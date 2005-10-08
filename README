@@ -1,0 +1,4 @@
+This is a program which synchronizes the contact and calender
+data stored by Evolution (http://www.gnome.org/projects/evolution/)
+with a SyncML server. It uses the Sync4j C++ client API library
+for that purpose.

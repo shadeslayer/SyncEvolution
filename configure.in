@@ -1,0 +1,39 @@
+dnl Process this file with autoconf to produce a configure script.
+
+AC_INIT(src/sync4jevolution.cpp)
+AM_INIT_AUTOMAKE(sync4jevolution, 0.01)
+AM_CONFIG_HEADER(config.h)
+
+AC_ARG_WITH(sync4j,
+            AS_HELP_STRING([--with-sync4j=<base directory>],
+                           [specifies location of Sync4j client library]),
+            [SYNC4J_CFLAGS="-I$withval/include/sync4j"; SYNC4J_LIBS="-L$withval/lib"])
+SYNC4J_LIBS="${SYNC4J_LIBS} -lsync4j"
+AC_SUBST(SYNC4J_CFLAGS)
+AC_SUBST(SYNC4J_LIBS)
+
+pkg_emodules_10="evolution-data-server-1.0 libebook-1.0 libecal-1.0 libedata-book-1.0 libedata-cal-1.0 libedataserver-1.0"
+pkg_emodules_11="evolution-data-server-1.1 libebook-1.1 libecal-1.1 libedata-book-1.1 libedata-cal-1.1 libedataserver-1.1"
+pkg_emodules_12="evolution-data-server-1.2 libebook-1.2 libecal-1.2 libedata-book-1.2 libedata-cal-1.2 libedataserver-1.2"
+
+export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:$prefix/lib/pkgconfig:/usr/local/lib/pkgconfig
+
+dnl check for Evolution
+PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_10], EDSFOUND=1, [EDSFOUND=0])
+if test "x${EDSFOUND}" = "x0"; then
+	PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_11], EDSFOUND=1, [EDSFOUND=0])
+	if test "x${EDSFOUND}" = "x0"; then
+		PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_12],,AC_MSG_ERROR(No compatible evolution-data-server was found))
+	fi
+fi
+AC_SUBST(EPACKAGE_CFLAGS)
+AC_SUBST(EPACKAGE_LIBS)
+
+dnl check for programs.
+AC_PROG_CXX
+AC_PROG_LIBTOOL
+
+AC_OUTPUT([
+Makefile
+src/Makefile
+])
