@@ -1,0 +1,76 @@
+{
+   write in pthread_create
+   Memcheck:Param
+   write(buf)
+   fun:write
+   fun:pthread_create@@GLIBC_2.1
+}
+
+{
+   write in e_book_new
+   Memcheck:Param
+   write(buf)
+   fun:write
+   obj:*libebook*
+   fun:e_book_new
+}
+
+{
+   write in g_thread_create_full
+   Memcheck:Param
+   write(buf)
+   fun:write
+   obj:*libgthread*
+   fun:g_thread_create_full
+}
+
+{
+   name server lookup
+   Memcheck:Leak
+   fun:malloc
+   fun:nss_parse_service_list
+   fun:__nss_database_lookup
+#   obj:*
+#   obj:*
+#   fun:getpwuid_r@@GLIBC_2.1.2
+#   obj:*libglib*
+#   fun:g_get_user_name
+#   fun:gconf_get_daemon_dir
+}
+
+{
+   bonobo_init
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:Bonobo_ActivationEnvValue_set
+   fun:bonobo_activation_init_activation_env
+   fun:bonobo_activation_orb_init
+   fun:bonobo_activation_init
+   fun:bonobo_init_full
+   fun:bonobo_init
+}
+
+{
+   corba init
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   obj:*
+   obj:*
+   fun:g_type_init_with_debug_flags
+   fun:g_type_init
+   fun:link_init
+   fun:giop_init
+   fun:CORBA_ORB_init
+}
+
+{
+   pthread leak
+   Memcheck:Leak
+   fun:malloc
+   fun:__pthread_initialize_manager
+   fun:pthread_create@@GLIBC_2.1
+}

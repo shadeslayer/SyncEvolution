@@ -1,9 +1,70 @@
-#include <spds/common/SyncManager.h>
-#include <spds/common/SyncSource.h>
+/*
+ * Copyright (C) 2005 Patrick Ohly
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
-#include <libebook/e-book.h>
+#include <base/Log.h>
+#include <base/autotools/Log.h>
+
+#include <iostream>
+using namespace std;
+
+#include "EvolutionContactSource.h"
+
+/**
+ * list all known data sources of a certain type
+ */
+static void listSources( EvolutionSyncSource &syncSource, const string &header )
+{
+    cout << header << ":\n";
+    EvolutionSyncSource::sources sources = syncSource.getSyncBackends();
+
+    for( EvolutionSyncSource::sources::const_iterator it = sources.begin();
+         it != sources.end();
+         it++ ) {
+        cout << it->m_name << ": " << it->m_uri << "\n";
+    }
+}
 
 int main( int argc, char **argv )
 {
+    setLogFile("-");
+    LOG.reset();
+    LOG.setLevel(LOG_LEVEL_DEBUG);
+    resetError();
+
+    try {
+        if ( argc != 2 ) {
+            EvolutionContactSource contactSource( string( "list" ) );
+
+            listSources( contactSource, "address books" );
+
+            fprintf( stderr, "usage: %s <server>\n", argv[0] );
+            return 1;
+        }
+    } catch ( int sync4jerror ) {
+        LOG.error( lastErrorMsg );
+    } catch ( string *errmsg ) {
+        LOG.error( errmsg->c_str() );
+        delete errmsg;
+    } catch ( const char *errmsg ) {
+        LOG.error( errmsg );
+    } catch (...) {
+        LOG.error( "unknown error" );
+    }
+
     return 0;
 }

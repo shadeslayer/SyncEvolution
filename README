@@ -1,4 +1,140 @@
-This is a program which synchronizes the contact and calender
-data stored by Evolution (http://www.gnome.org/projects/evolution/)
-with a SyncML server. It uses the Sync4j C++ client API library
-for that purpose.
+Introduction
+------------
+
+sync4jevolution synchronizes Evolution's contact and calender items
+with a SyncML server. The items are exchanged in the vCard and
+vCalender formats and via the Funambol Sync4j C++ client API library,
+which should make sync4jevolution compatible with the majority of
+SyncML servers. Full, one-way and incremental synchronization of items
+are supported.
+
+sync4jevolution does not synchronize with another SyncML capable
+device directly: a SyncML server that that device and sync4jevolution
+can talk to is needed. The remainder of this document assumes that
+Funambol's Sync4j server bundle for Linux V2.3 was installed using the
+default configuration.
+
+Usage
+-----
+
+Currently sync4jevolution comes as a simple command line tool which is
+configured via files. A graphical interface via an Evolution plugin
+would also be possible, but is not implemented yet. As command line
+parameters sync4jevolution only supports one option which specifies the
+configuration file that drive the synchronization run:
+
+   sync4jevolution <server>
+
+The SyncML <server> has to specified. Selection of sources of
+Evolution data which are to be synchronized with that server is done
+via configuration files. It is possible to configure sources without
+activating their synchronization, see the "disabled" property below.
+
+Progress and error messages are both sent to stdout. In case of an
+error the synchronization run is aborted and sync4jevolution returns a
+non-zero value. If one data source fails, synchronization of the
+remaining sources is not attempted. Recovery from failed
+synchronization is done by forcing a full synchronization during the
+next run, i.e. by sending all items and letting the SyncML server
+compare against the ones it already knows.
+
+After a successful synchronization the server's configuration file is
+updated so that the next run can be done incrementally.  If the
+configuration file has to be recreated e.g. because it was lost, the
+next run recovers from that by doing a full synchronization.
+
+Configuration
+-------------
+
+The configuration file of a certain <server> is stored in
+   $HOME/.sync4j/evolution/<server>/spds/syncml/config.txt
+
+The format is a simple list of
+   <property> = <value>
+pairs with one pair per line. Leading spaces and space around the
+equals character are skipped. <value> then runs until the the end of
+the line. In other words, it cannot start with spaces nor contain line
+breaks. Do not put quotation marks around <value>, they would be
+treated as part of the value itself. Lines starting with a hash (#)
+after optional leading spaces are treated as comments and skipped.
+
+The server configuration file should contain the following entries:
+   # the base URL of the SyncML server
+   syncURL = http://localhost:8080/sync4j/sync
+
+   # the SyncML gets this string and will use it to keep track
+   # of changes that still need to be synchronized; when multiple
+   # users access the server, this should be set to something unique
+   deviceId = sc-api-nat
+
+   # authorization for the SyncML server
+   username = guest
+   password = guest
+
+   # ???
+   firstTimeSyncMode = 0
+
+   # set to T to enable an HTTP proxy
+   useProxy = F
+   # proxy URL (http://<host>:<port>)
+   proxyHost = 
+
+   # used by the SyncML library internally; do not modify
+   begin =
+   end =
+
+   # obsolete?
+   serverName = 
+
+
+Each data source is configured in
+   $HOME/.sync4j/evolution/<server>/sources/<source>/config.txt
+
+Here is a file which would be used to synchronize the default
+Evolution contacts with the Sync4j server:
+
+   # name of the source
+   name = card
+
+   # set to T if this source is not to be synchronized
+   disabled = 
+
+   # requests a certain synchronization mode:
+   #   refresh = only exchange modified items if possible
+   #   slow = exchange all items
+   #   two-way-one-way = ???
+   sync = refresh
+
+   # overrides the supported synchronization modes
+   syncModes = slow,two-way-one-way,refresh
+
+   # specifies the format of the data
+   #    text/x-vcalendar = Evolution calender data
+   #    text/x-vcard = Evolution contact data
+   type = text/x-vcard
+
+   # picks one of Evolution's data sources, leave empty for default
+   evolutionurl = 
+
+   # this is appended to the server's URL to identify the
+   # server's database
+   uri = briefcase
+
+   # authentication for Evolution source
+   evolutionuser = 
+   evolutionpassword = 
+
+   # used by the SyncML library internally; do not modify
+   last = 1128964758
+
+Each data source corresponds to one database at the SyncML server, so
+two entries have to be added for each Evolution calendar as it stores
+both events/appointments and todo items. The Evolution data source is
+determined by the type of data given in "type" and uniquely identified
+with the "evolutionurl" property.  Not giving an url implies that
+Evolution's default contact or calender is to be used.
+
+If the Evolution data source requires authentication, the
+"evolutionuser" and "evolutionpassword" are used as credentials.  In
+this case the directory that contains the source's config.txt should
+only be accessible by the user.
