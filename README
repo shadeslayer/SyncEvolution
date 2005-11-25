@@ -138,3 +138,17 @@ If the Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.  In
 this case the directory that contains the source's config.txt should
 only be accessible by the user.
+
+Compiling from Source
+---------------------
+
+To compile the code the 3.x version of the Sync4j C++
+client library is needed. Also needed are the Evolution
+development files. The code was tested with Evolution
+2.0.4 and it is unclear which other versions it is
+compatible with.
+
+The build system is the normal autotools system.
+See INSTALL for general instructions how to use that
+and "./configure --help" for Sync4jEvolution specific
+options.

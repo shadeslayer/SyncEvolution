@@ -139,7 +139,7 @@ void EvolutionContactSource::close()
 }
 
 
-SyncItem *EvolutionContactSource::createItem( const string &uid )
+SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state )
 {
     // this function must never throw an exception
     // because it is called inside the Sync4j C++ API library
@@ -162,8 +162,10 @@ SyncItem *EvolutionContactSource::createItem( const string &uid )
         }
 
         auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
-        item->setData( vcardstr, strlen( vcardstr ) + 1 );
+        item->setData( vcardstr, strlen( vcardstr ) );
         item->setDataType( getMimeType() );
+        item->setModificationTime( 0 );
+        item->setState( state );
 
         return item.release();
     } catch (...) {
@@ -173,14 +175,11 @@ SyncItem *EvolutionContactSource::createItem( const string &uid )
     return NULL;
 }
 
-void EvolutionContactSource::setSyncItemStatus(char *key, int status)
-{
-}
-
 int EvolutionContactSource::addItem(SyncItem& item)
 {
     try {
-        gptr<EContact, GObject> contact( e_contact_new_from_vcard( (const char *)item.getData() ) );
+        string data = getData(item);
+        gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
         if( contact ) {
             GError *gerror = NULL;
             e_contact_set(contact, E_CONTACT_UID, NULL);
@@ -190,7 +189,7 @@ int EvolutionContactSource::addItem(SyncItem& item)
                 throwError( "storing new contact", gerror );
             }
         } else {
-            throwError( string( "parsing vcard" ) + (const char *)item.getData(),
+            throwError( string( "parsing vcard" ) + data,
                         NULL );
         }
     } catch ( ... ) {
@@ -202,20 +201,21 @@ int EvolutionContactSource::addItem(SyncItem& item)
 int EvolutionContactSource::updateItem(SyncItem& item)
 {
     try {
-        gptr<EContact, GObject> contact( e_contact_new_from_vcard( (const char *)item.getData() ) );
+        string data = getData(item);
+        gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
         if( contact ) {
             GError *gerror = NULL;
-            e_contact_set( contact, E_CONTACT_UID, item.getKey( NULL ) );
+            e_contact_set( contact, E_CONTACT_UID, item.getKey() );
             if ( e_book_commit_contact(m_addressbook, contact, &gerror) ) {
                 const char *uid = (const char *)e_contact_get_const(contact, E_CONTACT_UID);
                 if (uid) {
                     item.setKey( uid );
                 }
             } else {
-                throwError( string( "updating contact" ) + item.getKey( NULL ), gerror );
+                throwError( string( "updating contact" ) + item.getKey(), gerror );
             }
         } else {
-            throwError( string( "parsing vcard" ) + (const char *)item.getData(),
+            throwError( string( "parsing vcard" ) + data,
                         NULL );
         }
     } catch ( ... ) {
@@ -228,8 +228,8 @@ int EvolutionContactSource::deleteItem(SyncItem& item)
 {
     try {
         GError *gerror = NULL;
-        if (!e_book_remove_contact( m_addressbook, item.getKey( NULL ), &gerror ) ) {
-            throwError( string( "deleting contact" ) + item.getKey( NULL ),
+        if (!e_book_remove_contact( m_addressbook, item.getKey(), &gerror ) ) {
+            throwError( string( "deleting contact" ) + item.getKey(),
                         gerror );
         }
     } catch( ... ) {

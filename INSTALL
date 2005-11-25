@@ -1,7 +1,8 @@
 Basic Installation
 ==================
 
-   These are generic installation instructions.
+   These are generic installation instructions. Specific installation
+instructions for Sync4jEvolution are in the README file.
 
    The `configure' shell script attempts to guess correct values for
 various system-dependent variables used during compilation.  It uses

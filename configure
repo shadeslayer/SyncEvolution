@@ -1921,7 +1921,7 @@ INSTALL_STRIP_PROGRAM="\${SHELL} \$(install_sh) -c -s"
 # Check whether --with-sync4j or --without-sync4j was given.
 if test "${with_sync4j+set}" = set; then
   withval="$with_sync4j"
-  SYNC4J_CFLAGS="-I$withval/include/sync4j"; SYNC4J_LIBS="-L$withval/lib"
+  SYNC4J_CFLAGS="-I$withval/include/sync4j/common -I$withval/include/sync4j"; SYNC4J_LIBS="-L$withval/lib"
 fi;
 SYNC4J_LIBS="${SYNC4J_LIBS} -lsync4j"
 

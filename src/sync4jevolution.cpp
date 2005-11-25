@@ -17,7 +17,7 @@
  */
 
 #include <base/Log.h>
-#include <base/autotools/Log.h>
+#include <posix/base/posixlog.h>
 
 #include <iostream>
 using namespace std;

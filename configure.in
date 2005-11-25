@@ -7,7 +7,7 @@ AM_CONFIG_HEADER(config.h)
 AC_ARG_WITH(sync4j,
             AS_HELP_STRING([--with-sync4j=<base directory>],
                            [specifies location of Sync4j client library]),
-            [SYNC4J_CFLAGS="-I$withval/include/sync4j"; SYNC4J_LIBS="-L$withval/lib"])
+            [SYNC4J_CFLAGS="-I$withval/include/sync4j/common -I$withval/include/sync4j"; SYNC4J_LIBS="-L$withval/lib"])
 SYNC4J_LIBS="${SYNC4J_LIBS} -lsync4j"
 AC_SUBST(SYNC4J_CFLAGS)
 AC_SUBST(SYNC4J_LIBS)

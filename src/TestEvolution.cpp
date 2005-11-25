@@ -182,8 +182,8 @@ void TestEvolution::testContactSimpleInsert()
     SyncItem item;
     item.setData( vcard, strlen(vcard) + 1 );
     EVOLUTION_ASSERT_NO_THROW( source, source.addItem( item ) );
-    CPPUNIT_ASSERT( item.getKey( NULL ) != NULL );
-    CPPUNIT_ASSERT( strlen( item.getKey( NULL ) ) > 0 );
+    CPPUNIT_ASSERT( item.getKey() != NULL );
+    CPPUNIT_ASSERT( strlen( item.getKey() ) > 0 );
 
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
@@ -194,9 +194,9 @@ void TestEvolution::testContactSimpleInsert()
     SyncItem *sameItem;
     EVOLUTION_ASSERT_NO_THROW(
         source,
-        sameItem = source.createItem( item.getKey( NULL ) ) );
+        sameItem = source.createItem( item.getKey(), item.getState() ) );
     CPPUNIT_ASSERT( sameItem != NULL );
-    CPPUNIT_ASSERT( !strcmp( sameItem->getKey( NULL ), item.getKey( NULL ) ) );
+    CPPUNIT_ASSERT( !strcmp( sameItem->getKey(), item.getKey() ) );
     delete sameItem;
 }
 
@@ -294,8 +294,8 @@ void TestEvolution::contactUpdate()
     CPPUNIT_ASSERT( countDeletedItems( source ) == 0 );
     SyncItem *modifiedItem;
     EVOLUTION_ASSERT_NO_THROW( source, modifiedItem = source.getFirstItem() );
-    CPPUNIT_ASSERT( strlen( item->getKey( NULL ) ) );
-    CPPUNIT_ASSERT( !strcmp( item->getKey( NULL ), modifiedItem->getKey( NULL ) ) );
+    CPPUNIT_ASSERT( strlen( item->getKey() ) );
+    CPPUNIT_ASSERT( !strcmp( item->getKey(), modifiedItem->getKey() ) );
 
     delete item;
     delete modifiedItem;
@@ -341,9 +341,9 @@ void TestEvolution::testContactChanges()
     CPPUNIT_ASSERT( countDeletedItems( source ) == 1 );
     SyncItem *deletedItem;
     EVOLUTION_ASSERT_NO_THROW( source, deletedItem = source.getFirstDeletedItem() );
-    CPPUNIT_ASSERT( strlen( item->getKey( NULL ) ) );
-    CPPUNIT_ASSERT( strlen( deletedItem->getKey( NULL ) ) );
-    CPPUNIT_ASSERT( !strcmp( item->getKey( NULL ), deletedItem->getKey( NULL ) ) );
+    CPPUNIT_ASSERT( strlen( item->getKey() ) );
+    CPPUNIT_ASSERT( strlen( deletedItem->getKey() ) );
+    CPPUNIT_ASSERT( !strcmp( item->getKey(), deletedItem->getKey() ) );
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     delete item;
@@ -359,9 +359,9 @@ void TestEvolution::testContactChanges()
     EVOLUTION_ASSERT_NO_THROW( source, item = source.getFirstItem() );
     SyncItem *newItem;
     EVOLUTION_ASSERT_NO_THROW( source, newItem = source.getFirstNewItem() );
-    CPPUNIT_ASSERT( strlen( item->getKey( NULL ) ) );
-    CPPUNIT_ASSERT( strlen( newItem->getKey( NULL ) ) );
-    CPPUNIT_ASSERT( !strcmp( item->getKey( NULL ), newItem->getKey( NULL ) ) );
+    CPPUNIT_ASSERT( strlen( item->getKey() ) );
+    CPPUNIT_ASSERT( strlen( newItem->getKey() ) );
+    CPPUNIT_ASSERT( !strcmp( item->getKey(), newItem->getKey() ) );
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     delete newItem;
@@ -375,7 +375,7 @@ void TestEvolution::testContactChanges()
     CPPUNIT_ASSERT( countDeletedItems( source ) == 0 );
     SyncItem *updatedItem;
     EVOLUTION_ASSERT_NO_THROW( source, updatedItem = source.getFirstUpdatedItem() );
-    CPPUNIT_ASSERT( !strcmp( item->getKey( NULL ), updatedItem->getKey( NULL ) ) );
+    CPPUNIT_ASSERT( !strcmp( item->getKey(), updatedItem->getKey() ) );
 
     delete item;
     delete updatedItem;

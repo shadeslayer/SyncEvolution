@@ -48,16 +48,15 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual sources getSyncBackends();
     virtual void open();
     virtual void close();
-    virtual SyncItem *createItem( const string &uid );
+    virtual SyncItem *createItem( const string &uid, SyncState state );
 
     //
     // implementation of SyncSource
     //
-    virtual void setSyncItemStatus(char *key, int status);
     virtual int addItem(SyncItem& item);
     virtual int updateItem(SyncItem& item);
     virtual int deleteItem(SyncItem& item);
-   
+
   private:
     /** valid after open(): the address book that this source references */
     gptr<EBook, GObject> m_addressbook;
