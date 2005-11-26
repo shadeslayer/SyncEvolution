@@ -144,6 +144,7 @@ bin_PROGRAMS = sync4jevolution
 
 CORE_SOURCES = \
         EvolutionSyncSource.cpp \
+	EvolutionSyncClient.cpp \
 	EvolutionContactSource.cpp
 
 CORE_LDADD = @EPACKAGE_LIBS@ @SYNC4J_LIBS@ @LIBS@
@@ -177,7 +178,7 @@ check_PROGRAMS = test$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
 am__objects_1 = EvolutionSyncSource.$(OBJEXT) \
-	EvolutionContactSource.$(OBJEXT)
+	EvolutionSyncClient.$(OBJEXT) EvolutionContactSource.$(OBJEXT)
 am_sync4jevolution_OBJECTS = sync4jevolution.$(OBJEXT) $(am__objects_1)
 sync4jevolution_OBJECTS = $(am_sync4jevolution_OBJECTS)
 sync4jevolution_DEPENDENCIES =
@@ -192,6 +193,7 @@ DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/EvolutionContactSource.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/EvolutionSyncClient.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/EvolutionSyncSource.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/TestEvolution.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/TestMain.Po \
@@ -267,6 +269,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/EvolutionContactSource.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/EvolutionSyncClient.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/EvolutionSyncSource.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TestEvolution.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TestMain.Po@am__quote@

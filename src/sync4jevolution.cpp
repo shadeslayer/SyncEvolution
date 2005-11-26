@@ -23,6 +23,7 @@
 using namespace std;
 
 #include "EvolutionContactSource.h"
+#include "EvolutionSyncClient.h"
 
 /**
  * list all known data sources of a certain type
@@ -53,8 +54,12 @@ int main( int argc, char **argv )
             listSources( contactSource, "address books" );
 
             fprintf( stderr, "usage: %s <server>\n", argv[0] );
-            return 1;
+        } else {
+            EvolutionSyncClient client(argv[1]);
+            client.sync();
         }
+
+        return 0;
     } catch ( int sync4jerror ) {
         LOG.error( lastErrorMsg );
     } catch ( string *errmsg ) {
@@ -62,9 +67,11 @@ int main( int argc, char **argv )
         delete errmsg;
     } catch ( const char *errmsg ) {
         LOG.error( errmsg );
+    } catch ( const string error ) {
+        LOG.error( error.c_str() );
     } catch (...) {
         LOG.error( "unknown error" );
     }
 
-    return 0;
+    return 1;
 }

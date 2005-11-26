@@ -30,16 +30,16 @@ class EvolutionContactSource : public EvolutionSyncSource
   public:
     /**
      * Creates a new Evolution address book source.
+     *
      * @param    changeId    is used to track changes in the Evolution backend;
      *                       not specifying it implies that always all items are returned
      * @param    id          identifies the backend; not specifying it makes this instance
      *                       unusable for anything but listing backend databases
-     * @param    idIsName    true iff id references to the database name, otherwise its uri
      */
     EvolutionContactSource( const string &name,
                             const string &changeId = string(""),
                             const string &id = string(""),
-                            bool idIsName = false );
+                            EVCardFormat vcardFormat = EVC_FORMAT_VCARD_30 );
     virtual ~EvolutionContactSource();
 
     //
@@ -56,7 +56,9 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual int addItem(SyncItem& item);
     virtual int updateItem(SyncItem& item);
     virtual int deleteItem(SyncItem& item);
-
+    virtual int beginSync();
+    virtual int endSync();
+	 
   private:
     /** valid after open(): the address book that this source references */
     gptr<EBook, GObject> m_addressbook;
@@ -66,4 +68,7 @@ class EvolutionContactSource : public EvolutionSyncSource
 
     /** the mime type which corresponds to m_vcardFormat */
     const char *getMimeType();
+
+    /** internal implementation of endSync() which will throw an exception in case of failure */
+    void endSyncThrow();
 };

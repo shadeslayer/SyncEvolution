@@ -37,6 +37,7 @@
 
 
 #include <EvolutionContactSource.h>
+#include <common/spds/SyncStatus.h>
 
 #include <string.h>
 
@@ -140,8 +141,7 @@ void TestEvolution::testContactOpen()
 {
     EvolutionContactSource source( string( "dummy" ),
                                    m_changeIds[0],
-                                   m_contactName,
-                                   true );
+                                   m_contactName );
 
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
 }
@@ -173,10 +173,10 @@ void TestEvolution::testContactSimpleInsert()
     EvolutionContactSource source(
         string( "dummy" ),
         m_changeIds[0],
-        m_contactName,
-        true );
+        m_contactName );
     
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     int numItems;
     CPPUNIT_ASSERT_NO_THROW( numItems = countItems( source ) );
     SyncItem item;
@@ -187,6 +187,7 @@ void TestEvolution::testContactSimpleInsert()
 
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == numItems + 1 );
     CPPUNIT_ASSERT( countNewItems( source ) == 0 );
     CPPUNIT_ASSERT( countUpdatedItems( source ) == 0 );
@@ -206,10 +207,10 @@ void TestEvolution::testContactDeleteAll()
         
     EvolutionContactSource source( string( "dummy" ),
                                    m_changeIds[0],
-                                   m_contactName,
-                                   true );
+                                   m_contactName );
 
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     int numItems = countItems( source );
     CPPUNIT_ASSERT( numItems > 0 );
 
@@ -223,6 +224,7 @@ void TestEvolution::testContactDeleteAll()
 
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     EVOLUTION_ASSERT_MESSAGE(
         "should be empty now",
         source,
@@ -236,10 +238,10 @@ void TestEvolution::testContactIterateTwice()
 {
     EvolutionContactSource source( string( "dummy" ),
                                    m_changeIds[0],
-                                   m_contactName,
-                                   true );
+                                   m_contactName );
 
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     EVOLUTION_ASSERT_MESSAGE(
         "iterating twice should produce identical results",
         source,
@@ -257,9 +259,9 @@ void TestEvolution::contactUpdate()
 {
     EvolutionContactSource source( string( "dummy" ),
                                    m_changeIds[0],
-                                   m_contactName,
-                                   true );
+                                   m_contactName );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     SyncItem *item;
     EVOLUTION_ASSERT_NO_THROW( source, item = source.getFirstItem() );
     const char *vcard =
@@ -288,6 +290,7 @@ void TestEvolution::contactUpdate()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
     
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 1 );
     CPPUNIT_ASSERT( countNewItems( source ) == 0 );
     CPPUNIT_ASSERT( countUpdatedItems( source ) == 0 );
@@ -315,15 +318,16 @@ void TestEvolution::testContactChanges()
 
     EvolutionContactSource source( string( "dummy" ),
                                    m_changeIds[1],
-                                   m_contactName,
-                                   true );
+                                   m_contactName );
         
     // update change id #1
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     // no new changes
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 1 );
     CPPUNIT_ASSERT( countNewItems( source ) == 0 );
     CPPUNIT_ASSERT( countUpdatedItems( source ) == 0 );
@@ -335,6 +339,7 @@ void TestEvolution::testContactChanges()
     // delete item again
     testContactDeleteAll();
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
     CPPUNIT_ASSERT( countNewItems( source ) == 0 );
     CPPUNIT_ASSERT( countUpdatedItems( source ) == 0 );
@@ -352,6 +357,7 @@ void TestEvolution::testContactChanges()
     // insert another item
     testContactSimpleInsert();
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 1 );
     CPPUNIT_ASSERT( countNewItems( source ) == 1 );
     CPPUNIT_ASSERT( countUpdatedItems( source ) == 0 );
@@ -369,6 +375,7 @@ void TestEvolution::testContactChanges()
     // update item
     contactUpdate();
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 1 );
     CPPUNIT_ASSERT( countNewItems( source ) == 0 );
     CPPUNIT_ASSERT( countUpdatedItems( source ) == 1 );

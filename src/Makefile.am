@@ -7,6 +7,7 @@ bin_PROGRAMS = sync4jevolution
 
 CORE_SOURCES  = \
         EvolutionSyncSource.cpp \
+	EvolutionSyncClient.cpp \
 	EvolutionContactSource.cpp
 CORE_LDADD = @EPACKAGE_LIBS@ @SYNC4J_LIBS@ @LIBS@
 

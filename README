@@ -23,20 +23,23 @@ would also be possible, but is not implemented yet. As command line
 parameters sync4jevolution only supports one option which specifies the
 configuration file that drive the synchronization run:
 
-   sync4jevolution <server>
+   sync4jevolution [<server>]
 
-The SyncML <server> has to specified. Selection of sources of
+The <server> string is used to find the configuration which determines
+how synchronization is going to proceed. Selection of sources of
 Evolution data which are to be synchronized with that server is done
 via configuration files. It is possible to configure sources without
 activating their synchronization, see the "disabled" property below.
 
+If the SyncML server is not specified, sync4jevolution lists all
+available Evolution backend databases.
+
 Progress and error messages are both sent to stdout. In case of an
 error the synchronization run is aborted and sync4jevolution returns a
-non-zero value. If one data source fails, synchronization of the
-remaining sources is not attempted. Recovery from failed
-synchronization is done by forcing a full synchronization during the
-next run, i.e. by sending all items and letting the SyncML server
-compare against the ones it already knows.
+non-zero value. Recovery from failed synchronization is done by
+forcing a full synchronization during the next run, i.e. by sending
+all items and letting the SyncML server compare against the ones it
+already knows.
 
 After a successful synchronization the server's configuration file is
 updated so that the next run can be done incrementally.  If the
@@ -113,8 +116,9 @@ Evolution contacts with the Sync4j server:
    #    text/x-vcard = Evolution contact data
    type = text/x-vcard
 
-   # picks one of Evolution's data sources, leave empty for default
-   evolutionurl = 
+   # picks one of Evolution's data sources:
+   # enter either the name or the full URL
+   evolutionsource = 
 
    # this is appended to the server's URL to identify the
    # server's database
@@ -138,6 +142,32 @@ If the Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.  In
 this case the directory that contains the source's config.txt should
 only be accessible by the user.
+
+Tracking Changes inside Evolution
+---------------------------------
+
+The SyncML protocol requires that a client knows which items have been
+added, modified and deleted since the last sync. This is supported by
+the Evolution database server, albeit in a limited way:
+
+The same function lists changes and also moves the so called "change
+marker" forward. Therefore asking for changes twice in a row will only
+list changes the first time and not report the same changes a second
+time. sync4jevolution delays asking for changes as long as possible
+and only does it when synchronization has really started. Then
+if synchronization completed and items where added, modified or
+deleted on behalf of the server, the change marker is moved forward.
+
+If synchronization fails for some or all items, then sync4jevolution
+cannot mark individual items for retransmission during the next
+sync and forces the next sync to execute in slow mode.
+
+The change marker that sync4jevolution uses is a string which is
+composed as "sync4jevolution:<syncURL>/<name>" where <syncURL> comes
+from the server config file and <name> from the source config
+file. This implies that changes are tracked separately for each server
+and server database that Evolution might be synchronized with.
+
 
 Compiling from Source
 ---------------------

@@ -21,22 +21,12 @@ using namespace std;
 
 #include "EvolutionContactSource.h"
 
-class EvolutionContactItem : public SyncItem
-{
-public:
-    EvolutionContactItem( EContact *contact );
-};
-
-EvolutionContactItem::EvolutionContactItem( EContact *contact )
-{
-}
-
 EvolutionContactSource::EvolutionContactSource( const string &name,
                                                 const string &changeId,
                                                 const string &id,
-                                                bool idIsName ) :
-    EvolutionSyncSource( name, changeId, id, idIsName ),
-    m_vcardFormat( EVC_FORMAT_VCARD_30 )
+                                                EVCardFormat vcardFormat ) :
+    EvolutionSyncSource( name, changeId, id ),
+    m_vcardFormat( vcardFormat )
 {
 }
 
@@ -73,9 +63,9 @@ void EvolutionContactSource::open()
         throw "unable to access address books";
     }
     
-    ESource *source = findSource( sources, m_id, m_idIsName );
+    ESource *source = findSource( sources, m_id );
     if (!source) {
-        throw string( "no such address book: " ) + m_id;
+        throw string(getName()) + ": no such address book: '" + m_id + "'";
     }
 
     GError *gerror = NULL;
@@ -84,46 +74,70 @@ void EvolutionContactSource::open()
     if (!e_book_open( m_addressbook, TRUE, &gerror) ) {
         throwError( "opening address book", gerror );
     }
-
-    // find all items
-    gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
-    GList *nextItem;
-    if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
-        throwError( "reading all items", gerror );
-    }
-    while (nextItem) {
-        m_allItems.push_back( (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
-                                                                E_CONTACT_UID) );
-        nextItem = nextItem->next;
-    }
-    allItemsQuery = NULL;
-
-    // scan modified items since the last instantiation
-    if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
-        throwError( "reading changes", gerror );
-    } 
-    while (nextItem) {
-        EBookChange *ebc = (EBookChange *)nextItem->data;
-        const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
-
-        switch (ebc->change_type) {            
-         case E_BOOK_CHANGE_CARD_ADDED:
-            m_newItems.push_back( uid );
-            break;
-         case E_BOOK_CHANGE_CARD_MODIFIED:
-            m_updatedItems.push_back( uid );
-            break;
-         case E_BOOK_CHANGE_CARD_DELETED:
-            m_deletedItems.push_back( uid );
-            break;
-        }
-        nextItem = nextItem->next;
-    }
 }
 
-void EvolutionContactSource::close()
+int EvolutionContactSource::beginSync()
 {
-    if (m_addressbook) {
+    m_isModified = false;
+    try {
+        GError *gerror = NULL;
+
+        // find all items
+        gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+        GList *nextItem;
+        if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+            throwError( "reading all items", gerror );
+        }
+        while (nextItem) {
+            m_allItems.push_back( (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
+                                                                    E_CONTACT_UID) );
+            nextItem = nextItem->next;
+        }
+        allItemsQuery = NULL;
+
+        // scan modified items since the last instantiation
+        if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
+            throwError( "reading changes", gerror );
+        } 
+        while (nextItem) {
+            EBookChange *ebc = (EBookChange *)nextItem->data;
+            const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
+
+            switch (ebc->change_type) {            
+             case E_BOOK_CHANGE_CARD_ADDED:
+                m_newItems.push_back( uid );
+                break;
+             case E_BOOK_CHANGE_CARD_MODIFIED:
+                m_updatedItems.push_back( uid );
+                break;
+             case E_BOOK_CHANGE_CARD_DELETED:
+                m_deletedItems.push_back( uid );
+                break;
+            }
+            nextItem = nextItem->next;
+        }
+    } catch( ... ) {
+        m_hasFailed = true;
+        // TODO: properly set error
+        return 1;
+    }
+    return 0;
+}
+
+int EvolutionContactSource::endSync()
+{
+    try {
+        endSyncThrow();
+    } catch ( ... ) {
+        m_hasFailed = true;
+        return 1;
+    }
+    return 0;
+}
+
+void EvolutionContactSource::endSyncThrow()
+{
+    if (m_isModified) {
         GError *gerror = NULL;
         GList *nextItem;
         // move change_id forward so that our own changes are not listed the next time
@@ -131,11 +145,14 @@ void EvolutionContactSource::close()
             throwError( "reading changes", gerror );
         }
     }
+    resetItems();
+    m_isModified = false;
+}
+
+void EvolutionContactSource::close()
+{
+    endSyncThrow();
     m_addressbook = NULL;
-    m_allItems.clear();
-    m_newItems.clear();
-    m_updatedItems.clear();
-    m_deletedItems.clear();
 }
 
 
@@ -192,10 +209,13 @@ int EvolutionContactSource::addItem(SyncItem& item)
             throwError( string( "parsing vcard" ) + data,
                         NULL );
         }
+
+        m_isModified = true;
     } catch ( ... ) {
         m_hasFailed = true;
+        return STC_COMMAND_FAILED;
     }
-    return 0;
+    return STC_OK;
 }
 
 int EvolutionContactSource::updateItem(SyncItem& item)
@@ -218,10 +238,13 @@ int EvolutionContactSource::updateItem(SyncItem& item)
             throwError( string( "parsing vcard" ) + data,
                         NULL );
         }
+
+        m_isModified = true;
     } catch ( ... ) {
         m_hasFailed = true;
+        return STC_COMMAND_FAILED;
     }
-    return 0;
+    return STC_OK;
 }
 
 int EvolutionContactSource::deleteItem(SyncItem& item)
@@ -232,10 +255,13 @@ int EvolutionContactSource::deleteItem(SyncItem& item)
             throwError( string( "deleting contact" ) + item.getKey(),
                         gerror );
         }
+
+        m_isModified = true;
     } catch( ... ) {
         m_hasFailed = true;
+        return STC_COMMAND_FAILED;
     }
-    return 0;
+    return STC_OK;
 }
 
 const char *EvolutionContactSource::getMimeType()
