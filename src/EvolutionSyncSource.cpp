@@ -92,7 +92,21 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
     )
 {
     if (mimeType == "text/x-vcard") {
-        return new EvolutionContactSource(name, changeId, id, EVC_FORMAT_VCARD_30);
+        // remove special characters from change ID
+        string strippedChangeId = changeId;
+        int offset = 0;
+        while (offset < strippedChangeId.size()) {
+            switch (strippedChangeId[offset]) {
+             case ':':
+             case '/':
+                strippedChangeId.erase(offset, 1);
+                break;
+             default:
+                offset++;
+            }
+        }
+        
+        return new EvolutionContactSource(name, strippedChangeId, id, EVC_FORMAT_VCARD_30);
     }
 
     // TODO: other mime types?
