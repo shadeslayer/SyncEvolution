@@ -120,9 +120,17 @@ void EvolutionSyncClient::sync()
     int res = m_client.sync( sourceArray );
     delete [] sourceArray;
 
-    // TODO: force slow sync in case of res != STC_OK or failed Evolution source
+    // TODO: force slow sync in case of failure or failed Evolution source
     
-    if (res != STC_OK) {
-        throw lastErrorCode;
+    if (res) {
+        if (lastErrorCode) {
+            throw lastErrorCode;
+        }
+        // no error code?!
+        lastErrorCode = res;
+        if (!lastErrorMsg[0]) {
+            strcpy(lastErrorMsg, "sync() failed without setting an error description");
+        }
+        throw res;
     }
 }

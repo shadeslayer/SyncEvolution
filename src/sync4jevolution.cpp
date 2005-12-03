@@ -59,6 +59,7 @@ int main( int argc, char **argv )
             client.sync();
         }
 
+        LOG.info( "synchronization successful" );
         return 0;
     } catch ( int sync4jerror ) {
         LOG.error( lastErrorMsg );
@@ -73,5 +74,6 @@ int main( int argc, char **argv )
         LOG.error( "unknown error" );
     }
 
+    LOG.error( "synchronization failed" );
     return 1;
 }
