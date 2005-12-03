@@ -71,4 +71,9 @@ class EvolutionContactSource : public EvolutionSyncSource
 
     /** internal implementation of endSync() which will throw an exception in case of failure */
     void endSyncThrow();
+
+    /** log a one-line info about a contact */
+    void logItem( const string &uid, const string &info );
+    void logItem( SyncItem &item, const string &info );
+    
 };

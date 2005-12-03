@@ -21,6 +21,8 @@ using namespace std;
 
 #include "EvolutionContactSource.h"
 
+#include <common/base/Log.h>
+
 EvolutionContactSource::EvolutionContactSource( const string &name,
                                                 const string &changeId,
                                                 const string &id,
@@ -89,8 +91,10 @@ int EvolutionContactSource::beginSync()
             throwError( "reading all items", gerror );
         }
         while (nextItem) {
-            m_allItems.push_back( (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
-                                                                    E_CONTACT_UID) );
+            const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
+                                                                E_CONTACT_UID);
+            logItem( string(uid), "existing item" );
+            m_allItems.push_back(uid);
             nextItem = nextItem->next;
         }
         allItemsQuery = NULL;
@@ -105,12 +109,15 @@ int EvolutionContactSource::beginSync()
 
             switch (ebc->change_type) {            
              case E_BOOK_CHANGE_CARD_ADDED:
+                logItem( string(uid), "was added" );
                 m_newItems.push_back( uid );
                 break;
              case E_BOOK_CHANGE_CARD_MODIFIED:
+                logItem( string(uid), "was modified" );
                 m_updatedItems.push_back( uid );
                 break;
              case E_BOOK_CHANGE_CARD_DELETED:
+                logItem( string(uid), "was deleted" );
                 m_deletedItems.push_back( uid );
                 break;
             }
@@ -137,6 +144,7 @@ int EvolutionContactSource::endSync()
 
 void EvolutionContactSource::endSyncThrow()
 {
+    LOG.info( m_isModified ? "EvolutionContactSource: address book was modified" : "EvolutionContactSource: no modifications" );
     if (m_isModified) {
         GError *gerror = NULL;
         GList *nextItem;
@@ -162,6 +170,8 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
     // because it is called inside the Sync4j C++ API library
     // which cannot handle exceptions
     try {
+        logItem( uid, "extracting from EV" );
+        
         EContact *contact;
         GError *gerror = NULL;
         if (! e_book_get_contact( m_addressbook,
@@ -178,8 +188,16 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
             throwError( string( "converting contact" ) + uid, NULL );
         }
 
+        // hack: patch version so that Sync4j 2.3 accepts it
+        char *ver = strstr(vcardstr, "VERSION:3.0" );
+        if (ver) {
+            ver[8] = '2';
+            ver[10] = '1';
+        }
+
+        LOG.debug( vcardstr );
         auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
-        item->setData( vcardstr, strlen( vcardstr ) );
+        item->setData( vcardstr, strlen( vcardstr ) + 1 );
         item->setDataType( getMimeType() );
         item->setModificationTime( 0 );
         item->setState( state );
@@ -195,6 +213,8 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
 int EvolutionContactSource::addItem(SyncItem& item)
 {
     try {
+        logItem( item, "adding" );
+
         string data = getData(item);
         gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
         if( contact ) {
@@ -221,6 +241,8 @@ int EvolutionContactSource::addItem(SyncItem& item)
 int EvolutionContactSource::updateItem(SyncItem& item)
 {
     try {
+        logItem( item, "updating" );
+
         string data = getData(item);
         gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
         if( contact ) {
@@ -250,6 +272,8 @@ int EvolutionContactSource::updateItem(SyncItem& item)
 int EvolutionContactSource::deleteItem(SyncItem& item)
 {
     try {
+        logItem( item, "deleting" );
+
         GError *gerror = NULL;
         if (!e_book_remove_contact( m_addressbook, item.getKey(), &gerror ) ) {
             throwError( string( "deleting contact" ) + item.getKey(),
@@ -276,4 +300,67 @@ const char *EvolutionContactSource::getMimeType()
     }
 
     return "test/vcard";
+}
+
+void EvolutionContactSource::logItem( const string &uid, const string &info )
+{
+    if (LOG.getLevel() >= LOG_LEVEL_INFO) {
+        string line;
+        EContact *contact;
+        GError *gerror = NULL;
+
+        if (e_book_get_contact( m_addressbook,
+                                uid.c_str(),
+                                &contact,
+                                &gerror )) {
+            line += (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
+        } else {
+            line += "<unknown contact>";
+        }
+        line += " (";
+        line += uid;
+        line += "): ";
+        line += info;
+        
+        LOG.info( line.c_str() );
+    }
+}
+
+void EvolutionContactSource::logItem( SyncItem &item, const string &info )
+{
+    if (LOG.getLevel() >= LOG_LEVEL_INFO) {
+        string line;
+        string vcard( (const char *)item.getData(), item.getDataSize() );
+
+        int offset = vcard.find( "FN:");
+        if (offset != vcard.npos) {
+            int len = vcard.find( "\r", offset ) - offset - 3;
+            line += vcard.substr( offset + 3, len );
+        } else {
+            line += "<unnamed SyncItem>";
+        }
+
+        if (!strlen( item.getKey() )) {
+            line += ", no UID";
+        } else {
+            line += ", ";
+            line += item.getKey();
+        
+            EContact *contact;
+            GError *gerror = NULL;
+            if (e_book_get_contact( m_addressbook,
+                                    item.getKey(),
+                                    &contact,
+                                    &gerror )) {
+                line += "EV ";
+                line += (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
+            } else {
+                line += ", not in Evolution";
+            }
+        }
+        line += ": ";
+        line += info;
+        
+        LOG.info( line.c_str() );
+    }
 }
