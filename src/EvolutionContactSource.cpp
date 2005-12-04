@@ -313,7 +313,12 @@ void EvolutionContactSource::logItem( const string &uid, const string &info )
                                 uid.c_str(),
                                 &contact,
                                 &gerror )) {
-            line += (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
+            const char *fileas = (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
+            const char *name = (const char *)e_contact_get_const( contact, E_CONTACT_FULL_NAME );
+
+            line += fileas ? fileas :
+                name ? name :
+                "<unnamed contact>";
         } else {
             line += "<unknown contact>";
         }
@@ -340,8 +345,10 @@ void EvolutionContactSource::logItem( SyncItem &item, const string &info )
             line += "<unnamed SyncItem>";
         }
 
-        if (!strlen( item.getKey() )) {
-            line += ", no UID";
+        if (!item.getKey() ) {
+            line += ", NULL UID (?!)";
+        } else if (!strlen( item.getKey() )) {
+            line += ", empty UID";
         } else {
             line += ", ";
             line += item.getKey();
@@ -353,7 +360,12 @@ void EvolutionContactSource::logItem( SyncItem &item, const string &info )
                                     &contact,
                                     &gerror )) {
                 line += "EV ";
-                line += (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
+                const char *fileas = (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
+                const char *name = (const char *)e_contact_get_const( contact, E_CONTACT_FULL_NAME );
+
+                line += fileas ? fileas :
+                    name ? name :
+                    "<unnamed contact>";
             } else {
                 line += ", not in Evolution";
             }
