@@ -233,7 +233,12 @@ class EvolutionSyncSource : public SyncSource
     /** keeps track of failure state */
     bool m_hasFailed;
 
-    /** remembers whether items have been modified during the sync */
+    /**
+     * remembers whether items have been modified during the sync:
+     * if it is, then the destructor has to advance the change marker
+     * or these modifications will be picked up during the next
+     * two-way sync
+     */
     bool m_isModified;
 };
 

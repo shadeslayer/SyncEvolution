@@ -89,48 +89,89 @@ int EvolutionContactSource::beginSync()
         "???";
     LOG.info( buffer.c_str() );
     
-    m_isModified = false;
     try {
         GError *gerror = NULL;
 
-        // find all items
-        gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
-        GList *nextItem;
-        if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
-            throwError( "reading all items", gerror );
-        }
-        while (nextItem) {
-            const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
-                                                                E_CONTACT_UID);
-            logItem( string(uid), "existing item" );
-            m_allItems.push_back(uid);
-            nextItem = nextItem->next;
-        }
-        allItemsQuery = NULL;
+        // reset state
+        m_isModified = false;
+        m_allItems.clear();
+        m_newItems.clear();
+        m_updatedItems.clear();
+        m_deletedItems.clear();
 
-        // scan modified items since the last instantiation
-        if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
-            throwError( "reading changes", gerror );
-        } 
-        while (nextItem) {
-            EBookChange *ebc = (EBookChange *)nextItem->data;
-            const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
-
-            switch (ebc->change_type) {            
-             case E_BOOK_CHANGE_CARD_ADDED:
-                logItem( string(uid), "was added" );
-                m_newItems.push_back( uid );
-                break;
-             case E_BOOK_CHANGE_CARD_MODIFIED:
-                logItem( string(uid), "was modified" );
-                m_updatedItems.push_back( uid );
-                break;
-             case E_BOOK_CHANGE_CARD_DELETED:
-                logItem( string(uid), "was deleted" );
-                m_deletedItems.push_back( uid );
-                break;
+        switch (mode) {
+         case SYNC_SLOW: {
+            // find all items
+            gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+            GList *nextItem;
+            if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+                throwError( "reading all items", gerror );
             }
-            nextItem = nextItem->next;
+            while (nextItem) {
+                const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
+                                                                E_CONTACT_UID);
+                logItem( string(uid), "existing item" );
+                m_allItems.push_back(uid);
+                nextItem = nextItem->next;
+            }
+
+            // need to move change marker
+            m_isModified = true;
+            break;
+         }
+         case SYNC_TWO_WAY: {
+            // scan modified items since the last instantiation
+            GList *nextItem;
+            if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
+                throwError( "reading changes", gerror );
+            }
+            while (nextItem) {
+                EBookChange *ebc = (EBookChange *)nextItem->data;
+                const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
+
+                switch (ebc->change_type) {            
+                 case E_BOOK_CHANGE_CARD_ADDED:
+                    logItem( string(uid), "was added" );
+                    m_newItems.push_back( uid );
+                    break;
+                 case E_BOOK_CHANGE_CARD_MODIFIED:
+                    logItem( string(uid), "was modified" );
+                    m_updatedItems.push_back( uid );
+                    break;
+                 case E_BOOK_CHANGE_CARD_DELETED:
+                    logItem( string(uid), "was deleted" );
+                    m_deletedItems.push_back( uid );
+                    break;
+                }
+                nextItem = nextItem->next;
+            }
+            break;
+         }
+         case SYNC_REFRESH_FROM_SERVER: {
+            // delete all local items, we'll get the current ones from the server 
+            // find all items
+            gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+            GList *nextItem;
+            if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+                throwError( "reading all items", gerror );
+            }
+            while (nextItem) {
+                const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
+                                                                E_CONTACT_UID);
+                if (!e_book_remove_contact( m_addressbook, uid, &gerror ) ) {
+                    throwError( string( "deleting contact" ) + uid,
+                                gerror );
+                }
+                nextItem = nextItem->next;
+            }
+            
+            // need to move change marker
+            m_isModified = true;
+            break;
+         }
+         default:
+            throw "unsupported sync mode, valid are only: slow, two-way, refresh";
+            break;
         }
     } catch( ... ) {
         m_hasFailed = true;
