@@ -14,6 +14,12 @@ can talk to is needed. The remainder of this document assumes that
 Funambol's Sync4j server bundle for Linux V2.3 was installed using the
 default configuration.
 
+This software is still experimental. Make a backup of your
+   $HOME/.evolution/addressbook
+   $HOME/.evolution/calender
+directories before running it for the first time. In older Evolution
+versions the same data is found in $HOME/evolution.
+
 Usage
 -----
 
@@ -61,87 +67,99 @@ breaks. Do not put quotation marks around <value>, they would be
 treated as part of the value itself. Lines starting with a hash (#)
 after optional leading spaces are treated as comments and skipped.
 
-The server configuration file should contain the following entries:
-   # the base URL of the SyncML server
-   syncURL = http://localhost:8080/sync4j/sync
-
-   # the SyncML gets this string and will use it to keep track
-   # of changes that still need to be synchronized; when multiple
-   # users access the server, this should be set to something unique
-   deviceId = sc-api-nat
-
-   # authorization for the SyncML server
-   username = guest
-   password = guest
-
-   # ???
-   firstTimeSyncMode = 0
-
-   # set to T to enable an HTTP proxy
-   useProxy = F
-   # proxy URL (http://<host>:<port>)
-   proxyHost = 
-
-   # used by the SyncML library internally; do not modify
-   begin =
-   end =
-
-   # obsolete?
-   serverName = 
-
-
 Each data source is configured in
-   $HOME/.sync4j/evolution/<server>/sources/<source>/config.txt
+   $HOME/.sync4j/evolution/<server>/spds/sources/<source>/config.txt
 
-Here is a file which would be used to synchronize the default
-Evolution contacts with the Sync4j server:
+See "etc/example/spds/syncml/config.txt" for options in the server
+configuration and "etc/example/spds/sources/addressbook_1/config.txt"
+for options in the data source configuration. Without changing this
+example configuration can be used for testing the operation of
+sync4jevolution, see "Exchanging Data" below.
 
-   # name of the source
-   name = card
-
-   # set to T if this source is not to be synchronized
-   disabled = 
-
-   # requests a certain synchronization mode:
-   #   refresh = only exchange modified items if possible
-   #   slow = exchange all items
-   #   two-way-one-way = ???
-   sync = refresh
-
-   # overrides the supported synchronization modes
-   syncModes = slow,two-way-one-way,refresh
-
-   # specifies the format of the data
-   #    text/x-vcalendar = Evolution calender data
-   #    text/x-vcard = Evolution contact data
-   type = text/x-vcard
-
-   # picks one of Evolution's data sources:
-   # enter either the name or the full URL
-   evolutionsource = 
-
-   # this is appended to the server's URL to identify the
-   # server's database
-   uri = briefcase
-
-   # authentication for Evolution source
-   evolutionuser = 
-   evolutionpassword = 
-
-   # used by the SyncML library internally; do not modify
-   last = 1128964758
+Normally at least the following configuration options need to be adapted:
+  spds/syncml
+      syncURL
+      deviceId
+      username
+      password
+  spds/sources
+      uri
+      evolutionsource
 
 Each data source corresponds to one database at the SyncML server, so
 two entries have to be added for each Evolution calendar as it stores
 both events/appointments and todo items. The Evolution data source is
 determined by the type of data given in "type" and uniquely identified
-with the "evolutionurl" property.  Not giving an url implies that
-Evolution's default contact or calender is to be used.
+with the "evolutionurl" property.
+
+One can synchronize with multiple server databases in one run, but
+the same server database can only be accessed once. To synchronize
+the same server database with multiple local databases, one has
+to setup two independent configurations with different "deviceId"
+settings and synchronize them separately.
 
 If the Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.  In
 this case the directory that contains the source's config.txt should
-only be accessible by the user.
+only be accessible by the user. [NOT IMPLEMENTED YET]
+
+Exchanging Data
+---------------
+
+sync4jevolution transmits address book entries exactly as Evolution
+exports them, which means as vcard version 3.0. Exporting as vcard
+version 2.1 is not implemented in Evolution, at least not in 2.0.4.
+Importing new or modified entries from the server can be done
+in 2.1 and 3.0 vcards.
+
+How the server stores the vcards depends on its implementation and
+configuration. In the default Sync4j server installation, vcards are
+converted into an internal format, but it preserves the Evolution
+vcard extensions.
+
+To check which data is preserved, one can use this procedure:
+1. synchronize the address book with the server
+2. create an new address book in Evolution
+3. add a configuration for that second address book and the
+   same database on the SyncML server
+4. synchronize again, this time using the other data source
+
+The "etc/localhost_1" directory contains a configuration for
+a default Sync4j installation on the local host and Evolution
+an address book called "sync4jevolution test #1". The
+"etc/localhost_2" is the pendant for a second address book
+called "sync4jevolution test #2". Both configurations can
+be copied directly to ".sync4j/evolution":
+  mkdir -p .sync4j/evolution
+  cp -a etc/localhost* .sync4j/evolution
+
+Steps 1. above then becomes an invocation of
+  sync4jevolution localhost_1
+and step 4.
+  sync4jevolution localhost_2
+
+This copies all contacts into the server and from there into the new
+address book. Now one can either compare the address books in
+Evolution or do that automatically:
+- save the complete address books: mark all entries, save as VCard
+- normalize the files with the provided Perl script:
+     test/normalize_vcard.pl list1.vcf >list1.normal.vcf
+     test/normalize_vcard.pl list2.vcf >list2.normal.vcf
+- compare the normalized lists, e.g.:
+     diff -c list1.normal.vcf list2.normal.vcf
+
+Normalizing is necessary because the order of cards and their
+properties as well as other minor formatting aspects may be
+different.
+
+Modifying either address book and synchronizing back and forth
+can be used to verify that sync4jevolution works as expected. If
+you do not trust sync4jevolution or the server, then it is prudent
+to run these checks with a copy of the original address book.
+Make a backup of the .evolution/addressbook directory.
+
+Did I mention that you should make backups?
+
 
 Tracking Changes inside Evolution
 ---------------------------------
@@ -150,7 +168,7 @@ The SyncML protocol requires that a client knows which items have been
 added, modified and deleted since the last sync. This is supported by
 the Evolution database server, albeit in a limited way:
 
-The same function lists changes and also moves the so called "change
+the same function lists changes and also moves the so called "change
 marker" forward. Therefore asking for changes twice in a row will only
 list changes the first time and not report the same changes a second
 time. sync4jevolution delays asking for changes as long as possible
@@ -168,14 +186,17 @@ from the server config file and <name> from the source config
 file. This implies that changes are tracked separately for each server
 and server database that Evolution might be synchronized with.
 
-
 Compiling from Source
 ---------------------
 
-To compile the code the 3.x version of the Sync4j C++
-client library is needed. Also needed are the Evolution
-development files. The code was tested with Evolution
-2.0.4 and it is unclear which other versions it is
+To compile the code the 2.x version of the Sync4j C++ client library
+is needed. The recommended way to make that library available is by
+installing it into its own directory (configure --prefix=<dir>; make;
+make install) and then pointing the configure of sync4jevolution
+towards it (configure --with-sync4j=<dir>).
+
+Also needed are the Evolution development files. The code was tested
+with Evolution 2.0.4. It is unclear which other versions it is
 compatible with.
 
 The build system is the normal autotools system.

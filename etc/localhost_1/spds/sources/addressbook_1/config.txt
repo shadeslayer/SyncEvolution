@@ -1,0 +1,35 @@
+# name of the source
+name = addressbook_1
+
+# set to T if this source is not to be synchronized
+disabled = 
+
+# requests a certain synchronization mode:
+#   two-way = only send/receive changes since last sync
+#   slow    = exchange all items
+#   refresh = delete all local items and replace with
+#             the items on the server
+sync = two-way
+
+# overrides the supported synchronization modes
+syncModes = slow,two-way,refresh
+
+# specifies the format of the data
+# text/x-vcalendar = Evolution calender data [not implemented yet]
+# text/x-vcard = Evolution contact data
+type = text/x-vcard
+
+# picks one of Evolution's data sources:
+# enter either the name or the full URL
+evolutionsource = sync4jevolution test #1
+
+# this is appended to the server's URL to identify the
+# server's database
+uri = card
+
+# authentication for Evolution source
+evolutionuser = 
+evolutionpassword = 
+
+# used by the SyncML library internally; do not modify
+last = 

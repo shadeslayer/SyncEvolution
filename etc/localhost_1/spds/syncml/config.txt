@@ -1,0 +1,26 @@
+# the base URL of the SyncML server
+syncURL = http://localhost:8080/sync4j/sync
+
+# the SyncML gets this string and will use it to keep track
+# of changes that still need to be synchronized; when multiple
+# users access the server or the same user from different machines,
+# this should be set to something unique
+deviceId = sc-api-nat
+
+# authorization for the SyncML server
+username = guest
+password = guest
+
+# setting this to -1 forces a retransmission of the client
+# capabilities to the server; will be set to 0 automatically
+# after the initial sync
+firstTimeSyncMode = -1
+
+# set to T to enable an HTTP proxy
+useProxy = F
+# proxy URL (http://<host>:<port>)
+proxyHost = 
+
+# used by the SyncML library internally; do not modify
+begin =
+end =
