@@ -29,6 +29,7 @@ using namespace std;
 
 #include <spds/SyncSource.h>
 #include <spdm/ManagementNode.h>
+#include <base/Log.h>
 
 /**
  * This class implements the functionality shared by
@@ -64,10 +65,10 @@ class EvolutionSyncSource : public SyncSource
      */
     EvolutionSyncSource( const string name, const string &changeId, const string &id ) :
         SyncSource( name.c_str() ),
-        m_allItems( *this, SYNC_STATE_NONE ),
-        m_newItems( *this, SYNC_STATE_NEW ),
-        m_updatedItems( *this, SYNC_STATE_UPDATED ),
-        m_deletedItems( *this, SYNC_STATE_DELETED ),
+        m_allItems( *this, "all", SYNC_STATE_NONE ),
+        m_newItems( *this, "new", SYNC_STATE_NEW ),
+        m_updatedItems( *this, "updated", SYNC_STATE_UPDATED ),
+        m_deletedItems( *this, "deleted", SYNC_STATE_DELETED ),
         m_changeId( changeId ),
         m_hasFailed( false ),
         m_isModified( false ),
@@ -187,22 +188,28 @@ class EvolutionSyncSource : public SyncSource
     class itemList : public list<string> {
         const_iterator m_it;
         EvolutionSyncSource &m_source;
-        SyncState m_state;
+        const string m_type;
+        const SyncState m_state;
         
       public:
-        itemList( EvolutionSyncSource &source, SyncState state ) :
+        itemList( EvolutionSyncSource &source, const string &type, SyncState state ) :
             m_source( source ),
+            m_type( type ),
             m_state( state )
         {}
         /** start iterating, return first item if available */
         SyncItem *start() {
             m_it = begin();
+            string buffer = string( "start scanning " ) + m_type + " items";
+            LOG.debug( buffer.c_str() );
             return iterate();
         }
         /** return current item if available, step to next one */
         SyncItem *iterate() {
             if (m_it != end()) {
                 const string &uid( *m_it );
+                string buffer = string( "next " ) + m_type + " item: " + uid;
+                LOG.debug( buffer.c_str() );
                 ++m_it;
                 if (&m_source.m_deletedItems == this) {
                     // just tell caller the uid of the deleted item

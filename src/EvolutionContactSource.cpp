@@ -80,6 +80,15 @@ void EvolutionContactSource::open()
 
 int EvolutionContactSource::beginSync()
 {
+    string buffer = "sync mode is: ";
+    SyncMode mode = getSyncMode();
+    buffer += mode == SYNC_SLOW ? "slow" :
+        mode == SYNC_TWO_WAY ? "two-way" :
+        mode == SYNC_ONE_WAY_FROM_SERVER ? "one-way" :
+        mode == SYNC_REFRESH_FROM_SERVER ? "refresh" :
+        "???";
+    LOG.info( buffer.c_str() );
+    
     m_isModified = false;
     try {
         GError *gerror = NULL;
