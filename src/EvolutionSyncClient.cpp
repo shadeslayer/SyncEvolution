@@ -39,7 +39,7 @@ EvolutionSyncClient::~EvolutionSyncClient()
     Sync4jClient::dispose();
 }
 
-void EvolutionSyncClient::sync()
+void EvolutionSyncClient::sync( SyncMode syncMode )
 {
     class sourcelist : public list<EvolutionSyncSource *> {
     public:
@@ -94,6 +94,7 @@ void EvolutionSyncClient::sync()
                     ( type.size() ? string("not configured") :
                       string("'") + type + "' empty or unknown" );
             }
+            syncSource->setPreferredSyncMode( syncMode );
             sources.push_back(syncSource);
 
             // also open it; failing now is still safe

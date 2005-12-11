@@ -3,3 +3,4 @@
 Makefile
 sync4jevolution
 test
+*.log

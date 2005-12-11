@@ -14,6 +14,13 @@ tests. Those tests were written inside the CppUnit
 and so they (and just they) require that "cppunit-config"
 is in the shell search path.
 
+Running the test with the environment variable SYNC4J_LOG
+set to the server's log file ensures that for each
+individual sync session both the client and the corresponding
+server log are stored in individual files in the src
+directory. The filenames are derived from the tests and
+the steps executed for each of them.
+
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is
 used to hide errors inside system libraries which

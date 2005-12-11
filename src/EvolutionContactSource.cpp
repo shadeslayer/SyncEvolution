@@ -99,9 +99,49 @@ int EvolutionContactSource::beginSync()
         m_updatedItems.clear();
         m_deletedItems.clear();
 
+        // determine what to do
+        bool needAll = false;
+        bool needPartial = false;
+        bool deleteLocal = false;
         switch (mode) {
-         case SYNC_SLOW: {
-            // find all items
+         case SYNC_SLOW:
+            needAll = true;
+            m_isModified = true;
+            break;
+         case SYNC_TWO_WAY:
+            needPartial = true;
+            break;
+         case SYNC_REFRESH_FROM_SERVER:
+            deleteLocal = true;
+            m_isModified = true;
+            break;
+         case SYNC_NONE:
+            // special mode for testing: prepare both all and partial lists
+            needAll = needPartial = true;
+            break;
+         default:
+            throw "unsupported sync mode, valid are only: slow, two-way, refresh";
+            break;
+        }
+
+        if (deleteLocal) {
+            gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+            GList *nextItem;
+            if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+                throwError( "reading all items", gerror );
+            }
+            while (nextItem) {
+                const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
+                                                                E_CONTACT_UID);
+                if (!e_book_remove_contact( m_addressbook, uid, &gerror ) ) {
+                    throwError( string( "deleting contact" ) + uid,
+                                gerror );
+                }
+                nextItem = nextItem->next;
+            }
+        }
+
+        if (needAll) {
             gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
             GList *nextItem;
             if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
@@ -114,13 +154,9 @@ int EvolutionContactSource::beginSync()
                 m_allItems.push_back(uid);
                 nextItem = nextItem->next;
             }
+        }
 
-            // need to move change marker
-            m_isModified = true;
-            break;
-         }
-         case SYNC_TWO_WAY: {
-            // scan modified items since the last instantiation
+        if (needPartial) {
             GList *nextItem;
             if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
                 throwError( "reading changes", gerror );
@@ -145,33 +181,6 @@ int EvolutionContactSource::beginSync()
                 }
                 nextItem = nextItem->next;
             }
-            break;
-         }
-         case SYNC_REFRESH_FROM_SERVER: {
-            // delete all local items, we'll get the current ones from the server 
-            // find all items
-            gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
-            GList *nextItem;
-            if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
-                throwError( "reading all items", gerror );
-            }
-            while (nextItem) {
-                const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
-                                                                E_CONTACT_UID);
-                if (!e_book_remove_contact( m_addressbook, uid, &gerror ) ) {
-                    throwError( string( "deleting contact" ) + uid,
-                                gerror );
-                }
-                nextItem = nextItem->next;
-            }
-            
-            // need to move change marker
-            m_isModified = true;
-            break;
-         }
-         default:
-            throw "unsupported sync mode, valid are only: slow, two-way, refresh";
-            break;
         }
     } catch( ... ) {
         m_hasFailed = true;

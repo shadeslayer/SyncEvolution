@@ -46,8 +46,9 @@ class EvolutionSyncClient {
 
     /**
      * executes the sync, throws an exception in case of failure
+     * @param syncMode   setting this overrides the sync mode from the config
      */
-    void sync();
+    void sync(SyncMode syncMode = SYNC_NONE);
 };
 
 #endif // INCL_EVOLUTIONSYNCCLIENT
