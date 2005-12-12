@@ -394,7 +394,13 @@ void EvolutionContactSource::logItem( SyncItem &item, const string &info )
 {
     if (LOG.getLevel() >= LOG_LEVEL_INFO) {
         string line;
-        string vcard( (const char *)item.getData(), item.getDataSize() );
+        const char *data = (const char *)item.getData();
+        int datasize = item.getDataSize();
+        if (datasize <= 0) {
+            data = "";
+            datasize = 0;
+        }
+        string vcard( data, datasize );
 
         int offset = vcard.find( "FN:");
         if (offset != vcard.npos) {
