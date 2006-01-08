@@ -22,6 +22,8 @@ using namespace std;
 #include "EvolutionContactSource.h"
 
 #include <common/base/Log.h>
+#include <common/vocl/VObject.h>
+#include <common/vocl/VConverter.h>
 
 EvolutionContactSource::EvolutionContactSource( const string &name,
                                                 const string &changeId,
@@ -31,6 +33,13 @@ EvolutionContactSource::EvolutionContactSource( const string &name,
     m_vcardFormat( vcardFormat )
 {
 }
+
+EvolutionContactSource::EvolutionContactSource( const EvolutionContactSource &other ) :
+        EvolutionSyncSource( other ),
+        m_vcardFormat( other.m_vcardFormat )
+{
+}
+
 
 EvolutionContactSource::~EvolutionContactSource()
 {
@@ -198,7 +207,7 @@ int EvolutionContactSource::endSync()
         m_hasFailed = true;
         return 1;
     }
-    return 0;
+    return m_hasFailed ? 1 : 0;
 }
 
 void EvolutionContactSource::endSyncThrow()
@@ -246,17 +255,24 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
         if (!vcardstr) {
             throwError( string( "converting contact" ) + uid, NULL );
         }
-
-        // hack: patch version so that Sync4j 2.3 accepts it
-        char *ver = strstr(vcardstr, "VERSION:3.0" );
-        if (ver) {
-            ver[8] = '2';
-            ver[10] = '1';
-        }
-
         LOG.debug( vcardstr );
+
+        // convert from 3.0 to 2.1 so that Sync4j 2.3 accepts it
+        std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
+        if (vobj.get() == 0) {
+            throwError( string( "parsing contact" ) + uid, NULL );
+        }
+        vobj->toNativeEncoding();
+        vobj->setVersion("2.1");
+        VProperty *vprop = vobj->getProperty("VERSION");
+        vprop->setValue("2.1");
+        vobj->fromNativeEncoding();
+        char *finalstr = vobj->toString();
+        LOG.debug("after conversion to 2.1:");
+        LOG.debug(finalstr);
+
         auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
-        item->setData( vcardstr, strlen( vcardstr ) + 1 );
+        item->setData( finalstr, strlen( finalstr ) + 1 );
         item->setDataType( getMimeType() );
         item->setModificationTime( 0 );
         item->setState( state );
@@ -269,12 +285,34 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
     return NULL;
 }
 
+string EvolutionContactSource::preparseVCard(SyncItem& item)
+{
+    string data = getData(item);
+    // convert to 3.0 to get rid of quoted-printable encoded
+    // non-ASCII chars, because Evolution does not support
+    // decoding them
+    LOG.debug(data.c_str());
+    std::auto_ptr<VObject> vobj(VConverter::parse((char *)data.c_str()));
+    if (vobj.get() == 0) {
+        throwError( string( "parsing contact" ) + item.getKey(), NULL );
+    }
+    vobj->toNativeEncoding();
+    vobj->setVersion("3.0");
+    VProperty *vprop = vobj->getProperty("VERSION");
+    vprop->setValue("3.0");
+    vobj->fromNativeEncoding();
+    data = vobj->toString();
+    LOG.debug("after conversion to 3.0:");
+    LOG.debug(data.c_str());
+    return data;
+}
+
 int EvolutionContactSource::addItem(SyncItem& item)
 {
     try {
         logItem( item, "adding" );
 
-        string data = getData(item);
+        string data = preparseVCard(item);
         gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
         if( contact ) {
             GError *gerror = NULL;
@@ -302,7 +340,7 @@ int EvolutionContactSource::updateItem(SyncItem& item)
     try {
         logItem( item, "updating" );
 
-        string data = getData(item);
+        string data = preparseVCard(item);
         gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
         if( contact ) {
             GError *gerror = NULL;
@@ -439,5 +477,20 @@ void EvolutionContactSource::logItem( SyncItem &item, const string &info )
         line += info;
         
         LOG.info( line.c_str() );
+    }
+}
+
+
+EContact *EvolutionContactSource::getContact( const string &uid )
+{
+    EContact *contact;
+    GError *gerror = NULL;
+    if (e_book_get_contact( m_addressbook,
+                            uid.c_str(),
+                            &contact,
+                            &gerror )) {
+        return contact;
+    } else {
+        return NULL;
     }
 }

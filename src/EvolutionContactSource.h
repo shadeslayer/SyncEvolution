@@ -40,7 +40,18 @@ class EvolutionContactSource : public EvolutionSyncSource
                             const string &changeId = string(""),
                             const string &id = string(""),
                             EVCardFormat vcardFormat = EVC_FORMAT_VCARD_30 );
+    EvolutionContactSource( const EvolutionContactSource &other );
     virtual ~EvolutionContactSource();
+
+    //
+    // utility function for testing:
+    // returns a pointer to an Evolution contact (memory owned
+    // by Evolution) with the given UID, NULL if not found or failure
+    //
+    EContact *getContact( const string &uid );
+
+    // utility function: extract vcard from item in format suitable for Evolution
+    string preparseVCard(SyncItem& item);
 
     //
     // implementation of EvolutionSyncSource
@@ -58,7 +69,8 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual int deleteItem(SyncItem& item);
     virtual int beginSync();
     virtual int endSync();
-	 
+    virtual ArrayElement *clone() { return new EvolutionContactSource(*this); }
+
   private:
     /** valid after open(): the address book that this source references */
     gptr<EBook, GObject> m_addressbook;
