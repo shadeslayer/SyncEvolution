@@ -1,7 +1,16 @@
+Preamble
+--------
+
+This software is still experimental. Some parts of this documentation
+describe how features are supposed to work although they have not been
+implemented yet. They are marked with [not implemented].
+
+
 Introduction
 ------------
 
 sync4jevolution synchronizes Evolution's contact and calender items
+[calender not implemented yet]
 with a SyncML server. The items are exchanged in the vCard and
 vCalender formats and via the Funambol Sync4j C++ client API library,
 which should make sync4jevolution compatible with the majority of
@@ -27,7 +36,7 @@ Currently sync4jevolution comes as a simple command line tool which is
 configured via files. A graphical interface via an Evolution plugin
 would also be possible, but is not implemented yet. As command line
 parameters sync4jevolution only supports one option which specifies the
-configuration file that drive the synchronization run:
+configuration file that drives the synchronization run:
 
    sync4jevolution [<server>]
 
@@ -88,7 +97,7 @@ Normally at least the following configuration options need to be adapted:
 
 Each data source corresponds to one database at the SyncML server, so
 two entries have to be added for each Evolution calendar as it stores
-both events/appointments and todo items. The Evolution data source is
+both events/appointments and todo items [NOT IMPLEMENTED] The Evolution data source is
 determined by the type of data given in "type" and uniquely identified
 with the "evolutionurl" property.
 
@@ -106,16 +115,15 @@ only be accessible by the user. [NOT IMPLEMENTED YET]
 Exchanging Data
 ---------------
 
-sync4jevolution transmits address book entries exactly as Evolution
-exports them, which means as vcard version 3.0. Exporting as vcard
-version 2.1 is not implemented in Evolution, at least not in 2.0.4.
-Importing new or modified entries from the server can be done
-in 2.1 and 3.0 vcards.
+sync4jevolution transmits address book entries as vCard 2.1, although
+Evolution exports them as 3.0. This is done because most servers do
+not yet support importing 3.0. Importing new or modified entries from
+the server can be done in 2.1 and 3.0 vCards.
 
-How the server stores the vcards depends on its implementation and
-configuration. In the default Sync4j server installation, vcards are
+How the server stores the vCards depends on its implementation and
+configuration. In the default Sync4j server installation, vCards are
 converted into an internal format, but it preserves the Evolution
-vcard extensions.
+vCard extensions.
 
 To check which data is preserved, one can use this procedure:
 1. synchronize the address book with the server
@@ -125,23 +133,32 @@ To check which data is preserved, one can use this procedure:
 4. synchronize again, this time using the other data source
 
 The "etc/localhost_1" directory contains a configuration for
-a default Sync4j installation on the local host and Evolution
-an address book called "sync4jevolution test #1". The
+a default Sync4j installation on the local host and an Evolution
+address book called "sync4jevolution test #1". The
 "etc/localhost_2" is the pendant for a second address book
 called "sync4jevolution test #2". Both configurations can
 be copied directly to ".sync4j/evolution":
-  mkdir -p .sync4j/evolution
-  cp -a etc/localhost* .sync4j/evolution
+  mkdir -p ~/.sync4j/evolution
+  cp -a etc/localhost* ~/.sync4j/evolution
+  rm -rf ~/.sync4j/evolution/localhost*/spds/sources/CVS
+The last step is only necessary when working with a checkout
+of the sync4jevolution sources from CVS.
 
-Steps 1. above then becomes an invocation of
+For them to work, also create the two address books
+  sync4jevolution test #1
+  sync4jevolution test #2
+inside Evolution. sync4jevolution never creates address
+books itself.
+
+Steps 1 above then becomes an invocation of
   sync4jevolution localhost_1
-and step 4.
+and step 4
   sync4jevolution localhost_2
 
 This copies all contacts into the server and from there into the new
 address book. Now one can either compare the address books in
 Evolution or do that automatically:
-- save the complete address books: mark all entries, save as VCard
+- save the complete address books: mark all entries, save as vCard
 - normalize the files with the provided Perl script:
      test/normalize_vcard.pl list1.vcf >list1.normal.vcf
      test/normalize_vcard.pl list2.vcf >list2.normal.vcf
@@ -150,7 +167,9 @@ Evolution or do that automatically:
 
 Normalizing is necessary because the order of cards and their
 properties as well as other minor formatting aspects may be
-different.
+different. The automatic unit testing (see HACKING) also contains
+a "testVCard" test which verifies the copying of contact
+entries.
 
 Modifying either address book and synchronizing back and forth
 can be used to verify that sync4jevolution works as expected. If
@@ -189,8 +208,12 @@ and server database that Evolution might be synchronized with.
 Compiling from Source
 ---------------------
 
-To compile the code the 2.x version of the Sync4j C++ client library
-is needed. The recommended way to make that library available is by
+To compile the code the 3.x version of the Sync4j C++ client library
+is needed. It is currently only available from CVS, checkout the
+"3x" module from the CVS at
+   http://forge.objectweb.org/projects/sync4j
+
+The recommended way to make that library available is by
 installing it into its own directory (configure --prefix=<dir>; make;
 make install) and then pointing the configure of sync4jevolution
 towards it (configure --with-sync4j=<dir>).
