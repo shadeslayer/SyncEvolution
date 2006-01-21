@@ -23,6 +23,15 @@ can talk to is needed. The remainder of this document assumes that
 Funambol's Sync4j server bundle for Linux V2.3 was installed using the
 default configuration.
 
+With a server that fully supports SyncML and the vCard standard the
+following works:
+- copy a complete database to the server and restore it
+  from the server later
+- delete or modify an item locally and then make the same change
+  on the server
+- delete, modify or add items on the server (by synchronizing with
+  another device), then make the same change locally
+
 This software is still experimental. Make a backup of your
    $HOME/.evolution/addressbook
    $HOME/.evolution/calender

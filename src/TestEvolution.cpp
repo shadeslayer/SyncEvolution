@@ -153,6 +153,9 @@ class TestEvolution : public CppUnit::TestFixture
     /** create item in one database, then copy to the other */
     void doCopy( const string &prefix );
 
+    /** compare all entries in the two address books and assert that they are equal */
+    void compareAddressbooks( int numtestcases );
+
 public:
     void setUp() {
         m_contactNames[0] = "sync4jevolution test #1";
@@ -241,7 +244,7 @@ void TestEvolution::testContactSimpleInsert()
         "ROLE:\n"
         "X-EVOLUTION-MANAGER:\n"
         "X-EVOLUTION-ASSISTANT:\n"
-        "NICKNAME:johnny\n"
+        "NICKNAME:user1\n"
         "X-EVOLUTION-SPOUSE:\n"
         "NOTE:\n"
         "FN:John Doe\n"
@@ -252,7 +255,6 @@ void TestEvolution::testContactSimpleInsert()
         "FBURL:\n"
         "X-EVOLUTION-VIDEO-URL:\n"
         "X-MOZILLA-HTML:FALSE\n"
-        "EMAIL;TYPE=WORK;X-EVOLUTION-UI-SLOT=1:john.doe@neverland.org\n"
         "END:VCARD\n";
 
     EvolutionContactSource source(
@@ -362,18 +364,18 @@ void TestEvolution::contactUpdate()
         "ROLE:\n"
         "X-EVOLUTION-MANAGER:\n"
         "X-EVOLUTION-ASSISTANT:\n"
-        "NICKNAME:johnny\n"
+        "NICKNAME:user1\n"
         "X-EVOLUTION-SPOUSE:\n"
         "NOTE:\n"
-        "FN:John Doe\n"
-        "N:Doe;John;;;\n"
-        "X-EVOLUTION-FILE-AS:Doe\\, John\n"
+        "FN:Joan Doe\n"
+        "N:Doe;Joan;;;\n"
+        "X-EVOLUTION-FILE-AS:Doe\\, Joan\n"
         "X-EVOLUTION-BLOG-URL:\n"
+        "BDAY:2006-01-08\n"
         "CALURI:\n"
         "FBURL:\n"
         "X-EVOLUTION-VIDEO-URL:\n"
         "X-MOZILLA-HTML:FALSE\n"
-        "EMAIL;TYPE=WORK;X-EVOLUTION-UI-SLOT=1:john.doe@everywhere.com\n"
         "END:VCARD\n";
     item->setData( vcard, strlen( vcard ) + 1 );
     EVOLUTION_ASSERT_NO_THROW( source, source.updateItem( *item ) );
@@ -601,6 +603,7 @@ void TestEvolution::doCopy( const string &prefix )
 void TestEvolution::testCopy()
 {
     doCopy( "testCopy" );
+    compareAddressbooks( 1 );
 }
 
 void TestEvolution::testUpdate()
@@ -611,7 +614,7 @@ void TestEvolution::testUpdate()
     doSync( "testUpdate.update.0.client.log", 0, SYNC_TWO_WAY );
     doSync( "testUpdate.update.1.client.log", 1, SYNC_TWO_WAY );
 
-    // TODO: check that the second database contains the updated contact
+    compareAddressbooks( 1 );
 }
 
 void TestEvolution::testDelete()
@@ -800,6 +803,65 @@ static int compareContacts( const string &name, EContact *sourceContact, EContac
     }
 
     return identical;
+}
+
+void TestEvolution::compareAddressbooks( int numtestcases )
+{
+    int identical = 1;
+    int allcopied = 1;
+    
+    // now iterate over copied contacts and compare against original ones
+    EvolutionContactSource source(
+        string( "dummy" ),
+        m_changeIds[0],
+        m_contactNames[0] );
+    EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
+    EvolutionContactSource copy(
+        string( "dummy" ),
+        m_changeIds[1],
+        m_contactNames[1] );
+    EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
+    EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
+
+    for (SyncItem *sourceItem = source.getFirstItem();
+         sourceItem;
+         sourceItem = source.getNextItem()) {
+        // match items by nickname
+        EContact *sourceContact = source.getContact( sourceItem->getKey() );
+        CPPUNIT_ASSERT( sourceContact );
+        string sourceNick = e_contact_get_const( sourceContact, E_CONTACT_NICKNAME ) ?
+            (const char *)e_contact_get_const( sourceContact, E_CONTACT_NICKNAME ) :
+            "";
+            
+
+        int found = 0;
+        for (SyncItem *copiedItem = copy.getFirstItem();
+             copiedItem && !found;
+             copiedItem = copy.getNextItem()) {
+            EContact *copiedContact = copy.getContact( copiedItem->getKey() );
+            CPPUNIT_ASSERT( copiedContact );
+            string copiedNick = e_contact_get_const( copiedContact, E_CONTACT_NICKNAME ) ?
+                (const char *)e_contact_get_const( copiedContact, E_CONTACT_NICKNAME ) :
+                "";
+
+            if (copiedNick == sourceNick) {
+                found = 1;
+                if (!compareContacts( sourceNick, sourceContact, copiedContact )) {
+                    identical = 0;
+                }
+            }
+        }
+        if (!found) {
+            cout << sourceNick << " not found in copy, perhaps the nickname was modified?\n";
+            allcopied = 0;
+        }
+    }    
+
+    CPPUNIT_ASSERT( numtestcases == countItems( source ) );
+    CPPUNIT_ASSERT( identical );
+    CPPUNIT_ASSERT( numtestcases == countItems( copy ) );
+    CPPUNIT_ASSERT( allcopied );
 }
 
 void TestEvolution::testVCard()
@@ -1055,8 +1117,6 @@ void TestEvolution::testVCard()
     };
     const int numtestcases = sizeof(testcases) / sizeof(testcases[0]);
     int testcase;
-    int identical = 1;
-    int allcopied = 1;
 
     // clean server and first test database
     deleteAll( "testcases", 0);
@@ -1085,52 +1145,5 @@ void TestEvolution::testVCard()
     doSync( "testcases.send.client.log", 0, SYNC_TWO_WAY );
     doSync( "testcases.recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
 
-    // now iterate over copied contacts and compare against original ones
-    EvolutionContactSource copy(
-        string( "dummy" ),
-        m_changeIds[1],
-        m_contactNames[1] );
-    EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
-    EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
-    EVOLUTION_ASSERT_NO_THROW( source, source.open() );
-    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
-
-    for (SyncItem *sourceItem = source.getFirstItem();
-         sourceItem;
-         sourceItem = source.getNextItem()) {
-        // match items by nickname
-        EContact *sourceContact = source.getContact( sourceItem->getKey() );
-        CPPUNIT_ASSERT( sourceContact );
-        string sourceNick = e_contact_get_const( sourceContact, E_CONTACT_NICKNAME ) ?
-            (const char *)e_contact_get_const( sourceContact, E_CONTACT_NICKNAME ) :
-            "";
-            
-
-        int found = 0;
-        for (SyncItem *copiedItem = copy.getFirstItem();
-             copiedItem && !found;
-             copiedItem = copy.getNextItem()) {
-            EContact *copiedContact = copy.getContact( copiedItem->getKey() );
-            CPPUNIT_ASSERT( copiedContact );
-            string copiedNick = e_contact_get_const( copiedContact, E_CONTACT_NICKNAME ) ?
-                (const char *)e_contact_get_const( copiedContact, E_CONTACT_NICKNAME ) :
-                "";
-
-            if (copiedNick == sourceNick) {
-                found = 1;
-                if (!compareContacts( sourceNick, sourceContact, copiedContact )) {
-                    identical = 0;
-                }
-            }
-        }
-        if (!found) {
-            cout << sourceNick << " not found in copy, perhaps the nickname was modified?\n";
-            allcopied = 0;
-        }
-    }
-
-    CPPUNIT_ASSERT( numtestcases == countItems( source ) );
-    CPPUNIT_ASSERT( identical );
-    CPPUNIT_ASSERT( numtestcases == countItems( copy ) );
-    CPPUNIT_ASSERT( allcopied );
+    compareAddressbooks( numtestcases );
 }
