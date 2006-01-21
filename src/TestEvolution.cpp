@@ -68,39 +68,44 @@ static int countAnyItems(
     
 static int countNewItems( EvolutionSyncSource &source )
 {
-    return countAnyItems(
+    int res = countAnyItems(
         source,
         &EvolutionSyncSource::getFirstNewItem,
         &EvolutionSyncSource::getNextNewItem );
+    return res;
 }
 
 static int countUpdatedItems( EvolutionSyncSource &source )
 {
-    return countAnyItems(
+    int res = countAnyItems(
         source,
         &EvolutionSyncSource::getFirstUpdatedItem,
         &EvolutionSyncSource::getNextUpdatedItem );
+    return res;
 }
 
 static int countDeletedItems( EvolutionSyncSource &source )
 {
-    return countAnyItems(
+    int res = countAnyItems(
         source,
         &EvolutionSyncSource::getFirstDeletedItem,
         &EvolutionSyncSource::getNextDeletedItem );
+    return res;
 }
 
 static int countItems( EvolutionSyncSource &source )
 {
-    return countAnyItems(
+    int res = countAnyItems(
         source,
         &EvolutionSyncSource::getFirstItem,
         &EvolutionSyncSource::getNextItem );
+    return res;
 }
 
 class TestEvolution : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( TestEvolution );
+
     CPPUNIT_TEST( testContactOpen );
     CPPUNIT_TEST( testContactSimpleInsert );
     CPPUNIT_TEST( testContactDeleteAll );
@@ -118,6 +123,7 @@ class TestEvolution : public CppUnit::TestFixture
     CPPUNIT_TEST( testUpdate );
     CPPUNIT_TEST( testDelete );
     CPPUNIT_TEST( testVCard );
+
     CPPUNIT_TEST_SUITE_END();
 
     /** the name of the contact databases */
@@ -486,16 +492,16 @@ void TestEvolution::doSync(const string &logfile, int config, SyncMode syncMode)
             res = 1;
         }
     }
-    setLogFile( "sync.log", TRUE );
+    setLogFile( "sync.log", FALSE );
     
-    // let the server finish
-    sleep(10);
-
     // make a copy of the server's log (if found), then truncate it
     if (m_serverLog.size()) {
         int fd = open( m_serverLog.c_str(), O_RDWR );
 
         if (fd >= 0) {
+            // let the server finish
+            sleep(10);
+
             string serverLog = logfile;
             size_t pos = serverLog.find( "client" );
             if (pos != serverLog.npos ) {
@@ -507,6 +513,9 @@ void TestEvolution::doSync(const string &logfile, int config, SyncMode syncMode)
             system( cmd.c_str() );
             ftruncate( fd, 0 );
         }
+    } else {
+        // let the server finish
+        sleep(10);
     }
 
     CPPUNIT_ASSERT( !res );
