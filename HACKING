@@ -12,7 +12,10 @@ forget that an error occurred (EvolutionSyncSource::m_hasFailed).
 tests. Those tests were written inside the CppUnit
 [http://cppunit.sourceforge.net/cppunit-wiki] framework
 and so they (and just they) require that "cppunit-config"
-is in the shell search path.
+is in the shell search path. Before running them, setup
+your Evolution and ~/.sync4j configuration as described
+in the README section 'Exchanging Data' (create address
+books 'sync4jevolution test #1/2', etc).
 
 Running the test with the environment variable SYNC4J_LOG
 set to the server's log file ensures that for each
