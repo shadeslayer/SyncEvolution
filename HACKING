@@ -24,6 +24,10 @@ server log are stored in individual files in the src
 directory. The filenames are derived from the tests and
 the steps executed for each of them.
 
+The first parameter of the "test" program can be used
+to select specific tests, like this:
+   ./test TestEvolution::testVCard
+
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is
 used to hide errors inside system libraries which

@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
   runner.setOutputter( new CppUnit::CompilerOutputter( &runner.result(),
                                                        std::cerr ) );
   // Run the tests.
-  bool wasSucessful = runner.run();
+  bool wasSucessful = runner.run( argc > 1 ? argv[1] : "" );
 
   // Return error code 1 if the one of test failed.
   return wasSucessful ? 0 : 1;
