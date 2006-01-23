@@ -122,6 +122,7 @@ class TestEvolution : public CppUnit::TestFixture
     CPPUNIT_TEST( testCopy );
     CPPUNIT_TEST( testUpdate );
     CPPUNIT_TEST( testDelete );
+    CPPUNIT_TEST( testMerge );
     CPPUNIT_TEST( testVCard );
 
     CPPUNIT_TEST_SUITE_END();
@@ -139,7 +140,28 @@ class TestEvolution : public CppUnit::TestFixture
     string m_serverLog;
 
     /** assumes that one element is currently inserted and updates it */
-    void contactUpdate();
+    void contactUpdate( int config = 0, const char *vcard =
+                        "BEGIN:VCARD\n"
+                        "VERSION:3.0\n"
+                        "URL:\n"
+                        "TITLE:\n"
+                        "ROLE:\n"
+                        "X-EVOLUTION-MANAGER:\n"
+                        "X-EVOLUTION-ASSISTANT:\n"
+                        "NICKNAME:user1\n"
+                        "X-EVOLUTION-SPOUSE:\n"
+                        "NOTE:\n"
+                        "FN:Joan Doe\n"
+                        "N:Doe;Joan;;;\n"
+                        "X-EVOLUTION-FILE-AS:Doe\\, Joan\n"
+                        "X-EVOLUTION-BLOG-URL:\n"
+                        "BDAY:2006-01-08\n"
+                        "CALURI:\n"
+                        "FBURL:\n"
+                        "X-EVOLUTION-VIDEO-URL:\n"
+                        "X-MOZILLA-HTML:FALSE\n"
+                        "END:VCARD\n"
+        );
 
     /** performs one sync operation */
     void doSync(const string &logfile, int config, SyncMode syncMode);
@@ -216,6 +238,9 @@ public:
     void testUpdate();
     // test that a two-way sync deletes the copy of an item in the other database
     void testDelete();
+    // test what the server does when it finds that different
+    // fields of the same item have been modified
+    void testMerge();
     // creates several contact test cases, transmits them back and forth and
     // then compares which of them have been preserved
     void testVCard();
@@ -240,7 +265,7 @@ void TestEvolution::testContactSimpleInsert()
         "BEGIN:VCARD\n"
         "VERSION:3.0\n"
         "URL:\n"
-        "TITLE:\n"
+        "TITLE:tester\n"
         "ROLE:\n"
         "X-EVOLUTION-MANAGER:\n"
         "X-EVOLUTION-ASSISTANT:\n"
@@ -347,36 +372,15 @@ void TestEvolution::testContactComplexInsert()
     testContactIterateTwice();
 }
 
-void TestEvolution::contactUpdate()
+void TestEvolution::contactUpdate( int config, const char *vcard )
 {
     EvolutionContactSource source( string( "dummy" ),
-                                   m_changeIds[0],
-                                   m_contactNames[0] );
+                                   m_changeIds[config],
+                                   m_contactNames[config] );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     SyncItem *item;
     EVOLUTION_ASSERT_NO_THROW( source, item = source.getFirstItem() );
-    const char *vcard =
-        "BEGIN:VCARD\n"
-        "VERSION:3.0\n"
-        "URL:\n"
-        "TITLE:\n"
-        "ROLE:\n"
-        "X-EVOLUTION-MANAGER:\n"
-        "X-EVOLUTION-ASSISTANT:\n"
-        "NICKNAME:user1\n"
-        "X-EVOLUTION-SPOUSE:\n"
-        "NOTE:\n"
-        "FN:Joan Doe\n"
-        "N:Doe;Joan;;;\n"
-        "X-EVOLUTION-FILE-AS:Doe\\, Joan\n"
-        "X-EVOLUTION-BLOG-URL:\n"
-        "BDAY:2006-01-08\n"
-        "CALURI:\n"
-        "FBURL:\n"
-        "X-EVOLUTION-VIDEO-URL:\n"
-        "X-MOZILLA-HTML:FALSE\n"
-        "END:VCARD\n";
     item->setData( vcard, strlen( vcard ) + 1 );
     EVOLUTION_ASSERT_NO_THROW( source, source.updateItem( *item ) );
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
@@ -630,6 +634,88 @@ void TestEvolution::testDelete()
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
+}
+
+void TestEvolution::testMerge()
+{
+    doCopy( "testMerge.copy" );
+
+    // add a telephone number
+    contactUpdate( 0,
+                   "BEGIN:VCARD\n"
+                   "VERSION:3.0\n"
+                   "URL:\n"
+                   "TITLE:tester\n"
+                   "ROLE:\n"
+                   "X-EVOLUTION-MANAGER:\n"
+                   "X-EVOLUTION-ASSISTANT:\n"
+                   "NICKNAME:user1\n"
+                   "X-EVOLUTION-SPOUSE:\n"
+                   "NOTE:\n"
+                   "FN:John Doe\n"
+                   "N:Doe;John;;;\n"
+                   "X-EVOLUTION-FILE-AS:Doe\\, John\n"
+                   "X-EVOLUTION-BLOG-URL:\n"
+                   "CALURI:\n"
+                   "FBURL:\n"
+                   "X-EVOLUTION-VIDEO-URL:\n"
+                   "X-MOZILLA-HTML:FALSE\n"
+                   "TEL;TYPE=WORK:business 1\n"
+                   "END:VCARD\n" );
+    // add a birthday and modify the title
+    contactUpdate( 1,
+                   "BEGIN:VCARD\n"
+                   "VERSION:3.0\n"
+                   "URL:\n"
+                   "TITLE:developer\n"
+                   "ROLE:\n"
+                   "X-EVOLUTION-MANAGER:\n"
+                   "X-EVOLUTION-ASSISTANT:\n"
+                   "NICKNAME:user1\n"
+                   "X-EVOLUTION-SPOUSE:\n"
+                   "NOTE:\n"
+                   "FN:John Doe\n"
+                   "N:Doe;John;;;\n"
+                   "X-EVOLUTION-FILE-AS:Doe\\, John\n"
+                   "X-EVOLUTION-BLOG-URL:\n"
+                   "CALURI:\n"
+                   "FBURL:\n"
+                   "X-EVOLUTION-VIDEO-URL:\n"
+                   "X-MOZILLA-HTML:FALSE\n"
+                   "BDAY:2006-01-08\n"
+                   "END:VCARD\n" );
+    
+    doSync( "testMerge.send.0.client.log", 0, SYNC_TWO_WAY );
+    doSync( "testMerge.recv.1.client.log", 1, SYNC_TWO_WAY );
+    doSync( "testMerge.recv.0.client.log", 0, SYNC_TWO_WAY );
+
+    // check that both address books are identical (regardless of actual content):
+    // disabled because the address books won't be identical with Sync4j.
+    // What happens instead is that the server sends a
+    // STC_CONFLICT_RESOLVED_WITH_SERVER_DATA and
+    // EvolutionContactSource::setItemStatus() creates a copy.
+    // TODO: check what the server did (from testMerge.recv.1.client.log) and
+    //       test either for identical address books or how many items exist
+    // compareAddressbooks( 1 );
+
+    // this code here assumes STC_CONFLICT_RESOLVED_WITH_SERVER_DATA
+    EvolutionContactSource client0(
+        string( "dummy" ),
+        m_changeIds[0],
+        m_contactNames[0] );
+    
+    EVOLUTION_ASSERT_NO_THROW( client0, client0.open() );
+    EVOLUTION_ASSERT( client0, client0.beginSync() == 0 );
+    CPPUNIT_ASSERT( 1 == countItems( client0 ) );
+    
+    EvolutionContactSource client1(
+        string( "dummy" ),
+        m_changeIds[1],
+        m_contactNames[1] );
+    
+    EVOLUTION_ASSERT_NO_THROW( client1, client1.open() );
+    EVOLUTION_ASSERT( client1, client1.beginSync() == 0 );
+    CPPUNIT_ASSERT( 2 == countItems( client1 ) );
 }
 
 static int compareContacts( const string &name, EContact *sourceContact, EContact *copiedContact )

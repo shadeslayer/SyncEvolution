@@ -307,6 +307,59 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     return data;
 }
 
+void EvolutionContactSource::setItemStatus(const char *key, int status)
+{
+    switch (status) {
+     case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA: {
+        // make a copy before allowing the server to overwrite it
+        char buffer[200];
+
+        sprintf(buffer,
+                "contact %.80s: conflict, will be replaced by server contact - create copy\n",
+                key);
+        LOG.error(buffer);
+        
+        EContact *contact;
+        GError *gerror = NULL;
+        if (! e_book_get_contact( m_addressbook,
+                                  key,
+                                  &contact,
+                                  &gerror ) ) {
+            sprintf(buffer,
+                    "item %.80s: reading original for copy failed\n",
+                    key);
+            LOG.error(buffer);
+            break;
+        }
+        EContact *copy = e_contact_duplicate(contact);
+        if(!copy ||
+           ! e_book_add_contact(m_addressbook,
+                                copy,
+                                &gerror)) {
+            sprintf(buffer,
+                    "item %.80s: making copy failed\n",
+                    key);
+            LOG.error(buffer);
+            break;
+        }
+        break;
+     }
+     default:
+        EvolutionSyncSource::setItemStatus(key, status);
+        break;
+    }
+
+    if (status < 200 || status > 300) {
+        char buffer[200];
+
+        sprintf(buffer,
+                "unexpected SyncML status response %d for item %.80s\n",
+                status, key);
+        LOG.error(buffer);
+        m_hasFailed = true;
+    }
+}
+
 int EvolutionContactSource::addItem(SyncItem& item)
 {
     try {
@@ -344,12 +397,39 @@ int EvolutionContactSource::updateItem(SyncItem& item)
         gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
         if( contact ) {
             GError *gerror = NULL;
+
+            // The following code commits the new_from_vcard contact using the
+            // existing UID. It has been observed in Evolution 2.0.4 that the
+            // changes were then not "noticed" properly by the Evolution GUI.
+            //
+            // The code below was supposed to "notify" Evolution of the change by
+            // loaded the updated contact, modifying it, committing, restoring
+            // and committing once more, but that did not solve the problem.
+            //
+            // TODO: test with current Evolution
             e_contact_set( contact, E_CONTACT_UID, item.getKey() );
             if ( e_book_commit_contact(m_addressbook, contact, &gerror) ) {
                 const char *uid = (const char *)e_contact_get_const(contact, E_CONTACT_UID);
                 if (uid) {
                     item.setKey( uid );
                 }
+
+#if 0
+                EContact *refresh_contact;
+                if (! e_book_get_contact( m_addressbook,
+                                          uid,
+                                          &refresh_contact,
+                                          &gerror ) ) {
+                    throwError( string( "reading refresh contact" ) + uid,
+                                gerror );
+                }
+                string nick = (const char *)e_contact_get_const(refresh_contact, E_CONTACT_NICKNAME);
+                string nick_mod = nick + "_";
+                e_contact_set(refresh_contact, E_CONTACT_NICKNAME, (void *)nick_mod.c_str());
+                e_book_commit_contact(m_addressbook, refresh_contact, &gerror);
+                e_contact_set(refresh_contact, E_CONTACT_NICKNAME, (void *)nick.c_str());
+                e_book_commit_contact(m_addressbook, refresh_contact, &gerror);
+#endif
             } else {
                 throwError( string( "updating contact" ) + item.getKey(), gerror );
             }

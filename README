@@ -27,12 +27,18 @@ With a server that fully supports SyncML and the vCard standard the
 following works:
 - copy a complete database to the server and restore it
   from the server later
-- delete or modify an item locally and then make the same change
+- delete or modify an item locally, then make the same change
   on the server
 - delete, modify or add items on the server (by synchronizing with
-  another device), then make the same change locally
+  another client), then make the same change locally
+- conflict resolution (where two clients modify the same item,
+  then sync with the server) is handled by the server, but
+  sync4jevolution has support which ensures that no data is lost
+  by creating duplicates (see Conflict Resolution below)
 
-This software is still experimental. Make a backup of your
+Although all of the features are covered by unit testing and
+have been verified to work, this software is still experimental.
+Make a backup of your
    $HOME/.evolution/addressbook
    $HOME/.evolution/calender
 directories before running it for the first time. In older Evolution
@@ -188,6 +194,24 @@ Make a backup of the .evolution/addressbook directory.
 
 Did I mention that you should make backups?
 
+
+Conflict Resolution
+-------------------
+
+If two clients make changes to the same item, the first one to
+sync will get the server to copy its changes. The second one
+then runs into a conflict when it tries to push its own changes
+into the server.
+
+The SyncML server now has to decide how to proceed. If the server
+decides to continue with its own copy and asks to overwrite the
+locally modified copy (the default with Sync4j),
+sync4jevolution will make a local copy first. This leads to
+duplicates which have to be merged manually on the client side
+where the conflict occurred. Currently there is no support
+inside sync4jevolution: there is only an ERROR entry in the
+log. A summary at the end of syncing would be better, or
+even opening GUI dialogs to resolve the conflicts immediately...
 
 Tracking Changes inside Evolution
 ---------------------------------

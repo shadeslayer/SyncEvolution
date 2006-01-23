@@ -64,6 +64,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     //
     // implementation of SyncSource
     //
+    virtual void setItemStatus(const char *key, int status);
     virtual int addItem(SyncItem& item);
     virtual int updateItem(SyncItem& item);
     virtual int deleteItem(SyncItem& item);
