@@ -348,16 +348,6 @@ void EvolutionContactSource::setItemStatus(const char *key, int status)
         EvolutionSyncSource::setItemStatus(key, status);
         break;
     }
-
-    if (status < 200 || status > 300) {
-        char buffer[200];
-
-        sprintf(buffer,
-                "unexpected SyncML status response %d for item %.80s\n",
-                status, key);
-        LOG.error(buffer);
-        m_hasFailed = true;
-    }
 }
 
 int EvolutionContactSource::addItem(SyncItem& item)
