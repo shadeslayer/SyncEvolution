@@ -246,6 +246,12 @@ is needed. It is currently only available from CVS, checkout the
 "3x" module from the CVS at
    http://forge.objectweb.org/projects/sync4j
 
+Because that code changes a lot and thus might occasionally be
+incompatible with the current head revision of sync4jevolution,
+please checkout revision POHLY-SYNC4JEVOLUTION-CHECKED. That
+will always be the client code that I have verified to work
+with the latest sync4jevolution.
+
 The recommended way to make that library available is by
 installing it into its own directory (configure --prefix=<dir>; make;
 make install) and then pointing the configure of sync4jevolution
