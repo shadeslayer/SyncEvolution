@@ -152,6 +152,13 @@ class EvolutionSyncSource : public SyncSource
     //
     // default implementation of SyncSource iterators
     //
+    // getFirst/NextItemKey() are only required to return an item
+    // with its key set and nothing else, but this optimization
+    // does not really matter for Evolution, so they just iterate
+    // over all items normally. Strictly speaking they should use
+    // their own position marker, but as they are never called in
+    // parallel that's okay.
+    //
     virtual SyncItem* getFirstItem() { return m_allItems.start(); }
     virtual SyncItem* getNextItem() { return m_allItems.iterate(); }
     virtual SyncItem* getFirstNewItem() { return m_newItems.start(); }
@@ -160,6 +167,8 @@ class EvolutionSyncSource : public SyncSource
     virtual SyncItem* getNextUpdatedItem() { return m_updatedItems.iterate(); }
     virtual SyncItem* getFirstDeletedItem() { return m_deletedItems.start(); }
     virtual SyncItem* getNextDeletedItem() { return m_deletedItems.iterate(); }
+    virtual SyncItem* getFirstItemKey() { return getFirstItem(); }
+    virtual SyncItem* getNextItemKey() { return getNextItem(); }
     virtual void setItemStatus(const char *key, int status);
 	 
   protected:

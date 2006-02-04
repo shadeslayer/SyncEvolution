@@ -166,11 +166,18 @@ class TestEvolution : public CppUnit::TestFixture
     /** performs one sync operation */
     void doSync(const string &logfile, int config, SyncMode syncMode);
 
-    /** deletes all contacts */
+    /** deletes all contacts locally via EvolutionContactSource */
     void contactDeleteAll(int config);
 
-    /** deletes all items locally and on server */
-    void deleteAll( const string &prefix, int config );
+    enum DeleteAllMode {
+        DELETE_ALL_SYNC,   /**< make sure client and server are in sync,
+                              delete locally,
+                              sync again */
+        DELETE_ALL_REFRESH /**< delete locally, refresh server */
+    };
+
+    /** deletes all items locally and on server, using different methods */
+    void deleteAll( const string &prefix, int config, DeleteAllMode mode = DELETE_ALL_SYNC );
 
     /** create item in one database, then copy to the other */
     void doCopy( const string &prefix );
@@ -542,30 +549,68 @@ void TestEvolution::testSlowSync()
     doSync( "testSlowSync.client.log", 0, SYNC_SLOW );
 }
 
-void TestEvolution::deleteAll( const string &prefix, int config )
+void TestEvolution::deleteAll( const string &prefix, int config, DeleteAllMode mode )
 {
-    // refresh (in case something is missing locally), then delete
-    doSync( prefix + ".deleteall.refresh.client.log", config, SYNC_REFRESH_FROM_SERVER );
-    testContactDeleteAll();
-    doSync( prefix + ".deleteall.twoway.client.log", config, SYNC_TWO_WAY );
+    switch (mode) {
+     case DELETE_ALL_SYNC:
+        // refresh (in case something is missing locally), then delete
+        doSync( prefix + ".deleteall.refresh.client.log", config, SYNC_REFRESH_FROM_SERVER );
+        testContactDeleteAll();
+        doSync( prefix + ".deleteall.twoway.client.log", config, SYNC_TWO_WAY );
+        break;
+     case DELETE_ALL_REFRESH:
+        // delete locally
+        testContactDeleteAll();
+        // refresh server
+        doSync( prefix + ".deleteall.refreshserver.client.log", config, SYNC_REFRESH_FROM_CLIENT );
+        break;
+    }
 }
 
 void TestEvolution::testDeleteAll()
 {
-    // copy something to server first
-    testContactSimpleInsert();
-    doSync( "testDeleteAll.insert.client.log", 0, SYNC_SLOW );
-
-    deleteAll( "testDeleteAll", 0 );
-    
-    // nothing stored locally?
     EvolutionContactSource source( string( "dummy" ),
                                    m_changeIds[1],
                                    m_contactNames[0] );
+
+    // copy something to server first
+    testContactSimpleInsert();
+    doSync( "testDeleteAll.insert.1.client.log", 0, SYNC_SLOW );
+
+    deleteAll( "testDeleteAllSync", 0, DELETE_ALL_SYNC );
+    
+    // nothing stored locally?
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
+
+    // make sure server really deleted everything
+    doSync( "testDeleteAll.check.1.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
+    CPPUNIT_ASSERT( countItems( source ) == 0 );
+    EVOLUTION_ASSERT_NO_THROW( source, source.close() );    
+
+    // copy something to server again
+    testContactSimpleInsert();
+    doSync( "testDeleteAll.insert.2.client.log", 0, SYNC_SLOW );
+
+    deleteAll( "testDeleteAllRefresh", 0, DELETE_ALL_REFRESH );
+    
+    // nothing stored locally?
+    EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
+    CPPUNIT_ASSERT( countItems( source ) == 0 );
+    EVOLUTION_ASSERT_NO_THROW( source, source.close() );
+
+    // make sure server really deleted everything
+    doSync( "testDeleteAll.check.2.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
+    CPPUNIT_ASSERT( countItems( source ) == 0 );
+    EVOLUTION_ASSERT_NO_THROW( source, source.close() );
+
 }
 
 void TestEvolution::testRefreshSemantic()

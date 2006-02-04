@@ -94,7 +94,9 @@ int EvolutionContactSource::beginSync()
     buffer += mode == SYNC_SLOW ? "slow" :
         mode == SYNC_TWO_WAY ? "two-way" :
         mode == SYNC_ONE_WAY_FROM_SERVER ? "one-way" :
-        mode == SYNC_REFRESH_FROM_SERVER ? "refresh" :
+        mode == SYNC_REFRESH_FROM_SERVER ? "refresh from server" :
+        mode == SYNC_REFRESH_FROM_CLIENT ? "refresh from client" :
+        mode == SYNC_NONE ? "none" :
         "???";
     LOG.info( buffer.c_str() );
     
@@ -123,6 +125,9 @@ int EvolutionContactSource::beginSync()
          case SYNC_REFRESH_FROM_SERVER:
             deleteLocal = true;
             m_isModified = true;
+            break;
+         case SYNC_REFRESH_FROM_CLIENT:
+            needAll = true;
             break;
          case SYNC_NONE:
             // special mode for testing: prepare both all and partial lists
