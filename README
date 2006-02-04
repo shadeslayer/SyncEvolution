@@ -5,6 +5,9 @@ This software is still experimental. Some parts of this documentation
 describe how features are supposed to work although they have not been
 implemented yet. They are marked with [not implemented].
 
+There's no home page yet. Please refer to the SourceForge page instead:
+    http://sourceforge.net/projects/sync4jevolution/
+
 
 Introduction
 ------------
@@ -44,6 +47,7 @@ Make a backup of your
 directories before running it for the first time. In older Evolution
 versions the same data is found in $HOME/evolution.
 
+
 Usage
 -----
 
@@ -75,6 +79,7 @@ After a successful synchronization the server's configuration file is
 updated so that the next run can be done incrementally.  If the
 configuration file has to be recreated e.g. because it was lost, the
 next run recovers from that by doing a full synchronization.
+
 
 Configuration
 -------------
@@ -126,6 +131,7 @@ If the Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.  In
 this case the directory that contains the source's config.txt should
 only be accessible by the user. [NOT IMPLEMENTED YET]
+
 
 Exchanging Data
 ---------------
@@ -213,6 +219,7 @@ inside sync4jevolution: there is only an ERROR entry in the
 log. A summary at the end of syncing would be better, or
 even opening GUI dialogs to resolve the conflicts immediately...
 
+
 Tracking Changes inside Evolution
 ---------------------------------
 
@@ -238,6 +245,90 @@ from the server config file and <name> from the source config
 file. This implies that changes are tracked separately for each server
 and server database that Evolution might be synchronized with.
 
+
+Known Problems
+--------------
+
+- refresh-server results in a Sync4j client library error at the end
+  of the sync:
+
+  TestEvolution.cpp:534:Assertion
+  Test name: TestEvolution::testDeleteAll
+  assertion failed
+  - Expression: !res
+
+  Should be fixed in the client library.
+
+- various vcard related problems in the Sync4j server:
+  TestEvolution::testVCard fails the check that items
+  are identical after copying them to the server and back
+
+  Many of these issues have been fixed in the server already,
+  but not yet in 2.3b4.
+
+- Removing a field and then synchronizing with the Sync4j server
+  will not remove that field on the server. The server will preserve
+  the old value instead.
+
+  This is necessary because the server cannot distinguish between
+  removed fields and fields that a client does not store. To avoid
+  losing data when copying back items from a less capable client the
+  server preserves missing fields, even in situation where the field
+  was intentionally removed on the client.
+
+  The workaround for this conceptual problem is to never clean
+  (= remove) a field - better fill it with e.g. a single space.
+
+
+Support
+-------
+
+If you would like to ask questions, please use the Sync4j
+users mailing list. You can subscribe at
+   http://sourceforge.net/mail/?group_id=30236
+or mail
+   sync4j-users@lists.sourceforge.net
+directly. If you mail the list without subscribing, please ask
+to get replies to you directly, as some people might reply
+only to the list otherwise.
+
+However, before asking a question make sure that it has not
+been answered already (archives are linked to from the list
+page) and is not covered in this document. There is no FAQ yet.
+
+If you run into any kind of issue during synchronization with
+sync4jevolution, please try to determine as good as you can
+whether it is caused by sync4jevolution, the Sync4j client
+library or the server that you talk to.
+
+Issues in the server should be reported using the issue tracker
+for it. For Sync4j, it is located at
+   http://forge.objectweb.org/tracker/?group_id=96
+There you can also report issues with the Sync4j client library.
+
+Because binary releases of sync4jevolution will contain
+that library and have to be updated, please also create another
+issue in the sync4jevolution tracker linking to the objectweb
+issue.
+
+If unsure, just open a ticket in the sync4jevolution tracker
+and it will be forwarded appropriately after an initial analysis.
+That tracker is hosted at SourceForge and can also be used
+for feature requests:
+   http://sourceforge.net/tracker/?group_id=146288&atid=764733
+
+Be sure to always include the following information:
+- version of sync4jevolution
+- version of Evolution
+- server and its version
+- Linux distribution
+- client log if appropriate,
+  server log if appropriate and available
+- a description of what you do,
+  what you expect to see,
+  what you get instead
+
+
 Compiling from Source
 ---------------------
 
@@ -248,14 +339,18 @@ is needed. It is currently only available from CVS, checkout the
 
 Because that code changes a lot and thus might occasionally be
 incompatible with the current head revision of sync4jevolution,
-please checkout revision POHLY-SYNC4JEVOLUTION-CHECKED. That
-will always be the client code that I have verified to work
-with the latest sync4jevolution.
+please checkout revision
+   funambol30b1
+That is the latest revision of the client that I have verified to
+work with the latest sync4jevolution.
 
 The recommended way to make that library available is by
-installing it into its own directory (configure --prefix=<dir>; make;
-make install) and then pointing the configure of sync4jevolution
-towards it (configure --with-sync4j=<dir>).
+installing it into its own directory with shared libraries disabled:
+   configure --prefix=<dir> --disable-shared; make; make install
+and then pointing the configure of sync4jevolution towards it:
+   configure --with-sync4j=<dir> --disable-shared
+Shared versions of the libraries are not recommended at the moment
+because the client libraries API is not expected to be stable.
 
 Also needed are the Evolution development files. The code was tested
 with Evolution 2.0.4. It is unclear which other versions it is
@@ -265,3 +360,11 @@ The build system is the normal autotools system.
 See INSTALL for general instructions how to use that
 and "./configure --help" for Sync4jEvolution specific
 options.
+
+
+Author
+------
+
+Patrick Ohly
+patrick.ohly@gmx.de
+http://ohly.home.pages.de/
