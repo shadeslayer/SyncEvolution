@@ -19,11 +19,11 @@ pkg_emodules_12="evolution-data-server-1.2 libebook-1.2 libecal-1.2 libedata-boo
 export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:$prefix/lib/pkgconfig:/usr/local/lib/pkgconfig
 
 dnl check for Evolution
-PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_10], EDSFOUND=1, [EDSFOUND=0])
+PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_12], EDSFOUND=1, [EDSFOUND=0])
 if test "x${EDSFOUND}" = "x0"; then
 	PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_11], EDSFOUND=1, [EDSFOUND=0])
 	if test "x${EDSFOUND}" = "x0"; then
-		PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_12],,AC_MSG_ERROR(No compatible evolution-data-server was found))
+		PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_10],,AC_MSG_ERROR(No compatible evolution-data-server was found))
 	fi
 fi
 AC_SUBST(EPACKAGE_CFLAGS)
