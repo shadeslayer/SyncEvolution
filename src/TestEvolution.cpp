@@ -45,6 +45,8 @@
 #include <fcntl.h>
 
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 using namespace std;
 
 /** utility function to iterate over different kinds of items in a sync source */
@@ -763,173 +765,285 @@ void TestEvolution::testMerge()
     CPPUNIT_ASSERT( 2 == countItems( client1 ) );
 }
 
+static string tostring( const char *str )
+{
+    return string( str ? str : "" );
+}
+            
+static string Address2String( EContactAddress *addr )
+{
+    return !addr ? string() :
+        string() +
+        "format: " + tostring( addr->address_format ) + "\n" +
+        "po: " + tostring( addr->po ) + "\n" +
+        "ext: " + tostring( addr->ext ) + "\n" +
+        "street: " + tostring( addr->street ) + "\n" +
+        "locality: " + tostring( addr->locality ) + "\n" +
+        "region: " + tostring( addr->region ) + "\n" +
+        "code: " + tostring( addr->code ) + "\n" +
+        "country: " + tostring( addr->country ) + "\n";
+}
+
+static string Name2String( EContactName *name )
+{
+    return !name ? string() :
+        string() +
+        "family: " + tostring( name->family ) + "\n" +
+        "given: " + tostring( name->given ) + "\n" +
+        "additional: " + tostring( name->additional ) + "\n" +
+        "prefixes: " + tostring( name->prefixes ) + "\n" +
+        "suffixes: " + tostring( name->suffixes ) + "\n";
+}
+
+static string Date2String( EContactDate *date )
+{
+    string res;
+    if (date) {
+        char *date_cstr = e_contact_date_to_string( date );
+        res = date_cstr;
+        free( date_cstr );
+    }
+    return res;
+}
+
+static string Photo2String( EContactPhoto *photo )
+{
+    stringstream res;
+    if (photo) {
+        res << "length: " << photo->length << "\n";
+        if (photo->length) {
+            res << "first/last byte: " << hex << showbase << (unsigned int)(unsigned char)photo->data[0]
+                << "..." << (unsigned int)(unsigned char)photo->data[photo->length - 1] << "\n";
+        }
+    }
+    return res.str();
+}
+
+
+
 static int compareContacts( const string &name, EContact *sourceContact, EContact *copiedContact )
 {
-    const EContactField essential[] = {
-	E_CONTACT_FILE_AS,     	 /* string field */
+    enum fieldtype {
+            FIELD_TYPE_STRING,
+            FIELD_TYPE_ADDRESS,
+            FIELD_TYPE_NAME,
+            FIELD_TYPE_DATE,
+            FIELD_TYPE_PHOTO,
+            FIELD_TYPE_BOOLEAN
+    };
+    struct {
+        const EContactField field;
+        const fieldtype type;
+    } essential[] = {
+	{ E_CONTACT_FILE_AS, FIELD_TYPE_STRING },
 
 	/* Name fields */
-	E_CONTACT_FULL_NAME,   	 /* string field */
-	E_CONTACT_GIVEN_NAME,  	 /* synthetic string field */
-	E_CONTACT_FAMILY_NAME, 	 /* synthetic string field */
-	E_CONTACT_NICKNAME,    	 /* string field */
+	{ E_CONTACT_FULL_NAME, FIELD_TYPE_STRING },
+	{ E_CONTACT_GIVEN_NAME, FIELD_TYPE_STRING },
+	{ E_CONTACT_FAMILY_NAME, FIELD_TYPE_STRING },
+	{ E_CONTACT_NICKNAME, FIELD_TYPE_STRING },
 
-	/* Email fields */
-	E_CONTACT_EMAIL_1,     	 /* synthetic string field */
-	E_CONTACT_EMAIL_2,     	 /* synthetic string field */
-	E_CONTACT_EMAIL_3,     	 /* synthetic string field */
-	E_CONTACT_EMAIL_4,       /* synthetic string field */
+	/* Email fields - order of EMAIL_1-4 is random, TODOL: check original list instead */
+	{ E_CONTACT_EMAIL_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_EMAIL_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_EMAIL_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_EMAIL_4, FIELD_TYPE_STRING },
 
-	E_CONTACT_MAILER,        /* string field */
+	{ E_CONTACT_MAILER, FIELD_TYPE_STRING },
 
 	/* Address Labels */
-	E_CONTACT_ADDRESS_LABEL_HOME,  /* synthetic string field */
-	E_CONTACT_ADDRESS_LABEL_WORK,  /* synthetic string field */
-	E_CONTACT_ADDRESS_LABEL_OTHER, /* synthetic string field */
+	{ E_CONTACT_ADDRESS_LABEL_HOME, FIELD_TYPE_STRING },
+	{ E_CONTACT_ADDRESS_LABEL_WORK, FIELD_TYPE_STRING },
+	{ E_CONTACT_ADDRESS_LABEL_OTHER, FIELD_TYPE_STRING },
 
 	/* Phone fields */
-	E_CONTACT_PHONE_ASSISTANT,
-	E_CONTACT_PHONE_BUSINESS,
-	E_CONTACT_PHONE_BUSINESS_2,
-	E_CONTACT_PHONE_BUSINESS_FAX,
-	E_CONTACT_PHONE_CALLBACK,
-	E_CONTACT_PHONE_CAR,
-	E_CONTACT_PHONE_COMPANY,
-	E_CONTACT_PHONE_HOME,
-	E_CONTACT_PHONE_HOME_2,
-	E_CONTACT_PHONE_HOME_FAX,
-	E_CONTACT_PHONE_ISDN,
-	E_CONTACT_PHONE_MOBILE,
-	E_CONTACT_PHONE_OTHER,
-	E_CONTACT_PHONE_OTHER_FAX,
-	E_CONTACT_PHONE_PAGER,
-	E_CONTACT_PHONE_PRIMARY,
-	E_CONTACT_PHONE_RADIO,
-	E_CONTACT_PHONE_TELEX,
-	E_CONTACT_PHONE_TTYTDD,
+	{ E_CONTACT_PHONE_ASSISTANT, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_BUSINESS, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_BUSINESS_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_BUSINESS_FAX, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_CALLBACK, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_CAR, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_COMPANY, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_HOME, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_HOME_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_HOME_FAX, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_ISDN, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_MOBILE, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_OTHER, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_OTHER_FAX, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_PAGER, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_PRIMARY, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_RADIO, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_TELEX, FIELD_TYPE_STRING },
+	{ E_CONTACT_PHONE_TTYTDD, FIELD_TYPE_STRING },
 
 	/* Organizational fields */
-	E_CONTACT_ORG,        	 /* string field */
-	E_CONTACT_ORG_UNIT,   	 /* string field */
-	E_CONTACT_OFFICE,     	 /* string field */
-	E_CONTACT_TITLE,      	 /* string field */
-	E_CONTACT_ROLE,       	 /* string field */
-	E_CONTACT_MANAGER,    	 /* string field */
-	E_CONTACT_ASSISTANT,  	 /* string field */
+	{ E_CONTACT_ORG, FIELD_TYPE_STRING },
+	{ E_CONTACT_ORG_UNIT, FIELD_TYPE_STRING },
+	{ E_CONTACT_OFFICE, FIELD_TYPE_STRING },
+	{ E_CONTACT_TITLE, FIELD_TYPE_STRING },
+	{ E_CONTACT_ROLE, FIELD_TYPE_STRING },
+	{ E_CONTACT_MANAGER, FIELD_TYPE_STRING },
+	{ E_CONTACT_ASSISTANT, FIELD_TYPE_STRING },
 
 	/* Web fields */
-	E_CONTACT_HOMEPAGE_URL,  /* string field */
-	E_CONTACT_BLOG_URL,      /* string field */
+	{ E_CONTACT_HOMEPAGE_URL, FIELD_TYPE_STRING },
+	{ E_CONTACT_BLOG_URL, FIELD_TYPE_STRING },
 
 	/* Contact categories */
-	E_CONTACT_CATEGORIES,    /* string field */
+	{ E_CONTACT_CATEGORIES, FIELD_TYPE_STRING },
 
 	/* Collaboration fields */
-	E_CONTACT_CALENDAR_URI,  /* string field */
-	E_CONTACT_FREEBUSY_URL,  /* string field */
-	E_CONTACT_ICS_CALENDAR,  /* string field */
-	E_CONTACT_VIDEO_URL,      /* string field */
+	{ E_CONTACT_CALENDAR_URI, FIELD_TYPE_STRING },
+	{ E_CONTACT_FREEBUSY_URL, FIELD_TYPE_STRING },
+	{ E_CONTACT_ICS_CALENDAR, FIELD_TYPE_STRING },
+	{ E_CONTACT_VIDEO_URL, FIELD_TYPE_STRING },
 
 	/* misc fields */
-	E_CONTACT_SPOUSE,        /* string field */
-	E_CONTACT_NOTE,          /* string field */
+	{ E_CONTACT_SPOUSE, FIELD_TYPE_STRING },
+	{ E_CONTACT_NOTE, FIELD_TYPE_STRING },
 
-	E_CONTACT_IM_AIM_HOME_1,       /* Synthetic string field */
-	E_CONTACT_IM_AIM_HOME_2,       /* Synthetic string field */
-	E_CONTACT_IM_AIM_HOME_3,       /* Synthetic string field */
-	E_CONTACT_IM_AIM_WORK_1,       /* Synthetic string field */
-	E_CONTACT_IM_AIM_WORK_2,       /* Synthetic string field */
-	E_CONTACT_IM_AIM_WORK_3,       /* Synthetic string field */
-	E_CONTACT_IM_GROUPWISE_HOME_1, /* Synthetic string field */
-	E_CONTACT_IM_GROUPWISE_HOME_2, /* Synthetic string field */
-	E_CONTACT_IM_GROUPWISE_HOME_3, /* Synthetic string field */
-	E_CONTACT_IM_GROUPWISE_WORK_1, /* Synthetic string field */
-	E_CONTACT_IM_GROUPWISE_WORK_2, /* Synthetic string field */
-	E_CONTACT_IM_GROUPWISE_WORK_3, /* Synthetic string field */
-	E_CONTACT_IM_JABBER_HOME_1,    /* Synthetic string field */
-	E_CONTACT_IM_JABBER_HOME_2,    /* Synthetic string field */
-	E_CONTACT_IM_JABBER_HOME_3,    /* Synthetic string field */
-	E_CONTACT_IM_JABBER_WORK_1,    /* Synthetic string field */
-	E_CONTACT_IM_JABBER_WORK_2,    /* Synthetic string field */
-	E_CONTACT_IM_JABBER_WORK_3,    /* Synthetic string field */
-	E_CONTACT_IM_YAHOO_HOME_1,     /* Synthetic string field */
-	E_CONTACT_IM_YAHOO_HOME_2,     /* Synthetic string field */
-	E_CONTACT_IM_YAHOO_HOME_3,     /* Synthetic string field */
-	E_CONTACT_IM_YAHOO_WORK_1,     /* Synthetic string field */
-	E_CONTACT_IM_YAHOO_WORK_2,     /* Synthetic string field */
-	E_CONTACT_IM_YAHOO_WORK_3,     /* Synthetic string field */
-	E_CONTACT_IM_MSN_HOME_1,       /* Synthetic string field */
-	E_CONTACT_IM_MSN_HOME_2,       /* Synthetic string field */
-	E_CONTACT_IM_MSN_HOME_3,       /* Synthetic string field */
-	E_CONTACT_IM_MSN_WORK_1,       /* Synthetic string field */
-	E_CONTACT_IM_MSN_WORK_2,       /* Synthetic string field */
-	E_CONTACT_IM_MSN_WORK_3,       /* Synthetic string field */
-	E_CONTACT_IM_ICQ_HOME_1,       /* Synthetic string field */
-	E_CONTACT_IM_ICQ_HOME_2,       /* Synthetic string field */
-	E_CONTACT_IM_ICQ_HOME_3,       /* Synthetic string field */
-	E_CONTACT_IM_ICQ_WORK_1,       /* Synthetic string field */
-	E_CONTACT_IM_ICQ_WORK_2,       /* Synthetic string field */
-	E_CONTACT_IM_ICQ_WORK_3        /* Synthetic string field */
-    };
+	{ E_CONTACT_IM_AIM_HOME_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_AIM_HOME_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_AIM_HOME_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_AIM_WORK_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_AIM_WORK_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_AIM_WORK_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_GROUPWISE_HOME_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_GROUPWISE_HOME_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_GROUPWISE_HOME_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_GROUPWISE_WORK_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_GROUPWISE_WORK_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_GROUPWISE_WORK_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_JABBER_HOME_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_JABBER_HOME_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_JABBER_HOME_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_JABBER_WORK_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_JABBER_WORK_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_JABBER_WORK_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_YAHOO_HOME_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_YAHOO_HOME_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_YAHOO_HOME_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_YAHOO_WORK_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_YAHOO_WORK_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_YAHOO_WORK_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_MSN_HOME_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_MSN_HOME_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_MSN_HOME_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_MSN_WORK_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_MSN_WORK_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_MSN_WORK_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_ICQ_HOME_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_ICQ_HOME_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_ICQ_HOME_3, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_ICQ_WORK_1, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_ICQ_WORK_2, FIELD_TYPE_STRING },
+	{ E_CONTACT_IM_ICQ_WORK_3, FIELD_TYPE_STRING },
 
-    // some of these are important, but cannot be compare yet
-    const EContactField ignore[] = {
 	/* Address fields */
-	E_CONTACT_ADDRESS,       /* Multi-valued structured (EContactAddress) */
-	E_CONTACT_ADDRESS_HOME,  /* synthetic structured field (EContactAddress) */
-	E_CONTACT_ADDRESS_WORK,  /* synthetic structured field (EContactAddress) */
-	E_CONTACT_ADDRESS_OTHER, /* synthetic structured field (EContactAddress) */
+	// { E_CONTACT_ADDRESS, FIELD_TYPE_ADDRESS /* Multi-valued structured (EContactAddress) ??? */ },
+	{ E_CONTACT_ADDRESS_HOME, FIELD_TYPE_ADDRESS },
+	{ E_CONTACT_ADDRESS_WORK, FIELD_TYPE_ADDRESS },
+	{ E_CONTACT_ADDRESS_OTHER, FIELD_TYPE_ADDRESS },
 
-	E_CONTACT_CATEGORY_LIST, /* multi-valued */
+	// { E_CONTACT_CATEGORY_LIST, FIELD_TYPE_STRING /* multi-valued == string? */ },
 
 	/* Photo/Logo */
-	E_CONTACT_PHOTO,       	 /* structured field (EContactPhoto) */
-	E_CONTACT_LOGO,       	 /* structured field (EContactPhoto) */
+	{ E_CONTACT_PHOTO, FIELD_TYPE_PHOTO },
+	{ E_CONTACT_LOGO, FIELD_TYPE_PHOTO },
 
-	E_CONTACT_NAME,        	 /* structured field (EContactName) */
-	E_CONTACT_EMAIL,       	 /* Multi-valued */
+	{ E_CONTACT_NAME, FIELD_TYPE_NAME },
+#if 0
+	{ E_CONTACT_EMAIL, FIELD_TYPE_STRING /* Multi-valued == string? */ },
 
 	/* Instant Messaging fields */
-	E_CONTACT_IM_AIM,     	 /* Multi-valued */
-	E_CONTACT_IM_GROUPWISE,  /* Multi-valued */
-	E_CONTACT_IM_JABBER,  	 /* Multi-valued */
-	E_CONTACT_IM_YAHOO,   	 /* Multi-valued */
-	E_CONTACT_IM_MSN,     	 /* Multi-valued */
-	E_CONTACT_IM_ICQ,     	 /* Multi-valued */
+	{ E_CONTACT_IM_AIM, FIELD_TYPE_STRING /* Multi-valued == string? */ },
+	{ E_CONTACT_IM_GROUPWISE, FIELD_TYPE_STRING /* Multi-valued == string? */ },
+	{ E_CONTACT_IM_JABBER, FIELD_TYPE_STRING /* Multi-valued == string? */ },
+	{ E_CONTACT_IM_YAHOO, FIELD_TYPE_STRING /* Multi-valued == string? */ },
+	{ E_CONTACT_IM_MSN, FIELD_TYPE_STRING /* Multi-valued == string? */ },
+	{ E_CONTACT_IM_ICQ, FIELD_TYPE_STRING /* Multi-valued == string? */ },
+#endif
        
-	E_CONTACT_WANTS_HTML,    /* boolean field */
+	{ E_CONTACT_WANTS_HTML, FIELD_TYPE_BOOLEAN },
 
+	{ E_CONTACT_BIRTH_DATE, FIELD_TYPE_DATE },
+	{ E_CONTACT_ANNIVERSARY, FIELD_TYPE_DATE },
+    };
+
+#if 0
 	/* fields used for describing contact lists.  a contact list
 	   is just a contact with _IS_LIST set to true.  the members
 	   are listed in the _EMAIL field. */
 	E_CONTACT_IS_LIST,             /* boolean field */
 	E_CONTACT_LIST_SHOW_ADDRESSES, /* boolean field */
 
-
-	E_CONTACT_BIRTH_DATE,    /* structured field (EContactDate) */
-	E_CONTACT_ANNIVERSARY,   /* structured field (EContactDate) */
-
 	/* Security Fields */
 	E_CONTACT_X509_CERT      /* structured field (EContactCert) */
-    };
+#endif
 
+    
     int identical = 1;
     for (int field = 0;
          field < sizeof(essential)/sizeof(essential[0]);
          field++) {
-        EContactField fieldType = essential[field];
-        string source = e_contact_get_const( sourceContact, fieldType ) ?
-            (const char *)e_contact_get_const( sourceContact, fieldType ) :
-            "";
-        string copy = e_contact_get_const( copiedContact, fieldType ) ?
-            (const char *)e_contact_get_const( copiedContact, fieldType ) :
-            "";
+        EContactField fieldType = essential[field].field;
+        gpointer source = e_contact_get( sourceContact, fieldType );
+        gpointer copy = e_contact_get( copiedContact, fieldType );
+        string source_str, copy_str;
+        bool same = true;
 
-        if (source != copy) {
+        switch (essential[field].type) {
+         case FIELD_TYPE_STRING:
+            source_str = tostring( (const char *)source );
+            copy_str = tostring( (const char *)copy );
+            same = source_str == copy_str;
+            free( copy );
+            free( source );
+            break;
+         case FIELD_TYPE_ADDRESS:
+            source_str = Address2String( (EContactAddress *)source );
+            copy_str = Address2String( (EContactAddress *)copy );
+            same = source_str == copy_str;
+            e_contact_address_free( (EContactAddress *)source );
+            e_contact_address_free( (EContactAddress *)copy );
+            break;
+         case FIELD_TYPE_NAME:
+            source_str = Name2String( (EContactName *)source );
+            copy_str = Name2String( (EContactName *)copy );
+            same = source_str == copy_str;
+            e_contact_name_free( (EContactName *)source );
+            e_contact_name_free( (EContactName *)copy );
+            break;
+         case FIELD_TYPE_DATE:
+            source_str = Date2String( (EContactDate *)source );
+            copy_str = Date2String( (EContactDate *)copy );
+            same = e_contact_date_equal( (EContactDate *)source, (EContactDate *)copy );
+            e_contact_date_free( (EContactDate *)source );
+            e_contact_date_free( (EContactDate *)copy );
+            break;
+         case FIELD_TYPE_PHOTO:
+            source_str = Photo2String( (EContactPhoto *)source );
+            copy_str = Photo2String( (EContactPhoto *)copy );
+            same = source_str == copy_str;
+            e_contact_photo_free( (EContactPhoto *)source );
+            e_contact_photo_free( (EContactPhoto *)copy );
+            break;
+         case FIELD_TYPE_BOOLEAN:
+            source_str = source ? "TRUE" : "FALSE";
+            copy_str = copy ? "TRUE" : "FALSE";
+            same = source_str == copy_str;
+            break;
+        }
+
+        if (!same) {
             identical = 0;
-            cout << name << ": " << e_contact_field_name( fieldType ) << " not identical.\n";
-            cout << "   Source: " << source << "\n";
-            cout << "   Copy: " << copy << "\n";
+            cout << "\n*** " << name << "/" << e_contact_field_name( fieldType ) << " *** not identical:\n";
+            cout << "   Source: " << source_str << "\n";
+            cout << "   Copy: " << copy_str << "\n";
+        } else if( source_str.length() ) {
+            cout << "\n" << name << "/" << e_contact_field_name( fieldType ) << " identical:\n";
+            cout << "   " << source_str << "\n";
         }
     }
 
