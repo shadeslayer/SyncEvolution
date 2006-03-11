@@ -1,6 +1,12 @@
-# TODO: install files properly in distribution
-sysconf_DATA = localhost_1/spds/syncml/config.txt localhost_1/spds/sources/addressbook_1/config.txt \
-       	       localhost_2/spds/syncml/config.txt localhost_2/spds/sources/addressbook_2/config.txt
+localhost_source = localhost_1/spds/syncml/config.txt \
+                   localhost_1/spds/sources/addressbook_1/config.txt
+
+localhost_copy = localhost_2/spds/syncml/config.txt \
+                 localhost_2/spds/sources/addressbook_2/config.txt
+
+EXTRA_DIST = $(localhost_source)
+CLEANFILES = $(localhost_copy)
+nobase_sysconf_DATA = $(localhost_source) $(localhost_copy)
 
 localhost_2/spds/syncml/config.txt : localhost_1/spds/syncml/config.txt
 	mkdir -p $(@D)

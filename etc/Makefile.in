@@ -54,8 +54,8 @@ am__vpath_adj = case $$p in \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(sysconfdir)"
-sysconfDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(sysconf_DATA)
+nobase_sysconfDATA_INSTALL = $(install_sh_DATA)
+DATA = $(nobase_sysconf_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
@@ -112,6 +112,7 @@ RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+SYNC4J = @SYNC4J@
 SYNC4J_CFLAGS = @SYNC4J_CFLAGS@
 SYNC4J_LIBS = @SYNC4J_LIBS@
 VERSION = @VERSION@
@@ -159,9 +160,15 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-sysconf_DATA = localhost_1/spds/syncml/config.txt localhost_1/spds/sources/addressbook_1/config.txt \
-       	       localhost_2/spds/syncml/config.txt localhost_2/spds/sources/addressbook_2/config.txt
+localhost_source = localhost_1/spds/syncml/config.txt \
+                   localhost_1/spds/sources/addressbook_1/config.txt
 
+localhost_copy = localhost_2/spds/syncml/config.txt \
+                 localhost_2/spds/sources/addressbook_2/config.txt
+
+EXTRA_DIST = $(localhost_source)
+CLEANFILES = $(localhost_copy)
+nobase_sysconf_DATA = $(localhost_source) $(localhost_copy)
 all: all-am
 
 .SUFFIXES:
@@ -204,20 +211,22 @@ clean-libtool:
 distclean-libtool:
 	-rm -f libtool
 uninstall-info-am:
-install-sysconfDATA: $(sysconf_DATA)
+install-nobase_sysconfDATA: $(nobase_sysconf_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(sysconfdir)" || $(mkdir_p) "$(DESTDIR)$(sysconfdir)"
-	@list='$(sysconf_DATA)'; for p in $$list; do \
+	@$(am__vpath_adj_setup) \
+	list='$(nobase_sysconf_DATA)'; for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  f=$(am__strip_dir) \
-	  echo " $(sysconfDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(sysconfdir)/$$f'"; \
-	  $(sysconfDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(sysconfdir)/$$f"; \
+	  $(am__vpath_adj) \
+	  echo " $(nobase_sysconfDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(sysconfdir)/$$f'"; \
+	  $(nobase_sysconfDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(sysconfdir)/$$f"; \
 	done
 
-uninstall-sysconfDATA:
+uninstall-nobase_sysconfDATA:
 	@$(NORMAL_UNINSTALL)
-	@list='$(sysconf_DATA)'; for p in $$list; do \
-	  f=$(am__strip_dir) \
+	@$(am__vpath_adj_setup) \
+	list='$(nobase_sysconf_DATA)'; for p in $$list; do \
+	  $(am__vpath_adj) \
 	  echo " rm -f '$(DESTDIR)$(sysconfdir)/$$f'"; \
 	  rm -f "$(DESTDIR)$(sysconfdir)/$$f"; \
 	done
@@ -229,6 +238,7 @@ CTAGS:
 
 
 distdir: $(DISTFILES)
+	$(mkdir_p) $(distdir)/localhost_1/spds/sources/addressbook_1 $(distdir)/localhost_1/spds/syncml
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -279,6 +289,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -306,7 +317,7 @@ info-am:
 
 install-data-am:
 
-install-exec-am: install-sysconfDATA
+install-exec-am: install-nobase_sysconfDATA
 
 install-info: install-info-am
 
@@ -330,17 +341,18 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-info-am uninstall-sysconfDATA
+uninstall-am: uninstall-info-am uninstall-nobase_sysconfDATA
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
 	dvi-am html html-am info info-am install install-am \
 	install-data install-data-am install-exec install-exec-am \
-	install-info install-info-am install-man install-strip \
-	install-sysconfDATA installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	uninstall uninstall-am uninstall-info-am uninstall-sysconfDATA
+	install-info install-info-am install-man \
+	install-nobase_sysconfDATA install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
+	uninstall-info-am uninstall-nobase_sysconfDATA
 
 
 localhost_2/spds/syncml/config.txt : localhost_1/spds/syncml/config.txt

@@ -23,7 +23,7 @@ type = text/x-vcard
 
 # picks one of Evolution's data sources:
 # enter either the name or the full URL
-evolutionsource = sync4jevolution test #1
+evolutionsource = SyncEvolution test #1
 
 # this is appended to the server's URL to identify the
 # server's database

@@ -187,12 +187,12 @@ class TestEvolution : public CppUnit::TestFixture
 
 public:
     void setUp() {
-        m_contactNames[0] = "sync4jevolution test #1";
-        m_contactNames[1] = "sync4jevolution test #2";
+        m_contactNames[0] = "SyncEvolution test #1";
+        m_contactNames[1] = "SyncEvolution test #2";
         m_syncConfigs[0] = "localhost_1";
         m_syncConfigs[1] = "localhost_2";
-        m_changeIds[0] = "Sync4jEvolution Change ID #0";
-        m_changeIds[1] = "Sync4jEvolution Change ID #1";
+        m_changeIds[0] = "SyncEvolution Change ID #0";
+        m_changeIds[1] = "SyncEvolution Change ID #1";
         const char *log = getenv( "SYNC4J_LOG" );
         if (log) {
             m_serverLog = log;

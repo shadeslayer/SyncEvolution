@@ -1,6 +1,7 @@
 .deps
 .libs
 Makefile
-sync4jevolution
+syncevolution
 test
 *.log
+synclog.txt

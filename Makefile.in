@@ -127,6 +127,7 @@ RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+SYNC4J = @SYNC4J@
 SYNC4J_CFLAGS = @SYNC4J_CFLAGS@
 SYNC4J_LIBS = @SYNC4J_LIBS@
 VERSION = @VERSION@
@@ -175,6 +176,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 SUBDIRS = src etc
+DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@SYNC4J@
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -609,6 +611,15 @@ uninstall-info: uninstall-info-recursive
 	mostlyclean-libtool mostlyclean-recursive pdf pdf-am ps ps-am \
 	tags tags-recursive uninstall uninstall-am uninstall-info-am
 
+
+# binary distribution
+distbin : README all
+	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 ) 
+	rm -rf $(distdir)
+	$(MAKE) prefix=`pwd`/$(distdir) install
+	cp README $(distdir)
+	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
+	rm -rf $(distdir)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

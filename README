@@ -7,21 +7,24 @@ implemented yet. They are marked with [not implemented].
 
 There's no home page yet. Please refer to the SourceForge page instead:
     http://sourceforge.net/projects/sync4jevolution/
+Because the original name "sync4jevolution" is not really appropriate,
+it was changed to SyncEvolution. The web page and project name will
+be changed, too.
 
 
 Introduction
 ------------
 
-sync4jevolution synchronizes Evolution's contact and calender items
+SyncEvolution synchronizes Evolution's contact and calender items
 [calender not implemented yet]
 with a SyncML server. The items are exchanged in the vCard and
 vCalender formats and via the Funambol Sync4j C++ client API library,
-which should make sync4jevolution compatible with the majority of
+which should make SyncEvolution compatible with the majority of
 SyncML servers. Full, one-way and incremental synchronization of items
 are supported.
 
-sync4jevolution does not synchronize with another SyncML capable
-device directly: a SyncML server that that device and sync4jevolution
+SyncEvolution does not synchronize with another SyncML capable
+device directly: a SyncML server that that device and SyncEvolution
 can talk to is needed. The remainder of this document assumes that
 Funambol's Sync4j server bundle for Linux V2.3 was installed using the
 default configuration.
@@ -36,7 +39,7 @@ following works:
   another client), then make the same change locally
 - conflict resolution (where two clients modify the same item,
   then sync with the server) is handled by the server, but
-  sync4jevolution has support which ensures that no data is lost
+  SyncEvolution has support which ensures that no data is lost
   by creating duplicates (see Conflict Resolution below)
 
 Although all of the features are covered by unit testing and
@@ -48,16 +51,40 @@ directories before running it for the first time. In older Evolution
 versions the same data is found in $HOME/evolution.
 
 
+Installation
+------------
+
+To install SyncEvolution, just unpack an archive with a precompiled
+binary for your platform in a directory of your choice. Then create
+a configuration in $HOME/.sync4j/evolution as described below under
+"Configuration". No special environment variables are needed, although
+one might want to add the directory with contains the "syncevolution"
+binary to the shell's PATH variable.
+
+When a binary packages is not available for the target system
+and/or is not up-to-date, compiling from source can also be used
+to produce a binary. See below in "Compiling from Source" for details.
+
+You also need a working SyncML server. If you do not have and/or
+cannot get an account on an existing one, installing the Funambol
+Sync4j server bundle is very easy. See:
+   http://www.funambol.com/opensource/downloads.html
+
+For Sync4j V2.3, an additional patch is recommended to preserve
+line breaks of items on the server:
+   http://forge.objectweb.org/tracker/index.php?func=detail&aid=304718&group_id=96&atid=300096
+
+
 Usage
 -----
 
-Currently sync4jevolution comes as a simple command line tool which is
+Currently SyncEvolution comes as a simple command line tool which is
 configured via files. A graphical interface via an Evolution plugin
 would also be possible, but is not implemented yet. As command line
-parameters sync4jevolution only supports one option which specifies the
+parameters SyncEvolution only supports one option which specifies the
 configuration file that drives the synchronization run:
 
-   sync4jevolution [<server>]
+   syncevolution [<server>]
 
 The <server> string is used to find the configuration which determines
 how synchronization is going to proceed. Selection of sources of
@@ -65,11 +92,11 @@ Evolution data which are to be synchronized with that server is done
 via configuration files. It is possible to configure sources without
 activating their synchronization, see the "disabled" property below.
 
-If the SyncML server is not specified, sync4jevolution lists all
+If the SyncML server is not specified, SyncEvolution lists all
 available Evolution backend databases.
 
 Progress and error messages are both sent to stdout. In case of an
-error the synchronization run is aborted and sync4jevolution returns a
+error the synchronization run is aborted and SyncEvolution returns a
 non-zero value. Recovery from failed synchronization is done by
 forcing a full synchronization during the next run, i.e. by sending
 all items and letting the SyncML server compare against the ones it
@@ -103,7 +130,7 @@ See "etc/example/spds/syncml/config.txt" for options in the server
 configuration and "etc/example/spds/sources/addressbook_1/config.txt"
 for options in the data source configuration. Without changing this
 example configuration can be used for testing the operation of
-sync4jevolution, see "Exchanging Data" below.
+SyncEvolution, see "Exchanging Data" below.
 
 Normally at least the following configuration options need to be adapted:
   spds/syncml
@@ -136,7 +163,7 @@ only be accessible by the user. [NOT IMPLEMENTED YET]
 Exchanging Data
 ---------------
 
-sync4jevolution transmits address book entries as vCard 2.1, although
+SyncEvolution transmits address book entries as vCard 2.1, although
 Evolution exports them as 3.0. This is done because most servers do
 not yet support importing 3.0. Importing new or modified entries from
 the server can be done in 2.1 and 3.0 vCards.
@@ -155,34 +182,34 @@ To check which data is preserved, one can use this procedure:
 
 The "etc/localhost_1" directory contains a configuration for
 a default Sync4j installation on the local host and an Evolution
-address book called "sync4jevolution test #1". The
+address book called "syncevolution test #1". The
 "etc/localhost_2" is the pendant for a second address book
-called "sync4jevolution test #2". Both configurations can
+called "syncevolution test #2". Both configurations can
 be copied directly to ".sync4j/evolution":
   mkdir -p ~/.sync4j/evolution
   cp -a etc/localhost* ~/.sync4j/evolution
   rm -rf ~/.sync4j/evolution/localhost*/spds/sources/CVS
 The last step is only necessary when working with a checkout
-of the sync4jevolution sources from CVS.
+of the SyncEvolution sources from CVS.
 
 For them to work, also create the two address books
-  sync4jevolution test #1
-  sync4jevolution test #2
-inside Evolution. sync4jevolution never creates address
+  SyncEvolution test #1
+  SyncEvolution test #2
+inside Evolution. SyncEvolution never creates address
 books itself.
 
 Steps 1 above then becomes an invocation of
-  sync4jevolution localhost_1
+  syncevolution localhost_1
 and step 4
-  sync4jevolution localhost_2
+  syncevolution localhost_2
 
 This copies all contacts into the server and from there into the new
 address book. Now one can either compare the address books in
 Evolution or do that automatically:
 - save the complete address books: mark all entries, save as vCard
 - normalize the files with the provided Perl script:
-     test/normalize_vcard.pl list1.vcf >list1.normal.vcf
-     test/normalize_vcard.pl list2.vcf >list2.normal.vcf
+     normalize_vcard.pl list1.vcf >list1.normal.vcf
+     normalize_vcard.pl list2.vcf >list2.normal.vcf
 - compare the normalized lists, e.g.:
      diff -c list1.normal.vcf list2.normal.vcf
 
@@ -193,8 +220,8 @@ a "testVCard" test which verifies the copying of contact
 entries.
 
 Modifying either address book and synchronizing back and forth
-can be used to verify that sync4jevolution works as expected. If
-you do not trust sync4jevolution or the server, then it is prudent
+can be used to verify that SyncEvolution works as expected. If
+you do not trust SyncEvolution or the server, then it is prudent
 to run these checks with a copy of the original address book.
 Make a backup of the .evolution/addressbook directory.
 
@@ -212,10 +239,10 @@ into the server.
 The SyncML server now has to decide how to proceed. If the server
 decides to continue with its own copy and asks to overwrite the
 locally modified copy (the default with Sync4j),
-sync4jevolution will make a local copy first. This leads to
+SyncEvolution will make a local copy first. This leads to
 duplicates which have to be merged manually on the client side
 where the conflict occurred. Currently there is no support
-inside sync4jevolution: there is only an ERROR entry in the
+inside SyncEvolution: there is only an ERROR entry in the
 log. A summary at the end of syncing would be better, or
 even opening GUI dialogs to resolve the conflicts immediately...
 
@@ -230,17 +257,17 @@ the Evolution database server, albeit in a limited way:
 the same function lists changes and also moves the so called "change
 marker" forward. Therefore asking for changes twice in a row will only
 list changes the first time and not report the same changes a second
-time. sync4jevolution delays asking for changes as long as possible
+time. SyncEvolution delays asking for changes as long as possible
 and only does it when synchronization has really started. Then
 if synchronization completed and items where added, modified or
 deleted on behalf of the server, the change marker is moved forward.
 
-If synchronization fails for some or all items, then sync4jevolution
+If synchronization fails for some or all items, then SyncEvolution
 cannot mark individual items for retransmission during the next
 sync and forces the next sync to execute in slow mode.
 
-The change marker that sync4jevolution uses is a string which is
-composed as "sync4jevolution:<syncURL>/<name>" where <syncURL> comes
+The change marker that SyncEvolution uses is a string which is
+composed as "SyncEvolution:<syncURL>/<name>" where <syncURL> comes
 from the server config file and <name> from the source config
 file. This implies that changes are tracked separately for each server
 and server database that Evolution might be synchronized with.
@@ -297,8 +324,8 @@ been answered already (archives are linked to from the list
 page) and is not covered in this document. There is no FAQ yet.
 
 If you run into any kind of issue during synchronization with
-sync4jevolution, please try to determine as good as you can
-whether it is caused by sync4jevolution, the Sync4j client
+SyncEvolution, please try to determine as good as you can
+whether it is caused by SyncEvolution, the Sync4j client
 library or the server that you talk to.
 
 Issues in the server should be reported using the issue tracker
@@ -306,19 +333,19 @@ for it. For Sync4j, it is located at
    http://forge.objectweb.org/tracker/?group_id=96
 There you can also report issues with the Sync4j client library.
 
-Because binary releases of sync4jevolution will contain
+Because binary releases of SyncEvolution will contain
 that library and have to be updated, please also create another
-issue in the sync4jevolution tracker linking to the objectweb
+issue in the SyncEvolution tracker linking to the objectweb
 issue.
 
-If unsure, just open a ticket in the sync4jevolution tracker
+If unsure, just open a ticket in the SyncEvolution tracker
 and it will be forwarded appropriately after an initial analysis.
 That tracker is hosted at SourceForge and can also be used
 for feature requests:
    http://sourceforge.net/tracker/?group_id=146288&atid=764733
 
 Be sure to always include the following information:
-- version of sync4jevolution
+- version of SyncEvolution
 - version of Evolution
 - server and its version
 - Linux distribution
@@ -338,28 +365,29 @@ is needed. It is currently only available from CVS, checkout the
    http://forge.objectweb.org/projects/sync4j
 
 Because that code changes a lot and thus might occasionally be
-incompatible with the current head revision of sync4jevolution,
+incompatible with the current head revision of SyncEvolution,
 please checkout revision
    funambol30b1
 That is the latest revision of the client that I have verified to
-work with the latest sync4jevolution.
+work with the latest SyncEvolution.
 
 The recommended way to make that library available is by
 installing it into its own directory with shared libraries disabled:
    configure --prefix=<dir> --disable-shared; make; make install
-and then pointing the configure of sync4jevolution towards it:
+and then pointing the configure of SyncEvolution towards it:
    configure --with-sync4j=<dir> --disable-shared
 Shared versions of the libraries are not recommended at the moment
 because the client libraries API is not expected to be stable.
 
 Also needed are the Evolution development files. The code was tested
-with Evolution 2.0.4. It is unclear which other versions it is
-compatible with.
+with Evolution 2.0.4 and 2.4.2.1. It is unclear which other versions
+it is compatible with.
 
-The build system is the normal autotools system.
-See INSTALL for general instructions how to use that
-and "./configure --help" for Sync4jEvolution specific
-options.
+The build system is the normal autotools system.  See INSTALL for
+general instructions how to use that and "./configure --help" for
+SyncEvolution specific options. For the convenience of those checking
+out from CVS directly, the files generated with "autogen.sh" are also
+available from CVS.
 
 
 Author

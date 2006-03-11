@@ -1,3 +1,6 @@
+Working with the Code
+---------------------
+
 The code follows the code formatting of the Funambol
 Sync4j C++ client library. Just emulate the existing
 code when possible.
@@ -15,7 +18,7 @@ and so they (and just they) require that "cppunit-config"
 is in the shell search path. Before running them, setup
 your Evolution and ~/.sync4j configuration as described
 in the README section 'Exchanging Data' (create address
-books 'sync4jevolution test #1/2', etc).
+books 'SyncEvolution test #1/2', etc).
 
 Running the test with the environment variable SYNC4J_LOG
 set to the server's log file ensures that for each
@@ -31,7 +34,24 @@ to select specific tests, like this:
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is
 used to hide errors inside system libraries which
-are not caused by the sync4jevolution or Sync4j C++
+are not caused by SyncEvolution or Sync4j C++
 library code. Most likely the suppressions will only
 work on Debian GNU/Linux 3.1 ("Sarge") - feel free
 to add more for your system.
+
+
+CVS
+---
+
+Please add your changes to the ChangeLog file. The
+Emacs vc-update-change-log = C-x v a command collects
+the latest CVS commit messages and adds them automatically.
+
+
+Building a Release
+------------------
+
+- increase version number in configure.in/AM_INIT_AUTOMAKE
+- ensure ChangeLog and NEW are up-to-date
+- make distcheck
+- compile binary packages
