@@ -158,8 +158,6 @@ class TestEvolution : public CppUnit::TestFixture
                         "X-EVOLUTION-FILE-AS:Doe\\, Joan\n"
                         "X-EVOLUTION-BLOG-URL:\n"
                         "BDAY:2006-01-08\n"
-                        "CALURI:\n"
-                        "FBURL:\n"
                         "X-EVOLUTION-VIDEO-URL:\n"
                         "X-MOZILLA-HTML:FALSE\n"
                         "END:VCARD\n"
@@ -285,8 +283,6 @@ void TestEvolution::testContactSimpleInsert()
         "N:Doe;John;;;\n"
         "X-EVOLUTION-FILE-AS:Doe\\, John\n"
         "X-EVOLUTION-BLOG-URL:\n"
-        "CALURI:\n"
-        "FBURL:\n"
         "X-EVOLUTION-VIDEO-URL:\n"
         "X-MOZILLA-HTML:FALSE\n"
         "END:VCARD\n";
@@ -527,7 +523,9 @@ void TestEvolution::doSync(const string &logfile, int config, SyncMode syncMode)
             string cmd = string("cp ") + m_serverLog + " " + serverLog;
             system( cmd.c_str() );
             ftruncate( fd, 0 );
-        }
+        } else {
+            perror( m_serverLog.c_str() );
+	}
     } else {
         // let the server finish
         sleep(10);
@@ -703,8 +701,6 @@ void TestEvolution::testMerge()
                    "N:Doe;John;;;\n"
                    "X-EVOLUTION-FILE-AS:Doe\\, John\n"
                    "X-EVOLUTION-BLOG-URL:\n"
-                   "CALURI:\n"
-                   "FBURL:\n"
                    "X-EVOLUTION-VIDEO-URL:\n"
                    "X-MOZILLA-HTML:FALSE\n"
                    "TEL;TYPE=WORK:business 1\n"
@@ -725,8 +721,6 @@ void TestEvolution::testMerge()
                    "N:Doe;John;;;\n"
                    "X-EVOLUTION-FILE-AS:Doe\\, John\n"
                    "X-EVOLUTION-BLOG-URL:\n"
-                   "CALURI:\n"
-                   "FBURL:\n"
                    "X-EVOLUTION-VIDEO-URL:\n"
                    "X-MOZILLA-HTML:FALSE\n"
                    "BDAY:2006-01-08\n"
@@ -1132,8 +1126,6 @@ void TestEvolution::testVCard()
         "N:characters;special;;;\r\n"
         "X-EVOLUTION-FILE-AS:characters\\, special\r\n"
         "X-EVOLUTION-BLOG-URL:\r\n"
-        "CALURI:\r\n"
-        "FBURL:\r\n"
         "X-EVOLUTION-VIDEO-URL:\r\n"
         "X-MOZILLA-HTML:FALSE\r\n"
         "UID:pas-id-43C15E84000001AC\r\n"
@@ -1155,8 +1147,6 @@ void TestEvolution::testVCard()
         "N:breaks;line;;;\r\n"
         "X-EVOLUTION-FILE-AS:breaks\\, line\r\n"
         "X-EVOLUTION-BLOG-URL:\r\n"
-        "CALURI:\r\n"
-        "FBURL:\r\n"
         "X-EVOLUTION-VIDEO-URL:\r\n"
         "X-MOZILLA-HTML:FALSE\r\n"
         "ADR;TYPE=HOME:;Address Line 2\\nAddress Line 3;Address Line 1;;;;\r\n"
@@ -1178,8 +1168,6 @@ void TestEvolution::testVCard()
         "N:last;First;middle \\; special \\;;Mr.;\r\n"
         "X-EVOLUTION-FILE-AS:last\\, First\r\n"
         "X-EVOLUTION-BLOG-URL:\r\n"
-        "CALURI:\r\n"
-        "FBURL:\r\n"
         "X-EVOLUTION-VIDEO-URL:\r\n"
         "X-MOZILLA-HTML:FALSE\r\n"
         "UID:pas-id-43C15D55000001AA\r\n"
@@ -1199,8 +1187,6 @@ void TestEvolution::testVCard()
         "N:;JPG;;Ms.;\r\n"
         "X-EVOLUTION-FILE-AS:JPG\r\n"
         "X-EVOLUTION-BLOG-URL:\r\n"
-        "CALURI:\r\n"
-        "FBURL:\r\n"
         "X-EVOLUTION-VIDEO-URL:\r\n"
         "X-MOZILLA-HTML:FALSE\r\n"
         "PHOTO;ENCODING=b;TYPE=JPEG:/9j/4AAQSkZJRgABAQEASABIAAD/4QAWRXhpZgAATU0AKgAA\r\n"
@@ -1235,8 +1221,6 @@ void TestEvolution::testVCard()
         "N:;PNG;;Mrs.;\r\n"
         "X-EVOLUTION-FILE-AS:PNG\r\n"
         "X-EVOLUTION-BLOG-URL:\r\n"
-        "CALURI:\r\n"
-        "FBURL:\r\n"
         "X-EVOLUTION-VIDEO-URL:\r\n"
         "X-MOZILLA-HTML:FALSE\r\n"
         "PHOTO;ENCODING=b;TYPE=PNG:iVBORw0KGgoAAAANSUhEUgAAACQAAAAXCAYAAABj7u2bAAAAB\r\n"
@@ -1266,8 +1250,6 @@ void TestEvolution::testVCard()
         "N:;GIF;;Mr.;\r\n"
         "X-EVOLUTION-FILE-AS:GIF\r\n"
         "X-EVOLUTION-BLOG-URL:\r\n"
-        "CALURI:\r\n"
-        "FBURL:\r\n"
         "X-EVOLUTION-VIDEO-URL:\r\n"
         "X-MOZILLA-HTML:FALSE\r\n"
         "PHOTO;ENCODING=b;TYPE=GIF:R0lGODlhJAAXAIABAAAAAP///yH+FUNyZWF0ZWQgd2l0aCBUa\r\n"
@@ -1300,8 +1282,6 @@ void TestEvolution::testVCard()
         "X-EVOLUTION-FILE-AS:\xc3\x9c\\, \xc3\x84\r\n"
         "CATEGORIES:Business\r\n"
         "X-EVOLUTION-BLOG-URL:\r\n"
-        "CALURI:\r\n"
-        "FBURL:\r\n"
         "X-EVOLUTION-VIDEO-URL:\r\n"
         "X-MOZILLA-HTML:FALSE\r\n"
         "ADR;TYPE=HOME:test 5;Line 2\\n;Line 1;test 1;test 3;test 2;test 4\r\n"
