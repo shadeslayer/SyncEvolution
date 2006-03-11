@@ -1,4 +1,30 @@
-2006-02-04  pohly  <pohly@gollum>
+2006-03-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp:
+	restrict the usage of the problematic CALURI/FBURL to a few specific test cases
+
+2006-02-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp:
+	check some more vcard fields (however, different order of entries still breaks comparison)
+
+	* configure, configure.in:
+	try most recent Evolution versions first, because shared objects are not upward-compatible
+
+2006-02-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* ChangeLog:
+	started to use emac's vc-update-change-log to update the ChangeLog
+
+	* etc/localhost_1/spds/sources/addressbook_1/config.txt:
+	added support for the new refresh-client/server sync modes
+
+	* README: added known problems and support section, updated compiling
+
+	* src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp:
+	added support for the new refresh-client/server sync modes
+
+2006-02-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* README: added known problems and support section, updated compiling
 
@@ -6,18 +32,18 @@
 	  src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp:
 	added support for the new refresh-client/server sync modes
 
-2006-01-26  pohly  <pohly@gollum>
+2006-01-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* README: added POHLY-SYNC4JEVOLUTION-CHECKED
 
-2006-01-23  pohly  <pohly@gollum>
+2006-01-23  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp: removed redundant code
 
 	* README, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/TestEvolution.cpp:
 	added conflict handling
 
-2006-01-21  pohly  <pohly@gollum>
+2006-01-21  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* HACKING, src/TestMain.cpp: allow running just one test
 
@@ -30,23 +56,23 @@
 
 	* src/TestEvolution.cpp: minor changes to make it easier to debug
 
-2006-01-08  pohly  <pohly@gollum>
+2006-01-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/TestEvolution.cpp:
 	added test cases for vcard conversion
 	use VOCL classes to fix vcard encoding
 
-2005-12-12  pohly  <pohly@gollum>
+2005-12-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp:
 	a deleted item without data returns getDataSize() -1
 
-2005-12-11  pohly  <pohly@gollum>
+2005-12-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* HACKING, src/.cvsignore, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/TestEvolution.cpp:
 	added unit testing for syncing, needs some support in core classes (overriding sync mode, full lists)
 
-2005-12-10  pohly  <pohly@gollum>
+2005-12-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h:
 	implemented distinction between different sync modes: 'refresh' requires deleting items, scanning is different for full and partial sync
@@ -57,11 +83,11 @@
 	* src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h:
 	added some more debug logging
 
-2005-12-04  pohly  <pohly@gollum>
+2005-12-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp: more convervative logging
 
-2005-12-03  pohly  <pohly@gollum>
+2005-12-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionSyncClient.cpp, src/sync4jevolution.cpp:
 	fixed/extended error detection at the end of the sync
@@ -73,7 +99,7 @@
 	* src/EvolutionSyncSource.cpp:
 	strip special characters, Evolution gets confused by them
 
-2005-11-26  pohly  <pohly@gollum>
+2005-11-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* README, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/Makefile.in, src/TestEvolution.cpp, src/sync4jevolution.cpp:
 	implemented front-end based on new SyncML C++ config API
@@ -81,7 +107,7 @@
 	explain the change tracking and error handling
 	-> copying from server works, the other way around fails, probably because of vcard 3.0 parsing problems on the server
 
-2005-11-25  pohly  <pohly@gollum>
+2005-11-25  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* INSTALL, README, configure, configure.in, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/TestEvolution.cpp, src/sync4jevolution.cpp:
 	adapted to Sync4j C++ client API 3.x
@@ -89,13 +115,13 @@
 	* src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h:
 	base class with functionality common to all Evolution sync sources
 
-2005-11-05  pohly  <pohly@gollum>
+2005-11-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* .cvsignore, HACKING, README, src/.cvsignore, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSmartPtr.h, src/Makefile.am, src/Makefile.in, src/TestEvolution.cpp, src/TestMain.cpp, src/sync4jevolution.cpp, src/valgrind.supp:
 	first working version of SyncSource for Evolution contacts (requires Sync4j C++ API 2.0, not currently available)
 	added unit testing
 
-2005-10-08  pohly  <pohly@gollum>
+2005-10-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* .cvsignore, AUTHORS, COPYING, ChangeLog, INSTALL, Makefile.am, Makefile.in, NEWS, README, aclocal.m4, config.guess, config.h.in, config.sub, configure, configure.in, depcomp, install-sh, ltmain.sh, missing, mkinstalldirs, src/.cvsignore, src/Makefile.am, src/Makefile.in, src/sync4jevolution.cpp:
 	setup framework
