@@ -7,11 +7,61 @@ AM_CONFIG_HEADER(config.h)
 AC_ARG_WITH(sync4j,
             AS_HELP_STRING([--with-sync4j=<base directory>],
                            [specifies location of Sync4j client library]),
-            [SYNC4J_CFLAGS="-I$withval/include/sync4j/common -I$withval/include/sync4j"; SYNC4J_LIBS="-L$withval/lib"; SYNC4J="$withval"])
-SYNC4J_LIBS="${SYNC4J_LIBS} -lsync4j"
+            [SYNC4J="$withval"])
+
+AC_ARG_WITH(sync4j-src,
+            AS_HELP_STRING([--with-sync4j-src=<base directory>],
+                           [specifies location of the Sync4j '3x/client-api/native' source code]),
+            [SYNC4JSRC="$withval"])
+
+if test ! "$SYNC4J"; then
+    if test "$SYNC4JSRC"; then
+        # make a copy of the sources
+        AC_MSG_NOTICE( [updating the content of src/client-api from $SYNC4JSRC] )
+        mkdir -p src/client-api
+        if cp --link --update --archive $SYNC4JSRC/* src/client-api; then true; else
+            AC_MSG_ERROR( [copying $SYNC4JSRC into src/client-api failed] )
+        fi
+    else
+        if test ! -d src/client-api; then
+            if test -d $srcdir/src/client-api; then
+                mkdir -p src
+                case $srcdir in
+                        /*) ln -s $srcdir/src/client-api src/client-api;;
+                        *) ln -s $PWD/$srcdir/src/client-api src/client-api;;
+                esac
+            fi
+        fi
+    fi
+
+    if test -x src/client-api/build/autotools/configure; then
+        # use local copy of the sources
+        SYNC4J_SUBDIR=$PWD/src/client-api.build
+
+        SYNC4J_CFLAGS="-I$SYNC4J_SUBDIR/include/common -I$SYNC4J_SUBDIR/include"
+        SYNC4J_LIBS="-L. -lsync4j"
+
+        AC_MSG_NOTICE( [configuring the client library] )
+        CLIENT_CONFIGURE=$PWD/src/client-api/build/autotools/configure
+        if (mkdir -p $SYNC4J_SUBDIR && cd $SYNC4J_SUBDIR && $CLIENT_CONFIGURE --disable-shared); then true; else
+            AC_MSG_ERROR( [configuring client library failed] )
+        fi
+    else
+        AC_MSG_ERROR( [either --with-sync4j or --with-sync4j-src have to be used] )
+    fi
+else
+    if test -f $SYNC4J/include/sync4j/common/spds/SyncItem.h; then
+        SYNC4J_CFLAGS="-I$SYNC4J/include/sync4j/common -I$SYNC4J/include/sync4j"
+        SYNC4J_LIBS="-L$SYNC4J/lib -lsync4j"
+    else
+        AC_MSG_ERROR( [$SYNC4J does seem to be valid (e.g. include/sync4j/spds/common/SyncItem.h is missing)] )
+    fi
+fi
+
 AC_SUBST(SYNC4J_CFLAGS)
 AC_SUBST(SYNC4J_LIBS)
 AC_SUBST(SYNC4J)
+AC_SUBST(SYNC4J_SUBDIR)
 
 pkg_emodules_10="evolution-data-server-1.0 libebook-1.0 libecal-1.0 libedata-book-1.0 libedata-cal-1.0 libedataserver-1.0"
 pkg_emodules_11="evolution-data-server-1.1 libebook-1.1 libecal-1.1 libedata-book-1.1 libedata-cal-1.1 libedataserver-1.1"

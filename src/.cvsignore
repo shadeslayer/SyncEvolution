@@ -5,3 +5,5 @@ syncevolution
 test
 *.log
 synclog.txt
+client-api
+client-api.build

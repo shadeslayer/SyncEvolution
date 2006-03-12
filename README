@@ -360,24 +360,10 @@ Compiling from Source
 ---------------------
 
 To compile the code the 3.x version of the Sync4j C++ client library
-is needed. It is currently only available from CVS, checkout the
-"3x" module from the CVS at
-   http://forge.objectweb.org/projects/sync4j
-
-Because that code changes a lot and thus might occasionally be
-incompatible with the current head revision of SyncEvolution,
-please checkout revision
-   funambol30b1
-That is the latest revision of the client that I have verified to
-work with the latest SyncEvolution.
-
-The recommended way to make that library available is by
-installing it into its own directory with shared libraries disabled:
-   configure --prefix=<dir> --disable-shared; make; make install
-and then pointing the configure of SyncEvolution towards it:
-   configure --with-sync4j=<dir> --disable-shared
-Shared versions of the libraries are not recommended at the moment
-because the client libraries API is not expected to be stable.
+is needed. A compatible snapshot of it is included in SyncEvolution
+source packages and will be used automatically. Instructions for
+working with CVS sources directly are contained in the HACKING
+document.
 
 Also needed are the Evolution development files. The code was tested
 with Evolution 2.0.4 and 2.4.2.1. It is unclear which other versions

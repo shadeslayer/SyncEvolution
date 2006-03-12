@@ -1,3 +1,34 @@
+Checking out the Source
+-----------------------
+
+SyncEvolution is hosted at sf.net. If you want to work
+on the code, just let me know what your SF account is
+and I can provide access to the developers CVS. The
+anonymous CVS mirrors the sources automatically, but
+sometimes is lacking a bit behind.
+
+The most recent version of the Sync4j C++ client library
+is available from CVS, checkout the "3x" module from the CVS at
+   http://forge.objectweb.org/projects/sync4j
+You'll need the files in 3x/client-api/native.
+
+The recommended way to make that library available is by
+installing it into its own directory with shared libraries disabled:
+   configure --prefix=<dir> --disable-shared; make; make install
+and then pointing the configure of SyncEvolution towards it:
+   configure --with-sync4j=<dir> --disable-shared
+Shared versions of the libraries are not recommended at the moment
+because the client libraries API is not expected to be stable.
+
+Alternatively SyncEvolution can work with a source snapshot of
+the client library directly:
+   configure --with-sync4j-src=<dir>
+where <dir> points towards the contents of the 3x/client-api/native
+directory. This mode is required to generate source distributions
+because those are meant to contain a copy of the client library
+code.
+
+
 Working with the Code
 ---------------------
 

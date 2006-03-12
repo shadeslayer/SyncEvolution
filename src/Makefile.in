@@ -40,7 +40,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = syncevolution$(EXEEXT)
-check_PROGRAMS = test$(EXEEXT)
+EXTRA_PROGRAMS = test$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -147,6 +147,13 @@ STRIP = @STRIP@
 SYNC4J = @SYNC4J@
 SYNC4J_CFLAGS = @SYNC4J_CFLAGS@
 SYNC4J_LIBS = @SYNC4J_LIBS@
+
+# SYNC4J_SUBDIR specifies the directory where we compile
+# the client library by invoking make there.
+# Installing its source is done explicitly.
+#
+# The path may be empty!
+SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
 VERSION = @VERSION@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
@@ -197,6 +204,7 @@ INCLUDES = @EPACKAGE_CFLAGS@ @SYNC4J_CFLAGS@
 # Please remove '-Wno-return-type' when Evo fixes the warning in their headers.
 AM_CFLAGS = -Wall -Werror -Wno-return-type
 bin_SCRIPTS = normalize_vcard.pl
+EXTRA_DIST = normalize_vcard.pl
 CORE_SOURCES = \
         EvolutionContactSource.h \
         EvolutionSmartPtr.h \
@@ -220,7 +228,10 @@ test_SOURCES = \
 
 test_CFLAGS = `cppunit-config --cflags`
 test_LDFLAGS = `cppunit-config --libs` $(CORE_LDADD)
-all: all-am
+BUILT_SOURCES = $(SYNC4J_SUBDIR)/all libsync4j.la
+CLEANFILES = libsync4j.la .libs/libsync4j.a .libs/libsync4j.la
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .cpp .lo .o .obj
@@ -277,13 +288,6 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
-	  echo " rm -f $$p $$f"; \
-	  rm -f $$p $$f ; \
-	done
-
-clean-checkPROGRAMS:
-	@list='$(check_PROGRAMS)'; for p in $$list; do \
 	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
@@ -434,14 +438,15 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(PROGRAMS) $(SCRIPTS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -458,6 +463,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -465,10 +471,10 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
-	clean-libtool mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -518,18 +524,34 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	uninstall-info-am
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-checkPROGRAMS clean-generic clean-libtool ctags \
-	distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-binPROGRAMS \
-	install-binSCRIPTS install-data install-data-am install-exec \
-	install-exec-am install-info install-info-am install-man \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-binSCRIPTS uninstall-info-am
+	clean-generic clean-libtool ctags distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-binSCRIPTS install-data \
+	install-data-am install-exec install-exec-am install-info \
+	install-info-am install-man install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-binSCRIPTS uninstall-info-am
 
+
+clean distclean mostlyclean distdir : % : $(SYNC4J_SUBDIR)/%
+
+$(SYNC4J_SUBDIR)/distclean :
+	rm -rf $(SYNC4J_SUBDIR) client-api
+
+$(SYNC4J_SUBDIR)/distdir :
+	[ ! "$(SYNC4J_SUBDIR)" ] || ( cp -a client-api $(distdir) && ( find $(distdir)/client-api -name .libs -o -name "*.o" -o -name "*.lo" -o -name CVS -name autom4te.cache | xargs rm -rf ) )
+
+$(SYNC4J_SUBDIR)/% :
+	[ ! "$(SYNC4J_SUBDIR)" ] || ( cd ${@D} && $(MAKE) ${@F} )
+
+libsync4j.la : $(SYNC4J_SUBDIR)/all
+	mkdir -p .libs
+	cp -a $(SYNC4J_SUBDIR)/src/.libs/libsync4j* .libs
+	cp -a $(SYNC4J_SUBDIR)/src/libsync4j.la .
 
 valgrind : test
 	valgrind --leak-check=yes --suppressions=valgrind.supp ./test

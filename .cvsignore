@@ -6,3 +6,4 @@ config.status
 libtool
 stamp-h1
 Makefile
+syncevolution-*.tar.gz

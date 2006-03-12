@@ -130,6 +130,7 @@ STRIP = @STRIP@
 SYNC4J = @SYNC4J@
 SYNC4J_CFLAGS = @SYNC4J_CFLAGS@
 SYNC4J_LIBS = @SYNC4J_LIBS@
+SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
 VERSION = @VERSION@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
@@ -176,6 +177,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 SUBDIRS = src etc
+EXTRA_DIST = HACKING
 DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@SYNC4J@
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive

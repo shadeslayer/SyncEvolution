@@ -2,6 +2,7 @@
 
 SUBDIRS = src etc
 
+EXTRA_DIST = HACKING
 DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@SYNC4J@
 
 # binary distribution
