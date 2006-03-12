@@ -8,6 +8,7 @@ libtool
 stamp-h1
 Makefile
 Makefile.in
+README.syncevolution
 syncevolution-*.tar.gz
 config.guess
 config.sub

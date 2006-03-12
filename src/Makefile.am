@@ -47,10 +47,11 @@ test_LDFLAGS = `cppunit-config --libs` $(CORE_LDADD)
 SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
 BUILT_SOURCES = $(SYNC4J_SUBDIR)/all libsync4j.la
 CLEANFILES = libsync4j.la .libs/libsync4j.a .libs/libsync4j.la
+MAINTAINERCLEANFILES = Makefile.in
 
-clean distclean mostlyclean distdir : % : $(SYNC4J_SUBDIR)/%
+clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
 
-$(SYNC4J_SUBDIR)/distclean :
+$(SYNC4J_SUBDIR)/maintainer-clean $(SYNC4J_SUBDIR)/distclean :
 	rm -rf $(SYNC4J_SUBDIR) client-api
 
 $(SYNC4J_SUBDIR)/distdir :

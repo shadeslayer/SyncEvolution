@@ -3,6 +3,7 @@
 SUBDIRS = src etc
 
 EXTRA_DIST = HACKING
+MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs
 DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@SYNC4J@
 
 # binary distribution

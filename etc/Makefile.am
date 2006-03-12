@@ -6,6 +6,7 @@ localhost_copy = localhost_2/spds/syncml/config.txt \
 
 EXTRA_DIST = $(localhost_source)
 CLEANFILES = $(localhost_copy)
+MAINTAINERCLEANFILES = Makefile.in
 nobase_sysconf_DATA = $(localhost_source) $(localhost_copy)
 
 localhost_2/spds/syncml/config.txt : localhost_1/spds/syncml/config.txt
