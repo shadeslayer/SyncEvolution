@@ -1,5 +1,14 @@
 2006-03-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
+	* README, configure.in:
+	update README and version in preparation for release
+
+	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
+	added workarounds for FBURL/CALURI and ADR without TYPE
+
+	* src/.cvsignore, src/Makefile.am, src/TestEvolution.cpp, src/normalize_vcard.pl, README, configure.in:
+	replaced verification with vcard comparion via normalize_vcard.pl
+
 	* src/Makefile.am, etc/Makefile.am, .cvsignore, Makefile.am, autogen.sh:
 	fixed maintainer-cleanup
 
