@@ -44,6 +44,7 @@
 #include <string.h>
 #include <fcntl.h>
 
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -159,7 +160,7 @@ class TestEvolution : public CppUnit::TestFixture
                         "X-EVOLUTION-BLOG-URL:\n"
                         "BDAY:2006-01-08\n"
                         "X-EVOLUTION-VIDEO-URL:\n"
-                        "X-MOZILLA-HTML:FALSE\n"
+                        "X-MOZILLA-HTML:TRUE\n"
                         "END:VCARD\n"
         );
 
@@ -183,7 +184,7 @@ class TestEvolution : public CppUnit::TestFixture
     void doCopy( const string &prefix );
 
     /** compare all entries in the two address books and assert that they are equal */
-    void compareAddressbooks( int numtestcases );
+    void compareAddressbooks(const string &prefix);
 
 public:
     void setUp() {
@@ -652,7 +653,7 @@ void TestEvolution::doCopy( const string &prefix )
 void TestEvolution::testCopy()
 {
     doCopy( "testCopy" );
-    compareAddressbooks( 1 );
+    compareAddressbooks("testCopy");
 }
 
 void TestEvolution::testUpdate()
@@ -663,7 +664,7 @@ void TestEvolution::testUpdate()
     doSync( "testUpdate.update.0.client.log", 0, SYNC_TWO_WAY );
     doSync( "testUpdate.update.1.client.log", 1, SYNC_TWO_WAY );
 
-    compareAddressbooks( 1 );
+    compareAddressbooks("testUpdate");
 }
 
 void TestEvolution::testDelete()
@@ -705,7 +706,7 @@ void TestEvolution::testMerge()
                    "X-MOZILLA-HTML:FALSE\n"
                    "TEL;TYPE=WORK:business 1\n"
                    "END:VCARD\n" );
-    // add a birthday and modify the title
+    // add a birthday, modify the title and X-MOZILLA-HTML
     contactUpdate( 1,
                    "BEGIN:VCARD\n"
                    "VERSION:3.0\n"
@@ -722,7 +723,7 @@ void TestEvolution::testMerge()
                    "X-EVOLUTION-FILE-AS:Doe\\, John\n"
                    "X-EVOLUTION-BLOG-URL:\n"
                    "X-EVOLUTION-VIDEO-URL:\n"
-                   "X-MOZILLA-HTML:FALSE\n"
+                   "X-MOZILLA-HTML:TRUE\n"
                    "BDAY:2006-01-08\n"
                    "END:VCARD\n" );
     
@@ -813,243 +814,29 @@ static string Photo2String( EContactPhoto *photo )
     return res.str();
 }
 
-
-
-static int compareContacts( const string &name, EContact *sourceContact, EContact *copiedContact )
+/**
+ * exports the data of all items into the file
+ */
+static void exportData( const string &filename, SyncSource &source )
 {
-    enum fieldtype {
-            FIELD_TYPE_STRING,
-            FIELD_TYPE_ADDRESS,
-            FIELD_TYPE_NAME,
-            FIELD_TYPE_DATE,
-            FIELD_TYPE_PHOTO,
-            FIELD_TYPE_BOOLEAN
-    };
-    struct {
-        const EContactField field;
-        const fieldtype type;
-    } essential[] = {
-	{ E_CONTACT_FILE_AS, FIELD_TYPE_STRING },
-
-	/* Name fields */
-	{ E_CONTACT_FULL_NAME, FIELD_TYPE_STRING },
-	{ E_CONTACT_GIVEN_NAME, FIELD_TYPE_STRING },
-	{ E_CONTACT_FAMILY_NAME, FIELD_TYPE_STRING },
-	{ E_CONTACT_NICKNAME, FIELD_TYPE_STRING },
-
-	/* Email fields - order of EMAIL_1-4 is random, TODOL: check original list instead */
-	{ E_CONTACT_EMAIL_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_EMAIL_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_EMAIL_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_EMAIL_4, FIELD_TYPE_STRING },
-
-	{ E_CONTACT_MAILER, FIELD_TYPE_STRING },
-
-	/* Address Labels */
-	{ E_CONTACT_ADDRESS_LABEL_HOME, FIELD_TYPE_STRING },
-	{ E_CONTACT_ADDRESS_LABEL_WORK, FIELD_TYPE_STRING },
-	{ E_CONTACT_ADDRESS_LABEL_OTHER, FIELD_TYPE_STRING },
-
-	/* Phone fields */
-	{ E_CONTACT_PHONE_ASSISTANT, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_BUSINESS, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_BUSINESS_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_BUSINESS_FAX, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_CALLBACK, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_CAR, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_COMPANY, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_HOME, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_HOME_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_HOME_FAX, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_ISDN, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_MOBILE, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_OTHER, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_OTHER_FAX, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_PAGER, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_PRIMARY, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_RADIO, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_TELEX, FIELD_TYPE_STRING },
-	{ E_CONTACT_PHONE_TTYTDD, FIELD_TYPE_STRING },
-
-	/* Organizational fields */
-	{ E_CONTACT_ORG, FIELD_TYPE_STRING },
-	{ E_CONTACT_ORG_UNIT, FIELD_TYPE_STRING },
-	{ E_CONTACT_OFFICE, FIELD_TYPE_STRING },
-	{ E_CONTACT_TITLE, FIELD_TYPE_STRING },
-	{ E_CONTACT_ROLE, FIELD_TYPE_STRING },
-	{ E_CONTACT_MANAGER, FIELD_TYPE_STRING },
-	{ E_CONTACT_ASSISTANT, FIELD_TYPE_STRING },
-
-	/* Web fields */
-	{ E_CONTACT_HOMEPAGE_URL, FIELD_TYPE_STRING },
-	{ E_CONTACT_BLOG_URL, FIELD_TYPE_STRING },
-
-	/* Contact categories */
-	{ E_CONTACT_CATEGORIES, FIELD_TYPE_STRING },
-
-	/* Collaboration fields */
-	{ E_CONTACT_CALENDAR_URI, FIELD_TYPE_STRING },
-	{ E_CONTACT_FREEBUSY_URL, FIELD_TYPE_STRING },
-	{ E_CONTACT_ICS_CALENDAR, FIELD_TYPE_STRING },
-	{ E_CONTACT_VIDEO_URL, FIELD_TYPE_STRING },
-
-	/* misc fields */
-	{ E_CONTACT_SPOUSE, FIELD_TYPE_STRING },
-	{ E_CONTACT_NOTE, FIELD_TYPE_STRING },
-
-	{ E_CONTACT_IM_AIM_HOME_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_AIM_HOME_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_AIM_HOME_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_AIM_WORK_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_AIM_WORK_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_AIM_WORK_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_GROUPWISE_HOME_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_GROUPWISE_HOME_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_GROUPWISE_HOME_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_GROUPWISE_WORK_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_GROUPWISE_WORK_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_GROUPWISE_WORK_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_JABBER_HOME_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_JABBER_HOME_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_JABBER_HOME_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_JABBER_WORK_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_JABBER_WORK_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_JABBER_WORK_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_YAHOO_HOME_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_YAHOO_HOME_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_YAHOO_HOME_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_YAHOO_WORK_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_YAHOO_WORK_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_YAHOO_WORK_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_MSN_HOME_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_MSN_HOME_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_MSN_HOME_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_MSN_WORK_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_MSN_WORK_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_MSN_WORK_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_ICQ_HOME_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_ICQ_HOME_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_ICQ_HOME_3, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_ICQ_WORK_1, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_ICQ_WORK_2, FIELD_TYPE_STRING },
-	{ E_CONTACT_IM_ICQ_WORK_3, FIELD_TYPE_STRING },
-
-	/* Address fields */
-	// { E_CONTACT_ADDRESS, FIELD_TYPE_ADDRESS /* Multi-valued structured (EContactAddress) ??? */ },
-	{ E_CONTACT_ADDRESS_HOME, FIELD_TYPE_ADDRESS },
-	{ E_CONTACT_ADDRESS_WORK, FIELD_TYPE_ADDRESS },
-	{ E_CONTACT_ADDRESS_OTHER, FIELD_TYPE_ADDRESS },
-
-	// { E_CONTACT_CATEGORY_LIST, FIELD_TYPE_STRING /* multi-valued == string? */ },
-
-	/* Photo/Logo */
-	{ E_CONTACT_PHOTO, FIELD_TYPE_PHOTO },
-	{ E_CONTACT_LOGO, FIELD_TYPE_PHOTO },
-
-	{ E_CONTACT_NAME, FIELD_TYPE_NAME },
-#if 0
-	{ E_CONTACT_EMAIL, FIELD_TYPE_STRING /* Multi-valued == string? */ },
-
-	/* Instant Messaging fields */
-	{ E_CONTACT_IM_AIM, FIELD_TYPE_STRING /* Multi-valued == string? */ },
-	{ E_CONTACT_IM_GROUPWISE, FIELD_TYPE_STRING /* Multi-valued == string? */ },
-	{ E_CONTACT_IM_JABBER, FIELD_TYPE_STRING /* Multi-valued == string? */ },
-	{ E_CONTACT_IM_YAHOO, FIELD_TYPE_STRING /* Multi-valued == string? */ },
-	{ E_CONTACT_IM_MSN, FIELD_TYPE_STRING /* Multi-valued == string? */ },
-	{ E_CONTACT_IM_ICQ, FIELD_TYPE_STRING /* Multi-valued == string? */ },
-#endif
-       
-	{ E_CONTACT_WANTS_HTML, FIELD_TYPE_BOOLEAN },
-
-	{ E_CONTACT_BIRTH_DATE, FIELD_TYPE_DATE },
-	{ E_CONTACT_ANNIVERSARY, FIELD_TYPE_DATE },
-    };
-
-#if 0
-	/* fields used for describing contact lists.  a contact list
-	   is just a contact with _IS_LIST set to true.  the members
-	   are listed in the _EMAIL field. */
-	E_CONTACT_IS_LIST,             /* boolean field */
-	E_CONTACT_LIST_SHOW_ADDRESSES, /* boolean field */
-
-	/* Security Fields */
-	E_CONTACT_X509_CERT      /* structured field (EContactCert) */
-#endif
-
+    ofstream out(filename.c_str());
     
-    int identical = 1;
-    for (int field = 0;
-         field < sizeof(essential)/sizeof(essential[0]);
-         field++) {
-        EContactField fieldType = essential[field].field;
-        gpointer source = e_contact_get( sourceContact, fieldType );
-        gpointer copy = e_contact_get( copiedContact, fieldType );
-        string source_str, copy_str;
-        bool same = true;
-
-        switch (essential[field].type) {
-         case FIELD_TYPE_STRING:
-            source_str = tostring( (const char *)source );
-            copy_str = tostring( (const char *)copy );
-            same = source_str == copy_str;
-            free( copy );
-            free( source );
-            break;
-         case FIELD_TYPE_ADDRESS:
-            source_str = Address2String( (EContactAddress *)source );
-            copy_str = Address2String( (EContactAddress *)copy );
-            same = source_str == copy_str;
-            e_contact_address_free( (EContactAddress *)source );
-            e_contact_address_free( (EContactAddress *)copy );
-            break;
-         case FIELD_TYPE_NAME:
-            source_str = Name2String( (EContactName *)source );
-            copy_str = Name2String( (EContactName *)copy );
-            same = source_str == copy_str;
-            e_contact_name_free( (EContactName *)source );
-            e_contact_name_free( (EContactName *)copy );
-            break;
-         case FIELD_TYPE_DATE:
-            source_str = Date2String( (EContactDate *)source );
-            copy_str = Date2String( (EContactDate *)copy );
-            same = e_contact_date_equal( (EContactDate *)source, (EContactDate *)copy );
-            e_contact_date_free( (EContactDate *)source );
-            e_contact_date_free( (EContactDate *)copy );
-            break;
-         case FIELD_TYPE_PHOTO:
-            source_str = Photo2String( (EContactPhoto *)source );
-            copy_str = Photo2String( (EContactPhoto *)copy );
-            same = source_str == copy_str;
-            e_contact_photo_free( (EContactPhoto *)source );
-            e_contact_photo_free( (EContactPhoto *)copy );
-            break;
-         case FIELD_TYPE_BOOLEAN:
-            source_str = source ? "TRUE" : "FALSE";
-            copy_str = copy ? "TRUE" : "FALSE";
-            same = source_str == copy_str;
-            break;
-        }
-
-        if (!same) {
-            identical = 0;
-            cout << "\n*** " << name << "/" << e_contact_field_name( fieldType ) << " *** not identical:\n";
-            cout << "   Source: " << source_str << "\n";
-            cout << "   Copy: " << copy_str << "\n";
-        } else if( source_str.length() ) {
-            cout << "\n" << name << "/" << e_contact_field_name( fieldType ) << " identical:\n";
-            cout << "   " << source_str << "\n";
-        }
+    for (SyncItem *sourceItem = source.getFirstItem();
+         sourceItem;
+         sourceItem = source.getNextItem()) {
+        out << (const char *)sourceItem->getData() << "\n";
     }
-
-    return identical;
+    out.close();
+    CPPUNIT_ASSERT( out.good() );
 }
 
-void TestEvolution::compareAddressbooks( int numtestcases )
+/**
+ * takes two address books, exports them as vcards,
+ * then compares them using normalize_vcards.pl
+ * and shell commands
+ */
+void TestEvolution::compareAddressbooks(const string &prefix)
 {
-    int identical = 1;
-    int allcopied = 1;
-    
-    // now iterate over copied contacts and compare against original ones
     EvolutionContactSource source(
         string( "dummy" ),
         m_changeIds[0],
@@ -1063,44 +850,20 @@ void TestEvolution::compareAddressbooks( int numtestcases )
     EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
     EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
 
-    for (SyncItem *sourceItem = source.getFirstItem();
-         sourceItem;
-         sourceItem = source.getNextItem()) {
-        // match items by nickname
-        EContact *sourceContact = source.getContact( sourceItem->getKey() );
-        CPPUNIT_ASSERT( sourceContact );
-        string sourceNick = e_contact_get_const( sourceContact, E_CONTACT_NICKNAME ) ?
-            (const char *)e_contact_get_const( sourceContact, E_CONTACT_NICKNAME ) :
-            "";
-            
+    exportData(prefix + ".source.vcf", source);
+    exportData(prefix + ".copy.vcf", copy);
 
-        int found = 0;
-        for (SyncItem *copiedItem = copy.getFirstItem();
-             copiedItem && !found;
-             copiedItem = copy.getNextItem()) {
-            EContact *copiedContact = copy.getContact( copiedItem->getKey() );
-            CPPUNIT_ASSERT( copiedContact );
-            string copiedNick = e_contact_get_const( copiedContact, E_CONTACT_NICKNAME ) ?
-                (const char *)e_contact_get_const( copiedContact, E_CONTACT_NICKNAME ) :
-                "";
+    stringstream cmd;
 
-            if (copiedNick == sourceNick) {
-                found = 1;
-                if (!compareContacts( sourceNick, sourceContact, copiedContact )) {
-                    identical = 0;
-                }
-            }
-        }
-        if (!found) {
-            cout << sourceNick << " not found in copy, perhaps the nickname was modified?\n";
-            allcopied = 0;
-        }
-    }    
+    cmd << "perl normalize_vcard.pl " << prefix << ".source.vcf >" << prefix << ".normal_source.vcf &&";
+    cmd << "perl normalize_vcard.pl " << prefix << ".copy.vcf >" << prefix << ".normal_copy.vcf &&";
+    cmd << "( diff -y " << prefix << ".normal_source.vcf " << prefix << ".normal_copy.vcf >" << prefix << ".diff";
+    cmd << "  || (echo; echo '*** " << prefix << ".diff non-empty ***'; cat " << prefix << ".diff; exit 1 ) )";
 
-    CPPUNIT_ASSERT( numtestcases == countItems( source ) );
-    CPPUNIT_ASSERT( identical );
-    CPPUNIT_ASSERT( numtestcases == countItems( copy ) );
-    CPPUNIT_ASSERT( allcopied );
+    string cmdstr = cmd.str();
+    if (system(cmdstr.c_str())) {
+        CPPUNIT_ASSERT(((void)"address books identical", false));
+    }
 }
 
 void TestEvolution::testVCard()
@@ -1165,7 +928,7 @@ void TestEvolution::testVCard()
         "X-EVOLUTION-SPOUSE:\r\n"
         "NOTE:The middle name is \"middle \\; special \\;\".\r\n"
         "FN:Mr. First middle \\; special \\; last\r\n"
-        "N:last;First;middle \\; special \\;;Mr.;\r\n"
+        "N:last;First;middle \\; special \\;Jr.\r\n"
         "X-EVOLUTION-FILE-AS:last\\, First\r\n"
         "X-EVOLUTION-BLOG-URL:\r\n"
         "X-EVOLUTION-VIDEO-URL:\r\n"
@@ -1344,7 +1107,7 @@ void TestEvolution::testVCard()
     int testcase;
 
     // clean server and first test database
-    deleteAll( "testcases", 0);
+    deleteAll( "testVCard", 0);
     
     EvolutionContactSource source(
         string( "dummy" ),
@@ -1352,7 +1115,7 @@ void TestEvolution::testVCard()
         m_contactNames[0] );
 
     // insert test cases
-    setLogFile( "testcases.insert.log", TRUE );
+    setLogFile( "testVCard.insert.log", TRUE );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     int numItems;
@@ -1367,8 +1130,8 @@ void TestEvolution::testVCard()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     // transfer back and forth
-    doSync( "testcases.send.client.log", 0, SYNC_TWO_WAY );
-    doSync( "testcases.recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+    doSync( "testVCard.send.client.log", 0, SYNC_TWO_WAY );
+    doSync( "testVCard.recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
 
-    compareAddressbooks( numtestcases );
+    compareAddressbooks("testVCard");
 }

@@ -276,6 +276,13 @@ and server database that Evolution might be synchronized with.
 Known Problems
 --------------
 
+- Evolution (at least in 2.0.4) exports the classification of phone
+  numbers incorrectly: e.g. "Business Fax" becomes
+  TEL;TYPE=WORK;TYPE=WORK where it probably should be
+  TEL;TYPE=WORK;TYPE=FAX. The effect is that in exported
+  phone numbers the differentiation between e.g. fax and voice is
+  lost.
+
 - refresh-server results in a Sync4j client library error at the end
   of the sync:
 

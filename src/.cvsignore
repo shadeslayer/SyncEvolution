@@ -5,6 +5,8 @@ Makefile.in
 syncevolution
 test
 *.log
+test*.diff
+test*.vcf
 synclog.txt
 client-api
 client-api.build

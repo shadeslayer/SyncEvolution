@@ -14,9 +14,13 @@ foreach $_ ( split( /\n\n/ ) ) {
   s/;CHARSET="UTF-8"//g;
   # ignore extra email type
   s/EMAIL;TYPE=INTERNET/EMAIL/g;
+  # ignore extra ADR type
+  s/ADR;TYPE=OTHER/ADR/g;
+  # the type of certain fields is ignore by Evolution
+  s/X-(AIM|GROUPWISE|ICQ|YAHOO);TYPE=HOME/X-$1/g;
   # sort entries, putting "N:" first
   my @lines = split( "\n" );
   push @cards, join( "\n", grep( /^N:/, @lines ), sort( grep ( !/^N:/, @lines ) ) );
 }
 
-print join( "\n\n", sort @cards );
+print join( "\n\n", sort @cards ), "\n";

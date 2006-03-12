@@ -39,7 +39,7 @@ if test ! "$SYNC4J"; then
         SYNC4J_SUBDIR=$PWD/src/client-api.build
 
         SYNC4J_CFLAGS="-I$SYNC4J_SUBDIR/include/common -I$SYNC4J_SUBDIR/include"
-        SYNC4J_LIBS="-L. -lsync4j"
+        SYNC4J_LIBS="-L$SYNC4J_SUBDIR/src -lsync4j"
 
         AC_MSG_NOTICE( [configuring the client library] )
         CLIENT_CONFIGURE=$PWD/src/client-api/build/autotools/configure

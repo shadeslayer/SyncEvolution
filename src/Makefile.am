@@ -45,11 +45,14 @@ test_LDFLAGS = `cppunit-config --libs` $(CORE_LDADD)
 #
 # The path may be empty!
 SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
-BUILT_SOURCES = $(SYNC4J_SUBDIR)/all libsync4j.la
-CLEANFILES = libsync4j.la .libs/libsync4j.a .libs/libsync4j.la
+BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
 MAINTAINERCLEANFILES = Makefile.in
 
 clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
+clean : testclean
+
+testclean :
+	rm -f *copy.vcf *source.vcf *.log
 
 $(SYNC4J_SUBDIR)/maintainer-clean $(SYNC4J_SUBDIR)/distclean :
 	rm -rf $(SYNC4J_SUBDIR) client-api
@@ -57,13 +60,14 @@ $(SYNC4J_SUBDIR)/maintainer-clean $(SYNC4J_SUBDIR)/distclean :
 $(SYNC4J_SUBDIR)/distdir :
 	[ ! "$(SYNC4J_SUBDIR)" ] || ( cp -a client-api $(distdir) && ( find $(distdir)/client-api -name .libs -o -name "*.o" -o -name "*.lo" -o -name CVS -name autom4te.cache | xargs rm -rf ) )
 
+# rule to satisfy automatic dependencies on header files
+$(SYNC4J_SUBDIR)/%.h :
+	[ ! "$(SYNC4J_SUBDIR)" ] || ( cd $(SYNC4J_SUBDIR)/include && $(MAKE) all )
+
+# default rule for building in $(SYNC4J_SUBDIR)
 $(SYNC4J_SUBDIR)/% :
 	[ ! "$(SYNC4J_SUBDIR)" ] || ( cd ${@D} && $(MAKE) ${@F} )
 
-libsync4j.la : $(SYNC4J_SUBDIR)/all
-	mkdir -p .libs
-	cp -a $(SYNC4J_SUBDIR)/src/.libs/libsync4j* .libs
-	cp -a $(SYNC4J_SUBDIR)/src/libsync4j.la .
-
+# special target for testing with valgrind
 valgrind : test
 	valgrind --leak-check=yes --suppressions=valgrind.supp ./test
