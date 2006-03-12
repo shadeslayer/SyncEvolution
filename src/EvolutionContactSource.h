@@ -22,6 +22,8 @@
 #include <libebook/e-book.h>
 #include <libebook/e-vcard.h>
 
+#include <set>
+
 /**
  * Implements access to Evolution address books.
  */
@@ -78,6 +80,21 @@ class EvolutionContactSource : public EvolutionSyncSource
 
     /** the format of vcards that new items are expected to have */
     const EVCardFormat m_vcardFormat;
+
+    /**
+     * a list of Evolution vcard properties which have to be encoded
+     * as X-SYNCEVOLUTION-* when sending to server in 2.1 and decoded
+     * back when receiving.
+     */
+    static const class extensions : public set<string> {
+      public:
+        extensions() : prefix("X-SYNCEVOLUTION-") {
+            this->insert("FBURL");
+            this->insert("CALURI");
+        }
+
+        const string prefix;
+    } m_vcardExtensions;
 
     /** the mime type which corresponds to m_vcardFormat */
     const char *getMimeType();

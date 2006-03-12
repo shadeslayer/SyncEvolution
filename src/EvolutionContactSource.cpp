@@ -25,6 +25,8 @@ using namespace std;
 #include <common/vocl/VObject.h>
 #include <common/vocl/VConverter.h>
 
+const EvolutionContactSource::extensions EvolutionContactSource::m_vcardExtensions;
+
 EvolutionContactSource::EvolutionContactSource( const string &name,
                                                 const string &changeId,
                                                 const string &id,
@@ -268,6 +270,20 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
             throwError( string( "parsing contact" ) + uid, NULL );
         }
         vobj->toNativeEncoding();
+
+        // escape extended properties so that they are preserved
+        // as custom values by the server
+        for (int index = vobj->propertiesCount() - 1;
+             index >= 0;
+             index--) {
+            VProperty *vprop = vobj->getProperty(index);
+            string name = vprop->getName();
+            if (m_vcardExtensions.find(name) != m_vcardExtensions.end()) {
+                name = m_vcardExtensions.prefix + name;
+                vprop->setName(name.c_str());
+            }
+        }
+        
         vobj->setVersion("2.1");
         VProperty *vprop = vobj->getProperty("VERSION");
         vprop->setValue("2.1");
@@ -302,6 +318,26 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
         throwError( string( "parsing contact" ) + item.getKey(), NULL );
     }
     vobj->toNativeEncoding();
+
+    // convert our escaped properties back,
+    // extend certain properties so that Evolution can parse them
+    for (int index = vobj->propertiesCount() - 1;
+         index >= 0;
+         index--) {
+        VProperty *vprop = vobj->getProperty(index);
+        string name = vprop->getName();
+        if (name.size() > m_vcardExtensions.prefix.size() &&
+            !name.compare(0, m_vcardExtensions.prefix.size(), m_vcardExtensions.prefix)) {
+            vprop->setName(name.c_str() + m_vcardExtensions.prefix.size());
+        } else if (name == "ADR") {
+            if (!vprop->parameterCount()) {
+                // without a TYPE Evolution 2.0.4 does not parse the entry correctly
+                vprop->addParameter("TYPE", "OTHER");
+            }
+        }
+            
+    }
+
     vobj->setVersion("3.0");
     VProperty *vprop = vobj->getProperty("VERSION");
     vprop->setValue("3.0");
