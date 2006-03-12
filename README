@@ -276,12 +276,16 @@ and server database that Evolution might be synchronized with.
 Known Problems
 --------------
 
-- Evolution (at least in 2.0.4) exports the classification of phone
-  numbers incorrectly: e.g. "Business Fax" becomes
+- Evolution (at least in 2.0.4 and 2.4.2.1) exports the classification
+  of phone numbers incorrectly: e.g. "Business Fax" becomes
   TEL;TYPE=WORK;TYPE=WORK where it probably should be
   TEL;TYPE=WORK;TYPE=FAX. The effect is that in exported
   phone numbers the differentiation between e.g. fax and voice is
   lost.
+
+- Evolution 2.0.4 and 2.4.2.1 still display the old content of a contact
+  which was updated during a certain test (TestEvolution::testMerge).
+  Exact reason unknown, needs to be investigated.
 
 - refresh-server results in a Sync4j client library error at the end
   of the sync:
@@ -296,9 +300,10 @@ Known Problems
 - various vcard related problems in the Sync4j server:
   TestEvolution::testVCard fails the check that items
   are identical after copying them to the server and back
-
   Many of these issues have been fixed in the server already,
-  but not yet in 2.3b4.
+  but even in 2.3 plus patch some information is still lost
+  (see "testing vcard conversion and copying" on the sync4j-user
+   mailing list for details).
 
 - Removing a field and then synchronizing with the Sync4j server
   will not remove that field on the server. The server will preserve
