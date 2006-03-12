@@ -6,4 +6,13 @@ config.status
 libtool
 stamp-h1
 Makefile
+Makefile.in
 syncevolution-*.tar.gz
+config.guess
+config.sub
+configure
+depcomp
+install-sh
+ltmain.sh
+missing
+mkinstalldirs

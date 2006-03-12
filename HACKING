@@ -5,7 +5,9 @@ SyncEvolution is hosted at sf.net. If you want to work
 on the code, just let me know what your SF account is
 and I can provide access to the developers CVS. The
 anonymous CVS mirrors the sources automatically, but
-sometimes is lacking a bit behind.
+sometimes is lacking a bit behind. Before using sources
+checked out from CVS, invoke "sh autogen.sh" with
+appropriate autotools packages installed.
 
 The most recent version of the Sync4j C++ client library
 is available from CVS, checkout the "3x" module from the CVS at
