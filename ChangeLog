@@ -1,3 +1,22 @@
+2006-03-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am, etc/Makefile.am, .cvsignore, Makefile.am, autogen.sh:
+	fixed maintainer-cleanup
+
+	* .cvsignore, config.h.in, src/.cvsignore, src/Makefile.in, etc/.cvsignore, etc/Makefile.in, HACKING, Makefile.in, config.guess, config.sub, configure, depcomp, install-sh, ltmain.sh, missing, mkinstalldirs:
+	removed pregenerated autotools files from CVS - use autogen.sh
+
+	* src/.cvsignore, src/Makefile.am, src/Makefile.in, etc/Makefile.in, .cvsignore, HACKING, Makefile.am, Makefile.in, README, configure, configure.in:
+	integrated compilation of Sync4j C++ client library + distribution of its source
+
+2006-03-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* aclocal.m4, autogen.sh, configure, configure.in, etc/Makefile.am, etc/Makefile.in, etc/localhost_1/spds/sources/addressbook_1/config.txt, src/.cvsignore, src/Makefile.am, src/Makefile.in, src/TestEvolution.cpp, src/normalize_vcard.pl, src/sync4jevolution.cpp, src/syncevolution.cpp, test/normalize_vcard.pl, .cvsignore, COPYING, HACKING, Makefile.am, Makefile.in, README:
+	preparations for a release as 'SyncEvolution'
+
+	* src/TestEvolution.cpp:
+	restrict the usage of the problematic CALURI/FBURL to a few specific test cases
+
 2006-03-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/TestEvolution.cpp:
