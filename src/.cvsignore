@@ -10,3 +10,4 @@ test*.vcf
 synclog.txt
 client-api
 client-api.build
+normalize_vcard

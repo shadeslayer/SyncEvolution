@@ -208,10 +208,15 @@ address book. Now one can either compare the address books in
 Evolution or do that automatically:
 - save the complete address books: mark all entries, save as vCard
 - normalize the files with the provided Perl script:
-     normalize_vcard.pl list1.vcf >list1.normal.vcf
-     normalize_vcard.pl list2.vcf >list2.normal.vcf
+     normalize_vcard list1.vcf >list1.normal.vcf
+     normalize_vcard list2.vcf >list2.normal.vcf
 - compare the normalized lists, e.g.:
      diff -c list1.normal.vcf list2.normal.vcf
+
+Alternatively, one can invoke normalize_vcard with two file names
+as arguments and it will normalize and compare them automatically
+with diff in the side-by-side mode:
+     normalize_vcard list1.vcf list2.vcf
 
 Normalizing is necessary because the order of cards and their
 properties as well as other minor formatting aspects may be

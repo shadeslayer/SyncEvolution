@@ -4,9 +4,12 @@ INCLUDES = @EPACKAGE_CFLAGS@ @SYNC4J_CFLAGS@
 AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
-bin_SCRIPTS = normalize_vcard.pl
-
+bin_SCRIPTS = normalize_vcard
 EXTRA_DIST = normalize_vcard.pl
+
+normalize_vcard : normalize_vcard.pl
+	cp $< $@
+	chmod u+x $@
 
 CORE_SOURCES  = \
         EvolutionContactSource.h \
