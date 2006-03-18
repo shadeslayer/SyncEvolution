@@ -98,6 +98,30 @@ class EvolutionContactSource : public EvolutionSyncSource
         const string prefix;
     } m_vcardExtensions;
 
+    /**
+     * a list of properties which SyncEvolution (in contrast to
+     * the server) will only store once in each contact
+     */
+    static const class unique : public set<string> {
+      public:
+        unique () {
+            insert("X-AIM");
+            insert("X-GROUPWISE");
+            insert("X-ICQ");
+            insert("X-YAHOO");
+            insert("X-EVOLUTION-ANNIVERSARY");
+            insert("X-EVOLUTION-ASSISTANT");
+            insert("X-EVOLUTION-BLOG-URL");
+            insert("X-EVOLUTION-FILE-AS");
+            insert("X-EVOLUTION-MANAGER");
+            insert("X-EVOLUTION-SPOUSE");
+            insert("X-EVOLUTION-VIDEO-URL");
+            insert("X-MOZILLA-HTML");
+            insert("FBURL");
+            insert("CALURI");
+        }
+    } m_uniqueProperties;
+    
     /** the mime type which corresponds to m_vcardFormat */
     const char *getMimeType();
 

@@ -26,6 +26,7 @@ using namespace std;
 #include <common/vocl/VConverter.h>
 
 const EvolutionContactSource::extensions EvolutionContactSource::m_vcardExtensions;
+const EvolutionContactSource::unique EvolutionContactSource::m_uniqueProperties;
 
 EvolutionContactSource::EvolutionContactSource( const string &name,
                                                 const string &changeId,
@@ -336,7 +337,9 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     vobj->toNativeEncoding();
 
     // convert our escaped properties back,
-    // extend certain properties so that Evolution can parse them
+    // extend certain properties so that Evolution can parse them,
+    // ensure that unique properties appear indeed only once
+    set<string> found;
     for (int index = vobj->propertiesCount() - 1;
          index >= 0;
          index--) {
@@ -344,14 +347,25 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
         string name = vprop->getName();
         if (name.size() > m_vcardExtensions.prefix.size() &&
             !name.compare(0, m_vcardExtensions.prefix.size(), m_vcardExtensions.prefix)) {
-            vprop->setName(name.c_str() + m_vcardExtensions.prefix.size());
+            name = name.substr(m_vcardExtensions.prefix.size());
+            vprop->setName(name.c_str());
         } else if (name == "ADR") {
             if (!vprop->parameterCount()) {
                 // without a TYPE Evolution 2.0.4 does not parse the entry correctly
                 vprop->addParameter("TYPE", "OTHER");
             }
         }
-            
+
+        if (m_uniqueProperties.find(name) != m_uniqueProperties.end()) {
+            // has to be unique
+            if (found.find(name) != found.end()) {
+                // remove older entry
+                vobj->removeProperty(index);
+            } else {
+                // remember that valid instance exists
+                found.insert(name);
+            }
+        }
     }
 
     vobj->setVersion("3.0");
