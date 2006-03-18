@@ -19,7 +19,7 @@ if test ! "$SYNC4J"; then
         # make a copy of the sources
         AC_MSG_NOTICE( [updating the content of src/client-api from $SYNC4JSRC] )
         mkdir -p src/client-api
-        if cp --link --update --archive $SYNC4JSRC/* src/client-api; then true; else
+        if cp --update --archive $SYNC4JSRC/* src/client-api; then true; else
             AC_MSG_ERROR( [copying $SYNC4JSRC into src/client-api failed] )
         fi
     else
@@ -62,6 +62,7 @@ AC_SUBST(SYNC4J_CFLAGS)
 AC_SUBST(SYNC4J_LIBS)
 AC_SUBST(SYNC4J)
 AC_SUBST(SYNC4J_SUBDIR)
+AC_SUBST(SYNC4JSRC)
 
 pkg_emodules_10="evolution-data-server-1.0 libebook-1.0 libecal-1.0 libedata-book-1.0 libedata-cal-1.0 libedataserver-1.0"
 pkg_emodules_11="evolution-data-server-1.1 libebook-1.1 libecal-1.1 libedata-book-1.1 libedata-cal-1.1 libedataserver-1.1"

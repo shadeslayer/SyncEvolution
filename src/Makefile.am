@@ -48,6 +48,7 @@ test_LDADD = $(CORE_LDADD)
 # Installing its source is done explicitly.
 #
 # The path may be empty!
+SYNC4JSRC = @SYNC4JSRC@
 SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
 BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
 MAINTAINERCLEANFILES = Makefile.in
@@ -64,7 +65,7 @@ $(SYNC4J_SUBDIR)/maintainer-clean $(SYNC4J_SUBDIR)/distclean :
 	rm -rf $(SYNC4J_SUBDIR) client-api
 
 $(SYNC4J_SUBDIR)/distdir :
-	[ ! "$(SYNC4J_SUBDIR)" ] || ( cp -a client-api $(distdir) && ( find $(distdir)/client-api -name .libs -o -name "*.o" -o -name "*.lo" -o -name CVS -name autom4te.cache | xargs rm -rf ) )
+	[ ! "$(SYNC4J_SUBDIR)" ] || ( cp -r client-api $(distdir) && ( find $(distdir)/client-api -name .libs -o -name "*.o" -o -name "*.lo" -o -name CVS -name autom4te.cache | xargs rm -rf ) )
 
 # rule to satisfy automatic dependencies on header files
 $(SYNC4J_SUBDIR)/%.h :
@@ -73,6 +74,11 @@ $(SYNC4J_SUBDIR)/%.h :
 # default rule for building in $(SYNC4J_SUBDIR)
 $(SYNC4J_SUBDIR)/% :
 	[ ! "$(SYNC4J_SUBDIR)" ] || ( cd ${@D} && $(MAKE) ${@F} )
+
+# compare the local copy of the C++ client library against
+# the files where it was copied from
+client-api-diff :
+	diff -r -c -x CVS -x '.#*' -x '*~' $(SYNC4JSRC) client-api
 
 # special target for testing with valgrind
 valgrind : test
