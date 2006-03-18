@@ -1,3 +1,41 @@
+2006-03-18  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
+	ensure that unique properties occur not more than once
+
+	* src/TestEvolution.cpp: test adding multiple business phone numbers
+
+	* src/Makefile.am, src/TestEvolution.cpp, src/testVCard.vcf, src/.cvsignore, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncSource.h:
+	test for copying via server now transmits testVCard.vcf and also compares against it
+
+	* src/normalize_vcard.pl:
+	format normalized vcards with 60 columns for easier side-by-side diff
+
+2006-03-15  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/.cvsignore, src/Makefile.am, src/normalize_vcard.pl, README:
+	normalize_vcard can now also compare two files automatically; it's also installed without .pl suffix
+
+2006-03-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README, configure.in:
+	update README and version in preparation for release
+
+	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
+	added workarounds for FBURL/CALURI and ADR without TYPE
+
+	* src/.cvsignore, src/Makefile.am, src/TestEvolution.cpp, src/normalize_vcard.pl, README, configure.in:
+	replaced verification with vcard comparion via normalize_vcard.pl
+
+	* src/Makefile.am, etc/Makefile.am, .cvsignore, Makefile.am, autogen.sh:
+	fixed maintainer-cleanup
+
+	* .cvsignore, config.h.in, src/.cvsignore, src/Makefile.in, etc/.cvsignore, etc/Makefile.in, HACKING, Makefile.in, config.guess, config.sub, configure, depcomp, install-sh, ltmain.sh, missing, mkinstalldirs:
+	removed pregenerated autotools files from CVS - use autogen.sh
+
+	* src/.cvsignore, src/Makefile.am, src/Makefile.in, etc/Makefile.in, .cvsignore, HACKING, Makefile.am, Makefile.in, README, configure, configure.in:
+	integrated compilation of Sync4j C++ client library + distribution of its source
+
 2006-03-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* README, configure.in:
