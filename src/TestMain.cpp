@@ -20,6 +20,19 @@
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 
+#include <posix/base/posixlog.h>
+
+class Sync4jOutputter : public CppUnit::CompilerOutputter {
+public:
+    Sync4jOutputter(CppUnit::TestResultCollector *result, std::ostream &stream) :
+        CompilerOutputter(result, stream) {}
+    void write() {
+        // ensure that output goes to console again
+        setLogFile("sync.log", 0);
+        CompilerOutputter::write();
+    }
+};
+
 int main(int argc, char* argv[])
 {
   // Get the top level suite from the registry
@@ -30,8 +43,8 @@ int main(int argc, char* argv[])
   runner.addTest( suite );
 
   // Change the default outputter to a compiler error format outputter
-  runner.setOutputter( new CppUnit::CompilerOutputter( &runner.result(),
-                                                       std::cerr ) );
+  runner.setOutputter( new Sync4jOutputter( &runner.result(),
+                                            std::cerr ) );
   // Run the tests.
   bool wasSucessful = runner.run( argc > 1 ? argv[1] : "" );
 
