@@ -6,7 +6,7 @@ syncevolution
 test
 *.log
 test*.diff
-test*.vcf
+*.test.vcf
 synclog.txt
 client-api
 client-api.build

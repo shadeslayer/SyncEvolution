@@ -60,7 +60,9 @@ class EvolutionContactSource : public EvolutionSyncSource
     //
     virtual sources getSyncBackends();
     virtual void open();
-    virtual void close();
+    virtual void close(); 
+    virtual void exportData(ostream &out);
+   
     virtual SyncItem *createItem( const string &uid, SyncState state );
 
     //

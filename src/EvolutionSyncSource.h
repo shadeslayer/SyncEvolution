@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <ostream>
 using namespace std;
 
 #include <libedataserver/e-source.h>
@@ -116,6 +117,12 @@ class EvolutionSyncSource : public SyncSource
      * it.
      */
     virtual void close() = 0;
+
+    /**
+     * Dump all data from source unmodified into the given stream.
+     */
+    virtual void exportData(ostream &out) = 0;
+     
 
     /**
      * resets the lists of all/new/updated/deleted items

@@ -40,7 +40,8 @@ test_SOURCES = \
 	$(CORE_SOURCES)
 
 test_CFLAGS = `cppunit-config --cflags`
-test_LDFLAGS = `cppunit-config --libs` $(CORE_LDADD)
+test_LDFLAGS = `cppunit-config --libs`
+test_LDADD = $(CORE_LDADD)
 
 # SYNC4J_SUBDIR specifies the directory where we compile
 # the client library by invoking make there.
@@ -54,8 +55,10 @@ MAINTAINERCLEANFILES = Makefile.in
 clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
 clean : testclean
 
+test syncevolution : $(SYNC4J_SUBDIR)/src/libsync4j.la
+
 testclean :
-	rm -f *copy.vcf *source.vcf *.log
+	rm -f *.test.vcf *.log
 
 $(SYNC4J_SUBDIR)/maintainer-clean $(SYNC4J_SUBDIR)/distclean :
 	rm -rf $(SYNC4J_SUBDIR) client-api

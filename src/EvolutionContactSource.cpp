@@ -238,6 +238,22 @@ void EvolutionContactSource::close()
     m_addressbook = NULL;
 }
 
+void EvolutionContactSource::exportData(ostream &out)
+{
+    gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+    GList *nextItem;
+    GError *gerror = NULL;
+    if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+        throwError( "reading all items", gerror );
+    }
+    while (nextItem) {
+        gptr<char> vcardstr(e_vcard_to_string(&E_CONTACT(nextItem->data)->parent,
+                                              m_vcardFormat));
+
+        out << (const char *)vcardstr << "\r\n\r\n";
+        nextItem = nextItem->next;
+    }
+}
 
 SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state )
 {
@@ -396,7 +412,12 @@ int EvolutionContactSource::addItem(SyncItem& item)
     try {
         logItem( item, "adding" );
 
-        string data = preparseVCard(item);
+        string data;
+        if( strcmp(item.getDataType(), "raw" ) ) {
+            data = preparseVCard(item);
+        } else {
+            data = (const char *)item.getData();
+        }
         gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
         if( contact ) {
             GError *gerror = NULL;
