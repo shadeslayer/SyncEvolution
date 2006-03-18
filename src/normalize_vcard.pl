@@ -36,8 +36,13 @@ sub Normalize {
 
 
     # sort entries, putting "N:" first
+    # then modify entries to cover not more than
+    # 60 characters
     my @lines = split( "\n" );
-    push @cards, join( "\n", grep( /^N:/, @lines ), sort( grep ( !/^N:/, @lines ) ) );
+    push @cards, join( "\n",
+                       grep( ( s/(.{60})/$1\n /g || 1),
+                             grep( /^N:/, @lines ),
+                             sort( grep ( !/^N:/, @lines ) ) ) );
   }
 
   print $out join( "\n\n", sort @cards ), "\n";
