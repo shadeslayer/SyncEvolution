@@ -1,9 +1,10 @@
 Preamble
 --------
 
-This software is still experimental. Some parts of this documentation
-describe how features are supposed to work although they have not been
-implemented yet. They are marked with [not implemented].
+This software is ready for testing by a wider audience. Some parts of
+this documentation describe how features are supposed to work although
+they have not been implemented yet. They are marked with [not
+implemented].
 
 There's no home page yet. Please refer to the SourceForge page instead:
     http://sourceforge.net/projects/sync4jevolution/
@@ -43,8 +44,8 @@ following works:
   by creating duplicates (see Conflict Resolution below)
 
 Although all of the features are covered by unit testing and
-have been verified to work, this software is still experimental.
-Make a backup of your
+have been verified to work, it is highly recommended that you
+make a backup of your
    $HOME/.evolution/addressbook
    $HOME/.evolution/calender
 directories before running it for the first time. In older Evolution
@@ -281,13 +282,6 @@ and server database that Evolution might be synchronized with.
 Known Problems
 --------------
 
-- Evolution (at least in 2.0.4 and 2.4.2.1) exports the classification
-  of phone numbers incorrectly: e.g. "Business Fax" becomes
-  TEL;TYPE=WORK;TYPE=WORK where it probably should be
-  TEL;TYPE=WORK;TYPE=FAX. The effect is that in exported
-  phone numbers the differentiation between e.g. fax and voice is
-  lost.
-
 - Evolution 2.0.4 and 2.4.2.1 still display the old content of a contact
   which was updated during a certain test (TestEvolution::testMerge).
   Exact reason unknown, needs to be investigated.
@@ -300,15 +294,16 @@ Known Problems
   assertion failed
   - Expression: !res
 
-  Should be fixed in the client library.
-
-- various vcard related problems in the Sync4j server:
+- various vcard and special character related problems in the
+  Sync4j server and client library:
   TestEvolution::testVCard fails the check that items
   are identical after copying them to the server and back
   Many of these issues have been fixed in the server already,
   but even in 2.3 plus patch some information is still lost
   (see "testing vcard conversion and copying" on the sync4j-user
    mailing list for details).
+  Characters with special meaning in XML like & < > cannot be
+  exchanged.
 
 - Removing a field and then synchronizing with the Sync4j server
   will not remove that field on the server. The server will preserve
@@ -382,9 +377,11 @@ source packages and will be used automatically. Instructions for
 working with CVS sources directly are contained in the HACKING
 document.
 
-Also needed are the Evolution development files. The code was tested
-with Evolution 2.0.4 and 2.4.2.1. It is unclear which other versions
-it is compatible with.
+Also needed are the Evolution and libcurl development files. On
+Debian 3.1 (Sarge) you can install them with
+   apt-get install libcurl3-dev evolution-data-server-dev
+The code was tested with Evolution 2.0.4 and 2.4.2.1. It is unclear
+which other versions it is compatible with.
 
 The build system is the normal autotools system.  See INSTALL for
 general instructions how to use that and "./configure --help" for
