@@ -1,3 +1,23 @@
+SyncEvolution 0.2, 2006-03-19
+-----------------------------
+
+* Added automatic backup mechanism and log storage,
+  see "Automatic Backups and Logging".
+* Output no longer is the original log data, but rather
+  a human-readable report of errors and synchronization
+  results.
+* "normalize_vcard" can now also compare two .vcf files
+  directly.
+* improved unit tests to catch more errors
+* hide certain differences in vcards coming back from
+  the server: duplication of extended vcard properties,
+  missing TYPE=OTHER
+* fixed client library problems:
+  see http://forge.objectweb.org/tracker/?group_id=96&atid=100096
+      #304792, #304829
+* added some more problems to the "Known Problems" section
+
+
 SyncEvolution 0.1, 2006-03-13
 -----------------------------
 

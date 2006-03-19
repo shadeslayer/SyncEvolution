@@ -45,10 +45,13 @@ class EvolutionSyncClient {
     ~EvolutionSyncClient();
 
     /**
-     * executes the sync, throws an exception in case of failure
+     * Executes the sync, throws an exception in case of failure.
+     * Handles automatic backups and report generation.
+     * 
      * @param syncMode   setting this overrides the sync mode from the config
+     * @param doLogging  write additional log and datatbase files about the sync
      */
-    void sync(SyncMode syncMode = SYNC_NONE);
+    void sync(SyncMode syncMode = SYNC_NONE, bool doLogging = false);
 };
 
 #endif // INCL_EVOLUTIONSYNCCLIENT

@@ -19,7 +19,7 @@ Introduction
 SyncEvolution synchronizes Evolution's contact and calender items
 [calender not implemented yet]
 with a SyncML server. The items are exchanged in the vCard and
-vCalender formats and via the Funambol Sync4j C++ client API library,
+vCalender formats via the Funambol Sync4j C++ client API library,
 which should make SyncEvolution compatible with the majority of
 SyncML servers. Full, one-way and incremental synchronization of items
 are supported.
@@ -41,15 +41,7 @@ following works:
 - conflict resolution (where two clients modify the same item,
   then sync with the server) is handled by the server, but
   SyncEvolution has support which ensures that no data is lost
-  by creating duplicates (see Conflict Resolution below)
-
-Although all of the features are covered by unit testing and
-have been verified to work, it is highly recommended that you
-make a backup of your
-   $HOME/.evolution/addressbook
-   $HOME/.evolution/calender
-directories before running it for the first time. In older Evolution
-versions the same data is found in $HOME/evolution.
+  by creating duplicates (see "Conflict Resolution" below)
 
 
 Installation
@@ -75,6 +67,14 @@ For Sync4j V2.3, an additional patch is recommended to preserve
 line breaks of items on the server:
    http://forge.objectweb.org/tracker/index.php?func=detail&aid=304718&group_id=96&atid=300096
 
+Although all of the features are covered by unit testing and
+have been verified to work, it is highly recommended that you
+make a backup of your
+   $HOME/.evolution/addressbook
+   $HOME/.evolution/calender
+directories before running it for the first time. In older Evolution
+versions the same data is found in $HOME/evolution.
+
 
 Usage
 -----
@@ -91,17 +91,24 @@ The <server> string is used to find the configuration which determines
 how synchronization is going to proceed. Selection of sources of
 Evolution data which are to be synchronized with that server is done
 via configuration files. It is possible to configure sources without
-activating their synchronization, see the "disabled" property below.
+activating their synchronization, see the "disabled" property.
 
 If the SyncML server is not specified, SyncEvolution lists all
 available Evolution backend databases.
 
-Progress and error messages are both sent to stdout. In case of an
-error the synchronization run is aborted and SyncEvolution returns a
-non-zero value. Recovery from failed synchronization is done by
-forcing a full synchronization during the next run, i.e. by sending
-all items and letting the SyncML server compare against the ones it
-already knows.
+Progress and error messages are written into a log file that is
+preserved for each synchronization run. Details about that is found
+in the "Automatic Backups and Logging" section below. Immediately
+before quitting SyncEvolution will show all errors or warnings
+encountered and print a summary of how the databases were modified.
+This is done with the "normalize_vcard" utility script described
+in the "Exchanging Data" section.
+
+In case of an error the synchronization run is aborted prematurely and
+SyncEvolution will return a non-zero value. Recovery from failed
+synchronization is done by forcing a full synchronization during the
+next run, i.e. by sending all items and letting the SyncML server
+compare against the ones it already knows.
 
 After a successful synchronization the server's configuration file is
 updated so that the next run can be done incrementally.  If the
@@ -159,6 +166,49 @@ If the Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.  In
 this case the directory that contains the source's config.txt should
 only be accessible by the user. [NOT IMPLEMENTED YET]
+
+
+Automatic Backups and Logging
+-----------------------------
+
+To support recovery from a synchronization which damaged the
+local database or modified it in an unexpected way, SyncEvolution
+always creates the following files during a synchronization:
+- a dump of the database in a format which can be imported
+  back into Evolution, e.g. .vcf for address books
+- a full log file with debug information
+- a dump of the database after the synchronization for
+  automatic comparison of the before/after state with
+  "normalize_vcard"
+
+If the source configuration option "logdir" is set, then
+a new directory will be created for each synchronization
+in that directory, using the format
+  SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>[-<seq>]
+with the various fields filled in with the time when the
+synchronization started. The sequence suffix will only be
+used when necessary to make the name unique. By default,
+SyncEvolution will never delete any data in that log
+directory unless explicitly asked to keep only a limited
+number of previous log directories.
+
+This is done by setting the "maxlogdirs" limit to something
+different than the empty sring or 0: if a limit is set,
+then SyncEvolution will only keep that many log directories
+and start removing the oldest ones when it reaches the limit.
+This cleanup is only done after a successful synchronization
+and is limited to directories starting with the
+  SyncEvolution-<server>
+prefix, so it is safe to put other files or directories
+into the configured log directory.
+
+If that option is not set, then the directory will be
+created as
+  $TMPDIR/SyncEvolution-<username>-<server>
+with access allowed for the user only. Files from a
+previous synchronization will be overwritten. This is
+a lot less useful because the data will probably
+be lost during the next reboot.
 
 
 Exchanging Data
@@ -282,6 +332,9 @@ and server database that Evolution might be synchronized with.
 Known Problems
 --------------
 
+ObjectWeb #<num> refers to the Funambol issue tracker at:
+http://forge.objectweb.org/tracker/?group_id=96&atid=100096
+
 - Evolution 2.0.4 and 2.4.2.1 still display the old content of a contact
   which was updated during a certain test (TestEvolution::testMerge).
   Exact reason unknown, needs to be investigated.
@@ -294,6 +347,8 @@ Known Problems
   assertion failed
   - Expression: !res
 
+  ObjectWeb #304806
+
 - various vcard and special character related problems in the
   Sync4j server and client library:
   TestEvolution::testVCard fails the check that items
@@ -304,6 +359,12 @@ Known Problems
    mailing list for details).
   Characters with special meaning in XML like & < > cannot be
   exchanged.
+
+  ObjectWeb #304828, #304786, #304784, #304782
+
+- error handling could be improved
+
+  ObjectWeb #304805, #304562
 
 - Removing a field and then synchronizing with the Sync4j server
   will not remove that field on the server. The server will preserve

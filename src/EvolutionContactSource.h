@@ -62,6 +62,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual void open();
     virtual void close(); 
     virtual void exportData(ostream &out);
+    virtual string fileSuffix() { return "vcf"; }
    
     virtual SyncItem *createItem( const string &uid, SyncState state );
 

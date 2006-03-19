@@ -7,6 +7,9 @@ bin_PROGRAMS = syncevolution
 bin_SCRIPTS = normalize_vcard
 EXTRA_DIST = normalize_vcard.pl
 
+DISTCLEANFILES = normalize_vcard
+MAINTAINERCLEANFILES = Makefile.in
+
 normalize_vcard : normalize_vcard.pl
 	cp $< $@
 	chmod u+x $@
@@ -51,7 +54,6 @@ test_LDADD = $(CORE_LDADD)
 SYNC4JSRC = @SYNC4JSRC@
 SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
 BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
-MAINTAINERCLEANFILES = Makefile.in
 
 clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
 clean : testclean

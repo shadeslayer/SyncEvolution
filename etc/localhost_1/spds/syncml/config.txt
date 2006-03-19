@@ -21,6 +21,19 @@ useProxy = F
 # proxy URL (http://<host>:<port>)
 proxyHost = 
 
+# full path to directory where automatic backups and logs
+# are stored for all synchronizations; if empty, the temporary
+# directory "$TMPDIR/SyncEvolution-<username>-<server>" will
+# be used to keep the data of just the latest synchronization run
+logdir =
+
+# Unless this option is set, SyncEvolution will never delete
+# anything in the "logdir". If set, the oldest directories and
+# all their content will be removed after a successful sync
+# to prevent the number of log directories from growing beyond
+# the given limit.
+maxlogdirs =
+
 # used by the SyncML library internally; do not modify
 begin =
 end =

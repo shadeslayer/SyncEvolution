@@ -122,7 +122,11 @@ class EvolutionSyncSource : public SyncSource
      * Dump all data from source unmodified into the given stream.
      */
     virtual void exportData(ostream &out) = 0;
-     
+
+    /**
+     * file suffix for database files
+     */
+    virtual string fileSuffix() = 0;
 
     /**
      * resets the lists of all/new/updated/deleted items

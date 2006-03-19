@@ -220,7 +220,6 @@ int EvolutionContactSource::endSync()
 
 void EvolutionContactSource::endSyncThrow()
 {
-    LOG.info( m_isModified ? "EvolutionContactSource: address book was modified" : "EvolutionContactSource: no modifications" );
     if (m_isModified) {
         GError *gerror = NULL;
         GList *nextItem;
