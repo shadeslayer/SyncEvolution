@@ -1,3 +1,40 @@
+2006-03-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* NEWS, README, configure.in, etc/localhost_1/spds/syncml/config.txt, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h, src/Makefile.am, src/syncevolution.cpp:
+	- implemented automatic backups, logging and database comparison
+	- prepared 0.2 release
+
+	* src/EvolutionContactSource.cpp:
+	set TYPE=OTHER also for EMAIL if no other type found
+
+	* src/normalize_vcard.pl:
+	ignore some more irrelevant vcard differences (TYPE=PREF, extra separators)
+
+	* src/sync4j-client-api-sdkcpp_3_0_6a.diff, src/testVCard.vcf:
+	when using quoted-printable, also encode non-ASCII for consistency
+
+2006-03-18  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am, configure.in:
+	make full copy of client lib C++ sources,
+	added src/client-api-diff target to compare against original sources
+
+	* src/sync4j-client-api-sdkcpp_3_0_6a.diff:
+	changes for SyncEvolution not in Funambol CVS since sdkcpp_3_0_6a
+
+	* src/TestMain.cpp: reset stdout/stderr before printing final result
+
+	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
+	ensure that unique properties occur not more than once
+
+	* src/TestEvolution.cpp: test adding multiple business phone numbers
+
+	* src/Makefile.am, src/TestEvolution.cpp, src/testVCard.vcf, src/.cvsignore, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncSource.h:
+	test for copying via server now transmits testVCard.vcf and also compares against it
+
+	* src/normalize_vcard.pl:
+	format normalized vcards with 60 columns for easier side-by-side diff
+
 2006-03-18  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
