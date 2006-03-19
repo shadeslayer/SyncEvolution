@@ -349,9 +349,11 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
             !name.compare(0, m_vcardExtensions.prefix.size(), m_vcardExtensions.prefix)) {
             name = name.substr(m_vcardExtensions.prefix.size());
             vprop->setName(name.c_str());
-        } else if (name == "ADR") {
-            if (!vprop->parameterCount()) {
-                // without a TYPE Evolution 2.0.4 does not parse the entry correctly
+        } else if (name == "ADR" || name == "EMAIL" ) {
+            // ensure that at least one TYPE is set
+            if (!vprop->containsParameter("TYPE") &&
+                !vprop->containsParameter("HOME") &&
+                !vprop->containsParameter("WORK")) {
                 vprop->addParameter("TYPE", "OTHER");
             }
         }
