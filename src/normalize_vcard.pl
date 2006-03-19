@@ -24,11 +24,15 @@ sub Normalize {
     # ignore charset specifications, assume UTF-8
     s/;CHARSET="UTF-8"//g;
     # ignore extra email type
-    s/EMAIL;TYPE=INTERNET/EMAIL/g;
+    s/^EMAIL;TYPE=INTERNET/EMAIL/mg;
     # ignore extra ADR type
-    s/ADR;TYPE=OTHER/ADR/g;
+    s/^ADR;TYPE=OTHER/ADR/mg;
+    # ignore TYPE=PREF in address, does not matter in Evolution
+    s/^((ADR|LABEL)[^:]*);TYPE=PREF/$1/mg;
+    # ignore extra separators in multi-value fields
+    s/^((ORG|N|(ADR[^:]*)):.*?);*$/$1/mg;
     # the type of certain fields is ignore by Evolution
-    s/X-(AIM|GROUPWISE|ICQ|YAHOO);TYPE=HOME/X-$1/g;
+    s/^X-(AIM|GROUPWISE|ICQ|YAHOO);TYPE=HOME/X-$1/gm;
     # TYPE=VOICE is the default in Evolution and may or may not appear in the vcard
     s/^TEL([^:]*);TYPE=VOICE([^:]*):/TEL$1$2:/mg;
     # replace parameters with a sorted parameter list
