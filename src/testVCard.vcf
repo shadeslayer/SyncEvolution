@@ -25,8 +25,8 @@ CALURI:
 FBURL:
 X-EVOLUTION-VIDEO-URL:
 X-MOZILLA-HTML:FALSE
-ADR;TYPE=HOME:test 5;Line 2\n;Line 1;test 1;test 3;test 2;test 4
-LABEL;TYPE=HOME:Line 1\nLine 2\n\ntest 1\, test 3\ntest 2\ntest 5\ntest 4
+ADR;TYPE=HOME:test 5;Line 2\n;Umlaut Ä in Line 1;test 1;test 3;test 2;test 4
+LABEL;TYPE=HOME:Umlaut Ä in Line 1\nLine 2\n\ntest 1\, test 3\ntest 2\ntest 5\ntest 4
 UID:pas-id-43C0EF0A00000002
 END:VCARD
 
@@ -113,6 +113,8 @@ LABEL;TYPE=OTHER:Test Drive 3\nTest Megacity\, Test County\n12347\nTest Box
 UID:pas-id-43C0ED3900000001
 EMAIL;TYPE=WORK;X-EVOLUTION-UI-SLOT=1:john.doe@work.com
 EMAIL;TYPE=HOME;X-EVOLUTION-UI-SLOT=2:john.doe@home.priv
+EMAIL;TYPE=OTHER;X-EVOLUTION-UI-SLOT=3:john.doe@other.world
+EMAIL;TYPE=OTHER;X-EVOLUTION-UI-SLOT=4:john.doe@yet.another.world
 TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=1:business 1
 TEL;TYPE=HOME;TYPE=VOICE;X-EVOLUTION-UI-SLOT=2:home 2
 TEL;TYPE=CELL;X-EVOLUTION-UI-SLOT=3:mobile 3

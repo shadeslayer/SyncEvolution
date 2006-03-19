@@ -194,7 +194,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/c++/common/base/util/KeyValue
 retrieving revision 1.1
 diff -c -r1.1 KeyValuePair.cpp
 *** src/c++/common/base/util/KeyValuePair.cpp	12 Jan 2006 11:39:31 -0000	1.1
---- src/c++/common/base/util/KeyValuePair.cpp	18 Mar 2006 18:04:03 -0000
+--- src/c++/common/base/util/KeyValuePair.cpp	18 Mar 2006 19:54:24 -0000
 ***************
 *** 20,26 ****
   #include "base/util/utils.h"
@@ -252,7 +252,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/c++/common/vocl/VConverter.cp
 retrieving revision 1.1
 diff -c -r1.1 VConverter.cpp
 *** src/c++/common/vocl/VConverter.cpp	12 Jan 2006 11:39:32 -0000	1.1
---- src/c++/common/vocl/VConverter.cpp	18 Mar 2006 18:04:04 -0000
+--- src/c++/common/vocl/VConverter.cpp	18 Mar 2006 19:54:25 -0000
 ***************
 *** 59,67 ****
       if(!headerIndex)
@@ -384,7 +384,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/c++/common/vocl/VObject.cpp,v
 retrieving revision 1.1
 diff -c -r1.1 VObject.cpp
 *** src/c++/common/vocl/VObject.cpp	12 Jan 2006 11:39:32 -0000	1.1
---- src/c++/common/vocl/VObject.cpp	18 Mar 2006 18:04:05 -0000
+--- src/c++/common/vocl/VObject.cpp	18 Mar 2006 19:54:25 -0000
 ***************
 *** 144,152 ****
               wcscpy(paramName, property->getParameter(k));
@@ -408,16 +408,8 @@ diff -c -r1.1 VObject.cpp
               delete [] paramName; paramName = NULL;
           }
 ***************
-*** 214,228 ****
---- 215,236 ----
-  
-  static int hex2int( wchar_t x )
-  {
-+ 
-+     
-      return (x >= '0' && x <= '9') ? x - '0' :
-          (x >= 'A' && x <= 'F') ? x - 'A' + 10 :
-          (x >= 'a' && x <= 'f') ? x - 'a' + 10 :
+*** 220,228 ****
+--- 221,234 ----
           0;
   }
   
@@ -434,7 +426,7 @@ diff -c -r1.1 VObject.cpp
           VProperty *vprop = getProperty(index);
 ***************
 *** 255,260 ****
---- 263,277 ----
+--- 261,275 ----
                               hex2int(values[1]);
                           out++;
   
@@ -498,7 +490,7 @@ diff -c -r1.1 VObject.cpp
   
           vprop->setValue(native);
           delete [] native;
---- 286,336 ----
+--- 284,334 ----
               wcscpy(native, foreign);
           }
   
@@ -614,7 +606,7 @@ diff -c -r1.1 VObject.cpp
           delete [] foreign;
       }
   }
---- 359,422 ----
+--- 357,421 ----
           // characters on different platforms
           const int linebreaklen = wcslen(SYNC4J_LINEBREAK);
           
@@ -645,9 +637,10 @@ diff -c -r1.1 VObject.cpp
 !                 out++;
 !                 break;
 !              default:
-!                 if (doquoted && curr == '=') {
-!                     // escape =
-!                     wcsprintf(foreign + out, TEXT("=%02X"), '=');
+!                 if (doquoted &&
+!                     (curr == '=' || (unsigned wchar_t)curr >= 128)) {
+!                     // escape = and non-ASCII characters
+!                     wcsprintf(foreign + out, TEXT("=%02X"), (unsigned int)(unsigned wchar_t)curr);
 !                     out += 3;
 !                 } else if (!wcsncmp(native + in - 1,
 !                                     SYNC4J_LINEBREAK,
@@ -685,7 +678,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/c++/common/vocl/VProperty.cpp
 retrieving revision 1.1
 diff -c -r1.1 VProperty.cpp
 *** src/c++/common/vocl/VProperty.cpp	12 Jan 2006 11:39:32 -0000	1.1
---- src/c++/common/vocl/VProperty.cpp	18 Mar 2006 18:04:05 -0000
+--- src/c++/common/vocl/VProperty.cpp	18 Mar 2006 19:54:26 -0000
 ***************
 *** 40,51 ****
       }
@@ -765,7 +758,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/include/common/base/util/KeyV
 retrieving revision 1.1
 diff -c -r1.1 KeyValuePair.h
 *** src/include/common/base/util/KeyValuePair.h	12 Jan 2006 11:39:34 -0000	1.1
---- src/include/common/base/util/KeyValuePair.h	18 Mar 2006 18:04:05 -0000
+--- src/include/common/base/util/KeyValuePair.h	18 Mar 2006 19:54:26 -0000
 ***************
 *** 29,35 ****
   class KeyValuePair : public ArrayElement {
@@ -823,7 +816,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/include/common/vocl/VProperty
 retrieving revision 1.1
 diff -c -r1.1 VProperty.h
 *** src/include/common/vocl/VProperty.h	12 Jan 2006 11:39:34 -0000	1.1
---- src/include/common/vocl/VProperty.h	18 Mar 2006 18:04:06 -0000
+--- src/include/common/vocl/VProperty.h	18 Mar 2006 19:54:27 -0000
 ***************
 *** 32,38 ****
   
