@@ -194,7 +194,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/c++/common/base/util/KeyValue
 retrieving revision 1.1
 diff -c -r1.1 KeyValuePair.cpp
 *** src/c++/common/base/util/KeyValuePair.cpp	12 Jan 2006 11:39:31 -0000	1.1
---- src/c++/common/base/util/KeyValuePair.cpp	18 Mar 2006 19:54:24 -0000
+--- src/c++/common/base/util/KeyValuePair.cpp	26 Mar 2006 17:14:41 -0000
 ***************
 *** 20,26 ****
   #include "base/util/utils.h"
@@ -246,13 +246,103 @@ diff -c -r1.1 KeyValuePair.cpp
       if (v) delete[] v; v = NULL;
   
       k = (value) ? stringdup(value) : NULL;
+Index: src/c++/common/spds/SyncManager.cpp
+===================================================================
+RCS file: /cvsroot/sync4j/3x/client-api/native/src/c++/common/spds/SyncManager.cpp,v
+retrieving revision 1.5
+diff -c -r1.5 SyncManager.cpp
+*** src/c++/common/spds/SyncManager.cpp	2 Feb 2006 11:27:07 -0000	1.5
+--- src/c++/common/spds/SyncManager.cpp	26 Mar 2006 17:14:43 -0000
+***************
+*** 475,481 ****
+      unsigned int step    = 0; 
+      unsigned int toSync  = 0;
+      unsigned int iterator= 0;
+!     int ret              = 0;  
+      BOOL last            = FALSE;
+      ArrayList* list      = new ArrayList();
+  
+--- 475,482 ----
+      unsigned int step    = 0; 
+      unsigned int toSync  = 0;
+      unsigned int iterator= 0;
+!     int ret              = 0; // intermediate return code
+!     int finalRet         = 0; // final return code
+      BOOL last            = FALSE;
+      ArrayList* list      = new ArrayList();
+  
+***************
+*** 508,517 ****
+          iterator++;
+          
+          if ( sources[count]->beginSync() ) {
+!             // Error from SyncSource
+!             lastErrorCode = ERR_UNSPECIFIED;
+!             ret = lastErrorCode;
+              check[count]=0;
+              continue;
+          }
+  
+--- 509,530 ----
+          iterator++;
+          
+          if ( sources[count]->beginSync() ) {
+!             // Error from SyncSource:
+!             // keep that error, set one if none set by source
+!             if (!lastErrorCode) {
+!                 lastErrorCode = ERR_UNSPECIFIED;
+!             }
+!             ret = COMMAND_FAILED; // return status, not error code
+!             if (!isErrorStatus(finalRet)) {
+!                 finalRet = ret;
+!             }
+! 
+!             // disable this sync source, continue with the remaining ones
+              check[count]=0;
++             toSync--;
++             if (count + 1 == sourcesNumber) {
++                 last = TRUE;
++             }
+              continue;
+          }
+  
+***************
+*** 1066,1076 ****
+  
+  finally:
+  
+      safeDelete(&responseMsg);
+      safeDelete(&msg);    
+      deleteSyncML(&syncml);    
+  
+!     return ret;
+  }
+  
+  
+--- 1079,1094 ----
+  
+  finally:
+  
++     // avoid overwriting an older error with a more recent OK status
++     if (isErrorStatus(ret) && !isErrorStatus(finalRet)) {
++         finalRet = ret;
++     }
++ 
+      safeDelete(&responseMsg);
+      safeDelete(&msg);    
+      deleteSyncML(&syncml);    
+  
+!     return finalRet;
+  }
+  
+  
 Index: src/c++/common/vocl/VConverter.cpp
 ===================================================================
 RCS file: /cvsroot/sync4j/3x/client-api/native/src/c++/common/vocl/VConverter.cpp,v
 retrieving revision 1.1
 diff -c -r1.1 VConverter.cpp
 *** src/c++/common/vocl/VConverter.cpp	12 Jan 2006 11:39:32 -0000	1.1
---- src/c++/common/vocl/VConverter.cpp	18 Mar 2006 19:54:25 -0000
+--- src/c++/common/vocl/VConverter.cpp	26 Mar 2006 17:14:44 -0000
 ***************
 *** 59,67 ****
       if(!headerIndex)
@@ -384,7 +474,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/c++/common/vocl/VObject.cpp,v
 retrieving revision 1.1
 diff -c -r1.1 VObject.cpp
 *** src/c++/common/vocl/VObject.cpp	12 Jan 2006 11:39:32 -0000	1.1
---- src/c++/common/vocl/VObject.cpp	18 Mar 2006 19:54:25 -0000
+--- src/c++/common/vocl/VObject.cpp	26 Mar 2006 17:14:45 -0000
 ***************
 *** 144,152 ****
               wcscpy(paramName, property->getParameter(k));
@@ -678,7 +768,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/c++/common/vocl/VProperty.cpp
 retrieving revision 1.1
 diff -c -r1.1 VProperty.cpp
 *** src/c++/common/vocl/VProperty.cpp	12 Jan 2006 11:39:32 -0000	1.1
---- src/c++/common/vocl/VProperty.cpp	18 Mar 2006 19:54:26 -0000
+--- src/c++/common/vocl/VProperty.cpp	26 Mar 2006 17:14:45 -0000
 ***************
 *** 40,51 ****
       }
@@ -758,7 +848,7 @@ RCS file: /cvsroot/sync4j/3x/client-api/native/src/include/common/base/util/KeyV
 retrieving revision 1.1
 diff -c -r1.1 KeyValuePair.h
 *** src/include/common/base/util/KeyValuePair.h	12 Jan 2006 11:39:34 -0000	1.1
---- src/include/common/base/util/KeyValuePair.h	18 Mar 2006 19:54:26 -0000
+--- src/include/common/base/util/KeyValuePair.h	26 Mar 2006 17:14:45 -0000
 ***************
 *** 29,35 ****
   class KeyValuePair : public ArrayElement {
@@ -810,13 +900,48 @@ diff -c -r1.1 KeyValuePair.h
   
           /**
            * Returns the key (the internal buffer address is returned).
+Index: src/include/common/spds/SyncManager.h
+===================================================================
+RCS file: /cvsroot/sync4j/3x/client-api/native/src/include/common/spds/SyncManager.h,v
+retrieving revision 1.2
+diff -c -r1.2 SyncManager.h
+*** src/include/common/spds/SyncManager.h	26 Jan 2006 14:06:16 -0000	1.2
+--- src/include/common/spds/SyncManager.h	26 Mar 2006 17:14:46 -0000
+***************
+*** 48,58 ****
+          SyncManager(SyncManagerConfig* config) EXTRA_SECTION_01;
+          SyncManager(SyncManagerConfig& config) EXTRA_SECTION_01;
+          ~SyncManager() EXTRA_SECTION_01;
+!         
+          int prepareSync(SyncSource** sources) EXTRA_SECTION_01;
+!         
+          int sync() EXTRA_SECTION_01;
+!         
+          int endSync() EXTRA_SECTION_01;
+  
+      private:
+--- 48,61 ----
+          SyncManager(SyncManagerConfig* config) EXTRA_SECTION_01;
+          SyncManager(SyncManagerConfig& config) EXTRA_SECTION_01;
+          ~SyncManager() EXTRA_SECTION_01;
+! 
+!         // returns 0 for success, else error code
+          int prepareSync(SyncSource** sources) EXTRA_SECTION_01;
+! 
+!         // returns status code (not error!)
+          int sync() EXTRA_SECTION_01;
+! 
+!         // returns 0 for success, else error code
+          int endSync() EXTRA_SECTION_01;
+  
+      private:
 Index: src/include/common/vocl/VProperty.h
 ===================================================================
 RCS file: /cvsroot/sync4j/3x/client-api/native/src/include/common/vocl/VProperty.h,v
 retrieving revision 1.1
 diff -c -r1.1 VProperty.h
 *** src/include/common/vocl/VProperty.h	12 Jan 2006 11:39:34 -0000	1.1
---- src/include/common/vocl/VProperty.h	18 Mar 2006 19:54:27 -0000
+--- src/include/common/vocl/VProperty.h	26 Mar 2006 17:14:46 -0000
 ***************
 *** 32,38 ****
   
