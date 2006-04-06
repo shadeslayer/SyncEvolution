@@ -42,7 +42,6 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server) :
     m_server(server),
     m_configPath(string("evolution/") + server)
 {
-    LOG.setLevel(LOG_LEVEL_INFO);
     m_client.setDMConfig(m_configPath.c_str());
 }
 
@@ -94,9 +93,13 @@ class LogDir {
     string m_path;           /**< path to current logging and backup dir */
     string m_logfile;        /**< path to log file there */
     const string &m_server;  /**< name of the server for this synchronization */
+    LogLevel m_oldLogLevel;  /**< logging level to restore */
+    
 
 public:
-    LogDir(const string &server) : m_server(server) {}
+    LogDir(const string &server) : m_server(server),
+                                   m_oldLogLevel(LOG.getLevel())
+        {}
         
     // setup log directory and redirect logging into it
     // @param path        path to configured backup directy, NULL if defaulting to /tmp
@@ -220,7 +223,7 @@ public:
     void restore(bool all) {
         if (all) {
             setLogFile("-", false);
-            LOG.setLevel(LOG_LEVEL_INFO);
+            LOG.setLevel(m_oldLogLevel);
         } else {
             setLogFile(m_logfile.c_str(), false);
         }
@@ -270,7 +273,10 @@ public:
     void setLogdir(const char *logDirPath, int maxlogdirs) {
         if (m_doLogging) {
             m_logdir.setLogdir(logDirPath, maxlogdirs);
-        }            
+        } else {
+            // at least increase log level
+            LOG.setLevel(LOG_LEVEL_DEBUG);
+        }
     }
 
     // call when all sync sources are ready to dump
@@ -410,7 +416,9 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
                     ( type.size() ? string("not configured") :
                       string("'") + type + "' empty or unknown" );
             }
-            syncSource->setPreferredSyncMode( syncMode );
+            if (syncMode != SYNC_NONE) {
+                syncSource->setFixedSyncMode( syncMode );
+            }
             sources.push_back(syncSource);
 
             // also open it; failing now is still safe

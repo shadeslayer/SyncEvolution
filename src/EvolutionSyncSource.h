@@ -73,6 +73,7 @@ class EvolutionSyncSource : public SyncSource
         m_changeId( changeId ),
         m_hasFailed( false ),
         m_isModified( false ),
+        m_fixedSyncMode( SYNC_NONE ),
         m_id( id )
         {}
     virtual ~EvolutionSyncSource() {}
@@ -181,6 +182,18 @@ class EvolutionSyncSource : public SyncSource
     virtual SyncItem* getFirstItemKey() { return getFirstItem(); }
     virtual SyncItem* getNextItemKey() { return getNextItem(); }
     virtual void setItemStatus(const char *key, int status);
+
+    // if the SyncSource was fixed to a certain mode, then override
+    // the configuration in prepareSync()
+    virtual int prepareSync() {
+        if (m_fixedSyncMode != SYNC_NONE) {
+            setPreferredSyncMode(m_fixedSyncMode);
+        }
+        return 0;
+    }
+    void setFixedSyncMode(SyncMode sourceSyncMode) {
+        m_fixedSyncMode = sourceSyncMode;
+    }
 	 
   protected:
     /**
@@ -260,6 +273,9 @@ class EvolutionSyncSource : public SyncSource
      * two-way sync
      */
     bool m_isModified;
+
+    /** if not SYNC_NONE then override preferred sync mode in prepareSync() */
+    SyncMode m_fixedSyncMode;
 };
 
 #endif // INCL_EVOLUTIONSYNCSOURCE

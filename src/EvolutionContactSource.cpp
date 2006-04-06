@@ -102,7 +102,7 @@ int EvolutionContactSource::beginSync()
         mode == SYNC_NONE ? "none" :
         "???";
     LOG.info( buffer.c_str() );
-    
+
     try {
         GError *gerror = NULL;
 
@@ -113,6 +113,12 @@ int EvolutionContactSource::beginSync()
         m_updatedItems.clear();
         m_deletedItems.clear();
 
+        const char *error = getenv("SYNCEVOLUTION_BEGIN_SYNC_ERROR");
+        if (error && strstr(error, getName())) {
+            LOG.error("simulate error");
+            throw "artificial error in beginSync()";
+        }
+    
         // determine what to do
         bool needAll = false;
         bool needPartial = false;
@@ -215,6 +221,7 @@ int EvolutionContactSource::endSync()
         m_hasFailed = true;
         return 1;
     }
+    // TODO: sync engine ignores return code, work around this?
     return m_hasFailed ? 1 : 0;
 }
 

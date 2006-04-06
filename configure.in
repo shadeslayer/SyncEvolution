@@ -34,7 +34,9 @@ if test ! "$SYNC4J"; then
         fi
     fi
 
-    if test -x src/client-api/build/autotools/configure; then
+    if test -f src/client-api/build/autotools/configure; then
+        chmod u+x src/client-api/build/autotools/configure src/client-api/build/autotools/config.sub src/client-api/build/autotools/config.guess
+
         # use local copy of the sources
         SYNC4J_SUBDIR=$PWD/src/client-api.build
 
@@ -85,6 +87,8 @@ dnl check for programs.
 AC_PROG_CXX
 AC_PROG_LIBTOOL
 AC_PROG_MAKE_SET
+
+AC_CHECK_HEADERS(stdarg.h)
 
 AC_OUTPUT([
 Makefile

@@ -340,12 +340,21 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
   Exact reason unknown, needs to be investigated.
 
 - refresh-server results in a Sync4j client library error at the end
-  of the sync:
+  of the sync with the client library shipped with 0.2:
 
   TestEvolution.cpp:534:Assertion
   Test name: TestEvolution::testDeleteAll
   assertion failed
   - Expression: !res
+
+  With the current source that is avoided, but a refresh-server
+  with empty local address book does not delete all items on the
+  server as it should, leading to:
+
+  TestEvolution.cpp:674:Assertion
+  Test name: TestEvolution::testDeleteAll
+  assertion failed
+  - Expression: countItems( source ) == 0
 
   ObjectWeb #304806
 

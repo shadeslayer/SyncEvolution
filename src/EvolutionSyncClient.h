@@ -19,6 +19,7 @@
 #ifndef INCL_EVOLUTIONSYNCCLIENT
 #define INCL_EVOLUTIONSYNCCLIENT
 
+#include <config.h>
 #include <common/client/Sync4jClient.h>
 
 #include <string>

@@ -552,10 +552,14 @@ void TestEvolution::doSync(const string &logfile, int config, SyncMode syncMode)
 {
     int res = 0;
 
+    // use LOG_LEVEL_INFO to avoid extra debug output outside of
+    // EvolutionSyncClient::sync() which will set the level to DEBUG
+    // automatically
     remove( logfile.c_str() );
     setLogFile( logfile.c_str(), TRUE );
+    LOG.setLevel(LOG_LEVEL_INFO);
     {
-        EvolutionSyncClient client( m_syncConfigs[config] );
+        EvolutionSyncClient client(m_syncConfigs[config]);
         try {
             client.sync(syncMode);
         } catch(...) {
@@ -655,6 +659,7 @@ void TestEvolution::testDeleteAll()
     testContactSimpleInsert();
     doSync( "testDeleteAll.insert.2.client.log", 0, SYNC_SLOW );
 
+    // now try deleting using another sync method
     deleteAll( "testDeleteAllRefresh", 0, DELETE_ALL_REFRESH );
     
     // nothing stored locally?
@@ -700,12 +705,12 @@ void TestEvolution::doCopy( const string &prefix )
     // copy into second database
     doSync( prefix + ".1.client.log", 1, SYNC_TWO_WAY );
 
-    EvolutionContactSource source( string( "dummy" ),
+    EvolutionContactSource copy( string( "dummy" ),
                                    m_changeIds[0],
                                    m_contactNames[1] );
-    EVOLUTION_ASSERT_NO_THROW( source, source.open() );
-    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
-    CPPUNIT_ASSERT( countItems( source ) == 1 );
+    EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
+    EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
+    CPPUNIT_ASSERT( countItems( copy ) == 1 );
 }
 
 void TestEvolution::testCopy()
@@ -732,12 +737,12 @@ void TestEvolution::testDelete()
     doSync( "testDelete.delete.0.client.log", 0, SYNC_TWO_WAY );
     doSync( "testDelete.delete.1.client.log", 1, SYNC_TWO_WAY );
     
-    EvolutionContactSource source( string( "dummy" ),
+    EvolutionContactSource copy( string( "dummy" ),
                                    m_changeIds[1],
                                    m_contactNames[1] );
-    EVOLUTION_ASSERT_NO_THROW( source, source.open() );
-    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
-    CPPUNIT_ASSERT( countItems( source ) == 0 );
+    EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
+    EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
+    CPPUNIT_ASSERT( countItems( copy ) == 0 );
 }
 
 void TestEvolution::testMerge()
