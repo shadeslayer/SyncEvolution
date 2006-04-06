@@ -5,7 +5,7 @@ AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = normalize_vcard
-EXTRA_DIST = normalize_vcard.pl
+EXTRA_DIST = normalize_vcard.pl testVCard.vcf
 
 DISTCLEANFILES = normalize_vcard
 MAINTAINERCLEANFILES = Makefile.in
