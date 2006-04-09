@@ -131,6 +131,12 @@ class TestEvolution : public CppUnit::TestFixture
 
     CPPUNIT_TEST_SUITE_END();
 
+    /**
+     * duration to sleep after a synchronization -
+     * needed by Sync4j 2.3 to operate correctly
+     */
+    int m_syncDelay;
+    
     /** the name of the contact databases */
     string m_contactNames[2];
 
@@ -139,6 +145,9 @@ class TestEvolution : public CppUnit::TestFixture
 
     /** different change ids */
     string m_changeIds[2];
+
+    /** the source names */
+    string m_source[2];
 
     /** filename of server log */
     string m_serverLog;
@@ -197,10 +206,15 @@ public:
         m_syncConfigs[1] = "localhost_2";
         m_changeIds[0] = "SyncEvolution Change ID #0";
         m_changeIds[1] = "SyncEvolution Change ID #1";
+        m_source[0] = "addressbook_1";
+        m_source[1] = "addressbook_2";
+
         const char *log = getenv( "SYNC4J_LOG" );
         if (log) {
             m_serverLog = log;
         }
+        const char *delay = getenv("SYNC4J_DELAY");
+        m_syncDelay = delay ? atoi(delay) : 0;
     }
     void tearDown() {
     }
@@ -560,7 +574,9 @@ void TestEvolution::doSync(const string &logfile, int config, SyncMode syncMode)
     setLogFile( logfile.c_str(), TRUE );
     LOG.setLevel(LOG_LEVEL_INFO);
     {
-        EvolutionSyncClient client(m_syncConfigs[config]);
+        set<string> sources;
+        sources.insert(m_source[config]);
+        EvolutionSyncClient client(m_syncConfigs[config], sources);
         try {
             client.sync(syncMode);
         } catch(...) {
@@ -575,7 +591,7 @@ void TestEvolution::doSync(const string &logfile, int config, SyncMode syncMode)
 
         if (fd >= 0) {
             // let the server finish
-            sleep(10);
+            sleep(m_syncDelay);
 
             string serverLog = logfile;
             size_t pos = serverLog.find( "client" );
@@ -592,7 +608,7 @@ void TestEvolution::doSync(const string &logfile, int config, SyncMode syncMode)
 	}
     } else {
         // let the server finish
-        sleep(10);
+        sleep(m_syncDelay);
     }
 
     CPPUNIT_ASSERT( !res );
