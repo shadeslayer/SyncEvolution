@@ -16,12 +16,14 @@ normalize_vcard : normalize_vcard.pl
 
 CORE_SOURCES  = \
         EvolutionContactSource.h \
+        EvolutionCalendarSource.h \
         EvolutionSmartPtr.h \
         EvolutionSyncClient.h \
         EvolutionSyncSource.h \
         \
         EvolutionSyncSource.cpp \
 	EvolutionSyncClient.cpp \
+	EvolutionCalendarSource.cpp \
 	EvolutionContactSource.cpp
 CORE_LDADD = @EPACKAGE_LIBS@ @SYNC4J_LIBS@ @LIBS@
 

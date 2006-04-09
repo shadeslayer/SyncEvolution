@@ -16,10 +16,9 @@ be changed, too.
 Introduction
 ------------
 
-SyncEvolution synchronizes Evolution's contact and calender items
-[calender not implemented yet]
+SyncEvolution synchronizes Evolution's contact, calender and task items
 with a SyncML server. The items are exchanged in the vCard and
-vCalender formats via the Funambol Sync4j C++ client API library,
+iCalender formats via the Funambol Sync4j C++ client API library,
 which should make SyncEvolution compatible with the majority of
 SyncML servers. Full, one-way and incremental synchronization of items
 are supported.
@@ -30,8 +29,8 @@ can talk to is needed. The remainder of this document assumes that
 Funambol's Sync4j server bundle for Linux V2.3 was installed using the
 default configuration.
 
-With a server that fully supports SyncML and the vCard standard the
-following works:
+With a server that fully supports SyncML and vCard/iCalender
+the following works:
 - copy a complete database to the server and restore it
   from the server later
 - delete or modify an item locally, then make the same change
@@ -42,6 +41,12 @@ following works:
   then sync with the server) is handled by the server, but
   SyncEvolution has support which ensures that no data is lost
   by creating duplicates (see "Conflict Resolution" below)
+
+For conflict resolution and synchronization between clients which
+support different attributes of items the server needs an
+understanding of the format of items. The Sync4j server supports that
+for contacts and calendars but not tasks; see "Configuration with
+Sync4j" below for more information.
 
 
 Installation
@@ -72,6 +77,7 @@ have been verified to work, it is highly recommended that you
 make a backup of your
    $HOME/.evolution/addressbook
    $HOME/.evolution/calender
+   $HOME/.evolution/tasks
 directories before running it for the first time. In older Evolution
 versions the same data is found in $HOME/evolution.
 
@@ -85,13 +91,17 @@ would also be possible, but is not implemented yet. As command line
 parameters SyncEvolution only supports one option which specifies the
 configuration file that drives the synchronization run:
 
-   syncevolution [<server>]
+   syncevolution [<server>] [<source> ...]
 
 The <server> string is used to find the configuration which determines
 how synchronization is going to proceed. Selection of sources of
 Evolution data which are to be synchronized with that server is done
 via configuration files. It is possible to configure sources without
-activating their synchronization, see the "disabled" property.
+activating their synchronization: if the "sync" property of a source
+is set to "none", it will be ignore. Explicitely listing one or more
+source names after the server chooses just those sources for
+synchronization with configured sync mode or "two-way" if a source
+is currently set to "none".
 
 If the SyncML server is not specified, SyncEvolution lists all
 available Evolution backend databases.
@@ -113,7 +123,10 @@ compare against the ones it already knows.
 After a successful synchronization the server's configuration file is
 updated so that the next run can be done incrementally.  If the
 configuration file has to be recreated e.g. because it was lost, the
-next run recovers from that by doing a full synchronization.
+next run recovers from that by doing a full synchronization. The risk
+associated with this is that the server might not recognize items that
+it already has stored previously which then would lead to duplication
+of items.
 
 
 Configuration
@@ -150,11 +163,9 @@ Normally at least the following configuration options need to be adapted:
       uri
       evolutionsource
 
-Each data source corresponds to one database at the SyncML server, so
-two entries have to be added for each Evolution calendar as it stores
-both events/appointments and todo items [NOT IMPLEMENTED] The Evolution data source is
-determined by the type of data given in "type" and uniquely identified
-with the "evolutionurl" property.
+Each data source corresponds to one database at the SyncML server.
+The Evolution data source is determined by the type of data given in
+"type" and uniquely identified with the "evolutionurl" property.
 
 One can synchronize with multiple server databases in one run, but
 the same server database can only be accessed once. To synchronize
@@ -211,6 +222,57 @@ a lot less useful because the data will probably
 be lost during the next reboot.
 
 
+Configuration with Sync4j
+-------------------------
+
+A default Sync4j 2.3 installation already contains databases which
+SyncEvolution can synchronize with Evolution address books and
+calendars. They are adressed with
+  uri = card
+for contacts and
+  uri = cal
+for calendars in the source config.
+
+Although Evolution tasks are sent and received as special calendar
+events, the server cannot parse them. Therefore it is necessary to
+store each task as files on the server without having the server parse
+them. One can use the existing
+  uri = snote
+file source, but if that source is also used for real notes or
+files, then one has to setup another FileSyncSource. Adding
+a new "todo" sync source is best done via the graphical Sync4j admin
+tool:
+- connect to the server
+- unfold the tree and select "Modules/pdi/FileSystem SyncSource"
+- enter the following values:
+  Source URI: todo
+  Name: todo
+  Type: text/x-todo
+  Source Directory: <server install dir>/db/todo
+  Supported types: text/x-todo
+  Supported versions: text/x-todo
+  Encoded: deselected
+  MultiUser: deselected if all users access the same database,
+             selected if every user gets his own database
+- add the new sync source
+- create the <server install dir>/db/todo directory
+- if using the ChangeSourceUriSynclet (enabled in a default
+  Sync4j installation), also update its configuration in
+    server/default/config/common/beans/sync4j/server/engine/pipeline/PipelineManager.xml
+  by adding an entry for "todo" in the "syncSourcesToProcess" property
+
+The drawback of the file based approach is that the server always
+keeps tasks exactly as the clients send them: imagine that
+SyncEvolution stores a task on the server and then a phone fetches
+that task from the server, possibly throwing away attributes that it
+does not support. When now the task is modified on the phone and sent
+back to the server, only the attributes supported by the phone remain
+on the server and thus after another synchronization with
+SyncEvolution also in Evolution. For calendar entries and contacts the
+Sync4j server avoids this kind of data loss by updating its copy of an
+item instead of replacing it wholesale.
+
+
 Exchanging Data
 ---------------
 
@@ -231,28 +293,26 @@ To check which data is preserved, one can use this procedure:
    same database on the SyncML server
 4. synchronize again, this time using the other data source
 
-The "etc/localhost_1" directory contains a configuration for
-a default Sync4j installation on the local host and an Evolution
-address book called "syncevolution test #1". The
-"etc/localhost_2" is the pendant for a second address book
-called "syncevolution test #2". Both configurations can
-be copied directly to ".sync4j/evolution":
+The "etc/localhost_1" directory contains a configuration for a default
+Sync4j installation on the local host and Evolution address book,
+calendar and tasks all called "SyncEvolution test #1". The
+"etc/localhost_2" is the pendant for a second client which
+synchronizes against the same server and Evolution databases called
+"SyncEvolution test #2". Both configurations can be copied directly to
+".sync4j/evolution":
   mkdir -p ~/.sync4j/evolution
   cp -a etc/localhost* ~/.sync4j/evolution
-  rm -rf ~/.sync4j/evolution/localhost*/spds/sources/CVS
-The last step is only necessary when working with a checkout
-of the SyncEvolution sources from CVS.
 
-For them to work, also create the two address books
+For them to work, also create the two address books/calendars/tasks
   SyncEvolution test #1
   SyncEvolution test #2
-inside Evolution. SyncEvolution never creates address
-books itself.
+inside Evolution. SyncEvolution never creates databases
+itself.
 
 Steps 1 above then becomes an invocation of
-  syncevolution localhost_1
+  syncevolution localhost_1 addressbook_1
 and step 4
-  syncevolution localhost_2
+  syncevolution localhost_2 addressbook_2
 
 This copies all contacts into the server and from there into the new
 address book. Now one can either compare the address books in
@@ -294,13 +354,12 @@ into the server.
 
 The SyncML server now has to decide how to proceed. If the server
 decides to continue with its own copy and asks to overwrite the
-locally modified copy (the default with Sync4j),
-SyncEvolution will make a local copy first. This leads to
-duplicates which have to be merged manually on the client side
-where the conflict occurred. Currently there is no support
-inside SyncEvolution: there is only an ERROR entry in the
-log. A summary at the end of syncing would be better, or
-even opening GUI dialogs to resolve the conflicts immediately...
+locally modified copy (the default with Sync4j), SyncEvolution will
+make a local copy first. This leads to duplicates which have to be
+merged manually on the client side where the conflict
+occurred. Currently there is no support for that inside SyncEvolution:
+there is only an ERROR entry in the log and the summary will show
+the duplicated items.
 
 
 Tracking Changes inside Evolution
@@ -347,7 +406,7 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
   assertion failed
   - Expression: !res
 
-  With the current source that is avoided, but a refresh-server
+  With the current library source that is avoided, but a refresh-server
   with empty local address book does not delete all items on the
   server as it should, leading to:
 
@@ -362,6 +421,7 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
   Sync4j server and client library:
   TestEvolution::testVCard fails the check that items
   are identical after copying them to the server and back
+
   Many of these issues have been fixed in the server already,
   but even in 2.3 plus patch some information is still lost
   (see "testing vcard conversion and copying" on the sync4j-user

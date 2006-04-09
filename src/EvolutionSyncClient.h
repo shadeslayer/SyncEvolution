@@ -23,6 +23,7 @@
 #include <common/client/Sync4jClient.h>
 
 #include <string>
+#include <set>
 using namespace std;
 
 /*
@@ -37,12 +38,13 @@ class EvolutionSyncClient {
     Sync4jClient& m_client;
     const string m_server;
     const string m_configPath;
+    const set<string> m_sources;
 
   public:
     /**
      * @param server     identifies the server config to be used
      */
-    EvolutionSyncClient(const string &server);
+    EvolutionSyncClient(const string &server, const set<string> &sources = set<string>());
     ~EvolutionSyncClient();
 
     /**

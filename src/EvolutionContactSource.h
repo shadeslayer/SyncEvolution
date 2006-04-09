@@ -43,7 +43,7 @@ class EvolutionContactSource : public EvolutionSyncSource
                             const string &id = string(""),
                             EVCardFormat vcardFormat = EVC_FORMAT_VCARD_30 );
     EvolutionContactSource( const EvolutionContactSource &other );
-    virtual ~EvolutionContactSource();
+    virtual ~EvolutionContactSource() { close(); }
 
     //
     // utility function for testing:
@@ -65,18 +65,27 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual string fileSuffix() { return "vcf"; }
    
     virtual SyncItem *createItem( const string &uid, SyncState state );
-
+    
     //
     // implementation of SyncSource
     //
-    virtual void setItemStatus(const char *key, int status);
-    virtual int addItem(SyncItem& item);
-    virtual int updateItem(SyncItem& item);
-    virtual int deleteItem(SyncItem& item);
-    virtual int beginSync();
-    virtual int endSync();
     virtual ArrayElement *clone() { return new EvolutionContactSource(*this); }
 
+  protected:
+    //
+    // implementation of EvolutionSyncSource callbacks
+    //
+    virtual void beginSyncThrow(bool needAll,
+                                bool needPartial,
+                                bool deleteLocal);
+    virtual void endSyncThrow();
+    virtual void setItemStatusThrow(const char *key, int status);
+    virtual void addItemThrow(SyncItem& item);
+    virtual void updateItemThrow(SyncItem& item);
+    virtual void deleteItemThrow(SyncItem& item);
+    virtual void logItem(const string &uid, const string &info);
+    virtual void logItem(SyncItem &item, const string &info);
+    
   private:
     /** valid after open(): the address book that this source references */
     gptr<EBook, GObject> m_addressbook;
@@ -125,12 +134,4 @@ class EvolutionContactSource : public EvolutionSyncSource
     
     /** the mime type which corresponds to m_vcardFormat */
     const char *getMimeType();
-
-    /** internal implementation of endSync() which will throw an exception in case of failure */
-    void endSyncThrow();
-
-    /** log a one-line info about a contact */
-    void logItem( const string &uid, const string &info );
-    void logItem( SyncItem &item, const string &info );
-    
 };

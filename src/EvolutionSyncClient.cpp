@@ -37,9 +37,10 @@ using namespace std;
 #include <dirent.h>
 #include <errno.h>
 
-EvolutionSyncClient::EvolutionSyncClient(const string &server) :
+EvolutionSyncClient::EvolutionSyncClient(const string &server, const set<string> &sources) :
     m_client(Sync4jClient::getInstance()),
     m_server(server),
+    m_sources(sources),
     m_configPath(string("evolution/") + server)
 {
     m_client.setDMConfig(m_configPath.c_str());
@@ -314,6 +315,8 @@ public:
                     if (line.find("[ERROR]") != line.npos) {
                         success = false;
                         cout << line << "\n";
+                    } else if (line.find("[INFO]") != line.npos) {
+                        cout << line << "\n";
                     }
                 }
                 in.close();
@@ -400,8 +403,23 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
         // is the source enabled?
         string sourcePath(sourcesPath + "/" + sourceNames[index]);
         auto_ptr<ManagementNode> sourceNode(config.getManagementNode(sourcePath.c_str()));
-        string disabled = EvolutionSyncSource::getPropertyValue(*sourceNode, "disabled");
-        if (disabled != "T" && disabled != "t") {
+        string sync = EvolutionSyncSource::getPropertyValue(*sourceNode, "sync");
+        bool enabled = sync != "none";
+        SyncMode overrideMode = SYNC_NONE;
+
+        // override state?
+        if (m_sources.size()) {
+            if (m_sources.find(sourceNames[index]) != m_sources.end()) {
+                if (!enabled) {
+                    overrideMode = SYNC_TWO_WAY;
+                    enabled = true;
+                }
+            } else {
+                enabled = false;
+            }
+        }
+        
+        if (enabled) {
             // create it
             string type = EvolutionSyncSource::getPropertyValue(*sourceNode, "type");
             EvolutionSyncSource *syncSource =
@@ -416,9 +434,15 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
                     ( type.size() ? string("not configured") :
                       string("'") + type + "' empty or unknown" );
             }
+
             if (syncMode != SYNC_NONE) {
-                syncSource->setFixedSyncMode( syncMode );
+                // caller overrides mode
+                syncSource->setFixedSyncMode(syncMode);
+            } else if (overrideMode != SYNC_NONE) {
+                // disabled source selected via source name
+                syncSource->setFixedSyncMode(overrideMode);
             }
+
             sources.push_back(syncSource);
 
             // also open it; failing now is still safe

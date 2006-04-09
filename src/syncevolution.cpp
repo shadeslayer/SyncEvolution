@@ -27,6 +27,7 @@ using namespace std;
 #include <libgen.h>
 
 #include "EvolutionContactSource.h"
+#include "EvolutionCalendarSource.h"
 #include "EvolutionSyncClient.h"
 
 /**
@@ -68,14 +69,27 @@ int main( int argc, char **argv )
     free(exe);
 
     try {
-        if ( argc != 2 ) {
+        if ( argc == 1 ) {
             EvolutionContactSource contactSource( string( "list" ) );
-
             listSources( contactSource, "address books" );
+
+            EvolutionCalendarSource eventSource(E_CAL_SOURCE_TYPE_EVENT,
+                                                string("list"));
+            listSources(eventSource, "calendars");
+
+            EvolutionCalendarSource todoSource(E_CAL_SOURCE_TYPE_TODO,
+                                               string("list"));
+            listSources(eventSource, "tasks");
 
             fprintf( stderr, "\nusage: %s <server>\n", argv[0] );
         } else {
-            EvolutionSyncClient client(argv[1]);
+            set<string> sources;
+
+            for (int source = 2; source < argc; source++ ) {
+                sources.insert(argv[source]);
+            }
+            
+            EvolutionSyncClient client(argv[1], sources);
             client.sync(SYNC_NONE, true);
         }
         return 0;

@@ -516,9 +516,10 @@ void TestEvolution::testContactImport()
     ifstream input;
     input.open("testVCard.vcf");
     CPPUNIT_ASSERT(!input.bad());
+    CPPUNIT_ASSERT(input.is_open());
     string vcard, line;
     const string endvcard("END:VCARD");
-    while (!input.eof()) {
+    while (input) {
         do {
             getline(input, line);
             CPPUNIT_ASSERT(!input.bad());
@@ -895,7 +896,7 @@ static void exportData( const string &filename, SyncSource &source )
 
 /**
  * takes two address books, exports them as vcards,
- * then compares them using normalize_vcards.pl
+ * then compares them using normalize_vcards
  * and shell commands
  *
  * @param refVCard      existing file with existing reference vcards (optional)
@@ -937,7 +938,7 @@ void TestEvolution::compareAddressbooks(const string &prefix, const char *refVCa
     stringstream cmd;
 
     string diff = prefix + ".diff";
-    cmd << "perl normalize_vcard.pl " << sourceVCard << " " << copyVCard << ">" << diff;
+    cmd << "perl normalize_vcard " << sourceVCard << " " << copyVCard << ">" << diff;
     cmd << "  || (echo; echo '*** " << diff << " non-empty ***'; cat " << diff << "; exit 1 )";
 
     string cmdstr = cmd.str();

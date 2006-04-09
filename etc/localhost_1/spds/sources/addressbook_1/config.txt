@@ -1,23 +1,24 @@
 # name of the source
 name = addressbook_1
 
-# set to T if this source is not to be synchronized
-disabled = 
-
 # requests a certain synchronization mode:
 #   two-way        = only send/receive changes since last sync
 #   slow           = exchange all items
-#   refresh-client = discard all local items and replace with
+#   refresh-client = "refresh _from_ client":
+#                    discard all local items and replace with
 #                    the items on the server
-#   refresh-server = discard all remote items and replace with
+#   refresh-server = "refresh _from_ server":
+#                    discard all remote items and replace with
 #                    the items on the client
+#   none           = synchronization disabled
 sync = two-way
 
 # overrides the supported synchronization modes
 syncModes = slow,two-way,refresh-client,refresh-server
 
 # specifies the format of the data
-# text/x-vcalendar = Evolution calender data [not implemented yet]
+# text/x-vcalendar = Evolution calender data (as expected by Sync4j server)
+# text/x-todo = Evolution task data
 # text/x-vcard = Evolution contact data
 type = text/x-vcard
 

@@ -43,12 +43,6 @@ EvolutionContactSource::EvolutionContactSource( const EvolutionContactSource &ot
 {
 }
 
-
-EvolutionContactSource::~EvolutionContactSource()
-{
-    close();
-}
-
 EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
 {
     ESourceList *sources = NULL;
@@ -90,139 +84,66 @@ void EvolutionContactSource::open()
     }
 }
 
-int EvolutionContactSource::beginSync()
+void EvolutionContactSource::beginSyncThrow(bool needAll,
+                                            bool needPartial,
+                                            bool deleteLocal)
 {
-    string buffer = "sync mode is: ";
-    SyncMode mode = getSyncMode();
-    buffer += mode == SYNC_SLOW ? "slow" :
-        mode == SYNC_TWO_WAY ? "two-way" :
-        mode == SYNC_ONE_WAY_FROM_SERVER ? "one-way" :
-        mode == SYNC_REFRESH_FROM_SERVER ? "refresh from server" :
-        mode == SYNC_REFRESH_FROM_CLIENT ? "refresh from client" :
-        mode == SYNC_NONE ? "none" :
-        "???";
-    LOG.info( buffer.c_str() );
+    GError *gerror = NULL;
 
-    try {
-        GError *gerror = NULL;
-
-        // reset state
-        m_isModified = false;
-        m_allItems.clear();
-        m_newItems.clear();
-        m_updatedItems.clear();
-        m_deletedItems.clear();
-
-        const char *error = getenv("SYNCEVOLUTION_BEGIN_SYNC_ERROR");
-        if (error && strstr(error, getName())) {
-            LOG.error("simulate error");
-            throw "artificial error in beginSync()";
+    if (deleteLocal) {
+        gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+        GList *nextItem;
+        if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+            throwError( "reading all items", gerror );
         }
-    
-        // determine what to do
-        bool needAll = false;
-        bool needPartial = false;
-        bool deleteLocal = false;
-        switch (mode) {
-         case SYNC_SLOW:
-            needAll = true;
-            m_isModified = true;
-            break;
-         case SYNC_TWO_WAY:
-            needPartial = true;
-            break;
-         case SYNC_REFRESH_FROM_SERVER:
-            deleteLocal = true;
-            m_isModified = true;
-            break;
-         case SYNC_REFRESH_FROM_CLIENT:
-            needAll = true;
-            break;
-         case SYNC_NONE:
-            // special mode for testing: prepare both all and partial lists
-            needAll = needPartial = true;
-            break;
-         default:
-            throw "unsupported sync mode, valid are only: slow, two-way, refresh";
-            break;
-        }
-
-        if (deleteLocal) {
-            gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
-            GList *nextItem;
-            if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
-                throwError( "reading all items", gerror );
-            }
-            while (nextItem) {
-                const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
+        while (nextItem) {
+            const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
                                                                 E_CONTACT_UID);
-                if (!e_book_remove_contact( m_addressbook, uid, &gerror ) ) {
-                    throwError( string( "deleting contact" ) + uid,
-                                gerror );
-                }
-                nextItem = nextItem->next;
+            if (!e_book_remove_contact( m_addressbook, uid, &gerror ) ) {
+                throwError( string( "deleting contact" ) + uid,
+                            gerror );
             }
+            nextItem = nextItem->next;
         }
+    }
 
-        if (needAll) {
-            gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
-            GList *nextItem;
-            if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
-                throwError( "reading all items", gerror );
-            }
-            while (nextItem) {
-                const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
+    if (needAll) {
+        gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+        GList *nextItem;
+        if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+            throwError( "reading all items", gerror );
+        }
+        while (nextItem) {
+            const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
                                                                 E_CONTACT_UID);
-                logItem( string(uid), "existing item" );
-                m_allItems.push_back(uid);
-                nextItem = nextItem->next;
-            }
+            m_allItems.addItem(uid);
+            nextItem = nextItem->next;
         }
+    }
 
-        if (needPartial) {
-            GList *nextItem;
-            if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
-                throwError( "reading changes", gerror );
-            }
-            while (nextItem) {
-                EBookChange *ebc = (EBookChange *)nextItem->data;
-                const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
-
-                switch (ebc->change_type) {            
-                 case E_BOOK_CHANGE_CARD_ADDED:
-                    logItem( string(uid), "was added" );
-                    m_newItems.push_back( uid );
-                    break;
-                 case E_BOOK_CHANGE_CARD_MODIFIED:
-                    logItem( string(uid), "was modified" );
-                    m_updatedItems.push_back( uid );
-                    break;
-                 case E_BOOK_CHANGE_CARD_DELETED:
-                    logItem( string(uid), "was deleted" );
-                    m_deletedItems.push_back( uid );
-                    break;
-                }
-                nextItem = nextItem->next;
-            }
+    if (needPartial) {
+        GList *nextItem;
+        if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
+            throwError( "reading changes", gerror );
         }
-    } catch( ... ) {
-        m_hasFailed = true;
-        // TODO: properly set error
-        return 1;
-    }
-    return 0;
-}
+        while (nextItem) {
+            EBookChange *ebc = (EBookChange *)nextItem->data;
+            const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
 
-int EvolutionContactSource::endSync()
-{
-    try {
-        endSyncThrow();
-    } catch ( ... ) {
-        m_hasFailed = true;
-        return 1;
+            switch (ebc->change_type) {            
+             case E_BOOK_CHANGE_CARD_ADDED:
+                m_newItems.addItem(uid);
+                break;
+             case E_BOOK_CHANGE_CARD_MODIFIED:
+                m_updatedItems.addItem(uid);
+                break;
+             case E_BOOK_CHANGE_CARD_DELETED:
+                m_deletedItems.addItem(uid);
+                break;
+            }
+            nextItem = nextItem->next;
+        }
     }
-    // TODO: sync engine ignores return code, work around this?
-    return m_hasFailed ? 1 : 0;
 }
 
 void EvolutionContactSource::endSyncThrow()
@@ -386,7 +307,7 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     return data;
 }
 
-void EvolutionContactSource::setItemStatus(const char *key, int status)
+void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
 {
     switch (status) {
      case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA: {
@@ -424,119 +345,91 @@ void EvolutionContactSource::setItemStatus(const char *key, int status)
         break;
      }
      default:
-        EvolutionSyncSource::setItemStatus(key, status);
+        EvolutionSyncSource::setItemStatusThrow(key, status);
         break;
     }
 }
 
-int EvolutionContactSource::addItem(SyncItem& item)
+void EvolutionContactSource::addItemThrow(SyncItem& item)
 {
-    try {
-        logItem( item, "adding" );
-
-        string data;
-        if( strcmp(item.getDataType(), "raw" ) ) {
-            data = preparseVCard(item);
-        } else {
-            data = (const char *)item.getData();
-        }
-        gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
-        if( contact ) {
-            GError *gerror = NULL;
-            e_contact_set(contact, E_CONTACT_UID, NULL);
-            if (e_book_add_contact(m_addressbook, contact, &gerror)) {
-                item.setKey( (const char *)e_contact_get_const( contact, E_CONTACT_UID ) );
-            } else {
-                throwError( "storing new contact", gerror );
-            }
-        } else {
-            throwError( string( "parsing vcard" ) + data,
-                        NULL );
-        }
-
-        m_isModified = true;
-    } catch ( ... ) {
-        m_hasFailed = true;
-        return STC_COMMAND_FAILED;
+    string data;
+    if( strcmp(item.getDataType(), "raw" ) ) {
+        data = preparseVCard(item);
+    } else {
+        data = (const char *)item.getData();
     }
-    return STC_OK;
+    gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
+    if( contact ) {
+        GError *gerror = NULL;
+        e_contact_set(contact, E_CONTACT_UID, NULL);
+        if (e_book_add_contact(m_addressbook, contact, &gerror)) {
+            item.setKey( (const char *)e_contact_get_const( contact, E_CONTACT_UID ) );
+        } else {
+            throwError( "storing new contact", gerror );
+        }
+    } else {
+        throwError( string( "parsing vcard" ) + data,
+                    NULL );
+    }
 }
 
-int EvolutionContactSource::updateItem(SyncItem& item)
+void EvolutionContactSource::updateItemThrow(SyncItem& item)
 {
-    try {
-        logItem( item, "updating" );
+    string data = preparseVCard(item);
+    gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
+    if( contact ) {
+        GError *gerror = NULL;
 
-        string data = preparseVCard(item);
-        gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
-        if( contact ) {
-            GError *gerror = NULL;
-
-            // The following code commits the new_from_vcard contact using the
-            // existing UID. It has been observed in Evolution 2.0.4 that the
-            // changes were then not "noticed" properly by the Evolution GUI.
-            //
-            // The code below was supposed to "notify" Evolution of the change by
-            // loaded the updated contact, modifying it, committing, restoring
-            // and committing once more, but that did not solve the problem.
-            //
-            // TODO: test with current Evolution
-            e_contact_set( contact, E_CONTACT_UID, item.getKey() );
-            if ( e_book_commit_contact(m_addressbook, contact, &gerror) ) {
-                const char *uid = (const char *)e_contact_get_const(contact, E_CONTACT_UID);
-                if (uid) {
-                    item.setKey( uid );
-                }
+        // The following code commits the new_from_vcard contact using the
+        // existing UID. It has been observed in Evolution 2.0.4 that the
+        // changes were then not "noticed" properly by the Evolution GUI.
+        //
+        // The code below was supposed to "notify" Evolution of the change by
+        // loaded the updated contact, modifying it, committing, restoring
+        // and committing once more, but that did not solve the problem.
+        //
+        // TODO: test with current Evolution
+        e_contact_set( contact, E_CONTACT_UID, item.getKey() );
+        if ( e_book_commit_contact(m_addressbook, contact, &gerror) ) {
+            const char *uid = (const char *)e_contact_get_const(contact, E_CONTACT_UID);
+            if (uid) {
+                item.setKey( uid );
+            }
 
 #if 0
-                EContact *refresh_contact;
-                if (! e_book_get_contact( m_addressbook,
-                                          uid,
-                                          &refresh_contact,
-                                          &gerror ) ) {
-                    throwError( string( "reading refresh contact" ) + uid,
-                                gerror );
-                }
-                string nick = (const char *)e_contact_get_const(refresh_contact, E_CONTACT_NICKNAME);
-                string nick_mod = nick + "_";
-                e_contact_set(refresh_contact, E_CONTACT_NICKNAME, (void *)nick_mod.c_str());
-                e_book_commit_contact(m_addressbook, refresh_contact, &gerror);
-                e_contact_set(refresh_contact, E_CONTACT_NICKNAME, (void *)nick.c_str());
-                e_book_commit_contact(m_addressbook, refresh_contact, &gerror);
-#endif
-            } else {
-                throwError( string( "updating contact" ) + item.getKey(), gerror );
+            EContact *refresh_contact;
+            if (! e_book_get_contact( m_addressbook,
+                                      uid,
+                                      &refresh_contact,
+                                      &gerror ) ) {
+                throwError( string( "reading refresh contact" ) + uid,
+                            gerror );
             }
+            string nick = (const char *)e_contact_get_const(refresh_contact, E_CONTACT_NICKNAME);
+            string nick_mod = nick + "_";
+            e_contact_set(refresh_contact, E_CONTACT_NICKNAME, (void *)nick_mod.c_str());
+            e_book_commit_contact(m_addressbook, refresh_contact, &gerror);
+            e_contact_set(refresh_contact, E_CONTACT_NICKNAME, (void *)nick.c_str());
+            e_book_commit_contact(m_addressbook, refresh_contact, &gerror);
+#endif
         } else {
-            throwError( string( "parsing vcard" ) + data,
-                        NULL );
+            throwError( string( "updating contact" ) + item.getKey(), gerror );
         }
-
-        m_isModified = true;
-    } catch ( ... ) {
-        m_hasFailed = true;
-        return STC_COMMAND_FAILED;
+    } else {
+        throwError( string( "parsing vcard" ) + data,
+                    NULL );
     }
-    return STC_OK;
 }
 
-int EvolutionContactSource::deleteItem(SyncItem& item)
+void EvolutionContactSource::deleteItemThrow(SyncItem& item)
 {
-    try {
-        logItem( item, "deleting" );
-
-        GError *gerror = NULL;
-        if (!e_book_remove_contact( m_addressbook, item.getKey(), &gerror ) ) {
-            throwError( string( "deleting contact" ) + item.getKey(),
-                        gerror );
-        }
-
-        m_isModified = true;
-    } catch( ... ) {
-        m_hasFailed = true;
-        return STC_COMMAND_FAILED;
+    GError *gerror = NULL;
+    if (!e_book_remove_contact( m_addressbook, item.getKey(), &gerror ) ) {
+        throwError( string( "deleting contact" ) + item.getKey(),
+                    gerror );
     }
-    return STC_OK;
+
+    m_isModified = true;
 }
 
 const char *EvolutionContactSource::getMimeType()

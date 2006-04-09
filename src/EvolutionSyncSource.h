@@ -181,7 +181,6 @@ class EvolutionSyncSource : public SyncSource
     virtual SyncItem* getNextDeletedItem() { return m_deletedItems.iterate(); }
     virtual SyncItem* getFirstItemKey() { return getFirstItem(); }
     virtual SyncItem* getNextItemKey() { return getNextItem(); }
-    virtual void setItemStatus(const char *key, int status);
 
     // if the SyncSource was fixed to a certain mode, then override
     // the configuration in prepareSync()
@@ -194,7 +193,15 @@ class EvolutionSyncSource : public SyncSource
     void setFixedSyncMode(SyncMode sourceSyncMode) {
         m_fixedSyncMode = sourceSyncMode;
     }
-	 
+
+    virtual int beginSync();
+    virtual int endSync();
+    virtual void setItemStatus(const char *key, int status);
+    virtual int addItem(SyncItem& item);
+    virtual int updateItem(SyncItem& item);
+    virtual int deleteItem(SyncItem& item);
+
+
   protected:
     /**
      * searches the list for a source with the given uri or name
@@ -215,6 +222,32 @@ class EvolutionSyncSource : public SyncSource
      */
     void throwError( const string &action, GError *gerror );
 
+    /**
+     * source specific part of beginSync() - throws exceptions in case of error
+     *
+     * @param needAll           fill m_allItems
+     * @param needPartial       fill m_new/deleted/modifiedItems
+     * @param deleteLocal       erase all items
+     */
+    virtual void beginSyncThrow(bool needAll,
+                                bool needPartial,
+                                bool deleteLocal) = 0;
+
+    /**
+     * source specific part of endSync/setItemStatus/addItem/updateItem/deleteItem:
+     * throw exception in case of error
+     */
+    virtual void endSyncThrow() = 0;
+    virtual void setItemStatusThrow(const char *key, int status);
+    virtual void addItemThrow(SyncItem& item) = 0;
+    virtual void updateItemThrow(SyncItem& item) = 0;
+    virtual void deleteItemThrow(SyncItem& item) = 0;
+
+
+    /** log a one-line info about an item */
+    virtual void logItem(const string &uid, const string &info) = 0;
+    virtual void logItem(SyncItem &item, const string &info) = 0;
+
     const string m_changeId;
     const string m_id;
 
@@ -223,7 +256,7 @@ class EvolutionSyncSource : public SyncSource
         EvolutionSyncSource &m_source;
         const string m_type;
         const SyncState m_state;
-        
+
       public:
         itemList( EvolutionSyncSource &source, const string &type, SyncState state ) :
             m_source( source ),
@@ -255,6 +288,12 @@ class EvolutionSyncSource : public SyncSource
                 return NULL;
             }
         }
+
+        /** add to list, with logging */
+        void addItem(const string &uid) {
+            m_source.logItem(uid, m_type);
+            push_back(uid);
+        }
     };
     
     /** UIDs of all/all new/all updated/all deleted items */
@@ -276,6 +315,14 @@ class EvolutionSyncSource : public SyncSource
 
     /** if not SYNC_NONE then override preferred sync mode in prepareSync() */
     SyncMode m_fixedSyncMode;
+
+  private:
+    /**
+     * private wrapper function for add/delete/updateItemThrow()
+     */
+    int processItem(const char *action,
+                    void (EvolutionSyncSource::*func)(SyncItem& item),
+                    SyncItem& item);
 };
 
 #endif // INCL_EVOLUTIONSYNCSOURCE

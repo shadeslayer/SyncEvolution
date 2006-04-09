@@ -87,6 +87,8 @@ template<class T, class base = T> class gptr {
     T *operator-> () { return m_pointer; }
     T &operator* ()  { return *m_pointer; }
     operator T * () { return m_pointer; }
+    operator void * () { return (void *)m_pointer; }
+    operator bool () { return m_pointer != NULL; }
 };
 
 #endif
