@@ -1,3 +1,58 @@
+2006-04-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp:
+	refactored code so that test suites can be built from the base template TestEvolution class:
+	currently defined are ContactSource (local tests) and ContactSync (synchronization with server), tests work exactly as before
+
+	* src/EvolutionContactSource.cpp:
+	text/x-vcard is more suitable for vcard 2.1
+
+2006-04-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp:
+	made sleep configurable (off by default), synchronize only one source
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/TestEvolution.cpp, src/syncevolution.cpp, etc/Makefile.am, etc/localhost_1/spds/sources/addressbook_1/config.txt, README, configure.in:
+	- added support for calendars and tasks: not yet tested automatically
+	  but manual tests show that it works in principle, albeit with some
+	  loss of attributes in the server for calendars (time zone)
+	- removed "disabled" configuration option, use "sync = none" instead
+	- added selection of databases to synchronize via additional command
+	  line parameters
+
+	Source:
+	- Refactored code so that EvolutionSyncSource contains the client-library
+	  facing code and commong logging/error handling. EvolutionContactSource
+	  and EvolutionCalendarSource (for both calendars and tasks) can now
+	  indicate errors via exceptions in all functions.
+
+2006-04-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README, configure.in, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h, src/TestEvolution.cpp, src/syncevolution.cpp:
+	adapted to head revision of Sync4j C++ client library
+
+	* src/Makefile.am: testVCard.vcf was missing in source distribution
+
+2006-03-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/sync4j-client-api-sdkcpp_3_0_6a.diff:
+	fix for #304805: testing return code of SyncClient::beginSync()
+
+2006-03-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* NEWS, README, configure.in, etc/localhost_1/spds/syncml/config.txt, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h, src/Makefile.am, src/syncevolution.cpp:
+	- implemented automatic backups, logging and database comparison
+	- prepared 0.2 release
+
+	* src/EvolutionContactSource.cpp:
+	set TYPE=OTHER also for EMAIL if no other type found
+
+	* src/normalize_vcard.pl:
+	ignore some more irrelevant vcard differences (TYPE=PREF, extra separators)
+
+	* src/sync4j-client-api-sdkcpp_3_0_6a.diff, src/testVCard.vcf:
+	when using quoted-printable, also encode non-ASCII for consistency
+
 2006-03-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* NEWS, README, configure.in, etc/localhost_1/spds/syncml/config.txt, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h, src/Makefile.am, src/syncevolution.cpp:
