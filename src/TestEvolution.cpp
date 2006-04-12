@@ -105,31 +105,31 @@ static int countItems( EvolutionSyncSource &source )
     return res;
 }
 
-class TestEvolution : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE( TestEvolution );
+/**
+ * the base class for all kind of tests, using
+ * a class derived from EvolutionSyncSource to
+ * to access the backend
+ */
+template<class T> class TestEvolution : public CppUnit::TestFixture {
+    /**
+     * base name of the sync source, e.g. "addressbook"
+     */
+    const string m_syncSourceName;
 
-    CPPUNIT_TEST( testContactOpen );
-    CPPUNIT_TEST( testContactSimpleInsert );
-    CPPUNIT_TEST( testContactDeleteAll );
-    CPPUNIT_TEST( testContactIterateTwice );
-    CPPUNIT_TEST( testContactComplexInsert );
-    CPPUNIT_TEST( testContactUpdate );
-    CPPUNIT_TEST( testContactChanges );
-    CPPUNIT_TEST( testContactImport );
-
-    CPPUNIT_TEST( testRefreshSync );
-    CPPUNIT_TEST( testTwoWaySync );
-    CPPUNIT_TEST( testSlowSync );
-    CPPUNIT_TEST( testDeleteAll );
-    CPPUNIT_TEST( testRefreshSemantic );
-    CPPUNIT_TEST( testCopy );
-    CPPUNIT_TEST( testUpdate );
-    CPPUNIT_TEST( testDelete );
-    CPPUNIT_TEST( testMerge );
-    CPPUNIT_TEST( testVCard );
-
-    CPPUNIT_TEST_SUITE_END();
+    /**
+     * file containing items to be copied and compared after copying
+     */
+    const string m_testItems;
+    
+    /**
+     * initial item which gets inserted by testSimpleInsert(),
+     * default item to be used for updating it,
+     * updates of it for triggering a merge conflict,
+     * 
+     */
+    const string m_insertItem,
+        m_updateItem,
+        m_mergeItem1, m_mergeItem2;
 
     /**
      * duration to sleep after a synchronization -
@@ -137,10 +137,10 @@ class TestEvolution : public CppUnit::TestFixture
      */
     int m_syncDelay;
     
-    /** the name of the contact databases */
-    string m_contactNames[2];
+    /** the name of the Evolution databases */
+    string m_databases[2];
 
-    /** two different sync configurations, referencing the address books in m_contactNames */
+    /** two different sync configurations, referencing the address books in m_databases */
     string m_syncConfigs[2];
 
     /** different change ids */
@@ -152,35 +152,17 @@ class TestEvolution : public CppUnit::TestFixture
     /** filename of server log */
     string m_serverLog;
 
-    /** assumes that one element is currently inserted and updates it */
-    void contactUpdate( int config = 0, const char *vcard =
-                        "BEGIN:VCARD\n"
-                        "VERSION:3.0\n"
-                        "URL:\n"
-                        "TITLE:\n"
-                        "ROLE:\n"
-                        "X-EVOLUTION-MANAGER:\n"
-                        "X-EVOLUTION-ASSISTANT:\n"
-                        "NICKNAME:user1\n"
-                        "X-EVOLUTION-SPOUSE:\n"
-                        "NOTE:\n"
-                        "FN:Joan Doe\n"
-                        "N:Doe;Joan;;;\n"
-                        "X-EVOLUTION-FILE-AS:Doe\\, Joan\n"
-                        "TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=1:business 1\n"
-                        "TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=2:business 2\n"
-                        "X-EVOLUTION-BLOG-URL:\n"
-                        "BDAY:2006-01-08\n"
-                        "X-EVOLUTION-VIDEO-URL:\n"
-                        "X-MOZILLA-HTML:TRUE\n"
-                        "END:VCARD\n"
-        );
+    /**
+     * assumes that one element is currently inserted and updates it
+     * with the given item or m_updateItem
+     */
+    void update( int config = 0, const char *vcard = NULL );
 
     /** performs one sync operation */
     void doSync(const string &logfile, int config, SyncMode syncMode);
 
-    /** deletes all contacts locally via EvolutionContactSource */
-    void contactDeleteAll(int config);
+    /** deletes all items locally via T sync source */
+    void deleteAll(int config);
 
     enum DeleteAllMode {
         DELETE_ALL_SYNC,   /**< make sure client and server are in sync,
@@ -199,15 +181,30 @@ class TestEvolution : public CppUnit::TestFixture
     void compareAddressbooks(const string &prefix, const char *refVCard = NULL);
 
 public:
+    TestEvolution(
+        const char *syncSourceName,
+        const char *insertItem,
+        const char *updateItem,
+        const char *mergeItem1,
+        const char *mergeItem2
+        ) :
+        m_syncSourceName(syncSourceName),
+        m_insertItem(insertItem),
+        m_updateItem(updateItem),
+        m_mergeItem1(mergeItem1),
+        m_mergeItem2(mergeItem2),
+        m_testItems(string(syncSourceName) + ".tests")
+        {}
+
     void setUp() {
-        m_contactNames[0] = "SyncEvolution test #1";
-        m_contactNames[1] = "SyncEvolution test #2";
+        m_databases[0] = "SyncEvolution test #1";
+        m_databases[1] = "SyncEvolution test #2";
         m_syncConfigs[0] = "localhost_1";
         m_syncConfigs[1] = "localhost_2";
         m_changeIds[0] = "SyncEvolution Change ID #0";
         m_changeIds[1] = "SyncEvolution Change ID #1";
-        m_source[0] = "addressbook_1";
-        m_source[1] = "addressbook_2";
+        m_source[0] = m_syncSourceName + "_1";
+        m_source[1] = m_syncSourceName + "_2";
 
         const char *log = getenv( "SYNC4J_LOG" );
         if (log) {
@@ -220,33 +217,33 @@ public:
     }
 
     //
-    // tests involving only EvolutionContactSource:
-    // - done on m_contactNames[0]
+    // tests involving only T sync source:
+    // - done on m_databases[0]
     // - change tracking is tested with two different
     //   change markers in m_changeIds[0/1]
     //
 
     // opening address book
-    void testContactOpen();
+    void testOpen();
     // insert one contact
-    void testContactSimpleInsert();
-    // delete all contacts
-    void testContactDeleteAll();
-    // restart scanning of contacts
-    void testContactIterateTwice();
-    // clean address book, then insert
-    void testContactComplexInsert();
-    // clean address book, insert contact, update it
-    void testContactUpdate();
+    void testSimpleInsert();
+    // delete all items
+    void testLocalDeleteAll();
+    // restart scanning of items
+    void testIterateTwice();
+    // clean database, then insert
+    void testComplexInsert();
+    // clean database, insert item, update it
+    void testLocalUpdate();
     // complex sequence of address book changes
-    void testContactChanges();
+    void testChanges();
     // clean database, import file, then export again and compare
-    void testContactImport();
+    void testImport();
 
     //
     // tests involving real synchronization:
     // - expects existing configurations called as in m_syncConfigs
-    // - changes due to syncing are monitored via direct access through EvolutionContactSource
+    // - changes due to syncing are monitored via direct access through T sync source
     //
 
     // do a refresh sync without additional checks
@@ -268,50 +265,162 @@ public:
     // test what the server does when it finds that different
     // fields of the same item have been modified
     void testMerge();
-    // creates several contact test cases, transmits them back and forth and
+    // creates several items, transmits them back and forth and
     // then compares which of them have been preserved
-    void testVCard();
+    void testItems();
     
 };
 
-// Registers the fixture into the 'registry'
-CPPUNIT_TEST_SUITE_REGISTRATION( TestEvolution );
-
-void TestEvolution::testContactOpen()
+/**
+ * TestEvolution configured for use with contacts
+ */
+class TestContact : public TestEvolution<EvolutionContactSource>
 {
-    EvolutionContactSource source( string( "dummy" ),
-                                   m_changeIds[0],
-                                   m_contactNames[0] );
+public:
+    TestContact() :
+        TestEvolution<EvolutionContactSource>(
+            "addressbook",
+            
+            /* initial item */
+            "BEGIN:VCARD\n"
+            "VERSION:3.0\n"
+            "URL:\n"
+            "TITLE:tester\n"
+            "ROLE:\n"
+            "X-EVOLUTION-MANAGER:\n"
+            "X-EVOLUTION-ASSISTANT:\n"
+            "NICKNAME:user1\n"
+            "X-EVOLUTION-SPOUSE:\n"
+            "NOTE:\n"
+            "FN:John Doe\n"
+            "N:Doe;John;;;\n"
+            "TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=1:business 1\n"
+            "X-EVOLUTION-FILE-AS:Doe\\, John\n"
+            "X-EVOLUTION-BLOG-URL:\n"
+            "X-EVOLUTION-VIDEO-URL:\n"
+            "X-MOZILLA-HTML:FALSE\n"
+            "END:VCARD\n",
+
+            /* default update item which replaces the initial item */
+            "BEGIN:VCARD\n"
+            "VERSION:3.0\n"
+            "URL:\n"
+            "TITLE:\n"
+            "ROLE:\n"
+            "X-EVOLUTION-MANAGER:\n"
+            "X-EVOLUTION-ASSISTANT:\n"
+            "NICKNAME:user1\n"
+            "X-EVOLUTION-SPOUSE:\n"
+            "NOTE:\n"
+            "FN:Joan Doe\n"
+            "N:Doe;Joan;;;\n"
+            "X-EVOLUTION-FILE-AS:Doe\\, Joan\n"
+            "TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=1:business 1\n"
+            "TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=2:business 2\n"
+            "X-EVOLUTION-BLOG-URL:\n"
+            "BDAY:2006-01-08\n"
+            "X-EVOLUTION-VIDEO-URL:\n"
+            "X-MOZILLA-HTML:TRUE\n"
+            "END:VCARD\n",
+
+            /* add a telephone number to initial item in testMerge() */
+            "BEGIN:VCARD\n"
+            "VERSION:3.0\n"
+            "URL:\n"
+            "TITLE:tester\n"
+            "ROLE:\n"
+            "X-EVOLUTION-MANAGER:\n"
+            "X-EVOLUTION-ASSISTANT:\n"
+            "NICKNAME:user1\n"
+            "X-EVOLUTION-SPOUSE:\n"
+            "NOTE:\n"
+            "FN:John Doe\n"
+            "N:Doe;John;;;\n"
+            "X-EVOLUTION-FILE-AS:Doe\\, John\n"
+            "X-EVOLUTION-BLOG-URL:\n"
+            "X-EVOLUTION-VIDEO-URL:\n"
+            "X-MOZILLA-HTML:FALSE\n"
+            "TEL;TYPE=WORK:business 1\n"
+            "END:VCARD\n",
+
+            // add a birthday, modify the title and X-MOZILLA-HTML
+            "BEGIN:VCARD\n"
+            "VERSION:3.0\n"
+            "URL:\n"
+            "TITLE:developer\n"
+            "ROLE:\n"
+            "X-EVOLUTION-MANAGER:\n"
+            "X-EVOLUTION-ASSISTANT:\n"
+            "NICKNAME:user1\n"
+            "X-EVOLUTION-SPOUSE:\n"
+            "NOTE:\n"
+            "FN:John Doe\n"
+            "N:Doe;John;;;\n"
+            "X-EVOLUTION-FILE-AS:Doe\\, John\n"
+            "X-EVOLUTION-BLOG-URL:\n"
+            "X-EVOLUTION-VIDEO-URL:\n"
+            "X-MOZILLA-HTML:TRUE\n"
+            "BDAY:2006-01-08\n"
+            "END:VCARD\n" )
+        {}
+};
+
+class ContactSource : public TestContact
+{
+    CPPUNIT_TEST_SUITE( ContactSource );
+
+    CPPUNIT_TEST( testOpen );
+    CPPUNIT_TEST( testSimpleInsert );
+    CPPUNIT_TEST( testLocalDeleteAll );
+    CPPUNIT_TEST( testIterateTwice );
+    CPPUNIT_TEST( testComplexInsert );
+    CPPUNIT_TEST( testLocalUpdate );
+    CPPUNIT_TEST( testChanges );
+    CPPUNIT_TEST( testImport );
+
+    CPPUNIT_TEST_SUITE_END();
+};
+
+class ContactSync : public TestContact
+{
+    CPPUNIT_TEST_SUITE( ContactSync );
+
+    CPPUNIT_TEST( testRefreshSync );
+    CPPUNIT_TEST( testTwoWaySync );
+    CPPUNIT_TEST( testSlowSync );
+    CPPUNIT_TEST( testDeleteAll );
+    CPPUNIT_TEST( testRefreshSemantic );
+    CPPUNIT_TEST( testCopy );
+    CPPUNIT_TEST( testUpdate );
+    CPPUNIT_TEST( testDelete );
+    CPPUNIT_TEST( testMerge );
+    CPPUNIT_TEST( testItems );
+
+    CPPUNIT_TEST_SUITE_END();
+};
+
+// Registers the fixture into the 'registry'
+CPPUNIT_TEST_SUITE_REGISTRATION( ContactSource );
+CPPUNIT_TEST_SUITE_REGISTRATION( ContactSync );
+
+template<class T> void TestEvolution<T>::testOpen()
+{
+    T source(
+        string("dummy"),
+        m_changeIds[0],
+        m_databases[0]);
 
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
 }
 
-void TestEvolution::testContactSimpleInsert()
+template<class T> void TestEvolution<T>::testSimpleInsert()
 {
-    const char *vcard =
-        "BEGIN:VCARD\n"
-        "VERSION:3.0\n"
-        "URL:\n"
-        "TITLE:tester\n"
-        "ROLE:\n"
-        "X-EVOLUTION-MANAGER:\n"
-        "X-EVOLUTION-ASSISTANT:\n"
-        "NICKNAME:user1\n"
-        "X-EVOLUTION-SPOUSE:\n"
-        "NOTE:\n"
-        "FN:John Doe\n"
-        "N:Doe;John;;;\n"
-        "TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=1:business 1\n"
-        "X-EVOLUTION-FILE-AS:Doe\\, John\n"
-        "X-EVOLUTION-BLOG-URL:\n"
-        "X-EVOLUTION-VIDEO-URL:\n"
-        "X-MOZILLA-HTML:FALSE\n"
-        "END:VCARD\n";
+    const char *vcard = m_insertItem.c_str();
 
-    EvolutionContactSource source(
+    T source(
         string( "dummy" ),
         m_changeIds[0],
-        m_contactNames[0] );
+        m_databases[0]);
     
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
@@ -339,13 +448,14 @@ void TestEvolution::testContactSimpleInsert()
     delete sameItem;
 }
 
-void TestEvolution::contactDeleteAll(int config)
+template<class T> void TestEvolution<T>::deleteAll(int config)
 {
-    testContactSimpleInsert();
+    testSimpleInsert();
         
-    EvolutionContactSource source( string( "dummy" ),
-                                   m_changeIds[0],
-                                   m_contactNames[config] );
+    T source(
+        string( "dummy" ),
+        m_changeIds[0],
+        m_databases[config]);
 
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
@@ -372,16 +482,17 @@ void TestEvolution::contactDeleteAll(int config)
     CPPUNIT_ASSERT( countDeletedItems( source ) == 0 );    
 }
 
-void TestEvolution::testContactDeleteAll()
+template<class T> void TestEvolution<T>::testLocalDeleteAll()
 {
-    contactDeleteAll(0);
+    deleteAll(0);
 }
 
-void TestEvolution::testContactIterateTwice()
+template<class T> void TestEvolution<T>::testIterateTwice()
 {
-    EvolutionContactSource source( string( "dummy" ),
-                                   m_changeIds[0],
-                                   m_contactNames[0] );
+    T source(
+        string( "dummy" ),
+        m_changeIds[0],
+        m_databases[0]);
 
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
@@ -391,18 +502,23 @@ void TestEvolution::testContactIterateTwice()
         countItems(source) == countItems(source) );
 }
 
-void TestEvolution::testContactComplexInsert()
+template<class T> void TestEvolution<T>::testComplexInsert()
 {
-    testContactDeleteAll();
-    testContactSimpleInsert();
-    testContactIterateTwice();
+    testLocalDeleteAll();
+    testSimpleInsert();
+    testIterateTwice();
 }
 
-void TestEvolution::contactUpdate( int config, const char *vcard )
+template<class T> void TestEvolution<T>::update( int config, const char *vcard )
 {
-    EvolutionContactSource source( string( "dummy" ),
-                                   m_changeIds[config],
-                                   m_contactNames[config] );
+    if (!vcard) {
+        vcard = m_updateItem.c_str();
+    }
+
+    T source(
+        string( "dummy" ),
+        m_changeIds[config],
+        m_databases[config]);
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     SyncItem *item;
@@ -426,21 +542,22 @@ void TestEvolution::contactUpdate( int config, const char *vcard )
     delete modifiedItem;
 }
 
-void TestEvolution::testContactUpdate()
+template<class T> void TestEvolution<T>::testLocalUpdate()
 {
-    testContactDeleteAll();
-    testContactSimpleInsert();
-    contactUpdate();
+    testLocalDeleteAll();
+    testSimpleInsert();
+    update();
 }
 
-void TestEvolution::testContactChanges()
+template<class T> void TestEvolution<T>::testChanges()
 {
-    testContactDeleteAll();
-    testContactSimpleInsert();
+    testLocalDeleteAll();
+    testSimpleInsert();
 
-    EvolutionContactSource source( string( "dummy" ),
-                                   m_changeIds[1],
-                                   m_contactNames[0] );
+    T source(
+        string( "dummy" ),
+        m_changeIds[1],
+        m_databases[0]);
         
     // update change id #1
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
@@ -459,7 +576,7 @@ void TestEvolution::testContactChanges()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     // delete item again
-    testContactDeleteAll();
+    testLocalDeleteAll();
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
@@ -477,7 +594,7 @@ void TestEvolution::testContactChanges()
     delete deletedItem;
         
     // insert another item
-    testContactSimpleInsert();
+    testSimpleInsert();
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 1 );
@@ -495,7 +612,7 @@ void TestEvolution::testContactChanges()
     delete newItem;
 
     // update item
-    contactUpdate();
+    update();
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 1 );
@@ -510,14 +627,14 @@ void TestEvolution::testContactChanges()
     delete updatedItem;
 }
 
-void TestEvolution::testContactImport()
+template<class T> void TestEvolution<T>::testImport()
 {
-    testContactDeleteAll();
+    testLocalDeleteAll();
     
-    EvolutionContactSource source(
+    T source(
         string( "dummy" ),
         m_changeIds[0],
-        m_contactNames[0] );
+        m_databases[0]);
 
     // insert test cases
     setLogFile( "testVCard.insert.log", TRUE );
@@ -528,7 +645,7 @@ void TestEvolution::testContactImport()
     
     // import the .vcf file
     ifstream input;
-    input.open("testVCard.vcf");
+    input.open(m_testItems.c_str());
     CPPUNIT_ASSERT(!input.bad());
     CPPUNIT_ASSERT(input.is_open());
     string vcard, line;
@@ -563,7 +680,7 @@ void TestEvolution::testContactImport()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 }
 
-void TestEvolution::doSync(const string &logfile, int config, SyncMode syncMode)
+template<class T> void TestEvolution<T>::doSync(const string &logfile, int config, SyncMode syncMode)
 {
     int res = 0;
 
@@ -614,47 +731,48 @@ void TestEvolution::doSync(const string &logfile, int config, SyncMode syncMode)
     CPPUNIT_ASSERT( !res );
 }
 
-void TestEvolution::testRefreshSync()
+template<class T> void TestEvolution<T>::testRefreshSync()
 {
     doSync( "testRefreshSync.client.log", 0, SYNC_REFRESH_FROM_SERVER );
 }
 
-void TestEvolution::testTwoWaySync()
+template<class T> void TestEvolution<T>::testTwoWaySync()
 {
     doSync( "testTwoWaySync.client.log", 0, SYNC_TWO_WAY );
 }
 
-void TestEvolution::testSlowSync()
+template<class T> void TestEvolution<T>::testSlowSync()
 {
     doSync( "testSlowSync.client.log", 0, SYNC_SLOW );
 }
 
-void TestEvolution::deleteAll( const string &prefix, int config, DeleteAllMode mode )
+template<class T> void TestEvolution<T>::deleteAll( const string &prefix, int config, DeleteAllMode mode )
 {
     switch (mode) {
      case DELETE_ALL_SYNC:
         // refresh (in case something is missing locally), then delete
         doSync( prefix + ".deleteall.refresh.client.log", config, SYNC_REFRESH_FROM_SERVER );
-        testContactDeleteAll();
+        testLocalDeleteAll();
         doSync( prefix + ".deleteall.twoway.client.log", config, SYNC_TWO_WAY );
         break;
      case DELETE_ALL_REFRESH:
         // delete locally
-        testContactDeleteAll();
+        testLocalDeleteAll();
         // refresh server
         doSync( prefix + ".deleteall.refreshserver.client.log", config, SYNC_REFRESH_FROM_CLIENT );
         break;
     }
 }
 
-void TestEvolution::testDeleteAll()
+template<class T> void TestEvolution<T>::testDeleteAll()
 {
-    EvolutionContactSource source( string( "dummy" ),
-                                   m_changeIds[1],
-                                   m_contactNames[0] );
+    T source(
+        string( "dummy" ),
+        m_changeIds[1],
+        m_databases[0]);
 
     // copy something to server first
-    testContactSimpleInsert();
+    testSimpleInsert();
     doSync( "testDeleteAll.insert.1.client.log", 0, SYNC_SLOW );
 
     deleteAll( "testDeleteAllSync", 0, DELETE_ALL_SYNC );
@@ -673,7 +791,7 @@ void TestEvolution::testDeleteAll()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );    
 
     // copy something to server again
-    testContactSimpleInsert();
+    testSimpleInsert();
     doSync( "testDeleteAll.insert.2.client.log", 0, SYNC_SLOW );
 
     // now try deleting using another sync method
@@ -694,52 +812,54 @@ void TestEvolution::testDeleteAll()
 
 }
 
-void TestEvolution::testRefreshSemantic()
+template<class T> void TestEvolution<T>::testRefreshSemantic()
 {
     // insert a local item immediately before refresh with empty server
     // -> no items should exist afterwards
     deleteAll( "testRefreshSemantic", 0 );
-    testContactSimpleInsert();
+    testSimpleInsert();
     doSync( "testRefreshSemantic.client.log", 0, SYNC_REFRESH_FROM_SERVER);
     
-    EvolutionContactSource source( string( "dummy" ),
-                                   m_changeIds[1],
-                                   m_contactNames[0] );
+    T source(
+        string( "dummy" ),
+        m_changeIds[1],
+        m_databases[0]);
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
 }
 
-void TestEvolution::doCopy( const string &prefix )
+template<class T> void TestEvolution<T>::doCopy( const string &prefix )
 {
     deleteAll( prefix + ".0", 0 );
     deleteAll( prefix + ".1", 1 );
 
     // insert into first database, copy to server
-    testContactSimpleInsert();
+    testSimpleInsert();
     doSync( prefix + ".0.client.log", 0, SYNC_TWO_WAY );
 
     // copy into second database
     doSync( prefix + ".1.client.log", 1, SYNC_TWO_WAY );
 
-    EvolutionContactSource copy( string( "dummy" ),
-                                   m_changeIds[0],
-                                   m_contactNames[1] );
+    T copy(
+        string( "dummy" ),
+        m_changeIds[0],
+        m_databases[1]);
     EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
     EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( copy ) == 1 );
 }
 
-void TestEvolution::testCopy()
+template<class T> void TestEvolution<T>::testCopy()
 {
     doCopy( "testCopy" );
     compareAddressbooks("testCopy");
 }
 
-void TestEvolution::testUpdate()
+template<class T> void TestEvolution<T>::testUpdate()
 {
     doCopy( "testUpdate.copy" );
-    contactUpdate();
+    update();
 
     doSync( "testUpdate.update.0.client.log", 0, SYNC_TWO_WAY );
     doSync( "testUpdate.update.1.client.log", 1, SYNC_TWO_WAY );
@@ -747,65 +867,30 @@ void TestEvolution::testUpdate()
     compareAddressbooks("testUpdate");
 }
 
-void TestEvolution::testDelete()
+template<class T> void TestEvolution<T>::testDelete()
 {
     doCopy( "testDelete.copy" );
-    testContactDeleteAll();
+    testLocalDeleteAll();
     doSync( "testDelete.delete.0.client.log", 0, SYNC_TWO_WAY );
     doSync( "testDelete.delete.1.client.log", 1, SYNC_TWO_WAY );
     
-    EvolutionContactSource copy( string( "dummy" ),
-                                   m_changeIds[1],
-                                   m_contactNames[1] );
+    T copy(
+        string( "dummy" ),
+        m_changeIds[1],
+        m_databases[1]);
     EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
     EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( copy ) == 0 );
 }
 
-void TestEvolution::testMerge()
+template<class T> void TestEvolution<T>::testMerge()
 {
     doCopy( "testMerge.copy" );
 
-    // add a telephone number
-    contactUpdate( 0,
-                   "BEGIN:VCARD\n"
-                   "VERSION:3.0\n"
-                   "URL:\n"
-                   "TITLE:tester\n"
-                   "ROLE:\n"
-                   "X-EVOLUTION-MANAGER:\n"
-                   "X-EVOLUTION-ASSISTANT:\n"
-                   "NICKNAME:user1\n"
-                   "X-EVOLUTION-SPOUSE:\n"
-                   "NOTE:\n"
-                   "FN:John Doe\n"
-                   "N:Doe;John;;;\n"
-                   "X-EVOLUTION-FILE-AS:Doe\\, John\n"
-                   "X-EVOLUTION-BLOG-URL:\n"
-                   "X-EVOLUTION-VIDEO-URL:\n"
-                   "X-MOZILLA-HTML:FALSE\n"
-                   "TEL;TYPE=WORK:business 1\n"
-                   "END:VCARD\n" );
-    // add a birthday, modify the title and X-MOZILLA-HTML
-    contactUpdate( 1,
-                   "BEGIN:VCARD\n"
-                   "VERSION:3.0\n"
-                   "URL:\n"
-                   "TITLE:developer\n"
-                   "ROLE:\n"
-                   "X-EVOLUTION-MANAGER:\n"
-                   "X-EVOLUTION-ASSISTANT:\n"
-                   "NICKNAME:user1\n"
-                   "X-EVOLUTION-SPOUSE:\n"
-                   "NOTE:\n"
-                   "FN:John Doe\n"
-                   "N:Doe;John;;;\n"
-                   "X-EVOLUTION-FILE-AS:Doe\\, John\n"
-                   "X-EVOLUTION-BLOG-URL:\n"
-                   "X-EVOLUTION-VIDEO-URL:\n"
-                   "X-MOZILLA-HTML:TRUE\n"
-                   "BDAY:2006-01-08\n"
-                   "END:VCARD\n" );
+    // update in first client
+    update( 0, m_mergeItem1.c_str() );
+    // update in second client with a non-conflicting item
+    update( 1, m_mergeItem2.c_str() );
     
     doSync( "testMerge.send.0.client.log", 0, SYNC_TWO_WAY );
     doSync( "testMerge.recv.1.client.log", 1, SYNC_TWO_WAY );
@@ -815,83 +900,29 @@ void TestEvolution::testMerge()
     // disabled because the address books won't be identical with Sync4j.
     // What happens instead is that the server sends a
     // STC_CONFLICT_RESOLVED_WITH_SERVER_DATA and
-    // EvolutionContactSource::setItemStatus() creates a copy.
+    // T::setItemStatus() creates a copy.
     // TODO: check what the server did (from testMerge.recv.1.client.log) and
     //       test either for identical address books or how many items exist
     // compareAddressbooks( 1 );
 
     // this code here assumes STC_CONFLICT_RESOLVED_WITH_SERVER_DATA
-    EvolutionContactSource client0(
+    T client0(
         string( "dummy" ),
         m_changeIds[0],
-        m_contactNames[0] );
+        m_databases[0]);
     
     EVOLUTION_ASSERT_NO_THROW( client0, client0.open() );
     EVOLUTION_ASSERT( client0, client0.beginSync() == 0 );
     CPPUNIT_ASSERT( 1 == countItems( client0 ) );
     
-    EvolutionContactSource client1(
+    T client1(
         string( "dummy" ),
         m_changeIds[1],
-        m_contactNames[1] );
+        m_databases[1]);
     
     EVOLUTION_ASSERT_NO_THROW( client1, client1.open() );
     EVOLUTION_ASSERT( client1, client1.beginSync() == 0 );
     CPPUNIT_ASSERT( 2 == countItems( client1 ) );
-}
-
-static string tostring( const char *str )
-{
-    return string( str ? str : "" );
-}
-            
-static string Address2String( EContactAddress *addr )
-{
-    return !addr ? string() :
-        string() +
-        "format: " + tostring( addr->address_format ) + "\n" +
-        "po: " + tostring( addr->po ) + "\n" +
-        "ext: " + tostring( addr->ext ) + "\n" +
-        "street: " + tostring( addr->street ) + "\n" +
-        "locality: " + tostring( addr->locality ) + "\n" +
-        "region: " + tostring( addr->region ) + "\n" +
-        "code: " + tostring( addr->code ) + "\n" +
-        "country: " + tostring( addr->country ) + "\n";
-}
-
-static string Name2String( EContactName *name )
-{
-    return !name ? string() :
-        string() +
-        "family: " + tostring( name->family ) + "\n" +
-        "given: " + tostring( name->given ) + "\n" +
-        "additional: " + tostring( name->additional ) + "\n" +
-        "prefixes: " + tostring( name->prefixes ) + "\n" +
-        "suffixes: " + tostring( name->suffixes ) + "\n";
-}
-
-static string Date2String( EContactDate *date )
-{
-    string res;
-    if (date) {
-        char *date_cstr = e_contact_date_to_string( date );
-        res = date_cstr;
-        free( date_cstr );
-    }
-    return res;
-}
-
-static string Photo2String( EContactPhoto *photo )
-{
-    stringstream res;
-    if (photo) {
-        res << "length: " << photo->length << "\n";
-        if (photo->length) {
-            res << "first/last byte: " << hex << showbase << (unsigned int)(unsigned char)photo->data[0]
-                << "..." << (unsigned int)(unsigned char)photo->data[photo->length - 1] << "\n";
-        }
-    }
-    return res.str();
 }
 
 /**
@@ -917,7 +948,7 @@ static void exportData( const string &filename, SyncSource &source )
  *
  * @param refVCard      existing file with existing reference vcards (optional)
  */
-void TestEvolution::compareAddressbooks(const string &prefix, const char *refVCard)
+template<class T> void TestEvolution<T>::compareAddressbooks(const string &prefix, const char *refVCard)
 {
     string sourceVCard, copyVCard;
     if (refVCard) {
@@ -925,10 +956,10 @@ void TestEvolution::compareAddressbooks(const string &prefix, const char *refVCa
     } else {
         sourceVCard = prefix + ".source..test.vcf";
 
-        EvolutionContactSource source(
+        T source(
             string( "dummy" ),
             m_changeIds[0],
-            m_contactNames[0] );
+            m_databases[0]);
         EVOLUTION_ASSERT_NO_THROW( source, source.open() );
         EVOLUTION_ASSERT( source, source.beginSync() == 0 );
 
@@ -939,10 +970,10 @@ void TestEvolution::compareAddressbooks(const string &prefix, const char *refVCa
     }
 
     copyVCard = prefix + ".copy.test.vcf";
-    EvolutionContactSource copy(
+    T copy(
         string( "dummy" ),
         m_changeIds[1],
-        m_contactNames[1] );
+        m_databases[1]);
     EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
     EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
 
@@ -963,17 +994,18 @@ void TestEvolution::compareAddressbooks(const string &prefix, const char *refVCa
     }
 }
 
-void TestEvolution::testVCard()
+template<class T> void TestEvolution<T>::testItems()
 {
     // clean server and first test database
-    deleteAll( "testVCard", 0);
+    deleteAll("testItems", 0);
 
     // import data
-    testContactImport();
+    testImport();
 
     // transfer back and forth
-    doSync( "testVCard.send.client.log", 0, SYNC_TWO_WAY );
-    doSync( "testVCard.recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+    doSync( "testItems.send.client.log", 0, SYNC_TWO_WAY );
+    doSync( "testItems.recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
 
-    compareAddressbooks("testVCard", "testVCard.vcf");
+    
+    compareAddressbooks("testItems", m_testItems.c_str());
 }
