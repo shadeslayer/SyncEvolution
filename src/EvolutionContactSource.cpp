@@ -437,7 +437,7 @@ const char *EvolutionContactSource::getMimeType()
     // todo: be more precise here
     switch( m_vcardFormat ) {
      case EVC_FORMAT_VCARD_21:
-        return "text/vcard";
+        return "text/x-vcard";
         break;
      case EVC_FORMAT_VCARD_30:
         return "text/vcard";
