@@ -251,13 +251,39 @@ void EvolutionCalendarSource::addItemThrow(SyncItem& item)
 {
     icalcomponent *icomp = newFromItem(item);
     GError *gerror = NULL;
-    char *uid;
-    // TODO: ignore error due to adding already existing item, that can happen.
-    // Update it instead then.
+    char *uid = NULL;
     if (!e_cal_create_object(m_calendar, icomp, &uid, &gerror)) {
-        throwError( "storing new calendar item", gerror );
+        if (gerror->domain == E_CALENDAR_ERROR &&
+            gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
+            // Deal with error due to adding already existing item, that can happen,
+            // for example with a "dumb" server which cannot pair items by UID.
+            //
+            // TODO: alert the server? duplicate?
+            //
+            const char *olduid = getCompUID(icomp);
+            if (!olduid) {
+                throw "cannot extract UID to remove the item which is in the way";
+            }
+            item.setKey(olduid);
+
+#if 0
+            // overwrite item
+            deleteItemThrow(item);
+            if (!e_cal_create_object(m_calendar, icomp, &uid, &gerror)) {
+                throwError( "storing new calendar item", gerror );
+            }
+#else
+            // update item
+            updateItemThrow(item);
+            uid = NULL;
+#endif
+        } else {
+            throwError( "storing new calendar item", gerror );
+        }
     }
-    item.setKey(uid);
+    if (uid) {
+        item.setKey(uid);
+    }
 }
 
 void EvolutionCalendarSource::updateItemThrow(SyncItem& item)
@@ -266,6 +292,11 @@ void EvolutionCalendarSource::updateItemThrow(SyncItem& item)
     GError *gerror = NULL;
     if (!e_cal_modify_object(m_calendar, icomp, CALOBJ_MOD_ALL, &gerror)) {
         throwError("updating calendar item", gerror);
+    }
+
+    const char *uid = getCompUID(icomp);
+    if (uid) {
+        item.setKey(uid);
     }
 }
 
@@ -344,12 +375,23 @@ icalcomponent *EvolutionCalendarSource::newFromItem(SyncItem &item)
     // the icomp must be the ICAL_VEVENT/VTODO_COMPONENT of the item,
     // e_cal_create/modify_object() fail otherwise
     icomp = icalcomponent_get_first_component(icomp,
-                                              m_type == E_CAL_SOURCE_TYPE_EVENT ?
-                                              ICAL_VEVENT_COMPONENT :
-                                              ICAL_VTODO_COMPONENT);
+                                              getCompType());
     if (!icomp) {
         throw "cannot extract event";
     }
 
     return icomp;
 }
+
+const char *EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
+{
+    // figure out what the UID is
+    icalproperty *iprop = icalcomponent_get_first_property(icomp,
+                                                           ICAL_UID_PROPERTY);
+    if (!iprop) {
+        throw "cannot extract UID property";
+    }
+    const char *uid = icalproperty_get_uid(iprop);
+    return uid;
+}
+
