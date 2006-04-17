@@ -13,7 +13,7 @@ sub Normalize {
   my $in = shift;
   my $out = shift;
 
-  $_ = join( "", grep( !/^(BEGIN:VCARD|VERSION|END:VCARD|UID:)/, <$in> ) );
+  $_ = join( "", grep( !/^(BEGIN:VCARD|BEGIN:VCALENDAR|VERSION|END:VCARD|END:VCALENDAR|UID:)/, <$in> ) );
   s/\r//g;
 
   my @cards = ();
@@ -23,6 +23,7 @@ sub Normalize {
     s/\n\s//gs;
     # ignore charset specifications, assume UTF-8
     s/;CHARSET="UTF-8"//g;
+
     # ignore extra email type
     s/^EMAIL;TYPE=INTERNET/EMAIL/mg;
     # ignore extra ADR type
@@ -35,18 +36,27 @@ sub Normalize {
     s/^X-(AIM|GROUPWISE|ICQ|YAHOO);TYPE=HOME/X-$1/gm;
     # TYPE=VOICE is the default in Evolution and may or may not appear in the vcard
     s/^TEL([^:]*);TYPE=VOICE([^:]*):/TEL$1$2:/mg;
+
+    # remove extra timezone specification, it is not supported
+    # by SyncEvolution
+    s/BEGIN:VTIMEZONE.*?END:VTIMEZONE\r?\n?//gs;
+    # remove fields which may differ
+    s/^(PRODID|CREATED|LAST-MODIFIED):.*\r?\n?//gm;
+    # remove optional fields
+    s/^(METHOD):.*\r?\n?//gm;
+
     # replace parameters with a sorted parameter list
     s!^([^;:]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
 
 
-    # sort entries, putting "N:" first
+    # sort entries, putting "N:" resp. "SUMMARY:" first
     # then modify entries to cover not more than
     # 60 characters
     my @lines = split( "\n" );
     push @cards, join( "\n",
                        grep( ( s/(.{60})/$1\n /g || 1),
-                             grep( /^N:/, @lines ),
-                             sort( grep ( !/^N:/, @lines ) ) ) );
+                             grep( /^(N|SUMMARY):/, @lines ),
+                             sort( grep ( !/^(N|SUMMARY):/, @lines ) ) ) );
   }
 
   print $out join( "\n\n", sort @cards ), "\n";
