@@ -72,9 +72,9 @@ class EvolutionCalendarSource : public EvolutionSyncSource
                                 bool deleteLocal);
     virtual void endSyncThrow();
     virtual void setItemStatusThrow(const char *key, int status);
-    virtual void addItemThrow(SyncItem& item);
-    virtual void updateItemThrow(SyncItem& item);
-    virtual void deleteItemThrow(SyncItem& item);
+    virtual int addItemThrow(SyncItem& item);
+    virtual int updateItemThrow(SyncItem& item);
+    virtual int deleteItemThrow(SyncItem& item);
     virtual void logItem(const string &uid, const string &info);
     virtual void logItem(SyncItem &item, const string &info);
 

@@ -222,18 +222,19 @@ int EvolutionSyncSource::deleteItem(SyncItem& item)
 }
 
 int EvolutionSyncSource::processItem(const char *action,
-                                     void (EvolutionSyncSource::*func)(SyncItem& item),
+                                     int (EvolutionSyncSource::*func)(SyncItem& item),
                                      SyncItem& item)
 {
+    int status = STC_COMMAND_FAILED;
+    
     try {
         logItem(item, action);
-        (this->*func)(item);
+        status = (this->*func)(item);
         m_isModified = true;
     } catch (...) {
         m_hasFailed = true;
-        return STC_COMMAND_FAILED;
     }
-    return STC_OK;
+    return status;
 }
 
 void EvolutionSyncSource::setItemStatusThrow(const char *key, int status)

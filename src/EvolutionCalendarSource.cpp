@@ -157,10 +157,15 @@ void EvolutionCalendarSource::endSyncThrow()
     if (m_isModified) {
         GError *gerror = NULL;
         GList *nextItem;
-        // move change_id forward so that our own changes are not listed the next time
-        if (!e_cal_get_changes(m_calendar, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
-            throwError( "reading changes", gerror );
-        }
+        
+        // Move change_id forward so that our own changes are not listed the next time.
+        // Due to some bug in Evolution 2.0.4 (?) this might have to be repeated several
+        // times until no changes are listed anymore.
+        do {
+            if (!e_cal_get_changes(m_calendar, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
+                throwError( "reading changes", gerror );
+            }
+        } while(nextItem);
     }
     resetItems();
     m_isModified = false;
@@ -190,7 +195,10 @@ void EvolutionCalendarSource::exportData(ostream &out)
         e_cal_component_commit_sequence(comp);
         icalstr = e_cal_component_get_as_string(comp);
 
-        out << (const char *)icalstr << "\r\n\r\n";
+        out << "BEGIN:VCALENDAR\r\n";
+        out << (const char *)icalstr;
+        out << "END:VCALENDAR\r\n";
+        out << "\r\n";
         nextItem = nextItem->next;
     }
 }
@@ -208,6 +216,8 @@ SyncItem *EvolutionCalendarSource::createItem( const string &uid, SyncState stat
         // the item itself is a VEVENT and needs to be embedded
         // inside a VCALENDAR
         icalstr += "BEGIN:VCALENDAR\r\n";
+        icalstr += "METHOD:PUBLISH\r\n";
+        // TODO: add PRODID? 
         icalstr += retrieveItemAsString(uid);
         icalstr += "END:VCALENDAR\r\n";
 
@@ -247,11 +257,13 @@ void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
     }
 }
 
-void EvolutionCalendarSource::addItemThrow(SyncItem& item)
+int EvolutionCalendarSource::addItemThrow(SyncItem& item)
 {
     icalcomponent *icomp = newFromItem(item);
     GError *gerror = NULL;
     char *uid = NULL;
+    int status = STC_OK;
+    
     if (!e_cal_create_object(m_calendar, icomp, &uid, &gerror)) {
         if (gerror->domain == E_CALENDAR_ERROR &&
             gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
@@ -260,22 +272,25 @@ void EvolutionCalendarSource::addItemThrow(SyncItem& item)
             //
             // TODO: alert the server? duplicate?
             //
-            const char *olduid = getCompUID(icomp);
-            if (!olduid) {
-                throw "cannot extract UID to remove the item which is in the way";
-            }
-            item.setKey(olduid);
-
 #if 0
             // overwrite item
             deleteItemThrow(item);
             if (!e_cal_create_object(m_calendar, icomp, &uid, &gerror)) {
                 throwError( "storing new calendar item", gerror );
             }
+
+            const char *olduid = getCompUID(icomp);
+            if (!olduid) {
+                throw "cannot extract UID to remove the item which is in the way";
+            }
+            item.setKey(olduid);
 #else
-            // update item
-            updateItemThrow(item);
+            // update item (sets UID)
+            status = updateItemThrow(item);
             uid = NULL;
+            if (status == STC_OK) {
+                status = STC_CONFLICT_RESOLVED_WITH_MERGE;
+            }
 #endif
         } else {
             throwError( "storing new calendar item", gerror );
@@ -284,12 +299,15 @@ void EvolutionCalendarSource::addItemThrow(SyncItem& item)
     if (uid) {
         item.setKey(uid);
     }
+    return status;
 }
 
-void EvolutionCalendarSource::updateItemThrow(SyncItem& item)
+int EvolutionCalendarSource::updateItemThrow(SyncItem& item)
 {
+    int status = STC_OK;
     icalcomponent *icomp = newFromItem(item);
     GError *gerror = NULL;
+
     if (!e_cal_modify_object(m_calendar, icomp, CALOBJ_MOD_ALL, &gerror)) {
         throwError("updating calendar item", gerror);
     }
@@ -298,15 +316,19 @@ void EvolutionCalendarSource::updateItemThrow(SyncItem& item)
     if (uid) {
         item.setKey(uid);
     }
+    return status;
 }
 
-void EvolutionCalendarSource::deleteItemThrow(SyncItem& item)
+int EvolutionCalendarSource::deleteItemThrow(SyncItem& item)
 {
+    int status = STC_OK;
     GError *gerror = NULL;
+
     if (!e_cal_remove_object(m_calendar, item.getKey(), &gerror)) {
         throwError( string( "deleting calendar item" ) + item.getKey(),
                     gerror );
     }
+    return status;
 }
 
 void EvolutionCalendarSource::logItem(const string &uid, const string &info)

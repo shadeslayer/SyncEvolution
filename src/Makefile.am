@@ -5,7 +5,7 @@ AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = normalize_vcard
-EXTRA_DIST = normalize_vcard.pl testVCard.vcf
+EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics
 
 DISTCLEANFILES = normalize_vcard
 MAINTAINERCLEANFILES = Makefile.in
@@ -38,15 +38,15 @@ syncevolution_LDADD = $(CORE_LDADD)
 # prevent a successful "distcheck"
 # TESTS = test
 # check_PROGRAMS = test
-EXTRA_PROGRAMS = test
-test_SOURCES = \
+EXTRA_PROGRAMS = TestEvolution
+TestEvolution_SOURCES = \
         TestMain.cpp \
         TestEvolution.cpp \
 	$(CORE_SOURCES)
 
-test_CFLAGS = `cppunit-config --cflags`
-test_LDFLAGS = `cppunit-config --libs`
-test_LDADD = $(CORE_LDADD)
+TestEvolution_CFLAGS = `cppunit-config --cflags`
+TestEvolution_LDFLAGS = `cppunit-config --libs`
+TestEvolution_LDADD = $(CORE_LDADD)
 
 # SYNC4J_SUBDIR specifies the directory where we compile
 # the client library by invoking make there.
@@ -60,10 +60,21 @@ BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
 clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
 clean : testclean
 
-test syncevolution : $(SYNC4J_SUBDIR)/src/libsync4j.la
+TestEvolution syncevolution : $(SYNC4J_SUBDIR)/src/libsync4j.la
+test : TestEvolution addressbook.tests calendar.tests task.tests
+
+# test files are in CVS under a different name so that they
+# can be copied to the work directory under the name expected
+# by the "test" program
+addressbook.tests : testVCard.vcf
+	cp $< $@
+calendar.tests : testCalendar.ics
+	cp $< $@
+task.tests : testTask.ics
+	cp $< $@
 
 testclean :
-	rm -f *.test.vcf *.log
+	rm -f *.test.vcf *.log *.tests
 
 $(SYNC4J_SUBDIR)/maintainer-clean $(SYNC4J_SUBDIR)/distclean :
 	rm -rf $(SYNC4J_SUBDIR) client-api

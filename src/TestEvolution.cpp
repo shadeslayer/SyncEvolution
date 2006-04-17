@@ -154,10 +154,23 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
     string m_serverLog;
 
     /**
+     * inserts the given item or m_insertItem,
+     * using a source with config and change ID as specified
+     */
+    void insert(const string *data = NULL,
+                int changeid = 0,
+                int config = 0);
+
+    /**
      * assumes that one element is currently inserted and updates it
      * with the given item or m_updateItem
      */
     void update( int config = 0, const char *vcard = NULL );
+
+    /**
+     * imports m_testItems (must be file with blank-line separated items)
+     */
+    void import();
 
     /** performs one sync operation */
     void doSync(const string &logfile, int config, SyncMode syncMode);
@@ -626,30 +639,36 @@ template<class T> void TestEvolution<T>::testOpen()
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
 }
 
-template<class T> void TestEvolution<T>::testSimpleInsert()
+template<class T> void TestEvolution<T>::insert(const string *data,
+                                                int changeid,
+                                                int config)
 {
-    const char *vcard = m_insertItem.c_str();
-
+    if (!data) {
+        data = &m_insertItem;
+    }
+    
     T source(
         string( "dummy" ),
-        m_changeIds[0],
-        m_databases[0]);
+        m_changeIds[changeid],
+        m_databases[config]);
     
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     int numItems;
     CPPUNIT_ASSERT_NO_THROW( numItems = countItems( source ) );
     SyncItem item;
-    item.setData( vcard, strlen(vcard) + 1 );
-    EVOLUTION_ASSERT_NO_THROW( source, source.addItem( item ) );
+    item.setData( data->c_str(), data->size() + 1 );
+    int status;
+    EVOLUTION_ASSERT_NO_THROW( source, status = source.addItem( item ) );
     CPPUNIT_ASSERT( item.getKey() != NULL );
     CPPUNIT_ASSERT( strlen( item.getKey() ) > 0 );
 
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
-    // TODO: temporarily disabled because CalendarSource might update instead of replace item
-    // CPPUNIT_ASSERT( countItems( source ) == numItems + 1 );
+    CPPUNIT_ASSERT( status == STC_OK || status == STC_CONFLICT_RESOLVED_WITH_MERGE );
+    CPPUNIT_ASSERT( countItems( source ) == numItems +
+                    (status == STC_CONFLICT_RESOLVED_WITH_MERGE ? 0 : 1) );
     CPPUNIT_ASSERT( countNewItems( source ) == 0 );
     CPPUNIT_ASSERT( countUpdatedItems( source ) == 0 );
     CPPUNIT_ASSERT( countDeletedItems( source ) == 0 );
@@ -660,6 +679,11 @@ template<class T> void TestEvolution<T>::testSimpleInsert()
     CPPUNIT_ASSERT( sameItem != NULL );
     CPPUNIT_ASSERT( !strcmp( sameItem->getKey(), item.getKey() ) );
     delete sameItem;
+}
+
+template<class T> void TestEvolution<T>::testSimpleInsert()
+{
+    insert();
 }
 
 template<class T> void TestEvolution<T>::deleteAll(int config)
@@ -841,7 +865,20 @@ template<class T> void TestEvolution<T>::testChanges()
     delete updatedItem;
 }
 
-template<class T> void TestEvolution<T>::testImport()
+void importItem(EvolutionSyncSource &source, string &data)
+{
+    if (data.size()) {
+        SyncItem item;
+        item.setData( data.c_str(), data.size() + 1 );
+        item.setDataType( "raw" );
+        EVOLUTION_ASSERT_NO_THROW( source, source.addItem( item ) );
+        CPPUNIT_ASSERT( item.getKey() != NULL );
+        CPPUNIT_ASSERT( strlen( item.getKey() ) > 0 );
+        data = "";
+    }
+}
+
+template<class T> void TestEvolution<T>::import()
 {
     testLocalDeleteAll();
     
@@ -854,44 +891,56 @@ template<class T> void TestEvolution<T>::testImport()
     setLogFile( "testVCard.insert.log", TRUE );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
-    int numItems;
     CPPUNIT_ASSERT( !countItems( source ) );
     
-    // import the .vcf file
+    // import the file
     ifstream input;
     input.open(m_testItems.c_str());
     CPPUNIT_ASSERT(!input.bad());
     CPPUNIT_ASSERT(input.is_open());
     string vcard, line;
-    const string endvcard("END:VCARD");
     while (input) {
         do {
             getline(input, line);
             CPPUNIT_ASSERT(!input.bad());
-            if (line != "\r" ) {
+            // empty line marks end of record
+            if (line != "\r" && line.size() > 0) {
                 vcard += line;
                 vcard += "\n";
-            }
-            if (!line.compare(0, endvcard.size(), endvcard)) {
-                SyncItem item;
-                item.setData( vcard.c_str(), vcard.size() + 1 );
-                item.setDataType( "raw" );
-                EVOLUTION_ASSERT_NO_THROW( source, source.addItem( item ) );
-                CPPUNIT_ASSERT( item.getKey() != NULL );
-                CPPUNIT_ASSERT( strlen( item.getKey() ) > 0 );
-
-                vcard = "";
+            } else {
+                importItem(source, vcard);
             }
         } while(!input.eof());
     }
+    importItem(source, vcard);
+}
 
+template<class T> void TestEvolution<T>::testImport()
+{
+    import();
+
+    T source(
+        string( "dummy" ),
+        m_changeIds[0],
+        m_databases[0]);
+    
     // verify that importing/exporting did not already modify cards
     ofstream out("testVCard.export.test.vcf");
-    source.exportData(out);
+    EVOLUTION_ASSERT_NO_THROW(source, source.open());
+    EVOLUTION_ASSERT(source, source.beginSync() == 0);
+    EVOLUTION_ASSERT_NO_THROW(source, source.exportData(out));
     out.close();
-    CPPUNIT_ASSERT( !system("./normalize_vcard testVCard.vcf testVCard.export.test.vcf") );
+    string cmd;
+    cmd += "./normalize_vcard ";
+    cmd += m_testItems;
+    cmd += " testVCard.export.test.vcf";
+    CPPUNIT_ASSERT(!system(cmd.c_str()));
     
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
+
+    // delete again, because it was observed that this did not
+    // work right with calendars
+    testLocalDeleteAll();
 }
 
 template<class T> void TestEvolution<T>::doSync(const string &logfile, int config, SyncMode syncMode)
@@ -1214,7 +1263,7 @@ template<class T> void TestEvolution<T>::testItems()
     deleteAll("testItems", 0);
 
     // import data
-    testImport();
+    import();
 
     // transfer back and forth
     doSync( "testItems.send.client.log", 0, SYNC_TWO_WAY );

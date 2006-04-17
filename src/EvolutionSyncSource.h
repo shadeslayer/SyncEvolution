@@ -239,9 +239,9 @@ class EvolutionSyncSource : public SyncSource
      */
     virtual void endSyncThrow() = 0;
     virtual void setItemStatusThrow(const char *key, int status);
-    virtual void addItemThrow(SyncItem& item) = 0;
-    virtual void updateItemThrow(SyncItem& item) = 0;
-    virtual void deleteItemThrow(SyncItem& item) = 0;
+    virtual int addItemThrow(SyncItem& item) = 0;
+    virtual int updateItemThrow(SyncItem& item) = 0;
+    virtual int deleteItemThrow(SyncItem& item) = 0;
 
 
     /** log a one-line info about an item */
@@ -321,7 +321,7 @@ class EvolutionSyncSource : public SyncSource
      * private wrapper function for add/delete/updateItemThrow()
      */
     int processItem(const char *action,
-                    void (EvolutionSyncSource::*func)(SyncItem& item),
+                    int (EvolutionSyncSource::*func)(SyncItem& item),
                     SyncItem& item);
 };
 

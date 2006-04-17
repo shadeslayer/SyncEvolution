@@ -350,8 +350,9 @@ void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
     }
 }
 
-void EvolutionContactSource::addItemThrow(SyncItem& item)
+int EvolutionContactSource::addItemThrow(SyncItem& item)
 {
+    int status = STC_OK;
     string data;
     if( strcmp(item.getDataType(), "raw" ) ) {
         data = preparseVCard(item);
@@ -371,10 +372,12 @@ void EvolutionContactSource::addItemThrow(SyncItem& item)
         throwError( string( "parsing vcard" ) + data,
                     NULL );
     }
+    return status;
 }
 
-void EvolutionContactSource::updateItemThrow(SyncItem& item)
+int EvolutionContactSource::updateItemThrow(SyncItem& item)
 {
+    int status = STC_OK;
     string data = preparseVCard(item);
     gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
     if( contact ) {
@@ -419,17 +422,18 @@ void EvolutionContactSource::updateItemThrow(SyncItem& item)
         throwError( string( "parsing vcard" ) + data,
                     NULL );
     }
+    return status;
 }
 
-void EvolutionContactSource::deleteItemThrow(SyncItem& item)
+int EvolutionContactSource::deleteItemThrow(SyncItem& item)
 {
+    int status = STC_OK;
     GError *gerror = NULL;
     if (!e_book_remove_contact( m_addressbook, item.getKey(), &gerror ) ) {
         throwError( string( "deleting contact" ) + item.getKey(),
                     gerror );
     }
-
-    m_isModified = true;
+    return status;
 }
 
 const char *EvolutionContactSource::getMimeType()
