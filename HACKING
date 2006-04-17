@@ -62,7 +62,7 @@ the steps executed for each of them.
 
 The first parameter of the "test" program can be used
 to select specific tests, like this:
-   ./test TestEvolution::testVCard
+   ./test ContactSync::testItems
 
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is
