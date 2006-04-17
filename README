@@ -10,7 +10,7 @@ There's no home page yet. Please refer to the SourceForge page instead:
     http://sourceforge.net/projects/sync4jevolution/
 Because the original name "sync4jevolution" is not really appropriate,
 it was changed to SyncEvolution. The web page and project name will
-be changed, too.
+be changed eventually, too.
 
 
 Introduction
@@ -173,6 +173,10 @@ the same server database with multiple local databases, one has
 to setup two independent configurations with different "deviceId"
 settings and synchronize them separately.
 
+WARNING: either the server or the client library currently get
+confused when multiple databases are synchronized at once. Better
+avoid this at the moment.
+
 If the Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.  In
 this case the directory that contains the source's config.txt should
@@ -232,6 +236,12 @@ calendars. They are adressed with
 for contacts and
   uri = cal
 for calendars in the source config.
+
+WARNING: the current Sync4j 2.3 cannot parse calendar entries
+as send by SyncEvolution. Until these issues are resolved in the
+server, one has to fall back to a setup where the server does not
+have to convert tasks. This is similar to the configuration for
+tasks described in the next paragraph.
 
 Although Evolution tasks are sent and received as special calendar
 events, the server cannot parse them. Therefore it is necessary to
@@ -434,6 +444,14 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
 - error handling could be improved
 
   ObjectWeb #304805, #304562
+
+- calendar conversion fails resp. loses information
+
+  ObjectWeb #304946, #304993, #304994, #304995, #304996, #304997
+
+- synchronizing multiple databases at once does not correctly
+  set the status of the items in the right database; still needs
+  to be investigated
 
 - Removing a field and then synchronizing with the Sync4j server
   will not remove that field on the server. The server will preserve
