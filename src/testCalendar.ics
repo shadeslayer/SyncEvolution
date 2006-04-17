@@ -182,8 +182,8 @@ CREATED:20060416T204625
 LAST-MODIFIED:20060416T204833
 DESCRIPTION:this is an appointment with plenty of fields set\, and 
  special attributes...\n\nempty line above\, line\nbreak\n\nspecial 
- characters:\na-umlaut ä\nexclamation mark !\nampersand @\nhash #\nleft 
- angle bracket <\nright angle bracket >\nleft square bracket [\nright 
+ characters:\na-umlaut ä\nexclamation mark !\nampersand disabled\nhash #\nleft 
+ angle bracket disabled\nright angle bracket disabled\nleft square bracket [\nright 
  square bracket ]\nleft bracket (\nright bracket )\nbackslash 
  \\\nbackslash lf \\n\nbackslash cr \\r\nstar *\ncarret ^\npercent 
  %\ntilde ~\ntick `\nbacktick '\ncolon :\nsemicolon \;\ncomma \,\n
