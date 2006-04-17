@@ -1,3 +1,32 @@
+2006-04-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README: added warnings about known-problems
+
+	* src/testCalendar.ics:
+	temporarily removed some problematic characters (forge tracker #304786)
+
+	* README, src/Makefile.am, src/TestEvolution.cpp, src/TestMain.cpp:
+	- renamed normalize script to synccompare because it now applies to both calendar, tasks and contacts
+	- temporary files in test suite now start with the name of the test they belong to
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/TestEvolution.cpp, src/testCalendar.ics, src/testTask.ics:
+	- renamed "test" program to "TestEvolution"
+	- copy original test cases to fit the name expected by TestEvolution and to have
+	  them in the build directory
+	- handle merge with existing item in addItem(): return special status
+
+	* src/normalize_vcard.pl: now also handles calendar comparison
+
+2006-04-14  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.h:
+	added some support for inserting already existing item
+
+	* src/TestEvolution.cpp: instantiate test for calendar
+
+	* src/EvolutionCalendarSource.cpp:
+	added some support for inserting already existing item
+
 2006-04-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/TestEvolution.cpp:
