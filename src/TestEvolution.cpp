@@ -588,6 +588,97 @@ public:
         {}
 };
 
+/**
+ * EvolutionCalendarSource configured for access to tasks,
+ * with a constructor as expected by TestEvolution
+ */
+class TestEvolutionTaskSource : public EvolutionCalendarSource
+{
+public:
+    TestEvolutionTaskSource(
+        const string &name,
+        const string &changeId = string(""),
+        const string &id = string("") ) :
+        EvolutionCalendarSource(
+            E_CAL_SOURCE_TYPE_TODO,
+            name,
+            changeId,
+            id)
+        {}
+};
+
+/**
+ * TestEvolution configured for use with calendars
+ */
+class TestTask : public TestEvolution<TestEvolutionTaskSource>
+{
+public:
+    TestTask() :
+        TestEvolution<TestEvolutionTaskSource>(
+            "todo",
+            
+            /* initial item */
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VTODO\n"
+            "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+            "DTSTAMP:20060417T173712Z\n"
+            "SUMMARY:do me\n"
+            "PRIORITY:0\n"
+            "CREATED:20060417T173712\n"
+            "LAST-MODIFIED:20060417T173712\n"
+            "END:VTODO\n"
+            "END:VCALENDAR\n",
+
+            /* default update item which replaces the initial item */
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VTODO\n"
+            "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+            "DTSTAMP:20060417T173712Z\n"
+            "SUMMARY:do me ASAP\n"
+            "PRIORITY:1\n"
+            "CREATED:20060417T173712\n"
+            "LAST-MODIFIED:20060417T173712\n"
+            "END:VTODO\n"
+            "END:VCALENDAR\n",
+
+            /* change summary in initial item in testMerge() */
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VTODO\n"
+            "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+            "DTSTAMP:20060417T173712Z\n"
+            "SUMMARY:do me please, please\n"
+            "PRIORITY:0\n"
+            "CREATED:20060417T173712\n"
+            "LAST-MODIFIED:20060417T173712\n"
+            "END:VTODO\n"
+            "END:VCALENDAR\n",
+            
+            /* change priority */
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VTODO\n"
+            "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+            "DTSTAMP:20060417T173712Z\n"
+            "SUMMARY:do me\n"
+            "PRIORITY:7\n"
+            "CREATED:20060417T173712\n"
+            "LAST-MODIFIED:20060417T173712\n"
+            "END:VTODO\n"
+            "END:VCALENDAR\n" )
+        {}
+};
+
 
 #define SOURCE_TESTS \
     CPPUNIT_TEST( testOpen ); \
@@ -642,6 +733,25 @@ class CalendarSync : public TestCalendar
     CPPUNIT_TEST_SUITE_END();
 };
 CPPUNIT_TEST_SUITE_REGISTRATION( CalendarSync );
+
+class TaskSource : public TestTask
+{
+    CPPUNIT_TEST_SUITE( TaskSource );
+    SOURCE_TESTS;
+    CPPUNIT_TEST_SUITE_END();
+};
+CPPUNIT_TEST_SUITE_REGISTRATION( TaskSource );
+
+class TaskSync : public TestTask
+{
+    CPPUNIT_TEST_SUITE( TaskSync );
+    SYNC_TESTS;
+    CPPUNIT_TEST_SUITE_END();
+};
+CPPUNIT_TEST_SUITE_REGISTRATION( TaskSync );
+
+
+
 
 template<class T> void TestEvolution<T>::testOpen()
 {

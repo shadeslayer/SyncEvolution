@@ -61,7 +61,7 @@ clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
 clean : testclean
 
 TestEvolution syncevolution : $(SYNC4J_SUBDIR)/src/libsync4j.la
-test : TestEvolution addressbook.tests calendar.tests task.tests synccompare
+test : TestEvolution addressbook.tests calendar.tests todo.tests synccompare
 
 # test files are in CVS under a different name so that they
 # can be copied to the work directory under the name expected
@@ -70,7 +70,7 @@ addressbook.tests : testVCard.vcf
 	cp $< $@
 calendar.tests : testCalendar.ics
 	cp $< $@
-task.tests : testTask.ics
+todo.tests : testTask.ics
 	cp $< $@
 
 testclean :
