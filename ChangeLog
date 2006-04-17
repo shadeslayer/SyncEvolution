@@ -1,5 +1,10 @@
 2006-04-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
+	* src/Makefile.am, src/TestEvolution.cpp, src/testTask.ics:
+	added testing of tasks
+
+	* HACKING: test names have changed
+
 	* README: added warnings about known-problems
 
 	* src/testCalendar.ics:
