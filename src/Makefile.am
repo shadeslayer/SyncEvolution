@@ -4,13 +4,13 @@ INCLUDES = @EPACKAGE_CFLAGS@ @SYNC4J_CFLAGS@
 AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
-bin_SCRIPTS = normalize_vcard
+bin_SCRIPTS = synccompare
 EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics
 
-DISTCLEANFILES = normalize_vcard
+DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
 
-normalize_vcard : normalize_vcard.pl
+synccompare : normalize_vcard.pl
 	cp $< $@
 	chmod u+x $@
 
@@ -61,7 +61,7 @@ clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
 clean : testclean
 
 TestEvolution syncevolution : $(SYNC4J_SUBDIR)/src/libsync4j.la
-test : TestEvolution addressbook.tests calendar.tests task.tests
+test : TestEvolution addressbook.tests calendar.tests task.tests synccompare
 
 # test files are in CVS under a different name so that they
 # can be copied to the work directory under the name expected
@@ -74,7 +74,7 @@ task.tests : testTask.ics
 	cp $< $@
 
 testclean :
-	rm -f *.test.vcf *.log *.tests
+	rm -f *.test.vcf *.log *.tests *.diff
 
 $(SYNC4J_SUBDIR)/maintainer-clean $(SYNC4J_SUBDIR)/distclean :
 	rm -rf $(SYNC4J_SUBDIR) client-api

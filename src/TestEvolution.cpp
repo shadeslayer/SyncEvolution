@@ -51,6 +51,14 @@
 #include <iomanip>
 using namespace std;
 
+// until a better solution is found use the helper function from TestMain.cpp
+extern const string &getCurrentTest();
+
+// sets the log file to the current test
+
+
+
+
 /** utility function to iterate over different kinds of items in a sync source */
 static int countAnyItems(
     EvolutionSyncSource &source,
@@ -141,7 +149,7 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
     /** the name of the Evolution databases */
     string m_databases[2];
 
-    /** two different sync configurations, referencing the address books in m_databases */
+    /** two different sync configurations, referencing the databases in m_databases */
     string m_syncConfigs[2];
 
     /** different change ids */
@@ -165,7 +173,7 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
      * assumes that one element is currently inserted and updates it
      * with the given item or m_updateItem
      */
-    void update( int config = 0, const char *vcard = NULL );
+    void update( int config = 0, const char *data = NULL );
 
     /**
      * imports m_testItems (must be file with blank-line separated items)
@@ -191,8 +199,14 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
     /** create item in one database, then copy to the other */
     void doCopy( const string &prefix );
 
-    /** compare all entries in the two address books and assert that they are equal */
-    void compareAddressbooks(const string &prefix, const char *refVCard = NULL);
+    /**
+     * takes two databases, exports them,
+     * then compares them using synccompare
+     *
+     * @param refData      existing file with source reference items (defaults to first config)
+     * @param copyDatabase config of database with the copied items (defaults to second config)
+     */
+    void compareDatabases(const string &prefix, const char *refData = NULL, int copyDatabase = 1);
 
 public:
     TestEvolution(
@@ -747,10 +761,10 @@ template<class T> void TestEvolution<T>::testComplexInsert()
     testIterateTwice();
 }
 
-template<class T> void TestEvolution<T>::update( int config, const char *vcard )
+template<class T> void TestEvolution<T>::update( int config, const char *data )
 {
-    if (!vcard) {
-        vcard = m_updateItem.c_str();
+    if (!data) {
+        data = m_updateItem.c_str();
     }
 
     T source(
@@ -761,7 +775,7 @@ template<class T> void TestEvolution<T>::update( int config, const char *vcard )
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     SyncItem *item;
     EVOLUTION_ASSERT_NO_THROW( source, item = source.getFirstItem() );
-    item->setData( vcard, strlen( vcard ) + 1 );
+    item->setData(data, strlen(data) + 1);
     EVOLUTION_ASSERT_NO_THROW( source, source.updateItem( *item ) );
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
     
@@ -888,7 +902,6 @@ template<class T> void TestEvolution<T>::import()
         m_databases[0]);
 
     // insert test cases
-    setLogFile( "testVCard.insert.log", TRUE );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( !countItems( source ) );
@@ -898,58 +911,41 @@ template<class T> void TestEvolution<T>::import()
     input.open(m_testItems.c_str());
     CPPUNIT_ASSERT(!input.bad());
     CPPUNIT_ASSERT(input.is_open());
-    string vcard, line;
+    string data, line;
     while (input) {
         do {
             getline(input, line);
             CPPUNIT_ASSERT(!input.bad());
             // empty line marks end of record
             if (line != "\r" && line.size() > 0) {
-                vcard += line;
-                vcard += "\n";
+                data += line;
+                data += "\n";
             } else {
-                importItem(source, vcard);
+                importItem(source, data);
             }
         } while(!input.eof());
     }
-    importItem(source, vcard);
+    importItem(source, data);
 }
 
 template<class T> void TestEvolution<T>::testImport()
 {
     import();
-
-    T source(
-        string( "dummy" ),
-        m_changeIds[0],
-        m_databases[0]);
-    
-    // verify that importing/exporting did not already modify cards
-    ofstream out("testVCard.export.test.vcf");
-    EVOLUTION_ASSERT_NO_THROW(source, source.open());
-    EVOLUTION_ASSERT(source, source.beginSync() == 0);
-    EVOLUTION_ASSERT_NO_THROW(source, source.exportData(out));
-    out.close();
-    string cmd;
-    cmd += "./normalize_vcard ";
-    cmd += m_testItems;
-    cmd += " testVCard.export.test.vcf";
-    CPPUNIT_ASSERT(!system(cmd.c_str()));
-    
-    EVOLUTION_ASSERT_NO_THROW( source, source.close() );
+    compareDatabases("testImport", m_testItems.c_str(), 0);
 
     // delete again, because it was observed that this did not
     // work right with calendars
     testLocalDeleteAll();
 }
 
-template<class T> void TestEvolution<T>::doSync(const string &logfile, int config, SyncMode syncMode)
+template<class T> void TestEvolution<T>::doSync(const string &logfilesuffix, int config, SyncMode syncMode)
 {
     int res = 0;
 
     // use LOG_LEVEL_INFO to avoid extra debug output outside of
     // EvolutionSyncClient::sync() which will set the level to DEBUG
     // automatically
+    string logfile = getCurrentTest() + "." + logfilesuffix;
     remove( logfile.c_str() );
     setLogFile( logfile.c_str(), TRUE );
     LOG.setLevel(LOG_LEVEL_INFO);
@@ -963,7 +959,8 @@ template<class T> void TestEvolution<T>::doSync(const string &logfile, int confi
             res = 1;
         }
     }
-    setLogFile( "sync.log", FALSE );
+    string oldlogfile = getCurrentTest() + ".log";
+    setLogFile( oldlogfile.c_str(), TRUE );
     
     // make a copy of the server's log (if found), then truncate it
     if (m_serverLog.size()) {
@@ -996,17 +993,17 @@ template<class T> void TestEvolution<T>::doSync(const string &logfile, int confi
 
 template<class T> void TestEvolution<T>::testRefreshSync()
 {
-    doSync( "testRefreshSync.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    doSync( "client.log", 0, SYNC_REFRESH_FROM_SERVER );
 }
 
 template<class T> void TestEvolution<T>::testTwoWaySync()
 {
-    doSync( "testTwoWaySync.client.log", 0, SYNC_TWO_WAY );
+    doSync( "client.log", 0, SYNC_TWO_WAY );
 }
 
 template<class T> void TestEvolution<T>::testSlowSync()
 {
-    doSync( "testSlowSync.client.log", 0, SYNC_SLOW );
+    doSync( "client.log", 0, SYNC_SLOW );
 }
 
 template<class T> void TestEvolution<T>::deleteAll( const string &prefix, int config, DeleteAllMode mode )
@@ -1036,7 +1033,7 @@ template<class T> void TestEvolution<T>::testDeleteAll()
 
     // copy something to server first
     testSimpleInsert();
-    doSync( "testDeleteAll.insert.1.client.log", 0, SYNC_SLOW );
+    doSync( "insert.1.client.log", 0, SYNC_SLOW );
 
     deleteAll( "testDeleteAllSync", 0, DELETE_ALL_SYNC );
     
@@ -1047,7 +1044,7 @@ template<class T> void TestEvolution<T>::testDeleteAll()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     // make sure server really deleted everything
-    doSync( "testDeleteAll.check.1.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    doSync( "check.1.client.log", 0, SYNC_REFRESH_FROM_SERVER );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
@@ -1055,7 +1052,7 @@ template<class T> void TestEvolution<T>::testDeleteAll()
 
     // copy something to server again
     testSimpleInsert();
-    doSync( "testDeleteAll.insert.2.client.log", 0, SYNC_SLOW );
+    doSync( "insert.2.client.log", 0, SYNC_SLOW );
 
     // now try deleting using another sync method
     deleteAll( "testDeleteAllRefresh", 0, DELETE_ALL_REFRESH );
@@ -1067,7 +1064,7 @@ template<class T> void TestEvolution<T>::testDeleteAll()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     // make sure server really deleted everything
-    doSync( "testDeleteAll.check.2.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    doSync( "check.2.client.log", 0, SYNC_REFRESH_FROM_SERVER );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
@@ -1081,7 +1078,7 @@ template<class T> void TestEvolution<T>::testRefreshSemantic()
     // -> no items should exist afterwards
     deleteAll( "testRefreshSemantic", 0 );
     testSimpleInsert();
-    doSync( "testRefreshSemantic.client.log", 0, SYNC_REFRESH_FROM_SERVER);
+    doSync( "client.log", 0, SYNC_REFRESH_FROM_SERVER);
     
     T source(
         string( "dummy" ),
@@ -1115,27 +1112,27 @@ template<class T> void TestEvolution<T>::doCopy( const string &prefix )
 
 template<class T> void TestEvolution<T>::testCopy()
 {
-    doCopy( "testCopy" );
-    compareAddressbooks("testCopy");
+    doCopy("copy");
+    compareDatabases("");
 }
 
 template<class T> void TestEvolution<T>::testUpdate()
 {
-    doCopy( "testUpdate.copy" );
+    doCopy( "copy" );
     update();
 
-    doSync( "testUpdate.update.0.client.log", 0, SYNC_TWO_WAY );
-    doSync( "testUpdate.update.1.client.log", 1, SYNC_TWO_WAY );
+    doSync( "update.0.client.log", 0, SYNC_TWO_WAY );
+    doSync( "update.1.client.log", 1, SYNC_TWO_WAY );
 
-    compareAddressbooks("testUpdate");
+    compareDatabases("");
 }
 
 template<class T> void TestEvolution<T>::testDelete()
 {
-    doCopy( "testDelete.copy" );
+    doCopy( "copy" );
     testLocalDeleteAll();
-    doSync( "testDelete.delete.0.client.log", 0, SYNC_TWO_WAY );
-    doSync( "testDelete.delete.1.client.log", 1, SYNC_TWO_WAY );
+    doSync( "delete.0.client.log", 0, SYNC_TWO_WAY );
+    doSync( "delete.1.client.log", 1, SYNC_TWO_WAY );
     
     T copy(
         string( "dummy" ),
@@ -1148,16 +1145,16 @@ template<class T> void TestEvolution<T>::testDelete()
 
 template<class T> void TestEvolution<T>::testMerge()
 {
-    doCopy( "testMerge.copy" );
+    doCopy( "copy" );
 
     // update in first client
     update( 0, m_mergeItem1.c_str() );
     // update in second client with a non-conflicting item
     update( 1, m_mergeItem2.c_str() );
     
-    doSync( "testMerge.send.0.client.log", 0, SYNC_TWO_WAY );
-    doSync( "testMerge.recv.1.client.log", 1, SYNC_TWO_WAY );
-    doSync( "testMerge.recv.0.client.log", 0, SYNC_TWO_WAY );
+    doSync( "send.0.client.log", 0, SYNC_TWO_WAY );
+    doSync( "recv.1.client.log", 1, SYNC_TWO_WAY );
+    doSync( "recv.0.client.log", 0, SYNC_TWO_WAY );
 
     // check that both address books are identical (regardless of actual content):
     // disabled because the address books won't be identical with Sync4j.
@@ -1166,7 +1163,7 @@ template<class T> void TestEvolution<T>::testMerge()
     // T::setItemStatus() creates a copy.
     // TODO: check what the server did (from testMerge.recv.1.client.log) and
     //       test either for identical address books or how many items exist
-    // compareAddressbooks( 1 );
+    // compareDatabases( 1 );
 
     // this code here assumes STC_CONFLICT_RESOLVED_WITH_SERVER_DATA
     T client0(
@@ -1204,20 +1201,15 @@ static void exportData( const string &filename, SyncSource &source )
     CPPUNIT_ASSERT( out.good() );
 }
 
-/**
- * takes two address books, exports them as vcards,
- * then compares them using normalize_vcards
- * and shell commands
- *
- * @param refVCard      existing file with existing reference vcards (optional)
- */
-template<class T> void TestEvolution<T>::compareAddressbooks(const string &prefix, const char *refVCard)
+template<class T> void TestEvolution<T>::compareDatabases(const string &prefix,
+                                                          const char *refData,
+                                                          int copyDatabase)
 {
-    string sourceVCard, copyVCard;
-    if (refVCard) {
-        sourceVCard = refVCard;
+    string sourceData, copyData;
+    if (refData) {
+        sourceData = refData;
     } else {
-        sourceVCard = prefix + ".source..test.vcf";
+        sourceData = getCurrentTest() + (prefix.size() ? "." : "") + prefix + ".source.test.vcf";
 
         T source(
             string( "dummy" ),
@@ -1226,29 +1218,29 @@ template<class T> void TestEvolution<T>::compareAddressbooks(const string &prefi
         EVOLUTION_ASSERT_NO_THROW( source, source.open() );
         EVOLUTION_ASSERT( source, source.beginSync() == 0 );
 
-        ofstream osource(sourceVCard.c_str());
+        ofstream osource(sourceData.c_str());
         source.exportData(osource);
         osource.close();
         CPPUNIT_ASSERT(!osource.bad());
     }
 
-    copyVCard = prefix + ".copy.test.vcf";
+    copyData = getCurrentTest() + (prefix.size() ? "." : "") + prefix + ".copy.test.vcf";
     T copy(
         string( "dummy" ),
-        m_changeIds[1],
-        m_databases[1]);
+        m_changeIds[copyDatabase],
+        m_databases[copyDatabase]);
     EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
     EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
 
-    ofstream ocopy(copyVCard.c_str());
+    ofstream ocopy(copyData.c_str());
     copy.exportData(ocopy);
     ocopy.close();
     CPPUNIT_ASSERT(!ocopy.bad());
 
     stringstream cmd;
 
-    string diff = prefix + ".diff";
-    cmd << "perl normalize_vcard " << sourceVCard << " " << copyVCard << ">" << diff;
+    string diff = getCurrentTest() + (prefix.size() ? "." : "") + prefix + ".diff";
+    cmd << "perl synccompare " << sourceData << " " << copyData << ">" << diff;
     cmd << "  || (echo; echo '*** " << diff << " non-empty ***'; cat " << diff << "; exit 1 )";
 
     string cmdstr = cmd.str();
@@ -1266,9 +1258,9 @@ template<class T> void TestEvolution<T>::testItems()
     import();
 
     // transfer back and forth
-    doSync( "testItems.send.client.log", 0, SYNC_TWO_WAY );
-    doSync( "testItems.recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+    doSync( "send.client.log", 0, SYNC_TWO_WAY );
+    doSync( "recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
 
     
-    compareAddressbooks("testItems", m_testItems.c_str());
+    compareDatabases("testItems", m_testItems.c_str());
 }

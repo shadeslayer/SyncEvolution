@@ -19,8 +19,14 @@
 #include <cppunit/CompilerOutputter.h>
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
+#include <cppunit/TestListener.h>
+#include <cppunit/TestResult.h>
 
 #include <posix/base/posixlog.h>
+
+#include <string>
+#include <stdexcept>
+using namespace std;
 
 class Sync4jOutputter : public CppUnit::CompilerOutputter {
 public:
@@ -32,6 +38,35 @@ public:
         CompilerOutputter::write();
     }
 };
+
+class Sync4jListener : public CppUnit::TestListener {
+public:
+    void startTest (CppUnit::Test *test) {
+        currentTest = test->getName();
+        setLogFile( "-", 0 );
+        cerr << currentTest;
+        string logfile = currentTest + ".log";
+        remove(logfile.c_str());
+        setLogFile( logfile.c_str(), 1 );
+        failed = false;
+    }
+    void addFailure(const CppUnit::TestFailure &failure) {
+        failed = true;
+    }
+    void endTest (CppUnit::Test *test) {
+        setLogFile( "-", 0 );
+        if (failed) {
+            cerr << " *** failed ***";
+        }
+        cerr << "\n";
+    }
+    string currentTest;
+    bool failed;
+} syncListener;
+
+const string &getCurrentTest() {
+    return syncListener.currentTest;
+}
 
 int main(int argc, char* argv[])
 {
@@ -45,9 +80,24 @@ int main(int argc, char* argv[])
   // Change the default outputter to a compiler error format outputter
   runner.setOutputter( new Sync4jOutputter( &runner.result(),
                                             std::cerr ) );
-  // Run the tests.
-  bool wasSucessful = runner.run( argc > 1 ? argv[1] : "" );
 
-  // Return error code 1 if the one of test failed.
-  return wasSucessful ? 0 : 1;
+  // Our tests need to know the currently running test,
+  // register a TestListener to remember that information.
+  // If there is a better way to obtain that information
+  // I did not find it in the CppUnit documentation...
+  runner.eventManager().addListener(&syncListener);
+
+  try {
+      // Run the tests.
+      bool wasSucessful = runner.run(argc > 1 ? argv[1] : "", false, true, false);
+
+      // Return error code 1 if the one of test failed.
+      return wasSucessful ? 0 : 1;
+  } catch (invalid_argument e) {
+      // Test path not resolved
+      std::cerr << std::endl  
+                << "ERROR: " << e.what()
+                << std::endl;
+      return 1;
+  }
 }
