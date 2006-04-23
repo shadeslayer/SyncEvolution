@@ -266,10 +266,6 @@ tool:
              selected if every user gets his own database
 - add the new sync source
 - create the <server install dir>/db/todo directory
-- if using the ChangeSourceUriSynclet (enabled in a default
-  Sync4j installation), also update its configuration in
-    server/default/config/common/beans/sync4j/server/engine/pipeline/PipelineManager.xml
-  by adding an entry for "todo" in the "syncSourcesToProcess" property
 
 The drawback of the file based approach is that the server always
 keeps tasks exactly as the clients send them: imagine that
@@ -352,6 +348,11 @@ to run these checks with a copy of the original address book.
 Make a backup of the .evolution/addressbook directory.
 
 Did I mention that you should make backups?
+
+Note that the second client pretends to be a "sc-pim-ppc" client to
+avoid the need to reconfigure the default Sync4j installation. This
+implies that you cannot use this predefined Evolution config if you
+actually synchronize against a PocketPC client.
 
 
 Conflict Resolution
