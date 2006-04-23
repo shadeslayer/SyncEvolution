@@ -279,6 +279,7 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
         } else if (name == "ADR" || name == "EMAIL" ) {
             // ensure that at least one TYPE is set
             if (!vprop->containsParameter("TYPE") &&
+                !vprop->containsParameter("INTERNET") &&
                 !vprop->containsParameter("HOME") &&
                 !vprop->containsParameter("WORK")) {
                 vprop->addParameter("TYPE", "OTHER");
