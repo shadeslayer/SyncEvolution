@@ -22,7 +22,7 @@ nobase_sysconf_DATA = $(localhost_source) $(localhost_copy)
 
 localhost_2/spds/syncml/config.txt : localhost_1/spds/syncml/config.txt
 	mkdir -p $(@D)
-	sed -e s/sc-api-nat/sc-api-nat2/ $< >$@
+	sed -e s/sc-api-nat/sc-pim-ppc/ $< >$@
 
 localhost_2/spds/sources/addressbook_2/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
 	mkdir -p $(@D)
