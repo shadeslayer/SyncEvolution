@@ -41,7 +41,7 @@ sub Normalize {
     s/^PHOTO;(.*)TYPE=[A-Z]*/PHOTO;$1/mg;
     # encoding is not case sensitive, skip white space in the middle of binary data
     if (s/^PHOTO;.*?ENCODING=(b|B|BASE64).*?:\s*/PHOTO;ENCODING=B: /mgi) {
-      while (s/^PHOTO(.*?): (.*?)\s+/PHOTO$1: $2/mg) {}
+      while (s/^PHOTO(.*?): (\S+)[\t ]+(\S+)/PHOTO$1: $2$3/mg) {}
     }
 
     # remove extra timezone specification, it is not supported
