@@ -25,8 +25,8 @@ sub Normalize {
     s/;CHARSET="UTF-8"//g;
 
     # ignore extra email type
-    s/^EMAIL;.*TYPE=INTERNET/EMAIL$1/mg;
-    s/^EMAIL;TYPE=OTHER/EMAIL$1/mg;
+    s/^EMAIL(.*);TYPE=INTERNET/EMAIL$1/mg;
+    s/^EMAIL(.*);TYPE=OTHER/EMAIL$1/mg;
     # ignore extra ADR type
     s/^ADR;TYPE=OTHER/ADR/mg;
     # ignore TYPE=PREF in address, does not matter in Evolution
