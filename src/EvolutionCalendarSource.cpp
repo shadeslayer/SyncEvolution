@@ -25,6 +25,10 @@ using namespace std;
 #include <common/vocl/VObject.h>
 #include <common/vocl/VConverter.h>
 
+static const string
+EVOLUTION_CALENDAR_PRODID("PRODID:-//ACME//NONSGML SyncEvolution//EN"),
+EVOLUTION_CALENDAR_VERSION("VERSION:2.0");
+
 EvolutionCalendarSource::EvolutionCalendarSource( ECalSourceType type,
                                                   const string &name,
                                                   const string &changeId,
@@ -196,6 +200,8 @@ void EvolutionCalendarSource::exportData(ostream &out)
         icalstr = e_cal_component_get_as_string(comp);
 
         out << "BEGIN:VCALENDAR\r\n";
+        out << EVOLUTION_CALENDAR_VERSION << "\r\n";
+        out << EVOLUTION_CALENDAR_PRODID << "\r\n";
         out << (const char *)icalstr;
         out << "END:VCALENDAR\r\n";
         out << "\r\n";
@@ -216,8 +222,8 @@ SyncItem *EvolutionCalendarSource::createItem( const string &uid, SyncState stat
         // the item itself is a VEVENT and needs to be embedded
         // inside a VCALENDAR
         icalstr += "BEGIN:VCALENDAR\r\n";
-        icalstr += "METHOD:PUBLISH\r\n";
-        // TODO: add PRODID? 
+        icalstr += EVOLUTION_CALENDAR_VERSION + "\r\n";
+        icalstr += EVOLUTION_CALENDAR_PRODID + "\r\n";
         icalstr += retrieveItemAsString(uid);
         icalstr += "END:VCALENDAR\r\n";
 
