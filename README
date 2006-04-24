@@ -173,10 +173,6 @@ the same server database with multiple local databases, one has
 to setup two independent configurations with different "deviceId"
 settings and synchronize them separately.
 
-WARNING: either the server or the client library currently get
-confused when multiple databases are synchronized at once. Better
-avoid this at the moment.
-
 If the Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.  In
 this case the directory that contains the source's config.txt should
@@ -449,10 +445,6 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
 - calendar conversion fails resp. loses information
 
   ObjectWeb #304946, #304993, #304994, #304995, #304996, #304997
-
-- synchronizing multiple databases at once does not correctly
-  set the status of the items in the right database; still needs
-  to be investigated
 
 - Removing a field and then synchronizing with the Sync4j server
   will not remove that field on the server. The server will preserve
