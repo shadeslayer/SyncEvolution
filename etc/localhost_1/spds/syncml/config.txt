@@ -1,5 +1,10 @@
-# the base URL of the SyncML server
+# the base URL of the SyncML server:
+# - Sync4j 2.3
 syncURL = http://localhost:8080/sync4j/sync
+# - Funambol >= 3.0
+#syncURL = http://localhost:8080/funambol/ds
+# - www.scheduleworld.com
+#syncURL = http://sync.scheduleworld.com/sync4j/sync
 
 # the SyncML gets this string and will use it to keep track
 # of changes that still need to be synchronized; when multiple

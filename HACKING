@@ -53,16 +53,24 @@ your Evolution and ~/.sync4j configuration as described
 in the README section 'Exchanging Data' (create address
 books 'SyncEvolution test #1/2', etc).
 
-Running the test with the environment variable SYNC4J_LOG
+Running the test with the environment variable TEST_EVOLUTION_LOG
 set to the server's log file ensures that for each
 individual sync session both the client and the corresponding
 server log are stored in individual files in the src
 directory. The filenames are derived from the tests and
 the steps executed for each of them.
 
+The basic configuration is chosen via TEST_EVOLUTION_SERVER;
+the default is "localhost".
+
+If the server needs a certain delay between syncs, that
+can be set via TEST_EVOLUTION_DELAY=<seconds>. The Sync4j
+2.3 server needs a delay of around 20 seconds to work
+correctly.
+
 The first parameter of the "test" program can be used
 to select specific tests, like this:
-   ./test ContactSync::testItems
+   ./TestEvolution ContactSync::testItems
 
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is

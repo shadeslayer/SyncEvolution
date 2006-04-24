@@ -227,18 +227,22 @@ public:
     void setUp() {
         m_databases[0] = "SyncEvolution test #1";
         m_databases[1] = "SyncEvolution test #2";
-        m_syncConfigs[0] = "localhost_1";
-        m_syncConfigs[1] = "localhost_2";
+        const char *server = getenv("TEST_EVOLUTION_SERVER");
+        if (!server) {
+            server = "localhost";
+        }
+        m_syncConfigs[0] = string(server) + "_1";
+        m_syncConfigs[1] = string(server) + "_2";
         m_changeIds[0] = "SyncEvolution Change ID #0";
         m_changeIds[1] = "SyncEvolution Change ID #1";
         m_source[0] = m_syncSourceName + "_1";
         m_source[1] = m_syncSourceName + "_2";
 
-        const char *log = getenv( "SYNC4J_LOG" );
+        const char *log = getenv( "TEST_EVOLUTION_LOG" );
         if (log) {
             m_serverLog = log;
         }
-        const char *delay = getenv("SYNC4J_DELAY");
+        const char *delay = getenv("TEST_EVOLUTION_DELAY");
         m_syncDelay = delay ? atoi(delay) : 0;
     }
     void tearDown() {
@@ -312,61 +316,34 @@ public:
             /* initial item */
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
-            "URL:\n"
             "TITLE:tester\n"
-            "ROLE:\n"
-            "X-EVOLUTION-MANAGER:\n"
-            "X-EVOLUTION-ASSISTANT:\n"
-            "NICKNAME:user1\n"
-            "X-EVOLUTION-SPOUSE:\n"
-            "NOTE:\n"
             "FN:John Doe\n"
             "N:Doe;John;;;\n"
-            "TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=1:business 1\n"
+            "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
             "X-EVOLUTION-FILE-AS:Doe\\, John\n"
-            "X-EVOLUTION-BLOG-URL:\n"
-            "X-EVOLUTION-VIDEO-URL:\n"
             "X-MOZILLA-HTML:FALSE\n"
             "END:VCARD\n",
 
             /* default update item which replaces the initial item */
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
-            "URL:\n"
-            "TITLE:\n"
-            "ROLE:\n"
-            "X-EVOLUTION-MANAGER:\n"
-            "X-EVOLUTION-ASSISTANT:\n"
-            "NICKNAME:user1\n"
-            "X-EVOLUTION-SPOUSE:\n"
-            "NOTE:\n"
+            "TITLE:tester\n"
             "FN:Joan Doe\n"
             "N:Doe;Joan;;;\n"
             "X-EVOLUTION-FILE-AS:Doe\\, Joan\n"
-            "TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=1:business 1\n"
-            "TEL;TYPE=WORK;TYPE=VOICE;X-EVOLUTION-UI-SLOT=2:business 2\n"
-            "X-EVOLUTION-BLOG-URL:\n"
+            "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
+            "TEL;TYPE=WORK;TYPE=VOICE:business 2\n"
             "BDAY:2006-01-08\n"
-            "X-EVOLUTION-VIDEO-URL:\n"
             "X-MOZILLA-HTML:TRUE\n"
             "END:VCARD\n",
 
             /* add a telephone number to initial item in testMerge() */
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
-            "URL:\n"
             "TITLE:tester\n"
-            "ROLE:\n"
-            "X-EVOLUTION-MANAGER:\n"
-            "X-EVOLUTION-ASSISTANT:\n"
-            "NICKNAME:user1\n"
-            "X-EVOLUTION-SPOUSE:\n"
-            "NOTE:\n"
             "FN:John Doe\n"
             "N:Doe;John;;;\n"
             "X-EVOLUTION-FILE-AS:Doe\\, John\n"
-            "X-EVOLUTION-BLOG-URL:\n"
-            "X-EVOLUTION-VIDEO-URL:\n"
             "X-MOZILLA-HTML:FALSE\n"
             "TEL;TYPE=WORK:business 1\n"
             "END:VCARD\n",
@@ -374,19 +351,10 @@ public:
             // add a birthday, modify the title and X-MOZILLA-HTML
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
-            "URL:\n"
             "TITLE:developer\n"
-            "ROLE:\n"
-            "X-EVOLUTION-MANAGER:\n"
-            "X-EVOLUTION-ASSISTANT:\n"
-            "NICKNAME:user1\n"
-            "X-EVOLUTION-SPOUSE:\n"
-            "NOTE:\n"
             "FN:John Doe\n"
             "N:Doe;John;;;\n"
             "X-EVOLUTION-FILE-AS:Doe\\, John\n"
-            "X-EVOLUTION-BLOG-URL:\n"
-            "X-EVOLUTION-VIDEO-URL:\n"
             "X-MOZILLA-HTML:TRUE\n"
             "BDAY:2006-01-08\n"
             "END:VCARD\n" )

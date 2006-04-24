@@ -39,8 +39,10 @@ sub Normalize {
     s/^TEL([^:]*);TYPE=VOICE([^:]*):/TEL$1$2:/mg;
     # don't care about the TYPE property of PHOTOs
     s/^PHOTO;(.*)TYPE=[A-Z]*/PHOTO;$1/mg;
-    # encoding is not case sensitive
-    s/^PHOTO;(.*)ENCODING=b/PHOTO;$1ENCODING=B/mg;
+    # encoding is not case sensitive, skip white space in the middle of binary data
+    if (s/^PHOTO;.*?ENCODING=(b|B|BASE64).*?:\s*/PHOTO;ENCODING=B: /mgi) {
+      while (s/^PHOTO(.*?): (.*?)\s+/PHOTO$1: $2/mg) {}
+    }
 
     # remove extra timezone specification, it is not supported
     # by SyncEvolution
