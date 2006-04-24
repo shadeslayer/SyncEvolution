@@ -25,7 +25,8 @@ sub Normalize {
     s/;CHARSET="UTF-8"//g;
 
     # ignore extra email type
-    s/^EMAIL;TYPE=INTERNET/EMAIL/mg;
+    s/^EMAIL;.*TYPE=INTERNET/EMAIL$1/mg;
+    s/^EMAIL;TYPE=OTHER/EMAIL$1/mg;
     # ignore extra ADR type
     s/^ADR;TYPE=OTHER/ADR/mg;
     # ignore TYPE=PREF in address, does not matter in Evolution
@@ -36,6 +37,10 @@ sub Normalize {
     s/^X-(AIM|GROUPWISE|ICQ|YAHOO);TYPE=HOME/X-$1/gm;
     # TYPE=VOICE is the default in Evolution and may or may not appear in the vcard
     s/^TEL([^:]*);TYPE=VOICE([^:]*):/TEL$1$2:/mg;
+    # don't care about the TYPE property of PHOTOs
+    s/^PHOTO;(.*)TYPE=[A-Z]*/PHOTO;$1/mg;
+    # encoding is not case sensitive
+    s/^PHOTO;(.*)ENCODING=b/PHOTO;$1ENCODING=B/mg;
 
     # remove extra timezone specification, it is not supported
     # by SyncEvolution
