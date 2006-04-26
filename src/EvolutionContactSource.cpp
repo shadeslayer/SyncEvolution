@@ -176,7 +176,7 @@ void EvolutionContactSource::exportData(ostream &out)
     }
     while (nextItem) {
         gptr<char> vcardstr(e_vcard_to_string(&E_CONTACT(nextItem->data)->parent,
-                                              m_vcardFormat));
+                                              EVC_FORMAT_VCARD_30));
 
         out << (const char *)vcardstr << "\r\n\r\n";
         nextItem = nextItem->next;
@@ -202,42 +202,56 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
         }
         gptr<EContact, GObject> contactptr( contact, "contact" );
         gptr<char> vcardstr(e_vcard_to_string( &contactptr->parent,
-                                               m_vcardFormat ) );
+                                               EVC_FORMAT_VCARD_30 ) );
         if (!vcardstr) {
-            throwError( string( "converting contact" ) + uid, NULL );
+            throwError( string( "contact from Evolution" ) + uid, NULL );
         }
         LOG.debug( vcardstr );
 
-        // convert from 3.0 to 2.1 so that Sync4j 2.3 accepts it
-        std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
-        if (vobj.get() == 0) {
-            throwError( string( "parsing contact" ) + uid, NULL );
-        }
-        vobj->toNativeEncoding();
-
-        // escape extended properties so that they are preserved
-        // as custom values by the server
-        for (int index = vobj->propertiesCount() - 1;
-             index >= 0;
-             index--) {
-            VProperty *vprop = vobj->getProperty(index);
-            string name = vprop->getName();
-            if (m_vcardExtensions.find(name) != m_vcardExtensions.end()) {
-                name = m_vcardExtensions.prefix + name;
-                vprop->setName(name.c_str());
-            }
-        }
+        string finalstr;
         
-        vobj->setVersion("2.1");
-        VProperty *vprop = vobj->getProperty("VERSION");
-        vprop->setValue("2.1");
-        vobj->fromNativeEncoding();
-        char *finalstr = vobj->toString();
-        LOG.debug("after conversion to 2.1:");
-        LOG.debug(finalstr);
+        // convert from 3.0 to 2.1?
+        if (m_vcardFormat == EVC_FORMAT_VCARD_21) {
+            std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
+            if (vobj.get() == 0) {
+                throwError( string( "parsing contact" ) + uid, NULL );
+            }
+            vobj->toNativeEncoding();
+
+            // escape extended properties so that they are preserved
+            // as custom values by the server
+            for (int index = vobj->propertiesCount() - 1;
+                 index >= 0;
+                 index--) {
+                VProperty *vprop = vobj->getProperty(index);
+                string name = vprop->getName();
+                if (m_vcardExtensions.find(name) != m_vcardExtensions.end()) {
+                    name = m_vcardExtensions.prefix + name;
+                    vprop->setName(name.c_str());
+                }
+
+                // replace 3.0 ENCODING=B with 3.0 ENCODING=BASE64
+                char *encoding = vprop->getParameterValue("ENCODING");
+                if (encoding &&
+                    !strcasecmp("B", encoding)) {
+                    vprop->removeParameter("ENCODING");
+                    vprop->addParameter("ENCODING", "BASE64");
+                }
+            }
+        
+            vobj->setVersion("2.1");
+            VProperty *vprop = vobj->getProperty("VERSION");
+            vprop->setValue("2.1");
+            vobj->fromNativeEncoding();
+            finalstr = vobj->toString();
+            LOG.debug("after conversion to 2.1:");
+            LOG.debug(finalstr.c_str());
+        } else {
+            finalstr = (char *)vcardstr;
+        }
 
         auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
-        item->setData( finalstr, strlen( finalstr ) + 1 );
+        item->setData( finalstr.c_str(), finalstr.size() + 1 );
         item->setDataType( getMimeType() );
         item->setModificationTime( 0 );
         item->setState( state );
@@ -284,6 +298,14 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
                 !vprop->containsParameter("WORK")) {
                 vprop->addParameter("TYPE", "OTHER");
             }
+        }
+
+        // replace 2.1 ENCODING=BASE64 with 3.0 ENCODING=B
+        char *encoding = vprop->getParameterValue("ENCODING");
+        if (encoding &&
+            !strcasecmp("BASE64", encoding)) {
+            vprop->removeParameter("ENCODING");
+            vprop->addParameter("ENCODING", "B");
         }
 
         if (m_uniqueProperties.find(name) != m_uniqueProperties.end()) {
@@ -439,16 +461,15 @@ int EvolutionContactSource::deleteItemThrow(SyncItem& item)
 
 const char *EvolutionContactSource::getMimeType()
 {
-    // todo: be more precise here
     switch( m_vcardFormat ) {
      case EVC_FORMAT_VCARD_21:
         return "text/x-vcard";
         break;
      case EVC_FORMAT_VCARD_30:
+     default:
         return "text/vcard";
+        break;
     }
-
-    return "test/vcard";
 }
 
 void EvolutionContactSource::logItem( const string &uid, const string &info )

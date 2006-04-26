@@ -108,6 +108,8 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
     }
 
     if (mimeType == "text/x-vcard") {
+        return new EvolutionContactSource(name, strippedChangeId, id, EVC_FORMAT_VCARD_21);
+    } else if (mimeType == "text/vcard") {
         return new EvolutionContactSource(name, strippedChangeId, id, EVC_FORMAT_VCARD_30);
     } else if (mimeType == "text/x-todo") {
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, strippedChangeId, id);

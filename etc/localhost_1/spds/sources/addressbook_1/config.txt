@@ -18,8 +18,12 @@ syncModes = slow,two-way,refresh-client,refresh-server
 
 # specifies the format of the data
 # text/x-vcalendar = Evolution calender data (as expected by Sync4j server)
-# text/x-todo = Evolution task data
-# text/x-vcard = Evolution contact data
+# text/x-todo      = Evolution task data
+# text/x-vcard     = Evolution contact data in vCard 2.1 format
+#                    (works with most servers)
+# test/vcard       = Evolution contact data in vCard 3.0 (RFC 2425) format
+#                    (internal format of Evolution, preferred with servers
+#                    that support it)
 type = text/x-vcard
 
 # picks one of Evolution's data sources:

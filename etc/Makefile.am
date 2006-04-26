@@ -50,17 +50,16 @@ localhost_1/spds/sources/todo_1/config.txt : localhost_1/spds/sources/addressboo
 	sed -e s/addressbook_1/todo_1/ -e 's:type = text/x-vcard:type = text/x-todo:' -e 's/uri = card/uri = todo/' $< >$@
 
 
-scheduleworld_1/spds/sources/todo_1/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
+# www.scheduleworld.com configuration:
+# - different URL
+# - RFC compliant types
+# - standard sync sources, not the custom "todo" one
+$(scheduleworld_copy) : scheduleworld_% : localhost_%
 	mkdir -p $(@D)
-	sed -e s/addressbook_1/todo_1/ -e s/#1/#2/ -e 's:type = text/x-vcard:type = text/calendar:' -e 's/uri = card/uri = task/' $< >$@
-
-scheduleworld_2/spds/sources/todo_2/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
-	mkdir -p $(@D)
-	sed -e s/addressbook_1/todo_2/ -e s/#1/#2/ -e 's:type = text/x-vcard:type = text/calendar:' -e 's/uri = card/uri = task/' $< >$@
-
-$(filter-out todo, $(scheduleworld_copy)) : scheduleworld_% : localhost_%
-	mkdir -p $(@D)
-	sed -e 's;syncURL = http://localhost;#syncURL = http://localhost;' \
-	    -e 's;#syncURL = http://sync.scheduleworld;syncURL = http://sync.scheduleworld;' \
+	sed -e 's;^syncURL = http://localhost;#syncURL = http://localhost;' \
+	    -e 's;^#syncURL = http://sync.scheduleworld;syncURL = http://sync.scheduleworld;' \
+	    -e 's;^type = text/x-todo;type = text/calendar;' \
+	    -e 's;^type = text/x-vcard;type = text/vcard;' \
+	    -e 's;^uri = todo;uri = task;' \
 	    $< >$@
 
