@@ -85,9 +85,9 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     ECalSourceType m_type;         /**< use events or todos? */
 
     /** retrieve the item with the given uid - may throw exception */
-    ECalComponent *retrieveItem(const string &uid);
+    icalcomponent *retrieveItem(const string &uid);
 
-    /** retrieve the item with the given uid as string - may throw exception */
+    /** retrieve the item with the given uid as VCALENDAR string - may throw exception */
     string retrieveItemAsString(const string &uid);
 
     /** parse the data stored in the given SyncItem, throw error if cannot be parsed */

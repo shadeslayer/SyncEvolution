@@ -217,20 +217,11 @@ SyncItem *EvolutionCalendarSource::createItem( const string &uid, SyncState stat
     try {
         logItem( uid, "extracting from EV" );
         
-        string icalstr;
-
-        // the item itself is a VEVENT and needs to be embedded
-        // inside a VCALENDAR
-        icalstr += "BEGIN:VCALENDAR\r\n";
-        icalstr += EVOLUTION_CALENDAR_VERSION + "\r\n";
-        icalstr += EVOLUTION_CALENDAR_PRODID + "\r\n";
-        icalstr += retrieveItemAsString(uid);
-        icalstr += "END:VCALENDAR\r\n";
+        string icalstr = retrieveItemAsString(uid);
 
         auto_ptr<SyncItem> item(new SyncItem(uid.c_str()));
         item->setData(icalstr.c_str(), icalstr.size() + 1);
-        // TODO: take MIME type from config
-        item->setDataType("text/x-vcalendar");
+        item->setDataType("text/calendar");
         item->setModificationTime(0);
         item->setState(state);
 
@@ -247,14 +238,15 @@ void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
     switch (status) {
      case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA: {
         // make a copy before allowing the server to overwrite it
-        LOG.error("calendar item %.80s: conflict, will be replaced by server - creating copy\n",
+        LOG.error("calendar item %.80s: conflict, will be replaced by server\n",
                   key);
 
-        ECalComponent *comp = retrieveItem(key);
-        ECalComponent *copy = e_cal_component_clone(comp);
-        if (!copy) {
-            LOG.error("copying %s: making copy failed\n", key);
-        }
+        // TODO: uids make the item unique, so it cannot really be copied
+        // ECalComponent *comp = retrieveItem(key);
+        // ECalComponent *copy = e_cal_component_clone(comp);
+        // if (!copy) {
+        //    LOG.error("copying %s: making copy failed\n", key);
+        // }
         break;
      }
      default:
@@ -353,37 +345,28 @@ void EvolutionCalendarSource::logItem( SyncItem &item, const string &info )
     }
 }
 
-ECalComponent *EvolutionCalendarSource::retrieveItem(const string &uid)
+icalcomponent *EvolutionCalendarSource::retrieveItem(const string &uid)
 {
     GError *gerror = NULL;
-    GList *singleItem;
-    string query;
+    icalcomponent *comp;
 
-    query = "(uid? \"";
-    query += uid;
-    query += "\" )";
-
-    if (!e_cal_get_object_list_as_comp(m_calendar,
-                                       query.c_str(),
-                                       &singleItem,
-                                       &gerror)) {
-        throwError(string("executing query: ") + query, gerror);
+    if (!e_cal_get_object(m_calendar,
+                          uid.c_str(),
+                          NULL,
+                          &comp,
+                          &gerror)) {
+        throwError(string("retrieving item: ") + uid, gerror);
     }
 
-    if (!singleItem || singleItem->next) {
-        throw "got more or less than the single expected item";
-    }
-
-    return E_CAL_COMPONENT(singleItem->data);
+    return comp;
 }
 
 string EvolutionCalendarSource::retrieveItemAsString(const string &uid)
 {
-    ECalComponent *comp = retrieveItem(uid);
+    icalcomponent *comp = retrieveItem(uid);
     gptr<char> icalstr;
 
-    e_cal_component_commit_sequence(comp);
-    icalstr = e_cal_component_get_as_string(comp);
+    icalstr = e_cal_get_component_as_string(m_calendar, comp);
     return string(icalstr);
 }
 
