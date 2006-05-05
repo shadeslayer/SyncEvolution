@@ -373,7 +373,7 @@ string EvolutionCalendarSource::retrieveItemAsString(const string &uid)
 icalcomponent *EvolutionCalendarSource::newFromItem(SyncItem &item)
 {
     gptr<char> data;
-    data.set(new char[item.getDataSize() + 1], "copy of item");
+    data.set((char *)malloc(item.getDataSize() + 1), "copy of item");
     memcpy(data, item.getData(), item.getDataSize());
     data[item.getDataSize()] = 0;
     icalcomponent *icomp = icalcomponent_new_from_string(data);
