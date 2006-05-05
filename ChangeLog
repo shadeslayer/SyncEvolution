@@ -1,3 +1,46 @@
+2006-05-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp: fixed new[]/free() mismatch
+
+2006-05-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
+	generate iCalendar items with VTIMEZONE definitions
+
+	* README: added scheduleworld as preferred server
+
+2006-04-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* etc/Makefile.am, etc/localhost_1/spds/sources/addressbook_1/config.txt, src/EvolutionContactSource.cpp, src/EvolutionSyncSource.cpp:
+	added possibility to choose between sending vCard 2.1 and 3.0
+
+2006-04-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README: syncing multiple databases at the same time now worked okay
+
+	* src/TestEvolution.cpp:
+	avoid the problematic timezones in the basic tests
+
+	* src/EvolutionCalendarSource.cpp:
+	write the required PRODID and VERSION for iCalendar entries
+
+	* src/normalize_vcard.pl: avoid eating the trailing newline after PHOTO
+
+	* HACKING, etc/Makefile.am, etc/localhost_1/spds/syncml/config.txt, src/TestEvolution.cpp, src/normalize_vcard.pl:
+	added support for testing against www.scheduleworld.com
+
+	* src/normalize_vcard.pl: fixed the fix of EMAIL normalization...
+
+	* src/normalize_vcard.pl:
+	hide differences due to different PHOTO parameters, fixed EMAIL;INTERNET;OTHER
+
+2006-04-23  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* etc/Makefile.am, README:
+	avoid problems with ChangeSourceUriSynclet by using sc-pim-ppc for second client
+
+	* src/EvolutionContactSource.cpp: also treat INTERNET as TYPE
+
 2006-04-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/Makefile.am, src/TestEvolution.cpp, src/testTask.ics:
