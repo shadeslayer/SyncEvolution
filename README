@@ -38,6 +38,10 @@ iCalendar data than the stock Sync4j installation. Setting up a server
 on the desktop has the additional problem that not all mobile devices
 can communicate with the desktop via HTTP.
 
+[ not quite yet: scheduleworld still has some problems that the
+  admin is working on - the text above was written for SyncEvolution
+  0.3, which will be released once the problems have been resolved ]
+
 The remainder of this document assumes that either Funambol's Sync4j
 server bundle for Linux V2.3 was installed using the default
 configuration or scheduleworld is used: because scheduleworld uses
