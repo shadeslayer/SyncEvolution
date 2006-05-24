@@ -340,7 +340,7 @@ public:
 
                     string before = databaseName(**it, "before");
                     string after = databaseName(**it, "after");
-                    string cmd = string("normalize_vcard '" ) +
+                    string cmd = string("synccompare '" ) +
                         before + "' '" + after +
                         "' && echo 'no changes'";
                     system(cmd.c_str());
