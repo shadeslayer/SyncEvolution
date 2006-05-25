@@ -241,9 +241,15 @@ int EvolutionSyncSource::processItem(const char *action,
 
 void EvolutionSyncSource::setItemStatusThrow(const char *key, int status)
 {
-    if (status < 200 || status > 300) {
-        LOG.error("unexpected SyncML status response %d for item %.80s\n",
-                  status, key);
-        m_hasFailed = true;
+    switch (status) {
+     case STC_ALREADY_EXISTS:
+        // found pair during slow sync, that's okay
+        break;
+     default:
+        if (status < 200 || status > 300) {
+            LOG.error("unexpected SyncML status response %d for item %.80s\n",
+                      status, key);
+            m_hasFailed = true;
+        }
     }
 }

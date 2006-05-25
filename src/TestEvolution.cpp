@@ -297,6 +297,10 @@ public:
     // test what the server does when it finds that different
     // fields of the same item have been modified
     void testMerge();
+    // test what the server does when it has to execute a slow sync
+    // with identical data on client and server:
+    // expected behaviour is that nothing changes
+    void testTwinning();
     // creates several items, transmits them back and forth and
     // then compares which of them have been preserved
     void testItems();
@@ -588,7 +592,8 @@ public:
     CPPUNIT_TEST( testUpdate ); \
     CPPUNIT_TEST( testDelete ); \
     CPPUNIT_TEST( testMerge ); \
-    CPPUNIT_TEST( testItems );
+    CPPUNIT_TEST( testItems ); \
+    CPPUNIT_TEST( testTwinning );
 
 class ContactSource : public TestContact
 {
@@ -1261,4 +1266,27 @@ template<class T> void TestEvolution<T>::testItems()
 
     
     compareDatabases("testItems", m_testItems.c_str());
+}
+
+template<class T> void TestEvolution<T>::testTwinning()
+{
+    // clean server and first test database
+    deleteAll("testItems", 0);
+
+    // import data
+    import();
+
+    // send data to server
+    doSync( "send.client.log", 0, SYNC_TWO_WAY );
+
+    // ensure that client has the same data, ignoring data conversion
+    // issues (those are covered by testItems())
+    doSync( "refresh.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+
+    // slow sync now should not change anything
+    doSync( "twinning.client.log", 0, SYNC_SLOW );
+
+    // copy into second client and compare
+    doSync( "recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+    compareDatabases("", NULL, 1);
 }
