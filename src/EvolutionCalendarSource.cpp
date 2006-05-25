@@ -237,11 +237,12 @@ void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
 {
     switch (status) {
      case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA: {
-        // make a copy before allowing the server to overwrite it
-        LOG.error("calendar item %.80s: conflict, will be replaced by server\n",
-                  key);
+         LOG.error("%s: calendar item %.80s: conflict, will be replaced by server\n",
+                   getName(), key);
 
-        // TODO: uids make the item unique, so it cannot really be copied
+        // uids make the item unique, so it cannot be copied;
+        // the following code does not work:
+        //
         // ECalComponent *comp = retrieveItem(key);
         // ECalComponent *copy = e_cal_component_clone(comp);
         // if (!copy) {
@@ -332,16 +333,14 @@ int EvolutionCalendarSource::deleteItemThrow(SyncItem& item)
 void EvolutionCalendarSource::logItem(const string &uid, const string &info)
 {
     if (LOG.getLevel() >= LOG_LEVEL_INFO) {
-        // TODO
-        LOG.info("%s: %s", info.c_str(), uid.c_str());
+        LOG.info("%s: %s: %s", getName(), uid.c_str(), info.c_str());
     }
 }
 
 void EvolutionCalendarSource::logItem( SyncItem &item, const string &info )
 {
     if (LOG.getLevel() >= LOG_LEVEL_INFO) {
-        // TODO
-        LOG.info("%s: %s", info.c_str(), item.getKey());
+        LOG.info("%s: %s: %s", getName(), item.getKey(), info.c_str());
     }
 }
 

@@ -137,7 +137,13 @@ In case of an error the synchronization run is aborted prematurely and
 SyncEvolution will return a non-zero value. Recovery from failed
 synchronization is done by forcing a full synchronization during the
 next run, i.e. by sending all items and letting the SyncML server
-compare against the ones it already knows.
+compare against the ones it already knows. If the error is detected
+by SyncEvolution itself, then it attempts to cause the full
+synchronization only for the failed database, but if the SyncML
+client library itself runs into a problem it might cause a full
+synchronization of all databases even if only one of them failed.
+Therefore it might be less risky to invoke syncevolution for each
+database separately.
 
 After a successful synchronization the server's configuration file is
 updated so that the next run can be done incrementally.  If the

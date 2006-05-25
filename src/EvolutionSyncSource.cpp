@@ -118,27 +118,28 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, strippedChangeId, id);
     }
 
-    // TODO: other mime types?
     return NULL;
 }
 
 int EvolutionSyncSource::beginSync()
 {
-    string buffer = "sync mode is: ";
+    string buffer;
+    buffer += getName();
+    buffer += ": sync mode is ";
     SyncMode mode = getSyncMode();
-    buffer += mode == SYNC_SLOW ? "slow" :
-        mode == SYNC_TWO_WAY ? "two-way" :
-        mode == SYNC_ONE_WAY_FROM_SERVER ? "one-way" :
-        mode == SYNC_REFRESH_FROM_SERVER ? "refresh from server" :
-        mode == SYNC_REFRESH_FROM_CLIENT ? "refresh from client" :
-        mode == SYNC_NONE ? "none" :
+    buffer += mode == SYNC_SLOW ? "'slow'" :
+        mode == SYNC_TWO_WAY ? "'two-way'" :
+        mode == SYNC_ONE_WAY_FROM_SERVER ? "'one-way'" :
+        mode == SYNC_REFRESH_FROM_SERVER ? "'refresh from server'" :
+        mode == SYNC_REFRESH_FROM_CLIENT ? "'refresh from client'" :
+        mode == SYNC_NONE ? "'none' (for debugging)" :
         "???";
     LOG.info( buffer.c_str() );
 
     try {
         const char *error = getenv("SYNCEVOLUTION_BEGIN_SYNC_ERROR");
         if (error && strstr(error, getName())) {
-            LOG.error("simulate error");
+            LOG.error("%s: simulate error", getName());
             throw "artificial error in beginSync()";
         }
 
@@ -192,10 +193,13 @@ int EvolutionSyncSource::endSync()
         endSyncThrow();
     } catch ( ... ) {
         m_hasFailed = true;
-        return 1;
     }
-    // TODO: sync engine ignores return code, work around this?
-    return m_hasFailed ? 1 : 0;
+
+    // Do _not_ tell the caller (SyncManager) if an error occurred
+    // because that causes Sync4jClient to abort processing for all
+    // sync sources. Instead deal with failed sync sources in
+    // EvolutionSyncClient::sync().
+    return 0;
 }
 
 void EvolutionSyncSource::setItemStatus(const char *key, int status)
@@ -247,8 +251,8 @@ void EvolutionSyncSource::setItemStatusThrow(const char *key, int status)
         break;
      default:
         if (status < 200 || status > 300) {
-            LOG.error("unexpected SyncML status response %d for item %.80s\n",
-                      status, key);
+            LOG.error("%s: unexpected SyncML status response %d for item %.80s\n",
+                      getName(), status, key);
             m_hasFailed = true;
         }
     }

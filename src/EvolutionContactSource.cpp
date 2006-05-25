@@ -335,12 +335,9 @@ void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
     switch (status) {
      case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA: {
         // make a copy before allowing the server to overwrite it
-        char buffer[200];
 
-        sprintf(buffer,
-                "contact %.80s: conflict, will be replaced by server contact - create copy\n",
-                key);
-        LOG.error(buffer);
+        LOG.error("%s: contact %s: conflict, will be replaced by server contact - create copy",
+                  getName(), key);
         
         EContact *contact;
         GError *gerror = NULL;
@@ -348,10 +345,8 @@ void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
                                   key,
                                   &contact,
                                   &gerror ) ) {
-            sprintf(buffer,
-                    "item %.80s: reading original for copy failed\n",
-                    key);
-            LOG.error(buffer);
+            LOG.error("%s: item %.80s: reading original for copy failed",
+                      getName(), key);
             break;
         }
         EContact *copy = e_contact_duplicate(contact);
@@ -359,10 +354,8 @@ void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
            ! e_book_add_contact(m_addressbook,
                                 copy,
                                 &gerror)) {
-            sprintf(buffer,
-                    "item %.80s: making copy failed\n",
-                    key);
-            LOG.error(buffer);
+            LOG.error("%s: item %.80s: making copy failed",
+                      getName(), key);
             break;
         }
         break;
@@ -497,7 +490,7 @@ void EvolutionContactSource::logItem( const string &uid, const string &info )
         line += "): ";
         line += info;
         
-        LOG.info( line.c_str() );
+        LOG.info( "%s: %s", getName(), line.c_str() );
     }
 }
 
@@ -549,7 +542,7 @@ void EvolutionContactSource::logItem( SyncItem &item, const string &info )
         line += ": ";
         line += info;
         
-        LOG.info( line.c_str() );
+        LOG.info( "%s: %s", getName(), line.c_str() );
     }
 }
 

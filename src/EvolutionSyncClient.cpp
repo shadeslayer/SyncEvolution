@@ -469,10 +469,23 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
     }
     sourceArray[index] = NULL;
     int res = m_client.sync( sourceArray );
-    delete [] sourceArray;
 
-    // TODO: force slow sync in case of failure or failed Evolution source
-    
+    // force slow sync in case of failed Evolution source
+    // by overwriting the last sync time stamp;
+    // don't do it if only the general result is a failure
+    // because in that case it is not obvious which source
+    // failed
+    for ( index = 0; index < sources.size(); index++ ) {
+        if (sourceArray[index] &&
+            ((EvolutionSyncSource *)sourceArray[index])->hasFailed()) {
+            string sourcePath(sourcesPath + "/" + sourceArray[index]->getName());
+            auto_ptr<ManagementNode> sourceNode(config.getManagementNode(sourcePath.c_str()));
+            sourceNode->setPropertyValue("last", "0");
+        }
+    }
+
+    delete [] sourceArray;
+        
     if (res) {
         if (lastErrorCode) {
             throw lastErrorCode;

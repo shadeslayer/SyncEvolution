@@ -66,7 +66,7 @@ class EvolutionSyncSource : public SyncSource
      */
     EvolutionSyncSource( const string name, const string &changeId, const string &id ) :
         SyncSource( name.c_str() ),
-        m_allItems( *this, "all", SYNC_STATE_NONE ),
+        m_allItems( *this, "existing", SYNC_STATE_NONE ),
         m_newItems( *this, "new", SYNC_STATE_NEW ),
         m_updatedItems( *this, "updated", SYNC_STATE_UPDATED ),
         m_deletedItems( *this, "deleted", SYNC_STATE_DELETED ),
