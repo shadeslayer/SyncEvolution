@@ -1,5 +1,14 @@
 BEGIN:VCARD
 VERSION:3.0
+NICKNAME:user9
+NOTE;CHARSET="UTF-8":Tests charset specification with quotation marks.
+FN:charset
+N:set;char;;;
+X-EVOLUTION-FILE-AS:set\, char
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
 URL:
 TITLE:
 ROLE:
