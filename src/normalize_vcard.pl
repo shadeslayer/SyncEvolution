@@ -120,6 +120,9 @@ sub Normalize {
   print $out join( "\n\n", sort @items ), "\n";
 }
 
+# number of columns available for output
+my $columns = 75;
+
 if($#ARGV > 1) {
   # error
   Usage();
@@ -137,15 +140,44 @@ if($#ARGV > 1) {
   open(IN2, "<$file2") || die "$file2: $!";
   open(OUT1, ">$normal1") || die "$normal1: $!";
   open(OUT2, ">$normal2") || die "$normal2: $!";
-  Normalize(*IN1{IO}, *OUT1{IO}, 35);
-  Normalize(*IN2{IO}, *OUT2{IO}, 35);
+  my $singlewidth = ($columns - 3) / 2;
+  $columns = $singlewidth * 2 + 3;
+  Normalize(*IN1{IO}, *OUT1{IO}, $singlewidth);
+  Normalize(*IN2{IO}, *OUT2{IO}, $singlewidth);
   close(IN1);
   close(IN2);
   close(OUT1);
   close(OUT2);
 
-  my $res = system( "diff", "--suppress-common-lines", "-y", $normal1, $normal2 );
-  
+  $_ = `diff --expand-tabs --side-by-side --width $columns "$normal1" "$normal2"`;
+  my $res = $?;
+
+  # fix confusing output like:
+  # BEGIN:VCARD                             BEGIN:VCARD
+  #                                      >  N:new;entry
+  #                                      >  FN:new
+  #                                      >  END:VCARD
+  #                                      >
+  #                                      >  BEGIN:VCARD
+  # and replace it with:
+  #                                      >  BEGIN:VCARD
+  #                                      >  N:new;entry
+  #                                      >  FN:new
+  #                                      >  END:VCARD
+  #
+  # BEGIN:VCARD                             BEGIN:VCARD
+
+  s/(BEGIN:(VCARD|VCALENDAR) +BEGIN:\2\n)((?: {$singlewidth} > .*\n)+)( {$singlewidth}) >\n {$singlewidth} > BEGIN:\2\n/$4 > BEGIN:$2\n$3\n$1/mg;
+
+  # same for the other way around, note that we must insert variable padding
+  s/(BEGIN:(VCARD|VCALENDAR) +BEGIN:\2\n)((?:.{$singlewidth} <\n)+)( {$singlewidth}) <\nBEGIN:\2 *<\n/"BEGIN:$2" . (" " x ($singlewidth - length("BEGIN:$2"))) . " <\n$3\n$1"/mge;
+
+  # assume that blank lines separate chunks
+  my @chunks = split /\n\n/, $_;
+
+  # only print chunks which contain diffs
+  print join( "\n\n", grep(/^.{$singlewidth} [<>|]/m, @chunks));
+
   unlink($normal1);
   unlink($normal2);
   exit($res ? 1 : 0);
@@ -159,5 +191,5 @@ if($#ARGV > 1) {
     $in = *STDIN{IO};
   }
 
-  Normalize($in, *STDOUT{IO}, 75);
+  Normalize($in, *STDOUT{IO}, $columns);
 }
