@@ -103,7 +103,7 @@ class EvolutionSyncSource : public SyncSource
     /**
      * Extract information for the item identified by UID
      * and store it in a new SyncItem. The caller must
-     * free that item.
+     * free that item. May throw exceptions.
      *
      * @param uid      identifies the item
      * @param state    the state of the item
@@ -148,6 +148,13 @@ class EvolutionSyncSource : public SyncSource
      * @return empty string if property not found, otherwise its value
      */
     static string getPropertyValue(ManagementNode &node, const string &property);
+
+    /**
+     * convenience function, to be called inside a catch() block:
+     * rethrows the exception to determine what it is, then logs it
+     * as an error
+     */
+    static void handleException();
 
     /**
      * factory function for a EvolutionSyncSources that provides the
@@ -282,7 +289,12 @@ class EvolutionSyncSource : public SyncSource
                     return new SyncItem( uid.c_str() );
                 } else {
                     // retrieve item with all its data
-                    return m_source.createItem( uid, m_state );
+                    try {
+                        return m_source.createItem( uid, m_state );
+                    } catch(...) {
+                        EvolutionSyncSource::handleException();
+                        return NULL;
+                    }
                 }
             } else {
                 return NULL;

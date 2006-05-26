@@ -48,9 +48,7 @@ void EvolutionSyncSource::throwError( const string &action, GError *gerror )
         gerrorstr = ": failed";
     }
 
-    string error = string(getName()) + ": " + action + gerrorstr;
-    LOG.error( error.c_str() );       
-    throw error;
+    throw runtime_error(string(getName()) + ": " + action + gerrorstr);
 }
 
 void EvolutionSyncSource::resetItems()
@@ -83,6 +81,19 @@ string EvolutionSyncSource::getPropertyValue(ManagementNode &node, const string 
     }
 
     return res;
+}
+
+void EvolutionSyncSource::handleException()
+{
+    try {
+        throw;
+    } catch (std::exception &ex) {
+        if (lastErrorCode == ERR_NONE) {
+            lastErrorCode = ERR_UNSPECIFIED;
+            strcpy(lastErrorMsg, ex.what());
+        }
+        LOG.error("%s", ex.what());
+    }
 }
 
 EvolutionSyncSource *EvolutionSyncSource::createSource(
@@ -139,8 +150,7 @@ int EvolutionSyncSource::beginSync()
     try {
         const char *error = getenv("SYNCEVOLUTION_BEGIN_SYNC_ERROR");
         if (error && strstr(error, getName())) {
-            LOG.error("%s: simulate error", getName());
-            throw "artificial error in beginSync()";
+            throw runtime_error("artificial error in beginSync()");
         }
 
         // reset state
@@ -174,14 +184,14 @@ int EvolutionSyncSource::beginSync()
             needAll = needPartial = true;
             break;
          default:
-            throw "unsupported sync mode, valid are only: slow, two-way, refresh";
+            throw runtime_error("unsupported sync mode, valid are only: slow, two-way, refresh");
             break;
         }
 
         beginSyncThrow(needAll, needPartial, deleteLocal);
     } catch( ... ) {
+        handleException();
         m_hasFailed = true;
-        // TODO: properly set error
         return 1;
     }
     return 0;
@@ -192,6 +202,7 @@ int EvolutionSyncSource::endSync()
     try {
         endSyncThrow();
     } catch ( ... ) {
+        handleException();
         m_hasFailed = true;
     }
 
@@ -208,7 +219,8 @@ void EvolutionSyncSource::setItemStatus(const char *key, int status)
         // TODO: logging
         setItemStatusThrow(key, status);
     } catch (...) {
-        // TODO: error handling
+        handleException();
+        m_hasFailed = true;
     }
 }
 
@@ -238,6 +250,7 @@ int EvolutionSyncSource::processItem(const char *action,
         status = (this->*func)(item);
         m_isModified = true;
     } catch (...) {
+        handleException();
         m_hasFailed = true;
     }
     return status;

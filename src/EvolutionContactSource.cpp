@@ -48,7 +48,7 @@ EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
     ESourceList *sources = NULL;
 
     if (!e_book_get_addressbooks(&sources, NULL)) {
-        throw "unable to access address books";
+        throw runtime_error("unable to access address books");
     }
 
     EvolutionSyncSource::sources result;
@@ -68,12 +68,12 @@ void EvolutionContactSource::open()
 {
     ESourceList *sources;
     if (!e_book_get_addressbooks(&sources, NULL)) {
-        throw "unable to access address books";
+        throw runtime_error("unable to access address books");
     }
     
     ESource *source = findSource( sources, m_id );
     if (!source) {
-        throw string(getName()) + ": no such address book: '" + m_id + "'";
+        throw runtime_error(string(getName()) + ": no such address book: '" + m_id + "'");
     }
 
     GError *gerror = NULL;
@@ -185,83 +185,74 @@ void EvolutionContactSource::exportData(ostream &out)
 
 SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state )
 {
-    // this function must never throw an exception
-    // because it is called inside the Sync4j C++ API library
-    // which cannot handle exceptions
-    try {
-        logItem( uid, "extracting from EV" );
+    logItem( uid, "extracting from EV" );
         
-        EContact *contact;
-        GError *gerror = NULL;
-        if (! e_book_get_contact( m_addressbook,
-                                  uid.c_str(),
-                                  &contact,
-                                  &gerror ) ) {
-            throwError( string( "reading contact" ) + uid,
-                        gerror );
-        }
-        gptr<EContact, GObject> contactptr( contact, "contact" );
-        gptr<char> vcardstr(e_vcard_to_string( &contactptr->parent,
-                                               EVC_FORMAT_VCARD_30 ) );
-        if (!vcardstr) {
-            throwError( string( "contact from Evolution" ) + uid, NULL );
-        }
-        LOG.debug( vcardstr );
+    EContact *contact;
+    GError *gerror = NULL;
+    if (! e_book_get_contact( m_addressbook,
+                              uid.c_str(),
+                              &contact,
+                              &gerror ) ) {
+        throwError( string( "reading contact" ) + uid,
+                    gerror );
+    }
+    gptr<EContact, GObject> contactptr( contact, "contact" );
+    gptr<char> vcardstr(e_vcard_to_string( &contactptr->parent,
+                                           EVC_FORMAT_VCARD_30 ) );
+    if (!vcardstr) {
+        throwError( string( "contact from Evolution" ) + uid, NULL );
+    }
+    LOG.debug( vcardstr );
 
-        string finalstr;
+    string finalstr;
         
-        // convert from 3.0 to 2.1?
-        if (m_vcardFormat == EVC_FORMAT_VCARD_21) {
-            std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
-            if (vobj.get() == 0) {
-                throwError( string( "parsing contact" ) + uid, NULL );
+    // convert from 3.0 to 2.1?
+    if (m_vcardFormat == EVC_FORMAT_VCARD_21) {
+        std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
+        if (vobj.get() == 0) {
+            throwError( string( "parsing contact" ) + uid, NULL );
+        }
+        vobj->toNativeEncoding();
+
+        // escape extended properties so that they are preserved
+        // as custom values by the server
+        for (int index = vobj->propertiesCount() - 1;
+             index >= 0;
+             index--) {
+            VProperty *vprop = vobj->getProperty(index);
+            string name = vprop->getName();
+            if (m_vcardExtensions.find(name) != m_vcardExtensions.end()) {
+                name = m_vcardExtensions.prefix + name;
+                vprop->setName(name.c_str());
             }
-            vobj->toNativeEncoding();
 
-            // escape extended properties so that they are preserved
-            // as custom values by the server
-            for (int index = vobj->propertiesCount() - 1;
-                 index >= 0;
-                 index--) {
-                VProperty *vprop = vobj->getProperty(index);
-                string name = vprop->getName();
-                if (m_vcardExtensions.find(name) != m_vcardExtensions.end()) {
-                    name = m_vcardExtensions.prefix + name;
-                    vprop->setName(name.c_str());
-                }
-
-                // replace 3.0 ENCODING=B with 3.0 ENCODING=BASE64
-                char *encoding = vprop->getParameterValue("ENCODING");
-                if (encoding &&
-                    !strcasecmp("B", encoding)) {
-                    vprop->removeParameter("ENCODING");
-                    vprop->addParameter("ENCODING", "BASE64");
-                }
+            // replace 3.0 ENCODING=B with 3.0 ENCODING=BASE64
+            char *encoding = vprop->getParameterValue("ENCODING");
+            if (encoding &&
+                !strcasecmp("B", encoding)) {
+                vprop->removeParameter("ENCODING");
+                vprop->addParameter("ENCODING", "BASE64");
             }
-        
-            vobj->setVersion("2.1");
-            VProperty *vprop = vobj->getProperty("VERSION");
-            vprop->setValue("2.1");
-            vobj->fromNativeEncoding();
-            finalstr = vobj->toString();
-            LOG.debug("after conversion to 2.1:");
-            LOG.debug(finalstr.c_str());
-        } else {
-            finalstr = (char *)vcardstr;
         }
 
-        auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
-        item->setData( finalstr.c_str(), finalstr.size() + 1 );
-        item->setDataType( getMimeType() );
-        item->setModificationTime( 0 );
-        item->setState( state );
-
-        return item.release();
-    } catch (...) {
-        m_hasFailed = true;
+        vobj->setVersion("2.1");
+        VProperty *vprop = vobj->getProperty("VERSION");
+        vprop->setValue("2.1");
+        vobj->fromNativeEncoding();
+        finalstr = vobj->toString();
+        LOG.debug("after conversion to 2.1:");
+        LOG.debug(finalstr.c_str());
+    } else {
+        finalstr = (char *)vcardstr;
     }
 
-    return NULL;
+    auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
+    item->setData( finalstr.c_str(), finalstr.size() + 1 );
+    item->setDataType( getMimeType() );
+    item->setModificationTime( 0 );
+    item->setState( state );
+
+    return item.release();
 }
 
 string EvolutionContactSource::preparseVCard(SyncItem& item)

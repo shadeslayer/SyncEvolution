@@ -38,11 +38,15 @@ The code follows the code formatting of the Funambol
 Sync4j C++ client library. Just emulate the existing
 code when possible.
 
-Exceptions are used to report errors, but not in code
-which is called from inside the Sync4j library because
-that library does not handle exceptions for compatibility
+Exceptions derived from std::exception are used to report
+errors, but not in code which is called from inside the Sync4j
+library because that library does not handle exceptions for compatibility
 reasons. In that case special case must be taken to not
 forget that an error occurred (EvolutionSyncSource::m_hasFailed).
+This is done in in EvolutionSyncSource wrapper functions
+which call the real functions which then may throw exceptions.
+The EvolutionSyncSource::handleException() function deals with
+logging the exception.
 
 "make check" in the src directory compiles and runs unit
 tests. Those tests were written inside the CppUnit

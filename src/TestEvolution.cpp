@@ -959,6 +959,7 @@ template<class T> void TestEvolution<T>::doSync(const string &logfilesuffix, int
         try {
             client.sync(syncMode);
         } catch(...) {
+            EvolutionSyncSource::handleException();
             res = 1;
         }
     }

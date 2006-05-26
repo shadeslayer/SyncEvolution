@@ -77,7 +77,7 @@ void EvolutionCalendarSource::open()
     
     ESource *source = findSource(sources, m_id);
     if (!source) {
-        throw string(getName()) + ": no such calendar: '" + m_id + "'";
+        throw runtime_error(string(getName()) + ": no such calendar: '" + m_id + "'");
     }
 
     m_calendar.set(e_cal_new(source, m_type), "calendar");
@@ -211,26 +211,17 @@ void EvolutionCalendarSource::exportData(ostream &out)
 
 SyncItem *EvolutionCalendarSource::createItem( const string &uid, SyncState state )
 {
-    // this function must never throw an exception
-    // because it is called inside the Sync4j C++ API library
-    // which cannot handle exceptions
-    try {
-        logItem( uid, "extracting from EV" );
+    logItem( uid, "extracting from EV" );
         
-        string icalstr = retrieveItemAsString(uid);
+    string icalstr = retrieveItemAsString(uid);
 
-        auto_ptr<SyncItem> item(new SyncItem(uid.c_str()));
-        item->setData(icalstr.c_str(), icalstr.size() + 1);
-        item->setDataType("text/calendar");
-        item->setModificationTime(0);
-        item->setState(state);
+    auto_ptr<SyncItem> item(new SyncItem(uid.c_str()));
+    item->setData(icalstr.c_str(), icalstr.size() + 1);
+    item->setDataType("text/calendar");
+    item->setModificationTime(0);
+    item->setState(state);
 
-        return item.release();
-    } catch (...) {
-        m_hasFailed = true;
-    }
-
-    return NULL;
+    return item.release();
 }
 
 void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
@@ -280,7 +271,7 @@ int EvolutionCalendarSource::addItemThrow(SyncItem& item)
 
             const char *olduid = getCompUID(icomp);
             if (!olduid) {
-                throw "cannot extract UID to remove the item which is in the way";
+                throw runtime_error("cannot extract UID to remove the item which is in the way");
             }
             item.setKey(olduid);
 #else
@@ -387,7 +378,7 @@ icalcomponent *EvolutionCalendarSource::newFromItem(SyncItem &item)
     icomp = icalcomponent_get_first_component(icomp,
                                               getCompType());
     if (!icomp) {
-        throw "cannot extract event";
+        throw runtime_error("cannot extract event");
     }
 
     return icomp;
@@ -399,7 +390,7 @@ const char *EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
     icalproperty *iprop = icalcomponent_get_first_property(icomp,
                                                            ICAL_UID_PROPERTY);
     if (!iprop) {
-        throw "cannot extract UID property";
+        throw runtime_error("cannot extract UID property");
     }
     const char *uid = icalproperty_get_uid(iprop);
     return uid;

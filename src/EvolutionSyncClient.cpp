@@ -29,6 +29,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <stdexcept>
 using namespace std;
 
 #include <sys/stat.h>
@@ -56,7 +57,7 @@ static void rmBackupDir(const string &dirname)
 {
     DIR *dir = opendir(dirname.c_str());
     if (!dir) {
-        throw dirname + ": " + strerror(errno);
+        throw runtime_error(dirname + ": " + strerror(errno));
     }
     vector<string> entries;
     struct dirent *entry;
@@ -75,12 +76,12 @@ static void rmBackupDir(const string &dirname)
             && errno != EISDIR
 #endif
             ) {
-            throw path + ": " + strerror(errno);
+            throw runtime_error(path + ": " + strerror(errno));
         }
     }
 
     if (rmdir(dirname.c_str())) {
-        throw dirname + ": " + strerror(errno);
+        throw runtime_error(dirname + ": " + strerror(errno));
     }
 }
 
@@ -138,7 +139,7 @@ public:
                     break;
                 }
                 if (errno != EEXIST) {
-                    throw m_path + ": " + strerror(errno);
+                    throw runtime_error(m_path + ": " + strerror(errno));
                 }
                 seq++;
             }
@@ -163,7 +164,7 @@ public:
             m_path = path.str();
             if (mkdir(m_path.c_str(), S_IRWXU)) {
                 if (errno != EEXIST) {
-                    throw m_path + ": " + strerror(errno);
+                    throw runtime_error(m_path + ": " + strerror(errno));
                 }
             }
         }
@@ -194,7 +195,7 @@ public:
         if (m_logdir.size() && m_maxlogdirs > 0 ) {
             DIR *dir = opendir(m_logdir.c_str());
             if (!dir) {
-                throw m_logdir + ": " + strerror(errno);
+                throw runtime_error(m_logdir + ": " + strerror(errno));
             }
             vector<string> entries;
             struct dirent *entry;
@@ -430,9 +431,9 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
                     type
                     );
             if (!syncSource) {
-                throw sourceNames[index] + ": type " +
-                    ( type.size() ? string("not configured") :
-                      string("'") + type + "' empty or unknown" );
+                throw runtime_error(sourceNames[index] + ": type " +
+                                    ( type.size() ? string("not configured") :
+                                      string("'") + type + "' empty or unknown" ));
             }
 
             if (syncMode != SYNC_NONE) {
@@ -451,7 +452,7 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
     }
 
     if (!sources.size()) {
-        throw string("no sources configured");
+        throw runtime_error("no sources configured");
     }
 
     // ready to go: dump initial databases and prepare for final report
@@ -487,15 +488,11 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
     delete [] sourceArray;
         
     if (res) {
-        if (lastErrorCode) {
-            throw lastErrorCode;
+        if (lastErrorCode && lastErrorMsg[0]) {
+            throw runtime_error(lastErrorMsg);
         }
-        // no error code?!
-        lastErrorCode = res;
-        if (!lastErrorMsg[0]) {
-            strcpy(lastErrorMsg, "sync() failed without setting an error description");
-        }
-        throw res;
+        // no error code/description?!
+        throw runtime_error("sync() failed without setting an error description");
     }
 
     // all went well: print final report before cleaning up

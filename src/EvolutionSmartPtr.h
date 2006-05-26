@@ -23,6 +23,8 @@
 #include <glib-object.h>
 #include <libebook/e-book.h>
 
+#include <stdexcept>
+
 /**
  * a smart pointer implementation for objects for which
  * a unref() function exists;
@@ -55,9 +57,7 @@ template<class T, class base = T> class gptr {
         m_pointer( pointer )
     {
         if (!pointer && objectName ) {
-            string *str = new string("Error allocating ");
-            *str += objectName;
-            throw str;
+            throw std::runtime_error(string("Error allocating ") + objectName);
         }
     };
     ~gptr()
@@ -76,9 +76,7 @@ template<class T, class base = T> class gptr {
             unref( (base *)m_pointer );
         }
         if (!pointer && objectName) {
-            string *str = new string("Error allocating ");
-            *str += objectName;
-            throw str;
+            throw std::runtime_error(string("Error allocating ") + objectName);
         }
         m_pointer = pointer;
     }

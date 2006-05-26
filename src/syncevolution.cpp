@@ -93,17 +93,8 @@ int main( int argc, char **argv )
             client.sync(SYNC_NONE, true);
         }
         return 0;
-    } catch ( int sync4jerror ) {
-        LOG.error( lastErrorMsg );
-    } catch ( string *errmsg ) {
-        LOG.error( errmsg->c_str() );
-        delete errmsg;
-    } catch ( const char *errmsg ) {
-        LOG.error( errmsg );
-    } catch ( const string error ) {
-        LOG.error( error.c_str() );
-    } catch ( std::ios_base::failure error ) {
-        LOG.error( error.what() );
+    } catch ( std::exception ex ) {
+        LOG.error( ex.what() );
     } catch (...) {
         LOG.error( "unknown error" );
     }
