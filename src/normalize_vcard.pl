@@ -3,27 +3,31 @@
 use strict;
 
 sub Usage {
-  print "normalize_vcard <vcards.vcf\n";
-  print "                 vcards1.vcf vcards2.vcf\n\n";
-  print "Either normalizes one file (stdin or single argument)\n";
-  print "or compares the two files.\n";
+  print "$0 <vcards.vcf\n";
+  print "   normalizes one file (stdin or single argument), prints to stdout\n";
+  print "$0 vcards1.vcf vcards2.vcf\n";
+  print "   compares the two files\n";
+  print "Also works for iCalendar files.\n";
 }
 
 sub Normalize {
   my $in = shift;
   my $out = shift;
+  my $width = shift;
 
-  $_ = join( "", grep( !/^(BEGIN:VCARD|BEGIN:VCALENDAR|VERSION|END:VCARD|END:VCALENDAR|UID:)/, <$in> ) );
+  $_ = join( "", <$in> );
   s/\r//g;
 
-  my @cards = ();
+  my @items = ();
 
-  foreach $_ ( split( /\n\n/ ) ) {
+  foreach $_ ( split( /(?:(?<=\nEND:VCARD)|(?<=\nEND:VCALENDAR))\n*/ ) ) {
     # undo line continuation
     s/\n\s//gs;
     # ignore charset specifications, assume UTF-8
-    s/;CHARSET="UTF-8"//g;
+    s/;CHARSET="?UTF-8"?//g;
 
+    # UID may differ
+    s/^UID:.*\n//mg;
     # ignore extra email type
     s/^EMAIL(.*);TYPE=INTERNET/EMAIL$1/mg;
     s/^EMAIL(.*);TYPE=OTHER/EMAIL$1/mg;
@@ -44,9 +48,6 @@ sub Normalize {
       while (s/^PHOTO(.*?): (\S+)[\t ]+(\S+)/PHOTO$1: $2$3/mg) {}
     }
 
-    # remove extra timezone specification, it is not supported
-    # by SyncEvolution
-    s/BEGIN:VTIMEZONE.*?END:VTIMEZONE\r?\n?//gs;
     # remove fields which may differ
     s/^(PRODID|CREATED|LAST-MODIFIED):.*\r?\n?//gm;
     # remove optional fields
@@ -55,18 +56,68 @@ sub Normalize {
     # replace parameters with a sorted parameter list
     s!^([^;:]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
 
+    my @formatted = ();
 
-    # sort entries, putting "N:" resp. "SUMMARY:" first
-    # then modify entries to cover not more than
-    # 60 characters
-    my @lines = split( "\n" );
-    push @cards, join( "\n",
-                       grep( ( s/(.{60})/$1\n /g || 1),
-                             grep( /^(N|SUMMARY):/, @lines ),
-                             sort( grep ( !/^(N|SUMMARY):/, @lines ) ) ) );
+    # Modify lines to cover not more than
+    # $width characters by folding lines (as done for the N or SUMMARY above),
+    # but also indent each inner BEGIN/END block by 2 spaces
+    # and finally sort the lines.
+    # We need to keep a stack of open blocks in @formatted:
+    # - BEGIN creates another open block
+    # - END closes it, sorts it, and adds as single string to the parent block
+    push @formatted, [];
+    foreach $_ (split /\n/, $_) {
+      if (/^BEGIN:/) {
+        # start a new block
+        push @formatted, [];
+      }
+
+      # there must be a better way to get a string of 2 * "level" spaces...
+      my $spaces = "";
+      my $i = 0;
+      while ($i < $#formatted - 1) {
+        $spaces .= "  ";
+        $i++;
+      }
+
+      my $thiswidth = $width - length($spaces);
+      $thiswidth = 1 if $thiswidth <= 0;
+      s/(.{$thiswidth})(?!$)/$1\n /g;
+      s/^(.*)$/$spaces$1/mg;
+      push @{$formatted[$#formatted]}, $_;
+
+      if (/^\s*END:/) {
+        my $block = pop @formatted;
+        my $begin = shift @{$block};
+        my $end = pop @{$block};
+
+        # Keep begin/end as first/last line,
+        # inbetween sort, but so that N or SUMMARY are
+        # at the top. This ensures that the order of items
+        # is the same, even if individual properties differ.
+        # Also put indented blocks at the end, not the top.
+        sub numspaces {
+          my $str = shift;
+          $str =~ /^(\s*)/;
+          return length($1);
+        }
+        $_ = join("\n",
+                  $begin,
+                  sort( { $a =~ /^\s*(N|SUMMARY):/ ? -1 :
+                          $b =~ /^\s*(N|SUMMARY):/ ? 1 :
+                          ($a =~ /^\s/ && $b =~ /^\S/) ? 1 :
+                          numspaces($a) == numspaces($b) ? $a cmp $b :
+                          numspaces($a) - numspaces($b) }
+                        @{$block} ),
+                  $end);
+        push @{$formatted[$#formatted]}, $_;
+      }
+    }
+
+    push @items, ${$formatted[0]}[0];
   }
 
-  print $out join( "\n\n", sort @cards ), "\n";
+  print $out join( "\n\n", sort @items ), "\n";
 }
 
 if($#ARGV > 1) {
@@ -86,8 +137,8 @@ if($#ARGV > 1) {
   open(IN2, "<$file2") || die "$file2: $!";
   open(OUT1, ">$normal1") || die "$normal1: $!";
   open(OUT2, ">$normal2") || die "$normal2: $!";
-  Normalize(*IN1{IO}, *OUT1{IO});
-  Normalize(*IN2{IO}, *OUT2{IO});
+  Normalize(*IN1{IO}, *OUT1{IO}, 35);
+  Normalize(*IN2{IO}, *OUT2{IO}, 35);
   close(IN1);
   close(IN2);
   close(OUT1);
@@ -108,5 +159,5 @@ if($#ARGV > 1) {
     $in = *STDIN{IO};
   }
 
-  Normalize($in, *STDOUT{IO});
+  Normalize($in, *STDOUT{IO}, 75);
 }
