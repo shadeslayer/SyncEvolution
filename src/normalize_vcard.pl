@@ -120,8 +120,14 @@ sub Normalize {
   print $out join( "\n\n", sort @items ), "\n";
 }
 
-# number of columns available for output
-my $columns = 75;
+# number of columns available for output:
+# try tput without printing the shells error if not found,
+# default to 80
+my $columns = `which tput >/dev/null && tput cols`;
+print $columns;
+if ($? || !$columns) {
+  $columns = 80;
+}
 
 if($#ARGV > 1) {
   # error
@@ -140,7 +146,7 @@ if($#ARGV > 1) {
   open(IN2, "<$file2") || die "$file2: $!";
   open(OUT1, ">$normal1") || die "$normal1: $!";
   open(OUT2, ">$normal2") || die "$normal2: $!";
-  my $singlewidth = ($columns - 3) / 2;
+  my $singlewidth = int(($columns - 3) / 2);
   $columns = $singlewidth * 2 + 3;
   Normalize(*IN1{IO}, *OUT1{IO}, $singlewidth);
   Normalize(*IN2{IO}, *OUT2{IO}, $singlewidth);
