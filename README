@@ -130,7 +130,7 @@ preserved for each synchronization run. Details about that is found
 in the "Automatic Backups and Logging" section below. Immediately
 before quitting SyncEvolution will show all errors or warnings
 encountered and print a summary of how the databases were modified.
-This is done with the "normalize_vcard" utility script described
+This is done with the "synccompare" utility script described
 in the "Exchanging Data" section.
 
 In case of an error the synchronization run is aborted prematurely and
@@ -356,22 +356,20 @@ This copies all contacts into the server and from there into the new
 address book. Now one can either compare the address books in
 Evolution or do that automatically:
 - save the complete address books: mark all entries, save as vCard
-- normalize the files with the provided Perl script:
-     synccompare list1.vcf >list1.normal.vcf
-     synccompare list2.vcf >list2.normal.vcf
-- compare the normalized lists, e.g.:
-     diff -c list1.normal.vcf list2.normal.vcf
-
-Alternatively, one can invoke synccompare with two file names
-as arguments and it will normalize and compare them automatically
-with diff in the side-by-side mode:
-     synccompare list1.vcf list2.vcf
+- invoke synccompare with two file names as arguments and it will
+  normalize and compare them automatically
 
 Normalizing is necessary because the order of cards and their
 properties as well as other minor formatting aspects may be
-different. The automatic unit testing (see HACKING) also contains
-a "testItems" test which verifies the copying of special
-entries.
+different. The output comes from a "diff --side-by-side", but
+is augmented by the script so that the context of each change
+is always the complete item that was modified. Lines or items
+following a ">" on the right side were added, those on the
+left side followed by a "<" were removed, and those with
+a "!" between text on the left and right side were modified.
+
+The automatic unit testing (see HACKING) contains a "testItems"
+test which verifies the copying of special entries.
 
 Modifying either address book and synchronizing back and forth
 can be used to verify that SyncEvolution works as expected. If

@@ -80,7 +80,7 @@ sub Normalize {
         $i++;
       }
 
-      my $thiswidth = $width - length($spaces);
+      my $thiswidth = $width + 1 - length($spaces);
       $thiswidth = 1 if $thiswidth <= 0;
       s/(.{$thiswidth})(?!$)/$1\n /g;
       s/^(.*)$/$spaces$1/mg;
@@ -152,31 +152,34 @@ if($#ARGV > 1) {
   $_ = `diff --expand-tabs --side-by-side --width $columns "$normal1" "$normal2"`;
   my $res = $?;
 
-  # fix confusing output like:
-  # BEGIN:VCARD                             BEGIN:VCARD
-  #                                      >  N:new;entry
-  #                                      >  FN:new
-  #                                      >  END:VCARD
-  #                                      >
-  #                                      >  BEGIN:VCARD
-  # and replace it with:
-  #                                      >  BEGIN:VCARD
-  #                                      >  N:new;entry
-  #                                      >  FN:new
-  #                                      >  END:VCARD
-  #
-  # BEGIN:VCARD                             BEGIN:VCARD
+  if ($res) {
+    # fix confusing output like:
+    # BEGIN:VCARD                             BEGIN:VCARD
+    #                                      >  N:new;entry
+    #                                      >  FN:new
+    #                                      >  END:VCARD
+    #                                      >
+    #                                      >  BEGIN:VCARD
+    # and replace it with:
+    #                                      >  BEGIN:VCARD
+    #                                      >  N:new;entry
+    #                                      >  FN:new
+    #                                      >  END:VCARD
+    #
+    # BEGIN:VCARD                             BEGIN:VCARD
 
-  s/(BEGIN:(VCARD|VCALENDAR) +BEGIN:\2\n)((?: {$singlewidth} > .*\n)+)( {$singlewidth}) >\n {$singlewidth} > BEGIN:\2\n/$4 > BEGIN:$2\n$3\n$1/mg;
+    s/(BEGIN:(VCARD|VCALENDAR) +BEGIN:\2\n)((?: {$singlewidth} > .*\n)+)( {$singlewidth}) >\n {$singlewidth} > BEGIN:\2\n/$4 > BEGIN:$2\n$3\n$1/mg;
 
-  # same for the other way around, note that we must insert variable padding
-  s/(BEGIN:(VCARD|VCALENDAR) +BEGIN:\2\n)((?:.{$singlewidth} <\n)+)( {$singlewidth}) <\nBEGIN:\2 *<\n/"BEGIN:$2" . (" " x ($singlewidth - length("BEGIN:$2"))) . " <\n$3\n$1"/mge;
+    # same for the other way around, note that we must insert variable padding
+    s/(BEGIN:(VCARD|VCALENDAR) +BEGIN:\2)\n((?:.{$singlewidth} <\n)+)( {$singlewidth}) <\nBEGIN:\2 *<\n/"BEGIN:$2" . (" " x ($singlewidth - length("BEGIN:$2"))) . " <\n$3\n$1"/mge;
 
-  # assume that blank lines separate chunks
-  my @chunks = split /\n\n/, $_;
+    # assume that blank lines separate chunks
+    my @chunks = split /\n\n/, $_;
 
-  # only print chunks which contain diffs
-  print join( "\n\n", grep(/^.{$singlewidth} [<>|]/m, @chunks));
+    # only print chunks which contain diffs
+    print join( ( "-" x $columns ) . "\n", "",
+                grep( /^.{$singlewidth} [<>|]/m && (s/\n*$/\n/s || 1), @chunks), "");
+  }
 
   unlink($normal1);
   unlink($normal2);
