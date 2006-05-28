@@ -51,13 +51,7 @@
 #include <iomanip>
 using namespace std;
 
-// until a better solution is found use the helper function from TestMain.cpp
-extern const string &getCurrentTest();
-
-// sets the log file to the current test
-
-
-
+#include "Test.h"
 
 /** utility function to iterate over different kinds of items in a sync source */
 static int countAnyItems(
@@ -949,6 +943,8 @@ template<class T> void TestEvolution<T>::doSync(const string &logfilesuffix, int
     // EvolutionSyncClient::sync() which will set the level to DEBUG
     // automatically
     string logfile = getCurrentTest() + "." + logfilesuffix;
+    simplifyFilename(logfile);
+    
     remove( logfile.c_str() );
     setLogFile( logfile.c_str(), TRUE );
     LOG.setLevel(LOG_LEVEL_INFO);
@@ -964,6 +960,7 @@ template<class T> void TestEvolution<T>::doSync(const string &logfilesuffix, int
         }
     }
     string oldlogfile = getCurrentTest() + ".log";
+    simplifyFilename(oldlogfile);
     setLogFile( oldlogfile.c_str(), TRUE );
     
     // make a copy of the server's log (if found), then truncate it

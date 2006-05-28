@@ -28,6 +28,8 @@
 #include <stdexcept>
 using namespace std;
 
+#include "Test.h"
+
 class Sync4jOutputter : public CppUnit::CompilerOutputter {
 public:
     Sync4jOutputter(CppUnit::TestResultCollector *result, std::ostream &stream) :
@@ -46,6 +48,7 @@ public:
         setLogFile( "-", 0 );
         cerr << currentTest;
         string logfile = currentTest + ".log";
+        simplifyFilename(logfile);
         remove(logfile.c_str());
         setLogFile( logfile.c_str(), 1 );
         failed = false;
@@ -66,6 +69,18 @@ public:
 
 const string &getCurrentTest() {
     return syncListener.currentTest;
+}
+
+void simplifyFilename(string &filename)
+{
+    size_t pos = 0;
+    while (true) {
+        pos = filename.find(":", pos);
+        if (pos == filename.npos ) {
+            break;
+        }
+        filename.replace(pos, 1, "_");
+    }
 }
 
 int main(int argc, char* argv[])
