@@ -41,7 +41,7 @@ void EvolutionSyncSource::throwError( const string &action, GError *gerror )
 {
     string gerrorstr;
     if (gerror) {
-        gerrorstr += " ";
+        gerrorstr += ": ";
         gerrorstr += gerror->message;
         g_clear_error(&gerror);
     } else {

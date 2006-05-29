@@ -299,7 +299,7 @@ int EvolutionCalendarSource::updateItemThrow(SyncItem& item)
     GError *gerror = NULL;
 
     if (!e_cal_modify_object(m_calendar, icomp, CALOBJ_MOD_ALL, &gerror)) {
-        throwError("updating calendar item", gerror);
+        throwError(string("updating calendar item") + item.getKey(), gerror);
     }
 
     const char *uid = getCompUID(icomp);
