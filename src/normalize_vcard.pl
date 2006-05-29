@@ -1,6 +1,7 @@
 #! /usr/bin/perl -w
 
 use strict;
+use encoding 'utf8';
 
 sub Usage {
   print "$0 <vcards.vcf\n";
@@ -26,8 +27,9 @@ sub Normalize {
     # ignore charset specifications, assume UTF-8
     s/;CHARSET="?UTF-8"?//g;
 
-    # UID may differ
-    s/^UID:.*\n//mg;
+    # UID may differ, but only in vCards
+    s/(VCARD.*)^UID:[^\n]*\n/$1/msg;
+
     # ignore extra email type
     s/^EMAIL(.*);TYPE=INTERNET/EMAIL$1/mg;
     s/^EMAIL(.*);TYPE=OTHER/EMAIL$1/mg;
@@ -40,6 +42,8 @@ sub Normalize {
     # the type of certain fields is ignore by Evolution
     s/^X-(AIM|GROUPWISE|ICQ|YAHOO);TYPE=HOME/X-$1/gm;
     # TYPE=VOICE is the default in Evolution and may or may not appear in the vcard
+    s/^TEL([^:]*);TYPE=VOICE,([^:]*):/TEL$1;TYPE=$2:/mg;
+    s/^TEL([^:]*);TYPE=([^;:]*),VOICE([^:]*):/TEL$1;TYPE=$2$3:/mg;
     s/^TEL([^:]*);TYPE=VOICE([^:]*):/TEL$1$2:/mg;
     # don't care about the TYPE property of PHOTOs
     s/^PHOTO;(.*)TYPE=[A-Z]*/PHOTO;$1/mg;
@@ -51,7 +55,7 @@ sub Normalize {
     # remove fields which may differ
     s/^(PRODID|CREATED|LAST-MODIFIED):.*\r?\n?//gm;
     # remove optional fields
-    s/^(METHOD):.*\r?\n?//gm;
+    s/^(METHOD|X-WSS-COMPONENT|X-WSS-LUID):.*\r?\n?//gm;
 
     # replace parameters with a sorted parameter list
     s!^([^;:]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
@@ -72,15 +76,8 @@ sub Normalize {
         push @formatted, [];
       }
 
-      # there must be a better way to get a string of 2 * "level" spaces...
-      my $spaces = "";
-      my $i = 0;
-      while ($i < $#formatted - 1) {
-        $spaces .= "  ";
-        $i++;
-      }
-
-      my $thiswidth = $width + 1 - length($spaces);
+      my $spaces = "  " x ($#formatted - 1);
+      my $thiswidth = $width -1 - length($spaces);
       $thiswidth = 1 if $thiswidth <= 0;
       s/(.{$thiswidth})(?!$)/$1\n /g;
       s/^(.*)$/$spaces$1/mg;
@@ -124,7 +121,6 @@ sub Normalize {
 # try tput without printing the shells error if not found,
 # default to 80
 my $columns = `which tput >/dev/null && tput cols`;
-print $columns;
 if ($? || !$columns) {
   $columns = 80;
 }
@@ -142,10 +138,10 @@ if($#ARGV > 1) {
   chomp($normal1);
   chomp($normal2);
 
-  open(IN1, "<$file1") || die "$file1: $!";
-  open(IN2, "<$file2") || die "$file2: $!";
-  open(OUT1, ">$normal1") || die "$normal1: $!";
-  open(OUT2, ">$normal2") || die "$normal2: $!";
+  open(IN1, "<:utf8", $file1) || die "$file1: $!";
+  open(IN2, "<:utf8", $file2) || die "$file2: $!";
+  open(OUT1, ">:utf8", $normal1) || die "$normal1: $!";
+  open(OUT2, ">:utf8", $normal2) || die "$normal2: $!";
   my $singlewidth = int(($columns - 3) / 2);
   $columns = $singlewidth * 2 + 3;
   Normalize(*IN1{IO}, *OUT1{IO}, $singlewidth);
@@ -155,7 +151,10 @@ if($#ARGV > 1) {
   close(OUT1);
   close(OUT2);
 
-  $_ = `diff --expand-tabs --side-by-side --width $columns "$normal1" "$normal2"`;
+  # Produce output where each line is marked as old (aka remove) with o,
+  # as new (aka added) with n, and as unchanged with u at the beginning.
+  # This allows simpler processing below.
+  $_ = `diff "--old-line-format=o %L" "--new-line-format=n %L" "--unchanged-line-format=u %L" "$normal1" "$normal2"`;
   my $res = $?;
 
   if ($res) {
@@ -173,18 +172,58 @@ if($#ARGV > 1) {
     #                                      >  END:VCARD
     #
     # BEGIN:VCARD                             BEGIN:VCARD
+    #
+    # With the o/n/u markup this presents itself as:
+    # u BEGIN:VCARD
+    # n N:new;entry
+    # n FN:new
+    # n END:VCARD
+    # n
+    # n BEGIN:VCARD
+    #
 
-    s/(BEGIN:(VCARD|VCALENDAR) +BEGIN:\2\n)((?: {$singlewidth} > .*\n)+)( {$singlewidth}) >\n {$singlewidth} > BEGIN:\2\n/$4 > BEGIN:$2\n$3\n$1/mg;
+    while( s/^u BEGIN:(VCARD|VCALENDAR)\n((?:^n .*\n)+?)^n BEGIN:/n BEGIN:$1\n$2u BEGIN:/m) {}
+    
+    # same for the other way around
+    while( s/^u BEGIN:(VCARD|VCALENDAR)\n((?:^o .*\n)+?)^o BEGIN:/o BEGIN:$1\n$2u BEGIN:/m) {}
 
-    # same for the other way around, note that we must insert variable padding
-    s/(BEGIN:(VCARD|VCALENDAR) +BEGIN:\2)\n((?:.{$singlewidth} <\n)+)( {$singlewidth}) <\nBEGIN:\2 *<\n/"BEGIN:$2" . (" " x ($singlewidth - length("BEGIN:$2"))) . " <\n$3\n$1"/mge;
+    # split at end of each record
+    my $spaces = " " x $singlewidth;
+    foreach $_ (split /(?:(?<=. END:VCARD\n)|(?<=. END:VCALENDAR\n))(?:^. \n)*/m, $_) {
+      # ignore unchanged records
+      if (!length($_) || /^((u [^\n]*\n)*(u [^\n]*?))$/s) {
+        next;
+      }
 
-    # assume that blank lines separate chunks
-    my @chunks = split /\n\n/, $_;
+      # make all lines equally long in terms of printable characters
+      s/^(.*)$/$1 . (" " x ($singlewidth + 2 - length($1)))/gme;
 
-    # only print chunks which contain diffs
-    print join( ( "-" x $columns ) . "\n", "",
-                grep( /^.{$singlewidth} [<>|]/m && (s/\n*$/\n/s || 1), @chunks), "");
+      # convert into side-by-side output
+      my @buffer = ();
+      foreach $_ (split /\n/, $_) {
+        if (/^u (.*)/) {
+          print join(" <\n", @buffer), " <\n" if $#buffer >= 0;
+          @buffer = ();
+          print $1, "   ", $1, "\n";
+        } elsif (/^o (.*)/) {
+          # preserve in buffer for potential merging with "n "
+          push @buffer, $1;
+        } else {
+          /^n (.*)/;
+          # have line to be merged with?
+          if ($#buffer >= 0) {
+            print shift @buffer, " | ", $1, "\n";
+          } else {
+            print join(" <\n", @buffer), " <\n" if $#buffer >= 0;
+            print $spaces, " > ", $1, "\n";
+          }
+        }
+      }
+      print join(" <\n", @buffer), " <\n" if $#buffer >= 0;
+      @buffer = ();
+
+      print "-" x $columns, "\n";
+    }
   }
 
   unlink($normal1);
