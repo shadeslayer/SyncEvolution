@@ -21,8 +21,8 @@ NOTE:This user tests some of the advanced aspects of vcards:\n- non-ASCII c
   mailing address)\n- long lines (in this note)\n- special characters (in
   this note)\n- tabs (in this note)\n\nVery long line\, very very long th
  is time... still not finished... blah blah blah blah blah 1 2 3 4 5 6 7 
- 8 9 10 11 12 13 14 15 16\n\ncomma \,\ncollon :\nsemicolon \;\nbackslash 
- \\\n\nThe same\, in the middle of a line:\ncomma \, comma\ncollon : coll
+ 8 9 10 11 12 13 14 15 16\n\ncomma \,\ncolon :\nsemicolon \;\nbackslash 
+ \\\n\nThe same\, in the middle of a line:\ncomma \, comma\ncolon : col
  on\nsemicolon \; semicolon\nbackslash \\ backslash\n\nA tab 	tab done\n	
  line starts with tab\n
 FN:Umlaut Ä Ö Ü ß
