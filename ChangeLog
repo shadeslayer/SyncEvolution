@@ -1,3 +1,74 @@
+2006-06-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/normalize_vcard.pl:
+	adapted to syncing with sync.scheduleworld.com
+
+	* src/EvolutionContactSource.cpp:
+	added mapping for ADR;TYPE=OTHER for scheduleworld
+
+	* etc/Makefile.am, etc/localhost_1/spds/syncml/config.txt:
+	updated references to sync.scheduleworld.com
+
+	* etc/localhost_1/spds/sources/addressbook_1/config.txt:
+	comments explain how to obtain valid Evolution sources
+
+2006-05-29  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionSyncSource.cpp:
+	better error logging
+
+	* src/testVCard.vcf: fixed typo
+
+	* src/testCalendar.ics: adapted to scheduleworld.com
+
+	* src/normalize_vcard.pl:
+	use simpler diff output and transform into side-by-side oneself (simpler code, less fragile, handles UTF-8)
+
+2006-05-28  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/Test.h, src/TestEvolution.cpp, src/TestMain.cpp:
+	avoid filenames with colons in the name
+
+2006-05-27  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/normalize_vcard.pl:
+	adapt automatically to console size if tput is available
+
+	* src/normalize_vcard.pl, README:
+	made the diff output nicer: full items shown, separated by lines
+
+2006-05-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/normalize_vcard.pl:
+	massage the full diff output so that it is easier to read and contains exactly the full vcard/vcalendar for each change
+
+	* src/normalize_vcard.pl:
+	added indention for nested BEGIN/END blocks in iCalendar
+
+	* HACKING, src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp, src/syncevolution.cpp:
+	cleaned up error reporting and exception handling
+
+2006-05-25  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README, src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h:
+	cleaned up error handling and logging, in particular when using multiple sources at once
+
+	* configure.in: avoid copying temporary C++ API files
+
+	* src/testVCard.vcf: added buffer overflow test case
+
+	* src/EvolutionSyncSource.cpp, src/TestEvolution.cpp:
+	added test for slow-sync and added handling of the STC_ALREADY_EXISTS encountered then; twinning is currently broken in Funambol 3.0 beta 3, see #305357
+
+	* README: added remark that text has to be exchanged as UTF-8
+
+	* src/testVCard.vcf:
+	added test case with explicit CHARSET="UTF-8" to test how the updated client library deals with it
+
+2006-05-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: utility was renamed
+
 2006-05-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp: fixed new[]/free() mismatch
