@@ -3,6 +3,9 @@
 use strict;
 use encoding 'utf8';
 
+# ignore differences caused by sync.scheduleworld.com?
+my $scheduleworld = 1;
+
 sub Usage {
   print "$0 <vcards.vcf\n";
   print "   normalizes one file (stdin or single argument), prints to stdout\n";
@@ -30,17 +33,34 @@ sub Normalize {
     # UID may differ, but only in vCards
     s/(VCARD.*)^UID:[^\n]*\n/$1/msg;
 
-    # ignore extra email type
-    s/^EMAIL(.*);TYPE=INTERNET/EMAIL$1/mg;
-    s/^EMAIL(.*);TYPE=OTHER/EMAIL$1/mg;
-    # ignore extra ADR type
-    s/^ADR;TYPE=OTHER/ADR/mg;
+    # the distinction between an empty and a missing property
+    # is vague and handled differently, so ignore empty properties
+    s/^[^;:]*:\n//mg;
+
+    # use separate TYPE= fields
+    while( s/^(\w*)([^:\n]*);TYPE=(\w*),(\w*)/$1$2;TYPE=$3;TYPE=$4/mg ) {}
+
+    # replace parameters with a sorted parameter list
+    s!^([^;:]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
+
+    # Ignore "other" email, address and telephone type - this is
+    # an Evolution specific extension which might not be preserved.
+    s/^(ADR|EMAIL|TEL)([^:]*);TYPE=OTHER/$1$2/mg;
+    # TYPE=PREF on the other hand is not used by Evolution, but
+    # might be sent back.
+    s/^(ADR|EMAIL|TEL)([^:]*);TYPE=PREF/$1$2/mg;
+    # Evolution does not need TYPE=INTERNET for email
+    s/^(EMAIL)([^:]*);TYPE=INTERNET/$1$2/mg;
     # ignore TYPE=PREF in address, does not matter in Evolution
     s/^((ADR|LABEL)[^:]*);TYPE=PREF/$1/mg;
     # ignore extra separators in multi-value fields
     s/^((ORG|N|(ADR[^:]*)):.*?);*$/$1/mg;
     # the type of certain fields is ignore by Evolution
     s/^X-(AIM|GROUPWISE|ICQ|YAHOO);TYPE=HOME/X-$1/gm;
+    # Evolution ignores an additional pager type
+    s/^TEL;TYPE=PAGER;TYPE=WORK/TEL;TYPE=PAGER/gm;
+    # PAGER property is sent by Evolution, but otherwise ignored
+    s/^LABEL[;:].*\n//mg;
     # TYPE=VOICE is the default in Evolution and may or may not appear in the vcard
     s/^TEL([^:]*);TYPE=VOICE,([^:]*):/TEL$1;TYPE=$2:/mg;
     s/^TEL([^:]*);TYPE=([^;:]*),VOICE([^:]*):/TEL$1;TYPE=$2$3:/mg;
@@ -57,8 +77,11 @@ sub Normalize {
     # remove optional fields
     s/^(METHOD|X-WSS-COMPONENT|X-WSS-LUID):.*\r?\n?//gm;
 
-    # replace parameters with a sorted parameter list
-    s!^([^;:]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
+    if ($scheduleworld) {
+      # does not preserve X-EVOLUTION-UI-SLOT=
+      s/^(\w+)([^:]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
+    }
+
 
     my @formatted = ();
 
