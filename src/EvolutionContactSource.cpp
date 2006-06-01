@@ -206,12 +206,42 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
 
     string finalstr;
         
+    std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
+    if (vobj.get() == 0) {
+        throwError( string( "parsing contact" ) + uid, NULL );
+    }
+
+    // map ADR;TYPE=OTHER (not standard-compliant)
+    // to ADR;TYPE=PARCEL and vice-versa in preparseVCard();
+    // other TYPE=OTHER instances are simply removed
+    for (int index = vobj->propertiesCount() - 1;
+         index >= 0;
+         index--) {
+        VProperty *vprop = vobj->getProperty(index);
+        bool parcel = false;
+
+        int param = 0;
+        while (param < vprop->parameterCount()) {
+            if (!strcasecmp(vprop->getParameter(param), "TYPE") &&
+                !strcasecmp(vprop->getParameterValue(param), "OTHER")) {
+                vprop->removeParameter(param);
+                if (!strcasecmp(vprop->getName(), "ADR")) {
+                    parcel = true;
+                }
+            } else {
+                param++;
+            }
+        }
+
+        if (parcel) {
+            vprop->addParameter("TYPE", "PARCEL");
+        }
+    }
+
     // convert from 3.0 to 2.1?
     if (m_vcardFormat == EVC_FORMAT_VCARD_21) {
-        std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
-        if (vobj.get() == 0) {
-            throwError( string( "parsing contact" ) + uid, NULL );
-        }
+        LOG.debug("convert to 2.1");
+
         vobj->toNativeEncoding();
 
         // escape extended properties so that they are preserved
@@ -239,12 +269,11 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
         VProperty *vprop = vobj->getProperty("VERSION");
         vprop->setValue("2.1");
         vobj->fromNativeEncoding();
-        finalstr = vobj->toString();
-        LOG.debug("after conversion to 2.1:");
-        LOG.debug(finalstr.c_str());
-    } else {
-        finalstr = (char *)vcardstr;
     }
+
+    finalstr = vobj->toString();
+    LOG.debug("after conversion:");
+    LOG.debug(finalstr.c_str());
 
     auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
     item->setData( finalstr.c_str(), finalstr.size() + 1 );
@@ -282,6 +311,12 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
             name = name.substr(m_vcardExtensions.prefix.size());
             vprop->setName(name.c_str());
         } else if (name == "ADR" || name == "EMAIL" ) {
+            // remove unsupported TYPE=PARCEL again?
+            const char *type = vprop->getParameterValue("TYPE");
+            if (type && !strcasecmp(type, "PARCEL")) {
+                vprop->removeParameter("TYPE");
+            }
+
             // ensure that at least one TYPE is set
             if (!vprop->containsParameter("TYPE") &&
                 !vprop->containsParameter("INTERNET") &&
