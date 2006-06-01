@@ -298,7 +298,13 @@ public:
     // creates several items, transmits them back and forth and
     // then compares which of them have been preserved
     void testItems();
-    
+    // tests the following sequence of events:
+    // - both clients in sync with server
+    // - client 1 adds item
+    // - client 1 updates the same item
+    // - client 2 gets item (depending on server, might be flagged as update)
+    // See http://forge.objectweb.org/tracker/?func=detail&atid=100096&aid=305018&group_id=96
+    void testAddUpdate();
 };
 
 /**
@@ -587,6 +593,7 @@ public:
     CPPUNIT_TEST( testDelete ); \
     CPPUNIT_TEST( testMerge ); \
     CPPUNIT_TEST( testItems ); \
+    CPPUNIT_TEST( testAddUpdate ); \
     CPPUNIT_TEST( testTwinning );
 
 class ContactSource : public TestContact
@@ -1264,6 +1271,27 @@ template<class T> void TestEvolution<T>::testItems()
 
     
     compareDatabases("testItems", m_testItems.c_str());
+}
+
+template<class T> void TestEvolution<T>::testAddUpdate()
+{
+    // clean server and both test databases
+    deleteAll("testItems", 0);
+    doSync( "delete.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+
+    // add item
+    insert();
+    doSync( "add.client.log", 0, SYNC_TWO_WAY );
+
+    // update it
+    update();
+    doSync( "update.client.log", 0, SYNC_TWO_WAY );
+
+    // now download the updated item into the second client
+    doSync( "recv.client.log", 1, SYNC_TWO_WAY );
+
+    // compare the two databases
+    compareDatabases("", NULL, 1);
 }
 
 template<class T> void TestEvolution<T>::testTwinning()
