@@ -1218,7 +1218,7 @@ template<class T> void TestEvolution<T>::compareDatabases(const string &prefix,
         sourceData = refData;
     } else {
         sourceData = getCurrentTest() + (prefix.size() ? "." : "") + prefix + ".source.test.vcf";
-
+        simplifyFilename(sourceData);
         T source(
             string( "dummy" ),
             m_changeIds[0],
@@ -1233,6 +1233,7 @@ template<class T> void TestEvolution<T>::compareDatabases(const string &prefix,
     }
 
     copyData = getCurrentTest() + (prefix.size() ? "." : "") + prefix + ".copy.test.vcf";
+    simplifyFilename(copyData);
     T copy(
         string( "dummy" ),
         m_changeIds[copyDatabase],
@@ -1248,6 +1249,7 @@ template<class T> void TestEvolution<T>::compareDatabases(const string &prefix,
     stringstream cmd;
 
     string diff = getCurrentTest() + (prefix.size() ? "." : "") + prefix + ".diff";
+    simplifyFilename(diff);
     cmd << "perl synccompare " << sourceData << " " << copyData << ">" << diff;
     cmd << "  || (echo; echo '*** " << diff << " non-empty ***'; cat " << diff << "; exit 1 )";
 
