@@ -3,8 +3,8 @@
 syncURL = http://localhost:8080/sync4j/sync
 # - Funambol >= 3.0
 #syncURL = http://localhost:8080/funambol/ds
-# - www.scheduleworld.com
-#syncURL = http://sync.scheduleworld.com/sync4j/sync
+# - sync.scheduleworld.com
+#syncURL = http://sync.scheduleworld.com/funambol/ds
 
 # the SyncML gets this string and will use it to keep track
 # of changes that still need to be synchronized; when multiple

@@ -60,6 +60,8 @@ $(scheduleworld_copy) : scheduleworld_% : localhost_%
 	    -e 's;^#syncURL = http://sync.scheduleworld;syncURL = http://sync.scheduleworld;' \
 	    -e 's;^type = text/x-todo;type = text/calendar;' \
 	    -e 's;^type = text/x-vcard;type = text/vcard;' \
-	    -e 's;^uri = todo;uri = task;' \
+	    -e 's;^uri = todo;uri = task2;' \
+            -e 's;^uri = card;uri = card3;' \
+            -e 's;^uri = cal;uri = cal2;' \
 	    $< >$@
 
