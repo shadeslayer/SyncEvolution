@@ -93,7 +93,7 @@ int main( int argc, char **argv )
             client.sync(SYNC_NONE, true);
         }
         return 0;
-    } catch ( std::exception ex ) {
+    } catch ( const std::exception &ex ) {
         LOG.error( ex.what() );
     } catch (...) {
         LOG.error( "unknown error" );
