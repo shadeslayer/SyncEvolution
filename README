@@ -440,25 +440,6 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
   which was updated during a certain test (TestEvolution::testMerge).
   Exact reason unknown, needs to be investigated.
 
-- refresh-server results in a Sync4j client library error at the end
-  of the sync with the client library shipped with 0.2:
-
-  TestEvolution.cpp:534:Assertion
-  Test name: TestEvolution::testDeleteAll
-  assertion failed
-  - Expression: !res
-
-  With the current library source that is avoided, but a refresh-server
-  with empty local address book does not delete all items on the
-  server as it should, leading to:
-
-  TestEvolution.cpp:674:Assertion
-  Test name: TestEvolution::testDeleteAll
-  assertion failed
-  - Expression: countItems( source ) == 0
-
-  ObjectWeb #304806
-
 - various vcard and special character related problems in the
   Sync4j server and client library:
   TestEvolution::testVCard fails the check that items
@@ -472,6 +453,15 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
   exchanged.
 
   ObjectWeb #304828, #304786, #304784, #304782
+
+- the sync.scheduleworld.com preserves almost all Evolution
+  contact and calendar data, the exceptions are:
+  - the LDAP schema used to store contacts does not distinguish
+    between different emails, so although all email addresses
+    are preserved, their type gets lost
+  - "Department" and "Office" of a contact get lost
+  - the order of email addresses and phone numbers in the
+    Evolution GUI is not preserved
 
 - error handling could be improved
 

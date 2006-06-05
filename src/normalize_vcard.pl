@@ -4,7 +4,12 @@ use strict;
 use encoding 'utf8';
 
 # ignore differences caused by sync.scheduleworld.com?
-my $scheduleworld = 1;
+my $scheduleworld;
+if (defined $ENV{TEST_EVOLUTION_SERVER} && $ENV{TEST_EVOLUTION_SERVER} =~ /scheduleworld/) {
+  $scheduleworld = 1;
+} else {
+  $scheduleworld = 0;
+}
 
 sub Usage {
   print "$0 <vcards.vcf\n";
@@ -80,6 +85,10 @@ sub Normalize {
     if ($scheduleworld) {
       # does not preserve X-EVOLUTION-UI-SLOT=
       s/^(\w+)([^:]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
+      # cannot distinguish EMAIL types
+      s/^EMAIL;TYPE=\w*/EMAIL/mg;
+      # only preserves ORG "Company", but loses "Department" and "Office"
+      s/^ORG:([^;]+)(;.*)/ORG:$1/mg;
     }
 
 
