@@ -58,7 +58,7 @@ $(scheduleworld_copy) : scheduleworld_% : localhost_%
 	mkdir -p $(@D)
 	sed -e 's;^syncURL = http://localhost;#syncURL = http://localhost;' \
 	    -e 's;^#syncURL = http://sync.scheduleworld;syncURL = http://sync.scheduleworld;' \
-	    -e 's;^type = text/x-todo;type = text/calendar;' \
+	    -e 's;^type = text/x-calendar;type = text/calendar;' \
 	    -e 's;^type = text/x-vcard;type = text/vcard;' \
 	    -e 's;^uri = todo;uri = task2;' \
             -e 's;^uri = card;uri = card3;' \
