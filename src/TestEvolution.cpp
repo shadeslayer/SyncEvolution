@@ -278,8 +278,10 @@ public:
     void testTwoWaySync();
     // do a slow sync without additional checks
     void testSlowSync();
-    // delete all items, locally and on server
-    void testDeleteAll();
+    // delete all items, locally and on server using two-way sync
+    void testDeleteAllSync();
+    // delete all items, locally and on server using refresh-from-client sync
+    void testDeleteAllRefresh();
     // test that a refresh sync of an empty server leads to an empty datatbase
     void testRefreshSemantic();
     // test that a two-way sync copies an item from one address book into the other
@@ -586,7 +588,8 @@ public:
     CPPUNIT_TEST( testRefreshSync ); \
     CPPUNIT_TEST( testTwoWaySync ); \
     CPPUNIT_TEST( testSlowSync ); \
-    CPPUNIT_TEST( testDeleteAll ); \
+    CPPUNIT_TEST( testDeleteAllSync ); \
+    CPPUNIT_TEST( testDeleteAllRefresh ); \
     CPPUNIT_TEST( testRefreshSemantic ); \
     CPPUNIT_TEST( testCopy ); \
     CPPUNIT_TEST( testUpdate ); \
@@ -1032,7 +1035,7 @@ template<class T> void TestEvolution<T>::deleteAll( const string &prefix, int co
     }
 }
 
-template<class T> void TestEvolution<T>::testDeleteAll()
+template<class T> void TestEvolution<T>::testDeleteAllSync()
 {
     T source(
         string( "dummy" ),
@@ -1052,13 +1055,21 @@ template<class T> void TestEvolution<T>::testDeleteAll()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     // make sure server really deleted everything
-    doSync( "check.1.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    doSync( "check.client.log", 0, SYNC_REFRESH_FROM_SERVER );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
-    EVOLUTION_ASSERT_NO_THROW( source, source.close() );    
+    EVOLUTION_ASSERT_NO_THROW( source, source.close() );
+}
 
-    // copy something to server again
+template<class T> void TestEvolution<T>::testDeleteAllRefresh()
+{
+    T source(
+        string( "dummy" ),
+        m_changeIds[1],
+        m_databases[0]);
+
+    // copy something to server first
     testSimpleInsert();
     doSync( "insert.2.client.log", 0, SYNC_SLOW );
 
@@ -1072,12 +1083,11 @@ template<class T> void TestEvolution<T>::testDeleteAll()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     // make sure server really deleted everything
-    doSync( "check.2.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    doSync( "check.client.log", 0, SYNC_REFRESH_FROM_SERVER );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
-
 }
 
 template<class T> void TestEvolution<T>::testRefreshSemantic()
