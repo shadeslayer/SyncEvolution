@@ -193,17 +193,9 @@ void EvolutionCalendarSource::exportData(ostream &out)
         throwError( "reading all items", gerror );
     }
     while (nextItem) {
-        gptr<char> icalstr;
-        ECalComponent *comp = E_CAL_COMPONENT(nextItem->data);
-
-        e_cal_component_commit_sequence(comp);
-        icalstr = e_cal_component_get_as_string(comp);
-
-        out << "BEGIN:VCALENDAR\r\n";
-        out << EVOLUTION_CALENDAR_VERSION << "\r\n";
-        out << EVOLUTION_CALENDAR_PRODID << "\r\n";
-        out << (const char *)icalstr;
-        out << "END:VCALENDAR\r\n";
+        const char *uid;
+        e_cal_component_get_uid(E_CAL_COMPONENT(nextItem->data), &uid);
+        out << retrieveItemAsString(uid);
         out << "\r\n";
         nextItem = nextItem->next;
     }
@@ -285,7 +277,11 @@ int EvolutionCalendarSource::addItemThrow(SyncItem& item)
         } else {
             throwError( "storing new calendar item", gerror );
         }
+    } else {
+        importTimezones(item);
     }
+
+   
     if (uid) {
         item.setKey(uid);
     }
@@ -301,6 +297,7 @@ int EvolutionCalendarSource::updateItemThrow(SyncItem& item)
     if (!e_cal_modify_object(m_calendar, icomp, CALOBJ_MOD_ALL, &gerror)) {
         throwError(string("updating calendar item") + item.getKey(), gerror);
     }
+    importTimezones(item);
 
     const char *uid = getCompUID(icomp);
     if (uid) {
@@ -382,6 +379,37 @@ icalcomponent *EvolutionCalendarSource::newFromItem(SyncItem &item)
     }
 
     return icomp;
+}
+
+void EvolutionCalendarSource::importTimezones(SyncItem &item)
+{
+    gptr<char> data;
+    data.set((char *)malloc(item.getDataSize() + 1), "copy of item");
+    memcpy(data, item.getData(), item.getDataSize());
+    data[item.getDataSize()] = 0;
+    icalcomponent *icomp = icalcomponent_new_from_string(data);
+
+    if( !icomp ) {
+        throwError( string( "parsing ical" ) + (char *)data,
+                    NULL );
+    }
+
+    for (icalcomponent *tcomp = icalcomponent_get_first_component(icomp, ICAL_VTIMEZONE_COMPONENT);
+         tcomp;
+         tcomp = icalcomponent_get_next_component(icomp, ICAL_VTIMEZONE_COMPONENT)) {
+        icaltimezone *zone = icaltimezone_new();
+        icaltimezone_set_component(zone, tcomp);
+
+        GError *gerror = NULL;
+        gboolean success = e_cal_add_timezone(m_calendar, zone, &gerror);
+        if (!success) {
+            throwError(string("error adding VTIMEZONE ") + icaltimezone_get_tzid(zone),
+                       gerror);
+        }
+
+        // TODO: smart pointer for ical objects
+        icaltimezone_free (zone, 1);
+    }
 }
 
 const char *EvolutionCalendarSource::getCompUID(icalcomponent *icomp)

@@ -93,6 +93,9 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     /** parse the data stored in the given SyncItem, throw error if cannot be parsed */
     icalcomponent *newFromItem(SyncItem &item);
 
+    /** import all VTIMEZONE definitions stored in the item, throw error */
+    void importTimezones(SyncItem &item);
+
     /** returns the type which the ical library uses for our components */
     icalcomponent_kind getCompType() {
         return m_type == E_CAL_SOURCE_TYPE_EVENT ?
