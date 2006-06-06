@@ -502,7 +502,7 @@ public:
 };
 
 /**
- * TestEvolution configured for use with calendars
+ * TestEvolution configured for use with tasks
  */
 class TestTask : public TestEvolution<TestEvolutionTaskSource>
 {
@@ -521,6 +521,7 @@ public:
             "DTSTAMP:20060417T173712Z\n"
             "SUMMARY:do me\n"
             "PRIORITY:0\n"
+            "STATUS:IN-PROCESS\n"
             "CREATED:20060417T173712\n"
             "LAST-MODIFIED:20060417T173712\n"
             "END:VTODO\n"
@@ -536,6 +537,7 @@ public:
             "DTSTAMP:20060417T173712Z\n"
             "SUMMARY:do me ASAP\n"
             "PRIORITY:1\n"
+            "STATUS:IN-PROCESS\n"
             "CREATED:20060417T173712\n"
             "LAST-MODIFIED:20060417T173712\n"
             "END:VTODO\n"
@@ -551,6 +553,7 @@ public:
             "DTSTAMP:20060417T173712Z\n"
             "SUMMARY:do me please, please\n"
             "PRIORITY:0\n"
+            "STATUS:IN-PROCESS\n"
             "CREATED:20060417T173712\n"
             "LAST-MODIFIED:20060417T173712\n"
             "END:VTODO\n"
@@ -566,6 +569,7 @@ public:
             "DTSTAMP:20060417T173712Z\n"
             "SUMMARY:do me\n"
             "PRIORITY:7\n"
+            "STATUS:IN-PROCESS\n"
             "CREATED:20060417T173712\n"
             "LAST-MODIFIED:20060417T173712\n"
             "END:VTODO\n"
