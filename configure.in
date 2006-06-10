@@ -22,7 +22,8 @@ if test ! "$SYNC4J"; then
         if cp --update --archive $SYNC4JSRC/* src/client-api; then true; else
             AC_MSG_ERROR( [copying $SYNC4JSRC into src/client-api failed] )
         fi
-        find src/client-api -name "*~*" -o -name ".#*" -o -name "*.orig" | xargs rm
+        find src/client-api/build/autotools/include/* src/client-api/build/autotools/src/* -type d | xargs rm -rf
+        find src/client-api -name "*~*" -o -name ".#*" -o -name "*.orig" -o -name "stamp-*" -o -name "*.o" -o -name "*.lo" -o -name .libs -o -name autom4te.cache -o -name config.status | xargs rm -rf
     else
         if test ! -d src/client-api; then
             if test -d $srcdir/src/client-api; then
