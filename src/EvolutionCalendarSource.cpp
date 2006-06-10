@@ -20,6 +20,7 @@
 using namespace std;
 
 #include "EvolutionCalendarSource.h"
+#include "EvolutionSmartPtr.h"
 
 #include <common/base/Log.h>
 #include <common/vocl/VObject.h>
@@ -241,69 +242,88 @@ void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
 
 int EvolutionCalendarSource::addItemThrow(SyncItem& item)
 {
-    icalcomponent *icomp = newFromItem(item);
+    insertItem(item, false);
+}
+
+int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
+{
+    bool fallback = false;
+    gptr<char> data;
+    data.set((char *)malloc(item.getDataSize() + 1), "copy of item");
+    memcpy(data, item.getData(), item.getDataSize());
+    data[item.getDataSize()] = 0;
+    gptr<icalcomponent> icomp(icalcomponent_new_from_string(data));
+
+    if( !icomp ) {
+        throwError( string( "parsing ical" ) + (char *)data,
+                    NULL );
+    }
+
+    // the component to update/add must be the
+    // ICAL_VEVENT/VTODO_COMPONENT of the item,
+    // e_cal_create/modify_object() fail otherwise
+    icalcomponent *subcomp = icalcomponent_get_first_component(icomp,
+                                                               getCompType());
+    if (!subcomp) {
+        throw runtime_error("cannot extract event");
+    }
+    
     GError *gerror = NULL;
     char *uid = NULL;
     int status = STC_OK;
     
-    if (!e_cal_create_object(m_calendar, icomp, &uid, &gerror)) {
-        if (gerror->domain == E_CALENDAR_ERROR &&
-            gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
-            // Deal with error due to adding already existing item, that can happen,
-            // for example with a "dumb" server which cannot pair items by UID.
-            //
-            // TODO: alert the server? duplicate?
-            //
-#if 0
-            // overwrite item
-            deleteItemThrow(item);
-            if (!e_cal_create_object(m_calendar, icomp, &uid, &gerror)) {
+    if (!update) {
+        if(!e_cal_create_object(m_calendar, subcomp, &uid, &gerror)) {
+            if (gerror->domain == E_CALENDAR_ERROR &&
+                gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
+                // Deal with error due to adding already existing item, that can happen,
+                // for example with a "dumb" server which cannot pair items by UID.
+                update = true;
+                fallback = true;
+                g_clear_error(&gerror);
+            } else {
                 throwError( "storing new calendar item", gerror );
             }
-
-            const char *olduid = getCompUID(icomp);
-            if (!olduid) {
-                throw runtime_error("cannot extract UID to remove the item which is in the way");
-            }
-            item.setKey(olduid);
-#else
-            // update item (sets UID)
-            status = updateItemThrow(item);
-            uid = NULL;
-            if (status == STC_OK) {
-                status = STC_CONFLICT_RESOLVED_WITH_MERGE;
-            }
-#endif
         } else {
-            throwError( "storing new calendar item", gerror );
+            if (uid) {
+                item.setKey(uid);
+            }
         }
-    } else {
-        importTimezones(item);
     }
 
-   
-    if (uid) {
-        item.setKey(uid);
+    if (update) {
+        if (!e_cal_modify_object(m_calendar, subcomp, CALOBJ_MOD_ALL, &gerror)) {
+            throwError(string("updating calendar item") + item.getKey(), gerror);
+        }
+        string uid = getCompUID(subcomp);
+        if (uid.size()) {
+            item.setKey(uid.c_str());
+        }
+        if (fallback ) {
+            status = STC_CONFLICT_RESOLVED_WITH_MERGE;
+        }
     }
+
+    for (icalcomponent *tcomp = icalcomponent_get_first_component(icomp, ICAL_VTIMEZONE_COMPONENT);
+         tcomp;
+         tcomp = icalcomponent_get_next_component(icomp, ICAL_VTIMEZONE_COMPONENT)) {
+        gptr<icaltimezone> zone(icaltimezone_new(), "icaltimezone");
+        icaltimezone_set_component(zone, tcomp);
+
+        GError *gerror = NULL;
+        gboolean success = e_cal_add_timezone(m_calendar, zone, &gerror);
+        if (!success) {
+            throwError(string("error adding VTIMEZONE ") + icaltimezone_get_tzid(zone),
+                       gerror);
+        }
+    }
+    
     return status;
 }
 
 int EvolutionCalendarSource::updateItemThrow(SyncItem& item)
 {
-    int status = STC_OK;
-    icalcomponent *icomp = newFromItem(item);
-    GError *gerror = NULL;
-
-    if (!e_cal_modify_object(m_calendar, icomp, CALOBJ_MOD_ALL, &gerror)) {
-        throwError(string("updating calendar item") + item.getKey(), gerror);
-    }
-    importTimezones(item);
-
-    const char *uid = getCompUID(icomp);
-    if (uid) {
-        item.setKey(uid);
-    }
-    return status;
+    insertItem(item, true);
 }
 
 int EvolutionCalendarSource::deleteItemThrow(SyncItem& item)
@@ -350,69 +370,14 @@ icalcomponent *EvolutionCalendarSource::retrieveItem(const string &uid)
 
 string EvolutionCalendarSource::retrieveItemAsString(const string &uid)
 {
-    icalcomponent *comp = retrieveItem(uid);
+    gptr<icalcomponent> comp(retrieveItem(uid));
     gptr<char> icalstr;
 
     icalstr = e_cal_get_component_as_string(m_calendar, comp);
     return string(icalstr);
 }
 
-icalcomponent *EvolutionCalendarSource::newFromItem(SyncItem &item)
-{
-    gptr<char> data;
-    data.set((char *)malloc(item.getDataSize() + 1), "copy of item");
-    memcpy(data, item.getData(), item.getDataSize());
-    data[item.getDataSize()] = 0;
-    icalcomponent *icomp = icalcomponent_new_from_string(data);
-
-    if( !icomp ) {
-        throwError( string( "parsing ical" ) + (char *)data,
-                    NULL );
-    }
-
-    // the icomp must be the ICAL_VEVENT/VTODO_COMPONENT of the item,
-    // e_cal_create/modify_object() fail otherwise
-    icomp = icalcomponent_get_first_component(icomp,
-                                              getCompType());
-    if (!icomp) {
-        throw runtime_error("cannot extract event");
-    }
-
-    return icomp;
-}
-
-void EvolutionCalendarSource::importTimezones(SyncItem &item)
-{
-    gptr<char> data;
-    data.set((char *)malloc(item.getDataSize() + 1), "copy of item");
-    memcpy(data, item.getData(), item.getDataSize());
-    data[item.getDataSize()] = 0;
-    icalcomponent *icomp = icalcomponent_new_from_string(data);
-
-    if( !icomp ) {
-        throwError( string( "parsing ical" ) + (char *)data,
-                    NULL );
-    }
-
-    for (icalcomponent *tcomp = icalcomponent_get_first_component(icomp, ICAL_VTIMEZONE_COMPONENT);
-         tcomp;
-         tcomp = icalcomponent_get_next_component(icomp, ICAL_VTIMEZONE_COMPONENT)) {
-        icaltimezone *zone = icaltimezone_new();
-        icaltimezone_set_component(zone, tcomp);
-
-        GError *gerror = NULL;
-        gboolean success = e_cal_add_timezone(m_calendar, zone, &gerror);
-        if (!success) {
-            throwError(string("error adding VTIMEZONE ") + icaltimezone_get_tzid(zone),
-                       gerror);
-        }
-
-        // TODO: smart pointer for ical objects
-        icaltimezone_free (zone, 1);
-    }
-}
-
-const char *EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
+string EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
 {
     // figure out what the UID is
     icalproperty *iprop = icalcomponent_get_first_property(icomp,
@@ -421,6 +386,6 @@ const char *EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
         throw runtime_error("cannot extract UID property");
     }
     const char *uid = icalproperty_get_uid(iprop);
-    return uid;
+    return string(uid ? uid : "");
 }
 

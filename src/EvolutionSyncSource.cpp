@@ -29,9 +29,13 @@ ESource *EvolutionSyncSource::findSource( ESourceList *list, const string &id )
         GSList *s;
         for (s = e_source_group_peek_sources (group); s; s = s->next) {
             ESource *source = E_SOURCE (s->data);
-            if ( !id.compare(e_source_peek_name(source)) ||
-                 !id.compare(e_source_get_uri(source)) )
+            char *uri = e_source_get_uri(source);
+            bool found = !id.compare(e_source_peek_name(source)) ||
+                (uri && !id.compare(uri));
+            g_free(uri);
+            if (found) {
                 return source;
+            }
         }
     }
     return NULL;

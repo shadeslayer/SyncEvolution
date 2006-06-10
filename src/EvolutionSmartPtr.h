@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <glib-object.h>
 #include <libebook/e-book.h>
+#include <libecal/e-cal.h>
 
 #include <stdexcept>
 
@@ -32,8 +33,6 @@
  * unreferencing valid objects is done automatically
  */
 template<class T, class base = T> class gptr {
-    T *m_pointer;
-
     /** do not allow copy construction */
     gptr( const gptr &other) {};
 
@@ -43,11 +42,16 @@ template<class T, class base = T> class gptr {
     void unref( char *pointer ) { free( pointer ); }
     void unref( GObject *pointer ) { g_object_unref( pointer ); }
     void unref( EBookQuery *pointer ) { e_book_query_unref( pointer ); }
+    void unref( icalcomponent *pointer ) { icalcomponent_free( pointer ); }
+    void unref( icaltimezone *pointer ) { icaltimezone_free( pointer, 1 ); }
 #if 0
     void unref( EBook *pointer ) { g_object_unref( pointer ); }
     void unref( EContact *pointer ) { g_object_unref( pointer ); }
 #endif
 
+ protected:
+    T *m_pointer;
+    
   public:
     /**
      * create a smart pointer that owns the given object;
@@ -87,6 +91,39 @@ template<class T, class base = T> class gptr {
     operator T * () { return m_pointer; }
     operator void * () { return (void *)m_pointer; }
     operator bool () { return m_pointer != NULL; }
+};
+
+/**
+ * a gptr for C++ arrays: everything is unref'ed via delete []
+ */
+template <class T> class arrayptr : public gptr<T> {
+    void unref( T *pointer) { delete [] pointer; }
+    
+  public:
+    arrayptr(T *pointer = NULL, const char *objectName = NULL) :
+        gptr<T>(pointer, objectName)
+    {}
+    ~arrayptr()
+    {
+        set(NULL);
+    }
+    arrayptr<T> &operator = ( T *pointer ) { set( pointer ); return *this; }
+
+    /**
+     * has to be duplicated, base class does not pick up our unref()
+     * above otherwise
+     */
+    void set( T *pointer, const char *objectName = NULL )
+    {
+        if (m_pointer) {
+            unref(m_pointer);
+        }
+        if (!pointer && objectName) {
+            throw std::runtime_error(string("Error allocating ") + objectName);
+        }
+        m_pointer = pointer;
+    }
+        
 };
 
 #endif

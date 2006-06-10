@@ -204,8 +204,6 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
     }
     LOG.debug( vcardstr );
 
-    string finalstr;
-        
     std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
     if (vobj.get() == 0) {
         throwError( string( "parsing contact" ) + uid, NULL );
@@ -271,12 +269,12 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
         vobj->fromNativeEncoding();
     }
 
-    finalstr = vobj->toString();
+    arrayptr<char> finalstr(vobj->toString(), "VOCL string");
     LOG.debug("after conversion:");
-    LOG.debug(finalstr.c_str());
+    LOG.debug("%s", (char *)finalstr);
 
     auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
-    item->setData( finalstr.c_str(), finalstr.size() + 1 );
+    item->setData( (char *)finalstr, strlen(finalstr) + 1 );
     item->setDataType( getMimeType() );
     item->setModificationTime( 0 );
     item->setState( state );
@@ -350,9 +348,10 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     VProperty *vprop = vobj->getProperty("VERSION");
     vprop->setValue("3.0");
     vobj->fromNativeEncoding();
-    data = vobj->toString();
+    arrayptr<char> voclstr(vobj->toString(), "VOCL string");
+    data = (char *)voclstr;
     LOG.debug("after conversion to 3.0:");
-    LOG.debug(data.c_str());
+    LOG.debug("%s", data.c_str());
     return data;
 }
 

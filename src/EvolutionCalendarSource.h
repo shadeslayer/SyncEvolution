@@ -84,17 +84,22 @@ class EvolutionCalendarSource : public EvolutionSyncSource
 
     ECalSourceType m_type;         /**< use events or todos? */
 
-    /** retrieve the item with the given uid - may throw exception */
+    /**
+     * retrieve the item with the given uid - may throw exception
+     *
+     * caller has to free result
+     */
     icalcomponent *retrieveItem(const string &uid);
 
     /** retrieve the item with the given uid as VCALENDAR string - may throw exception */
     string retrieveItemAsString(const string &uid);
 
-    /** parse the data stored in the given SyncItem, throw error if cannot be parsed */
-    icalcomponent *newFromItem(SyncItem &item);
-
-    /** import all VTIMEZONE definitions stored in the item, throw error */
-    void importTimezones(SyncItem &item);
+    /**
+     * - parse the data stored in the given SyncItem, throw error if cannot be parsed
+     * - then either insert or update it, trying update if insert fails because it exists already
+     * - also import timezones
+     */
+    int insertItem(SyncItem &item, bool update);
 
     /** returns the type which the ical library uses for our components */
     icalcomponent_kind getCompType() {
@@ -104,7 +109,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     }
 
     /** returns the uid of the given component */
-    const char *getCompUID(icalcomponent *icomp);
+    string getCompUID(icalcomponent *icomp);
 };
 
 #endif // INCL_EVOLUTIONSYNCSOURCE
