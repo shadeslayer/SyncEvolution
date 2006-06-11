@@ -267,6 +267,26 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
                     NULL );
     }
 
+    GError *gerror = NULL;
+    char *uid = NULL;
+    int status = STC_OK;
+
+    // insert before adding/updating the event so that the new VTIMEZONE is
+    // immediately available should anyone want it
+    for (icalcomponent *tcomp = icalcomponent_get_first_component(icomp, ICAL_VTIMEZONE_COMPONENT);
+         tcomp;
+         tcomp = icalcomponent_get_next_component(icomp, ICAL_VTIMEZONE_COMPONENT)) {
+        gptr<icaltimezone> zone(icaltimezone_new(), "icaltimezone");
+        icaltimezone_set_component(zone, tcomp);
+
+        GError *gerror = NULL;
+        gboolean success = e_cal_add_timezone(m_calendar, zone, &gerror);
+        if (!success) {
+            throwError(string("error adding VTIMEZONE ") + icaltimezone_get_tzid(zone),
+                       gerror);
+        }
+    }
+
     // the component to update/add must be the
     // ICAL_VEVENT/VTODO_COMPONENT of the item,
     // e_cal_create/modify_object() fail otherwise
@@ -275,10 +295,6 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
     if (!subcomp) {
         throw runtime_error("cannot extract event");
     }
-    
-    GError *gerror = NULL;
-    char *uid = NULL;
-    int status = STC_OK;
     
     if (!update) {
         if(!e_cal_create_object(m_calendar, subcomp, &uid, &gerror)) {
@@ -312,20 +328,6 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
         }
     }
 
-    for (icalcomponent *tcomp = icalcomponent_get_first_component(icomp, ICAL_VTIMEZONE_COMPONENT);
-         tcomp;
-         tcomp = icalcomponent_get_next_component(icomp, ICAL_VTIMEZONE_COMPONENT)) {
-        gptr<icaltimezone> zone(icaltimezone_new(), "icaltimezone");
-        icaltimezone_set_component(zone, tcomp);
-
-        GError *gerror = NULL;
-        gboolean success = e_cal_add_timezone(m_calendar, zone, &gerror);
-        if (!success) {
-            throwError(string("error adding VTIMEZONE ") + icaltimezone_get_tzid(zone),
-                       gerror);
-        }
-    }
-    
     return status;
 }
 
