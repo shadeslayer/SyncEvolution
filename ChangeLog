@@ -1,4 +1,52 @@
+2006-06-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
+	added sanity checks for using the results of Evolution's change tracking: invalid UIDs have been observed
+
+2006-06-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionSmartPtr.h, src/EvolutionSyncSource.cpp:
+	fixed memory leaks
+
+	* configure.in:
+	remove unwanted files in case someone has compiled in the sync4j src dir
+
+2006-06-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/testVCard.vcf:
+	avoid trailing space at end of NOTE, might not be preserved
+
+2006-06-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* etc/localhost_1/spds/sources/addressbook_1/config.txt, etc/Makefile.am:
+	fixed type for scheduleworld
+
+	* src/TestEvolution.cpp: STATUS expected by libical
+
+	* src/TestEvolution.cpp:
+	split testDeleteAll into two tests, one for each method
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
+	added support for custom timezones
+
+	* src/testTask.ics: removed libical error message
+
+	* src/testCalendar.ics:
+	fixed invalid CREATED/LAST-MODIFIED, must be in UTC - broken by importing/exporting again, though
+
+2006-06-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/syncevolution.cpp: avoid copying incomplete type in catch
+
+	* README, src/normalize_vcard.pl:
+	ignore known problems with contact properties in scheduleworld
+
 2006-06-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp:
+	got rid of the remaining files with :: in the name
+
+	* src/TestEvolution.cpp: added test for add-update-download sequence
 
 	* src/normalize_vcard.pl:
 	adapted to syncing with sync.scheduleworld.com
