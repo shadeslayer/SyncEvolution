@@ -115,13 +115,13 @@ template <class T> class arrayptr : public gptr<T> {
      */
     void set( T *pointer, const char *objectName = NULL )
     {
-        if (m_pointer) {
-            unref(m_pointer);
+        if (this->m_pointer) {
+            unref(this->m_pointer);
         }
         if (!pointer && objectName) {
             throw std::runtime_error(string("Error allocating ") + objectName);
         }
-        m_pointer = pointer;
+        this->m_pointer = pointer;
     }
         
 };
