@@ -265,6 +265,8 @@ public:
     void testChanges();
     // clean database, import file, then export again and compare
     void testImport();
+    // same as testImport() with immediate delete
+    void testImportDelete();
 
     //
     // tests involving real synchronization:
@@ -586,7 +588,8 @@ public:
     CPPUNIT_TEST( testComplexInsert ); \
     CPPUNIT_TEST( testLocalUpdate ); \
     CPPUNIT_TEST( testChanges ); \
-    CPPUNIT_TEST( testImport );
+    CPPUNIT_TEST( testImport ); \
+    CPPUNIT_TEST( testImportDelete );
 
 #define SYNC_TESTS \
     CPPUNIT_TEST( testRefreshSync ); \
@@ -943,6 +946,11 @@ template<class T> void TestEvolution<T>::testImport()
 {
     import();
     compareDatabases("testImport", m_testItems.c_str(), 0);
+}
+
+template<class T> void TestEvolution<T>::testImportDelete()
+{
+    import();
 
     // delete again, because it was observed that this did not
     // work right with calendars
