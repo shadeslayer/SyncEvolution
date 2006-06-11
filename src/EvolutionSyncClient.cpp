@@ -209,7 +209,7 @@ public:
                 
             sort(entries.begin(), entries.end());
 
-            int deleted = 0;
+            unsigned int deleted = 0;
             for (vector<string>::iterator it = entries.begin();
                  it != entries.end() && entries.size() - deleted > m_maxlogdirs;
                  ++it, ++deleted) {
@@ -387,7 +387,7 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
     // find sources
     string sourcesPath = m_configPath + "/spds/sources";
     auto_ptr<ManagementNode> sourcesNode(config.getManagementNode(sourcesPath.c_str()));
-    int index, numSources = sourcesNode->getChildrenMaxCount();
+    unsigned int index, numSources = sourcesNode->getChildrenMaxCount();
     char **sourceNamesPtr = sourcesNode->getChildrenNames();
 
     // copy source names into format that will be

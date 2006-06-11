@@ -109,7 +109,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 {
     // remove special characters from change ID
     string strippedChangeId = changeId;
-    int offset = 0;
+    size_t offset = 0;
     while (offset < strippedChangeId.size()) {
         switch (strippedChangeId[offset]) {
          case ':':

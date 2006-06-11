@@ -66,15 +66,15 @@ class EvolutionSyncSource : public SyncSource
      */
     EvolutionSyncSource( const string name, const string &changeId, const string &id ) :
         SyncSource( name.c_str() ),
+        m_changeId( changeId ),
+        m_id( id ),
         m_allItems( *this, "existing", SYNC_STATE_NONE ),
         m_newItems( *this, "new", SYNC_STATE_NEW ),
         m_updatedItems( *this, "updated", SYNC_STATE_UPDATED ),
         m_deletedItems( *this, "deleted", SYNC_STATE_DELETED ),
-        m_changeId( changeId ),
         m_hasFailed( false ),
         m_isModified( false ),
-        m_fixedSyncMode( SYNC_NONE ),
-        m_id( id )
+        m_fixedSyncMode( SYNC_NONE )
         {}
     virtual ~EvolutionSyncSource() {}
 

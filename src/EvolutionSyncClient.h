@@ -37,8 +37,8 @@ using namespace std;
 class EvolutionSyncClient {
     Sync4jClient& m_client;
     const string m_server;
-    const string m_configPath;
     const set<string> m_sources;
+    const string m_configPath;
 
   public:
     /**

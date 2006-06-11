@@ -120,11 +120,6 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
     const string m_syncSourceName;
 
     /**
-     * file containing items to be copied and compared after copying
-     */
-    const string m_testItems;
-    
-    /**
      * initial item which gets inserted by testSimpleInsert(),
      * default item to be used for updating it,
      * updates of it for triggering a merge conflict,
@@ -134,6 +129,11 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
         m_updateItem,
         m_mergeItem1, m_mergeItem2;
 
+    /**
+     * file containing items to be copied and compared after copying
+     */
+    const string m_testItems;
+    
     /**
      * duration to sleep after a synchronization -
      * needed by Sync4j 2.3 to operate correctly
@@ -1205,22 +1205,6 @@ template<class T> void TestEvolution<T>::testMerge()
     EVOLUTION_ASSERT_NO_THROW( client1, client1.open() );
     EVOLUTION_ASSERT( client1, client1.beginSync() == 0 );
     CPPUNIT_ASSERT( 2 == countItems( client1 ) );
-}
-
-/**
- * exports the data of all items into the file
- */
-static void exportData( const string &filename, SyncSource &source )
-{
-    ofstream out(filename.c_str());
-    
-    for (SyncItem *sourceItem = source.getFirstItem();
-         sourceItem;
-         sourceItem = source.getNextItem()) {
-        out << (const char *)sourceItem->getData() << "\n";
-    }
-    out.close();
-    CPPUNIT_ASSERT( out.good() );
 }
 
 template<class T> void TestEvolution<T>::compareDatabases(const string &prefix,

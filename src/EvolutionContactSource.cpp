@@ -537,7 +537,7 @@ void EvolutionContactSource::logItem( SyncItem &item, const string &info )
         }
         string vcard( data, datasize );
 
-        int offset = vcard.find( "FN:");
+        size_t offset = vcard.find( "FN:");
         if (offset != vcard.npos) {
             int len = vcard.find( "\r", offset ) - offset - 3;
             line += vcard.substr( offset + 3, len );

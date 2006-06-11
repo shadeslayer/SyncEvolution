@@ -250,7 +250,7 @@ void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
 
 int EvolutionCalendarSource::addItemThrow(SyncItem& item)
 {
-    insertItem(item, false);
+    return insertItem(item, false);
 }
 
 int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
@@ -331,7 +331,7 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
 
 int EvolutionCalendarSource::updateItemThrow(SyncItem& item)
 {
-    insertItem(item, true);
+    return insertItem(item, true);
 }
 
 int EvolutionCalendarSource::deleteItemThrow(SyncItem& item)
