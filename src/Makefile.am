@@ -5,7 +5,7 @@ AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
-EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics
+EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics vocl/README
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
@@ -20,11 +20,19 @@ CORE_SOURCES  = \
         EvolutionSmartPtr.h \
         EvolutionSyncClient.h \
         EvolutionSyncSource.h \
+	vocl/VObject.h \
+	vocl/VProperty.h \
+	vocl/VConverter.h \
+	vocl/posixadapter.h \
         \
         EvolutionSyncSource.cpp \
 	EvolutionSyncClient.cpp \
 	EvolutionCalendarSource.cpp \
-	EvolutionContactSource.cpp
+	EvolutionContactSource.cpp \
+	vocl/VObject.cpp \
+	vocl/VProperty.cpp \
+	vocl/VConverter.cpp
+
 CORE_LDADD = @EPACKAGE_LIBS@ @SYNC4J_LIBS@ @LIBS@
 
 syncevolution_SOURCES = \

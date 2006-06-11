@@ -22,8 +22,9 @@ using namespace std;
 #include "EvolutionContactSource.h"
 
 #include <common/base/Log.h>
-#include <common/vocl/VObject.h>
-#include <common/vocl/VConverter.h>
+#include "vocl/VConverter.h"
+
+using namespace vocl;
 
 const EvolutionContactSource::extensions EvolutionContactSource::m_vcardExtensions;
 const EvolutionContactSource::unique EvolutionContactSource::m_uniqueProperties;
