@@ -484,6 +484,12 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
   The workaround for this conceptual problem is to never clean
   (= remove) a field - better fill it with e.g. a single space.
 
+- Evolution 2.0.4 (and perhaps also other versions) have a problem
+  when SyncEvolution receives a calendar event with a new timezone
+  definition. SyncEvolution adds the definition to the Evolution
+  database, but an already running Evolution crashes when trying to
+  open the new event. Restarting Evolution solves that problem.
+
 
 Support
 -------
