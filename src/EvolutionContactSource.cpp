@@ -128,18 +128,23 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
         }
         while (nextItem) {
             EBookChange *ebc = (EBookChange *)nextItem->data;
-            const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
 
-            switch (ebc->change_type) {            
-             case E_BOOK_CHANGE_CARD_ADDED:
-                m_newItems.addItem(uid);
-                break;
-             case E_BOOK_CHANGE_CARD_MODIFIED:
-                m_updatedItems.addItem(uid);
-                break;
-             case E_BOOK_CHANGE_CARD_DELETED:
-                m_deletedItems.addItem(uid);
-                break;
+            if (ebc->contact) {
+                const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
+                
+                if (uid) {
+                    switch (ebc->change_type) {            
+                     case E_BOOK_CHANGE_CARD_ADDED:
+                        m_newItems.addItem(uid);
+                        break;
+                     case E_BOOK_CHANGE_CARD_MODIFIED:
+                        m_updatedItems.addItem(uid);
+                        break;
+                     case E_BOOK_CHANGE_CARD_DELETED:
+                        m_deletedItems.addItem(uid);
+                        break;
+                    }
+                }
             }
             nextItem = nextItem->next;
         }

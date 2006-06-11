@@ -138,20 +138,28 @@ void EvolutionCalendarSource::beginSyncThrow(bool needAll,
         }
         while (nextItem) {
             ECalChange *ecc = (ECalChange *)nextItem->data;
-            const char *uid;
 
-            e_cal_component_get_uid(ecc->comp, &uid);
-            switch (ecc->type) {
-             case E_CAL_CHANGE_ADDED:
-                m_newItems.addItem(uid);
-                break;
-             case E_CAL_CHANGE_MODIFIED:
-                m_updatedItems.addItem(uid);
-                break;
-             case E_CAL_CHANGE_DELETED:
-                m_deletedItems.addItem(uid);
-                break;
+            if (ecc->comp) {
+                const char *uid = NULL;
+
+                // does not have a return code which could be checked
+                e_cal_component_get_uid(ecc->comp, &uid);
+
+                if (uid) {
+                    switch (ecc->type) {
+                     case E_CAL_CHANGE_ADDED:
+                        m_newItems.addItem(uid);
+                        break;
+                     case E_CAL_CHANGE_MODIFIED:
+                        m_updatedItems.addItem(uid);
+                        break;
+                     case E_CAL_CHANGE_DELETED:
+                        m_deletedItems.addItem(uid);
+                        break;
+                    }
+                }
             }
+
             nextItem = nextItem->next;
         }
     }
