@@ -26,21 +26,17 @@ synchronization of items are supported.
 SyncEvolution does not synchronize with another SyncML capable
 device directly. A SyncML server that that device and SyncEvolution
 can talk to is needed. There are several options for that:
-- using a web service like www.scheduleworld.com which stores the
+- using a web service like sync.scheduleworld.com which stores the
   data to be synchronized on a scheduleworld server and provides
   access to it via SyncML
 - installing a SyncML server like Funambol's Sync4j on one's own server
 - installing a SyncML server on the desktop
 
-The recommended solution is www.scheduleworld.com because it is easier
+The recommended solution is sync.scheduleworld.com because it is easier
 than setting up a server and provides better support for vCard and
 iCalendar data than the stock Sync4j installation. Setting up a server
 on the desktop has the additional problem that not all mobile devices
 can communicate with the desktop via HTTP.
-
-[ not quite yet: scheduleworld still has some problems that the
-  admin is working on - the text above was written for SyncEvolution
-  0.3, which will be released once the problems have been resolved ]
 
 The remainder of this document assumes that either Funambol's Sync4j
 server bundle for Linux V2.3 was installed using the default
@@ -83,8 +79,8 @@ and/or is not up-to-date, compiling from source can also be used
 to produce a binary. See below in "Compiling from Source" for details.
 
 You also need a working SyncML server. If you do not have and/or
-cannot get an account on an existing one, installing the Funambol
-Sync4j server bundle is very easy. See:
+cannot get an account on an existing one like scheduleworld, installing
+the Funambol Sync4j server bundle is very easy. See:
    http://www.funambol.com/opensource/downloads.html
 
 For Sync4j V2.3, an additional patch is recommended to preserve
@@ -108,7 +104,8 @@ Currently SyncEvolution comes as a simple command line tool which is
 configured via files. A graphical interface via an Evolution plugin
 would also be possible, but is not implemented yet. As command line
 parameters SyncEvolution only supports one option which specifies the
-configuration file that drives the synchronization run:
+configuration file that drives the synchronization run and several
+options which choose the data sources in that configuration:
 
    syncevolution [<server>] [<source> ...]
 
@@ -119,11 +116,12 @@ via configuration files. It is possible to configure sources without
 activating their synchronization: if the "sync" property of a source
 is set to "none", it will be ignore. Explicitely listing one or more
 source names after the server chooses just those sources for
-synchronization with configured sync mode or "two-way" if a source
-is currently set to "none".
+synchronization with the configured sync mode. If such a selected
+source is currently set to "none", it will be synced in "two-way" mode
+once, but the setting in the configuration file is not changed.
 
 If the SyncML server is not specified, SyncEvolution lists all
-available Evolution backend databases.
+available Evolution data sources.
 
 Progress and error messages are written into a log file that is
 preserved for each synchronization run. Details about that is found
@@ -143,7 +141,7 @@ synchronization only for the failed database, but if the SyncML
 client library itself runs into a problem it might cause a full
 synchronization of all databases even if only one of them failed.
 Therefore it might be less risky to invoke syncevolution for each
-database separately.
+data source separately.
 
 After a successful synchronization the server's configuration file is
 updated so that the next run can be done incrementally.  If the
@@ -190,7 +188,10 @@ Normally at least the following configuration options need to be adapted:
 
 Each data source corresponds to one database at the SyncML server.
 The Evolution data source is determined by the type of data given in
-"type" and uniquely identified with the "evolutionurl" property.
+"type" and uniquely identified with the "evolutionsource" property.
+To get a list of available data sources, run syncevolution with no
+arguments. "evolutionsource" can be set to either the name or URL
+of a data source.
 
 One can synchronize with multiple server databases in one run, but
 the same server database can only be accessed once. To synchronize
@@ -245,6 +246,17 @@ with access allowed for the user only. Files from a
 previous synchronization will be overwritten. This is
 a lot less useful because the data will probably
 be lost during the next reboot.
+
+
+Configuration with sync.scheduleworld.com
+-----------------------------------------
+
+It is recommended to sync against the new Funambol 3.0 sync sources at
+scheduleworld. They use vCard 3.0 and iCalendar 2.0, the native
+formats of Evolution, and have been tested extensively with
+SyncEvolution. The "scheduleworld_1" example configuration is ready to
+be used with them, one only has to fill in the real username and
+password.
 
 
 Configuration with Sync4j
@@ -436,25 +448,19 @@ Known Problems
 ObjectWeb #<num> refers to the Funambol issue tracker at:
 http://forge.objectweb.org/tracker/?group_id=96&atid=100096
 
-- Evolution 2.0.4 and 2.4.2.1 still display the old content of a contact
-  which was updated during a certain test (TestEvolution::testMerge).
-  Exact reason unknown, needs to be investigated.
-
 - various vcard and special character related problems in the
   Sync4j server and client library:
-  TestEvolution::testVCard fails the check that items
+  TestEvolution::testItems fails the check that items
   are identical after copying them to the server and back
 
   Many of these issues have been fixed in the server already,
   but even in 2.3 plus patch some information is still lost
   (see "testing vcard conversion and copying" on the sync4j-user
    mailing list for details).
-  Characters with special meaning in XML like & < > cannot be
-  exchanged.
 
   ObjectWeb #304828, #304786, #304784, #304782
 
-- the sync.scheduleworld.com preserves almost all Evolution
+- sync.scheduleworld.com preserves almost all Evolution
   contact and calendar data, the exceptions are:
   - the LDAP schema used to store contacts does not distinguish
     between different emails, so although all email addresses
@@ -467,9 +473,8 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
 
   ObjectWeb #304805, #304562
 
-- calendar conversion fails resp. loses information
-
-  ObjectWeb #304946, #304993, #304994, #304995, #304996, #304997
+- The Funambol servers upto and including 3.0 do not support
+  iCalendar 2.0, see above.
 
 - Removing a field and then synchronizing with the Sync4j server
   will not remove that field on the server. The server will preserve
@@ -483,6 +488,10 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
 
   The workaround for this conceptual problem is to never clean
   (= remove) a field - better fill it with e.g. a single space.
+
+- Evolution 2.0.4 and 2.4.2.1 still display the old content of a contact
+  which was updated during a certain test (TestEvolution::testMerge).
+  Exact reason unknown, needs to be investigated.
 
 - Evolution 2.0.4 (and perhaps also other versions) have a problem
   when SyncEvolution receives a calendar event with a new timezone
