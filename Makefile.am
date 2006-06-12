@@ -11,6 +11,6 @@ distbin : README all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 ) 
 	rm -rf $(distdir)
 	$(MAKE) prefix=`pwd`/$(distdir) install
-	cp README $(distdir)
+	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(distdir)
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
