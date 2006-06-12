@@ -1,9 +1,26 @@
+SyncEvolution 0.3, 2006-06-12
+-----------------------------
+
+* added syncing of calendars and tasks as iCalendar 2.0
+* added syncing of contacts as vCard 3.0
+* tested extensively with sync.scheduleworld.com and
+  added an example configuration for it
+* uses C++ client library revision "wmplugin_3_0_20"
+  which contains several bug fixes, among them proper
+  support for special characters and memory handling
+  fixes
+* much nicer listing of changes made during a sync,
+  handled by the improved "synccompare" utility script
+  (formerly known as "normalize_vcard")
+* improved automated testing
+
+
 SyncEvolution 0.2, 2006-03-19
 -----------------------------
 
-* Added automatic backup mechanism and log storage,
+* added automatic backup mechanism and log storage,
   see "Automatic Backups and Logging".
-* Output no longer is the original log data, but rather
+* output no longer is the original log data, but rather
   a human-readable report of errors and synchronization
   results.
 * "normalize_vcard" can now also compare two .vcf files
