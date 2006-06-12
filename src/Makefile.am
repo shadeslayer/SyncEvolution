@@ -14,24 +14,29 @@ synccompare : normalize_vcard.pl
 	cp $< $@
 	chmod u+x $@
 
+VOCL_SOURCES = \
+	vocl/VObject.h \
+	vocl/VProperty.h \
+	vocl/VConverter.h \
+	vocl/posixadapter.h \
+	\
+	vocl/VObject.cpp \
+	vocl/VProperty.cpp \
+	vocl/VConverter.cpp
+
 CORE_SOURCES  = \
         EvolutionContactSource.h \
         EvolutionCalendarSource.h \
         EvolutionSmartPtr.h \
         EvolutionSyncClient.h \
         EvolutionSyncSource.h \
-	vocl/VObject.h \
-	vocl/VProperty.h \
-	vocl/VConverter.h \
-	vocl/posixadapter.h \
         \
         EvolutionSyncSource.cpp \
 	EvolutionSyncClient.cpp \
 	EvolutionCalendarSource.cpp \
 	EvolutionContactSource.cpp \
-	vocl/VObject.cpp \
-	vocl/VProperty.cpp \
-	vocl/VConverter.cpp
+	\
+	$(VOCL_SOURCES)
 
 CORE_LDADD = @EPACKAGE_LIBS@ @SYNC4J_LIBS@ @LIBS@
 
@@ -56,6 +61,13 @@ TestEvolution_CFLAGS = `cppunit-config --cflags`
 TestEvolution_LDFLAGS = `cppunit-config --libs`
 TestEvolution_LDADD = $(CORE_LDADD)
 
+EXTRA_PROGRAMS += vcardconverter
+vcardconverter_SOURCES = \
+        vocl/vcardconverter.cpp \
+	$(VOCL_SOURCES)
+vcardconverter_LDADD = $(CORE_LDADD)
+
+
 # SYNC4J_SUBDIR specifies the directory where we compile
 # the client library by invoking make there.
 # Installing its source is done explicitly.
@@ -68,8 +80,9 @@ BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
 clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
 clean : testclean
 
-TestEvolution syncevolution : $(SYNC4J_SUBDIR)/src/libsync4j.la
-test : TestEvolution addressbook.tests calendar.tests todo.tests synccompare
+TestEvolution syncevolution vcardconverter : \
+	$(SYNC4J_SUBDIR)/src/libsync4j.la
+test : TestEvolution addressbook.tests calendar.tests todo.tests synccompare vcardconverter
 
 # test files are in CVS under a different name so that they
 # can be copied to the work directory under the name expected
