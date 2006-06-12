@@ -1,4 +1,54 @@
+2006-06-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* configure.in: bumped version to 0.3
+
+	* README:
+	some more proof-reading - terms are still not used consistently
+
+	* src/syncevolution.cpp, src/EvolutionContactSource.cpp:
+	made output a bit nicer
+
+	* src/vocl/vcardconverter.cpp, src/Makefile.am:
+	also imported the vcardconverter program from the Funambol CVS
+
+	* src/vocl/VObject.cpp: readded the removal of CHARSET
+
+2006-06-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README:
+	some more proof-reading - terms are still not used consistently
+
+	* src/syncevolution.cpp, src/EvolutionContactSource.cpp:
+	made output a bit nicer
+
+	* src/vocl/vcardconverter.cpp, src/Makefile.am:
+	also imported the vcardconverter program from the Funambol CVS
+
+	* src/vocl/VObject.cpp: readded the removal of CHARSET
+
 2006-06-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp:
+	importing new timezones before their events works better (e.g. with Evolution 2.4)
+
+	* README:
+	added remark about Evolution 2.0.4 GUI problem with new VTIMEZONE defs
+
+	* src/testCalendar.ics: use a TZID that no-one else knows
+
+	* src/TestEvolution.cpp:
+	testImport should leave the items imported - moved import/delete into its own test
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp:
+	fixed several compiler warnings
+
+	* src/normalize_vcard.pl: allow sync.scheduleworld.com to replace TZIDs
+
+	* src/EvolutionSmartPtr.h:
+	explicitly reference class member (required by g++ 4.1, but not g++ 3.3.5)
+
+	* src/vocl/VConverter.h, src/vocl/VObject.cpp, src/vocl/VObject.h, src/vocl/VProperty.cpp, src/vocl/VProperty.h, src/vocl/posixadapter.h, src/EvolutionContactSource.cpp, src/Makefile.am, src/vocl/README, src/vocl/VConverter.cpp:
+	added a copy of the relevant VOCL classes to be independent of incompatible changes upstream
 
 	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
 	added sanity checks for using the results of Evolution's change tracking: invalid UIDs have been observed
