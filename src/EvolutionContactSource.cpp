@@ -508,11 +508,16 @@ void EvolutionContactSource::logItem( const string &uid, const string &info )
                                 &contact,
                                 &gerror )) {
             const char *fileas = (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
-            const char *name = (const char *)e_contact_get_const( contact, E_CONTACT_FULL_NAME );
-
-            line += fileas ? fileas :
-                name ? name :
-                "<unnamed contact>";
+            if (fileas) {
+                line += fileas;
+            } else {
+                const char *name = (const char *)e_contact_get_const( contact, E_CONTACT_FULL_NAME );
+                if (name) {
+                    line += name;
+                } else {
+                    line += "<unnamed contact>";
+                }
+            }
         } else {
             line += "<unknown contact>";
         }
@@ -559,13 +564,18 @@ void EvolutionContactSource::logItem( SyncItem &item, const string &info )
                                     item.getKey(),
                                     &contact,
                                     &gerror )) {
-                line += "EV ";
+                line += ", EV ";
                 const char *fileas = (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
-                const char *name = (const char *)e_contact_get_const( contact, E_CONTACT_FULL_NAME );
-
-                line += fileas ? fileas :
-                    name ? name :
-                    "<unnamed contact>";
+                if (fileas) {
+                    line += fileas;
+                } else {
+                    const char *name = (const char *)e_contact_get_const( contact, E_CONTACT_FULL_NAME );
+                    if (name) {
+                        line += name;
+                    } else {
+                        line += "<unnamed contact>";
+                    }
+                }
             } else {
                 line += ", not in Evolution";
             }

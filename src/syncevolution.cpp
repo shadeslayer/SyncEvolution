@@ -72,10 +72,12 @@ int main( int argc, char **argv )
         if ( argc == 1 ) {
             EvolutionContactSource contactSource( string( "list" ) );
             listSources( contactSource, "address books" );
+            cout << "\n";
 
             EvolutionCalendarSource eventSource(E_CAL_SOURCE_TYPE_EVENT,
                                                 string("list"));
             listSources(eventSource, "calendars");
+            cout << "\n";
 
             EvolutionCalendarSource todoSource(E_CAL_SOURCE_TYPE_TODO,
                                                string("list"));
