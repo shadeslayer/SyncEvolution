@@ -1,5 +1,15 @@
 BEGIN:VCARD
 VERSION:3.0
+NICKNAME:user10
+NOTE:test case with empty email
+FN:incomplete
+N:incomplete
+EMAIL:
+X-EVOLUTION-FILE-AS:incomplete
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
 NICKNAME:user9
 NOTE;CHARSET="UTF-8":Tests charset specification with quotation marks.
 FN:charset
