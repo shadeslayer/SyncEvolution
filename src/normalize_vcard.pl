@@ -76,6 +76,8 @@ sub Normalize {
     if (s/^PHOTO;.*?ENCODING=(b|B|BASE64).*?:\s*/PHOTO;ENCODING=B: /mgi) {
       while (s/^PHOTO(.*?): (\S+)[\t ]+(\S+)/PHOTO$1: $2$3/mg) {}
     }
+    # ignore extra day factor in front of weekday
+    s/^RRULE:(.*)BYDAY=\+?1(\D)/RRULE:$1BYDAY=$2/mg;
 
     # remove fields which may differ
     s/^(PRODID|CREATED|LAST-MODIFIED):.*\r?\n?//gm;
