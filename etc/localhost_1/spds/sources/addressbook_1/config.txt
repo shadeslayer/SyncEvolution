@@ -1,4 +1,5 @@
-# name of the source
+# name of the source, must match the <source> in
+# spds/sources/<source>/config.txt
 name = addressbook_1
 
 # requests a certain synchronization mode:

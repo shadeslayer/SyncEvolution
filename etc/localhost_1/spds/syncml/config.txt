@@ -6,10 +6,10 @@ syncURL = http://localhost:8080/sync4j/sync
 # - sync.scheduleworld.com
 #syncURL = http://sync.scheduleworld.com/funambol/ds
 
-# the SyncML gets this string and will use it to keep track
-# of changes that still need to be synchronized; when multiple
-# users access the server or the same user from different machines,
-# this should be set to something unique
+# the SyncML server gets this string and will use it to keep track of
+# changes that still need to be synchronized with this particular
+# client; it must be set to something unique if SyncEvolution is used
+# to synchronize data between different computers
 deviceId = sc-api-nat
 
 # authorization for the SyncML server
