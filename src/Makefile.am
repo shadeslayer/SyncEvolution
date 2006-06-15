@@ -5,7 +5,7 @@ AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
-EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics vocl/README
+EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics testTask.ics vocl/README
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
