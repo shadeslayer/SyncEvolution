@@ -230,28 +230,37 @@ void EvolutionSyncSource::setItemStatus(const char *key, int status)
 
 int EvolutionSyncSource::addItem(SyncItem& item)
 {
-    return processItem("add", &EvolutionSyncSource::addItemThrow, item);
+    return processItem("add", &EvolutionSyncSource::addItemThrow, item, true);
 }
 
 int EvolutionSyncSource::updateItem(SyncItem& item)
 {
-    return processItem("update", &EvolutionSyncSource::updateItemThrow, item);
+    return processItem("update", &EvolutionSyncSource::updateItemThrow, item, true);
 }
 
 int EvolutionSyncSource::deleteItem(SyncItem& item)
 {
-    return processItem("delete", &EvolutionSyncSource::deleteItemThrow, item);
+    return processItem("delete", &EvolutionSyncSource::deleteItemThrow, item, false);
 }
 
 int EvolutionSyncSource::processItem(const char *action,
                                      int (EvolutionSyncSource::*func)(SyncItem& item),
-                                     SyncItem& item)
+                                     SyncItem& item,
+                                     bool needData)
 {
     int status = STC_COMMAND_FAILED;
     
     try {
         logItem(item, action);
-        status = (this->*func)(item);
+        if (needData && item.getDataSize() < 0 || !item.getData()) {
+            // Something went wrong in the server: update or add without data.
+            // Shouldn't happen, but it did with one server and thus this
+            // security check was added to prevent segfaults.
+            logItem(item, "ignored due to missing data");
+            status = STC_OK;
+        } else {
+            status = (this->*func)(item);
+        }
         m_isModified = true;
     } catch (...) {
         handleException();

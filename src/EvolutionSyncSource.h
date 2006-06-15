@@ -334,7 +334,8 @@ class EvolutionSyncSource : public SyncSource
      */
     int processItem(const char *action,
                     int (EvolutionSyncSource::*func)(SyncItem& item),
-                    SyncItem& item);
+                    SyncItem& item,
+                    bool needData);
 };
 
 #endif // INCL_EVOLUTIONSYNCSOURCE
