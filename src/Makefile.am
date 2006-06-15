@@ -53,6 +53,7 @@ syncevolution_LDADD = $(CORE_LDADD)
 # check_PROGRAMS = test
 EXTRA_PROGRAMS = TestEvolution
 TestEvolution_SOURCES = \
+        Test.h \
         TestMain.cpp \
         TestEvolution.cpp \
 	$(CORE_SOURCES)
