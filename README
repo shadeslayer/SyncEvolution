@@ -609,8 +609,11 @@ working with CVS sources directly are contained in the HACKING
 document.
 
 Also needed are the Evolution and libcurl development files. On
-Debian 3.1 (Sarge) you can install them with
-   apt-get install libcurl3-dev evolution-data-server-dev
+Debian 3.1 (Sarge) you can install them with:
+   apt-get install libcurl3-dev evolution-data-server-dev libdb3-dev
+and optionally for the test suite:
+   apt-get install libcppunit-dev
+
 The code was tested with Evolution 2.0.4 and 2.4.2.1. It is unclear
 which other versions it is compatible with.
 
