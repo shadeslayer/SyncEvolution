@@ -1,3 +1,29 @@
+2006-06-15  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am: added testTask.ics
+
+	* etc/localhost_1/spds/syncml/config.txt, README, etc/localhost_1/spds/sources/addressbook_1/config.txt:
+	clarified documentation and adapted to current status of SyncEvolution, ScheduleWorld and Funambol
+
+2006-06-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* Makefile.am: also add NEWS and COPYING to distribution
+
+	* NEWS: comments on 0.3
+
+	* configure.in: bumped version to 0.3
+
+	* README:
+	some more proof-reading - terms are still not used consistently
+
+	* src/syncevolution.cpp, src/EvolutionContactSource.cpp:
+	made output a bit nicer
+
+	* src/vocl/vcardconverter.cpp, src/Makefile.am:
+	also imported the vcardconverter program from the Funambol CVS
+
+	* src/vocl/VObject.cpp: readded the removal of CHARSET
+
 2006-06-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* configure.in: bumped version to 0.3
