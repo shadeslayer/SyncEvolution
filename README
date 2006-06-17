@@ -353,7 +353,9 @@ To check which data is preserved, one can use this procedure
 (described for contacts, but works the same way for calendars and
 tasks):
 1. synchronize the address book with the server
-2. create an new address book in Evolution
+2. create an new address book in Evolution and enter it in Evolution
+   once (the second step is necessary in at least Evolution 2.0.4
+   to make the new address book usable in SyncEvolution)
 3. add a configuration for that second address book and the
    same database on the SyncML server
 4. synchronize again, this time using the other data source
@@ -548,6 +550,11 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
   definition. SyncEvolution adds the definition to the Evolution
   database, but an already running Evolution crashes when trying to
   open the new event. Restarting Evolution solves that problem.
+
+- In Evolution 2.0.4 (and perhaps also other versions) an address book
+  has to be entered once in Evolution after creating it. Otherwise
+  accessing it in SyncEvolution fails with:
+    [ERROR] <source>: opening address book: EBookStatus returned 19
 
 
 Support
