@@ -78,6 +78,8 @@ sub Normalize {
     }
     # ignore extra day factor in front of weekday
     s/^RRULE:(.*)BYDAY=\+?1(\D)/RRULE:$1BYDAY=$2/mg;
+    # remove default VALUE=DATE-TIME
+    s/^(DTSTART|DTEND)([^:]*);VALUE=DATE-TIME/$1$2/mg;
 
     # remove fields which may differ
     s/^(PRODID|CREATED|LAST-MODIFIED):.*\r?\n?//gm;
