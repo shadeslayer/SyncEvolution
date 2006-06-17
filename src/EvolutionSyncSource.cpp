@@ -252,7 +252,7 @@ int EvolutionSyncSource::processItem(const char *action,
     
     try {
         logItem(item, action);
-        if (needData && item.getDataSize() < 0 || !item.getData()) {
+        if (needData && (item.getDataSize() < 0 || !item.getData())) {
             // Something went wrong in the server: update or add without data.
             // Shouldn't happen, but it did with one server and thus this
             // security check was added to prevent segfaults.
