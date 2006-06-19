@@ -124,9 +124,9 @@ public:
                  << setfill('0')
                  << setw(4) << tm->tm_year + 1900 << "-"
                  << setw(2) << tm->tm_mon << "-"
-                 << tm->tm_mday << "-"
-                 << tm->tm_hour << "-"
-                 << tm->tm_min;
+                 << setw(2) << tm->tm_mday << "-"
+                 << setw(2) << tm->tm_hour << "-"
+                 << setw(2) << tm->tm_min;
             int seq = 0;
             while (true) {
                 stringstream path;
