@@ -120,6 +120,13 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
     const string m_syncSourceName;
 
     /**
+     * properties which need to be updated when creating
+     * artificial items
+     */
+    list<string> m_uniqueProperties;
+
+    
+    /**
      * initial item which gets inserted by testSimpleInsert(),
      * default item to be used for updating it,
      * updates of it for triggering a merge conflict,
@@ -205,6 +212,7 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
 public:
     TestEvolution(
         const char *syncSourceName,
+        const char *uniqueProperties,
         const char *insertItem,
         const char *updateItem,
         const char *mergeItem1,
@@ -216,7 +224,21 @@ public:
         m_mergeItem1(mergeItem1),
         m_mergeItem2(mergeItem2),
         m_testItems(string(syncSourceName) + ".tests")
-        {}
+        {
+            // split into individual components
+            const char *prop = uniqueProperties;
+            const char *nextProp;
+
+            while (*prop) {
+                nextProp = strchr(prop, ':');
+                if (!nextProp) {
+                    m_uniqueProperties.push_back(string(prop));
+                    break;
+                }
+                m_uniqueProperties.push_back(string(prop, 0, nextProp - prop));
+                prop = nextProp + 1;
+            }
+        }
 
     void setUp() {
         m_databases[0] = "SyncEvolution test #1";
@@ -309,6 +331,16 @@ public:
     // - client 2 gets item (depending on server, might be flagged as update)
     // See http://forge.objectweb.org/tracker/?func=detail&atid=100096&aid=305018&group_id=96
     void testAddUpdate();
+
+    //
+    // stress tests: execute some of the normal operations,
+    // but with large number of artificially generated items
+    //
+
+    // two-way sync with clean client/server,
+    // followed by slow sync and comparison
+    // via second client
+    void testManyItems();
 };
 
 /**
@@ -320,6 +352,8 @@ public:
     TestContact() :
         TestEvolution<EvolutionContactSource>(
             "addressbook",
+
+            "FN:N:X-EVOLUTION-FILE-AS",
             
             /* initial item */
             "BEGIN:VCARD\n"
@@ -397,6 +431,8 @@ public:
     TestCalendar() :
         TestEvolution<TestEvolutionCalendarSource>(
             "calendar",
+
+            "SUMMARY:UID",
             
             /* initial item */
             "BEGIN:VCALENDAR\n"
@@ -512,6 +548,8 @@ public:
     TestTask() :
         TestEvolution<TestEvolutionTaskSource>(
             "todo",
+
+            "SUMMARY:UID",
             
             /* initial item */
             "BEGIN:VCALENDAR\n"
@@ -606,6 +644,10 @@ public:
     CPPUNIT_TEST( testAddUpdate ); \
     CPPUNIT_TEST( testTwinning );
 
+#define STRESS_TESTS \
+    CPPUNIT_TEST( testManyItems );
+
+
 class ContactSource : public TestContact
 {
     CPPUNIT_TEST_SUITE( ContactSource );
@@ -621,6 +663,15 @@ class ContactSync : public TestContact
     CPPUNIT_TEST_SUITE_END();
 };
 CPPUNIT_TEST_SUITE_REGISTRATION( ContactSync );
+
+class ContactStress : public TestContact
+{
+    CPPUNIT_TEST_SUITE( ContactStress );
+    STRESS_TESTS;
+    CPPUNIT_TEST_SUITE_END();
+};
+CPPUNIT_TEST_SUITE_REGISTRATION( ContactStress );
+
 
 class CalendarSource : public TestCalendar
 {
@@ -638,6 +689,15 @@ class CalendarSync : public TestCalendar
 };
 CPPUNIT_TEST_SUITE_REGISTRATION( CalendarSync );
 
+class CalendarStress : public TestCalendar
+{
+    CPPUNIT_TEST_SUITE( CalendarStress );
+    STRESS_TESTS;
+    CPPUNIT_TEST_SUITE_END();
+};
+CPPUNIT_TEST_SUITE_REGISTRATION( ContactStress );
+
+
 class TaskSource : public TestTask
 {
     CPPUNIT_TEST_SUITE( TaskSource );
@@ -653,6 +713,14 @@ class TaskSync : public TestTask
     CPPUNIT_TEST_SUITE_END();
 };
 CPPUNIT_TEST_SUITE_REGISTRATION( TaskSync );
+
+class TaskStress : public TestTask
+{
+    CPPUNIT_TEST_SUITE( TaskStress );
+    STRESS_TESTS;
+    CPPUNIT_TEST_SUITE_END();
+};
+CPPUNIT_TEST_SUITE_REGISTRATION( ContactStress );
 
 
 
@@ -1322,5 +1390,60 @@ template<class T> void TestEvolution<T>::testTwinning()
 
     // copy into second client and compare
     doSync( "recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+    compareDatabases("", NULL, 1);
+}
+
+template<class T> void TestEvolution<T>::testManyItems()
+{
+    // clean server and first test database
+    deleteAll("testItems", 0);
+
+    // import artificial data
+    T source(
+        string( "dummy" ),
+        m_changeIds[0],
+        m_databases[0]);
+    EVOLUTION_ASSERT_NO_THROW( source, source.open() );
+    EVOLUTION_ASSERT( source, source.beginSync() == 0 );
+    CPPUNIT_ASSERT( !countItems( source ) );
+    const char *setting = getenv("TEST_EVOLUTION_NUM_ITEMS");
+    int numItems = setting ? atoi(setting) : 200;
+    for (int item = 1; item <= numItems; item++) {
+        string data = m_insertItem;
+        stringstream prefix;
+
+        prefix << setfill('0') << setw(3) << item << " ";
+        
+        for (list<string>::iterator it = m_uniqueProperties.begin();
+             it != m_uniqueProperties.end();
+             it++) {
+            string property;
+            // property is expected to not start directly at the
+            // beginning
+            property = "\n";
+            property += *it;
+            property += ":";
+            size_t off = data.find(property);
+            if (off != data.npos) {
+                data.insert(off + property.size(), prefix.str());
+            }
+        }
+        importItem(source, data);
+    }
+    
+    // send data to server
+    doSync( "send.client.log", 0, SYNC_TWO_WAY );
+
+    // ensure that client has the same data, ignoring data conversion
+    // issues (those are covered by testItems())
+    doSync( "refresh.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+
+    // also copy to second client
+    doSync( "recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+
+    // slow sync now should not change anything
+    doSync( "twinning.client.log", 0, SYNC_SLOW );
+
+    // compare
     compareDatabases("", NULL, 1);
 }
