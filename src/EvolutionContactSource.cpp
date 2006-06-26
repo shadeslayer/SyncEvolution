@@ -527,7 +527,7 @@ void EvolutionContactSource::logItem( const string &uid, const string &info )
                 }
             }
         } else {
-            line += "<unknown contact>";
+            line += "<name unavailable>";
         }
         line += " (";
         line += uid;
@@ -555,7 +555,7 @@ void EvolutionContactSource::logItem( SyncItem &item, const string &info )
             int len = vcard.find( "\r", offset ) - offset - 3;
             line += vcard.substr( offset + 3, len );
         } else {
-            line += "<unnamed SyncItem>";
+            line += "<unnamed contact>";
         }
 
         if (!item.getKey() ) {
