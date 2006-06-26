@@ -314,11 +314,19 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
             !name.compare(0, m_vcardExtensions.prefix.size(), m_vcardExtensions.prefix)) {
             name = name.substr(m_vcardExtensions.prefix.size());
             vprop->setName(name.c_str());
-        } else if (name == "ADR" || name == "EMAIL" ) {
-            // remove unsupported TYPE=PARCEL again?
+        } else if (name == "ADR" || name == "EMAIL" || name == "TEL") {
             const char *type = vprop->getParameterValue("TYPE");
-            if (type && !strcasecmp(type, "PARCEL")) {
-                vprop->removeParameter("TYPE");
+            if (type) {
+                if (!strcasecmp(type, "PARCEL")) {
+                    // remove unsupported TYPE=PARCEL that was
+                    // added in createItem()
+                    vprop->removeParameter("TYPE");
+                } else if (!strcasecmp(type, "PREF,VOICE")) {
+                    // this is not mapped by Evolution to "Primary Phone",
+                    // help a little bit
+                    vprop->removeParameter("TYPE");
+                    vprop->addParameter("TYPE", "PREF");
+                }
             }
 
             // ensure that at least one TYPE is set

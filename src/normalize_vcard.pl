@@ -53,7 +53,7 @@ sub Normalize {
     s/^(ADR|EMAIL|TEL)([^:]*);TYPE=OTHER/$1$2/mg;
     # TYPE=PREF on the other hand is not used by Evolution, but
     # might be sent back.
-    s/^(ADR|EMAIL|TEL)([^:]*);TYPE=PREF/$1$2/mg;
+    s/^(ADR|EMAIL)([^:]*);TYPE=PREF/$1$2/mg;
     # Evolution does not need TYPE=INTERNET for email
     s/^(EMAIL)([^:]*);TYPE=INTERNET/$1$2/mg;
     # ignore TYPE=PREF in address, does not matter in Evolution
@@ -66,7 +66,9 @@ sub Normalize {
     s/^TEL;TYPE=PAGER;TYPE=WORK/TEL;TYPE=PAGER/gm;
     # PAGER property is sent by Evolution, but otherwise ignored
     s/^LABEL[;:].*\n//mg;
-    # TYPE=VOICE is the default in Evolution and may or may not appear in the vcard
+    # TYPE=VOICE is the default in Evolution and may or may not appear in the vcard;
+    # this simplification is a bit too agressive and hides the problematic
+    # TYPE=PREF,VOICE combination which Evolution does not handle :-/
     s/^TEL([^:]*);TYPE=VOICE,([^:]*):/TEL$1;TYPE=$2:/mg;
     s/^TEL([^:]*);TYPE=([^;:]*),VOICE([^:]*):/TEL$1;TYPE=$2$3:/mg;
     s/^TEL([^:]*);TYPE=VOICE([^:]*):/TEL$1$2:/mg;
