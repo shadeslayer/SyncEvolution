@@ -541,20 +541,25 @@ http://forge.objectweb.org/tracker/?group_id=96&atid=100096
   The workaround for this conceptual problem is to never clean
   (= remove) a field - better fill it with e.g. a single space.
 
-- Evolution 2.0.4 and 2.4.2.1 still display the old content of a contact
+- Evolution might still display the old content of a contact
   which was updated during a certain test (TestEvolution::testMerge).
-  Exact reason unknown, needs to be investigated.
+  Exact reason unknown, needs to be investigated (Evolution 2.0.4 and
+  2.4.2.1).
 
-- Evolution 2.0.4 (and perhaps also other versions) have a problem
-  when SyncEvolution receives a calendar event with a new timezone
-  definition. SyncEvolution adds the definition to the Evolution
-  database, but an already running Evolution crashes when trying to
-  open the new event. Restarting Evolution solves that problem.
+- Evolution has a problem when SyncEvolution receives a calendar event
+  with a new timezone definition. SyncEvolution adds the definition to
+  the Evolution database, but an already running Evolution crashes when
+  trying to open the new event. Restarting Evolution solves that problem.
+  Observed in 2.0.4.
 
-- In Evolution 2.0.4 (and perhaps also other versions) an address book
-  has to be entered once in Evolution after creating it. Otherwise
-  accessing it in SyncEvolution fails with:
+- In Evolution an address book has to be viewed once in Evolution
+  after creating it (observed in 2.0.4). Otherwise accessing it in
+  SyncEvolution fails with:
     [ERROR] <source>: opening address book: EBookStatus returned 19
+
+- In an installation of Evolution the libraries used by SyncEvolution
+  crash unless the gconfd was started earlier, f.i. by logging into
+  GNOME or running the Evolution GUI (observed with 2.4.2.1).
 
 
 Support
