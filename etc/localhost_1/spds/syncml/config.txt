@@ -39,6 +39,12 @@ logdir =
 # the given limit.
 maxlogdirs =
 
+# This value is the number of changes which are sent to the
+# server at once. It is set to a very large number to work around
+# problems in either client library or server when items are
+# actually sent in multiple chunks during a slow sync - do not edit!
+maxModPerMsg = 100000
+
 # used by the SyncML library internally; do not modify
 begin =
 end =
