@@ -353,20 +353,20 @@ To check which data is preserved, one can use this procedure
 (described for contacts, but works the same way for calendars and
 tasks):
 1. synchronize the address book with the server
-2. create an new address book in Evolution and enter it in Evolution
+2. create an new address book in Evolution and view it in Evolution
    once (the second step is necessary in at least Evolution 2.0.4
    to make the new address book usable in SyncEvolution)
 3. add a configuration for that second address book and the
-   same database on the SyncML server
+   same URI on the SyncML server
 4. synchronize again, this time using the other data source
 
 The "etc/localhost_1" directory contains a configuration for a default
 Sync4j 2.3 installation on the local host and Evolution address book,
 calendar and tasks all called "SyncEvolution test #1". The
-"etc/localhost_2" is the pendant for a second client which
-synchronizes against the same server and Evolution databases called
-"SyncEvolution test #2". Both configurations can be copied directly to
-".sync4j/evolution":
+"etc/localhost_2" is the counterpart with the configuration of a
+second client which synchronizes against the same server, but Evolution
+databases called "SyncEvolution test #2". Both configurations can be
+copied directly to ".sync4j/evolution":
   mkdir -p ~/.sync4j/evolution
   cp -a etc/localhost* ~/.sync4j/evolution
 
