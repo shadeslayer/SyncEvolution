@@ -1,18 +1,3 @@
-Preamble
---------
-
-This software is ready for testing by a wider audience. Some parts of
-this documentation describe how features are supposed to work although
-they have not been implemented yet. They are marked with [not
-implemented].
-
-There's no home page yet. Please refer to the SourceForge page instead:
-    http://sourceforge.net/projects/sync4jevolution/
-Because the original name "sync4jevolution" is not really appropriate,
-it was changed to SyncEvolution. The web page and project name will
-be changed eventually, too.
-
-
 Introduction
 ------------
 
@@ -472,98 +457,19 @@ and source configuration that Evolution might be synchronized with.
 Known Problems
 --------------
 
-ObjectWeb #<num> refers to the Funambol issue tracker at:
-http://forge.objectweb.org/tracker/?group_id=96&atid=100096
+The most important limitation at the moment is that the Funambol
+C++ client library has problems with non-Funambol servers. Hopefully
+this will be addressed shortly.
 
-- Synchronization with http://syncml.mobiledit.com fails, apparently
-  due to problems in the client library. Your mileage with non-Funambol
-  based servers may vary.
-
-  ObjectWeb #305503
-
-- various vcard and special character related problems in the
-  Sync4j server and client library:
-  TestEvolution::testItems fails the check that items
-  are identical after copying them to the server and back
-
-  Many of these issues have been fixed in the server already,
-  but even in 2.3 plus patch some information is still lost
-  (see "testing vcard conversion and copying" on the sync4j-user
-   mailing list for details).
-
-  ObjectWeb #304828, #304786, #304784, #304782
-
-- ScheduleWorld preserves almost all Evolution
-  contact and calendar data, the exceptions are:
-  - the LDAP schema used to store contacts does not distinguish
-    between different emails, so although all email addresses
-    are preserved, their type gets lost
-  - "Department" and "Office" of a contact get lost
-  - the order of email addresses and phone numbers in the
-    Evolution GUI is not preserved
-
-- ScheduleWorld's LDAP schema for email addresses implies that when
-  a client sends back a modified contact with a certain set of
-  email addresses, the server can either add them to its own copy
-  of the contact (thus preventing clients from removing old addresses)
-  or replace all of the contact's addresses with the ones sent
-  by the client. Currently ScheduleWorld does the latter, but this
-  also implies that modifying contacts on devices which store less
-  or no email addresses than Evolution may delete still valid email
-  addresses.
-
-- "refresh-from-client" synchronization is not supported by the
-  current ScheduleWorld server. It might be added soon.
-
-- Copying a calendar event via the ScheduleWorld server from one client
-  to another, then deleting it on the first client and trying to
-  synchronize this change to the second client currently does not
-  delete the event on the second client (CalendarSync::testDelete in
-  the test suite). This is under investigation.
-
-- error handling could be improved
-
-  ObjectWeb #304805, #304562
-
-- The Funambol servers upto and including 3.0 do not support
-  iCalendar 2.0, see above.
-
-- Removing a field and then synchronizing with a Funambol server
-  will not remove that field on the server. The server will preserve
-  the old value instead. Other servers might do the same.
-
-  This is necessary because a SyncML server cannot distinguish between
-  removed fields and fields that a client does not store. To avoid
-  losing data when copying back items from a less capable client the
-  server preserves missing fields, even in a situation where the field
-  was intentionally removed on the client.
-
-  The workaround for this conceptual problem is to never clean
-  (= remove) a field - better fill it with e.g. a single space.
-
-- Evolution might still display the old content of a contact
-  which was updated during a certain test (TestEvolution::testMerge).
-  Exact reason unknown, needs to be investigated (Evolution 2.0.4 and
-  2.4.2.1).
-
-- Evolution has a problem when SyncEvolution receives a calendar event
-  with a new timezone definition. SyncEvolution adds the definition to
-  the Evolution database, but an already running Evolution crashes when
-  trying to open the new event. Restarting Evolution solves that problem.
-  Observed in 2.0.4.
-
-- In Evolution an address book has to be viewed once in Evolution
-  after creating it (observed in 2.0.4). Otherwise accessing it in
-  SyncEvolution fails with:
-    [ERROR] <source>: opening address book: EBookStatus returned 19
-
-- In an installation of Evolution the libraries used by SyncEvolution
-  crash unless the gconfd was started earlier, f.i. by logging into
-  GNOME or running the Evolution GUI (observed with 2.4.2.1).
+The full list and up-to-date status of known problems is maintained at:
+   http://ohly.home.pages.de/projects/SyncML/KnownIssues.html
 
 
 Support
 -------
+
+The home page for SyncEvolution is located at:
+   http://ohly.home.pages.de/projects/SyncML/
 
 If you would like to ask questions, please use the Funambol Sync4j
 users mailing list. You can subscribe at
