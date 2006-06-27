@@ -41,7 +41,7 @@ static void listSources( EvolutionSyncSource &syncSource, const string &header )
     for( EvolutionSyncSource::sources::const_iterator it = sources.begin();
          it != sources.end();
          it++ ) {
-        cout << it->m_name << ": " << it->m_uri << "\n";
+        cout << it->m_name << " (" << it->m_uri << ")\n";
     }
 }
 
@@ -81,7 +81,7 @@ int main( int argc, char **argv )
 
             EvolutionCalendarSource todoSource(E_CAL_SOURCE_TYPE_TODO,
                                                string("list"));
-            listSources(eventSource, "tasks");
+            listSources(todoSource, "tasks");
 
             fprintf( stderr, "\nusage: %s <server>\n", argv[0] );
         } else {
