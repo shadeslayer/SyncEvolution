@@ -1,4 +1,61 @@
+2006-06-27  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README: moved some content to new home page, added link to it
+
+	* src/syncevolution.cpp:
+	listing Evolution databases showed calendars twice instead of task lists
+
+2006-06-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README:
+	changed comments about Evolution versions affected by known problems
+
+	* README: minor clarifications
+
+	* etc/localhost_1/spds/syncml/config.txt:
+	workaround for problems during slow-sync if items are split between different messages
+
+	* src/EvolutionContactSource.cpp: clarified unknown name text
+
+	* src/EvolutionContactSource.cpp, src/normalize_vcard.pl:
+	added special handling of TEL;TYPE=PREF,VOICE
+
+2006-06-22  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp: added *Stress::testManyItems
+
+2006-06-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: always use two digits in file name
+
+2006-06-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp:
+	never executed delete since adding workaround (wrong brackets)
+
+	* src/normalize_vcard.pl: remove redundant VALUE=DATE-TIME
+
+	* src/testCalendar.ics: added test case with BYSETPOS=-1
+
+	* src/testCalendar.ics:
+	added more special characters - double quotation marks currently not tested because of Evolution's invalid encoding of them
+
+	* README:
+	documented need to enter new address book to avoid 'EBookStatus returned 19'
+
 2006-06-15  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/normalize_vcard.pl, src/testTask.ics:
+	relax comparison of RRULE BYDAY, modified task test case to always use its own VTIMEZONE
+
+	* src/testVCard.vcf: added test case with empty EMAIL: property
+
+	* src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h:
+	added safety check to avoid segfaults if server sends no data for item
+
+	* README: some more comments about compiling on Debian Sarge
+
+	* src/Makefile.am: added Test.h to distribution
 
 	* src/Makefile.am: added testTask.ics
 
