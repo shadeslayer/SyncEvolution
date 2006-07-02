@@ -1,3 +1,13 @@
+SyncEvolution xxx, ????
+-----------------------
+* updated C++ client library: the user agent string
+  can now be modified in the spds/syncml/config.txt: the example
+  configs use "SyncEvolution" to override the default in the
+  client library, which is "Funambol SyncML client".
+  Existing user configurations have to be updated
+  manually.
+
+
 SyncEvolution 0.3, 2006-06-27
 -----------------------------
 

@@ -25,6 +25,8 @@ firstTimeSyncMode = -1
 useProxy = F
 # proxy URL (http://<host>:<port>)
 proxyHost = 
+# user agent string used for HTTP
+userAgent = SyncEvolution
 
 # full path to directory where automatic backups and logs
 # are stored for all synchronizations; if empty, the temporary
