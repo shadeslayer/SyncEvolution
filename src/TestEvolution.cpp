@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <cppunit/AdditionalMessage.h>
 #include <cppunit/extensions/HelperMacros.h>
 #define EVOLUTION_ASSERT_NO_THROW( _source, _x ) \
 { \
@@ -206,8 +207,9 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
      *
      * @param refData      existing file with source reference items (defaults to first config)
      * @param copyDatabase config of database with the copied items (defaults to second config)
+     * @param raiseAssertion raise assertion if comparison yields differences (defaults to true)
      */
-    void compareDatabases(const string &prefix, const char *refData = NULL, int copyDatabase = 1);
+    void compareDatabases(const string &prefix, const char *refData = NULL, int copyDatabase = 1, bool raiseAssert = true);
 
 public:
     TestEvolution(
@@ -1252,7 +1254,29 @@ template<class T> void TestEvolution<T>::testMerge()
     
     doSync( "send.0.client.log", 0, SYNC_TWO_WAY );
     doSync( "recv.1.client.log", 1, SYNC_TWO_WAY );
-    doSync( "recv.0.client.log", 0, SYNC_TWO_WAY );
+
+    // figure out how the conflict during recv.1.client was handled
+    
+    T client1(
+        string( "dummy" ),
+        m_changeIds[1],
+        m_databases[1]);
+    EVOLUTION_ASSERT_NO_THROW( client1, client1.open() );
+    EVOLUTION_ASSERT( client1, client1.beginSync() == 0 );
+    CPPUNIT_ASSERT( countItems( client1 ) >= 1 );
+    CPPUNIT_ASSERT( countItems( client1 ) <= 2 );
+
+    string result;
+    if (countItems( client1 ) == 1 ) {
+        result += "conflicting items where merged";
+    } else {
+        result += "both of the conflicting items where preserved";
+    }
+    cout << " " << result << " ";
+    cout.flush();
+    compareDatabases("after-conflict", NULL, 1, false);
+    
+    // doSync( "recv.0.client.log", 0, SYNC_TWO_WAY );
 
     // check that both address books are identical (regardless of actual content):
     // disabled because the address books won't be identical with Sync4j.
@@ -1263,6 +1287,9 @@ template<class T> void TestEvolution<T>::testMerge()
     //       test either for identical address books or how many items exist
     // compareDatabases( 1 );
 
+    // figure out how the conflict durinc 
+
+#if 0
     // this code here assumes STC_CONFLICT_RESOLVED_WITH_SERVER_DATA
     T client0(
         string( "dummy" ),
@@ -1281,11 +1308,13 @@ template<class T> void TestEvolution<T>::testMerge()
     EVOLUTION_ASSERT_NO_THROW( client1, client1.open() );
     EVOLUTION_ASSERT( client1, client1.beginSync() == 0 );
     CPPUNIT_ASSERT( 2 == countItems( client1 ) );
+#endif
 }
 
 template<class T> void TestEvolution<T>::compareDatabases(const string &prefix,
                                                           const char *refData,
-                                                          int copyDatabase)
+                                                          int copyDatabase,
+                                                          bool raiseAssertion)
 {
     string sourceData, copyData;
     if (refData) {
@@ -1328,7 +1357,7 @@ template<class T> void TestEvolution<T>::compareDatabases(const string &prefix,
     cmd << "  || (echo; echo '*** " << diff << " non-empty ***'; cat " << diff << "; exit 1 )";
 
     string cmdstr = cmd.str();
-    if (system(cmdstr.c_str())) {
+    if (system(cmdstr.c_str()) && raiseAssertion) {
         CPPUNIT_ASSERT(((void)"address books identical", false));
     }
 }
