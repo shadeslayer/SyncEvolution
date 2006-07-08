@@ -18,13 +18,20 @@ sync = two-way
 syncModes = slow,two-way,refresh-client,refresh-server
 
 # specifies the format of the data
+#
 # text/calendar    = Evolution calender data (in iCalendar 2.0 format)
 # text/x-todo      = Evolution task data (iCalendar 2.0)
 # text/x-vcard     = Evolution contact data in vCard 2.1 format
 #                    (works with most servers)
 # test/vcard       = Evolution contact data in vCard 3.0 (RFC 2425) format
 #                    (internal format of Evolution, preferred with servers
-#                    that support it)
+#                    that support it and thus recommended for ScheduleWorld
+#                    together with the "card3" uri)
+#
+# Sending and receiving items in the same format as used by the server for
+# the uri selected below is essential. Errors while parsing and/or storing
+# items one either client or server can be caused by a mismatch between
+# type and uri.
 type = text/x-vcard
 
 

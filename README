@@ -254,7 +254,8 @@ Configuration with ScheduleWorld
 --------------------------------
 
 It is recommended to sync against the new vCard 3.0 URI (card3) and
-iCalendar 2.0 URI (cal2, task2). These are the native formats of
+iCalendar 2.0 URIs (cal2, task2), using the "text/vcard", "text/calendar"
+and "text/x-todo" type setting respectively. These are the native formats of
 Evolution and a lot of effort went into ensuring that they store as
 much Evolution data as possible. SyncEvolution is primarily tested
 against ScheduleWorld. The "scheduleworld_1" example configuration is
@@ -515,6 +516,13 @@ Be sure to always include the following information:
 - a description of what you do,
   what you expect to see,
   what you get instead
+
+*Warning*: logs may expose user/password if the basic authentication
+mechanism is used. Before posting such logs search for
+  <Type>syncml:auth-basic</Type>
+and overwrite the <Data> directly afterwards. It might look like this
+and occur multiple times in the log:
+  <Data>MGKlldQ2MZnJha3RhbA==</Data>
 
 
 Compiling from Source
