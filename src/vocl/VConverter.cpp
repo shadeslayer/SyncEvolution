@@ -43,7 +43,7 @@ VObject* VConverter::parse(wchar_t* buffer) {
         if (!prop) {
             break;
         }
-        if ( readFieldBody(buffCopy, prop )) {
+        if ( readFieldBody(*vo, buffCopy, prop )) {
             // this makes a copy of prop, we still have to free it
             vo->addProperty(prop);
         }
@@ -158,8 +158,11 @@ VProperty* VConverter::readFieldHeader(wchar_t* buffer) {
     return prop;
 }
 
-bool VConverter::readFieldBody(wchar_t* buffer, VProperty* vprop) {
-
+bool VConverter::readFieldBody(VObject &vo, wchar_t* buffer, VProperty* vprop) {
+    // old folding (vCard 2.1): folding insert CRLF before _existing_ space
+    // new MIME folding( vCard 3.0, iCalendar): folding inserts CRLFSP
+    bool isOldFolding = vo.getVersion() &&
+        !bstrcmp(vo.getVersion(), "2.1");
     bool folding = false;
     wchar_t *c = buffer;
     int i = 0, j = 0;
@@ -170,55 +173,44 @@ bool VConverter::readFieldBody(wchar_t* buffer, VProperty* vprop) {
     if(vprop->equalsEncoding(TEXT("QUOTED-PRINTABLE"))) {
         bool afterEqual = false;
         while (c[i] != '\0') {
-            if(afterEqual) {
-                if(c[i] == '\n')
-                    afterEqual = false;
-                else if(c[i] == '\r') {
-                    if(c[i++] != '\n') {
-                        i++;
+            if (c[i] == '\r') {
+                if (c[i + 1] == '\n') {
+                    if (!afterEqual) {
+                        // end of property after \r\n,
+                        // ignore last two characters and stop
+                        i += 2;
                         break;
                     }
-                    afterEqual = false;
                 }
-                else {
-                    value[j] = c[i];
-                    j++;
-                    afterEqual = false;
-                }
-            }
-            else {
-                if (c[i] == '=') {
-                    afterEqual = true;
-                    value[j] = c[i];
-                    j++;
-                    value[j] = '\0';
-                }
-                else if(c[i] == '\n') {
-                    i++;
+            } else if (c[i] == '\n') {
+                if (!afterEqual) {
+                    // end of property after single \n,
+                    // ignore last two characters and stop
+                    i += 1;
                     break;
                 }
-                else if(c[i] == '\r') {
-                    if(c[i++] != '\n') {
-                        i++;
-                        break;
-                    }
-                }
-                else {
-                    value[j] = c[i];
-                    j++;
-                    value[j] = '\0';
-                }
+            } else if (c[i] == '=') {
+                afterEqual = true;
+            } else {
+                // normal character
+                afterEqual = false;
             }
+            
+            value[j] = c[i];
+            j++;
             i++;
         }
-    }
-    else 
+    } else {
         while (c[i] != '\0') {
             if(folding) {
                 if((c[i] == ' ') || c[i] == '\t' ) {
+                    if (isOldFolding) {
+                        value[j] = c[i];
+                        j++;
+                    }
                     folding = false;
                 }
-                else
+                else 
                     if((c[i] != '\r') && (c[i] != '\n'))
                         break;
 	        }
@@ -233,8 +225,9 @@ bool VConverter::readFieldBody(wchar_t* buffer, VProperty* vprop) {
             }
             i++;
         }
+    }
   
-    
+    value[j] = 0;
     vprop->setValue(value);
     delete [] value; value = NULL;
     // wcscpy only valid for non-overlapping buffers.

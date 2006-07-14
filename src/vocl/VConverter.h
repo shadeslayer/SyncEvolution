@@ -12,7 +12,7 @@ public:
 
 private:
     static VProperty* readFieldHeader(char* buffer);
-    static bool readFieldBody(char* buffer, VProperty* property);
+    static bool readFieldBody(VObject &vo, char* buffer, VProperty* property);
 
     // Extract the parameter of certain properties, e.g. "BEGIN:" or "VERSION:".
     // The result is a pointer into buffCopy, which is expected to have
