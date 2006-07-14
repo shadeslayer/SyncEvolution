@@ -385,6 +385,10 @@ void VObject::fromNativeEncoding()
         // if necessary do quoted-printable encoding
         bool doquoted = !is_30 &&
             wcsstr(native, SYNC4J_LINEBREAK) != NULL;
+
+        // non-ASCII character encountered
+        bool utf8 = false;
+        
         while ((curr = native[in]) != 0) {
             in++;
             switch (curr) {
@@ -408,8 +412,14 @@ void VObject::fromNativeEncoding()
                 out++;
                 break;
              default:
+                bool currIsUTF8 = (unsigned char)curr >= 128;
+
+                if (currIsUTF8) {
+                    utf8 = true;
+                }
+
                 if (doquoted &&
-                    (curr == '=' || (unsigned char)curr >= 128)) {
+                    (curr == '=' || currIsUTF8)) {
                     // escape = and non-ASCII characters
                     wsprintf(foreign + out, TEXT("=%02X"), (unsigned int)(unsigned char)curr);
                     out += 3;
@@ -440,6 +450,9 @@ void VObject::fromNativeEncoding()
         if (doquoted) {
             // we have used quoted-printable encoding
             vprop->addParameter(TEXT("ENCODING"), TEXT("QUOTED-PRINTABLE"));
+        }
+        if (utf8 && !vprop->getParameterValue("CHARSET")) {
+            vprop->addParameter("CHARSET", "UTF-8");
         }
     }
 }
