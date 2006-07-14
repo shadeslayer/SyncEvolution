@@ -40,7 +40,7 @@ sub Normalize {
 
     # the distinction between an empty and a missing property
     # is vague and handled differently, so ignore empty properties
-    s/^[^;:]*:\n//mg;
+    s/^[^:]*:;*\n//mg;
 
     # use separate TYPE= fields
     while( s/^(\w*)([^:\n]*);TYPE=(\w*),(\w*)/$1$2;TYPE=$3;TYPE=$4/mg ) {}
@@ -84,7 +84,7 @@ sub Normalize {
     s/^(DTSTART|DTEND)([^:]*);VALUE=DATE-TIME/$1$2/mg;
 
     # remove fields which may differ
-    s/^(PRODID|CREATED|LAST-MODIFIED):.*\r?\n?//gm;
+    s/^(PRODID|CREATED|LAST-MODIFIED|REV):.*\r?\n?//gm;
     # remove optional fields
     s/^(METHOD|X-WSS-COMPONENT|X-WSS-LUID):.*\r?\n?//gm;
 
