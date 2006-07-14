@@ -10,6 +10,27 @@ END:VCARD
 
 BEGIN:VCARD
 VERSION:3.0
+NICKNAME:user11
+NOTE:This is a long line without any special characters. This is a simpler 
+ example that should require folding in vcards. Does folding insert a crlf
+  before a space or does it insert crlf _plus_ a space? vCard 2.1 inserts 
+ before a space\, 3.0 inserts line break plus space.
+FN:long line
+N:line;long;;;
+X-EVOLUTION-FILE-AS:line\, long
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+NICKNAME:user12
+NOTE:ampersand entity &amp\; less-than entity &lt\;
+FN:xml entities
+N:xml;entities;;;
+X-EVOLUTION-FILE-AS:xml\, entities
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
 NICKNAME:user9
 NOTE;CHARSET="UTF-8":Tests charset specification with quotation marks.
 FN:charset
