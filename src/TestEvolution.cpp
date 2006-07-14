@@ -697,7 +697,7 @@ class CalendarStress : public TestCalendar
     STRESS_TESTS;
     CPPUNIT_TEST_SUITE_END();
 };
-CPPUNIT_TEST_SUITE_REGISTRATION( ContactStress );
+CPPUNIT_TEST_SUITE_REGISTRATION( CalendarStress );
 
 
 class TaskSource : public TestTask
@@ -722,7 +722,7 @@ class TaskStress : public TestTask
     STRESS_TESTS;
     CPPUNIT_TEST_SUITE_END();
 };
-CPPUNIT_TEST_SUITE_REGISTRATION( ContactStress );
+CPPUNIT_TEST_SUITE_REGISTRATION( TaskStress );
 
 
 
