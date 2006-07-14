@@ -215,13 +215,17 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
         throwError( string( "parsing contact" ) + uid, NULL );
     }
 
-    // map ADR;TYPE=OTHER (not standard-compliant)
-    // to ADR;TYPE=PARCEL and vice-versa in preparseVCard();
-    // other TYPE=OTHER instances are simply removed
+    vobj->toNativeEncoding();
+
     for (int index = vobj->propertiesCount() - 1;
          index >= 0;
          index--) {
         VProperty *vprop = vobj->getProperty(index);
+
+        // map ADR;TYPE=OTHER (not standard-compliant)
+        // to ADR;TYPE=PARCEL and vice-versa in preparseVCard();
+        // other TYPE=OTHER instances are simply removed
+
         bool parcel = false;
 
         int param = 0;
@@ -245,8 +249,6 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
     // convert from 3.0 to 2.1?
     if (m_vcardFormat == EVC_FORMAT_VCARD_21) {
         LOG.debug("convert to 2.1");
-
-        vobj->toNativeEncoding();
 
         // escape extended properties so that they are preserved
         // as custom values by the server
@@ -272,8 +274,9 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
         vobj->setVersion("2.1");
         VProperty *vprop = vobj->getProperty("VERSION");
         vprop->setValue("2.1");
-        vobj->fromNativeEncoding();
     }
+
+    vobj->fromNativeEncoding();
 
     arrayptr<char> finalstr(vobj->toString(), "VOCL string");
     LOG.debug("after conversion:");
