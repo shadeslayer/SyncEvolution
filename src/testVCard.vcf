@@ -245,10 +245,10 @@ X-EVOLUTION-MANAGER:
 X-EVOLUTION-ASSISTANT:
 NICKNAME:user6
 X-EVOLUTION-SPOUSE:
-NOTE:The middle name is "middle \; special \;".
-FN:Mr. First middle \; special \; last
-N:last;First;middle \; special \;;Mr.;
-X-EVOLUTION-FILE-AS:last\, First
+NOTE:The first name is "First \; special \;".
+FN:Mr. First \; special \; middle Last
+N:Last;First \; special \;;middle;Mr.;
+X-EVOLUTION-FILE-AS:Last\, First \; special \;
 X-EVOLUTION-BLOG-URL:
 CALURI:
 FBURL:

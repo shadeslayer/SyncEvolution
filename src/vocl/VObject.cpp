@@ -232,12 +232,14 @@ static int hex2int( wchar_t x )
 void VObject::toNativeEncoding()
 {
     bool is_30 = !wcscmp(getVersion(), TEXT("3.0"));
+    bool is_21 = !wcscmp(getVersion(), TEXT("2.1"));
     // line break is encoded with either one or two
     // characters on different platforms
     const int linebreaklen = wcslen(SYNC4J_LINEBREAK);
 
     for (int index = propertiesCount() - 1; index >= 0; index--) {
         VProperty *vprop = getProperty(index);
+        wchar_t *name = vprop->getName();
         wchar_t *foreign = vprop->getValue();
         // the native encoding is always shorter than the foreign one
         wchar_t *native = new wchar_t[wcslen(foreign) + 1];
@@ -323,10 +325,22 @@ void VObject::toNativeEncoding()
                 }
                 break;
              case ';':
-                // field separator - must replace with something special
-                // so that we can encode it again in fromNativeEncoding()
-                native[out] = SEMICOLON_REPLACEMENT;
-                out++;
+                // might be field separator, but beware:
+                // in vCard 2.1 a single, unescaped semicolon is valid in all
+                // properties which are single values and not structured
+                if (!is_21 ||
+                    !wcsicmp(name, "N") ||
+                    !wcsicmp(name, "ADR") ||
+                    !wcsicmp(name, "ORG")) {
+                    // must replace with something special
+                    // so that we can encode it again in fromNativeEncoding()
+                    native[out] = SEMICOLON_REPLACEMENT;
+                    out++;
+                } else {
+                    // copy literally
+                    native[out] = ';';
+                    out++;
+                }
                 break;
              default:
                 native[out] = curr;
