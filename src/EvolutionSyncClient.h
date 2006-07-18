@@ -34,8 +34,7 @@ using namespace std;
  * Despite the name it is not a Sync4jClient, but rather
  * uses one.
  */
-class EvolutionSyncClient {
-    Sync4jClient& m_client;
+class EvolutionSyncClient : private SyncClient {
     const string m_server;
     const set<string> m_sources;
     const string m_configPath;
@@ -55,6 +54,12 @@ class EvolutionSyncClient {
      * @param doLogging  write additional log and datatbase files about the sync
      */
     void sync(SyncMode syncMode = SYNC_NONE, bool doLogging = false);
+
+    /**************************************************/
+    /************ override SyncClient interface *******/
+    /**************************************************/
+
+    const char *getClientID() { return "SyncEvolution " VERSION; }
 };
 
 #endif // INCL_EVOLUTIONSYNCCLIENT

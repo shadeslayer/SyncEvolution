@@ -39,12 +39,11 @@ using namespace std;
 #include <errno.h>
 
 EvolutionSyncClient::EvolutionSyncClient(const string &server, const set<string> &sources) :
-    m_client(Sync4jClient::getInstance()),
     m_server(server),
     m_sources(sources),
     m_configPath(string("evolution/") + server)
 {
-    m_client.setDMConfig(m_configPath.c_str());
+    setDMConfig(m_configPath.c_str());
 }
 
 EvolutionSyncClient::~EvolutionSyncClient()
@@ -469,7 +468,7 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
         ++index;
     }
     sourceArray[index] = NULL;
-    int res = m_client.sync( sourceArray );
+    int res = SyncClient::sync( sourceArray );
 
     // force slow sync in case of failed Evolution source
     // by overwriting the last sync time stamp;
