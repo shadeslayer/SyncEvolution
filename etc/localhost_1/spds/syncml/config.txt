@@ -16,11 +16,6 @@ deviceId = sc-api-nat
 username = guest
 password = guest
 
-# setting this to -1 forces a retransmission of the client
-# capabilities to the server; will be set to 0 automatically
-# after the initial sync
-firstTimeSyncMode = -1
-
 # set to T to enable an HTTP proxy
 useProxy = F
 # proxy URL (http://<host>:<port>)
@@ -50,3 +45,4 @@ maxModPerMsg = 100000
 # used by the SyncML library internally; do not modify
 begin =
 end =
+firstTimeSyncMode = 0
