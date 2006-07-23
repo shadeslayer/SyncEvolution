@@ -59,7 +59,11 @@ class EvolutionSyncClient : private SyncClient {
     /************ override SyncClient interface *******/
     /**************************************************/
 
-    const char *getClientID() { return "SyncEvolution " VERSION; }
+    const char *getClientID() const { return "SyncEvolution"; }
+    const char *getClientVersion() const { return VERSION; }
+    const char *getManufacturer() const { return "Patrick Ohly"; }
+    const char *getClientType() const { return "workstation"; }
+    int isUTC() const { return true; }
 };
 
 #endif // INCL_EVOLUTIONSYNCCLIENT
