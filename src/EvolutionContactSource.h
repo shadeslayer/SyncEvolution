@@ -16,8 +16,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef INCL_EVOLUTIONCONTACTSOURCE
+#define INCL_EVOLUTIONCONTACTSOURCE
+
 #include "EvolutionSyncSource.h"
 #include "EvolutionSmartPtr.h"
+
+#ifdef ENABLE_EBOOK
 
 #include <libebook/e-book.h>
 #include <libebook/e-vcard.h>
@@ -135,3 +140,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     /** the mime type which corresponds to m_vcardFormat */
     const char *getMimeType();
 };
+
+#endif // ENABLE_EBOOK
+
+#endif // INCL_EVOLUTIONCONTACTSOURCE

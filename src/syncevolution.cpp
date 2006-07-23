@@ -70,10 +70,13 @@ int main( int argc, char **argv )
 
     try {
         if ( argc == 1 ) {
+#ifdef ENABLE_EBOOK
             EvolutionContactSource contactSource( string( "list" ) );
             listSources( contactSource, "address books" );
             cout << "\n";
+#endif
 
+#ifdef ENABLE_ECAL
             EvolutionCalendarSource eventSource(E_CAL_SOURCE_TYPE_EVENT,
                                                 string("list"));
             listSources(eventSource, "calendars");
@@ -82,6 +85,7 @@ int main( int argc, char **argv )
             EvolutionCalendarSource todoSource(E_CAL_SOURCE_TYPE_TODO,
                                                string("list"));
             listSources(todoSource, "tasks");
+#endif
 
             fprintf( stderr, "\nusage: %s <server>\n", argv[0] );
         } else {

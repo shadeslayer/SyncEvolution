@@ -19,6 +19,10 @@
 #include <memory>
 using namespace std;
 
+#include "config.h"
+
+#ifdef ENABLE_EBOOK
+
 #include "EvolutionContactSource.h"
 
 #include <common/base/Log.h>
@@ -612,3 +616,5 @@ EContact *EvolutionContactSource::getContact( const string &uid )
         return NULL;
     }
 }
+
+#endif ENABLE_EBOOK

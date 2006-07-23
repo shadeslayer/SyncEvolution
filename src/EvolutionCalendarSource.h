@@ -22,6 +22,8 @@
 #include "EvolutionSyncSource.h"
 #include "EvolutionSmartPtr.h"
 
+#ifdef ENABLE_ECAL
+
 #include <libecal/e-cal.h>
 
 /**
@@ -111,5 +113,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     /** returns the uid of the given component */
     string getCompUID(icalcomponent *icomp);
 };
+
+#endif // ENABLE_ECAL
 
 #endif // INCL_EVOLUTIONSYNCSOURCE

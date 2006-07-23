@@ -21,8 +21,12 @@
 
 #include <stdlib.h>
 #include <glib-object.h>
+#ifdef ENABLE_EBOOK
 #include <libebook/e-book.h>
+#endif
+#ifdef ENABLE_ECAL
 #include <libecal/e-cal.h>
+#endif
 
 #include <stdexcept>
 
@@ -41,9 +45,13 @@ template<class T, class base = T> class gptr {
 
     void unref( char *pointer ) { free( pointer ); }
     void unref( GObject *pointer ) { g_object_unref( pointer ); }
+#ifdef ENABLE_EBOOK
     void unref( EBookQuery *pointer ) { e_book_query_unref( pointer ); }
+#endif
+#ifdef ENABLE_ECAL
     void unref( icalcomponent *pointer ) { icalcomponent_free( pointer ); }
     void unref( icaltimezone *pointer ) { icaltimezone_free( pointer, 1 ); }
+#endif
 #if 0
     void unref( EBook *pointer ) { g_object_unref( pointer ); }
     void unref( EContact *pointer ) { g_object_unref( pointer ); }

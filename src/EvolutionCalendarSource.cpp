@@ -19,6 +19,10 @@
 #include <memory>
 using namespace std;
 
+#include "config.h"
+
+#ifdef ENABLE_ECAL
+
 #include "EvolutionCalendarSource.h"
 #include "EvolutionSmartPtr.h"
 
@@ -399,3 +403,4 @@ string EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
     return string(uid ? uid : "");
 }
 
+#endif /* ENABLE_ECAL */
