@@ -19,6 +19,7 @@
 #ifndef INCL_EVOLUTIONCALENDARSOURCE
 #define INCL_EVOLUTIONCALENDARSOURCE
 
+#include <config.h>
 #include "EvolutionSyncSource.h"
 #include "EvolutionSmartPtr.h"
 
@@ -64,7 +65,25 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     // implementation of SyncSource
     //
     virtual ArrayElement *clone() { return new EvolutionCalendarSource(*this); }
+    void getPreferredTypes(const char*& recvType,
+                           const char*& recvVersion,
+                           const char*& sendType,
+                           const char*& sendVersion) {
+        // these might be the preferred types, but in the end
+        // the configured type is used
+        recvType = "text/calendar";
+        recvVersion = "2.0";
+        sendType = "text/calendar";
+        sendVersion = "2.0";
+    }
+    const char **getSendTypes() {
+        static const char *types[] = { "text/calendar", "2.0",
+                                       NULL };
 
+        return types;
+    }
+    const char **getRecvTypes() { return getSendTypes(); }
+    
   protected:
     //
     // implementation of EvolutionSyncSource callbacks

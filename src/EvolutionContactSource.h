@@ -19,6 +19,7 @@
 #ifndef INCL_EVOLUTIONCONTACTSOURCE
 #define INCL_EVOLUTIONCONTACTSOURCE
 
+#include <config.h>
 #include "EvolutionSyncSource.h"
 #include "EvolutionSmartPtr.h"
 
@@ -75,6 +76,25 @@ class EvolutionContactSource : public EvolutionSyncSource
     // implementation of SyncSource
     //
     virtual ArrayElement *clone() { return new EvolutionContactSource(*this); }
+    void getPreferredTypes(const char*& recvType,
+                           const char*& recvVersion,
+                           const char*& sendType,
+                           const char*& sendVersion) {
+        // these might be the preferred types, but in the end
+        // the configured type is used
+        recvType = "text/vcard";
+        recvVersion = "3.0";
+        sendType = "text/vcard";
+        sendVersion = "3.0";
+    }
+    const char **getSendTypes() {
+        static const char *types[] = { "text/vcard", "3.0",
+                                       "text/x-vcard", "2.1",
+                                       NULL };
+
+        return types;
+    }
+    const char **getRecvTypes() { return getSendTypes(); }
 
   protected:
     //
