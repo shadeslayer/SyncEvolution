@@ -617,4 +617,4 @@ EContact *EvolutionContactSource::getContact( const string &uid )
     }
 }
 
-#endif ENABLE_EBOOK
+#endif /* ENABLE_EBOOK */
