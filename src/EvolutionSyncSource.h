@@ -286,7 +286,12 @@ class EvolutionSyncSource : public SyncSource
                 ++m_it;
                 if (&m_source.m_deletedItems == this) {
                     // just tell caller the uid of the deleted item
-                    return new SyncItem( uid.c_str() );
+                    // and the type that it probably had
+                    SyncItem *item = new SyncItem( uid.c_str() );
+                    const char *recvType, *recvVersion, *sendType, *sendVersion;
+                    m_source.getPreferredTypes( recvType, recvVersion, sendType, sendVersion );
+                    item->setDataType( sendType );
+                    return item;
                 } else {
                     // retrieve item with all its data
                     try {
