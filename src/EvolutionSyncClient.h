@@ -26,34 +26,45 @@
 #include <set>
 using namespace std;
 
+class SourceList;
+
 /*
  * This is the main class inside sync4jevolution which
  * looks at the configuration, activates all enabled
  * sources and executes the synchronization.
  *
- * Despite the name it is not a Sync4jClient, but rather
- * uses one.
  */
 class EvolutionSyncClient : private SyncClient {
     const string m_server;
     const set<string> m_sources;
+    const SyncMode m_syncMode;
+    const bool m_doLogging;
     const string m_configPath;
+    string m_url;
+
+    /*
+     * variable shared by sync() and prepareSync():
+     * stores active sync sources and handles reporting
+     */
+    SourceList *m_sourceList;
 
   public:
     /**
      * @param server     identifies the server config to be used
+     * @param syncMode   setting this overrides the sync mode from the config
+     * @param doLogging  write additional log and datatbase files about the sync
      */
-    EvolutionSyncClient(const string &server, const set<string> &sources = set<string>());
+    EvolutionSyncClient(const string &server,
+                        SyncMode syncMode = SYNC_NONE,
+                        bool doLogging = false,
+                        const set<string> &sources = set<string>());
     ~EvolutionSyncClient();
 
     /**
      * Executes the sync, throws an exception in case of failure.
      * Handles automatic backups and report generation.
-     * 
-     * @param syncMode   setting this overrides the sync mode from the config
-     * @param doLogging  write additional log and datatbase files about the sync
      */
-    void sync(SyncMode syncMode = SYNC_NONE, bool doLogging = false);
+    int sync();
 
     /**************************************************/
     /************ override SyncClient interface *******/
@@ -64,6 +75,16 @@ class EvolutionSyncClient : private SyncClient {
     const char *getManufacturer() const { return "Patrick Ohly"; }
     const char *getClientType() const { return "workstation"; }
     int isUTC() const { return true; }
+
+  protected:
+    /* Sync4jClient callbacks */
+    int prepareSync(const AccessConfig &config,
+                    ManagementNode &node);
+    int createSyncSource(const char *name,
+                         const SyncSourceConfig &config,
+                         ManagementNode &node,
+                         SyncSource **source);
+    int beginSync();
 };
 
 #endif // INCL_EVOLUTIONSYNCCLIENT

@@ -123,17 +123,18 @@ encountered and print a summary of how the databases were modified.
 This is done with the "synccompare" utility script described
 in the "Exchanging Data" section.
 
-In case of an error the synchronization run is aborted prematurely and
-SyncEvolution will return a non-zero value. Recovery from failed
-synchronization is done by forcing a full synchronization during the
-next run, i.e. by sending all items and letting the SyncML server
-compare against the ones it already knows. If the error is detected
-by SyncEvolution itself, then it attempts to cause the full
-synchronization only for the failed database, but if the SyncML
-client library itself runs into a problem it might cause a full
-synchronization of all databases even if only one of them failed.
-Therefore it might be less risky to invoke SyncEvolution for each
-data source separately.
+In case of a severe error the synchronization run is aborted
+prematurely and SyncEvolution will return a non-zero value. Recovery
+from failed synchronization is done by forcing a full synchronization
+during the next run, i.e. by sending all items and letting the SyncML
+server compare against the ones it already knows. This is avoided
+whenever possible because matching items during a slow synchronization
+can lead to duplicate entries.
+
+Due to a limitation in the client library implementation it might
+force a slow synchronization of all databases even if only one of them
+failed. Therefore it might be less risky to invoke SyncEvolution for
+each data source separately.
 
 After a successful synchronization the server's configuration file is
 updated so that the next run can be done incrementally.  If the

@@ -73,8 +73,7 @@ class EvolutionSyncSource : public SyncSource
         m_updatedItems( *this, "updated", SYNC_STATE_UPDATED ),
         m_deletedItems( *this, "deleted", SYNC_STATE_DELETED ),
         m_hasFailed( false ),
-        m_isModified( false ),
-        m_fixedSyncMode( SYNC_NONE )
+        m_isModified( false )
         {}
     virtual ~EvolutionSyncSource() {}
 
@@ -188,18 +187,6 @@ class EvolutionSyncSource : public SyncSource
     virtual SyncItem* getNextDeletedItem() { return m_deletedItems.iterate(); }
     virtual SyncItem* getFirstItemKey() { return getFirstItem(); }
     virtual SyncItem* getNextItemKey() { return getNextItem(); }
-
-    // if the SyncSource was fixed to a certain mode, then override
-    // the configuration in prepareSync()
-    virtual int prepareSync() {
-        if (m_fixedSyncMode != SYNC_NONE) {
-            setPreferredSyncMode(m_fixedSyncMode);
-        }
-        return 0;
-    }
-    void setFixedSyncMode(SyncMode sourceSyncMode) {
-        m_fixedSyncMode = sourceSyncMode;
-    }
 
     virtual int beginSync();
     virtual int endSync();
@@ -329,9 +316,6 @@ class EvolutionSyncSource : public SyncSource
      * two-way sync
      */
     bool m_isModified;
-
-    /** if not SYNC_NONE then override preferred sync mode in prepareSync() */
-    SyncMode m_fixedSyncMode;
 
   private:
     /**

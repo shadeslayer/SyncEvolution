@@ -38,17 +38,20 @@ using namespace std;
 #include <dirent.h>
 #include <errno.h>
 
-EvolutionSyncClient::EvolutionSyncClient(const string &server, const set<string> &sources) :
+EvolutionSyncClient::EvolutionSyncClient(const string &server, SyncMode syncMode,
+                                         bool doLogging, const set<string> &sources) :
     m_server(server),
     m_sources(sources),
-    m_configPath(string("evolution/") + server)
+    m_syncMode(syncMode),
+    m_doLogging(doLogging),
+    m_configPath(string("evolution/") + server),
+    m_sourceList(NULL)
 {
     setDMConfig(m_configPath.c_str());
 }
 
 EvolutionSyncClient::~EvolutionSyncClient()
 {
-    Sync4jClient::dispose();
 }
 
 /// remove all files in the given directory and the directory itself
@@ -368,48 +371,83 @@ public:
     }
 };
 
-void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
+int EvolutionSyncClient::sync()
 {
-    SourceList sources(m_server, doLogging);
+    // this will trigger the prepareSync(), createSyncSource(), beginSource() callbacks
+    int res = SyncClient::sync();
 
-    DMTree config(m_configPath.c_str());
-
-    // find server URL (part of change id)
-    string serverPath = m_configPath + "/spds/syncml";
-    auto_ptr<ManagementNode> serverNode(config.getManagementNode(serverPath.c_str()));
-    string url = EvolutionSyncSource::getPropertyValue(*serverNode, "syncURL");
-
-    // redirect logging as soon as possible
-    sources.setLogdir(serverNode->getPropertyValue("logdir"),
-                      atoi(serverNode->getPropertyValue("maxlogdirs")));
-
-    // find sources
-    string sourcesPath = m_configPath + "/spds/sources";
-    auto_ptr<ManagementNode> sourcesNode(config.getManagementNode(sourcesPath.c_str()));
-    unsigned int index, numSources = sourcesNode->getChildrenMaxCount();
-    char **sourceNamesPtr = sourcesNode->getChildrenNames();
-
-    // copy source names into format that will be
-    // freed in case of exception
-    vector<string> sourceNames;
-    for ( index = 0; index < numSources; index++ ) {
-        sourceNames.push_back(sourceNamesPtr[index]);
-        delete [] sourceNamesPtr[index];
+#if 0
+    // Change of policy: even if a sync source failed allow
+    // the next sync to proceed normally. The rationale is
+    // that novice users then do not have to care about deleting
+    // "bad" items because the next two-way sync will not stumble
+    // over them.
+    //
+    // Force slow sync in case of failed Evolution source
+    // by overwriting the last sync time stamp;
+    // don't do it if only the general result is a failure
+    // because in that case it is not obvious which source
+    // failed.
+    for ( index = 0; index < m_sourceList->size(); index++ ) {
+        EvolutionSyncSource *source = (*m_sourceList)[index];
+        if (source->hasFailed()) {
+            string sourcePath(sourcesPath + "/" + sourceArray[index]->getName());
+            auto_ptr<ManagementNode> sourceNode(config.getManagementNode(sourcePath.c_str()));
+            sourceNode->setPropertyValue("last", "0");
+        }
     }
-    delete [] sourceNamesPtr;
-    
-    // iterate over sources
-    for ( index = 0; index < numSources; index++ ) {
+#endif
+
+    if (res) {
+        if (lastErrorCode && lastErrorMsg[0]) {
+            throw runtime_error(lastErrorMsg);
+        }
+        // no error code/description?!
+        throw runtime_error("sync failed without an error description, check log");
+    }
+
+    // all went well: print final report before cleaning up
+    m_sourceList->syncDone(true);
+    delete m_sourceList;
+    m_sourceList = NULL;
+}
+
+int EvolutionSyncClient::prepareSync(const AccessConfig &config,
+                                     ManagementNode &node)
+{
+    try {
+        // remember for use by sync sources
+        m_url = config.getSyncURL() ? config.getSyncURL() : "";
+
+        // redirect logging as soon as possible
+        m_sourceList = new SourceList(m_server, m_doLogging);
+        m_sourceList->setLogdir(node.getPropertyValue("logdir"),
+                                atoi(node.getPropertyValue("maxlogdirs")));
+    } catch(...) {
+        EvolutionSyncSource::handleException();
+        return ERR_UNSPECIFIED;
+    }
+
+    return ERR_NONE;
+}
+
+int EvolutionSyncClient::createSyncSource(const char *name,
+                                          const SyncSourceConfig &config,
+                                          ManagementNode &node,
+                                          SyncSource **source)
+{
+    try {
+        // by default no source for this name
+        *source = NULL;
+        
         // is the source enabled?
-        string sourcePath(sourcesPath + "/" + sourceNames[index]);
-        auto_ptr<ManagementNode> sourceNode(config.getManagementNode(sourcePath.c_str()));
-        string sync = EvolutionSyncSource::getPropertyValue(*sourceNode, "sync");
+        string sync = config.getSync() ? config.getSync() : "";
         bool enabled = sync != "none";
         SyncMode overrideMode = SYNC_NONE;
 
         // override state?
         if (m_sources.size()) {
-            if (m_sources.find(sourceNames[index]) != m_sources.end()) {
+            if (m_sources.find(name) != m_sources.end()) {
                 if (!enabled) {
                     overrideMode = SYNC_TWO_WAY;
                     enabled = true;
@@ -421,79 +459,54 @@ void EvolutionSyncClient::sync(SyncMode syncMode, bool doLogging)
         
         if (enabled) {
             // create it
-            string type = EvolutionSyncSource::getPropertyValue(*sourceNode, "type");
+            string type = config.getType() ? config.getType() : "";
             EvolutionSyncSource *syncSource =
                 EvolutionSyncSource::createSource(
-                    sourceNames[index],
-                    string("sync4jevolution:") + url + "/" + EvolutionSyncSource::getPropertyValue(*sourceNode, "name"),
-                    EvolutionSyncSource::getPropertyValue(*sourceNode, "evolutionsource"),
+                    name,
+                    string("sync4jevolution:") + m_url + "/" + name,
+                    EvolutionSyncSource::getPropertyValue(node, "evolutionsource"),
                     type
                     );
             if (!syncSource) {
-                throw runtime_error(sourceNames[index] + ": type " +
+                throw runtime_error(string(name) + ": type " +
                                     ( type.size() ? string("not configured") :
                                       string("'") + type + "' empty or unknown" ));
             }
+            m_sourceList->push_back(syncSource);
 
-            if (syncMode != SYNC_NONE) {
+            // configure it
+            syncSource->setConfig(config);
+            if (m_syncMode != SYNC_NONE) {
                 // caller overrides mode
-                syncSource->setFixedSyncMode(syncMode);
+                syncSource->setPreferredSyncMode(m_syncMode);
             } else if (overrideMode != SYNC_NONE) {
                 // disabled source selected via source name
-                syncSource->setFixedSyncMode(overrideMode);
+                syncSource->setPreferredSyncMode(overrideMode);
             }
-
-            sources.push_back(syncSource);
 
             // also open it; failing now is still safe
             syncSource->open();
+
+            // success!
+            *source = syncSource;
         }
+    } catch(...) {
+        EvolutionSyncSource::handleException();
+        return ERR_UNSPECIFIED;
     }
-
-    if (!sources.size()) {
-        throw runtime_error("no sources configured");
-    }
-
-    // ready to go: dump initial databases and prepare for final report
-    sources.syncPrepare();
     
-    // build array as sync wants it, then sync
-    // (no exceptions allowed here)
-    SyncSource **sourceArray = new SyncSource *[sources.size() + 1];
-    index = 0;
-    for ( list<EvolutionSyncSource *>::iterator it = sources.begin();
-          it != sources.end();
-          ++it ) {
-        sourceArray[index] = *it;
-        ++index;
-    }
-    sourceArray[index] = NULL;
-    int res = SyncClient::sync( sourceArray );
+    return ERR_NONE;
+}
 
-    // force slow sync in case of failed Evolution source
-    // by overwriting the last sync time stamp;
-    // don't do it if only the general result is a failure
-    // because in that case it is not obvious which source
-    // failed
-    for ( index = 0; index < sources.size(); index++ ) {
-        if (sourceArray[index] &&
-            ((EvolutionSyncSource *)sourceArray[index])->hasFailed()) {
-            string sourcePath(sourcesPath + "/" + sourceArray[index]->getName());
-            auto_ptr<ManagementNode> sourceNode(config.getManagementNode(sourcePath.c_str()));
-            sourceNode->setPropertyValue("last", "0");
-        }
+int EvolutionSyncClient::beginSync()
+{
+    try {
+        // ready to go: dump initial databases and prepare for final report
+        m_sourceList->syncPrepare();
+    } catch(...) {
+        EvolutionSyncSource::handleException();
+        return ERR_UNSPECIFIED;
     }
 
-    delete [] sourceArray;
-        
-    if (res) {
-        if (lastErrorCode && lastErrorMsg[0]) {
-            throw runtime_error(lastErrorMsg);
-        }
-        // no error code/description?!
-        throw runtime_error("sync() failed without setting an error description");
-    }
-
-    // all went well: print final report before cleaning up
-    sources.syncDone(true);
+    return ERR_NONE;
 }

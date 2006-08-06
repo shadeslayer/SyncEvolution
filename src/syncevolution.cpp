@@ -95,8 +95,8 @@ int main( int argc, char **argv )
                 sources.insert(argv[source]);
             }
             
-            EvolutionSyncClient client(argv[1], sources);
-            client.sync(SYNC_NONE, true);
+            EvolutionSyncClient client(argv[1], SYNC_NONE, true, sources);
+            client.sync();
         }
         return 0;
     } catch ( const std::exception &ex ) {

@@ -1040,16 +1040,14 @@ template<class T> void TestEvolution<T>::doSync(const string &logfilesuffix, int
     remove( logfile.c_str() );
     setLogFile( logfile.c_str(), TRUE );
     LOG.setLevel(LOG_LEVEL_INFO);
-    {
+    try {
         set<string> sources;
         sources.insert(m_source[config]);
-        EvolutionSyncClient client(m_syncConfigs[config], sources);
-        try {
-            client.sync(syncMode);
-        } catch(...) {
-            EvolutionSyncSource::handleException();
-            res = 1;
-        }
+        EvolutionSyncClient client(m_syncConfigs[config], syncMode, false, sources);
+        client.sync();
+    } catch(...) {
+        EvolutionSyncSource::handleException();
+        res = 1;
     }
     string oldlogfile = getCurrentTest() + ".log";
     simplifyFilename(oldlogfile);
