@@ -1,5 +1,5 @@
-SyncEvolution xxx, ????
------------------------
+SyncEvolution 0.4 pre 1, 2006-08-06
+-----------------------------------
 * C++ client library revision "funambol30ga" plus the patches
   stored in its ".patches" directory:
   - the user agent string can now be modified in the
