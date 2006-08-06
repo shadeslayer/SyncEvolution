@@ -325,11 +325,12 @@ void VObject::toNativeEncoding()
                 }
                 break;
              case ';':
-                // might be field separator, but beware:
+                // Might be field separator, but beware:
                 // in vCard 2.1 a single, unescaped semicolon is valid in all
-                // properties which are single values and not structured
-                if (!is_21 ||
-                    !wcsicmp(name, "N") ||
+                // properties which are single values and not structured.
+                // Some encoders even do that in 3.0, so always accept a literal
+                // ; as it is in properties which are not multi-value.
+                if (!wcsicmp(name, "N") ||
                     !wcsicmp(name, "ADR") ||
                     !wcsicmp(name, "ORG")) {
                     // must replace with something special
