@@ -19,7 +19,9 @@ if test ! "$SYNC4J"; then
         # make a copy of the sources
         AC_MSG_NOTICE( [updating the content of src/client-api from $SYNC4JSRC] )
         mkdir -p src/client-api
-        if cp --update --archive $SYNC4JSRC/* src/client-api; then true; else
+        if cp --update --archive $SYNC4JSRC/* src/client-api; then
+            ( cd src/client-api/build/autotools && ( test -f configure || sh autogen.sh ) )
+        else
             AC_MSG_ERROR( [copying $SYNC4JSRC into src/client-api failed] )
         fi
         find src/client-api/build/autotools/include/* src/client-api/build/autotools/src/* -type d | xargs rm -rf
