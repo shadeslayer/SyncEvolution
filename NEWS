@@ -13,10 +13,13 @@ SyncEvolution xxx, ????
   - #305795: for tasks the "text/x-todo" type from the configuration
     was sent to servers instead of the correct "text/calendar"
     provided by SyncEvolution itself
+  - sync modes "refresh-client/server" can now be specified as
+    "refresh-from-client/server" in the config
 * updated default syncml/config.txt:
   - firstTimeSyncMode has never been implemented in the library,
     removed its documentation,
   - added documentation for userAgent
+  - use "refresh-from-client/server"
 * changed vCard parser to make it compatible with servers
   which send a verbatim semicolon as part of properties where
   the semicolon has no special meaning
@@ -35,7 +38,8 @@ SyncEvolution xxx, ????
   eventually be told of all changes, so now this repetition is built
   into the code which queries for changes and a single synchronization
   is sufficient as it should be.
-
+* Made it compile on Maemo 2.0, the Nokia 770 build environment, by
+  adding "--disable-ecal". Not tested yet, though.
 
 
 SyncEvolution 0.3, 2006-06-27

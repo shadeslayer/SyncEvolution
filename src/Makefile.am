@@ -1,4 +1,4 @@
-INCLUDES = @EPACKAGE_CFLAGS@ @SYNC4J_CFLAGS@ 
+INCLUDES = @EPACKAGE_CFLAGS@ @GLIB_CFLAGS@ @SYNC4J_CFLAGS@ 
 
 # Please remove '-Wno-return-type' when Evo fixes the warning in their headers.
 AM_CFLAGS = -Wall -Werror -Wno-return-type
@@ -38,7 +38,7 @@ CORE_SOURCES  = \
 	\
 	$(VOCL_SOURCES)
 
-CORE_LDADD = @EPACKAGE_LIBS@ @SYNC4J_LIBS@ @LIBS@
+CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @LIBS@
 
 syncevolution_SOURCES = \
 	syncevolution.cpp \

@@ -106,6 +106,17 @@ fi
 AC_SUBST(EPACKAGE_CFLAGS)
 AC_SUBST(EPACKAGE_LIBS)
 
+dnl check for glib - calling g_type_init() is expected on Maemo
+PKG_CHECK_MODULES(GLIB, "glib-2.0", GLIBFOUND=1, GLIBFOUND=0)
+if test "x${GLIBFOUND}" = "x0"; then
+	PKG_CHECK_MODULES(GLIB, "glib", GLIBFOUND=1, GLIBFOUND=0)
+fi
+if  test "x${GLIBFOUND}" = "x1"; then
+        AC_DEFINE(HAVE_GLIB, 1, [glib found])
+fi
+AC_SUBST(GLIB_CFLAGS)
+AC_SUBST(GLIB_LIBS)
+
 dnl check for programs.
 AC_PROG_CXX
 AC_PROG_LIBTOOL

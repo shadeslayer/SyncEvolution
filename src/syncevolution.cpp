@@ -25,6 +25,9 @@
 using namespace std;
 
 #include <libgen.h>
+#ifdef HAVE_GLIB
+#include <glib-object.h>
+#endif
 
 #include "EvolutionContactSource.h"
 #include "EvolutionCalendarSource.h"
@@ -47,6 +50,12 @@ static void listSources( EvolutionSyncSource &syncSource, const string &header )
 
 int main( int argc, char **argv )
 {
+#ifdef HAVE_GLIB
+    // this is required on Maemo and does not harm either on a normal
+    // desktop system with Evolution
+    g_type_init();
+#endif
+
     setLogFile("-");
     LOG.reset();
     LOG.setLevel(LOG_LEVEL_INFO);
