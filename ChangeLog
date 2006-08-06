@@ -1,5 +1,8 @@
 2006-08-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
+	* src/vocl/VObject.cpp:
+	always treat single ; as normal character in single-value properties
+
 	* NEWS, configure.in, src/Makefile.am, src/syncevolution.cpp:
 	now compiles on Maemo
 
