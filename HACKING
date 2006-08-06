@@ -14,6 +14,13 @@ is available from CVS, checkout the "3x" module from the CVS at
    http://forge.objectweb.org/projects/sync4j
 You'll need the files in 3x/client-api/native.
 
+Also note that some of the patches in the
+3x/client-api/native/.patches directory might be needed for
+SyncEvolution to compile and work correctly. See
+3x/client-api/native/README for more information about those patches
+and SyncEvolution's NEWS file for some information which client
+library is compatible.
+
 The recommended way to make that library available is by
 installing it into its own directory with shared libraries disabled:
    configure --prefix=<dir> --disable-shared; make; make install
