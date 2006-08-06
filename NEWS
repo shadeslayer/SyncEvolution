@@ -13,8 +13,10 @@ SyncEvolution xxx, ????
   - #305795: for tasks the "text/x-todo" type from the configuration
     was sent to servers instead of the correct "text/calendar"
     provided by SyncEvolution itself
-* updated default syncml/config.txt: firstTimeSyncMode has never
-  been implemented in the library, removed its documentation
+* updated default syncml/config.txt:
+  - firstTimeSyncMode has never been implemented in the library,
+    removed its documentation,
+  - added documentation for userAgent
 * changed vCard parser to make it compatible with servers
   which send a verbatim semicolon as part of properties where
   the semicolon has no special meaning
@@ -26,6 +28,13 @@ SyncEvolution xxx, ????
   but required user assistance. With the new approach synchronization
   continues to work, although without fixing the root cause of
   the problem.
+* Workaround for bug in Evolution 2.0.6 (and perhaps other versions):
+  for calendars and task lists not all deleted items were reported
+  at once thus a single synchronization would only tell the server
+  about a subset of the changes. Repeating the synchronization would
+  eventually be told of all changes, so now this repetition is built
+  into the code which queries for changes and a single synchronization
+  is sufficient as it should be.
 
 
 

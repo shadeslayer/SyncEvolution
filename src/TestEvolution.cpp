@@ -211,6 +211,12 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
      */
     void compareDatabases(const string &prefix, const char *refData = NULL, int copyDatabase = 1, bool raiseAssert = true);
 
+    /**
+     * insert artificial items, number of them determined by TEST_EVOLUTION_NUM_ITEMS
+     * @return number of items inserted
+     */
+    int insertManyItems(int config);
+    
 public:
     TestEvolution(
         const char *syncSourceName,
@@ -291,6 +297,8 @@ public:
     void testImport();
     // same as testImport() with immediate delete
     void testImportDelete();
+    // test change tracking with large number of items
+    void testManyChanges();
 
     //
     // tests involving real synchronization:
@@ -629,7 +637,8 @@ public:
     CPPUNIT_TEST( testLocalUpdate ); \
     CPPUNIT_TEST( testChanges ); \
     CPPUNIT_TEST( testImport ); \
-    CPPUNIT_TEST( testImportDelete );
+    CPPUNIT_TEST( testImportDelete ); \
+    CPPUNIT_TEST( testManyChanges );
 
 #define SYNC_TESTS \
     CPPUNIT_TEST( testRefreshSync ); \
@@ -1027,6 +1036,46 @@ template<class T> void TestEvolution<T>::testImportDelete()
     testLocalDeleteAll();
 }
 
+template<class T> void TestEvolution<T>::testManyChanges()
+{
+    deleteAll(0);
+
+    T copy(
+        string( "dummy" ),
+        m_changeIds[1],
+        m_databases[0]);
+
+    // check that everything is empty, also resets change counter
+    EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
+    EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
+    CPPUNIT_ASSERT( !countItems( copy ) );
+    EVOLUTION_ASSERT_NO_THROW( copy, copy.close() );
+
+    // now insert plenty of items
+    int numItems = insertManyItems(0);
+
+    // check that exactly this number of items is listed as new
+    EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
+    EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
+    CPPUNIT_ASSERT( numItems == countItems( copy ) );
+    CPPUNIT_ASSERT( numItems == countNewItems( copy ) );
+    CPPUNIT_ASSERT( !countUpdatedItems( copy ) );
+    CPPUNIT_ASSERT( !countDeletedItems( copy ) );
+    EVOLUTION_ASSERT_NO_THROW( copy, copy.close() );
+
+    // delete all items
+    deleteAll(0);
+
+    // verify again
+    EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
+    EVOLUTION_ASSERT( copy, copy.beginSync() == 0 );
+    CPPUNIT_ASSERT( !countItems( copy ) );
+    CPPUNIT_ASSERT( !countNewItems( copy ) );
+    CPPUNIT_ASSERT( !countUpdatedItems( copy ) );
+    CPPUNIT_ASSERT( numItems == countDeletedItems( copy ) );
+    EVOLUTION_ASSERT_NO_THROW( copy, copy.close() );
+}
+
 template<class T> void TestEvolution<T>::doSync(const string &logfilesuffix, int config, SyncMode syncMode)
 {
     int res = 0;
@@ -1420,19 +1469,16 @@ template<class T> void TestEvolution<T>::testTwinning()
     compareDatabases("", NULL, 1);
 }
 
-template<class T> void TestEvolution<T>::testManyItems()
+template<class T> int TestEvolution<T>::insertManyItems(int config)
 {
-    // clean server and first test database
-    deleteAll("testItems", 0);
-
-    // import artificial data
     T source(
         string( "dummy" ),
         m_changeIds[0],
-        m_databases[0]);
+        m_databases[config]);
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( !countItems( source ) );
+
     const char *setting = getenv("TEST_EVOLUTION_NUM_ITEMS");
     int numItems = setting ? atoi(setting) : 200;
     for (int item = 1; item <= numItems; item++) {
@@ -1457,6 +1503,17 @@ template<class T> void TestEvolution<T>::testManyItems()
         }
         importItem(source, data);
     }
+
+    return numItems;
+}
+
+template<class T> void TestEvolution<T>::testManyItems()
+{
+    // clean server and first test database
+    deleteAll("testItems", 0);
+
+    // import artificial data
+    insertManyItems(0);
     
     // send data to server
     doSync( "send.client.log", 0, SYNC_TWO_WAY );

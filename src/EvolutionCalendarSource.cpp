@@ -135,37 +135,49 @@ void EvolutionCalendarSource::beginSyncThrow(bool needAll,
     }
 
     if (needPartial) {
-        GList *nextItem;
+        bool foundChanges;
 
-        if (!e_cal_get_changes(m_calendar, (char *)m_changeId.c_str(), &nextItem, &gerror)) {
-            throwError( "reading changes", gerror );
-        }
-        while (nextItem) {
-            ECalChange *ecc = (ECalChange *)nextItem->data;
+        // This is repeated in a loop because it was observed that in
+        // Evolution 2.0.6 the deleted items were not all reported in one
+        // chunk. Instead each invocation of e_cal_get_changes() reported
+        // additional changes.
+        do {
+            GList *nextItem;
 
-            if (ecc->comp) {
-                const char *uid = NULL;
+            foundChanges = false;
+            if (!e_cal_get_changes(m_calendar, (char *)m_changeId.c_str(), &nextItem, &gerror)) {
+                throwError( "reading changes", gerror );
+            }
+            while (nextItem) {
+                ECalChange *ecc = (ECalChange *)nextItem->data;
 
-                // does not have a return code which could be checked
-                e_cal_component_get_uid(ecc->comp, &uid);
+                if (ecc->comp) {
+                    const char *uid = NULL;
 
-                if (uid) {
-                    switch (ecc->type) {
-                     case E_CAL_CHANGE_ADDED:
-                        m_newItems.addItem(uid);
-                        break;
-                     case E_CAL_CHANGE_MODIFIED:
-                        m_updatedItems.addItem(uid);
-                        break;
-                     case E_CAL_CHANGE_DELETED:
-                        m_deletedItems.addItem(uid);
-                        break;
+                    // does not have a return code which could be checked
+                    e_cal_component_get_uid(ecc->comp, &uid);
+
+                    if (uid) {
+                        switch (ecc->type) {
+                         case E_CAL_CHANGE_ADDED:
+                            m_newItems.addItem(uid);
+                            foundChanges = true;
+                            break;
+                         case E_CAL_CHANGE_MODIFIED:
+                            m_updatedItems.addItem(uid);
+                            foundChanges = true;
+                            break;
+                         case E_CAL_CHANGE_DELETED:
+                            m_deletedItems.addItem(uid);
+                            foundChanges = true;
+                            break;
+                        }
                     }
                 }
-            }
 
-            nextItem = nextItem->next;
-        }
+                nextItem = nextItem->next;
+            }
+        } while(foundChanges);
     }
 }
 
