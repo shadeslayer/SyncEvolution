@@ -31,6 +31,33 @@ END:VCARD
 
 BEGIN:VCARD
 VERSION:3.0
+NICKNAME:user13
+NOTE:a colon is not a special character so here it comes : and not quoting necessary
+FN:colon
+N:colon;unquoted;;;
+X-EVOLUTION-FILE-AS:colon\, unquoted
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+NICKNAME:user14
+NOTE:here are some quotation marks: single ' double " back ` - none of them is special
+FN:quotation marks
+N:marks;quotation;;;
+X-EVOLUTION-FILE-AS:marks\, quotation
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+NICKNAME:user15
+NOTE:Spouse's Name: foobar
+FN:spouse name
+N:name;spouse;;;
+X-EVOLUTION-FILE-AS:spouse\, name
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
 NICKNAME:user9
 NOTE;CHARSET="UTF-8":Tests charset specification with quotation marks.
 FN:charset
