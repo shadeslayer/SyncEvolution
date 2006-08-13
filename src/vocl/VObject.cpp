@@ -466,7 +466,9 @@ void VObject::fromNativeEncoding()
             // we have used quoted-printable encoding
             vprop->addParameter(TEXT("ENCODING"), TEXT("QUOTED-PRINTABLE"));
         }
-        if (utf8 && !vprop->getParameterValue("CHARSET")) {
+        if (utf8 &&
+            !is_30 &&
+            !vprop->getParameterValue("CHARSET")) {
             vprop->addParameter("CHARSET", "UTF-8");
         }
     }
