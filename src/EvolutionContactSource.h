@@ -80,12 +80,20 @@ class EvolutionContactSource : public EvolutionSyncSource
                            const char*& recvVersion,
                            const char*& sendType,
                            const char*& sendVersion) {
-        // these might be the preferred types, but in the end
-        // the configured type is used
-        recvType = "text/vcard";
-        recvVersion = "3.0";
-        sendType = "text/vcard";
-        sendVersion = "3.0";
+        // use the configured type also as the preferred one,
+        // some servers get confused when sending something different
+        // than announced here
+        if (m_vcardFormat == EVC_FORMAT_VCARD_21) {
+            recvType = "text/x-vcard";
+            recvVersion = "2.1";
+            sendType = "text/x-vcard";
+            sendVersion = "2.1";
+        } else {
+            recvType = "text/vcard";
+            recvVersion = "3.0";
+            sendType = "text/vcard";
+            sendVersion = "3.0";
+        }
     }
     const char **getSendTypes() {
         static const char *types[] = { "text/vcard", "3.0",
