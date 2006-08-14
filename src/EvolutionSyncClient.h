@@ -22,6 +22,8 @@
 #include <config.h>
 #include <common/client/Sync4jClient.h>
 
+#include "EvolutionSmartPtr.h"
+
 #include <string>
 #include <set>
 using namespace std;
@@ -43,10 +45,12 @@ class EvolutionSyncClient : private SyncClient {
     string m_url;
 
     /*
-     * variable shared by sync() and prepareSync():
-     * stores active sync sources and handles reporting
+     * Variable shared by sync() and prepareSync():
+     * stores active sync sources and handles reporting.
+     * Not a smart pointer to avoid the need to make SourceList
+     * public.
      */
-    SourceList *m_sourceList;
+    eptr<SourceList> m_sourceList;
 
   public:
     /**

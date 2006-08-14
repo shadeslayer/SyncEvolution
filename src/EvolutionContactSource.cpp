@@ -96,7 +96,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
     GError *gerror = NULL;
 
     if (deleteLocal) {
-        gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+        eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
         GList *nextItem;
         if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
             throwError( "reading all items", gerror );
@@ -113,7 +113,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
     }
 
     if (needAll) {
-        gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+        eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
         GList *nextItem;
         if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
             throwError( "reading all items", gerror );
@@ -178,14 +178,14 @@ void EvolutionContactSource::close()
 
 void EvolutionContactSource::exportData(ostream &out)
 {
-    gptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+    eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
     GList *nextItem;
     GError *gerror = NULL;
     if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
         throwError( "reading all items", gerror );
     }
     while (nextItem) {
-        gptr<char> vcardstr(e_vcard_to_string(&E_CONTACT(nextItem->data)->parent,
+        eptr<char> vcardstr(e_vcard_to_string(&E_CONTACT(nextItem->data)->parent,
                                               EVC_FORMAT_VCARD_30));
 
         out << (const char *)vcardstr << "\r\n\r\n";
@@ -206,8 +206,8 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
         throwError( string( "reading contact" ) + uid,
                     gerror );
     }
-    gptr<EContact, GObject> contactptr( contact, "contact" );
-    gptr<char> vcardstr(e_vcard_to_string( &contactptr->parent,
+    eptr<EContact, GObject> contactptr( contact, "contact" );
+    eptr<char> vcardstr(e_vcard_to_string( &contactptr->parent,
                                            EVC_FORMAT_VCARD_30 ) );
     if (!vcardstr) {
         throwError( string( "contact from Evolution" ) + uid, NULL );
@@ -421,7 +421,7 @@ int EvolutionContactSource::addItemThrow(SyncItem& item)
     } else {
         data = (const char *)item.getData();
     }
-    gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
+    eptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
     if( contact ) {
         GError *gerror = NULL;
         e_contact_set(contact, E_CONTACT_UID, NULL);
@@ -441,7 +441,7 @@ int EvolutionContactSource::updateItemThrow(SyncItem& item)
 {
     int status = STC_OK;
     string data = preparseVCard(item);
-    gptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
+    eptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
     if( contact ) {
         GError *gerror = NULL;
 

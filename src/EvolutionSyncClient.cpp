@@ -44,8 +44,7 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server, SyncMode syncMode
     m_sources(sources),
     m_syncMode(syncMode),
     m_doLogging(doLogging),
-    m_configPath(string("evolution/") + server),
-    m_sourceList(NULL)
+    m_configPath(string("evolution/") + server)
 {
     setDMConfig(m_configPath.c_str());
 }
@@ -371,6 +370,11 @@ public:
     }
 };
 
+void unref(SourceList *sourceList)
+{
+    delete sourceList;
+}
+
 int EvolutionSyncClient::sync()
 {
     // this will trigger the prepareSync(), createSyncSource(), beginSource() callbacks
@@ -408,7 +412,6 @@ int EvolutionSyncClient::sync()
 
     // all went well: print final report before cleaning up
     m_sourceList->syncDone(true);
-    delete m_sourceList;
     m_sourceList = NULL;
 }
 
@@ -418,6 +421,12 @@ int EvolutionSyncClient::prepareSync(const AccessConfig &config,
     try {
         // remember for use by sync sources
         m_url = config.getSyncURL() ? config.getSyncURL() : "";
+
+        if (!m_url.size()) {
+            LOG.error("no syncURL configured - perhaps the server name \"%s\" is wrong?",
+                      m_server.c_str());
+            throw runtime_error("cannot proceed without configuration");
+        }
 
         // redirect logging as soon as possible
         m_sourceList = new SourceList(m_server, m_doLogging);

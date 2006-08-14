@@ -101,7 +101,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource
 
   private:
     /** valid after open(): the calendar that this source references */
-    gptr<ECal, GObject> m_calendar;
+    eptr<ECal, GObject> m_calendar;
 
     ECalSourceType m_type;         /**< use events or todos? */
 

@@ -121,7 +121,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     
   private:
     /** valid after open(): the address book that this source references */
-    gptr<EBook, GObject> m_addressbook;
+    eptr<EBook, GObject> m_addressbook;
 
     /** the format of vcards that new items are expected to have */
     const EVCardFormat m_vcardFormat;

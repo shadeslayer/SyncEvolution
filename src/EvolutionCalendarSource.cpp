@@ -272,11 +272,11 @@ int EvolutionCalendarSource::addItemThrow(SyncItem& item)
 int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
 {
     bool fallback = false;
-    gptr<char> data;
+    eptr<char> data;
     data.set((char *)malloc(item.getDataSize() + 1), "copy of item");
     memcpy(data, item.getData(), item.getDataSize());
     data[item.getDataSize()] = 0;
-    gptr<icalcomponent> icomp(icalcomponent_new_from_string(data));
+    eptr<icalcomponent> icomp(icalcomponent_new_from_string(data));
 
     if( !icomp ) {
         throwError( string( "parsing ical" ) + (char *)data,
@@ -292,7 +292,7 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
     for (icalcomponent *tcomp = icalcomponent_get_first_component(icomp, ICAL_VTIMEZONE_COMPONENT);
          tcomp;
          tcomp = icalcomponent_get_next_component(icomp, ICAL_VTIMEZONE_COMPONENT)) {
-        gptr<icaltimezone> zone(icaltimezone_new(), "icaltimezone");
+        eptr<icaltimezone> zone(icaltimezone_new(), "icaltimezone");
         icaltimezone_set_component(zone, tcomp);
 
         GError *gerror = NULL;
@@ -396,8 +396,8 @@ icalcomponent *EvolutionCalendarSource::retrieveItem(const string &uid)
 
 string EvolutionCalendarSource::retrieveItemAsString(const string &uid)
 {
-    gptr<icalcomponent> comp(retrieveItem(uid));
-    gptr<char> icalstr;
+    eptr<icalcomponent> comp(retrieveItem(uid));
+    eptr<char> icalstr;
 
     icalstr = e_cal_get_component_as_string(m_calendar, comp);
     return string(icalstr);

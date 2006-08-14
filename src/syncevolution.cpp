@@ -103,13 +103,13 @@ int main( int argc, char **argv )
             for (int source = 2; source < argc; source++ ) {
                 sources.insert(argv[source]);
             }
-            
+
             EvolutionSyncClient client(argv[1], SYNC_NONE, true, sources);
             client.sync();
         }
         return 0;
     } catch ( const std::exception &ex ) {
-        LOG.error( ex.what() );
+        LOG.error( "%s", ex.what() );
     } catch (...) {
         LOG.error( "unknown error" );
     }

@@ -29,6 +29,22 @@
 #endif
 
 #include <stdexcept>
+#include <string>
+
+void inline unref( char *pointer ) { free( pointer ); }
+void inline unref( GObject *pointer ) { g_object_unref( pointer ); }
+#ifdef ENABLE_EBOOK
+void inline unref( EBookQuery *pointer ) { e_book_query_unref( pointer ); }
+#endif
+#ifdef ENABLE_ECAL
+void inline unref( icalcomponent *pointer ) { icalcomponent_free( pointer ); }
+void inline unref( icaltimezone *pointer ) { icaltimezone_free( pointer, 1 ); }
+#endif
+#if 0
+void inline unref( EBook *pointer ) { g_object_unref( pointer ); }
+void inline unref( EContact *pointer ) { g_object_unref( pointer ); }
+#endif
+template <class T> void unref(T *pointer) { delete pointer; }
 
 /**
  * a smart pointer implementation for objects for which
@@ -36,26 +52,12 @@
  * trying to store a NULL pointer raises an exception,
  * unreferencing valid objects is done automatically
  */
-template<class T, class base = T> class gptr {
+template<class T, class base = T> class eptr {
     /** do not allow copy construction */
-    gptr( const gptr &other) {};
+    eptr( const eptr &other) {};
 
     /** do not allow copying */
-    void operator = ( const gptr &other ) {}
-
-    void unref( char *pointer ) { free( pointer ); }
-    void unref( GObject *pointer ) { g_object_unref( pointer ); }
-#ifdef ENABLE_EBOOK
-    void unref( EBookQuery *pointer ) { e_book_query_unref( pointer ); }
-#endif
-#ifdef ENABLE_ECAL
-    void unref( icalcomponent *pointer ) { icalcomponent_free( pointer ); }
-    void unref( icaltimezone *pointer ) { icaltimezone_free( pointer, 1 ); }
-#endif
-#if 0
-    void unref( EBook *pointer ) { g_object_unref( pointer ); }
-    void unref( EContact *pointer ) { g_object_unref( pointer ); }
-#endif
+    void operator = ( const eptr &other ) {}
 
  protected:
     T *m_pointer;
@@ -65,14 +67,14 @@ template<class T, class base = T> class gptr {
      * create a smart pointer that owns the given object;
      * passing a NULL pointer and a name for the object raises an error
      */
-    gptr(T *pointer = NULL, const char *objectName = NULL) :
+    eptr(T *pointer = NULL, const char *objectName = NULL) :
         m_pointer( pointer )
     {
         if (!pointer && objectName ) {
-            throw std::runtime_error(string("Error allocating ") + objectName);
+            throw std::runtime_error(std::string("Error allocating ") + objectName);
         }
     };
-    ~gptr()
+    ~eptr()
     {
         set( NULL );
     }
@@ -88,12 +90,12 @@ template<class T, class base = T> class gptr {
             unref( (base *)m_pointer );
         }
         if (!pointer && objectName) {
-            throw std::runtime_error(string("Error allocating ") + objectName);
+            throw std::runtime_error(std::string("Error allocating ") + objectName);
         }
         m_pointer = pointer;
     }
 
-    gptr<T, base> &operator = ( T *pointer ) { set( pointer ); return *this; }
+    eptr<T, base> &operator = ( T *pointer ) { set( pointer ); return *this; }
     T *operator-> () { return m_pointer; }
     T &operator* ()  { return *m_pointer; }
     operator T * () { return m_pointer; }
@@ -102,14 +104,14 @@ template<class T, class base = T> class gptr {
 };
 
 /**
- * a gptr for C++ arrays: everything is unref'ed via delete []
+ * a eptr for C++ arrays: everything is unref'ed via delete []
  */
-template <class T> class arrayptr : public gptr<T> {
+template <class T> class arrayptr : public eptr<T> {
     void unref( T *pointer) { delete [] pointer; }
     
   public:
     arrayptr(T *pointer = NULL, const char *objectName = NULL) :
-        gptr<T>(pointer, objectName)
+        eptr<T>(pointer, objectName)
     {}
     ~arrayptr()
     {
@@ -127,7 +129,7 @@ template <class T> class arrayptr : public gptr<T> {
             unref(this->m_pointer);
         }
         if (!pointer && objectName) {
-            throw std::runtime_error(string("Error allocating ") + objectName);
+            throw std::runtime_error(std::string("Error allocating ") + objectName);
         }
         this->m_pointer = pointer;
     }
