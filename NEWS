@@ -1,6 +1,8 @@
 SyncEvolution 0.4, xxxxxxx
 --------------------------
-
+* fix: in vCard 2.1 7-bit is the default encoding, so 8-bit
+  UTF-8 characters are now avoided with quoted-printable encoding
+  (illegal encoding had not caused problems though)
 * fix for 0.4 pre 1: sending CHARSET is not allowed (and not
   needed) for vCard 3.0, so it was removed again (did not harm
   either)

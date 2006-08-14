@@ -431,6 +431,11 @@ void VObject::fromNativeEncoding()
 
                 if (currIsUTF8) {
                     utf8 = true;
+                    if (!is_30 && !doquoted) {
+                        // vCard 2.1 defaults to 7-bit; instead of
+                        // overriding that we fall back to quoted-printable
+                        doquoted = true;
+                    }
                 }
 
                 if (doquoted &&
