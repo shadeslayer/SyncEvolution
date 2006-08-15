@@ -94,7 +94,7 @@ sub Normalize {
       # cannot distinguish EMAIL types
       s/^EMAIL;TYPE=\w*/EMAIL/mg;
       # only preserves ORG "Company", but loses "Department" and "Office"
-      s/^ORG:([^;]+)(;.*)/ORG:$1/mg;
+      s/^ORG:([^;:]+)(;[^\n]*)/ORG:$1/mg;
       # replaces certain TZIDs with more up-to-date ones
       s;TZID(=|:)/(scheduleworld.com|softwarestudio.org)/Olson_\d+_\d+/;TZID$1/foo.com/Olson_20000101_1/;mg;
     }
