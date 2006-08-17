@@ -50,6 +50,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <list>
 using namespace std;
 
 #include "Test.h"

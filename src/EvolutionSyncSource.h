@@ -21,7 +21,7 @@
 
 #include <string>
 #include <vector>
-#include <list>
+#include <set>
 #include <ostream>
 using namespace std;
 
@@ -262,7 +262,7 @@ class EvolutionSyncSource : public SyncSource
     const string m_changeId;
     const string m_id;
 
-    class itemList : public list<string> {
+    class itemList : public set<string> {
         const_iterator m_it;
         EvolutionSyncSource &m_source;
         const string m_type;
@@ -310,10 +310,17 @@ class EvolutionSyncSource : public SyncSource
             }
         }
 
-        /** add to list, with logging */
-        void addItem(const string &uid) {
-            m_source.logItem(uid, m_type);
-            push_back(uid);
+        /**
+         * add to list, with logging
+         *
+         * @return true if the item had not been added before
+         */
+        bool addItem(const string &uid) {
+            pair<iterator, bool> res = insert(uid);
+            if (res.second) {
+                m_source.logItem(uid, m_type);
+            }
+            return res.second;
         }
     };
     

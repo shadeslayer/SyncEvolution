@@ -174,16 +174,19 @@ void EvolutionCalendarSource::beginSyncThrow(bool needAll,
                     if (uid) {
                         switch (ecc->type) {
                          case E_CAL_CHANGE_ADDED:
-                            m_newItems.addItem(uid);
-                            foundChanges = true;
+                            if (m_newItems.addItem(uid)) {
+                                foundChanges = true;
+                            }
                             break;
                          case E_CAL_CHANGE_MODIFIED:
-                            m_updatedItems.addItem(uid);
-                            foundChanges = true;
+                            if (m_updatedItems.addItem(uid)) {
+                                foundChanges = true;
+                            }
                             break;
                          case E_CAL_CHANGE_DELETED:
-                            m_deletedItems.addItem(uid);
-                            foundChanges = true;
+                            if (m_deletedItems.addItem(uid)) {
+                                foundChanges = true;
+                            }
                             break;
                         }
                     }
