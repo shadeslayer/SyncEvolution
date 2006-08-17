@@ -1,5 +1,6 @@
 SyncEvolution 0.4, xxxxxxx
 --------------------------
+* implemented authentication for Evolution databases
 * synccompare was removing too many parts of vCards with 
   single-value ORG properties
 * improved error reporting when selected server is not configured

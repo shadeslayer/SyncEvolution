@@ -92,6 +92,23 @@ class EvolutionSyncSource : public SyncSource
     virtual sources getSyncBackends() = 0;
 
     /**
+     * Set credentials to be used during open.
+     */
+    virtual void setAuthentication(const string &user, const string &passwd) {
+        m_user = user;
+        m_passwd = passwd;
+    }
+          
+
+    /**
+     * Get credentials.
+     */
+    virtual void getAuthentication(string &user, string &passwd) {
+        user = m_user;
+        passwd = m_passwd;
+    }
+    
+    /**
      * Actually opens the data source specified in the constructor,
      * will throw the normal exceptions if that fails. Should
      * not modify the state of the sync source: that can be deferred
@@ -325,6 +342,9 @@ class EvolutionSyncSource : public SyncSource
                     int (EvolutionSyncSource::*func)(SyncItem& item),
                     SyncItem& item,
                     bool needData);
+
+    /** user name/password set for this source, empty if none */
+    string m_user, m_passwd;
 };
 
 #endif // INCL_EVOLUTIONSYNCSOURCE

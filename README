@@ -202,9 +202,10 @@ with the "localhost_1/2" configs and using it for testing is explained
 in more detail in "Exchanging Data" below.
 
 If the Evolution data source requires authentication, the
-"evolutionuser" and "evolutionpassword" are used as credentials.  In
-this case the directory that contains the source's config.txt should
-only be accessible by the user. [NOT IMPLEMENTED YET]
+"evolutionuser" and "evolutionpassword" are used as credentials.
+In this case the directory that contains the source's config.txt should
+only be accessible by the user. Usually these fields can be left
+empty.
 
 
 Automatic Backups and Logging

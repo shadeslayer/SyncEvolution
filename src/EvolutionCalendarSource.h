@@ -131,6 +131,18 @@ class EvolutionCalendarSource : public EvolutionSyncSource
 
     /** returns the uid of the given component */
     string getCompUID(icalcomponent *icomp);
+
+    /** ECalAuthFunc which calls the authenticate() methods */
+    static char *eCalAuthFunc(ECal *ecal,
+                              const char *prompt,
+                              const char *key,
+                              gpointer user_data) {
+        return ((EvolutionCalendarSource *)user_data)->authenticate(prompt, key);
+    }
+
+    /** actual implementation of ECalAuthFunc */
+    char *authenticate(const char *prompt,
+                       const char *key);
 };
 
 #endif // ENABLE_ECAL

@@ -83,9 +83,41 @@ void EvolutionContactSource::open()
 
     GError *gerror = NULL;
     m_addressbook.set( e_book_new( source, &gerror ), "address book" );
-
+ 
     if (!e_book_open( m_addressbook, TRUE, &gerror) ) {
         throwError( "opening address book", gerror );
+    }
+
+    // users are not expected to configure an authentication method,
+    // so pick one automatically if the user indicated that he wants authentication
+    // by setting user or password
+    string user, passwd;
+    getAuthentication(user, passwd);
+    if (passwd.size() || passwd.size()) {
+        GList *authmethod;
+        if (!e_book_get_supported_auth_methods(m_addressbook, &authmethod, &gerror)) {
+            throwError("getting authentication methods", gerror );
+        }
+        while (authmethod) {
+            const char *method = (const char *)authmethod->data;
+            LOG.debug("%s: trying authentication method \"%s\", user %s, password %s",
+                      getName(), method,
+                      user.size() ? "configured" : "not configured",
+                      passwd.size() ? "configured" : "not configured");
+            if (e_book_authenticate_user(m_addressbook,
+                                         user.c_str(),
+                                         passwd.c_str(),
+                                         method,
+                                         &gerror)) {
+                LOG.debug("%s: authentication succeeded", getName());
+                break;
+            } else {
+                LOG.error("%s: authentication failed: %s",
+                          getName(), gerror->message);
+                g_clear_error(&gerror);
+            }
+        }
+        authmethod = authmethod->next;
     }
 }
 

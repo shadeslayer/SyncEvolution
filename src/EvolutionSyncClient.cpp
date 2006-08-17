@@ -492,6 +492,9 @@ int EvolutionSyncClient::createSyncSource(const char *name,
                 // disabled source selected via source name
                 syncSource->setPreferredSyncMode(overrideMode);
             }
+            const string user(EvolutionSyncSource::getPropertyValue(node, "evolutionuser")),
+                passwd(EvolutionSyncSource::getPropertyValue(node, "evolutionpassword"));
+            syncSource->setAuthentication(user, passwd);
 
             // also open it; failing now is still safe
             syncSource->open();

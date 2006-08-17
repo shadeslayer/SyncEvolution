@@ -71,6 +71,18 @@ EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
     return result;
 }
 
+char *EvolutionCalendarSource::authenticate(const char *prompt,
+                                            const char *key)
+{
+    string user, passwd;
+    getAuthentication(user, passwd);
+    
+    LOG.debug("%s: authentication requested, prompt \"%s\", key \"%s\" => %s",
+              getName(), prompt, key,
+              passwd.size() ? "returning configured password" : "no password configured");
+    return passwd.size() ? strdup(passwd.c_str()) : NULL;
+}
+
 void EvolutionCalendarSource::open()
 {
     ESourceList *sources;
@@ -87,6 +99,8 @@ void EvolutionCalendarSource::open()
 
     m_calendar.set(e_cal_new(source, m_type), "calendar");
 
+    e_cal_set_auth_func(m_calendar, eCalAuthFunc, this);
+    
     if (!e_cal_open(m_calendar, TRUE, &gerror)) {
         throwError( "opening calendar", gerror );
     }
