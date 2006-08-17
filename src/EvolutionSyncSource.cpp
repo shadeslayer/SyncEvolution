@@ -198,6 +198,7 @@ int EvolutionSyncSource::beginSync()
             break;
          case SYNC_REFRESH_FROM_CLIENT:
             needAll = true;
+            m_isModified = true;
             break;
          case SYNC_NONE:
             // special mode for testing: prepare both all and partial lists

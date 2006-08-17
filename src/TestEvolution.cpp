@@ -184,7 +184,7 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
     void import();
 
     /** performs one sync operation */
-    void doSync(const string &logfile, int config, SyncMode syncMode);
+    string doSync(const string &logfile, int config, SyncMode syncMode);
 
     /** deletes all items locally via T sync source */
     void deleteAll(int config);
@@ -319,6 +319,13 @@ public:
     void testDeleteAllRefresh();
     // test that a refresh sync of an empty server leads to an empty datatbase
     void testRefreshSemantic();
+    // tests the following sequence of events:
+    // - insert item
+    // - delete all items
+    // - insert one other item
+    // - refresh from client
+    // => no items should now be listed as new, updated or deleted for this client
+    void testRefreshStatus();
     // test that a two-way sync copies an item from one address book into the other
     void testCopy();
     // test that a two-way sync copies updates from database to the other
@@ -648,6 +655,7 @@ public:
     CPPUNIT_TEST( testDeleteAllSync ); \
     CPPUNIT_TEST( testDeleteAllRefresh ); \
     CPPUNIT_TEST( testRefreshSemantic ); \
+    CPPUNIT_TEST( testRefreshStatus ); \
     CPPUNIT_TEST( testCopy ); \
     CPPUNIT_TEST( testUpdate ); \
     CPPUNIT_TEST( testDelete ); \
@@ -1077,7 +1085,7 @@ template<class T> void TestEvolution<T>::testManyChanges()
     EVOLUTION_ASSERT_NO_THROW( copy, copy.close() );
 }
 
-template<class T> void TestEvolution<T>::doSync(const string &logfilesuffix, int config, SyncMode syncMode)
+template<class T> string TestEvolution<T>::doSync(const string &logfilesuffix, int config, SyncMode syncMode)
 {
     int res = 0;
 
@@ -1130,6 +1138,8 @@ template<class T> void TestEvolution<T>::doSync(const string &logfilesuffix, int
     }
 
     CPPUNIT_ASSERT( !res );
+
+    return logfile;
 }
 
 template<class T> void TestEvolution<T>::testRefreshSync()
@@ -1235,6 +1245,27 @@ template<class T> void TestEvolution<T>::testRefreshSemantic()
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
+}
+
+template<class T> void TestEvolution<T>::testRefreshStatus()
+{
+    insert();
+    deleteAll(0);
+    insert();
+    doSync(string("refresh-server.log"), 0, SYNC_REFRESH_FROM_CLIENT );
+    string logfile = doSync(string("two-way.log"), 0, SYNC_TWO_WAY );
+
+    // check that the two-way sync did not transfer any items
+    ifstream file(logfile.c_str());
+    while (file) {
+        string line;
+        getline(file, line);
+        if (line.find("INFO")) {
+            CPPUNIT_ASSERT( line.find(": new") == line.npos );
+            CPPUNIT_ASSERT( line.find(": updated") == line.npos );
+            CPPUNIT_ASSERT( line.find(": deleted") == line.npos );
+        }
+    }
 }
 
 template<class T> void TestEvolution<T>::doCopy( const string &prefix )

@@ -1,5 +1,8 @@
 SyncEvolution 0.4, xxxxxxx
 --------------------------
+* fixed a bug where after a refresh-from-client sync changes would
+  be sent to the server again during a two-way sync although the
+  server already had them
 * implemented authentication for Evolution databases
 * synccompare was removing too many parts of vCards with 
   single-value ORG properties
