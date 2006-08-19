@@ -95,12 +95,22 @@ fi
 
 export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:$prefix/lib/pkgconfig:/usr/local/lib/pkgconfig
 
+evomissing="No compatible evolution-data-server was found.
+
+Please install the development packages of Evolution and/or
+set the PKG_CONFIG_PATH variable so that it points towards
+the .pc files of libecal, libedata, evolution-data-server
+and libedataserver.
+
+You can check that these packages are available by running
+pkg-config --list-all."
+
 dnl check for Evolution
 PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_12], EDSFOUND=1, [EDSFOUND=0])
 if test "x${EDSFOUND}" = "x0"; then
 	PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_11], EDSFOUND=1, [EDSFOUND=0])
 	if test "x${EDSFOUND}" = "x0"; then
-		PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_10],,AC_MSG_ERROR(No compatible evolution-data-server was found))
+		PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_10],,AC_MSG_ERROR($evomissing))
 	fi
 fi
 AC_SUBST(EPACKAGE_CFLAGS)
