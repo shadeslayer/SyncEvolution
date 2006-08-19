@@ -106,6 +106,61 @@ void EvolutionCalendarSource::open()
     }
 }
 
+void EvolutionCalendarSource::getChanges()
+{
+    GError *gerror = NULL;
+    bool foundChanges;
+
+    m_newItems.clear();
+    m_updatedItems.clear();
+    m_deletedItems.clear();
+
+    // This is repeated in a loop because it was observed that in
+    // Evolution 2.0.6 the deleted items were not all reported in one
+    // chunk. Instead each invocation of e_cal_get_changes() reported
+    // additional changes.
+    do {
+        GList *nextItem;
+
+        foundChanges = false;
+        if (!e_cal_get_changes(m_calendar, (char *)m_changeId.c_str(), &nextItem, &gerror)) {
+            throwError( "reading changes", gerror );
+        }
+        while (nextItem) {
+            ECalChange *ecc = (ECalChange *)nextItem->data;
+
+            if (ecc->comp) {
+                const char *uid = NULL;
+
+                // does not have a return code which could be checked
+                e_cal_component_get_uid(ecc->comp, &uid);
+
+                if (uid) {
+                    switch (ecc->type) {
+                    case E_CAL_CHANGE_ADDED:
+                        if (m_newItems.addItem(uid)) {
+                            foundChanges = true;
+                        }
+                        break;
+                    case E_CAL_CHANGE_MODIFIED:
+                        if (m_updatedItems.addItem(uid)) {
+                            foundChanges = true;
+                        }
+                        break;
+                    case E_CAL_CHANGE_DELETED:
+                        if (m_deletedItems.addItem(uid)) {
+                            foundChanges = true;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            nextItem = nextItem->next;
+        }
+    } while(foundChanges);
+}
+
 void EvolutionCalendarSource::beginSyncThrow(bool needAll,
                                              bool needPartial,
                                              bool deleteLocal)
@@ -149,69 +204,14 @@ void EvolutionCalendarSource::beginSyncThrow(bool needAll,
     }
 
     if (needPartial) {
-        bool foundChanges;
-
-        // This is repeated in a loop because it was observed that in
-        // Evolution 2.0.6 the deleted items were not all reported in one
-        // chunk. Instead each invocation of e_cal_get_changes() reported
-        // additional changes.
-        do {
-            GList *nextItem;
-
-            foundChanges = false;
-            if (!e_cal_get_changes(m_calendar, (char *)m_changeId.c_str(), &nextItem, &gerror)) {
-                throwError( "reading changes", gerror );
-            }
-            while (nextItem) {
-                ECalChange *ecc = (ECalChange *)nextItem->data;
-
-                if (ecc->comp) {
-                    const char *uid = NULL;
-
-                    // does not have a return code which could be checked
-                    e_cal_component_get_uid(ecc->comp, &uid);
-
-                    if (uid) {
-                        switch (ecc->type) {
-                         case E_CAL_CHANGE_ADDED:
-                            if (m_newItems.addItem(uid)) {
-                                foundChanges = true;
-                            }
-                            break;
-                         case E_CAL_CHANGE_MODIFIED:
-                            if (m_updatedItems.addItem(uid)) {
-                                foundChanges = true;
-                            }
-                            break;
-                         case E_CAL_CHANGE_DELETED:
-                            if (m_deletedItems.addItem(uid)) {
-                                foundChanges = true;
-                            }
-                            break;
-                        }
-                    }
-                }
-
-                nextItem = nextItem->next;
-            }
-        } while(foundChanges);
+        getChanges();
     }
 }
 
 void EvolutionCalendarSource::endSyncThrow()
 {
     if (m_isModified) {
-        GError *gerror = NULL;
-        GList *nextItem;
-        
-        // Move change_id forward so that our own changes are not listed the next time.
-        // Due to some bug in Evolution 2.0.4 (?) this might have to be repeated several
-        // times until no changes are listed anymore.
-        do {
-            if (!e_cal_get_changes(m_calendar, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
-                throwError( "reading changes", gerror );
-            }
-        } while(nextItem);
+        getChanges();
     }
     resetItems();
     m_isModified = false;

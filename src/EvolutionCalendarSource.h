@@ -143,6 +143,9 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     /** actual implementation of ECalAuthFunc */
     char *authenticate(const char *prompt,
                        const char *key);
+
+    /** help function which resets the lists of added/updated/deleted items and fills them again */
+    void getChanges();
 };
 
 #endif // ENABLE_ECAL
