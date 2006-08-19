@@ -465,14 +465,14 @@ C++ client library has problems with non-Funambol servers. Hopefully
 this will be addressed shortly.
 
 The full list and up-to-date status of known problems is maintained at:
-   http://ohly.home.pages.de/projects/SyncML/KnownIssues.html
+   http://www.estamos.de/projects/SyncML/KnownIssues.html
 
 
 Support
 -------
 
 The home page for SyncEvolution is located at:
-   http://ohly.home.pages.de/projects/SyncML/
+   http://www.estamos.de/projects/SyncML/
 
 If you would like to ask questions, please use the Funambol Sync4j
 users mailing list. You can subscribe at
@@ -555,4 +555,4 @@ Author
 
 Patrick Ohly
 patrick.ohly@gmx.de
-http://ohly.home.pages.de/
+http://www.estamos.de/
