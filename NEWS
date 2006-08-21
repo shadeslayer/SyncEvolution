@@ -1,5 +1,9 @@
-SyncEvolution 0.4, xxxxxxx
---------------------------
+SyncEvolution 0.4 pre2, 21.08.2006
+----------------------------------
+* C++ client library revision "syncevolution-0-4-pre2":
+  most patches were merged into CVS head, but .patches/devinfo.patch
+  still needs to be applied manually when checking out from the
+  Funambol CVS instead of using the bundled version
 * fixed a bug where after a refresh-from-client sync changes would
   be sent to the server again during a two-way sync although the
   server already had them
@@ -7,9 +11,9 @@ SyncEvolution 0.4, xxxxxxx
 * synccompare was removing too many parts of vCards with 
   single-value ORG properties
 * improved error reporting when selected server is not configured
-* fix: in vCard 2.1 7-bit is the default encoding, so 8-bit
-  UTF-8 characters are now avoided with quoted-printable encoding
-  (illegal encoding had not caused problems though)
+* use 7-bit quoted-printable encoding with explicit UTF-8 charset for
+  vCard 2.1 to avoid any potential confusion about the content; not
+  really necessary because SyncML specifies 8-bit UTF-8 as the default
 * fix for 0.4 pre 1: sending CHARSET is not allowed (and not
   needed) for vCard 3.0, so it was removed again (did not harm
   either)
