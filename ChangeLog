@@ -1,3 +1,43 @@
+2006-08-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README: new server is www.estamos.de
+
+	* configure.in:
+	better error message when Evolution development files are missing
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
+	moved reading of changes into helper function so that it can be used in the pre- and post-processing
+
+2006-08-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* NEWS, src/EvolutionSyncSource.cpp, src/TestEvolution.cpp:
+	ensure that after refresh-from-client items are not sent again
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp:
+	changed list into a set to be more resilient against getting UIDs multiple times
+
+	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.h, NEWS, README, src/EvolutionCalendarSource.cpp:
+	implemented Evolution authentication
+
+2006-08-15  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/normalize_vcard.pl, NEWS:
+	normalizing ORG must not extend into other properties
+
+2006-08-14  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/syncevolution.cpp, NEWS:
+	- rename qptr to eptr to avoid name clash with sstring
+	- moved unref() into global name space so that more unref() functions
+	  can be added (otherwise local methods shadow the global functions)
+	- use eptr for SourceList (wasn't destructed in case of error otherwise and
+	  logging in 0.4 pre continued to go to file)
+	- check for server configuration and abort in prepare if none given with
+	  a suitable error message
+
+	* NEWS, src/vocl/VObject.cpp:
+	avoid CHARSET=UTF-8 without quoted-printable encoding
+
 2006-08-13  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/testVCard.vcf: added some more test cases for special characters
