@@ -43,10 +43,12 @@ def copy(f, t):
 class Action:
     """Base class for all actions to be performed."""
 
-    DONE = 0
-    WARNINGS = 1
-    FAILED = 2
-    TODO = 3
+    DONE = "0 DONE"
+    WARNINGS = "1 WARNINGS"
+    FAILED = "2 FAILED"
+    TODO = "3 TODO"
+    SKIPPED = "4 SKIPPED"
+    COMPLETED = (DONE, WARNINGS)
 
     def __init__(self, name):
         self.name = name
@@ -81,13 +83,16 @@ class Action:
                 os.dup2(fd, 2)
                 sys.stdout = os.fdopen(fd, "w")
                 sys.stderr = sys.stdout
-            self.status = self.execute()
+            print "=== starting %s ===" % (self.name)
+            self.execute()
+            self.status = Action.DONE
             self.summary = "okay"
         except Exception, inst:
             traceback.print_exc()
             self.status = Action.FAILED
             self.summary = str(inst)
 
+        print "\n=== %s: %s ===" % (self.name, self.status)
         sys.stdout.flush()
         os.chdir(cwd)
         if logs:
@@ -104,11 +109,11 @@ class Action:
 class Context:
     """Provides services required by actions and handles running them."""
 
-    def __init__(self, tmpdir, resultdir, workdir, mailtitle, sender, recipients, enabled, nologs):
+    def __init__(self, tmpdir, resultdir, workdir, mailtitle, sender, recipients, enabled, skip, nologs):
         # preserve normal stdout because stdout/stderr will be redirected
         self.out = os.fdopen(os.dup(1))
         self.todo = []
-        self.done = {}
+        self.actions = {}
         self.tmpdir = abspath(tmpdir)
         self.resultdir = abspath(resultdir)
         self.workdir = abspath(workdir)
@@ -117,18 +122,21 @@ class Context:
         self.sender = sender
         self.recipients = recipients
         self.enabled = enabled
+        self.skip = skip
         self.nologs = nologs
 
     def runCommand(self, cmd):
         """Log and run the given command, throwing an exception if it fails."""
         print "%s: %s" % (os.getcwd(), cmd)
         sys.stdout.flush()
-        if os.system(cmd) != 0:
-            raise Exception(cmd + " failed")
+        result = os.system(cmd)
+        if result != 0:
+            raise Exception("%s: failed (return code %d)" % (cmd, result))
 
     def add(self, action):
         """Add an action for later execution. Order is important, fifo..."""
         self.todo.append(action)
+        self.actions[action.name] = action
 
     def required(self, actionname):
         """Returns true if the action is required by one which is enabled."""
@@ -146,30 +154,41 @@ class Context:
 
         while len(self.todo) > 0:
             try:
-                # get action, check whether it is to be executed
+                # get action
                 action = self.todo.pop(0)
+
+                # check whether it actually needs to be executed
                 if self.enabled and \
                        not action.name in self.enabled and \
                        not self.required(action.name):
-                    continue
+                    # disabled
+                    action.status = Action.SKIPPED
+                    self.summary.append("%s skipped: disabled in configuration" % (action.name))
+                elif action.name in self.skip:
+                    # assume that it was done earlier
+                    action.status = Action.SKIPPED
+                    self.summary.append("%s assumed to be done: requested by configuration" % (action.name))
+                else:
+                    # check dependencies
+                    for depend in action.dependencies:
+                        if not self.actions[depend].status in Action.COMPLETED:
+                            action.status = Action.SKIPPED
+                            self.summary.append("%s skipped: %s has not been executed" % (action.name, depend))
+                            break
 
-                # check dependencies
-                for depend in action.dependencies:
-                    if not self.done.has_key(depend):
-                        self.summary.append("%s skipped: %s has not been executed successfully" % (action.name, depend))
-                        continue
+                if action.status == Action.SKIPPED:
+                    continue
 
                 # execute it
                 action.tryexecution(not self.nologs)
                 if action.status > status:
                     status = action.status
                 if action.status == Action.FAILED:
-                    raise Exception(action.summary)
-                if action.status == Action.WARNINGS:
+                    self.summary.append("%s: %s" % (action.name, action.summary))
+                elif action.status == Action.WARNINGS:
                     self.summary.append("%s done, but check the warnings" % action.name)
                 else:
                     self.summary.append("%s successful" % action.name)
-                self.done[action.name] = action
             except Exception, inst:
                 traceback.print_exc()
                 self.summary.append("%s failed: %s" % (action.name, inst))
@@ -193,7 +212,10 @@ class Context:
         else:
             print "\n".join(self.summary), "\n"
 
-        sys.exit(status)
+        if status in Action.COMPLETED:
+            sys.exit(0)
+        else:
+            sys.exit(1)
 
 # must be set before instantiating some of the following classes
 context = None
@@ -201,12 +223,13 @@ context = None
 class CVSCheckout(Action):
     """Does a CVS checkout (if directory does not exist yet) or an update (if it does)."""
     
-    def __init__(self, name, workdir, cvsroot, module, revision):
+    def __init__(self, name, workdir, runner, cvsroot, module, revision):
         """workdir defines the directory to do the checkout in,
         cvsroot the server, module the path to the files,
         revision the tag to checkout"""
         Action.__init__(self,name)
         self.workdir = workdir
+        self.runner = runner
         self.cvsroot = cvsroot
         self.module = module
         self.revision = revision
@@ -224,13 +247,13 @@ class CVSCheckout(Action):
             context.runCommand("cvs -d %s checkout -r %s %s" % (self.cvsroot, self.revision, self.module))
             os.chdir(self.module)
         if os.access("autogen.sh", os.F_OK):
-            context.runCommand("./autogen.sh")
+            context.runCommand("%s ./autogen.sh" % (self.runner))
 
 class ClientCheckout(CVSCheckout):
     def __init__(self, name, revision):
         """checkout C++ client source code and apply all patches"""
         CVSCheckout.__init__(self,
-                             name, context.workdir,
+                             name, context.workdir, options.shell,
                              ":ext:pohly@cvs.forge.objectweb.org:/cvsroot/sync4j",
                              "3x/client-api/native",
                              revision)
@@ -312,13 +335,16 @@ class SyncEvolutionTest(Action):
 parser = optparse.OptionParser()
 parser.add_option("-e", "--enable",
                   action="append", type="string", dest="enabled",
-                  help="use this to enable specific actions instead of executing all of them")
+                  help="use this to enable specific actions instead of executing all of them (can be used multiple times)")
 parser.add_option("-n", "--no-logs",
                   action="store_true", dest="nologs",
                   help="print to stdout/stderr directly instead of redirecting into log files")
 parser.add_option("-l", "--list",
                   action="store_true", dest="list",
                   help="list all available actions")
+parser.add_option("-s", "--skip",
+                  action="append", type="string", dest="skip", default=[],
+                  help="instead of executing this action assume that it completed earlier (can be used multiple times)")
 parser.add_option("", "--tmp",
                   type="string", dest="tmpdir", default="/tmp/runtests",
                   help="temporary directory for intermediate files")
@@ -354,13 +380,13 @@ if options.recipients and not options.sender:
 
 context = Context(options.tmpdir, options.resultdir, options.workdir,
                   options.subject, options.sender, options.recipients,
-                  options.enabled, options.nologs)
+                  options.enabled, options.skip, options.nologs)
 
 class SyncEvolutionCheckout(CVSCheckout):
     def __init__(self, name, revision):
         """checkout SyncEvolution"""
         CVSCheckout.__init__(self,
-                             name, context.workdir,
+                             name, context.workdir, options.shell,
                              ":ext:pohly@sync4jevolution.cvs.sourceforge.net:/cvsroot/sync4jevolution",
                              "sync4jevolution",
                              revision)
@@ -391,13 +417,13 @@ context.add(evolutiontest)
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compilehead,
                                       "", options.shell,
                                       [],
-                                      "TEST_EVOLUTION_SERVER=scheduleworld")
+                                      "TEST_EVOLUTION_SERVER=scheduleworld TEST_EVOLUTION_FAILURES=ContactSync::testItems,ContactSync::testTwinning,CalendarSync::testDeleteAllRefresh,CalendarSync::testItems,TaskSync::testDeleteAllRefresh,TaskSync::testItems,TaskSync::testTwinning")
 context.add(scheduleworldtest)
 
 class SynthesisTest(SyncEvolutionTest):
     def __init__(self, name, build, synthesisdir, runner):
         SyncEvolutionTest.__init__(self, name, build, os.path.join(synthesisdir, "logs"),
-                                   runner, [ "ContactSync" ], "TEST_EVOLUTION_SERVER=synthesis")
+                                   runner, [ "ContactSync", "ContactStress" ], "TEST_EVOLUTION_SERVER=synthesis")
         self.synthesisdir = synthesisdir
         self.dependencies.append(evolutiontest.name)
 
@@ -417,7 +443,7 @@ context.add(synthesis)
 class FunambolTest(SyncEvolutionTest):
     def __init__(self, name, build, funamboldir, runner):
         SyncEvolutionTest.__init__(self, name, build, os.path.join(funamboldir, "ds-server", "logs", "funambol_ds.log"),
-                                   runner, [ "ContactSync" ], "TEST_EVOLUTION_DELAY=10 TEST_EVOLUTION_SERVER=funambol")
+                                   runner, [ "ContactSync", "ContactStress" ], "TEST_EVOLUTION_DELAY=10 TEST_EVOLUTION_SERVER=funambol")
         self.funamboldir = funamboldir
         self.dependencies.append(evolutiontest.name)
 
