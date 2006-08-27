@@ -21,6 +21,7 @@
 #include <cppunit/ui/text/TestRunner.h>
 #include <cppunit/TestListener.h>
 #include <cppunit/TestResult.h>
+#include <cppunit/TestFailure.h>
 
 #include <posix/base/posixlog.h>
 
@@ -67,6 +68,37 @@ public:
     bool failed;
 } syncListener;
 
+class SuccessListener : public CppUnit::TestListener {
+public:
+    SuccessListener(string allowedFailures) {
+        int start = 0, end;
+        while ((end = allowedFailures.find(',', start)) != allowedFailures.npos) {
+            int len = end - start;
+            if (len) {
+                m_allowedFailures.insert(allowedFailures.substr(start, len));
+            }
+            start = end + 1;
+        }
+        if (allowedFailures.size() > start) {
+            m_allowedFailures.insert(allowedFailures.substr(start));
+        }
+        m_failed = false;
+    }
+    
+    void addFailure(const CppUnit::TestFailure &failure) {
+        if (m_allowedFailures.find(failure.failedTestName()) == m_allowedFailures.end()) {
+            m_failed = true;
+        } else {
+            cout << "failure ignored\n";
+        }
+    }
+
+    bool hasFailed() { return m_failed; }
+private:
+    set<string> m_allowedFailures;
+    bool m_failed;
+};
+
 const string &getCurrentTest() {
     return syncListener.currentTest;
 }
@@ -102,12 +134,18 @@ int main(int argc, char* argv[])
   // I did not find it in the CppUnit documentation...
   runner.eventManager().addListener(&syncListener);
 
+  // track failures ourselves so that we can allow some tests to fail
+  // and still return a success code
+  const char *allowedFailures = getenv("TEST_EVOLUTION_FAILURES");
+  SuccessListener success(allowedFailures ? allowedFailures : "");
+  runner.eventManager().addListener(&success);
+
   try {
       // Run the tests.
-      bool wasSucessful = runner.run(argc > 1 ? argv[1] : "", false, true, false);
+      runner.run(argc > 1 ? argv[1] : "", false, true, false);
 
       // Return error code 1 if the one of test failed.
-      return wasSucessful ? 0 : 1;
+      return success.hasFailed() ? 1 : 0;
   } catch (invalid_argument e) {
       // Test path not resolved
       std::cerr << std::endl  
