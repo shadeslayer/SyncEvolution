@@ -63,7 +63,7 @@ class Action:
         """
         raise Exception("not implemented")
 
-    def tryexecution(self, logs):
+    def tryexecution(self, step, logs):
         """wrapper around execute which handles exceptions, directories and stdout"""
         if logs:
             fd = -1
@@ -73,10 +73,11 @@ class Action:
             olderr = sys.stderr
         cwd = os.getcwd()
         try:
-            del_dir(self.name)
+            subdirname = "%d-%s" % (step, self.name)
+            del_dir(subdirname)
             sys.stderr.flush()
             sys.stdout.flush()
-            cd(self.name)
+            cd(subdirname)
             if logs:
                 fd = os.open("output.txt", os.O_WRONLY|os.O_CREAT|os.O_TRUNC)
                 os.dup2(fd, 1)
@@ -152,8 +153,11 @@ class Context:
         s = file("summary.txt", "w+")
         status = Action.DONE
 
+        step = 0
         while len(self.todo) > 0:
             try:
+                step = step + 1
+
                 # get action
                 action = self.todo.pop(0)
 
@@ -180,7 +184,7 @@ class Context:
                     continue
 
                 # execute it
-                action.tryexecution(not self.nologs)
+                action.tryexecution(step, not self.nologs)
                 if action.status > status:
                     status = action.status
                 if action.status == Action.FAILED:
