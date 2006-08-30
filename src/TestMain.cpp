@@ -89,7 +89,7 @@ public:
         if (m_allowedFailures.find(failure.failedTestName()) == m_allowedFailures.end()) {
             m_failed = true;
         } else {
-            cout << "failure ignored\n";
+            cerr << "failure ignored\n";
         }
     }
 
