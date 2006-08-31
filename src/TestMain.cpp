@@ -44,33 +44,11 @@ public:
 
 class Sync4jListener : public CppUnit::TestListener {
 public:
-    void startTest (CppUnit::Test *test) {
-        currentTest = test->getName();
-        setLogFile( "-", 0 );
-        cerr << currentTest;
-        string logfile = currentTest + ".log";
-        simplifyFilename(logfile);
-        remove(logfile.c_str());
-        setLogFile( logfile.c_str(), 1 );
-        failed = false;
+    Sync4jListener() :
+        m_failed(false) {
     }
-    void addFailure(const CppUnit::TestFailure &failure) {
-        failed = true;
-    }
-    void endTest (CppUnit::Test *test) {
-        setLogFile( "-", 0 );
-        if (failed) {
-            cerr << " *** failed ***";
-        }
-        cerr << "\n";
-    }
-    string currentTest;
-    bool failed;
-} syncListener;
 
-class SuccessListener : public CppUnit::TestListener {
-public:
-    SuccessListener(string allowedFailures) {
+    void addAllowedFailures(string allowedFailures) {
         int start = 0, end;
         while ((end = allowedFailures.find(',', start)) != allowedFailures.npos) {
             int len = end - start;
@@ -82,25 +60,47 @@ public:
         if (allowedFailures.size() > start) {
             m_allowedFailures.insert(allowedFailures.substr(start));
         }
-        m_failed = false;
     }
-    
+
+    void startTest (CppUnit::Test *test) {
+        m_currentTest = test->getName();
+        setLogFile( "-", 0 );
+        cerr << m_currentTest;
+        string logfile = m_currentTest + ".log";
+        simplifyFilename(logfile);
+        remove(logfile.c_str());
+        setLogFile( logfile.c_str(), 1 );
+        m_testFailed = false;
+    }
+
     void addFailure(const CppUnit::TestFailure &failure) {
-        if (m_allowedFailures.find(failure.failedTestName()) == m_allowedFailures.end()) {
-            m_failed = true;
-        } else {
-            cerr << "failure ignored\n";
+        m_testFailed = true;
+    }
+
+    void endTest (CppUnit::Test *test) {
+        setLogFile( "-", 0 );
+        if (m_testFailed) {
+            if (m_allowedFailures.find(m_currentTest) == m_allowedFailures.end()) {
+                cerr << " *** failed ***";
+                m_failed = true;
+            } else {
+                cerr << " *** failure ignored ***";
+            }
+            cerr << "\n";
         }
     }
 
     bool hasFailed() { return m_failed; }
+    const string &getCurrentTest() const { return m_currentTest; }
+
 private:
     set<string> m_allowedFailures;
-    bool m_failed;
-};
+    bool m_failed, m_testFailed;
+    string m_currentTest;
+} syncListener;
 
 const string &getCurrentTest() {
-    return syncListener.currentTest;
+    return syncListener.getCurrentTest();
 }
 
 void simplifyFilename(string &filename)
@@ -128,24 +128,19 @@ int main(int argc, char* argv[])
   runner.setOutputter( new Sync4jOutputter( &runner.result(),
                                             std::cerr ) );
 
-  // Our tests need to know the currently running test,
-  // register a TestListener to remember that information.
-  // If there is a better way to obtain that information
-  // I did not find it in the CppUnit documentation...
-  runner.eventManager().addListener(&syncListener);
-
-  // track failures ourselves so that we can allow some tests to fail
-  // and still return a success code
+  // track current test and failure state
   const char *allowedFailures = getenv("TEST_EVOLUTION_FAILURES");
-  SuccessListener success(allowedFailures ? allowedFailures : "");
-  runner.eventManager().addListener(&success);
+  if (allowedFailures) {
+      syncListener.addAllowedFailures(allowedFailures);
+  }
+  runner.eventManager().addListener(&syncListener);
 
   try {
       // Run the tests.
       runner.run(argc > 1 ? argv[1] : "", false, true, false);
 
       // Return error code 1 if the one of test failed.
-      return success.hasFailed() ? 1 : 0;
+      return syncListener.hasFailed() ? 1 : 0;
   } catch (invalid_argument e) {
       // Test path not resolved
       std::cerr << std::endl  
