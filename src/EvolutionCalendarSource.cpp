@@ -349,8 +349,11 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
     }
 
     if (update) {
+        // ensure that the component has the right UID - some servers replace it
+        icalcomponent_set_uid(subcomp, item.getKey());
+        
         if (!e_cal_modify_object(m_calendar, subcomp, CALOBJ_MOD_ALL, &gerror)) {
-            throwError(string("updating calendar item") + item.getKey(), gerror);
+            throwError(string("updating calendar item ") + item.getKey(), gerror);
         }
         string uid = getCompUID(subcomp);
         if (uid.size()) {
