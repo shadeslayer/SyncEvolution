@@ -1,3 +1,54 @@
+2006-09-07  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h:
+	adapted to official DevInf API with one patch: config passed to SyncClient::conf()
+
+	* src/EvolutionCalendarSource.cpp:
+	beware to not overwrite valid UID with empty one (some tests broke due to this recent change)
+
+	* src/Makefile.am:
+	excluded automatically generated files from client-api-diff
+
+	* src/TestMain.cpp:
+	newline was missing after successfully completed test
+
+2006-08-31  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp:
+	SF issue 1511951: support copying changes back from EGroupware server by not expecting the UID of calendar items to be unmodified
+
+	* src/TestMain.cpp:
+	merged listeners so that failure message is generated in just one place
+
+2006-08-30  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestMain.cpp:
+	print failure summary to cerr, like the rest of the messages
+
+2006-08-27  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* test/runtests.py: add number to preserve ordering of actions
+
+	* test/runtests.py: added --skip option, made reporting a bit nicer
+
+	* src/TestMain.cpp:
+	added support for ignoring the failure of certain tests by listing them in TEST_EVOLUTION_FAILURES
+
+2006-08-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* test/runtests.py:
+	executes CVS checkout, compilation and testing automatically
+
+2006-08-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README: new server is www.estamos.de
+
+	* configure.in:
+	better error message when Evolution development files are missing
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
+	moved reading of changes into helper function so that it can be used in the pre- and post-processing
+
 2006-08-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* README: new server is www.estamos.de

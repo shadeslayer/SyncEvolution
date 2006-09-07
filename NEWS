@@ -1,3 +1,10 @@
+SyncEvolution 0.4 xxxx
+----------------------
+* adapted to C++ client library from CVS head:
+  devinfo.patch patch was merged with several changes to the API
+* SF issue 1511951: support copying changes back from EGroupware
+  server by not expecting the UID of calendar items to be unmodified
+
 SyncEvolution 0.4 pre2, 21.08.2006
 ----------------------------------
 * C++ client library revision "syncevolution-0-4-pre2":
