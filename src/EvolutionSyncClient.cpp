@@ -19,7 +19,7 @@
 #include "EvolutionSyncClient.h"
 #include "EvolutionSyncSource.h"
 
-#include <spdm/DMTree.h>
+#include <client/DMTClientConfig.h>
 #include <posix/base/posixlog.h>
 
 #include <list>
@@ -46,7 +46,6 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server, SyncMode syncMode
     m_doLogging(doLogging),
     m_configPath(string("evolution/") + server)
 {
-    setDMConfig(m_configPath.c_str());
 }
 
 EvolutionSyncClient::~EvolutionSyncClient()
@@ -244,6 +243,7 @@ class SourceList : public list<EvolutionSyncSource *> {
     LogDir m_logdir;     /**< our logging directory */
     bool m_doLogging;    /**< true iff additional files are to be written during sync */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
+    arrayptr<SyncSource *> m_sourceArray;  /** owns the array that is expected by SyncClient::sync() */
 
     string databaseName(EvolutionSyncSource &source, const string suffix) {
         return m_logdir.getLogdir() + "/" +
@@ -355,7 +355,22 @@ public:
             }
         }
     }
-        
+
+    /** returns current sources as array as expected by SyncClient::sync(), memory owned by this class */
+    SyncSource **getSourceArray() {
+        m_sourceArray = new SyncSource *[size() + 1];
+
+        int index = 0;
+        for (iterator it = begin();
+             it != end();
+             ++it) {
+            ((SyncSource **)m_sourceArray)[index] = *it;
+            index++;
+        }
+        ((SyncSource **)m_sourceArray)[index] = 0;
+        return m_sourceArray;
+    }
+   
     ~SourceList() {
         // if we get here without a previous report,
         // something went wrong
@@ -377,86 +392,105 @@ void unref(SourceList *sourceList)
 
 int EvolutionSyncClient::sync()
 {
-    // this will trigger the prepareSync(), createSyncSource(), beginSource() callbacks
-    int res = SyncClient::sync();
+    class EvolutionClientConfig : public DMTClientConfig {
+    public:
+        EvolutionClientConfig(const char *root) :
+            DMTClientConfig(root) {}
 
-#if 0
-    // Change of policy: even if a sync source failed allow
-    // the next sync to proceed normally. The rationale is
-    // that novice users then do not have to care about deleting
-    // "bad" items because the next two-way sync will not stumble
-    // over them.
-    //
-    // Force slow sync in case of failed Evolution source
-    // by overwriting the last sync time stamp;
-    // don't do it if only the general result is a failure
-    // because in that case it is not obvious which source
-    // failed.
-    for ( index = 0; index < m_sourceList->size(); index++ ) {
-        EvolutionSyncSource *source = (*m_sourceList)[index];
-        if (source->hasFailed()) {
-            string sourcePath(sourcesPath + "/" + sourceArray[index]->getName());
-            auto_ptr<ManagementNode> sourceNode(config.getManagementNode(sourcePath.c_str()));
-            sourceNode->setPropertyValue("last", "0");
+    protected:
+        /*
+         * tweak the base class in two ways:
+         * - continue to use the "syncml" node for all non-source properties, as in previous versions
+         * - do not save properties which cannot be configured
+         */
+        virtual int readAuthConfig(ManagementNode& syncMLNode,
+                                   ManagementNode& authNode) {
+            return DMTClientConfig::readAuthConfig(syncMLNode, syncMLNode);
         }
-    }
-#endif
-
-    if (res) {
-        if (lastErrorCode && lastErrorMsg[0]) {
-            throw runtime_error(lastErrorMsg);
+        virtual void saveAuthConfig(ManagementNode& syncMLNode,
+                                    ManagementNode& authNode) {
+            DMTClientConfig::saveAuthConfig(syncMLNode, syncMLNode);
         }
-        // no error code/description?!
-        throw runtime_error("sync failed without an error description, check log");
-    }
-
-    // all went well: print final report before cleaning up
-    m_sourceList->syncDone(true);
-    m_sourceList = NULL;
-}
-
-int EvolutionSyncClient::prepareSync(const AccessConfig &config,
-                                     ManagementNode &node)
-{
-    try {
-        // remember for use by sync sources
-        m_url = config.getSyncURL() ? config.getSyncURL() : "";
-
-        if (!m_url.size()) {
-            LOG.error("no syncURL configured - perhaps the server name \"%s\" is wrong?",
-                      m_server.c_str());
-            throw runtime_error("cannot proceed without configuration");
+        virtual int readConnConfig(ManagementNode& syncMLNode,
+                                    ManagementNode& connNode) {
+            return DMTClientConfig::readConnConfig(syncMLNode, syncMLNode);
+        }
+        virtual void saveConnConfig(ManagementNode& syncMLNode,
+                                    ManagementNode& connNode) {
+            DMTClientConfig::saveConnConfig(syncMLNode, syncMLNode);
+        }
+        virtual int readExtAccessConfig(ManagementNode& syncMLNode,
+                                        ManagementNode& extNode) {
+            return DMTClientConfig::readExtAccessConfig(syncMLNode, syncMLNode);
+        }
+        virtual void saveExtAccessConfig(ManagementNode& syncMLNode,
+                                         ManagementNode& extNode) {
+            DMTClientConfig::saveExtAccessConfig(syncMLNode, syncMLNode);
+        }
+        virtual int readDevInfoConfig(ManagementNode& syncMLNode,
+                                      ManagementNode& devInfoNode) {
+            return DMTClientConfig::readDevInfoConfig(syncMLNode, syncMLNode);
+        }
+        virtual void saveDevInfoConfig(ManagementNode& syncMLNode,
+                                       ManagementNode& devInfoNode) {
+            // these properties are always set by the code, don't save them
+        }
+        virtual int readDevDetailConfig(ManagementNode& syncMLNode,
+                                        ManagementNode& devDetailNode) {
+            return DMTClientConfig::readDevDetailConfig(syncMLNode, syncMLNode);
+        }
+        virtual void saveDevDetailConfig(ManagementNode& syncMLNode,
+                                         ManagementNode& devDetailNode) {
+            // these properties are always set by the code, don't save them
+        }
+        virtual int readExtDevConfig(ManagementNode& syncMLNode,
+                                     ManagementNode& extNode) {
+            return DMTClientConfig::readExtDevConfig(syncMLNode, syncMLNode);
+        }
+        virtual void saveExtDevConfig(ManagementNode& syncMLNode,
+                                      ManagementNode& extNode) {
+            // these properties are always set by the code, don't save them
         }
 
-        // redirect logging as soon as possible
-        m_sourceList = new SourceList(m_server, m_doLogging);
-        m_sourceList->setLogdir(node.getPropertyValue("logdir"),
-                                atoi(node.getPropertyValue("maxlogdirs")));
-    } catch(...) {
-        EvolutionSyncSource::handleException();
-        return ERR_UNSPECIFIED;
+        virtual void saveSourceConfig(int i,
+                                      ManagementNode& sourcesNode,
+                                      ManagementNode& sourceNode) {
+            // no, don't overwrite config, in particular not the "type"
+        }
+
+    } config(m_configPath.c_str());
+    
+    if (!config.read() || !config.open()) {
+        throw runtime_error("reading configuration failed");
     }
 
-    return ERR_NONE;
-}
+    // remember for use by sync sources
+    string url = config.getAccessConfig().getSyncURL() ? config.getAccessConfig().getSyncURL() : "";
 
-int EvolutionSyncClient::createSyncSource(const char *name,
-                                          const SyncSourceConfig &config,
-                                          ManagementNode &node,
-                                          SyncSource **source)
-{
-    try {
-        // by default no source for this name
-        *source = NULL;
+    if (!url.size()) {
+        LOG.error("no syncURL configured - perhaps the server name \"%s\" is wrong?",
+                  m_server.c_str());
+        throw runtime_error("cannot proceed without configuration");
+    }
+
+    // redirect logging as soon as possible
+    SourceList sourceList(m_server, m_doLogging);
+    sourceList.setLogdir(config.getSyncMLNode()->getPropertyValue("logdir"),
+                         atoi(config.getSyncMLNode()->getPropertyValue("maxlogdirs")));
+
+    SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
+    for (int index = 0; index < config.getNumSources(); index++) {
+        ManagementNode &node(*config.getSyncSourceNode(index));
+        SyncSourceConfig &sc(sourceconfigs[index]);
         
         // is the source enabled?
-        string sync = config.getSync() ? config.getSync() : "";
+        string sync = sc.getSync() ? sc.getSync() : "";
         bool enabled = sync != "none";
         SyncMode overrideMode = SYNC_NONE;
 
         // override state?
         if (m_sources.size()) {
-            if (m_sources.find(name) != m_sources.end()) {
+            if (m_sources.find(sc.getName()) != m_sources.end()) {
                 if (!enabled) {
                     overrideMode = SYNC_TWO_WAY;
                     enabled = true;
@@ -468,23 +502,27 @@ int EvolutionSyncClient::createSyncSource(const char *name,
         
         if (enabled) {
             // create it
-            string type = config.getType() ? config.getType() : "";
+            string type = sc.getType() ? sc.getType() : "";
             EvolutionSyncSource *syncSource =
                 EvolutionSyncSource::createSource(
-                    name,
-                    string("sync4jevolution:") + m_url + "/" + name,
+                    sc.getName(),
+                    string("sync4jevolution:") + url + "/" + sc.getName(),
                     EvolutionSyncSource::getPropertyValue(node, "evolutionsource"),
                     type
                     );
             if (!syncSource) {
-                throw runtime_error(string(name) + ": type " +
+                throw runtime_error(string(sc.getName()) + ": type " +
                                     ( type.size() ? string("not configured") :
                                       string("'") + type + "' empty or unknown" ));
             }
-            m_sourceList->push_back(syncSource);
+            sourceList.push_back(syncSource);
 
-            // configure it
-            syncSource->setConfig(config);
+            // configure it: type must be a valid mime type in the backend
+            // storage because SyncManager will overwrite the source's settings
+            sc.setType(syncSource->getMimeType());
+            sc.setVersion(syncSource->getMimeVersion());
+            syncSource->setConfig(sc);
+
             if (m_syncMode != SYNC_NONE) {
                 // caller overrides mode
                 syncSource->setPreferredSyncMode(m_syncMode);
@@ -497,28 +535,39 @@ int EvolutionSyncClient::createSyncSource(const char *name,
             syncSource->setAuthentication(user, passwd);
 
             // also open it; failing now is still safe
-            syncSource->open();
-
-            // success!
-            *source = syncSource;
+            syncSource->open();    
         }
-    } catch(...) {
-        EvolutionSyncSource::handleException();
-        return ERR_UNSPECIFIED;
-    }
-    
-    return ERR_NONE;
-}
-
-int EvolutionSyncClient::beginSync()
-{
-    try {
-        // ready to go: dump initial databases and prepare for final report
-        m_sourceList->syncPrepare();
-    } catch(...) {
-        EvolutionSyncSource::handleException();
-        return ERR_UNSPECIFIED;
     }
 
-    return ERR_NONE;
+    // reconfigure with our fixed properties
+    DeviceConfig &dc(config.getDeviceConfig());
+    dc.setMod("SyncEvolution");
+    dc.setSwv(VERSION);
+    dc.setMan("Patrick Ohly");
+    dc.setDevType("workstation");
+    dc.setUtc(1);
+    dc.setOem("Open Source");
+    dc.setFwv("unknown");
+    dc.setHwv("unknown");
+    dc.setDevID("unknown");
+
+    // ready to go: dump initial databases and prepare for final report
+    sourceList.syncPrepare();
+
+    // do it
+    int res = SyncClient::sync(config, sourceList.getSourceArray());
+
+    if (res) {
+        if (lastErrorCode && lastErrorMsg[0]) {
+            throw runtime_error(lastErrorMsg);
+        }
+        // no error code/description?!
+        throw runtime_error("sync failed without an error description, check log");
+    }
+
+    // store modified properties
+    config.save();
+
+    // all went well: print final report before cleaning up
+    sourceList.syncDone(true);
 }

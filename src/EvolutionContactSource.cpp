@@ -543,6 +543,19 @@ const char *EvolutionContactSource::getMimeType()
     }
 }
 
+const char *EvolutionContactSource::getMimeVersion()
+{
+    switch( m_vcardFormat ) {
+     case EVC_FORMAT_VCARD_21:
+        return "2.1";
+        break;
+     case EVC_FORMAT_VCARD_30:
+     default:
+        return "3.0";
+        break;
+    }
+}
+
 void EvolutionContactSource::logItem( const string &uid, const string &info )
 {
     if (LOG.getLevel() >= LOG_LEVEL_INFO) {

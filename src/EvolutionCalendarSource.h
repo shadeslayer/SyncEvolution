@@ -58,6 +58,8 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     virtual void close(); 
     virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "ics"; }
+    virtual const char *getMimeType() { return "text/calendar"; }
+    virtual const char *getMimeVersion() { return "2.0"; }
    
     virtual SyncItem *createItem( const string &uid, SyncState state );
 
@@ -65,17 +67,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     // implementation of SyncSource
     //
     virtual ArrayElement *clone() { return new EvolutionCalendarSource(*this); }
-    void getPreferredTypes(const char*& recvType,
-                           const char*& recvVersion,
-                           const char*& sendType,
-                           const char*& sendVersion) {
-        // these might be the preferred types, but in the end
-        // the configured type is used
-        recvType = "text/calendar";
-        recvVersion = "2.0";
-        sendType = "text/calendar";
-        sendVersion = "2.0";
-    }
+
     const char **getSendTypes() {
         static const char *types[] = { "text/calendar", "2.0",
                                        NULL };

@@ -69,6 +69,9 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual void close(); 
     virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "vcf"; }
+    virtual const char *getMimeType();
+    virtual const char *getMimeVersion();
+    
    
     virtual SyncItem *createItem( const string &uid, SyncState state );
     
@@ -76,25 +79,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     // implementation of SyncSource
     //
     virtual ArrayElement *clone() { return new EvolutionContactSource(*this); }
-    void getPreferredTypes(const char*& recvType,
-                           const char*& recvVersion,
-                           const char*& sendType,
-                           const char*& sendVersion) {
-        // use the configured type also as the preferred one,
-        // some servers get confused when sending something different
-        // than announced here
-        if (m_vcardFormat == EVC_FORMAT_VCARD_21) {
-            recvType = "text/x-vcard";
-            recvVersion = "2.1";
-            sendType = "text/x-vcard";
-            sendVersion = "2.1";
-        } else {
-            recvType = "text/vcard";
-            recvVersion = "3.0";
-            sendType = "text/vcard";
-            sendVersion = "3.0";
-        }
-    }
+
     const char **getSendTypes() {
         static const char *types[] = { "text/vcard", "3.0",
                                        "text/x-vcard", "2.1",
@@ -103,7 +88,7 @@ class EvolutionContactSource : public EvolutionSyncSource
         return types;
     }
     const char **getRecvTypes() { return getSendTypes(); }
-
+    
   protected:
     //
     // implementation of EvolutionSyncSource callbacks
@@ -118,7 +103,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual int deleteItemThrow(SyncItem& item);
     virtual void logItem(const string &uid, const string &info);
     virtual void logItem(SyncItem &item, const string &info);
-    
+
   private:
     /** valid after open(): the address book that this source references */
     eptr<EBook, GObject> m_addressbook;
@@ -164,9 +149,6 @@ class EvolutionContactSource : public EvolutionSyncSource
             insert("CALURI");
         }
     } m_uniqueProperties;
-    
-    /** the mime type which corresponds to m_vcardFormat */
-    const char *getMimeType();
 };
 
 #endif // ENABLE_EBOOK

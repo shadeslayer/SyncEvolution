@@ -146,6 +146,16 @@ class EvolutionSyncSource : public SyncSource
     virtual string fileSuffix() = 0;
 
     /**
+     * the actual type used by the source for items
+     */
+    virtual const char *getMimeType() = 0;
+
+    /**
+     * the actual version of the mime specification
+     */
+    virtual const char *getMimeVersion() = 0;
+    
+    /**
      * resets the lists of all/new/updated/deleted items
      */
     void resetItems();
@@ -292,9 +302,7 @@ class EvolutionSyncSource : public SyncSource
                     // just tell caller the uid of the deleted item
                     // and the type that it probably had
                     SyncItem *item = new SyncItem( uid.c_str() );
-                    const char *recvType, *recvVersion, *sendType, *sendVersion;
-                    m_source.getPreferredTypes( recvType, recvVersion, sendType, sendVersion );
-                    item->setDataType( sendType );
+                    item->setDataType(m_source.getMimeType());
                     return item;
                 } else {
                     // retrieve item with all its data
