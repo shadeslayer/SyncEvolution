@@ -86,8 +86,8 @@ public:
             } else {
                 cerr << " *** failure ignored ***";
             }
-            cerr << "\n";
         }
+        cerr << "\n";
     }
 
     bool hasFailed() { return m_failed; }
