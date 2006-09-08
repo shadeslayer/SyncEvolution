@@ -163,6 +163,8 @@ int EvolutionSyncSource::beginSync()
         mode == SYNC_ONE_WAY_FROM_SERVER ? "'one-way'" :
         mode == SYNC_REFRESH_FROM_SERVER ? "'refresh from server'" :
         mode == SYNC_REFRESH_FROM_CLIENT ? "'refresh from client'" :
+        mode == SYNC_ONE_WAY_FROM_SERVER ? "'one-way from server'" :
+        mode == SYNC_ONE_WAY_FROM_CLIENT ? "'one-way from client'" :
         mode == SYNC_NONE ? "'none' (for debugging)" :
         "???";
     LOG.info( buffer.c_str() );
