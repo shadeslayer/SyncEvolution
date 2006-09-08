@@ -429,7 +429,15 @@ int EvolutionSyncClient::sync()
         }
         virtual int readDevInfoConfig(ManagementNode& syncMLNode,
                                       ManagementNode& devInfoNode) {
-            return DMTClientConfig::readDevInfoConfig(syncMLNode, syncMLNode);
+            int res = DMTClientConfig::readDevInfoConfig(syncMLNode, syncMLNode);
+
+            // always read device ID from the traditional property "deviceId"
+            char* tmp;
+            tmp = syncMLNode.getPropertyValue("deviceId");
+            deviceConfig.setDevID(tmp);
+            delete [] tmp;
+
+            return res;
         }
         virtual void saveDevInfoConfig(ManagementNode& syncMLNode,
                                        ManagementNode& devInfoNode) {
@@ -517,8 +525,9 @@ int EvolutionSyncClient::sync()
             }
             sourceList.push_back(syncSource);
 
-            // configure it: type must be a valid mime type in the backend
-            // storage because SyncManager will overwrite the source's settings
+            // Update the backend configuration because the SyncManager will
+            // overwrite the settings in our sync sources. The EvolutionClientConfig
+            // above prevents that these modifications overwrite the user settings.
             sc.setType(syncSource->getMimeType());
             sc.setVersion(syncSource->getMimeVersion());
             syncSource->setConfig(sc);
@@ -549,7 +558,6 @@ int EvolutionSyncClient::sync()
     dc.setOem("Open Source");
     dc.setFwv("unknown");
     dc.setHwv("unknown");
-    dc.setDevID("unknown");
 
     // ready to go: dump initial databases and prepare for final report
     sourceList.syncPrepare();
