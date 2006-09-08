@@ -22,8 +22,12 @@
 #include <cppunit/TestListener.h>
 #include <cppunit/TestResult.h>
 #include <cppunit/TestFailure.h>
+#include <cppunit/extensions/HelperMacros.h>
 
 #include <posix/base/posixlog.h>
+
+#include <unistd.h>
+#include <signal.h>
 
 #include <string>
 #include <stdexcept>
@@ -46,6 +50,16 @@ class Sync4jListener : public CppUnit::TestListener {
 public:
     Sync4jListener() :
         m_failed(false) {
+        // install signal handler which turns an alarm signal into a runtime exception
+        // to abort tests which run too long
+        const char *alarm = getenv("TEST_EVOLUTION_ALARM");
+        m_alarmSeconds = alarm ? atoi(alarm) : -1;
+
+        struct sigaction action;
+        memset(&action, 0, sizeof(action));
+        action.sa_handler = alarmTriggered;
+        action.sa_flags = SA_NOMASK;
+        sigaction(SIGALRM, &action, NULL);
     }
 
     void addAllowedFailures(string allowedFailures) {
@@ -71,6 +85,10 @@ public:
         remove(logfile.c_str());
         setLogFile( logfile.c_str(), 1 );
         m_testFailed = false;
+
+        if (m_alarmSeconds > 0) {
+            alarm(m_alarmSeconds);
+        }
     }
 
     void addFailure(const CppUnit::TestFailure &failure) {
@@ -78,6 +96,10 @@ public:
     }
 
     void endTest (CppUnit::Test *test) {
+        if (m_alarmSeconds > 0) {
+            alarm(0);
+        }
+
         setLogFile( "-", 0 );
         if (m_testFailed) {
             if (m_allowedFailures.find(m_currentTest) == m_allowedFailures.end()) {
@@ -97,6 +119,11 @@ private:
     set<string> m_allowedFailures;
     bool m_failed, m_testFailed;
     string m_currentTest;
+    int m_alarmSeconds;
+
+    static void alarmTriggered(int signal) {
+        CPPUNIT_ASSERT_MESSAGE(false, "test timed out");
+    }
 } syncListener;
 
 const string &getCurrentTest() {
