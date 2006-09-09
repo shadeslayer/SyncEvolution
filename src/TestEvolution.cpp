@@ -397,7 +397,7 @@ public:
             "X-MOZILLA-HTML:TRUE\n"
             "END:VCARD\n",
 
-            /* add a telephone number to initial item in testMerge() */
+            /* add a telephone number, email and X-AIM to initial item in testMerge() */
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
             "TITLE:tester\n"
@@ -405,7 +405,9 @@ public:
             "N:Doe;John;;;\n"
             "X-EVOLUTION-FILE-AS:Doe\\, John\n"
             "X-MOZILLA-HTML:FALSE\n"
-            "TEL;TYPE=WORK:business 1\n"
+            "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
+            "EMAIL:john.doe@work.com\n"
+            "X-AIM:AIM JOHN\n"
             "END:VCARD\n",
 
             // add a birthday, modify the title and X-MOZILLA-HTML

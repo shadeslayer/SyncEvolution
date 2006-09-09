@@ -17,6 +17,8 @@
  */
 
 #include <memory>
+#include <map>
+#include <sstream>
 using namespace std;
 
 #include "config.h"
@@ -340,10 +342,42 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     }
     vobj->toNativeEncoding();
 
-    // convert our escaped properties back,
-    // extend certain properties so that Evolution can parse them,
-    // ensure that unique properties appear indeed only once
+    // - convert our escaped properties back
+    // - extend certain properties so that Evolution can parse them
+    // - ensure that unique properties appear indeed only once (because
+    //   for some properties the server doesn't know that they have to be
+    //   unique)
+    // - add X-EVOLUTION-UI-SLOT to TEL and MAIL properties (code just added
+    //   for experiments, never enabled)
+    // - split TYPE=WORK,VOICE into TYPE=WORK;TYPE=VOICE
     set<string> found;
+
+#ifdef SET_UI_SLOT
+    class slots : public map< string, set<string> > {
+    public:
+        slots() {
+            insert(value_type(string("ADR"), set<string>()));
+            insert(value_type(string("EMAIL"), set<string>()));
+            insert(value_type(string("TEL"), set<string>()));
+        }
+        string assignFree(string type) {
+            int slot = 1;
+            set<string> &used((*this)[type]);
+            
+            while (true) {
+                stringstream buffer;
+                buffer << slot;
+                string slotstr = buffer.str();
+                if (used.find(slotstr) == used.end()) {
+                    used.insert(slotstr);
+                    return slotstr;
+                }
+                slot++;
+            }
+        }
+    } usedSlots;
+#endif
+
     for (int index = vobj->propertiesCount() - 1;
          index >= 0;
          index--) {
@@ -365,6 +399,19 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
                     // help a little bit
                     vprop->removeParameter("TYPE");
                     vprop->addParameter("TYPE", "PREF");
+                } else if (strchr(type, ',')) {
+                    // Evolution cannot handle e.g. "WORK,VOICE". Split into
+                    // different parts.
+                    string buffer = type, value;
+                    int start = 0, end;
+                    vprop->removeParameter("TYPE");
+                    while ((end = buffer.find(',', start)) != buffer.npos) {
+                        value = buffer.substr(start, end - start);
+                        vprop->addParameter("TYPE", value.c_str());
+                        start = end + 1;
+                    }
+                    value = buffer.substr(start);
+                    vprop->addParameter("TYPE", value.c_str());
                 }
             }
 
@@ -375,6 +422,14 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
                 !vprop->containsParameter("WORK")) {
                 vprop->addParameter("TYPE", "OTHER");
             }
+
+#ifdef SET_UI_SLOT
+            // remember which slots are set
+            const char *slot = vprop->getParameterValue("X-EVOLUTION-UI-SLOT");
+            if (slot) {
+                usedSlots[name].insert(slot);
+            }
+#endif
         }
 
         // replace 2.1 ENCODING=BASE64 with 3.0 ENCODING=B
@@ -397,6 +452,24 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
         }
     }
 
+#ifdef SET_UI_SLOT
+    // add missing slot parameters
+    for (int index = 0;
+         index < vobj->propertiesCount();
+         index++) {
+        VProperty *vprop = vobj->getProperty(index);
+        string name = vprop->getName();
+        if (name == "EMAIL" || name == "TEL") {
+            const char *slot = vprop->getParameterValue("X-EVOLUTION-UI-SLOT");
+
+            if (!slot) {
+                string freeslot = usedSlots.assignFree(name);
+                vprop->addParameter("X-EVOLUTION-UI-SLOT", freeslot.c_str());
+            }
+        }
+    }
+#endif
+    
     vobj->setVersion("3.0");
     VProperty *vprop = vobj->getProperty("VERSION");
     vprop->setValue("3.0");
