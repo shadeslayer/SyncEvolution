@@ -335,7 +335,7 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
                 gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
                 // Deal with error due to adding already existing item, that can happen,
                 // for example with a "dumb" server which cannot pair items by UID.
-                update = true;
+                logItem(item, "exists already, updating instead");
                 fallback = true;
                 g_clear_error(&gerror);
             } else {
@@ -348,9 +348,11 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
         }
     }
 
-    if (update) {
+    if (update || fallback) {
         // ensure that the component has the right UID - some servers replace it
-        if (item.getKey() && item.getKey()[0]) {
+        // inside the VEVENT, but luckily the SyncML standard requires them to
+        // provide the original UID in an update
+        if (update && item.getKey() && item.getKey()[0]) {
             icalcomponent_set_uid(subcomp, item.getKey());
         }
         
