@@ -382,8 +382,15 @@ int EvolutionCalendarSource::deleteItemThrow(SyncItem& item)
     GError *gerror = NULL;
 
     if (!e_cal_remove_object(m_calendar, item.getKey(), &gerror)) {
-        throwError( string( "deleting calendar item " ) + item.getKey(),
-                    gerror );
+        if (gerror->domain == E_CALENDAR_ERROR &&
+            gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
+            LOG.debug("%s: %s: request to delete non-existant item ignored",
+                      getName(), item.getKey());
+            g_clear_error(&gerror);
+        } else {
+            throwError( string( "deleting calendar item " ) + item.getKey(),
+                        gerror );
+        }
     }
     return status;
 }

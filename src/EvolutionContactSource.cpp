@@ -597,8 +597,15 @@ int EvolutionContactSource::deleteItemThrow(SyncItem& item)
     int status = STC_OK;
     GError *gerror = NULL;
     if (!e_book_remove_contact( m_addressbook, item.getKey(), &gerror ) ) {
-        throwError( string( "deleting contact " ) + item.getKey(),
-                    gerror );
+        if (gerror->domain == E_BOOK_ERROR &&
+            gerror->code == E_BOOK_ERROR_CONTACT_NOT_FOUND) {
+            LOG.debug("%s: %s: request to delete non-existant contact ignored",
+                      getName(), item.getKey());
+            g_clear_error(&gerror);
+        } else {
+            throwError( string( "deleting contact " ) + item.getKey(),
+                        gerror );
+        }
     }
     return status;
 }
