@@ -84,7 +84,7 @@ sub Normalize {
     s/^(DTSTART|DTEND)([^:]*);VALUE=DATE-TIME/$1$2/mg;
 
     # remove fields which may differ
-    s/^(PRODID|CREATED|LAST-MODIFIED|REV):.*\r?\n?//gm;
+    s/^(PRODID|CREATED|DTSTAMP|LAST-MODIFIED|REV):.*\r?\n?//gm;
     # remove optional fields
     s/^(METHOD|X-WSS-COMPONENT|X-WSS-LUID):.*\r?\n?//gm;
 
