@@ -187,7 +187,7 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
     string doSync(const string &logfile, int config, SyncMode syncMode);
 
     /** deletes all items locally via T sync source */
-    void deleteAll(int config);
+    void deleteAll(int config, bool insertFirst = false);
 
     enum DeleteAllMode {
         DELETE_ALL_SYNC,   /**< make sure client and server are in sync,
@@ -199,7 +199,7 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
     /** deletes all items locally and on server, using different methods */
     void deleteAll( const string &prefix, int config, DeleteAllMode mode = DELETE_ALL_SYNC );
 
-    /** create item in one database, then copy to the other */
+    /** reset databases, create item in one database, then copy to the other */
     void doCopy( const string &prefix );
 
     /**
@@ -217,6 +217,16 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
      * @return number of items inserted
      */
     int insertManyItems(int config);
+
+    /**
+     * replicate server database locally: same as SYNC_REFRESH_FROM_SERVER,
+     * but done with explicit local delete and then a SYNC_SLOW because some
+     * servers do no support SYNC_REFRESH_FROM_SERVER
+     */
+    void refreshClient(const string &prefix, int config) {
+        deleteAll(config);
+        doSync(prefix, config, SYNC_SLOW);
+    }
     
 public:
     TestEvolution(
@@ -804,9 +814,12 @@ template<class T> void TestEvolution<T>::testSimpleInsert()
     insert();
 }
 
-template<class T> void TestEvolution<T>::deleteAll(int config)
+template<class T> void TestEvolution<T>::deleteAll(int config, bool insertFirst)
 {
-    testSimpleInsert();
+    if (insertFirst) {
+        CPPUNIT_ASSERT(config == 0);
+        insert();
+    }
         
     T source(
         string( "dummy" ),
@@ -815,8 +828,10 @@ template<class T> void TestEvolution<T>::deleteAll(int config)
 
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
-    int numItems = countItems( source );
-    CPPUNIT_ASSERT( numItems > 0 );
+    if (insertFirst) {
+        int numItems = countItems( source );
+        CPPUNIT_ASSERT( numItems > 0 );
+    }
 
     SyncItem *item;
     EVOLUTION_ASSERT_NO_THROW( source, item = source.getFirstItem() );
@@ -840,7 +855,7 @@ template<class T> void TestEvolution<T>::deleteAll(int config)
 
 template<class T> void TestEvolution<T>::testLocalDeleteAll()
 {
-    deleteAll(0);
+    deleteAll(0, true);
 }
 
 template<class T> void TestEvolution<T>::testIterateTwice()
@@ -1163,14 +1178,15 @@ template<class T> void TestEvolution<T>::deleteAll( const string &prefix, int co
 {
     switch (mode) {
      case DELETE_ALL_SYNC:
-        // refresh (in case something is missing locally), then delete
-        doSync( prefix + ".deleteall.refresh.client.log", config, SYNC_REFRESH_FROM_SERVER );
-        testLocalDeleteAll();
+        // a refresh from server would slightly reduce the amount of data exchanged, but not all servers support it
+        deleteAll(config);
+        doSync( prefix + ".deleteall.init.client.log", config, SYNC_TWO_WAY );
+        deleteAll(config);
         doSync( prefix + ".deleteall.twoway.client.log", config, SYNC_TWO_WAY );
         break;
      case DELETE_ALL_REFRESH:
         // delete locally
-        testLocalDeleteAll();
+        deleteAll(config);
         // refresh server
         doSync( prefix + ".deleteall.refreshserver.client.log", config, SYNC_REFRESH_FROM_CLIENT );
         break;
@@ -1197,7 +1213,7 @@ template<class T> void TestEvolution<T>::testDeleteAllSync()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     // make sure server really deleted everything
-    doSync( "check.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    doSync( "check.client.log", 0, SYNC_SLOW );
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
@@ -1225,7 +1241,7 @@ template<class T> void TestEvolution<T>::testDeleteAllRefresh()
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
 
     // make sure server really deleted everything
-    doSync( "check.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    refreshClient("check.client.log", 0);
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     CPPUNIT_ASSERT( countItems( source ) == 0 );
@@ -1453,8 +1469,7 @@ template<class T> void TestEvolution<T>::testItems()
 
     // transfer back and forth
     doSync( "send.client.log", 0, SYNC_TWO_WAY );
-    doSync( "recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
-
+    refreshClient("recv.client.log", 1);
     
     compareDatabases("testItems", m_testItems.c_str());
 }
@@ -1463,7 +1478,7 @@ template<class T> void TestEvolution<T>::testAddUpdate()
 {
     // clean server and both test databases
     deleteAll("testItems", 0);
-    doSync( "delete.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+    refreshClient("delete.client.log", 1);
 
     // add item
     insert();
@@ -1493,13 +1508,15 @@ template<class T> void TestEvolution<T>::testTwinning()
 
     // ensure that client has the same data, ignoring data conversion
     // issues (those are covered by testItems())
-    doSync( "refresh.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    refreshClient("refresh.client.log", 0);
+
+    // copy into second client
+    refreshClient("recv.client.log", 1);
 
     // slow sync now should not change anything
     doSync( "twinning.client.log", 0, SYNC_SLOW );
 
-    // copy into second client and compare
-    doSync( "recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+    // compare
     compareDatabases("", NULL, 1);
 }
 
@@ -1554,10 +1571,10 @@ template<class T> void TestEvolution<T>::testManyItems()
 
     // ensure that client has the same data, ignoring data conversion
     // issues (those are covered by testItems())
-    doSync( "refresh.client.log", 0, SYNC_REFRESH_FROM_SERVER );
+    refreshClient("refresh.client.log", 0);
 
     // also copy to second client
-    doSync( "recv.client.log", 1, SYNC_REFRESH_FROM_SERVER );
+    refreshClient("recv.client.log", 1);
 
     // slow sync now should not change anything
     doSync( "twinning.client.log", 0, SYNC_SLOW );
