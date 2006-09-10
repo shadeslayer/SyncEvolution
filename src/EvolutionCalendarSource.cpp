@@ -181,7 +181,7 @@ void EvolutionCalendarSource::beginSyncThrow(bool needAll,
 
             e_cal_component_get_uid(E_CAL_COMPONENT(nextItem->data), &uid);
             if (!e_cal_remove_object(m_calendar, uid, &gerror) ) {
-                throwError( string( "deleting calendar entry" ) + uid,
+                throwError( string( "deleting calendar entry " ) + uid,
                             gerror );
             }
             nextItem = nextItem->next;
@@ -382,7 +382,7 @@ int EvolutionCalendarSource::deleteItemThrow(SyncItem& item)
     GError *gerror = NULL;
 
     if (!e_cal_remove_object(m_calendar, item.getKey(), &gerror)) {
-        throwError( string( "deleting calendar item" ) + item.getKey(),
+        throwError( string( "deleting calendar item " ) + item.getKey(),
                     gerror );
     }
     return status;

@@ -139,7 +139,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
             const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
                                                                 E_CONTACT_UID);
             if (!e_book_remove_contact( m_addressbook, uid, &gerror ) ) {
-                throwError( string( "deleting contact" ) + uid,
+                throwError( string( "deleting contact " ) + uid,
                             gerror );
             }
             nextItem = nextItem->next;
@@ -237,20 +237,20 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
                               uid.c_str(),
                               &contact,
                               &gerror ) ) {
-        throwError( string( "reading contact" ) + uid,
+        throwError( string( "reading contact " ) + uid,
                     gerror );
     }
     eptr<EContact, GObject> contactptr( contact, "contact" );
     eptr<char> vcardstr(e_vcard_to_string( &contactptr->parent,
                                            EVC_FORMAT_VCARD_30 ) );
     if (!vcardstr) {
-        throwError( string( "contact from Evolution" ) + uid, NULL );
+        throwError( string( "contact from Evolution " ) + uid, NULL );
     }
     LOG.debug( vcardstr );
 
     std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
     if (vobj.get() == 0) {
-        throwError( string( "parsing contact" ) + uid, NULL );
+        throwError( string( "parsing contact " ) + uid, NULL );
     }
 
     vobj->toNativeEncoding();
@@ -338,7 +338,7 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     LOG.debug(data.c_str());
     std::auto_ptr<VObject> vobj(VConverter::parse((char *)data.c_str()));
     if (vobj.get() == 0) {
-        throwError( string( "parsing contact" ) + item.getKey(), NULL );
+        throwError( string( "parsing contact " ) + item.getKey(), NULL );
     }
     vobj->toNativeEncoding();
 
@@ -536,7 +536,7 @@ int EvolutionContactSource::addItemThrow(SyncItem& item)
             throwError( "storing new contact", gerror );
         }
     } else {
-        throwError( string( "parsing vcard" ) + data,
+        throwError( string( "parsing vcard " ) + data,
                     NULL );
     }
     return status;
@@ -572,7 +572,7 @@ int EvolutionContactSource::updateItemThrow(SyncItem& item)
                                       uid,
                                       &refresh_contact,
                                       &gerror ) ) {
-                throwError( string( "reading refresh contact" ) + uid,
+                throwError( string( "reading refresh contact " ) + uid,
                             gerror );
             }
             string nick = (const char *)e_contact_get_const(refresh_contact, E_CONTACT_NICKNAME);
@@ -583,10 +583,10 @@ int EvolutionContactSource::updateItemThrow(SyncItem& item)
             e_book_commit_contact(m_addressbook, refresh_contact, &gerror);
 #endif
         } else {
-            throwError( string( "updating contact" ) + item.getKey(), gerror );
+            throwError( string( "updating contact " ) + item.getKey(), gerror );
         }
     } else {
-        throwError( string( "parsing vcard" ) + data,
+        throwError( string( "parsing vcard " ) + data,
                     NULL );
     }
     return status;
@@ -597,7 +597,7 @@ int EvolutionContactSource::deleteItemThrow(SyncItem& item)
     int status = STC_OK;
     GError *gerror = NULL;
     if (!e_book_remove_contact( m_addressbook, item.getKey(), &gerror ) ) {
-        throwError( string( "deleting contact" ) + item.getKey(),
+        throwError( string( "deleting contact " ) + item.getKey(),
                     gerror );
     }
     return status;
