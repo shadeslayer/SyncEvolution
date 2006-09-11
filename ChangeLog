@@ -1,3 +1,36 @@
+2006-09-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp:
+	avoid refresh-from-server sync whenever possible because eGroupware server does not support it
+
+	* src/normalize_vcard.pl: DTSTAMP may vary
+
+	* README: minor updates for 0.4
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
+	do not treat requests to delete non-existant items as error, instead log the event (grep for DEBUG and non-existant) and proceed - this is currently necessary with ScheduleWorld server
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
+	added missing space to error messages
+
+2006-09-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp:
+	do not overwrite the UID in an addItem operation even if we fall back to an update
+
+	* src/EvolutionContactSource.cpp, src/TestEvolution.cpp:
+	split TYPE parameter with commas into different parameters to help Evolution parse it (the overview display didn't handle this, the editor did)
+
+2006-09-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestMain.cpp:
+	added TEST_EVOLUTION_ALARM to have some means of aborting when a test takes too long
+
+	* src/EvolutionSyncClient.cpp:
+	deviceId property was renamed -> restored compatibility with old configs
+
+	* src/EvolutionSyncSource.cpp: added one-way from server/client
+
 2006-09-07  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h:
