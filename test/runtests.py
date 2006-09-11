@@ -14,7 +14,13 @@ the result of each action:
   that the action can put there
 """
 
-import os, sys, popen2, traceback, re, time, smtplib, optparse
+import os, sys, popen2, traceback, re, time, smtplib, optparse, stat
+
+try:
+    import gzip
+    havegzip = True
+except:
+    havegzip = False
 
 def cd(path):
     """Enter directories, creating them if necessary."""
@@ -37,8 +43,29 @@ def del_dir(path):
             os.remove(file_or_dir) #it's a file, delete it
     os.rmdir(path)
 
-def copy(f, t):
-    file(t, "w").writelines(file(f, "r").readlines())
+
+def copyLog(filename, dirname, htaccess):
+    """Make a gzipped copy (if possible) with the original time stamps and find the most severe problem in it.
+    That line is then added as description in a .htaccess AddDescription.
+    """
+    info = os.stat(filename)
+    outname = os.path.join(dirname, os.path.basename(filename))
+    if True:
+        outname = outname + ".gz"
+        out = gzip.open(outname, "wb")
+    else:
+        out = file(outname, "w")
+    error = None
+    for line in file(filename, "r").readlines():
+        if not error and line.find("ERROR") >= 0:
+            error = line
+        out.write(line)
+    out.close()
+    os.utime(outname, (info[stat.ST_ATIME], info[stat.ST_MTIME]))
+    if error:
+        htaccess.write("AddDescription \"%s\" %s\n" %
+                       (error.strip().replace("\"", "'").replace("<", "&lt;").replace(">","&gt;"),
+                        os.path.basename(filename)))
 
 class Action:
     """Base class for all actions to be performed."""
@@ -112,7 +139,7 @@ class Context:
 
     def __init__(self, tmpdir, resultdir, workdir, mailtitle, sender, recipients, enabled, skip, nologs):
         # preserve normal stdout because stdout/stderr will be redirected
-        self.out = os.fdopen(os.dup(1))
+        self.out = os.fdopen(os.dup(1), "w")
         self.todo = []
         self.actions = {}
         self.tmpdir = abspath(tmpdir)
@@ -150,7 +177,7 @@ class Context:
 
     def execute(self):
         cd(self.resultdir)
-        s = file("summary.txt", "w+")
+        s = file("output.txt", "w+")
         status = Action.DONE
 
         step = 0
@@ -177,7 +204,7 @@ class Context:
                     for depend in action.dependencies:
                         if not self.actions[depend].status in Action.COMPLETED:
                             action.status = Action.SKIPPED
-                            self.summary.append("%s skipped: %s has not been executed" % (action.name, depend))
+                            self.summary.append("%s skipped: required %s has not been executed" % (action.name, depend))
                             break
 
                 if action.status == Action.SKIPPED:
@@ -297,7 +324,7 @@ class AutotoolsBuild(Action):
 
 class SyncEvolutionTest(Action):
     def __init__(self, name, build, serverlogs, runner, tests, testenv):
-        """Execute TestEvolution in the for all (empty tests) or the
+        """Execute TestEvolution for all (empty tests) or the
         selected tests."""
         Action.__init__(self, name)
         self.srcdir = os.path.join(build.builddir, "src")
@@ -311,7 +338,8 @@ class SyncEvolutionTest(Action):
         resdir = os.getcwd()
         os.chdir(self.srcdir)
         try:
-            basecmd = "%s TEST_EVOLUTION_LOG=%s %s ./TestEvolution" % (self.testenv, self.serverlogs, self.runner);
+            basecmd = "%s TEST_EVOLUTION_ALARM=120 TEST_EVOLUTION_LOG=%s %s ./TestEvolution" % (self.testenv, self.serverlogs, self.runner);
+            context.runCommand("make testclean test")
             if self.tests:
                 ex = None
                 for test in self.tests:
@@ -326,9 +354,10 @@ class SyncEvolutionTest(Action):
                 context.runCommand(basecmd)
         finally:
             tocopy = re.compile(r'.*\.log')
+            htaccess = file(os.path.join(resdir, ".htaccess"), "a")
             for f in os.listdir(self.srcdir):
                 if tocopy.match(f):
-                    copy(f, os.path.join(resdir, f))
+                    copyLog(f, resdir, htaccess)
 
 
 
@@ -350,19 +379,19 @@ parser.add_option("-s", "--skip",
                   action="append", type="string", dest="skip", default=[],
                   help="instead of executing this action assume that it completed earlier (can be used multiple times)")
 parser.add_option("", "--tmp",
-                  type="string", dest="tmpdir", default="/tmp/runtests",
+                  type="string", dest="tmpdir", default="",
                   help="temporary directory for intermediate files")
 parser.add_option("", "--workdir",
-                  type="string", dest="workdir", default="/scratch/work/runtests",
+                  type="string", dest="workdir", default="",
                   help="directory for files which might be reused between runs")
 parser.add_option("", "--resultdir",
-                  type="string", dest="resultdir", default="/scratch/work/runtests-" + time.strftime("%Y-%m-%d-%M"),
+                  type="string", dest="resultdir", default="",
                   help="directory for log files and results")
 parser.add_option("", "--shell",
                   type="string", dest="shell", default="",
                   help="a prefix which is put in front of a command to execute it (can be used for e.g. run_garnome)")
 parser.add_option("", "--synthesis",
-                  type="string", dest="synthesisdir", default="/scratch/SyServ_Pro_linux_2.1.1.28",
+                  type="string", dest="synthesisdir", default="",
                   help="directory with Synthesis installation")
 parser.add_option("", "--funambol",
                   type="string", dest="funamboldir", default="/scratch/Funambol",
@@ -424,12 +453,18 @@ scheduleworldtest = SyncEvolutionTest("scheduleworld", compilehead,
                                       "TEST_EVOLUTION_SERVER=scheduleworld TEST_EVOLUTION_FAILURES=ContactSync::testItems,ContactSync::testTwinning,CalendarSync::testDeleteAllRefresh,CalendarSync::testItems,TaskSync::testDeleteAllRefresh,TaskSync::testItems,TaskSync::testTwinning")
 context.add(scheduleworldtest)
 
+egroupwaretest = SyncEvolutionTest("egroupware", compilehead,
+                                   "", options.shell,
+                                   [ "ContactSync", "ContactStress", "CalendarSync", "CalendarSync" ],
+                                   "TEST_EVOLUTION_SERVER=egroupware")
+context.add(egroupwaretest)
+
 class SynthesisTest(SyncEvolutionTest):
     def __init__(self, name, build, synthesisdir, runner):
         SyncEvolutionTest.__init__(self, name, build, os.path.join(synthesisdir, "logs"),
                                    runner, [ "ContactSync", "ContactStress" ], "TEST_EVOLUTION_SERVER=synthesis")
         self.synthesisdir = synthesisdir
-        self.dependencies.append(evolutiontest.name)
+        # self.dependencies.append(evolutiontest.name)
 
     def execute(self):
         context.runCommand("synthesis start \"%s\"" % (self.synthesisdir))
@@ -449,15 +484,17 @@ class FunambolTest(SyncEvolutionTest):
         SyncEvolutionTest.__init__(self, name, build, os.path.join(funamboldir, "ds-server", "logs", "funambol_ds.log"),
                                    runner, [ "ContactSync", "ContactStress" ], "TEST_EVOLUTION_DELAY=10 TEST_EVOLUTION_SERVER=funambol")
         self.funamboldir = funamboldir
-        self.dependencies.append(evolutiontest.name)
+        # self.dependencies.append(evolutiontest.name)
 
     def execute(self):
-        context.runCommand("%s/tools/bin/funambol.sh start" % (self.funamboldir))
+        if self.funamboldir:
+            context.runCommand("%s/tools/bin/funambol.sh start" % (self.funamboldir))
         time.sleep(5)
         try:
             SyncEvolutionTest.execute(self)
         finally:
-            context.runCommand("%s/tools/bin/funambol.sh stop" % (self.funamboldir))
+            if self.funamboldir:
+                context.runCommand("%s/tools/bin/funambol.sh stop" % (self.funamboldir))
 
 funambol = FunambolTest("funambol", compilehead,
                         options.funamboldir,
