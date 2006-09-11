@@ -1,3 +1,7 @@
+2006-09-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* NEWS: created entry for 0.3 -> 0.4 changes
+
 2006-09-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/TestEvolution.cpp:
