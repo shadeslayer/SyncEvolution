@@ -154,6 +154,12 @@ class EvolutionSyncSource : public SyncSource
      * the actual version of the mime specification
      */
     virtual const char *getMimeVersion() = 0;
+
+    /**
+     * supported data types for send and receive,
+     * in the format "type1:version1,type2:version2,..."
+     */
+    virtual const char *getSupportedTypes() = 0;
     
     /**
      * resets the lists of all/new/updated/deleted items

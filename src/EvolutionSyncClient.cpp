@@ -530,6 +530,7 @@ int EvolutionSyncClient::sync()
             // above prevents that these modifications overwrite the user settings.
             sc.setType(syncSource->getMimeType());
             sc.setVersion(syncSource->getMimeVersion());
+            sc.setSupportedTypes(syncSource->getSupportedTypes());
             syncSource->setConfig(sc);
 
             if (m_syncMode != SYNC_NONE) {
@@ -556,8 +557,6 @@ int EvolutionSyncClient::sync()
     dc.setDevType("workstation");
     dc.setUtc(1);
     dc.setOem("Open Source");
-    dc.setFwv("unknown");
-    dc.setHwv("unknown");
 
     // ready to go: dump initial databases and prepare for final report
     sourceList.syncPrepare();

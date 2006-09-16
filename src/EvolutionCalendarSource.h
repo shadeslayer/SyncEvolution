@@ -60,6 +60,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     virtual string fileSuffix() { return "ics"; }
     virtual const char *getMimeType() { return "text/calendar"; }
     virtual const char *getMimeVersion() { return "2.0"; }
+    virtual const char *getSupportedTypes() { return "text/calendar:2.0"; }
    
     virtual SyncItem *createItem( const string &uid, SyncState state );
 
@@ -68,14 +69,6 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     //
     virtual ArrayElement *clone() { return new EvolutionCalendarSource(*this); }
 
-    const char **getSendTypes() {
-        static const char *types[] = { "text/calendar", "2.0",
-                                       NULL };
-
-        return types;
-    }
-    const char **getRecvTypes() { return getSendTypes(); }
-    
   protected:
     //
     // implementation of EvolutionSyncSource callbacks
