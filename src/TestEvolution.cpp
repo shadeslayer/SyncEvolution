@@ -1730,7 +1730,7 @@ template<class T> void TestEvolution<T>::doVarSizes(bool withMaxMsgSize,
 
     // copy to second client
     doSync("recv.log", 1, SYNC_REFRESH_FROM_SERVER,
-           withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
+           withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
            withMaxMsgSize ? maxMsgSize * 100 : 0,
            withLargeObject,
            encoding);
