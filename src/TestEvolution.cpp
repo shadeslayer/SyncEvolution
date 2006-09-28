@@ -127,6 +127,11 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
      */
     list<string> m_uniqueProperties;
 
+    /**
+     * property which can be filled with spaces to artificially increase the
+     * size of the m_insertItem; must already be contained in item
+     */
+    const string m_sizeProperty;
     
     /**
      * initial item which gets inserted by testSimpleInsert(),
@@ -184,7 +189,11 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
     void import();
 
     /** performs one sync operation */
-    string doSync(const string &logfile, int config, SyncMode syncMode);
+    string doSync(const string &logfile, int config, SyncMode syncMode,
+                  long maxMsgSize = 0,
+                  long maxObjSize = 0,
+                  bool loSupport = false,
+                  const char *encoding = NULL);
 
     /** deletes all items locally via T sync source */
     void deleteAll(int config, bool insertFirst = false);
@@ -214,9 +223,15 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
 
     /**
      * insert artificial items, number of them determined by TEST_EVOLUTION_NUM_ITEMS
+     * unless passed explicitly
+     *
+     * @param config          determines which client is modified
+     * @param startIndex      IDs are generated starting with this value
+     * @param numItems        number of items to be inserted if non-null, otherwise TEST_EVOLUTION_NUM_ITEMS is used
+     * @param size            minimum size for new items
      * @return number of items inserted
      */
-    int insertManyItems(int config);
+    int insertManyItems(int config, int startIndex = 1, int numItems = 0, int size = -1);
 
     /**
      * replicate server database locally: same as SYNC_REFRESH_FROM_SERVER,
@@ -227,17 +242,27 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
         deleteAll(config);
         doSync(prefix, config, SYNC_SLOW);
     }
+
+    /**
+     * implements testMaxMsg(), testLargeObject(), testLargeObjectEncoded()
+     * using a sequence of items with varying sizes
+     */
+    void doVarSizes(bool withMaxMsgSize,
+                    bool withLargeObject,
+                    const char *encoding);
     
 public:
     TestEvolution(
         const char *syncSourceName,
         const char *uniqueProperties,
+        const char *sizeProperty,
         const char *insertItem,
         const char *updateItem,
         const char *mergeItem1,
         const char *mergeItem2
         ) :
         m_syncSourceName(syncSourceName),
+        m_sizeProperty(sizeProperty),
         m_insertItem(insertItem),
         m_updateItem(updateItem),
         m_mergeItem1(mergeItem1),
@@ -359,7 +384,19 @@ public:
     // - client 2 gets item (depending on server, might be flagged as update)
     // See http://forge.objectweb.org/tracker/?func=detail&atid=100096&aid=305018&group_id=96
     void testAddUpdate();
-
+    // test copying with maxMsg and no large object support
+    void testMaxMsg() {
+        doVarSizes(true, false, NULL);
+    }
+    // test copying with maxMsg and large object support
+    void testLargeObject() {
+        doVarSizes(true, true, NULL);
+    }
+    // test copying with maxMsg and large object support using B64 encoding
+    void testLargeObjectEncoded() {
+        doVarSizes(true, true, "b64");
+    }
+    
     //
     // stress tests: execute some of the normal operations,
     // but with large number of artificially generated items
@@ -382,6 +419,7 @@ public:
             "addressbook",
 
             "FN:N:X-EVOLUTION-FILE-AS",
+            "NOTE",
             
             /* initial item */
             "BEGIN:VCARD\n"
@@ -392,6 +430,7 @@ public:
             "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
             "X-EVOLUTION-FILE-AS:Doe\\, John\n"
             "X-MOZILLA-HTML:FALSE\n"
+            "NOTE:\n"
             "END:VCARD\n",
 
             /* default update item which replaces the initial item */
@@ -442,11 +481,13 @@ class TestEvolutionCalendarSource : public EvolutionCalendarSource
 public:
     TestEvolutionCalendarSource(
         const string &name,
+        SyncSourceConfig *sc,
         const string &changeId = string(""),
         const string &id = string("") ) :
         EvolutionCalendarSource(
             E_CAL_SOURCE_TYPE_EVENT,
             name,
+            sc,
             changeId,
             id)
         {}
@@ -463,6 +504,7 @@ public:
             "calendar",
 
             "SUMMARY:UID",
+            "DESCRIPTION",
             
             /* initial item */
             "BEGIN:VCALENDAR\n"
@@ -559,11 +601,13 @@ class TestEvolutionTaskSource : public EvolutionCalendarSource
 public:
     TestEvolutionTaskSource(
         const string &name,
+        SyncSourceConfig *sc,
         const string &changeId = string(""),
         const string &id = string("") ) :
         EvolutionCalendarSource(
             E_CAL_SOURCE_TYPE_TODO,
             name,
+            sc,
             changeId,
             id)
         {}
@@ -580,6 +624,7 @@ public:
             "todo",
 
             "SUMMARY:UID",
+            "DESCRIPTION",
             
             /* initial item */
             "BEGIN:VCALENDAR\n"
@@ -674,6 +719,9 @@ public:
     CPPUNIT_TEST( testMerge ); \
     CPPUNIT_TEST( testItems ); \
     CPPUNIT_TEST( testAddUpdate ); \
+    CPPUNIT_TEST( testMaxMsg ); \
+    CPPUNIT_TEST( testLargeObject ); \
+    // CPPUNIT_TEST( testLargeObjectEncoded ); \
     CPPUNIT_TEST( testTwinning );
 
 #define STRESS_TESTS \
@@ -761,6 +809,7 @@ template<class T> void TestEvolution<T>::testOpen()
 {
     T source(
         string("dummy"),
+        NULL,
         m_changeIds[0],
         m_databases[0]);
 
@@ -777,6 +826,7 @@ template<class T> void TestEvolution<T>::insert(const string *data,
     
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[changeid],
         m_databases[config]);
     
@@ -823,6 +873,7 @@ template<class T> void TestEvolution<T>::deleteAll(int config, bool insertFirst)
         
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[0],
         m_databases[config]);
 
@@ -862,6 +913,7 @@ template<class T> void TestEvolution<T>::testIterateTwice()
 {
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[0],
         m_databases[0]);
 
@@ -888,12 +940,14 @@ template<class T> void TestEvolution<T>::update( int config, const char *data )
 
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[config],
         m_databases[config]);
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
     SyncItem *item;
     EVOLUTION_ASSERT_NO_THROW( source, item = source.getFirstItem() );
+    CPPUNIT_ASSERT( item );
     item->setData(data, strlen(data) + 1);
     EVOLUTION_ASSERT_NO_THROW( source, source.updateItem( *item ) );
     EVOLUTION_ASSERT_NO_THROW( source, source.close() );
@@ -927,6 +981,7 @@ template<class T> void TestEvolution<T>::testChanges()
 
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[1],
         m_databases[0]);
         
@@ -1017,6 +1072,7 @@ template<class T> void TestEvolution<T>::import()
     
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[0],
         m_databases[0]);
 
@@ -1068,6 +1124,7 @@ template<class T> void TestEvolution<T>::testManyChanges()
 
     T copy(
         string( "dummy" ),
+        NULL,
         m_changeIds[1],
         m_databases[0]);
 
@@ -1102,7 +1159,13 @@ template<class T> void TestEvolution<T>::testManyChanges()
     EVOLUTION_ASSERT_NO_THROW( copy, copy.close() );
 }
 
-template<class T> string TestEvolution<T>::doSync(const string &logfilesuffix, int config, SyncMode syncMode)
+template<class T> string TestEvolution<T>::doSync(const string &logfilesuffix,
+                                                  int config,
+                                                  SyncMode syncMode,
+                                                  long maxMsgSize,
+                                                  long maxObjSize,
+                                                  bool loSupport,
+                                                  const char *encoding)
 {
     int res = 0;
 
@@ -1118,7 +1181,49 @@ template<class T> string TestEvolution<T>::doSync(const string &logfilesuffix, i
     try {
         set<string> sources;
         sources.insert(m_source[config]);
-        EvolutionSyncClient client(m_syncConfigs[config], syncMode, false, sources);
+        class TestSyncClient : public EvolutionSyncClient {
+        public:
+            TestSyncClient(const string &server,
+                           const set<string> &sources,
+                           SyncMode syncMode,
+                           long maxMsgSize,
+                           long maxObjSize,
+                           bool loSupport,
+                           const char *encoding) :
+                EvolutionSyncClient(server, false, sources),
+                m_syncMode(syncMode),
+                m_maxMsgSize(maxMsgSize),
+                m_maxObjSize(maxObjSize),
+                m_loSupport(loSupport),
+                m_encoding(encoding)
+                {}
+
+        protected:
+            virtual void prepare(SyncManagerConfig &config,
+                                 SyncSource **sources) {
+                for (SyncSource **source = sources;
+                     *source;
+                     source++) {
+                    if (m_encoding) {
+                        (*source)->getConfig().setEncoding(m_encoding);
+                    }
+                    (*source)->setPreferredSyncMode(m_syncMode);
+                }
+                DeviceConfig &dc(config.getDeviceConfig());
+                dc.setLoSupport(m_loSupport);
+                dc.setMaxObjSize(m_maxObjSize);
+                AccessConfig &ac(config.getAccessConfig());
+                ac.setMaxMsgSize(m_maxMsgSize);
+                EvolutionSyncClient::prepare(config, sources);
+            }
+
+        private:
+            const SyncMode m_syncMode;
+            const long m_maxMsgSize;
+            const long m_maxObjSize;
+            const bool m_loSupport;
+            const char *m_encoding;
+        } client(m_syncConfigs[config], sources, syncMode, maxMsgSize, maxObjSize, loSupport, encoding);
         client.sync();
     } catch(...) {
         EvolutionSyncSource::handleException();
@@ -1197,6 +1302,7 @@ template<class T> void TestEvolution<T>::testDeleteAllSync()
 {
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[1],
         m_databases[0]);
 
@@ -1224,6 +1330,7 @@ template<class T> void TestEvolution<T>::testDeleteAllRefresh()
 {
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[1],
         m_databases[0]);
 
@@ -1258,6 +1365,7 @@ template<class T> void TestEvolution<T>::testRefreshSemantic()
     
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[1],
         m_databases[0]);
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
@@ -1300,6 +1408,7 @@ template<class T> void TestEvolution<T>::doCopy( const string &prefix )
 
     T copy(
         string( "dummy" ),
+        NULL,
         m_changeIds[0],
         m_databases[1]);
     EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
@@ -1333,6 +1442,7 @@ template<class T> void TestEvolution<T>::testDelete()
     
     T copy(
         string( "dummy" ),
+        NULL,
         m_changeIds[1],
         m_databases[1]);
     EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
@@ -1356,6 +1466,7 @@ template<class T> void TestEvolution<T>::testMerge()
     
     T client1(
         string( "dummy" ),
+        NULL,
         m_changeIds[1],
         m_databases[1]);
     EVOLUTION_ASSERT_NO_THROW( client1, client1.open() );
@@ -1390,6 +1501,7 @@ template<class T> void TestEvolution<T>::testMerge()
     // this code here assumes STC_CONFLICT_RESOLVED_WITH_SERVER_DATA
     T client0(
         string( "dummy" ),
+        NULL,
         m_changeIds[0],
         m_databases[0]);
     
@@ -1399,6 +1511,7 @@ template<class T> void TestEvolution<T>::testMerge()
     
     T client1(
         string( "dummy" ),
+        NULL,
         m_changeIds[1],
         m_databases[1]);
     
@@ -1421,6 +1534,7 @@ template<class T> void TestEvolution<T>::compareDatabases(const string &prefix,
         simplifyFilename(sourceData);
         T source(
             string( "dummy" ),
+            NULL,
             m_changeIds[0],
             m_databases[0]);
         EVOLUTION_ASSERT_NO_THROW( source, source.open() );
@@ -1436,6 +1550,7 @@ template<class T> void TestEvolution<T>::compareDatabases(const string &prefix,
     simplifyFilename(copyData);
     T copy(
         string( "dummy" ),
+        NULL,
         m_changeIds[copyDatabase],
         m_databases[copyDatabase]);
     EVOLUTION_ASSERT_NO_THROW( copy, copy.open() );
@@ -1520,19 +1635,24 @@ template<class T> void TestEvolution<T>::testTwinning()
     compareDatabases("", NULL, 1);
 }
 
-template<class T> int TestEvolution<T>::insertManyItems(int config)
+template<class T> int TestEvolution<T>::insertManyItems(int config, int startIndex, int numItems, int size)
 {
     T source(
         string( "dummy" ),
+        NULL,
         m_changeIds[0],
         m_databases[config]);
     EVOLUTION_ASSERT_NO_THROW( source, source.open() );
     EVOLUTION_ASSERT( source, source.beginSync() == 0 );
-    CPPUNIT_ASSERT( !countItems( source ) );
+    CPPUNIT_ASSERT( startIndex > 1 || !countItems( source ) );
 
     const char *setting = getenv("TEST_EVOLUTION_NUM_ITEMS");
-    int numItems = setting ? atoi(setting) : 200;
-    for (int item = 1; item <= numItems; item++) {
+    int firstIndex = startIndex;
+    if (firstIndex < 0) {
+        firstIndex = 1;
+    }
+    int lastIndex = firstIndex + (numItems >= 1 ? numItems : setting ? atoi(setting) : 200) - 1;
+    for (int item = firstIndex; item <= lastIndex; item++) {
         string data = m_insertItem;
         stringstream prefix;
 
@@ -1552,10 +1672,71 @@ template<class T> int TestEvolution<T>::insertManyItems(int config)
                 data.insert(off + property.size(), prefix.str());
             }
         }
+        if (size > 0 && data.size() < size) {
+            int additionalBytes = size - data.size();
+            int added = 0;
+            
+            /* stuff the item so that it reaches at least that size */
+            size_t off = data.find(m_sizeProperty);
+            CPPUNIT_ASSERT(off != data.npos);
+            stringstream stuffing;
+            while(added < additionalBytes) {
+                int linelen = 0;
+
+                while(added + 4 < additionalBytes &&
+                      linelen < 60) {
+                    stuffing << 'x';
+                    added++;
+                    linelen++;
+                }
+                stuffing << "x\\nx";
+                added += 4;
+            }
+            data.insert(off + 1 + m_sizeProperty.size(), stuffing.str());
+        }
+        
         importItem(source, data);
     }
 
-    return numItems;
+    return lastIndex - firstIndex + 1;
+}
+
+template<class T> void TestEvolution<T>::doVarSizes(bool withMaxMsgSize,
+                                                    bool withLargeObject,
+                                                    const char *encoding)
+{
+    static const int maxMsgSize = 8 * 1024;
+    
+    // clean server and first test database
+    deleteAll("varsizes", 0);
+
+    // insert items, doubling their size, then restart with small size
+    int item = 1;
+    for (int i = 0; i < 2; i++ ) {
+        int size = 1;
+        while (size < 2 * maxMsgSize) {
+            insertManyItems(0, item, 1, m_insertItem.size() + 10 + size);
+            size *= 2;
+            item++;
+        }
+    }
+
+    // transfer to server
+    doSync("send.log", 0, SYNC_TWO_WAY,
+           withMaxMsgSize ? maxMsgSize : 0,
+           withMaxMsgSize ? maxMsgSize * 100 : 0,
+           withLargeObject,
+           encoding);
+
+    // copy to second client
+    doSync("recv.log", 1, SYNC_REFRESH_FROM_SERVER,
+           withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
+           withMaxMsgSize ? maxMsgSize * 100 : 0,
+           withLargeObject,
+           encoding);
+
+    // compare
+    compareDatabases("", NULL, 1);
 }
 
 template<class T> void TestEvolution<T>::testManyItems()

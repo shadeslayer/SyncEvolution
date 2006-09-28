@@ -45,6 +45,7 @@ class EvolutionContactSource : public EvolutionSyncSource
      *                       unusable for anything but listing backend databases
      */
     EvolutionContactSource( const string &name,
+                            const SyncSourceConfig *sc,
                             const string &changeId = string(""),
                             const string &id = string(""),
                             EVCardFormat vcardFormat = EVC_FORMAT_VCARD_30 );

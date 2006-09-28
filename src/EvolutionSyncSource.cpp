@@ -102,6 +102,7 @@ void EvolutionSyncSource::handleException()
 
 EvolutionSyncSource *EvolutionSyncSource::createSource(
     const string &name,
+    const SyncSourceConfig *sc,
     const string &changeId,
     const string &id,
     const string &mimeType
@@ -124,26 +125,26 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 
     if (mimeType == "text/x-vcard") {
 #ifdef ENABLE_EBOOK
-        return new EvolutionContactSource(name, strippedChangeId, id, EVC_FORMAT_VCARD_21);
+        return new EvolutionContactSource(name, sc, strippedChangeId, id, EVC_FORMAT_VCARD_21);
 #else
         LOG.error("access to addressbooks not compiled into this binary, text/x-vcard not supported");
 #endif
     } else if (mimeType == "text/vcard") {
 #ifdef ENABLE_EBOOK
-        return new EvolutionContactSource(name, strippedChangeId, id, EVC_FORMAT_VCARD_30);
+        return new EvolutionContactSource(name, sc, strippedChangeId, id, EVC_FORMAT_VCARD_30);
 #else
         LOG.error("access to addressbooks not compiled into this binary, text/vcard not supported");
 #endif
     } else if (mimeType == "text/x-todo") {
 #ifdef ENABLE_ECAL
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, strippedChangeId, id);
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, sc, strippedChangeId, id);
 #else
         LOG.error("access to calendars not compiled into this binary, text/x-todo not supported");
 #endif
     } else if (mimeType == "text/calendar" ||
                mimeType == "text/x-vcalendar") {
 #ifdef ENABLE_ECAL
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, strippedChangeId, id);
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, sc, strippedChangeId, id);
 #else
         LOG.error("access to calendars not compiled into this binary, %s not supported", mimeType.c_str());
 #endif

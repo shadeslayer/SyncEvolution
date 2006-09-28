@@ -38,11 +38,10 @@ using namespace std;
 #include <dirent.h>
 #include <errno.h>
 
-EvolutionSyncClient::EvolutionSyncClient(const string &server, SyncMode syncMode,
+EvolutionSyncClient::EvolutionSyncClient(const string &server,
                                          bool doLogging, const set<string> &sources) :
     m_server(server),
     m_sources(sources),
-    m_syncMode(syncMode),
     m_doLogging(doLogging),
     m_configPath(string("evolution/") + server)
 {
@@ -514,6 +513,7 @@ int EvolutionSyncClient::sync()
             EvolutionSyncSource *syncSource =
                 EvolutionSyncSource::createSource(
                     sc.getName(),
+                    &sc,
                     string("sync4jevolution:") + url + "/" + sc.getName(),
                     EvolutionSyncSource::getPropertyValue(node, "evolutionsource"),
                     type
@@ -533,10 +533,7 @@ int EvolutionSyncClient::sync()
             sc.setSupportedTypes(syncSource->getSupportedTypes());
             syncSource->setConfig(sc);
 
-            if (m_syncMode != SYNC_NONE) {
-                // caller overrides mode
-                syncSource->setPreferredSyncMode(m_syncMode);
-            } else if (overrideMode != SYNC_NONE) {
+            if (overrideMode != SYNC_NONE) {
                 // disabled source selected via source name
                 syncSource->setPreferredSyncMode(overrideMode);
             }
@@ -557,6 +554,9 @@ int EvolutionSyncClient::sync()
     dc.setDevType("workstation");
     dc.setUtc(1);
     dc.setOem("Open Source");
+
+    // give derived class also a chance to update the configs
+    prepare(config, sourceList.getSourceArray());
 
     // ready to go: dump initial databases and prepare for final report
     sourceList.syncPrepare();

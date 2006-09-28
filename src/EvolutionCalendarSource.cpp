@@ -36,9 +36,10 @@ EVOLUTION_CALENDAR_VERSION("VERSION:2.0");
 
 EvolutionCalendarSource::EvolutionCalendarSource( ECalSourceType type,
                                                   const string &name,
+                                                  const SyncSourceConfig *sc,
                                                   const string &changeId,
                                                   const string &id ) :
-    EvolutionSyncSource(name, changeId, id),
+    EvolutionSyncSource(name, sc, changeId, id),
     m_type(type)
 {
 }

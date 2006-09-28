@@ -36,10 +36,11 @@ const EvolutionContactSource::extensions EvolutionContactSource::m_vcardExtensio
 const EvolutionContactSource::unique EvolutionContactSource::m_uniqueProperties;
 
 EvolutionContactSource::EvolutionContactSource( const string &name,
+                                                const SyncSourceConfig *sc,
                                                 const string &changeId,
                                                 const string &id,
                                                 EVCardFormat vcardFormat ) :
-    EvolutionSyncSource( name, changeId, id ),
+    EvolutionSyncSource( name, sc, changeId, id ),
     m_vcardFormat( vcardFormat )
 {
 }

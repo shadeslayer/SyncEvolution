@@ -60,12 +60,13 @@ class EvolutionSyncSource : public SyncSource
      * Creates a new Evolution sync source.
      *
      * @param    name        the named needed by SyncSource
+     * @param    sc          obligatory config for this source, must remain valid throughout the lifetime of the source
      * @param    changeId    is used to track changes in the Evolution backend
      * @param    id          identifies the backend; not specifying it makes this instance
      *                       unusable for anything but listing backend databases
      */
-    EvolutionSyncSource( const string name, const string &changeId, const string &id ) :
-        SyncSource( name.c_str() ),
+    EvolutionSyncSource( const string name, const SyncSourceConfig *sc, const string &changeId, const string &id ) :
+        SyncSource( name.c_str(), sc ),
         m_changeId( changeId ),
         m_id( id ),
         m_allItems( *this, "existing", SYNC_STATE_NONE ),
@@ -196,6 +197,7 @@ class EvolutionSyncSource : public SyncSource
      */
     static EvolutionSyncSource *createSource(
         const string &name,
+        const SyncSourceConfig *sc,
         const string &changeId,
         const string &id,
         const string &mimeType );

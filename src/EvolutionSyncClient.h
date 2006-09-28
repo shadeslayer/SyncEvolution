@@ -37,7 +37,6 @@ using namespace std;
 class EvolutionSyncClient : public SyncClient {
     const string m_server;
     const set<string> m_sources;
-    const SyncMode m_syncMode;
     const bool m_doLogging;
     const string m_configPath;
 
@@ -48,7 +47,6 @@ class EvolutionSyncClient : public SyncClient {
      * @param doLogging  write additional log and datatbase files about the sync
      */
     EvolutionSyncClient(const string &server,
-                        SyncMode syncMode = SYNC_NONE,
                         bool doLogging = false,
                         const set<string> &sources = set<string>());
     ~EvolutionSyncClient();
@@ -58,6 +56,18 @@ class EvolutionSyncClient : public SyncClient {
      * Handles automatic backups and report generation.
      */
     int sync();
+
+  protected:
+    /**
+     * Callback for derived classes: called after setting up the client's
+     * and sources' configuration. Can be used to reconfigure before
+     * actually starting the synchronization.
+     *
+     * @param config    the clients config, can be modified
+     * @param sources   a NULL terminated array of all active sources
+     */
+    virtual void prepare(SyncManagerConfig &config,
+                         SyncSource **sources) {}
 };
 
 #endif // INCL_EVOLUTIONSYNCCLIENT

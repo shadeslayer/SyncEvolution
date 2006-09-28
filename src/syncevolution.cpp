@@ -80,19 +80,21 @@ int main( int argc, char **argv )
     try {
         if ( argc == 1 ) {
 #ifdef ENABLE_EBOOK
-            EvolutionContactSource contactSource( string( "list" ) );
+            EvolutionContactSource contactSource( string( "list" ), NULL );
             listSources( contactSource, "address books" );
             cout << "\n";
 #endif
 
 #ifdef ENABLE_ECAL
             EvolutionCalendarSource eventSource(E_CAL_SOURCE_TYPE_EVENT,
-                                                string("list"));
+                                                string("list"),
+                                                NULL);
             listSources(eventSource, "calendars");
             cout << "\n";
 
             EvolutionCalendarSource todoSource(E_CAL_SOURCE_TYPE_TODO,
-                                               string("list"));
+                                               string("list"),
+                                               NULL);
             listSources(todoSource, "tasks");
 #endif
 
@@ -104,7 +106,7 @@ int main( int argc, char **argv )
                 sources.insert(argv[source]);
             }
 
-            EvolutionSyncClient client(argv[1], SYNC_NONE, true, sources);
+            EvolutionSyncClient client(argv[1], true, sources);
             client.sync();
         }
         return 0;
