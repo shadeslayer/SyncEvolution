@@ -3,13 +3,10 @@
 use strict;
 use encoding 'utf8';
 
-# ignore differences caused by sync.scheduleworld.com?
-my $scheduleworld;
-if (defined $ENV{TEST_EVOLUTION_SERVER} && $ENV{TEST_EVOLUTION_SERVER} =~ /scheduleworld/) {
-  $scheduleworld = 1;
-} else {
-  $scheduleworld = 0;
-}
+# ignore differences caused by specific servers?
+my $server = $ENV{TEST_EVOLUTION_SERVER} || "";
+my $scheduleworld = $server =~ /scheduleworld/;
+my $synthesis = $server =~ /synthesis/;
 
 sub Usage {
   print "$0 <vcards.vcf\n";
@@ -97,6 +94,11 @@ sub Normalize {
       s/^ORG:([^;:]+)(;[^\n]*)/ORG:$1/mg;
       # replaces certain TZIDs with more up-to-date ones
       s;TZID(=|:)/(scheduleworld.com|softwarestudio.org)/Olson_\d+_\d+/;TZID$1/foo.com/Olson_20000101_1/;mg;
+    }
+
+    if ($synthesis) {
+      # does not preserve certain properties
+      s/^(FN|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS):.*\r?\n?//gm;
     }
 
 
