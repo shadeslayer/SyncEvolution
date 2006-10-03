@@ -65,7 +65,7 @@ class EvolutionSyncSource : public SyncSource
      * @param    id          identifies the backend; not specifying it makes this instance
      *                       unusable for anything but listing backend databases
      */
-    EvolutionSyncSource( const string name, const SyncSourceConfig *sc, const string &changeId, const string &id ) :
+    EvolutionSyncSource( const string name, SyncSourceConfig *sc, const string &changeId, const string &id ) :
         SyncSource( name.c_str(), sc ),
         m_changeId( changeId ),
         m_id( id ),
@@ -197,7 +197,7 @@ class EvolutionSyncSource : public SyncSource
      */
     static EvolutionSyncSource *createSource(
         const string &name,
-        const SyncSourceConfig *sc,
+        SyncSourceConfig *sc,
         const string &changeId,
         const string &id,
         const string &mimeType );

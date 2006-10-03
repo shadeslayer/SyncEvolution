@@ -36,7 +36,7 @@ EVOLUTION_CALENDAR_VERSION("VERSION:2.0");
 
 EvolutionCalendarSource::EvolutionCalendarSource( ECalSourceType type,
                                                   const string &name,
-                                                  const SyncSourceConfig *sc,
+                                                  SyncSourceConfig *sc,
                                                   const string &changeId,
                                                   const string &id ) :
     EvolutionSyncSource(name, sc, changeId, id),
@@ -251,7 +251,7 @@ SyncItem *EvolutionCalendarSource::createItem( const string &uid, SyncState stat
     string icalstr = retrieveItemAsString(uid);
 
     auto_ptr<SyncItem> item(new SyncItem(uid.c_str()));
-    item->setData(icalstr.c_str(), icalstr.size() + 1);
+    item->setData(icalstr.c_str(), icalstr.size());
     item->setDataType("text/calendar");
     item->setModificationTime(0);
     item->setState(state);

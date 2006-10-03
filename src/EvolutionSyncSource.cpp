@@ -102,7 +102,7 @@ void EvolutionSyncSource::handleException()
 
 EvolutionSyncSource *EvolutionSyncSource::createSource(
     const string &name,
-    const SyncSourceConfig *sc,
+    SyncSourceConfig *sc,
     const string &changeId,
     const string &id,
     const string &mimeType

@@ -45,7 +45,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource
      */
     EvolutionCalendarSource( ECalSourceType type,
                              const string &name,
-                             const SyncSourceConfig *sc,
+                             SyncSourceConfig *sc,
                              const string &changeId = string(""),
                              const string &id = string("") );
     EvolutionCalendarSource( const EvolutionCalendarSource &other );

@@ -36,7 +36,7 @@ const EvolutionContactSource::extensions EvolutionContactSource::m_vcardExtensio
 const EvolutionContactSource::unique EvolutionContactSource::m_uniqueProperties;
 
 EvolutionContactSource::EvolutionContactSource( const string &name,
-                                                const SyncSourceConfig *sc,
+                                                SyncSourceConfig *sc,
                                                 const string &changeId,
                                                 const string &id,
                                                 EVCardFormat vcardFormat ) :
@@ -322,7 +322,7 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
     LOG.debug("%s", (char *)finalstr);
 
     auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
-    item->setData( (char *)finalstr, strlen(finalstr) + 1 );
+    item->setData( (char *)finalstr, strlen(finalstr) );
     item->setDataType( getMimeType() );
     item->setModificationTime( 0 );
     item->setState( state );
