@@ -721,7 +721,7 @@ public:
     CPPUNIT_TEST( testAddUpdate ); \
     CPPUNIT_TEST( testMaxMsg ); \
     CPPUNIT_TEST( testLargeObject ); \
-    // CPPUNIT_TEST( testLargeObjectEncoded ); \
+    CPPUNIT_TEST( testLargeObjectEncoded ); \
     CPPUNIT_TEST( testTwinning );
 
 #define STRESS_TESTS \
@@ -1722,14 +1722,14 @@ template<class T> void TestEvolution<T>::doVarSizes(bool withMaxMsgSize,
     }
 
     // transfer to server
-    doSync("send.log", 0, SYNC_TWO_WAY,
+    doSync("send.client.log", 0, SYNC_TWO_WAY,
            withMaxMsgSize ? maxMsgSize : 0,
            withMaxMsgSize ? maxMsgSize * 100 : 0,
            withLargeObject,
            encoding);
 
     // copy to second client
-    doSync("recv.log", 1, SYNC_REFRESH_FROM_SERVER,
+    doSync("recv.client.log", 1, SYNC_REFRESH_FROM_SERVER,
            withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
            withMaxMsgSize ? maxMsgSize * 100 : 0,
            withLargeObject,
