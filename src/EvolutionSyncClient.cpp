@@ -525,13 +525,11 @@ int EvolutionSyncClient::sync()
             }
             sourceList.push_back(syncSource);
 
-            // Update the backend configuration because the SyncManager will
-            // overwrite the settings in our sync sources. The EvolutionClientConfig
+            // Update the backend configuration. The EvolutionClientConfig
             // above prevents that these modifications overwrite the user settings.
             sc.setType(syncSource->getMimeType());
             sc.setVersion(syncSource->getMimeVersion());
             sc.setSupportedTypes(syncSource->getSupportedTypes());
-            syncSource->setConfig(sc);
 
             if (overrideMode != SYNC_NONE) {
                 // disabled source selected via source name
