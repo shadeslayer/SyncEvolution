@@ -721,7 +721,7 @@ public:
     CPPUNIT_TEST( testAddUpdate ); \
     CPPUNIT_TEST( testMaxMsg ); \
     CPPUNIT_TEST( testLargeObject ); \
-    CPPUNIT_TEST( testLargeObjectEncoded ); \
+    /* CPPUNIT_TEST( testLargeObjectEncoded ); requires a server which supportes b64, disabled */ \
     CPPUNIT_TEST( testTwinning );
 
 #define STRESS_TESTS \
