@@ -44,7 +44,7 @@ def del_dir(path):
     os.rmdir(path)
 
 
-def copyLog(filename, dirname, htaccess):
+def copyLog(filename, dirname, htaccess, lineFilter=None):
     """Make a gzipped copy (if possible) with the original time stamps and find the most severe problem in it.
     That line is then added as description in a .htaccess AddDescription.
     """
@@ -59,6 +59,8 @@ def copyLog(filename, dirname, htaccess):
     for line in file(filename, "r").readlines():
         if not error and line.find("ERROR") >= 0:
             error = line
+        if lineFilter:
+            line = lineFilter(line)
         out.write(line)
     out.close()
     os.utime(outname, (info[stat.ST_ATIME], info[stat.ST_MTIME]))
@@ -323,7 +325,7 @@ class AutotoolsBuild(Action):
 
 
 class SyncEvolutionTest(Action):
-    def __init__(self, name, build, serverlogs, runner, tests, testenv):
+    def __init__(self, name, build, serverlogs, runner, tests, testenv, lineFilter=None):
         """Execute TestEvolution for all (empty tests) or the
         selected tests."""
         Action.__init__(self, name)
@@ -333,12 +335,13 @@ class SyncEvolutionTest(Action):
         self.tests = tests
         self.testenv = testenv
         self.dependencies.append(build.name)
+        self.lineFilter = lineFilter
 
     def execute(self):
         resdir = os.getcwd()
         os.chdir(self.srcdir)
         try:
-            basecmd = "%s TEST_EVOLUTION_ALARM=120 TEST_EVOLUTION_LOG=%s %s ./TestEvolution" % (self.testenv, self.serverlogs, self.runner);
+            basecmd = "%s TEST_EVOLUTION_ALARM=600 TEST_EVOLUTION_LOG=%s %s ./TestEvolution" % (self.testenv, self.serverlogs, self.runner);
             context.runCommand("make testclean test")
             if self.tests:
                 ex = None
@@ -357,7 +360,7 @@ class SyncEvolutionTest(Action):
             htaccess = file(os.path.join(resdir, ".htaccess"), "a")
             for f in os.listdir(self.srcdir):
                 if tocopy.match(f):
-                    copyLog(f, resdir, htaccess)
+                    copyLog(f, resdir, htaccess, self.lineFilter)
 
 
 
@@ -390,6 +393,9 @@ parser.add_option("", "--resultdir",
 parser.add_option("", "--shell",
                   type="string", dest="shell", default="",
                   help="a prefix which is put in front of a command to execute it (can be used for e.g. run_garnome)")
+parser.add_option("", "--tag",
+                  type="string", dest="tag", default="HEAD",
+                  help="the tag of both SyncEvolution and the C++ client library to be tested (default HEAD)")
 parser.add_option("", "--synthesis",
                   type="string", dest="synthesisdir", default="",
                   help="directory with Synthesis installation")
@@ -430,33 +436,36 @@ class SyncEvolutionBuild(AutotoolsBuild):
         os.chdir("src")
         context.runCommand("%s make test" % (self.runner))
 
-clienthead = ClientCheckout("client-api-head", "HEAD")
-context.add(clienthead)
-synchead = SyncEvolutionCheckout("syncevolution-head", "HEAD")
-context.add(synchead)
-compilehead = SyncEvolutionBuild("compile-head",
-                                 synchead.basedir,
-                                 "--disable-shared CXXFLAGS=-g --with-sync4j-src=%s" % (clienthead.basedir),
-                                 options.shell,
-                                 [ clienthead.name, synchead.name ])
-context.add(compilehead)
+client = ClientCheckout("client-api", options.tag)
+context.add(client)
+sync = SyncEvolutionCheckout("syncevolution", options.tag)
+context.add(sync)
+compile = SyncEvolutionBuild("compile",
+                             sync.basedir,
+                             "--disable-shared CXXFLAGS=-g --with-sync4j-src=%s" % (client.basedir),
+                             options.shell,
+                             [ client.name, sync.name ])
+context.add(compile)
 
-evolutiontest = SyncEvolutionTest("evolution", compilehead,
+evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
                                   [ "ContactSource", "CalendarSource", "TaskSource" ],
                                   "")
 context.add(evolutiontest)
 
-scheduleworldtest = SyncEvolutionTest("scheduleworld", compilehead,
+scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
-                                      [],
-                                      "TEST_EVOLUTION_SERVER=scheduleworld TEST_EVOLUTION_FAILURES=ContactSync::testItems,ContactSync::testTwinning,CalendarSync::testDeleteAllRefresh,CalendarSync::testItems,TaskSync::testDeleteAllRefresh,TaskSync::testItems,TaskSync::testTwinning")
+                                      # [ "ContactSync", "ContactStress", "TaskSync", "TaskStress", "CalendarSync", "CalendarStress" ]
+                                      [ ],
+                                      "TEST_EVOLUTION_SERVER=scheduleworld TEST_EVOLUTION_DELAY=2 TEST_EVOLUTION_FAILURES=ContactSync::testItems,ContactSync::testTwinning,CalendarSync::testDeleteAllRefresh,CalendarSync::testItems,TaskSync::testDeleteAllRefresh,TaskSync::testItems,TaskSync::testTwinning")
 context.add(scheduleworldtest)
 
-egroupwaretest = SyncEvolutionTest("egroupware", compilehead,
+egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    "", options.shell,
-                                   [ "ContactSync", "ContactStress", "CalendarSync", "CalendarSync" ],
-                                   "TEST_EVOLUTION_SERVER=egroupware")
+                                   [ "ContactSync", "ContactStress", "CalendarSync", "CalendarStress" ],
+                                   "TEST_EVOLUTION_SERVER=egroupware",
+                                   lambda x: x.replace('oasis.ethz.ch','<host hidden>').\
+                                             replace('cG9obHk6cWQyYTVtZ1gzZk5GQQ==','xxx'))
 context.add(egroupwaretest)
 
 class SynthesisTest(SyncEvolutionTest):
@@ -474,7 +483,7 @@ class SynthesisTest(SyncEvolutionTest):
         finally:
             context.runCommand("synthesis stop \"%s\"" % (self.synthesisdir))
 
-synthesis = SynthesisTest("synthesis", compilehead,
+synthesis = SynthesisTest("synthesis", compile,
                           options.synthesisdir,
                           options.shell)
 context.add(synthesis)
@@ -496,7 +505,7 @@ class FunambolTest(SyncEvolutionTest):
             if self.funamboldir:
                 context.runCommand("%s/tools/bin/funambol.sh stop" % (self.funamboldir))
 
-funambol = FunambolTest("funambol", compilehead,
+funambol = FunambolTest("funambol", compile,
                         options.funamboldir,
                         options.shell)
 context.add(funambol)
