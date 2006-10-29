@@ -546,6 +546,7 @@ int EvolutionSyncClient::sync()
 
     // reconfigure with our fixed properties
     DeviceConfig &dc(config.getDeviceConfig());
+    dc.setVerDTD("1.1");
     dc.setMod("SyncEvolution");
     dc.setSwv(VERSION);
     dc.setMan("Patrick Ohly");
