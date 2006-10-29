@@ -392,6 +392,10 @@ public:
     void testLargeObject() {
         doVarSizes(true, true, NULL);
     }
+    // test copying with maxMsg and large object support using explicit "bin" encoding
+    void testLargeObjectBin() {
+        doVarSizes(true, true, "bin");
+    }
     // test copying with maxMsg and large object support using B64 encoding
     void testLargeObjectEncoded() {
         doVarSizes(true, true, "b64");
@@ -515,7 +519,7 @@ public:
             "SUMMARY:phone meeting\n"
             "DTEND;20060406T163000Z\n"
             "DTSTART;20060406T160000Z\n"
-            "UID:20060406T211449Z-4562-727-1-63@gollum\n"
+            "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
             "LAST-MODIFIED:20060409T213201\n"
             "CREATED:20060409T213201\n"
@@ -536,7 +540,7 @@ public:
             "SUMMARY:meeting on site\n"
             "DTEND;20060406T163000Z\n"
             "DTSTART;20060406T160000Z\n"
-            "UID:20060406T211449Z-4562-727-1-63@gollum\n"
+            "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
             "LAST-MODIFIED:20060409T213201\n"
             "CREATED:20060409T213201\n"
@@ -557,7 +561,7 @@ public:
             "SUMMARY:phone meeting\n"
             "DTEND;20060406T163000Z\n"
             "DTSTART;20060406T160000Z\n"
-            "UID:20060406T211449Z-4562-727-1-63@gollum\n"
+            "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
             "LAST-MODIFIED:20060409T213201\n"
             "CREATED:20060409T213201\n"
@@ -578,7 +582,7 @@ public:
             "SUMMARY:phone meeting\n"
             "DTEND;20060406T163000Z\n"
             "DTSTART;20060406T160000Z\n"
-            "UID:20060406T211449Z-4562-727-1-63@gollum\n"
+            "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
             "LAST-MODIFIED:20060409T213201\n"
             "CREATED:20060409T213201\n"
@@ -721,6 +725,7 @@ public:
     CPPUNIT_TEST( testAddUpdate ); \
     CPPUNIT_TEST( testMaxMsg ); \
     CPPUNIT_TEST( testLargeObject ); \
+    CPPUNIT_TEST( testLargeObjectBin ); \
     /* CPPUNIT_TEST( testLargeObjectEncoded ); requires a server which supportes b64, disabled */ \
     CPPUNIT_TEST( testTwinning );
 
