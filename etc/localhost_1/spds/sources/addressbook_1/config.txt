@@ -5,10 +5,10 @@ name = addressbook_1
 # requests a certain synchronization mode:
 #   two-way             = only send/receive changes since last sync
 #   slow                = exchange all items
-#   refresh-from-client = discard all local items and replace with
-#                         the items on the server
-#   refresh-from-server = discard all remote items and replace with
+#   refresh-from-client = discard all remote items and replace with
 #                         the items on the client
+#   refresh-from-server = discard all local items and replace with
+#                         the items on the server
 #   none                = synchronization disabled
 sync = two-way
 
