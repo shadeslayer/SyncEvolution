@@ -58,7 +58,7 @@ TestEvolution_SOURCES = \
         TestEvolution.cpp \
 	$(CORE_SOURCES)
 
-TestEvolution_CFLAGS = `cppunit-config --cflags`
+TestEvolution_CXXFLAGS = `cppunit-config --cflags`
 TestEvolution_LDFLAGS = `cppunit-config --libs`
 TestEvolution_LDADD = $(CORE_LDADD)
 
