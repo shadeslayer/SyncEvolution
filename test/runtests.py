@@ -393,9 +393,12 @@ parser.add_option("", "--resultdir",
 parser.add_option("", "--shell",
                   type="string", dest="shell", default="",
                   help="a prefix which is put in front of a command to execute it (can be used for e.g. run_garnome)")
-parser.add_option("", "--tag",
-                  type="string", dest="tag", default="HEAD",
-                  help="the tag of both SyncEvolution and the C++ client library to be tested (default HEAD)")
+parser.add_option("", "--syncevo-tag",
+                  type="string", dest="syncevotag", default="HEAD",
+                  help="the tag of SyncEvolution (default HEAD)")
+parser.add_option("", "--client-tag",
+                  type="string", dest="clienttag", default="HEAD",
+                  help="the tag of the client library (default HEAD)")
 parser.add_option("", "--synthesis",
                   type="string", dest="synthesisdir", default="",
                   help="directory with Synthesis installation")
@@ -436,9 +439,9 @@ class SyncEvolutionBuild(AutotoolsBuild):
         os.chdir("src")
         context.runCommand("%s make test" % (self.runner))
 
-client = ClientCheckout("client-api", options.tag)
+client = ClientCheckout("client-api", options.clienttag)
 context.add(client)
-sync = SyncEvolutionCheckout("syncevolution", options.tag)
+sync = SyncEvolutionCheckout("syncevolution", options.syncevotag)
 context.add(sync)
 compile = SyncEvolutionBuild("compile",
                              sync.basedir,
