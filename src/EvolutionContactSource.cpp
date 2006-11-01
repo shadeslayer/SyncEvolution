@@ -69,6 +69,28 @@ EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
                                                            e_source_get_uri(source) ) );
         }
     }
+
+    // No results? Try system address book (workaround for embedded Evolution Dataserver).
+    if (!result.size()) {
+        eptr<EBook, GObject> book;
+        GError *gerror;
+        const char *name;
+
+        name = "<<system>>";
+        book = e_book_new_system_addressbook (&gerror);
+        g_clear_error(&gerror);
+        if (!book) {
+            name = "<<default>>";
+            book = e_book_new_default_addressbook (&gerror);
+        }
+        g_clear_error(&gerror);
+
+        if (book) {
+            const char *uri = e_book_get_uri (book);
+            result.push_back (EvolutionSyncSource::source (name, uri));
+        }
+    }
+    
     return result;
 }
 
@@ -79,13 +101,20 @@ void EvolutionContactSource::open()
         throw runtime_error("unable to access address books");
     }
     
+    GError *gerror = NULL;
     ESource *source = findSource( sources, m_id );
     if (!source) {
-        throw runtime_error(string(getName()) + ": no such address book: '" + m_id + "'");
+        // might have been special "<<system>>" or "<<default>>", try that before giving up
+        if (m_id == "<<system>>") {
+            m_addressbook.set( e_book_new_system_addressbook (&gerror), "system address book" );
+        } else if (m_id == "<<default>>") {
+            m_addressbook.set( e_book_new_default_addressbook (&gerror), "default address book" );
+        } else {
+            throw runtime_error(string(getName()) + ": no such address book: '" + m_id + "'");
+        }
+    } else {
+        m_addressbook.set( e_book_new( source, &gerror ), "address book" );
     }
-
-    GError *gerror = NULL;
-    m_addressbook.set( e_book_new( source, &gerror ), "address book" );
  
     if (!e_book_open( m_addressbook, TRUE, &gerror) ) {
         throwError( "opening address book", gerror );
