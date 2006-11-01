@@ -16,6 +16,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <config.h>
+
 #include <cppunit/AdditionalMessage.h>
 #include <cppunit/extensions/HelperMacros.h>
 #define EVOLUTION_ASSERT_NO_THROW( _source, _x ) \
@@ -36,9 +38,12 @@
     CPPUNIT_ASSERT( !(_source).hasFailed() );\
 }
 
-
+#ifdef ENABLE_EBOOK
 #include <EvolutionContactSource.h>
+#endif
+#ifdef ENABLE_ECAL
 #include <EvolutionCalendarSource.h>
+#endif
 #include <EvolutionSyncClient.h>
 #include <common/spds/SyncStatus.h>
 #include <posix/base/posixlog.h>
@@ -412,6 +417,7 @@ public:
     void testManyItems();
 };
 
+#ifdef ENABLE_EBOOK
 /**
  * TestEvolution configured for use with contacts
  */
@@ -475,7 +481,9 @@ public:
             "END:VCARD\n" )
         {}
 };
+#endif /* ENABLE_EBOOK */
 
+#ifdef ENABLE_ECAL
 /**
  * EvolutionCalendarSource configured for access to calendars,
  * with a constructor as expected by TestEvolution
@@ -695,7 +703,7 @@ public:
             "END:VCALENDAR\n" )
         {}
 };
-
+#endif /* ENABLE_ECAL */
 
 #define SOURCE_TESTS \
     CPPUNIT_TEST( testOpen ); \
@@ -726,13 +734,14 @@ public:
     CPPUNIT_TEST( testMaxMsg ); \
     CPPUNIT_TEST( testLargeObject ); \
     CPPUNIT_TEST( testLargeObjectBin ); \
-    /* CPPUNIT_TEST( testLargeObjectEncoded ); requires a server which supportes b64, disabled */ \
+    /* CPPUNIT_TEST( testLargeObjectEncoded ); requires a server which supports b64, disabled */ \
     CPPUNIT_TEST( testTwinning );
 
 #define STRESS_TESTS \
     CPPUNIT_TEST( testManyItems );
 
 
+#ifdef ENABLE_EBOOK
 class ContactSource : public TestContact
 {
     CPPUNIT_TEST_SUITE( ContactSource );
@@ -756,8 +765,9 @@ class ContactStress : public TestContact
     CPPUNIT_TEST_SUITE_END();
 };
 CPPUNIT_TEST_SUITE_REGISTRATION( ContactStress );
+#endif /* ENABLE_EBOOK */
 
-
+#ifdef ENABLE_ECAL
 class CalendarSource : public TestCalendar
 {
     CPPUNIT_TEST_SUITE( CalendarSource );
@@ -806,7 +816,7 @@ class TaskStress : public TestTask
     CPPUNIT_TEST_SUITE_END();
 };
 CPPUNIT_TEST_SUITE_REGISTRATION( TaskStress );
-
+#endif /* ENABLE_ECAL */
 
 
 
