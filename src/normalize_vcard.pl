@@ -7,6 +7,8 @@ use encoding 'utf8';
 my $server = $ENV{TEST_EVOLUTION_SERVER} || "";
 my $scheduleworld = $server =~ /scheduleworld/;
 my $synthesis = $server =~ /synthesis/;
+my $egroupware = $server =~ /egroupware/;
+my $funambol = $server =~ /funambol/;
 
 sub Usage {
   print "$0 <vcards.vcf\n";
@@ -37,26 +39,27 @@ sub Normalize {
 
     # the distinction between an empty and a missing property
     # is vague and handled differently, so ignore empty properties
-    s/^[^:]*:;*\n//mg;
+    s/^[^:\n]*:;*\n//mg;
 
     # use separate TYPE= fields
     while( s/^(\w*)([^:\n]*);TYPE=(\w*),(\w*)/$1$2;TYPE=$3;TYPE=$4/mg ) {}
 
     # replace parameters with a sorted parameter list
-    s!^([^;:]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
+    s!^([^;:\n]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
 
     # Ignore "other" email, address and telephone type - this is
     # an Evolution specific extension which might not be preserved.
-    s/^(ADR|EMAIL|TEL)([^:]*);TYPE=OTHER/$1$2/mg;
+    s/^(ADR|EMAIL|TEL)([^:\n]*);TYPE=OTHER/$1$2/mg;
     # TYPE=PREF on the other hand is not used by Evolution, but
     # might be sent back.
-    s/^(ADR|EMAIL)([^:]*);TYPE=PREF/$1$2/mg;
+    s/^(ADR|EMAIL)([^:\n]*);TYPE=PREF/$1$2/mg;
     # Evolution does not need TYPE=INTERNET for email
-    s/^(EMAIL)([^:]*);TYPE=INTERNET/$1$2/mg;
+    s/^(EMAIL)([^:\n]*);TYPE=INTERNET/$1$2/mg;
     # ignore TYPE=PREF in address, does not matter in Evolution
-    s/^((ADR|LABEL)[^:]*);TYPE=PREF/$1/mg;
+    s/^((ADR|LABEL)[^:\n]*);TYPE=PREF/$1/mg;
     # ignore extra separators in multi-value fields
-    s/^((ORG|N|(ADR[^:]*)):.*?);*$/$1/mg;
+
+    s/^((ORG|N|(ADR[^:\n]*?)):.*?);*$/$1/mg;
     # the type of certain fields is ignore by Evolution
     s/^X-(AIM|GROUPWISE|ICQ|YAHOO);TYPE=HOME/X-$1/gm;
     # Evolution ignores an additional pager type
@@ -66,9 +69,9 @@ sub Normalize {
     # TYPE=VOICE is the default in Evolution and may or may not appear in the vcard;
     # this simplification is a bit too agressive and hides the problematic
     # TYPE=PREF,VOICE combination which Evolution does not handle :-/
-    s/^TEL([^:]*);TYPE=VOICE,([^:]*):/TEL$1;TYPE=$2:/mg;
-    s/^TEL([^:]*);TYPE=([^;:]*),VOICE([^:]*):/TEL$1;TYPE=$2$3:/mg;
-    s/^TEL([^:]*);TYPE=VOICE([^:]*):/TEL$1$2:/mg;
+    s/^TEL([^:\n]*);TYPE=VOICE,([^:\n]*):/TEL$1;TYPE=$2:/mg;
+    s/^TEL([^:\n]*);TYPE=([^;:\n]*),VOICE([^:\n]*):/TEL$1;TYPE=$2$3:/mg;
+    s/^TEL([^:\n]*);TYPE=VOICE([^:\n]*):/TEL$1$2:/mg;
     # don't care about the TYPE property of PHOTOs
     s/^PHOTO;(.*)TYPE=[A-Z]*/PHOTO;$1/mg;
     # encoding is not case sensitive, skip white space in the middle of binary data
@@ -78,20 +81,23 @@ sub Normalize {
     # ignore extra day factor in front of weekday
     s/^RRULE:(.*)BYDAY=\+?1(\D)/RRULE:$1BYDAY=$2/mg;
     # remove default VALUE=DATE-TIME
-    s/^(DTSTART|DTEND)([^:]*);VALUE=DATE-TIME/$1$2/mg;
+    s/^(DTSTART|DTEND)([^:\n]*);VALUE=DATE-TIME/$1$2/mg;
 
     # remove fields which may differ
     s/^(PRODID|CREATED|DTSTAMP|LAST-MODIFIED|REV):.*\r?\n?//gm;
     # remove optional fields
     s/^(METHOD|X-WSS-COMPONENT|X-WSS-LUID):.*\r?\n?//gm;
 
-    if ($scheduleworld) {
+    if ($scheduleworld || $egroupware) {
       # does not preserve X-EVOLUTION-UI-SLOT=
-      s/^(\w+)([^:]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
+      s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
+    }
+
+    if ($scheduleworld) {
       # cannot distinguish EMAIL types
       s/^EMAIL;TYPE=\w*/EMAIL/mg;
       # only preserves ORG "Company", but loses "Department" and "Office"
-      s/^ORG:([^;:]+)(;[^\n]*)/ORG:$1/mg;
+      s/^ORG:([^;:\n]+)(;[^\n]*)/ORG:$1/mg;
       # replaces certain TZIDs with more up-to-date ones
       s;TZID(=|:)/(scheduleworld.com|softwarestudio.org)/Olson_\d+_\d+/;TZID$1/foo.com/Olson_20000101_1/;mg;
     }
@@ -101,6 +107,20 @@ sub Normalize {
       s/^(FN|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS):.*\r?\n?//gm;
     }
 
+    if ($egroupware) {
+      # CLASS:PUBLIC is added if none exists (as in our test cases),
+      # several properties not preserved
+      s/^(BDAY|CATEGORIES|FBURL|PHOTO|FN|X-[A-Z-]*|CALURI|CLASS|NICKNAME|UID|TRANSP|PRIORITY|SEQUENCE)(;[^:;\n]*)*:.*\r?\n?//gm;
+      # org gets truncated
+      s/^ORG:([^;:\n]*);.*/ORG:$1/gm;
+      # NOTE is often truncated due to length resistrictions
+      s/^(NOTE)(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
+
+    if ($funambol) {
+      # several properties are not preserved
+      s/^(FN|X-MOZILLA-HTML)(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
 
     my @formatted = ();
 
