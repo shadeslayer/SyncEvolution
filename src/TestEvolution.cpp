@@ -145,7 +145,7 @@ template<class T> class TestEvolution : public CppUnit::TestFixture {
      * 
      */
     const string m_insertItem,
-        m_updateItem,
+        m_updateItem, m_complexUpdateItem,
         m_mergeItem1, m_mergeItem2;
 
     /**
@@ -263,6 +263,7 @@ public:
         const char *sizeProperty,
         const char *insertItem,
         const char *updateItem,
+        const char *complexUpdateItem,
         const char *mergeItem1,
         const char *mergeItem2
         ) :
@@ -270,6 +271,7 @@ public:
         m_sizeProperty(sizeProperty),
         m_insertItem(insertItem),
         m_updateItem(updateItem),
+        m_complexUpdateItem(complexUpdateItem),
         m_mergeItem1(mergeItem1),
         m_mergeItem2(mergeItem2),
         m_testItems(string(syncSourceName) + ".tests")
@@ -368,8 +370,13 @@ public:
     void testRefreshStatus();
     // test that a two-way sync copies an item from one address book into the other
     void testCopy();
-    // test that a two-way sync copies updates from database to the other
+    // test that a two-way sync copies updates from database to the other client,
+    // using simple data commonly supported by servers
     void testUpdate();
+    // test that a two-way sync copies updates from database to the other client,
+    // using data that some, but not all servers support, like adding a second
+    // phone number to a contact
+    void testComplexUpdate();
     // test that a two-way sync deletes the copy of an item in the other database
     void testDelete();
     // test what the server does when it finds that different
@@ -450,8 +457,23 @@ public:
             "FN:Joan Doe\n"
             "N:Doe;Joan;;;\n"
             "X-EVOLUTION-FILE-AS:Doe\\, Joan\n"
-            "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
             "TEL;TYPE=WORK;TYPE=VOICE:business 2\n"
+            "BDAY:2006-01-08\n"
+            "X-MOZILLA-HTML:TRUE\n"
+            "END:VCARD\n",
+
+            /*
+             * complex update item which replaces the initial item in testComplexUpdate:
+             * adds a second phone number
+             */
+            "BEGIN:VCARD\n"
+            "VERSION:3.0\n"
+            "TITLE:tester\n"
+            "FN:Joan Doe\n"
+            "N:Doe;Joan;;;\n"
+            "X-EVOLUTION-FILE-AS:Doe\\, Joan\n"
+            "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
+            "TEL;TYPE=HOME;TYPE=VOICE:home 2\n"
             "BDAY:2006-01-08\n"
             "X-MOZILLA-HTML:TRUE\n"
             "END:VCARD\n",
@@ -559,6 +581,9 @@ public:
             "SEQUENCE:1\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n",
+
+            /* complex update item which replaces the initial item - empty because not needed */
+            "",
 
             /* change location in initial item in testMerge() */
             "BEGIN:VCALENDAR\n"
@@ -670,6 +695,9 @@ public:
             "END:VTODO\n"
             "END:VCALENDAR\n",
 
+            /* complex update item which replaces the initial item - empty because not needed */
+            "",
+
             /* change summary in initial item in testMerge() */
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -727,6 +755,7 @@ public:
     CPPUNIT_TEST( testRefreshStatus ); \
     CPPUNIT_TEST( testCopy ); \
     CPPUNIT_TEST( testUpdate ); \
+    CPPUNIT_TEST( testComplexUpdate ); \
     CPPUNIT_TEST( testDelete ); \
     CPPUNIT_TEST( testMerge ); \
     CPPUNIT_TEST( testItems ); \
@@ -1441,6 +1470,21 @@ template<class T> void TestEvolution<T>::testUpdate()
 {
     doCopy( "copy" );
     update();
+
+    doSync( "update.0.client.log", 0, SYNC_TWO_WAY );
+    doSync( "update.1.client.log", 1, SYNC_TWO_WAY );
+
+    compareDatabases("");
+}
+
+template<class T> void TestEvolution<T>::testComplexUpdate()
+{
+    if (!m_complexUpdateItem.size()) {
+        return;
+    }
+    
+    doCopy( "copy" );
+    update( 0, m_complexUpdateItem.c_str() );
 
     doSync( "update.0.client.log", 0, SYNC_TWO_WAY );
     doSync( "update.1.client.log", 1, SYNC_TWO_WAY );
