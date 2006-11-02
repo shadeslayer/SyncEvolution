@@ -48,6 +48,10 @@ evolutionsource = SyncEvolution test #1
 uri = card
 
 # authentication for Evolution source
+#
+# Warning: setting evolutionuser/password in cases where it is not
+# needed as with local calendars and addressbooks can cause the
+# Evolution backend to hang.
 evolutionuser = 
 evolutionpassword = 
 

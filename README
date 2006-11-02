@@ -208,6 +208,12 @@ In this case the directory that contains the source's config.txt should
 only be accessible by the user. Usually these fields can be left
 empty.
 
+***
+*** Warning: setting evolutionuser/password in cases where it is not
+*** needed as with local calendars and addressbooks can cause
+*** the Evolution backend to hang.
+***
+
 
 Automatic Backups and Logging
 -----------------------------
