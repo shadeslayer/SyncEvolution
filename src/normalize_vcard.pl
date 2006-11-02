@@ -113,13 +113,16 @@ sub Normalize {
       s/^(BDAY|CATEGORIES|FBURL|PHOTO|FN|X-[A-Z-]*|CALURI|CLASS|NICKNAME|UID|TRANSP|PRIORITY|SEQUENCE)(;[^:;\n]*)*:.*\r?\n?//gm;
       # org gets truncated
       s/^ORG:([^;:\n]*);.*/ORG:$1/gm;
-      # NOTE is often truncated due to length resistrictions
-      s/^(NOTE)(;[^:;\n]*)*:.*\r?\n?//gm;
     }
 
     if ($funambol) {
       # several properties are not preserved
-      s/^(FN|X-MOZILLA-HTML)(;[^:;\n]*)*:.*\r?\n?//gm;
+      s/^(FN|X-MOZILLA-HTML|PHOTO)(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
+
+    if ($funambol || $egroupware) {
+      # NOTE may be truncated due to length resistrictions
+      s/^(NOTE(;[^:;\n]*)*:.{0,160}).*(\r?\n?)/$1$3/gm;
     }
 
     my @formatted = ();
