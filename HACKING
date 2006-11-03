@@ -79,9 +79,14 @@ can be set via TEST_EVOLUTION_DELAY=<seconds>. The Sync4j
 2.3 server needs a delay of around 20 seconds to work
 correctly.
 
-The first parameter of the "test" program can be used
-to select specific tests, like this:
-   ./TestEvolution ContactSync::testItems
+When invoking TestEvolution without parameters all 
+tests will be run. Otherwise each test listed on the
+command line will be run:
+   ./TestEvolution ContactSync::testItems \
+                   ContactSync::testCopy
+
+For a list of available tests see the TestEvolution.cpp
+source code.
 
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is

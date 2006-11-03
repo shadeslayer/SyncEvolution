@@ -164,7 +164,15 @@ int main(int argc, char* argv[])
 
   try {
       // Run the tests.
-      runner.run(argc > 1 ? argv[1] : "", false, true, false);
+      if (argc <= 1) {
+          // all tests
+          runner.run("", false, true, false);
+      } else {
+          // run selected tests individually
+          for (int test = 1; test < argc; test++) {
+              runner.run(argv[test], false, true, false);
+          }
+      }
 
       // Return error code 1 if the one of test failed.
       return syncListener.hasFailed() ? 1 : 0;
