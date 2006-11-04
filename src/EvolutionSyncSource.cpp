@@ -161,7 +161,6 @@ int EvolutionSyncSource::beginSync()
     SyncMode mode = getSyncMode();
     buffer += mode == SYNC_SLOW ? "'slow'" :
         mode == SYNC_TWO_WAY ? "'two-way'" :
-        mode == SYNC_ONE_WAY_FROM_SERVER ? "'one-way'" :
         mode == SYNC_REFRESH_FROM_SERVER ? "'refresh from server'" :
         mode == SYNC_REFRESH_FROM_CLIENT ? "'refresh from client'" :
         mode == SYNC_ONE_WAY_FROM_SERVER ? "'one-way from server'" :
@@ -192,6 +191,7 @@ int EvolutionSyncSource::beginSync()
             needAll = true;
             m_isModified = true;
             break;
+         case SYNC_ONE_WAY_FROM_CLIENT:
          case SYNC_TWO_WAY:
             needPartial = true;
             break;
@@ -206,6 +206,9 @@ int EvolutionSyncSource::beginSync()
          case SYNC_NONE:
             // special mode for testing: prepare both all and partial lists
             needAll = needPartial = true;
+            break;
+         case SYNC_ONE_WAY_FROM_SERVER:
+            // nothing to do, just wait for server's changes
             break;
          default:
             throw runtime_error("unsupported sync mode, valid are only: slow, two-way, refresh");

@@ -386,6 +386,26 @@ public:
     // with identical data on client and server:
     // expected behaviour is that nothing changes
     void testTwinning();
+    // tests one-way sync from server:
+    // - get both clients and server in sync with no items anywhere
+    // - add one item on first client, copy to server
+    // - add a different item on second client, one-way-from-server
+    // - two-way sync with first client
+    // => one item on first client, two on second
+    // - delete on first client, sync that to second client
+    //   via two-way sync + one-way-from-server
+    // => one item left on second client (the one inserted locally)
+    void testOneWayFromServer();
+    // tests one-way sync from client:
+    // - get both clients and server in sync with no items anywhere
+    // - add one item on first client, copy to server
+    // - add a different item on second client, one-way-from-client
+    // - two-way sync with first client
+    // => two items on first client, one on second
+    // - delete on second client, sync that to first client
+    //   via one-way-from-client, two-way
+    // => one item left on first client (the one inserted locally)
+    void testOneWayFromClient();
     // creates several items, transmits them back and forth and
     // then compares which of them have been preserved
     void testItems();
@@ -764,6 +784,8 @@ public:
     CPPUNIT_TEST( testMerge ); \
     CPPUNIT_TEST( testItems ); \
     CPPUNIT_TEST( testAddUpdate ); \
+    CPPUNIT_TEST( testOneWayFromServer ); \
+    CPPUNIT_TEST( testOneWayFromClient ); \
     CPPUNIT_TEST( testMaxMsg ); \
     CPPUNIT_TEST( testLargeObject ); \
     CPPUNIT_TEST( testLargeObjectBin ); \
@@ -1698,6 +1720,216 @@ template<class T> void TestEvolution<T>::testTwinning()
     compareDatabases("", NULL, 1);
 }
 
+template<class T> void TestEvolution<T>::testOneWayFromServer()
+{
+    T first(
+        string( "dummy" ),
+        NULL,
+        m_changeIds[1],
+        m_databases[0]);
+    T second(
+        string( "dummy" ),
+        NULL,
+        m_changeIds[1],
+        m_databases[1]);
+
+    // get clients and server in sync
+    deleteAll( "delete.0", 0 );
+    deleteAll( "delete.1", 1 );
+
+    // check that everything is empty, also resets change counter
+    EVOLUTION_ASSERT_NO_THROW( first, first.open() );
+    EVOLUTION_ASSERT( first, first.beginSync() == 0 );
+    CPPUNIT_ASSERT( !countItems( first ) );
+    EVOLUTION_ASSERT_NO_THROW( first, first.close() );
+
+    EVOLUTION_ASSERT_NO_THROW( second, second.open() );
+    EVOLUTION_ASSERT( second, second.beginSync() == 0 );
+    CPPUNIT_ASSERT( !countItems( second ) );
+    EVOLUTION_ASSERT_NO_THROW( second, second.close() );
+
+    // add one item on first client, copy to server
+    insertManyItems(0, 1, 1);
+    doSync("send.0.client.log", 0, SYNC_TWO_WAY);
+    EVOLUTION_ASSERT_NO_THROW( first, first.open() );
+    EVOLUTION_ASSERT( first, first.beginSync() == 0 );
+    CPPUNIT_ASSERT( 1 == countItems( first ) );
+    CPPUNIT_ASSERT( 1 == countNewItems( first ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( first ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( first ) );
+    EVOLUTION_ASSERT_NO_THROW( first, first.close() );
+    
+    // add a different item on second client, one-way-from-server
+    // => one item added locally, none sent to server
+    insertManyItems(1, 2, 1);
+    EVOLUTION_ASSERT_NO_THROW( second, second.open() );
+    EVOLUTION_ASSERT( second, second.beginSync() == 0 );
+    CPPUNIT_ASSERT( 1 == countItems( second ) );
+    CPPUNIT_ASSERT( 1 == countNewItems( second ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( second ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( second ) );
+    EVOLUTION_ASSERT_NO_THROW( second, second.close() );
+
+    doSync("recv.1.client.log", 1, SYNC_ONE_WAY_FROM_SERVER);
+    EVOLUTION_ASSERT_NO_THROW( second, second.open() );
+    EVOLUTION_ASSERT( second, second.beginSync() == 0 );
+    CPPUNIT_ASSERT( 2 == countItems( second ) );
+    CPPUNIT_ASSERT( 1 == countNewItems( second ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( second ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( second ) );
+    EVOLUTION_ASSERT_NO_THROW( second, second.close() );
+    
+    // two-way sync with first client for verification
+    // => no changes
+    doSync("check.0.client.log", 0, SYNC_TWO_WAY);
+    EVOLUTION_ASSERT_NO_THROW( first, first.open() );
+    EVOLUTION_ASSERT( first, first.beginSync() == 0 );
+    CPPUNIT_ASSERT( 1 == countItems( first ) );
+    CPPUNIT_ASSERT( 0 == countNewItems( first ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( first ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( first ) );
+    EVOLUTION_ASSERT_NO_THROW( first, first.close() );
+
+    // TODO: update on first client, then sync the change to
+    // second one via two-way with first client and
+    // one-way with second one
+
+    // delete items on first client, sync to server
+    deleteAll(0);
+    EVOLUTION_ASSERT_NO_THROW( first, first.open() );
+    EVOLUTION_ASSERT( first, first.beginSync() == 0 );
+    CPPUNIT_ASSERT( 0 == countItems( first ) );
+    CPPUNIT_ASSERT( 0 == countNewItems( first ) );
+    CPPUNIT_ASSERT( 1 == countDeletedItems( first ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( first ) );
+    EVOLUTION_ASSERT_NO_THROW( first, first.close() );
+    
+    doSync("delete.0.client.log", 0, SYNC_TWO_WAY);
+    EVOLUTION_ASSERT_NO_THROW( first, first.open() );
+    EVOLUTION_ASSERT( first, first.beginSync() == 0 );
+    CPPUNIT_ASSERT( 0 == countItems( first ) );
+    CPPUNIT_ASSERT( 0 == countNewItems( first ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( first ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( first ) );
+    EVOLUTION_ASSERT_NO_THROW( first, first.close() );
+
+    // sync the same change to second client
+    // => one item left (the one inserted locally)
+    doSync("delete.1.client.log", 1, SYNC_ONE_WAY_FROM_SERVER);
+    EVOLUTION_ASSERT_NO_THROW( second, second.open() );
+    EVOLUTION_ASSERT( second, second.beginSync() == 0 );
+    CPPUNIT_ASSERT( 1 == countItems( second ) );
+    CPPUNIT_ASSERT( 0 == countNewItems( second ) );
+    CPPUNIT_ASSERT( 1 == countDeletedItems( second ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( second ) );
+    EVOLUTION_ASSERT_NO_THROW( second, second.close() );
+}
+
+template<class T> void TestEvolution<T>::testOneWayFromClient()
+{
+    T first(
+        string( "dummy" ),
+        NULL,
+        m_changeIds[1],
+        m_databases[0]);
+    T second(
+        string( "dummy" ),
+        NULL,
+        m_changeIds[1],
+        m_databases[1]);
+
+    // get clients and server in sync
+    deleteAll( "delete.0", 0 );
+    deleteAll( "delete.1", 1 );
+
+    // check that everything is empty, also resets change counter
+    EVOLUTION_ASSERT_NO_THROW( first, first.open() );
+    EVOLUTION_ASSERT( first, first.beginSync() == 0 );
+    CPPUNIT_ASSERT( !countItems( first ) );
+    EVOLUTION_ASSERT_NO_THROW( first, first.close() );
+
+    EVOLUTION_ASSERT_NO_THROW( second, second.open() );
+    EVOLUTION_ASSERT( second, second.beginSync() == 0 );
+    CPPUNIT_ASSERT( !countItems( second ) );
+    EVOLUTION_ASSERT_NO_THROW( second, second.close() );
+
+    // add one item on first client, copy to server
+    insertManyItems(0, 1, 1);
+    doSync("send.0.client.log", 0, SYNC_TWO_WAY);
+    EVOLUTION_ASSERT_NO_THROW( first, first.open() );
+    EVOLUTION_ASSERT( first, first.beginSync() == 0 );
+    CPPUNIT_ASSERT( 1 == countItems( first ) );
+    CPPUNIT_ASSERT( 1 == countNewItems( first ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( first ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( first ) );
+    EVOLUTION_ASSERT_NO_THROW( first, first.close() );
+    
+    // add a different item on second client, one-way-from-client
+    // => no item added locally, one sent to server
+    insertManyItems(1, 2, 1);
+    EVOLUTION_ASSERT_NO_THROW( second, second.open() );
+    EVOLUTION_ASSERT( second, second.beginSync() == 0 );
+    CPPUNIT_ASSERT( 1 == countItems( second ) );
+    CPPUNIT_ASSERT( 1 == countNewItems( second ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( second ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( second ) );
+    EVOLUTION_ASSERT_NO_THROW( second, second.close() );
+
+    doSync("send.1.client.log", 1, SYNC_ONE_WAY_FROM_CLIENT);
+    EVOLUTION_ASSERT_NO_THROW( second, second.open() );
+    EVOLUTION_ASSERT( second, second.beginSync() == 0 );
+    CPPUNIT_ASSERT( 1 == countItems( second ) );
+    CPPUNIT_ASSERT( 0 == countNewItems( second ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( second ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( second ) );
+    EVOLUTION_ASSERT_NO_THROW( second, second.close() );
+    
+    // two-way sync with first client for verification
+    // => receive one item
+    doSync("check.0.client.log", 0, SYNC_TWO_WAY);
+    EVOLUTION_ASSERT_NO_THROW( first, first.open() );
+    EVOLUTION_ASSERT( first, first.beginSync() == 0 );
+    CPPUNIT_ASSERT( 2 == countItems( first ) );
+    CPPUNIT_ASSERT( 1 == countNewItems( first ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( first ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( first ) );
+    EVOLUTION_ASSERT_NO_THROW( first, first.close() );
+
+    // TODO: update on second client, then sync the change to
+    // first one via one-way-from-client with second client and
+    // two-way with first one
+
+    // delete items on second client, sync to server
+    deleteAll(1);
+    EVOLUTION_ASSERT_NO_THROW( second, second.open() );
+    EVOLUTION_ASSERT( second, second.beginSync() == 0 );
+    CPPUNIT_ASSERT( 0 == countItems( second ) );
+    CPPUNIT_ASSERT( 0 == countNewItems( second ) );
+    CPPUNIT_ASSERT( 1 == countDeletedItems( second ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( second ) );
+    EVOLUTION_ASSERT_NO_THROW( second, second.close() );
+    
+    doSync("delete.1.client.log", 1, SYNC_ONE_WAY_FROM_CLIENT);
+    EVOLUTION_ASSERT_NO_THROW( second, second.open() );
+    EVOLUTION_ASSERT( second, second.beginSync() == 0 );
+    CPPUNIT_ASSERT( 0 == countItems( second ) );
+    CPPUNIT_ASSERT( 0 == countNewItems( second ) );
+    CPPUNIT_ASSERT( 0 == countDeletedItems( second ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( second ) );
+    EVOLUTION_ASSERT_NO_THROW( second, second.close() );
+
+    // sync the same change to first client
+    // => one item left (the one inserted locally)
+    doSync("delete.0.client.log", 0, SYNC_TWO_WAY);
+    EVOLUTION_ASSERT_NO_THROW( first, first.open() );
+    EVOLUTION_ASSERT( first, first.beginSync() == 0 );
+    CPPUNIT_ASSERT( 1 == countItems( first ) );
+    CPPUNIT_ASSERT( 0 == countNewItems( first ) );
+    CPPUNIT_ASSERT( 1 == countDeletedItems( first ) );
+    CPPUNIT_ASSERT( 0 == countUpdatedItems( first ) );
+    EVOLUTION_ASSERT_NO_THROW( first, first.close() );
+}
+    
 template<class T> int TestEvolution<T>::insertManyItems(int config, int startIndex, int numItems, int size)
 {
     T source(
