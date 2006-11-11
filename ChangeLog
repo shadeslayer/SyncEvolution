@@ -1,3 +1,8 @@
+2006-11-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionContactSource.h, src/EvolutionSyncSource.h, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, ChangeLog:
+	messages about local changes are now logged as DEBUG and not INFO because they were confusing for users; now they are not visible in the final report
+
 2006-11-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionSyncSource.cpp, src/TestEvolution.cpp, README, etc/localhost_1/spds/syncml/config.txt:
