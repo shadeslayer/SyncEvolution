@@ -1,3 +1,29 @@
+SyncEvolution 0.4 -> 0.5, 11.11.2006
+------------------------------------
+* C++ client library revision "syncevolution-0-5":
+  - added support for sending changes in smaller chunks
+    ("Large Object Support"): disabled by default, see updated
+    example configuration
+  - time is printed with GMT offset so that a server admin in
+    a different timezone can always figure out how a client log
+    relates to events on the server
+* bug fix: in 0.4 it was necessary to manually configure the verDTD
+  or the Funambol 3.0a server would choke on the invalid SyncML during
+  the second synchronization with SyncEvolution; now this option is set
+  automatically
+* added support and testing of transmitting just the changes
+  from client to server or vice versa; see "one-way-from-server/client"
+  in example configuration
+* fixed/updated comments in the example configuration
+* improved automated testing and fixed the problem that CPPUnit was not
+  found unless it was part of the system
+* Now works on Maemo/Nokia 770: minor changes were necessary so that
+  the system address book can now be selected under the name "<<system>>.
+  Copying 300 contacts into the Nokia 770 went fine, but any further
+  attempt to synchronize suffered from timeouts inside the embedded
+  Evolution Data Server.
+
+
 SyncEvolution 0.3 -> 0.4, 11.09.2006 
 ------------------------------------
 * C++ client library revision "syncevolution-0-4":
