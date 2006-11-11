@@ -1,3 +1,90 @@
+2006-11-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp, src/TestEvolution.cpp, README, etc/localhost_1/spds/syncml/config.txt:
+	added support and testing of one-way-from-client/server
+
+2006-11-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp:
+	TaskSync tests for large object support failed because the test item didn't have the expected DESCRIPTION to stuff the item's size
+
+	* HACKING, src/TestMain.cpp:
+	allow running multiple tests by specifying them on the command line
+
+2006-11-02  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* README, etc/localhost_1/spds/sources/addressbook_1/config.txt:
+	added warning about setting evolutionuser/password when not needed -> causes backend to hang
+
+	* src/normalize_vcard.pl:
+	PHOTO/NOTE update for EGroupware and Funambol portal
+
+	* src/TestEvolution.cpp:
+	use simpler data for update test, moved complex contact update into testComplexUpdate
+
+2006-11-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/normalize_vcard.pl:
+	avoid that patterns accidentally run over line ends, added special cases for Funambol and EGroupware server
+
+	* test/runtests.py:
+	allow to build arbitrary combinations of client library and SyncEvolution
+
+	* src/EvolutionContactSource.cpp:
+	<<system>> and <<default>> can be used to reference the system and the default address books, respectively
+
+	* src/Makefile.am:
+	cppunit-config was not called when compiling C++ code, therefore it was only found if in the default search path
+
+	* src/TestEvolution.cpp: made test coverage configurable
+
+2006-10-29  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp:
+	added testLargeObjectBin, changed calendar UID so that without support for special characters in the key the sync fails
+
+	* src/EvolutionSyncClient.cpp:
+	VerDTD must be configured, otherwise Funambol 3.0a (but not 3.0b5) fails during the second sync
+
+	* etc/localhost_1/spds/sources/addressbook_1/config.txt:
+	documentation got the direction in refresh-from-client/server wrong
+
+2006-10-28  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* test/runtests.py:
+	filter out private information from logs, added --tag parameter
+
+2006-10-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: setting config is no longer necessary
+
+	* src/TestEvolution.cpp:
+	disabled testLargeObjectEncoded again, it requires a suitable server
+
+2006-10-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp: enabled encoded LargeObject support test
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h:
+	adapted to new API
+
+	* src/normalize_vcard.pl: ignore some known Synthesis data conversions
+
+2006-09-28  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp:
+	force server to split large items when LargeObject support is enabled
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp, src/syncevolution.cpp:
+	adapted to additional SyncSourceConfig parameter in SyncSource constructor, added testing of LargeObject support
+
+	* src/testVCard.vcf: make names unique again
+
+2006-09-16  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.h:
+	adapted to C++ client API change: supported datatypes now in config
+
 2006-09-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* test/runtests.py:

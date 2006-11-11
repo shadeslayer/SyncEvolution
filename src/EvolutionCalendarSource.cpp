@@ -396,17 +396,17 @@ int EvolutionCalendarSource::deleteItemThrow(SyncItem& item)
     return status;
 }
 
-void EvolutionCalendarSource::logItem(const string &uid, const string &info)
+void EvolutionCalendarSource::logItem(const string &uid, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= LOG_LEVEL_INFO) {
-        LOG.info("%s: %s: %s", getName(), uid.c_str(), info.c_str());
+    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+        (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s: %s", getName(), uid.c_str(), info.c_str());
     }
 }
 
-void EvolutionCalendarSource::logItem( SyncItem &item, const string &info )
+void EvolutionCalendarSource::logItem( SyncItem &item, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= LOG_LEVEL_INFO) {
-        LOG.info("%s: %s: %s", getName(), item.getKey(), info.c_str());
+    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+        (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s: %s", getName(), item.getKey(), info.c_str());
     }
 }
 

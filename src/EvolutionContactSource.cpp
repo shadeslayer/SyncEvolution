@@ -666,9 +666,9 @@ const char *EvolutionContactSource::getMimeVersion()
     }
 }
 
-void EvolutionContactSource::logItem( const string &uid, const string &info )
+void EvolutionContactSource::logItem(const string &uid, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= LOG_LEVEL_INFO) {
+    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
         string line;
         EContact *contact;
         GError *gerror = NULL;
@@ -696,13 +696,13 @@ void EvolutionContactSource::logItem( const string &uid, const string &info )
         line += "): ";
         line += info;
         
-        LOG.info( "%s: %s", getName(), line.c_str() );
+        (LOG.*(debug ? &Log::debug : &Log::info))( "%s: %s", getName(), line.c_str() );
     }
 }
 
-void EvolutionContactSource::logItem( SyncItem &item, const string &info )
+void EvolutionContactSource::logItem(SyncItem &item, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= LOG_LEVEL_INFO) {
+    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
         string line;
         const char *data = (const char *)item.getData();
         int datasize = item.getDataSize();
@@ -753,7 +753,7 @@ void EvolutionContactSource::logItem( SyncItem &item, const string &info )
         line += ": ";
         line += info;
         
-        LOG.info( "%s: %s", getName(), line.c_str() );
+        (LOG.*(debug ? &Log::debug : &Log::info))( "%s: %s", getName(), line.c_str() );
     }
 }
 

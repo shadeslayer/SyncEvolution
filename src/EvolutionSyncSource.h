@@ -274,8 +274,8 @@ class EvolutionSyncSource : public SyncSource
 
 
     /** log a one-line info about an item */
-    virtual void logItem(const string &uid, const string &info) = 0;
-    virtual void logItem(SyncItem &item, const string &info) = 0;
+    virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;
+    virtual void logItem(SyncItem &item, const string &info, bool debug = false) = 0;
 
     const string m_changeId;
     const string m_id;
@@ -334,7 +334,7 @@ class EvolutionSyncSource : public SyncSource
         bool addItem(const string &uid) {
             pair<iterator, bool> res = insert(uid);
             if (res.second) {
-                m_source.logItem(uid, m_type);
+                m_source.logItem(uid, m_type, true);
             }
             return res.second;
         }

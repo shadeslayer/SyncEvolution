@@ -82,8 +82,8 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     virtual int addItemThrow(SyncItem& item);
     virtual int updateItemThrow(SyncItem& item);
     virtual int deleteItemThrow(SyncItem& item);
-    virtual void logItem(const string &uid, const string &info);
-    virtual void logItem(SyncItem &item, const string &info);
+    virtual void logItem(const string &uid, const string &info, bool debug = false);
+    virtual void logItem(SyncItem &item, const string &info, bool debug = false);
 
   private:
     /** valid after open(): the calendar that this source references */
