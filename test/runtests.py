@@ -314,8 +314,8 @@ class AutotoolsBuild(Action):
         self.configargs = configargs
         self.runner = runner
         self.dependencies = dependencies
-        self.installdir = os.path.join(context.tmpdir, name + "-install")
-        self.builddir = os.path.join(context.tmpdir, name + "-build")
+        self.installdir = os.path.join(context.tmpdir, "install")
+        self.builddir = os.path.join(context.tmpdir, "build")
 
     def execute(self):
         del_dir(self.builddir)
@@ -399,6 +399,9 @@ parser.add_option("", "--syncevo-tag",
 parser.add_option("", "--client-tag",
                   type="string", dest="clienttag", default="HEAD",
                   help="the tag of the client library (default HEAD)")
+parser.add_option("", "--bin-suffix",
+                  type="string", dest="binsuffix", default="",
+                  help="string to append to binary distribution archive (default empty = no binary distribution built)")
 parser.add_option("", "--synthesis",
                   type="string", dest="synthesisdir", default="",
                   help="directory with Synthesis installation")
@@ -450,6 +453,27 @@ compile = SyncEvolutionBuild("compile",
                              [ client.name, sync.name ])
 context.add(compile)
 
+class SyncEvolutionDist(AutotoolsBuild):
+    def __init__(self, name, binsuffix, binrunner, dependencies):
+        """Builds a normal and a binary distribution archive in a directory where
+        SyncEvolution was configured and compiled before.
+        """
+        AutotoolsBuild.__init__(self, name, "", "", binrunner, dependencies)
+        self.binsuffix = binsuffix
+        
+    def execute(self):
+        cd(self.builddir)
+        if self.binsuffix:
+            context.runCommand("%s make BINSUFFIX=%s distbin distcheck" % (self.runner, self.binsuffix))
+        else:
+            context.runCommand("%s make distcheck" % (self.runner))
+
+dist = SyncEvolutionDist("dist",
+                         options.binsuffix,
+                         options.shell,
+                         [ compile.name ])
+context.add(dist)
+
 evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
                                   [ "ContactSource", "CalendarSource", "TaskSource" ],
@@ -460,13 +484,22 @@ scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       # [ "ContactSync", "ContactStress", "TaskSync", "TaskStress", "CalendarSync", "CalendarStress" ]
                                       [ ],
-                                      "TEST_EVOLUTION_SERVER=scheduleworld TEST_EVOLUTION_DELAY=2 TEST_EVOLUTION_FAILURES=ContactSync::testItems,ContactSync::testTwinning,CalendarSync::testDeleteAllRefresh,CalendarSync::testItems,TaskSync::testDeleteAllRefresh,TaskSync::testItems,TaskSync::testTwinning")
+                                      # ContactSync::testItems - temporary problem with tabs
+                                      # CalendarSync::testItems, CalendarSync::testTwinning - temporary problem with lost timezone
+                                      "TEST_EVOLUTION_SERVER=scheduleworld TEST_EVOLUTION_DELAY=2 TEST_EVOLUTION_FAILURES=ContactSync::testItems,ContactSync::testTwinning,CalendarSync::testDeleteAllRefresh,CalendarSync::testItems,TaskSync::testDeleteAllRefresh,TaskSync::testItems,TaskSync::testTwinning,ContactSync::testItems,CalendarSync::testItems,CalendarSync::testTwinning")
 context.add(scheduleworldtest)
 
 egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    "", options.shell,
-                                   [ "ContactSync", "ContactStress", "CalendarSync", "CalendarStress" ],
-                                   "TEST_EVOLUTION_SERVER=egroupware",
+                                   [ "ContactSync", "CalendarSync::testCopy", "CalendarSync::testUpdate", "CalendarSync::testDelete" ],
+                                   # ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus - refresh-from-client not supported by server
+                                   # ContactSync::testOneWayFromClient - not supported by server?
+                                   # ContactSync::testItems - loses a lot of information
+                                   # ContactSync::testComplexUpdate - only one phone number preserved
+                                   # ContactSync::testMaxMsg,ContactSync::testLargeObject,ContactSync::testLargeObjectBin - server fails to parse extra info?
+                                   # ContactSync::testTwinning - duplicates contacts
+                                   # CalendarSync::testCopy,CalendarSync::testUpdate - shifts time?
+                                   "TEST_EVOLUTION_SERVER=egroupware TEST_EVOLUTION_FAILURES=ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus,ContactSync::testOneWayFromClient,ContactSync::testAddUpdate,ContactSync::testItems,ContactSync::testComplexUpdate,ContactSync::testTwinning,ContactSync::testMaxMsg,ContactSync::testLargeObject,ContactSync::testLargeObjectBin,CalendarSync::testCopy,CalendarSync::testUpdate",
                                    lambda x: x.replace('oasis.ethz.ch','<host hidden>').\
                                              replace('cG9obHk6cWQyYTVtZ1gzZk5GQQ==','xxx'))
 context.add(egroupwaretest)
@@ -494,7 +527,8 @@ context.add(synthesis)
 class FunambolTest(SyncEvolutionTest):
     def __init__(self, name, build, funamboldir, runner):
         SyncEvolutionTest.__init__(self, name, build, os.path.join(funamboldir, "ds-server", "logs", "funambol_ds.log"),
-                                   runner, [ "ContactSync", "ContactStress" ], "TEST_EVOLUTION_DELAY=10 TEST_EVOLUTION_SERVER=funambol")
+                                   runner, [ "ContactSync", "ContactStress" ],
+                                   "TEST_EVOLUTION_DELAY=10 TEST_EVOLUTION_FAILURES= TEST_EVOLUTION_SERVER=funambol")
         self.funamboldir = funamboldir
         # self.dependencies.append(evolutiontest.name)
 
