@@ -1,3 +1,20 @@
+2006-11-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* test/runtests.py:
+	added building of release packages, adapted to some more known server limitations
+
+	* src/TestEvolution.cpp:
+	renamed testRefreshSync to testRefreshFromServerSync and added testRefreshFromClient
+
+	* src/normalize_vcard.pl: ignore known limitations of Synthesis server
+
+2006-11-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* NEWS, configure.in: 0.5 release
+
+	* src/EvolutionContactSource.h, src/EvolutionSyncSource.h, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, ChangeLog:
+	messages about local changes are now logged as DEBUG and not INFO because they were confusing for users; now they are not visible in the final report
+
 2006-11-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionContactSource.h, src/EvolutionSyncSource.h, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, ChangeLog:

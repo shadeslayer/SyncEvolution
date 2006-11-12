@@ -1,4 +1,4 @@
-SyncEvolution 0.4 -> 0.5, 11.11.2006
+SyncEvolution 0.4 -> 0.5, 12.11.2006
 ------------------------------------
 * C++ client library revision "syncevolution-0-5":
   - added support for sending changes in smaller chunks
@@ -7,6 +7,8 @@ SyncEvolution 0.4 -> 0.5, 11.11.2006
   - time is printed with GMT offset so that a server admin in
     a different timezone can always figure out how a client log
     relates to events on the server
+  - special item keys as they might be stored in some calendars after
+    importing non-Evolution events are now properly supported
 * bug fix: in 0.4 it was necessary to manually configure the verDTD
   or the Funambol 3.0a server would choke on the invalid SyncML during
   the second synchronization with SyncEvolution; now this option is set
