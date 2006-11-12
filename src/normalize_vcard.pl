@@ -88,7 +88,7 @@ sub Normalize {
     # remove optional fields
     s/^(METHOD|X-WSS-COMPONENT|X-WSS-LUID):.*\r?\n?//gm;
 
-    if ($scheduleworld || $egroupware) {
+    if ($scheduleworld || $egroupware || $synthesis) {
       # does not preserve X-EVOLUTION-UI-SLOT=
       s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
     }
@@ -96,15 +96,26 @@ sub Normalize {
     if ($scheduleworld) {
       # cannot distinguish EMAIL types
       s/^EMAIL;TYPE=\w*/EMAIL/mg;
-      # only preserves ORG "Company", but loses "Department" and "Office"
-      s/^ORG:([^;:\n]+)(;[^\n]*)/ORG:$1/mg;
       # replaces certain TZIDs with more up-to-date ones
       s;TZID(=|:)/(scheduleworld.com|softwarestudio.org)/Olson_\d+_\d+/;TZID$1/foo.com/Olson_20000101_1/;mg;
     }
 
+    if ($scheduleworld || $synthesis) {
+      # only preserves ORG "Company", but loses "Department" and "Office"
+      s/^ORG:([^;:\n]+)(;[^\n]*)/ORG:$1/mg;
+    }
+
     if ($synthesis) {
       # does not preserve certain properties
-      s/^(FN|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS):.*\r?\n?//gm;
+      s/^(FN|BDAY|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|NICKNAME|PHOTO|CALURI)(;[^:;\n]*)*:.*\r?\n?//gm;
+      # default ADR is HOME
+      s/^ADR;TYPE=HOME/ADR/gm;
+      # only some parts of N are preserved
+      s/^N\:(.*)/@_ = split(\/(?<!\\);\/, $1); "N:$_[0];" . ($_[1] || "") . ";;" . ($_[3] || "")/gme;
+      # this vcard contains too many ADR and PHONE entries - ignore it
+      if (/This is a test case which uses almost all Evolution fields/) {
+        next;
+      }
     }
 
     if ($egroupware) {
