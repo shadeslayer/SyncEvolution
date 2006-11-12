@@ -349,8 +349,10 @@ public:
     // - changes due to syncing are monitored via direct access through T sync source
     //
 
-    // do a refresh sync without additional checks
-    void testRefreshSync();
+    // do a refresh from server sync without additional checks
+    void testRefreshFromServerSync();
+    // do a refresh from client sync without additional checks
+    void testRefreshFromClientSync();
     // do a two-way sync without additional checks
     void testTwoWaySync();
     // do a slow sync without additional checks
@@ -770,7 +772,8 @@ public:
     CPPUNIT_TEST( testManyChanges );
 
 #define SYNC_TESTS \
-    CPPUNIT_TEST( testRefreshSync ); \
+    CPPUNIT_TEST( testRefreshFromServerSync ); \
+    CPPUNIT_TEST( testRefreshFromClientSync ); \
     CPPUNIT_TEST( testTwoWaySync ); \
     CPPUNIT_TEST( testSlowSync ); \
     CPPUNIT_TEST( testDeleteAllSync ); \
@@ -1334,9 +1337,14 @@ template<class T> string TestEvolution<T>::doSync(const string &logfilesuffix,
     return logfile;
 }
 
-template<class T> void TestEvolution<T>::testRefreshSync()
+template<class T> void TestEvolution<T>::testRefreshFromServerSync()
 {
     doSync( "client.log", 0, SYNC_REFRESH_FROM_SERVER );
+}
+
+template<class T> void TestEvolution<T>::testRefreshFromClientSync()
+{
+    doSync( "client.log", 0, SYNC_REFRESH_FROM_CLIENT );
 }
 
 template<class T> void TestEvolution<T>::testTwoWaySync()
