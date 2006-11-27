@@ -76,7 +76,7 @@ string EvolutionSyncSource::getData(SyncItem& item)
 
 string EvolutionSyncSource::getPropertyValue(ManagementNode &node, const string &property)
 {
-    char *value = node.getPropertyValue(property.c_str());
+    char *value = node.readPropertyValue(property.c_str());
     string res;
 
     if (value) {

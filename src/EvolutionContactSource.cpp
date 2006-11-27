@@ -589,7 +589,7 @@ int EvolutionContactSource::updateItemThrow(SyncItem& item)
         // and committing once more, but that did not solve the problem.
         //
         // TODO: test with current Evolution
-        e_contact_set( contact, E_CONTACT_UID, item.getKey() );
+        e_contact_set( contact, E_CONTACT_UID, (void *)item.getKey() );
         if ( e_book_commit_contact(m_addressbook, contact, &gerror) ) {
             const char *uid = (const char *)e_contact_get_const(contact, E_CONTACT_UID);
             if (uid) {
