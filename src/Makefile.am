@@ -6,6 +6,9 @@ AM_CFLAGS = -Wall -Werror -Wno-return-type
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
 EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics testTask.ics vocl/README
+EXTRA_PROGRAMS = client-test
+check_PROGRAMS = @CPPUNIT_TESTS@
+TESTS = @CPPUNIT_TESTS@
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
@@ -51,7 +54,7 @@ syncevolution_LDADD = $(CORE_LDADD)
 # prevent a successful "distcheck"
 # TESTS = test
 # check_PROGRAMS = test
-EXTRA_PROGRAMS = TestEvolution
+EXTRA_PROGRAMS += TestEvolution
 TestEvolution_SOURCES = \
         Test.h \
         TestMain.cpp \
@@ -80,6 +83,16 @@ BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
 
 clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
 clean : testclean
+
+# With --disable-shared autotools links against libsync4j.a which does not
+# pull any of the test suites into the test binary, so they would not be
+# executed. The workaround is to explicitly set them as undefined on the
+# link line.
+client_test_SOURCES = client-test-app.cpp ClientTest.cpp client-test-main.cpp $(CORE_SOURCES)
+client_test_LDFLAGS = `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
+client_test_LDADD = $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
+
+vpath %.cpp : $(SYNC4J_SUBDIR)/test/test
 
 TestEvolution syncevolution vcardconverter : \
 	$(SYNC4J_SUBDIR)/src/libsync4j.la
