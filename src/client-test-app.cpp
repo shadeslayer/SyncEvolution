@@ -49,6 +49,18 @@ public:
     }
 };
 
+static bool compare(ClientTest &client, const char *fileA, const char *fileB)
+{
+    stringstream cmd;
+
+    string diff = getCurrentTest() + ".diff";
+    simplifyFilename(diff);
+    cmd << "perl synccompare " << fileA << " " << fileB << ">" << diff;
+    cmd << "  || (echo; echo '*** " << diff << " non-empty ***'; cat " << diff << "; exit 1 )";
+
+    string cmdstr = cmd.str();
+    return system(cmdstr.c_str()) == 0;
+}
 
 class TestEvolution : public ClientTest {
 public:
@@ -138,6 +150,10 @@ public:
             config.templateItem = config.insertItem;
             config.uniqueProperties = "FN:N:X-EVOLUTION-FILE-AS";
             config.sizeProperty = "NOTE";
+            config.import = ClientTest::import;
+            config.dump = ClientTest::dump;
+            config.compare = compare;
+            config.testcases = "addressbook.tests";
             break;
          case TEST_CALENDAR_SOURCE:
             config.sourceName = "Calendar";
