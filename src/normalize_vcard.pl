@@ -196,7 +196,7 @@ sub Normalize {
 # number of columns available for output:
 # try tput without printing the shells error if not found,
 # default to 80
-my $columns = `which tput >/dev/null && tput cols`;
+my $columns = `which tput >/dev/null && tput cols 2>/dev/null`;
 if ($? || !$columns) {
   $columns = 80;
 }
