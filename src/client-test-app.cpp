@@ -64,6 +64,24 @@ static bool compare(ClientTest &client, const char *fileA, const char *fileB)
 
 class TestEvolution : public ClientTest {
 public:
+    /**
+     * can be instantiated as client A with id == "1" and client B with id == "2"
+     */
+    TestEvolution(const string &id) :
+        clientID(id) {
+        if (id == "1") {
+            clientB = new TestEvolution("2");
+        } else {
+            clientB = NULL;
+        }
+    }
+
+    ~TestEvolution() {
+        if (clientB) {
+            delete clientB;
+        }
+    }   
+
     enum sourceType {
         TEST_CONTACT_SOURCE,
         TEST_CALENDAR_SOURCE,
@@ -165,7 +183,7 @@ public:
     }
 
     virtual ClientTest *getClientB() {
-        return NULL;
+        return clientB;
     }
 
     virtual int sync(
@@ -197,11 +215,14 @@ public:
             }
 
             /* TODO */
-            activeSources.insert(database + "_1");
+            activeSources.insert(database + "_" + clientID);
         }
 
+
         /* TODO */
-        string server = "funambol_1";
+        string server = "funambol";
+        server += "_";
+        server += clientID;
         
         class ClientTest : public EvolutionSyncClient {
         public:
@@ -251,6 +272,9 @@ public:
     }
     
 private:
+    string clientID;
+    TestEvolution *clientB;
+    
     SyncSource *createSyncSource(sourceType type, string changeID, string database) {
         switch (type) {
          case TEST_CONTACT_SOURCE:
@@ -269,32 +293,39 @@ private:
     }
 
     static SyncSource *createContactSourceA(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_CONTACT_SOURCE, "SyncEvolution Change ID #1", "SyncEvolution test #1");
+        return ((TestEvolution *)&client)->createSyncSource(TEST_CONTACT_SOURCE, "SyncEvolution Change ID #1",
+                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
     }
     static SyncSource *createContactSourceB(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_CONTACT_SOURCE, "SyncEvolution Change ID #2", "SyncEvolution test #1");
+        return ((TestEvolution *)&client)->createSyncSource(TEST_CONTACT_SOURCE, "SyncEvolution Change ID #2",
+                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
     }
 
     static SyncSource *createCalendarSourceA(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_CALENDAR_SOURCE, "SyncEvolution Change ID #1", "SyncEvolution test #1");
+        return ((TestEvolution *)&client)->createSyncSource(TEST_CALENDAR_SOURCE, "SyncEvolution Change ID #1",
+                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
     }
     static SyncSource *createCalendarSourceB(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_CALENDAR_SOURCE, "SyncEvolution Change ID #2", "SyncEvolution test #1");
+        return ((TestEvolution *)&client)->createSyncSource(TEST_CALENDAR_SOURCE, "SyncEvolution Change ID #2",
+                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
     }
 
 #if 0
     static SyncSource *createTaskSourceA(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_TASK_SOURCE, "SyncEvolution Change ID #1", "SyncEvolution test #1");
+        return ((TestEvolution *)&client)->createSyncSource(TEST_TASK_SOURCE, "SyncEvolution Change ID #1",
+                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
     }
     static SyncSource *createTaskSourceB(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_TASK_SOURCE, "SyncEvolution Change ID #2", "SyncEvolution test #1");
+        return ((TestEvolution *)&client)->createSyncSource(TEST_TASK_SOURCE, "SyncEvolution Change ID #2",
+                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
     }
 #endif
 };
 
 static class RegisterTestEvolution {
 public:
-    RegisterTestEvolution() {
+    RegisterTestEvolution() :
+        testClient("1") {
         testClient.registerTests();
     }
 
