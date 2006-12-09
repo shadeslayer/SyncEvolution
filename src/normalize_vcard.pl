@@ -47,7 +47,9 @@ sub Normalize {
     # replace parameters with a sorted parameter list
     s!^([^;:\n]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
 
-    # Ignore "other" email, address and telephone type - this is
+    # Map non-standard ADR;TYPE=OTHER to PARCEL, just like SyncEvolution does
+    s/^ADR;TYPE=OTHER/ADR;TYPE=PARCEL/mg;
+    # Ignore remaining "other" email, address and telephone type - this is
     # an Evolution specific extension which might not be preserved.
     s/^(ADR|EMAIL|TEL)([^:\n]*);TYPE=OTHER/$1$2/mg;
     # TYPE=PREF on the other hand is not used by Evolution, but
@@ -58,7 +60,6 @@ sub Normalize {
     # ignore TYPE=PREF in address, does not matter in Evolution
     s/^((ADR|LABEL)[^:\n]*);TYPE=PREF/$1/mg;
     # ignore extra separators in multi-value fields
-
     s/^((ORG|N|(ADR[^:\n]*?)):.*?);*$/$1/mg;
     # the type of certain fields is ignore by Evolution
     s/^X-(AIM|GROUPWISE|ICQ|YAHOO);TYPE=HOME/X-$1/gm;
