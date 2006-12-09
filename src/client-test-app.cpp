@@ -23,6 +23,7 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 #include <exception>
+#include <iostream>
 
 #include "EvolutionSyncClient.h"
 #include "EvolutionCalendarSource.h"
@@ -43,9 +44,10 @@ public:
     }
 
     virtual int endSync() {
+        int res = T::endSync();
         CPPUNIT_ASSERT_NO_THROW(close());
         CPPUNIT_ASSERT(!hasFailed());
-        return T::endSync();
+        return res;
     }
 };
 
@@ -68,6 +70,8 @@ public:
      * can be instantiated as client A with id == "1" and client B with id == "2"
      */
     TestEvolution(const string &id) :
+        ClientTest(getenv("TEST_EVOLUTION_DELAY") ? atoi(getenv("TEST_EVOLUTION_DELAY")) : 0,
+                   getenv("TEST_EVOLUTION_LOG") ? getenv("TEST_EVOLUTION_LOG") : ""),
         clientID(id) {
         if (id == "1") {
             clientB = new TestEvolution("2");
@@ -83,9 +87,11 @@ public:
     }   
 
     enum sourceType {
+#ifdef ENABLE_EBOOK
         TEST_CONTACT_SOURCE,
+#endif
+#ifdef ENABLE_ECAL
         TEST_CALENDAR_SOURCE,
-#if 0
         TEST_TASK_SOURCE,
 #endif
         TEST_MAX_SOURCE
@@ -96,17 +102,14 @@ public:
     }
     
     virtual void getSourceConfig(int source, Config &config) {
-        const char *delaystr = getenv("TEST_EVOLUTION_DELAY");
-        int delayseconds = delaystr ? atoi(delaystr) : 0;
-
         memset(&config, 0, sizeof(config));
         
         switch (source) {
+#ifdef ENABLE_EBOOK
          case TEST_CONTACT_SOURCE:
             config.sourceName = "Contact";
             config.createSourceA = createContactSourceA;
             config.createSourceB = createContactSourceB;
-            config.serverDelaySeconds = delayseconds;
             config.insertItem =
                 "BEGIN:VCARD\n"
                 "VERSION:3.0\n"
@@ -173,17 +176,193 @@ public:
             config.compare = compare;
             config.testcases = "addressbook.tests";
             break;
+#endif /* ENABLE_EBOOK */
+#ifdef ENABLE_ECAL
          case TEST_CALENDAR_SOURCE:
             config.sourceName = "Calendar";
             config.createSourceA = createCalendarSourceA;
             config.createSourceB = createCalendarSourceB;
-            config.serverDelaySeconds = delayseconds;
+            config.insertItem =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VEVENT\n"
+                "SUMMARY:phone meeting\n"
+                "DTEND;20060406T163000Z\n"
+                "DTSTART;20060406T160000Z\n"
+                "UID:1234567890!@#$%^&*()<>@dummy\n"
+                "DTSTAMP:20060406T211449Z\n"
+                "LAST-MODIFIED:20060409T213201\n"
+                "CREATED:20060409T213201\n"
+                "LOCATION:my office\n"
+                "DESCRIPTION:let's talk\n"
+                "CLASS:PUBLIC\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:1\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+            config.updateItem =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VEVENT\n"
+                "SUMMARY:meeting on site\n"
+                "DTEND;20060406T163000Z\n"
+                "DTSTART;20060406T160000Z\n"
+                "UID:1234567890!@#$%^&*()<>@dummy\n"
+                "DTSTAMP:20060406T211449Z\n"
+                "LAST-MODIFIED:20060409T213201\n"
+                "CREATED:20060409T213201\n"
+                "LOCATION:big meeting room\n"
+                "DESCRIPTION:nice to see you\n"
+                "CLASS:PUBLIC\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:1\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+            config.complexUpdateItem = NULL;
+            /* change location in insertItem in testMerge() */
+            config.mergeItem1 =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VEVENT\n"
+                "SUMMARY:phone meeting\n"
+                "DTEND;20060406T163000Z\n"
+                "DTSTART;20060406T160000Z\n"
+                "UID:1234567890!@#$%^&*()<>@dummy\n"
+                "DTSTAMP:20060406T211449Z\n"
+                "LAST-MODIFIED:20060409T213201\n"
+                "CREATED:20060409T213201\n"
+                "LOCATION:calling from home\n"
+                "DESCRIPTION:let's talk\n"
+                "CLASS:PUBLIC\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:1\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+            config.mergeItem2 =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VEVENT\n"
+                "SUMMARY:phone meeting\n"
+                "DTEND;20060406T163000Z\n"
+                "DTSTART;20060406T160000Z\n"
+                "UID:1234567890!@#$%^&*()<>@dummy\n"
+                "DTSTAMP:20060406T211449Z\n"
+                "LAST-MODIFIED:20060409T213201\n"
+                "CREATED:20060409T213201\n"
+                "LOCATION:my office\n"
+                "DESCRIPTION:what the heck\\, let's even shout a bit\n"
+                "CLASS:PUBLIC\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:1\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+            config.templateItem = config.insertItem;
+            config.uniqueProperties = "SUMMARY:UID";
+            config.sizeProperty = "DESCRIPTION";
+            config.import = ClientTest::import;
+            config.dump = ClientTest::dump;
+            config.compare = compare;
+            config.testcases = "calendar.tests";
+            break;
+         case TEST_TASK_SOURCE:
+            config.sourceName = "Todo";
+            config.createSourceA = createTaskSourceA;
+            config.createSourceB = createTaskSourceB;
+            config.insertItem =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VTODO\n"
+                "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+                "DTSTAMP:20060417T173712Z\n"
+                "SUMMARY:do me\n"
+                "DESCRIPTION:to be done\n"
+                "PRIORITY:0\n"
+                "STATUS:IN-PROCESS\n"
+                "CREATED:20060417T173712\n"
+                "LAST-MODIFIED:20060417T173712\n"
+                "END:VTODO\n"
+                "END:VCALENDAR\n";
+            config.updateItem =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VTODO\n"
+                "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+                "DTSTAMP:20060417T173712Z\n"
+                "SUMMARY:do me ASAP\n"
+                "DESCRIPTION:to be done\n"
+                "PRIORITY:1\n"
+                "STATUS:IN-PROCESS\n"
+                "CREATED:20060417T173712\n"
+                "LAST-MODIFIED:20060417T173712\n"
+                "END:VTODO\n"
+                "END:VCALENDAR\n";
+            config.complexUpdateItem = NULL;
+            /* change summary in insertItem in testMerge() */
+            config.mergeItem1 =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VTODO\n"
+                "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+                "DTSTAMP:20060417T173712Z\n"
+                "SUMMARY:do me please\\, please\n"
+                "DESCRIPTION:to be done\n"
+                "PRIORITY:0\n"
+                "STATUS:IN-PROCESS\n"
+                "CREATED:20060417T173712\n"
+                "LAST-MODIFIED:20060417T173712\n"
+                "END:VTODO\n"
+                "END:VCALENDAR\n";
+            config.mergeItem2 =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VTODO\n"
+                "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+                "DTSTAMP:20060417T173712Z\n"
+                "SUMMARY:do me\n"
+                "DESCRIPTION:to be done\n"
+                "PRIORITY:7\n"
+                "STATUS:IN-PROCESS\n"
+                "CREATED:20060417T173712\n"
+                "LAST-MODIFIED:20060417T173712\n"
+                "END:VTODO\n"
+                "END:VCALENDAR\n";
+            config.templateItem = config.insertItem;
+            config.uniqueProperties = "SUMMARY:UID";
+            config.sizeProperty = "DESCRIPTION";
+            config.import = ClientTest::import;
+            config.dump = ClientTest::dump;
+            config.compare = compare;
+            config.testcases = "todo.tests";
+            break;
+#endif /* ENABLE_ECAL */
+         default:
+            CPPUNIT_ASSERT(source < TEST_MAX_SOURCE);
             break;
         }
     }
 
     virtual ClientTest *getClientB() {
         return clientB;
+    }
+
+    virtual bool isB64Enabled() {
+        return false;
     }
 
     virtual int sync(
@@ -198,13 +377,15 @@ public:
             string database;
             
             switch (sources[i]) {
+#ifdef ENABLE_EBOOK
              case TEST_CONTACT_SOURCE:
                 database = "addressbook";
                 break;
+#endif
+#ifdef ENABLE_ECAL
              case TEST_CALENDAR_SOURCE:
                 database = "calendar";
                 break;
-#if 0
              case TEST_TASK_SOURCE:
                 database = "task";
                 break;
@@ -214,13 +395,10 @@ public:
                 break;
             }
 
-            /* TODO */
             activeSources.insert(database + "_" + clientID);
         }
 
-
-        /* TODO */
-        string server = "funambol";
+        string server = getenv("TEST_EVOLUTION_SERVER") ? getenv("TEST_EVOLUTION_SERVER") : "funambol";
         server += "_";
         server += clientID;
         
@@ -277,21 +455,24 @@ private:
     
     SyncSource *createSyncSource(sourceType type, string changeID, string database) {
         switch (type) {
+#ifdef ENABLE_EBOOK
          case TEST_CONTACT_SOURCE:
             return new TestEvolutionSyncSource<EvolutionContactSource>(changeID, database);
             break;
+#endif
+#ifdef ENABLE_ECAL
          case TEST_CALENDAR_SOURCE:
             return new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_EVENT, changeID, database);
             break;
-#if 0
          case TEST_TASK_SOURCE:
-            return new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_TASK, changeID, database);
+            return new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_TODO, changeID, database);
 #endif
          default:
             return NULL;
         }
     }
 
+#ifdef ENABLE_EBOOK
     static SyncSource *createContactSourceA(ClientTest &client) {
         return ((TestEvolution *)&client)->createSyncSource(TEST_CONTACT_SOURCE, "SyncEvolution Change ID #1",
                                                             string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
@@ -300,7 +481,9 @@ private:
         return ((TestEvolution *)&client)->createSyncSource(TEST_CONTACT_SOURCE, "SyncEvolution Change ID #2",
                                                             string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
     }
+#endif
 
+#ifdef ENABLE_ECAL
     static SyncSource *createCalendarSourceA(ClientTest &client) {
         return ((TestEvolution *)&client)->createSyncSource(TEST_CALENDAR_SOURCE, "SyncEvolution Change ID #1",
                                                             string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
@@ -310,7 +493,6 @@ private:
                                                             string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
     }
 
-#if 0
     static SyncSource *createTaskSourceA(ClientTest &client) {
         return ((TestEvolution *)&client)->createSyncSource(TEST_TASK_SOURCE, "SyncEvolution Change ID #1",
                                                             string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
