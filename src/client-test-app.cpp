@@ -39,15 +39,15 @@ public:
         T("dummy", NULL, changeID, database) {}
 
     virtual int beginSync() {
-        CPPUNIT_ASSERT_NO_THROW(open());
-        CPPUNIT_ASSERT(!hasFailed());
+        CPPUNIT_ASSERT_NO_THROW(T::open());
+        CPPUNIT_ASSERT(!T::hasFailed());
         return T::beginSync();
     }
 
     virtual int endSync() {
         int res = T::endSync();
-        CPPUNIT_ASSERT_NO_THROW(close());
-        CPPUNIT_ASSERT(!hasFailed());
+        CPPUNIT_ASSERT_NO_THROW(T::close());
+        CPPUNIT_ASSERT(!T::hasFailed());
         return res;
     }
 };
@@ -75,17 +75,9 @@ public:
                    getenv("TEST_EVOLUTION_LOG") ? getenv("TEST_EVOLUTION_LOG") : ""),
         clientID(id) {
         if (id == "1") {
-            clientB = new TestEvolution("2");
-        } else {
-            clientB = NULL;
+            clientB.reset(new TestEvolution("2"));
         }
     }
-
-    ~TestEvolution() {
-        if (clientB) {
-            delete clientB;
-        }
-    }   
 
     enum sourceType {
 #ifdef ENABLE_EBOOK
@@ -109,8 +101,8 @@ public:
 #ifdef ENABLE_EBOOK
          case TEST_CONTACT_SOURCE:
             config.sourceName = "Contact";
-            config.createSourceA = createContactSourceA;
-            config.createSourceB = createContactSourceB;
+            config.createSourceA = createSource;
+            config.createSourceB = createSource;
             config.insertItem =
                 "BEGIN:VCARD\n"
                 "VERSION:3.0\n"
@@ -181,8 +173,8 @@ public:
 #ifdef ENABLE_ECAL
          case TEST_CALENDAR_SOURCE:
             config.sourceName = "Calendar";
-            config.createSourceA = createCalendarSourceA;
-            config.createSourceB = createCalendarSourceB;
+            config.createSourceA = createSource;
+            config.createSourceB = createSource;
             config.insertItem =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -275,8 +267,8 @@ public:
             break;
          case TEST_TASK_SOURCE:
             config.sourceName = "Todo";
-            config.createSourceA = createTaskSourceA;
-            config.createSourceB = createTaskSourceB;
+            config.createSourceA = createSource;
+            config.createSourceB = createSource;
             config.insertItem =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -359,7 +351,7 @@ public:
     }
 
     virtual ClientTest *getClientB() {
-        return clientB;
+        return clientB.get();
     }
 
     virtual bool isB64Enabled() {
@@ -392,7 +384,7 @@ public:
                 break;
 #endif
              default:
-                CPPUNIT_ASSERT(sources[i] < TEST_MAX_SOURCE);
+                CPPUNIT_ASSERT(sources[i] >= 0 && sources[i] < TEST_MAX_SOURCE);
                 break;
             }
 
@@ -452,9 +444,14 @@ public:
     
 private:
     string clientID;
-    TestEvolution *clientB;
+    std::auto_ptr<TestEvolution> clientB;
     
-    SyncSource *createSyncSource(sourceType type, string changeID, string database) {
+    static SyncSource *createSource(ClientTest &client, int type, bool isSourceA) {
+        string changeID = "SyncEvolution Change ID #";
+        changeID += isSourceA ? "1" : "2";
+        string database = "SyncEvolution test #";
+        database += ((TestEvolution &)client).clientID;
+        
         switch (type) {
 #ifdef ENABLE_EBOOK
          case TEST_CONTACT_SOURCE:
@@ -469,40 +466,10 @@ private:
             return new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_TODO, changeID, database);
 #endif
          default:
+            CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
             return NULL;
         }
     }
-
-#ifdef ENABLE_EBOOK
-    static SyncSource *createContactSourceA(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_CONTACT_SOURCE, "SyncEvolution Change ID #1",
-                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
-    }
-    static SyncSource *createContactSourceB(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_CONTACT_SOURCE, "SyncEvolution Change ID #2",
-                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
-    }
-#endif
-
-#ifdef ENABLE_ECAL
-    static SyncSource *createCalendarSourceA(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_CALENDAR_SOURCE, "SyncEvolution Change ID #1",
-                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
-    }
-    static SyncSource *createCalendarSourceB(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_CALENDAR_SOURCE, "SyncEvolution Change ID #2",
-                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
-    }
-
-    static SyncSource *createTaskSourceA(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_TASK_SOURCE, "SyncEvolution Change ID #1",
-                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
-    }
-    static SyncSource *createTaskSourceB(ClientTest &client) {
-        return ((TestEvolution *)&client)->createSyncSource(TEST_TASK_SOURCE, "SyncEvolution Change ID #2",
-                                                            string("SyncEvolution test #") + ((TestEvolution &)client).clientID);
-    }
-#endif
 };
 
 static class RegisterTestEvolution {
