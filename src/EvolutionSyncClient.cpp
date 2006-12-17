@@ -577,4 +577,6 @@ int EvolutionSyncClient::sync()
 
     // all went well: print final report before cleaning up
     sourceList.syncDone(true);
+
+    return 0;
 }
