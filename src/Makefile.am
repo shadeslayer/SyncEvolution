@@ -128,7 +128,7 @@ $(SYNC4J_SUBDIR)/% :
 # compare the local copy of the C++ client library against
 # the files where it was copied from
 client-api-diff :
-	diff -r -c -x CVS -x '.#*' -x '*~' -x '*.in' -x autom4te.cache $(SYNC4JSRC) client-api
+	diff -r -c -x CVS -x config.guess -x config.sub -x depcomp -x install-sh -x ltmain.sh -x missing -x aclocal.m4 -x configure -x '.#*' -x '*~' -x '*.in' -x autom4te.cache $(SYNC4JSRC) client-api
 
 # special target for testing with valgrind
 valgrind : test
