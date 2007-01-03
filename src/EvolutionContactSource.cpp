@@ -451,7 +451,7 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
                 !vprop->containsParameter("INTERNET") &&
                 !vprop->containsParameter("HOME") &&
                 !vprop->containsParameter("WORK")) {
-                vprop->addParameter("TYPE", "OTHER");
+                vprop->addParameter("TYPE", "HOME");
             }
 
 #ifdef SET_UI_SLOT
