@@ -274,10 +274,12 @@ It is recommended to sync against the new vCard 3.0 URI (card3) and
 iCalendar 2.0 URIs (cal2, task2), using the "text/vcard", "text/calendar"
 and "text/x-todo" type setting respectively. These are the native formats of
 Evolution and a lot of effort went into ensuring that they store as
-much Evolution data as possible. SyncEvolution is primarily tested
-against ScheduleWorld. The "scheduleworld_1" example configuration is
-ready to be used with these URIs, one only has to fill in the real
-username and password.
+much Evolution data as possible. The "note" URI and "text/x-journal" type
+can be used to synchronize memos.
+
+SyncEvolution is primarily tested against ScheduleWorld. The
+"scheduleworld_1" example configuration is ready to be used with these
+URIs, one only has to fill in the real username and password.
 
 
 Configuration with Funambol

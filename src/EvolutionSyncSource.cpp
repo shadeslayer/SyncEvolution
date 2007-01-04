@@ -142,6 +142,12 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 #else
         LOG.error("access to calendars not compiled into this binary, text/x-todo not supported");
 #endif
+    } else if (mimeType == "text/x-journal") {
+#ifdef ENABLE_ECAL
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, strippedChangeId, id);
+#else
+        LOG.error("access to memos not compiled into this binary, text/x-journal not supported");
+#endif
     } else if (mimeType == "text/calendar" ||
                mimeType == "text/x-vcalendar") {
 #ifdef ENABLE_ECAL

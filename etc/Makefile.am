@@ -14,7 +14,9 @@ localhost_copy = \
 		$(localhost_copy_syncml) \
 		$(localhost_copy_sources)
 scheduleworld_copy = \
-		$(subst localhost,scheduleworld,$(localhost_copy) $(localhost_source))
+		$(subst localhost,scheduleworld,$(localhost_copy) $(localhost_source)) \
+		scheduleworld_1/spds/sources/memo_1/config.txt \
+		scheduleworld_2/spds/sources/memo_2/config.txt
 
 all_copy = \
 		$(localhost_copy) \
@@ -41,6 +43,10 @@ localhost_2/spds/sources/todo_2/config.txt : localhost_1/spds/sources/addressboo
 	mkdir -p $(@D)
 	sed -e s/addressbook_1/todo_2/ -e s/#1/#2/ -e 's:type = text/x-vcard:type = text/x-todo:' -e 's/uri = card/uri = todo/' $< >$@
 
+localhost_2/spds/sources/memo_2/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
+	mkdir -p $(@D)
+	sed -e s/addressbook_1/memo_2/ -e s/#1/#2/ -e 's:type = text/x-vcard:type = text/x-journal:' -e 's/uri = card/uri = note/' $< >$@
+
 localhost_1/spds/sources/calendar_1/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
 	mkdir -p $(@D)
 	sed -e s/addressbook_1/calendar_1/ -e 's:type = text/x-vcard:type = text/calendar:' -e 's/uri = card/uri = cal/' $< >$@
@@ -48,6 +54,10 @@ localhost_1/spds/sources/calendar_1/config.txt : localhost_1/spds/sources/addres
 localhost_1/spds/sources/todo_1/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
 	mkdir -p $(@D)
 	sed -e s/addressbook_1/todo_1/ -e 's:type = text/x-vcard:type = text/x-todo:' -e 's/uri = card/uri = todo/' $< >$@
+
+localhost_1/spds/sources/memo_1/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
+	mkdir -p $(@D)
+	sed -e s/addressbook_1/memo_1/ -e 's:type = text/x-vcard:type = text/x-journal:' -e 's/uri = card/uri = note/' $< >$@
 
 
 # www.scheduleworld.com configuration:

@@ -97,6 +97,12 @@ int main( int argc, char **argv )
                                                string("list"),
                                                NULL);
             listSources(todoSource, "tasks");
+            cout << "\n";
+
+            EvolutionCalendarSource journalSource(E_CAL_SOURCE_TYPE_JOURNAL,
+                                                  string("list"),
+                                                  NULL);
+            listSources(todoSource, "memos");
 #endif
 
             fprintf( stderr, "\nusage: %s <server>\n", argv[0] );

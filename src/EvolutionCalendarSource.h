@@ -111,8 +111,8 @@ class EvolutionCalendarSource : public EvolutionSyncSource
 
     /** returns the type which the ical library uses for our components */
     icalcomponent_kind getCompType() {
-        return m_type == E_CAL_SOURCE_TYPE_EVENT ?
-            ICAL_VEVENT_COMPONENT :
+        return m_type == E_CAL_SOURCE_TYPE_EVENT ? ICAL_VEVENT_COMPONENT :
+            m_type == E_CAL_SOURCE_TYPE_JOURNAL ? ICAL_VJOURNAL_COMPONENT :
             ICAL_VTODO_COMPONENT;
     }
 
