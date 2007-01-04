@@ -97,7 +97,7 @@ vpath %.cpp : $(SYNC4J_SUBDIR)/test/test
 
 TestEvolution syncevolution vcardconverter : \
 	$(SYNC4J_SUBDIR)/src/libsync4j.la
-test : TestEvolution addressbook.tests calendar.tests todo.tests synccompare vcardconverter
+test : TestEvolution addressbook.tests calendar.tests todo.tests memo.tests synccompare vcardconverter
 
 # test files are in CVS under a different name so that they
 # can be copied to the work directory under the name expected
@@ -107,6 +107,8 @@ addressbook.tests : testVCard.vcf
 calendar.tests : testCalendar.ics
 	cp $< $@
 todo.tests : testTask.ics
+	cp $< $@
+memo.tests : testMemo.ics
 	cp $< $@
 
 testclean :

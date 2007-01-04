@@ -758,6 +758,113 @@ public:
             "END:VCALENDAR\n" )
         {}
 };
+
+/**
+ * EvolutionCalendarSource configured for access to memos,
+ * with a constructor as expected by TestEvolution
+ */
+class TestEvolutionMemoSource : public EvolutionCalendarSource
+{
+public:
+    TestEvolutionMemoSource(
+        const string &name,
+        SyncSourceConfig *sc,
+        const string &changeId = string(""),
+        const string &id = string("") ) :
+        EvolutionCalendarSource(
+            E_CAL_SOURCE_TYPE_JOURNAL,
+            name,
+            sc,
+            changeId,
+            id)
+        {}
+};
+
+/**
+ * TestEvolution configured for use with tasks
+ */
+class TestMemo : public TestEvolution<TestEvolutionMemoSource>
+{
+public:
+    TestMemo() :
+        TestEvolution<TestEvolutionMemoSource>(
+            "memo",
+
+            "SUMMARY:UID",
+            "DESCRIPTION",
+            
+            /* initial item */
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "UID:20070104T192337Z-4315-727-1-88@gollum\n"
+            "DTSTAMP:20070104T192337Z\n"
+            "SUMMARY:test\n"
+            "CLASS:PRIVATE\n"
+            "CREATED:20070104T192729\n"
+            "LAST-MODIFIED:20070104T193158\n"
+            "DESCRIPTION:test\n"
+            "CATEGORIES:test\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n",
+
+            /* default update item which replaces the initial item */
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "UID:20070104T192337Z-4315-727-1-88@gollum\n"
+            "DTSTAMP:20070104T192337Z\n"
+            "SUMMARY:test modified\n"
+            "CLASS:PRIVATE\n"
+            "CREATED:20070104T192729\n"
+            "LAST-MODIFIED:20070104T193158\n"
+            "DESCRIPTION:test modified\n"
+            "CATEGORIES:test\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n",
+
+            /* complex update item which replaces the initial item - empty because not needed */
+            "",
+
+            /* change summary in initial item in testMerge() */
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "UID:20070104T192337Z-4315-727-1-88@gollum\n"
+            "DTSTAMP:20070104T192337Z\n"
+            "SUMMARY:test modified\n"
+            "CLASS:PRIVATE\n"
+            "CREATED:20070104T192729\n"
+            "LAST-MODIFIED:20070104T193158\n"
+            "DESCRIPTION:test modified\n"
+            "CATEGORIES:test\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n",
+            
+            /* change categories */
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "UID:20070104T192337Z-4315-727-1-88@gollum\n"
+            "DTSTAMP:20070104T192337Z\n"
+            "SUMMARY:test\n"
+            "CLASS:PRIVATE\n"
+            "CREATED:20070104T192729\n"
+            "LAST-MODIFIED:20070104T193158\n"
+            "DESCRIPTION:test\n"
+            "CATEGORIES:release\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n" )
+        {}
+};
 #endif /* ENABLE_ECAL */
 
 #define SOURCE_TESTS \
@@ -875,6 +982,30 @@ class TaskStress : public TestTask
     CPPUNIT_TEST_SUITE_END();
 };
 CPPUNIT_TEST_SUITE_REGISTRATION( TaskStress );
+
+class MemoSource : public TestMemo
+{
+    CPPUNIT_TEST_SUITE( MemoSource );
+    SOURCE_TESTS;
+    CPPUNIT_TEST_SUITE_END();
+};
+CPPUNIT_TEST_SUITE_REGISTRATION( MemoSource );
+
+class MemoSync : public TestMemo
+{
+    CPPUNIT_TEST_SUITE( MemoSync );
+    SYNC_TESTS;
+    CPPUNIT_TEST_SUITE_END();
+};
+CPPUNIT_TEST_SUITE_REGISTRATION( MemoSync );
+
+class MemoStress : public TestMemo
+{
+    CPPUNIT_TEST_SUITE( MemoStress );
+    STRESS_TESTS;
+    CPPUNIT_TEST_SUITE_END();
+};
+CPPUNIT_TEST_SUITE_REGISTRATION( MemoStress );
 #endif /* ENABLE_ECAL */
 
 
