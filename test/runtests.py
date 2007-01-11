@@ -399,6 +399,12 @@ parser.add_option("", "--syncevo-tag",
 parser.add_option("", "--client-tag",
                   type="string", dest="clienttag", default="HEAD",
                   help="the tag of the client library (default HEAD)")
+parser.add_option("", "--openembedded",
+                  type="string", dest="oedir",
+                  help="the build directory of the OpenEmbedded cross-compile environment")
+parser.add_option("", "--host",
+                  type="string", dest="host",
+                  help="platform identifier like x86_64-linux; if this and --openembedded is set, then cross-compilation is tested")
 parser.add_option("", "--bin-suffix",
                   type="string", dest="binsuffix", default="",
                   help="string to append to binary distribution archive (default empty = no binary distribution built)")
@@ -452,6 +458,26 @@ compile = SyncEvolutionBuild("compile",
                              options.shell,
                              [ client.name, sync.name ])
 context.add(compile)
+
+class SyncEvolutionCross(AutotoolsBuild):
+    def __init__(self, syncevosrc, syncclientsrc, host, oedir, dependencies):
+        """cross-compile SyncEvolution using a certain OpenEmbedded build dir:
+        host is the platform identifier (e.g. x86_64-linux),
+        oedir must contain the 'tmp/cross' and 'tmp/staging/<host>' directories"""
+        AutotoolsBuild.__init__(self, "cross-compile", syncevosrc, \
+                                "--host=%s --with-sync4j-src=%s CPPFLAGS=-I%s/tmp/staging/%s/include/ LDFLAGS='-Wl,-rpath-link=%s/tmp/staging/%s/lib/ -Wl,--allow-shlib-undefined'" % \
+                                ( host, syncclientsrc, oedir, host, oedir, host ), \
+                                "PKG_CONFIG_PATH=%s/tmp/staging/%s/share/pkgconfig PATH=%s/tmp/cross/bin:$PATH" % \
+                                ( oedir, host, oedir ),
+                                dependencies)
+        self.builddir = os.path.join(context.tmpdir, host)
+        
+    def execute(self):
+        AutotoolsBuild.execute(self)
+
+if options.oedir and options.host:
+    cross = SyncEvolutionCross(sync.basedir, client.basedir, options.host, options.oedir, [ client.name, sync.name, compile.name ])
+    context.add(cross)
 
 class SyncEvolutionDist(AutotoolsBuild):
     def __init__(self, name, binsuffix, binrunner, dependencies):
