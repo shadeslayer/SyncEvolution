@@ -37,8 +37,10 @@ def del_dir(path):
         return
     for file in os.listdir(path):
         file_or_dir = os.path.join(path,file)
+        # ensure directory is writable
+        os.chmod(path, os.stat(path)[stat.ST_MODE] | stat.S_IRWXU)
         if os.path.isdir(file_or_dir) and not os.path.islink(file_or_dir):
-            del_dir(file_or_dir) #it's a directory reucursive call to function again
+            del_dir(file_or_dir) #it's a directory recursive call to function again
         else:
             os.remove(file_or_dir) #it's a file, delete it
     os.rmdir(path)
