@@ -7,6 +7,8 @@ localhost_copy_sources = \
 		localhost_2/spds/sources/addressbook_2/config.txt \
                 localhost_2/spds/sources/calendar_2/config.txt \
                 localhost_2/spds/sources/todo_2/config.txt \
+		localhost_2/spds/sources/memo_2/config.txt \
+		localhost_1/spds/sources/memo_1/config.txt \
                 localhost_1/spds/sources/calendar_1/config.txt \
                 localhost_1/spds/sources/todo_1/config.txt
 
@@ -14,9 +16,7 @@ localhost_copy = \
 		$(localhost_copy_syncml) \
 		$(localhost_copy_sources)
 scheduleworld_copy = \
-		$(subst localhost,scheduleworld,$(localhost_copy) $(localhost_source)) \
-		scheduleworld_1/spds/sources/memo_1/config.txt \
-		scheduleworld_2/spds/sources/memo_2/config.txt
+		$(subst localhost,scheduleworld,$(localhost_copy) $(localhost_source))
 
 all_copy = \
 		$(localhost_copy) \
@@ -45,7 +45,7 @@ localhost_2/spds/sources/todo_2/config.txt : localhost_1/spds/sources/addressboo
 
 localhost_2/spds/sources/memo_2/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
 	mkdir -p $(@D)
-	sed -e s/addressbook_1/memo_2/ -e s/#1/#2/ -e 's:type = text/x-vcard:type = text/x-journal:' -e 's/uri = card/uri = note/' $< >$@
+	sed -e s/addressbook_1/memo_2/ -e s/#1/#2/ -e 's:type = text/x-vcard:type = text/x-journal:' -e 's/uri = card/uri = note/' -e 's/sync = two-way/sync = none/' $< >$@
 
 localhost_1/spds/sources/calendar_1/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
 	mkdir -p $(@D)
@@ -57,7 +57,7 @@ localhost_1/spds/sources/todo_1/config.txt : localhost_1/spds/sources/addressboo
 
 localhost_1/spds/sources/memo_1/config.txt : localhost_1/spds/sources/addressbook_1/config.txt
 	mkdir -p $(@D)
-	sed -e s/addressbook_1/memo_1/ -e 's:type = text/x-vcard:type = text/x-journal:' -e 's/uri = card/uri = note/' $< >$@
+	sed -e s/addressbook_1/memo_1/ -e 's:type = text/x-vcard:type = text/x-journal:' -e 's/uri = card/uri = note/' -e 's/sync = two-way/sync = none/' $< >$@
 
 
 # www.scheduleworld.com configuration:
@@ -73,5 +73,6 @@ $(scheduleworld_copy) : scheduleworld_% : localhost_%
 	    -e 's;^uri = todo;uri = task2;' \
             -e 's;^uri = card;uri = card3;' \
             -e 's;^uri = cal;uri = cal2;' \
+            -e 's;^sync = none;sync = two-way;' \
 	    $< >$@
 
