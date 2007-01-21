@@ -12,6 +12,7 @@ TESTS = @CPPUNIT_TESTS@
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
+CLEANFILES = libstdc++.a
 
 synccompare : normalize_vcard.pl
 	cp $< $@
@@ -42,6 +43,10 @@ CORE_SOURCES  = \
 	$(VOCL_SOURCES)
 
 CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @LIBS@
+
+# put link to static c++ library into current directory, needed if compiling with --enable-static-c++
+libstdc++.a :
+	path=`$(CXX) $(CORE_LDADD) $(LD_FLAGS) -print-file-name=libstdc++.a` && ln -s $$path .
 
 syncevolution_SOURCES = \
 	syncevolution.cpp \
@@ -81,7 +86,7 @@ SYNC4JSRC = @SYNC4JSRC@
 SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
 BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
 
-clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/%
+clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/% %-am
 clean : testclean
 
 # With --disable-shared autotools links against libsync4j.a which does not
@@ -96,6 +101,7 @@ client_test_LDADD = $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
 vpath %.cpp : $(SYNC4J_SUBDIR)/test/test
 
 TestEvolution syncevolution vcardconverter : \
+        @CORE_LDADD_DEP@ \
 	$(SYNC4J_SUBDIR)/src/libsync4j.la
 test : TestEvolution addressbook.tests calendar.tests todo.tests memo.tests synccompare vcardconverter
 
