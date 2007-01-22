@@ -86,7 +86,8 @@ SYNC4JSRC = @SYNC4JSRC@
 SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
 BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
 
-clean distclean mostlyclean distdir maintainer-clean : % : $(SYNC4J_SUBDIR)/% %-am
+clean distclean mostlyclean maintainer-clean distdir : % : $(SYNC4J_SUBDIR)/%
+clean distclean mostlyclean maintainer-clean : % : %-am
 clean : testclean
 
 # With --disable-shared autotools links against libsync4j.a which does not
