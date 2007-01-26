@@ -432,7 +432,7 @@ int EvolutionSyncClient::sync()
             int res = DMTClientConfig::readDevInfoConfig(syncMLNode, syncMLNode);
 
             // always read device ID from the traditional property "deviceId"
-            eptr<char> tmp(syncMLNode.readPropertyValue("deviceId"));
+            arrayptr<char> tmp(syncMLNode.readPropertyValue("deviceId"));
             deviceConfig.setDevID(tmp);
 
             return res;
@@ -482,8 +482,8 @@ int EvolutionSyncClient::sync()
     // redirect logging as soon as possible
     SourceList sourceList(m_server, m_doLogging);
 
-    eptr<char> logdir(config.getSyncMLNode()->readPropertyValue("logdir"));
-    eptr<char> maxlogdirs(config.getSyncMLNode()->readPropertyValue("maxlogdirs"));
+    arrayptr<char> logdir(config.getSyncMLNode()->readPropertyValue("logdir"));
+    arrayptr<char> maxlogdirs(config.getSyncMLNode()->readPropertyValue("maxlogdirs"));
     sourceList.setLogdir(logdir, atoi(maxlogdirs));
 
     SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
