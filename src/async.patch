@@ -1,0 +1,532 @@
+This patch demonstrates how switching from the current, synchronous
+to the corresponding asynchronous API could work. This helps to
+avoid some timeouts with EDS-DBus, but not all: the e_book_async_get_changes()
+call still times out.
+
+Index: src/EvolutionContactSource.cpp
+===================================================================
+RCS file: /cvsroot/sync4jevolution/sync4jevolution/src/EvolutionContactSource.cpp,v
+retrieving revision 1.50
+diff -c -r1.50 EvolutionContactSource.cpp
+*** src/EvolutionContactSource.cpp	3 Jan 2007 20:58:41 -0000	1.50
+--- src/EvolutionContactSource.cpp	22 Feb 2007 19:27:50 -0000
+***************
+*** 27,32 ****
+--- 27,33 ----
+  #ifdef ENABLE_EBOOK
+  
+  #include "EvolutionContactSource.h"
++ #include <libebook/e-book-view.h>
+  
+  #include <common/base/Log.h>
+  #include "vocl/VConverter.h"
+***************
+*** 154,159 ****
+--- 155,207 ----
+      }
+  }
+  
++ void EvolutionContactSource::addContacts(void *custom, GList *nextItem)
++ {
++     EvolutionContactSource *source = (EvolutionContactSource *)custom;
++     
++     while (nextItem) {
++         const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
++                                                             E_CONTACT_UID);
++         source->m_allItems.addItem(uid);
++         nextItem = nextItem->next;
++     }
++ }
++ 
++ void EvolutionContactSource::addChanges(EBook *book,
++                                         EBookStatus status,
++                                         GList *nextItem,
++                                         gpointer custom)
++ {
++     EvolutionContactSource *source = (EvolutionContactSource *)custom;
++     source->m_status = status;
++ 
++     while (nextItem) {
++         EBookChange *ebc = (EBookChange *)nextItem->data;
++         
++         if (ebc->contact) {
++             const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
++                 
++             if (uid) {
++                 switch (ebc->change_type) {            
++                  case E_BOOK_CHANGE_CARD_ADDED:
++                     source->m_newItems.addItem(uid);
++                     break;
++                  case E_BOOK_CHANGE_CARD_MODIFIED:
++                     source->m_updatedItems.addItem(uid);
++                     break;
++                  case E_BOOK_CHANGE_CARD_DELETED:
++                     source->m_deletedItems.addItem(uid);
++                     break;
++                 }
++             }
++         }
++         nextItem = nextItem->next;
++     }
++ 
++     source->m_loop.quit();
++ }
++ 
++ 
+  void EvolutionContactSource::beginSyncThrow(bool needAll,
+                                              bool needPartial,
+                                              bool deleteLocal)
+***************
+*** 161,234 ****
+      GError *gerror = NULL;
+  
+      if (deleteLocal) {
+!         eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+!         GList *nextItem;
+!         if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+!             throwError( "reading all items", gerror );
+!         }
+!         while (nextItem) {
+!             const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
+!                                                                 E_CONTACT_UID);
+!             if (!e_book_remove_contact( m_addressbook, uid, &gerror ) ) {
+!                 throwError( string( "deleting contact " ) + uid,
+                              gerror );
+              }
+-             nextItem = nextItem->next;
+          }
+      }
+  
+      if (needAll) {
+!         eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+!         GList *nextItem;
+!         if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+!             throwError( "reading all items", gerror );
+!         }
+!         while (nextItem) {
+!             const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
+!                                                                 E_CONTACT_UID);
+!             m_allItems.addItem(uid);
+!             nextItem = nextItem->next;
+!         }
+      }
+  
+      if (needPartial) {
+          GList *nextItem;
+          if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
+              throwError( "reading changes", gerror );
+          }
+!         while (nextItem) {
+!             EBookChange *ebc = (EBookChange *)nextItem->data;
+! 
+!             if (ebc->contact) {
+!                 const char *uid = (const char *)e_contact_get_const( ebc->contact, E_CONTACT_UID );
+!                 
+!                 if (uid) {
+!                     switch (ebc->change_type) {            
+!                      case E_BOOK_CHANGE_CARD_ADDED:
+!                         m_newItems.addItem(uid);
+!                         break;
+!                      case E_BOOK_CHANGE_CARD_MODIFIED:
+!                         m_updatedItems.addItem(uid);
+!                         break;
+!                      case E_BOOK_CHANGE_CARD_DELETED:
+!                         m_deletedItems.addItem(uid);
+!                         break;
+!                     }
+!                 }
+!             }
+!             nextItem = nextItem->next;
+          }
+      }
+  }
+  
+  void EvolutionContactSource::endSyncThrow()
+  {
+      if (m_isModified) {
+-         GError *gerror = NULL;
+-         GList *nextItem;
+          // move change_id forward so that our own changes are not listed the next time
+!         if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
+!             throwError( "reading changes", gerror );
+          }
+      }
+      resetItems();
+--- 209,264 ----
+      GError *gerror = NULL;
+  
+      if (deleteLocal) {
+!         m_allItems.clear();
+!         listAllContacts(addContacts, this);
+! 
+!         EvolutionSyncSource::itemList::const_iterator it;
+!         for (it = m_allItems.begin();
+!              it != m_allItems.end();
+!              ++it) {
+!             if (!e_book_remove_contact( m_addressbook, it->c_str(), &gerror ) ) {
+!                 throwError( string( "deleting contact " ) + *it,
+                              gerror );
+              }
+          }
++         m_allItems.clear();
+      }
+  
+      if (needAll) {
+!         listAllContacts(addContacts, this);
+      }
+  
+      if (needPartial) {
++ #if 0
++         // times out on N770
++         GError *gerror = NULL;
+          GList *nextItem;
+          if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
+              throwError( "reading changes", gerror );
+          }
+!         addChanges(m_addressbook, E_BOOK_ERROR_OK, nextItem, (gpointer)this);
+! #else
+!         if (e_book_async_get_changes(m_addressbook, (char *)m_changeId.c_str(), addChanges, this)) {
+!             throwError( "reading changes", gerror );
+          }
++         m_loop.run();
++         if (m_status != E_BOOK_ERROR_OK) {
++             throw runtime_error("reading changes stopped with an error");
++         }
++ #endif
+      }
+  }
+  
+  void EvolutionContactSource::endSyncThrow()
+  {
+      if (m_isModified) {
+          // move change_id forward so that our own changes are not listed the next time
+!         if (e_book_async_get_changes(m_addressbook, (char *)m_changeId.c_str(), addChanges, this)) {
+!             throw runtime_error("reading changes");
+!         }
+!         m_loop.run();
+!         if (m_status != E_BOOK_ERROR_OK) {
+!             throw runtime_error("reading changes stopped with an error");
+          }
+      }
+      resetItems();
+***************
+*** 241,263 ****
+      m_addressbook = NULL;
+  }
+  
+! void EvolutionContactSource::exportData(ostream &out)
+  {
+!     eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+!     GList *nextItem;
+!     GError *gerror = NULL;
+!     if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
+!         throwError( "reading all items", gerror );
+!     }
+      while (nextItem) {
+          eptr<char> vcardstr(e_vcard_to_string(&E_CONTACT(nextItem->data)->parent,
+                                                EVC_FORMAT_VCARD_30));
+  
+!         out << (const char *)vcardstr << "\r\n\r\n";
+          nextItem = nextItem->next;
+      }
+  }
+  
+  SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state )
+  {
+      logItem( uid, "extracting from EV" );
+--- 271,296 ----
+      m_addressbook = NULL;
+  }
+  
+! 
+! static void dumpContacts(void *custom, GList *nextItem)
+  {
+!     ostream *out = (ostream *)custom;
+! 
+      while (nextItem) {
+          eptr<char> vcardstr(e_vcard_to_string(&E_CONTACT(nextItem->data)->parent,
+                                                EVC_FORMAT_VCARD_30));
+  
+!         *out << (const char *)vcardstr << "\r\n\r\n";
+! 
+          nextItem = nextItem->next;
+      }
+  }
+  
++ void EvolutionContactSource::exportData(ostream &out)
++ {
++     listAllContacts(dumpContacts, (void *)&out);
++ }
++ 
+  SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state )
+  {
+      logItem( uid, "extracting from EV" );
+***************
+*** 773,776 ****
+--- 806,876 ----
+      }
+  }
+  
++ class EvolutionContactListAll {
++ public:
++     EvolutionContactListAll(void (*processList)(void *custom, GList *list), void *custom, EvolutionContactSource &source):
++         m_processList(processList),
++         m_custom(custom),
++         m_source(source),
++         m_status(E_BOOK_VIEW_STATUS_OK)
++         {}
++ 
++     static void contactsAdded(EBookView *ebookview,
++                               gpointer arg1,
++                               gpointer user_data) {
++         EvolutionContactListAll *listAll = (EvolutionContactListAll *)user_data;
++         listAll->m_processList(listAll->m_custom, (GList *)arg1);
++     }
++ 
++     static void sequenceDone(EBookView *ebookview,
++                              gint arg1,
++                              gpointer user_data) {
++         EvolutionContactListAll *listAll = (EvolutionContactListAll *)user_data;
++         listAll->m_status = (EBookViewStatus)arg1;
++         listAll->m_source.m_loop.quit();
++     }
++ 
++     /** throw an error exception if an error occurred */
++     void checkStatus() {
++         if (m_status != E_BOOK_VIEW_STATUS_OK) {
++             throw runtime_error("iterating over all contacts failed");
++         }
++     }
++ 
++ private:
++     void (*m_processList)(void *custom, GList *list);
++     void *m_custom;
++     EvolutionContactSource &m_source;
++     EBookViewStatus m_status;
++ };
++ 
++ 
++ 
++ 
++ 
++ void EvolutionContactSource::listAllContacts(void (*processList)(void *custom, GList *list), void *custom)
++ {
++     eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
++     GError *gerror = NULL;
++     EBookView *viewptr;
++     
++     if (e_book_get_book_view(m_addressbook, allItemsQuery, NULL, -1, &viewptr, &gerror)) {
++         eptr<EBookView, GObject> view(viewptr);
++         EvolutionContactListAll listAll(processList, custom, *this);
++         
++         g_signal_connect(viewptr, "contacts-added", G_CALLBACK(listAll.contactsAdded), &listAll);
++         g_signal_connect(viewptr, "sequence-complete", G_CALLBACK(listAll.sequenceDone), &listAll);
++         e_book_view_start(view);
++         m_loop.run();
++         e_book_view_stop(view);
++         // workaround for http://bugzilla.gnome.org/show_bug.cgi?id=399011
++         // Without the sleep() EDS often (but not always) crashes in e_book_backend_get_book_views()
++         // during one of the following calls.
++         sleep(1);
++         listAll.checkStatus();
++     } else {
++         throwError( "getting view on addressbook", gerror );
++     }
++ }
++ 
+  #endif /* ENABLE_EBOOK */
+Index: src/EvolutionContactSource.h
+===================================================================
+RCS file: /cvsroot/sync4jevolution/sync4jevolution/src/EvolutionContactSource.h,v
+retrieving revision 1.22
+diff -c -r1.22 EvolutionContactSource.h
+*** src/EvolutionContactSource.h	10 Dec 2006 17:35:18 -0000	1.22
+--- src/EvolutionContactSource.h	22 Feb 2007 19:27:50 -0000
+***************
+*** 32,37 ****
+--- 32,49 ----
+  #include <set>
+  
+  /**
++  * callback used by EvolutionContactSource::listAll() and 
++  */
++ class EvolutionCallback
++ {
++   public:
++     /**
++      * Called to iterate over data. Content of list depends on context.
++      */
++     virtual void processList(GList *list) = 0;
++ };
++ 
++ /**
+   * Implements access to Evolution address books.
+   */
+  class EvolutionContactSource : public EvolutionSyncSource
+***************
+*** 81,87 ****
+      // implementation of SyncSource
+      //
+      virtual ArrayElement *clone() { return new EvolutionContactSource(*this); }
+!     
+    protected:
+      //
+      // implementation of EvolutionSyncSource callbacks
+--- 93,102 ----
+      // implementation of SyncSource
+      //
+      virtual ArrayElement *clone() { return new EvolutionContactSource(*this); }
+! 
+!     /** start and stop event processing on this source */
+!     EvolutionAsync m_loop;
+! 
+    protected:
+      //
+      // implementation of EvolutionSyncSource callbacks
+***************
+*** 142,149 ****
+--- 157,191 ----
+              insert("CALURI");
+          }
+      } m_uniqueProperties;
++ 
++     /**
++      * extracts all contacts
++      *
++      * @param processList     is fed the contacts, possibly in multiple chunks
++      * @param custom          pointer passed through to processList
++      */
++     void listAllContacts(void (*processList)(void *custom, GList *list), void *custom);
++ 
++     /**
++      * callback for listAllContacts() which adds all contacts to m_allItems
++      */
++     static void addContacts(void *custom, GList *nextItem);
++ 
++     /**
++      * EBookListCallback for beginSyncThrow()'s e_book_async_get_changes ()
++      */
++     static void addChanges(EBook *book,
++                            EBookStatus status,
++                            GList *nextItem,
++                            gpointer custom);
++     /**
++      * status passed to addChanges()
++      */
++     EBookStatus m_status;
+  };
+  
++ 
++ 
+  #endif // ENABLE_EBOOK
+  
+  #endif // INCL_EVOLUTIONCONTACTSOURCE
+Index: src/EvolutionSmartPtr.h
+===================================================================
+RCS file: /cvsroot/sync4jevolution/sync4jevolution/src/EvolutionSmartPtr.h,v
+retrieving revision 1.8
+diff -c -r1.8 EvolutionSmartPtr.h
+*** src/EvolutionSmartPtr.h	10 Dec 2006 17:35:19 -0000	1.8
+--- src/EvolutionSmartPtr.h	22 Feb 2007 19:27:50 -0000
+***************
+*** 34,39 ****
+--- 34,40 ----
+  
+  void inline unref( char *pointer ) { free( pointer ); }
+  void inline unref( GObject *pointer ) { g_object_unref( pointer ); }
++ void inline unref( GMainLoop *pointer ) { g_main_loop_unref( pointer ); }
+  #ifdef ENABLE_EBOOK
+  void inline unref( EBookQuery *pointer ) { e_book_query_unref( pointer ); }
+  #endif
+Index: src/EvolutionSyncClient.cpp
+===================================================================
+RCS file: /cvsroot/sync4jevolution/sync4jevolution/src/EvolutionSyncClient.cpp,v
+retrieving revision 1.24
+diff -c -r1.24 EvolutionSyncClient.cpp
+*** src/EvolutionSyncClient.cpp	17 Dec 2006 16:33:45 -0000	1.24
+--- src/EvolutionSyncClient.cpp	22 Feb 2007 19:27:50 -0000
+***************
+*** 432,438 ****
+              int res = DMTClientConfig::readDevInfoConfig(syncMLNode, syncMLNode);
+  
+              // always read device ID from the traditional property "deviceId"
+!             eptr<char> tmp(syncMLNode.readPropertyValue("deviceId"));
+              deviceConfig.setDevID(tmp);
+  
+              return res;
+--- 432,438 ----
+              int res = DMTClientConfig::readDevInfoConfig(syncMLNode, syncMLNode);
+  
+              // always read device ID from the traditional property "deviceId"
+!             arrayptr<char> tmp(syncMLNode.readPropertyValue("deviceId"));
+              deviceConfig.setDevID(tmp);
+  
+              return res;
+***************
+*** 482,489 ****
+      // redirect logging as soon as possible
+      SourceList sourceList(m_server, m_doLogging);
+  
+!     eptr<char> logdir(config.getSyncMLNode()->readPropertyValue("logdir"));
+!     eptr<char> maxlogdirs(config.getSyncMLNode()->readPropertyValue("maxlogdirs"));
+      sourceList.setLogdir(logdir, atoi(maxlogdirs));
+  
+      SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
+--- 482,489 ----
+      // redirect logging as soon as possible
+      SourceList sourceList(m_server, m_doLogging);
+  
+!     arrayptr<char> logdir(config.getSyncMLNode()->readPropertyValue("logdir"));
+!     arrayptr<char> maxlogdirs(config.getSyncMLNode()->readPropertyValue("maxlogdirs"));
+      sourceList.setLogdir(logdir, atoi(maxlogdirs));
+  
+      SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
+Index: src/EvolutionSyncSource.h
+===================================================================
+RCS file: /cvsroot/sync4jevolution/sync4jevolution/src/EvolutionSyncSource.h,v
+retrieving revision 1.24
+diff -c -r1.24 EvolutionSyncSource.h
+*** src/EvolutionSyncSource.h	10 Dec 2006 17:35:19 -0000	1.24
+--- src/EvolutionSyncSource.h	22 Feb 2007 19:27:51 -0000
+***************
+*** 33,38 ****
+--- 33,40 ----
+  #include <spdm/ManagementNode.h>
+  #include <base/Log.h>
+  
++ #include <EvolutionSmartPtr.h>
++ 
+  /**
+   * This class implements the functionality shared by
+   * both EvolutionCalenderSource and EvolutionContactSource:
+***************
+*** 371,374 ****
+--- 373,400 ----
+      string m_user, m_passwd;
+  };
+  
++ /**
++  * Utility class which hides the mechanisms needed to handle events
++  * during asynchronous calls.
++  */
++ class EvolutionAsync {
++   public:
++     EvolutionAsync() :
++         m_loop(g_main_loop_new(NULL, FALSE), "main loop")
++     {}
++     
++     /** start processing events */
++     void run() {
++         g_main_loop_run(m_loop);
++     }
++ 
++     /** stop processing events, to be called inside run() by callback */
++     void quit() {
++         g_main_loop_quit(m_loop);
++     }
++ 
++   private:
++     eptr<GMainLoop> m_loop;
++ };
++ 
+  #endif // INCL_EVOLUTIONSYNCSOURCE
