@@ -30,8 +30,7 @@ using namespace std;
 #include <glib-object.h>
 #endif
 
-#include "EvolutionContactSource.h"
-#include "EvolutionCalendarSource.h"
+#include "EvolutionSyncSource.h"
 #include "EvolutionSyncClient.h"
 
 /**
@@ -80,32 +79,23 @@ int main( int argc, char **argv )
 
     try {
         if ( argc == 1 ) {
-#ifdef ENABLE_EBOOK
-            EvolutionContactSource contactSource( string( "list" ), NULL );
-            listSources( contactSource, "address books" );
-            cout << "\n";
-#endif
+            const struct { const char *mimeType, *kind; } kinds[] = {
+                { "text/vcard",  "address books" },
+                { "text/calendar", "calendars" },
+                { "text/x-journal", "memos" },
+                { "text/x-todo", "tasks" },
+                { NULL }
+            };
 
-#ifdef ENABLE_ECAL
-            EvolutionCalendarSource eventSource(E_CAL_SOURCE_TYPE_EVENT,
-                                                string("list"),
-                                                NULL);
-            listSources(eventSource, "calendars");
-            cout << "\n";
+            for (int i = 0; kinds[i].mimeType; i++ ) {
+                auto_ptr<EvolutionSyncSource> source(EvolutionSyncSource::createSource("list", NULL, "", "", kinds[i].mimeType, false));
+                if (source.get() != NULL) {
+                    listSources(*source, kinds[i].kind);
+                    cout << "\n";
+                }
+            }
 
-            EvolutionCalendarSource todoSource(E_CAL_SOURCE_TYPE_TODO,
-                                               string("list"),
-                                               NULL);
-            listSources(todoSource, "tasks");
-            cout << "\n";
-
-            EvolutionCalendarSource journalSource(E_CAL_SOURCE_TYPE_JOURNAL,
-                                                  string("list"),
-                                                  NULL);
-            listSources(todoSource, "memos");
-#endif
-
-            fprintf( stderr, "\nusage: %s <server>\n", argv[0] );
+            fprintf( stderr, "usage: %s <server>\n", argv[0] );
         } else {
             set<string> sources;
 

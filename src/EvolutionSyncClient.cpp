@@ -511,6 +511,9 @@ int EvolutionSyncClient::sync()
         if (enabled) {
             // create it
             string type = sc.getType() ? sc.getType() : "";
+            if (!type.size()) {
+                throw runtime_error(string(sc.getName()) + ": type not configured");
+            }
             EvolutionSyncSource *syncSource =
                 EvolutionSyncSource::createSource(
                     sc.getName(),
@@ -520,9 +523,7 @@ int EvolutionSyncClient::sync()
                     type
                     );
             if (!syncSource) {
-                throw runtime_error(string(sc.getName()) + ": type " +
-                                    ( type.size() ? string("not configured") :
-                                      string("'") + type + "' empty or unknown" ));
+                throw runtime_error(string(sc.getName()) + ": type '" + type + "' unknown" );
             }
             sourceList.push_back(syncSource);
 

@@ -194,6 +194,7 @@ class EvolutionSyncSource : public SyncSource
      * factory function for a EvolutionSyncSources that provides the
      * given mime type; for the other parameters see constructor
      *
+     * @param error    throw a runtime error describing what the problem is if no matching source is found
      * @return NULL if no source can handle the given type
      */
     static EvolutionSyncSource *createSource(
@@ -201,8 +202,23 @@ class EvolutionSyncSource : public SyncSource
         SyncSourceConfig *sc,
         const string &changeId,
         const string &id,
-        const string &mimeType );
-    
+        const string &mimeType,
+        bool error = true);
+
+    /**
+     * SyncSource backend modules have to provide this function under
+     * the "SyncEvolutionCreateSource" name (plan C name); it will then
+     * be called by the createSource() method.
+     *
+     * @return new sync source or NULL if the mime type is not supported
+     */
+    typedef EvolutionSyncSource *(*CreateSource_t)(
+        const string &name,
+        SyncSourceConfig *sc,
+        const string &changeId,
+        const string &id,
+        const string &mimeType);
+
     //
     // default implementation of SyncSource iterators
     //

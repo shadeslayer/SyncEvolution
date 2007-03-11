@@ -1,10 +1,13 @@
-INCLUDES = @EPACKAGE_CFLAGS@ @GLIB_CFLAGS@ @SYNC4J_CFLAGS@ 
+INCLUDES = @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @SYNC4J_CFLAGS@ 
 
 # Please remove '-Wno-return-type' when Evo fixes the warning in their headers.
 AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
+EXTRA_LTLIBRARIES = syncecal.la syncebook.la
+MOSTLYCLEANFILES = syncecal.la syncebook.la
+pkglib_LTLIBRARIES = @SYNCEVOLUTION_LTLIBRARIES@
 EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics testTask.ics vocl/README
 EXTRA_PROGRAMS = client-test
 check_PROGRAMS = @CPPUNIT_TESTS@
@@ -29,18 +32,22 @@ VOCL_SOURCES = \
 	vocl/VConverter.cpp
 
 CORE_SOURCES  = \
-        EvolutionContactSource.h \
-        EvolutionCalendarSource.h \
         EvolutionSmartPtr.h \
         EvolutionSyncClient.h \
         EvolutionSyncSource.h \
         \
         EvolutionSyncSource.cpp \
 	EvolutionSyncClient.cpp \
-	EvolutionCalendarSource.cpp \
-	EvolutionContactSource.cpp \
 	\
 	$(VOCL_SOURCES)
+
+SYNCECAL_SOURCES = \
+        EvolutionCalendarSource.h \
+	EvolutionCalendarSource.cpp
+
+SYNCEBOOK_SOURCES = \
+        EvolutionContactSource.h \
+	EvolutionContactSource.cpp
 
 CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @LIBS@
 
@@ -52,7 +59,19 @@ syncevolution_SOURCES = \
 	syncevolution.cpp \
 	$(CORE_SOURCES)
 
-syncevolution_LDADD = $(CORE_LDADD)
+# SYNCEVOLUTION_LDADD@ will be replaced with libsyncebook.la/libsyncecal.la
+# if linking statically against them, empty otherwise;
+# either way this does not lead to a dependency on those libs - done explicitly
+syncevolution_LDADD = @SYNCEVOLUTION_LDADD@ $(CORE_LDADD)
+syncevolution_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
+
+syncecal_la_SOURCES = $(SYNCECAL_SOURCES)
+syncecal_la_LIBADD = @ECAL_LIBS@
+syncecal_la_LDFLAGS = -module -rpath '$(pkglibdir)'
+
+syncebook_la_SOURCES = $(SYNCEBOOK_SOURCES)
+syncebook_la_LIBADD = @EBOOK_LIBS@
+syncebook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 
 # test suite - *not* declared as an obligatory check,
 # because some of them are known to fail and thus
@@ -68,7 +87,8 @@ TestEvolution_SOURCES = \
 
 TestEvolution_CXXFLAGS = `cppunit-config --cflags`
 TestEvolution_LDFLAGS = `cppunit-config --libs`
-TestEvolution_LDADD = $(CORE_LDADD)
+TestEvolution_LDADD = @SYNCEVOLUTION_MODULES@ $(CORE_LDADD)
+TestEvolution_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
 
 EXTRA_PROGRAMS += vcardconverter
 vcardconverter_SOURCES = \

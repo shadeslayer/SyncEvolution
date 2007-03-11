@@ -448,4 +448,26 @@ string EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
     return string(uid ? uid : "");
 }
 
+#ifdef ENABLE_MODULES
+
+extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
+                                                          SyncSourceConfig *sc,
+                                                          const string &changeId,
+                                                          const string &id,
+                                                          const string &mimeType)
+{
+    if (mimeType == "text/x-todo") {
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, sc, changeId, id);
+    } else if (mimeType == "text/x-journal") {
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, changeId, id);
+    } else if (mimeType == "text/calendar" ||
+               mimeType == "text/x-vcalendar") {
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, sc, changeId, id);
+    } else {
+        return NULL;
+    }
+}
+
+#endif /* ENABLE_MODULES */
+
 #endif /* ENABLE_ECAL */

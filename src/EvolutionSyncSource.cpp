@@ -17,11 +17,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <config.h>
+
 #include "EvolutionSyncSource.h"
 #include "EvolutionContactSource.h"
 #include "EvolutionCalendarSource.h"
 
 #include <common/base/Log.h>
+
+#include <list>
+#include <dlfcn.h>
 
 ESource *EvolutionSyncSource::findSource( ESourceList *list, const string &id )
 {
@@ -106,7 +111,8 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
     SyncSourceConfig *sc,
     const string &changeId,
     const string &id,
-    const string &mimeType
+    const string &mimeType,
+    bool error
     )
 {
     // remove special characters from change ID
@@ -124,38 +130,116 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         }
     }
 
+#ifdef ENABLE_MODULES
+    
+    static list<CreateSource_t>createSources;
+    static bool scannedModules;
+    static string available;
+    static string missing;
+
+    if (!scannedModules) {
+        // possible extension: scan directories for matching module names instead of hard-coding known names
+        const char *modules[] = {
+            "syncebook.so.0",
+            "syncecal.so.0",
+            NULL
+        };
+
+        for (int i = 0; modules[i]; i++) {
+            void *dlhandle;
+
+            dlhandle = dlopen(modules[i], RTLD_NOW);
+            if (dlhandle) {
+                void *createSource = dlsym(dlhandle, "SyncEvolutionCreateSource");
+
+                if (createSource) {
+                    createSources.push_back((CreateSource_t)createSource);
+                } else {
+                    dlclose(dlhandle);
+                    dlhandle = NULL;
+                }
+            } else if(error) {
+                LOG.error("%s", dlerror());
+            }
+
+            // remember which modules were found and which were not
+            string &res(dlhandle ? available : missing);
+            if (res.size()) {
+                res += " ";
+            }
+            res += modules[i];
+        }
+        scannedModules = true;
+    }
+
+    for (list<CreateSource_t>::const_iterator it = createSources.begin();
+         it != createSources.end();
+         ++it) {
+        EvolutionSyncSource *source = (*it)(name, sc, strippedChangeId, id, mimeType);
+        if (source) {
+            return source;
+        }
+    }
+
+    if (error) {
+        string problem = name + ": type '" + mimeType + "' not supported";
+        if (available.size()) {
+            problem += " by any of the available backends (";
+            problem += available;
+            problem += ")";
+        }
+        if (missing.size()) {
+            problem += ". The following backend(s) were not found: ";
+            problem += missing;
+        }
+        throw runtime_error(problem);
+    }
+
+#else // ENABLE_MODULES
+
     if (mimeType == "text/x-vcard") {
 #ifdef ENABLE_EBOOK
         return new EvolutionContactSource(name, sc, strippedChangeId, id, EVC_FORMAT_VCARD_21);
 #else
-        LOG.error("access to addressbooks not compiled into this binary, text/x-vcard not supported");
+        if (error) {
+            throw runtime_error(name + ": access to addressbooks not compiled into this binary, text/x-vcard not supported");
+        }
 #endif
     } else if (mimeType == "text/vcard") {
 #ifdef ENABLE_EBOOK
         return new EvolutionContactSource(name, sc, strippedChangeId, id, EVC_FORMAT_VCARD_30);
 #else
-        LOG.error("access to addressbooks not compiled into this binary, text/vcard not supported");
+        if (error) {
+            throw runtime_error(name + ": access to addressbooks not compiled into this binary, text/vcard not supported");
+        }
 #endif
     } else if (mimeType == "text/x-todo") {
 #ifdef ENABLE_ECAL
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, sc, strippedChangeId, id);
 #else
-        LOG.error("access to calendars not compiled into this binary, text/x-todo not supported");
+        if (error) {
+            throw runtime_error(name + ": access to calendars not compiled into this binary, text/x-todo not supported");
+        }
 #endif
     } else if (mimeType == "text/x-journal") {
 #ifdef ENABLE_ECAL
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, strippedChangeId, id);
 #else
-        LOG.error("access to memos not compiled into this binary, text/x-journal not supported");
+        if (error) {
+            throw runtime_error(name + ": access to memos not compiled into this binary, text/x-journal not supported");
+        }
 #endif
     } else if (mimeType == "text/calendar" ||
                mimeType == "text/x-vcalendar") {
 #ifdef ENABLE_ECAL
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, sc, strippedChangeId, id);
 #else
-        LOG.error("access to calendars not compiled into this binary, %s not supported", mimeType.c_str());
+        if (error) {
+            throw runtime_error(name + ": access to calendars not compiled into this binary, %s not supported", mimeType.c_str());
+        }
 #endif
     }
+#endif // ENABLE_MODULES
 
     return NULL;
 }

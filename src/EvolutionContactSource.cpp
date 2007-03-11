@@ -773,4 +773,23 @@ EContact *EvolutionContactSource::getContact( const string &uid )
     }
 }
 
+#ifdef ENABLE_MODULES
+
+extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
+                                                          SyncSourceConfig *sc,
+                                                          const string &changeId,
+                                                          const string &id,
+                                                          const string &mimeType)
+{
+    if (mimeType == "text/x-vcard") {
+        return new EvolutionContactSource(name, sc, changeId, id, EVC_FORMAT_VCARD_21);
+    } else if (mimeType == "text/vcard") {
+        return new EvolutionContactSource(name, sc, changeId, id, EVC_FORMAT_VCARD_30);
+    } else {
+        return NULL;
+    }
+}
+
+#endif /* ENABLE_MODULES */
+
 #endif /* ENABLE_EBOOK */
