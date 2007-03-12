@@ -1,0 +1,12 @@
+Source: syncevolution
+Section: unknown
+Priority: extra
+Maintainer: Patrick Ohly <patrick.ohly@gmx.de>
+Build-Depends: debhelper (>= 5), autotools-dev, evolution-data-server-dev, libcurl3-dev
+Standards-Version: 3.7.2
+
+Package: syncevolution
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: SyncEvolution - a SyncML client for Evolution
+
