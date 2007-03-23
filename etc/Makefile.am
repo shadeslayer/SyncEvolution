@@ -33,6 +33,8 @@ MAINTAINERCLEANFILES = Makefile.in
 # this is a custom rule to install the etc example files there
 install-data-local: $(all_copy)
 	set -e; \
+        docdir="$(docdir)"; \
+        if [ ! "$$docdir" ]; then docdir="$(datadir)/share/doc/$(PACKAGE)"; fi; \
 	for file in $(all_copy); do \
 		$(INSTALL) -d -m 744 "$(DESTDIR)/$(docdir)/`dirname $$file`"; \
 		$(INSTALL) -m 744 $$file "$(DESTDIR)/$(docdir)/`dirname $$file`"; \
