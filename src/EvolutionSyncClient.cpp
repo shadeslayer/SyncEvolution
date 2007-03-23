@@ -241,6 +241,7 @@ public:
 // as the final report (
 class SourceList : public list<EvolutionSyncSource *> {
     LogDir m_logdir;     /**< our logging directory */
+    bool m_prepared;     /**< remember whether syncPrepare() completed successfully */
     bool m_doLogging;    /**< true iff additional files are to be written during sync */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
     arrayptr<SyncSource *> m_sourceArray;  /** owns the array that is expected by SyncClient::sync() */
@@ -251,23 +252,35 @@ class SourceList : public list<EvolutionSyncSource *> {
             source.fileSuffix();
     }
 
-    void dumpDatabases(const string &suffix) {
+    /**
+     * dump into files with a certain suffix, optionally remove those which end in another
+     */
+    void dumpDatabases(const string &suffix, const string &removeSuffix = string("") ) {
         ofstream out;
         out.exceptions(ios_base::badbit|ios_base::failbit|ios_base::eofbit);
 
         for( iterator it = begin();
              it != end();
              ++it ) {
-            string file = databaseName(**it, suffix);
+            string file;
+
+            if (removeSuffix.size()) {
+                file = databaseName(**it, removeSuffix);
+                unlink(file.c_str());
+            }
+            
+            file = databaseName(**it, suffix);
             out.open(file.c_str());
             (*it)->exportData(out);
             out.close();
+
         }
     }
         
 public:
     SourceList(const string &server, bool doLogging) :
         m_logdir(server),
+        m_prepared(false),
         m_doLogging(doLogging),
         m_reportTodo(false) {
     }
@@ -289,8 +302,9 @@ public:
             m_reportTodo = true;
 
             // dump initial databases
-            dumpDatabases("before");
+            dumpDatabases("before", "after");
         }
+        m_prepared = true;
     }
 
     // call at the end of a sync with success == true
@@ -305,8 +319,10 @@ public:
                 // don't do it again
                 m_reportTodo = false;
 
-                // dump datatbase after sync
-                dumpDatabases("after");
+                // dump datatbase after sync, but not if already dumping it at the beginning didn't complete
+                if (m_prepared) {
+                    dumpDatabases("after");
+                }
 
                 // scan for error messages
                 ifstream in;
@@ -333,21 +349,23 @@ public:
                          << " for details.\n";
                 }
 
-                // compare databases
-                cout << "\nModifications:\n";
-                for( iterator it = begin();
-                     it != end();
-                     ++it ) {
-                    cout << "*** " << (*it)->getName() << " ***\n" << flush;
+                // compare databases?
+                if (m_prepared) {
+                    cout << "\nModifications:\n";
+                    for( iterator it = begin();
+                         it != end();
+                         ++it ) {
+                        cout << "*** " << (*it)->getName() << " ***\n" << flush;
 
-                    string before = databaseName(**it, "before");
-                    string after = databaseName(**it, "after");
-                    string cmd = string("synccompare '" ) +
-                        before + "' '" + after +
-                        "' && echo 'no changes'";
-                    system(cmd.c_str());
+                        string before = databaseName(**it, "before");
+                        string after = databaseName(**it, "after");
+                        string cmd = string("synccompare '" ) +
+                            before + "' '" + after +
+                            "' && echo 'no changes'";
+                        system(cmd.c_str());
+                    }
+                    cout << "\n";
                 }
-                cout << "\n";
 
                 if (success) {
                     m_logdir.expire();
@@ -372,10 +390,6 @@ public:
     }
    
     ~SourceList() {
-        // if we get here without a previous report,
-        // something went wrong
-        syncDone(false);
-
         // free sync sources
         for( iterator it = begin();
              it != end();
@@ -482,102 +496,112 @@ int EvolutionSyncClient::sync()
     // redirect logging as soon as possible
     SourceList sourceList(m_server, m_doLogging);
 
-    arrayptr<char> logdir(config.getSyncMLNode()->readPropertyValue("logdir"));
-    arrayptr<char> maxlogdirs(config.getSyncMLNode()->readPropertyValue("maxlogdirs"));
-    sourceList.setLogdir(logdir, atoi(maxlogdirs));
+    try {
+        arrayptr<char> logdir(config.getSyncMLNode()->readPropertyValue("logdir"));
+        arrayptr<char> maxlogdirs(config.getSyncMLNode()->readPropertyValue("maxlogdirs"));
+        sourceList.setLogdir(logdir, atoi(maxlogdirs));
 
-    SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
-    for (int index = 0; index < config.getNumSources(); index++) {
-        ManagementNode &node(*config.getSyncSourceNode(index));
-        SyncSourceConfig &sc(sourceconfigs[index]);
+        SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
+        for (int index = 0; index < config.getNumSources(); index++) {
+            ManagementNode &node(*config.getSyncSourceNode(index));
+            SyncSourceConfig &sc(sourceconfigs[index]);
         
-        // is the source enabled?
-        string sync = sc.getSync() ? sc.getSync() : "";
-        bool enabled = sync != "none";
-        SyncMode overrideMode = SYNC_NONE;
+            // is the source enabled?
+            string sync = sc.getSync() ? sc.getSync() : "";
+            bool enabled = sync != "none";
+            SyncMode overrideMode = SYNC_NONE;
 
-        // override state?
-        if (m_sources.size()) {
-            if (m_sources.find(sc.getName()) != m_sources.end()) {
-                if (!enabled) {
-                    overrideMode = SYNC_TWO_WAY;
-                    enabled = true;
+            // override state?
+            if (m_sources.size()) {
+                if (m_sources.find(sc.getName()) != m_sources.end()) {
+                    if (!enabled) {
+                        overrideMode = SYNC_TWO_WAY;
+                        enabled = true;
+                    }
+                } else {
+                    enabled = false;
                 }
-            } else {
-                enabled = false;
             }
-        }
         
-        if (enabled) {
-            // create it
-            string type = sc.getType() ? sc.getType() : "";
-            if (!type.size()) {
-                throw runtime_error(string(sc.getName()) + ": type not configured");
-            }
-            EvolutionSyncSource *syncSource =
-                EvolutionSyncSource::createSource(
-                    sc.getName(),
-                    &sc,
-                    string("sync4jevolution:") + url + "/" + sc.getName(),
-                    EvolutionSyncSource::getPropertyValue(node, "evolutionsource"),
-                    type
-                    );
-            if (!syncSource) {
-                throw runtime_error(string(sc.getName()) + ": type '" + type + "' unknown" );
-            }
-            sourceList.push_back(syncSource);
+            if (enabled) {
+                // create it
+                string type = sc.getType() ? sc.getType() : "";
+                if (!type.size()) {
+                    throw runtime_error(string(sc.getName()) + ": type not configured");
+                }
+                EvolutionSyncSource *syncSource =
+                    EvolutionSyncSource::createSource(
+                        sc.getName(),
+                        &sc,
+                        string("sync4jevolution:") + url + "/" + sc.getName(),
+                        EvolutionSyncSource::getPropertyValue(node, "evolutionsource"),
+                        type
+                        );
+                if (!syncSource) {
+                    throw runtime_error(string(sc.getName()) + ": type '" + type + "' unknown" );
+                }
+                sourceList.push_back(syncSource);
 
-            // Update the backend configuration. The EvolutionClientConfig
-            // above prevents that these modifications overwrite the user settings.
-            sc.setType(syncSource->getMimeType());
-            sc.setVersion(syncSource->getMimeVersion());
-            sc.setSupportedTypes(syncSource->getSupportedTypes());
+                // Update the backend configuration. The EvolutionClientConfig
+                // above prevents that these modifications overwrite the user settings.
+                sc.setType(syncSource->getMimeType());
+                sc.setVersion(syncSource->getMimeVersion());
+                sc.setSupportedTypes(syncSource->getSupportedTypes());
 
-            if (overrideMode != SYNC_NONE) {
-                // disabled source selected via source name
-                syncSource->setPreferredSyncMode(overrideMode);
+                if (overrideMode != SYNC_NONE) {
+                    // disabled source selected via source name
+                    syncSource->setPreferredSyncMode(overrideMode);
+                }
+                const string user(EvolutionSyncSource::getPropertyValue(node, "evolutionuser")),
+                    passwd(EvolutionSyncSource::getPropertyValue(node, "evolutionpassword"));
+                syncSource->setAuthentication(user, passwd);
+
+                // also open it; failing now is still safe
+                syncSource->open();    
             }
-            const string user(EvolutionSyncSource::getPropertyValue(node, "evolutionuser")),
-                passwd(EvolutionSyncSource::getPropertyValue(node, "evolutionpassword"));
-            syncSource->setAuthentication(user, passwd);
-
-            // also open it; failing now is still safe
-            syncSource->open();    
         }
-    }
 
-    // reconfigure with our fixed properties
-    DeviceConfig &dc(config.getDeviceConfig());
-    dc.setVerDTD("1.1");
-    dc.setMod("SyncEvolution");
-    dc.setSwv(VERSION);
-    dc.setMan("Patrick Ohly");
-    dc.setDevType("workstation");
-    dc.setUtc(1);
-    dc.setOem("Open Source");
+        // reconfigure with our fixed properties
+        DeviceConfig &dc(config.getDeviceConfig());
+        dc.setVerDTD("1.1");
+        dc.setMod("SyncEvolution");
+        dc.setSwv(VERSION);
+        dc.setMan("Patrick Ohly");
+        dc.setDevType("workstation");
+        dc.setUtc(1);
+        dc.setOem("Open Source");
 
-    // give derived class also a chance to update the configs
-    prepare(config, sourceList.getSourceArray());
+        // give derived class also a chance to update the configs
+        prepare(config, sourceList.getSourceArray());
 
-    // ready to go: dump initial databases and prepare for final report
-    sourceList.syncPrepare();
+        // ready to go: dump initial databases and prepare for final report
+        sourceList.syncPrepare();
 
-    // do it
-    int res = SyncClient::sync(config, sourceList.getSourceArray());
+        // do it
+        int res = SyncClient::sync(config, sourceList.getSourceArray());
 
-    if (res) {
-        if (lastErrorCode && lastErrorMsg[0]) {
-            throw runtime_error(lastErrorMsg);
+        if (res) {
+            if (lastErrorCode && lastErrorMsg[0]) {
+                throw runtime_error(lastErrorMsg);
+            }
+            // no error code/description?!
+            throw runtime_error("sync failed without an error description, check log");
         }
-        // no error code/description?!
-        throw runtime_error("sync failed without an error description, check log");
+
+        // store modified properties
+        config.save();
+
+        // all went well: print final report before cleaning up
+        sourceList.syncDone(true);
+    } catch (const std::exception &ex) {
+        LOG.error( "%s", ex.what() );
+
+        // something went wrong, but try to write .after state anyway
+        sourceList.syncDone(false);
+    } catch (...) {
+        LOG.error( "unknown error" );
+        sourceList.syncDone(false);
     }
-
-    // store modified properties
-    config.save();
-
-    // all went well: print final report before cleaning up
-    sourceList.syncDone(true);
 
     return 0;
 }

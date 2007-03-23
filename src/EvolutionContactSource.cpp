@@ -261,7 +261,7 @@ void EvolutionContactSource::exportData(ostream &out)
 SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state )
 {
     logItem( uid, "extracting from EV" );
-        
+
     EContact *contact;
     GError *gerror = NULL;
     if (! e_book_get_contact( m_addressbook,
