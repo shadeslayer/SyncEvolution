@@ -423,6 +423,9 @@ icalcomponent *EvolutionCalendarSource::retrieveItem(const string &uid)
                           &gerror)) {
         throwError(string("retrieving item: ") + uid, gerror);
     }
+    if (!comp) {
+        throw runtime_error(string("could not retrieve item: ") + uid);
+    }
 
     return comp;
 }
@@ -433,6 +436,9 @@ string EvolutionCalendarSource::retrieveItemAsString(const string &uid)
     eptr<char> icalstr;
 
     icalstr = e_cal_get_component_as_string(m_calendar, comp);
+    if (!icalstr) {
+        throw runtime_error(string("could not encode item as iCal: ") + uid);
+    }
     return string(icalstr);
 }
 
