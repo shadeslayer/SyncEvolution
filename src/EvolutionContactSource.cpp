@@ -253,6 +253,9 @@ void EvolutionContactSource::exportData(ostream &out)
         eptr<char> vcardstr(e_vcard_to_string(&E_CONTACT(nextItem->data)->parent,
                                               EVC_FORMAT_VCARD_30));
 
+        if (!(const char *)vcardstr) {
+            throw runtime_error("could not convert contact into string");
+        }
         out << (const char *)vcardstr << "\r\n\r\n";
         nextItem = nextItem->next;
     }
