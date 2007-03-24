@@ -381,11 +381,6 @@ void VObject::fromNativeEncoding()
     for (int index = propertiesCount() - 1; index >= 0; index--) {
         VProperty *vprop = getProperty(index);
 
-        if (vprop->equalsEncoding(TEXT("QUOTED-PRINTABLE"))) {
-            // remove this, we cannot recreate it
-            vprop->removeParameter(TEXT("ENCODING"));
-        }
-
         wchar_t *native = vprop->getValue();
         // in the worst case every comma/linebreak is replaced with
         // two characters and each \n with =0D=0A
@@ -401,6 +396,14 @@ void VObject::fromNativeEncoding()
         bool doquoted = !is_30 &&
             wcsstr(native, SYNC4J_LINEBREAK) != NULL;
 
+        if (vprop->equalsEncoding(TEXT("QUOTED-PRINTABLE"))) {
+            // remove it, recreate if doing 2.1
+            vprop->removeParameter(TEXT("ENCODING"));
+            if (!is_30) {
+                doquoted = true;
+            }
+        }
+        
         // non-ASCII character encountered
         bool utf8 = false;
         

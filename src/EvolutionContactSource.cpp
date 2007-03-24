@@ -338,6 +338,21 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
                 vprop->removeParameter("ENCODING");
                 vprop->addParameter("ENCODING", "BASE64");
             }
+
+            // Workaround for Funambol 3.0 parser bug:
+            // trailing = are interpreted as soft line break
+            // even if the property doesn't use QUOTED-PRINTABLE encoding.
+            // Avoid that situation by enabling QUOTED-PRINTABLE for
+            // such properties.
+            if (!encoding) {
+                char *value = vprop->getValue();
+
+                if (value &&
+                    value[0] &&
+                    value[strlen(value)-1] == '=') {
+                    vprop->addParameter("ENCODING", "QUOTED-PRINTABLE");
+                }
+            }
         }
 
         vobj->setVersion("2.1");
