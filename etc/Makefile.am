@@ -40,6 +40,13 @@ install-data-local: $(all_copy)
 		$(INSTALL) -m 744 $$file "$(DESTDIR)/$$docdir/`dirname $$file`"; \
 	done
 
+uninstall-local:
+	docdir="$(docdir)"; \
+        if [ ! "$$docdir" ]; then docdir="$(datadir)/share/doc/$(PACKAGE)"; fi; \
+	for file in $(all_copy); do \
+		rm "$(DESTDIR)/$$docdir/$$file"; \
+	done
+
 
 funambol_1/spds/syncml/config.txt : localhost_1/spds/syncml/config.txt
 	mkdir -p $(@D)
