@@ -36,32 +36,21 @@ logdir =
 # the given limit.
 maxlogdirs =
 
-# By default all changes are sent by client and server in one,
-# potentially large message. This is not a big (no pun intented)
-# problem on a desktop computer, but on smaller devices may
-# run out of memory.
+# Support for large objects and limiting the message size was added in
+# SyncEvolution 0.5, but still disabled in the example configurations
+# of that version. Some servers had problems with that configuration,
+# so now both features are enabled by default and it is recommended
+# to update existing configurations.
 #
-# To solve this problem the maximum size of each message can
-# be set (maxMsgSize) and the server can be told to never sent
-# items larger than a certain threshold (maxObjSize). Presumably
-# the server has to truncate or skip larger items. Finally the
-# client and server may be given the permission to transmit large
-# items in multiple messages (loSupport = large object support).
-#
-# Reasonable values are either all these features off (the
-# default because it is simpler):
-#   maxMsgSize = 0
-#   maxObjSize = 0
-#   loSupport = 0
-# or all of them on with a very large object size:
-#   maxMsgSize = 8192
-#   maxObjSize = 500000
-#   loSupport = 1
-
-maxMsgSize = 0
-maxObjSize = 0
-loSupport = 0
-
+# The maximum size of each message can be set (maxMsgSize) and the
+# server can be told to never sent items larger than a certain
+# threshold (maxObjSize). Presumably the server has to truncate or
+# skip larger items. Finally the client and server may be given the
+# permission to transmit large items in multiple messages (loSupport =
+# large object support).
+maxMsgSize = 8192
+maxObjSize = 500000
+loSupport = 1
 
 # used by the SyncML library internally; do not modify
 begin =
