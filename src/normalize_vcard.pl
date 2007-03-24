@@ -210,8 +210,9 @@ if($#ARGV > 1) {
   # comparison
 
   my ($file1, $file2) = ($ARGV[0], $ARGV[1]);
-  my $normal1 = `mktemp`;
-  my $normal2 = `mktemp`;
+  my $tmp = $ENV{TMPDIR} || "/tmp";
+  my $normal1 = `mktemp $tmp/synccompare.XXXXXXXXXX`;
+  my $normal2 = `mktemp $tmp/synccompare.XXXXXXXXXX`;
   chomp($normal1);
   chomp($normal2);
 
