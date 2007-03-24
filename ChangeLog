@@ -1,3 +1,139 @@
+2007-03-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* debian/compat, debian/control: Maemo only has debhelper 4
+
+	* src/EvolutionSyncSource.cpp:
+	fixed compile error without calendar support
+
+2007-03-23  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp:
+	added error checking for broken events which cannot be converted to iCal, e.g. because of a missing timezone definition (SF #1685637)
+
+	* src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp:
+	Errors while writing the initial datatbase dumps was not handled
+	properly and led to a direct dump of the error exception. Now the
+	error is logged first and the '.after' dump is skipped.
+
+	* etc/Makefile.am:
+	fixed compatibility problem with older automake/autoconf which does not have docdir yet
+
+2007-03-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* etc/Makefile.am:
+	install into $(docdir), not etc; also use "funambol_*" instead of "localhost_"
+
+	* debian/README.Debian: no special comment for Debian needed
+
+2007-03-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* debian/control, debian/copyright, debian/docs, debian/rules, debian/README.Debian, debian/changelog, debian/compat:
+	added packaging for Debian
+
+2007-03-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/syncevolution.cpp, src/EvolutionSyncClient.cpp, src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, configure.in:
+	--enable-ecal/ebook are only enabled by default if the libs are present
+	--enable-shared will build backends as modules which are loaded dynamically if possible (off by default)
+
+2007-02-22  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/async.patch: patch switches to async version of the Evolution API
+
+2007-01-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: fixed free/delete [] mismatch
+
+2007-01-22  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am:
+	fixed distdir target that broke in yesterday's commit
+
+2007-01-21  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am, configure.in:
+	added --enable-static-cxx to link libstdc++ statically
+
+2007-01-20  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* test/runtests.py:
+	fixed problem of deleting read-only install directories
+
+	* etc/Makefile.am:
+	memo config now also included for localhost, but disabled by default
+
+2007-01-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* test/runtests.py: added cross-compilation
+
+2007-01-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* configure.in:
+	pass cross-compilation options through to configure of client library
+
+2007-01-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am, src/TestEvolution.cpp, src/testMemo.ics:
+	added testing of memos
+
+	* etc/localhost_1/spds/sources/addressbook_1/config.txt, src/EvolutionCalendarSource.h, src/EvolutionSyncSource.cpp, src/syncevolution.cpp, README, etc/Makefile.am:
+	added support for synchronizing Evolution memos in iCalendar 2.0 VJOURNAL format
+
+	* configure.in:
+	bumped version, clean up copy of client library sources some more
+
+	* src/Makefile.am: fixed problem with 'make dist'
+
+2007-01-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp:
+	avoid adding the non-standard TYPE=OTHER, better use HOME instead (that's also the default in the Synthesis server)
+
+	* configure.in:
+	autoconf checks must not be inside conditional code (fixes 'conditional AMDEP was never defined' error)
+
+2006-12-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/client-test-app.cpp: adapted to update test API
+
+	* src/Makefile.am: ignore changes in autotools generated files
+
+	* src/EvolutionSyncClient.cpp: fixed missing return code
+
+2006-12-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/TestEvolution.cpp, src/TestMain.cpp, src/client-test-app.cpp, src/syncevolution.cpp, src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/EvolutionContactSource.h, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionCalendarSource.cpp, COPYING:
+	copyright transfer to Funambol
+
+2006-12-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/client-test-app.cpp:
+	adapted to new C++ client library test suite interface, finished configuration for calendars and tasks
+
+	* src/normalize_vcard.pl:
+	ignore differences caused by exporting vCard with ADR;TYPE=PARCEL instead of ADR;TYPE=OTHER
+
+2006-12-07  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/client-test-app.cpp: support testing with two clients
+
+2006-12-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/client-test-app.cpp: adapted contacts to full set of local tests
+
+	* src/normalize_vcard.pl:
+	avoid tput error when no valid terminal is set
+
+2006-12-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* configure.in, src/Makefile.am, src/client-test-app.cpp:
+	use the new C++ client library testing framework
+
+2006-11-27  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp, src/vocl/VProperty.cpp:
+	adapted to const qualifier changes in client library and fixed minor memory leak
+
 2006-11-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* test/runtests.py:
