@@ -148,7 +148,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         for (int i = 0; modules[i]; i++) {
             void *dlhandle;
 
-            dlhandle = dlopen(modules[i], RTLD_NOW);
+            dlhandle = dlopen(modules[i], RTLD_NOW|RTLD_GLOBAL);
             if (dlhandle) {
                 void *createSource = dlsym(dlhandle, "SyncEvolutionCreateSource");
 
@@ -159,7 +159,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
                     dlhandle = NULL;
                 }
             } else if(error) {
-                LOG.error("%s", dlerror());
+                LOG.debug("%s", dlerror());
             }
 
             // remember which modules were found and which were not
