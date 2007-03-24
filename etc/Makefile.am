@@ -36,8 +36,8 @@ install-data-local: $(all_copy)
         docdir="$(docdir)"; \
         if [ ! "$$docdir" ]; then docdir="$(datadir)/share/doc/$(PACKAGE)"; fi; \
 	for file in $(all_copy); do \
-		$(INSTALL) -d -m 744 "$(DESTDIR)/$(docdir)/`dirname $$file`"; \
-		$(INSTALL) -m 744 $$file "$(DESTDIR)/$(docdir)/`dirname $$file`"; \
+		$(INSTALL) -d -m 744 "$(DESTDIR)/$$docdir/`dirname $$file`"; \
+		$(INSTALL) -m 744 $$file "$(DESTDIR)/$$docdir/`dirname $$file`"; \
 	done
 
 
