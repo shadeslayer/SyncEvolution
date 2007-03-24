@@ -235,7 +235,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, sc, strippedChangeId, id);
 #else
         if (error) {
-            throw runtime_error(name + ": access to calendars not compiled into this binary, %s not supported", mimeType.c_str());
+            throw runtime_error(name + ": access to calendars not compiled into this binary, " + mimeType + " not supported");
         }
 #endif
     }
