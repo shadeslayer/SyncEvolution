@@ -18,7 +18,7 @@ MAINTAINERCLEANFILES = Makefile.in
 CLEANFILES = libstdc++.a
 
 synccompare : normalize_vcard.pl
-	cp $< $@
+	perl -p -e '' @MODIFY_SYNCCOMPARE@ $< >$@
 	chmod u+x $@
 
 VOCL_SOURCES = \

@@ -33,6 +33,31 @@ using namespace std;
 #include "EvolutionSyncSource.h"
 #include "EvolutionSyncClient.h"
 
+#if defined(ENABLE_MAEMO) && defined (ENABLE_EBOOK)
+
+#include <dlfcn.h>
+
+extern "C" EContact *e_contact_new_from_vcard(const char *vcard)
+{
+    static typeof(e_contact_new_from_vcard) *impl;
+
+    if (!impl) {
+        impl = (typeof(impl))dlsym(RTLD_NEXT, "e_contact_new_from_vcard");
+    }
+
+    // Old versions of EDS-DBus parse_changes_array() call
+    // e_contact_new_from_vcard() with a pointer which starts
+    // with a line break; Evolution is not happy with that and
+    // refuses to parse it. This code forwards until it finds
+    // the first non-whitespace, presumably the BEGIN:VCARD.
+    while (*vcard && isspace(*vcard)) {
+        vcard++;
+    }
+
+    return impl ? impl(vcard) : NULL;
+}
+#endif
+
 /**
  * list all known data sources of a certain type
  */
@@ -50,6 +75,18 @@ static void listSources( EvolutionSyncSource &syncSource, const string &header )
 
 int main( int argc, char **argv )
 {
+#ifdef ENABLE_MAEMO
+    // EDS-DBus uses potentially long-running calls which may fail due
+    // to the default 25s timeout. Some of these can be replaced by
+    // their async version, but e_book_async_get_changes() still
+    // triggered it.
+    //
+    // The workaround for this is to link the binary against a libdbus
+    // which has the dbus-timeout.patch and thus let's users and
+    // the application increase the default timeout.
+    setenv("DBUS_DEFAULT_TIMEOUT", "600000", 0);
+#endif
+    
 #ifdef HAVE_GLIB
     // this is required on Maemo and does not harm either on a normal
     // desktop system with Evolution
