@@ -8,7 +8,7 @@ bin_SCRIPTS = synccompare
 EXTRA_LTLIBRARIES = syncecal.la syncebook.la
 MOSTLYCLEANFILES = syncecal.la syncebook.la
 pkglib_LTLIBRARIES = @SYNCEVOLUTION_LTLIBRARIES@
-EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics testTask.ics vocl/README
+EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics testTask.ics vocl/README Algorithm/Artistic Algorithm/copyright Algorithm/Diff.pm Algorithm/README
 EXTRA_PROGRAMS = client-test
 check_PROGRAMS = @CPPUNIT_TESTS@
 TESTS = @CPPUNIT_TESTS@
@@ -64,7 +64,10 @@ syncevolution_SOURCES = \
 # SYNCEVOLUTION_LDADD@ will be replaced with libsyncebook.la/libsyncecal.la
 # if linking statically against them, empty otherwise;
 # either way this does not lead to a dependency on those libs - done explicitly
-syncevolution_LDADD = @SYNCEVOLUTION_LDADD@ $(CORE_LDADD)
+#
+# LIBDBUS might be replaced with path to patched libdbus-1.a (required for
+# DBUS_DEFAULT_TIMEOUT hack on Maemo).
+syncevolution_LDADD = @SYNCEVOLUTION_LDADD@ @LIBDBUS@ $(CORE_LDADD)
 syncevolution_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
 
 syncecal_la_SOURCES = $(SYNCECAL_SOURCES)
@@ -89,7 +92,7 @@ TestEvolution_SOURCES = \
 
 TestEvolution_CXXFLAGS = `cppunit-config --cflags`
 TestEvolution_LDFLAGS = `cppunit-config --libs`
-TestEvolution_LDADD = @SYNCEVOLUTION_MODULES@ $(CORE_LDADD)
+TestEvolution_LDADD = @SYNCEVOLUTION_MODULES@ @LIBDBUS@ $(CORE_LDADD)
 TestEvolution_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
 
 EXTRA_PROGRAMS += vcardconverter

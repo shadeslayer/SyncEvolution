@@ -10,6 +10,10 @@
 # Modified to make a template file for a multi-binary package with separated
 # build-arch and build-indep targets  by Bill Allombert 2001
 
+# options that can be added to DEB_BUILD_OPTIONS:
+# - noopt: compile with -O0
+# - maemo[=<absolute path to directory which contains patched libdbus-1.a/so>]: enable maemo hacks
+
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
@@ -25,9 +29,15 @@ DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 CFLAGS = -Wall -g
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -O0
-else
-	CFLAGS += -O2
+	CONFIGURE_FLAGS += CXXFLAGS="-g -O0"
+endif
+
+ifneq (,$(findstring maemo,$(DEB_BUILD_OPTIONS)))
+	CONFIGURE_FLAGS += --enable-maemo --enable-shared
+endif
+
+ifneq (,$(findstring maemo=,$(DEB_BUILD_OPTIONS)))
+	CONFIGURE_FLAGS += --with-patched-libdbus=$(subst maemo=,,$(filter maemo=%,$(DEB_BUILD_OPTIONS)))
 endif
 
 config.status: configure
@@ -35,8 +45,7 @@ config.status: configure
 	# --enable-shared added to build SyncEvolution backends as modules,
 	# which is more flexible but not the default because it requires a
 	# specific installation layout.
-	./configure --enable-shared --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info CFLAGS="$(CFLAGS)" 
-
+	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) $(CONFIGURE_FLAGS) --prefix=/usr --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info
 
 #Architecture 
 build: build-arch build-indep
