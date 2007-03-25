@@ -74,7 +74,7 @@ EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
     // No results? Try system address book (workaround for embedded Evolution Dataserver).
     if (!result.size()) {
         eptr<EBook, GObject> book;
-        GError *gerror;
+        GError *gerror = NULL;
         const char *name;
 
         name = "<<system>>";
