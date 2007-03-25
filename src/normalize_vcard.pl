@@ -225,7 +225,7 @@ if($#ARGV > 1) {
   # Produce output where each line is marked as old (aka remove) with o,
   # as new (aka added) with n, and as unchanged with u at the beginning.
   # This allows simpler processing below.
-  my $res = 1;
+  my $res = 0;
   if (0) {
     # $_ = `diff "--old-line-format=o %L" "--new-line-format=n %L" "--unchanged-line-format=u %L" "$normal1" "$normal2"`;
     # $res = $?;
@@ -239,11 +239,14 @@ if($#ARGV > 1) {
       my ($type, $left, $right) = @{$hunk};
       if ($type eq "-") {
         push @_, "o $left";
+        $res = 1;
       } elsif ($type eq "+") {
         push @_, "n $right";
+        $res = 1;
       } elsif ($type eq "c") {
         push @_, "o $left";
         push @_, "n $right";
+        $res = 1;
       } else {
         push @_, "u $left";
       }
