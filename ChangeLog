@@ -1,4 +1,47 @@
-2007-03-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-03-25  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am, HACKING, configure.in, debian/rules:
+	- fixed building synccompare for Maemo
+	- added/fixed rules to build for Maemo
+	- add new Algorithm::Diff files to source distribution
+
+	* src/EvolutionContactSource.cpp:
+	fixed uninitialized memory read under Maemo
+
+	* src/normalize_vcard.pl:
+	Algorithm::Diff: check whether files really have changed
+
+	* src/Algorithm/copyright, src/Algorithm/README, src/Algorithm/Diff.pm, src/Algorithm/Artistic, src/normalize_vcard.pl, src/Makefile.am:
+	- use Algorithm::Diff instead of external diff tool in synccompare;
+	  Algorithm::Diff is embedded in synccompare to keep it self-contained
+	- tput must be called without redirection of stderr, otherwise it did
+	  not find the current number of columns
+
+2007-03-24  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp: additional error check
+
+	* src/EvolutionSyncSource.cpp:
+	dlopen(RTLD_GLOBAL) fixes obscure libebook failures on Maemo; dlopen() errors can occur due to missing modules, only print as debug to avoid failure message after sync
+
+	* etc/Makefile.am:
+	also need to uninstall doc files, distcheck complains otherwise
+
+	* src/vocl/VObject.cpp, src/EvolutionContactSource.cpp, src/testVCard.vcf:
+	workaround for Funambol 3.0 trailing = parser bug
+
+	* etc/localhost_1/spds/syncml/config.txt:
+	enable large object support and max message limit by default
+
+	* src/syncevolution.cpp, configure.in, dbus-timeout.patch, src/Makefile.am:
+	added configurable hacks for Maemo (--enable-maemo):
+	- set the (non-standard!) DBUS_DEFAULT_TIMEOUT; see dbus-timeout.patch
+	- wrap e_book_from_string() to fix invalid parameter
+	- don't use UTF-8 encoding in Perl script
+
+	* src/normalize_vcard.pl: BusyBox's mktemp on Maemo requires parameter
+
+	* etc/Makefile.am: new internal docdir was not actually used
 
 	* debian/compat, debian/control: Maemo only has debhelper 4
 
