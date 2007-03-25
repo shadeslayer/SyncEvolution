@@ -17,8 +17,10 @@ DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
 CLEANFILES = libstdc++.a
 
-synccompare : normalize_vcard.pl
-	perl -p -e '' @MODIFY_SYNCCOMPARE@ $< >$@
+# synccompare is created by replacing its 'import Algorithm::Diff;'
+# with a simplified copy of Diff.pm.
+synccompare : Algorithm/Diff.pm normalize_vcard.pl 
+	perl -e '$$diff = shift; open(DIFF, "<$$diff"); ($$_) = split(/__END__/, join("", <DIFF>)); s/\*import.*//m; s/require +Exporter;//; s/^#.*\n//mg; s/ +#.*\n//mg; $$diff = $$_;' -e 'while(<>) {' @MODIFY_SYNCCOMPARE@ -e 's/use +Algorithm::Diff;/"# embedded version of Algorithm::Diff follows, copyright by the original authors\n" . $$diff . "# end of embedded Algorithm::Diff\n"/e; print;}' $+ >$@
 	chmod u+x $@
 
 VOCL_SOURCES = \
