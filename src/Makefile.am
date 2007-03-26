@@ -147,7 +147,7 @@ testclean :
 	rm -f *.test.vcf *.log *.tests *.diff
 
 $(SYNC4J_SUBDIR)/maintainer-clean $(SYNC4J_SUBDIR)/distclean :
-	rm -rf $(SYNC4J_SUBDIR) client-api
+	rm -rf $(SYNC4J_SUBDIR) @CLEAN_CLIENT_SRC@
 
 $(SYNC4J_SUBDIR)/distdir :
 	[ ! "$(SYNC4J_SUBDIR)" ] || ( cp -r client-api $(distdir) && ( find $(distdir)/client-api -name .libs -o -name "*.o" -o -name "*.lo" -o -name CVS -name autom4te.cache | xargs rm -rf ) )

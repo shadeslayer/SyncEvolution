@@ -88,9 +88,15 @@ if test $enable_static_cxx == "yes"; then
 fi
 AC_SUBST(CORE_LDADD_DEP)
 
+# preserve src/client-api by default
+CLEAN_CLIENT_SRC=
+AC_SUBST(CLEAN_CLIENT_SRC)
+
 if test ! "$SYNC4J"; then
     if test "$SYNC4JSRC"; then
-        # make a copy of the sources
+        # make a copy of the sources, remove it during maintainer-clean and distclean
+        CLEAN_CLIENT_SRC=client-api
+
         AC_MSG_NOTICE( [updating the content of src/client-api from $SYNC4JSRC] )
         mkdir -p src/client-api
         if cp --update --archive $SYNC4JSRC/* src/client-api; then
