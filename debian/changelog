@@ -1,6 +1,5 @@
-syncevolution (0.6-CVS-1) unstable; urgency=low
+syncevolution (0.6-pre1) unstable; urgency=low
 
   * Initial release as .deb file
 
- -- Patrick Ohly <patrick@patrick.estamos.de>  Mon, 12 Mar 2007 20:07:30 +0100
-
+ -- Patrick Ohly <patrick@patrick.estamos.de>  Mon, 26 Mar 2007 21:46:30 +0200

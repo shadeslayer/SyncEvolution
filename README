@@ -174,10 +174,14 @@ Each data source is configured in
 
 See "etc/localhost_1/spds/syncml/config.txt" for options in the server
 configuration and "etc/localhost_1/spds/sources/addressbook_1/config.txt"
-for options in the data source configuration. Without changes this
-example configuration can be used immediately with a local Funambol
-installation for testing the operation of SyncEvolution, see "Exchanging
-Data" below.
+for options in the data source configuration. In packages of SyncEvolution
+these files might be installed in [/usr/local]/shared/doc/syncevolution
+and use the name of specific SyncML servers instead of the generic
+"localhost".
+
+Without changes this example configuration can be used immediately
+with a local Funambol installation for testing the operation of
+SyncEvolution, see "Exchanging Data" below.
 
 Normally at least the following configuration options need to be adapted:
   spds/syncml

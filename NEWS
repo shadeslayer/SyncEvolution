@@ -1,3 +1,33 @@
+SyncEvolution 0.5 -> 0.6, 26.03.2006
+------------------------------------
+* C++ client library: CVS snapshot from 26.03.2006
+* added support for synchronizing Evolution notes (aka memos) as
+  iCal 2.0 journal
+* added --enable-static-cxa = linking C++ runtime statically:
+  binaries produced for 0.6 will have less external
+  dependencies than the 0.5 binaries
+* added hacks for Maemo/Nokia 770, including a build
+  mode with dynamically loadable modules (--enable-shared, --enable-maemo,
+  --with-patched-dbus)
+* implemented synccompare as pure Perl script using Algorithm::Diff
+  instead of external diff tool
+* synccompare did not figure out width of shell window as it should have
+* better error handling if creating the before/after database dumps
+  fails (SF #1685637)
+* example configs are now installed in share/doc/syncevolution,
+  enabled message limit and large object support in them
+* workaround for Funambol 3.0 trailing = parser bug
+
+UPGRADING
+
+Old config files continue to work, but it is recommended
+to set the following options to enable message size limits:
+  maxMsgSize = 8192
+  maxObjSize = 500000
+  loSupport = 1
+
+
+
 SyncEvolution 0.4 -> 0.5, 12.11.2006
 ------------------------------------
 * C++ client library revision "syncevolution-0-5":

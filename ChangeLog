@@ -1,3 +1,10 @@
+2007-03-26  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* configure.in: streamlined dependencies and their checking
+
+	* src/Makefile.am, configure.in:
+	do not remove src/client-api unless it was copied by configure
+
 2007-03-25  Patrick Ohly <Patrick.Ohly@gmx.de>
 
 	* src/Makefile.am, HACKING, configure.in, debian/rules:

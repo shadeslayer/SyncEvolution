@@ -2,7 +2,7 @@ Source: syncevolution
 Section: unknown
 Priority: extra
 Maintainer: Patrick Ohly <patrick.ohly@gmx.de>
-Build-Depends: debhelper (>= 4), autotools-dev, evolution-data-server-dev, libcurl3-dev
+Build-Depends: debhelper (>= 4), autotools-dev, libedataserver-dev, libcurl3-dev
 Standards-Version: 3.7.2
 
 Package: syncevolution

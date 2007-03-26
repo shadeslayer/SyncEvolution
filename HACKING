@@ -109,7 +109,8 @@ Building a Release
 ------------------
 
 - increase version number in configure.in/AM_INIT_AUTOMAKE
-- ensure ChangeLog and NEW are up-to-date
+- ensure files were updated:
+  ./ChangeLog ./NEW debian/changelog
 - make distcheck
 - compile binary .tar.gz packages for different Evolution versions;
   done automatically by runtests.py on estamos.de (= Debian 3.0), using different Garnome
