@@ -19,7 +19,7 @@ CLEANFILES = libstdc++.a
 
 # synccompare is created by replacing its 'import Algorithm::Diff;'
 # with a simplified copy of Diff.pm.
-synccompare : Algorithm/Diff.pm normalize_vcard.pl 
+synccompare : $(SYNC4J_SUBDIR)/test/test/Algorithm/Diff.pm $(SYNC4J_SUBDIR)/test/test/synccompare.pl
 	perl -e '$$diff = shift; open(DIFF, "<$$diff"); ($$_) = split(/__END__/, join("", <DIFF>)); s/\*import.*//m; s/require +Exporter;//; s/^#.*\n//mg; s/ +#.*\n//mg; $$diff = $$_;' -e 'while(<>) {' @MODIFY_SYNCCOMPARE@ -e 's/use +Algorithm::Diff;/"# embedded version of Algorithm::Diff follows, copyright by the original authors\n" . $$diff . "# end of embedded Algorithm::Diff\n"/e; print;}' $+ >$@
 	chmod u+x $@
 
@@ -83,17 +83,17 @@ syncebook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 # prevent a successful "distcheck"
 # TESTS = test
 # check_PROGRAMS = test
-EXTRA_PROGRAMS += TestEvolution
-TestEvolution_SOURCES = \
-        Test.h \
-        TestMain.cpp \
-        TestEvolution.cpp \
-	$(CORE_SOURCES)
+#EXTRA_PROGRAMS += TestEvolution
+#TestEvolution_SOURCES = \
+#        Test.h \
+#        TestMain.cpp \
+#        TestEvolution.cpp \
+#	$(CORE_SOURCES)
 
-TestEvolution_CXXFLAGS = `cppunit-config --cflags`
-TestEvolution_LDFLAGS = `cppunit-config --libs`
-TestEvolution_LDADD = @SYNCEVOLUTION_MODULES@ @LIBDBUS@ $(CORE_LDADD)
-TestEvolution_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
+#TestEvolution_CXXFLAGS = `cppunit-config --cflags`
+#TestEvolution_LDFLAGS = `cppunit-config --libs`
+#TestEvolution_LDADD = @SYNCEVOLUTION_MODULES@ @LIBDBUS@ $(CORE_LDADD)
+#TestEvolution_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
 
 EXTRA_PROGRAMS += vcardconverter
 vcardconverter_SOURCES = \
@@ -120,28 +120,40 @@ clean : testclean
 # executed. The workaround is to explicitly set them as undefined on the
 # link line.
 client_test_SOURCES = client-test-app.cpp $(CORE_SOURCES)
-nodist_client_test_SOURCES = ClientTest.cpp client-test-main.cpp 
-client_test_LDFLAGS = `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
-client_test_LDADD = $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
+nodist_client_test_SOURCES = ClientTest.cpp client-test-main.cpp ClientTest.h
+client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS
+client_test_CXXFLAGS = `cppunit-config --cflags`
+client_test_LDFLAGS = `cppunit-config --libs` `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
+client_test_LDADD = @SYNCEVOLUTION_MODULES@ @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
 
-vpath %.cpp : $(SYNC4J_SUBDIR)/test/test
+# automake build rules expect these to be available locally,
+# and we need to get rid of WCHAR
+ClientTest.h ClientTest.cpp client-test-main.cpp : % : $(SYNC4J_SUBDIR)/test/test/%
+	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
+ClientTest.cpp : ClientTest.h
 
-TestEvolution syncevolution vcardconverter : \
-        @CORE_LDADD_DEP@ \
-	$(SYNC4J_SUBDIR)/src/libsync4j.la
-test : TestEvolution addressbook.tests calendar.tests todo.tests memo.tests synccompare vcardconverter
+testcases: $(SYNC4J_SUBDIR)/test/test/testcases
+	ln -s $< $@
+
+test : client-test testcases synccompare
+
+
+# TestEvolution syncevolution vcardconverter : \
+#        @CORE_LDADD_DEP@ \
+#	$(SYNC4J_SUBDIR)/src/libsync4j.la
+#test : TestEvolution addressbook.tests calendar.tests todo.tests memo.tests synccompare vcardconverter
 
 # test files are in CVS under a different name so that they
 # can be copied to the work directory under the name expected
 # by the "test" program
-addressbook.tests : testVCard.vcf
-	cp $< $@
-calendar.tests : testCalendar.ics
-	cp $< $@
-todo.tests : testTask.ics
-	cp $< $@
-memo.tests : testMemo.ics
-	cp $< $@
+#addressbook.tests : testVCard.vcf
+#	cp $< $@
+#calendar.tests : testCalendar.ics
+#	cp $< $@
+#todo.tests : testTask.ics
+#	cp $< $@
+#memo.tests : testMemo.ics
+#	cp $< $@
 
 testclean :
 	rm -f *.test.vcf *.log *.tests *.diff

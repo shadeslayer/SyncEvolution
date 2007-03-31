@@ -46,10 +46,12 @@ class EvolutionSyncClient : public SyncClient {
      * @param server     identifies the server config to be used
      * @param syncMode   setting this overrides the sync mode from the config
      * @param doLogging  write additional log and datatbase files about the sync
+     * @param configRoot DM config root (= ".sync4j/<configRoot>")
      */
     EvolutionSyncClient(const string &server,
                         bool doLogging = false,
-                        const set<string> &sources = set<string>());
+                        const set<string> &sources = set<string>(),
+                        const string &configRoot = "evolution/");
     ~EvolutionSyncClient();
 
     /**

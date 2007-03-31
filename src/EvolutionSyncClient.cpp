@@ -19,8 +19,8 @@
 
 #include "EvolutionSyncClient.h"
 #include "EvolutionSyncSource.h"
+#include <EvolutionClientConfig.h>
 
-#include <client/DMTClientConfig.h>
 #include <posix/base/posixlog.h>
 
 #include <list>
@@ -40,11 +40,12 @@ using namespace std;
 #include <errno.h>
 
 EvolutionSyncClient::EvolutionSyncClient(const string &server,
-                                         bool doLogging, const set<string> &sources) :
+                                         bool doLogging, const set<string> &sources,
+                                         const string &configRoot ) :
     m_server(server),
     m_sources(sources),
     m_doLogging(doLogging),
-    m_configPath(string("evolution/") + server)
+    m_configPath(configRoot + server)
 {
 }
 
@@ -96,11 +97,11 @@ class LogDir {
     string m_logfile;        /**< path to log file there */
     const string &m_server;  /**< name of the server for this synchronization */
     LogLevel m_oldLogLevel;  /**< logging level to restore */
-    
+    bool m_restoreLog;       /**< false if nothing needs to be restored because setLogdir() was never called */
 
 public:
     LogDir(const string &server) : m_server(server),
-                                   m_oldLogLevel(LOG.getLevel())
+                                   m_restoreLog(false)
         {}
         
     // setup log directory and redirect logging into it
@@ -177,7 +178,9 @@ public:
         out.open(m_logfile.c_str());
         out.close();
         setLogFile(m_logfile.c_str(), true);
+        m_oldLogLevel = LOG.getLevel();
         LOG.setLevel(LOG_LEVEL_DEBUG);
+        m_restoreLog = true;
     }
 
     // return log directory, empty if not enabled
@@ -223,6 +226,10 @@ public:
 
     // remove redirection of stderr and (optionally) also of logging
     void restore(bool all) {
+        if (!m_restoreLog) {
+            return;
+        }
+          
         if (all) {
             setLogFile("-", false);
             LOG.setLevel(m_oldLogLevel);
@@ -406,79 +413,8 @@ void unref(SourceList *sourceList)
 
 int EvolutionSyncClient::sync()
 {
-    class EvolutionClientConfig : public DMTClientConfig {
-    public:
-        EvolutionClientConfig(const char *root) :
-            DMTClientConfig(root) {}
-
-    protected:
-        /*
-         * tweak the base class in two ways:
-         * - continue to use the "syncml" node for all non-source properties, as in previous versions
-         * - do not save properties which cannot be configured
-         */
-        virtual int readAuthConfig(ManagementNode& syncMLNode,
-                                   ManagementNode& authNode) {
-            return DMTClientConfig::readAuthConfig(syncMLNode, syncMLNode);
-        }
-        virtual void saveAuthConfig(ManagementNode& syncMLNode,
-                                    ManagementNode& authNode) {
-            DMTClientConfig::saveAuthConfig(syncMLNode, syncMLNode);
-        }
-        virtual int readConnConfig(ManagementNode& syncMLNode,
-                                    ManagementNode& connNode) {
-            return DMTClientConfig::readConnConfig(syncMLNode, syncMLNode);
-        }
-        virtual void saveConnConfig(ManagementNode& syncMLNode,
-                                    ManagementNode& connNode) {
-            DMTClientConfig::saveConnConfig(syncMLNode, syncMLNode);
-        }
-        virtual int readExtAccessConfig(ManagementNode& syncMLNode,
-                                        ManagementNode& extNode) {
-            return DMTClientConfig::readExtAccessConfig(syncMLNode, syncMLNode);
-        }
-        virtual void saveExtAccessConfig(ManagementNode& syncMLNode,
-                                         ManagementNode& extNode) {
-            DMTClientConfig::saveExtAccessConfig(syncMLNode, syncMLNode);
-        }
-        virtual int readDevInfoConfig(ManagementNode& syncMLNode,
-                                      ManagementNode& devInfoNode) {
-            int res = DMTClientConfig::readDevInfoConfig(syncMLNode, syncMLNode);
-
-            // always read device ID from the traditional property "deviceId"
-            arrayptr<char> tmp(syncMLNode.readPropertyValue("deviceId"));
-            deviceConfig.setDevID(tmp);
-
-            return res;
-        }
-        virtual void saveDevInfoConfig(ManagementNode& syncMLNode,
-                                       ManagementNode& devInfoNode) {
-            // these properties are always set by the code, don't save them
-        }
-        virtual int readDevDetailConfig(ManagementNode& syncMLNode,
-                                        ManagementNode& devDetailNode) {
-            return DMTClientConfig::readDevDetailConfig(syncMLNode, syncMLNode);
-        }
-        virtual void saveDevDetailConfig(ManagementNode& syncMLNode,
-                                         ManagementNode& devDetailNode) {
-            // these properties are always set by the code, don't save them
-        }
-        virtual int readExtDevConfig(ManagementNode& syncMLNode,
-                                     ManagementNode& extNode) {
-            return DMTClientConfig::readExtDevConfig(syncMLNode, syncMLNode);
-        }
-        virtual void saveExtDevConfig(ManagementNode& syncMLNode,
-                                      ManagementNode& extNode) {
-            // these properties are always set by the code, don't save them
-        }
-
-        virtual void saveSourceConfig(int i,
-                                      ManagementNode& sourcesNode,
-                                      ManagementNode& sourceNode) {
-            // no, don't overwrite config, in particular not the "type"
-        }
-
-    } config(m_configPath.c_str());
+    int res = 1;
+    EvolutionClientConfig config(m_configPath.c_str());
     
     if (!config.read() || !config.open()) {
         throw runtime_error("reading configuration failed");
@@ -578,7 +514,7 @@ int EvolutionSyncClient::sync()
         sourceList.syncPrepare();
 
         // do it
-        int res = SyncClient::sync(config, sourceList.getSourceArray());
+        res = SyncClient::sync(config, sourceList.getSourceArray());
 
         if (res) {
             if (lastErrorCode && lastErrorMsg[0]) {
@@ -593,6 +529,8 @@ int EvolutionSyncClient::sync()
 
         // all went well: print final report before cleaning up
         sourceList.syncDone(true);
+
+        res = 0;
     } catch (const std::exception &ex) {
         LOG.error( "%s", ex.what() );
 
@@ -603,5 +541,5 @@ int EvolutionSyncClient::sync()
         sourceList.syncDone(false);
     }
 
-    return 0;
+    return res;
 }
