@@ -230,11 +230,11 @@ public:
         SyncClient client;
         int res = client.sync(*config, syncSources);
         CPPUNIT_ASSERT(client.getSyncReport());
-        checkReport.check(*client.getSyncReport());
 
         for (source = 0; syncSources[source]; source++) {
             delete syncSources[source];
         }
+        checkReport.check(res, *client.getSyncReport());
 
         return res;
     }
