@@ -301,6 +301,7 @@ private:
 
     /** returns the name of the Evolution database */
     string getDatabaseName(SourceType type) {
+        // TODO: get database name from config tree
         return string("SyncEvolution test ") + getSourceName(type) + " #" + clientID;
     }
     

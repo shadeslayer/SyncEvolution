@@ -91,6 +91,9 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     eptr<ECal, GObject> m_calendar;
 
     ECalSourceType m_type;         /**< use events or todos? */
+    string m_typeName;             /**< "calendar", "task list", "memo list" */
+    ECal *(*m_newSystem)(void);    /**< e_cal_new_system_calendar, etc. */
+    
 
     /**
      * retrieve the item with the given uid - may throw exception

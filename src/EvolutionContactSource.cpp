@@ -104,21 +104,30 @@ void EvolutionContactSource::open()
     
     GError *gerror = NULL;
     ESource *source = findSource( sources, m_id );
+    bool onlyIfExists = true;
     if (!source) {
-        // might have been special "<<system>>" or "<<default>>", try that before giving up
+        // might have been special "<<system>>" or "<<default>>", try that and
+        // creating address book from file:// URI before giving up
         if (m_id == "<<system>>") {
             m_addressbook.set( e_book_new_system_addressbook (&gerror), "system address book" );
         } else if (m_id == "<<default>>") {
             m_addressbook.set( e_book_new_default_addressbook (&gerror), "default address book" );
+        } else if (!m_id.compare(0, 7, "file://")) {
+            m_addressbook.set(e_book_new_from_uri(m_id.c_str(), &gerror), "creating address book");
         } else {
             throw runtime_error(string(getName()) + ": no such address book: '" + m_id + "'");
         }
+        onlyIfExists = false;
     } else {
         m_addressbook.set( e_book_new( source, &gerror ), "address book" );
     }
  
-    if (!e_book_open( m_addressbook, TRUE, &gerror) ) {
-        throwError( "opening address book", gerror );
+    if (!e_book_open( m_addressbook, onlyIfExists, &gerror) ) {
+        // opening newly created address books often fails, try again once more
+        sleep(5);
+        if (!e_book_open( m_addressbook, onlyIfExists, &gerror) ) {
+            throwError( "opening address book", gerror );
+        }
     }
 
     // users are not expected to configure an authentication method,

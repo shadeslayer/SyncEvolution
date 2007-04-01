@@ -49,6 +49,23 @@ EvolutionCalendarSource::EvolutionCalendarSource( const EvolutionCalendarSource 
     EvolutionSyncSource(other),
     m_type(other.m_type)
 {
+    switch (m_type) {
+     case E_CAL_SOURCE_TYPE_EVENT:
+        m_typeName = "calendar";
+        m_newSystem = e_cal_new_system_calendar;
+        break;
+     case E_CAL_SOURCE_TYPE_TODO:
+        m_typeName = "task list";
+        m_newSystem = e_cal_new_system_tasks;
+        break;
+     case E_CAL_SOURCE_TYPE_JOURNAL:
+        m_typeName = "memo list";
+        m_newSystem = e_cal_new_system_memos;
+        break;
+     default:
+        throw runtime_error("internal error, invalid calendar type");
+        break;
+    }
 }
 
 EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
@@ -95,16 +112,30 @@ void EvolutionCalendarSource::open()
     }
     
     ESource *source = findSource(sources, m_id);
+    bool onlyIfExists = true;
     if (!source) {
-        throw runtime_error(string(getName()) + ": no such calendar: '" + m_id + "'");
+        // might have been special "<<system>>" or "<<default>>", try that and
+        // creating address book from file:// URI before giving up
+        if (m_id == "<<system>>") {
+            m_calendar.set(m_newSystem(), "system calendar/tasks/memos");
+        } else if (!m_id.compare(0, 7, "file://")) {
+            m_calendar.set(e_cal_new_from_uri(m_id.c_str(), m_type), "creating calendar/tasks/memos");
+        } else {
+            throw runtime_error(string(getName()) + ": not found: '" + m_id + "'");
+        }
+        onlyIfExists = false;
+    } else {
+        m_calendar.set(e_cal_new(source, m_type), m_typeName.c_str());
     }
-
-    m_calendar.set(e_cal_new(source, m_type), "calendar");
 
     e_cal_set_auth_func(m_calendar, eCalAuthFunc, this);
     
-    if (!e_cal_open(m_calendar, TRUE, &gerror)) {
-        throwError( "opening calendar", gerror );
+    if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
+        // opening newly created address books often failed, perhaps that also applies to calendars - try again
+        sleep(5);
+        if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
+            throwError( "opening calendar", gerror );
+        }
     }
 }
 
