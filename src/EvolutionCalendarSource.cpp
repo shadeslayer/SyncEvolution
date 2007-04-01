@@ -60,7 +60,10 @@ EvolutionCalendarSource::EvolutionCalendarSource( const EvolutionCalendarSource 
         break;
      case E_CAL_SOURCE_TYPE_JOURNAL:
         m_typeName = "memo list";
-        m_newSystem = e_cal_new_system_memos;
+        // This is not available in older Evolution versions.
+        // A configure check could detect that, but as this isn't
+        // important the functionality is simply disabled.
+        m_newSystem = NULL /* e_cal_new_system_memos */;
         break;
      default:
         throw runtime_error("internal error, invalid calendar type");
@@ -116,7 +119,7 @@ void EvolutionCalendarSource::open()
     if (!source) {
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
-        if (m_id == "<<system>>") {
+        if (m_id == "<<system>>" && m_newSystem) {
             m_calendar.set(m_newSystem(), "system calendar/tasks/memos");
         } else if (!m_id.compare(0, 7, "file://")) {
             m_calendar.set(e_cal_new_from_uri(m_id.c_str(), m_type), "creating calendar/tasks/memos");
