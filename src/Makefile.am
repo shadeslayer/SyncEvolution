@@ -125,6 +125,7 @@ client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS
 client_test_CXXFLAGS = `cppunit-config --cflags`
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
 client_test_LDADD = @SYNCEVOLUTION_MODULES@ @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
+client_test_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
 
 # automake build rules expect these to be available locally,
 # and we need to get rid of WCHAR
