@@ -74,6 +74,10 @@ public:
             setenv("CLIENT_TEST_SERVER", "funambol", 1);
         }
 
+        /* override Evolution database names? */
+        const char *evoprefix = getenv("CLIENT_TEST_EVOLUTION_PREFIX");
+        evoPrefix = evoprefix ? evoprefix :  "SyncEvolution_Test_";
+
         /* check sources */
         const char *sourcelist = getenv("CLIENT_TEST_SOURCES");
         if (!sourcelist) {
@@ -103,6 +107,7 @@ public:
         std::string root = std::string("evolution/") + server + "_" + id;
         std::auto_ptr<DMTClientConfig> config(new EvolutionClientConfig(root.c_str(), true));
         config->read();
+        config->open();
         DeviceConfig &dc(config->getDeviceConfig());
         if (!strlen(dc.getDevID())) {
             // no configuration yet
@@ -121,19 +126,22 @@ public:
                 sc = config->getSyncSourceConfig(testconfig.sourceName);
                 CPPUNIT_ASSERT(sc);
                 sc->setURI(testconfig.uri);
+                // ensure that config has a ManagementNode for the new source
                 config->save();
-                config->open();
-                ManagementNode *node = config->getSyncSourceNode(testconfig.sourceName);
-                CPPUNIT_ASSERT(node);
-                string database = getDatabaseName(sourceType);
-                node->setPropertyValue("evolutionsource", database.c_str());
-
-                // flush config to disk
-                config.reset(new EvolutionClientConfig(root.c_str(), true));
                 config->read();
-                sc = config->getSyncSourceConfig(testconfig.sourceName);
-                CPPUNIT_ASSERT(sc);
+                config->open();
             }
+            ManagementNode *node = config->getSyncSourceNode(testconfig.sourceName);
+            CPPUNIT_ASSERT(node);
+            string database = getDatabaseName(sourceType);
+            node->setPropertyValue("evolutionsource", database.c_str());
+
+            // flush config to disk
+            config.reset(new EvolutionClientConfig(root.c_str(), true));
+            config->read();
+            config->open();
+            sc = config->getSyncSourceConfig(testconfig.sourceName);
+            CPPUNIT_ASSERT(sc);
 
             sc->setType(testconfig.type);
         }
@@ -269,6 +277,9 @@ private:
     string clientID;
     std::auto_ptr<TestEvolution> clientB;
 
+    /** prefix to be used for Evolution databases */
+    string evoPrefix;
+
     /** all sources that are active in the current test run */
     SourceType enabledSources[TEST_MAX_SOURCE];
     /** number of active sources */
@@ -301,8 +312,7 @@ private:
 
     /** returns the name of the Evolution database */
     string getDatabaseName(SourceType type) {
-        // TODO: get database name from config tree
-        return string("SyncEvolution test ") + getSourceName(type) + " #" + clientID;
+        return evoPrefix + getSourceName(type) + "_" + clientID;
     }
     
     static SyncSource *createSource(ClientTest &client, int type, bool isSourceA) {
