@@ -8,7 +8,6 @@ bin_SCRIPTS = synccompare
 EXTRA_LTLIBRARIES = syncecal.la syncebook.la
 MOSTLYCLEANFILES = syncecal.la syncebook.la
 pkglib_LTLIBRARIES = @SYNCEVOLUTION_LTLIBRARIES@
-EXTRA_DIST = normalize_vcard.pl testVCard.vcf testCalendar.ics testTask.ics vocl/README Algorithm/Artistic Algorithm/copyright Algorithm/Diff.pm Algorithm/README
 EXTRA_PROGRAMS = client-test
 check_PROGRAMS = @CPPUNIT_TESTS@
 TESTS = @CPPUNIT_TESTS@
