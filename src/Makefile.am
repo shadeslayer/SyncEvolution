@@ -36,6 +36,7 @@ CORE_SOURCES  = \
         EvolutionSmartPtr.h \
         EvolutionSyncClient.h \
         EvolutionSyncSource.h \
+	EvolutionClientConfig.h \
         \
         EvolutionSyncSource.cpp \
 	EvolutionSyncClient.cpp \
