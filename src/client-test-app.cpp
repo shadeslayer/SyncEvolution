@@ -318,7 +318,7 @@ private:
     static SyncSource *createSource(ClientTest &client, int type, bool isSourceA) {
         string changeID = "SyncEvolution Change ID #";
         changeID += isSourceA ? "1" : "2";
-        string database = ((TestEvolution &)client).getDatabaseName((SourceType)type);
+        string database = ((TestEvolution &)client).getDatabaseName(((TestEvolution &)client).enabledSources[type]);
         
         switch (type) {
 #ifdef ENABLE_EBOOK
