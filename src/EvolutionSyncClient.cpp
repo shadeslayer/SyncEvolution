@@ -289,7 +289,7 @@ public:
         m_logdir(server),
         m_prepared(false),
         m_doLogging(doLogging),
-        m_reportTodo(false) {
+        m_reportTodo(true) {
     }
     
     // call as soon as logdir settings are known
@@ -306,8 +306,6 @@ public:
     // pre-sync databases
     void syncPrepare() {
         if (m_doLogging) {
-            m_reportTodo = true;
-
             // dump initial databases
             dumpDatabases("before", "after");
         }
