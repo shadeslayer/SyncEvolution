@@ -124,6 +124,7 @@ void EvolutionContactSource::open()
  
     if (!e_book_open( m_addressbook, onlyIfExists, &gerror) ) {
         // opening newly created address books often fails, try again once more
+        g_clear_error(&gerror);
         sleep(5);
         if (!e_book_open( m_addressbook, onlyIfExists, &gerror) ) {
             throwError( "opening address book", gerror );

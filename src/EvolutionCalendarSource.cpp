@@ -135,6 +135,7 @@ void EvolutionCalendarSource::open()
     
     if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
         // opening newly created address books often failed, perhaps that also applies to calendars - try again
+        g_clear_error(&gerror);
         sleep(5);
         if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
             throwError( "opening calendar", gerror );
