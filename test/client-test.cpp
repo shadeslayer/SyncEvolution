@@ -20,6 +20,25 @@
 /** @addtogroup ClientTest */
 /** @{ */
 
+#include "spdm/DeviceManagementNode.h"
+#include "client/RawFileSyncSource.h"
+#include "spds/spdsutils.h"
+#include "client/DMTClientConfig.h"
+#include "client/SyncClient.h"
+#include "test/ClientTest.h"
+#include "base/test.h"
+
+#include <string>
+#include <vector>
+#include <iomanip>
+#include <memory>
+
+#ifdef WIN32
+#include <direct.h>
+#endif
+#include <sys/stat.h>
+
+#ifdef ENABLE_INTEGRATION_TESTS
 
 /**
  * This code uses the ClientTest and FILESyncSource to test real
@@ -30,7 +49,7 @@
  * ClientTest class, because that is where the test data comes from.
  *
  * At least the following kinds of data are currently supported by the
- * ClientTest class (see ClientTest::getSourceConfig() for more
+ * ClientTest class (see ClientTest::getTestData() for more
  * information):
  * - vcard30 = vCard 3.0 contacts
  * - ical20 = iCalendar 2.0 calendar events
