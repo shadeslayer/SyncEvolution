@@ -126,6 +126,7 @@ public:
                 sc = config->getSyncSourceConfig(testconfig.sourceName);
                 CPPUNIT_ASSERT(sc);
                 sc->setURI(testconfig.uri);
+                sc->setType(testconfig.type);
                 // ensure that config has a ManagementNode for the new source
                 config->save();
                 config->read();
@@ -315,10 +316,11 @@ private:
         return evoPrefix + getSourceName(type) + "_" + clientID;
     }
     
-    static SyncSource *createSource(ClientTest &client, int type, bool isSourceA) {
+    static SyncSource *createSource(ClientTest &client, int source, bool isSourceA) {
         string changeID = "SyncEvolution Change ID #";
+        SourceType type = ((TestEvolution &)client).enabledSources[source];
         changeID += isSourceA ? "1" : "2";
-        string database = ((TestEvolution &)client).getDatabaseName(((TestEvolution &)client).enabledSources[type]);
+        string database = ((TestEvolution &)client).getDatabaseName(type);
         
         switch (type) {
 #ifdef ENABLE_EBOOK
