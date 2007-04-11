@@ -448,11 +448,13 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
             vprop->setName(name.c_str());
         } else if (name == "ADR" || name == "EMAIL" || name == "TEL") {
             const char *type = vprop->getParameterValue("TYPE");
+            bool isOther = false;
             if (type) {
                 if (!strcasecmp(type, "PARCEL")) {
                     // remove unsupported TYPE=PARCEL that was
-                    // added in createItem()
+                    // added in createItem() and replace with "OTHER" to be symetric
                     vprop->removeParameter("TYPE");
+                    isOther = true;
                 } else if (!strcasecmp(type, "PREF,VOICE")) {
                     // this is not mapped by Evolution to "Primary Phone",
                     // help a little bit
@@ -479,7 +481,7 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
                 !vprop->containsParameter("INTERNET") &&
                 !vprop->containsParameter("HOME") &&
                 !vprop->containsParameter("WORK")) {
-                vprop->addParameter("TYPE", "HOME");
+                vprop->addParameter("TYPE", isOther ? "OTHER" : "HOME");
             }
 
 #ifdef SET_UI_SLOT
