@@ -242,9 +242,7 @@ public:
                 for (SyncSource **source = sources;
                      *source;
                      source++) {
-                    if (m_encoding) {
-                        (*source)->getConfig().setEncoding(m_encoding);
-                    }
+                    (*source)->getConfig().setEncoding(m_encoding ? m_encoding : "");
                     (*source)->setPreferredSyncMode(m_syncMode);
                 }
                 DeviceConfig &dc(config.getDeviceConfig());
