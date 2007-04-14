@@ -1,5 +1,12 @@
+syncevolution (0.6-pre2) unstable; urgency=low
+
+  * updated upstream sources
+  * packaged without dependency on libecal/libebook
+
+ -- Patrick Ohly <patrick.ohly@gmx.de>  Sat,  7 Apr 2007 17:22:19 +0200
+
 syncevolution (0.6-pre1) unstable; urgency=low
 
   * Initial release as .deb file
 
- -- Patrick Ohly <patrick@patrick.estamos.de>  Mon, 26 Mar 2007 21:46:30 +0200
+ -- Patrick Ohly <patrick.ohly@gmx.de>  Mon, 26 Mar 2007 21:46:30 +0200
