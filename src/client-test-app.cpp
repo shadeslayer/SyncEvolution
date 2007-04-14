@@ -167,6 +167,10 @@ public:
         
         switch (sourceType) {
          case TEST_CONTACT21_SOURCE:
+            // we cannot use the C++ client libraries' vcard21 test
+            // data because Evolution only imports vCard 3.0 items,
+            // but we can use the vcard30 test data and synchronize
+            // it as vCard 2.1
             getTestData("vcard30", config);
             config.sourceName = "vcard21";
             config.uri = "card"; // Funambol
@@ -180,6 +184,7 @@ public:
             break;
          case TEST_TASK_SOURCE:
             getTestData("itodo20", config);
+            config.type = "text/x-todo"; // special type required by SyncEvolution
             break;
          default:
             CPPUNIT_ASSERT(sourceType < TEST_MAX_SOURCE);
@@ -287,22 +292,18 @@ private:
     /** returns the name corresponding to the type, using the same strings as the C++ client testing system */
     string getSourceName(SourceType type) {
         switch (type) {
-#ifdef ENABLE_EBOOK
          case TEST_CONTACT21_SOURCE:
             return "vcard21";
             break;
          case TEST_CONTACT30_SOURCE:
             return "vcard30";
             break;
-#endif
-#ifdef ENABLE_ECAL
          case TEST_CALENDAR_SOURCE:
             return "ical20";
             break;
          case TEST_TASK_SOURCE:
             return "itodo20";
             break;
-#endif
          default:
             CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
             break;
@@ -321,19 +322,23 @@ private:
         string database = ((TestEvolution &)client).getDatabaseName(type);
         
         switch (type) {
-#ifdef ENABLE_EBOOK
          case TEST_CONTACT21_SOURCE:
          case TEST_CONTACT30_SOURCE:
+#ifdef ENABLE_EBOOK
             return new TestEvolutionSyncSource<EvolutionContactSource>(changeID, database);
-            break;
+#else
+            return NULL;
 #endif
-#ifdef ENABLE_ECAL
+            break;
          case TEST_CALENDAR_SOURCE:
+#ifdef ENABLE_ECAL
             return new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_EVENT, changeID, database);
+#else
+            return NULL;
+#endif
             break;
          case TEST_TASK_SOURCE:
             return new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_TODO, changeID, database);
-#endif
          default:
             CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
             return NULL;
