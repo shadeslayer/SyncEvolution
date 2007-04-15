@@ -25,7 +25,7 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 #include <exception>
-#include <iostream>
+#include <fstream>
 
 #include "EvolutionSyncClient.h"
 #include "EvolutionCalendarSource.h"
