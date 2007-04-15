@@ -19,7 +19,10 @@ syncModes = slow,two-way,refresh-from-client,refresh-from-server
 #
 # text/calendar    = Evolution calender data (in iCalendar 2.0 format)
 # text/x-todo      = Evolution task data (iCalendar 2.0)
-# text/x-journal   = Evolution memos (iCalendar 2.0)
+# text/x-journal   = Evolution memos (iCalendar 2.0) - not supported by any
+#                    known SyncML server and not actively tested
+# text/plain       = Evolution memos in plain text format, UTF-8 encoding,
+#                    first line acts as summary
 # text/x-vcard     = Evolution contact data in vCard 2.1 format
 #                    (works with most servers)
 # test/vcard       = Evolution contact data in vCard 3.0 (RFC 2425) format

@@ -45,7 +45,9 @@ CORE_SOURCES  = \
 
 SYNCECAL_SOURCES = \
         EvolutionCalendarSource.h \
-	EvolutionCalendarSource.cpp
+        EvolutionMemoSource.h \
+	EvolutionCalendarSource.cpp \
+	EvolutionMemoSource.cpp
 
 SYNCEBOOK_SOURCES = \
         EvolutionContactSource.h \

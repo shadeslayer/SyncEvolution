@@ -25,6 +25,7 @@ using namespace std;
 #ifdef ENABLE_ECAL
 
 #include "EvolutionCalendarSource.h"
+#include "EvolutionMemoSource.h"
 #include "EvolutionSmartPtr.h"
 
 #include <common/base/Log.h>
@@ -501,6 +502,8 @@ extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, sc, changeId, id);
     } else if (mimeType == "text/x-journal") {
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, changeId, id);
+    } else if (mimeType == "text/plain") {
+        return new EvolutionMemoSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, changeId, id);
     } else if (mimeType == "text/calendar" ||
                mimeType == "text/x-vcalendar") {
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, sc, changeId, id);

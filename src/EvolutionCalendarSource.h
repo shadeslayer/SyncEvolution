@@ -86,7 +86,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     virtual void logItem(const string &uid, const string &info, bool debug = false);
     virtual void logItem(SyncItem &item, const string &info, bool debug = false);
 
-  private:
+  protected:
     /** valid after open(): the calendar that this source references */
     eptr<ECal, GObject> m_calendar;
 
@@ -110,7 +110,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource
      * - then either insert or update it, trying update if insert fails because it exists already
      * - also import timezones
      */
-    int insertItem(SyncItem &item, bool update);
+    virtual int insertItem(SyncItem &item, bool update);
 
     /** returns the type which the ical library uses for our components */
     icalcomponent_kind getCompType() {

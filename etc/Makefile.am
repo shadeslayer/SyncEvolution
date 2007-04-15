@@ -74,7 +74,7 @@ funambol_2/spds/sources/todo_2/config.txt : funambol_1/spds/sources/addressbook_
 
 funambol_2/spds/sources/memo_2/config.txt : funambol_1/spds/sources/addressbook_1/config.txt
 	mkdir -p $(@D)
-	sed -e s/addressbook_1/memo_2/ -e s/#1/#2/ -e 's:type = text/x-vcard:type = text/x-journal:' -e 's/uri = card/uri = note/' -e 's/sync = two-way/sync = none/' $< >$@
+	sed -e s/addressbook_1/memo_2/ -e s/#1/#2/ -e 's:type = text/x-vcard:type = text/plain:' -e 's/uri = card/uri = note/' -e 's/sync = two-way/sync = none/' $< >$@
 
 funambol_1/spds/sources/calendar_1/config.txt : funambol_1/spds/sources/addressbook_1/config.txt
 	mkdir -p $(@D)
@@ -86,7 +86,7 @@ funambol_1/spds/sources/todo_1/config.txt : funambol_1/spds/sources/addressbook_
 
 funambol_1/spds/sources/memo_1/config.txt : funambol_1/spds/sources/addressbook_1/config.txt
 	mkdir -p $(@D)
-	sed -e s/addressbook_1/memo_1/ -e 's:type = text/x-vcard:type = text/x-journal:' -e 's/uri = card/uri = note/' -e 's/sync = two-way/sync = none/' $< >$@
+	sed -e s/addressbook_1/memo_1/ -e 's:type = text/x-vcard:type = text/plain:' -e 's/uri = card/uri = note/' -e 's/sync = two-way/sync = none/' $< >$@
 
 
 # www.scheduleworld.com configuration:

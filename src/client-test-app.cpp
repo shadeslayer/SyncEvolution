@@ -29,6 +29,7 @@
 
 #include "EvolutionSyncClient.h"
 #include "EvolutionCalendarSource.h"
+#include "EvolutionMemoSource.h"
 #include "EvolutionContactSource.h"
 
 /** a wrapper class which automatically does an open() in the constructor and a close() in the destructor */
@@ -81,7 +82,7 @@ public:
         /* check sources */
         const char *sourcelist = getenv("CLIENT_TEST_SOURCES");
         if (!sourcelist) {
-            sourcelist = "vcard21,vcard30,ical20,imemo20,itodo20";
+            sourcelist = "vcard21,vcard30,ical20,text,itodo20";
         }
         numSources = 0;
         for (SourceType sourceType = (SourceType)0; sourceType < TEST_MAX_SOURCE; sourceType = (SourceType)((int)sourceType + 1) ) {
@@ -93,7 +94,9 @@ public:
             }
 #endif
 #ifndef ENABLE_ECAL
-            if (sourceType == TEST_CALENDAR_SOURCE || sourceType == TEST_TASK_SOURCE) {
+            if (sourceType == TEST_CALENDAR_SOURCE ||
+                sourceType == TEST_TASK_SOURCE ||
+                sourceType == TEST_MEMO_SOURCE) {
                 continue;
             }
 #endif
@@ -154,7 +157,7 @@ public:
         TEST_CONTACT30_SOURCE,
         TEST_CALENDAR_SOURCE,
         TEST_TASK_SOURCE,
-        // TEST_MEMO_SOURCE,
+        TEST_MEMO_SOURCE,
         TEST_MAX_SOURCE
     };
 
@@ -185,6 +188,49 @@ public:
          case TEST_TASK_SOURCE:
             getTestData("itodo20", config);
             config.type = "text/x-todo"; // special type required by SyncEvolution
+            break;
+         case TEST_MEMO_SOURCE:
+            config.sourceName = "text";
+            config.uri = "note"; // ScheduleWorld
+            config.type = "text/plain";
+            config.insertItem =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VJOURNAL\n"
+                "SUMMARY:Summary\n"
+                "DESCRIPTION:Summary\\nBody text\n"
+                "END:VJOURNAL\n"
+                "END:VCALENDAR\n";
+            config.updateItem =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VJOURNAL\n"
+                "SUMMARY:Summary Modified\n"
+                "DESCRIPTION:Summary Modified\\nBody text\n"
+                "END:VJOURNAL\n"
+                "END:VCALENDAR\n";
+            /* change summary, as in updateItem, and the body in the other merge item */
+            config.mergeItem1 = config.updateItem;
+            config.mergeItem2 =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VJOURNAL\n"
+                "SUMMARY:Summary\n"
+                "DESCRIPTION:Summary\\nBody modified\n"
+                "END:VJOURNAL\n"
+                "END:VCALENDAR\n";                
+            config.templateItem = config.insertItem;
+            config.uniqueProperties = "SUMMARY:DESCRIPTION";
+            config.sizeProperty = "DESCRIPTION";
+            config.import = ClientTest::import;
+            config.dump = dumpMemoSource;
+            config.testcases = "testcases/imemo20.ics";
             break;
          default:
             CPPUNIT_ASSERT(sourceType < TEST_MAX_SOURCE);
@@ -304,6 +350,9 @@ private:
          case TEST_TASK_SOURCE:
             return "itodo20";
             break;
+         case TEST_MEMO_SOURCE:
+            return "text";
+            break;
          default:
             CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
             break;
@@ -338,12 +387,39 @@ private:
 #endif
             break;
          case TEST_TASK_SOURCE:
+#ifdef ENABLE_ECAL         
             return new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_TODO, changeID, database);
+#else
+            return NULL;
+#endif
+            break;
+         case TEST_MEMO_SOURCE:
+#ifdef ENABLE_ECAL         
+            return new TestEvolutionSyncSource<EvolutionMemoSource>(E_CAL_SOURCE_TYPE_JOURNAL, changeID, database);
+#else
+            return NULL;
+#endif
+            break;
          default:
             CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
             return NULL;
         }
     }
+
+    /**
+     * dump memos in iCalendar 2.0 format for synccompare: ClientTest::dump() would
+     * dump the plain text
+     */
+    static int dumpMemoSource(ClientTest &client, SyncSource &source, const char *file) {
+        std::ofstream out(file);
+
+#ifdef ENABLE_ECAL
+        ((EvolutionMemoSource &)source).exportData(out);
+#endif
+        out.close();
+        return out.bad();
+    }
+
 };
 
 static class RegisterTestEvolution {

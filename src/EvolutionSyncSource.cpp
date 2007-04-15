@@ -22,6 +22,7 @@
 #include "EvolutionSyncSource.h"
 #include "EvolutionContactSource.h"
 #include "EvolutionCalendarSource.h"
+#include "EvolutionMemoSource.h"
 
 #include <common/base/Log.h>
 
@@ -227,6 +228,14 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 #else
         if (error) {
             throw runtime_error(name + ": access to memos not compiled into this binary, text/x-journal not supported");
+        }
+#endif
+    } else if (mimeType == "text/plain") {
+#ifdef ENABLE_ECAL
+        return new EvolutionMemoSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, strippedChangeId, id);
+#else
+        if (error) {
+            throw runtime_error(name + ": access to memos not compiled into this binary, text/plain not supported");
         }
 #endif
     } else if (mimeType == "text/calendar" ||
