@@ -94,7 +94,7 @@ class LogDir {
     int m_maxlogdirs;        /**< number of backup dirs to preserve, 0 if unlimited */
     string m_prefix;         /**< common prefix of backup dirs */
     string m_path;           /**< path to current logging and backup dir */
-    string m_logfile;        /**< path to log file there */
+    string m_logfile;        /**< path to log file there, empty if not writing one */
     const string &m_server;  /**< name of the server for this synchronization */
     LogLevel m_oldLogLevel;  /**< logging level to restore */
     bool m_restoreLog;       /**< false if nothing needs to be restored because setLogdir() was never called */
@@ -105,11 +105,14 @@ public:
         {}
         
     // setup log directory and redirect logging into it
-    // @param path        path to configured backup directy, NULL if defaulting to /tmp
+    // @param path        path to configured backup directy, NULL if defaulting to /tmp, "none" if not creating log file
     // @param maxlogdirs  number of backup dirs to preserve in path, 0 if unlimited
-    void setLogdir(const char *path, int maxlogdirs) {
+    // @param logLevel    0 = default, 1 = ERROR, 2 = INFO, 3 = DEBUG
+    void setLogdir(const char *path, int maxlogdirs, int logLevel = 0) {
         m_maxlogdirs = maxlogdirs;
-        if (path && path[0]) {
+        if (path && !strcasecmp(path, "none")) {
+            m_logfile = "";
+        } else if (path && path[0]) {
             m_logdir = path;
 
             // create unique directory name in the given directory
@@ -124,7 +127,7 @@ public:
                  << "-"
                  << setfill('0')
                  << setw(4) << tm->tm_year + 1900 << "-"
-                 << setw(2) << tm->tm_mon << "-"
+                 << setw(2) << tm->tm_mon + 1 << "-"
                  << setw(2) << tm->tm_mday << "-"
                  << setw(2) << tm->tm_hour << "-"
                  << setw(2) << tm->tm_min;
@@ -144,6 +147,7 @@ public:
                 }
                 seq++;
             }
+            m_logfile = m_path + "/client.log";
         } else {
             // create temporary directory: $TMPDIR/SyncEvolution-<username>
             stringstream path;
@@ -168,18 +172,22 @@ public:
                     throw runtime_error(m_path + ": " + strerror(errno));
                 }
             }
+            m_logfile = m_path + "/client.log";
         }
 
-        // redirect logging into that directory, including stderr,
-        // after truncating it
-        m_logfile = m_path + "/client.log";
-        ofstream out;
-        out.exceptions(ios_base::badbit|ios_base::failbit|ios_base::eofbit);
-        out.open(m_logfile.c_str());
-        out.close();
-        setLogFile(m_logfile.c_str(), true);
+        if (m_logfile.size()) {
+            // redirect logging into that directory, including stderr,
+            // after truncating it
+            ofstream out;
+            out.exceptions(ios_base::badbit|ios_base::failbit|ios_base::eofbit);
+            out.open(m_logfile.c_str());
+            out.close();
+            setLogFile(m_logfile.c_str(), true);
+        }
         m_oldLogLevel = LOG.getLevel();
-        LOG.setLevel(LOG_LEVEL_DEBUG);
+        LOG.setLevel(logLevel > 0 ? (LogLevel)(logLevel - 1) /* fixed level */ :
+                     m_logfile.size() ? LOG_LEVEL_DEBUG /* default for log file */ :
+                     LOG_LEVEL_INFO /* default for console output */ );
         m_restoreLog = true;
     }
 
@@ -231,10 +239,14 @@ public:
         }
           
         if (all) {
-            setLogFile("-", false);
+            if (m_logfile.size()) {
+                setLogFile("-", false);
+            }
             LOG.setLevel(m_oldLogLevel);
         } else {
-            setLogFile(m_logfile.c_str(), false);
+            if (m_logfile.size()) {
+                setLogFile(m_logfile.c_str(), false);
+            }
         }
     }
 
@@ -248,7 +260,7 @@ public:
 // as the final report (
 class SourceList : public list<EvolutionSyncSource *> {
     LogDir m_logdir;     /**< our logging directory */
-    bool m_prepared;     /**< remember whether syncPrepare() completed successfully */
+    bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
     bool m_doLogging;    /**< true iff additional files are to be written during sync */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
     arrayptr<SyncSource *> m_sourceArray;  /** owns the array that is expected by SyncClient::sync() */
@@ -293,9 +305,9 @@ public:
     }
     
     // call as soon as logdir settings are known
-    void setLogdir(const char *logDirPath, int maxlogdirs) {
+    void setLogdir(const char *logDirPath, int maxlogdirs, int logLevel) {
         if (m_doLogging) {
-            m_logdir.setLogdir(logDirPath, maxlogdirs);
+            m_logdir.setLogdir(logDirPath, maxlogdirs, logLevel);
         } else {
             // at least increase log level
             LOG.setLevel(LOG_LEVEL_DEBUG);
@@ -305,11 +317,12 @@ public:
     // call when all sync sources are ready to dump
     // pre-sync databases
     void syncPrepare() {
-        if (m_doLogging) {
+        if (m_logdir.getLogfile().size() &&
+            m_doLogging) {
             // dump initial databases
             dumpDatabases("before", "after");
+            m_prepared = true;
         }
-        m_prepared = true;
     }
 
     // call at the end of a sync with success == true
@@ -330,28 +343,34 @@ public:
                 }
 
                 // scan for error messages
-                ifstream in;
-                in.open(m_logdir.getLogfile().c_str());
-                while (in.good()) {
-                    string line;
-                    getline(in, line);
-                    if (line.find("[ERROR]") != line.npos) {
-                        success = false;
-                        cout << line << "\n";
-                    } else if (line.find("[INFO]") != line.npos) {
-                        cout << line << "\n";
+                string logfile = m_logdir.getLogfile();
+                if (logfile.size()) {
+                    ifstream in;
+                    in.open(m_logdir.getLogfile().c_str());
+                    while (in.good()) {
+                        string line;
+                        getline(in, line);
+                        if (line.find("[ERROR]") != line.npos) {
+                            success = false;
+                            cout << line << "\n";
+                        } else if (line.find("[INFO]") != line.npos) {
+                            cout << line << "\n";
+                        }
                     }
+                    in.close();
                 }
-                in.close();
-                cout << flush;
 
+                cout << flush;
+                cerr << flush;
                 cout << "\n";
                 if (success) {
                     cout << "Synchronization successful.\n";
-                } else {
+                } else if (logfile.size()) {
                     cout << "Synchronization failed, see "
-                         << m_logdir.getLogdir()
+                         << logfile
                          << " for details.\n";
+                } else {
+                    cout << "Synchronization failed.\n";
                 }
 
                 // compare databases?
@@ -433,7 +452,8 @@ int EvolutionSyncClient::sync()
     try {
         arrayptr<char> logdir(config.getSyncMLNode()->readPropertyValue("logdir"));
         arrayptr<char> maxlogdirs(config.getSyncMLNode()->readPropertyValue("maxlogdirs"));
-        sourceList.setLogdir(logdir, atoi(maxlogdirs));
+        arrayptr<char> loglevel(config.getSyncMLNode()->readPropertyValue("logLevel"));
+        sourceList.setLogdir(logdir, atoi(maxlogdirs), atoi(loglevel));
 
         SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
         for (int index = 0; index < config.getNumSources(); index++) {

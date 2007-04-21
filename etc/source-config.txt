@@ -9,11 +9,13 @@ name = addressbook_1
 #                         the items on the client
 #   refresh-from-server = discard all local items and replace with
 #                         the items on the server
+#   one-way-from-client = transmit changes from client
+#   one-way-from-server = transmit changes from server
 #   none                = synchronization disabled
 sync = two-way
 
 # overrides the supported synchronization modes
-syncModes = slow,two-way,refresh-from-client,refresh-from-server
+syncModes = slow,two-way,refresh-from-client,refresh-from-server,one-way-from-client,one-way-from-server
 
 # specifies the format of the data
 #

@@ -26,8 +26,21 @@ userAgent = SyncEvolution
 # full path to directory where automatic backups and logs
 # are stored for all synchronizations; if empty, the temporary
 # directory "$TMPDIR/SyncEvolution-<username>-<server>" will
-# be used to keep the data of just the latest synchronization run
+# be used to keep the data of just the latest synchronization run;
+# if "none", then no backups of the databases are made and any
+# output is printed directly instead of writing it into a log
+#
+# When writing into a log nothing will be shown during the
+# synchronization. Instead the important messages are extracted
+# automatically from the log at the end.
 logdir =
+
+# level of detail for log messages:
+# - 0 (or unset) = INFO messages without log file, DEBUG with log file
+# - 1 = only ERROR messages
+# - 2 = also INFO messages
+# - 3 = also DEBUG messages
+loglevel = 0
 
 # Unless this option is set, SyncEvolution will never delete
 # anything in the "logdir". If set, the oldest directories and

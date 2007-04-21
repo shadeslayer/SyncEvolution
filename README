@@ -140,11 +140,6 @@ server compare against the ones it already knows. This is avoided
 whenever possible because matching items during a slow synchronization
 can lead to duplicate entries.
 
-Due to a limitation in the client library implementation it might
-force a slow synchronization of all databases even if only one of them
-failed. Therefore it might be less risky to invoke SyncEvolution for
-each data source separately.
-
 After a successful synchronization the server's configuration file is
 updated so that the next run can be done incrementally.  If the
 configuration file has to be recreated e.g. because it was lost, the
@@ -152,6 +147,25 @@ next run recovers from that by doing a full synchronization. The risk
 associated with this is that the server might not recognize items that
 it already has stored previously which then would lead to duplication
 of items.
+
+
+Getting Started with ScheduleWorld
+----------------------------------
+- get a ScheduleWorld account
+- create a configuration:
+  mkdir -p ~/.sync4j/evolution
+  cp -r <path to example configs>/scheduleworld ~/.sync4j/evolution/
+- edit ~/.sync4j/evolution/spds/syncml/config.txt,
+  set "username" and "password" (beware, avoid extra spaces at the line ends)
+  and choose a unique string for "deviceId";
+  optional: create a directory where SyncEvolution can store
+  backup files and a log during each synchronization, see
+  documentation of "logdir/maxlogdirs" for details
+- edit ~/.sync4j/evolution/spds/sources/*/config.txt,
+  set "evolutionsource" to the name or uri of your Evolution
+  database ("syncevolution" without parameter prints both for
+  each available database)
+- synchronize with "syncevolution scheduleworld"
 
 
 Configuration
@@ -165,23 +179,21 @@ The format is a simple list of
 pairs with one pair per line. Leading spaces and space around the
 equals character are skipped. <value> then runs until the the end of
 the line. In other words, it cannot start with spaces nor contain line
-breaks. Do not put quotation marks around <value>, they would be
-treated as part of the value itself. Lines starting with a hash (#)
-after optional leading spaces are treated as comments and skipped.
+breaks BUT spaces at the end of the line are part of the value! Be
+careful not to add extraneous spaces. Do not put quotation marks around
+<value>, they would be treated as part of the value itself. Lines 
+starting with a hash (#) after optional leading spaces are treated as
+comments and skipped.
 
 Each data source is configured in
    $HOME/.sync4j/evolution/<server>/spds/sources/<source>/config.txt
 
-See "etc/localhost_1/spds/syncml/config.txt" for options in the server
-configuration and "etc/localhost_1/spds/sources/addressbook_1/config.txt"
+See "scheduleworld/spds/syncml/config.txt" for options in the server
+configuration and "scheduleworld/spds/sources/addressbook/config.txt"
 for options in the data source configuration. In packages of SyncEvolution
-these files might be installed in [/usr/local]/shared/doc/syncevolution
-and use the name of specific SyncML servers instead of the generic
-"localhost".
-
-Without changes this example configuration can be used immediately
-with a local Funambol installation for testing the operation of
-SyncEvolution, see "Exchanging Data" below.
+these files might be installed in [/usr/local]/shared/doc/syncevolution.
+Another example configuration "funambol" is provided for use with a 
+local Funambol installation.
 
 Normally at least the following configuration options need to be adapted:
   spds/syncml
@@ -210,9 +222,11 @@ One can synchronize with multiple server databases in one run, but the
 same server database can only be accessed once. To synchronize the
 same server database with multiple local Evolution data sources, one
 has to setup two independent configurations with different "deviceId"
-settings and synchronize them separately. Such a setup is provided
-with the "localhost_1/2" configs and using it for testing is explained
-in more detail in "Exchanging Data" below.
+settings and synchronize them separately. To create such a setup simply
+copy the whole configuration tree of the server, e.g.:
+  cp -r ~/.sync4j/evolution/localhost ~/.sync4j/evolution/localhost_copy
+and then edit ~/.sync4j/evolution/localhost_copy/spds/syncml/config.txt
+to update the "deviceId".
 
 If the Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.
@@ -232,7 +246,7 @@ Automatic Backups and Logging
 
 To support recovery from a synchronization which damaged the
 local data or modified it in an unexpected way, SyncEvolution
-always creates the following files during a synchronization:
+can create the following files during a synchronization:
 - a dump of the data in a format which can be imported
   back into Evolution, e.g. .vcf for address books
 - a full log file with debug information
@@ -261,14 +275,20 @@ and is limited to directories starting with the
 prefix, so it is safe to put other files or directories
 into the configured log directory.
 
-If that option is not set, then the directory will be
-created as
+If that option is not set (as in the example configurations),
+then the directory will be created as
   $TMPDIR/SyncEvolution-<username>-<server>
 with access allowed for the user only. Files from a
 previous synchronization will be overwritten. This is
 a lot less useful because the data will usually
 be lost during the next reboot and each synchronization run
 overwrites the data of the previous one.
+
+To avoid writing any additional log file or database dumps during
+a synchronization the "logdir" can be set to "none". To reduce
+the verbosity of the log set "logLevel". If not set or 0, then
+the verbosity is set to 3 = DEBUG when writing to a log file and
+2 = INFO when writing to the console directly.
 
 
 Configuration with ScheduleWorld
@@ -282,7 +302,7 @@ much Evolution data as possible. The "note" URI and "text/x-journal" type
 can be used to synchronize memos.
 
 SyncEvolution is primarily tested against ScheduleWorld. The
-"scheduleworld_1" example configuration is ready to be used with these
+"scheduleworld" example configuration is ready to be used with these
 URIs, one only has to fill in the real username and password.
 
 
@@ -369,46 +389,22 @@ tasks):
    same URI on the SyncML server
 4. synchronize again, this time using the other data source
 
-The "etc/localhost_1" directory contains a configuration for a default
-Sync4j 2.3 installation on the local host and Evolution address book,
-calendar and tasks all called "SyncEvolution test #1". The
-"etc/localhost_2" is the counterpart with the configuration of a
-second client which synchronizes against the same server, but Evolution
-databases called "SyncEvolution test #2". Both configurations can be
-copied directly to ".sync4j/evolution":
-  mkdir -p ~/.sync4j/evolution
-  cp -a etc/localhost* ~/.sync4j/evolution
+The default example configurations already reference Evolution databases
+under the fictional names "SyncEvolution test #1". After copying them into
+.sync4j/evolution under two different names, changing "#1" into "#2" and
+the deviceId in the second copy and creating the "SyncEvolution test #1/2"
+databases "syncevolution" can be invoked first for one configuration, then
+the other to test how data is copied via the server.
 
-Note that the second client pretends to be a "sc-pim-ppc" client to
-avoid the need to reconfigure the default Sync4j installation. This
-implies that you cannot use this predefined Evolution config if you
-actually synchronize against a PocketPC client.
-
-The same configuration also exists for ScheduleWorld, but beware
-that username/password must be adapted in the spds/syncml/config.txt
-files.
-
-For them to work, also create the two address books/calendars/tasks
-  SyncEvolution test #1
-  SyncEvolution test #2
-inside Evolution. SyncEvolution never creates automatically what is
-referenced in a source configuration to avoid surprises.
-
-Steps 1 above then becomes an invocation of
-  syncevolution localhost_1 addressbook_1
-and step 4
-  syncevolution localhost_2 addressbook_2
-
-This copies all contacts into the server and from there into the new
-address book. Now one can either compare the address books in
-Evolution or do that automatically:
+Now one can either compare the address books in Evolution or do that
+automatically, described here for contacts:
 - save the complete address books: mark all entries, save as vCard
 - invoke synccompare with two file names as arguments and it will
   normalize and compare them automatically
 
 Normalizing is necessary because the order of cards and their
 properties as well as other minor formatting aspects may be
-different. The output comes from a "diff --side-by-side", but
+different. The output comes from a side-by-side comparison, but
 is augmented by the script so that the context of each change
 is always the complete item that was modified. Lines or items
 following a ">" on the right side were added, those on the

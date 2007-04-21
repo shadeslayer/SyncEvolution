@@ -55,38 +55,23 @@ which call the real functions which then may throw exceptions.
 The EvolutionSyncSource::handleException() function deals with
 logging the exception.
 
-"make check" in the src directory compiles and runs unit
-tests. Those tests were written inside the CppUnit
-[http://cppunit.sourceforge.net/cppunit-wiki] framework
-and so they (and just they) require that "cppunit-config"
-is in the shell search path. Before running them, setup
-your Evolution and ~/.sync4j configuration as described
-in the README section 'Exchanging Data' (create address
-books 'SyncEvolution test #1/2', etc).
+SyncEvolution uses the Funambol C++ testing framework (which is
+based on the previous SyncEvolution testing). Configure with
+--enable-integration-tests and (optionally) --enable-unit-tests,
+then run "src/client-test" as described in the C++ client libraries
+test/README.txt.
 
-Running the test with the environment variable TEST_EVOLUTION_LOG
-set to the server's log file ensures that for each
-individual sync session both the client and the corresponding
-server log are stored in individual files in the src
-directory. The filenames are derived from the tests and
-the steps executed for each of them.
+It understands the same environment variables as the C++ client
+libraries "client-test", among them:
+- CLIENT_TEST_SERVER = choose config (will be created with _1 and _2
+  suffix if those do not exist yet; for remote servers the syncURI
+  and username/password must be added)
+- CLIENT_TEST_LOG = name of server log file
 
-The basic configuration is chosen via TEST_EVOLUTION_SERVER;
-the default is "localhost".
-
-If the server needs a certain delay between syncs, that
-can be set via TEST_EVOLUTION_DELAY=<seconds>. The Sync4j
-2.3 server needs a delay of around 20 seconds to work
-correctly.
-
-When invoking TestEvolution without parameters all 
-tests will be run. Otherwise each test listed on the
-command line will be run:
-   ./TestEvolution ContactSync::testItems \
-                   ContactSync::testCopy
-
-For a list of available tests see the TestEvolution.cpp
-source code.
+In addition it supports:
+- CLIENT_TEST_EVOLUTION_PREFIX=[name|file://<path>] overrides
+  the evolutionsource setting, if file:// is used then these
+  database will be created automatically
 
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is
