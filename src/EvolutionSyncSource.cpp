@@ -270,6 +270,12 @@ int EvolutionSyncSource::beginSync()
     LOG.info( buffer.c_str() );
 
     try {
+        // reset anchors now, once we proceed there is no going back
+        // (because the change marker is about to be moved)
+        // and the sync must either complete or result in a slow sync
+        // the next time
+        getConfig().setLast(0);
+        
         const char *error = getenv("SYNCEVOLUTION_BEGIN_SYNC_ERROR");
         if (error && strstr(error, getName())) {
             throw runtime_error("artificial error in beginSync()");

@@ -534,6 +534,10 @@ int EvolutionSyncClient::sync()
         // do it
         res = SyncClient::sync(config, sourceList.getSourceArray());
 
+        // store modified properties: must be done even after failed
+        // sync because the source's anchor might have been reset
+        config.save();
+
         if (res) {
             if (lastErrorCode && lastErrorMsg[0]) {
                 throw runtime_error(lastErrorMsg);
@@ -541,9 +545,6 @@ int EvolutionSyncClient::sync()
             // no error code/description?!
             throw runtime_error("sync failed without an error description, check log");
         }
-
-        // store modified properties
-        config.save();
 
         // all went well: print final report before cleaning up
         sourceList.syncDone(true);
