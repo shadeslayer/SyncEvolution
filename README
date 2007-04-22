@@ -226,7 +226,8 @@ settings and synchronize them separately. To create such a setup simply
 copy the whole configuration tree of the server, e.g.:
   cp -r ~/.sync4j/evolution/localhost ~/.sync4j/evolution/localhost_copy
 and then edit ~/.sync4j/evolution/localhost_copy/spds/syncml/config.txt
-to update the "deviceId".
+to update the "deviceId" and the sources/*/config.txt files to update
+the "evolutionsource".
 
 If the Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.
@@ -393,7 +394,7 @@ The default example configurations already reference Evolution databases
 under the fictional names "SyncEvolution test #1". After copying them into
 .sync4j/evolution under two different names, changing "#1" into "#2" and
 the deviceId in the second copy and creating the "SyncEvolution test #1/2"
-databases "syncevolution" can be invoked first for one configuration, then
+databases, "syncevolution" can be invoked first for one configuration, then
 the other to test how data is copied via the server.
 
 Now one can either compare the address books in Evolution or do that
