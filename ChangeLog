@@ -1,4 +1,95 @@
+2007-04-21  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp, src/EvolutionSyncClient.cpp:
+	fixed error handling: a failed source was not forced into a slow sync, one failed source prevented saving configs of not-failed ones
+
+	* src/EvolutionSyncClient.cpp, etc/localhost_1/spds/sources/addressbook_1/config.txt, etc/localhost_1/spds/syncml/config.txt, etc/source-config.txt, etc/syncml-config.txt, etc/Makefile.am, README, HACKING:
+	- improved logging: log file and backup can be avoided with logdir=none,
+	  loglevel is configurable
+	- fixed off-by-one counting of months in backup directory names
+	- only one example configuration per server, users typically do not
+	  need the _1/2 suffices and the testing system no longer has to be
+	  configured manually either
+	- documented the switch from the original SyncEvolution testing to its
+	  successor, the generic Funambol C++ client testing framework
+
+2007-04-15  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/client-test-app.cpp:
+	fixed compile problem on Debian 3.1/older gcc
+
+	* src/client-test-app.cpp, src/EvolutionSyncSource.cpp, src/Makefile.am, src/EvolutionMemoSource.cpp, src/EvolutionMemoSource.h, etc/localhost_1/spds/sources/addressbook_1/config.txt, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, etc/Makefile.am:
+	added synchronization of Memos as plain text
+
+	* HACKING: added note about building Maemo package with fakeroot
+
+2007-04-14  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* debian/rules: avoid unwanted dependencies caused by optional modules
+
+	* debian/changelog, configure.in: bumped to 0.6 pre2
+
+	* src/client-test-app.cpp:
+	minor changes about ifdef ENABLE, added comment avoid vcard21, FIXED itodo20 type
+
+2007-04-12  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/client-test-app.cpp:
+	always set encoding, we might have to overwrite an encoding set earlier
+
+2007-04-11  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp:
+	type OTHER was converted to PARCEL when sending to server, but PARCEL was then not converted back to OTHER, but rather into HOME
+
+	* src/client-test-app.cpp:
+	- source type was not set in new configs as intended
+	- fixed confusion with source index vs. type (broke testing of e.g. ical20)
+
+2007-04-09  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
+	avoid not freeing error/overwriting error when trying again
+
+	* src/client-test-app.cpp:
+	fixed incorrect mapping from selected source to type
+
+	* src/EvolutionSyncClient.cpp:
+	always summarize ERROR/INFO messages at the end, even if sync didn't start - there might be errors which prevent starting it
+
+2007-04-06  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am:
+	need to declare new files so that it gets included in distribution
+
+2007-04-02  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am:
+	fixed distribution after taking several files from C++ client library
+
+2007-04-01  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/client-test-app.cpp:
+	added CLIENT_TEST_EVOLUTION_PREFIX which overrides the evolutionsource setting in test configs; default SyncEvolution_Test_
+
+	* src/EvolutionCalendarSource.cpp:
+	avoid e_cal_new_system_memos(), it breaks compilation with older Evolution
+
+	* src/EvolutionContactSource.cpp, src/client-test-app.cpp, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
+	added the possibility to create databases if evolutionsource is set to a file:// uri
+
+	* src/Makefile.am:
+	explicit dependency on modules is needed for client-test
+
+2007-03-31  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* src/Algorithm/Artistic, src/Algorithm/Diff.pm, src/Algorithm/README, src/Algorithm/copyright, src/EvolutionClientConfig.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/Makefile.am, src/client-test-app.cpp:
+	synccompare and test suite are now taken from C++ client library
+
 2007-03-26  Patrick Ohly <Patrick.Ohly@gmx.de>
+
+	* debian/control, debian/changelog, README, NEWS, ChangeLog, HACKING:
+	various release preparations
 
 	* configure.in: streamlined dependencies and their checking
 
