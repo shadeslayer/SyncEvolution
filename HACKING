@@ -63,15 +63,49 @@ test/README.txt.
 
 It understands the same environment variables as the C++ client
 libraries "client-test", among them:
-- CLIENT_TEST_SERVER = choose config (will be created with _1 and _2
-  suffix if those do not exist yet; for remote servers the syncURI
-  and username/password must be added)
-- CLIENT_TEST_LOG = name of server log file
+- CLIENT_TEST_SERVER = chooses config
+- CLIENT_TEST_LOG = name of server log file, will be copied and reset
+  after each sync
+- CLIENT_TEST_FAILURES = comma separated list of tests which are allowed
+  to fail without affecting the return code of the test runner
+- CLIENT_TEST_ALARM = number of seconds a single test is allowed to run
+  before aborting it
+- CLIENT_TEST_SOURCES = comma separated list of enabled sources, identified
+  by their name (ical20, vcard21, vcard30, itodo20, text (= memos))
 
 In addition it supports:
 - CLIENT_TEST_EVOLUTION_PREFIX=[name|file://<path>] overrides
-  the evolutionsource setting, if file:// is used then these
-  database will be created automatically
+  the evolutionsource setting in the configuration; if file:// is used
+  then these database will be created automatically
+
+Here are step-by-step instructions to get started with testing,
+using ScheduleWorld as example:
+- CLIENT_TEST_SERVER=scheduleworld \
+  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/testing/ \
+  ./client-test -h
+  => creates ~/.sync4j/evolution/scheduleworld_[12]/ configs
+     which use data bases under /tmp/testing, then
+     prints all available tests
+- edit ~/.sync4j/evolution/scheduleworld_[12]/spds/syncml/config.txt
+  and enter account data for ScheduleWorld in both configurations;
+  check that the syncURL is correct
+- CLIENT_TEST_SERVER=scheduleworld \
+  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/testing/ \
+  ./client-test Client::Source
+  => runs alls tests involving just local operations
+- CLIENT_TEST_SERVER=scheduleworld \
+  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/testing/ \
+  ./client-test Client::Sync::vcard30::testCopy
+  => runs one test that checks that one contact can
+     be copied to and from the server using the two
+     configurations
+- CLIENT_TEST_SERVER=scheduleworld \
+  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/testing/ \
+  ./client-test Client::Sync
+  => runs all tests which involve the SyncML server;
+     tests involving just one source are run first,
+     followed by the same tests with all enabled
+     sources in two different orders
 
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is
