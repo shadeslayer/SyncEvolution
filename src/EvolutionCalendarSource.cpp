@@ -327,14 +327,42 @@ int EvolutionCalendarSource::addItemThrow(SyncItem& item)
 int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
 {
     bool fallback = false;
-    eptr<char> data;
-    data.set((char *)malloc(item.getDataSize() + 1), "copy of item");
-    memcpy(data, item.getData(), item.getDataSize());
-    data[item.getDataSize()] = 0;
-    eptr<icalcomponent> icomp(icalcomponent_new_from_string(data));
+    string data = getData(item);
+
+    /*
+     * Evolution/libical can only deal with \, as separator.
+     * Replace plain , in incoming event CATEGORIES with \, -
+     * based on simple text search/replace and thus will not work
+     * in all cases...
+     *
+     * Inverse operation in extractItemAsString().
+     */
+    size_t propstart = data.find("\nCATEGORIES");
+    bool modified = false;
+    while (propstart != data.npos) {
+        size_t eol = data.find('\n', propstart + 1);
+        size_t comma = data.find(',', propstart);
+
+        while (eol != data.npos &&
+               comma != data.npos &&
+               comma < eol) {
+            if (data[comma-1] != '\\') {
+                data.insert(comma, "\\");
+                comma++;
+                modified = true;
+            }
+            comma = data.find(',', comma + 1);
+        }
+        propstart = data.find("\nCATEGORIES", propstart + 1);
+    }
+    if (modified) {
+        LOG.debug("after replacing , with \\, in CATEGORIES:\n%s", data.c_str());
+    }
+
+    eptr<icalcomponent> icomp(icalcomponent_new_from_string((char *)data.c_str()));
 
     if( !icomp ) {
-        throwError( string( "parsing ical" ) + (char *)data,
+        throwError( string( "parsing ical" ) + data,
                     NULL );
     }
 
@@ -475,7 +503,39 @@ string EvolutionCalendarSource::retrieveItemAsString(const string &uid)
     if (!icalstr) {
         throw runtime_error(string("could not encode item as iCal: ") + uid);
     }
-    return string(icalstr);
+
+    /*
+     * Evolution/libical can only deal with \, as separator.
+     * Replace plain \, in outgoing event CATEGORIES with , -
+     * based on simple text search/replace and thus will not work
+     * in all cases...
+     *
+     * Inverse operation in insertItem().
+     */
+    string data = string(icalstr);
+    size_t propstart = data.find("\nCATEGORIES");
+    bool modified = false;
+    while (propstart != data.npos) {
+        size_t eol = data.find('\n', propstart + 1);
+        size_t comma = data.find(',', propstart);
+
+        while (eol != data.npos &&
+               comma != data.npos &&
+               comma < eol) {
+            if (data[comma-1] == '\\') {
+                data.erase(comma - 1, 1);
+                comma--;
+                modified = true;
+            }
+            comma = data.find(',', comma + 1);
+        }
+        propstart = data.find("\nCATEGORIES", propstart + 1);
+    }
+    if (modified) {
+        LOG.debug("after replacing \\, with , in CATEGORIES:\n%s", data.c_str());
+    }
+    
+    return data;
 }
 
 string EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
