@@ -135,8 +135,14 @@ ClientTest.h ClientTest.cpp client-test-main.cpp : % : $(SYNC4J_SUBDIR)/test/tes
 	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
 ClientTest.cpp : ClientTest.h
 
+# temporary: copy instead of link to original test cases so that we can fix up CATEGORIES data
+# testcases: $(SYNC4J_SUBDIR)/test/test/testcases
+#	ln -s $< $@
 testcases: $(SYNC4J_SUBDIR)/test/test/testcases
-	ln -s $< $@
+	rm -rf testcases
+	mkdir testcases
+	for i in $</*; do sed -e 's/CATEGORIES:\(.*\)\\,/CATEGORIES:\1,/' -e 's/CATEGORIES:\(.*\)\\,/CATEGORIES:\1,/' $$i >testcases/`basename $$i`; done
+
 
 test : client-test testcases synccompare
 
