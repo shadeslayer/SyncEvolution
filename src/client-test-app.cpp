@@ -54,6 +54,56 @@ public:
     }
 };
 
+class EvolutionLocalTests : public LocalTests {
+public:
+    EvolutionLocalTests(const std::string &name, ClientTest &cl, int sourceParam, ClientTest::Config &co) :
+        LocalTests(name, cl, sourceParam, co)
+        {}
+
+    virtual void addTests() {
+        LocalTests::addTests();
+
+#ifdef ENABLE_MAEMO
+        if (config.createSourceA &&
+            config.createSourceB &&
+            config.templateItem &&
+            strstr(config.templateItem, "BEGIN:VCARD") &&
+            config.uniqueProperties) {
+            ADD_TEST(EvolutionLocalTests, testOssoDelete);
+        }
+#endif
+    }
+
+private:
+
+    // insert am item,
+    // overwrite it with an additional X-OSSO-CONTACT-STATE:DELETED as Maemoe address book does,
+    // iterate again and check that our own code deleted the item
+    void testOssoDelete() {
+        // get into clean state with one template item added
+        deleteAll(createSourceA);
+        insert(createSourceA, config.templateItem);
+
+        // add X-OSSO-CONTACT-STATE:DELETED
+        string item = config.templateItem;
+        const char *comma = strchr(config.uniqueProperties, ':');
+        size_t offset = item.find(config.uniqueProperties, 0,
+                                  comma ? comma - config.uniqueProperties : strlen(config.uniqueProperties));
+        CPPUNIT_ASSERT(offset != item.npos);
+        item.insert(offset, "X-OSSO-CONTACT-STATE:DELETED\n");
+        update(createSourceA, item.c_str());
+
+        // opening and preparing the source should delete the item
+        std::auto_ptr<SyncSource> source;
+        SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+        SOURCE_ASSERT(source.get(), source->beginSync() == 0 );
+        CPPUNIT_ASSERT_EQUAL(0, countItemsOfType(source.get(), TOTAL_ITEMS));
+        CPPUNIT_ASSERT_EQUAL(0, countItemsOfType(source.get(), NEW_ITEMS));
+        CPPUNIT_ASSERT_EQUAL(0, countItemsOfType(source.get(), UPDATED_ITEMS));
+        CPPUNIT_ASSERT_EQUAL(1, countItemsOfType(source.get(), DELETED_ITEMS));
+    }
+};
+
 class TestEvolution : public ClientTest {
 public:
     /**
@@ -150,6 +200,10 @@ public:
             sc->setType(testconfig.type);
         }
         config->save();
+    }
+
+    virtual LocalTests *createLocalTests(const std::string &name, int sourceParam, ClientTest::Config &co) {
+        return new EvolutionLocalTests(name, *this, sourceParam, co);
     }
 
     enum SourceType {
@@ -426,6 +480,11 @@ static class RegisterTestEvolution {
 public:
     RegisterTestEvolution() :
         testClient("1") {
+#ifdef HAVE_GLIB
+        // this is required on Maemo and does not harm either on a normal
+        // desktop system with Evolution
+        g_type_init();
+#endif
         testClient.registerTests();
     }
 

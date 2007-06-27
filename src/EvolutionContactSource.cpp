@@ -170,15 +170,28 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
 {
     GError *gerror = NULL;
 
+    eptr<EBookQuery> deleteItemsQuery;
     if (deleteLocal) {
-        eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
+        deleteItemsQuery.set( e_book_query_any_field_contains(""), "query" );
+    }
+#ifdef ENABLE_MAEMO
+    else {
+        deleteItemsQuery.set( e_book_query_field_test( E_CONTACT_OSSO_CONTACT_STATE, E_BOOK_QUERY_IS, "DELETED" ), "query" );
+    }
+#endif
+
+    if (deleteItemsQuery) {
         GList *nextItem;
-        if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
-            throwError( "reading all items", gerror );
+    
+        if (!e_book_get_contacts( m_addressbook, deleteItemsQuery, &nextItem, &gerror )) {
+            throwError( "reading items to be deleted", gerror );
         }
         while (nextItem) {
             const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
                                                                 E_CONTACT_UID);
+            if (!deleteLocal) {
+                logItem(uid, "deleting item scheduled for removal", true);
+            }
             if (!e_book_remove_contact( m_addressbook, uid, &gerror ) ) {
                 throwError( string( "deleting contact " ) + uid,
                             gerror );
@@ -186,6 +199,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
             nextItem = nextItem->next;
         }
     }
+
 
     if (needAll) {
         eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
