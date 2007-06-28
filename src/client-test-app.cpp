@@ -91,7 +91,7 @@ private:
                                   comma ? comma - config.uniqueProperties : strlen(config.uniqueProperties));
         CPPUNIT_ASSERT(offset != item.npos);
         item.insert(offset, "X-OSSO-CONTACT-STATE:DELETED\n");
-        update(createSourceA, item.c_str());
+        update(createSourceA, item.c_str(), false);
 
         // opening and preparing the source should delete the item
         std::auto_ptr<SyncSource> source;

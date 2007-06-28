@@ -169,6 +169,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
                                             bool deleteLocal)
 {
     GError *gerror = NULL;
+    bool removedSome = false;
 
     eptr<EBookQuery> deleteItemsQuery;
     if (deleteLocal) {
@@ -176,7 +177,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
     }
 #ifdef ENABLE_MAEMO
     else {
-        deleteItemsQuery.set( e_book_query_field_test( E_CONTACT_OSSO_CONTACT_STATE, E_BOOK_QUERY_IS, "DELETED" ), "query" );
+        deleteItemsQuery.set( e_book_query_vcard_field_exists("X-OSSO-CONTACT-STATE"), "query" );
     }
 #endif
 
@@ -186,20 +187,38 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
         if (!e_book_get_contacts( m_addressbook, deleteItemsQuery, &nextItem, &gerror )) {
             throwError( "reading items to be deleted", gerror );
         }
-        while (nextItem) {
+        for (;nextItem; nextItem = nextItem->next) {
             const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
                                                                 E_CONTACT_UID);
+#ifdef ENABLE_MAEMO
             if (!deleteLocal) {
+                GList *nextState = (GList *)e_contact_get(E_CONTACT(nextItem->data),
+                                                          E_CONTACT_OSSO_CONTACT_STATE);
+                bool deleted = false;
+                while (nextState) {
+                    if (nextState->data && !strcmp((char *)nextState->data, "DELETED")) {
+                        deleted = true;
+                    }
+                    nextState = nextState->next;
+                }
+                if (!deleted) {
+                    continue;
+                }
                 logItem(uid, "deleting item scheduled for removal", true);
+                if (needPartial) {
+                    // the observation is that the deleted item is not listed again
+                    // below; apparently only changes made by someone else are recorded
+                    // in the list of changes ?!
+                    m_deletedItems.addItem(uid);
+                }
             }
+#endif
             if (!e_book_remove_contact( m_addressbook, uid, &gerror ) ) {
                 throwError( string( "deleting contact " ) + uid,
                             gerror );
             }
-            nextItem = nextItem->next;
         }
     }
-
 
     if (needAll) {
         eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
