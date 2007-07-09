@@ -523,9 +523,9 @@ context.add(evolutiontest)
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       [ "Client::Sync" ],
-                                      # ContactSync::testItems - temporary problem with tabs
-                                      # CalendarSync::testItems, CalendarSync::testTwinning - temporary problem with lost timezone
-                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5")
+                                      # some syncs try to update non-existant items: Client::Sync::itodo20::testOneWayFromServer, Client::Sync::itodo20::testOneWayFromClient
+                                      # triggers 511 error on server: Client::Sync::itodo20::testLargeObject
+                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES=Client::Sync::itodo20::testOneWayFromServer,Client::Sync::itodo20::testOneWayFromClient,Client::Sync::itodo20::testLargeObject CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5")
 context.add(scheduleworldtest)
 
 egroupwaretest = SyncEvolutionTest("egroupware", compile,
@@ -574,7 +574,8 @@ class FunambolTest(SyncEvolutionTest):
             serverlogs = ""
         SyncEvolutionTest.__init__(self, name, build, serverlogs,
                                    runner, [ ],
-                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol")
+                                   # 3.0 does not import all test cases
+                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES=Client::Sync::vcard21::testTwinning,Client::Sync::vcard21::testItems CLIENT_TEST_SERVER=funambol")
         self.funamboldir = funamboldir
         # self.dependencies.append(evolutiontest.name)
 
