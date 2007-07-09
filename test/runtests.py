@@ -141,13 +141,14 @@ class Action:
 class Context:
     """Provides services required by actions and handles running them."""
 
-    def __init__(self, tmpdir, resultdir, workdir, mailtitle, sender, recipients, enabled, skip, nologs):
+    def __init__(self, tmpdir, resultdir, uri, workdir, mailtitle, sender, recipients, enabled, skip, nologs):
         # preserve normal stdout because stdout/stderr will be redirected
         self.out = os.fdopen(os.dup(1), "w")
         self.todo = []
         self.actions = {}
         self.tmpdir = abspath(tmpdir)
         self.resultdir = abspath(resultdir)
+        self.uri = uri
         self.workdir = abspath(workdir)
         self.summary = []
         self.mailtitle = mailtitle
@@ -228,6 +229,10 @@ class Context:
                 traceback.print_exc()
                 self.summary.append("%s failed: %s" % (action.name, inst))
 
+        # append all parameters to summary
+        self.summary.append("")
+        self.summary.extend(sys.argv)
+
         # update summary
         s.write("%s\n" % ("\n".join(self.summary)))
         s.close()
@@ -235,10 +240,11 @@ class Context:
         # report result by email
         if self.recipients:
             server = smtplib.SMTP("localhost")
-            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s" % \
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s: %s\r\n\r\n%s\n\n%s" % \
                   (self.sender,
                    ", ".join(self.recipients),
-                   self.mailtitle,
+                   self.mailtitle, os.path.basename(self.resultdir),
+                   self.uri or self.resultdir,
                    "\n".join(self.summary))
             failed = server.sendmail(self.sender, self.recipients, msg)
             if failed:
@@ -343,7 +349,7 @@ class SyncEvolutionTest(Action):
         resdir = os.getcwd()
         os.chdir(self.srcdir)
         try:
-            basecmd = "%s TEST_EVOLUTION_ALARM=600 TEST_EVOLUTION_LOG=%s %s ./TestEvolution" % (self.testenv, self.serverlogs, self.runner);
+            basecmd = "%s CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner);
             context.runCommand("make testclean test")
             if self.tests:
                 ex = None
@@ -392,6 +398,9 @@ parser.add_option("", "--workdir",
 parser.add_option("", "--resultdir",
                   type="string", dest="resultdir", default="",
                   help="directory for log files and results")
+parser.add_option("", "--resulturi",
+                  type="string", dest="uri", default=None,
+                  help="URI that corresponds to --resultdir, if given this is used in mails instead of --resultdir")
 parser.add_option("", "--shell",
                   type="string", dest="shell", default="",
                   help="a prefix which is put in front of a command to execute it (can be used for e.g. run_garnome)")
@@ -401,6 +410,9 @@ parser.add_option("", "--syncevo-tag",
 parser.add_option("", "--client-tag",
                   type="string", dest="clienttag", default="HEAD",
                   help="the tag of the client library (default HEAD)")
+parser.add_option("", "--configure",
+                  type="string", dest="configure", default="",
+                  help="additional parameters for configure")
 parser.add_option("", "--openembedded",
                   type="string", dest="oedir",
                   help="the build directory of the OpenEmbedded cross-compile environment")
@@ -431,7 +443,7 @@ if options.recipients and not options.sender:
     print "sending email also requires sender argument"
     sys.exit(1)
 
-context = Context(options.tmpdir, options.resultdir, options.workdir,
+context = Context(options.tmpdir, options.resultdir, options.uri, options.workdir,
                   options.subject, options.sender, options.recipients,
                   options.enabled, options.skip, options.nologs)
 
@@ -448,7 +460,7 @@ class SyncEvolutionBuild(AutotoolsBuild):
     def execute(self):
         AutotoolsBuild.execute(self)
         os.chdir("src")
-        context.runCommand("%s make test" % (self.runner))
+        context.runCommand("%s make test CXXFLAGS=-O0" % (self.runner))
 
 client = ClientCheckout("client-api", options.clienttag)
 context.add(client)
@@ -456,7 +468,7 @@ sync = SyncEvolutionCheckout("syncevolution", options.syncevotag)
 context.add(sync)
 compile = SyncEvolutionBuild("compile",
                              sync.basedir,
-                             "--disable-shared CXXFLAGS=-g --with-sync4j-src=%s" % (client.basedir),
+                             "%s --with-sync4j-src=%s" % (options.configure, client.basedir),
                              options.shell,
                              [ client.name, sync.name ])
 context.add(compile)
@@ -504,22 +516,23 @@ context.add(dist)
 
 evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
-                                  [ "ContactSource", "CalendarSource", "TaskSource" ],
+                                  [ "Client::Source" ],
                                   "")
 context.add(evolutiontest)
 
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
-                                      # [ "ContactSync", "ContactStress", "TaskSync", "TaskStress", "CalendarSync", "CalendarStress" ]
-                                      [ ],
+                                      [ "Client::Sync" ],
                                       # ContactSync::testItems - temporary problem with tabs
                                       # CalendarSync::testItems, CalendarSync::testTwinning - temporary problem with lost timezone
-                                      "TEST_EVOLUTION_SERVER=scheduleworld TEST_EVOLUTION_DELAY=2 TEST_EVOLUTION_FAILURES=ContactSync::testItems,ContactSync::testTwinning,CalendarSync::testDeleteAllRefresh,CalendarSync::testItems,TaskSync::testDeleteAllRefresh,TaskSync::testItems,TaskSync::testTwinning,ContactSync::testItems,CalendarSync::testItems,CalendarSync::testTwinning")
+                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5")
 context.add(scheduleworldtest)
 
 egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    "", options.shell,
-                                   [ "ContactSync", "CalendarSync::testCopy", "CalendarSync::testUpdate", "CalendarSync::testDelete" ],
+                                   [ "Client::Sync::vcard21", "Client::Sync::ical20::testCopy", "Client::Sync::ical20::testUpdate", "Client::Sync::ical20::testDelete", \
+                                     "Client::Sync::vcard21_ical20::testCopy", "Client::Sync::vcard21_ical20::testUpdate", "Client::Sync::vcard21_ical20::testDelete" \
+                                     "Client::Sync::ical20_vcard21::testCopy", "Client::Sync::ical20_vcard21::testUpdate", "Client::Sync::ical20_vcard21::testDelete"  ],
                                    # ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus - refresh-from-client not supported by server
                                    # ContactSync::testOneWayFromClient - not supported by server?
                                    # ContactSync::testItems - loses a lot of information
@@ -527,15 +540,16 @@ egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    # ContactSync::testMaxMsg,ContactSync::testLargeObject,ContactSync::testLargeObjectBin - server fails to parse extra info?
                                    # ContactSync::testTwinning - duplicates contacts
                                    # CalendarSync::testCopy,CalendarSync::testUpdate - shifts time?
-                                   "TEST_EVOLUTION_SERVER=egroupware TEST_EVOLUTION_FAILURES=ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus,ContactSync::testOneWayFromClient,ContactSync::testAddUpdate,ContactSync::testItems,ContactSync::testComplexUpdate,ContactSync::testTwinning,ContactSync::testMaxMsg,ContactSync::testLargeObject,ContactSync::testLargeObjectBin,CalendarSync::testCopy,CalendarSync::testUpdate",
+                                   "CLIENT_TEST_SOURCES=vcard21,ical20 CLIENT_TEST_SERVER=egroupware CLIENT_TEST_FAILURES=ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus,ContactSync::testOneWayFromClient,ContactSync::testAddUpdate,ContactSync::testItems,ContactSync::testComplexUpdate,ContactSync::testTwinning,ContactSync::testMaxMsg,ContactSync::testLargeObject,ContactSync::testLargeObjectBin,CalendarSync::testCopy,CalendarSync::testUpdate",
                                    lambda x: x.replace('oasis.ethz.ch','<host hidden>').\
                                              replace('cG9obHk6cWQyYTVtZ1gzZk5GQQ==','xxx'))
 context.add(egroupwaretest)
 
 class SynthesisTest(SyncEvolutionTest):
     def __init__(self, name, build, synthesisdir, runner):
-        SyncEvolutionTest.__init__(self, name, build, os.path.join(synthesisdir, "logs"),
-                                   runner, [ "ContactSync", "ContactStress" ], "TEST_EVOLUTION_SERVER=synthesis")
+        SyncEvolutionTest.__init__(self, name, build, "", # os.path.join(synthesisdir, "logs")
+                                   runner, [ "Client::Sync" ],
+                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_NUM_ITEMS=70 CLIENT_TEST_SERVER=synthesis CLIENT_TEST_DELAY=2")
         self.synthesisdir = synthesisdir
         # self.dependencies.append(evolutiontest.name)
 
@@ -554,9 +568,13 @@ context.add(synthesis)
 
 class FunambolTest(SyncEvolutionTest):
     def __init__(self, name, build, funamboldir, runner):
-        SyncEvolutionTest.__init__(self, name, build, os.path.join(funamboldir, "ds-server", "logs", "funambol_ds.log"),
-                                   runner, [ "ContactSync", "ContactStress" ],
-                                   "TEST_EVOLUTION_DELAY=10 TEST_EVOLUTION_FAILURES= TEST_EVOLUTION_SERVER=funambol")
+        if funamboldir:
+            serverlogs = os.path.join(funamboldir, "ds-server", "logs", "funambol_ds.log")
+        else:
+            serverlogs = ""
+        SyncEvolutionTest.__init__(self, name, build, serverlogs,
+                                   runner, [ ],
+                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol")
         self.funamboldir = funamboldir
         # self.dependencies.append(evolutiontest.name)
 
