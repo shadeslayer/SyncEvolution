@@ -1,3 +1,37 @@
+2007-06-28  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp, src/client-test-app.cpp:
+	Maemo address book delete support works now: one has to search for X-OSSO-CONTACT-STATE:DELETED manually
+
+2007-06-27  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp, src/client-test-app.cpp:
+	- added test for X-OSSO-CONTACT-STATE:DELETED handling
+	- contacts marked for deletion are now deleted by SyncEvolution (but code fails test...)
+	- made it possible to run client-test with EDS-DBus
+
+2007-06-25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am: when using older test data fix the broken CATEGORIES
+
+2007-06-24  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: fixed invalid path names
+
+	* src/EvolutionCalendarSource.cpp:
+	workaround for Evolution bug in the calendar import/export:
+	Evolution uses \, as separator for CATEGORIES, but the standard
+	specifies a plain comma. The effect was that multiple categories were
+	treated as one category with commas by ScheduleWorld. Events imported
+	into Evolution were stored incorrectly and the GUI only used the last
+	category.
+
+	As a workaround SyncEvolution now converts back and forth between , and \,
+
+2007-06-19  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING: updated testing instructions
+
 2007-04-21  Patrick Ohly <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionSyncSource.cpp, src/EvolutionSyncClient.cpp:

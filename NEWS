@@ -1,3 +1,87 @@
+SyncEvolution 0.5 -> 0.6, 09.07.2007
+------------------------------------
+* C++ client library: tag "sdkcpp_6_0_9_1"
+* added support for synchronizing Evolution notes (aka memos) as
+  plain text where the first line serves as summary; this is the
+  format understood by ScheduleWorld
+* added support for synchronizing Evolution notes (aka memos) as
+  iCal 2.0 journal; not currently supported by any server and 
+  untested
+* revamped example configs and documentation: only one set of
+  config files for each server is provided, because this is more
+  likely to be needed by users
+* example configs are now installed in share/doc/syncevolution,
+  enabled message limit and large object support in them
+* added support for Nokia 770/800 (aka Maemo):
+  built with loadable modules so that it works with whatever
+  backends are installed, improved log handling to accomodate
+  for limited space on filesystem (see below), some workarounds
+* added workaround for Nokia 770:
+  contacts are not really deleted unless the EDS-Sync with
+  instant messaging servers is activated; now SyncEvolution
+  will delete contacts marked as deleted by the GUI before
+  a sync if it finds any.
+  WARNING: if you use EDS-Sync and SyncEvolution, then give
+  EDS-Sync enough time after going online to finish its own
+  synchronization of modified/deleted contacts before starting
+  SyncEvolution.
+* improved log handling: writing log and database dumps can be
+  disabled with "logdir=none", verbosity of log is controlled by
+  "loglevel", better handling of errors during initial database
+  access
+* added workaround for Evolution bug #455274:
+  the separator for multiple categories in events and tasks
+  is not generated and interpreted according to iCalendar 2.0
+  by Evolution; as a consequence of that items sent to the server
+  had all categories merged into one and items imported into
+  Evolution only used one of the catories
+  http://bugzilla.gnome.org/show_bug.cgi?id=455274
+* fixed off-by-one counting of months in backup directory names
+* fixed error handling: a failed source was not forced into a slow
+  sync as required; one failed source prevented saving configs of
+  not-failed ones and thus forced those into an unnecessary slow
+  sync
+* uses the Funambol C++ testing framework (which is based on the
+  previous SyncEvolution testing); now creates its configs
+  and (when using CLIENT_TEST_EVOLUTION_PREFIX=file://<path>)
+  also the Evolution databases automatically
+* implemented synccompare as pure Perl script using Algorithm::Diff
+  instead of external diff tool
+* synccompare did not figure out width of shell window as it should have
+* better error handling if creating the before/after database dumps
+  fails (SF #1685637)
+* workaround for Funambol 3.0 trailing = parser bug
+
+UPGRADING
+
+Old config files from 0.5 or older continue to work, but it is recommended
+to set the following options to enable message size limits:
+  maxMsgSize = 8192
+  maxObjSize = 500000
+  loSupport = 1
+
+
+SyncEvolution 0.6pre2 -> 0.6, 09.07.2007
+----------------------------------------
+* improved README/HACKING documents
+* added workaround for Evolution bug #455274:
+  the separator for multiple categories in events and tasks
+  is not generated and interpreted according to iCalendar 2.0
+  by Evolution; as a consequence of that items sent to the server
+  had all categories merged into one and items imported into
+  Evolution only used one of the catories
+  http://bugzilla.gnome.org/show_bug.cgi?id=455274
+* added workaround for Nokia 770:
+  contacts are not really deleted unless the EDS-Sync with
+  instant messaging servers is activated; now SyncEvolution
+  will delete contacts marked as deleted by the GUI before
+  a sync if it finds any.
+  WARNING: if you use EDS-Sync and SyncEvolution, then give
+  EDS-Sync enough time after going online to finish its own
+  synchronization of modified/deleted contacts before starting
+  SyncEvolution.
+
+
 SyncEvolution 0.6pre1 -> 0.6pre2, 23.04.2006
 --------------------------------------------
 * C++ client library: tag "sdkcpp_6_0_7" + revision 1.7 of

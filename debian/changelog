@@ -1,3 +1,9 @@
+syncevolution (0.6) stable; urgency=low
+
+  * updated upstream sources
+
+ -- Patrick Ohly <patrick.ohly@gmx.de>  Mon,  9 Jul 2007 22:23:19 +0200
+
 syncevolution (0.6-pre2) unstable; urgency=low
 
   * updated upstream sources
