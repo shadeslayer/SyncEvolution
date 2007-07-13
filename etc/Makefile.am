@@ -55,11 +55,11 @@ funambol/spds/sources/addressbook/config.txt : source-config.txt
 
 funambol/spds/sources/calendar/config.txt : source-config.txt
 	mkdir -p $(@D)
-	sed -e s/addressbook/calendar/ -e 's:type = text/x-vcard:type = text/calendar:' -e 's/uri = card/uri = cal/' -e 's/sync = two-way/sync = none/' $< >$@
+	sed -e s/addressbook/calendar/ -e 's:type = text/x-vcard:type = text/calendar:' -e 's/uri = card/uri = event/' -e 's/sync = two-way/sync = none/' $< >$@
 
 funambol/spds/sources/todo/config.txt : funambol/spds/sources/addressbook/config.txt
 	mkdir -p $(@D)
-	sed -e s/addressbook/todo/ -e 's:type = text/x-vcard:type = text/x-todo:' -e 's/uri = card/uri = todo/' -e 's/sync = two-way/sync = none/' $< >$@
+	sed -e s/addressbook/todo/ -e 's:type = text/x-vcard:type = text/x-todo:' -e 's/uri = card/uri = task/' -e 's/sync = two-way/sync = none/' $< >$@
 
 funambol/spds/sources/memo/config.txt : funambol/spds/sources/addressbook/config.txt
 	mkdir -p $(@D)
@@ -76,9 +76,9 @@ $(scheduleworld_copy) : scheduleworld% : funambol%
 	    -e 's;^#syncURL = http://sync.scheduleworld;syncURL = http://sync.scheduleworld;' \
 	    -e 's;^type = text/x-calendar;type = text/calendar;' \
 	    -e 's;^type = text/x-vcard;type = text/vcard;' \
-	    -e 's;^uri = todo;uri = task2;' \
+	    -e 's;^uri = task;uri = task2;' \
             -e 's;^uri = card;uri = card3;' \
-            -e 's;^uri = cal;uri = cal2;' \
+            -e 's;^uri = event;uri = cal2;' \
             -e 's;^sync = none;sync = two-way;' \
 	    $< >$@
 

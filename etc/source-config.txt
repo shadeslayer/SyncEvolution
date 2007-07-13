@@ -1,6 +1,6 @@
 # name of the source, must match the <source> in
 # spds/sources/<source>/config.txt
-name = addressbook_1
+name = addressbook
 
 # requests a certain synchronization mode:
 #   two-way             = only send/receive changes since last sync
