@@ -1,3 +1,8 @@
+2007-07-13  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/source-config.txt, etc/Makefile.am:
+	fixed name of example source configs (broke during the changes for 0.6 pre)
+
 2007-06-28  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp, src/client-test-app.cpp:
