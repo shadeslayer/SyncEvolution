@@ -23,12 +23,14 @@
 #include "EvolutionContactSource.h"
 #include "EvolutionCalendarSource.h"
 #include "EvolutionMemoSource.h"
+#include "SQLiteContactSource.h"
 
 #include <common/base/Log.h>
 
 #include <list>
 #include <dlfcn.h>
 
+#ifdef HAVE_EDS
 ESource *EvolutionSyncSource::findSource( ESourceList *list, const string &id )
 {
     for (GSList *g = e_source_list_peek_groups (list); g; g = g->next) {
@@ -47,20 +49,27 @@ ESource *EvolutionSyncSource::findSource( ESourceList *list, const string &id )
     }
     return NULL;
 }
+#endif // HAVE_EDS
 
-void EvolutionSyncSource::throwError( const string &action, GError *gerror )
+void EvolutionSyncSource::throwError( const string &action
+#ifdef HAVE_EDS
+, GError *gerror
+#endif
+                                      )
 {
     string gerrorstr;
+#ifdef HAVE_EDS
     if (gerror) {
         gerrorstr += ": ";
         gerrorstr += gerror->message;
         g_clear_error(&gerror);
-    } else {
+    } else
+#endif
         gerrorstr = ": failed";
-    }
 
     throw runtime_error(string(getName()) + ": " + action + gerrorstr);
 }
+
 
 void EvolutionSyncSource::resetItems()
 {
@@ -143,6 +152,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         const char *modules[] = {
             "syncebook.so.0",
             "syncecal.so.0",
+	    "syncsqlite.so.0",
             NULL
         };
 
@@ -245,6 +255,14 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 #else
         if (error) {
             throw runtime_error(name + ": access to calendars not compiled into this binary, " + mimeType + " not supported");
+        }
+#endif
+    } else if (mimeType == "sqlite") {
+#ifdef ENABLE_SQLITE
+        return new SQLiteContactSource(name, sc, strippedChangeId, id);
+#else
+        if (error) {
+            throw runtime_error(name + ": access to sqlite not compiled into this binary, " + mimeType + " not supported");
         }
 #endif
     }

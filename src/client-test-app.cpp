@@ -31,6 +31,7 @@
 #include "EvolutionCalendarSource.h"
 #include "EvolutionMemoSource.h"
 #include "EvolutionContactSource.h"
+#include "SQLiteContactSource.h"
 
 /** a wrapper class which automatically does an open() in the constructor and a close() in the destructor */
 template<class T> class TestEvolutionSyncSource : public T {
@@ -132,7 +133,7 @@ public:
         /* check sources */
         const char *sourcelist = getenv("CLIENT_TEST_SOURCES");
         if (!sourcelist) {
-            sourcelist = "vcard21,vcard30,ical20,text,itodo20";
+            sourcelist = "vcard21,vcard30,ical20,text,itodo20,sqlite";
         }
         numSources = 0;
         for (SourceType sourceType = (SourceType)0; sourceType < TEST_MAX_SOURCE; sourceType = (SourceType)((int)sourceType + 1) ) {
@@ -147,6 +148,11 @@ public:
             if (sourceType == TEST_CALENDAR_SOURCE ||
                 sourceType == TEST_TASK_SOURCE ||
                 sourceType == TEST_MEMO_SOURCE) {
+                continue;
+            }
+#endif
+#ifndef ENABLE_SQLITE
+            if (sourceType == TEST_SQLITE_CONTACT_SOURCE) {
                 continue;
             }
 #endif
@@ -212,6 +218,7 @@ public:
         TEST_CALENDAR_SOURCE,
         TEST_TASK_SOURCE,
         TEST_MEMO_SOURCE,
+        TEST_SQLITE_CONTACT_SOURCE,
         TEST_MAX_SOURCE
     };
 
@@ -285,6 +292,11 @@ public:
             config.import = ClientTest::import;
             config.dump = dumpMemoSource;
             config.testcases = "testcases/imemo20.ics";
+            break;
+         case TEST_SQLITE_CONTACT_SOURCE:
+            getTestData("vcard21", config);
+            config.sourceName = "sqlite";
+            config.type = "sqlite";
             break;
          default:
             CPPUNIT_ASSERT(sourceType < TEST_MAX_SOURCE);
@@ -407,6 +419,9 @@ private:
          case TEST_MEMO_SOURCE:
             return "text";
             break;
+         case TEST_SQLITE_CONTACT_SOURCE:
+            return "sqlite";
+            break;
          default:
             CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
             break;
@@ -423,41 +438,54 @@ private:
         SourceType type = ((TestEvolution &)client).enabledSources[source];
         changeID += isSourceA ? "1" : "2";
         string database = ((TestEvolution &)client).getDatabaseName(type);
+        SyncSource *ss = NULL;
         
         switch (type) {
          case TEST_CONTACT21_SOURCE:
          case TEST_CONTACT30_SOURCE:
 #ifdef ENABLE_EBOOK
-            return new TestEvolutionSyncSource<EvolutionContactSource>(changeID, database);
-#else
-            return NULL;
+            ss = new TestEvolutionSyncSource<EvolutionContactSource>(changeID, database);
 #endif
             break;
          case TEST_CALENDAR_SOURCE:
 #ifdef ENABLE_ECAL
-            return new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_EVENT, changeID, database);
-#else
-            return NULL;
+            ss = new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_EVENT, changeID, database);
 #endif
             break;
          case TEST_TASK_SOURCE:
 #ifdef ENABLE_ECAL         
-            return new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_TODO, changeID, database);
-#else
-            return NULL;
+            ss = new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_TODO, changeID, database);
 #endif
             break;
          case TEST_MEMO_SOURCE:
 #ifdef ENABLE_ECAL         
-            return new TestEvolutionSyncSource<EvolutionMemoSource>(E_CAL_SOURCE_TYPE_JOURNAL, changeID, database);
-#else
-            return NULL;
+            ss = new TestEvolutionSyncSource<EvolutionMemoSource>(E_CAL_SOURCE_TYPE_JOURNAL, changeID, database);
 #endif
             break;
+         case TEST_SQLITE_CONTACT_SOURCE:
+#ifdef ENABLE_SQLITE
+            ss = new TestEvolutionSyncSource<SQLiteContactSource>(changeID, database);
+
+            // this is a hack: it guesses the last sync time stamp by remembering
+            // the last time the sync source was created
+            static time_t lastts[TEST_MAX_SOURCE];
+            char anchor[DIM_ANCHOR];
+            time_t nextts;
+
+            timestampToAnchor(lastts[type], anchor);
+            ss->setLastAnchor(anchor);
+            nextts = time(NULL);
+            while (lastts[type] == nextts) {
+                sleep(1);
+                nextts = time(NULL);
+            }
+            lastts[type] = nextts;
+#endif
          default:
             CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
-            return NULL;
         }
+
+        return ss;
     }
 
     /**
@@ -480,7 +508,7 @@ static class RegisterTestEvolution {
 public:
     RegisterTestEvolution() :
         testClient("1") {
-#ifdef HAVE_GLIB
+#if defined(HAVE_GLIB) && defined(HAVE_EDS)
         // this is required on Maemo and does not harm either on a normal
         // desktop system with Evolution
         g_type_init();

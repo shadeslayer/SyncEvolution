@@ -26,16 +26,18 @@
 #include <ostream>
 using namespace std;
 
+#ifdef HAVE_EDS
 #include <libedataserver/e-source.h>
 #include <libedataserver/e-source-list.h>
+#endif
 
 #include <spds/SyncSource.h>
 #include <spdm/ManagementNode.h>
 #include <base/Log.h>
 
 /**
- * This class implements the functionality shared by
- * both EvolutionCalenderSource and EvolutionContactSource:
+ * SyncEvolution accesses all sources through this interface.  This
+ * class also implements common functionality for all SyncSources:
  * - handling of change IDs and URI
  * - finding the calender/contact backend
  * - default implementation of SyncSource interface
@@ -249,6 +251,7 @@ class EvolutionSyncSource : public SyncSource
 
 
   protected:
+#ifdef HAVE_EDS
     /**
      * searches the list for a source with the given uri or name
      *
@@ -257,6 +260,7 @@ class EvolutionSyncSource : public SyncSource
      * @return   pointer to source or NULL if not found
      */
     ESource *findSource( ESourceList *list, const string &id );
+#endif
 
     /**
      * throw an exception after a Gnome action failed and
@@ -266,7 +270,11 @@ class EvolutionSyncSource : public SyncSource
      * @param gerror     if not NULL: a more detailed description of the failure,
      *                                will be freed
      */
-    void throwError( const string &action, GError *gerror );
+    void throwError( const string &action
+#ifdef HAVE_EDS
+                     , GError *gerror = NULL
+#endif
+                     );
 
     /**
      * source specific part of beginSync() - throws exceptions in case of error

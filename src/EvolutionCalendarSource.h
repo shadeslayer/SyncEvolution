@@ -138,6 +138,10 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     void getChanges();
 };
 
+#else
+
+typedef int ECalSourceType;
+
 #endif // ENABLE_ECAL
 
 #endif // INCL_EVOLUTIONSYNCSOURCE

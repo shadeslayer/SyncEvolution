@@ -23,6 +23,7 @@ public:
     char* getVersion();
     char* getProdID();
     void addProperty(VProperty* property);
+    void addProperty(const char *name, const char *value) { VProperty vprop((char *)name, (char *)value); addProperty(&vprop); }
     void addFirstProperty(VProperty* property);
     void insertProperty(VProperty* property);
     bool removeProperty(int index);
@@ -77,6 +78,9 @@ public:
     // object.
     //
     void fromNativeEncoding();
+
+    /** in native property values this special character separates sub-values in multi-value properties */
+    static const char SEMICOLON_REPLACEMENT = '\a';
 };
 
 };

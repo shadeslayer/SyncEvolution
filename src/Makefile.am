@@ -1,12 +1,12 @@
-INCLUDES = @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @SYNC4J_CFLAGS@ 
+INCLUDES = @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @SYNC4J_CFLAGS@ @SQLITE_CFLAGS@
 
 # Please remove '-Wno-return-type' when Evo fixes the warning in their headers.
 AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
-EXTRA_LTLIBRARIES = syncecal.la syncebook.la
-MOSTLYCLEANFILES = syncecal.la syncebook.la
+EXTRA_LTLIBRARIES = syncecal.la syncebook.la syncsqlite.la
+MOSTLYCLEANFILES = syncecal.la syncebook.la syncsqlite.la
 pkglib_LTLIBRARIES = @SYNCEVOLUTION_LTLIBRARIES@
 EXTRA_PROGRAMS = client-test
 check_PROGRAMS = @CPPUNIT_TESTS@
@@ -53,6 +53,13 @@ SYNCEBOOK_SOURCES = \
         EvolutionContactSource.h \
 	EvolutionContactSource.cpp
 
+SYNCSQLITE_SOURCES = \
+	SQLiteSyncSource.h \
+	SQLiteSyncSource.cpp \
+	SQLiteContactSource.h \
+	SQLiteContactSource.cpp
+
+
 CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @LIBS@
 
 # put link to static c++ library into current directory, needed if compiling with --enable-static-c++
@@ -63,7 +70,7 @@ syncevolution_SOURCES = \
 	syncevolution.cpp \
 	$(CORE_SOURCES)
 
-# SYNCEVOLUTION_LDADD@ will be replaced with libsyncebook.la/libsyncecal.la
+# SYNCEVOLUTION_LDADD@ will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
 # if linking statically against them, empty otherwise;
 # either way this does not lead to a dependency on those libs - done explicitly
 #
@@ -79,6 +86,10 @@ syncecal_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 syncebook_la_SOURCES = $(SYNCEBOOK_SOURCES)
 syncebook_la_LIBADD = @EBOOK_LIBS@
 syncebook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
+
+syncsqlite_la_SOURCES = $(SYNCSQLITE_SOURCES)
+syncsqlite_la_LIBADD = @SQLITE_LIBS@
+syncsqlite_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 
 # test suite - *not* declared as an obligatory check,
 # because some of them are known to fail and thus

@@ -227,8 +227,6 @@ static int hex2int( wchar_t x )
         0;
 }
 
-#define SEMICOLON_REPLACEMENT '\a'
-
 void VObject::toNativeEncoding()
 {
     bool is_30 = !wcscmp(getVersion(), TEXT("3.0"));
