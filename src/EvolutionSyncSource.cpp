@@ -24,6 +24,7 @@
 #include "EvolutionCalendarSource.h"
 #include "EvolutionMemoSource.h"
 #include "SQLiteContactSource.h"
+#include "AddressBookSource.h"
 
 #include <common/base/Log.h>
 
@@ -153,6 +154,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
             "syncebook.so.0",
             "syncecal.so.0",
 	    "syncsqlite.so.0",
+            "addressbook.so.0"
             NULL
         };
 
@@ -263,6 +265,14 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 #else
         if (error) {
             throw runtime_error(name + ": access to sqlite not compiled into this binary, " + mimeType + " not supported");
+        }
+#endif
+    } else if (mimeType == "AddressBook") {
+#ifdef ENABLE_ADDRESSBOOK
+        return new AddressBookSource(name, sc, strippedChangeId, id);
+#else
+        if (error) {
+            throw runtime_error(name + ": access to Mac OS X address book not compiled into this binary, not supported");
         }
 #endif
     }

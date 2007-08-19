@@ -21,6 +21,7 @@
 # define INCL_EVOLUTION_SMART_POINTER
 
 #include <stdlib.h>
+#ifdef HAVE_EDS
 #include <glib-object.h>
 #ifdef ENABLE_EBOOK
 #include <libebook/e-book.h>
@@ -28,11 +29,13 @@
 #ifdef ENABLE_ECAL
 #include <libecal/e-cal.h>
 #endif
+#endif
 
 #include <stdexcept>
 #include <string>
 
 void inline unref( char *pointer ) { free( pointer ); }
+#ifdef HAVE_EDS
 void inline unref( GObject *pointer ) { g_object_unref( pointer ); }
 #ifdef ENABLE_EBOOK
 void inline unref( EBookQuery *pointer ) { e_book_query_unref( pointer ); }
@@ -44,6 +47,7 @@ void inline unref( icaltimezone *pointer ) { icaltimezone_free( pointer, 1 ); }
 #if 0
 void inline unref( EBook *pointer ) { g_object_unref( pointer ); }
 void inline unref( EContact *pointer ) { g_object_unref( pointer ); }
+#endif
 #endif
 template <class T> void unref(T *pointer) { delete pointer; }
 

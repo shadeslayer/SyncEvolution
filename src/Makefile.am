@@ -1,12 +1,12 @@
-INCLUDES = @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @SYNC4J_CFLAGS@ @SQLITE_CFLAGS@
+INCLUDES = @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @SYNC4J_CFLAGS@ @SQLITE_CFLAGS@ @ADDRESSBOOK_CFLAGS@
 
 # Please remove '-Wno-return-type' when Evo fixes the warning in their headers.
 AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
-EXTRA_LTLIBRARIES = syncecal.la syncebook.la syncsqlite.la
-MOSTLYCLEANFILES = syncecal.la syncebook.la syncsqlite.la
+EXTRA_LTLIBRARIES = syncecal.la syncebook.la syncsqlite.la syncaddressbook.la
+MOSTLYCLEANFILES = syncecal.la syncebook.la syncsqlite.la syncaddressbook.la
 pkglib_LTLIBRARIES = @SYNCEVOLUTION_LTLIBRARIES@
 EXTRA_PROGRAMS = client-test
 check_PROGRAMS = @CPPUNIT_TESTS@
@@ -59,8 +59,11 @@ SYNCSQLITE_SOURCES = \
 	SQLiteContactSource.h \
 	SQLiteContactSource.cpp
 
+SYNCADDRESSBOOK_SOURCES = \
+	AddressBookSource.h \
+	AddressBookSource.cpp
 
-CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @LIBS@
+CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @ADDRESSBOOK_LIBS@ @LIBS@
 
 # put link to static c++ library into current directory, needed if compiling with --enable-static-c++
 libstdc++.a :
@@ -90,6 +93,10 @@ syncebook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 syncsqlite_la_SOURCES = $(SYNCSQLITE_SOURCES)
 syncsqlite_la_LIBADD = @SQLITE_LIBS@
 syncsqlite_la_LDFLAGS = -module -rpath '$(pkglibdir)'
+
+syncaddressbook_la_SOURCES = $(SYNCADDRESSBOOK_SOURCES)
+syncaddressbook_la_LIBADD = @ADDRESSBOOK_LIBS@
+syncaddressbook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 
 # test suite - *not* declared as an obligatory check,
 # because some of them are known to fail and thus

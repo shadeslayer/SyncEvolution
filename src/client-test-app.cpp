@@ -32,6 +32,7 @@
 #include "EvolutionMemoSource.h"
 #include "EvolutionContactSource.h"
 #include "SQLiteContactSource.h"
+#include "AddressBookSource.h"
 
 /** a wrapper class which automatically does an open() in the constructor and a close() in the destructor */
 template<class T> class TestEvolutionSyncSource : public T {
@@ -133,7 +134,7 @@ public:
         /* check sources */
         const char *sourcelist = getenv("CLIENT_TEST_SOURCES");
         if (!sourcelist) {
-            sourcelist = "vcard21,vcard30,ical20,text,itodo20,sqlite";
+            sourcelist = "vcard21,vcard30,ical20,text,itodo20,sqlite,addressbook";
         }
         numSources = 0;
         for (SourceType sourceType = (SourceType)0; sourceType < TEST_MAX_SOURCE; sourceType = (SourceType)((int)sourceType + 1) ) {
@@ -153,6 +154,11 @@ public:
 #endif
 #ifndef ENABLE_SQLITE
             if (sourceType == TEST_SQLITE_CONTACT_SOURCE) {
+                continue;
+            }
+#endif
+#ifndef ENABLE_ADDRESSBOOK
+            if (sourceType == TEST_ADDRESSBOOK_SOURCE) {
                 continue;
             }
 #endif
@@ -219,6 +225,7 @@ public:
         TEST_TASK_SOURCE,
         TEST_MEMO_SOURCE,
         TEST_SQLITE_CONTACT_SOURCE,
+        TEST_ADDRESS_BOOK_SOURCE,
         TEST_MAX_SOURCE
     };
 
@@ -297,6 +304,11 @@ public:
             getTestData("vcard21", config);
             config.sourceName = "sqlite";
             config.type = "sqlite";
+            break;
+         case TEST_ADDRESS_BOOK_SOURCE:
+            getTestData("vcard30", config);
+            config.sourceName = "AddressBook";
+            config.type = "addressbook";
             break;
          default:
             CPPUNIT_ASSERT(sourceType < TEST_MAX_SOURCE);
@@ -422,6 +434,9 @@ private:
          case TEST_SQLITE_CONTACT_SOURCE:
             return "sqlite";
             break;
+        case TEST_ADDRESS_BOOK_SOURCE:
+            return "addressbook";
+            break;
          default:
             CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
             break;
@@ -481,6 +496,12 @@ private:
             }
             lastts[type] = nextts;
 #endif
+            break;
+         case TEST_ADDRESS_BOOK_SOURCE:
+#ifdef ENABLE_ADDRESSBOOK
+            ss = new TestEvolutionSyncSource<AddressBookSource>(changeID, database);
+#endif
+            break;
          default:
             CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
         }
