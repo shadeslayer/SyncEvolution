@@ -89,7 +89,7 @@ string SQLiteSyncSource::findColumn(const char *database, const char *keyname, c
 
 string SQLiteSyncSource::getTextColumn(sqlite3_stmt *stmt, int col, const char *def)
 {
-    const unsigned char *text = sqlite3_column_text(stmt, 0);
+    const unsigned char *text = sqlite3_column_text(stmt, col);
     return text ? (const char *)text : def;
 }
 
