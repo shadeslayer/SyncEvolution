@@ -27,6 +27,7 @@
 #ifdef ENABLE_ADDRESSBOOK
 
 #include <AddressBook/ABAddressBookC.h>
+#include "DeviceManagementNode.h"
 
 /**
  * a smart pointer implementation for objects for which
@@ -104,7 +105,8 @@ class AddressBookSource : public EvolutionSyncSource
     AddressBookSource(const string &name,
                       SyncSourceConfig *sc,
                       const string &changeId = string(""),
-                      const string &id = string(""));
+                      const string &id = string(""),
+                      const string &configPath = string(""));
     AddressBookSource(const AddressBookSource &other);
     virtual ~AddressBookSource() { close(); }
 
@@ -142,9 +144,32 @@ class AddressBookSource : public EvolutionSyncSource
     virtual void logItem(const string &uid, const string &info, bool debug = false);
     virtual void logItem(SyncItem &item, const string &info, bool debug = false);
 
+    /** insert item, optionally replacing the one with the specified uid */
+    virtual int insertItem(SyncItem &item, const char *uid);
+
   private:
     /** valid after open(): the address book that this source references */
     ref<ABAddressBookRef> m_addressbook;
+
+    /**
+     * Stores the modification time of all items sent to or received from the server.
+     * Items listed here and not in the current address book have been deleted.
+     * More recent items were modified, new items are not listed here.
+     *
+     * The DeviceManagementNode must have the readProperties() and removeProperty()
+     * functions. Currently that's only the case for the DeviceManagementNode included
+     * with SyncEvolution, but not with the ones included in the C++ client library.
+     */
+    eptr<spdm::DeviceManagementNode> m_modTimes;
+
+    /** the config path for the modification time node */
+    string m_modNodeName;
+
+    /** converts a CFString to std::string - does not free input */
+    string CFString2Std(CFStringRef cfstring);
+
+    /** returns absolute modification time or (if that doesn't exist) the creation time */
+    double getModTime(ABRecordRef record);
 };
 
 #endif // ENABLE_EBOOK

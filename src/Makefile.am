@@ -41,6 +41,9 @@ CORE_SOURCES  = \
         EvolutionSyncSource.cpp \
 	EvolutionSyncClient.cpp \
 	\
+	DeviceManagementNode.h \
+	DeviceManagementNode.cpp \
+	\
 	$(VOCL_SOURCES)
 
 SYNCECAL_SOURCES = \

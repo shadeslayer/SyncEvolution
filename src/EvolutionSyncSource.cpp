@@ -119,6 +119,7 @@ void EvolutionSyncSource::handleException()
 
 EvolutionSyncSource *EvolutionSyncSource::createSource(
     const string &name,
+    ManagementNode *node,
     SyncSourceConfig *sc,
     const string &changeId,
     const string &id,
@@ -269,7 +270,8 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 #endif
     } else if (mimeType == "AddressBook") {
 #ifdef ENABLE_ADDRESSBOOK
-        return new AddressBookSource(name, sc, strippedChangeId, id);
+        arrayptr<char> configNodeName(node ? node->createFullName() : wstrdup(""));
+        return new AddressBookSource(name, sc, strippedChangeId, id, string(configNodeName));
 #else
         if (error) {
             throw runtime_error(name + ": access to Mac OS X address book not compiled into this binary, not supported");
@@ -352,7 +354,7 @@ int EvolutionSyncSource::beginSync()
         beginSyncThrow(needAll, needPartial, deleteLocal);
     } catch( ... ) {
         handleException();
-        m_hasFailed = true;
+        setFailed(true);
         return 1;
     }
     return 0;
@@ -364,7 +366,7 @@ int EvolutionSyncSource::endSync()
         endSyncThrow();
     } catch ( ... ) {
         handleException();
-        m_hasFailed = true;
+        setFailed(true);
     }
 
     // Do _not_ tell the caller (SyncManager) if an error occurred
@@ -381,7 +383,7 @@ void EvolutionSyncSource::setItemStatus(const char *key, int status)
         setItemStatusThrow(key, status);
     } catch (...) {
         handleException();
-        m_hasFailed = true;
+        setFailed(true);
     }
 }
 
@@ -421,7 +423,7 @@ int EvolutionSyncSource::processItem(const char *action,
         m_isModified = true;
     } catch (...) {
         handleException();
-        m_hasFailed = true;
+        setFailed(true);
     }
     return status;
 }
@@ -436,7 +438,7 @@ void EvolutionSyncSource::setItemStatusThrow(const char *key, int status)
         if (status < 200 || status > 300) {
             LOG.error("%s: unexpected SyncML status response %d for item %.80s\n",
                       getName(), status, key);
-            m_hasFailed = true;
+            setFailed(true);
         }
     }
 }

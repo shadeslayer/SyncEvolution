@@ -174,6 +174,7 @@ class EvolutionSyncSource : public SyncSource
      * returns true iff some failure occured
      */
     bool hasFailed() { return m_hasFailed; }
+    void setFailed(bool failed) { m_hasFailed = failed; }
 
     /** convenience function: copies item's data into string */
     static string getData(SyncItem& item);
@@ -201,6 +202,7 @@ class EvolutionSyncSource : public SyncSource
      */
     static EvolutionSyncSource *createSource(
         const string &name,
+        ManagementNode *node,
         SyncSourceConfig *sc,
         const string &changeId,
         const string &id,
@@ -371,9 +373,6 @@ class EvolutionSyncSource : public SyncSource
         m_updatedItems,
         m_deletedItems;
 
-    /** keeps track of failure state */
-    bool m_hasFailed;
-
     /**
      * remembers whether items have been modified during the sync:
      * if it is, then the destructor has to advance the change marker
@@ -390,6 +389,9 @@ class EvolutionSyncSource : public SyncSource
                     int (EvolutionSyncSource::*func)(SyncItem& item),
                     SyncItem& item,
                     bool needData);
+
+    /** keeps track of failure state */
+    bool m_hasFailed;
 
     /** user name/password set for this source, empty if none */
     string m_user, m_passwd;

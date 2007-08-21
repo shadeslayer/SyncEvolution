@@ -486,6 +486,7 @@ int EvolutionSyncClient::sync()
                 EvolutionSyncSource *syncSource =
                     EvolutionSyncSource::createSource(
                         sc.getName(),
+                        &node,
                         &sc,
                         string("sync4jevolution:") + url + "/" + sc.getName(),
                         EvolutionSyncSource::getPropertyValue(node, "evolutionsource"),

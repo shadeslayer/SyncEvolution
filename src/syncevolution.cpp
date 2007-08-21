@@ -125,7 +125,7 @@ int main( int argc, char **argv )
             };
 
             for (int i = 0; kinds[i].mimeType; i++ ) {
-                auto_ptr<EvolutionSyncSource> source(EvolutionSyncSource::createSource("list", NULL, "", "", kinds[i].mimeType, false));
+                auto_ptr<EvolutionSyncSource> source(EvolutionSyncSource::createSource("list", NULL, NULL, "", "", kinds[i].mimeType, false));
                 if (source.get() != NULL) {
                     listSources(*source, kinds[i].kind);
                     cout << "\n";

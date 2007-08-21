@@ -41,6 +41,8 @@ public:
         T(type, "dummy", NULL, changeID, database) {}
     TestEvolutionSyncSource(string changeID, string database) :
         T("dummy", NULL, changeID, database) {}
+    TestEvolutionSyncSource(string changeID, string database, string configPath) :
+        T("dummy", NULL, changeID, database, configPath) {}
 
     virtual int beginSync() {
         CPPUNIT_ASSERT_NO_THROW(T::open());
@@ -404,6 +406,7 @@ public:
 private:
     string clientID;
     std::auto_ptr<TestEvolution> clientB;
+    string addressBookConfigPath;
 
     /** prefix to be used for Evolution databases */
     string evoPrefix;
@@ -414,7 +417,7 @@ private:
     int numSources;
 
     /** returns the name corresponding to the type, using the same strings as the C++ client testing system */
-    string getSourceName(SourceType type) {
+    static string getSourceName(SourceType type) {
         switch (type) {
          case TEST_CONTACT21_SOURCE:
             return "vcard21";
@@ -499,7 +502,7 @@ private:
             break;
          case TEST_ADDRESS_BOOK_SOURCE:
 #ifdef ENABLE_ADDRESSBOOK
-            ss = new TestEvolutionSyncSource<AddressBookSource>(changeID, database);
+            ss = new TestEvolutionSyncSource<AddressBookSource>(changeID, database, string("client-test-changes/") + ((TestEvolution &)client).getSourceName(type));
 #endif
             break;
          default:
