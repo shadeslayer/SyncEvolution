@@ -20,6 +20,7 @@
 #include "posixadapter.h"
 
 #include "base/util/utils.h"
+#include "base/util/StringBuffer.h"
 #include "VProperty.h"
 
 namespace vocl {
@@ -268,35 +269,27 @@ wchar_t* VProperty::getPropComponent(int i) {
 bool VProperty::isType(wchar_t* type) {
     if(containsParameter(type))
         return true;
-    if(containsParameter(TEXT("TYPE")) && getParameterValue(TEXT("TYPE"))) {
 
-        wchar_t seps[] = TEXT(",");
-        wchar_t* token;
+    char *value;
+    for (int paramindex = 0;
+         paramindex < parameterCount();
+         paramindex++) {
+        wchar_t *value = getParameterValue(paramindex);
+        if (value && !strcasecmp(value, type)) {
+            wchar_t seps[] = TEXT(",");
+            wchar_t* token;
 
-        token = wcstok(getParameterValue(TEXT("TYPE")), seps );
+            StringBuffer buff(value);
 
-        while( token != NULL )
-        {
-            if(!wcscmp(type, token))
-                return true;
-            token = wcstok( NULL, seps );
+            token = wcstok((char *)buff.c_str(), seps);
+            while( token != NULL ) {
+                if(!wcscmp(type, token))
+                    return true;
+                token = wcstok( NULL, seps );
+            }
         }
     }
 
-    if(containsParameter(TEXT("type")) && getParameterValue(TEXT("type"))) {
-
-        wchar_t seps[] = TEXT(",");
-        wchar_t* token;
-
-        token = wcstok(getParameterValue(TEXT("type")), seps );
-
-        while( token != NULL )
-        {
-            if(!wcscmp(type, token))
-                return true;
-            token = wcstok( NULL, seps );
-        }
-    }
     return false;
 }
 

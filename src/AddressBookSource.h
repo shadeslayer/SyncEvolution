@@ -85,6 +85,12 @@ template<class T> class ref {
     T operator * () { return m_pointer; }
     operator T () { return m_pointer; }
     operator bool () { return m_pointer != NULL; }
+
+    T release() {
+        T res = m_pointer;
+        m_pointer = NULL;
+        return res;
+    }
 };
 
 
@@ -164,9 +170,6 @@ class AddressBookSource : public EvolutionSyncSource
 
     /** the config path for the modification time node */
     string m_modNodeName;
-
-    /** converts a CFString to std::string - does not free input */
-    string CFString2Std(CFStringRef cfstring);
 
     /** returns absolute modification time or (if that doesn't exist) the creation time */
     double getModTime(ABRecordRef record);

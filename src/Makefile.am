@@ -18,7 +18,12 @@ CLEANFILES = libstdc++.a
 
 # synccompare is created by replacing its 'import Algorithm::Diff;'
 # with a simplified copy of Diff.pm.
-synccompare : $(SYNC4J_SUBDIR)/test/test/Algorithm/Diff.pm $(SYNC4J_SUBDIR)/test/test/synccompare.pl
+#
+# If there is a copy of synccompare.pl in the SyncEvolution test directory,
+# then it is used instead of the one from the client library.
+vpath %.pl $(srcdir)/../test $(SYNC4J_SUBDIR)/test/test/Algorithm
+vpath %.pm $(srcdir)/../test $(SYNC4J_SUBDIR)/test/test/Algorithm
+synccompare : Diff.pm synccompare.pl
 	perl -e '$$diff = shift; open(DIFF, "<$$diff"); ($$_) = split(/__END__/, join("", <DIFF>)); s/\*import.*//m; s/require +Exporter;//; s/^#.*\n//mg; s/ +#.*\n//mg; $$diff = $$_;' -e 'while(<>) {' @MODIFY_SYNCCOMPARE@ -e 's/use +Algorithm::Diff;/"# embedded version of Algorithm::Diff follows, copyright by the original authors\n" . $$diff . "# end of embedded Algorithm::Diff\n"/e; print;}' $+ >$@
 	chmod u+x $@
 
