@@ -22,6 +22,7 @@
 
 #include "base/util/ArrayElement.h"
 #include "spdm/ManagementNode.h"
+#include <stdlib.h>
 
 namespace spdm {
 #ifndef BOOL

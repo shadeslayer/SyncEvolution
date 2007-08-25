@@ -149,7 +149,7 @@ void SQLiteSyncSource::open()
         while (nextsql && *nextsql) {
             const char *sql = nextsql;
             eptr<sqlite3_stmt> create(prepareSQLWrapper(sql, &nextsql));
-            while (TRUE) {
+            while (true) {
                 int res = sqlite3_step(create);
                 if (res == SQLITE_DONE) {
                     break;
