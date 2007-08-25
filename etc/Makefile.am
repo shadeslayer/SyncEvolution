@@ -31,7 +31,7 @@ all: $(all_copy)
 install-data-local: $(all_copy)
 	set -e; \
         docdir="$(docdir)"; \
-        if [ ! "$$docdir" ]; then docdir="$(datadir)/share/doc/$(PACKAGE)"; fi; \
+        if [ ! "$$docdir" ]; then docdir="$(datadir)/doc/$(PACKAGE)"; fi; \
 	for file in $(all_copy); do \
 		$(INSTALL) -d -m 744 "$(DESTDIR)/$$docdir/`dirname $$file`"; \
 		$(INSTALL) -m 744 $$file "$(DESTDIR)/$$docdir/`dirname $$file`"; \
@@ -39,7 +39,7 @@ install-data-local: $(all_copy)
 
 uninstall-local:
 	docdir="$(docdir)"; \
-        if [ ! "$$docdir" ]; then docdir="$(datadir)/share/doc/$(PACKAGE)"; fi; \
+        if [ ! "$$docdir" ]; then docdir="$(datadir)/doc/$(PACKAGE)"; fi; \
 	for file in $(all_copy); do \
 		rm "$(DESTDIR)/$$docdir/$$file"; \
 	done
