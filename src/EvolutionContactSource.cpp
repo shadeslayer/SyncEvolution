@@ -306,7 +306,7 @@ void EvolutionContactSource::exportData(ostream &out)
 
 SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state )
 {
-    logItem( uid, "extracting from EV" );
+    logItem( uid, "extracting from EV", true );
 
     EContact *contact;
     GError *gerror = NULL;

@@ -1011,7 +1011,7 @@ void AddressBookSource::exportData(ostream &out)
 
 SyncItem *AddressBookSource::createItem( const string &uid, SyncState state )
 {
-    logItem(uid, "extracting from address book");
+    logItem(uid, "extracting from address book", true);
 
     ref<CFStringRef> cfuid(Std2CFString(uid));
     ref<ABPersonRef> person((ABPersonRef)ABCopyRecordForUniqueId(m_addressbook, cfuid), "contact");
