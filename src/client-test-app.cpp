@@ -26,6 +26,8 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <exception>
 #include <fstream>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "EvolutionSyncClient.h"
 #include "EvolutionCalendarSource.h"
@@ -33,6 +35,88 @@
 #include "EvolutionContactSource.h"
 #include "SQLiteContactSource.h"
 #include "AddressBookSource.h"
+
+/**
+ * A helper class for Mac OS X which switches between different
+ * address books by renaming the database file. This is a hack
+ * because it makes assumptions about the data storage - and it
+ * does not work, apparently because the library caches information
+ * in memory...
+ *
+ * The initial address book is called "system" and it will be
+ * restored during normal termination - but don't count on that...
+ */
+class MacOSAddressBook {
+public:
+    /**
+     * moves the current address book out of the way and
+     * makes the one with the selected suffix the default one
+     */
+    void select(const string &suffix) {
+        if (suffix != m_currentBook) {
+            const char *home = getenv("HOME");
+            int res;
+            CPPUNIT_ASSERT(home);
+
+            int wdfd = open(".", O_RDONLY);
+            CPPUNIT_ASSERT(wdfd >= 0);
+            res = chdir(home);
+            CPPUNIT_ASSERT(res >= 0);
+            res = chdir("Library/Application Support/AddressBook/");
+            CPPUNIT_ASSERT(res >= 0);
+
+            string baseName = "AddressBook.data";
+
+            string oldBook = baseName + "." + m_currentBook;
+            res = rename(baseName.c_str(), oldBook.c_str());
+            printf("renamed %s to %s: %s\n",
+                   baseName.c_str(),
+                   oldBook.c_str(),
+                   res >= 0 ? "successfully" : strerror(errno));
+            CPPUNIT_ASSERT(res >= 0 || errno == ENOENT);
+
+            string newBook = baseName + "." + suffix;
+            res = rename(newBook.c_str(), baseName.c_str());
+            printf("renamed %s to %s: %s\n",
+                   newBook.c_str(),
+                   baseName.c_str(),
+                   res >= 0 ? "successfully" : strerror(errno));
+            CPPUNIT_ASSERT(res >= 0 || errno == ENOENT);
+
+            // touch it
+            res = open(baseName.c_str(), O_WRONLY|O_CREAT, 0600);
+            if (res >= 0) {
+                close(res);
+            }
+
+            unlink("ABPerson.skIndexInverted");
+            unlink("AddressBook.data.previous");
+
+            // chdir(home);
+            // chdir("Library/Caches/com.apple.AddressBook");
+            // system("rm -rf MetaData");
+
+            m_currentBook = suffix;
+
+            res = fchdir(wdfd);
+            CPPUNIT_ASSERT(res >= 0);
+        }
+    }
+
+    static MacOSAddressBook &get() { return m_singleton; }
+
+private:
+    MacOSAddressBook() :
+        m_currentBook("system") {}
+    ~MacOSAddressBook() {
+        select("system");
+    }
+
+    string m_currentBook;
+    static MacOSAddressBook m_singleton;
+};
+MacOSAddressBook MacOSAddressBook::m_singleton;
+
 
 /** a wrapper class which automatically does an open() in the constructor and a close() in the destructor */
 template<class T> class TestEvolutionSyncSource : public T {
@@ -309,7 +393,7 @@ public:
             break;
          case TEST_ADDRESS_BOOK_SOURCE:
             getTestData("vcard30", config);
-            config.sourceName = "AddressBook";
+            config.sourceName = "addressbook";
             config.type = "addressbook";
             break;
          default:
@@ -344,6 +428,9 @@ public:
         set<string> activeSources;
         for(int i = 0; sources[i] >= 0; i++) {
             activeSources.insert(getSourceName(enabledSources[sources[i]]));
+            if (enabledSources[sources[i]] == TEST_ADDRESS_BOOK_SOURCE) {
+                MacOSAddressBook::get().select(clientID);
+            }
         }
 
         string server = getenv("CLIENT_TEST_SERVER") ? getenv("CLIENT_TEST_SERVER") : "funambol";
@@ -502,6 +589,7 @@ private:
             break;
          case TEST_ADDRESS_BOOK_SOURCE:
 #ifdef ENABLE_ADDRESSBOOK
+            MacOSAddressBook::get().select(((TestEvolution &)client).clientID);
             ss = new TestEvolutionSyncSource<AddressBookSource>(changeID, database, string("client-test-changes/") + ((TestEvolution &)client).getSourceName(type));
 #endif
             break;

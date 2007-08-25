@@ -268,7 +268,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
             throw runtime_error(name + ": access to sqlite not compiled into this binary, " + mimeType + " not supported");
         }
 #endif
-    } else if (mimeType == "AddressBook") {
+    } else if (mimeType == "addressbook") {
 #ifdef ENABLE_ADDRESSBOOK
         arrayptr<char> configNodeName(node ? node->createFullName() : wstrdup(""));
         return new AddressBookSource(name, sc, strippedChangeId, id, string(configNodeName));
