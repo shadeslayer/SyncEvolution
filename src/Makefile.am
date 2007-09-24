@@ -69,6 +69,7 @@ SYNCSQLITE_SOURCES = \
 
 SYNCADDRESSBOOK_SOURCES = \
 	AddressBookSource.h \
+	AddressBookConstants.cpp \
 	AddressBookSource.cpp
 
 CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @ADDRESSBOOK_LIBS@ @LIBS@
