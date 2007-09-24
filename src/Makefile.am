@@ -156,20 +156,34 @@ client_test_LDFLAGS = `cppunit-config --libs` `nm $(SYNC4J_SUBDIR)/src/.libs/lib
 client_test_LDADD = @SYNCEVOLUTION_MODULES@ @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
 client_test_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
 
-# automake build rules expect these to be available locally,
-# and we need to get rid of WCHAR
-ClientTest.h ClientTest.cpp client-test-main.cpp : % : $(SYNC4J_SUBDIR)/test/test/%
+# copy test files for several reasons:
+# - automake expects them here
+# - wchar needs to be removed from distribution to avoid need for defines
+# - a locally modified file with suffix ".modified" can take precedence over
+#   the upstream version
+
+LOCAL_TEST_FILES=$(notdir $(wildcard $(srcdir)/../test/*))
+
+# sources from SyncEvolution
+$(filter $(LOCAL_TEST_FILES), ClientTest.h ClientTest.cpp client-test-main.cpp) : % : $(srcdir)/../test/%
 	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
+
+# sources from compiled client library
+$(filter-out $(LOCAL_TEST_FILES), ClientTest.h ClientTest.cpp client-test-main.cpp) : % : $(SYNC4J_SUBDIR)/test/test/%
+	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
+
+# extra dependency - don't remember why
 ClientTest.cpp : ClientTest.h
 
-# temporary: copy instead of link to original test cases so that we can fix up CATEGORIES data
-# testcases: $(SYNC4J_SUBDIR)/test/test/testcases
-#	ln -s $< $@
-testcases: $(SYNC4J_SUBDIR)/test/test/testcases
-	rm -rf testcases
-	mkdir testcases
-	for i in $</*; do sed -e 's/CATEGORIES:\(.*\)\\,/CATEGORIES:\1,/' -e 's/CATEGORIES:\(.*\)\\,/CATEGORIES:\1,/' $$i >testcases/`basename $$i`; done
+# verbatim files from SyncEvolution
+$(filter $(LOCAL_TEST_FILES), testcases) : % : $(srcdir)/../test/%
+	rm -rf $@
+	cp -r $< $@
 
+# verbatim files from client library
+$(filter-out $(LOCAL_TEST_FILES), testcases) : % : $(SYNC4J_SUBDIR)/test/test/%
+	rm -rf $@
+	cp -r $< $@
 
 test : client-test testcases synccompare
 
