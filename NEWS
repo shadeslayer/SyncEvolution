@@ -1,3 +1,13 @@
+SyncEvolution 0.6 -> 0.7-pre1, 25.08.2007
+-----------------------------------------
+* C++ client library: tag "sdkcpp_6_0_9_1" (same as before)
+* added support for Mac OS X/iPhone address book
+* fixed Nokia packaging problem which prevented installation
+  via the package manager unless it was in "red pill" mode
+* less verbose: "extracting" items is now logged at debug level
+  and thus not normally shown
+
+
 SyncEvolution 0.5 -> 0.6, 13.07.2007
 ------------------------------------
 * C++ client library: tag "sdkcpp_6_0_9_1"

@@ -1,3 +1,40 @@
+2007-08-25  pohly  <patrick.ohly@gmx.de>
+
+	* etc/Makefile.am:
+	fixed SF 1767329: example configs were in share/share directory
+
+	* src/DeviceManagementNode.h, src/SQLiteSyncSource.cpp:
+	fixed compile error
+
+	* src/EvolutionSyncSource.cpp, src/client-test-app.cpp:
+	unsuccessful attempt to work around the 'one address book per user' limitation in order to get automated sync testing working
+
+	* src/AddressBookSource.cpp, src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
+	less verbose INFO logging: extracting items is now logged as DEBUG
+
+2007-08-24  pohly  <patrick.ohly@gmx.de>
+
+	* test/synccompare.pl, src/AddressBookSource.cpp, src/AddressBookSource.h, src/Makefile.am, src/vocl/VProperty.cpp:
+	added custom vcard 3.0 <-> AddressBook conversion: needed to make vcard representation close to what SyncML servers understand
+
+2007-08-21  pohly  <patrick.ohly@gmx.de>
+
+	* src/AddressBookSource.cpp, src/AddressBookSource.h, src/DeviceManagementNode.cpp, src/DeviceManagementNode.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/client-test-app.cpp, src/syncevolution.cpp:
+	finished change tracking, update and delete - still needs improved import/export with own functions because Address Book vcard parser merges X- properties into NOTE and cannot update contact
+
+2007-08-19  pohly  <patrick.ohly@gmx.de>
+
+	* configure.in, src/AddressBookSource.cpp, src/AddressBookSource.h, src/EvolutionSmartPtr.h, src/EvolutionSyncSource.cpp, src/Makefile.am, src/client-test-app.cpp:
+	added initial support for Mac OS X address book: no change tracking, no updating
+
+	* src/SQLiteSyncSource.cpp:
+	fixed incorrect extraction of text columns from SQLite
+
+2007-08-13  pohly  <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/SQLiteContactSource.cpp, src/SQLiteContactSource.h, src/SQLiteSyncSource.cpp, src/SQLiteSyncSource.h, src/client-test-app.cpp, src/syncevolution.cpp, src/vocl/VObject.cpp, src/vocl/VObject.h, configure.in:
+	added a sync source which stores contacts in a SQLite database
+
 2007-07-13  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* etc/source-config.txt, etc/Makefile.am:
