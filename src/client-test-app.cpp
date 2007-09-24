@@ -28,6 +28,7 @@
 #include <fstream>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "EvolutionSyncClient.h"
 #include "EvolutionCalendarSource.h"
@@ -244,7 +245,7 @@ public:
             }
 #endif
 #ifndef ENABLE_ADDRESSBOOK
-            if (sourceType == TEST_ADDRESSBOOK_SOURCE) {
+            if (sourceType == TEST_ADDRESS_BOOK_SOURCE) {
                 continue;
             }
 #endif
