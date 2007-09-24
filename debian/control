@@ -1,5 +1,5 @@
 Source: syncevolution
-Section: unknown
+Section: user/communication
 Priority: extra
 Maintainer: Patrick Ohly <patrick.ohly@gmx.de>
 Build-Depends: debhelper (>= 4), autotools-dev, libedataserver-dev, libcurl3-dev
