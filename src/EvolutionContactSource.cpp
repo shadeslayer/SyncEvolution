@@ -29,6 +29,7 @@ using namespace std;
 #include "EvolutionContactSource.h"
 
 #include <common/base/Log.h>
+#include <base/test.h>
 #include "vocl/VConverter.h"
 
 using namespace vocl;
@@ -511,6 +512,12 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
 
             // ensure that at least one TYPE is set
             if (!vprop->containsParameter("TYPE") &&
+                !vprop->containsParameter("CELL") &&
+                !vprop->containsParameter("CAR") &&
+                !vprop->containsParameter("PREF") &&
+                !vprop->containsParameter("FAX") &&
+                !vprop->containsParameter("VOICE") &&
+                !vprop->containsParameter("PAGER") &&
                 !vprop->containsParameter("INTERNET") &&
                 !vprop->containsParameter("HOME") &&
                 !vprop->containsParameter("WORK")) {
@@ -852,6 +859,74 @@ extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
         return NULL;
     }
 }
+
+#else /* ENABLE_MODULES */
+
+#ifdef ENABLE_UNIT_TESTS
+
+class EvolutionContactTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(EvolutionContactTest);
+    CPPUNIT_TEST(testImport);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    /**
+     * Tests parsing of contacts as they might be send by certain servers.
+     * This complements the actual testing with real servers and might cover
+     * cases not occurring with servers that are actively tested against.
+     */
+    void testImport() {
+        EvolutionContactSource source21("foo", NULL, "", "", EVC_FORMAT_VCARD_21),
+            source30("foo", NULL, "", "", EVC_FORMAT_VCARD_30);
+        string parsed;
+
+        // SF bug 1796086: sync with EGW: lost or messed up telephones
+        parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;CELL:cell\r\nEND:VCARD\r\n";
+        CPPUNIT_ASSERT_EQUAL(parsed,
+                             preparse(source21,
+                                      "BEGIN:VCARD\nVERSION:2.1\nTEL;CELL:cell\nEND:VCARD\n",
+                                      "text/x-vcard"));
+
+        parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=CAR:car\r\nEND:VCARD\r\n";
+        CPPUNIT_ASSERT_EQUAL(parsed,
+                             preparse(source21,
+                                      "BEGIN:VCARD\nVERSION:2.1\nTEL;TYPE=CAR:car\nEND:VCARD\n",
+                                      "text/x-vcard"));
+
+        parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=HOME:home\r\nEND:VCARD\r\n";
+        CPPUNIT_ASSERT_EQUAL(parsed,
+                             preparse(source21,
+                                      "BEGIN:VCARD\nVERSION:2.1\nTEL:home\nEND:VCARD\n",
+                                      "text/x-vcard"));
+
+        // TYPE=PARCEL not supported by Evolution, used to represent Evolutions TYPE=OTHER
+        parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=OTHER:other\r\nEND:VCARD\r\n";
+        CPPUNIT_ASSERT_EQUAL(parsed,
+                             preparse(source21,
+                                      "BEGIN:VCARD\nVERSION:2.1\nTEL;TYPE=PARCEL:other\nEND:VCARD\n",
+                                      "text/x-vcard"));
+
+        parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=HOME;TYPE=VOICE:cell\r\nEND:VCARD\r\n";
+        CPPUNIT_ASSERT_EQUAL(parsed,
+                             preparse(source21,
+                                      "BEGIN:VCARD\nVERSION:2.1\nTEL;TYPE=HOME,VOICE:cell\nEND:VCARD\n",
+                                      "text/x-vcard"));
+    }
+
+private:
+    string preparse(EvolutionContactSource &source,
+                    const char *data,
+                    const char *type) {
+        SyncItem item;
+        item.setData(data, strlen(data));
+        item.setDataType(type);
+        return source.preparseVCard(item);
+    }
+};
+
+FUNAMBOL_TEST_SUITE_REGISTRATION(EvolutionContactTest);
+
+#endif
 
 #endif /* ENABLE_MODULES */
 
