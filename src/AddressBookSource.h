@@ -71,6 +71,7 @@ template<class T> class ref {
      */
     void set( T pointer, const char *objectName = NULL )
     {
+        fprintf(stderr, "ref %p: %p -> %p\n", this, m_pointer, pointer);
         if (m_pointer) {
             CFRelease(m_pointer);
         }
@@ -155,7 +156,7 @@ class AddressBookSource : public EvolutionSyncSource
 
   private:
     /** valid after open(): the address book that this source references */
-    ref<ABAddressBookRef> m_addressbook;
+    ABAddressBookRef m_addressbook;
 
     /**
      * Stores the modification time of all items sent to or received from the server.

@@ -26,6 +26,77 @@ using namespace std;
 
 #ifdef ENABLE_ADDRESSBOOK
 
+#ifdef __arm__
+// On the iPhone the API is different, but the changes mostly seem to
+// consist of renames. Some constants and the vcard conversion
+// functions are missing. Unique IDs are integers, not string references.
+
+# define ABAddRecord ABCAddRecord
+# define ABCopyArrayOfAllPeople ABCCopyArrayOfAllPeople
+# define ABGetSharedAddressBook ABCGetSharedAddressBook
+# define ABMultiValueAdd ABCMultiValueAdd
+# define ABMultiValueCopyLabelAtIndex ABCMultiValueCopyLabelAtIndex
+# define ABMultiValueCopyValueAtIndex ABCMultiValueCopyValueAtIndex
+# define ABMultiValueCount ABCMultiValueGetCount
+# define ABMultiValueCreateMutable ABCMultiValueCreateMutable
+# define ABPersonCopyImageData ABCPersonCopyImageData
+# define PersonCreateWrapper(_addressbook) ABCPersonCreateNewPerson(_addressbook)
+# define ABPersonSetImageData ABCPersonSetImageData
+# define ABRecordCopyValue ABCRecordCopyValue
+# define ABRecordRemoveValue ABCRecordRemoveValue
+# define ABRecordSetValue ABCRecordSetValue
+# define ABRemoveRecord ABCRemoveRecord
+# define ABSave ABCSave
+# define kABAIMInstantProperty kABCAIMInstantProperty
+# define kABAddressCityKey kABCAddressCityKey
+# define kABAddressCountryKey kABCAddressCountryKey
+# define kABAddressHomeLabel kABCAddressHomeLabel
+# define kABAddressProperty kABCAddressProperty
+# define kABAddressStateKey kABCAddressStateKey
+# define kABAddressStreetKey kABCAddressStreetKey
+# define kABAddressWorkLabel kABCAddressWorkLabel
+# define kABAddressZIPKey kABCAddressZIPKey
+# define kABAssistantLabel kABCAssistantLabel
+# define kABBirthdayProperty kABCBirthdayProperty
+# define kABCreationDateProperty kABCCreationDateProperty
+# define kABDepartmentProperty kABCDepartmentProperty
+# define kABEmailHomeLabel kABCEmailHomeLabel
+# define kABEmailProperty kABCEmailProperty
+# define kABEmailWorkLabel kABCEmailWorkLabel
+# define kABFirstNameProperty kABCFirstNameProperty
+# define kABHomePageLabel kABCHomePageLabel
+/* # define kABHomePageProperty kABCHomePageProperty */
+# define kABICQInstantProperty kABCICQInstantProperty
+# define kABJabberHomeLabel kABCJabberHomeLabel
+# define kABJabberInstantProperty kABCJabberInstantProperty
+# define kABJabberWorkLabel kABCJabberWorkLabel
+# define kABJobTitleProperty kABCJobTitleProperty
+# define kABLastNameProperty kABCLastNameProperty
+# define kABMSNInstantProperty kABCMSNInstantProperty
+# define kABManagerLabel kABCManagerLabel
+# define kABMiddleNameProperty kABCMiddleNameProperty
+# define kABModificationDateProperty kABCModificationDateProperty
+# define kABNicknameProperty kABCNicknameProperty
+# define kABNoteProperty kABCNoteProperty
+# define kABOrganizationProperty kABCOrganizationProperty
+# define kABOtherDatesProperty kABCOtherDatesProperty
+# define kABPhoneHomeFAXLabel kABCPhoneHomeFAXLabel
+# define kABPhoneHomeLabel kABCPhoneHomeLabel
+# define kABPhoneMainLabel kABCPhoneMainLabel
+# define kABPhoneMobileLabel kABCPhoneMobileLabel
+# define kABPhonePagerLabel kABCPhonePagerLabel
+# define kABPhoneProperty kABCPhoneProperty
+# define kABPhoneWorkFAXLabel kABCPhoneWorkFAXLabel
+# define kABPhoneWorkLabel kABCPhoneWorkLabel
+# define kABRelatedNamesProperty kABCRelatedNamesProperty
+# define kABSpouseLabel kABCSpouseLabel
+# define kABSuffixProperty kABCSuffixProperty
+// # define kABTitleProperty kABCTitleProperty
+// # define kABURLsProperty kABCURLsProperty
+# define kABYahooInstantProperty kABCYahooInstantProperty
+#else
+# #define PersonCreateWrapper(_addressbook) ABPersonCreate()
+#endif
 #include "AddressBookSource.h"
 
 #include <common/base/Log.h>
@@ -61,6 +132,30 @@ static CFStringRef Std2CFString(const string &str)
     ref<CFStringRef> cfstring(CFStringCreateWithCString(NULL, str.c_str(), kCFStringEncodingUTF8), "conversion from CFString");
     return cfstring.release();
 }
+
+#ifdef __arm__
+
+extern "C" const CFStringRef kABCHomePageProperty;
+extern "C" const CFStringRef kABCURLProperty;
+
+extern "C" ABPersonRef ABCPersonCreateNewPerson(ABAddressBookRef addressbook);
+
+extern "C" ABRecordRef ABCPersonGetRecordForUniqueID(ABAddressBookRef addressBook, SInt32 uid);
+extern "C" ABRecordRef ABCopyRecordForUniqueId(ABAddressBookRef addressBook, CFStringRef uniqueId)
+{
+    SInt32 uid = CFStringGetIntValue(uniqueId);
+    return ABCPersonGetRecordForUniqueID(addressBook, uid);
+}
+
+extern "C" SInt32 ABCRecordGetUniqueId(ABRecordRef record);
+extern "C" CFStringRef ABRecordCopyUniqueId(ABRecordRef record)
+{
+    SInt32 uid = ABCRecordGetUniqueId(record);
+    return CFStringCreateWithFormat(NULL, NULL, CFSTR("%d"), uid);
+}
+
+#endif
+
 
 /**
  * a strtok_r() which does no skip delimiters at the start and end and does 
@@ -108,21 +203,39 @@ public:
         // Remove all properties from person that we might set:
         // those still found in the vCard will be recreated.
         // Properties that we do not support are left untouched.
+        LOG.debug("removing values");
         for (int mapindex = 0;
              m_mapping[mapindex].m_vCardProp;
              mapindex++) {
+            printf(" mapindex %d\n", mapindex);
             const mapping &map = m_mapping[mapindex];
             if (map.m_abPersonProp) {
-                if (!ABRecordRemoveValue(m_person, map.m_abPersonProp)) {
-                    throw runtime_error("removing old value " + CFString2Std(map.m_abPersonProp) + " failed");
+                if (!ABRecordRemoveValue(m_person, *map.m_abPersonProp)) {
+                    throw runtime_error("removing old value "
+#ifndef __arm__
+                                        + CFString2Std(*map.m_abPersonProp) + " " +
+#endif
+                                        "failed");
                 }
+            }
+        }
+        for (int multi = 0; multi < MAX_MULTIVALUE; multi++) {
+            printf(" multi %d\n", multi);
+            if (!ABRecordRemoveValue(m_person, *m_multiProp[multi])) {
+                throw runtime_error("removing old value "
+#ifndef __arm__
+                                    + CFString2Std(**m_multiProp[multi]) + " " +
+#endif
+                                    "failed");
             }
         }
 
         // walk through all properties and handle them
         int propindex = 0;
         VProperty *vprop;
+        LOG.debug("storing properties in contact");
         while ((vprop = vobj->getProperty(propindex)) != NULL) {
+            LOG.debug("property %s", vprop->getName());
             for (int mapindex = 0;
                  m_mapping[mapindex].m_vCardProp;
                  mapindex++) {
@@ -133,6 +246,7 @@ public:
                         handler = &vCard2ABPerson::toPersonString;
                     }
                     (this->*handler)(map, *vprop);
+                    LOG.debug("property %s handled", vprop->getName());
                     break;
                 }
             }
@@ -140,12 +254,14 @@ public:
         }
 
         // now copy all those values to the person which did not map directly
+        LOG.debug("set multiprops");
         for (int multi = 0; multi < MAX_MULTIVALUE; multi++) {
             if (m_multi[multi]) {
-                setPersonProp(m_multiProp[multi], m_multi[multi]);
+                setPersonProp(*m_multiProp[multi], m_multi[multi]);
             }
         }
 
+        LOG.debug("set photo");
         VProperty *photo = vobj->getProperty("PHOTO");
         if (photo) {
             int len;
@@ -155,6 +271,8 @@ public:
                 throw runtime_error("cannot set photo data");
             }
         }
+
+        LOG.debug("contact done");
     }
 
     void fromPerson() {
@@ -162,7 +280,7 @@ public:
         const unsigned char *text;
         
         // VObject is so broken that it neither as a reset nor
-        // an assignment operator - no I didn't write it :-/
+        // an assignment operator - no, I didn't write it :-/
         //
         // Reseting m_vobj was supposed to allow repeated calls
         // to fromPerson, but this is not really necessary.
@@ -177,14 +295,24 @@ public:
              m_mapping[mapindex].m_vCardProp;
              mapindex++ ) {
             const mapping &map = m_mapping[mapindex];
+            printf("%d: ", mapindex);
+            printf("%s prop %p = %p\n",
+                   map.m_vCardProp,
+                   map.m_abPersonProp,
+                   map.m_abPersonProp ? *map.m_abPersonProp : 0);
             if (map.m_abPersonProp) {
-                ref<CFTypeRef> value(ABRecordCopyValue(m_person, map.m_abPersonProp));
+                ref<CFTypeRef> value(ABRecordCopyValue(m_person, *map.m_abPersonProp));
+                printf("got %p\n", (CFTypeRef)value);
                 if (value) {
+                    ref<CFStringRef> descr(CFCopyDescription(value));
+                    printf(" = %s\n",
+                           CFString2Std(descr).c_str());
                     fromPerson_t handler = map.m_fromPerson;
                     if (!handler) {
                         handler = &vCard2ABPerson::fromPersonString;
                     }
                     (this->*handler)(map, value);
+                    printf(" handled\n");
                 }
             }
         }
@@ -225,10 +353,11 @@ public:
         m_vobj.fromNativeEncoding();
         arrayptr<char> finalstr(m_vobj.toString(), "VOCL string");
         m_vcard = (char *)finalstr;
+        LOG.debug("extracted %s",
+                  (char *)finalstr);
     }
 
 private:
-    string m_errorPrefix;
     string &m_vcard;
     ABPersonRef m_person;
     VObject m_vobj;
@@ -252,21 +381,27 @@ private:
 
     /** intermediate storage for multi-value data later passed to ABPerson - keep in sync with m_multiProp */
     enum {
-        URLS,
         EMAILS,
         PHONES,
+#ifndef __arm__
         DATES,
-        NAMES,
-        ADDRESSES,
         AIM,
         JABBER,
         MSN,
         YAHOO,
         ICQ,
+#endif
+        NAMES,
+        ADDRESSES,
         MAX_MULTIVALUE
     };
     ref<ABMutableMultiValueRef> m_multi[MAX_MULTIVALUE];
-    static const CFStringRef m_multiProp[MAX_MULTIVALUE];
+    /**
+     * the ABPerson property which corresponds to the m_multi array:
+     * a pointer because the tool chain for the iPhone did not properly
+     * handle the constants
+     */
+    static const CFStringRef *m_multiProp[MAX_MULTIVALUE];
 
     struct mapping;
     typedef void (vCard2ABPerson::*toPerson_t)(const mapping &map, VProperty &vprop);
@@ -281,10 +416,12 @@ private:
         setPersonProp(property, cfstring);
     }
     void setPersonProp(CFStringRef property, CFTypeRef cftype) {
+        ref<CFStringRef> descr(CFCopyDescription(cftype));
+        LOG.debug("setting property %p to %s", property, CFString2Std(descr).c_str());
         if (!ABRecordSetValue(m_person, property, cftype)) {
-            ref<CFStringRef> descr(CFCopyDescription(cftype));
             throwError("setting " + CFString2Std(property) + " to '" + CFString2Std(descr) + "'");
         }
+        LOG.debug("setting done");
     }
 
     /**
@@ -293,8 +430,8 @@ private:
     static const struct mapping {
         /** the name of the vCard property, e.g. "ADDR" */
         const char *m_vCardProp;
-        /** the predefined string reference for an ABPerson property */
-        CFStringRef m_abPersonProp;
+        /** address of ABPerson property, NULL pointer if none matches directly */
+        const CFStringRef *m_abPersonProp;
         /** called when the property is found in the VObject: default is to copy string */
         toPerson_t m_toPerson;
         /** called when the property is found in the ABPerson: default is to copy string */
@@ -315,7 +452,8 @@ private:
         if (!value) {
             value = "";
         }
-        setPersonProp(map.m_abPersonProp, value);
+        // assert(map.m_abPersonProp);
+        setPersonProp(*map.m_abPersonProp, value);
     }
 
     void fromPersonStoreString(const mapping &map, CFTypeRef cftype) {
@@ -342,12 +480,15 @@ private:
             date.day = day;
             ref<CFDateRef> cfdate(CFDateCreate(NULL, CFGregorianDateGetAbsoluteTime(date, NULL)));
             if (cfdate) {
-                setPersonProp(map.m_abPersonProp, cfdate);
+                // assert(map.m_abPersonProp);
+                setPersonProp(*map.m_abPersonProp, cfdate);
             }
         }
     }
 
     void fromPersonURLs(const mapping &map, CFTypeRef cftype) {
+#ifndef __arm__
+        // TODO: figure out what kABCURLProperty stands for
         int index = ABMultiValueCount((ABMultiValueRef)cftype) - 1;
         while (index >= 0) {
             ref<CFStringRef> label((CFStringRef)ABMultiValueCopyLabelAtIndex((ABMultiValueRef)cftype, index), "label");
@@ -364,6 +505,7 @@ private:
 
             index--;
         }
+#endif
     }
 
     void fromPersonEMail(const mapping &map, CFTypeRef cftype) {
@@ -389,6 +531,8 @@ private:
         }
     }
     void toPersonEMail(const mapping &map, VProperty &vprop) {
+#ifndef __arm__
+        // TODO: crashes on iPhone
         const char *value = vprop.getValue();
         arrayptr<char> buffer(wstrdup(value ? value : ""));
         char *saveptr, *endptr;
@@ -416,6 +560,7 @@ private:
         } else {
             ref<CFStringRef> cfres(res);
         }
+#endif
     }
 
     void fromPersonAddr(const mapping &map, CFTypeRef cftype) {
@@ -571,6 +716,8 @@ private:
         }
     }
     void toPersonPhone(const mapping &map, VProperty &vprop) {
+#ifndef __arm__
+        // TODO: crashes on iPhone
         const char *value = vprop.getValue();
         arrayptr<char> buffer(wstrdup(value ? value : ""));
         char *saveptr, *endptr;
@@ -612,6 +759,7 @@ private:
         } else {
             ref<CFStringRef> cfres(res);
         }
+#endif
     }
 
     void fromPersonChat(const mapping &map, CFTypeRef cftype) {
@@ -688,7 +836,9 @@ private:
         if (!prefix) {
             return;
         }
+#ifndef __arm__
         setPersonProp(kABTitleProperty, prefix);
+#endif
 
         char *suffix = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
         if (!suffix) {
@@ -747,58 +897,66 @@ private:
     }
 };
 
-const CFStringRef vCard2ABPerson::m_multiProp[MAX_MULTIVALUE] = {
-    (CFStringRef)kABURLsProperty,
-    kABEmailProperty,
-    kABPhoneProperty,
-    kABOtherDatesProperty,
-    kABRelatedNamesProperty,
-    kABAddressProperty,
-    kABAIMInstantProperty,
-    kABJabberInstantProperty,
-    kABMSNInstantProperty,
-    kABYahooInstantProperty,
-    kABICQInstantProperty
+const CFStringRef *vCard2ABPerson::m_multiProp[MAX_MULTIVALUE] = {
+    &kABEmailProperty,
+    &kABPhoneProperty,
+#ifndef __arm__
+    &kABOtherDatesProperty,
+    &kABAIMInstantProperty,
+    &kABJabberInstantProperty,
+    &kABMSNInstantProperty,
+    &kABYahooInstantProperty,
+    &kABICQInstantProperty,
+#endif
+    &kABRelatedNamesProperty,
+    &kABAddressProperty
 };
 
 const vCard2ABPerson::mapping vCard2ABPerson::m_mapping[] = {
-    { "", kABFirstNameProperty, NULL, &vCard2ABPerson::fromPersonStoreString, FIRST_NAME },
-    { "", kABLastNameProperty, NULL, &vCard2ABPerson::fromPersonStoreString, LAST_NAME },
-    { "", kABMiddleNameProperty, NULL, &vCard2ABPerson::fromPersonStoreString, MIDDLE_NAME },
-    { "", kABTitleProperty, NULL, &vCard2ABPerson::fromPersonStoreString, TITLE },
-    { "", kABSuffixProperty, NULL, &vCard2ABPerson::fromPersonStoreString, SUFFIX },
+    { "", &kABFirstNameProperty, NULL, &vCard2ABPerson::fromPersonStoreString, FIRST_NAME },
+    { "", &kABLastNameProperty, NULL, &vCard2ABPerson::fromPersonStoreString, LAST_NAME },
+    { "", &kABMiddleNameProperty, NULL, &vCard2ABPerson::fromPersonStoreString, MIDDLE_NAME },
+#ifndef __arm__
+    { "", &kABTitleProperty, NULL, &vCard2ABPerson::fromPersonStoreString, TITLE },
+#endif
+    { "", &kABSuffixProperty, NULL, &vCard2ABPerson::fromPersonStoreString, SUFFIX },
     { "N", 0, &vCard2ABPerson::toPersonName },
     /* "FN" */
     /* kABFirstNamePhoneticProperty */
     /* kABLastNamePhoneticProperty */
     /* kABMiddleNamePhoneticProperty */
-    { "BDAY", kABBirthdayProperty, &vCard2ABPerson::toPersonDate, &vCard2ABPerson::fromPersonDate },
+    { "BDAY", &kABBirthdayProperty, &vCard2ABPerson::toPersonDate, &vCard2ABPerson::fromPersonDate },
 
-    { "", kABOrganizationProperty, NULL, &vCard2ABPerson::fromPersonStoreString, ORGANIZATION },
-    { "", kABDepartmentProperty, NULL, &vCard2ABPerson::fromPersonStoreString, DEPARTMENT },
+    { "", &kABOrganizationProperty, NULL, &vCard2ABPerson::fromPersonStoreString, ORGANIZATION },
+    { "", &kABDepartmentProperty, NULL, &vCard2ABPerson::fromPersonStoreString, DEPARTMENT },
     { "ORG", 0, &vCard2ABPerson::toPersonOrg },
 
-    { "TITLE", kABJobTitleProperty },
+    { "TITLE", &kABJobTitleProperty },
     /* "ROLE" */
 
+#ifdef __arm__
+    // TODO: { "", &kABCURLProperty, NULL, &vCard2ABPerson::fromPersonURLs },
+#else
     /**
      * bug in the header files for kABHomePageProperty and kABURLsProperty,
      * typecast required
      */
-    { "URL", (CFStringRef)kABHomePageProperty },
-    { "", (CFStringRef)kABURLsProperty, NULL, &vCard2ABPerson::fromPersonURLs },
+    { "URL", (CFStringRef *)&kABHomePageProperty },
+    { "", (CFStringRef *)&kABURLsProperty, NULL, &vCard2ABPerson::fromPersonURLs },
+#endif
 #if 0
 kABHomePageLabel
 #endif
 
-    { "EMAIL", kABEmailProperty, &vCard2ABPerson::toPersonEMail, &vCard2ABPerson::fromPersonEMail, EMAILS },
+#ifndef __arm__
+    { "EMAIL", &kABEmailProperty, &vCard2ABPerson::toPersonEMail, &vCard2ABPerson::fromPersonEMail, EMAILS },
 #if 0
 kABEmailWorkLabel
 kABEmailHomeLabel
 #endif
         
 
-    { "ADR", kABAddressProperty, &vCard2ABPerson::toPersonAddr, &vCard2ABPerson::fromPersonAddr, ADDRESSES },
+    { "ADR", &kABAddressProperty, &vCard2ABPerson::toPersonAddr, &vCard2ABPerson::fromPersonAddr, ADDRESSES },
 #if 0
 kABAddressWorkLabel
 kABAddressHomeLabel
@@ -812,7 +970,9 @@ kABAddressCountryCodeKey
 #endif
     /* LABEL */
 
-    { "TEL", kABPhoneProperty, &vCard2ABPerson::toPersonPhone, &vCard2ABPerson::fromPersonPhone, PHONES },
+    { "TEL", &kABPhoneProperty, &vCard2ABPerson::toPersonPhone, &vCard2ABPerson::fromPersonPhone, PHONES },
+#endif // __arm__
+
 #if 0
 kABPhoneWorkLabel
 kABPhoneHomeLabel
@@ -822,18 +982,22 @@ kABPhoneHomeFAXLabel
 kABPhoneWorkFAXLabel
 kABPhonePagerLabel
 #endif
-    { "X-AIM", kABAIMInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, AIM },
-    { "X-JABBER", kABJabberInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, JABBER },
-    { "X-MSN", kABMSNInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, MSN },
-    { "X-YAHOO", kABYahooInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, YAHOO },
-    { "X-ICQ", kABICQInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, ICQ },
+#ifndef __arm__
+    { "X-AIM", &kABAIMInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, AIM },
+    { "X-JABBER", &kABJabberInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, JABBER },
+    { "X-MSN", &kABMSNInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, MSN },
+    { "X-YAHOO", &kABYahooInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, YAHOO },
+    { "X-ICQ", &kABICQInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, ICQ },
+#endif
     /* "X-GROUPWISE */
-    { "NOTE", kABNoteProperty },
-    { "NICKNAME", kABNicknameProperty },
+    { "NOTE", &kABNoteProperty },
+    { "NICKNAME", &kABNicknameProperty },
     
     /* kABMaidenNameProperty */
     /* kABOtherDatesProperty */
-    { "", kABRelatedNamesProperty, NULL, &vCard2ABPerson::fromPersonNames },
+#ifndef __arm__
+    { "", &kABRelatedNamesProperty, NULL, &vCard2ABPerson::fromPersonNames },
+#endif
 #if 0
 kABMotherLabel
 kABFatherLabel
@@ -865,9 +1029,13 @@ kABManagerLabel
 };
 
 
-
 double AddressBookSource::getModTime(ABRecordRef record)
 {
+    double absolute;
+#ifdef __arm__
+    absolute = (double)(int)ABRecordCopyValue(record,
+                                              kABModificationDateProperty);
+#else
     ref<CFDateRef> itemModTime((CFDateRef)ABRecordCopyValue(record,
                                                             kABModificationDateProperty));
     if (!itemModTime) {
@@ -877,12 +1045,13 @@ double AddressBookSource::getModTime(ABRecordRef record)
     if (!itemModTime) {
         throwError("cannot extract time stamp");
     }
+    absolute = CFDateGetAbsoluteTime(itemModTime);
+#endif
 
     // round up to next full second:
     // together with a sleep of 1 second in endSyncThrow() this ensures
     // that our time stamps are always >= the stored time stamp even if
     // the time stamp is rounded in the database
-    double absolute = CFDateGetAbsoluteTime(itemModTime);
     return ceil(absolute);
 }
 
@@ -912,7 +1081,10 @@ EvolutionSyncSource::sources AddressBookSource::getSyncBackends()
 
 void AddressBookSource::open()
 {
-    m_addressbook.set(ABGetSharedAddressBook(), "address book");
+    m_addressbook = ABGetSharedAddressBook();
+    if (!m_addressbook) {
+        throwError("could not open address book");
+    }
     m_modTimes.set(new spdm::DeviceManagementNode(m_modNodeName.c_str()), "change management node");
     m_modTimes->setAutosave(FALSE);
 }
@@ -976,37 +1148,60 @@ void AddressBookSource::endSyncThrow()
     resetItems();
 
     if (m_addressbook && !hasFailed()) {
+        LOG.debug("flushing address book");
+
         // store changes persistently
         if (!ABSave(m_addressbook)) {
             throwError("could not save address book");
         }
+
+        fprintf(stderr, "saved address book\n");
+
         m_modTimes->update(FALSE);
 
         // time stamps are rounded to next second,
         // so to prevent changes in that range of inaccurracy
         // sleep a bit before returning control
         sleep(2);
+
+        LOG.debug("done with address book");
     }
 }
 
 void AddressBookSource::close()
 {
+    printf("close\n");
     endSyncThrow();
+    printf("free addressbook\n");
     m_addressbook = NULL;
+    printf("free mod times\n");
     m_modTimes = NULL;
+    printf("closed\n");
 }
 
 void AddressBookSource::exportData(ostream &out)
 {
+    LOG.debug("getting list of all people");
+
     ref<CFArrayRef> allPersons(ABCopyArrayOfAllPeople(m_addressbook), "list of all people");
 
+    LOG.debug("got list");
+    LOG.debug("%d persons", (int)CFArrayGetCount(allPersons));
+
     for (CFIndex i = 0; i < CFArrayGetCount(allPersons); i++) {
-        ref<CFStringRef> cfuid(ABRecordCopyUniqueId((ABRecordRef)CFArrayGetValueAtIndex(allPersons, i)), "reading UID");
+        ABRecordRef person = (ABRecordRef)CFArrayGetValueAtIndex(allPersons, i);
+        CFStringRef descr = CFCopyDescription(person);
+        LOG.debug("at index foo %s", CFString2Std(descr).c_str());
+        LOG.debug("before copy");
+        ref<CFStringRef> cfuid(ABRecordCopyUniqueId(person), "reading UID");
+        LOG.debug("after copy");
         string uid(CFString2Std(cfuid));
         eptr<SyncItem> item(createItem(uid, SYNC_STATE_NONE), "sync item");
 
         out << (char *)item->getData() << "\n";
     }
+
+    LOG.debug("done with list of all people");
 }
 
 SyncItem *AddressBookSource::createItem( const string &uid, SyncState state )
@@ -1074,7 +1269,9 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
         person.set((ABPersonRef)ABCopyRecordForUniqueId(m_addressbook, cfuid), "contact");
     } else {
         // new contact
-        person.set(ABPersonCreate(), "contact");
+        LOG.debug("before creating contact");
+        person.set(PersonCreateWrapper(m_addressbook), "contact");
+        LOG.debug("after creating contact");
     }
     try {
         LOG.debug("storing vCard for %s:\n%s",
@@ -1082,6 +1279,7 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
                   data.c_str());
         vCard2ABPerson converter(data, person);
         converter.toPerson();
+        LOG.debug("person set");
     } catch (const std::exception &ex) {
         throwError(string("storing vCard for ") + (uid ? uid : "new contact") + " failed: " + ex.what());
     }
@@ -1090,22 +1288,39 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
 
     // make sure we have a modification time stamp, otherwise the address book
     // sets one at random times
+    LOG.debug("create time");
     CFAbsoluteTime nowabs = CFAbsoluteTimeGetCurrent();
+    LOG.debug("setting absolute time %f", nowabs);
+#ifdef __arm__
+    void *now = (void *)(int)round(nowabs);
+#else
     ref<CFDateRef> now(CFDateCreate(NULL, nowabs), "current time");
+#endif
     if (!ABRecordSetValue(person, kABModificationDateProperty, now)) {
         throwError("setting mod time");
     }
+    LOG.debug("time set\n");
 
     // existing contacts do not have to (and cannot) be added (?)
     if (uid || ABAddRecord(m_addressbook, person)) {
+        printf("inserted contact\n");
+
+#ifdef __arm__
+        /* need to save to get UID? */
+        ABSave(m_addressbook);
+#endif
+
         ref<CFStringRef> cfuid(ABRecordCopyUniqueId(person), "uid");
-        string uid(CFString2Std(cfuid));
-        item.setKey(uid.c_str());
+        string uidstr(CFString2Std(cfuid));
+        item.setKey(uidstr.c_str());
 
         char buffer[80];
         sprintf(buffer, "%.8f", getModTime(person));
-        m_modTimes->setPropertyValue(uid.c_str(), buffer);
+        LOG.debug("inserted contact %s with modification time %s",
+                  uidstr.c_str(), buffer);
+        m_modTimes->setPropertyValue(uidstr.c_str(), buffer);
     } else {
+        printf("error adding contact\n");
         throwError("storing new contact");
     }
 

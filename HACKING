@@ -153,3 +153,19 @@ that address book syncing uses the default libraries):
   apt-cache showpkg libecal-dev libedata-cal-dev
   ver=1.4.1-0zoh4; for i in libecal-dev libecal libedata-cal libedata-cal-dev; do  wget http://maemo.o-hand.com/packages/mistral/${i}_${ver}_armel.deb; done
   dpkg --force-depends -i *.deb
+
+- compiling for iPhone:
+  Requires iPhone toolchain and libcurl, ideally configured as small as possible
+  and statically (to avoid packaging problems):
+      ./configure --prefix=/usr/local/iphone --host=arm-apple-darwin --disable-shared \
+                  --disable-crypto-auth --without-gnutls --without-ssl --without-zlib \
+                  --without-libssh2 --disable-ipv6 --disable-manual --disable-telnet \
+                  --disable-tftp  --disable-ldap  --disable-file --disable-ftp
+      manually set HAVE_POSIX_STRERROR_R in lib/config.h
+
+  Potential problems with toolchain:
+    std++ not found: ln -s libstdc++.6.dylib /usr/local/iphone-filesystem/usr/lib/libstdc++.dylib
+    AddressBook framework must be added to iphone-dev/include/install-headers.sh.in
+
+  Compile with curl-config in the PATH:
+    PATH=/usr/local/iphone/bin/:$PATH ~/projects/sync4jevolution/configure --host=arm-apple-darwin --with-sync4j-src=/home/patrick/projects/native CXXFLAGS=-g --disable-ecal --disable-ebook --enable-addressbook
