@@ -97,6 +97,8 @@ int main( int argc, char **argv )
     LOG.reset();
     LOG.setLevel(LOG_LEVEL_INFO);
     resetError();
+    setvbuf(stderr, NULL, _IONBF, 0);
+    setvbuf(stdout, NULL, _IONBF, 0);
 
     // Expand PATH to cover the directory we were started from?
     // This might be needed to find normalize_vcard.
