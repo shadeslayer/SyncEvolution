@@ -29,15 +29,21 @@
 #include <AddressBook/ABAddressBookC.h>
 #include "DeviceManagementNode.h"
 
+#ifdef __arm__
+/** enables iPhone hacks */
+# define IPHONE 1
+#endif
+
 /**
- * a smart pointer implementation for objects for which
- * a unref() function exists; in contrast to eptr the
- * base type already is a pointer
+ * a smart pointer for CoreFoundation object references
  *
  * trying to store a NULL pointer raises an exception,
  * unreferencing valid objects is done automatically
+ *
+ * @param T         the pointer type
+ * @param release   CFRelease() is only called when passing true
  */
-template<class T> class ref {
+template<class T, bool doRelease = true> class ref {
     /** do not allow copy construction */
     ref( const ref &other) {};
 
@@ -71,8 +77,7 @@ template<class T> class ref {
      */
     void set( T pointer, const char *objectName = NULL )
     {
-        fprintf(stderr, "ref %p: %p -> %p\n", this, m_pointer, pointer);
-        if (m_pointer) {
+        if (m_pointer && doRelease) {
             CFRelease(m_pointer);
         }
         if (!pointer && objectName) {
@@ -94,9 +99,59 @@ template<class T> class ref {
     }
 };
 
+#if 0
+/* template typedefs would have been handy here, but are not specified in C++ (yet) */
+#ifdef IPHONE
+/** do not free some particular objects on the iPhone because that crashes */
+template<class T> typedef ref<T, false> iphoneref;
+#else
+template<class T> typedef ref<T, true> iphoneref;
+#endif
+
+#else
+
+#ifdef IPHONE
+# define IPHONE_RELEASE false
+#else
+# define IPHONE_RELEASE true
+#endif
+
+#endif
+
 
 /**
- * Implements access to Mac OS X address book.
+ * The AddressBookSource synchronizes the Mac OS X and iPhone system
+ * address book using the "AddressBook" framework. Changes are tracked
+ * by comparing the current time stamp of a contact against its time
+ * stamp from the previous sync, stored in a separate key/value
+ * database. Contacts are converted to/from vCard 3.0 using custom
+ * code because a) the mapping can be chosen so that typical SyncML
+ * servers understand it and b) the iPhone's AddressBook does not have
+ * vcard import/export functions.
+ *
+ * On the iPhone the interface is similar, but not the same. These
+ * differences are hidden behind "ifdef IPHONE" which depends (for
+ * simplicity reasons) on the __arm__ define.
+ *
+ * Some of the differences and how they are handled are listed here.
+ * - ABC instead of AB prefix, other renames: map Mac OS X name to iPhone
+ *   name before including AddressBook.h, then use Mac OS X names
+ * - CFRelease() and CFCopyDescription on ABMultiValueRef crash (bugs?!):
+ *   use ref<T, IPHONE_RELEASE> for those instead the normal ref smart pointer,
+ *   avoid CFCopyDescription()
+ * - UID is integer, not CFStringRef: added wrapper function
+ * - the address of kABC*Property identifies properties, not the CFStringRef
+ *   at that address, caused toolchain problems when initializing data
+ *   with these addresses: added one additional address indirection
+ * - UIDs are assigned to added contacts only during saving, but are needed
+ *   earlier: save after adding each contact (affects performance and aborted
+ *   sync changes address book - perhaps better guess UID?)
+ * - Mac OS X 10.4 still uses the kABHomePageProperty (a single string),
+ *   the iPhone switched to the more recent kABCURLProperty/kABURLsProperty:
+ *   conversion code is slightly different
+ * - iPhone does not have a title (e.g. "sir") property, only the job title
+ * - label constants are not part of the framework:
+ *   defined in AddressSourceConstants
  */
 class AddressBookSource : public EvolutionSyncSource
 {
@@ -127,8 +182,8 @@ class AddressBookSource : public EvolutionSyncSource
     virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "vcf"; }
     virtual const char *getMimeType() { return "text/x-vcard"; }
-    virtual const char *getMimeVersion() { return "2.1"; }
-    virtual const char *getSupportedTypes() { return "text/x-vcard:2.1"; }
+    virtual const char *getMimeVersion() { return "3.0"; }
+    virtual const char *getSupportedTypes() { return "text/x-vcard:3.0"; }
    
     virtual SyncItem *createItem( const string &uid, SyncState state );
     

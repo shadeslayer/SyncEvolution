@@ -28,10 +28,11 @@ using namespace std;
 #ifdef ENABLE_ADDRESSBOOK
 
 #ifdef __arm__
-// On the iPhone the API is different, but the changes mostly seem to
-// consist of renames. Some constants and the vcard conversion
-// functions are missing. Unique IDs are integers, not string references.
+/** enables iPhone hacks */
+# define IPHONE 1
+#endif
 
+#ifdef IPHONE
 # define ABAddRecord ABCAddRecord
 # define ABCopyArrayOfAllPeople ABCCopyArrayOfAllPeople
 # define ABGetSharedAddressBook ABCGetSharedAddressBook
@@ -134,29 +135,33 @@ static CFStringRef Std2CFString(const string &str)
     return cfstring.release();
 }
 
+/** generic label for 'other' items in a multi-value list */
 static const CFStringRef otherLabel(CFSTR("_$!<Other>!$_"));
+/** generic label for 'work' items in a multi-value list */
 static const CFStringRef workLabel(CFSTR("_$!<Work>!$_"));
+/** custom label used for "TEL;PREF;WORK" */
 static const CFStringRef mainWorkLabel(CFSTR("main work"));
 
-#ifdef __arm__
+#ifdef IPHONE
 
-extern "C" const CFStringRef kABCHomePageProperty;
-extern "C" const CFStringRef kABCURLProperty;
+/** declarations and functions which are missing in iPhone framework */
+extern "C" {
+    extern const CFStringRef kABCHomePageProperty;
+    extern const CFStringRef kABCURLProperty;
+    
+    ABPersonRef ABCPersonCreateNewPerson(ABAddressBookRef addressbook);
 
-extern "C" ABPersonRef ABCPersonCreateNewPerson(ABAddressBookRef addressbook);
+    ABRecordRef ABCPersonGetRecordForUniqueID(ABAddressBookRef addressBook, SInt32 uid);
+    ABRecordRef ABCopyRecordForUniqueId(ABAddressBookRef addressBook, CFStringRef uniqueId) {
+        SInt32 uid = CFStringGetIntValue(uniqueId);
+        return ABCPersonGetRecordForUniqueID(addressBook, uid);
+    }
 
-extern "C" ABRecordRef ABCPersonGetRecordForUniqueID(ABAddressBookRef addressBook, SInt32 uid);
-extern "C" ABRecordRef ABCopyRecordForUniqueId(ABAddressBookRef addressBook, CFStringRef uniqueId)
-{
-    SInt32 uid = CFStringGetIntValue(uniqueId);
-    return ABCPersonGetRecordForUniqueID(addressBook, uid);
-}
-
-extern "C" SInt32 ABCRecordGetUniqueId(ABRecordRef record);
-extern "C" CFStringRef ABRecordCopyUniqueId(ABRecordRef record)
-{
-    SInt32 uid = ABCRecordGetUniqueId(record);
-    return CFStringCreateWithFormat(NULL, NULL, CFSTR("%d"), uid);
+    SInt32 ABCRecordGetUniqueId(ABRecordRef record);
+    CFStringRef ABRecordCopyUniqueId(ABRecordRef record) {
+        SInt32 uid = ABCRecordGetUniqueId(record);
+        return CFStringCreateWithFormat(NULL, NULL, CFSTR("%d"), uid);
+    }
 }
 
 #endif
@@ -191,56 +196,19 @@ static char *my_strtok_r(char *buffer, char delim, char **ptr, char **endptr)
     return res;
 }
 
-#if 0
-/**
- * retains a reference to all objects stored in it,
- * releases that when cleared or deleted
- */
-class CFStorage : private list<CFTypeRef> {
-public:
-    CFStorage() {}
-    CFStorage &operator = (const CFStorage &other) {
-        clear();
-        for(const_iterator it = other.begin();
-            it != other.end();
-            it++) {
-            push_front(CFRetain(*it));
-        }
-    }
-
-    void add(CFTypeRef cf) {
-        push_front(CFRetain(cf));
-    }
-
-    void clear() {
-        while(true) {
-            iterator it = begin();
-            if (it == end()) {
-                break;
-            }
-            CFRelease(*it);
-            pop_front();
-        }
-    }
-};
-#endif
-
-
 /** converts between vCard and ABPerson and back */
 class vCard2ABPerson {
 public:
     vCard2ABPerson(string &vcard, ABPersonRef person) :
         m_vcard(vcard),
         m_person(person) {
-#ifdef __arm__
-        memset(m_multi, 0, sizeof(m_multi));
-#endif
     }
 
     ~vCard2ABPerson() {
         printf("destructing vCard2ABPerson with m_multi = %p\n", &m_multi);
     }
 
+    /** parses vcard and stores result in person */
     void toPerson() {
         std::auto_ptr<VObject> vobj(VConverter::parse((char *)m_vcard.c_str()));
         if (vobj.get() == 0) {
@@ -259,22 +227,22 @@ public:
             const mapping &map = m_mapping[mapindex];
             if (map.m_abPersonProp) {
                 if (!ABRecordRemoveValue(m_person, *map.m_abPersonProp)) {
-                    throw runtime_error("removing old value "
-#ifndef __arm__
-                                        + CFString2Std(*map.m_abPersonProp) + " " +
+                    throwError("removing old value "
+#ifndef IPHONE
+                               + CFString2Std(*map.m_abPersonProp) + " " +
 #endif
-                                        "failed");
+                               "failed");
                 }
             }
         }
         for (int multi = 0; multi < MAX_MULTIVALUE; multi++) {
             printf(" multi %d\n", multi);
             if (!ABRecordRemoveValue(m_person, *m_multiProp[multi])) {
-                throw runtime_error("removing old value "
-#ifndef __arm__
-                                    + CFString2Std(**m_multiProp[multi]) + " " +
+                throwError("removing old value "
+#ifndef IPHONE
+                           + CFString2Std(**m_multiProp[multi]) + " " +
 #endif
-                                    "failed");
+                           "failed");
             }
         }
 
@@ -323,6 +291,7 @@ public:
         LOG.debug("contact done");
     }
 
+    /** convert person into vCard 3.0 and store it in string */
     void fromPerson() {
         string tmp;
         const unsigned char *text;
@@ -349,7 +318,7 @@ public:
                    map.m_abPersonProp,
                    map.m_abPersonProp ? *map.m_abPersonProp : 0);
             if (map.m_abPersonProp) {
-#ifdef __arm__
+#ifdef IPHONE
                 // some of the properties returned on the iPhone can neither
                 // be printed nor released: trying it leads to crashes, so
                 // avoid it
@@ -359,7 +328,7 @@ public:
 #endif
                 printf("got %p\n", (CFTypeRef)value);
                 if (value) {
-#ifndef __arm__
+#ifndef IPHONE
                     ref<CFStringRef> descr(CFCopyDescription(value));
                     printf(" = %s\n",
                            CFString2Std(descr).c_str());
@@ -441,7 +410,7 @@ private:
         URLS,
         EMAILS,
         PHONES,
-#ifndef __arm__
+#ifndef IPHONE
         DATES,
         AIM,
         JABBER,
@@ -453,11 +422,7 @@ private:
         ADDRESSES,
         MAX_MULTIVALUE
     };
-#ifdef __arm__
-    ABMutableMultiValueRef m_multi[MAX_MULTIVALUE];
-#else
-    ref<ABMutableMultiValueRef> m_multi[MAX_MULTIVALUE];
-#endif
+    ref<ABMutableMultiValueRef, IPHONE_RELEASE> m_multi[MAX_MULTIVALUE];
     /**
      * the ABPerson property which corresponds to the m_multi array:
      * a pointer because the tool chain for the iPhone did not properly
@@ -466,17 +431,25 @@ private:
     static const CFStringRef *m_multiProp[MAX_MULTIVALUE];
 
     struct mapping;
+    /** member function which handles one specific vCard property */
     typedef void (vCard2ABPerson::*toPerson_t)(const mapping &map, VProperty &vprop);
+    /** member function which handles one specific ABPerson property */
     typedef void (vCard2ABPerson::*fromPerson_t)(const mapping &map, CFTypeRef cftype);
 
+    /** store a string in the ABPerson */
     void setPersonProp(CFStringRef property, const string &str) {
         ref<CFStringRef> cfstring(Std2CFString(str));
         setPersonProp(property, cfstring);
     }
+    /** store a string in the ABPerson */
     void setPersonProp(CFStringRef property, const char *str) {
         ref<CFStringRef> cfstring(Std2CFString(str));
         setPersonProp(property, cfstring);
     }
+    /**
+     * store a generic property in the ABPerson
+     * @param dump     avoid CFCopyDescription() for some properties (iPhone bug)
+     */
     void setPersonProp(CFStringRef property, CFTypeRef cftype, bool dump = true) {
         ref<CFStringRef> descr;
         if (dump) {
@@ -485,19 +458,52 @@ private:
         }
         if (!ABRecordSetValue(m_person, property, cftype)) {
             if (dump) {
-                throwError("setting " + CFString2Std(property) + " to '" + CFString2Std(descr) + "'");
+                throwError(string("setting ") +
+#ifndef IPHONE
+                           CFString2Std(property) +
+#else
+                           "property " +
+#endif
+                           + " to " + CFString2Std(descr) + "'");
             } else {
-                throwError("setting " + CFString2Std(property));
+                throwError(string("setting ") + 
+#ifndef IPHONE
+                           CFString2Std(property)
+#else
+                           "property"
+#endif
+                           );
             }
         }
         LOG.debug("setting done");
+    }
+
+    /** add another label/value pair to a multi-value list */
+    void toPersonMultiVal(const mapping &map, CFStringRef label, CFTypeRef value) {
+        if (!m_multi[map.m_customInt]) {
+            m_multi[map.m_customInt].set(ABMultiValueCreateMutable(), "multivalue");
+        }
+        CFStringRef res;
+        if (!ABMultiValueAdd(m_multi[map.m_customInt],
+                             value,
+                             label,
+                             &res)) {
+            printf("failed\n");
+            throwError(string("adding multi value for ") + map.m_vCardProp);
+        } else {
+            printf("free res %p", res);
+#ifndef IPHONE
+            CFRelease(res);
+#endif
+        }
+        printf("done\n");    
     }
 
     /**
      * mapping between vCard and ABPerson properties
      */
     static const struct mapping {
-        /** the name of the vCard property, e.g. "ADDR" */
+        /** the name of the vCard property, e.g. "ADDR", NULL terminates array */
         const char *m_vCardProp;
         /** address of ABPerson property, NULL pointer if none matches directly */
         const CFStringRef *m_abPersonProp;
@@ -511,11 +517,13 @@ private:
         CFStringRef m_customString;
     } m_mapping[];
 
+    /** copy normal string directly */
     void fromPersonString(const mapping &map, CFTypeRef cftype) {
         string value(CFString2Std((CFStringRef)cftype));
         m_vobj.addProperty(map.m_vCardProp, value.c_str());
     }
 
+    /** copy normal string directly */
     void toPersonString(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
         if (!value) {
@@ -525,16 +533,48 @@ private:
         setPersonProp(*map.m_abPersonProp, value);
     }
 
+    /** remember string to compose a more complex vCard property later (e.g. "N") */
     void fromPersonStoreString(const mapping &map, CFTypeRef cftype) {
         m_strings[map.m_customInt] = CFString2Std((CFStringRef)cftype);
     }
 
+    /**
+     * add a generic string with a predefined label
+     * (map.m_customString) or a work/home label to multi-value
+     */
+    void toPersonStore(const mapping &map, VProperty &vprop) {
+        const char *value = vprop.getValue();
+        if (!value) {
+            value = "";
+        }
+        ref<CFStringRef> cfstring(Std2CFString(value));
+        CFStringRef label = map.m_customString;
+        if (!label) {
+            // IM property: label depends on type;
+            // same simplification as in fromPersonChat
+            if (map.m_customString) {
+                label = map.m_customString;
+            } else if (vprop.isType("HOME")) {
+                label = kABJabberHomeLabel;
+            } else if (vprop.isType("WORK")) {
+                label = kABJabberHomeLabel;
+            } else {
+                label = otherLabel;
+            }
+        }
+
+        toPersonMultiVal(map, label, cfstring);
+    }
+
+    /** copy date */
     void fromPersonDate(const mapping &map, CFTypeRef cftype) {
         CFGregorianDate date = CFAbsoluteTimeGetGregorianDate(CFDateGetAbsoluteTime((CFDateRef)cftype), NULL);
         char buffer[40];
         sprintf(buffer, "%04d-%02d-%02d", date.year, date.month, date.day);
         m_vobj.addProperty(map.m_vCardProp, buffer);
     }
+
+    /** copy date */
     void toPersonDate(const mapping &map, VProperty &vprop) {
         int year, month, day;
         const char *value = vprop.getValue();
@@ -555,6 +595,7 @@ private:
         }
     }
 
+    /** map URL multi-value to vCard URL with different TYPEs */
     void fromPersonURLs(const mapping &map, CFTypeRef cftype) {
         int index = ABMultiValueCount((ABMultiValueRef)cftype) - 1;
         while (index >= 0) {
@@ -580,30 +621,7 @@ private:
         }
     }
 
-    void toPersonMultiVal(const mapping &map, CFStringRef label, CFTypeRef value) {
-        if (!m_multi[map.m_customInt]) {
-#ifdef __arm__
-            m_multi[map.m_customInt] = ABMultiValueCreateMutable();
-#else
-            m_multi[map.m_customInt].set(ABMultiValueCreateMutable(), "multivalue");
-#endif
-        }
-        CFStringRef res;
-        if (!ABMultiValueAdd(m_multi[map.m_customInt],
-                             value,
-                             label,
-                             &res)) {
-            printf("failed\n");
-            throw runtime_error(string("adding multi value for ") + map.m_vCardProp);
-        } else {
-            printf("free res %p", res);
-#ifndef __arm__
-            CFRelease(res);
-#endif
-        }
-        printf("done\n");    
-    }
-
+    /** iPhone: add another URL to multi-value (Mac OS X only has one string property) */
     void toPersonURLs(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
         arrayptr<char> buffer(wstrdup(value ? value : ""));
@@ -628,6 +646,7 @@ private:
         toPersonMultiVal(map, label, cfvalue);
     }
 
+    /** map email multi-value to vCard EMAIL with different TYPEs */
     void fromPersonEMail(const mapping &map, CFTypeRef cftype) {
         int index = ABMultiValueCount((ABMultiValueRef)cftype) - 1;
         while (index >= 0) {
@@ -640,7 +659,8 @@ private:
             } else if (CFStringCompare(label, kABEmailHomeLabel, 0) == kCFCompareEqualTo) {
                 vprop.addParameter("TYPE", "HOME");
             } else {
-                // custom phone types not supported
+                string labelstr = CFString2Std(label);
+                vprop.addParameter("TYPE", labelstr.c_str());
             }
 
             string email = CFString2Std(value);
@@ -650,6 +670,8 @@ private:
             index--;
         }
     }
+
+    /** add another EMAIL to the email multi-value */
     void toPersonEMail(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
         arrayptr<char> buffer(wstrdup(value ? value : ""));
@@ -657,10 +679,15 @@ private:
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
         CFStringRef label;
+        ref<CFStringRef> custom;
+        const char *type = vprop.getParameterValue("TYPE");
         if (vprop.isType("WORK")) {
             label = kABEmailWorkLabel;
         } else if(vprop.isType("HOME")) {
             label = kABEmailHomeLabel;
+        } else if (type) {
+            custom.set(Std2CFString(type));
+            label = custom;
         } else {
             label = otherLabel;
         }
@@ -668,6 +695,7 @@ private:
         toPersonMultiVal(map, label, cfvalue);
     }
 
+    /** map address multi-value to vCard ADR with different TYPEs */
     void fromPersonAddr(const mapping &map, CFTypeRef cftype) {
         int index = ABMultiValueCount((ABMultiValueRef)cftype) - 1;
         while (index >= 0) {
@@ -726,6 +754,8 @@ private:
             index--;
         }
     }
+
+    /** add another ADR to address multi-value */
     void toPersonAddr(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
         arrayptr<char> buffer(wstrdup(value ? value : ""));
@@ -775,6 +805,7 @@ private:
         toPersonMultiVal(map, label, dict);
     }
 
+    /** map phone multi-value to vCard TEL with different TYPEs */
     void fromPersonPhone(const mapping &map, CFTypeRef cftype) {
         int index = ABMultiValueCount((ABMultiValueRef)cftype) - 1;
         while (index >= 0) {
@@ -816,6 +847,8 @@ private:
             index--;
         }
     }
+
+    /** add another phone to the multi-value */
     void toPersonPhone(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
         arrayptr<char> buffer(wstrdup(value ? value : ""));
@@ -850,6 +883,11 @@ private:
         toPersonMultiVal(map, label, cfvalue);
     }
 
+    /**
+     * map chat contact multi-value to respective vCard X- properties
+     *
+     * complementary operation is toPersonStore()
+     */
     void fromPersonChat(const mapping &map, CFTypeRef cftype) {
         int index = ABMultiValueCount((ABMultiValueRef)cftype) - 1;
         while (index >= 0) {
@@ -876,6 +914,7 @@ private:
         }
     }
 
+    /** map related names multi-value to some vCard extension properties */
     void fromPersonNames(const mapping &map, CFTypeRef cftype) {
         int index = ABMultiValueCount((ABMultiValueRef)cftype) - 1;
         while (index >= 0) {
@@ -900,6 +939,11 @@ private:
         }
     }
 
+    /**
+     * decode vCard N and store in person properties
+     *
+     * complementary operation is fromPersonStoreString()
+     */
     void toPersonName(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
         arrayptr<char> buffer(wstrdup(value ? value : ""));
@@ -924,7 +968,7 @@ private:
         if (!prefix) {
             return;
         }
-#ifndef __arm__
+#ifndef IPHONE
         setPersonProp(kABTitleProperty, prefix);
 #endif
 
@@ -935,6 +979,11 @@ private:
         setPersonProp(kABSuffixProperty, suffix);
     }
 
+    /**
+     * decode ORG and store in person properties
+     *
+     * complementary operation is fromPersonStoreString()
+     */
     void toPersonOrg(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
         arrayptr<char> buffer(wstrdup(value ? value : ""));
@@ -949,39 +998,17 @@ private:
         }
         setPersonProp(kABDepartmentProperty, department);
     }
-
-    void toPersonStore(const mapping &map, VProperty &vprop) {
-        const char *value = vprop.getValue();
-        if (!value) {
-            value = "";
-        }
-        ref<CFStringRef> cfstring(Std2CFString(value));
-        CFStringRef label = map.m_customString;
-        if (!label) {
-            // IM property: label depends on type;
-            // same simplification as in fromPersonChat
-            if (vprop.isType("HOME")) {
-                label = kABJabberHomeLabel;
-            } else if (vprop.isType("WORK")) {
-                label = kABJabberHomeLabel;
-            } else {
-                label = otherLabel;
-            }
-        }
-
-        toPersonMultiVal(map, label, cfstring);
-    }
 };
 
 const CFStringRef *vCard2ABPerson::m_multiProp[MAX_MULTIVALUE] = {
-#ifdef __arm__
+#ifdef IPHONE
     &kABCURLProperty,
 #else
     (CFStringRef)kABURLsProperty,
 #endif
     &kABEmailProperty,
     &kABPhoneProperty,
-#ifndef __arm__
+#ifndef IPHONE
     &kABOtherDatesProperty,
     &kABAIMInstantProperty,
     &kABJabberInstantProperty,
@@ -997,7 +1024,7 @@ const vCard2ABPerson::mapping vCard2ABPerson::m_mapping[] = {
     { "", &kABFirstNameProperty, NULL, &vCard2ABPerson::fromPersonStoreString, FIRST_NAME },
     { "", &kABLastNameProperty, NULL, &vCard2ABPerson::fromPersonStoreString, LAST_NAME },
     { "", &kABMiddleNameProperty, NULL, &vCard2ABPerson::fromPersonStoreString, MIDDLE_NAME },
-#ifndef __arm__
+#ifndef IPHONE
     { "", &kABTitleProperty, NULL, &vCard2ABPerson::fromPersonStoreString, TITLE },
 #endif
     { "", &kABSuffixProperty, NULL, &vCard2ABPerson::fromPersonStoreString, SUFFIX },
@@ -1015,7 +1042,7 @@ const vCard2ABPerson::mapping vCard2ABPerson::m_mapping[] = {
     { "TITLE", &kABJobTitleProperty },
     /* "ROLE" */
 
-#ifdef __arm__
+#ifdef IPHONE
     { "URL", &kABCURLProperty, &vCard2ABPerson::toPersonURLs, &vCard2ABPerson::fromPersonURLs, URLS },
 #else
     /**
@@ -1060,7 +1087,7 @@ kABPhoneHomeFAXLabel
 kABPhoneWorkFAXLabel
 kABPhonePagerLabel
 #endif
-#ifndef __arm__
+#ifndef IPHONE
     { "X-AIM", &kABAIMInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, AIM },
     { "X-JABBER", &kABJabberInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, JABBER },
     { "X-MSN", &kABMSNInstantProperty, &vCard2ABPerson::toPersonStore, &vCard2ABPerson::fromPersonChat, MSN },
@@ -1073,7 +1100,7 @@ kABPhonePagerLabel
     
     /* kABMaidenNameProperty */
     /* kABOtherDatesProperty */
-#ifndef __arm__
+#ifndef IPHONE
     { "", &kABRelatedNamesProperty, NULL, &vCard2ABPerson::fromPersonNames },
 #endif
 #if 0
@@ -1101,7 +1128,6 @@ kABManagerLabel
     /* X-EVOLUTION-VIDEO-URL */
     /* X-MOZILLA-HTML */
     /* X-EVOLUTION-ANNIVERSARY */
-    /* PHOTO */
 
     { NULL }
 };
@@ -1110,7 +1136,7 @@ kABManagerLabel
 double AddressBookSource::getModTime(ABRecordRef record)
 {
     double absolute;
-#ifdef __arm__
+#ifdef IPHONE
     absolute = (double)(int)ABRecordCopyValue(record,
                                               kABModificationDateProperty);
 #else
@@ -1369,7 +1395,7 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
     LOG.debug("create time");
     CFAbsoluteTime nowabs = CFAbsoluteTimeGetCurrent();
     LOG.debug("setting absolute time %f", nowabs);
-#ifdef __arm__
+#ifdef IPHONE
     void *now = (void *)(int)round(nowabs);
 #else
     ref<CFDateRef> now(CFDateCreate(NULL, nowabs), "current time");
@@ -1383,7 +1409,7 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
     if (uid || ABAddRecord(m_addressbook, person)) {
         printf("inserted contact\n");
 
-#ifdef __arm__
+#ifdef IPHONE
         /* need to save to get UID? */
         ABSave(m_addressbook);
 #endif
