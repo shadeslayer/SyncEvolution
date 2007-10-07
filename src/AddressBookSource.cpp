@@ -27,11 +27,6 @@ using namespace std;
 
 #ifdef ENABLE_ADDRESSBOOK
 
-#ifdef __arm__
-/** enables iPhone hacks */
-# define IPHONE 1
-#endif
-
 #ifdef IPHONE
 # define ABAddRecord ABCAddRecord
 # define ABCopyArrayOfAllPeople ABCCopyArrayOfAllPeople
@@ -97,7 +92,7 @@ using namespace std;
 // # define kABURLsProperty kABCURLsProperty
 # define kABYahooInstantProperty kABCYahooInstantProperty
 #else
-# #define PersonCreateWrapper(_addressbook) ABPersonCreate()
+#define PersonCreateWrapper(_addressbook) ABPersonCreate()
 #endif
 #include "AddressBookSource.h"
 
@@ -1279,7 +1274,6 @@ SyncItem *AddressBookSource::createItem( const string &uid, SyncState state )
     } catch (const std::exception &ex) {
         throwError("creating vCard for " + uid + " failed: " + ex.what());
     }
-    LOG.debug("%s", vcard.c_str());
     item->setData(vcard.c_str(), vcard.size());
 #endif
 

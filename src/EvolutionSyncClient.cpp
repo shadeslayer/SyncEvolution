@@ -143,6 +143,7 @@ public:
                     break;
                 }
                 if (errno != EEXIST) {
+                    LOG.debug("%s: %s", m_path.c_str(), strerror(errno));
                     throw runtime_error(m_path + ": " + strerror(errno));
                 }
                 seq++;
@@ -178,11 +179,13 @@ public:
         if (m_logfile.size()) {
             // redirect logging into that directory, including stderr,
             // after truncating it
-            ofstream out;
-            out.exceptions(ios_base::badbit|ios_base::failbit|ios_base::eofbit);
-            out.open(m_logfile.c_str());
-            out.close();
-            setLogFile(m_logfile.c_str(), true);
+            FILE *file = fopen(m_logfile.c_str(), "w");
+            if (file) {
+                fclose(file);
+                setLogFile(m_logfile.c_str(), true);
+            } else {
+                LOG.error("creating log file %s failed", m_logfile.c_str());
+            }
         }
         m_oldLogLevel = LOG.getLevel();
         LOG.setLevel(logLevel > 0 ? (LogLevel)(logLevel - 1) /* fixed level */ :
@@ -276,7 +279,12 @@ class SourceList : public list<EvolutionSyncSource *> {
      */
     void dumpDatabases(const string &suffix, const string &removeSuffix = string("") ) {
         ofstream out;
+#ifndef IPHONE
+        // output stream on iPhone raises exception even though it is in a good state;
+        // perhaps the missing C++ exception support is the reason:
+        // http://code.google.com/p/iphone-dev/issues/detail?id=48
         out.exceptions(ios_base::badbit|ios_base::failbit|ios_base::eofbit);
+#endif
 
         for( iterator it = begin();
              it != end();
@@ -289,10 +297,11 @@ class SourceList : public list<EvolutionSyncSource *> {
             }
             
             file = databaseName(**it, suffix);
+            LOG.debug("creating %s", file.c_str());
             out.open(file.c_str());
             (*it)->exportData(out);
             out.close();
-
+            LOG.debug("%s created", file.c_str());
         }
     }
         

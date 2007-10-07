@@ -29,11 +29,6 @@
 #include <AddressBook/ABAddressBookC.h>
 #include "DeviceManagementNode.h"
 
-#ifdef __arm__
-/** enables iPhone hacks */
-# define IPHONE 1
-#endif
-
 /**
  * a smart pointer for CoreFoundation object references
  *
@@ -43,7 +38,15 @@
  * @param T         the pointer type
  * @param release   CFRelease() is only called when passing true
  */
-template<class T, bool doRelease = true> class ref {
+template<class T, bool doRelease = 
+#ifdef IPHONE
+    // by default do not release anything because that has led
+    // to crashes: this is the safe default in case of doubt
+    false
+#else
+    true
+#endif
+    > class ref {
     /** do not allow copy construction */
     ref( const ref &other) {};
 

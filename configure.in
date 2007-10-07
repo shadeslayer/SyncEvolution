@@ -331,6 +331,11 @@ AC_SUBST(SYNCEVOLUTION_LTLIBRARIES)
 AC_SUBST(SYNCEVOLUTION_LDADD)
 AC_SUBST(SYNCEVOLUTION_MODULES)
 
+dnl a quick-and-dirty way to detect compilation for the iPhone
+if test "$host" == "arm-apple-darwin"; then
+   AC_DEFINE(IPHONE, 1, [compiling for iPhone])
+fi
+
 AC_CHECK_HEADERS(stdarg.h)
 
 AC_OUTPUT([
