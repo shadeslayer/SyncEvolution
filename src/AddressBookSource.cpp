@@ -204,10 +204,6 @@ public:
         m_person(person) {
     }
 
-    ~vCard2ABPerson() {
-        printf("destructing vCard2ABPerson with m_multi = %p\n", &m_multi);
-    }
-
     /** parses vcard and stores result in person */
     void toPerson() {
         std::auto_ptr<VObject> vobj(VConverter::parse((char *)m_vcard.c_str()));
@@ -219,11 +215,9 @@ public:
         // Remove all properties from person that we might set:
         // those still found in the vCard will be recreated.
         // Properties that we do not support are left untouched.
-        LOG.debug("removing values");
         for (int mapindex = 0;
              m_mapping[mapindex].m_vCardProp;
              mapindex++) {
-            printf(" mapindex %d\n", mapindex);
             const mapping &map = m_mapping[mapindex];
             if (map.m_abPersonProp) {
                 if (!ABRecordRemoveValue(m_person, *map.m_abPersonProp)) {
@@ -236,7 +230,6 @@ public:
             }
         }
         for (int multi = 0; multi < MAX_MULTIVALUE; multi++) {
-            printf(" multi %d\n", multi);
             if (!ABRecordRemoveValue(m_person, *m_multiProp[multi])) {
                 throwError("removing old value "
 #ifndef IPHONE
@@ -249,9 +242,7 @@ public:
         // walk through all properties and handle them
         int propindex = 0;
         VProperty *vprop;
-        LOG.debug("storing properties in contact");
         while ((vprop = vobj->getProperty(propindex)) != NULL) {
-            LOG.debug("property %s", vprop->getName());
             for (int mapindex = 0;
                  m_mapping[mapindex].m_vCardProp;
                  mapindex++) {
@@ -262,7 +253,6 @@ public:
                         handler = &vCard2ABPerson::toPersonString;
                     }
                     (this->*handler)(map, *vprop);
-                    LOG.debug("property %s handled", vprop->getName());
                     break;
                 }
             }
@@ -270,14 +260,12 @@ public:
         }
 
         // now copy all those values to the person which did not map directly
-        LOG.debug("set multiprops");
         for (int multi = 0; multi < MAX_MULTIVALUE; multi++) {
             if (m_multi[multi]) {
                 setPersonProp(*m_multiProp[multi], m_multi[multi], false);
             }
         }
 
-        LOG.debug("set photo");
         VProperty *photo = vobj->getProperty("PHOTO");
         if (photo) {
             int len;
@@ -287,8 +275,6 @@ public:
                 throw runtime_error("cannot set photo data");
             }
         }
-
-        LOG.debug("contact done");
     }
 
     /** convert person into vCard 3.0 and store it in string */
@@ -312,11 +298,6 @@ public:
              m_mapping[mapindex].m_vCardProp;
              mapindex++ ) {
             const mapping &map = m_mapping[mapindex];
-            printf("%d: ", mapindex);
-            printf("%s prop %p = %p\n",
-                   map.m_vCardProp,
-                   map.m_abPersonProp,
-                   map.m_abPersonProp ? *map.m_abPersonProp : 0);
             if (map.m_abPersonProp) {
 #ifdef IPHONE
                 // some of the properties returned on the iPhone can neither
@@ -326,19 +307,12 @@ public:
 #else
                 ref<CFTypeRef> value(ABRecordCopyValue(m_person, *map.m_abPersonProp));
 #endif
-                printf("got %p\n", (CFTypeRef)value);
                 if (value) {
-#ifndef IPHONE
-                    ref<CFStringRef> descr(CFCopyDescription(value));
-                    printf(" = %s\n",
-                           CFString2Std(descr).c_str());
-#endif
                     fromPerson_t handler = map.m_fromPerson;
                     if (!handler) {
                         handler = &vCard2ABPerson::fromPersonString;
                     }
                     (this->*handler)(map, value);
-                    printf(" handled\n");
                 }
             }
         }
@@ -379,8 +353,6 @@ public:
         m_vobj.fromNativeEncoding();
         arrayptr<char> finalstr(m_vobj.toString(), "VOCL string");
         m_vcard = (char *)finalstr;
-        LOG.debug("extracted %s",
-                  (char *)finalstr);
     }
 
 private:
@@ -454,7 +426,6 @@ private:
         ref<CFStringRef> descr;
         if (dump) {
             descr.set(CFCopyDescription(cftype));
-            LOG.debug("setting property %p to %s", property, CFString2Std(descr).c_str());
         }
         if (!ABRecordSetValue(m_person, property, cftype)) {
             if (dump) {
@@ -475,7 +446,6 @@ private:
                            );
             }
         }
-        LOG.debug("setting done");
     }
 
     /** add another label/value pair to a multi-value list */
@@ -488,15 +458,12 @@ private:
                              value,
                              label,
                              &res)) {
-            printf("failed\n");
             throwError(string("adding multi value for ") + map.m_vCardProp);
         } else {
-            printf("free res %p", res);
 #ifndef IPHONE
             CFRelease(res);
 #endif
         }
-        printf("done\n");    
     }
 
     /**
@@ -1259,8 +1226,6 @@ void AddressBookSource::endSyncThrow()
             throwError("could not save address book");
         }
 
-        fprintf(stderr, "saved address book\n");
-
         m_modTimes->update(FALSE);
 
         // time stamps are rounded to next second,
@@ -1274,38 +1239,24 @@ void AddressBookSource::endSyncThrow()
 
 void AddressBookSource::close()
 {
-    printf("close\n");
     endSyncThrow();
-    printf("free addressbook\n");
     m_addressbook = NULL;
-    printf("free mod times\n");
     m_modTimes = NULL;
-    printf("closed\n");
 }
 
 void AddressBookSource::exportData(ostream &out)
 {
-    LOG.debug("getting list of all people");
-
     ref<CFArrayRef> allPersons(ABCopyArrayOfAllPeople(m_addressbook), "list of all people");
-
-    LOG.debug("got list");
-    LOG.debug("%d persons", (int)CFArrayGetCount(allPersons));
 
     for (CFIndex i = 0; i < CFArrayGetCount(allPersons); i++) {
         ABRecordRef person = (ABRecordRef)CFArrayGetValueAtIndex(allPersons, i);
         CFStringRef descr = CFCopyDescription(person);
-        LOG.debug("at index foo %s", CFString2Std(descr).c_str());
-        LOG.debug("before copy");
         ref<CFStringRef> cfuid(ABRecordCopyUniqueId(person), "reading UID");
-        LOG.debug("after copy");
         string uid(CFString2Std(cfuid));
         eptr<SyncItem> item(createItem(uid, SYNC_STATE_NONE), "sync item");
 
         out << (char *)item->getData() << "\n";
     }
-
-    LOG.debug("done with list of all people");
 }
 
 SyncItem *AddressBookSource::createItem( const string &uid, SyncState state )
@@ -1373,9 +1324,7 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
         person.set((ABPersonRef)ABCopyRecordForUniqueId(m_addressbook, cfuid), "contact");
     } else {
         // new contact
-        LOG.debug("before creating contact");
         person.set(PersonCreateWrapper(m_addressbook), "contact");
-        LOG.debug("after creating contact");
     }
     try {
         LOG.debug("storing vCard for %s:\n%s",
@@ -1383,7 +1332,6 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
                   data.c_str());
         vCard2ABPerson converter(data, person);
         converter.toPerson();
-        LOG.debug("person set");
     } catch (const std::exception &ex) {
         throwError(string("storing vCard for ") + (uid ? uid : "new contact") + " failed: " + ex.what());
     }
@@ -1392,9 +1340,7 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
 
     // make sure we have a modification time stamp, otherwise the address book
     // sets one at random times
-    LOG.debug("create time");
     CFAbsoluteTime nowabs = CFAbsoluteTimeGetCurrent();
-    LOG.debug("setting absolute time %f", nowabs);
 #ifdef IPHONE
     void *now = (void *)(int)round(nowabs);
 #else
@@ -1403,12 +1349,9 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
     if (!ABRecordSetValue(person, kABModificationDateProperty, now)) {
         throwError("setting mod time");
     }
-    LOG.debug("time set\n");
 
     // existing contacts do not have to (and cannot) be added (?)
     if (uid || ABAddRecord(m_addressbook, person)) {
-        printf("inserted contact\n");
-
 #ifdef IPHONE
         /* need to save to get UID? */
         ABSave(m_addressbook);
@@ -1424,7 +1367,6 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
                   uidstr.c_str(), buffer);
         m_modTimes->setPropertyValue(uidstr.c_str(), buffer);
     } else {
-        printf("error adding contact\n");
         throwError("storing new contact");
     }
 
