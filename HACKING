@@ -168,4 +168,10 @@ that address book syncing uses the default libraries):
     AddressBook framework must be added to iphone-dev/include/install-headers.sh.in
 
   Compile with curl-config in the PATH:
-    PATH=/usr/local/iphone/bin/:$PATH ~/projects/sync4jevolution/configure --host=arm-apple-darwin --with-sync4j-src=/home/patrick/projects/native CXXFLAGS=-g --disable-ecal --disable-ebook --enable-addressbook
+    PATH=/usr/local/iphone/bin/:$PATH ~/projects/sync4jevolution/configure --host=arm-apple-darwin --with-sync4j-src=/home/patrick/projects/native CXXFLAGS=-O0 --disable-ecal --disable-ebook --enable-addressbook --prefix=/usr
+    PATH=/usr/local/iphone/bin/:$PATH make all
+
+  Build a package with:
+    make distbin BINSUFFIX="iphone"
+
+
