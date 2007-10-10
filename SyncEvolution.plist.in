@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>bundleIdentifier</key>
+    <string>de.estamos.iphone.SyncEvolution</string>
+    <key>name</key>
+    <string>SyncEvolution</string>
+    <key>version</key>
+    <string>__VERSION__</string>
+    <key>location</key>
+    <string>http://www.estamos.de/iphone/zips/__FILENAME__</string>
+    <key>size</key>
+    <string>__SIZE__</string>
+    <key>description</key>
+    <string>A command line tool to synchronize the address book via SyncML.</string>
+    <key>url</key>
+    <string>http://www.estamos.de/projects/SyncML/</string>
+    <key>scripts</key>
+    <dict>
+      <key>install</key>
+      <array>
+        <array>
+          <string>CopyPath</string>
+          <string>usr/bin/syncevolution</string>
+          <string>/usr/bin/syncevolution</string>
+        </array>
+        <array>
+          <string>CopyPath</string>
+          <string>usr/bin/synccompare</string>
+          <string>/usr/bin/synccompare</string>
+        </array>
+        <array>
+	  <string>SetStatus</string>
+	  <string>Run 'syncevolution &lt;server&gt;' to synchronize.</string>
+	</array>
+ 	<array>
+	  <string>IfNot</string>
+          <array>
+	    <array>
+	      <string>ExistsPath</string>
+	      <string>/var/root/.sync4j</string>
+	    </array>
+          </array>
+	  <array>
+            <array>
+	      <string>CopyPath</string>
+	      <string>usr/share/doc/syncevolution/</string>
+	      <string>/var/root/.sync4j/evolution</string>
+            </array>
+	  </array>
+	</array>
+      </array>
+      <key>uninstall</key>
+      <array>
+	<array>
+	  <string>RemovePath</string>
+	  <string>/usr/bin/syncevolution</string>
+	</array>
+	<array>
+	  <string>RemovePath</string>
+	  <string>/usr/bin/synccompare</string>
+	</array>
+      </array>
+    </dict>
+  </dict>
+</plist>

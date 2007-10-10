@@ -14,3 +14,22 @@ distbin : README all
 	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(distdir)
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
+
+iphone : SyncEvolution.plist
+
+IPHONE_FILENAME = syncevolution-$(VERSION)-iphone.zip
+
+SyncEvolution.plist : SyncEvolution.plist.in $(IPHONE_FILENAME)
+	sed -e 's/__FILENAME__/$(IPHONE_FILENAME)/' \
+	    -e 's/__VERSION__/$(VERSION)/' \
+	    -e 's/__SIZE__/$(shell ls -l $(IPHONE_FILENAME) | sed -e 's/  */ /g' | cut -d ' ' -f 5)/' \
+	    $< >$@
+
+$(IPHONE_FILENAME) : all
+	rm -rf syncevolution-iphone $@
+	$(MAKE) DESTDIR=`pwd`/syncevolution-iphone install
+	rm -rf `ls -1 -d syncevolution-iphone/usr/share/doc/syncevolution/*/spds/sources/* | grep -v addressbook`
+	perl -pi -e 's;SyncEvolution test #1;;;' \
+	         -e 's;^type = text/(x-)?vcard;type = addressbook;m;' \
+                 syncevolution-iphone/usr/share/doc/syncevolution/*/spds/sources/addressbook/config.txt
+	cd syncevolution-iphone && zip -r ../$(IPHONE_FILENAME) .
