@@ -24,6 +24,7 @@ using namespace std;
 
 #ifdef ENABLE_ECAL
 
+#include "EvolutionSyncClient.h"
 #include "EvolutionCalendarSource.h"
 #include "EvolutionMemoSource.h"
 #include "EvolutionSmartPtr.h"
@@ -67,7 +68,7 @@ EvolutionCalendarSource::EvolutionCalendarSource( const EvolutionCalendarSource 
         m_newSystem = NULL /* e_cal_new_system_memos */;
         break;
      default:
-        throw runtime_error("internal error, invalid calendar type");
+        EvolutionSyncClient::throwError("internal error, invalid calendar type");
         break;
     }
 }
@@ -125,7 +126,7 @@ void EvolutionCalendarSource::open()
         } else if (!m_id.compare(0, 7, "file://")) {
             m_calendar.set(e_cal_new_from_uri(m_id.c_str(), m_type), "creating calendar/tasks/memos");
         } else {
-            throw runtime_error(string(getName()) + ": not found: '" + m_id + "'");
+            throwError(string("not found: '") + m_id + "'");
         }
         onlyIfExists = false;
     } else {
@@ -392,7 +393,7 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
     icalcomponent *subcomp = icalcomponent_get_first_component(icomp,
                                                                getCompType());
     if (!subcomp) {
-        throw runtime_error("cannot extract event");
+        throwError("extracting event");
     }
     
     if (!update) {
@@ -488,7 +489,7 @@ icalcomponent *EvolutionCalendarSource::retrieveItem(const string &uid)
         throwError(string("retrieving item: ") + uid, gerror);
     }
     if (!comp) {
-        throw runtime_error(string("could not retrieve item: ") + uid);
+        throwError(string("retrieving item: ") + uid);
     }
 
     return comp;
@@ -501,7 +502,7 @@ string EvolutionCalendarSource::retrieveItemAsString(const string &uid)
 
     icalstr = e_cal_get_component_as_string(m_calendar, comp);
     if (!icalstr) {
-        throw runtime_error(string("could not encode item as iCal: ") + uid);
+        throwError(string("could not encode item as iCal: ") + uid);
     }
 
     /*
@@ -544,7 +545,7 @@ string EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
     icalproperty *iprop = icalcomponent_get_first_property(icomp,
                                                            ICAL_UID_PROPERTY);
     if (!iprop) {
-        throw runtime_error("cannot extract UID property");
+        throwError("cannot extract UID property");
     }
     const char *uid = icalproperty_get_uid(iprop);
     return string(uid ? uid : "");

@@ -39,6 +39,8 @@ using namespace std;
 #include <dirent.h>
 #include <errno.h>
 
+SourceList *EvolutionSyncClient::m_sourceListPtr;
+
 EvolutionSyncClient::EvolutionSyncClient(const string &server,
                                          bool doLogging, const set<string> &sources,
                                          const string &configRoot ) :
@@ -58,7 +60,7 @@ static void rmBackupDir(const string &dirname)
 {
     DIR *dir = opendir(dirname.c_str());
     if (!dir) {
-        throw runtime_error(dirname + ": " + strerror(errno));
+        EvolutionSyncClient::throwError(dirname + ": " + strerror(errno));
     }
     vector<string> entries;
     struct dirent *entry;
@@ -77,12 +79,12 @@ static void rmBackupDir(const string &dirname)
             && errno != EISDIR
 #endif
             ) {
-            throw runtime_error(path + ": " + strerror(errno));
+            EvolutionSyncClient::throwError(path + ": " + strerror(errno));
         }
     }
 
     if (rmdir(dirname.c_str())) {
-        throw runtime_error(dirname + ": " + strerror(errno));
+        EvolutionSyncClient::throwError(dirname + ": " + strerror(errno));
     }
 }
 
@@ -144,7 +146,7 @@ public:
                 }
                 if (errno != EEXIST) {
                     LOG.debug("%s: %s", m_path.c_str(), strerror(errno));
-                    throw runtime_error(m_path + ": " + strerror(errno));
+                    EvolutionSyncClient::throwError(m_path + ": " + strerror(errno));
                 }
                 seq++;
             }
@@ -170,7 +172,7 @@ public:
             m_path = path.str();
             if (mkdir(m_path.c_str(), S_IRWXU)) {
                 if (errno != EEXIST) {
-                    throw runtime_error(m_path + ": " + strerror(errno));
+                    EvolutionSyncClient::throwError(m_path + ": " + strerror(errno));
                 }
             }
             m_logfile = m_path + "/client.log";
@@ -209,7 +211,7 @@ public:
         if (m_logdir.size() && m_maxlogdirs > 0 ) {
             DIR *dir = opendir(m_logdir.c_str());
             if (!dir) {
-                throw runtime_error(m_logdir + ": " + strerror(errno));
+                EvolutionSyncClient::throwError(m_logdir + ": " + strerror(errno));
             }
             vector<string> entries;
             struct dirent *entry;
@@ -437,13 +439,32 @@ void unref(SourceList *sourceList)
     delete sourceList;
 }
 
+void EvolutionSyncClient::throwError(const string &error)
+{
+#ifdef IPHONE
+    /*
+     * Catching the runtime_exception fails due to a toolchain problem,
+     * so do the error handling now and abort: because there is just
+     * one sync source this is probably the only thing that can be done.
+     * Still, it's not nice on the server...
+     */
+    LOG.error("%s", error.c_str());
+    if (m_sourceListPtr) {
+        m_sourceListPtr->syncDone(false);
+    }
+    exit(1);
+#else
+    throwError(error);
+#endif
+}
+
 int EvolutionSyncClient::sync()
 {
     int res = 1;
     EvolutionClientConfig config(m_configPath.c_str());
     
     if (!config.read() || !config.open()) {
-        throw runtime_error("reading configuration failed");
+        throwError("reading configuration failed");
     }
 
     // remember for use by sync sources
@@ -452,11 +473,12 @@ int EvolutionSyncClient::sync()
     if (!url.size()) {
         LOG.error("no syncURL configured - perhaps the server name \"%s\" is wrong?",
                   m_server.c_str());
-        throw runtime_error("cannot proceed without configuration");
+        throwError("cannot proceed without configuration");
     }
 
     // redirect logging as soon as possible
     SourceList sourceList(m_server, m_doLogging);
+    m_sourceListPtr = &sourceList;
 
     try {
         arrayptr<char> logdir(config.getSyncMLNode()->readPropertyValue("logdir"));
@@ -490,7 +512,7 @@ int EvolutionSyncClient::sync()
                 // create it
                 string type = sc.getType() ? sc.getType() : "";
                 if (!type.size()) {
-                    throw runtime_error(string(sc.getName()) + ": type not configured");
+                    throwError(string(sc.getName()) + ": type not configured");
                 }
                 EvolutionSyncSource *syncSource =
                     EvolutionSyncSource::createSource(
@@ -502,7 +524,7 @@ int EvolutionSyncClient::sync()
                         type
                         );
                 if (!syncSource) {
-                    throw runtime_error(string(sc.getName()) + ": type '" + type + "' unknown" );
+                    throwError(string(sc.getName()) + ": type '" + type + "' unknown" );
                 }
                 sourceList.push_back(syncSource);
 
@@ -550,10 +572,10 @@ int EvolutionSyncClient::sync()
 
         if (res) {
             if (lastErrorCode && lastErrorMsg[0]) {
-                throw runtime_error(lastErrorMsg);
+                throwError(lastErrorMsg);
             }
             // no error code/description?!
-            throw runtime_error("sync failed without an error description, check log");
+            throwError("sync failed without an error description, check log");
         }
 
         // all went well: print final report before cleaning up
@@ -564,11 +586,14 @@ int EvolutionSyncClient::sync()
         LOG.error( "%s", ex.what() );
 
         // something went wrong, but try to write .after state anyway
+        m_sourceListPtr = NULL;
         sourceList.syncDone(false);
     } catch (...) {
         LOG.error( "unknown error" );
+        m_sourceListPtr = NULL;
         sourceList.syncDone(false);
     }
 
+    m_sourceListPtr = NULL;
     return res;
 }

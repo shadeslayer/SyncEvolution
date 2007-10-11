@@ -29,6 +29,8 @@
 #include <set>
 using namespace std;
 
+class SourceList;
+
 /*
  * This is the main class inside sync4jevolution which
  * looks at the configuration, activates all enabled
@@ -40,6 +42,12 @@ class EvolutionSyncClient : public SyncClient {
     const set<string> m_sources;
     const bool m_doLogging;
     const string m_configPath;
+
+    /**
+     * a pointer to the active SourceList instance if one exists; 
+     * used for error handling in throwError() on the iPhone
+     */
+    static SourceList *m_sourceListPtr;
 
   public:
     /**
@@ -59,6 +67,16 @@ class EvolutionSyncClient : public SyncClient {
      * Handles automatic backups and report generation.
      */
     int sync();
+
+    /**
+     * throws a runtime_error with the given string
+     * or (on the iPhone, where exception handling is not
+     * supported by the toolchain) prints an error directly
+     * and aborts
+     *
+     * @param error     a string describing the error
+     */
+    static void throwError(const string &error);
 
   protected:
     /**

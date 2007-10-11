@@ -19,6 +19,7 @@
 
 #include <config.h>
 
+#include "EvolutionSyncClient.h"
 #include "EvolutionSyncSource.h"
 #include "EvolutionContactSource.h"
 #include "EvolutionCalendarSource.h"
@@ -66,9 +67,9 @@ void EvolutionSyncSource::throwError( const string &action
         g_clear_error(&gerror);
     } else
 #endif
-        gerrorstr = ": failed";
+        gerrorstr = ": failure";
 
-    throw runtime_error(string(getName()) + ": " + action + gerrorstr);
+    EvolutionSyncClient::throwError(string(getName()) + ": " + action + gerrorstr);
 }
 
 
@@ -206,7 +207,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
             problem += ". The following backend(s) were not found: ";
             problem += missing;
         }
-        throw runtime_error(problem);
+        EvolutionSyncClient::throwError(problem);
     }
 
 #else // ENABLE_MODULES
@@ -216,7 +217,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new EvolutionContactSource(name, sc, strippedChangeId, id, EVC_FORMAT_VCARD_21);
 #else
         if (error) {
-            throw runtime_error(name + ": access to addressbooks not compiled into this binary, text/x-vcard not supported");
+            EvolutionSyncClient::throwError(name + ": access to addressbooks not compiled into this binary, text/x-vcard not supported");
         }
 #endif
     } else if (mimeType == "text/vcard") {
@@ -224,7 +225,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new EvolutionContactSource(name, sc, strippedChangeId, id, EVC_FORMAT_VCARD_30);
 #else
         if (error) {
-            throw runtime_error(name + ": access to addressbooks not compiled into this binary, text/vcard not supported");
+            EvolutionSyncClient::throwError(name + ": access to addressbooks not compiled into this binary, text/vcard not supported");
         }
 #endif
     } else if (mimeType == "text/x-todo") {
@@ -232,7 +233,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, sc, strippedChangeId, id);
 #else
         if (error) {
-            throw runtime_error(name + ": access to calendars not compiled into this binary, text/x-todo not supported");
+            EvolutionSyncClient::throwError(name + ": access to calendars not compiled into this binary, text/x-todo not supported");
         }
 #endif
     } else if (mimeType == "text/x-journal") {
@@ -240,7 +241,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, strippedChangeId, id);
 #else
         if (error) {
-            throw runtime_error(name + ": access to memos not compiled into this binary, text/x-journal not supported");
+            EvolutionSyncClient::throwError(name + ": access to memos not compiled into this binary, text/x-journal not supported");
         }
 #endif
     } else if (mimeType == "text/plain") {
@@ -248,7 +249,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new EvolutionMemoSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, strippedChangeId, id);
 #else
         if (error) {
-            throw runtime_error(name + ": access to memos not compiled into this binary, text/plain not supported");
+            EvolutionSyncClient::throwError(name + ": access to memos not compiled into this binary, text/plain not supported");
         }
 #endif
     } else if (mimeType == "text/calendar" ||
@@ -257,7 +258,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, sc, strippedChangeId, id);
 #else
         if (error) {
-            throw runtime_error(name + ": access to calendars not compiled into this binary, " + mimeType + " not supported");
+            EvolutionSyncClient::throwError(name + ": access to calendars not compiled into this binary, " + mimeType + " not supported");
         }
 #endif
     } else if (mimeType == "sqlite") {
@@ -265,7 +266,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new SQLiteContactSource(name, sc, strippedChangeId, id);
 #else
         if (error) {
-            throw runtime_error(name + ": access to sqlite not compiled into this binary, " + mimeType + " not supported");
+            EvolutionSyncClient::throwError(name + ": access to sqlite not compiled into this binary, " + mimeType + " not supported");
         }
 #endif
     } else if (mimeType == "addressbook") {
@@ -274,7 +275,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
         return new AddressBookSource(name, sc, strippedChangeId, id, string(configNodeName));
 #else
         if (error) {
-            throw runtime_error(name + ": access to Mac OS X address book not compiled into this binary, not supported");
+            EvolutionSyncClient::throwError(name + ": access to Mac OS X address book not compiled into this binary, not supported");
         }
 #endif
     }
@@ -308,7 +309,7 @@ int EvolutionSyncSource::beginSync()
         
         const char *error = getenv("SYNCEVOLUTION_BEGIN_SYNC_ERROR");
         if (error && strstr(error, getName())) {
-            throw runtime_error("artificial error in beginSync()");
+            EvolutionSyncClient::throwError("artificial error in beginSync()");
         }
 
         // reset state
@@ -347,7 +348,7 @@ int EvolutionSyncSource::beginSync()
             // nothing to do, just wait for server's changes
             break;
          default:
-            throw runtime_error("unsupported sync mode, valid are only: slow, two-way, refresh");
+            EvolutionSyncClient::throwError("unsupported sync mode, valid are only: slow, two-way, refresh");
             break;
         }
 

@@ -26,6 +26,7 @@ using namespace std;
 
 #ifdef ENABLE_EBOOK
 
+#include "EvolutionSyncClient.h"
 #include "EvolutionContactSource.h"
 
 #include <common/base/Log.h>
@@ -58,7 +59,7 @@ EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
     ESourceList *sources = NULL;
 
     if (!e_book_get_addressbooks(&sources, NULL)) {
-        throw runtime_error("unable to access address books");
+        EvolutionSyncClient::throwError("unable to access address books");
     }
 
     EvolutionSyncSource::sources result;
@@ -100,7 +101,7 @@ void EvolutionContactSource::open()
 {
     ESourceList *sources;
     if (!e_book_get_addressbooks(&sources, NULL)) {
-        throw runtime_error("unable to access address books");
+        throwError("unable to access address books");
     }
     
     GError *gerror = NULL;
@@ -116,7 +117,7 @@ void EvolutionContactSource::open()
         } else if (!m_id.compare(0, 7, "file://")) {
             m_addressbook.set(e_book_new_from_uri(m_id.c_str(), &gerror), "creating address book");
         } else {
-            throw runtime_error(string(getName()) + ": no such address book: '" + m_id + "'");
+            throwError(string(getName()) + ": no such address book: '" + m_id + "'");
         }
         onlyIfExists = false;
     } else {
@@ -298,7 +299,7 @@ void EvolutionContactSource::exportData(ostream &out)
                                               EVC_FORMAT_VCARD_30));
 
         if (!(const char *)vcardstr) {
-            throw runtime_error("could not convert contact into string");
+            throwError("could not convert contact into string");
         }
         out << (const char *)vcardstr << "\r\n\r\n";
         nextItem = nextItem->next;

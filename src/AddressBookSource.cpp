@@ -94,6 +94,7 @@ using namespace std;
 #else
 #define PersonCreateWrapper(_addressbook) ABPersonCreate()
 #endif
+#include "EvolutionSyncClient.h"
 #include "AddressBookSource.h"
 
 #include <common/base/Log.h>
@@ -120,7 +121,7 @@ static string CFString2Std(CFStringRef cfstring)
         }
         len *= 2;
     }
-    throw runtime_error(string("converting CF string failed"));
+    EvolutionSyncClient::throwError("converting CF string failed");
 }
 
 /** converts a string in UTF-8 into a CFString - throws an exception if no valid reference can be generated */
@@ -267,7 +268,7 @@ public:
             arrayptr<char> decoded((char *)b64_decode(len, photo->getValue()), "photo");
             ref<CFDataRef> data(CFDataCreateWithBytesNoCopy(NULL, (UInt8 *)(char *)decoded, len, kCFAllocatorNull));
             if (!ABPersonSetImageData(m_person, data)) {
-                throw runtime_error("cannot set photo data");
+                EvolutionSyncClient::throwError("cannot set photo data");
             }
         }
     }
@@ -356,7 +357,7 @@ private:
     VObject m_vobj;
 
     void throwError(const string &error) {
-        throw runtime_error(error);
+        EvolutionSyncClient::throwError(string("vCard<->Addressbook conversion: ") + error);
     }
 
     /** intermediate storage for strings gathered from either vcard or person */
@@ -1109,7 +1110,7 @@ double AddressBookSource::getModTime(ABRecordRef record)
                                                      kABCreationDateProperty));
     }
     if (!itemModTime) {
-        throwError("cannot extract time stamp");
+        throwError("extracting time stamp");
     }
     absolute = CFDateGetAbsoluteTime(itemModTime);
 #endif
@@ -1149,7 +1150,7 @@ void AddressBookSource::open()
 {
     m_addressbook = ABGetSharedAddressBook();
     if (!m_addressbook) {
-        throwError("could not open address book");
+        throwError("opening address book");
     }
     m_modTimes.set(new spdm::DeviceManagementNode(m_modNodeName.c_str()), "change management node");
     m_modTimes->setAutosave(FALSE);
@@ -1167,7 +1168,7 @@ void AddressBookSource::beginSyncThrow(bool needAll,
 
         if (deleteLocal) {
             if (!ABRemoveRecord(m_addressbook, (ABRecordRef)CFArrayGetValueAtIndex(allPersons, i))) {
-                throwError("deleting contact failed");
+                throwError("deleting contact");
             }
         } else {
             m_allItems.addItem(uid);
@@ -1218,7 +1219,7 @@ void AddressBookSource::endSyncThrow()
 
         // store changes persistently
         if (!ABSave(m_addressbook)) {
-            throwError("could not save address book");
+            throwError("saving address book");
         }
 
         m_modTimes->update(FALSE);
