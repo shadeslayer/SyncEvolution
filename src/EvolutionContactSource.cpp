@@ -513,13 +513,41 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
 
             // ensure that at least one TYPE is set
             if (!vprop->containsParameter("TYPE") &&
+
+                /* TEL */
                 !vprop->containsParameter("CELL") &&
                 !vprop->containsParameter("CAR") &&
                 !vprop->containsParameter("PREF") &&
                 !vprop->containsParameter("FAX") &&
                 !vprop->containsParameter("VOICE") &&
+                !vprop->containsParameter("MSG") &&
+                !vprop->containsParameter("BBS") &&
+                !vprop->containsParameter("MODEM") &&
+                !vprop->containsParameter("ISDN") &&
+                !vprop->containsParameter("VIDEO") &&
                 !vprop->containsParameter("PAGER") &&
+
+                /* ADR */
+                !vprop->containsParameter("DOM") &&
+                !vprop->containsParameter("INTL") &&
+                !vprop->containsParameter("POSTAL") &&
+                !vprop->containsParameter("PARCEL") &&
+
+                /* EMAIL */
+                !vprop->containsParameter("AOL") &&
+                !vprop->containsParameter("AppleLink") &&
+                !vprop->containsParameter("ATTMail") &&
+                !vprop->containsParameter("CIS") &&
+                !vprop->containsParameter("eWorld") &&
                 !vprop->containsParameter("INTERNET") &&
+                !vprop->containsParameter("IBMMail") &&
+                !vprop->containsParameter("MCIMail") &&
+                !vprop->containsParameter("POWERSHARE") &&
+                !vprop->containsParameter("PRODIGY") &&
+                !vprop->containsParameter("TLX") &&
+                !vprop->containsParameter("X400") &&
+
+                /* all of them */
                 !vprop->containsParameter("HOME") &&
                 !vprop->containsParameter("WORK")) {
                 vprop->addParameter("TYPE", isOther ? "OTHER" : "HOME");
