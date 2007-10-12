@@ -156,7 +156,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
             "syncebook.so.0",
             "syncecal.so.0",
 	    "syncsqlite.so.0",
-            "addressbook.so.0"
+            "addressbook.so.0",
             NULL
         };
 
