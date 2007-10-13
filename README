@@ -552,8 +552,17 @@ document.
 
 Also needed are the Evolution and libcurl development files. On
 Debian 3.1 (Sarge) you can install them with:
-   apt-get install libcurl3-dev evolution-data-server-dev libdb3-dev
+   apt-get install libcurl3-dev evolution-data-server-dev libdb3-dev 
 and optionally for the test suite:
+   apt-get install libcppunit-dev
+
+On more recent systems like Debian 4.0 (Etch) the libecal and libebook
+development packages need to be installed separately and the name of
+the Curl library has changed. On such a distribution the following
+command installs all packages relevant SyncEvolution:
+   apt-get install libcurl3-gnutls-dev evolution-data-server-dev \
+                   libdb3-dev libecal1.2-dev libebook1.2-dev
+The test framework is still installed with:
    apt-get install libcppunit-dev
 
 The build system is the normal autotools system.  See INSTALL for
