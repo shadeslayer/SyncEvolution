@@ -454,7 +454,7 @@ void EvolutionSyncClient::throwError(const string &error)
     }
     exit(1);
 #else
-    throwError(error);
+    throw runtime_error(error);
 #endif
 }
 
