@@ -129,7 +129,7 @@ sub Normalize {
       s;TZID(=|:)/(scheduleworld.com|softwarestudio.org)/Olson_\d+_\d+/;TZID$1/foo.com/Olson_20000101_1/;mg;
     }
 
-    if ($scheduleworld || $synthesis) {
+    if ($synthesis) {
       # only preserves ORG "Company", but loses "Department" and "Office"
       s/^ORG:([^;:\n]+)(;[^\n]*)/ORG:$1/mg;
     }
