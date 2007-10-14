@@ -352,7 +352,12 @@ public:
 
                 // dump datatbase after sync, but not if already dumping it at the beginning didn't complete
                 if (m_prepared) {
-                    dumpDatabases("after");
+                    try {
+                        dumpDatabases("after");
+                    } catch (const std::exception &ex) {
+                        LOG.error( "%s", ex.what() );
+                        m_prepared = false;
+                    }
                 }
 
                 // scan for error messages
