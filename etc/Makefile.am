@@ -72,7 +72,7 @@ funambol/spds/sources/memo/config.txt : funambol/spds/sources/addressbook/config
 # - standard sync sources, not the custom "todo" one
 $(scheduleworld_copy) : scheduleworld% : funambol%
 	mkdir -p $(@D)
-	sed -e 's;^syncURL = http://localhost;#syncURL = http://localhost;' \
+	sed -e 's;^syncURL = ;#syncURL = ;' \
 	    -e 's;^#syncURL = http://sync.scheduleworld;syncURL = http://sync.scheduleworld;' \
 	    -e 's;^type = text/x-calendar;type = text/calendar;' \
 	    -e 's;^type = text/x-vcard;type = text/vcard;' \
