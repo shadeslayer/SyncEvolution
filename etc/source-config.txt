@@ -14,7 +14,8 @@ name = addressbook
 #   none                = synchronization disabled
 sync = two-way
 
-# overrides the supported synchronization modes
+# overrides the supported synchronization modes (at least one must
+# be specified)
 syncModes = slow,two-way,refresh-from-client,refresh-from-server,one-way-from-client,one-way-from-server
 
 # specifies the format of the data
