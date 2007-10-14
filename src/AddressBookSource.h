@@ -127,7 +127,7 @@ template<class T> typedef ref<T, true> iphoneref;
  * address book using the "AddressBook" framework. Changes are tracked
  * by comparing the current time stamp of a contact against its time
  * stamp from the previous sync, stored in a separate key/value
- * database. Contacts are converted to/from vCard 3.0 using custom
+ * database. Contacts are converted to/from vCard 2.1 using custom
  * code because a) the mapping can be chosen so that typical SyncML
  * servers understand it and b) the iPhone's AddressBook does not have
  * vcard import/export functions.
@@ -185,8 +185,8 @@ class AddressBookSource : public EvolutionSyncSource
     virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "vcf"; }
     virtual const char *getMimeType() { return "text/x-vcard"; }
-    virtual const char *getMimeVersion() { return "3.0"; }
-    virtual const char *getSupportedTypes() { return "text/x-vcard:3.0"; }
+    virtual const char *getMimeVersion() { return "2.1"; }
+    virtual const char *getSupportedTypes() { return "text/x-vcard:2.1"; }
    
     virtual SyncItem *createItem( const string &uid, SyncState state );
     

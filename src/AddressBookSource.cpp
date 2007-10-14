@@ -273,7 +273,7 @@ public:
         }
     }
 
-    /** convert person into vCard 3.0 and store it in string */
+    /** convert person into vCard 2.1 and store it in string */
     void fromPerson() {
         string tmp;
         const unsigned char *text;
@@ -286,8 +286,8 @@ public:
         // m_vobj = VObject();
 
         m_vobj.addProperty("BEGIN", "VCARD");
-        m_vobj.addProperty("VERSION", "3.0");
-        m_vobj.setVersion("3.0");
+        m_vobj.addProperty("VERSION", "2.1");
+        m_vobj.setVersion("2.1");
 
         // iterate over all person properties and handle them
         for (int mapindex = 0;
