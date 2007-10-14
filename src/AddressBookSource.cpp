@@ -491,11 +491,16 @@ private:
     /** copy normal string directly */
     void toPersonString(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
-        if (!value) {
-            value = "";
+        /*
+         * Empty strings are not properly ignored by the iPhone GUI,
+         * better not add empty string properties. Empty vcard
+         * properties as an indication that the property is to be
+         * cleared are still handled because all known properties
+         * were removed in toPerson().
+         */
+        if (value && *value) {
+            setPersonProp(*map.m_abPersonProp, value);
         }
-        // assert(map.m_abPersonProp);
-        setPersonProp(*map.m_abPersonProp, value);
     }
 
     /** remember string to compose a more complex vCard property later (e.g. "N") */
@@ -509,8 +514,8 @@ private:
      */
     void toPersonStore(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
-        if (!value) {
-            value = "";
+        if (!value || !value[0]) {
+            return;
         }
         ref<CFStringRef> cfstring(Std2CFString(value));
         CFStringRef label = map.m_customString;
@@ -533,7 +538,8 @@ private:
 
     /** copy date */
     void fromPersonDate(const mapping &map, CFTypeRef cftype) {
-        CFGregorianDate date = CFAbsoluteTimeGetGregorianDate(CFDateGetAbsoluteTime((CFDateRef)cftype), NULL);
+        ref<CFTimeZoneRef> tz(CFTimeZoneCopyDefault());
+        CFGregorianDate date = CFAbsoluteTimeGetGregorianDate(CFDateGetAbsoluteTime((CFDateRef)cftype), tz);
         char buffer[40];
         sprintf(buffer, "%04d-%02d-%02d", date.year, date.month, date.day);
         m_vobj.addProperty(map.m_vCardProp, buffer);
@@ -543,8 +549,8 @@ private:
     void toPersonDate(const mapping &map, VProperty &vprop) {
         int year, month, day;
         const char *value = vprop.getValue();
-        if (!value) {
-            value = "";
+        if (!value || !value[0]) {
+            return;
         }
         if (sscanf(value, "%d-%d-%d", &year, &month, &day) == 3) {
             CFGregorianDate date;
@@ -552,7 +558,19 @@ private:
             date.year = year;
             date.month = month;
             date.day = day;
-            ref<CFDateRef> cfdate(CFDateCreate(NULL, CFGregorianDateGetAbsoluteTime(date, NULL)));
+
+            /*
+             * The iPhone stores absolute times for dates, but
+             * interprets them according to the current time zone.
+             * The effect is that a birthday changes as the system
+             * timezone is changed.
+             *
+             * To mitigate this problem dates are created with
+             * an absolute time in the current time zone, just like
+             * the iPhone GUI does.
+             */
+            ref<CFTimeZoneRef> tz(CFTimeZoneCopyDefault());
+            ref<CFDateRef> cfdate(CFDateCreate(NULL, CFGregorianDateGetAbsoluteTime(date, tz)));
             if (cfdate) {
                 // assert(map.m_abPersonProp);
                 setPersonProp(*map.m_abPersonProp, cfdate);
@@ -589,7 +607,10 @@ private:
     /** iPhone: add another URL to multi-value (Mac OS X only has one string property) */
     void toPersonURLs(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
-        arrayptr<char> buffer(wstrdup(value ? value : ""));
+        if (!value || !value[0]) {
+            return;
+        }
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
@@ -639,7 +660,10 @@ private:
     /** add another EMAIL to the email multi-value */
     void toPersonEMail(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
-        arrayptr<char> buffer(wstrdup(value ? value : ""));
+        if (!value || !value[0]) {
+            return;
+        }
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
@@ -723,7 +747,10 @@ private:
     /** add another ADR to address multi-value */
     void toPersonAddr(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
-        arrayptr<char> buffer(wstrdup(value ? value : ""));
+        if (!value || !value[0]) {
+            return;
+        }
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         ref<CFMutableDictionaryRef> dict(CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
@@ -816,7 +843,10 @@ private:
     /** add another phone to the multi-value */
     void toPersonPhone(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
-        arrayptr<char> buffer(wstrdup(value ? value : ""));
+        if (!value || !value[0]) {
+            return;
+        }
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
@@ -911,7 +941,10 @@ private:
      */
     void toPersonName(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
-        arrayptr<char> buffer(wstrdup(value ? value : ""));
+        if (!value || !value[0]) {
+            return;
+        }
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         char *last = my_strtok_r(buffer, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
@@ -949,7 +982,10 @@ private:
      */
     void toPersonOrg(const mapping &map, VProperty &vprop) {
         const char *value = vprop.getValue();
-        arrayptr<char> buffer(wstrdup(value ? value : ""));
+        if (!value || !value[0]) {
+            return;
+        }
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         char *company = my_strtok_r(buffer, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
