@@ -386,7 +386,7 @@ public:
 
                 // compare databases?
                 if (m_prepared) {
-                    cout << "\nModifications:\n";
+                    cout << "\nChanges applied during synchronization:\n";
                     for( iterator it = begin();
                          it != end();
                          ++it ) {
