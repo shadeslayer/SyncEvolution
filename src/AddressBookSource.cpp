@@ -166,6 +166,8 @@ extern "C" {
 /**
  * a strtok_r() which does no skip delimiters at the start and end and does 
  * not merge consecutive delimiters, i.e. returned string may be empty
+ *
+ * @return NULL if no further tokens
  */
 static char *my_strtok_r(char *buffer, char delim, char **ptr, char **endptr)
 {
@@ -731,27 +733,27 @@ private:
         char *extadr = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
 
         char *street = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (street) {
+        if (street && *street) {
             ref<CFStringRef> cfstring(Std2CFString(street));
             CFDictionarySetValue(dict, kABAddressStreetKey, cfstring);
         }
         char *city = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (city) {
+        if (city && *city) {
             ref<CFStringRef> cfstring(Std2CFString(city));
             CFDictionarySetValue(dict, kABAddressCityKey, cfstring);
         }
         char *region = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (region) {
+        if (region && *region) {
             ref<CFStringRef> cfstring(Std2CFString(region));
             CFDictionarySetValue(dict, kABAddressStateKey, cfstring);
         }
         char *zip = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (zip) {
+        if (zip && *zip) {
             ref<CFStringRef> cfstring(Std2CFString(zip));
             CFDictionarySetValue(dict, kABAddressZIPKey, cfstring);
         }
         char *country = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (country) {
+        if (country && *country) {
             ref<CFStringRef> cfstring(Std2CFString(country));
             CFDictionarySetValue(dict, kABAddressCountryKey, cfstring);
         }
@@ -913,33 +915,31 @@ private:
         char *saveptr, *endptr;
 
         char *last = my_strtok_r(buffer, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        setPersonProp(kABLastNameProperty, last);
+        if (last && *last) {
+            setPersonProp(kABLastNameProperty, last);
+        }
 
         char *first = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (!first ) {
-            return;
+        if (first && *first) {
+            setPersonProp(kABFirstNameProperty, first);
         }
-        setPersonProp(kABFirstNameProperty, first);
 
         char *middle = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (!middle) {
-            return;
+        if (middle && *middle) {
+            setPersonProp(kABMiddleNameProperty, middle);
         }
-        setPersonProp(kABMiddleNameProperty, middle);
 
         char *prefix = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (!prefix) {
-            return;
-        }
 #ifndef IPHONE
-        setPersonProp(kABTitleProperty, prefix);
+        if (prefix && *prefix) {
+            setPersonProp(kABTitleProperty, prefix);
+        }
 #endif
 
         char *suffix = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (!suffix) {
-            return;
+        if (suffix && *suffix) {
+            setPersonProp(kABSuffixProperty, suffix);
         }
-        setPersonProp(kABSuffixProperty, suffix);
     }
 
     /**
@@ -953,13 +953,14 @@ private:
         char *saveptr, *endptr;
 
         char *company = my_strtok_r(buffer, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        setPersonProp(kABOrganizationProperty, company);
+        if (company && *company) {
+            setPersonProp(kABOrganizationProperty, company);
+        }
 
         char *department = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        if (!department) {
-            return;
+        if (department && *department) {
+            setPersonProp(kABDepartmentProperty, department);
         }
-        setPersonProp(kABDepartmentProperty, department);
     }
 };
 
