@@ -267,6 +267,7 @@ class SourceList : public list<EvolutionSyncSource *> {
     LogDir m_logdir;     /**< our logging directory */
     bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
     bool m_doLogging;    /**< true iff additional files are to be written during sync */
+    SyncClient &m_client; /**< client which holds the sync report after a sync */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
     arrayptr<SyncSource *> m_sourceArray;  /** owns the array that is expected by SyncClient::sync() */
 
@@ -308,10 +309,11 @@ class SourceList : public list<EvolutionSyncSource *> {
     }
         
 public:
-    SourceList(const string &server, bool doLogging) :
+    SourceList(const string &server, bool doLogging, SyncClient &client) :
         m_logdir(server),
         m_prepared(false),
         m_doLogging(doLogging),
+        m_client(client),
         m_reportTodo(true) {
     }
     
@@ -384,9 +386,51 @@ public:
                     cout << "Synchronization failed.\n";
                 }
 
+                // pretty-print report
+                cout << "\nChanges applied during synchronization:\n";
+                SyncReport *report = m_client.getSyncReport();
+                if (report) {
+
+                    cout << "+-------------------|-------ON CLIENT-------|-------ON SERVER-------|\n";
+                    cout << "|                   |   successful / total  |   successful / total  |\n";
+                    cout << "|            Source |  NEW  |  MOD  |  DEL  |  NEW  |  MOD  |  DEL  |\n";
+                    const char *sep = 
+                        "+-------------------+-------+-------+-------+-------+-------+-------+\n";
+                    cout << sep;
+
+                    for (unsigned int i = 0; report->getSyncSourceReport(i); i++) {
+                        SyncSourceReport* ssr = report->getSyncSourceReport(i);
+
+                        if (ssr->getState() == SOURCE_INACTIVE) {
+                            continue;
+                        }
+                        
+                        cout << "|" << right << setw(18) << ssr->getSourceName() << " |";
+                        static const char * const targets[] =
+                            { CLIENT, SERVER, NULL };
+                        for (int target = 0;
+                             targets[target];
+                             target++) {
+                            static const char * const commands[] =
+                                { COMMAND_ADD, COMMAND_REPLACE, COMMAND_DELETE, NULL };
+                            for (int command = 0;
+                                 commands[command];
+                                 command++) {
+                                cout << right << setw(3) <<
+                                    ssr->getItemReportSuccessfulCount(targets[target], commands[command]);
+                                cout << "/";
+                                cout << left << setw(3) <<
+                                    ssr->getItemReportCount(targets[target], commands[command]);
+                                cout << "|";
+                            }
+                        }
+                        cout << "\n";
+                    }
+                    cout << sep;
+                }
+
                 // compare databases?
                 if (m_prepared) {
-                    cout << "\nChanges applied during synchronization:\n";
                     for( iterator it = begin();
                          it != end();
                          ++it ) {
@@ -477,7 +521,7 @@ int EvolutionSyncClient::sync()
     }
 
     // redirect logging as soon as possible
-    SourceList sourceList(m_server, m_doLogging);
+    SourceList sourceList(m_server, m_doLogging, *this);
     m_sourceListPtr = &sourceList;
 
     try {
