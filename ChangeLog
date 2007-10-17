@@ -1,3 +1,8 @@
+2007-10-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* Makefile.am:
+	added packaging via checkinstall as deb (working) and rpm (somehow not working)
+
 2007-10-14  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/AddressBookSource.cpp:

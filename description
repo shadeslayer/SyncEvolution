@@ -1,0 +1,8 @@
+SyncEvolution SyncML Client
+
+SyncEvolution synchronizes personal information management (PIM) data
+like contacts, calenders, tasks and memos via SyncML. It supports all
+of these for GNOME's Evolution and contacts for the system address
+book of the Nokia 770/800 internet tablets, Mac OS X and the
+iPhone. The command-line tool 'syncevolution' (compiled separately for
+each of these platforms) executes the synchronization.

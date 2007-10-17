@@ -1,4 +1,4 @@
-SyncEvolution 0.6 -> 0.7-pre1, 25.08.2007
+SyncEvolution 0.6 -> 0.7-pre1, 17.10.2007
 -----------------------------------------
 * C++ client library: tag "sdkcpp_6_0_9_1" (same as before)
 * added support for Mac OS X/iPhone address book
@@ -6,6 +6,18 @@ SyncEvolution 0.6 -> 0.7-pre1, 25.08.2007
   via the package manager unless it was in "red pill" mode
 * less verbose: "extracting" items is now logged at debug level
   and thus not normally shown
+* example configs were in share/share directory (SF #1767329)
+* Nokia 770/800: uninstallable package fixed by setting category
+  (SF #1781652)
+* sync with eGroupware - lost or messed up telephones: SyncEvolution
+  incorrectly added TYPE=OTHER to phone numbers sent with e.g.
+  CELL instead of TYPE=CELL (SF #1796086). Another patch was
+  required for eGroupware itself to correctly map phone numbers
+  as sent by SyncEvolution, see Compatibility web page.
+* SyncCap is not generated unless syncModes are configured: added
+  a comment to example config (SF #1764123)
+* improved error handling: catch errors during post-processing and
+  continue
 
 
 SyncEvolution 0.5 -> 0.6, 13.07.2007
