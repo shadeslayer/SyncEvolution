@@ -33,3 +33,36 @@ $(IPHONE_FILENAME) : all
 	         -e 's;^type = text/(x-)?vcard;type = addressbook;m;' \
                  syncevolution-iphone/usr/share/doc/syncevolution/*/spds/sources/addressbook/config.txt
 	cd syncevolution-iphone && zip -r ../$(IPHONE_FILENAME) .
+
+TYPE_deb = -D
+TYPE_rpm = -R
+REQUIRES_deb = --requires="`dpkg-shlibdeps -O src/syncevolution | sed -e 's/[^=]*=//'`"
+VERSION_deb = $(VERSION)
+VERSION_rpm = `echo $(VERSION) | sed -e s/-/_/g`
+
+# When calling checkinstall we cannot install into /tmp
+# because any file created there will be excluded: that makes
+# sense, because "make install" might create temporary files
+# there. The current directory might be in /tmp, so use $HOME.
+deb rpm : all doc-pak
+	tmpdir=`mktemp -d $$HOME/syncevolution.XXXXXXXXXX` && \
+	trap "rm -rf $$tmpdir" EXIT && \
+	docdir="$(docdir)" && \
+        if [ ! "$$docdir" ]; then docdir="$(datadir)/doc/$(PACKAGE)"; fi && \
+	fakeroot checkinstall \
+		$(TYPE_$@) \
+		$(REQUIRES_$@) \
+		--fstrans=yes \
+		--pkgversion=$(VERSION_$@) \
+		--pkgname=syncevolution$(patsubst %,-%,$(BINSUFFIX)) \
+		--maintainer='Patrick Ohly <patrick.ohly@gmx.de>' \
+		--pkgsource='http://sourceforge.net/project/showfiles.php?group_id=146288' \
+		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
+		--docdir=$$docdir $(MAKE) install
+
+doc-pak : README NEWS COPYING
+	mkdir $@
+	cp $+ $@
+
+description-pak : description
+	cp $< $@
