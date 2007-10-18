@@ -4,8 +4,11 @@ SyncEvolution 0.6 -> 0.7-pre1, 17.10.2007
 * added support for Mac OS X/iPhone address book
 * fixed Nokia packaging problem which prevented installation
   via the package manager unless it was in "red pill" mode
-* less verbose: "extracting" items is now logged at debug level
-  and thus not normally shown
+* improved output: less verbose ("extracting" items is now
+  logged at debug level and thus not normally shown) and more
+  informative printing of changes (table summarizes number of
+  changes on client and server, heading for comparison changed
+  to make it clear that it shows changes on the client)
 * example configs were in share/share directory (SF #1767329)
 * Nokia 770/800: uninstallable package fixed by setting category
   (SF #1781652)
