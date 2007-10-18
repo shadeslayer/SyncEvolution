@@ -342,4 +342,5 @@ AC_OUTPUT([
 Makefile
 src/Makefile
 etc/Makefile
+test/Makefile
 ])
