@@ -40,6 +40,14 @@ REQUIRES_deb = --requires="`dpkg-shlibdeps -O src/syncevolution | sed -e 's/[^=]
 VERSION_deb = $(VERSION)
 VERSION_rpm = `echo $(VERSION) | sed -e s/-/_/g`
 
+# The package name: BINSUFFIX is used to distinguish binaries
+# for different Evolution releases.
+PKGNAME=syncevolution$(patsubst %,-%,$(BINSUFFIX))
+
+# This is a list of packages (potentially) provided on estamos.de.
+# The current package conflicts with any of them, but not itself.
+PKGS = $(addprefix syncevolution-evolution-, 2.0 2.2 2.4 2.6 2.8 2.10 2.12 2.14 2.16)
+
 # When calling checkinstall we cannot install into /tmp
 # because any file created there will be excluded: that makes
 # sense, because "make install" might create temporary files
@@ -54,10 +62,13 @@ deb rpm : all doc-pak
 		$(REQUIRES_$@) \
 		--fstrans=yes \
 		--pkgversion=$(VERSION_$@) \
-		--pkgname=syncevolution$(patsubst %,-%,$(BINSUFFIX)) \
+		--pkgname=$(PKGNAME) \
+		--provides=syncevolution \
+		--conflicts="`echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */, /g'`" \
 		--maintainer='Patrick Ohly <patrick.ohly@gmx.de>' \
 		--pkgsource='http://sourceforge.net/project/showfiles.php?group_id=146288' \
 		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
+		--pkggroup='gnome' \
 		--docdir=$$docdir $(MAKE) install
 
 doc-pak : README NEWS COPYING
