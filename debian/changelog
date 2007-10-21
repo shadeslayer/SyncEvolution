@@ -1,5 +1,6 @@
 syncevolution (0.7-pre1-1) unstable; urgency=low
 
+  * updated upstream sources
   * SF #1781652: Nokia 770/800: uninstallable package
     fixed by setting the section to "user/communication"
   
