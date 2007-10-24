@@ -18,6 +18,7 @@
  */
 
 #include <config.h>
+#include <stddef.h>
 
 #include <base/Log.h>
 #include <posix/base/posixlog.h>
