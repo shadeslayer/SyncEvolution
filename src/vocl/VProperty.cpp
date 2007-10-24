@@ -104,7 +104,7 @@ void VProperty::removeParameter(wchar_t* paramName) {
             WKeyValuePair *parameter; 
             parameter = (WKeyValuePair* )parameters->get(i);
             if(!wcscmp(parameter->getKey(), paramName)) {
-                parameters->remove(i);
+                parameters->removeElementAt(i);
                 break;
             }
         }
@@ -112,7 +112,7 @@ void VProperty::removeParameter(wchar_t* paramName) {
 }
 
 void VProperty::removeParameter(int index) {
-    parameters->remove(index);
+    parameters->removeElementAt(index);
 }
    
 bool VProperty::containsParameter(wchar_t* paramName) {

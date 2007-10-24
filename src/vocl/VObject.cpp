@@ -78,7 +78,7 @@ int VObject::propertiesCount() {
 bool VObject::removeProperty(int index) {
     if(index < 0 || index >= propertiesCount())
         return false;
-    properties->remove(index);
+    properties->removeElementAt(index);
     return true;
 }
 
@@ -87,7 +87,7 @@ void VObject::removeProperty(wchar_t* propName) {
         VProperty *property; 
         property = (VProperty* )properties->get(i);
         if(!wcscmp(property->getName(), propName)) {
-            properties->remove(i);
+            properties->removeElementAt(i);
             break;
         }
     }
