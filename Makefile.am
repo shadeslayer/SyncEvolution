@@ -36,9 +36,10 @@ $(IPHONE_FILENAME) : all
 
 TYPE_deb = -D
 TYPE_rpm = -R
-REQUIRES_deb = --requires="`dpkg-shlibdeps -O src/syncevolution | sed -e 's/[^=]*=//'`"
+REQUIRES_deb = --requires="`dpkg-shlibdeps -L$(srcdir)/src/shlibs.local -O src/syncevolution | sed -e 's/[^=]*=//'`"
 VERSION_deb = $(VERSION)
 VERSION_rpm = `echo $(VERSION) | sed -e s/-/_/g`
+RELEASE = 2
 
 # The package name: BINSUFFIX is used to distinguish binaries
 # for different Evolution releases.
@@ -62,6 +63,7 @@ deb rpm : all doc-pak
 		$(REQUIRES_$@) \
 		--fstrans=yes \
 		--pkgversion=$(VERSION_$@) \
+		--pkgrelease=$(RELEASE) \
 		--pkgname=$(PKGNAME) \
 		--provides=syncevolution \
 		--conflicts="`echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */, /g'`" \
