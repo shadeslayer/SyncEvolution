@@ -1,1 +1,1 @@
-EXTRA_DIST = ClientTest.cpp synccompare.pl
+EXTRA_DIST = 
