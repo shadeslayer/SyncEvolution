@@ -229,9 +229,9 @@ public:
         }
         for (int multi = 0; multi < MAX_MULTIVALUE; multi++) {
             if (!ABRecordRemoveValue(m_person, *m_multiProp[multi])) {
-                throwError("removing old value "
+                throwError(string("removing old value ")
 #ifndef IPHONE
-                           + CFString2Std(**m_multiProp[multi]) + " " +
+                           + CFString2Std(*m_multiProp[multi]) + " " +
 #endif
                            "failed");
             }
@@ -1004,7 +1004,7 @@ const CFStringRef *vCard2ABPerson::m_multiProp[MAX_MULTIVALUE] = {
 #ifdef IPHONE
     &kABCURLProperty,
 #else
-    (CFStringRef)kABURLsProperty,
+    (CFStringRef*)&kABURLsProperty,
 #endif
     &kABEmailProperty,
     &kABPhoneProperty,
