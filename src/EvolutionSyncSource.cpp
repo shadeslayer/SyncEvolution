@@ -300,6 +300,10 @@ int EvolutionSyncSource::beginSync()
         "???";
     LOG.info( buffer.c_str() );
 
+    // start background thread if not running yet:
+    // necessary to catch problems with Evolution backend
+    EvolutionSyncClient::startLoopThread();
+
     try {
         // reset anchors now, once we proceed there is no going back
         // (because the change marker is about to be moved)

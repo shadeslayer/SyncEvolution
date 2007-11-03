@@ -497,13 +497,48 @@ void EvolutionSyncClient::throwError(const string &error)
      * one sync source this is probably the only thing that can be done.
      * Still, it's not nice on the server...
      */
-    LOG.error("%s", error.c_str());
+    fatalError(NULL, error.c_str());
+#else
+    throw runtime_error(error);
+#endif
+}
+
+void EvolutionSyncClient::fatalError(void *object, const char *error)
+{
+    LOG.error("%s", error);
     if (m_sourceListPtr) {
         m_sourceListPtr->syncDone(false);
     }
     exit(1);
-#else
-    throw runtime_error(error);
+}
+
+#if defined(HAVE_GLIB) && defined(HAVE_EDS)
+# define RUN_GLIB_LOOP
+#endif
+
+#ifdef RUN_GLIB_LOOP
+#include <pthread.h>
+static void *mainLoopThread(void *)
+{
+    GMainLoop *mainloop = g_main_loop_new(NULL, TRUE);
+    if (mainloop) {
+        g_main_loop_run(mainloop);
+        g_main_loop_unref(mainloop);
+    }
+    return NULL;
+}
+#endif
+
+void EvolutionSyncClient::startLoopThread()
+{
+#ifdef RUN_GLIB_LOOP
+    // when using Evolution we must have a running main loop,
+    // otherwise loss of connection won't be reported to us
+    static pthread_t loopthread;
+    static bool loopthreadrunning;
+    if (!loopthreadrunning) {
+        loopthreadrunning = !pthread_create(&loopthread, NULL, mainLoopThread, NULL);
+    }
 #endif
 }
 
@@ -608,6 +643,10 @@ int EvolutionSyncClient::sync()
 
         // give derived class also a chance to update the configs
         prepare(config, sourceList.getSourceArray());
+
+        // start background thread if not running yet:
+        // necessary to catch problems with Evolution backend
+        startLoopThread();
 
         // ready to go: dump initial databases and prepare for final report
         sourceList.syncPrepare();

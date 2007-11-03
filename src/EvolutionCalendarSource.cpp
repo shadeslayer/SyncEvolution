@@ -143,6 +143,11 @@ void EvolutionCalendarSource::open()
             throwError( "opening calendar", gerror );
         }
     }
+
+    g_signal_connect_after(m_calendar,
+                           "backend-died",
+                           G_CALLBACK(EvolutionSyncClient::fatalError),
+                           (void *)"Evolution Data Server has died unexpectedly, database no longer available.");
 }
 
 void EvolutionCalendarSource::getChanges()

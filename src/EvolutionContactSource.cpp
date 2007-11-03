@@ -164,6 +164,11 @@ void EvolutionContactSource::open()
         }
         authmethod = authmethod->next;
     }
+
+    g_signal_connect_after(m_addressbook,
+                           "backend-died",
+                           G_CALLBACK(EvolutionSyncClient::fatalError),
+                           (void *)"Evolution Data Server has died unexpectedly, contacts no longer available.");
 }
 
 void EvolutionContactSource::beginSyncThrow(bool needAll,

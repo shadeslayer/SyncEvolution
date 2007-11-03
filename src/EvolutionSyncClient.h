@@ -78,6 +78,27 @@ class EvolutionSyncClient : public SyncClient {
      */
     static void throwError(const string &error);
 
+    /**
+     * An error handler which prints the error message and then
+     * stops the program. Never returns.
+     *
+     * The API was chosen so that it can be used as libebook/libecal
+     * "backend-dies" signal handler.
+     */
+    static void fatalError(void *object, const char *error);
+
+    /**
+     * When using Evolution this function starts a background thread
+     * which drives the default event loop. Without that loop
+     * "backend-died" signals are not delivered. The problem with
+     * the thread is that it seems to interfere with gconf startup
+     * when added to the main() function of syncevolution. Therefore
+     * it is started by EvolutionSyncSource::beginSync() (for unit
+     * testing of sync sources) and EvolutionSyncClient::sync() (for
+     * normal operation).
+     */
+    static void startLoopThread();
+
   protected:
     /**
      * Callback for derived classes: called after setting up the client's
