@@ -397,6 +397,9 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
     }
     
     if (!update) {
+        const char *olduid = icalcomponent_get_uid(subcomp);
+        string olduidstr(olduid ? olduid : "");
+
         if(!e_cal_create_object(m_calendar, subcomp, &uid, &gerror)) {
             if (gerror->domain == E_CALENDAR_ERROR &&
                 gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
@@ -405,6 +408,10 @@ int EvolutionCalendarSource::insertItem(SyncItem& item, bool update)
                 logItem(item, "exists already, updating instead");
                 fallback = true;
                 g_clear_error(&gerror);
+
+                // Starting with Evolution 2.12, the old UID was removed during
+                // e_cal_create_object(). Restore it so that the updating below works.
+                icalcomponent_set_uid(subcomp, olduidstr.c_str());
             } else {
                 throwError( "storing new calendar item", gerror );
             }
