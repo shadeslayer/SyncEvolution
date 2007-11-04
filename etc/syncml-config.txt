@@ -15,8 +15,8 @@ syncURL = http://my.funambol.com/sync
 deviceId = sc-api-nat
 
 # authorization for the SyncML server
-username = guest
-password = guest
+username = your SyncML server account name
+password = your SyncML server password
 
 # set to T to enable an HTTP proxy
 useProxy = F
