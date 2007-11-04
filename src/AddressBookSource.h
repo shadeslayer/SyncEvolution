@@ -175,6 +175,9 @@ class AddressBookSource : public EvolutionSyncSource
     AddressBookSource(const AddressBookSource &other);
     virtual ~AddressBookSource() { close(); }
 
+    void setVCard30(bool asVCard30) { m_asVCard30 = asVCard30; }
+    bool getVCard30() { return m_asVCard30; }
+
 
     //
     // implementation of EvolutionSyncSource
@@ -184,11 +187,12 @@ class AddressBookSource : public EvolutionSyncSource
     virtual void close(); 
     virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "vcf"; }
-    virtual const char *getMimeType() { return "text/x-vcard"; }
-    virtual const char *getMimeVersion() { return "2.1"; }
-    virtual const char *getSupportedTypes() { return "text/x-vcard:2.1"; }
+    virtual const char *getMimeType() { return m_asVCard30 ? "text/vcard" : "text/x-vcard"; }
+    virtual const char *getMimeVersion() { return m_asVCard30 ? "3.0" : "2.1"; }
+    virtual const char *getSupportedTypes() { return m_asVCard30 ? "text/vcard:3.0" : "text/x-vcard:2.1"; }
    
-    virtual SyncItem *createItem( const string &uid, SyncState state );
+    virtual SyncItem *createItem(const string &uid, SyncState state) { return createItem(uid, state, m_asVCard30); }
+    virtual SyncItem *createItem(const string &uid, SyncState state, bool asVCard30);
     
     //
     // implementation of SyncSource
@@ -232,6 +236,9 @@ class AddressBookSource : public EvolutionSyncSource
 
     /** returns absolute modification time or (if that doesn't exist) the creation time */
     double getModTime(ABRecordRef record);
+
+    /** unless selected otherwise send items as vCard 2.1 */
+    bool m_asVCard30;
 };
 
 #endif // ENABLE_EBOOK

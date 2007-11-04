@@ -231,9 +231,9 @@ public:
             if (!ABRecordRemoveValue(m_person, *m_multiProp[multi])) {
                 throwError(string("removing old value ")
 #ifndef IPHONE
-                           + CFString2Std(*m_multiProp[multi]) + " " +
+                           + CFString2Std(*m_multiProp[multi]) + " "
 #endif
-                           "failed");
+                           + "failed");
             }
         }
 
@@ -275,8 +275,8 @@ public:
         }
     }
 
-    /** convert person into vCard 2.1 and store it in string */
-    void fromPerson() {
+    /** convert person into vCard 2.1 or 3.0 and store it in string */
+    void fromPerson(bool asVCard30) {
         string tmp;
         const unsigned char *text;
         
@@ -288,8 +288,8 @@ public:
         // m_vobj = VObject();
 
         m_vobj.addProperty("BEGIN", "VCARD");
-        m_vobj.addProperty("VERSION", "2.1");
-        m_vobj.setVersion("2.1");
+        m_vobj.addProperty("VERSION", asVCard30 ? "3.0" : "2.1");
+        m_vobj.setVersion(asVCard30 ? "3.0" : "2.1");
 
         // iterate over all person properties and handle them
         for (int mapindex = 0;
@@ -342,7 +342,7 @@ public:
             StringBuffer encoded;
             b64_encode(encoded, (void *)CFDataGetBytePtr(photo), CFDataGetLength(photo));
             VProperty vprop("PHOTO");
-            vprop.addParameter("ENCODING", "B");
+            vprop.addParameter("ENCODING", asVCard30 ? "B" : "BASE64");
             vprop.setValue(encoded.c_str());
             m_vobj.addProperty(&vprop);
         }
@@ -1165,9 +1165,18 @@ AddressBookSource::AddressBookSource(const string &name,
                                      const string &changeId,
                                      const string &id,
                                      const string &configPath) :
-    EvolutionSyncSource(name, sc, changeId, id)
+    EvolutionSyncSource(name, sc, changeId, id),
+    m_asVCard30(false)
 {
     m_modNodeName = configPath + "/changes_" + changeId;
+
+    // hack: when configured to talk with ScheduleWorld "card3" URI then
+    // switch to sending vCard 3.0. A better solution would be to wait for
+    // server SyncCap information, but this is not currently possible (not sent
+    // by SW, not made available to Sync Source (?)).
+    if (sc && sc->getURI() && !strcasecmp(sc->getURI(), "card3")) {
+        setVCard30(true);
+    }
 }
 
 AddressBookSource::AddressBookSource(const AddressBookSource &other) :
@@ -1286,13 +1295,13 @@ void AddressBookSource::exportData(ostream &out)
         CFStringRef descr = CFCopyDescription(person);
         ref<CFStringRef> cfuid(ABRecordCopyUniqueId(person), "reading UID");
         string uid(CFString2Std(cfuid));
-        eptr<SyncItem> item(createItem(uid, SYNC_STATE_NONE), "sync item");
+        eptr<SyncItem> item(createItem(uid, SYNC_STATE_NONE, true), "sync item");
 
         out << (char *)item->getData() << "\n";
     }
 }
 
-SyncItem *AddressBookSource::createItem( const string &uid, SyncState state )
+SyncItem *AddressBookSource::createItem(const string &uid, SyncState state, bool asVCard30)
 {
     logItem(uid, "extracting from address book", true);
 
@@ -1308,7 +1317,7 @@ SyncItem *AddressBookSource::createItem( const string &uid, SyncState state )
     string vcard;
     try {
         vCard2ABPerson conv(vcard, person);
-        conv.fromPerson();
+        conv.fromPerson(asVCard30);
     } catch (const std::exception &ex) {
         throwError("creating vCard for " + uid + " failed: " + ex.what());
     }

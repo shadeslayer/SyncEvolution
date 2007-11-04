@@ -44,18 +44,18 @@ VObject::~VObject() {
     }
 }
 
-void VObject::set(wchar_t** p, wchar_t* v) {
+void VObject::set(wchar_t** p, const wchar_t* v) {
     if (*p) {
         delete [] *p;
     }
     *p = (v) ? wstrdup(v) : NULL;
 }
 
-void VObject::setVersion(wchar_t* ver) {
+void VObject::setVersion(const wchar_t* ver) {
     set(&version, ver);
 }
 
-void VObject::setProdID(wchar_t* prodID) {
+void VObject::setProdID(const wchar_t* prodID) {
     set(&productID, prodID);
 }
 

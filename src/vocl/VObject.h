@@ -12,14 +12,14 @@ private:
     char* version;
     char* productID;
     ArrayList* properties;
-    void set(char**, char*);
+    void set(char**, const char*);
 
 public:       
 
     VObject();
     ~VObject();
-    void setVersion (char* ver);
-    void setProdID (char* prodID);
+    void setVersion (const char* ver);
+    void setProdID (const char* prodID);
     char* getVersion();
     char* getProdID();
     void addProperty(VProperty* property);
