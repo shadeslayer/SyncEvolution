@@ -275,7 +275,8 @@ bool VProperty::isType(wchar_t* type) {
          paramindex < parameterCount();
          paramindex++) {
         wchar_t *value = getParameterValue(paramindex);
-        if (value && !strcasecmp(value, type)) {
+        wchar_t *param = getParameter(paramindex);
+        if (value && param && !strcasecmp(param, "TYPE")) {
             wchar_t seps[] = TEXT(",");
             wchar_t* token;
 
