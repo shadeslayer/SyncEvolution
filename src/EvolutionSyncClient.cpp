@@ -570,6 +570,12 @@ int EvolutionSyncClient::sync()
         arrayptr<char> loglevel(config.getSyncMLNode()->readPropertyValue("logLevel"));
         sourceList.setLogdir(logdir, atoi(maxlogdirs), atoi(loglevel));
 
+        // dump some summary information at the beginning of the log
+        LOG.debug("SyncML server account: %s", config.getAccessConfig().getUsername());
+        LOG.debug("client: SyncEvolution %s", VERSION);
+        time_t now = time(NULL);
+        LOG.debug("current UTC date and time: %s", asctime(gmtime(&now)));
+
         SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
         for (int index = 0; index < config.getNumSources(); index++) {
             ManagementNode &node(*config.getSyncSourceNode(index));
