@@ -36,9 +36,22 @@ using namespace std;
 # define ABMultiValueCopyValueAtIndex ABCMultiValueCopyValueAtIndex
 # define ABMultiValueCount ABCMultiValueGetCount
 # define ABMultiValueCreateMutable ABCMultiValueCreateMutable
-# define ABPersonCopyImageData ABCPersonCopyImageData
+// # define ABPersonCopyImageData ABCPersonCopyImageData
 # define PersonCreateWrapper(_addressbook) ABCPersonCreateNewPerson(_addressbook)
-# define ABPersonSetImageData ABCPersonSetImageData
+/**
+ * The iPhone stores photos in three (?) different sizes.
+ * Storing just one copy is okay, albeit a bit inefficient:
+ * it needs to be scaled down each time it is accessed.
+ *
+ * @todo When importing photos into the address book, create
+ * all three different sizes.
+ */
+enum {
+    IPHONE_PHOTO_SIZE_THUMBNAIL,
+    IPHONE_PHOTO_SIZE_MEDIUM,
+    IPHONE_PHOTO_SIZE_ORIGINAL
+};
+# define PersonSetImageDataWrapper(_person, _dataref) ABCPersonSetImageDataAndCropRect(_person, IPHONE_PHOTO_SIZE_THUMBNAIL, _dataref, 0,0,0,0)
 # define ABRecordCopyValue ABCRecordCopyValue
 # define ABRecordRemoveValue ABCRecordRemoveValue
 # define ABRecordSetValue ABCRecordSetValue
@@ -92,7 +105,8 @@ using namespace std;
 // # define kABURLsProperty kABCURLsProperty
 # define kABYahooInstantProperty kABCYahooInstantProperty
 #else
-#define PersonCreateWrapper(_addressbook) ABPersonCreate()
+# define PersonCreateWrapper(_addressbook) ABPersonCreate()
+# define PersonSetImageDataWrapper(_person, _dataref) ABPersonSetImageData(_person, _dataref)
 #endif
 #include "EvolutionSyncClient.h"
 #include "AddressBookSource.h"
@@ -158,6 +172,10 @@ extern "C" {
         SInt32 uid = ABCRecordGetUniqueId(record);
         return CFStringCreateWithFormat(NULL, NULL, CFSTR("%d"), uid);
     }
+
+    CFDataRef ABCPersonCopyImageData(ABPersonRef person, int format);
+    bool ABCPersonSetImageData(ABPersonRef person, int format, CFDataRef data);
+    bool ABCPersonSetImageDataAndCropRect(ABPersonRef person, int format, CFDataRef data, int crop_x, int crop_y, int crop_width, int crop_height);
 }
 
 #endif
@@ -268,8 +286,8 @@ public:
         if (photo) {
             int len;
             arrayptr<char> decoded((char *)b64_decode(len, photo->getValue()), "photo");
-            ref<CFDataRef> data(CFDataCreateWithBytesNoCopy(NULL, (UInt8 *)(char *)decoded, len, kCFAllocatorNull));
-            if (!ABPersonSetImageData(m_person, data)) {
+            ref<CFDataRef> data(CFDataCreate(NULL, (UInt8 *)(char *)decoded, len));
+            if (!PersonSetImageDataWrapper(m_person, data)) {
                 EvolutionSyncClient::throwError("cannot set photo data");
             }
         }
@@ -337,7 +355,20 @@ public:
             m_vobj.addProperty("ORG", org.c_str());
         }
 
-        ref<CFDataRef> photo(ABPersonCopyImageData(m_person));
+        ref<CFDataRef> photo;
+#ifdef IPHONE
+        // ask for largets size first
+        for(int format = IPHONE_PHOTO_SIZE_ORIGINAL; format >= 0; format--) {
+            fprintf(stderr, "photo %d\n", format);
+            photo.set(ABCPersonCopyImageData(m_person, format));
+            if (photo) {
+                fprintf(stderr, "got %d bytes\n", CFDataGetLength(photo));
+                break;
+            }
+        }
+#else
+        photo.set(ABPersonCopyImageData(m_person));
+#endif
         if (photo) {
             StringBuffer encoded;
             b64_encode(encoded, (void *)CFDataGetBytePtr(photo), CFDataGetLength(photo));
