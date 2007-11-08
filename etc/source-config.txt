@@ -39,7 +39,6 @@ syncModes = slow,two-way,refresh-from-client,refresh-from-server,one-way-from-cl
 # type and uri.
 type = text/x-vcard
 
-
 # picks one of Evolution's data sources:
 # enter either the name or the full URL
 #
@@ -48,7 +47,7 @@ type = text/x-vcard
 # is printed in front of the colon, followed by
 # the URL. Usually the name is unique and can be
 # used to reference the data source.
-evolutionsource = SyncEvolution test #1
+evolutionsource = Personal
 
 # this is appended to the server's URL to identify the
 # server's database
