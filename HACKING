@@ -135,7 +135,19 @@ Building a Release
   done automatically by runtests.py on estamos.de (= Debian 3.0), using different Garnome
   installations, and with special configure options to ensure maximum
   portability (LDFLAGS=-W,--as-needed --enable-static-cxx)
-- compile .deb for Maemo:
+- compile .deb for Maemo
+- add new .debs/.zip to www.estamos.de/download
+- upload new files to sf.net
+- remove files from www.estamos.de so that downloads access sf.net
+- update entries on the web about the release:
+  http://maemo.org/downloads/product/syncevolution/
+  http://www.modmyiphone.com/ (?)
+  http://www.estamos.de/blog/wp-admin
+  http://www.estamos.de/projects/SyncEvolution/Roadmap.html
+
+
+Compiling for Maemo
+-------------------
   build patched libdbus (apt-get source dbus; apply dbus-timeout.patch; fakeroot dpkg-buildpackage);
   unpack source archive in Scratchbox (for maximum compatibility: use Mistral 2.0
   rootstrap; for support of all backends: ensure that the EDS-DBus calendar dev packages
@@ -154,8 +166,11 @@ that address book syncing uses the default libraries):
   ver=1.4.1-0zoh4; for i in libecal-dev libecal libedata-cal libedata-cal-dev; do  wget http://maemo.o-hand.com/packages/mistral/${i}_${ver}_armel.deb; done
   dpkg --force-depends -i *.deb
 
-- compiling for iPhone:
-  Requires iPhone toolchain and libcurl, ideally configured as small as possible
+
+Compiling for iPhone
+--------------------
+  Requires iPhone toolchain and a libcurl compiled for the iPhone.
+  libcurl is ideally configured as small as possible
   and statically (to avoid packaging problems):
       ./configure --prefix=/usr/local/iphone --host=arm-apple-darwin --disable-shared \
                   --disable-crypto-auth --without-gnutls --without-ssl --without-zlib \
@@ -173,5 +188,17 @@ that address book syncing uses the default libraries):
 
   Build a package with:
     make distbin BINSUFFIX="iphone"
+
+Compiling for Mac OS X
+----------------------
+
+  <path>/configure --with-sync4j-src= --enable-addressbook
+  make CFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386" \
+       LDFLAGS="-Wl,-syslibroot,/Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386"
+  
+  Fine-grained memory checking:
+    MallocStackLogging=1 MallocStackLoggingNoCompact=1 \
+    MallocScribble=1 MallocPreScribble=1 MallocGuardEdges=1 \
+    MallocCheckHeapStart=1 MallocCheckHeapEach=100
 
 
