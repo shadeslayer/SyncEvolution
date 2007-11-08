@@ -1,22 +1,31 @@
 Introduction
 ------------
 
-SyncEvolution synchronizes Evolution's contact, calender and task
-items via SyncML. The items are exchanged in the vCard 2.1 or 3.0
-format and iCalender 2.0 format via the Funambol C++ client API
-library, which should make SyncEvolution compatible with the majority
-of SyncML servers.
+SyncEvolution synchronizes personal information management (PIM) data
+like contacts, calenders, tasks and memos via the SyncML information
+synchronization standard. It supports all of these for GNOME's
+Evolution and contacts for the system address book of the Nokia
+Internet Tablets, Mac OS X and the iPhone. The command-line tool
+'syncevolution' (compiled separately for each of these platforms)
+executes the synchronization.
 
-SyncEvolution does not synchronize with another SyncML capable
-device or another computer directly. A SyncML server that that device
-and SyncEvolution can talk to is needed. There are several options for
+The items are exchanged in the vCard 2.1/3.0, iCalender 2.0 and
+textual format via the open source Funambol C++ client API library,
+which makes SyncEvolution compatible with the majority of SyncML
+servers. Full, one-way and incremental synchronization of items are
+supported.
+
+SyncEvolution does not synchronize with another SyncML capable device
+or another computer directly. A SyncML server that that device and
+SyncEvolution can talk to is needed. There are several options for
 that:
-- using a web service like ScheduleWorld (sync.scheduleworld.com)
-  which stores the data to be synchronized on a ScheduleWorld server
-  and provides access to it via SyncML
-- installing a SyncML server like the free one from Funambol
-  (www.funambol.com) on one's own server
+- using a web service like ScheduleWorld or myFUNAMBOL which store
+  the data to be synchronized on a server and provide access to it
+  via SyncML
+- installing a SyncML server like the free one from Funambol on
+  one's own server
 - installing a SyncML server on the desktop
+
 
 The recommended solution is ScheduleWorld because it is easier than
 setting up a server and provides better support for vCard and
@@ -33,10 +42,10 @@ All SyncML synchronization modes are supported by SyncEvolution:
   the server then decides which items need to be deleted, added or
   updated on the client ("slow")
 
-The remainder of this document assumes that either Funambol's server
-bundle was installed using the default configuration or ScheduleWorld
-is used: because ScheduleWorld is based on the Funambol server,
-configuration and usage are often similar.
+The remainder of this document assumes that either Funambol's
+myFUNAMBOL service or ScheduleWorld are used: because ScheduleWorld is
+based on the Funambol server, configuration and usage are often
+similar.
 
 With a server that fully supports SyncML and vCard/iCalender
 the following works:
@@ -65,24 +74,15 @@ Installation
 ------------
 
 To install SyncEvolution, just unpack an archive with a precompiled
-binary for your platform in a directory of your choice. Then create
-a configuration in $HOME/.sync4j/evolution as described below under
-"Configuration". No special environment variables are needed, although
-one might want to add the directory with contains the "syncevolution"
-binary to the shell's PATH variable.
+binary for your platform in a directory of your choice or install one
+of the packages. Then create a configuration in $HOME/.sync4j/evolution
+as described below under "Configuration". No special environment variables
+are needed, although one might want to add the directory with contains
+the "syncevolution" binary to the shell's PATH variable.
 
 When a binary packages is not available for the target system
 and/or is not up-to-date, compiling from source can also be used
 to produce a binary. See below in "Compiling from Source" for details.
-
-You also need a working SyncML server. If you do not have an account
-and/or do not want to get an account on an existing one like
-ScheduleWorld, installing the Funambol server bundle is very easy:
-   http://www.funambol.com/opensource/downloads.html
-
-For Funambol Sync4j V2.3, an additional patch is recommended to preserve
-line breaks of items on the server:
-   http://forge.objectweb.org/tracker/index.php?func=detail&aid=304718&group_id=96&atid=300096
 
 Although all of the features are covered by unit testing and
 have been verified to work, it is highly recommended that you
@@ -90,47 +90,52 @@ make a backup of your
    $HOME/.evolution/addressbook
    $HOME/.evolution/calender
    $HOME/.evolution/tasks
-directories before running SyncEvolution for the first time. In older Evolution
-versions the same data is found in $HOME/evolution.
+   $HOME/.evolution/memos
+directories before running SyncEvolution for the first time with
+Evolution. In older Evolution versions the same data is found in
+$HOME/evolution.
 
 
 Usage
 -----
 
 Currently SyncEvolution comes as a simple command line tool which is
-configured via files. A graphical interface via an Evolution plugin
-would also be possible, but is not implemented yet. As command line
-parameters SyncEvolution only supports one option which specifies the
-configuration file that drives the synchronization run and several
-options which choose the data sources in that configuration:
+configured via files. The synopsis of the command line parameters is:
 
-   syncevolution [<server>] [<source> ...]
+   syncevolution [<options>] [<server>] [<source> ...]
 
-The <server> string is used to find the configuration which determines
-how synchronization is going to proceed. Selection of sources of
-Evolution data which are to be synchronized with that server is done
-via configuration files. Each source corresponds to one Evolution
-address book, calendar or task list.
+The <server> and the <source> strings are used to find the
+configuration files which determine how synchronization is going to
+proceed. Each source corresponds to one local address book, calendar,
+task list or set of memos and the corresponding database on the
+server.
 
-If no arguments are given, SyncEvolution lists all available Evolution
-data sources.
+If no arguments are given, then SyncEvolution will list all available
+data sources regardless whether there is a configuration file for them
+or not. The output includes the identifiers which can then be used to
+select those sources in a configuration file. For each source one can
+set a different synchronization mode in its configuration file.
 
-For each source one can set a different synchronization mode.  It is
-possible to configure sources without activating their
-synchronization: if the synchronization mode of a source is set to
-"none", it will be ignore. Explicitely listing one or more source
-names after the server chooses just those sources for synchronization
-with their configured sync mode. If such a selected source is
-currently set to "none", it will be synchronized in "two-way" mode
-once. The setting in the configuration file is not changed.
+Without the optional list of sources all sources which are enabled in
+their configuration file are synchronized. Otherwise only the ones
+mentioned on the command line are active. It is possible to configure
+sources without activating their synchronization: if the
+synchronization mode of a source is set to "none", the source will be
+ignore. Explicitely listing such a source will synchronize it in
+"two-way" mode once.
 
 Progress and error messages are written into a log file that is
 preserved for each synchronization run. Details about that is found
 in the "Automatic Backups and Logging" section below. Immediately
 before quitting SyncEvolution will show all errors or warnings
-encountered and print a summary of how the databases were modified.
+encountered and print a summary of how the local data was modified.
 This is done with the "synccompare" utility script described
 in the "Exchanging Data" section.
+
+When the "logdir" option is enabled (not the default because a
+persistent directory must be chosen, but highly recommended if one
+has the space!), then the same comparison is also done before the
+synchronization starts.
 
 In case of a severe error the synchronization run is aborted
 prematurely and SyncEvolution will return a non-zero value. Recovery
@@ -147,6 +152,28 @@ next run recovers from that by doing a full synchronization. The risk
 associated with this is that the server might not recognize items that
 it already has stored previously which then would lead to duplication
 of items.
+
+The <options> in front of the server name are:
+
+--sync|-s <mode>
+  Temporarily synchronize the active sources in that mode. Useful
+  for a "refresh-from-server" or "refresh-from-client" sync which
+  clears all data at one end and copies all items from the other.
+
+--status|-t
+  The changes made to local data since the last synchronization are
+  shown without starting a new one. This can be used to see in advance
+  whether the local data needs to be synchronized with the server.
+
+--quiet|-q
+  Suppresses most of the normal output during a synchronization. The
+  log file still contains all the information.
+
+--help|-h
+  Prints usage information.
+
+--version
+  Prints the SyncEvolution version.
 
 
 Getting Started with ScheduleWorld
@@ -177,13 +204,11 @@ The configuration file of a certain <server> is stored in
 The format is a simple list of
    <property> = <value>
 pairs with one pair per line. Leading spaces and space around the
-equals character are skipped. <value> then runs until the the end of
-the line. In other words, it cannot start with spaces nor contain line
-breaks BUT spaces at the end of the line are part of the value! Be
-careful not to add extraneous spaces. Do not put quotation marks around
-<value>, they would be treated as part of the value itself. Lines 
-starting with a hash (#) after optional leading spaces are treated as
-comments and skipped.
+equals character and at the end of the line are skipped. In other words,
+values can neither start or end with spaces nor contain line breaks. Do not
+put quotation marks around <value>, they would be treated as part of the
+value itself. Lines starting with a hash (#) after optional leading
+spaces are treated as comments and skipped.
 
 Each data source is configured in
    $HOME/.sync4j/evolution/<server>/spds/sources/<source>/config.txt
@@ -206,21 +231,21 @@ Normally at least the following configuration options need to be adapted:
       evolutionsource
 
 Each data source corresponds to one database at the SyncML server.
-The Evolution data source is determined by the type of data given in
+The local data source is determined by the type of data given in
 "type" and uniquely identified with the "evolutionsource" property.
 To get a list of available data sources, run SyncEvolution with no
 arguments. "evolutionsource" can be set to either the name or URL
 of a data source that SyncEvolution prints then.
 
 The "uri" property is used to identify with which database on the
-SyncML server the Evolution data is to be synchronized. Each server
+SyncML server the local data is to be synchronized. Each server
 usually documents what needs to be configured here. The provided
-configurations for ScheduleWorld and Funambol on the local host
-already have this set correctly.
+configurations for ScheduleWorld and myFUNAMBOL already have this set
+correctly.
 
 One can synchronize with multiple server databases in one run, but the
 same server database can only be accessed once. To synchronize the
-same server database with multiple local Evolution data sources, one
+same server database with multiple local data sources, one
 has to setup two independent configurations with different "deviceId"
 settings and synchronize them separately. To create such a setup simply
 copy the whole configuration tree of the server, e.g.:
@@ -229,7 +254,7 @@ and then edit ~/.sync4j/evolution/localhost_copy/spds/syncml/config.txt
 to update the "deviceId" and the sources/*/config.txt files to update
 the "evolutionsource".
 
-If the Evolution data source requires authentication, the
+If an Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.
 In this case the directory that contains the source's config.txt should
 only be accessible by the user. Usually these fields can be left
@@ -318,46 +343,9 @@ for contacts and
   uri = cal
 for calendars. Tasks (aka todos) are not supported directly.
 
-WARNING: the current Sync4j 2.3 and Funambol 3.0 cannot parse calendar
-entries as sent by SyncEvolution. Until these issues are resolved in
-the server, one has to fall back to a setup where the server does not
-have to convert calendar events. This is similar to the configuration
-for tasks described in the next paragraph.
-
-Although Evolution tasks are sent and received as special calendar
-events, the server cannot parse them. Therefore it is necessary to
-store each task as files on the server without having the server parse
-them. One can use the existing
-  uri = snote
-file URI, but if that URI is also used for real notes or files, then one
-has to setup what is called FileSyncSource. Just as the client library,
-the Funambol server also has "sync sources" of data. Adding a new "todo"
-sync source is best done via the graphical admin tool:
-- connect to the server
-- unfold the tree and select "Modules/pdi/FileSystem SyncSource"
-- enter the following values:
-  Source URI: todo
-  Name: todo
-  Type: text/x-todo
-  Source Directory: <server install dir>/db/todo
-  Supported types: text/x-todo
-  Supported versions: text/x-todo
-  Encoded: deselected
-  MultiUser: deselected if all users access the same database,
-             selected if every user gets his own database
-- add the new sync source
-- create the <server install dir>/db/todo directory
-
-The drawback of the file based approach is that the server always
-keeps tasks exactly as the clients send them: imagine that
-SyncEvolution stores a task on the server and then a phone fetches
-that task from the server, possibly throwing away attributes that it
-does not support. When now the task is modified on the phone and sent
-back to the server, only the attributes supported by the phone remain
-on the server and thus after another synchronization with
-SyncEvolution also in Evolution. For calendar entries and contacts the
-Funambol server avoids this kind of data loss by updating its copy of an
-item instead of replacing it wholesale.
+WARNING: up to and including Funambol 6.0 there are known data
+conversion issues for calendars because Evolution uses iCalendar 2.0
+and Funambol vCalendar 1.0.
 
 
 Exchanging Data
@@ -373,11 +361,9 @@ How the server stores the items depends on its implementation and
 configuration. In the default Funambol server installation, contacts
 and calendar items are converted into an internal format, but at
 least for contacts it preserves most of the properties used by
-Evolution whereas iCalendar 2.0 items are not parsed properly at all
-at the moment. ScheduleWorld uses the same format as Evolution for
-calendars and tasks and thus requires no conversion. Contacts are
-stored in an LDAP server using the same schema also supported by
-Evolution.
+Evolution whereas iCalendar 2.0 items are not preserved properly 
+in Funambol 6.0. ScheduleWorld uses the same format as Evolution for
+calendars and tasks and thus requires no conversion.
 
 To check which data is preserved, one can use this procedure
 (described for contacts, but works the same way for calendars and
@@ -389,13 +375,6 @@ tasks):
 3. add a configuration for that second address book and the
    same URI on the SyncML server
 4. synchronize again, this time using the other data source
-
-The default example configurations already reference Evolution databases
-under the fictional names "SyncEvolution test #1". After copying them into
-.sync4j/evolution under two different names, changing "#1" into "#2" and
-the deviceId in the second copy and creating the "SyncEvolution test #1/2"
-databases, "syncevolution" can be invoked first for one configuration, then
-the other to test how data is copied via the server.
 
 Now one can either compare the address books in Evolution or do that
 automatically, described here for contacts:
@@ -448,8 +427,8 @@ which might lead to data loss. It is better to avoid this situation
 in the first place by synchronizing before making changes.
 
 
-Tracking Changes inside Evolution
----------------------------------
+Tracking Changes inside Evolution and Nokia Internet Tablets
+------------------------------------------------------------
 
 The SyncML protocol requires that a client knows which items have been
 added, modified and deleted since the last sync. This is supported by
@@ -475,70 +454,22 @@ file. This implies that changes are tracked separately for each server
 and source configuration that Evolution might be synchronized with.
 
 
-Known Problems
---------------
+Tracking Changes inside Mac OS X and iPhone
+-------------------------------------------
 
-The full list and up-to-date status of known problems is maintained at:
-   http://www.estamos.de/projects/SyncML/KnownIssues.html
+Changes are tracked by remembering the modification time stamp
+of items and comparing that list against the current list when
+the next synchronization starts. Removed entries are in the first
+but not the second list, added items are only in the second and
+modified items have a more recent time stamp.
 
 
-Support
--------
+Known Problems + Support
+------------------------
 
-The home page for SyncEvolution is located at:
-   http://www.estamos.de/projects/SyncML/
-
-If you would like to ask questions, please use the Funambol Sync4j
-users mailing list. You can subscribe at
-   http://sourceforge.net/mail/?group_id=30236
-or mail
-   sync4j-users@lists.sourceforge.net
-directly. If you mail the list without subscribing, please ask
-to get replies to you directly, as some people might reply
-only to the list otherwise.
-
-However, before asking a question make sure that it has not
-been answered already (archives are linked to from the list
-page) and is not covered in this document. There is no FAQ yet.
-
-If you run into any kind of issue during synchronization with
-SyncEvolution, please try to determine as good as you can
-whether it is caused by SyncEvolution, the Funambol C++ client
-library or the server that you talk to.
-
-Issues in the server should be reported using the issue tracker
-for it. For Funambol, it is located at
-   http://forge.objectweb.org/tracker/?group_id=96
-There you can also report issues with the client library.
-
-Because binary releases of SyncEvolution will contain
-that library and have to be updated, please also create another
-issue in the SyncEvolution tracker linking to the objectweb
-issue.
-
-If unsure, just open a ticket in the SyncEvolution tracker
-and it will be forwarded appropriately after an initial analysis.
-That tracker is hosted at SourceForge and can also be used
-for feature requests:
-   http://sourceforge.net/tracker/?group_id=146288&atid=764733
-
-Be sure to always include the following information:
-- version of SyncEvolution
-- version of Evolution
-- server and its version
-- Linux distribution
-- client log if appropriate,
-  server log if appropriate and available
-- a description of what you do,
-  what you expect to see,
-  what you get instead
-
-*Warning*: logs may expose user/password if the basic authentication
-mechanism is used. Before posting such logs search for
-  <Type>syncml:auth-basic</Type>
-and overwrite the <Data> directly afterwards. It might look like this
-and occur multiple times in the log:
-  <Data>MGKlldQ2MZnJha3RhbA==</Data>
+Please visit http://www.estamos.de/projects/SyncML/ for up-to-date
+information about known problems and links to places where further
+help can be found.
 
 
 Compiling from Source
@@ -568,6 +499,30 @@ The test framework is still installed with:
 The build system is the normal autotools system.  See INSTALL for
 general instructions how to use that and "./configure --help" for
 SyncEvolution specific options.
+
+
+Supporting SyncEvolution
+------------------------
+
+SyncEvolution is free software: available free of charge and you have
+the freedom of modifying and distributing it. If you are a software
+developer, the best way to support SyncEvolution is to port it to
+other backends and systems. Get in touch if you want to hear more
+about this.
+
+If you are a (hopefully happy) user of SyncEvolution, then you can
+make your appreciation or suggestions for improvements known in
+several ways. Although SyncEvolution is free, this does not mean that
+its development did not cost much effort - quite the opposite, a lot
+of time went into it.
+
+- Send a postcard to the author (see main page).
+- Leave comments on the author's blog (coming soon).
+- If you really want to, you can donate an arbitrary amount of money
+  via PayPal to patrick.ohly@gmx.de. This is by no means required:
+  the author does not depend on this income and promises to spend it
+  on SyncEvolution related expenses instead of wasting it on booze and
+  women...
 
 
 Author

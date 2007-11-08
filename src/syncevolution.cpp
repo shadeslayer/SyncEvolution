@@ -22,6 +22,7 @@
 
 #include <base/Log.h>
 #include <posix/base/posixlog.h>
+#include <spds/spdsutils.h>
 
 #include <iostream>
 using namespace std;
@@ -74,6 +75,42 @@ static void listSources( EvolutionSyncSource &syncSource, const string &header )
     }
 }
 
+/** print usage information */
+void usage(char **argv, bool full, string error = string(""))
+{
+    printf("%s\n", argv[0]);
+    printf("%s [<options>] <server> [<source> ...]\n", argv[0]);
+    printf("%s --help|-h\n", argv[0]);
+    printf("%s --version\n", argv[0]);
+    if (full) {
+        printf("\n"
+               "Options:\n"
+               "  --sync|-s <mode>\n"
+               "    Temporarily synchronize the active sources in that mode. Useful\n"
+               "    for a 'refresh-from-server' or 'refresh-from-client' sync which\n"
+               "    clears all data at one end and copies all items from the other.\n"
+               "  \n"
+               "  --status|-t\n"
+               "    The changes made to local data since the last synchronization are\n"
+               "    shown without starting a new one. This can be used to see in advance\n"
+               "    whether the local data needs to be synchronized with the server.\n"
+               "  \n"
+               "  --quiet|-q\n"
+               "    Suppresses most of the normal output during a synchronization. The\n"
+               "    log file still contains all the information.\n"
+               "  \n"
+               "  --help|-h\n"
+               "    Prints usage information.\n"
+               "  \n"
+               "  --version\n"
+               "    Prints the SyncEvolution version.\n");
+    }
+
+    if(error.size()) {
+        printf("\nERROR: %s\n", error.c_str());
+    }
+}
+
 int main( int argc, char **argv )
 {
 #ifdef ENABLE_MAEMO
@@ -118,7 +155,50 @@ int main( int argc, char **argv )
     free(exe);
 
     try {
-        if ( argc == 1 ) {
+        bool quiet = false;
+        bool status = false;
+        SyncMode syncMode = SYNC_NONE;
+
+        int opt = 1;
+        while (opt < argc) {
+            if (argv[opt][0] != '-') {
+                break;
+            }
+            if (!strcasecmp(argv[opt], "--sync") ||
+                !strcasecmp(argv[opt], "-s")) {
+                opt++;
+                if (opt == argc) {
+                    usage(argv, true, string("missing parameter for ") + argv[opt - 1]);
+                    exit(1);
+                }
+                syncMode = syncModeCode(argv[opt]);
+                if (syncMode == SYNC_NONE) {
+                    usage(argv, true, string("invalid parameter for ") + argv[opt - 1]);
+                    exit(1);
+                }
+            } else if(!strcasecmp(argv[opt], "--status") ||
+                      !strcasecmp(argv[opt], "-t")) {
+                status = true;
+            } else if(!strcasecmp(argv[opt], "--quiet") ||
+                      !strcasecmp(argv[opt], "-q")) {
+                quiet = true;
+            } else if(!strcasecmp(argv[opt], "--help") ||
+                      !strcasecmp(argv[opt], "-h")) {
+                usage(argv, true);
+                exit(0);
+            } else if(!strcasecmp(argv[opt], "--version")) {
+                printf("SyncEvolution %s\n", VERSION);
+                exit(0);
+            }
+            opt++;
+        }
+
+        if (opt >= argc) {
+            if (argc > 1) {
+                usage(argv, true);
+                exit(1);
+            }
+
             const struct { const char *mimeType, *kind; } kinds[] = {
                 { "text/vcard",  "address books" },
                 { "text/calendar", "calendars" },
@@ -135,16 +215,22 @@ int main( int argc, char **argv )
                 }
             }
 
-            fprintf( stderr, "usage: %s <server>\n", argv[0] );
+            usage(argv, false);        
         } else {
+            string server = argv[opt++];
             set<string> sources;
-
-            for (int source = 2; source < argc; source++ ) {
-                sources.insert(argv[source]);
+            while (opt < argc) {
+                sources.insert(argv[opt++]);
             }
 
-            EvolutionSyncClient client(argv[1], true, sources);
-            client.sync();
+            EvolutionSyncClient client(server, true, sources);
+            client.setQuiet(quiet);
+            client.setSyncMode(syncMode);
+            if (status) {
+                client.status();
+            } else {
+                client.sync();
+            }
         }
         return 0;
     } catch ( const std::exception &ex ) {

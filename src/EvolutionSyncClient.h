@@ -30,6 +30,7 @@
 using namespace std;
 
 class SourceList;
+class EvolutionClientConfig;
 
 /*
  * This is the main class inside sync4jevolution which
@@ -42,6 +43,8 @@ class EvolutionSyncClient : public SyncClient {
     const set<string> m_sources;
     const bool m_doLogging;
     const string m_configPath;
+    SyncMode m_syncMode;
+    bool m_quiet;
 
     /**
      * a pointer to the active SourceList instance if one exists; 
@@ -62,11 +65,22 @@ class EvolutionSyncClient : public SyncClient {
                         const string &configRoot = "evolution/");
     ~EvolutionSyncClient();
 
+    bool getQuiet() { return m_quiet; }
+    void setQuiet(bool quiet) { m_quiet = quiet; }
+    SyncMode getSyncMode() { return m_syncMode; }
+    void setSyncMode(SyncMode syncMode) { m_syncMode = syncMode; }
+
     /**
      * Executes the sync, throws an exception in case of failure.
      * Handles automatic backups and report generation.
      */
     int sync();
+
+    /**
+     * Determines the log directory of the previous sync (either in
+     * temp or logdir) and shows changes since then.
+     */
+    void status();
 
     /**
      * throws a runtime_error with the given string
@@ -109,7 +123,15 @@ class EvolutionSyncClient : public SyncClient {
      * @param sources   a NULL terminated array of all active sources
      */
     virtual void prepare(SyncManagerConfig &config,
-                         SyncSource **sources) {}
+                         SyncSource **sources);
+
+ private:
+    /**
+     * the code common to init() and status():
+     * populate source list with active sources and open
+     * them for reading without changing their state yet
+     */
+    void initSources(SourceList &sourceList, EvolutionClientConfig &config, const string &url);
 };
 
 #endif // INCL_EVOLUTIONSYNCCLIENT

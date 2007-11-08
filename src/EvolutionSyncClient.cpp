@@ -47,7 +47,9 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server,
     m_server(server),
     m_sources(sources),
     m_doLogging(doLogging),
-    m_configPath(configRoot + server)
+    m_configPath(configRoot + server),
+    m_quiet(false),
+    m_syncMode(SYNC_NONE)
 {
 }
 
@@ -104,8 +106,63 @@ class LogDir {
 public:
     LogDir(const string &server) : m_server(server),
                                    m_restoreLog(false)
-        {}
-        
+    {
+        // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
+        m_prefix = "SyncEvolution-";
+        m_prefix += m_server;
+
+        // default: $TMPDIR/SyncEvolution-<username>-<server>
+        stringstream path;
+        char *tmp = getenv("TMPDIR");
+        if (tmp) {
+            path << tmp;
+        } else {
+            path << "/tmp";
+        }
+        path << "/SyncEvolution-";
+        struct passwd *user = getpwuid(getuid());
+        if (user && user->pw_name) {
+            path << user->pw_name;
+        } else {
+            path << getuid();
+        }
+        path << "-" << m_server;
+
+        m_path = path.str();
+    }
+
+    /**
+     * Finds previous log directory. Must be called before setLogdir().
+     *
+     * @param path        path to configured backup directy, NULL if defaulting to /tmp, "none" if not creating log file
+     * @return full path of previous log directory, empty string if not found
+     */
+    string previousLogdir(const char *path) {
+        string logdir;
+
+        if (path && !strcasecmp(path, "none")) {
+            return "";
+        } else if (path && path[0]) {
+            vector<string> entries;
+            try {
+                getLogdirs(path, entries);
+            } catch(const std::exception &ex) {
+                LOG.error("%s", ex.what());
+                return "";
+            }
+
+            logdir = entries.size() ? string(path) + "/" + entries[entries.size()-1] : "";
+        } else {
+            logdir = m_path;
+        }
+
+        if (access(logdir.c_str(), R_OK|X_OK) == 0) {
+            return logdir;
+        } else {
+            return "";
+        }
+    }
+
     // setup log directory and redirect logging into it
     // @param path        path to configured backup directy, NULL if defaulting to /tmp, "none" if not creating log file
     // @param maxlogdirs  number of backup dirs to preserve in path, 0 if unlimited
@@ -121,9 +178,6 @@ public:
             time_t ts = time(NULL);
             struct tm *tm = localtime(&ts);
             stringstream base;
-            // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
-            m_prefix = "SyncEvolution-";
-            m_prefix += m_server;
             base << path << "/"
                  << m_prefix
                  << "-"
@@ -152,24 +206,7 @@ public:
             }
             m_logfile = m_path + "/client.log";
         } else {
-            // create temporary directory: $TMPDIR/SyncEvolution-<username>
-            stringstream path;
-            char *tmp = getenv("TMPDIR");
-            if (tmp) {
-                path << tmp;
-            } else {
-                path << "/tmp";
-            }
-            path << "/SyncEvolution-";
-            struct passwd *user = getpwuid(getuid());
-            if (user && user->pw_name) {
-                path << user->pw_name;
-            } else {
-                path << getuid();
-            }
-            path << "-" << m_server;
-
-            m_path = path.str();
+            // use the default temp directory
             if (mkdir(m_path.c_str(), S_IRWXU)) {
                 if (errno != EEXIST) {
                     EvolutionSyncClient::throwError(m_path + ": " + strerror(errno));
@@ -196,6 +233,9 @@ public:
         m_restoreLog = true;
     }
 
+    /** sets a fixed directory for database files without redirecting logging */
+    void setPath(const string &path) { m_path = path; }
+
     // return log directory, empty if not enabled
     const string &getLogdir() {
         return m_path;
@@ -206,24 +246,30 @@ public:
         return m_logfile;
     }
 
+    /** find all entries in a given directory, return as sorted array */
+    void getLogdirs(const string &logdir, vector<string> &entries) {
+        DIR *dir = opendir(logdir.c_str());
+        if (!dir) {
+            EvolutionSyncClient::throwError(m_logdir + ": " + strerror(errno));
+        }
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != NULL) {
+            if (strlen(entry->d_name) >= m_prefix.size() &&
+                !m_prefix.compare(0, m_prefix.size(), entry->d_name, m_prefix.size())) {
+                entries.push_back(entry->d_name);
+            }
+        }
+        closedir(dir);
+                
+        sort(entries.begin(), entries.end());
+    }
+
+
     // remove oldest backup dirs if exceeding limit
     void expire() {
         if (m_logdir.size() && m_maxlogdirs > 0 ) {
-            DIR *dir = opendir(m_logdir.c_str());
-            if (!dir) {
-                EvolutionSyncClient::throwError(m_logdir + ": " + strerror(errno));
-            }
             vector<string> entries;
-            struct dirent *entry;
-            while ((entry = readdir(dir)) != NULL) {
-                if (strlen(entry->d_name) >= m_prefix.size() &&
-                    !m_prefix.compare(0, m_prefix.size(), entry->d_name, m_prefix.size())) {
-                    entries.push_back(entry->d_name);
-                }
-            }
-            closedir(dir);
-                
-            sort(entries.begin(), entries.end());
+            getLogdirs(m_logdir, entries);
 
             unsigned int deleted = 0;
             for (vector<string>::iterator it = entries.begin();
@@ -270,17 +316,24 @@ class SourceList : public list<EvolutionSyncSource *> {
     SyncClient &m_client; /**< client which holds the sync report after a sync */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
     arrayptr<SyncSource *> m_sourceArray;  /** owns the array that is expected by SyncClient::sync() */
+    const bool m_quiet;  /**< avoid redundant printing to screen */
+    string m_previousLogdir; /**< remember previous log dir before creating the new one */
 
-    string databaseName(EvolutionSyncSource &source, const string suffix) {
-        return m_logdir.getLogdir() + "/" +
+    /** create name in current (if set) or previous logdir */
+    string databaseName(EvolutionSyncSource &source, const string suffix, string logdir = "") {
+        if (!logdir.size()) {
+            logdir = m_logdir.getLogdir();
+        }
+        return logdir + "/" +
             source.getName() + "." + suffix + "." +
             source.fileSuffix();
     }
 
+public:
     /**
-     * dump into files with a certain suffix, optionally remove those which end in another
+     * dump into files with a certain suffix
      */
-    void dumpDatabases(const string &suffix, const string &removeSuffix = string("") ) {
+    void dumpDatabases(const string &suffix) {
         ofstream out;
 #ifndef IPHONE
         // output stream on iPhone raises exception even though it is in a good state;
@@ -292,14 +345,7 @@ class SourceList : public list<EvolutionSyncSource *> {
         for( iterator it = begin();
              it != end();
              ++it ) {
-            string file;
-
-            if (removeSuffix.size()) {
-                file = databaseName(**it, removeSuffix);
-                unlink(file.c_str());
-            }
-            
-            file = databaseName(**it, suffix);
+            string file = databaseName(**it, suffix);
             LOG.debug("creating %s", file.c_str());
             out.open(file.c_str());
             (*it)->exportData(out);
@@ -307,18 +353,32 @@ class SourceList : public list<EvolutionSyncSource *> {
             LOG.debug("%s created", file.c_str());
         }
     }
+
+    /** remove database dumps with a specific suffix */
+    void removeDatabases(const string &removeSuffix) {
+        for( iterator it = begin();
+             it != end();
+             ++it ) {
+            string file;
+
+            file = databaseName(**it, removeSuffix);
+            unlink(file.c_str());
+        }
+    }
         
-public:
-    SourceList(const string &server, bool doLogging, SyncClient &client) :
+    SourceList(const string &server, bool doLogging, SyncClient &client, bool quiet) :
         m_logdir(server),
         m_prepared(false),
         m_doLogging(doLogging),
         m_client(client),
-        m_reportTodo(true) {
+        m_reportTodo(true),
+        m_quiet(quiet)
+    {
     }
     
     // call as soon as logdir settings are known
     void setLogdir(const char *logDirPath, int maxlogdirs, int logLevel) {
+        m_previousLogdir = m_logdir.previousLogdir(logDirPath);
         if (m_doLogging) {
             m_logdir.setLogdir(logDirPath, maxlogdirs, logLevel);
         } else {
@@ -327,13 +387,61 @@ public:
         }
     }
 
+    /** return previous log dir found in setLogdir() */
+    const string &getPrevLogdir() const { return m_previousLogdir; }
+
+    /** set directory for database files without actually redirecting the logging */
+    void setPath(const string &path) { m_logdir.setPath(path); }
+
+    /**
+     * If possible (m_previousLogdir found) and enabled (!m_quiet),
+     * then dump changes applied locally.
+     *
+     * @param oldSuffix      suffix of old database dump: usually "after"
+     * @param currentSuffix  the current database dump suffix: "current"
+     *                       when not doing a sync, otherwise "before"
+     */
+    bool dumpLocalChanges(const string &oldSuffix, const string &newSuffix) {
+        if (m_quiet || !m_previousLogdir.size()) {
+            return false;
+        }
+
+        cout << "Local changes to be applied to server during synchronization:\n";
+        for( iterator it = begin();
+             it != end();
+             ++it ) {
+            string oldFile = databaseName(**it, oldSuffix, m_previousLogdir);
+            string newFile = databaseName(**it, newSuffix);
+            cout << "*** " << (*it)->getName() << " ***\n" << flush;
+            string cmd = string("env CLIENT_TEST_COMPARISON_FAILED=10 CLIENT_TEST_LEFT_NAME='after last sync' CLIENT_TEST_RIGHT_NAME='current data' CLIENT_TEST_REMOVED='removed since last sync' CLIENT_TEST_ADDED='added since last sync' synccompare 2>/dev/null '" ) +
+                oldFile + "' '" + newFile + "'";
+            int ret = system(cmd.c_str());
+            switch (ret == -1 ? ret : WEXITSTATUS(ret)) {
+            case 0:
+                cout << "no changes\n";
+                break;
+            case 10:
+                break;
+            default:
+                cout << "Comparison was impossible.\n";
+                break;
+            }
+        }
+        cout << "\n";
+        return true;
+    }
+
     // call when all sync sources are ready to dump
     // pre-sync databases
     void syncPrepare() {
         if (m_logdir.getLogfile().size() &&
             m_doLogging) {
             // dump initial databases
-            dumpDatabases("before", "after");
+            dumpDatabases("before");
+            // compare against the old "after" database dump
+            dumpLocalChanges("after", "before");
+            // now remove the old database dump
+            removeDatabases("after");
             m_prepared = true;
         }
     }
@@ -362,7 +470,7 @@ public:
 
                 // scan for error messages
                 string logfile = m_logdir.getLogfile();
-                if (logfile.size()) {
+                if (!m_quiet && logfile.size()) {
                     ifstream in;
                     in.open(m_logdir.getLogfile().c_str());
                     while (in.good()) {
@@ -392,9 +500,11 @@ public:
                 }
 
                 // pretty-print report
-                cout << "\nChanges applied during synchronization:\n";
+                if (!m_quiet) {
+                    cout << "\nChanges applied during synchronization:\n";
+                }
                 SyncReport *report = m_client.getSyncReport();
-                if (report) {
+                if (!m_quiet && report) {
 
                     cout << "+-------------------|-------ON CLIENT-------|-------ON SERVER-------|\n";
                     cout << "|                   |   successful / total  |   successful / total  |\n";
@@ -435,7 +545,7 @@ public:
                 }
 
                 // compare databases?
-                if (m_prepared) {
+                if (!m_quiet && m_prepared) {
                     for( iterator it = begin();
                          it != end();
                          ++it ) {
@@ -542,6 +652,70 @@ void EvolutionSyncClient::startLoopThread()
 #endif
 }
 
+void EvolutionSyncClient::initSources(SourceList &sourceList, EvolutionClientConfig &config, const string &url)
+{
+    SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
+    for (int index = 0; index < config.getNumSources(); index++) {
+        ManagementNode &node(*config.getSyncSourceNode(index));
+        SyncSourceConfig &sc(sourceconfigs[index]);
+        
+        // is the source enabled?
+        string sync = sc.getSync() ? sc.getSync() : "";
+        bool enabled = sync != "none";
+        SyncMode overrideMode = SYNC_NONE;
+
+        // override state?
+        if (m_sources.size()) {
+            if (m_sources.find(sc.getName()) != m_sources.end()) {
+                if (!enabled) {
+                    overrideMode = SYNC_TWO_WAY;
+                    enabled = true;
+                }
+            } else {
+                enabled = false;
+            }
+        }
+        
+        if (enabled) {
+            // create it
+            string type = sc.getType() ? sc.getType() : "";
+            if (!type.size()) {
+                throwError(string(sc.getName()) + ": type not configured");
+            }
+            EvolutionSyncSource *syncSource =
+                EvolutionSyncSource::createSource(
+                                                  sc.getName(),
+                                                  &node,
+                                                  &sc,
+                                                  string("sync4jevolution:") + url + "/" + sc.getName(),
+                                                  EvolutionSyncSource::getPropertyValue(node, "evolutionsource"),
+                                                  type
+                                                  );
+            if (!syncSource) {
+                throwError(string(sc.getName()) + ": type '" + type + "' unknown" );
+            }
+            sourceList.push_back(syncSource);
+
+            // Update the backend configuration. The EvolutionClientConfig
+            // above prevents that these modifications overwrite the user settings.
+            sc.setType(syncSource->getMimeType());
+            sc.setVersion(syncSource->getMimeVersion());
+            sc.setSupportedTypes(syncSource->getSupportedTypes());
+            
+            if (overrideMode != SYNC_NONE) {
+                // disabled source selected via source name
+                syncSource->setPreferredSyncMode(overrideMode);
+            }
+            const string user(EvolutionSyncSource::getPropertyValue(node, "evolutionuser")),
+                passwd(EvolutionSyncSource::getPropertyValue(node, "evolutionpassword"));
+            syncSource->setAuthentication(user, passwd);
+            
+            // also open it; failing now is still safe
+            syncSource->open();    
+        }
+    }
+}
+
 int EvolutionSyncClient::sync()
 {
     int res = 1;
@@ -553,7 +727,6 @@ int EvolutionSyncClient::sync()
 
     // remember for use by sync sources
     string url = config.getAccessConfig().getSyncURL() ? config.getAccessConfig().getSyncURL() : "";
-
     if (!url.size()) {
         LOG.error("no syncURL configured - perhaps the server name \"%s\" is wrong?",
                   m_server.c_str());
@@ -561,7 +734,7 @@ int EvolutionSyncClient::sync()
     }
 
     // redirect logging as soon as possible
-    SourceList sourceList(m_server, m_doLogging, *this);
+    SourceList sourceList(m_server, m_doLogging, *this, m_quiet);
     m_sourceListPtr = &sourceList;
 
     try {
@@ -576,66 +749,7 @@ int EvolutionSyncClient::sync()
         time_t now = time(NULL);
         LOG.debug("current UTC date and time: %s", asctime(gmtime(&now)));
 
-        SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
-        for (int index = 0; index < config.getNumSources(); index++) {
-            ManagementNode &node(*config.getSyncSourceNode(index));
-            SyncSourceConfig &sc(sourceconfigs[index]);
-        
-            // is the source enabled?
-            string sync = sc.getSync() ? sc.getSync() : "";
-            bool enabled = sync != "none";
-            SyncMode overrideMode = SYNC_NONE;
-
-            // override state?
-            if (m_sources.size()) {
-                if (m_sources.find(sc.getName()) != m_sources.end()) {
-                    if (!enabled) {
-                        overrideMode = SYNC_TWO_WAY;
-                        enabled = true;
-                    }
-                } else {
-                    enabled = false;
-                }
-            }
-        
-            if (enabled) {
-                // create it
-                string type = sc.getType() ? sc.getType() : "";
-                if (!type.size()) {
-                    throwError(string(sc.getName()) + ": type not configured");
-                }
-                EvolutionSyncSource *syncSource =
-                    EvolutionSyncSource::createSource(
-                        sc.getName(),
-                        &node,
-                        &sc,
-                        string("sync4jevolution:") + url + "/" + sc.getName(),
-                        EvolutionSyncSource::getPropertyValue(node, "evolutionsource"),
-                        type
-                        );
-                if (!syncSource) {
-                    throwError(string(sc.getName()) + ": type '" + type + "' unknown" );
-                }
-                sourceList.push_back(syncSource);
-
-                // Update the backend configuration. The EvolutionClientConfig
-                // above prevents that these modifications overwrite the user settings.
-                sc.setType(syncSource->getMimeType());
-                sc.setVersion(syncSource->getMimeVersion());
-                sc.setSupportedTypes(syncSource->getSupportedTypes());
-
-                if (overrideMode != SYNC_NONE) {
-                    // disabled source selected via source name
-                    syncSource->setPreferredSyncMode(overrideMode);
-                }
-                const string user(EvolutionSyncSource::getPropertyValue(node, "evolutionuser")),
-                    passwd(EvolutionSyncSource::getPropertyValue(node, "evolutionpassword"));
-                syncSource->setAuthentication(user, passwd);
-
-                // also open it; failing now is still safe
-                syncSource->open();    
-            }
-        }
+        initSources(sourceList, config, url);
 
         // reconfigure with our fixed properties
         DeviceConfig &dc(config.getDeviceConfig());
@@ -690,4 +804,55 @@ int EvolutionSyncClient::sync()
 
     m_sourceListPtr = NULL;
     return res;
+}
+
+void EvolutionSyncClient::prepare(SyncManagerConfig &config,
+                                  SyncSource **sources) {
+    if (m_syncMode != SYNC_NONE) {
+        for (SyncSource **source = sources;
+             *source;
+             source++) {
+            (*source)->setPreferredSyncMode(m_syncMode);
+        }
+    }
+}
+
+void EvolutionSyncClient::status()
+{
+    EvolutionClientConfig config(m_configPath.c_str());
+    if (!config.read() || !config.open()) {
+        throwError("reading configuration failed");
+    }
+
+    // remember for use by sync sources
+    string url = config.getAccessConfig().getSyncURL() ? config.getAccessConfig().getSyncURL() : "";
+    if (!url.size()) {
+        LOG.error("no syncURL configured - perhaps the server name \"%s\" is wrong?",
+                  m_server.c_str());
+        throwError("cannot proceed without configuration");
+    }
+
+    SourceList sourceList(m_server, false, *this, false);
+    initSources(sourceList, config, url);
+
+    arrayptr<char> logdir(config.getSyncMLNode()->readPropertyValue("logdir"));
+    sourceList.setLogdir(logdir, 0, LOG_LEVEL_NONE);
+    LOG.setLevel(LOG_LEVEL_INFO);
+    string prevLogdir = sourceList.getPrevLogdir();
+    bool found = access(prevLogdir.c_str(), R_OK|X_OK) == 0;
+
+    if (found) {
+        try {
+            sourceList.setPath(prevLogdir);
+            sourceList.dumpDatabases("current");
+            sourceList.dumpLocalChanges("after", "current");
+        } catch(const std::exception &ex) {
+            LOG.error("%s", ex.what());
+        }
+    } else {
+        cerr << "Previous log directory not found.\n";
+        if (!logdir || !logdir[0]) {
+            cerr << "Enable the 'logdir' option and synchronize to use this feature.\n";
+        }
+    }
 }
