@@ -20,6 +20,7 @@
 #include <memory>
 #include <map>
 #include <sstream>
+#include <list>
 using namespace std;
 
 #include "config.h"
@@ -405,6 +406,29 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
                     value[strlen(value)-1] == '=') {
                     vprop->addParameter("ENCODING", "QUOTED-PRINTABLE");
                 }
+            }
+
+            // Split TYPE=foo,bar into TYPE=foo;TYPE=bar because the comma-separated
+            // list is an extension of 3.0.
+            list<string> types;
+            while (true) {
+                char *type = vprop->getParameterValue("TYPE");
+                if (!type) {
+                    break;
+                }
+                StringBuffer buff(type);
+
+                char *token = strtok((char *)buff.c_str(), ",");
+                while (token != NULL) {
+                    types.push_back(token);
+                    token = strtok(NULL, ",");
+                }
+                vprop->removeParameter("TYPE");
+            }
+            for(list<string>::const_iterator it = types.begin();
+                it != types.end();
+                ++it) {
+                vprop->addParameter("TYPE", it->c_str());
             }
         }
 
