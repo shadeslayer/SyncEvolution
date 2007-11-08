@@ -1,3 +1,63 @@
+SyncEvolution 0.7-pre1 -> 0.7-pre2, 08.11.2007
+----------------------------------------------
+C++ client library: branch b_v65
+
+Updating user configuration: no relevant changes in this release. For those
+who haven't done so already, enabling large object support is recommended
+(see syncml/config.txt sample configs). It is required for myFUNAMBOL to
+synchronize very large address books and some users have reported segfaults
+unless this option was enabled.
+
+* iPhone bug fix: syncing contacts with photos was unreliable (export) and
+  crashed (import) because the API had not been called correctly
+
+* iPhone + ScheduleWorld: when configured to use vcard3 (recommended!) then
+  contacts are exchanged as vCard 3.0
+
+* iPhone + ScheduleWorld bugfix: importing vCard 3.0 did not correctly
+  classify the phone numbers. A sync with the new "--sync refresh-from-server"
+  option will fix this, assuming that the server has the correct data.
+
+* Evolution: detect a crashed backend and abort SyncEvolution instead of
+  hanging forever.
+
+* adapted calendar event insert/update to Evolution 2.12: the UID needs to be
+  restored, otherwise the Evolution backend crashes (GNOME issue #488881)
+
+* new feature: if the previous log directory is still available,
+  then local changes made since last sync can be queried
+  before starting a sync (new option --status) and will be
+  printed directly before a sync. Setting the "logdir" option
+  will automatically keep the most recent logs and database
+  dumps around.
+
+* added command line options:
+  --sync|-s <mode>
+    Temporarily synchronize the active sources in that mode. Useful
+    for a 'refresh-from-server' or 'refresh-from-client' sync which
+    clears all data at one end and copies all items from the other.
+
+  --status|-t
+    The changes made to local data since the last synchronization are
+    shown without starting a new one. This can be used to see in advance
+    whether the local data needs to be synchronized with the server.
+
+  --quiet|-q
+    Suppresses most of the normal output during a synchronization. The
+    log file still contains all the information.
+
+  --help|-h
+    Prints usage information.
+
+  --version
+    Prints the SyncEvolution version.
+
+* default configurations now reference the normal Evolution databases
+  ("Personal") thus requiring less changes to use. The account information
+  is now clearly marked as placeholder which needs to be entered.
+
+
+
 SyncEvolution 0.6 -> 0.7-pre1, 17.10.2007
 -----------------------------------------
 * C++ client library: tag "sdkcpp_6_0_9_1" (same as before)

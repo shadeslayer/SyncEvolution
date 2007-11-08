@@ -1,3 +1,105 @@
+2007-11-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp:
+	Evolution 2.12 generates contacts with e.g. TYPE=VOICE,WORK. This needs to be split into TYPE=VOICE;TYPE=WORK when converting to 2.1, otherwise myFUNAMBOL drops the phone numbers with the (in 2.1) incorrect TYPE
+
+	* README, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/syncevolution.cpp:
+	- revised an updated usage instructions (myFUNAMBOL instead of Funambol)
+	- added dumping of local changes before sync (works best with logdir)
+	- added command line options:
+
+	  --sync|-s <mode>
+	    Temporarily synchronize the active sources in that mode. Useful
+	    for a 'refresh-from-server' or 'refresh-from-client' sync which
+	    clears all data at one end and copies all items from the other.
+
+	  --status|-t
+	    The changes made to local data since the last synchronization are
+	    shown without starting a new one. This can be used to see in advance
+	    whether the local data needs to be synchronized with the server.
+
+	  --quiet|-q
+	    Suppresses most of the normal output during a synchronization. The
+	    log file still contains all the information.
+
+	  --help|-h
+	    Prints usage information.
+
+	  --version
+	    Prints the SyncEvolution version.
+
+	* HACKING: separated compile and release instructions
+
+	* etc/source-config.txt:
+	let the default source configs access the default Evolution databases: less work for users to configure it
+
+2007-11-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/AddressBookSource.cpp:
+	fixed iPhone photo import/export: that API wasn't as expected and therefore was
+	called incorrectly. Importing photos crashed, exporting them may have failed
+	randomly and/or picked the wrong size of the photo.
+
+2007-11-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/AddressBookSource.cpp, src/AddressBookSource.h, src/vocl/VObject.cpp, src/vocl/VObject.h:
+	when configured to use ScheduleWorld card3 URI, then switch to sending vCard 3.0 (easier to parse by SW); always dump contacts as vCard 3.0 (avoids quoted-printable in synccompare output)
+
+	* src/vocl/VProperty.cpp:
+	bug fix: TYPE with multiple comma-separated values (vCard 3.0, e.g. TYPE=WORK,VOICE) was not decoded as intended => downloading into iPhone from SW card3 URI did not set type correctly
+
+	* src/EvolutionSyncClient.cpp:
+	dump user name, date and SyncEvolution at beginning of debug log
+
+	* etc/syncml-config.txt:
+	Replaced guest/guest credentials with "your SyncML server account name"
+	and "your SyncML server password" to make it clear that something must
+	be entered there. Some servers also really have "guest/guest" demo
+	accounts.
+
+2007-11-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp:
+	Detect unexpected crashes of the Evolution Data Server. A workaround for
+	the fact that the synchronous EDS API calls block infinitely in that case.
+	- drive default glib event look in background thread
+	- listen for "backend-died" signals
+	- if triggered, print a message ("Evolution Data Server has died unexpectedly,
+	  database no longer available.") and abort the process (other error handling is
+	  impossible)
+	- for contacts instead of "database" "contacts" is printed
+
+	* src/EvolutionCalendarSource.cpp:
+	adapted calendar event insert/update to Evolution 2.12: the UID needs to be restored, otherwise the Evolution backend crashes (GNOME issue #488881)
+
+2007-11-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/AddressBookSource.cpp: fixed compile errors on Mac OS X
+
+2007-10-25  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* Makefile.am, src/shlibs.local:
+	added package release number and dependency calculation for local Evolution libs without installed .debs
+
+	* test/Makefile.am:
+	ClientTest.cpp and synccompare.pl are back in C++ library
+
+2007-10-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/Makefile.am:
+	synccompare.pl wasn't found in client library because search rule had the wrong directory
+
+	* src/syncevolution.cpp:
+	workaround for dependency on size_t in client library Log.h: include stddef.h first
+
+	* src/vocl/VObject.cpp, src/vocl/VProperty.cpp:
+	adapted to ArrayList::remove() -> removeElementAt() renaming
+
+2007-10-23  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/DeviceManagementNode.cpp:
+	same patch as in client library: chop trailing white spaces
+
 2007-10-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* Makefile.am:
