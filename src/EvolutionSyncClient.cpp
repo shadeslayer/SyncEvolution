@@ -546,6 +546,7 @@ public:
 
                 // compare databases?
                 if (!m_quiet && m_prepared) {
+                    cout << "\nChanges applied to client during synchronization:\n";
                     for( iterator it = begin();
                          it != end();
                          ++it ) {
