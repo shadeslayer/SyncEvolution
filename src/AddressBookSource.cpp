@@ -359,10 +359,8 @@ public:
 #ifdef IPHONE
         // ask for largets size first
         for(int format = IPHONE_PHOTO_SIZE_ORIGINAL; format >= 0; format--) {
-            fprintf(stderr, "photo %d\n", format);
             photo.set(ABCPersonCopyImageData(m_person, format));
             if (photo) {
-                fprintf(stderr, "got %d bytes\n", CFDataGetLength(photo));
                 break;
             }
         }
