@@ -336,7 +336,7 @@ if test "$host" == "arm-apple-darwin"; then
    AC_DEFINE(IPHONE, 1, [compiling for iPhone])
 fi
 
-AC_CHECK_HEADERS(stdarg.h)
+AC_CHECK_HEADERS(stdarg.h valgrind/valgrind.h execinfo.h)
 
 AC_OUTPUT([
 Makefile
