@@ -656,6 +656,7 @@ void EvolutionSyncClient::startLoopThread()
 void EvolutionSyncClient::initSources(SourceList &sourceList, EvolutionClientConfig &config, const string &url)
 {
     SyncSourceConfig *sourceconfigs = config.getSyncSourceConfigs();
+    set<string> unmatchedSources = m_sources;
     for (int index = 0; index < config.getNumSources(); index++) {
         ManagementNode &node(*config.getSyncSourceNode(index));
         SyncSourceConfig &sc(sourceconfigs[index]);
@@ -672,6 +673,7 @@ void EvolutionSyncClient::initSources(SourceList &sourceList, EvolutionClientCon
                     overrideMode = SYNC_TWO_WAY;
                     enabled = true;
                 }
+                unmatchedSources.erase(sc.getName());
             } else {
                 enabled = false;
             }
@@ -714,6 +716,21 @@ void EvolutionSyncClient::initSources(SourceList &sourceList, EvolutionClientCon
             // also open it; failing now is still safe
             syncSource->open();    
         }
+    }
+
+    // check whether there were any sources specified which do not exist
+    if (unmatchedSources.size()) {
+        string sources;
+
+        for (set<string>::const_iterator it = unmatchedSources.begin();
+             it != unmatchedSources.end();
+             it++) {
+            if (sources.size()) {
+                sources += " ";
+            }
+            sources += *it;
+        }
+        throwError(string("no such source(s): ") + sources);
     }
 }
 
