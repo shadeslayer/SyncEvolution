@@ -629,8 +629,20 @@ void EvolutionSyncClient::fatalError(void *object, const char *error)
 
 #ifdef RUN_GLIB_LOOP
 #include <pthread.h>
+#include <signal.h>
 static void *mainLoopThread(void *)
 {
+    // The test framework uses SIGALRM for timeouts.
+    // Block the signal here because a) the signal handler
+    // prints a stack back trace when called and we are not
+    // interessted in the background thread's stack and b)
+    // it seems to have confused glib/libebook enough to
+    // access invalid memory and segfault when it gets the SIGALRM.
+    sigset_t blocked;
+    sigemptyset(&blocked);
+    sigaddset(&blocked, SIGALRM);
+    pthread_sigmask(SIG_BLOCK, &blocked, NULL);
+
     GMainLoop *mainloop = g_main_loop_new(NULL, TRUE);
     if (mainloop) {
         g_main_loop_run(mainloop);
