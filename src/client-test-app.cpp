@@ -638,7 +638,8 @@ static void handler(int sig)
 #ifdef HAVE_VALGRIND_VALGRIND_H
     VALGRIND_PRINTF_BACKTRACE("\ncaught signal %d\n", sig);
 #endif
-    system("objdump -l -C -d client-test >&2");
+    /* system("objdump -l -C -d client-test >&2"); */
+    exit(1);
 }
 
 static class RegisterTestEvolution {
