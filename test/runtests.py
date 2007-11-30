@@ -328,8 +328,8 @@ class AutotoolsBuild(Action):
     def execute(self):
         del_dir(self.builddir)
         cd(self.builddir)
-        context.runCommand("%s %s/configure --prefix=%s %s" % (self.runner, self.src, self.installdir, self.configargs))
-        context.runCommand("%s make install" % (self.runner))
+        context.runCommand("%s %s/configure %s" % (self.runner, self.src, self.configargs))
+        context.runCommand("%s make install DESTDIR=%s" % (self.runner, self.installdir))
 
 
 class SyncEvolutionTest(Action):
@@ -504,7 +504,7 @@ class SyncEvolutionDist(AutotoolsBuild):
     def execute(self):
         cd(self.builddir)
         if self.binsuffix:
-            context.runCommand("%s make BINSUFFIX=%s distbin distcheck" % (self.runner, self.binsuffix))
+            context.runCommand("%s make BINSUFFIX=%s distbin deb distcheck" % (self.runner, self.binsuffix))
         else:
             context.runCommand("%s make distcheck" % (self.runner))
 
@@ -523,9 +523,7 @@ context.add(evolutiontest)
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       [ "Client::Sync" ],
-                                      # some syncs try to update non-existant items: Client::Sync::itodo20::testOneWayFromServer, Client::Sync::itodo20::testOneWayFromClient
-                                      # triggers 511 error on server: Client::Sync::itodo20::testLargeObject
-                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES=Client::Sync::itodo20::testOneWayFromServer,Client::Sync::itodo20::testOneWayFromClient,Client::Sync::itodo20::testLargeObject CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5")
+                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5")
 context.add(scheduleworldtest)
 
 egroupwaretest = SyncEvolutionTest("egroupware", compile,
@@ -549,7 +547,7 @@ class SynthesisTest(SyncEvolutionTest):
     def __init__(self, name, build, synthesisdir, runner):
         SyncEvolutionTest.__init__(self, name, build, "", # os.path.join(synthesisdir, "logs")
                                    runner, [ "Client::Sync" ],
-                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_NUM_ITEMS=70 CLIENT_TEST_SERVER=synthesis CLIENT_TEST_DELAY=2")
+                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_NUM_ITEMS=20 CLIENT_TEST_SERVER=synthesis CLIENT_TEST_DELAY=2")
         self.synthesisdir = synthesisdir
         # self.dependencies.append(evolutiontest.name)
 
@@ -574,8 +572,7 @@ class FunambolTest(SyncEvolutionTest):
             serverlogs = ""
         SyncEvolutionTest.__init__(self, name, build, serverlogs,
                                    runner, [ ],
-                                   # 3.0 does not import all test cases
-                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES=Client::Sync::vcard21::testTwinning,Client::Sync::vcard21::testItems CLIENT_TEST_SERVER=funambol")
+                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol")
         self.funamboldir = funamboldir
         # self.dependencies.append(evolutiontest.name)
 
