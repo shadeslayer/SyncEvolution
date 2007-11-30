@@ -312,6 +312,14 @@ void EvolutionContactSource::exportData(ostream &out)
     }
 }
 
+string toupperstr(string str)
+{
+    for (size_t i = 0; i < str.size(); i++) {
+        str[i] = toupper(str[i]);
+    }
+    return str;
+}
+
 SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state )
 {
     logItem( uid, "extracting from EV", true );
@@ -429,6 +437,24 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
                 it != types.end();
                 ++it) {
                 vprop->addParameter("TYPE", it->c_str());
+            }
+
+            // Also make all strings uppercase because 3.0 is
+            // case-insensitive whereas 2.1 requires uppercase.
+            list< pair<string, string> > parameters;
+            while (vprop->parameterCount() > 0) {
+                const char *param = vprop->getParameter(0);
+                const char *value = vprop->getParameterValue(0);
+                if (!param || !value) {
+                    break;
+                }
+                parameters.push_back(pair<string, string>(toupperstr(param), toupperstr(value)));
+                vprop->removeParameter(0);
+            }
+            while (parameters.size() > 0) {
+                pair<string, string> param_value = parameters.front();
+                vprop->addParameter(param_value.first.c_str(), param_value.second.c_str());
+                parameters.pop_front();
             }
         }
 
