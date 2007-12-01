@@ -333,7 +333,7 @@ class AutotoolsBuild(Action):
 
 
 class SyncEvolutionTest(Action):
-    def __init__(self, name, build, serverlogs, runner, tests, testenv, lineFilter=None):
+    def __init__(self, name, build, serverlogs, runner, tests, testenv="", lineFilter=None, testPrefix=""):
         """Execute TestEvolution for all (empty tests) or the
         selected tests."""
         Action.__init__(self, name)
@@ -344,12 +344,13 @@ class SyncEvolutionTest(Action):
         self.testenv = testenv
         self.dependencies.append(build.name)
         self.lineFilter = lineFilter
+        self.testPrefix = testPrefix
 
     def execute(self):
         resdir = os.getcwd()
         os.chdir(self.srcdir)
         try:
-            basecmd = "%s CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner);
+            basecmd = "%s CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
             context.runCommand("make testclean test")
             if self.tests:
                 ex = None
@@ -404,6 +405,9 @@ parser.add_option("", "--resulturi",
 parser.add_option("", "--shell",
                   type="string", dest="shell", default="",
                   help="a prefix which is put in front of a command to execute it (can be used for e.g. run_garnome)")
+parser.add_option("", "--test-prefix",
+                  type="string", dest="testprefix", default="",
+                  help="a prefix which is put in front of client-test (e.g. valgrind)")
 parser.add_option("", "--syncevo-tag",
                   type="string", dest="syncevotag", default="HEAD",
                   help="the tag of SyncEvolution (default HEAD)")
@@ -517,13 +521,14 @@ context.add(dist)
 evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
                                   [ "Client::Source" ],
-                                  "")
+                                  testPrefix=options.testprefix)
 context.add(evolutiontest)
 
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       [ "Client::Sync" ],
-                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5")
+                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5",
+                                      testPrefix=options.testprefix)
 context.add(scheduleworldtest)
 
 egroupwaretest = SyncEvolutionTest("egroupware", compile,
@@ -540,39 +545,45 @@ egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    # CalendarSync::testCopy,CalendarSync::testUpdate - shifts time?
                                    "CLIENT_TEST_SOURCES=vcard21,ical20 CLIENT_TEST_SERVER=egroupware CLIENT_TEST_FAILURES=ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus,ContactSync::testOneWayFromClient,ContactSync::testAddUpdate,ContactSync::testItems,ContactSync::testComplexUpdate,ContactSync::testTwinning,ContactSync::testMaxMsg,ContactSync::testLargeObject,ContactSync::testLargeObjectBin,CalendarSync::testCopy,CalendarSync::testUpdate",
                                    lambda x: x.replace('oasis.ethz.ch','<host hidden>').\
-                                             replace('cG9obHk6cWQyYTVtZ1gzZk5GQQ==','xxx'))
+                                             replace('cG9obHk6cWQyYTVtZ1gzZk5GQQ==','xxx'),
+                                   testPrefix=options.testprefix)
 context.add(egroupwaretest)
 
 class SynthesisTest(SyncEvolutionTest):
-    def __init__(self, name, build, synthesisdir, runner):
+    def __init__(self, name, build, synthesisdir, runner, testPrefix):
         SyncEvolutionTest.__init__(self, name, build, "", # os.path.join(synthesisdir, "logs")
                                    runner, [ "Client::Sync" ],
-                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_NUM_ITEMS=20 CLIENT_TEST_SERVER=synthesis CLIENT_TEST_DELAY=2")
+                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_NUM_ITEMS=20 CLIENT_TEST_SERVER=synthesis CLIENT_TEST_DELAY=2",
+                                   testPrefix=testPrefix)
         self.synthesisdir = synthesisdir
         # self.dependencies.append(evolutiontest.name)
 
     def execute(self):
-        context.runCommand("synthesis start \"%s\"" % (self.synthesisdir))
+        if self.synthesisdir:
+            context.runCommand("synthesis start \"%s\"" % (self.synthesisdir))
         time.sleep(5)
         try:
             SyncEvolutionTest.execute(self)
         finally:
-            context.runCommand("synthesis stop \"%s\"" % (self.synthesisdir))
+            if self.synthesisdir:
+                context.runCommand("synthesis stop \"%s\"" % (self.synthesisdir))
 
 synthesis = SynthesisTest("synthesis", compile,
                           options.synthesisdir,
-                          options.shell)
+                          options.shell,
+                          options.testprefix)
 context.add(synthesis)
 
 class FunambolTest(SyncEvolutionTest):
-    def __init__(self, name, build, funamboldir, runner):
+    def __init__(self, name, build, funamboldir, runner, testPrefix):
         if funamboldir:
             serverlogs = os.path.join(funamboldir, "ds-server", "logs", "funambol_ds.log")
         else:
             serverlogs = ""
         SyncEvolutionTest.__init__(self, name, build, serverlogs,
                                    runner, [ ],
-                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol")
+                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol",
+                                   testPrefix=testPrefix)
         self.funamboldir = funamboldir
         # self.dependencies.append(evolutiontest.name)
 
@@ -588,7 +599,8 @@ class FunambolTest(SyncEvolutionTest):
 
 funambol = FunambolTest("funambol", compile,
                         options.funamboldir,
-                        options.shell)
+                        options.shell,
+                        options.testprefix)
 context.add(funambol)
 
 if options.list:
