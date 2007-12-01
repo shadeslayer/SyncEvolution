@@ -639,7 +639,11 @@ static void handler(int sig)
     VALGRIND_PRINTF_BACKTRACE("\ncaught signal %d\n", sig);
 #endif
     /* system("objdump -l -C -d client-test >&2"); */
-    exit(1);
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = SIG_DFL;
+    sigaction(SIGABRT, &act, NULL);
+    abort();
 }
 
 static class RegisterTestEvolution {
