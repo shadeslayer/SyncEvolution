@@ -202,3 +202,9 @@ Compiling for Mac OS X
     MallocCheckHeapStart=1 MallocCheckHeapEach=100
 
 
+Debugging
+---------
+
+The following packages contain debug information for
+relevant libraries on Ubuntu 7.10:
+  evolution-data-server-dbg libglib2.0-0-dbg evolution-dbg
