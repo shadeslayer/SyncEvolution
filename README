@@ -182,13 +182,13 @@ Getting Started with ScheduleWorld
 - create a configuration:
   mkdir -p ~/.sync4j/evolution
   cp -r <path to example configs>/scheduleworld ~/.sync4j/evolution/
-- edit ~/.sync4j/scheduleworld/evolution/spds/syncml/config.txt,
+- edit ~/.sync4j/evolution/scheduleworld/spds/syncml/config.txt,
   set "username" and "password" (beware, avoid extra spaces at the line ends)
   and choose a unique string for "deviceId";
   optional: create a directory where SyncEvolution can store
   backup files and a log during each synchronization, see
   documentation of "logdir/maxlogdirs" for details
-- edit ~/.sync4j/scheduleworld/evolution/spds/sources/*/config.txt,
+- edit ~/.sync4j/evolution/scheduleworld/spds/sources/*/config.txt,
   set "evolutionsource" to the name or uri of your Evolution
   database ("syncevolution" without parameter prints both for
   each available database)
