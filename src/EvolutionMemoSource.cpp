@@ -49,7 +49,26 @@ SyncItem *EvolutionMemoSource::createItem( const string &uid, SyncState state )
     if (desc) {
         const char *text = icalproperty_get_description(desc);
         if (text) {
-            item->setData(text, strlen(text));
+            // replace all \n with \r\n: in the worst case the text
+            // becomes twice as long
+            eptr<char> dostext((char *)malloc(strlen(text) * 2 + 1));
+            const char *from = text;
+            char *to = dostext;
+            const char *eol = strchr(from, '\n');
+            while (eol) {
+                size_t linelen = eol - from;
+                memcpy(to, from, linelen);
+                to += linelen;
+                from += linelen;
+                to[0] = '\r';
+                to[1] = '\n';
+                to += 2;
+                from++;
+
+                eol = strchr(from, '\n');
+            }
+            memcpy(to, from, strlen(from) + 1);
+            item->setData(dostext, strlen(dostext));
         }
     }
     item->setDataType("text/plain");
@@ -79,7 +98,27 @@ int EvolutionMemoSource::insertItem(SyncItem& item, bool update)
     memcpy(text, item.getData(), item.getDataSize());
     text[item.getDataSize()] = 0;
 
-    const char *eol = strchr(text, '\n');
+    // replace all \r\n with \n
+    char *from = text, *to = text;
+    const char *eol = strstr(from, "\r\n");
+    while (eol) {
+        size_t linelen = eol - from;
+        if (to != from) {
+            memmove(to, from, linelen);
+        }
+        to += linelen;
+        from += linelen;
+        *to = '\n';
+        to++;
+        from += 2;
+
+        eol = strstr(from, "\r\n");
+    }
+    if (to != from) {
+        memmove(to, from, strlen(from) + 1);
+    }
+
+    eol = strchr(text, '\n');
     string summary;
     if (eol) {
         summary.insert(0, (char *)text, eol - (char *)text);
