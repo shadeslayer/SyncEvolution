@@ -728,10 +728,10 @@ void EvolutionSyncClient::initSources(SourceList &sourceList, EvolutionClientCon
             // also open it; failing now is still safe
             syncSource->open();    
         } else {
-            // set empty type to prevent inclusion in DevInfo with invalid infos
-            sc.setType("");
-            sc.setVersion("");
-            sc.setSupportedTypes("");
+            // set type info: the Funambol server expects valid entries
+            sc.setType("text/x-vcard");
+            sc.setVersion("2.0");
+            sc.setSupportedTypes("text/x-vcard:2.0");
         }
     }
 
