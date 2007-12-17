@@ -53,12 +53,12 @@ PKGS = $(addprefix syncevolution-evolution-, 2.0 2.2 2.4 2.6 2.8 2.10 2.12 2.14 
 # because any file created there will be excluded: that makes
 # sense, because "make install" might create temporary files
 # there. The current directory might be in /tmp, so use $HOME.
-deb rpm : all doc-pak
+deb rpm : all doc-pak description-pak
 	tmpdir=`mktemp -d $$HOME/syncevolution.XXXXXXXXXX` && \
 	trap "rm -rf $$tmpdir" EXIT && \
 	docdir="$(docdir)" && \
         if [ ! "$$docdir" ]; then docdir="$(datadir)/doc/$(PACKAGE)"; fi && \
-	fakeroot checkinstall \
+	fakeroot checkinstall </dev/null \
 		$(TYPE_$@) \
 		$(REQUIRES_$@) \
 		--fstrans=yes \
@@ -71,7 +71,7 @@ deb rpm : all doc-pak
 		--pkgsource='http://sourceforge.net/project/showfiles.php?group_id=146288' \
 		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
 		--pkggroup='gnome' \
-		--docdir=$$docdir $(MAKE) install
+		--docdir=":$$docdir" $(MAKE) install
 
 doc-pak : README NEWS COPYING
 	mkdir $@

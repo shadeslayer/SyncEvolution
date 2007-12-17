@@ -309,7 +309,7 @@ class ClientCheckout(CVSCheckout):
         # checkout/upgrade
         CVSCheckout.execute(self)
         #patch again
-        context.runCommand("patcher -A")
+        context.runCommand("echo $PATH; which patcher; patcher -A")
 
 
 class AutotoolsBuild(Action):
@@ -425,7 +425,11 @@ parser.add_option("", "--host",
                   help="platform identifier like x86_64-linux; if this and --openembedded is set, then cross-compilation is tested")
 parser.add_option("", "--bin-suffix",
                   type="string", dest="binsuffix", default="",
-                  help="string to append to binary distribution archive (default empty = no binary distribution built)")
+                  help="string to append to name of binary .tar.gz distribution archive (default empty = no binary distribution built)")
+parser.add_option("", "--package-suffix",
+                  type="string", dest="packagesuffix", default="",
+                  help="string to insert into package name (default empty = no binary distribution built)")
+
 parser.add_option("", "--synthesis",
                   type="string", dest="synthesisdir", default="",
                   help="directory with Synthesis installation")
@@ -498,22 +502,26 @@ if options.oedir and options.host:
     context.add(cross)
 
 class SyncEvolutionDist(AutotoolsBuild):
-    def __init__(self, name, binsuffix, binrunner, dependencies):
+    def __init__(self, name, binsuffix, packagesuffix, binrunner, dependencies):
         """Builds a normal and a binary distribution archive in a directory where
         SyncEvolution was configured and compiled before.
         """
         AutotoolsBuild.__init__(self, name, "", "", binrunner, dependencies)
         self.binsuffix = binsuffix
+        self.packagesuffix = packagesuffix
         
     def execute(self):
         cd(self.builddir)
+        if self.packagesuffix:
+            context.runCommand("%s make BINSUFFIX=%s deb" % (self.runner, self.packagesuffix))
         if self.binsuffix:
-            context.runCommand("%s make BINSUFFIX=%s distbin deb distcheck" % (self.runner, self.binsuffix))
+            context.runCommand("%s make BINSUFFIX=%s distbin distcheck" % (self.runner, self.binsuffix))
         else:
             context.runCommand("%s make distcheck" % (self.runner))
 
 dist = SyncEvolutionDist("dist",
                          options.binsuffix,
+                         options.packagesuffix,
                          options.shell,
                          [ compile.name ])
 context.add(dist)
@@ -553,7 +561,7 @@ class SynthesisTest(SyncEvolutionTest):
     def __init__(self, name, build, synthesisdir, runner, testPrefix):
         SyncEvolutionTest.__init__(self, name, build, "", # os.path.join(synthesisdir, "logs")
                                    runner, [ "Client::Sync" ],
-                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_NUM_ITEMS=20 CLIENT_TEST_SERVER=synthesis CLIENT_TEST_DELAY=2",
+                                   "CLIENT_TEST_SOURCES=vcard21,text CLIENT_TEST_NUM_ITEMS=20 CLIENT_TEST_SERVER=synthesis CLIENT_TEST_DELAY=2",
                                    testPrefix=testPrefix)
         self.synthesisdir = synthesisdir
         # self.dependencies.append(evolutiontest.name)

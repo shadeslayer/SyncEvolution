@@ -28,10 +28,11 @@ syncModes = slow,two-way,refresh-from-client,refresh-from-server,one-way-from-cl
 #                    first line acts as summary
 # text/x-vcard     = Evolution contact data in vCard 2.1 format
 #                    (works with most servers)
-# test/vcard       = Evolution contact data in vCard 3.0 (RFC 2425) format
+# text/vcard       = Evolution contact data in vCard 3.0 (RFC 2425) format
 #                    (internal format of Evolution, preferred with servers
 #                    that support it and thus recommended for ScheduleWorld
 #                    together with the "card3" uri)
+# addressbook      = Mac OS X or iPhone address book
 #
 # Sending and receiving items in the same format as used by the server for
 # the uri selected below is essential. Errors while parsing and/or storing
