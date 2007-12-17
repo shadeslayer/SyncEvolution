@@ -1,3 +1,101 @@
+2007-12-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* Makefile.am, README, etc/source-config.txt, test/runtests.py:
+	fixed building of .deb (docdir and description)
+	- the new checkinstall --docdir=: syntax is used to avoid adding the name twice
+	- description-pak was not created and thus missing from package
+
+2007-12-15  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp:
+	disabled the background glib event loop again because it caused segfaults
+
+	Without the event loop SyncEvolution will get stuck again in EDS API calls
+	when the EDS dies, but that is the lesser evil.
+
+2007-12-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp:
+	myFUNAMBOL does not like empty types in the capability, so always send a valid (even if wrong) type
+
+2007-12-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionMemoSource.cpp: text/plain requires \r\n line breaks:
+	- send in that format now
+	- accept both \r\n and \n line breaks for incoming memos
+
+2007-12-07  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp:
+	avoid empty strings in DevInf structure, they might cause failures with myFUNAMBOL
+
+2007-12-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionMemoSource.cpp:
+	Implemented support for sending/receiving all VEVENTs with the same UID
+	as one SyncML item. This turned out to be incompatible with what most
+	SyncML servers do, so it will be necessary to switch to a model where
+	each VEVENT is one item and the LUID is UID+RECURRENCE-ID.
+
+	* README: fixed typo in getting started section
+
+	* HACKING: added list of debug packages
+
+2007-12-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/client-test-app.cpp:
+	dump core if test fails instead of simply exiting
+
+	* test/runtests.py: added the possibility to run under valgrind
+
+	* src/EvolutionSyncClient.cpp:
+	avoid including invalid information about inactive sources in DevInf by clearing it
+
+	* src/EvolutionMemoSource.h:
+	need to set mime type, required for correct DevInf (expected by Synthesis server)
+
+2007-11-30  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp:
+	bugfix: vCard 3.0 with mixed case were not converted properly to vCard 2.1
+	by SyncEvolution (must convert to upper case because vCard 2.1 only allows
+	that), leading to problems with mapping phone numbers in the Funambol server.
+	Diagnosed and reported by Paul McDermott, thanks a lot!
+
+	* test/runtests.py:
+	- changed configure/build so that it also builds .deb (default prefix + DESTDIR for install)
+	- updated config for servers
+
+2007-11-28  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp:
+	avoid delivering SIGALRM to background thread - glib/ebook crash when that happens
+
+	* src/client-test-app.cpp:
+	avoid lengthy objdump -l -C output in error handler, exit to prevent repeated segfault invocation
+
+2007-11-22  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp:
+	added better error message when 'syncevolution' is started with non-existant sources as parameter
+
+2007-11-21  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/client-test-app.cpp, configure.in:
+	Added stack dumping in case of SIGABRT, SIGSEGV, SIGILL.
+	Both valgrind and glibc backtrace() are used: the former automatically
+	looks up source code, the later can handle stack back traces out of a signal
+	handler. objdump is called so that the addresses printed by backtrace()
+	can be associated with source code.
+
+2007-11-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+
+	* src/AddressBookSource.cpp:
+	last minute fix for iPhone 0.7 pre2: removed debug output
+
+	* src/EvolutionSyncClient.cpp:
+	clarified post-sync comparison by adding 'Changes applied to client during synchronization'
+
 2007-11-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp:

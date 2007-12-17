@@ -1,3 +1,107 @@
+SyncEvolution 0.6 -> 0.7, 17.12.2007
+------------------------------------
+C++ client library: r_6_5_3_1
+
+Updating user configuration: no relevant changes in this release. For those
+who haven't done so already, enabling large object support is recommended
+(see syncml/config.txt sample configs).
+
+* added port for iPhone and Mac OS X Address Book
+
+* fixed Nokia packaging problem which prevented installation
+  via the package manager unless it was in "red pill" mode
+  (SF #1781652)
+
+* sync with eGroupware - lost or messed up telephones: SyncEvolution
+  incorrectly added TYPE=OTHER to phone numbers sent with e.g.
+  CELL instead of TYPE=CELL (SF #1796086). Another patch was
+  required for eGroupware itself to correctly map phone numbers
+  as sent by SyncEvolution, see Compatibility web page.
+
+* added .deb packages
+
+* adapted calendar event insert/update to Evolution 2.12: the UID needs to be
+  restored, otherwise the Evolution backend crashes (GNOME issue #488881)
+
+* new feature: if the previous log directory is still available,
+  then local changes made since last sync can be queried
+  before starting a sync (new option --status) and will be
+  printed directly before a sync. Setting the "logdir" option
+  will automatically keep the most recent logs and database
+  dumps around.
+
+* added command line options:
+  --sync|-s <mode>
+    Temporarily synchronize the active sources in that mode. Useful
+    for a 'refresh-from-server' or 'refresh-from-client' sync which
+    clears all data at one end and copies all items from the other.
+
+  --status|-t
+    The changes made to local data since the last synchronization are
+    shown without starting a new one. This can be used to see in advance
+    whether the local data needs to be synchronized with the server.
+
+  --quiet|-q
+    Suppresses most of the normal output during a synchronization. The
+    log file still contains all the information.
+
+  --help|-h
+    Prints usage information.
+
+  --version
+    Prints the SyncEvolution version.
+
+* default configurations now reference the normal Evolution databases
+  ("Personal") thus requiring less changes to use. The account information
+  is now clearly marked as placeholder which needs to be entered.
+
+* bugfix: vCard 3.0 with mixed case were not converted properly to vCard 2.1
+  by SyncEvolution (must convert to upper case because vCard 2.1 only allows
+  that), leading to problems with mapping phone numbers in the Funambol server.
+  Diagnosed and reported by Paul McDermott, thanks a lot!
+
+* support receiving plain text notes with \n and \r\n line breaks;
+  always send with \r\n
+
+* added explicit error message when syncevolution is invoked
+  with incorrect names in the list of sources to synchronize:
+  previously it silently ignored unknown names
+
+* improved output: less verbose ("extracting" items is now
+  logged at debug level and thus not normally shown) and more
+  informative printing of changes (table summarizes number of
+  changes on client and server, heading for comparison changed
+  to make it clear that it shows changes on the client)
+
+* SyncCap is not generated unless syncModes are configured: added
+  a comment to example config (SF #1764123)
+
+* improved error handling: catch errors during post-processing and
+  continue
+
+
+SyncEvolution 0.7-pre2 -> 0.7, 17.12.2007
+-----------------------------------------
+C++ client library: r_6_5_3_1
+
+* bugfix: vCard 3.0 with mixed case were not converted properly to vCard 2.1
+  by SyncEvolution (must convert to upper case because vCard 2.1 only allows
+  that), leading to problems with mapping phone numbers in the Funambol server.
+  Diagnosed and reported by Paul McDermott, thanks a lot!
+
+* support receiving plain text notes with \n and \r\n line breaks;
+  always send with \r\n
+
+* added explicit error message when syncevolution is invoked
+  with incorrect names in the list of sources to synchronize:
+  previously it silently ignored unknown names
+
+* added stack dumping in case of premature abort;
+  removed workaround for lost connection to Evolution Dataserver
+  again because the workaround itself caused random segfaults inside
+  glib
+
+
 SyncEvolution 0.7-pre1 -> 0.7-pre2, 08.11.2007
 ----------------------------------------------
 C++ client library: branch b_v65
@@ -55,7 +159,6 @@ unless this option was enabled.
 * default configurations now reference the normal Evolution databases
   ("Personal") thus requiring less changes to use. The account information
   is now clearly marked as placeholder which needs to be entered.
-
 
 
 SyncEvolution 0.6 -> 0.7-pre1, 17.10.2007
