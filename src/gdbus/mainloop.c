@@ -418,3 +418,39 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name)
 
 	return connection;
 }
+
+static DBusHandlerResult disconnect_filter(DBusConnection *connection,
+					DBusMessage *message, void *data)
+{
+	if (dbus_message_is_signal(message,
+			DBUS_INTERFACE_LOCAL, "Disconnected") == FALSE)
+		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
+	DBG("disconnected");
+
+	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+}
+
+/**
+ * Sets callback function for message bus disconnects
+ * @param connection the connection
+ * @param function function called on connection disconnect
+ * @param user_data user data to pass to the function
+ * @param destroy function called to destroy user_data
+ * @return TRUE on success
+ *
+ * Set a callback function that will be called when the
+ * D-Bus message bus exits.
+ */
+gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
+				GDBusDisconnectFunction function,
+				void *user_data, DBusFreeFunction destroy)
+{
+	dbus_connection_set_exit_on_disconnect(connection, FALSE);
+
+	if (dbus_connection_add_filter(connection,
+				disconnect_filter, NULL, NULL) == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
