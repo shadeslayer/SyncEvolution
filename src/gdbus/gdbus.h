@@ -31,10 +31,22 @@ extern "C" {
 #include <dbus/dbus.h>
 #include <glib.h>
 
+/**
+ * @mainpage
+ *
+ * This manual documents <em>libgdbus</em> API.
+ *
+ */
+
 G_BEGIN_DECLS
 
 /** Destroy function */
 typedef void (* GDBusDestroyFunction) (void *user_data);
+
+/**
+ * @addtogroup watch
+ * @{
+ */
 
 /** Watch function */
 typedef gboolean (* GDBusWatchFunction) (void *user_data);
@@ -42,6 +54,13 @@ typedef gboolean (* GDBusWatchFunction) (void *user_data);
 typedef void (* GDBusConnectFunction) (void *user_data);
 /** Disconnect function */
 typedef void (* GDBusDisconnectFunction) (void *user_data);
+
+/** @} */
+
+/**
+ * @addtogroup object
+ * @{
+ */
 
 /** Method function */
 typedef DBusMessage * (* GDBusMethodFunction) (DBusConnection *connection,
@@ -92,6 +111,13 @@ typedef struct {
 	GDBusPropertyFlags flags;	/**<Property flags */
 } GDBusPropertyTable;
 
+/** @} */
+
+/**
+ * @addtogroup mainloop
+ * @{
+ */
+
 void g_dbus_setup_connection(DBusConnection *connection,
 						GMainContext *context);
 void g_dbus_cleanup_connection(DBusConnection *connection);
@@ -101,6 +127,13 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name);
 gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
 				GDBusDisconnectFunction function,
 				void *user_data, GDBusDestroyFunction destroy);
+
+/** @} */
+
+/**
+ * @addtogroup object
+ * @{
+ */
 
 gboolean g_dbus_register_object(DBusConnection *connection, const char *path,
 				void *user_data, GDBusDestroyFunction destroy);
@@ -124,6 +157,13 @@ gboolean g_dbus_emit_signal_valist(DBusConnection *connection,
 				const char *path, const char *interface,
 				const char *name, int type, va_list args);
 
+/** @} */
+
+/**
+ * @addtogroup watch
+ * @{
+ */
+
 guint g_dbus_add_watch(DBusConnection *connection, const char *name,
 				GDBusConnectFunction connect,
 				GDBusDisconnectFunction disconnect,
@@ -133,6 +173,8 @@ guint g_dbus_add_disconnect_watch(DBusConnection *connection,
 				void *user_data, GDBusDestroyFunction destroy);
 gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag);
 void g_dbus_remove_all_watches(DBusConnection *connection);
+
+/** @} */
 
 G_END_DECLS
 
