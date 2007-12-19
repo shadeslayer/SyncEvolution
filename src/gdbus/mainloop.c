@@ -268,6 +268,8 @@ static void free_connection(void *memory)
 
 	DBG("connection data %p", data);
 
+	g_dbus_unregister_all_objects(data->connection);
+
 	dbus_connection_unref(data->connection);
 
 	g_main_context_unref(data->context);
