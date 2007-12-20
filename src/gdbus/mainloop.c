@@ -405,11 +405,41 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name)
 			return NULL;
 		}
 
-		if (dbus_error_is_set(&error)) {
+		if (dbus_error_is_set(&error) == TRUE) {
 			dbus_error_free(&error);
 			dbus_connection_unref(connection);
 			return NULL;
 		}
+	}
+
+	g_dbus_setup_connection(connection, NULL);
+
+	dbus_connection_unref(connection);
+
+	return connection;
+}
+
+/**
+ * Connect to bus and setup connection
+ * @param address bus address
+ * @return a DBusConnection
+ *
+ * Returns a connection to the bus specified via
+ * the given address and sets the watch and timeout
+ * functions for it.
+ */
+DBusConnection *g_dbus_setup_address(const char *address)
+{
+	DBusConnection *connection;
+	DBusError error;
+
+	dbus_error_init(&error);
+
+	connection = dbus_connection_open(address, &error);
+	
+	if (dbus_error_is_set(&error) == TRUE) {
+		dbus_error_free(&error);
+		return NULL;
 	}
 
 	g_dbus_setup_connection(connection, NULL);
