@@ -37,7 +37,7 @@ $(IPHONE_FILENAME) : all
 TYPE_deb = -D
 TYPE_rpm = -R
 REQUIRES_deb = --requires="`dpkg-shlibdeps -L$(srcdir)/src/shlibs.local -O src/syncevolution | sed -e 's/[^=]*=//'`"
-VERSION_deb = $(VERSION)
+VERSION_deb = 1:$(VERSION)
 VERSION_rpm = `echo $(VERSION) | sed -e s/-/_/g`
 RELEASE = 2
 
