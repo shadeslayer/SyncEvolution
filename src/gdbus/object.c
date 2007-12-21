@@ -259,16 +259,23 @@ static void update_parent(DBusConnection *connection, const char *path)
 
 	DBG("connection %p path %s", connection, path);
 
+	if (strlen(path) < 2)
+		return;
+
 	parent = g_path_get_dirname(path);
 	if (parent == NULL)
 		return;
 
 	if (dbus_connection_get_object_path_data(connection,
-					parent, (void *) &data) == FALSE)
+					parent, (void *) &data) == FALSE) {
+		update_parent(connection, parent);
 		goto done;
+	}
 
-	if (data == NULL)
+	if (data == NULL) {
+		update_parent(connection, parent);
 		goto done;
+	}
 
 	g_free(data->introspect);
 	data->introspect = generate_introspect(connection, parent, data);
