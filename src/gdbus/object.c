@@ -379,7 +379,7 @@ static DBusHandlerResult properties_get(DBusConnection *connection,
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT,
 						property->type, &value);
 
-	result = property->get(connection, &value, data);
+	result = property->get(connection, &value, data->user_data);
 
 	dbus_message_iter_close_container(&iter, &value);
 
@@ -437,7 +437,7 @@ static DBusHandlerResult properties_set(DBusConnection *connection,
 
 	dbus_message_append_args(reply, DBUS_TYPE_INVALID);
 
-	if (property->set(connection, &value, data) == FALSE) {
+	if (property->set(connection, &value, data->user_data) == FALSE) {
 		dbus_message_unref(reply);
 		return send_error(connection, message, DBUS_ERROR_FAILED,
 						"Writing to property failed");
@@ -487,7 +487,7 @@ static void do_getall(DBusConnection *connection, DBusMessageIter *iter,
 		dbus_message_iter_open_container(&entry, DBUS_TYPE_VARIANT,
 						property->type, &value);
 
-		result = property->get(connection, &value, data);
+		result = property->get(connection, &value, data->user_data);
 
 		dbus_message_iter_close_container(&entry, &value);
 
