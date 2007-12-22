@@ -259,7 +259,7 @@ static void update_parent(DBusConnection *connection, const char *path)
 
 	DBG("connection %p path %s", connection, path);
 
-	if (strlen(path) < 2)
+	if (strlen(path) < 2 || path[0] != '/')
 		return;
 
 	parent = g_path_get_dirname(path);
