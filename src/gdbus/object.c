@@ -122,10 +122,10 @@ static inline void add_methods(GString *xml, GDBusMethodTable *methods)
 		add_arguments(xml, "in", method->signature);
 		add_arguments(xml, "out", method->reply);
 
-		if (method->flags & G_DBUS_METHOD_FLAGS_DEPRECATED)
+		if (method->flags & G_DBUS_METHOD_FLAG_DEPRECATED)
 			add_annotation(xml, "org.freedesktop.DBus.Deprecated");
 
-		if (method->flags & G_DBUS_METHOD_FLAGS_NOREPLY)
+		if (method->flags & G_DBUS_METHOD_FLAG_NOREPLY)
 			add_annotation(xml, "org.freedesktop.DBus.Method.NoReply");
 
 		g_string_append(xml, "\t\t</method>\n");
@@ -142,7 +142,7 @@ static inline void add_signals(GString *xml, GDBusSignalTable *signals)
 
 		add_arguments(xml, NULL, signal->signature);
 
-		if (signal->flags & G_DBUS_SIGNAL_FLAGS_DEPRECATED)
+		if (signal->flags & G_DBUS_SIGNAL_FLAG_DEPRECATED)
 			add_annotation(xml, "org.freedesktop.DBus.Deprecated");
 
 		g_string_append(xml, "\t\t</signal>\n");
@@ -174,7 +174,7 @@ static inline void add_properties(GString *xml, GDBusPropertyTable *properties)
 			"\t\t<property name=\"%s\" type=\"%s\" access=\"%s\">\n",
 					property->name, property->type, access);
 
-		if (property->flags & G_DBUS_PROPERTY_FLAGS_DEPRECATED)
+		if (property->flags & G_DBUS_PROPERTY_FLAG_DEPRECATED)
 			add_annotation(xml, "org.freedesktop.DBus.Deprecated");
 
 		g_string_append(xml, "\t\t</property>\n");
@@ -598,7 +598,7 @@ static DBusHandlerResult handle_message(DBusConnection *connection,
 		reply = method->function(connection,
 						message, data->user_data);
 
-		if (method->flags & G_DBUS_METHOD_FLAGS_NOREPLY) {
+		if (method->flags & G_DBUS_METHOD_FLAG_NOREPLY) {
 			if (reply != NULL)
 				dbus_message_unref(reply);
 			return DBUS_HANDLER_RESULT_HANDLED;

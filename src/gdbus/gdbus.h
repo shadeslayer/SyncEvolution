@@ -75,18 +75,18 @@ typedef dbus_bool_t (* GDBusPropertySetFunction) (DBusConnection *connection,
 
 /** Method flags */
 typedef enum {
-	G_DBUS_METHOD_FLAGS_DEPRECATED = (1 << 0),
-	G_DBUS_METHOD_FLAGS_NOREPLY    = (1 << 1),
+	G_DBUS_METHOD_FLAG_DEPRECATED = (1 << 0),
+	G_DBUS_METHOD_FLAG_NOREPLY    = (1 << 1),
 } GDBusMethodFlags;
 
 /** Signal flags */
 typedef enum {
-	G_DBUS_SIGNAL_FLAGS_DEPRECATED = (1 << 0),
+	G_DBUS_SIGNAL_FLAG_DEPRECATED = (1 << 0),
 } GDBusSignalFlags;
 
 /** Property flags */
 typedef enum {
-	G_DBUS_PROPERTY_FLAGS_DEPRECATED = (1 << 0),
+	G_DBUS_PROPERTY_FLAG_DEPRECATED = (1 << 0),
 } GDBusPropertyFlags;
 
 typedef struct {
