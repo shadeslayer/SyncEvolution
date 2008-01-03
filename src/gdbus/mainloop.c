@@ -395,7 +395,7 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name)
 
 	connection = dbus_bus_get(type, NULL);
 
-	if (name) {
+	if (name != NULL) {
 		dbus_error_init(&error);
 
 		if (dbus_bus_request_name(connection, name,
@@ -433,6 +433,8 @@ DBusConnection *g_dbus_setup_address(const char *address)
 	DBusConnection *connection;
 	DBusError error;
 
+	DBG("address %s", address);
+
 	dbus_error_init(&error);
 
 	connection = dbus_connection_open(address, &error);
@@ -447,6 +449,38 @@ DBusConnection *g_dbus_setup_address(const char *address)
 	dbus_connection_unref(connection);
 
 	return connection;
+}
+
+/**
+ * Request bus name
+ * @param connection the connection
+ * @param name well known name
+ * @return TRUE on success
+ *
+ * Requests a well known name for connection.
+ */
+gboolean g_dbus_request_name(DBusConnection *connection, const char *name)
+{
+	DBusError error;
+
+	DBG("connection %p name %s", connection, name);
+
+	if (name == NULL)
+		return FALSE;
+
+	dbus_error_init(&error);
+
+	if (dbus_bus_request_name(connection, name,
+			DBUS_NAME_FLAG_DO_NOT_QUEUE, &error) !=
+				DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER )
+		return FALSE;
+
+	if (dbus_error_is_set(&error) == TRUE) {
+		dbus_error_free(&error);
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 static DBusHandlerResult disconnect_filter(DBusConnection *connection,

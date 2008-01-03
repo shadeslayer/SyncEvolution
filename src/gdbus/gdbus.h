@@ -126,6 +126,8 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name);
 
 DBusConnection *g_dbus_setup_address(const char *address);
 
+gboolean g_dbus_request_name(DBusConnection *connection, const char *name);
+
 gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
 				GDBusDisconnectFunction function,
 				void *user_data, GDBusDestroyFunction destroy);
