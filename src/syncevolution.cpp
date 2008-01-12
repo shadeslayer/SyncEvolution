@@ -111,6 +111,33 @@ void usage(char **argv, bool full, string error = string(""))
     }
 }
 
+#ifdef LOG_HAVE_SET_LOGGER
+class CmdLineLogger : public POSIXLog {
+protected:
+    virtual void printLine(int firstLine,
+                           const char *fullTime,
+                           const char *shortTime,
+                           LogLevel level,
+                           const char *levelPrefix,
+                           const char *line) {
+        POSIXLog::printLine(firstLine,
+                            fullTime,
+                            shortTime,
+                            level,
+                            levelPrefix,
+                            line);
+        if (level <= LOG_LEVEL_INFO &&
+            getLogFile()) {
+            /* POSIXLog is printing to file, therefore print important lines to stdout */
+            fprintf(stdout, "%s [%s] %s\n",
+                    shortTime,
+                    levelPrefix,
+                    line);
+        }
+    }
+};
+#endif
+
 int main( int argc, char **argv )
 {
 #ifdef ENABLE_MAEMO
@@ -131,7 +158,15 @@ int main( int argc, char **argv )
     g_type_init();
 #endif
 
-    setLogFile("-");
+#ifdef LOG_HAVE_SET_LOGGER
+    static CmdLineLogger logger;
+    Log::setLogger(&logger);
+#endif
+
+#ifdef POSIX_LOG
+    POSIX_LOG.
+#endif
+        setLogFile(NULL, "-");
     LOG.reset();
     LOG.setLevel(LOG_LEVEL_INFO);
     resetError();

@@ -221,7 +221,10 @@ public:
             FILE *file = fopen(m_logfile.c_str(), "w");
             if (file) {
                 fclose(file);
-                setLogFile(m_logfile.c_str(), true);
+#ifdef POSIX_LOG
+                POSIX_LOG.
+#endif
+                    setLogFile(NULL, m_logfile.c_str(), true);
             } else {
                 LOG.error("creating log file %s failed", m_logfile.c_str());
             }
@@ -291,12 +294,18 @@ public:
           
         if (all) {
             if (m_logfile.size()) {
-                setLogFile("-", false);
+#ifdef POSIX_LOG
+                POSIX_LOG.
+#endif
+                    setLogFile(NULL, "-", false);
             }
             LOG.setLevel(m_oldLogLevel);
         } else {
             if (m_logfile.size()) {
-                setLogFile(m_logfile.c_str(), false);
+#ifdef POSIX_LOG
+                POSIX_LOG.
+#endif
+                    setLogFile(NULL, m_logfile.c_str(), false);
             }
         }
     }
@@ -468,8 +477,9 @@ public:
                     }
                 }
 
-                // scan for error messages
                 string logfile = m_logdir.getLogfile();
+#ifndef LOG_HAVE_SET_LOGGER
+                // scan for error messages
                 if (!m_quiet && logfile.size()) {
                     ifstream in;
                     in.open(m_logdir.getLogfile().c_str());
@@ -478,13 +488,14 @@ public:
                         getline(in, line);
                         if (line.find("[ERROR]") != line.npos) {
                             success = false;
-                            cout << line << "\n";
+                           cout << line << "\n";
                         } else if (line.find("[INFO]") != line.npos) {
                             cout << line << "\n";
                         }
                     }
                     in.close();
                 }
+#endif
 
                 cout << flush;
                 cerr << flush;
@@ -785,10 +796,15 @@ int EvolutionSyncClient::sync()
         sourceList.setLogdir(logdir, atoi(maxlogdirs), atoi(loglevel));
 
         // dump some summary information at the beginning of the log
-        LOG.debug("SyncML server account: %s", config.getAccessConfig().getUsername());
-        LOG.debug("client: SyncEvolution %s", VERSION);
+#ifdef LOG_HAVE_DEVELOPER
+# define LOG_DEVELOPER developer
+#else
+# define LOG_DEVELOPER debug
+#endif
+        LOG.LOG_DEVELOPER("SyncML server account: %s", config.getAccessConfig().getUsername());
+        LOG.LOG_DEVELOPER("client: SyncEvolution %s", VERSION);
         time_t now = time(NULL);
-        LOG.debug("current UTC date and time: %s", asctime(gmtime(&now)));
+        LOG.LOG_DEVELOPER("current UTC date and time: %s", asctime(gmtime(&now)));
 
         initSources(sourceList, config, url);
 
