@@ -21,15 +21,15 @@
 
 #ifdef ENABLE_SQLITE
 
-#include "SQLiteSyncSource.h"
+#include "SQLiteUtil.h"
 #include "base/util/StringBuffer.h"
 #include "vocl/VConverter.h"
 
 #include <stdarg.h>
 
-void SQLiteSyncSource::throwError(const string &operation)
+void SQLiteUtil::throwError(const string &operation)
 {
-    string descr = string(getName()) + ": '" + m_id + "': " + operation + " failed";
+    string descr = m_name + ": '" + m_fileid + "': " + operation + " failed";
 
     if (m_db) {
         const char *error = sqlite3_errmsg(m_db);
@@ -40,7 +40,7 @@ void SQLiteSyncSource::throwError(const string &operation)
     throw runtime_error(descr);
 }
 
-sqlite3_stmt *SQLiteSyncSource::prepareSQLWrapper(const char *sql, const char **nextsql)
+sqlite3_stmt *SQLiteUtil::prepareSQLWrapper(const char *sql, const char **nextsql)
 {
     sqlite3_stmt *stmt = NULL;
 
@@ -48,7 +48,7 @@ sqlite3_stmt *SQLiteSyncSource::prepareSQLWrapper(const char *sql, const char **
     return stmt;
 }
 
-sqlite3_stmt *SQLiteSyncSource::prepareSQL(const char *sqlfmt, ...)
+sqlite3_stmt *SQLiteUtil::prepareSQL(const char *sqlfmt, ...)
 {
     StringBuffer sql;
     va_list ap;
@@ -61,7 +61,7 @@ sqlite3_stmt *SQLiteSyncSource::prepareSQL(const char *sqlfmt, ...)
 }
 
 
-SQLiteSyncSource::key_t SQLiteSyncSource::findKey(const char *database, const char *keyname, const char *key)
+SQLiteUtil::key_t SQLiteUtil::findKey(const char *database, const char *keyname, const char *key)
 {
     eptr<sqlite3_stmt> query(prepareSQL("SELECT ROWID FROM %s WHERE %s = '%s';", database, keyname, key));
 
@@ -73,7 +73,7 @@ SQLiteSyncSource::key_t SQLiteSyncSource::findKey(const char *database, const ch
     }
 }
 
-string SQLiteSyncSource::findColumn(const char *database, const char *keyname, const char *key, const char *column, const char *def)
+string SQLiteUtil::findColumn(const char *database, const char *keyname, const char *key, const char *column, const char *def)
 {
     eptr<sqlite3_stmt> query(prepareSQL("SELECT %s FROM %s WHERE %s = '%s';", column, database, keyname, key));
 
@@ -87,19 +87,19 @@ string SQLiteSyncSource::findColumn(const char *database, const char *keyname, c
     }
 }
 
-string SQLiteSyncSource::getTextColumn(sqlite3_stmt *stmt, int col, const char *def)
+string SQLiteUtil::getTextColumn(sqlite3_stmt *stmt, int col, const char *def)
 {
     const unsigned char *text = sqlite3_column_text(stmt, col);
     return text ? (const char *)text : def;
 }
 
-SQLiteSyncSource::syncml_time_t SQLiteSyncSource::getTimeColumn(sqlite3_stmt *stmt, int col)
+SQLiteUtil::syncml_time_t SQLiteUtil::getTimeColumn(sqlite3_stmt *stmt, int col)
 {
     // assumes that the database stores the result of time() directly
     return sqlite3_column_int64(stmt, col);
 }
 
-void SQLiteSyncSource::rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj)
+void SQLiteUtil::rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj)
 {
     const unsigned char *text;
     const char *tablename;
@@ -121,14 +121,21 @@ void SQLiteSyncSource::rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj)
     }
 }
 
-void SQLiteSyncSource::open()
+void SQLiteUtil::open(const string &name,
+                      const string &fileid,
+                      const SQLiteUtil::Mapping *mapping,
+                      const char *schema)
 {
+    close();
+    m_name = name;
+    m_fileid = fileid;
+
     const string prefix("file://");
-    bool create = m_id.substr(0, prefix.size()) == prefix;
-    string filename = create ? m_id.substr(prefix.size()) : m_id;
+    bool create = fileid.substr(0, prefix.size()) == prefix;
+    string filename = create ? fileid.substr(prefix.size()) : fileid;
 
     if (!create && access(filename.c_str(), F_OK)) {
-        throw runtime_error(string(getName()) + ": no such database: '" + filename + "'");
+        throw runtime_error(m_name + ": no such database: '" + filename + "'");
     }
 
     sqlite3 *db;
@@ -144,7 +151,6 @@ void SQLiteSyncSource::open()
         break;
     case SQLITE_DONE: {
         // empty
-        const char *schema = getDefaultSchema();
         const char *nextsql = schema;
         while (nextsql && *nextsql) {
             const char *sql = nextsql;
@@ -168,7 +174,6 @@ void SQLiteSyncSource::open()
     }
 
     // query database schema to find columns we need
-    const Mapping *mapping = getConstMapping();
     int i;
     for (i = 0; mapping[i].colname; i++) ;
     m_mapping.set(new Mapping[i + 1]);
@@ -196,8 +201,10 @@ void SQLiteSyncSource::open()
     memset(&m_mapping[i], 0, sizeof(m_mapping[i]));
 }
 
-void SQLiteSyncSource::close()
+void SQLiteUtil::close()
 {
+    m_db = NULL;
 }
+
 
 #endif /* ENABLE_SQLITE */

@@ -140,10 +140,12 @@ Building a Release
 - upload new files to sf.net
 - remove files from www.estamos.de so that downloads access sf.net
 - update entries on the web about the release:
-  http://maemo.org/downloads/product/syncevolution/
+  http://maemo.org/downloads/product/OS2006/syncevolution/
+  http://maemo.org/downloads/product/OS2007/syncevolution/
   http://www.modmyiphone.com/ (?)
   http://www.estamos.de/blog/wp-admin
   http://www.estamos.de/projects/SyncEvolution/Roadmap.html
+  http://freshmeat.net/projects/syncevolution/
 
 
 Compiling for Maemo
@@ -195,6 +197,13 @@ Compiling for Mac OS X
   <path>/configure --with-sync4j-src= --enable-addressbook
   make CFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386" \
        LDFLAGS="-Wl,-syslibroot,/Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386"
+
+  ./configure --enable-addressbook \
+              CXXFLAGS="-O -g -arch i386 -arch ppc" \
+              CFLAGS="-O -g -arch i386 -arch ppc" \
+              LDFLAGS="-arch i386 -arch ppc" --disable-dependency-tracking
+
+  TODO: --disable-dependency-tracking an client-api weiterreichen
   
   Fine-grained memory checking:
     MallocStackLogging=1 MallocStackLoggingNoCompact=1 \

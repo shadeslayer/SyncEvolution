@@ -20,12 +20,13 @@
 #ifndef INCL_SQLITESYNCSOURCE
 #define INCL_SQLITESYNCSOURCE
 
-#include "EvolutionSyncSource.h"
-
 #ifdef ENABLE_SQLITE
 
 #include <sqlite3.h>
 #include "EvolutionSmartPtr.h"
+
+#include <string>
+using namespace std;
 
 namespace vocl {
     class VObject;
@@ -37,34 +38,40 @@ void inline unref(sqlite3_stmt *stmt) { sqlite3_finalize(stmt); }
  * This class implements access to SQLite database files:
  * - opening the database file
  * - error reporting
- * - creating a database file in debugging mode
+ * - creating a database file
+ * - converting to and from a VObject via a simple property<->column name mapping
  */
-class SQLiteSyncSource : public EvolutionSyncSource
+class SQLiteUtil
 {
   public:
+    /** information about the database mapping */
+    struct Mapping {
+        const char *colname;        /**< column name in SQL table */
+        const char *tablename;      /**< name of the SQL table which has this column */
+        const char *propname;       /**< optional: vcard/vcalendar property which corresponds to this */
+        int colindex;               /**< determined dynamically in open(): index of the column, -1 if not present */
+    };
+
+    const Mapping &getMapping(int i) { return m_mapping[i]; }
+
     /**
-     * Creates a new Evolution sync source.
-     *
-     * @param    name        the named needed by SyncSource
-     * @param    sc          obligatory config for this source, must remain valid throughout the lifetime of the source
-     * @param    changeId    is used to track changes in the Evolution backend
-     * @param    id          identifies the backend; not specifying it makes this instance
-     *                       unusable for anything but listing backend databases
+     * @param name        a name for the data source, used for error messages
+     * @param fileid      a descriptor which identifies the file to be opened:
+     *                    currently valid syntax is file:// followed by path
+     * @param mapping     array with database mapping, terminated by NULL colname
+     * @param schema      database schema to use when creating new databases, may be NULL
      */
-    SQLiteSyncSource( const string name, SyncSourceConfig *sc, const string &changeId, const string &id ) :
-    EvolutionSyncSource( name, sc, changeId, id),
-        m_db(NULL)
-        {}
-    virtual ~SQLiteSyncSource() {}
+    void open(const string &name,
+              const string &fileid,
+              const Mapping *mapping,
+              const char *schema);
 
-    /* implementation of EvolutionSyncSource interface */
-    virtual sources getSyncBackends() { return sources(); /* we cannot list available databases */ }
-    virtual void open();
-    virtual void close();
+    void close();
 
-
- protected:
-    /** throw error for a specific sqlite3 operation on m_db */
+    /**
+     * throw error for a specific sqlite3 operation on m_db
+     * @param operation   a description of the operation which failed
+     */
     void throwError(const string &operation);
 
     /**
@@ -114,27 +121,13 @@ class SQLiteSyncSource : public EvolutionSyncSource
     /** copies all columns which directly map to a property into the vobj */
     void rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj);
 
-    /** database schema to use when creating new databases, may be NULL */
-    virtual const char *getDefaultSchema() = 0;
-
-    /** information about the database mapping */
-    struct Mapping {
-        const char *colname;        /**< column name in SQL table */
-        const char *tablename;      /**< name of the SQL table which has this column */
-        const char *propname;       /**< optional: vcard/vcalendar property which corresponds to this */
-        int colindex;               /**< determined dynamically in open(): index of the column, -1 if not present */
-    };
-
-    /**
-     * array with database mapping, terminated by NULL colname:
-     * variable fields are stored in a copy maintained by the SQLiteSyncSource class
-     */
-    virtual const Mapping *getConstMapping() = 0;
-
-    /** filled in by SQLiteSyncSource::open() */
+ private:
+    /* copy of open() parameters */
     arrayptr<Mapping> m_mapping;
+    string m_name;
+    string m_fileid;
 
-    /** after opening: current databse */
+    /** current database */
     eptr<sqlite3> m_db;
 };
 

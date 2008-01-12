@@ -20,25 +20,30 @@
 #ifndef INCL_SQLITECONTACTSOURCE
 #define INCL_SQLITECONTACTSOURCE
 
-#include "SQLiteSyncSource.h"
+#include "EvolutionSyncSource.h"
+#include "SQLiteUtil.h"
 
 #ifdef ENABLE_SQLITE
 
 /**
- * Specialization of SQLiteSyncSource for contacts
+ * Uses SQLiteUtil for contacts
  * with a schema as used by Mac OS X.
+ * The schema has hierarchical tables, which is not
+ * supported by SQLiteUtil, so only the properties which
+ * have a 1:1 mapping are currently stored.
  */
-class SQLiteContactSource : public SQLiteSyncSource
+class SQLiteContactSource : public EvolutionSyncSource
 {
   public:
     SQLiteContactSource( const string name, SyncSourceConfig *sc, const string &changeId, const string &id ) :
-    SQLiteSyncSource( name, sc, changeId, id)
+        EvolutionSyncSource(name, sc, changeId, id)
         {}
-    virtual ~SQLiteContactSource() {}
 
  protected:
     /* implementation of EvolutionSyncSource interface */
     virtual void open();
+    virtual void close();
+    virtual sources getSyncBackends() { return sources(); }
     virtual SyncItem *createItem( const string &uid, SyncState state );
     virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "vcf"; }
@@ -58,11 +63,10 @@ class SQLiteContactSource : public SQLiteSyncSource
     virtual void logItem(const string &uid, const string &info, bool debug = false);
     virtual void logItem(SyncItem &item, const string &info, bool debug = false);
 
-    /* implementation of SQLiteSyncSource interface */
-    virtual const char *getDefaultSchema();
-    virtual const Mapping *getConstMapping();
-
  private:
+    /** encapsulates access to database */
+    SQLiteUtil m_sqlite;
+
     /** constant key values defined by tables in the database, queried during open() */
     key_t m_addrCountryCode,
         m_addrCity,

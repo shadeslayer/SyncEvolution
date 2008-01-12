@@ -32,28 +32,6 @@
 
 using namespace vocl;
 
-const char *SQLiteContactSource::getDefaultSchema()
-{
-    return 
-        "BEGIN TRANSACTION;"
-        "CREATE TABLE ABMultiValue (UID INTEGER PRIMARY KEY, record_id INTEGER, property INTEGER, identifier INTEGER, label INTEGER, value TEXT);"
-        "CREATE TABLE ABMultiValueEntry (parent_id INTEGER, key INTEGER, value TEXT, UNIQUE(parent_id, key));"
-        "CREATE TABLE ABMultiValueEntryKey (value TEXT, UNIQUE(value));"
-        "CREATE TABLE ABMultiValueLabel (value TEXT, UNIQUE(value));"
-        "CREATE TABLE ABPerson (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, First TEXT, Last TEXT, Middle TEXT, FirstPhonetic TEXT, MiddlePhonetic TEXT, LastPhonetic TEXT, Organization TEXT, Department TEXT, Note TEXT, Kind INTEGER, Birthday TEXT, JobTitle TEXT, Nickname TEXT, Prefix TEXT, Suffix TEXT, FirstSort TEXT, LastSort TEXT, CreationDate INTEGER, ModificationDate INTEGER, CompositeNameFallback TEXT);"
-        "INSERT INTO ABMultiValueLabel VALUES('_$!<Mobile>!$_');"
-        "INSERT INTO ABMultiValueLabel VALUES('_$!<Home>!$_');"
-        "INSERT INTO ABMultiValueLabel VALUES('_$!<Work>!$_');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('CountryCode');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('City');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('Street');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('State');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('ZIP');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('Country');"
-        "COMMIT;"
-        ;
-}
-
 enum {
     PERSON_LAST,
     PERSON_MIDDLE,
@@ -72,9 +50,9 @@ enum {
     LAST_COL
 };
 
-const SQLiteSyncSource::Mapping *SQLiteContactSource::getConstMapping()
+void SQLiteContactSource::open()
 {
-    static const Mapping mapping[LAST_COL] = {
+    static const SQLiteUtil::Mapping mapping[LAST_COL + 1] = {
         { "Last", "ABPerson" },
         { "Middle", "ABPerson" },
         { "First", "ABPerson" },
@@ -87,44 +65,64 @@ const SQLiteSyncSource::Mapping *SQLiteContactSource::getConstMapping()
         { "Note", "ABPerson", "NOTE" },
         { "Birthday", "ABPerson", "BIRTHDAY" },
         { "JobTitle", "ABPerson", "ROLE" },
-        { "Nickname", "ABPerson", "NICKNAME" }
+        { "Nickname", "ABPerson", "NICKNAME" },
+        { NULL }
     };
+    static const char *schema = 
+        "BEGIN TRANSACTION;"
+        "CREATE TABLE ABMultiValue (UID INTEGER PRIMARY KEY, record_id INTEGER, property INTEGER, identifier INTEGER, label INTEGER, value TEXT);"
+        "CREATE TABLE ABMultiValueEntry (parent_id INTEGER, key INTEGER, value TEXT, UNIQUE(parent_id, key));"
+        "CREATE TABLE ABMultiValueEntryKey (value TEXT, UNIQUE(value));"
+        "CREATE TABLE ABMultiValueLabel (value TEXT, UNIQUE(value));"
+        "CREATE TABLE ABPerson (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, First TEXT, Last TEXT, Middle TEXT, FirstPhonetic TEXT, MiddlePhonetic TEXT, LastPhonetic TEXT, Organization TEXT, Department TEXT, Note TEXT, Kind INTEGER, Birthday TEXT, JobTitle TEXT, Nickname TEXT, Prefix TEXT, Suffix TEXT, FirstSort TEXT, LastSort TEXT, CreationDate INTEGER, ModificationDate INTEGER, CompositeNameFallback TEXT);"
+        "INSERT INTO ABMultiValueLabel VALUES('_$!<Mobile>!$_');"
+        "INSERT INTO ABMultiValueLabel VALUES('_$!<Home>!$_');"
+        "INSERT INTO ABMultiValueLabel VALUES('_$!<Work>!$_');"
+        "INSERT INTO ABMultiValueEntryKey VALUES('CountryCode');"
+        "INSERT INTO ABMultiValueEntryKey VALUES('City');"
+        "INSERT INTO ABMultiValueEntryKey VALUES('Street');"
+        "INSERT INTO ABMultiValueEntryKey VALUES('State');"
+        "INSERT INTO ABMultiValueEntryKey VALUES('ZIP');"
+        "INSERT INTO ABMultiValueEntryKey VALUES('Country');"
+        "COMMIT;";
 
-    return mapping;
-}
-
-void SQLiteContactSource::open()
-{
-    SQLiteSyncSource::open();
+    m_sqlite.open(getName(),
+                  m_id,
+                  mapping,
+                  schema);
 
     // query database for certain constant indices
-    m_addrCountryCode = findKey("ABMultiValueEntryKey", "value", "CountryCode");
-    m_addrCity = findKey("ABMultiValueEntryKey", "value", "City");
-    m_addrStreet = findKey("ABMultiValueEntryKey", "value", "Street");
-    m_addrState = findKey("ABMultiValueEntryKey", "value", "State");
-    m_addrZIP = findKey("ABMultiValueEntryKey", "value", "ZIP");
-    m_typeMobile = findKey("ABMultiValueLabel", "value", "_$!<Mobile>!$_");
-    m_typeHome = findKey("ABMultiValueLabel", "value", "_$!<Home>!$_");
-    m_typeWork = findKey("ABMultiValueLabel", "value", "_$!<Work>!$_");
+    m_addrCountryCode = m_sqlite.findKey("ABMultiValueEntryKey", "value", "CountryCode");
+    m_addrCity = m_sqlite.findKey("ABMultiValueEntryKey", "value", "City");
+    m_addrStreet = m_sqlite.findKey("ABMultiValueEntryKey", "value", "Street");
+    m_addrState = m_sqlite.findKey("ABMultiValueEntryKey", "value", "State");
+    m_addrZIP = m_sqlite.findKey("ABMultiValueEntryKey", "value", "ZIP");
+    m_typeMobile = m_sqlite.findKey("ABMultiValueLabel", "value", "_$!<Mobile>!$_");
+    m_typeHome = m_sqlite.findKey("ABMultiValueLabel", "value", "_$!<Home>!$_");
+    m_typeWork = m_sqlite.findKey("ABMultiValueLabel", "value", "_$!<Work>!$_");
 }
 
+void SQLiteContactSource::close()
+{
+    m_sqlite.close();
+}
 
 void SQLiteContactSource::beginSyncThrow(bool needAll,
                                          bool needPartial,
                                          bool deleteLocal)
 {
-    syncml_time_t lastSyncTime = anchorToTimestamp(getLastAnchor());
+    SQLiteUtil::syncml_time_t lastSyncTime = anchorToTimestamp(getLastAnchor());
 
-    eptr<sqlite3_stmt> all(prepareSQL("SELECT ROWID, CreationDate, ModificationDate FROM ABPerson;"));
-    while (checkSQL(sqlite3_step(all)) == SQLITE_ROW) {
-        string uid = toString(SQLITE3_COLUMN_KEY(all, 0));
+    eptr<sqlite3_stmt> all(m_sqlite.prepareSQL("SELECT ROWID, CreationDate, ModificationDate FROM ABPerson;"));
+    while (m_sqlite.checkSQL(sqlite3_step(all)) == SQLITE_ROW) {
+        string uid = m_sqlite.toString(SQLITE3_COLUMN_KEY(all, 0));
         m_allItems.addItem(uid);
 
         // find new and updated items by comparing their creation resp. modification time stamp
         // against the end of the last sync
         if (needPartial) {
-            syncml_time_t creationTime = getTimeColumn(all, 1);
-            syncml_time_t modTime = getTimeColumn(all, 2);
+            SQLiteUtil::syncml_time_t creationTime = m_sqlite.getTimeColumn(all, 1);
+            SQLiteUtil::syncml_time_t modTime = m_sqlite.getTimeColumn(all, 2);
 
             if (creationTime > lastSyncTime) {
                 m_newItems.addItem(uid);
@@ -143,8 +141,8 @@ void SQLiteContactSource::beginSyncThrow(bool needAll,
     // TODO: currently syncevolution resets the last anchor in case of
     // a failure and thus forces a slow sync - avoid that for SQLite
     // database sources
-    eptr<sqlite3_stmt> start(prepareSQL("BEGIN TRANSACTION;"));
-    checkSQL(sqlite3_step(start));
+    eptr<sqlite3_stmt> start(m_sqlite.prepareSQL("BEGIN TRANSACTION;"));
+    m_sqlite.checkSQL(sqlite3_step(start));
 
 
     if (deleteLocal) {
@@ -160,15 +158,15 @@ void SQLiteContactSource::beginSyncThrow(bool needAll,
 void SQLiteContactSource::endSyncThrow()
 {
     // complete the transaction started in beginSyncThrow()
-    eptr<sqlite3_stmt> end(prepareSQL("COMMIT;"));
-    checkSQL(sqlite3_step(end));
+    eptr<sqlite3_stmt> end(m_sqlite.prepareSQL("COMMIT;"));
+    m_sqlite.checkSQL(sqlite3_step(end));
 }
 
 void SQLiteContactSource::exportData(ostream &out)
 {
-    eptr<sqlite3_stmt> all(prepareSQL("SELECT ROWID FROM ABPerson;"));
-    while (checkSQL(sqlite3_step(all)) == SQLITE_ROW) {
-        string uid = toString(SQLITE3_COLUMN_KEY(all, 1));
+    eptr<sqlite3_stmt> all(m_sqlite.prepareSQL("SELECT ROWID FROM ABPerson;"));
+    while (m_sqlite.checkSQL(sqlite3_step(all)) == SQLITE_ROW) {
+        string uid = m_sqlite.toString(SQLITE3_COLUMN_KEY(all, 1));
         auto_ptr<SyncItem> item(createItem(uid, SYNC_STATE_NONE));
 
         out << item->getData();
@@ -180,8 +178,8 @@ SyncItem *SQLiteContactSource::createItem( const string &uid, SyncState state )
 {
     logItem(uid, "extracting from database");
 
-    eptr<sqlite3_stmt> contact(prepareSQL("SELECT * FROM ABPerson WHERE ROWID = '%s';", uid.c_str()));
-    if (checkSQL(sqlite3_step(contact)) != SQLITE_ROW) {
+    eptr<sqlite3_stmt> contact(m_sqlite.prepareSQL("SELECT * FROM ABPerson WHERE ROWID = '%s';", uid.c_str()));
+    if (m_sqlite.checkSQL(sqlite3_step(contact)) != SQLITE_ROW) {
         throw runtime_error(string(getName()) + ": contact not found: " + uid);
     }
 
@@ -193,26 +191,24 @@ SyncItem *SQLiteContactSource::createItem( const string &uid, SyncState state )
     vobj.addProperty("VERSION", "2.1");
     vobj.setVersion("2.1");
 
-    tmp = getTextColumn(contact, m_mapping[PERSON_LAST].colindex);
+    tmp = m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_LAST).colindex);
     tmp += VObject::SEMICOLON_REPLACEMENT;
-    tmp += getTextColumn(contact, m_mapping[PERSON_MIDDLE].colindex);
+    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_MIDDLE).colindex);
     tmp += VObject::SEMICOLON_REPLACEMENT;
-    tmp += getTextColumn(contact, m_mapping[PERSON_FIRST].colindex);
+    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_FIRST).colindex);
     if (tmp.size() > 2) {
         vobj.addProperty("N", tmp.c_str());
     }
 
-    tmp = getTextColumn(contact, m_mapping[PERSON_ORGANIZATION].colindex);
+    tmp = m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_ORGANIZATION).colindex);
     tmp += VObject::SEMICOLON_REPLACEMENT;
-    tmp += getTextColumn(contact, m_mapping[PERSON_DEPARTMENT].colindex);
+    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_DEPARTMENT).colindex);
     if (tmp.size() > 1) {
         vobj.addProperty("ORG", tmp.c_str());
     }
  
-    rowToVObject(contact, vobj);
-
+    m_sqlite.rowToVObject(contact, vobj);
     vobj.addProperty("END", "VCARD");
-
     vobj.fromNativeEncoding();
 
     arrayptr<char> finalstr(vobj.toString(), "VOCL string");
@@ -237,7 +233,7 @@ int SQLiteContactSource::updateItemThrow(SyncItem& item)
     // Make sure that there is no contact with this uid,
     // then insert the new data. If there was no such uid,
     // then this behaves like an add.
-    string creationTime = findColumn("ABPerson", "ROWID", item.getKey(), "CreationDate", "");
+    string creationTime = m_sqlite.findColumn("ABPerson", "ROWID", item.getKey(), "CreationDate", "");
     deleteItemThrow(item.getKey());
     return insertItemThrow(item, item.getKey(), creationTime);
 }
@@ -279,11 +275,11 @@ int SQLiteContactSource::insertItemThrow(SyncItem &item, const char *uid, const 
             suffix = fn.substr(sep4 + 1);
         }
     }
-    cols << m_mapping[PERSON_FIRST].colname << ", " <<
-        m_mapping[PERSON_MIDDLE].colname << ", " <<
-        m_mapping[PERSON_LAST].colname << ", " <<
-        m_mapping[PERSON_LASTSORT].colname << ", " <<
-        m_mapping[PERSON_FIRSTSORT].colname;
+    cols << m_sqlite.getMapping(PERSON_FIRST).colname << ", " <<
+        m_sqlite.getMapping(PERSON_MIDDLE).colname << ", " <<
+        m_sqlite.getMapping(PERSON_LAST).colname << ", " <<
+        m_sqlite.getMapping(PERSON_LASTSORT).colname << ", " <<
+        m_sqlite.getMapping(PERSON_FIRSTSORT).colname;
     values << "?, ?, ?, ?, ?";
 
     // synthesize sort keys: upper case with specific order of first/last name
@@ -300,31 +296,31 @@ int SQLiteContactSource::insertItemThrow(SyncItem &item, const char *uid, const 
     cols << ", CreationDate, ModificationDate";
     values << ", ?, ?";
 
-    eptr<sqlite3_stmt> insert(prepareSQL("INSERT INTO ABPerson( %s ) "
+    eptr<sqlite3_stmt> insert(m_sqlite.prepareSQL("INSERT INTO ABPerson( %s ) "
                                          "VALUES( %s );",
                                          cols.str().c_str(),
                                          values.str().c_str()));
 
     // now bind parameter values in the same order as the columns specification above
     int param = 1;
-    checkSQL(sqlite3_bind_text(insert, param++, first.c_str(), -1, SQLITE_TRANSIENT));
-    checkSQL(sqlite3_bind_text(insert, param++, middle.c_str(), -1, SQLITE_TRANSIENT));
-    checkSQL(sqlite3_bind_text(insert, param++, last.c_str(), -1, SQLITE_TRANSIENT));
-    checkSQL(sqlite3_bind_text(insert, param++, lastsort.c_str(), -1, SQLITE_TRANSIENT));
-    checkSQL(sqlite3_bind_text(insert, param++, firstsort.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, first.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, middle.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, last.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, lastsort.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, firstsort.c_str(), -1, SQLITE_TRANSIENT));
     if (uid) {
-        checkSQL(sqlite3_bind_text(insert, param++, uid, -1, SQLITE_TRANSIENT));
-        checkSQL(sqlite3_bind_text(insert, param++, creationTime.c_str(), -1, SQLITE_TRANSIENT));
+        m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, uid, -1, SQLITE_TRANSIENT));
+        m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, creationTime.c_str(), -1, SQLITE_TRANSIENT));
     } else {
-        checkSQL(sqlite3_bind_int64(insert, param++, (long long)time(NULL)));
+        m_sqlite.checkSQL(sqlite3_bind_int64(insert, param++, (long long)time(NULL)));
     }
-    checkSQL(sqlite3_bind_int64(insert, param++, (long long)time(NULL)));
+    m_sqlite.checkSQL(sqlite3_bind_int64(insert, param++, (long long)time(NULL)));
 
-    checkSQL(sqlite3_step(insert));
+    m_sqlite.checkSQL(sqlite3_step(insert));
 
     if (!uid) {
         // figure out which UID was assigned to the new contact
-        string newuid = findColumn("SQLITE_SEQUENCE", "NAME", "ABPerson", "SEQ", "");
+        string newuid = m_sqlite.findColumn("SQLITE_SEQUENCE", "NAME", "ABPerson", "SEQ", "");
         item.setKey(newuid.c_str());
     }
 
@@ -337,24 +333,24 @@ int SQLiteContactSource::deleteItemThrow(const string &uid)
     int status = STC_OK;
 
     // delete address field members of contact
-    eptr<sqlite3_stmt> del(prepareSQL("DELETE FROM ABMultiValueEntry "
-                                      "WHERE ABMultiValueEntry.parent_id IN "
-                                      "(SELECT ABMultiValue.uid FROM ABMultiValue WHERE "
-                                      " ABMultiValue.record_id = ?);"));
-    checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
-    checkSQL(sqlite3_step(del));
+    eptr<sqlite3_stmt> del(m_sqlite.prepareSQL("DELETE FROM ABMultiValueEntry "
+                                               "WHERE ABMultiValueEntry.parent_id IN "
+                                               "(SELECT ABMultiValue.uid FROM ABMultiValue WHERE "
+                                               " ABMultiValue.record_id = ?);"));
+    m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_step(del));
 
     // delete addresses and emails of contact
-    del.set(prepareSQL("DELETE FROM ABMultiValue WHERE "
-                       "ABMultiValue.record_id = ?;"));
-    checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
-    checkSQL(sqlite3_step(del));
+    del.set(m_sqlite.prepareSQL("DELETE FROM ABMultiValue WHERE "
+                                "ABMultiValue.record_id = ?;"));
+    m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_step(del));
 
     // now delete the contact itself
-    del.set(prepareSQL("DELETE FROM ABPerson WHERE "
-                       "ABPerson.ROWID = ?;"));
-    checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
-    checkSQL(sqlite3_step(del));
+    del.set(m_sqlite.prepareSQL("DELETE FROM ABPerson WHERE "
+                                "ABPerson.ROWID = ?;"));
+    m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_step(del));
 
     return status;
 }
@@ -369,11 +365,11 @@ void SQLiteContactSource::logItem(const string &uid, const string &info, bool de
     if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
         (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s %s",
                                                   getName(),
-                                                  findColumn("ABPerson",
-                                                             "ROWID",
-                                                             uid.c_str(),
-                                                             "FirstSort",
-                                                             uid.c_str()).c_str(),
+                                                  m_sqlite.findColumn("ABPerson",
+                                                                      "ROWID",
+                                                                      uid.c_str(),
+                                                                      "FirstSort",
+                                                                      uid.c_str()).c_str(),
                                                   info.c_str());
     }
 }
