@@ -24,6 +24,7 @@
 
 #include "EvolutionSmartPtr.h"
 #include <client/SyncClient.h>
+#include <spds/SyncManagerConfig.h>
 
 #include <string>
 #include <set>
