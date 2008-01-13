@@ -100,6 +100,13 @@ template<class T, class base = T> class eptr {
         m_pointer = pointer;
     }
 
+    /**
+     * transfer ownership over the pointer to caller and stop tracking it:
+     * pointer tracked by smart pointer is set to NULL and the original
+     * pointer is returned
+     */
+    T *release() { T *res = m_pointer; m_pointer = NULL; return res; }
+
     eptr<T, base> &operator = ( T *pointer ) { set( pointer ); return *this; }
     T *operator-> () { return m_pointer; }
     T &operator* ()  { return *m_pointer; }

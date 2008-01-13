@@ -320,7 +320,7 @@ string toupperstr(string str)
     return str;
 }
 
-SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state )
+SyncItem *EvolutionContactSource::createItem(const string &uid)
 {
     logItem( uid, "extracting from EV", true );
 
@@ -473,7 +473,6 @@ SyncItem *EvolutionContactSource::createItem( const string &uid, SyncState state
     item->setData( (char *)finalstr, strlen(finalstr) );
     item->setDataType( getMimeType() );
     item->setModificationTime( 0 );
-    item->setState( state );
 
     return item.release();
 }

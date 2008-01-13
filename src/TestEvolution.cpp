@@ -1058,7 +1058,7 @@ template<class T> void TestEvolution<T>::insert(const string *data,
     SyncItem *sameItem;
     EVOLUTION_ASSERT_NO_THROW(
         source,
-        sameItem = source.createItem( item.getKey(), item.getState() ) );
+        sameItem = source.createItem(item.getKey()));
     CPPUNIT_ASSERT( sameItem != NULL );
     CPPUNIT_ASSERT( !strcmp( sameItem->getKey(), item.getKey() ) );
     delete sameItem;

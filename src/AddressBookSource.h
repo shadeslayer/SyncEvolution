@@ -191,8 +191,8 @@ class AddressBookSource : public EvolutionSyncSource
     virtual const char *getMimeVersion() { return m_asVCard30 ? "3.0" : "2.1"; }
     virtual const char *getSupportedTypes() { return m_asVCard30 ? "text/vcard:3.0" : "text/x-vcard:2.1"; }
    
-    virtual SyncItem *createItem(const string &uid, SyncState state) { return createItem(uid, state, m_asVCard30); }
-    virtual SyncItem *createItem(const string &uid, SyncState state, bool asVCard30);
+    virtual SyncItem *createItem(const string &uid) { return createItem(uid, m_asVCard30); }
+    virtual SyncItem *createItem(const string &uid, bool asVCard30);
     
     //
     // implementation of SyncSource

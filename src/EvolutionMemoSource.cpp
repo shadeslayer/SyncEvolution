@@ -29,7 +29,7 @@ using namespace std;
 
 #include <common/base/Log.h>
 
-SyncItem *EvolutionMemoSource::createItem( const string &uid, SyncState state )
+SyncItem *EvolutionMemoSource::createItem(const string &uid)
 {
     logItem( uid, "extracting from EV" );
         
@@ -73,7 +73,6 @@ SyncItem *EvolutionMemoSource::createItem( const string &uid, SyncState state )
     }
     item->setDataType("text/plain");
     item->setModificationTime(0);
-    item->setState(state);
 
     return item.release();
 }

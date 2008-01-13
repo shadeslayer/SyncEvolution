@@ -43,7 +43,7 @@ class EvolutionMemoSource : public EvolutionCalendarSource
     //
     // implementation of EvolutionSyncSource
     //
-    virtual SyncItem *createItem( const string &uid, SyncState state );
+    virtual SyncItem *createItem(const string &uid);
     virtual const char *getMimeType() { return "text/plain"; }
     virtual const char *getMimeVersion() { return "1.0"; }
     virtual const char *getSupportedTypes() { return "text/plain:1.0"; }

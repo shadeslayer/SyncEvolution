@@ -1324,13 +1324,13 @@ void AddressBookSource::exportData(ostream &out)
         CFStringRef descr = CFCopyDescription(person);
         ref<CFStringRef> cfuid(ABRecordCopyUniqueId(person), "reading UID");
         string uid(CFString2Std(cfuid));
-        eptr<SyncItem> item(createItem(uid, SYNC_STATE_NONE, true), "sync item");
+        eptr<SyncItem> item(createItem(uid, true), "sync item");
 
         out << (char *)item->getData() << "\n";
     }
 }
 
-SyncItem *AddressBookSource::createItem(const string &uid, SyncState state, bool asVCard30)
+SyncItem *AddressBookSource::createItem(const string &uid, bool asVCard30)
 {
     logItem(uid, "extracting from address book", true);
 

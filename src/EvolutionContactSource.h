@@ -75,7 +75,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual const char *getMimeVersion();
     virtual const char *getSupportedTypes() { return "text/vcard:3.0,text/x-vcard:2.1"; }
    
-    virtual SyncItem *createItem( const string &uid, SyncState state );
+    virtual SyncItem *createItem(const string &uid);
     
     //
     // implementation of SyncSource

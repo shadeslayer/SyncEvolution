@@ -64,7 +64,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     virtual const char *getMimeVersion() { return "2.0"; }
     virtual const char *getSupportedTypes() { return "text/calendar:2.0"; }
    
-    virtual SyncItem *createItem( const string &uid, SyncState state );
+    virtual SyncItem *createItem(const string &uid);
 
     //
     // implementation of SyncSource

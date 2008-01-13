@@ -20,6 +20,8 @@
 #ifndef INCL_EVOLUTIONSYNCSOURCE
 #define INCL_EVOLUTIONSYNCSOURCE
 
+#include "EvolutionSmartPtr.h"
+
 #include <string>
 #include <vector>
 #include <set>
@@ -126,9 +128,8 @@ class EvolutionSyncSource : public SyncSource
      * free that item. May throw exceptions.
      *
      * @param uid      identifies the item
-     * @param state    the state of the item
      */
-    virtual SyncItem *createItem( const string &uid, SyncState state ) = 0;
+    virtual SyncItem *createItem(const string &uid) = 0;
 
     /**
      * closes the data source so that it can be reopened
@@ -342,7 +343,11 @@ class EvolutionSyncSource : public SyncSource
                 } else {
                     // retrieve item with all its data
                     try {
-                        return m_source.createItem( uid, m_state );
+                        eptr<SyncItem> item(m_source.createItem(uid));
+                        if (item) {
+                            item->setState(m_state);
+                        }
+                        return item.release();
                     } catch(...) {
                         EvolutionSyncSource::handleException();
                         return NULL;

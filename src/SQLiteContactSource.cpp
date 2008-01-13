@@ -167,14 +167,14 @@ void SQLiteContactSource::exportData(ostream &out)
     eptr<sqlite3_stmt> all(m_sqlite.prepareSQL("SELECT ROWID FROM ABPerson;"));
     while (m_sqlite.checkSQL(sqlite3_step(all)) == SQLITE_ROW) {
         string uid = m_sqlite.toString(SQLITE3_COLUMN_KEY(all, 1));
-        auto_ptr<SyncItem> item(createItem(uid, SYNC_STATE_NONE));
+        auto_ptr<SyncItem> item(createItem(uid));
 
         out << item->getData();
         out << "\n";
     }
 }
 
-SyncItem *SQLiteContactSource::createItem( const string &uid, SyncState state )
+SyncItem *SQLiteContactSource::createItem(const string &uid)
 {
     logItem(uid, "extracting from database");
 
@@ -218,7 +218,6 @@ SyncItem *SQLiteContactSource::createItem( const string &uid, SyncState state )
     item->setData( (char *)finalstr, strlen(finalstr) );
     item->setDataType( getMimeType() );
     item->setModificationTime( 0 );
-    item->setState( state );
 
     return item.release();
 }

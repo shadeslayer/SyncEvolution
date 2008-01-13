@@ -287,7 +287,7 @@ void EvolutionCalendarSource::exportData(ostream &out)
     }
 }
 
-SyncItem *EvolutionCalendarSource::createItem( const string &uid, SyncState state )
+SyncItem *EvolutionCalendarSource::createItem(const string &uid)
 {
     logItem( uid, "extracting from EV", true );
         
@@ -297,7 +297,6 @@ SyncItem *EvolutionCalendarSource::createItem( const string &uid, SyncState stat
     item->setData(icalstr.c_str(), icalstr.size());
     item->setDataType("text/calendar");
     item->setModificationTime(0);
-    item->setState(state);
 
     return item.release();
 }

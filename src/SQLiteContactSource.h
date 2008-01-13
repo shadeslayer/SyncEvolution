@@ -44,7 +44,7 @@ class SQLiteContactSource : public EvolutionSyncSource
     virtual void open();
     virtual void close();
     virtual sources getSyncBackends() { return sources(); }
-    virtual SyncItem *createItem( const string &uid, SyncState state );
+    virtual SyncItem *createItem(const string &uid);
     virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "vcf"; }
     virtual const char *getMimeType() { return "text/x-vcard:2.1"; }
