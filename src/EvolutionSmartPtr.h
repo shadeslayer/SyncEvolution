@@ -58,12 +58,6 @@ template <class T> void unref(T *pointer) { delete pointer; }
  * unreferencing valid objects is done automatically
  */
 template<class T, class base = T> class eptr {
-    /** do not allow copy construction */
-    eptr( const eptr &other) {};
-
-    /** do not allow copying */
-    void operator = ( const eptr &other ) {}
-
  protected:
     T *m_pointer;
     
@@ -82,6 +76,17 @@ template<class T, class base = T> class eptr {
     ~eptr()
     {
         set( NULL );
+    }
+
+    /** assignment and copy construction transfer ownership to the copy */
+    eptr(eptr &other) {
+        m_pointer = other.m_pointer;
+        other.m_pointer = NULL;
+    }
+    eptr & operator = (eptr &other) {
+        m_pointer = other.m_pointer;
+        other.m_pointer = NULL;
+        return *this;
     }
 
     /**
@@ -108,6 +113,7 @@ template<class T, class base = T> class eptr {
     T *release() { T *res = m_pointer; m_pointer = NULL; return res; }
 
     eptr<T, base> &operator = ( T *pointer ) { set( pointer ); return *this; }
+    T *get() { return m_pointer; }
     T *operator-> () { return m_pointer; }
     T &operator* ()  { return *m_pointer; }
     operator T * () { return m_pointer; }
