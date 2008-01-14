@@ -263,7 +263,12 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 #endif
     } else if (mimeType == "sqlite") {
 #ifdef ENABLE_SQLITE
-        return new SQLiteContactSource(name, sc, strippedChangeId, id);
+        arrayptr<char> configNodeName(node ? node->createFullName() : wstrdup(""));
+        string trackingNodeName = configNodeName.get();
+        trackingNodeName += "/changes";
+        eptr<spdm::DeviceManagementNode> trackingNode(new spdm::DeviceManagementNode(trackingNodeName.c_str()), "tracking node");
+
+        return new SQLiteContactSource(name, sc, strippedChangeId, id, trackingNode);
 #else
         if (error) {
             EvolutionSyncClient::throwError(name + ": access to sqlite not compiled into this binary, " + mimeType + " not supported");
@@ -271,7 +276,6 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 #endif
     } else if (mimeType == "addressbook") {
 #ifdef ENABLE_ADDRESSBOOK
-        arrayptr<char> configNodeName(node ? node->createFullName() : wstrdup(""));
         return new AddressBookSource(name, sc, strippedChangeId, id, string(configNodeName));
 #else
         if (error) {

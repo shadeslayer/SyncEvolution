@@ -135,6 +135,8 @@ public:
         T("dummy", NULL, changeID, database) {}
     TestEvolutionSyncSource(string changeID, string database, string configPath) :
         T("dummy", NULL, changeID, database, configPath) {}
+    TestEvolutionSyncSource(string changeID, string database, eptr<spdm::DeviceManagementNode> trackingNode) :
+        T("dummy", NULL, changeID, database, trackingNode) {}
 
     virtual int beginSync() {
         CPPUNIT_ASSERT_NO_THROW(T::open());
@@ -577,22 +579,15 @@ private:
             break;
          case TEST_SQLITE_CONTACT_SOURCE:
 #ifdef ENABLE_SQLITE
-            ss = new TestEvolutionSyncSource<SQLiteContactSource>(changeID, database);
-
-            // this is a hack: it guesses the last sync time stamp by remembering
-            // the last time the sync source was created
-            static time_t lastts[TEST_MAX_SOURCE];
-            char anchor[DIM_ANCHOR];
-            time_t nextts;
-
-            timestampToAnchor(lastts[type], anchor);
-            ss->setLastAnchor(anchor);
-            nextts = time(NULL);
-            while (lastts[type] == nextts) {
-                sleep(1);
-                nextts = time(NULL);
-            }
-            lastts[type] = nextts;
+             {
+                 string trackingNodePath = string("client-test-changes/") +
+                     ((TestEvolution &)client).getSourceName(type) +
+                     "_" +
+                     (isSourceA ? "1" : "2");
+                 eptr<spdm::DeviceManagementNode> trackingNode(new spdm::DeviceManagementNode(trackingNodePath.c_str()), "tracking node");
+                 ss = new TestEvolutionSyncSource<SQLiteContactSource>(changeID, database, trackingNode);
+                                                                       
+             }
 #endif
             break;
          case TEST_ADDRESS_BOOK_SOURCE:

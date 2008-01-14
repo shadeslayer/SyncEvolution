@@ -99,6 +99,13 @@ SQLiteUtil::syncml_time_t SQLiteUtil::getTimeColumn(sqlite3_stmt *stmt, int col)
     return sqlite3_column_int64(stmt, col);
 }
 
+string SQLiteUtil::time2str(SQLiteUtil::syncml_time_t t)
+{
+    char buffer[128];
+    sprintf(buffer, "%lld", t);
+    return buffer;
+}
+
 void SQLiteUtil::rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj)
 {
     const unsigned char *text;

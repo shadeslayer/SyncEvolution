@@ -20,7 +20,7 @@
 #ifndef INCL_SQLITECONTACTSOURCE
 #define INCL_SQLITECONTACTSOURCE
 
-#include "EvolutionSyncSource.h"
+#include "TrackingSyncSource.h"
 #include "SQLiteUtil.h"
 
 #ifdef ENABLE_SQLITE
@@ -32,11 +32,11 @@
  * supported by SQLiteUtil, so only the properties which
  * have a 1:1 mapping are currently stored.
  */
-class SQLiteContactSource : public EvolutionSyncSource
+class SQLiteContactSource : public TrackingSyncSource
 {
   public:
-    SQLiteContactSource( const string name, SyncSourceConfig *sc, const string &changeId, const string &id ) :
-        EvolutionSyncSource(name, sc, changeId, id)
+    SQLiteContactSource( const string name, SyncSourceConfig *sc, const string &changeId, const string &id, eptr<spdm::DeviceManagementNode> trackingNode) :
+        TrackingSyncSource(name, sc, changeId, id, trackingNode)
         {}
 
  protected:
@@ -45,23 +45,18 @@ class SQLiteContactSource : public EvolutionSyncSource
     virtual void close();
     virtual sources getSyncBackends() { return sources(); }
     virtual SyncItem *createItem(const string &uid);
-    virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "vcf"; }
     virtual const char *getMimeType() { return "text/x-vcard:2.1"; }
     virtual const char *getMimeVersion() { return "2.1"; }
     virtual const char *getSupportedTypes() { return "text/vcard:3.0,text/x-vcard:2.1"; }
-    virtual ArrayElement* clone() { new SQLiteContactSource(getName(), &getConfig(), m_changeId, m_id); }
-    virtual void beginSyncThrow(bool needAll,
-                                bool needPartial,
-                                bool deleteLocal);
-
-    virtual void endSyncThrow();
-    virtual int addItemThrow(SyncItem& item);
-    virtual int updateItemThrow(SyncItem& item);
-    virtual int deleteItemThrow(SyncItem& item);
-
     virtual void logItem(const string &uid, const string &info, bool debug = false);
     virtual void logItem(SyncItem &item, const string &info, bool debug = false);
+
+    /* implementation of TrackingSyncSource interface */
+    virtual void listAllItems(RevisionMap_t &revisions);
+    virtual string insertItem(string &uid, const SyncItem &item);
+    virtual void deleteItem(const string &uid);
+    virtual void flush();
 
  private:
     /** encapsulates access to database */
@@ -77,16 +72,6 @@ class SQLiteContactSource : public EvolutionSyncSource
         m_typeMobile,
         m_typeHome,
         m_typeWork;
-
-    /** same as deleteItemThrow() but works with the uid directly */
-    virtual int deleteItemThrow(const string &uid);
-
-    /**
-     * inserts the contact under a specific UID (if given) or
-     * adds under a new UID
-     */
-    virtual int insertItemThrow(SyncItem &item, const char *uid, const string &creationTime);
-
 };
 
 #endif // ENABLE_SQLITE

@@ -118,6 +118,9 @@ class SQLiteUtil
     /** transform column to same time base as used by SyncML libary (typically time()) */
     syncml_time_t getTimeColumn(sqlite3_stmt *stmt, int col);
 
+    /** convert time to string */
+    static string time2str(syncml_time_t t);
+
     /** copies all columns which directly map to a property into the vobj */
     void rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj);
 

@@ -107,70 +107,13 @@ void SQLiteContactSource::close()
     m_sqlite.close();
 }
 
-void SQLiteContactSource::beginSyncThrow(bool needAll,
-                                         bool needPartial,
-                                         bool deleteLocal)
+void SQLiteContactSource::listAllItems(RevisionMap_t &revisions)
 {
-    SQLiteUtil::syncml_time_t lastSyncTime = anchorToTimestamp(getLastAnchor());
-
     eptr<sqlite3_stmt> all(m_sqlite.prepareSQL("SELECT ROWID, CreationDate, ModificationDate FROM ABPerson;"));
     while (m_sqlite.checkSQL(sqlite3_step(all)) == SQLITE_ROW) {
         string uid = m_sqlite.toString(SQLITE3_COLUMN_KEY(all, 0));
-        m_allItems.addItem(uid);
-
-        // find new and updated items by comparing their creation resp. modification time stamp
-        // against the end of the last sync
-        if (needPartial) {
-            SQLiteUtil::syncml_time_t creationTime = m_sqlite.getTimeColumn(all, 1);
-            SQLiteUtil::syncml_time_t modTime = m_sqlite.getTimeColumn(all, 2);
-
-            if (creationTime > lastSyncTime) {
-                m_newItems.addItem(uid);
-            } else if (modTime > lastSyncTime) {
-                m_updatedItems.addItem(uid);
-            }
-        }
-    }
-
-    // TODO: find deleted items
-
-    // all modifications from now on will be rolled back on an error:
-    // if the server does the same, theoretically client and server
-    // could restart with a two-way sync
-    //
-    // TODO: currently syncevolution resets the last anchor in case of
-    // a failure and thus forces a slow sync - avoid that for SQLite
-    // database sources
-    eptr<sqlite3_stmt> start(m_sqlite.prepareSQL("BEGIN TRANSACTION;"));
-    m_sqlite.checkSQL(sqlite3_step(start));
-
-
-    if (deleteLocal) {
-        for (itemList::const_iterator it = m_allItems.begin();
-             it != m_allItems.end();
-             it++) {
-            deleteItemThrow(*it);
-        }
-        m_allItems.clear();
-    }
-}
-
-void SQLiteContactSource::endSyncThrow()
-{
-    // complete the transaction started in beginSyncThrow()
-    eptr<sqlite3_stmt> end(m_sqlite.prepareSQL("COMMIT;"));
-    m_sqlite.checkSQL(sqlite3_step(end));
-}
-
-void SQLiteContactSource::exportData(ostream &out)
-{
-    eptr<sqlite3_stmt> all(m_sqlite.prepareSQL("SELECT ROWID FROM ABPerson;"));
-    while (m_sqlite.checkSQL(sqlite3_step(all)) == SQLITE_ROW) {
-        string uid = m_sqlite.toString(SQLITE3_COLUMN_KEY(all, 1));
-        auto_ptr<SyncItem> item(createItem(uid));
-
-        out << item->getData();
-        out << "\n";
+        string modTime = m_sqlite.time2str(m_sqlite.getTimeColumn(all, 2));
+        revisions.insert(RevisionMap_t::value_type(uid, modTime));
     }
 }
 
@@ -222,27 +165,12 @@ SyncItem *SQLiteContactSource::createItem(const string &uid)
     return item.release();
 }
 
-int SQLiteContactSource::addItemThrow(SyncItem& item)
+string SQLiteContactSource::insertItem(string &uid, const SyncItem &item)
 {
-    return insertItemThrow(item, NULL, "");
-}
-
-int SQLiteContactSource::updateItemThrow(SyncItem& item)
-{
-    // Make sure that there is no contact with this uid,
-    // then insert the new data. If there was no such uid,
-    // then this behaves like an add.
-    string creationTime = m_sqlite.findColumn("ABPerson", "ROWID", item.getKey(), "CreationDate", "");
-    deleteItemThrow(item.getKey());
-    return insertItemThrow(item, item.getKey(), creationTime);
-}
-
-int SQLiteContactSource::insertItemThrow(SyncItem &item, const char *uid, const string &creationTime)
-{
-    string data(getData(item));
-    std::auto_ptr<VObject> vobj(VConverter::parse((char *)data.c_str()));
+    string creationTime;
+    std::auto_ptr<VObject> vobj(VConverter::parse((char *)((SyncItem &)item).getData()));
     if (vobj.get() == 0) {
-        throwError(string("parsing contact ") + item.getKey());
+        throwError(string("parsing contact ") + ((SyncItem &)item).getKey());
     }
     vobj->toNativeEncoding();
 
@@ -288,17 +216,27 @@ int SQLiteContactSource::insertItemThrow(SyncItem &item, const char *uid, const 
     transform(lastsort.begin(), lastsort.end(), lastsort.begin(), ::toupper);
 
     // optional fixed UID, potentially fixed creation time
-    if (uid) {
+    if (uid.size()) {
+        creationTime = m_sqlite.findColumn("ABPerson", "ROWID", uid.c_str(), "CreationDate", "");
         cols << ", ROWID";
         values << ", ?";
     }
     cols << ", CreationDate, ModificationDate";
     values << ", ?, ?";
 
+    // delete complete row so that we can recreate it
+    if (uid.size()) {
+        eptr<sqlite3_stmt> remove(m_sqlite.prepareSQL("DELETE FROM ABPerson WHERE ROWID == ?;"));
+        m_sqlite.checkSQL(sqlite3_bind_text(remove, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
+        m_sqlite.checkSQL(sqlite3_step(remove));
+    }
+
+    string cols_str = cols.str();
+    string values_str = values.str();
     eptr<sqlite3_stmt> insert(m_sqlite.prepareSQL("INSERT INTO ABPerson( %s ) "
-                                         "VALUES( %s );",
-                                         cols.str().c_str(),
-                                         values.str().c_str()));
+                                                  "VALUES( %s );",
+                                                  cols_str.c_str(),
+                                                  values_str.c_str()));
 
     // now bind parameter values in the same order as the columns specification above
     int param = 1;
@@ -307,30 +245,27 @@ int SQLiteContactSource::insertItemThrow(SyncItem &item, const char *uid, const 
     m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, last.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, lastsort.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, firstsort.c_str(), -1, SQLITE_TRANSIENT));
-    if (uid) {
-        m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, uid, -1, SQLITE_TRANSIENT));
+    if (uid.size()) {
+        m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, uid.c_str(), -1, SQLITE_TRANSIENT));
         m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, creationTime.c_str(), -1, SQLITE_TRANSIENT));
     } else {
         m_sqlite.checkSQL(sqlite3_bind_int64(insert, param++, (long long)time(NULL)));
     }
-    m_sqlite.checkSQL(sqlite3_bind_int64(insert, param++, (long long)time(NULL)));
-
+    SQLiteUtil::syncml_time_t modificationTime = time(NULL);
+    m_sqlite.checkSQL(sqlite3_bind_int64(insert, param++, modificationTime));
+                      
     m_sqlite.checkSQL(sqlite3_step(insert));
-
-    if (!uid) {
+                      
+    if (!uid.size()) {
         // figure out which UID was assigned to the new contact
-        string newuid = m_sqlite.findColumn("SQLITE_SEQUENCE", "NAME", "ABPerson", "SEQ", "");
-        item.setKey(newuid.c_str());
+        uid = m_sqlite.findColumn("SQLITE_SEQUENCE", "NAME", "ABPerson", "SEQ", "");
     }
-
-    return STC_OK;
+    return m_sqlite.time2str(modificationTime);
 }
 
 
-int SQLiteContactSource::deleteItemThrow(const string &uid)
+void SQLiteContactSource::deleteItem(const string &uid)
 {
-    int status = STC_OK;
-
     // delete address field members of contact
     eptr<sqlite3_stmt> del(m_sqlite.prepareSQL("DELETE FROM ABMultiValueEntry "
                                                "WHERE ABMultiValueEntry.parent_id IN "
@@ -350,13 +285,16 @@ int SQLiteContactSource::deleteItemThrow(const string &uid)
                                 "ABPerson.ROWID = ?;"));
     m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_step(del));
-
-    return status;
 }
 
-int SQLiteContactSource::deleteItemThrow(SyncItem& item)
+void SQLiteContactSource::flush()
 {
-    return deleteItemThrow(item.getKey());
+    // Our change tracking is time based.
+    // Don't let caller proceed without waiting for
+    // one second to prevent being called again before
+    // the modification time stamp is larger than it
+    // is now.
+    sleep(1);
 }
 
 void SQLiteContactSource::logItem(const string &uid, const string &info, bool debug)

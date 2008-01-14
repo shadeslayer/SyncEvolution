@@ -62,6 +62,8 @@ SYNCEBOOK_SOURCES = \
 	EvolutionContactSource.cpp
 
 SYNCSQLITE_SOURCES = \
+	TrackingSyncSource.h \
+	TrackingSyncSource.cpp \
 	SQLiteUtil.h \
 	SQLiteUtil.cpp \
 	SQLiteContactSource.h \
