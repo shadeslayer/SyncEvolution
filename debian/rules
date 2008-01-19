@@ -27,6 +27,9 @@ DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
 
 CFLAGS = -Wall -g
+LDFLAGS = -Wl,--as-needed
+export CFLAGS
+export LDFLAGS
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	CONFIGURE_FLAGS += CXXFLAGS="-g -O0"
@@ -46,6 +49,10 @@ config.status: configure
 	# which is more flexible but not the default because it requires a
 	# specific installation layout.
 	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) $(CONFIGURE_FLAGS) --prefix=/usr --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info
+	# fix place of \$compiler_flags in -shared build line: our -Wl,--as-needed has
+	# no effect if it comes after the libs, which is where libtool 1.5.24 puts it
+	# normally
+	perl -pi -e 's/-shared (.*) \\\$$compiler_flags/-shared \\\$$compiler_flags $$1/' libtool
 
 #Architecture 
 build: build-arch build-indep
