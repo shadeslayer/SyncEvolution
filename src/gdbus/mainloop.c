@@ -393,7 +393,14 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name)
 
 	DBG("type %d name %s", type, name);
 
-	connection = dbus_bus_get(type, NULL);
+	dbus_error_init(&error);
+
+	connection = dbus_bus_get(type, &error);
+
+	if (dbus_error_is_set(&error) == TRUE) {
+		dbus_error_free(&error);
+		return NULL;
+	}
 
 	if (name != NULL) {
 		dbus_error_init(&error);
