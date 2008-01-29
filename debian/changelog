@@ -2,6 +2,10 @@ syncevolution (1:0.7-2) unstable; urgency=low
 
   * compiled with --as-needed to avoid useless dependencies on libs which
     are not available on ITOS 2008
+  * replaced linking against a patched libdbus with a wrapper for the
+    libdbus function dbus_connection_send_with_reply() which replaces
+    the hard-coded default: this was necessary to be compatible with
+    ITOS 2006 till 2008
 
  -- Patrick Ohly <patrick.ohly@gmx.de>  Sat, 19 Jan 2008 21:09:05 +0100
 
