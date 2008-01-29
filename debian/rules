@@ -12,7 +12,7 @@
 
 # options that can be added to DEB_BUILD_OPTIONS:
 # - noopt: compile with -O0
-# - maemo[=<absolute path to directory which contains patched libdbus-1.a/so>]: enable maemo hacks
+# - maemo: enable maemo hacks
 
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
@@ -39,10 +39,6 @@ ifneq (,$(findstring maemo,$(DEB_BUILD_OPTIONS)))
 	CONFIGURE_FLAGS += --enable-maemo --enable-shared
 endif
 
-ifneq (,$(findstring maemo=,$(DEB_BUILD_OPTIONS)))
-	CONFIGURE_FLAGS += --with-patched-libdbus=$(subst maemo=,,$(filter maemo=%,$(DEB_BUILD_OPTIONS)))
-endif
-
 config.status: configure
 	dh_testdir
 	# --enable-shared added to build SyncEvolution backends as modules,
@@ -53,6 +49,9 @@ config.status: configure
 	# no effect if it comes after the libs, which is where libtool 1.5.24 puts it
 	# normally
 	perl -pi -e 's/-shared (.*) \\\$$compiler_flags/-shared \\\$$compiler_flags $$1/' libtool
+	# add dbus wrapper which overrides the default timeout: only required if not yet
+	# in upstream source (it wasn't in the 0.7 source snapshot)
+	grep dbus_connection_send_with_reply src/EvolutionSyncClient.cpp >/dev/null || cat debian/dbus-wrapper.cpp >>src/EvolutionSyncClient.cpp
 
 #Architecture 
 build: build-arch build-indep
