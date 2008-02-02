@@ -400,6 +400,7 @@ public:
             getTestData("vcard21", config);
             config.sourceName = "sqlite";
             config.type = "sqlite";
+            config.testcases = "testcases/vcard21_sqlite.vcf";
             break;
          case TEST_ADDRESS_BOOK_SOURCE:
             getTestData("vcard30", config);

@@ -124,6 +124,19 @@ class SQLiteUtil
     /** copies all columns which directly map to a property into the vobj */
     void rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj);
 
+    /**
+     * Creates a SQL INSERT INTO <tablename> ( <cols> ) VALUES ( <values> )
+     * statement and binds all rows/values that map directly from the vobj.
+     *
+     * @param numparams      number of ? placeholders in values; the caller has
+     *                       to bind those before executing the statement
+     */
+    sqlite3_stmt *vObjectToRow(vocl::VObject &vobj,
+                               const string &tablename,
+                               int numparams,
+                               const string &cols,
+                               const string &values);
+
  private:
     /* copy of open() parameters */
     arrayptr<Mapping> m_mapping;

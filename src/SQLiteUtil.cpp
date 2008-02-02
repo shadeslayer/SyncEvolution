@@ -26,6 +26,7 @@
 #include "vocl/VConverter.h"
 
 #include <stdarg.h>
+#include <sstream>
 
 void SQLiteUtil::throwError(const string &operation)
 {
@@ -126,6 +127,62 @@ void SQLiteUtil::rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj)
             vobj.addProperty(m_mapping[i].propname, (const char *)text);
         }
     }
+}
+
+sqlite3_stmt *SQLiteUtil::vObjectToRow(vocl::VObject &vobj,
+                                       const string &tablename,
+                                       int numparams,
+                                       const string &cols,
+                                       const string &values)
+{
+    stringstream cols_stream;
+    stringstream values_stream;
+    int i;
+
+    cols_stream << cols;
+    values_stream << values;
+
+    // figure out which columns we will fill
+    for (i = 0; m_mapping[i].colname; i++) {
+        if (m_mapping[i].colindex < 0 ||
+            !m_mapping[i].propname ||
+            tablename != m_mapping[i].tablename) {
+            continue;
+        }
+        
+        vocl::VProperty *vprop = vobj.getProperty(m_mapping[i].propname);
+        if (vprop) {
+            if (cols.size()) {
+                cols_stream << ", ";
+                values_stream << ", ";
+            }
+            cols_stream << m_mapping[i].colname;
+            values_stream << "?";
+        }
+    }
+
+    // create statement
+    eptr<sqlite3_stmt> insert(prepareSQL("INSERT INTO ABPerson( %s ) "
+                                         "VALUES( %s );",
+                                         cols_stream.str().c_str(),
+                                         values_stream.str().c_str()));
+    // now bind our parameters
+    int param = numparams + 1;
+    for (i = 0; m_mapping[i].colname; i++) {
+        if (m_mapping[i].colindex < 0 ||
+            !m_mapping[i].propname ||
+            tablename != m_mapping[i].tablename) {
+            continue;
+        }
+        
+        vocl::VProperty *vprop = vobj.getProperty(m_mapping[i].propname);
+        if (vprop) {
+            const char *text = vprop->getValue();
+            checkSQL(sqlite3_bind_text(insert, param++, text ? text : "", -1, SQLITE_TRANSIENT));
+        }
+    }
+
+    return insert.release();
 }
 
 void SQLiteUtil::open(const string &name,

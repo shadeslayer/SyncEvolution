@@ -182,10 +182,12 @@ $(filter $(LOCAL_TEST_FILES), testcases) : % : $(srcdir)/../test/%
 	rm -rf $@
 	cp -r $< $@
 
-# verbatim files from client library
+# verbatim files from client library:
+# - SQLiteContactSource does not support all fields: filter those out
 $(filter-out $(LOCAL_TEST_FILES), testcases) : % : $(SYNC4J_SUBDIR)/test/test/%
 	rm -rf $@
 	cp -r $< $@
+	perl -e '$$_ = join("", <>); s/^(ADR|TEL|EMAIL|PHOTO).*?(?=^\S)//msg; print;' testcases/vcard21.vcf >testcases/vcard21_sqlite.vcf
 
 test : client-test testcases synccompare
 

@@ -42,10 +42,30 @@ enum {
     PERSON_FIRSTSORT,
     PERSON_ORGANIZATION,
     PERSON_DEPARTMENT,
+    PERSON_UNIT,
     PERSON_NOTE,
     PERSON_BIRTHDAY,
     PERSON_JOBTITLE,
+    PERSON_TITLE,
     PERSON_NICKNAME,
+    PERSON_FULLNAME,
+    PERSON_CATEGORIES,
+
+    PERSON_AIM,
+    PERSON_GROUPWISE,
+    PERSON_ICQ,
+    PERSON_YAHOO,
+
+    PERSON_FILEAS,
+    PERSON_ANNIVERSARY,
+
+    PERSON_ASSISTANT,
+    PERSON_MANAGER,
+    PERSON_SPOUSE,
+
+    PERSON_URL,
+    PERSON_BLOG_URL,
+    PERSON_VIDEO_URL,
 
     LAST_COL
 };
@@ -62,44 +82,78 @@ void SQLiteContactSource::open()
         { "LastSort", "ABPerson" },
         { "Organization", "ABPerson" },
         { "Department", "ABPerson" },
+        { "Unit", "ABPerson" },
         { "Note", "ABPerson", "NOTE" },
-        { "Birthday", "ABPerson", "BIRTHDAY" },
+        { "Birthday", "ABPerson", "BDAY" },
         { "JobTitle", "ABPerson", "ROLE" },
+        { "Title", "ABPerson", "TITLE" },
         { "Nickname", "ABPerson", "NICKNAME" },
+        { "CompositeNameFallback", "ABPerson", "FN" },
+        { "Categories", "ABPerson", "CATEGORIES" },
+
+        { "AIM", "ABPerson", "X-AIM" },
+        { "Groupwise", "ABPerson", "X-GROUPWISE" },
+        { "ICQ", "ABPerson", "X-ICQ" },
+        { "Yahoo", "ABPerson", "X-YAHOO" },
+
+        { "FileAs", "ABPerson", "X-EVOLUTION-FILE-AS" },
+        { "Anniversary", "ABPerson", "X-EVOLUTION-ANNIVERSARY" },
+
+        { "Assistant", "ABPerson", "X-EVOLUTION-ASSISTANT" },
+        { "Manager", "ABPerson", "X-EVOLUTION-MANAGER" },
+        { "Spouse", "ABPerson", "X-EVOLUTION-SPOUSE" },
+
+    
+        { "URL", "ABPerson", "URL" },
+        { "BlogURL", "ABPerson", "X-EVOLUTION-BLOG-URL" },
+        { "VideoURL", "ABPerson", "X-EVOLUTION-VIDEO-URL" },
+
         { NULL }
     };
     static const char *schema = 
         "BEGIN TRANSACTION;"
-        "CREATE TABLE ABMultiValue (UID INTEGER PRIMARY KEY, record_id INTEGER, property INTEGER, identifier INTEGER, label INTEGER, value TEXT);"
-        "CREATE TABLE ABMultiValueEntry (parent_id INTEGER, key INTEGER, value TEXT, UNIQUE(parent_id, key));"
-        "CREATE TABLE ABMultiValueEntryKey (value TEXT, UNIQUE(value));"
-        "CREATE TABLE ABMultiValueLabel (value TEXT, UNIQUE(value));"
-        "CREATE TABLE ABPerson (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, First TEXT, Last TEXT, Middle TEXT, FirstPhonetic TEXT, MiddlePhonetic TEXT, LastPhonetic TEXT, Organization TEXT, Department TEXT, Note TEXT, Kind INTEGER, Birthday TEXT, JobTitle TEXT, Nickname TEXT, Prefix TEXT, Suffix TEXT, FirstSort TEXT, LastSort TEXT, CreationDate INTEGER, ModificationDate INTEGER, CompositeNameFallback TEXT);"
-        "INSERT INTO ABMultiValueLabel VALUES('_$!<Mobile>!$_');"
-        "INSERT INTO ABMultiValueLabel VALUES('_$!<Home>!$_');"
-        "INSERT INTO ABMultiValueLabel VALUES('_$!<Work>!$_');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('CountryCode');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('City');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('Street');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('State');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('ZIP');"
-        "INSERT INTO ABMultiValueEntryKey VALUES('Country');"
+        "CREATE TABLE ABPerson (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "First TEXT, "
+        "Last TEXT, "
+        "Middle TEXT, "
+        "FirstPhonetic TEXT, "
+        "MiddlePhonetic TEXT, "
+        "LastPhonetic TEXT, "
+        "Organization TEXT, "
+        "Department TEXT, "
+        "Unit TEXT, "
+        "Note TEXT, "
+        "Kind INTEGER, "
+        "Birthday TEXT, "
+        "JobTitle TEXT, "
+        "Title TEXT, "
+        "Nickname TEXT, "
+        "Prefix TEXT, "
+        "Suffix TEXT, "
+        "FirstSort TEXT, "
+        "LastSort TEXT, "
+        "CreationDate INTEGER, "
+        "ModificationDate INTEGER, "
+        "CompositeNameFallback TEXT, "
+        "Categories TEXT, "
+        "AIM TEXT, "
+        "Groupwise TEXT, "
+        "ICQ Text, "
+        "Yahoo TEXT, "
+        "Anniversary TEXT, "
+        "Assistant TEXT, "
+        "Manager TEXT, "
+        "Spouse TEXT, "
+        "URL TEXT, "
+        "BlogURL TEXT, "
+        "VideoURL TEXT, "
+        "FileAs TEXT);"
         "COMMIT;";
 
     m_sqlite.open(getName(),
                   m_id,
                   mapping,
                   schema);
-
-    // query database for certain constant indices
-    m_addrCountryCode = m_sqlite.findKey("ABMultiValueEntryKey", "value", "CountryCode");
-    m_addrCity = m_sqlite.findKey("ABMultiValueEntryKey", "value", "City");
-    m_addrStreet = m_sqlite.findKey("ABMultiValueEntryKey", "value", "Street");
-    m_addrState = m_sqlite.findKey("ABMultiValueEntryKey", "value", "State");
-    m_addrZIP = m_sqlite.findKey("ABMultiValueEntryKey", "value", "ZIP");
-    m_typeMobile = m_sqlite.findKey("ABMultiValueLabel", "value", "_$!<Mobile>!$_");
-    m_typeHome = m_sqlite.findKey("ABMultiValueLabel", "value", "_$!<Home>!$_");
-    m_typeWork = m_sqlite.findKey("ABMultiValueLabel", "value", "_$!<Work>!$_");
 }
 
 void SQLiteContactSource::close()
@@ -139,14 +193,20 @@ SyncItem *SQLiteContactSource::createItem(const string &uid)
     tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_MIDDLE).colindex);
     tmp += VObject::SEMICOLON_REPLACEMENT;
     tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_FIRST).colindex);
-    if (tmp.size() > 2) {
+    tmp += VObject::SEMICOLON_REPLACEMENT;
+    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_PREFIX).colindex);
+    tmp += VObject::SEMICOLON_REPLACEMENT;
+    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_SUFFIX).colindex);
+    if (tmp.size() > 4) {
         vobj.addProperty("N", tmp.c_str());
     }
 
     tmp = m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_ORGANIZATION).colindex);
     tmp += VObject::SEMICOLON_REPLACEMENT;
     tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_DEPARTMENT).colindex);
-    if (tmp.size() > 1) {
+    tmp += VObject::SEMICOLON_REPLACEMENT;
+    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_UNIT).colindex);
+    if (tmp.size() > 2) {
         vobj.addProperty("ORG", tmp.c_str());
     }
  
@@ -174,11 +234,34 @@ string SQLiteContactSource::insertItem(string &uid, const SyncItem &item)
     }
     vobj->toNativeEncoding();
 
+    int numparams = 0;
     stringstream cols;
     stringstream values;
     VProperty *prop;
 
-    // always set the name, even if not in the vcard
+    // parse up to three fields of ORG
+    prop = vobj->getProperty("ORG");
+    string organization, department, unit;
+    if (prop && prop->getValue()) {
+        string fn = prop->getValue();
+        size_t sep1 = fn.find(VObject::SEMICOLON_REPLACEMENT);
+        size_t sep2 = sep1 == fn.npos ? fn.npos : fn.find(VObject::SEMICOLON_REPLACEMENT, sep1 + 1);
+
+        organization = fn.substr(0, sep1);
+        if (sep1 != fn.npos) {
+            department = fn.substr(sep1 + 1, (sep2 == fn.npos) ? fn.npos : sep2 - sep1 - 1);
+        }
+        if (sep2 != fn.npos) {
+            unit = fn.substr(sep2 + 1);
+        }
+    }
+    cols << m_sqlite.getMapping(PERSON_ORGANIZATION).colname << ", " <<
+        m_sqlite.getMapping(PERSON_DEPARTMENT).colname << ", " <<
+        m_sqlite.getMapping(PERSON_UNIT).colname << ", ";
+    values << "?, ?, ?, ";
+    numparams += 3;
+
+    // parse the name, insert empty fields if not found
     prop = vobj->getProperty("N");
     string first, middle, last, prefix, suffix, firstsort, lastsort;
     if (prop && prop->getValue()) {
@@ -205,9 +288,13 @@ string SQLiteContactSource::insertItem(string &uid, const SyncItem &item)
     cols << m_sqlite.getMapping(PERSON_FIRST).colname << ", " <<
         m_sqlite.getMapping(PERSON_MIDDLE).colname << ", " <<
         m_sqlite.getMapping(PERSON_LAST).colname << ", " <<
+        m_sqlite.getMapping(PERSON_PREFIX).colname << ", " <<
+        m_sqlite.getMapping(PERSON_SUFFIX).colname << ", " <<
         m_sqlite.getMapping(PERSON_LASTSORT).colname << ", " <<
         m_sqlite.getMapping(PERSON_FIRSTSORT).colname;
-    values << "?, ?, ?, ?, ?";
+    values << "?, ?, ?, ?, ?, ?, ?";
+    numparams += 7;
+
 
     // synthesize sort keys: upper case with specific order of first/last name
     firstsort = first + " " + last;
@@ -220,9 +307,11 @@ string SQLiteContactSource::insertItem(string &uid, const SyncItem &item)
         creationTime = m_sqlite.findColumn("ABPerson", "ROWID", uid.c_str(), "CreationDate", "");
         cols << ", ROWID";
         values << ", ?";
+        numparams++;
     }
     cols << ", CreationDate, ModificationDate";
     values << ", ?, ?";
+    numparams += 2;
 
     // delete complete row so that we can recreate it
     if (uid.size()) {
@@ -233,16 +322,22 @@ string SQLiteContactSource::insertItem(string &uid, const SyncItem &item)
 
     string cols_str = cols.str();
     string values_str = values.str();
-    eptr<sqlite3_stmt> insert(m_sqlite.prepareSQL("INSERT INTO ABPerson( %s ) "
-                                                  "VALUES( %s );",
-                                                  cols_str.c_str(),
-                                                  values_str.c_str()));
+    eptr<sqlite3_stmt> insert(m_sqlite.vObjectToRow(*vobj,
+                                                    "ABPerson",
+                                                    numparams,
+                                                    cols.str(),
+                                                    values.str()));
 
     // now bind parameter values in the same order as the columns specification above
     int param = 1;
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, organization.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, department.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, unit.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, first.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, middle.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, last.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, prefix.c_str(), -1, SQLITE_TRANSIENT));
+    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, suffix.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, lastsort.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, firstsort.c_str(), -1, SQLITE_TRANSIENT));
     if (uid.size()) {
@@ -266,21 +361,8 @@ string SQLiteContactSource::insertItem(string &uid, const SyncItem &item)
 
 void SQLiteContactSource::deleteItem(const string &uid)
 {
-    // delete address field members of contact
-    eptr<sqlite3_stmt> del(m_sqlite.prepareSQL("DELETE FROM ABMultiValueEntry "
-                                               "WHERE ABMultiValueEntry.parent_id IN "
-                                               "(SELECT ABMultiValue.uid FROM ABMultiValue WHERE "
-                                               " ABMultiValue.record_id = ?);"));
-    m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_step(del));
+    eptr<sqlite3_stmt> del;
 
-    // delete addresses and emails of contact
-    del.set(m_sqlite.prepareSQL("DELETE FROM ABMultiValue WHERE "
-                                "ABMultiValue.record_id = ?;"));
-    m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_step(del));
-
-    // now delete the contact itself
     del.set(m_sqlite.prepareSQL("DELETE FROM ABPerson WHERE "
                                 "ABPerson.ROWID = ?;"));
     m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
