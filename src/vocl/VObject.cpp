@@ -108,7 +108,7 @@ VProperty* VObject::getProperty(int index) {
     return (VProperty*)properties->get(index);
 }
 
-VProperty* VObject::getProperty(wchar_t* propName) {
+VProperty* VObject::getProperty(const wchar_t* propName) {
     for (int i=0; i<properties->size(); i++) {
         
         VProperty *property; 

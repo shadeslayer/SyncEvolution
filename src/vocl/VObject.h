@@ -33,7 +33,7 @@ public:
     bool containsProperty(char* propName);
     int propertiesCount();
     VProperty* getProperty(int index);
-    VProperty* getProperty(char* propName);
+    VProperty* getProperty(const char* propName);
     char* toString();
 
     // Patrick Ohly:
