@@ -119,7 +119,7 @@ void SQLiteContactSource::listAllItems(RevisionMap_t &revisions)
 
 SyncItem *SQLiteContactSource::createItem(const string &uid)
 {
-    logItem(uid, "extracting from database");
+    logItem(uid, "extracting from database", true);
 
     eptr<sqlite3_stmt> contact(m_sqlite.prepareSQL("SELECT * FROM ABPerson WHERE ROWID = '%s';", uid.c_str()));
     if (m_sqlite.checkSQL(sqlite3_step(contact)) != SQLITE_ROW) {
@@ -190,10 +190,10 @@ string SQLiteContactSource::insertItem(string &uid, const SyncItem &item)
 
         last = fn.substr(0, sep1);
         if (sep1 != fn.npos) {
-            first = fn.substr(sep1 + 1, (sep2 == fn.npos) ? fn.npos : sep2 - sep1 - 1);
+            middle = fn.substr(sep1 + 1, (sep2 == fn.npos) ? fn.npos : sep2 - sep1 - 1);
         }
         if (sep2 != fn.npos) {
-            middle = fn.substr(sep2 + 1, (sep3 == fn.npos) ? fn.npos : sep3 - sep2 - 1);
+            first = fn.substr(sep2 + 1, (sep3 == fn.npos) ? fn.npos : sep3 - sep2 - 1);
         }
         if (sep3 != fn.npos) {
             prefix = fn.substr(sep3 + 1, (sep4 == fn.npos) ? fn.npos : sep4 - sep3 - 1);
