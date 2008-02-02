@@ -136,7 +136,9 @@ Building a Release
   installations, and with special configure options to ensure maximum
   portability (LDFLAGS=-W,--as-needed --enable-static-cxx)
 - compile .deb for Maemo
-- add new .debs/.zip to www.estamos.de/download
+- add new .debs/.zip to www.estamos.de/download:
+  - distribution "stable"
+  - for ITOS2008 also "chinook"
 - upload new files to sf.net
 - remove files from www.estamos.de so that downloads access sf.net
 - update entries on the web about the release:
