@@ -583,8 +583,9 @@ private:
              {
                  string trackingNodePath = string("client-test-changes/") +
                      ((TestEvolution &)client).getSourceName(type) +
+                     "_" + ((TestEvolution &)client).clientID +
                      "_" +
-                     (isSourceA ? "1" : "2");
+                     (isSourceA ? "A" : "B");
                  eptr<spdm::DeviceManagementNode> trackingNode(new spdm::DeviceManagementNode(trackingNodePath.c_str()), "tracking node");
                  ss = new TestEvolutionSyncSource<SQLiteContactSource>(changeID, database, trackingNode);
                                                                        
