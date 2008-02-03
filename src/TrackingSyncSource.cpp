@@ -33,6 +33,19 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
     RevisionMap_t revisions;
     listAllItems(revisions);
 
+    // slow sync or refresh-from-server/client: clear tracking node and
+    // recreate it based on current content of database
+    if (!needPartial) {
+        ArrayList uids;
+        ArrayList modTimes;
+        m_trackingNode->readProperties(&uids, &modTimes);
+        for (int i = 0; i < uids.size(); i++ ) {
+            const StringBuffer *uid = (StringBuffer *)uids[i];
+            m_deletedItems.addItem(uid->c_str());
+            m_trackingNode->removeProperty(uid->c_str());
+        }
+    }
+
     for (RevisionMap_t::const_iterator it = revisions.begin();
          it != revisions.end();
          it++) {
@@ -41,7 +54,6 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
 
         if (deleteLocal) {
             deleteItem(uid);
-            m_trackingNode->removeProperty(uid.c_str());
         } else {
             // always remember the item, need full list to find deleted items
             m_allItems.addItem(uid);
@@ -58,10 +70,16 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
                         m_trackingNode->setPropertyValue(uid.c_str(), revision.c_str());
                     }
                 }
+            } else {
+                // refresh-from-client: make sure that all items we are about
+                // to send to server are also in our tracking node (otherwise
+                // the next incremental sync will go wrong)
+                m_trackingNode->setPropertyValue(uid.c_str(), revision.c_str());
             }
         }
     }
 
+    // clear information about all items that we recognized as deleted
     if (needPartial) {
         ArrayList uids;
         ArrayList modTimes;
