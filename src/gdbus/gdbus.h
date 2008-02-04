@@ -77,6 +77,7 @@ typedef dbus_bool_t (* GDBusPropertySetFunction) (DBusConnection *connection,
 typedef enum {
 	G_DBUS_METHOD_FLAG_DEPRECATED = (1 << 0),
 	G_DBUS_METHOD_FLAG_NOREPLY    = (1 << 1),
+	G_DBUS_METHOD_FLAG_ASYNC      = (1 << 2),
 } GDBusMethodFlags;
 
 /** Signal flags */

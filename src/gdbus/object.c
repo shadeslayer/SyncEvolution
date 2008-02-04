@@ -604,6 +604,11 @@ static DBusHandlerResult handle_message(DBusConnection *connection,
 			return DBUS_HANDLER_RESULT_HANDLED;
 		}
 
+		if (method->flags & G_DBUS_METHOD_FLAG_ASYNC) {
+			if (reply == NULL)
+				return DBUS_HANDLER_RESULT_HANDLED;
+		}
+
 		if (reply == NULL)
 			return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
