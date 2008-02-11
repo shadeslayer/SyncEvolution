@@ -41,7 +41,7 @@ class EvolutionClientConfig : public DMTClientConfig {
      * - continue to use the "syncml" node for all non-source properties, as in previous versions
      * - do not save properties which cannot be configured
      */
-    virtual int readAuthConfig(ManagementNode& syncMLNode,
+    virtual bool readAuthConfig(ManagementNode& syncMLNode,
                                ManagementNode& authNode) {
         return DMTClientConfig::readAuthConfig(syncMLNode, syncMLNode);
     }
@@ -49,7 +49,7 @@ class EvolutionClientConfig : public DMTClientConfig {
                                 ManagementNode& authNode) {
         DMTClientConfig::saveAuthConfig(syncMLNode, syncMLNode);
     }
-    virtual int readConnConfig(ManagementNode& syncMLNode,
+    virtual bool readConnConfig(ManagementNode& syncMLNode,
                                ManagementNode& connNode) {
         return DMTClientConfig::readConnConfig(syncMLNode, syncMLNode);
     }
@@ -57,7 +57,7 @@ class EvolutionClientConfig : public DMTClientConfig {
                                 ManagementNode& connNode) {
         DMTClientConfig::saveConnConfig(syncMLNode, syncMLNode);
     }
-    virtual int readExtAccessConfig(ManagementNode& syncMLNode,
+    virtual bool readExtAccessConfig(ManagementNode& syncMLNode,
                                     ManagementNode& extNode) {
         return DMTClientConfig::readExtAccessConfig(syncMLNode, syncMLNode);
     }
@@ -65,7 +65,7 @@ class EvolutionClientConfig : public DMTClientConfig {
                                      ManagementNode& extNode) {
         DMTClientConfig::saveExtAccessConfig(syncMLNode, syncMLNode);
     }
-    virtual int readDevInfoConfig(ManagementNode& syncMLNode,
+    virtual bool readDevInfoConfig(ManagementNode& syncMLNode,
                                   ManagementNode& devInfoNode) {
         int res = DMTClientConfig::readDevInfoConfig(syncMLNode, syncMLNode);
         
@@ -83,7 +83,7 @@ class EvolutionClientConfig : public DMTClientConfig {
             DMTClientConfig::saveDevInfoConfig(syncMLNode, syncMLNode);
         }
     }
-    virtual int readDevDetailConfig(ManagementNode& syncMLNode,
+    virtual bool readDevDetailConfig(ManagementNode& syncMLNode,
                                     ManagementNode& devDetailNode) {
         return DMTClientConfig::readDevDetailConfig(syncMLNode, syncMLNode);
     }
@@ -93,7 +93,7 @@ class EvolutionClientConfig : public DMTClientConfig {
             DMTClientConfig::saveDevDetailConfig(syncMLNode, syncMLNode);
         }
     }
-    virtual int readExtDevConfig(ManagementNode& syncMLNode,
+    virtual bool readExtDevConfig(ManagementNode& syncMLNode,
                                  ManagementNode& extNode) {
         return DMTClientConfig::readExtDevConfig(syncMLNode, syncMLNode);
     }
