@@ -14,7 +14,7 @@ the result of each action:
   that the action can put there
 """
 
-import os, sys, popen2, traceback, re, time, smtplib, optparse, stat
+import os, sys, popen2, traceback, re, time, smtplib, optparse, stat, shutil
 
 try:
     import gzip
@@ -445,6 +445,9 @@ parser.add_option("", "--to",
 parser.add_option("", "--subject",
                   type="string", dest="subject", default="SyncML Tests " + time.strftime("%Y-%m-%d"),
                   help="subject of result email (default is \"SyncML Tests <date>\"")
+parser.add_option("", "--evosvn",
+                  action="append", type="string", dest="evosvn", default=[],
+                  help="<name>=<path>: compiles Evolution from source under a short name, using Paul Smith's Makefile and config as found in <path>")
 
 (options, args) = parser.parse_args()
 if options.recipients and not options.sender:
@@ -454,6 +457,40 @@ if options.recipients and not options.sender:
 context = Context(options.tmpdir, options.resultdir, options.uri, options.workdir,
                   options.subject, options.sender, options.recipients,
                   options.enabled, options.skip, options.nologs)
+
+class EvoSvn(Action):
+    """Builds Evolution from SVN using Paul Smith's Evolution Makefile."""
+    
+    def __init__(self, name, workdir, resultdir, makedir, makeoptions):
+        """workdir defines the directory to do the build in,
+        makedir is the directory which contains the Makefile and its local.mk,
+        makeoptions contain additional parameters for make (like BRANCH=2.20 PREFIX=/tmp/runtests/evo)."""
+        Action.__init__(self,name)
+        self.workdir = workdir
+	self.resultdir = resultdir
+        self.makedir = makedir
+        self.makeoptions = makeoptions
+
+    def execute(self):
+        cd(self.workdir)
+        shutil.copy2(os.path.join(self.makedir, "Makefile"), ".")
+        shutil.copy2(os.path.join(self.makedir, "local.mk"), ".")
+        shutil.rmtree(self.resultdir)
+	localmk = open("local.mk", "a")
+	localmk.write("PREFIX := %s\n" % self.resultdir)
+	localmk.close()
+        if os.access(".stamp", os.F_OK):
+            context.runCommand("make check-changelog")
+        context.runCommand("make %s" % self.makeoptions)
+
+for evosvn in options.evosvn:
+    name, path = evosvn.split("=")
+    evosvn = EvoSvn("evolution" + name,
+                    os.path.join(options.tmpdir, "evolution%s-build" % name),
+		    os.path.join(options.tmpdir, "evolution%s-result" % name),
+                    path,
+                    "SUDO=true")
+    context.add(evosvn)
 
 class SyncEvolutionCheckout(CVSCheckout):
     def __init__(self, name, revision):
