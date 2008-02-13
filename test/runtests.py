@@ -290,6 +290,31 @@ class CVSCheckout(Action):
         if os.access("autogen.sh", os.F_OK):
             context.runCommand("%s ./autogen.sh" % (self.runner))
 
+class SVNCheckout(Action):
+    """Does a Subversion checkout (if directory does not exist yet) or a switch (if it does)."""
+    
+    def __init__(self, name, workdir, runner, url, module):
+        """workdir defines the directory to do the checkout in,
+        URL the server and path inside repository,
+        module the path to the files in the checked out copy"""
+        Action.__init__(self,name)
+        self.workdir = workdir
+        self.runner = runner
+        self.url = url
+        self.module = module
+        self.basedir = os.path.join(abspath(workdir), module)
+
+    def execute(self):
+        cd(self.workdir)
+        if os.access(self.module, os.F_OK):
+            cmd = "switch"
+        else:
+            cmd = "checkout"
+        context.runCommand("svn %s %s %s"  % (cmd, self.url, self.module))
+        os.chdir(self.module)
+        if os.access("autogen.sh", os.F_OK):
+            context.runCommand("%s ./autogen.sh" % (self.runner))
+
 class ClientCheckout(CVSCheckout):
     def __init__(self, name, revision):
         """checkout C++ client source code and apply all patches"""
@@ -409,8 +434,8 @@ parser.add_option("", "--test-prefix",
                   type="string", dest="testprefix", default="",
                   help="a prefix which is put in front of client-test (e.g. valgrind)")
 parser.add_option("", "--syncevo-tag",
-                  type="string", dest="syncevotag", default="HEAD",
-                  help="the tag of SyncEvolution (default HEAD)")
+                  type="string", dest="syncevotag", default="trunk",
+                  help="the tag of SyncEvolution (e.g. tags/syncevolution-0.7, default trunk")
 parser.add_option("", "--client-tag",
                   type="string", dest="clienttag", default="HEAD",
                   help="the tag of the client library (default HEAD)")
@@ -492,14 +517,13 @@ for evosvn in options.evosvn:
                     "SUDO=true")
     context.add(evosvn)
 
-class SyncEvolutionCheckout(CVSCheckout):
+class SyncEvolutionCheckout(SVNCheckout):
     def __init__(self, name, revision):
         """checkout SyncEvolution"""
-        CVSCheckout.__init__(self,
+        SVNCheckout.__init__(self,
                              name, context.workdir, options.shell,
-                             ":ext:pohly@sync4jevolution.cvs.sourceforge.net:/cvsroot/sync4jevolution",
-                             "sync4jevolution",
-                             revision)
+                             "https://zeitsenke.de/svn/SyncEvolution/%s" % revision,
+                             "SyncEvolution")
 
 class SyncEvolutionBuild(AutotoolsBuild):
     def execute(self):
