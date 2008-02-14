@@ -836,8 +836,8 @@ int EvolutionSyncClient::sync()
         config.save();
 
         if (res) {
-            if (lastErrorCode && lastErrorMsg[0]) {
-                throwError(lastErrorMsg);
+            if (getLastErrorCode() && getLastErrorMsg() && getLastErrorMsg()[0]) {
+                throwError(getLastErrorMsg());
             }
             // no error code/description?!
             throwError("sync failed without an error description, check log");

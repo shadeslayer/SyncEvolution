@@ -110,11 +110,9 @@ void EvolutionSyncSource::handleException()
     try {
         throw;
     } catch (std::exception &ex) {
-        if (lastErrorCode == ERR_NONE) {
-            lastErrorCode = ERR_UNSPECIFIED;
-            strcpy(lastErrorMsg, ex.what());
-        }
-        LOG.error("%s", ex.what());
+        setErrorF(getLastErrorCode() == ERR_NONE ? ERR_UNSPECIFIED : getLastErrorCode(),
+                  "%s", ex.what());
+        LOG.error("%s", getLastErrorMsg());
     }
 }
 
