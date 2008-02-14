@@ -25,6 +25,7 @@
 #include <spds/spdsutils.h>
 
 #include <iostream>
+#include <memory>
 using namespace std;
 
 #include <libgen.h>
