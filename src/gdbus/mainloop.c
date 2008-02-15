@@ -380,40 +380,34 @@ void g_dbus_cleanup_connection(DBusConnection *connection)
  * Connect to bus and setup connection
  * @param type bus type
  * @param name well known name
+ * @param error error that can be returned
  * @return a DBusConnection
  *
  * Returns a connection to the given bus and requests a
  * well known name for it. Sets the watch and timeout
  * functions for it.
  */
-DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name)
+DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
+							DBusError *error)
 {
 	DBusConnection *connection;
-	DBusError error;
 
-	DBG("type %d name %s", type, name);
+	DBG("type %d name %s error %p", type, name, error);
 
-	dbus_error_init(&error);
+	connection = dbus_bus_get(type, error);
 
-	connection = dbus_bus_get(type, &error);
-
-	if (dbus_error_is_set(&error) == TRUE) {
-		dbus_error_free(&error);
+	if (dbus_error_is_set(error) == TRUE)
 		return NULL;
-	}
 
 	if (name != NULL) {
-		dbus_error_init(&error);
-
 		if (dbus_bus_request_name(connection, name,
-				DBUS_NAME_FLAG_DO_NOT_QUEUE, &error) !=
+				DBUS_NAME_FLAG_DO_NOT_QUEUE, error) !=
 				DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER ) {
 			dbus_connection_unref(connection);
 			return NULL;
 		}
 
-		if (dbus_error_is_set(&error) == TRUE) {
-			dbus_error_free(&error);
+		if (dbus_error_is_set(error) == TRUE) {
 			dbus_connection_unref(connection);
 			return NULL;
 		}
@@ -429,27 +423,23 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name)
 /**
  * Connect to bus and setup connection
  * @param address bus address
+ * @param error error that can be returned
  * @return a DBusConnection
  *
  * Returns a connection to the bus specified via
  * the given address and sets the watch and timeout
  * functions for it.
  */
-DBusConnection *g_dbus_setup_address(const char *address)
+DBusConnection *g_dbus_setup_address(const char *address, DBusError *error)
 {
 	DBusConnection *connection;
-	DBusError error;
 
-	DBG("address %s", address);
+	DBG("address %s error %p", address, error);
 
-	dbus_error_init(&error);
+	connection = dbus_connection_open(address, error);
 
-	connection = dbus_connection_open(address, &error);
-	
-	if (dbus_error_is_set(&error) == TRUE) {
-		dbus_error_free(&error);
+	if (dbus_error_is_set(error) == TRUE)
 		return NULL;
-	}
 
 	g_dbus_setup_connection(connection, NULL);
 
@@ -462,30 +452,26 @@ DBusConnection *g_dbus_setup_address(const char *address)
  * Request bus name
  * @param connection the connection
  * @param name well known name
+ * @param error error that can be returned
  * @return TRUE on success
  *
  * Requests a well known name for connection.
  */
-gboolean g_dbus_request_name(DBusConnection *connection, const char *name)
+gboolean g_dbus_request_name(DBusConnection *connection, const char *name,
+							DBusError *error)
 {
-	DBusError error;
-
-	DBG("connection %p name %s", connection, name);
+	DBG("connection %p name %s error %p", connection, name, error);
 
 	if (name == NULL)
 		return FALSE;
 
-	dbus_error_init(&error);
-
 	if (dbus_bus_request_name(connection, name,
-			DBUS_NAME_FLAG_DO_NOT_QUEUE, &error) !=
+			DBUS_NAME_FLAG_DO_NOT_QUEUE, error) !=
 				DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER )
 		return FALSE;
 
-	if (dbus_error_is_set(&error) == TRUE) {
-		dbus_error_free(&error);
+	if (dbus_error_is_set(error) == TRUE)
 		return FALSE;
-	}
 
 	return TRUE;
 }
