@@ -408,7 +408,12 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 
 	connection = dbus_bus_get(type, error);
 
-	if (dbus_error_is_set(error) == TRUE)
+	if (error != NULL) {
+		if (dbus_error_is_set(error) == TRUE)
+			return NULL;
+	}
+
+	if (connection == NULL)
 		return NULL;
 
 	if (name != NULL) {
@@ -419,9 +424,11 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 			return NULL;
 		}
 
-		if (dbus_error_is_set(error) == TRUE) {
-			dbus_connection_unref(connection);
-			return NULL;
+		if (error != NULL) {
+			if (dbus_error_is_set(error) == TRUE) {
+				dbus_connection_unref(connection);
+				return NULL;
+			}
 		}
 	}
 
@@ -452,7 +459,12 @@ DBusConnection *g_dbus_setup_address(const char *address, DBusError *error)
 
 	connection = dbus_connection_open(address, error);
 
-	if (dbus_error_is_set(error) == TRUE)
+	if (error != NULL) {
+		if (dbus_error_is_set(error) == TRUE)
+			return NULL;
+	}
+
+	if (connection == NULL)
 		return NULL;
 
 	g_dbus_setup_connection(connection, NULL);
@@ -486,8 +498,10 @@ gboolean g_dbus_request_name(DBusConnection *connection, const char *name,
 				DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER )
 		return FALSE;
 
-	if (dbus_error_is_set(error) == TRUE)
-		return FALSE;
+	if (error != NULL) {
+		if (dbus_error_is_set(error) == TRUE)
+			return FALSE;
+	}
 
 	return TRUE;
 }
