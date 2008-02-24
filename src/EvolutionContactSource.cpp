@@ -139,7 +139,7 @@ void EvolutionContactSource::open()
     // by setting user or password
     string user, passwd;
     getAuthentication(user, passwd);
-    if (passwd.size() || passwd.size()) {
+    if (passwd.size() || user.size()) {
         GList *authmethod;
         if (!e_book_get_supported_auth_methods(m_addressbook, &authmethod, &gerror)) {
             throwError("getting authentication methods", gerror );
@@ -162,8 +162,8 @@ void EvolutionContactSource::open()
                           getName(), gerror->message);
                 g_clear_error(&gerror);
             }
+            authmethod = authmethod->next;
         }
-        authmethod = authmethod->next;
     }
 
     g_signal_connect_after(m_addressbook,
