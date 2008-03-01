@@ -109,23 +109,6 @@ syncaddressbook_la_SOURCES = $(SYNCADDRESSBOOK_SOURCES)
 syncaddressbook_la_LIBADD = @ADDRESSBOOK_LIBS@
 syncaddressbook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 
-# test suite - *not* declared as an obligatory check,
-# because some of them are known to fail and thus
-# prevent a successful "distcheck"
-# TESTS = test
-# check_PROGRAMS = test
-#EXTRA_PROGRAMS += TestEvolution
-#TestEvolution_SOURCES = \
-#        Test.h \
-#        TestMain.cpp \
-#        TestEvolution.cpp \
-#	$(CORE_SOURCES)
-
-#TestEvolution_CXXFLAGS = `cppunit-config --cflags`
-#TestEvolution_LDFLAGS = `cppunit-config --libs`
-#TestEvolution_LDADD = @SYNCEVOLUTION_MODULES@ @LIBDBUS@ $(CORE_LDADD)
-#TestEvolution_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
-
 EXTRA_PROGRAMS += vcardconverter
 vcardconverter_SOURCES = \
         vocl/vcardconverter.cpp \
@@ -190,25 +173,6 @@ $(filter-out $(LOCAL_TEST_FILES), testcases) : % : $(SYNC4J_SUBDIR)/test/test/%
 	perl -e '$$_ = join("", <>); s/^(ADR|TEL|EMAIL|PHOTO).*?(?=^\S)//msg; print;' testcases/vcard21.vcf >testcases/vcard21_sqlite.vcf
 
 test : client-test testcases synccompare
-
-
-# TestEvolution syncevolution vcardconverter : \
-#        @CORE_LDADD_DEP@ \
-#	$(SYNC4J_SUBDIR)/src/libsync4j.la
-#test : TestEvolution addressbook.tests calendar.tests todo.tests memo.tests synccompare vcardconverter
-
-# test files are in CVS under a different name so that they
-# can be copied to the work directory under the name expected
-# by the "test" program
-#addressbook.tests : testVCard.vcf
-#	cp $< $@
-#calendar.tests : testCalendar.ics
-#	cp $< $@
-#todo.tests : testTask.ics
-#	cp $< $@
-#memo.tests : testMemo.ics
-#	cp $< $@
-
 testclean :
 	rm -f *.test.vcf *.log *.tests *.diff
 
