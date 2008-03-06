@@ -1190,7 +1190,7 @@ double AddressBookSource::getModTime(ABRecordRef record)
 
 
 AddressBookSource::AddressBookSource(const string &name,
-                                     SyncSourceConfig *sc,
+                                     EvolutionSyncSourceConfig *sc,
                                      const string &changeId,
                                      const string &id,
                                      const string &configPath) :
@@ -1563,7 +1563,7 @@ void AddressBookSource::logItem(SyncItem &item, const string &info, bool debug)
 #ifdef ENABLE_MODULES
 
 extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
-                                                          SyncSourceConfig *sc,
+                                                          EvolutionSyncSourceConfig *sc,
                                                           const string &changeId,
                                                           const string &id,
                                                           const string &mimeType)

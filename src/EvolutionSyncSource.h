@@ -20,8 +20,10 @@
 #ifndef INCL_EVOLUTIONSYNCSOURCE
 #define INCL_EVOLUTIONSYNCSOURCE
 
+#include "SyncEvolutionConfig.h"
 #include "EvolutionSmartPtr.h"
 
+#include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
 #include <set>
@@ -36,6 +38,50 @@ using namespace std;
 #include <spds/SyncSource.h>
 #include <spdm/ManagementNode.h>
 #include <base/Log.h>
+
+/**
+ * This set of parameters always has to be passed when constructing
+ * EvolutionSyncSource instances.
+ */
+struct EvolutionSyncSourceParams {
+    /**
+     * @param    name        the named needed by SyncSource
+     * @param    nodes       a set of config nodes to be used by this source
+     * @param    changeId    is used to track changes in the Evolution backend:
+     *                       a unique string constructed from an ID for SyncEvolution
+     *                       and the URL/database we synchronize against
+     */
+    EvolutionSyncSourceParams(const string &name,
+                              const SyncSourceNodes &nodes,
+                              const string &changeId) :
+    m_name(name),
+        m_nodes(nodes),
+        m_changeId(stripChangeId(changeId))
+    {}
+
+    const string m_name;
+    const SyncSourceNodes m_nodes;
+    const string m_changeId;
+
+    /** remove special characters from change ID */
+    static string stripChangeId(const string changeId) {
+        string strippedChangeId = changeId;
+        size_t offset = 0;
+        while (offset < strippedChangeId.size()) {
+            switch (strippedChangeId[offset]) {
+            case ':':
+            case '/':
+            case '\\':
+                strippedChangeId.erase(offset, 1);
+                break;
+            default:
+                offset++;
+            }
+        }
+        return strippedChangeId;
+    }
+};
+
 
 /**
  * SyncEvolution accesses all sources through this interface.  This
@@ -58,29 +104,29 @@ using namespace std;
  * It also adds an Evolution specific interface:
  * - listing backend storages: getSyncBackends()
  */
-class EvolutionSyncSource : public SyncSource
+class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
 {
-  public:
+ public:
     /**
      * Creates a new Evolution sync source.
      *
      * @param    name        the named needed by SyncSource
-     * @param    sc          obligatory config for this source, must remain valid throughout the lifetime of the source
+     * @param    nodes       a set of config nodes to be used by this source
      * @param    changeId    is used to track changes in the Evolution backend
-     * @param    id          identifies the backend; not specifying it makes this instance
-     *                       unusable for anything but listing backend databases
      */
-    EvolutionSyncSource( const string name, SyncSourceConfig *sc, const string &changeId, const string &id ) :
-        SyncSource( name.c_str(), sc ),
-        m_changeId( changeId ),
-        m_id( id ),
+    EvolutionSyncSource(const EvolutionSyncSourceParams &params) :
+        SyncSource(params.m_name.c_str(), NULL),
+        EvolutionSyncSourceConfig(params.m_name, params.m_nodes),
+        m_changeId( params.m_changeId ),
         m_allItems( *this, "existing", SYNC_STATE_NONE ),
         m_newItems( *this, "new", SYNC_STATE_NEW ),
         m_updatedItems( *this, "updated", SYNC_STATE_UPDATED ),
         m_deletedItems( *this, "deleted", SYNC_STATE_DELETED ),
         m_hasFailed( false ),
         m_isModified( false )
-        {}
+        {
+            setConfig(this);
+        }
     virtual ~EvolutionSyncSource() {}
 
     struct source {
@@ -97,23 +143,6 @@ class EvolutionSyncSource : public SyncSource
      */
     virtual sources getSyncBackends() = 0;
 
-    /**
-     * Set credentials to be used during open.
-     */
-    virtual void setAuthentication(const string &user, const string &passwd) {
-        m_user = user;
-        m_passwd = passwd;
-    }
-          
-
-    /**
-     * Get credentials.
-     */
-    virtual void getAuthentication(string &user, string &passwd) {
-        user = m_user;
-        passwd = m_passwd;
-    }
-    
     /**
      * Actually opens the data source specified in the constructor,
      * will throw the normal exceptions if that fails. Should
@@ -151,20 +180,25 @@ class EvolutionSyncSource : public SyncSource
     virtual string fileSuffix() = 0;
 
     /**
-     * the actual type used by the source for items
+     * Returns the preferred mime type of the items handled by the sync source.
+     * Example: "text/x-vcard"
      */
-    virtual const char *getMimeType() = 0;
+    virtual const char *getMimeType() const = 0;
 
     /**
-     * the actual version of the mime specification
+     * Returns the version of the mime type used by client.
+     * Example: "2.1"
      */
-    virtual const char *getMimeVersion() = 0;
+    virtual const char *getMimeVersion() const = 0;
 
     /**
-     * supported data types for send and receive,
-     * in the format "type1:version1,type2:version2,..."
+     * A string representing the source types (with versions) supported by the SyncSource.
+     * The string must be formatted as a sequence of "type:version" separated by commas ','.
+     * For example: "text/x-vcard:2.1,text/vcard:3.0".
+     * The version can be left empty, for example: "text/x-s4j-sifc:".
+     * Supported types will be sent as part of the DevInf.
      */
-    virtual const char *getSupportedTypes() = 0;
+    virtual const char* getSupportedTypes() const = 0;
     
     /**
      * resets the lists of all/new/updated/deleted items
@@ -196,19 +230,13 @@ class EvolutionSyncSource : public SyncSource
 
     /**
      * factory function for a EvolutionSyncSources that provides the
-     * given mime type; for the other parameters see constructor
+     * given source type; for the other parameters see constructor
      *
      * @param error    throw a runtime error describing what the problem is if no matching source is found
      * @return NULL if no source can handle the given type
      */
-    static EvolutionSyncSource *createSource(
-        const string &name,
-        ManagementNode *node,
-        SyncSourceConfig *sc,
-        const string &changeId,
-        const string &id,
-        const string &mimeType,
-        bool error = true);
+    static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params,
+                                             bool error = true);
 
     /**
      * SyncSource backend modules have to provide this function under
@@ -217,12 +245,7 @@ class EvolutionSyncSource : public SyncSource
      *
      * @return new sync source or NULL if the mime type is not supported
      */
-    typedef EvolutionSyncSource *(*CreateSource_t)(
-        const string &name,
-        SyncSourceConfig *sc,
-        const string &changeId,
-        const string &id,
-        const string &mimeType);
+    typedef EvolutionSyncSource *(*CreateSource_t)(const EvolutionSyncSourceParams &params);
 
     //
     // default implementation of SyncSource iterators
@@ -252,6 +275,11 @@ class EvolutionSyncSource : public SyncSource
     virtual int updateItem(SyncItem& item);
     virtual int deleteItem(SyncItem& item);
 
+    /**
+     * Disambiguate getName(): we have inherited it from both SyncSource and
+     * AbstractSyncSourceConfig. Both must return the same string.
+     */
+    const char *getName() { return SyncSource::getName(); }
 
   protected:
 #ifdef HAVE_EDS
@@ -305,8 +333,8 @@ class EvolutionSyncSource : public SyncSource
     virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;
     virtual void logItem(SyncItem &item, const string &info, bool debug = false) = 0;
 
+    const boost::shared_ptr<EvolutionSyncSourceConfig> m_syncSourceConfig;
     const string m_changeId;
-    const string m_id;
 
     class itemList : public set<string> {
         const_iterator m_it;
@@ -397,9 +425,6 @@ class EvolutionSyncSource : public SyncSource
 
     /** keeps track of failure state */
     bool m_hasFailed;
-
-    /** user name/password set for this source, empty if none */
-    string m_user, m_passwd;
 };
 
 #endif // INCL_EVOLUTIONSYNCSOURCE

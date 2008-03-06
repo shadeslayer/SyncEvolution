@@ -116,30 +116,9 @@ void EvolutionSyncSource::handleException()
     }
 }
 
-EvolutionSyncSource *EvolutionSyncSource::createSource(
-    const string &name,
-    ManagementNode *node,
-    SyncSourceConfig *sc,
-    const string &changeId,
-    const string &id,
-    const string &mimeType,
-    bool error
-    )
+EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSourceParams &params, bool error)
 {
-    // remove special characters from change ID
-    string strippedChangeId = changeId;
-    size_t offset = 0;
-    while (offset < strippedChangeId.size()) {
-        switch (strippedChangeId[offset]) {
-         case ':':
-         case '/':
-         case '\\':
-            strippedChangeId.erase(offset, 1);
-            break;
-         default:
-            offset++;
-        }
-    }
+    string sourceType = getSourceType(params.m_nodes);
 
 #ifdef ENABLE_MODULES
     
@@ -188,14 +167,14 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
     for (list<CreateSource_t>::const_iterator it = createSources.begin();
          it != createSources.end();
          ++it) {
-        EvolutionSyncSource *source = (*it)(name, sc, strippedChangeId, id, mimeType);
+        EvolutionSyncSource *source = (*it)(params);
         if (source) {
             return source;
         }
     }
 
     if (error) {
-        string problem = name + ": type '" + mimeType + "' not supported";
+        string problem = params.m_name + ": type '" + sourceType + "' not supported";
         if (available.size()) {
             problem += " by any of the available backends (";
             problem += available;
@@ -210,74 +189,69 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(
 
 #else // ENABLE_MODULES
 
-    if (mimeType == "text/x-vcard") {
+    if (sourceType == "text/x-vcard") {
 #ifdef ENABLE_EBOOK
-        return new EvolutionContactSource(name, sc, strippedChangeId, id, EVC_FORMAT_VCARD_21);
+        return new EvolutionContactSource(params, EVC_FORMAT_VCARD_21);
 #else
         if (error) {
-            EvolutionSyncClient::throwError(name + ": access to addressbooks not compiled into this binary, text/x-vcard not supported");
+            EvolutionSyncClient::throwError(params.m_name + ": access to addressbooks not compiled into this binary, text/x-vcard not supported");
         }
 #endif
-    } else if (mimeType == "text/vcard") {
+    } else if (sourceType == "text/vcard") {
 #ifdef ENABLE_EBOOK
-        return new EvolutionContactSource(name, sc, strippedChangeId, id, EVC_FORMAT_VCARD_30);
+        return new EvolutionContactSource(params, EVC_FORMAT_VCARD_30);
 #else
         if (error) {
-            EvolutionSyncClient::throwError(name + ": access to addressbooks not compiled into this binary, text/vcard not supported");
+            EvolutionSyncClient::throwError(params.m_name + ": access to addressbooks not compiled into this binary, text/vcard not supported");
         }
 #endif
-    } else if (mimeType == "text/x-todo") {
+    } else if (sourceType == "text/x-todo") {
 #ifdef ENABLE_ECAL
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, sc, strippedChangeId, id);
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, params);
 #else
         if (error) {
-            EvolutionSyncClient::throwError(name + ": access to calendars not compiled into this binary, text/x-todo not supported");
+            EvolutionSyncClient::throwError(params.m_name + ": access to calendars not compiled into this binary, text/x-todo not supported");
         }
 #endif
-    } else if (mimeType == "text/x-journal") {
+    } else if (sourceType == "text/x-journal") {
 #ifdef ENABLE_ECAL
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, strippedChangeId, id);
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, params);
 #else
         if (error) {
-            EvolutionSyncClient::throwError(name + ": access to memos not compiled into this binary, text/x-journal not supported");
+            EvolutionSyncClient::throwError(params.m_name + ": access to memos not compiled into this binary, text/x-journal not supported");
         }
 #endif
-    } else if (mimeType == "text/plain") {
+    } else if (sourceType == "text/plain") {
 #ifdef ENABLE_ECAL
-        return new EvolutionMemoSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, strippedChangeId, id);
+        return new EvolutionMemoSource(params);
 #else
         if (error) {
-            EvolutionSyncClient::throwError(name + ": access to memos not compiled into this binary, text/plain not supported");
+            EvolutionSyncClient::throwError(params.m_name + ": access to memos not compiled into this binary, text/plain not supported");
         }
 #endif
-    } else if (mimeType == "text/calendar" ||
-               mimeType == "text/x-vcalendar") {
+    } else if (sourceType == "text/calendar" ||
+               sourceType == "text/x-vcalendar") {
 #ifdef ENABLE_ECAL
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, sc, strippedChangeId, id);
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, params);
 #else
         if (error) {
-            EvolutionSyncClient::throwError(name + ": access to calendars not compiled into this binary, " + mimeType + " not supported");
+            EvolutionSyncClient::throwError(params.m_name + ": access to calendars not compiled into this binary, " + sourceType + " not supported");
         }
 #endif
-    } else if (mimeType == "sqlite") {
+    } else if (sourceType == "sqlite") {
 #ifdef ENABLE_SQLITE
-        arrayptr<char> configNodeName(node ? node->createFullName() : wstrdup(""));
-        string trackingNodeName = configNodeName.get();
-        trackingNodeName += "/changes";
-        eptr<spdm::DeviceManagementNode> trackingNode(new spdm::DeviceManagementNode(trackingNodeName.c_str()), "tracking node");
-
-        return new SQLiteContactSource(name, sc, strippedChangeId, id, trackingNode);
+        return new SQLiteContactSource(params);
 #else
         if (error) {
-            EvolutionSyncClient::throwError(name + ": access to sqlite not compiled into this binary, " + mimeType + " not supported");
+            EvolutionSyncClient::throwError(params.m_name + ": access to sqlite not compiled into this binary, " + sourceType + " not supported");
         }
 #endif
-    } else if (mimeType == "addressbook") {
+    } else if (sourceType == "addressbook") {
 #ifdef ENABLE_ADDRESSBOOK
-        return new AddressBookSource(name, sc, strippedChangeId, id, string(configNodeName));
+        return new AddressBookSource(nodes);
 #else
         if (error) {
-            EvolutionSyncClient::throwError(name + ": access to Mac OS X address book not compiled into this binary, not supported");
+            EvolutionSyncClient::throwError(params.m_name + ": access to Mac OS X address book not compiled into this binary, not supported");
         }
 #endif
     }

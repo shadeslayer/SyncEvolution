@@ -46,8 +46,10 @@ CORE_SOURCES  = \
         EvolutionSyncSource.cpp \
 	EvolutionSyncClient.cpp \
 	\
-	DeviceManagementNode.h \
-	DeviceManagementNode.cpp \
+	SyncEvolutionConfig.cpp \
+	FilterConfigNode.cpp \
+	FileConfigNode.cpp \
+	FileConfigTree.cpp \
 	\
 	$(VOCL_SOURCES)
 

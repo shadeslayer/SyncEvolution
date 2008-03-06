@@ -150,8 +150,9 @@ void SQLiteContactSource::open()
         "FileAs TEXT);"
         "COMMIT;";
 
+    string id = getDatabaseID();
     m_sqlite.open(getName(),
-                  m_id,
+                  id.c_str(),
                   mapping,
                   schema);
 }
@@ -422,7 +423,7 @@ void SQLiteContactSource::logItem(SyncItem &item, const string &info, bool debug
 #ifdef ENABLE_MODULES
 
 extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
-                                                          SyncSourceConfig *sc,
+                                                          EvolutionSyncSourceConfig *sc,
                                                           const string &changeId,
                                                           const string &id,
                                                           const string &mimeType)

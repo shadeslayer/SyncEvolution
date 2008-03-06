@@ -39,13 +39,10 @@ using namespace vocl;
 const EvolutionContactSource::extensions EvolutionContactSource::m_vcardExtensions;
 const EvolutionContactSource::unique EvolutionContactSource::m_uniqueProperties;
 
-EvolutionContactSource::EvolutionContactSource( const string &name,
-                                                SyncSourceConfig *sc,
-                                                const string &changeId,
-                                                const string &id,
-                                                EVCardFormat vcardFormat ) :
-    EvolutionSyncSource( name, sc, changeId, id ),
-    m_vcardFormat( vcardFormat )
+EvolutionContactSource::EvolutionContactSource(const EvolutionSyncSourceParams &params,
+                                               EVCardFormat vcardFormat) :
+    EvolutionSyncSource(params),
+    m_vcardFormat(vcardFormat)
 {
 }
 
@@ -106,19 +103,20 @@ void EvolutionContactSource::open()
     }
     
     GError *gerror = NULL;
-    ESource *source = findSource( sources, m_id );
+    string id = getDatabaseID();
+    ESource *source = findSource(sources, id);
     bool onlyIfExists = true;
     if (!source) {
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
-        if (m_id == "<<system>>") {
+        if (id == "<<system>>") {
             m_addressbook.set( e_book_new_system_addressbook (&gerror), "system address book" );
-        } else if (m_id == "<<default>>") {
+        } else if (id == "<<default>>") {
             m_addressbook.set( e_book_new_default_addressbook (&gerror), "default address book" );
-        } else if (!m_id.compare(0, 7, "file://")) {
-            m_addressbook.set(e_book_new_from_uri(m_id.c_str(), &gerror), "creating address book");
+        } else if (!id.compare(0, 7, "file://")) {
+            m_addressbook.set(e_book_new_from_uri(id.c_str(), &gerror), "creating address book");
         } else {
-            throwError(string(getName()) + ": no such address book: '" + m_id + "'");
+            throwError(string(getName()) + ": no such address book: '" + id + "'");
         }
         onlyIfExists = false;
     } else {
@@ -137,9 +135,9 @@ void EvolutionContactSource::open()
     // users are not expected to configure an authentication method,
     // so pick one automatically if the user indicated that he wants authentication
     // by setting user or password
-    string user, passwd;
-    getAuthentication(user, passwd);
-    if (passwd.size() || user.size()) {
+    const char *user = m_syncSourceConfig ? m_syncSourceConfig->getUser() : NULL,
+        *passwd = m_syncSourceConfig ? m_syncSourceConfig->getPassword() : NULL;
+    if (user && user[0] || passwd && passwd[0]) {
         GList *authmethod;
         if (!e_book_get_supported_auth_methods(m_addressbook, &authmethod, &gerror)) {
             throwError("getting authentication methods", gerror );
@@ -148,11 +146,11 @@ void EvolutionContactSource::open()
             const char *method = (const char *)authmethod->data;
             LOG.debug("%s: trying authentication method \"%s\", user %s, password %s",
                       getName(), method,
-                      user.size() ? "configured" : "not configured",
-                      passwd.size() ? "configured" : "not configured");
+                      user && user[0] ? "configured" : "not configured",
+                      passwd && passwd[0] ? "configured" : "not configured");
             if (e_book_authenticate_user(m_addressbook,
-                                         user.c_str(),
-                                         passwd.c_str(),
+                                         user ? user : "",
+                                         passwd ? passwd : "",
                                          method,
                                          &gerror)) {
                 LOG.debug("%s: authentication succeeded", getName());
@@ -794,7 +792,7 @@ int EvolutionContactSource::deleteItemThrow(SyncItem& item)
     return status;
 }
 
-const char *EvolutionContactSource::getMimeType()
+const char *EvolutionContactSource::getMimeType() const
 {
     switch( m_vcardFormat ) {
      case EVC_FORMAT_VCARD_21:
@@ -807,7 +805,7 @@ const char *EvolutionContactSource::getMimeType()
     }
 }
 
-const char *EvolutionContactSource::getMimeVersion()
+const char *EvolutionContactSource::getMimeVersion() const
 {
     switch( m_vcardFormat ) {
      case EVC_FORMAT_VCARD_21:
@@ -929,14 +927,14 @@ EContact *EvolutionContactSource::getContact( const string &uid )
 #ifdef ENABLE_MODULES
 
 extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
-                                                          SyncSourceConfig *sc,
-                                                          const string &changeId,
-                                                          const string &id,
-                                                          const string &mimeType)
+                                                          const SyncSourceNodes &nodes,
+                                                          const string &changeId)
 {
-    if (mimeType == "text/x-vcard") {
+    string sourceType = getSourceType(sc);
+
+    if (sourceType == "text/x-vcard") {
         return new EvolutionContactSource(name, sc, changeId, id, EVC_FORMAT_VCARD_21);
-    } else if (mimeType == "text/vcard") {
+    } else if (sourceType == "text/vcard") {
         return new EvolutionContactSource(name, sc, changeId, id, EVC_FORMAT_VCARD_30);
     } else {
         return NULL;

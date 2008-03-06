@@ -20,8 +20,9 @@
 #define INCL_TRACKINGSYNCSOURCE
 
 #include "EvolutionSyncSource.h"
-#include "DeviceManagementNode.h"
+#include "ConfigNode.h"
 
+#include <boost/shared_ptr.hpp>
 #include <string>
 #include <map>
 using namespace std;
@@ -57,18 +58,8 @@ class TrackingSyncSource : public EvolutionSyncSource
   public:
     /**
      * Creates a new tracking sync source.
-     *
-     * @param name           the named needed by SyncSource
-     * @param sc             obligatory config for this source, must remain valid throughout the lifetime of the source;
-     *                       may be NULL for unit testing
-     * @param changeId       is used to track changes in the Evolution backend
-     * @param id             identifies the backend; not specifying it makes this instance
-     *                       unusable for anything but listing backend databases
-     * @param trackingNode   the management node which this instance shall use to store its state:
-     *                       ownership over the pointer has to be transferred to the source
      */
-    TrackingSyncSource(const string &name, SyncSourceConfig *sc, const string &changeId, const string &id,
-                       eptr<spdm::DeviceManagementNode> trackingNode);
+    TrackingSyncSource(const EvolutionSyncSourceParams &params);
 
     /**
      * returns a list of all know sources for the kind of items
@@ -150,20 +141,25 @@ class TrackingSyncSource : public EvolutionSyncSource
     virtual string fileSuffix() = 0;
 
     /**
-     * the actual type used by the source for items
+     * Returns the preferred mime type of the items handled by the sync source.
+     * Example: "text/x-vcard"
      */
-    virtual const char *getMimeType() = 0;
+    virtual const char *getMimeType() const = 0;
 
     /**
-     * the actual version of the mime specification
+     * Returns the version of the mime type used by client.
+     * Example: "2.1"
      */
-    virtual const char *getMimeVersion() = 0;
+    virtual const char *getMimeVersion() const = 0;
 
     /**
-     * supported data types for send and receive,
-     * in the format "type1:version1,type2:version2,..."
+     * A string representing the source types (with versions) supported by the SyncSource.
+     * The string must be formatted as a sequence of "type:version" separated by commas ','.
+     * For example: "text/x-vcard:2.1,text/vcard:3.0".
+     * The version can be left empty, for example: "text/x-s4j-sifc:".
+     * Supported types will be sent as part of the DevInf.
      */
-    virtual const char *getSupportedTypes() = 0;
+    virtual const char* getSupportedTypes() const = 0;
 
  protected:
     /** log a one-line info about an item */
@@ -184,7 +180,7 @@ class TrackingSyncSource : public EvolutionSyncSource
     /** cannot be cloned because clones would have to coordinate access to change tracking */
     ArrayElement *clone() { return NULL; }
 
-    eptr<spdm::DeviceManagementNode> m_trackingNode;
+    boost::shared_ptr<ConfigNode> m_trackingNode;
 };
 
 #endif // INCL_TRACKINGSYNCSOURCE

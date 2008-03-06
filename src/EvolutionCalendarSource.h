@@ -36,20 +36,14 @@ class EvolutionCalendarSource : public EvolutionSyncSource
 {
   public:
     /**
-     * Creates a new Evolution calendar source.
-     *
-     * @param    type        chooses which parts of the calendar to use
-     * @param    changeId    is used to track changes in the Evolution backend;
-     *                       not specifying it implies that always all items are returned
-     * @param    id          identifies the backend; not specifying it makes this instance
-     *                       unusable for anything but listing backend databases
+     * @param    type        chooses which kind of calendar data to use:
+     *                       E_CAL_SOURCE_TYPE_TODO,
+     *                       E_CAL_SOURCE_TYPE_JOURNAL,
+     *                       E_CAL_SOURCE_TYPE_EVENT
      */
-    EvolutionCalendarSource( ECalSourceType type,
-                             const string &name,
-                             SyncSourceConfig *sc,
-                             const string &changeId = string(""),
-                             const string &id = string("") );
-    EvolutionCalendarSource( const EvolutionCalendarSource &other );
+    EvolutionCalendarSource(ECalSourceType type,
+                            const EvolutionSyncSourceParams &params);
+    EvolutionCalendarSource(const EvolutionCalendarSource &other);
     virtual ~EvolutionCalendarSource() { close(); }
 
     //
@@ -60,9 +54,9 @@ class EvolutionCalendarSource : public EvolutionSyncSource
     virtual void close(); 
     virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "ics"; }
-    virtual const char *getMimeType() { return "text/calendar"; }
-    virtual const char *getMimeVersion() { return "2.0"; }
-    virtual const char *getSupportedTypes() { return "text/calendar:2.0"; }
+    virtual const char *getMimeType() const { return "text/calendar"; }
+    virtual const char *getMimeVersion() const { return "2.0"; }
+    virtual const char *getSupportedTypes() const { return "text/calendar:2.0"; }
    
     virtual SyncItem *createItem(const string &uid);
 

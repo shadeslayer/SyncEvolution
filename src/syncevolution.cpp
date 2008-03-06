@@ -35,6 +35,7 @@ using namespace std;
 
 #include "EvolutionSyncSource.h"
 #include "EvolutionSyncClient.h"
+#include "VolatileConfigNode.h"
 
 #if defined(ENABLE_MAEMO) && defined (ENABLE_EBOOK)
 
@@ -115,7 +116,7 @@ void usage(char **argv, bool full, string error = string(""))
 #ifdef LOG_HAVE_SET_LOGGER
 class CmdLineLogger : public POSIXLog {
 protected:
-    virtual void printLine(int firstLine,
+    virtual void printLine(bool firstLine,
                            const char *fullTime,
                            const char *shortTime,
                            LogLevel level,
@@ -243,8 +244,14 @@ int main( int argc, char **argv )
                 { NULL }
             };
 
+            boost::shared_ptr<FilterConfigNode> configNode(new VolatileConfigNode());
+            boost::shared_ptr<FilterConfigNode> hiddenNode(new VolatileConfigNode());
+            boost::shared_ptr<FilterConfigNode> trackingNode(new VolatileConfigNode());
+            SyncSourceNodes nodes(configNode, hiddenNode, trackingNode);
+            EvolutionSyncSourceParams params("list", nodes, "");
             for (int i = 0; kinds[i].mimeType; i++ ) {
-                auto_ptr<EvolutionSyncSource> source(EvolutionSyncSource::createSource("list", NULL, NULL, "", "", kinds[i].mimeType, false));
+                configNode->setProperty("type", kinds[i].mimeType);
+                auto_ptr<EvolutionSyncSource> source(EvolutionSyncSource::createSource(params, false));
                 if (source.get() != NULL) {
                     listSources(*source, kinds[i].kind);
                     cout << "\n";

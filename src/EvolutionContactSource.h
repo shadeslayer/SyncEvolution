@@ -37,20 +37,9 @@
 class EvolutionContactSource : public EvolutionSyncSource
 {
   public:
-    /**
-     * Creates a new Evolution address book source.
-     *
-     * @param    changeId    is used to track changes in the Evolution backend;
-     *                       not specifying it implies that always all items are returned
-     * @param    id          identifies the backend; not specifying it makes this instance
-     *                       unusable for anything but listing backend databases
-     */
-    EvolutionContactSource( const string &name,
-                            SyncSourceConfig *sc,
-                            const string &changeId = string(""),
-                            const string &id = string(""),
-                            EVCardFormat vcardFormat = EVC_FORMAT_VCARD_30 );
-    EvolutionContactSource( const EvolutionContactSource &other );
+    EvolutionContactSource(const EvolutionSyncSourceParams &params,
+                           EVCardFormat vcardFormat = EVC_FORMAT_VCARD_30);
+    EvolutionContactSource(const EvolutionContactSource &other);
     virtual ~EvolutionContactSource() { close(); }
 
     //
@@ -71,9 +60,9 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual void close(); 
     virtual void exportData(ostream &out);
     virtual string fileSuffix() { return "vcf"; }
-    virtual const char *getMimeType();
-    virtual const char *getMimeVersion();
-    virtual const char *getSupportedTypes() { return "text/vcard:3.0,text/x-vcard:2.1"; }
+    virtual const char *getMimeType() const;
+    virtual const char *getMimeVersion() const;
+    virtual const char *getSupportedTypes() const { return "text/vcard:3.0,text/x-vcard:2.1"; }
    
     virtual SyncItem *createItem(const string &uid);
     

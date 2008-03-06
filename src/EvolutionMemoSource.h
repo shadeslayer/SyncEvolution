@@ -33,12 +33,8 @@
 class EvolutionMemoSource : public EvolutionCalendarSource
 {
   public:
-    EvolutionMemoSource(ECalSourceType type,
-                        const string &name,
-                        SyncSourceConfig *sc,
-                        const string &changeId,
-                        const string &id) :
-        EvolutionCalendarSource(type, name, sc, changeId, id) {}
+    EvolutionMemoSource(const EvolutionSyncSourceParams &params) :
+        EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, params) {}
     
     //
     // implementation of EvolutionSyncSource

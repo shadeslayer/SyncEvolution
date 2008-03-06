@@ -49,8 +49,8 @@
 class SQLiteContactSource : public TrackingSyncSource
 {
   public:
-    SQLiteContactSource( const string name, SyncSourceConfig *sc, const string &changeId, const string &id, eptr<spdm::DeviceManagementNode> trackingNode) :
-        TrackingSyncSource(name, sc, changeId, id, trackingNode)
+    SQLiteContactSource(const EvolutionSyncSourceParams &params) :
+        TrackingSyncSource(params)
         {}
 
  protected:
@@ -60,9 +60,9 @@ class SQLiteContactSource : public TrackingSyncSource
     virtual sources getSyncBackends() { return sources(); }
     virtual SyncItem *createItem(const string &uid);
     virtual string fileSuffix() { return "vcf"; }
-    virtual const char *getMimeType() { return "text/x-vcard"; }
-    virtual const char *getMimeVersion() { return "2.1"; }
-    virtual const char *getSupportedTypes() { return "text/vcard:3.0,text/x-vcard:2.1"; }
+    virtual const char *getMimeType() const { return "text/x-vcard"; }
+    virtual const char *getMimeVersion() const { return "2.1"; }
+    virtual const char *getSupportedTypes()const { return "text/vcard:3.0,text/x-vcard:2.1"; }
     virtual void logItem(const string &uid, const string &info, bool debug = false);
     virtual void logItem(SyncItem &item, const string &info, bool debug = false);
 

@@ -168,10 +168,8 @@ class AddressBookSource : public EvolutionSyncSource
      *                       unusable for anything but listing backend databases
      */
     AddressBookSource(const string &name,
-                      SyncSourceConfig *sc,
-                      const string &changeId = string(""),
-                      const string &id = string(""),
-                      const string &configPath = string(""));
+                      const SyncSourceNodes &nodes,
+                      const string &changeId = string(""));
     AddressBookSource(const AddressBookSource &other);
     virtual ~AddressBookSource() { close(); }
 

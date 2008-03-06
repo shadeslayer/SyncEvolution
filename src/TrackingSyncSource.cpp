@@ -18,12 +18,10 @@
 
 #include "TrackingSyncSource.h"
 
-TrackingSyncSource::TrackingSyncSource(const string &name, SyncSourceConfig *sc, const string &changeId, const string &id,
-                                       eptr<spdm::DeviceManagementNode> trackingNode) :
-    EvolutionSyncSource(name, sc, changeId, id),
-    m_trackingNode(trackingNode)
+TrackingSyncSource::TrackingSyncSource(const EvolutionSyncSourceParams &params) :
+    EvolutionSyncSource(params),
+    m_trackingNode(params.m_nodes.m_trackingNode)
 {
-    m_trackingNode->setAutosave(false);
 }
 
 void TrackingSyncSource::beginSyncThrow(bool needAll,
@@ -36,13 +34,15 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
     // slow sync or refresh-from-server/client: clear tracking node and
     // recreate it based on current content of database
     if (!needPartial) {
-        ArrayList uids;
-        ArrayList modTimes;
-        m_trackingNode->readProperties(&uids, &modTimes);
-        for (int i = 0; i < uids.size(); i++ ) {
-            const StringBuffer *uid = (StringBuffer *)uids[i];
-            m_deletedItems.addItem(uid->c_str());
-            m_trackingNode->removeProperty(uid->c_str());
+        map<string, string> props = m_trackingNode->readProperties();
+
+        for (map<string, string>::iterator it = props.begin();
+             it != props.end();
+             it++) {
+            const string &uid(it->first);
+            const string &modTime(it->second);
+            m_deletedItems.addItem(uid.c_str());
+            m_trackingNode->removeProperty(uid);
         }
     }
 
@@ -59,36 +59,37 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
             m_allItems.addItem(uid);
 
             if (needPartial) {
-                arrayptr<char> serverRevision(m_trackingNode->readPropertyValue(uid.c_str()));
+                string serverRevision(m_trackingNode->readProperty(uid));
 
-                if (!serverRevision || !serverRevision[0]) {
+                if (!serverRevision.size()) {
                     m_newItems.addItem(uid);
-                    m_trackingNode->setPropertyValue(uid.c_str(), revision.c_str());
+                    m_trackingNode->setProperty(uid, revision);
                 } else {
-                    if (revision !=  serverRevision.get()) {
+                    if (revision != serverRevision) {
                         m_updatedItems.addItem(uid);
-                        m_trackingNode->setPropertyValue(uid.c_str(), revision.c_str());
+                        m_trackingNode->setProperty(uid, revision);
                     }
                 }
             } else {
                 // refresh-from-client: make sure that all items we are about
                 // to send to server are also in our tracking node (otherwise
                 // the next incremental sync will go wrong)
-                m_trackingNode->setPropertyValue(uid.c_str(), revision.c_str());
+                m_trackingNode->setProperty(uid, revision);
             }
         }
     }
 
     // clear information about all items that we recognized as deleted
     if (needPartial) {
-        ArrayList uids;
-        ArrayList modTimes;
-        m_trackingNode->readProperties(&uids, &modTimes);
-        for (int i = 0; i < uids.size(); i++ ) {
-            const StringBuffer *uid = (StringBuffer *)uids[i];
-            if (m_allItems.find(uid->c_str()) == m_allItems.end()) {
-                m_deletedItems.addItem(uid->c_str());
-                m_trackingNode->removeProperty(uid->c_str());
+        map<string, string> props = m_trackingNode->readProperties();
+
+        for (map<string, string>::iterator it = props.begin();
+             it != props.end();
+             it++) {
+            const string &uid(it->first);
+            if (m_allItems.find(uid) == m_allItems.end()) {
+                m_deletedItems.addItem(uid.c_str());
+                m_trackingNode->removeProperty(uid);
             }
         }
     }
@@ -105,7 +106,7 @@ void TrackingSyncSource::endSyncThrow()
     flush();
 
     if (!hasFailed()) {
-        m_trackingNode->update(false);
+        m_trackingNode->flush();
     } else {
         // SyncEvolution's error handling for failed sources
         // forces a slow sync the next time. Therefore the
@@ -134,7 +135,7 @@ int TrackingSyncSource::addItemThrow(SyncItem& item)
     string uid;
     string revision = insertItem(uid, item);
     item.setKey(uid.c_str());
-    m_trackingNode->setPropertyValue(uid.c_str(), revision.c_str());
+    m_trackingNode->setProperty(uid, revision);
     return STC_OK;
 }
 
@@ -144,10 +145,10 @@ int TrackingSyncSource::updateItemThrow(SyncItem& item)
     string newuid = olduid;
     string revision = insertItem(newuid, item);
     if (olduid != newuid) {
-        m_trackingNode->removeProperty(olduid.c_str());
+        m_trackingNode->removeProperty(olduid);
     }
     item.setKey(newuid.c_str());
-    m_trackingNode->setPropertyValue(newuid.c_str(), revision.c_str());
+    m_trackingNode->setProperty(newuid, revision);
     return STC_OK;
 }
 
@@ -155,7 +156,7 @@ int TrackingSyncSource::deleteItemThrow(SyncItem& item)
 {
     const string uid = item.getKey();
     deleteItem(uid);
-    m_trackingNode->removeProperty(uid.c_str());
+    m_trackingNode->removeProperty(uid);
     return STC_OK;
 }
 

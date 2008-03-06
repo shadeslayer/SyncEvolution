@@ -21,7 +21,6 @@
 
 #include <base/test.h>
 #include <test/ClientTest.h>
-#include <EvolutionClientConfig.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 #include <exception>
@@ -129,14 +128,10 @@ MacOSAddressBook MacOSAddressBook::m_singleton;
 /** a wrapper class which automatically does an open() in the constructor and a close() in the destructor */
 template<class T> class TestEvolutionSyncSource : public T {
 public:
-    TestEvolutionSyncSource(ECalSourceType type, string changeID, string database) :
-        T(type, "dummy", NULL, changeID, database) {}
-    TestEvolutionSyncSource(string changeID, string database) :
-        T("dummy", NULL, changeID, database) {}
-    TestEvolutionSyncSource(string changeID, string database, string configPath) :
-        T("dummy", NULL, changeID, database, configPath) {}
-    TestEvolutionSyncSource(string changeID, string database, eptr<spdm::DeviceManagementNode> trackingNode) :
-        T("dummy", NULL, changeID, database, trackingNode) {}
+    TestEvolutionSyncSource(ECalSourceType type, const EvolutionSyncSourceParams &params) :
+        T(type, params) {}
+    TestEvolutionSyncSource(const EvolutionSyncSourceParams &params) :
+        T(params) {}
 
     virtual int beginSync() {
         CPPUNIT_ASSERT_NO_THROW(T::open());
@@ -266,48 +261,32 @@ public:
         // get configuration and set obligatory fields
         LOG.setLevel(LOG_LEVEL_DEBUG);
         std::string root = std::string("evolution/") + server + "_" + id;
-        std::auto_ptr<DMTClientConfig> config(new EvolutionClientConfig(root.c_str(), true));
-        config->read();
-        config->open();
-        DeviceConfig &dc(config->getDeviceConfig());
-        if (!strlen(dc.getDevID())) {
+        EvolutionSyncConfig config(string(server) + "_" + id);
+        if (!config.exists()) {
             // no configuration yet
-            config->setClientDefaults();
-            dc.setDevID(id == "1" ? "sc-api-nat" : "sc-pim-ppc");
+            config.setDefaults(server);
+            config.setProperty("deviceId", id == "1" ? "sc-api-nat" : "sc-pim-ppc");
         }
         for (SourceType sourceType = (SourceType)0; sourceType < TEST_MAX_SOURCE; sourceType = (SourceType)((int)sourceType + 1) ) {
             ClientTest::Config testconfig;
             getSourceConfig(sourceType, testconfig);
             CPPUNIT_ASSERT(testconfig.type);
 
-            SyncSourceConfig* sc = config->getSyncSourceConfig(testconfig.sourceName);
+            boost::shared_ptr<EvolutionSyncSourceConfig> sc = config.getSyncSourceConfig(testconfig.sourceName);
             if (!sc) {
                 // no configuration yet
-                config->setSourceDefaults(testconfig.sourceName);
-                sc = config->getSyncSourceConfig(testconfig.sourceName);
+                config.setSourceDefaults(testconfig.sourceName);
+                sc = config.getSyncSourceConfig(testconfig.sourceName);
                 CPPUNIT_ASSERT(sc);
-                sc->setURI(testconfig.uri);
-                sc->setType(testconfig.type);
-                // ensure that config has a ManagementNode for the new source
-                config->save();
-                config->read();
-                config->open();
+                sc->setProperty("uri", testconfig.uri);
+                sc->setProperty("type", testconfig.type);
             }
-            ManagementNode *node = config->getSyncSourceNode(testconfig.sourceName);
-            CPPUNIT_ASSERT(node);
+
+            // always set this property: the name might have changes since last test run
             string database = getDatabaseName(sourceType);
-            node->setPropertyValue("evolutionsource", database.c_str());
-
-            // flush config to disk
-            config.reset(new EvolutionClientConfig(root.c_str(), true));
-            config->read();
-            config->open();
-            sc = config->getSyncSourceConfig(testconfig.sourceName);
-            CPPUNIT_ASSERT(sc);
-
-            sc->setType(testconfig.type);
+            sc->setProperty("evolutionsource", database.c_str());
         }
-        config->save();
+        config.flush();
     }
 
     virtual LocalTests *createLocalTests(const std::string &name, int sourceParam, ClientTest::Config &co) {
@@ -457,7 +436,7 @@ public:
                            long maxObjSize,
                            bool loSupport,
                            const char *encoding) :
-                EvolutionSyncClient(server, false, activeSources, "evolution/"),
+                EvolutionSyncClient(server, false, activeSources),
                 m_syncMode(syncMode),
                 m_maxMsgSize(maxMsgSize),
                 m_maxObjSize(maxObjSize),
@@ -466,20 +445,17 @@ public:
                 {}
 
         protected:
-            virtual void prepare(SyncManagerConfig &config,
-                                 SyncSource **sources) {
+            virtual void prepare(SyncSource **sources) {
                 for (SyncSource **source = sources;
                      *source;
                      source++) {
-                    (*source)->getConfig().setEncoding(m_encoding ? m_encoding : "");
+                    ((EvolutionSyncSource *)*source)->addConfigFilter("encoding", m_encoding ? m_encoding : "");
                     (*source)->setPreferredSyncMode(m_syncMode);
                 }
-                DeviceConfig &dc(config.getDeviceConfig());
-                dc.setLoSupport(m_loSupport);
-                dc.setMaxObjSize(m_maxObjSize);
-                AccessConfig &ac(config.getAccessConfig());
-                ac.setMaxMsgSize(m_maxMsgSize);
-                EvolutionSyncClient::prepare(config, sources);
+                addConfigFilter("loSupport", m_loSupport);
+                addConfigFilter("maxObjSize", m_maxObjSize);
+                addConfigFilter("maxMsgSize", m_maxMsgSize);
+                EvolutionSyncClient::prepare(sources);
             }
 
         private:
@@ -555,47 +531,51 @@ private:
         changeID += isSourceA ? "1" : "2";
         string database = ((TestEvolution &)client).getDatabaseName(type);
         SyncSource *ss = NULL;
-        
+
+        EvolutionSyncConfig config("client-test-changes");
+        string name = ((TestEvolution &)client).getSourceName(type);
+        SyncSourceNodes nodes = config.getSyncSourceNodes(name,
+                                                          string("_") + ((TestEvolution &)client).clientID +
+                                                          "_" + (isSourceA ? "A" : "B"));
+
+        // always set this property: the name might have changes since last test run
+        nodes.m_configNode->setProperty("evolutionsource", database.c_str());
+
+        EvolutionSyncSourceParams params(name,
+                                         nodes,
+                                         changeID);
+
         switch (type) {
          case TEST_CONTACT21_SOURCE:
          case TEST_CONTACT30_SOURCE:
 #ifdef ENABLE_EBOOK
-            ss = new TestEvolutionSyncSource<EvolutionContactSource>(changeID, database);
+            ss = new TestEvolutionSyncSource<EvolutionContactSource>(params);
 #endif
             break;
          case TEST_CALENDAR_SOURCE:
 #ifdef ENABLE_ECAL
-            ss = new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_EVENT, changeID, database);
+            ss = new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_EVENT, params);
 #endif
             break;
          case TEST_TASK_SOURCE:
 #ifdef ENABLE_ECAL         
-            ss = new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_TODO, changeID, database);
+            ss = new TestEvolutionSyncSource<EvolutionCalendarSource>(E_CAL_SOURCE_TYPE_TODO, params);
 #endif
             break;
          case TEST_MEMO_SOURCE:
 #ifdef ENABLE_ECAL         
-            ss = new TestEvolutionSyncSource<EvolutionMemoSource>(E_CAL_SOURCE_TYPE_JOURNAL, changeID, database);
+            ss = new TestEvolutionSyncSource<EvolutionMemoSource>(params);
 #endif
             break;
          case TEST_SQLITE_CONTACT_SOURCE:
 #ifdef ENABLE_SQLITE
-             {
-                 string trackingNodePath = string("client-test-changes/") +
-                     ((TestEvolution &)client).getSourceName(type) +
-                     "_" + ((TestEvolution &)client).clientID +
-                     "_" +
-                     (isSourceA ? "A" : "B");
-                 eptr<spdm::DeviceManagementNode> trackingNode(new spdm::DeviceManagementNode(trackingNodePath.c_str()), "tracking node");
-                 ss = new TestEvolutionSyncSource<SQLiteContactSource>(changeID, database, trackingNode);
-                                                                       
-             }
+             ss = new TestEvolutionSyncSource<SQLiteContactSource>(params);
 #endif
             break;
          case TEST_ADDRESS_BOOK_SOURCE:
 #ifdef ENABLE_ADDRESSBOOK
             MacOSAddressBook::get().select(((TestEvolution &)client).clientID);
-            ss = new TestEvolutionSyncSource<AddressBookSource>(changeID, database, string("client-test-changes/") + ((TestEvolution &)client).getSourceName(type));
+            ss = new TestEvolutionSyncSource<AddressBookSource>(params);
 #endif
             break;
          default:

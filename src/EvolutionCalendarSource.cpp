@@ -37,12 +37,9 @@ static const string
 EVOLUTION_CALENDAR_PRODID("PRODID:-//ACME//NONSGML SyncEvolution//EN"),
 EVOLUTION_CALENDAR_VERSION("VERSION:2.0");
 
-EvolutionCalendarSource::EvolutionCalendarSource( ECalSourceType type,
-                                                  const string &name,
-                                                  SyncSourceConfig *sc,
-                                                  const string &changeId,
-                                                  const string &id ) :
-    EvolutionSyncSource(name, sc, changeId, id),
+EvolutionCalendarSource::EvolutionCalendarSource(ECalSourceType type,
+                                                 const EvolutionSyncSourceParams &params) :
+    EvolutionSyncSource(params),
     m_type(type)
 {
 }
@@ -98,13 +95,12 @@ EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
 char *EvolutionCalendarSource::authenticate(const char *prompt,
                                             const char *key)
 {
-    string user, passwd;
-    getAuthentication(user, passwd);
-    
+    const char *passwd = m_syncSourceConfig ? m_syncSourceConfig->getPassword() : NULL;
+
     LOG.debug("%s: authentication requested, prompt \"%s\", key \"%s\" => %s",
               getName(), prompt, key,
-              passwd.size() ? "returning configured password" : "no password configured");
-    return passwd.size() ? strdup(passwd.c_str()) : NULL;
+              passwd && passwd[0] ? "returning configured password" : "no password configured");
+    return passwd && passwd[0] ? strdup(passwd) : NULL;
 }
 
 void EvolutionCalendarSource::open()
@@ -115,18 +111,19 @@ void EvolutionCalendarSource::open()
     if (!e_cal_get_sources(&sources, m_type, &gerror)) {
         throwError("unable to access calendars", gerror);
     }
-    
-    ESource *source = findSource(sources, m_id);
+
+    string id = getDatabaseID();    
+    ESource *source = findSource(sources, id);
     bool onlyIfExists = true;
     if (!source) {
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
-        if (m_id == "<<system>>" && m_newSystem) {
+        if (id == "<<system>>" && m_newSystem) {
             m_calendar.set(m_newSystem(), "system calendar/tasks/memos");
-        } else if (!m_id.compare(0, 7, "file://")) {
-            m_calendar.set(e_cal_new_from_uri(m_id.c_str(), m_type), "creating calendar/tasks/memos");
+        } else if (!id.compare(0, 7, "file://")) {
+            m_calendar.set(e_cal_new_from_uri(id.c_str(), m_type), "creating calendar/tasks/memos");
         } else {
-            throwError(string("not found: '") + m_id + "'");
+            throwError(string("not found: '") + id + "'");
         }
         onlyIfExists = false;
     } else {
@@ -565,20 +562,21 @@ string EvolutionCalendarSource::getCompUID(icalcomponent *icomp)
 #ifdef ENABLE_MODULES
 
 extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
-                                                          SyncSourceConfig *sc,
-                                                          const string &changeId,
-                                                          const string &id,
-                                                          const string &mimeType)
+                                                          const SyncSourceNodes &nodes,
+                                                          const string &changeId)
+
 {
-    if (mimeType == "text/x-todo") {
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, sc, changeId, id);
-    } else if (mimeType == "text/x-journal") {
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, changeId, id);
-    } else if (mimeType == "text/plain") {
-        return new EvolutionMemoSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, changeId, id);
-    } else if (mimeType == "text/calendar" ||
-               mimeType == "text/x-vcalendar") {
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, sc, changeId, id);
+    string sourceType = getSourceType(sc);
+
+    if (sourceType == "text/x-todo") {
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, name, sc, changeId);
+    } else if (sourceType == "text/x-journal") {
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, changeId);
+    } else if (sourceType == "text/plain") {
+        return new EvolutionMemoSource(E_CAL_SOURCE_TYPE_JOURNAL, name, sc, changeId);
+    } else if (sourceType == "text/calendar" ||
+               sourceType == "text/x-vcalendar") {
+        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, name, sc, changeId);
     } else {
         return NULL;
     }
