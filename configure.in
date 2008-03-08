@@ -5,6 +5,9 @@ AM_INIT_AUTOMAKE(syncevolution, 0.7)
 AM_CONFIG_HEADER(config.h)
 AC_LIBTOOL_DLOPEN
 
+dnl default device type (see AC_DEFINE below)
+DEVICE_TYPE=desktop
+
 # command used to configure client library, including options
 CLIENT_CONFIGURE=$PWD/src/client-api/build/autotools/configure
 
@@ -50,6 +53,7 @@ AC_ARG_ENABLE(maemo,
               AS_HELP_STRING([--enable-maemo],
                              [enables some hacks which work around problems with the Maemo 2.0 until at least 3.0 EDS-Dbus]),
               [AC_DEFINE(ENABLE_MAEMO, 1, [enable Maemo hacks])
+               DEVICE_TYPE=Maemo
                MODIFY_SYNCCOMPARE='-e "s/use encoding/#use encoding/;" -e "s/:utf8//;"'])
 AC_SUBST(MODIFY_SYNCCOMPARE)
 
@@ -261,6 +265,7 @@ fi
 
 if test "$enable_addressbook" = "yes"; then
         AC_DEFINE(ENABLE_ADDRESSBOOK, 1, [addressbook available])
+        DEVICE_TYPE=MacOS_X
         enable_any="yes"
 else
         ADDRESSBOOK_LIBS=
@@ -334,7 +339,15 @@ AC_SUBST(SYNCEVOLUTION_MODULES)
 dnl a quick-and-dirty way to detect compilation for the iPhone
 if test "$host" == "arm-apple-darwin"; then
    AC_DEFINE(IPHONE, 1, [compiling for iPhone])
+   DEVICE_TYPE=iPhone
 fi
+
+dnl This string is sent as part of the SyncML DevInf (device
+dnl information) structure to the server. All SyncEvolution platforms
+dnl use "SyncEvolution" as HTTP user agent and "Mod" (model), so the
+dnl device type is the only way how different kinds of clients can be
+dnl distinguished.
+AC_DEFINE_UNQUOTED(DEVICE_TYPE, "$DEVICE_TYPE", "SyncML DevInf DevType")
 
 AC_CHECK_HEADERS(stdarg.h valgrind/valgrind.h execinfo.h)
 
