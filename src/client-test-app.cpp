@@ -273,7 +273,7 @@ public:
             CPPUNIT_ASSERT(testconfig.type);
 
             boost::shared_ptr<EvolutionSyncSourceConfig> sc = config.getSyncSourceConfig(testconfig.sourceName);
-            if (!sc) {
+            if (!sc || !sc->exists()) {
                 // no configuration yet
                 config.setSourceDefaults(testconfig.sourceName);
                 sc = config.getSyncSourceConfig(testconfig.sourceName);

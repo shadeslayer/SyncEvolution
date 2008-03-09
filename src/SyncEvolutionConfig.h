@@ -38,46 +38,54 @@ struct SyncSourceNodes;
  * additional code to read and write the property from/to a
  * ConfigNode.
  *
- * @TODO add default value if the property is not set
+ * A default value is returned if the ConfigNode doesn't have
+ * a value set (= empty string).
  */
 class ConfigProperty {
  public:
- ConfigProperty(const string &name, const string &comment) :
+    ConfigProperty(const string &name, const string &comment, const string &def = string("")) :
     m_name(name),
-        m_comment(comment)
+        m_comment(comment),
+        m_defValue(def),
+        m_hidden(false)
         {}
     
-    const string m_name, m_comment;
+    const string m_name, m_comment, m_defValue;
 
-    void setProperty(ConfigNode &node, const string &value) { node.setProperty(m_name, value, m_comment); }
-    void setProperty(FilterConfigNode &node, const string &value, bool temporarily = false) {
+    bool isHidden() const { return m_hidden; }
+    void setHidden(bool hidden) { m_hidden = hidden; }
+
+    void setProperty(ConfigNode &node, const string &value) const { node.setProperty(m_name, value, m_comment); }
+    void setProperty(FilterConfigNode &node, const string &value, bool temporarily = false) const {
         if (temporarily) {
             node.addFilter(m_name, value);
         } else {
             node.setProperty(m_name, value, m_comment);
         }
     }
-    string getProperty(const ConfigNode &node) const { return node.readProperty(m_name); }
+    string getProperty(const ConfigNode &node) const { string res = node.readProperty(m_name); return res.size() ? res : m_defValue; }
+
+ private:
+    bool m_hidden;
 };
 
 /**
  * Instead of reading and writing strings, this class interprets the content
  * as a specific type.
  */
-template<class T, T def> class TypedConfigProperty : public ConfigProperty {
+template<class T> class TypedConfigProperty : public ConfigProperty {
  public:
-    TypedConfigProperty(const string &name, const string &comment, const T defValue = def) :
-    ConfigProperty(name, comment),
-    m_defValue(def)
+    TypedConfigProperty(const string &name, const string &comment, const string &defValue = string("0")) :
+    ConfigProperty(name, comment, defValue)
         {}
 
-    void setProperty(ConfigNode &node, const T &value) {
+    void setProperty(ConfigNode &node, const T &value) const {
         ostringstream out;
 
         out << value;
         node.setProperty(m_name, out.str(), m_comment);
     }
-    void setProperty(FilterConfigNode &node, const T &value, bool temporarily = false) {
+    void setProperty(FilterConfigNode &node, const T &value, bool temporarily = false) const {
         ostringstream out;
 
         out << value;
@@ -94,18 +102,17 @@ template<class T, T def> class TypedConfigProperty : public ConfigProperty {
         if (in >> res) {
             return res;
         } else {
-            return m_defValue;
+            istringstream defStream(m_defValue);
+            defStream >> res;
+            return res;
         }
     }
-
- private:
-    T m_defValue;
 };
 
-typedef TypedConfigProperty<int, 0> IntConfigProperty;
-typedef TypedConfigProperty<unsigned int, 0> UIntConfigProperty;
-typedef TypedConfigProperty<long, 0> LongConfigProperty;
-typedef TypedConfigProperty<unsigned long, 0> ULongConfigProperty;
+typedef TypedConfigProperty<int> IntConfigProperty;
+typedef TypedConfigProperty<unsigned int> UIntConfigProperty;
+typedef TypedConfigProperty<long> LongConfigProperty;
+typedef TypedConfigProperty<unsigned long> ULongConfigProperty;
 
 
 /**
@@ -114,8 +121,8 @@ typedef TypedConfigProperty<unsigned long, 0> ULongConfigProperty;
  */
 class BoolConfigProperty : public ConfigProperty {
  public:
- BoolConfigProperty(const string &name, const string &comment) :
-    ConfigProperty(name, comment)
+    BoolConfigProperty(const string &name, const string &comment, const string &defValue = string("F")) :
+    ConfigProperty(name, comment, defValue )
         {}
 
     void setProperty(ConfigNode &node, bool value) {
@@ -210,7 +217,7 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     EvolutionSyncConfig(const string &server);
 
     /** true if the main configuration file already exists */
-    bool exists();
+    bool exists() const;
 
     /** write changes */
     void flush();
@@ -329,12 +336,10 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     virtual void setMaxMsgSize(unsigned long value, bool temporarily = false);
     virtual unsigned int getMaxObjSize() const;
     virtual void setMaxObjSize(unsigned int value, bool temporarily = false);
-    virtual unsigned long getReadBufferSize() const;
-    virtual void setReadBufferSize(unsigned long value, bool temporarily = false);
+    virtual unsigned long getReadBufferSize() const { return 0; }
     virtual bool  getCompression() const;
     virtual void setCompression(bool value, bool temporarily = false);
-    virtual unsigned int getResponseTimeout() const;
-    virtual void setResponseTimeout(unsigned int value, bool temporarily = false);
+    virtual unsigned int getResponseTimeout() const { return 0; }
     virtual const char*  getDevID() const;
     virtual void setDevID(const string &value, bool temporarily = false);
 
@@ -420,6 +425,8 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
     EvolutionSyncSourceConfig(const string &name, const SyncSourceNodes &nodes);
 
     static ConfigPropertyRegistry &getRegistry();
+
+    bool exists() const { return m_nodes.m_configNode->exists(); }
 
     /**
      * @defgroup EvolutionSyncSourceConfigExtensions

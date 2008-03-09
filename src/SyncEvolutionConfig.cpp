@@ -60,7 +60,7 @@ EvolutionSyncConfig::EvolutionSyncConfig(const string &server) :
     m_hiddenNode = m_tree->open(path, true);
 }
 
-bool EvolutionSyncConfig::exists()
+bool EvolutionSyncConfig::exists() const
 {
     return m_configNode->exists();
 }
@@ -116,17 +116,17 @@ static ConfigProperty syncPropDevID("deviceId",
                                     "client; it must be set to something unique if SyncEvolution is used\n"
                                     "to synchronize data between different computers");
 static ConfigProperty syncPropUsername("username",
-                                       "authorization for the SyncML server: account");
-static ConfigProperty syncPropPassword("password",
-                                       "authorization for the SyncML server: password");
+                                       "authorization for the SyncML server",
+                                       "your SyncML server account name");
+static ConfigProperty syncPropPassword("password", "",
+                                       "your SyncML server password");
 static BoolConfigProperty syncPropUseProxy("useProxy",
                                            "set to T to enable an HTTP proxy");
 static ConfigProperty syncPropProxyHost("proxyHost",
                                         "proxy URL (http://<host>:<port>)");
 static ConfigProperty syncPropProxyUsername("proxyUsername",
-                                            "authentication for proxy: account");
-static ConfigProperty syncPropProxyPassword("proxyPassword",
-                                            "authentication for proxy: password");
+                                            "authentication for proxy");
+static ConfigProperty syncPropProxyPassword("proxyPassword", "");
 static ConfigProperty syncPropClientAuthType("clientAuthType",
                                              "- 'syncml:auth-basic' for insecure method\n"
                                              "- 'syncml:auth-md5' for secure method");
@@ -142,12 +142,12 @@ static ULongConfigProperty syncPropMaxMsgSize("maxMsgSize",
                                               "threshold (maxObjSize). Presumably the server has to truncate or\n"
                                               "skip larger items. Finally the client and server may be given the\n"
                                               "permission to transmit large items in multiple messages (loSupport =\n"
-                                              "large object support).");
-static BoolConfigProperty syncPropLoSupport("loSupport", "");
-static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "");
-static ULongConfigProperty syncPropReadBufferSize("readBufferSize", "");
-static BoolConfigProperty syncPropCompression("enableCompression", "");
-static UIntConfigProperty syncPropResponseTimeout("responseTimeout", "");
+                                              "large object support).",
+                                              "8192");
+static BoolConfigProperty syncPropLoSupport("loSupport", "", "T");
+static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "500000");
+
+static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)");
 static ConfigProperty syncPropServerNonce("serverNonce", "");
 static ConfigProperty syncPropClientNonce("clientNonce", "");
 static ConfigProperty syncPropDevInfHash("devInfoHash", "");
@@ -196,12 +196,14 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropMaxMsgSize);
         registry.push_back(&syncPropMaxObjSize);
         registry.push_back(&syncPropLoSupport);
-        registry.push_back(&syncPropReadBufferSize);
         registry.push_back(&syncPropCompression);
-        registry.push_back(&syncPropResponseTimeout);
+
         registry.push_back(&syncPropServerNonce);
+        syncPropServerNonce.setHidden(true);
         registry.push_back(&syncPropClientNonce);
+        syncPropClientNonce.setHidden(true);
         registry.push_back(&syncPropDevInfHash);
+        syncPropDevInfHash.setHidden(true);
         initialized = true;
     }
 
@@ -230,12 +232,8 @@ unsigned long  EvolutionSyncConfig::getMaxMsgSize() const { return syncPropMaxMs
 void EvolutionSyncConfig::setMaxMsgSize(unsigned long value, bool temporarily) { syncPropMaxMsgSize.setProperty(*m_configNode, value, temporarily); }
 unsigned int  EvolutionSyncConfig::getMaxObjSize() const { return syncPropMaxObjSize.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setMaxObjSize(unsigned int value, bool temporarily) { syncPropMaxObjSize.setProperty(*m_configNode, value, temporarily); }
-unsigned long  EvolutionSyncConfig::getReadBufferSize() const { return syncPropReadBufferSize.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setReadBufferSize(unsigned long value, bool temporarily) { syncPropReadBufferSize.setProperty(*m_configNode, value, temporarily); }
 bool EvolutionSyncConfig::getCompression() const { return syncPropCompression.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setCompression(bool value, bool temporarily) { syncPropCompression.setProperty(*m_configNode, value, temporarily); }
-unsigned int  EvolutionSyncConfig::getResponseTimeout() const { return syncPropResponseTimeout.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setResponseTimeout(unsigned int value, bool temporarily) { syncPropResponseTimeout.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getDevID() const { return m_stringCache.getProperty(*m_configNode, syncPropDevID); }
 void EvolutionSyncConfig::setDevID(const string &value, bool temporarily) { syncPropDevID.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getServerNonce() const { return m_stringCache.getProperty(*m_hiddenNode, syncPropServerNonce); }
@@ -254,12 +252,31 @@ void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLog
 
 void EvolutionSyncConfig::setDefaults(const string &serverTemplate)
 {
-    // @TODO: implement setup templates
+    ConfigPropertyRegistry registry = getRegistry();
+
+    for (ConfigPropertyRegistry::const_iterator it = registry.begin();
+         it != registry.end();
+         ++it) {
+        if (!(*it)->isHidden()) {
+            (*it)->setProperty(*m_configNode, (*it)->m_defValue);
+        }
+    }
+    flush();
 }
 
 void EvolutionSyncConfig::setSourceDefaults(const string &name)
 {
-    // @TODO: implement setup templates
+    SyncSourceNodes nodes = getSyncSourceNodes(name);
+    ConfigPropertyRegistry registry = EvolutionSyncSourceConfig::getRegistry();
+
+    for (ConfigPropertyRegistry::const_iterator it = registry.begin();
+         it != registry.end();
+         ++it) {
+        if (!(*it)->isHidden()) {
+            (*it)->setProperty(*nodes.m_configNode, (*it)->m_defValue);
+        }
+    }
+    nodes.m_configNode->flush();
 }
 
 const char *EvolutionSyncConfig::getSwv() const { return VERSION; }
@@ -282,7 +299,8 @@ static ConfigProperty sourcePropSync("sync",
                                      "                        the items on the server\n"
                                      "  one-way-from-client = transmit changes from client\n"
                                      "  one-way-from-server = transmit changes from server\n"
-                                     "  none                = synchronization disabled");
+                                     "  none                = synchronization disabled",
+                                     "two-way");
 
 /** @todo: add aliases (contacts, calendar, todos, ...) and optional mime-type (contacts:text/x-vcard) */
 static ConfigProperty sourcePropSourceType("type",
@@ -325,7 +343,8 @@ static ConfigProperty sourcePropUser("evolutionuser",
                                      "needed as with local calendars and addressbooks can cause the\n"
                                      "Evolution backend to hang.");
 static ConfigProperty sourcePropPassword("evolutionpassword", "");
-static ConfigProperty sourcePropEncoding("encoding", "");
+
+static ConfigProperty sourcePropEncoding("encoding", "\"b64\" enables base64 encoding of outgoing items (not recommended)");
 static ULongConfigProperty sourcePropLast("last",
                                           "used by the SyncML library internally; do not modify");
 
@@ -343,6 +362,7 @@ ConfigPropertyRegistry &EvolutionSyncSourceConfig::getRegistry()
         registry.push_back(&sourcePropPassword);
         registry.push_back(&sourcePropEncoding);
         registry.push_back(&sourcePropLast);
+        sourcePropLast.setHidden(true);
         initialized = true;
     }
 

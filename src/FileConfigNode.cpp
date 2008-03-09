@@ -265,7 +265,9 @@ void FileConfigNode::setProperty(const string &property, const string &newvalue,
 
     // add each line of the comment as separate line in .ini file
     if (comment.size()) {
-        m_lines.push_back("");
+        if (m_lines.size()) {
+            m_lines.push_back("");
+        }
         size_t start = 0;
         while (true) {
             size_t end = comment.find('\n', start);
