@@ -744,6 +744,9 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
             EvolutionSyncSourceParams params(name,
                                              getSyncSourceNodes(name),
                                              string("sync4jevolution:") + getSyncURL() + "/" + name);
+            // the sync mode has to be set before instantiating the source
+            // because the client library reads the preferredSyncMode at that time:
+            // have to take a shortcut and set the property via its name
             if (overrideMode) {
                 params.m_nodes.m_configNode->addFilter("sync", "two-way");
             }
