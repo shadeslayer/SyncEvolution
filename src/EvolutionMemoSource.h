@@ -40,9 +40,9 @@ class EvolutionMemoSource : public EvolutionCalendarSource
     // implementation of EvolutionSyncSource
     //
     virtual SyncItem *createItem(const string &uid);
-    virtual const char *getMimeType() { return "text/plain"; }
-    virtual const char *getMimeVersion() { return "1.0"; }
-    virtual const char *getSupportedTypes() { return "text/plain:1.0"; }
+    virtual const char *getMimeType() const { return "text/plain"; }
+    virtual const char *getMimeVersion() const { return "1.0"; }
+    virtual const char *getSupportedTypes() const { return "text/plain:1.0"; }
 
     //
     // implementation of SyncSource
