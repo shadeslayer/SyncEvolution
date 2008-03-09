@@ -70,19 +70,6 @@ void EvolutionSyncConfig::flush()
     m_tree->flush();
 }
 
-void EvolutionSyncConfig::addConfigFilter(const string &property, const string &value)
-{
-    m_configNode->addFilter(property, value);
-}
-
-void EvolutionSyncConfig::addConfigFilter(const string &property, int value)
-{
-    char buffer[32];
-    sprintf(buffer, "%d", value);
-
-    m_configNode->addFilter(property, buffer);
-}
-
 boost::shared_ptr<PersistentEvolutionSyncSourceConfig> EvolutionSyncConfig::getSyncSourceConfig(const string &name)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
@@ -136,10 +123,10 @@ static BoolConfigProperty syncPropUseProxy("useProxy",
                                            "set to T to enable an HTTP proxy");
 static ConfigProperty syncPropProxyHost("proxyHost",
                                         "proxy URL (http://<host>:<port>)");
-static IntConfigProperty syncPropProxyUsername("proxyUsername",
-                                               "authentication for proxy: account");
-static IntConfigProperty syncPropProxyPassword("proxyPassword",
-                                               "authentication for proxy: password");
+static ConfigProperty syncPropProxyUsername("proxyUsername",
+                                            "authentication for proxy: account");
+static ConfigProperty syncPropProxyPassword("proxyPassword",
+                                            "authentication for proxy: password");
 static ConfigProperty syncPropClientAuthType("clientAuthType",
                                              "- 'syncml:auth-basic' for insecure method\n"
                                              "- 'syncml:auth-md5' for secure method");
@@ -222,34 +209,48 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
 }
 
 const char *EvolutionSyncConfig::getUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropUsername); }
+void EvolutionSyncConfig::setUsername(const string &value, bool temporarily) { syncPropUsername.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getPassword() const { return m_stringCache.getProperty(*m_configNode, syncPropPassword); }
+void EvolutionSyncConfig::setPassword(const string &value, bool temporarily) { syncPropPassword.setProperty(*m_configNode, value, temporarily); }
 bool EvolutionSyncConfig::getUseProxy() const { return syncPropUseProxy.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getProxyHost() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyHost); }
-int EvolutionSyncConfig::getProxyPort() const { return 0; }
+void EvolutionSyncConfig::setProxyHost(const string &value, bool temporarily) { syncPropProxyHost.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getProxyUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyUsername); }
+void EvolutionSyncConfig::setProxyUsername(const string &value, bool temporarily) { syncPropProxyUsername.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getProxyPassword() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyPassword); }
+void EvolutionSyncConfig::setProxyPassword(const string &value, bool temporarily) { syncPropProxyPassword.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getSyncURL() const { return m_stringCache.getProperty(*m_configNode, syncPropSyncURL); }
-bool EvolutionSyncConfig::getServerAuthRequired() const { return false; }
+void EvolutionSyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getClientAuthType() const { return m_stringCache.getProperty(*m_configNode, syncPropClientAuthType); }
-const char *EvolutionSyncConfig::getServerAuthType() const { ""; }
-const char *EvolutionSyncConfig::getServerPWD() const { return ""; }
-const char *EvolutionSyncConfig::getServerID() const { return ""; }
+void EvolutionSyncConfig::setClientAuthType(const string &value, bool temporarily) { syncPropClientAuthType.setProperty(*m_configNode, value, temporarily); }
 bool EvolutionSyncConfig::getLoSupport() const { return syncPropLoSupport.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setLoSupport(bool value, bool temporarily) { syncPropLoSupport.setProperty(*m_configNode, value, temporarily); }
 unsigned long  EvolutionSyncConfig::getMaxMsgSize() const { return syncPropMaxMsgSize.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setMaxMsgSize(unsigned long value, bool temporarily) { syncPropMaxMsgSize.setProperty(*m_configNode, value, temporarily); }
 unsigned int  EvolutionSyncConfig::getMaxObjSize() const { return syncPropMaxObjSize.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setMaxObjSize(unsigned int value, bool temporarily) { syncPropMaxObjSize.setProperty(*m_configNode, value, temporarily); }
 unsigned long  EvolutionSyncConfig::getReadBufferSize() const { return syncPropReadBufferSize.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setReadBufferSize(unsigned long value, bool temporarily) { syncPropReadBufferSize.setProperty(*m_configNode, value, temporarily); }
 bool EvolutionSyncConfig::getCompression() const { return syncPropCompression.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setCompression(bool value, bool temporarily) { syncPropCompression.setProperty(*m_configNode, value, temporarily); }
 unsigned int  EvolutionSyncConfig::getResponseTimeout() const { return syncPropResponseTimeout.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setResponseTimeout(unsigned int value, bool temporarily) { syncPropResponseTimeout.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getDevID() const { return m_stringCache.getProperty(*m_configNode, syncPropDevID); }
+void EvolutionSyncConfig::setDevID(const string &value, bool temporarily) { syncPropDevID.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getServerNonce() const { return m_stringCache.getProperty(*m_hiddenNode, syncPropServerNonce); }
 void EvolutionSyncConfig::setServerNonce(const char *value) { syncPropServerNonce.setProperty(*m_hiddenNode, value); }
 const char *EvolutionSyncConfig::getClientNonce() const { return m_stringCache.getProperty(*m_hiddenNode, syncPropClientNonce); }
 void EvolutionSyncConfig::setClientNonce(const char *value) { syncPropClientNonce.setProperty(*m_hiddenNode, value); }
 const char *EvolutionSyncConfig::getDevInfHash() const { return m_stringCache.getProperty(*m_hiddenNode, syncPropDevInfHash); }
-void EvolutionSyncConfig::setDevInfHash(const char *hash){ syncPropDevInfHash.setProperty(*m_hiddenNode, hash); }
+void EvolutionSyncConfig::setDevInfHash(const char *value) { syncPropDevInfHash.setProperty(*m_hiddenNode, value); }
 const char *EvolutionSyncConfig::getLogDir() const { return m_stringCache.getProperty(*m_configNode, syncPropLogDir); }
+void EvolutionSyncConfig::setLogDir(const string &value, bool temporarily) { syncPropLogDir.setProperty(*m_configNode, value, temporarily); }
 int EvolutionSyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*m_configNode, value, temporarily); }
 int EvolutionSyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
+
 
 void EvolutionSyncConfig::setDefaults(const string &serverTemplate)
 {
@@ -261,13 +262,6 @@ void EvolutionSyncConfig::setSourceDefaults(const string &name)
     // @TODO: implement setup templates
 }
 
-void EvolutionSyncConfig::setProperty(const string &property,
-                                      const string &value,
-                                      const string &comment)
-{
-    m_configNode->setProperty(property, value, comment);
-}
-
 const char *EvolutionSyncConfig::getSwv() const { return VERSION; }
 const char *EvolutionSyncConfig::getDevType() const { return DEVICE_TYPE; }
 
@@ -276,19 +270,6 @@ EvolutionSyncSourceConfig::EvolutionSyncSourceConfig(const string &name, const S
     m_name(name),
     m_nodes(nodes)
 {
-}
-
-void EvolutionSyncSourceConfig::setProperty(const string &property,
-                                                    const string &value,
-                                                    const string &comment)
-{
-    m_nodes.m_configNode->setProperty(property, value, comment);
-}
-
-
-void EvolutionSyncSourceConfig::addConfigFilter(const string &property, const string &value)
-{
-    m_nodes.m_configNode->addFilter(property, value);
 }
 
 static ConfigProperty sourcePropSync("sync",
@@ -303,27 +284,28 @@ static ConfigProperty sourcePropSync("sync",
                                      "  one-way-from-server = transmit changes from server\n"
                                      "  none                = synchronization disabled");
 
-static ConfigProperty sourcePropType("type",
-                                     "specifies the format of the data\n"
-                                     "\n"
-                                     "text/calendar    = Evolution calender data (in iCalendar 2.0 format)\n"
-                                     "text/x-todo      = Evolution task data (iCalendar 2.0)\n"
-                                     "text/x-journal   = Evolution memos (iCalendar 2.0) - not supported by any\n"
-                                     "                   known SyncML server and not actively tested\n"
-                                     "text/plain       = Evolution memos in plain text format, UTF-8 encoding,\n"
-                                     "                   first line acts as summary\n"
-                                     "text/x-vcard     = Evolution contact data in vCard 2.1 format\n"
-                                     "                   (works with most servers)\n"
-                                     "text/vcard       = Evolution contact data in vCard 3.0 (RFC 2425) format\n"
-                                     "                   (internal format of Evolution, preferred with servers\n"
-                                     "                   that support it and thus recommended for ScheduleWorld\n"
-                                     "                   together with the \"card3\" uri)\n"
-                                     "addressbook      = Mac OS X or iPhone address book\n"
-                                     "\n"
-                                     "Sending and receiving items in the same format as used by the server for\n"
-                                     "the uri selected below is essential. Errors while parsing and/or storing\n"
-                                     "items one either client or server can be caused by a mismatch between\n"
-                                     "type and uri.");
+/** @todo: add aliases (contacts, calendar, todos, ...) and optional mime-type (contacts:text/x-vcard) */
+static ConfigProperty sourcePropSourceType("type",
+                                           "specifies the format of the data\n"
+                                           "\n"
+                                           "text/calendar    = Evolution calender data (in iCalendar 2.0 format)\n"
+                                           "text/x-todo      = Evolution task data (iCalendar 2.0)\n"
+                                           "text/x-journal   = Evolution memos (iCalendar 2.0) - not supported by any\n"
+                                           "                   known SyncML server and not actively tested\n"
+                                           "text/plain       = Evolution memos in plain text format, UTF-8 encoding,\n"
+                                           "                   first line acts as summary\n"
+                                           "text/x-vcard     = Evolution contact data in vCard 2.1 format\n"
+                                           "                   (works with most servers)\n"
+                                           "text/vcard       = Evolution contact data in vCard 3.0 (RFC 2425) format\n"
+                                           "                   (internal format of Evolution, preferred with servers\n"
+                                           "                   that support it and thus recommended for ScheduleWorld\n"
+                                           "                   together with the \"card3\" uri)\n"
+                                           "addressbook      = Mac OS X or iPhone address book\n"
+                                           "\n"
+                                           "Sending and receiving items in the same format as used by the server for\n"
+                                           "the uri selected below is essential. Errors while parsing and/or storing\n"
+                                           "items one either client or server can be caused by a mismatch between\n"
+                                           "type and uri.");
 static ConfigProperty sourcePropDatabaseID("evolutionsource",
                                            "picks one of Evolution's data sources:\n"
                                            "enter either the name or the full URL\n"
@@ -354,7 +336,7 @@ ConfigPropertyRegistry &EvolutionSyncSourceConfig::getRegistry()
 
     if (!initialized) {
         registry.push_back(&sourcePropSync);
-        registry.push_back(&sourcePropType);
+        registry.push_back(&sourcePropSourceType);
         registry.push_back(&sourcePropDatabaseID);
         registry.push_back(&sourcePropURI);
         registry.push_back(&sourcePropUser);
@@ -368,11 +350,19 @@ ConfigPropertyRegistry &EvolutionSyncSourceConfig::getRegistry()
 }
 
 const char *EvolutionSyncSourceConfig::getDatabaseID() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropDatabaseID); }
+void EvolutionSyncSourceConfig::setDatabaseID(const string &value, bool temporarily) { sourcePropDatabaseID.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getUser() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropUser); }
+void EvolutionSyncSourceConfig::setUser(const string &value, bool temporarily) { sourcePropUser.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getPassword() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropPassword); }
+void EvolutionSyncSourceConfig::setPassword(const string &value, bool temporarily) { sourcePropPassword.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getURI() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropURI); }
+void EvolutionSyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getSync() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropSync); }
+void EvolutionSyncSourceConfig::setSync(const string &value, bool temporarily) { sourcePropSync.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getEncoding() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropEncoding); }
-void EvolutionSyncSourceConfig::setLast(unsigned long timestamp) { sourcePropLast.setProperty(*m_nodes.m_hiddenNode, timestamp); }
+void EvolutionSyncSourceConfig::setEncoding(const string &value, bool temporarily) { sourcePropEncoding.setProperty(*m_nodes.m_configNode, value, temporarily); }
 unsigned long EvolutionSyncSourceConfig::getLast() const { return sourcePropLast.getProperty(*m_nodes.m_hiddenNode); }
-string EvolutionSyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) { return sourcePropType.getProperty(*nodes.m_configNode); }
+void EvolutionSyncSourceConfig::setLast(unsigned long timestamp) { sourcePropLast.setProperty(*m_nodes.m_hiddenNode, timestamp); }
+string EvolutionSyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.m_configNode); }
+const char *EvolutionSyncSourceConfig::getSourceType() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropSourceType); }
+void EvolutionSyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*m_nodes.m_configNode, value, temporarily); }

@@ -50,6 +50,13 @@ class ConfigProperty {
     const string m_name, m_comment;
 
     void setProperty(ConfigNode &node, const string &value) { node.setProperty(m_name, value, m_comment); }
+    void setProperty(FilterConfigNode &node, const string &value, bool temporarily = false) {
+        if (temporarily) {
+            node.addFilter(m_name, value);
+        } else {
+            node.setProperty(m_name, value, m_comment);
+        }
+    }
     string getProperty(const ConfigNode &node) const { return node.readProperty(m_name); }
 };
 
@@ -64,12 +71,23 @@ template<class T, T def> class TypedConfigProperty : public ConfigProperty {
     m_defValue(def)
         {}
 
-    void setProperty(ConfigNode &node, T value) {
+    void setProperty(ConfigNode &node, const T &value) {
         ostringstream out;
 
         out << value;
-        node.setProperty(m_name, out.str().c_str(), m_comment);
+        node.setProperty(m_name, out.str(), m_comment);
     }
+    void setProperty(FilterConfigNode &node, const T &value, bool temporarily = false) {
+        ostringstream out;
+
+        out << value;
+        if (temporarily) {
+            node.addFilter(m_name, out.str());
+        } else {
+            node.setProperty(m_name, out.str(), m_comment);
+        }
+    }
+
     int getProperty(ConfigNode &node) {
         istringstream in(node.readProperty(m_name));
         T res;
@@ -102,6 +120,14 @@ class BoolConfigProperty : public ConfigProperty {
 
     void setProperty(ConfigNode &node, bool value) {
         node.setProperty(m_name, value ? "1" : "0", m_comment);
+    }
+    void setProperty(FilterConfigNode &node, bool value, bool temporarily) {
+        string v(value ? "1" : "0");
+        if (temporarily) {
+            node.addFilter(m_name, v);
+        } else {
+            node.setProperty(m_name, v, m_comment);
+        }
     }
     int getProperty(ConfigNode &node) {
         string res = node.readProperty(m_name);
@@ -153,6 +179,10 @@ class ConfigStringCache {
  * Likewise EvolutionSyncSource is derived from
  * EvolutionSyncSourceConfig.
  *
+ * Properties can be set permanently (this changes the underlying
+ * ConfigNode) and temporarily (this modifies the FilterConfigNode
+ * which wraps the ConfigNode).
+ *
  * The old layout is:
  * - $HOME/.sync4j/evolution/<server>/spds/syncml/config.txt
  * -- spds/sources/<source>/config.txt
@@ -184,12 +214,6 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
 
     /** write changes */
     void flush();
-
-    /**
-     * overrides global sync settings without saving them permanently
-     */
-    void addConfigFilter(const string &property, const string &value);
-    void addConfigFilter(const string &property, int value);
 
     /**
      * A list of all properties. Can be extended by derived clients.
@@ -236,68 +260,88 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
      */
     void setSourceDefaults(const string &name);
 
-    /** universal set method for properties */
-    virtual void setProperty(const string &property,
-                             const string &value,
-                             const string &comment = "");
-
-    /* SyncEvolution specific settings */
-
     /**
-     * Full path to directory where automatic backups and logs
-     * are stored for all synchronizations; if empty, the temporary
-     * directory "$TMPDIR/SyncEvolution-<username>-<server>" will
-     * be used to keep the data of just the latest synchronization run;
-     * if "none", then no backups of the databases are made and any
-     * output is printed directly instead of writing it into a log
+     * @defgroup SyncEvolutionSettings
      *
-     * When writing into a log nothing will be shown during the
-     * synchronization. Instead the important messages are extracted
-     * automatically from the log at the end.
+     * See etc/syncml-config.txt and the property definitions in
+     * SyncEvolutionConfig.cpp for the user-visible explanations of
+     * these settings.
+     *
+     * @{
      */
-    virtual const char* getLogDir() const;
-    /**
-     * Unless this option is set, SyncEvolution will never delete
-     * anything in the "logdir". If set, the oldest directories and
-     * all their content will be removed after a successful sync
-     * to prevent the number of log directories from growing beyond
-     * the given limit.
-     */
-    virtual int getMaxLogDirs() const;
-    /**
-     * level of detail for log messages:
-     * - 0 (or unset) = INFO messages without log file, DEBUG with log file
-     * - 1 = only ERROR messages
-     * - 2 = also INFO messages
-     * - 3 = also DEBUG messages
-     */
-    virtual int getLogLevel() const;
 
-    /* AbstractSyncConfig API */
+    virtual const char *getLogDir() const;
+    virtual void setLogDir(const string &value, bool temporarily = false);
+
+    virtual int getMaxLogDirs() const;
+    virtual void setMaxLogDirs(int value, bool temporarily = false);
+
+    virtual int getLogLevel() const;
+    virtual void setLogLevel(int value, bool temporarily = false);
+
+    /**@}*/
+
+    /**
+     * @defgroup AbstractSyncConfig
+     *
+     * These settings are required by the Funambol C++ client library.
+     * Some of them are hard-coded in this class. A derived class could
+     * make them configurable again, should that be desired.
+     *
+     * @{
+     */
+
+    /**
+     * @defgroup ActiveSyncSources
+     *
+     * This group of calls grants access to all active sources. In
+     * SyncEvolution the EvolutionSyncClient class decides which
+     * sources are active and thus fully configured and reimplements
+     * these calls.
+     *
+     * @{
+     */
     virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(const char* name) const { return NULL; }
     virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(unsigned int i) const { return NULL; }
     virtual unsigned int getAbstractSyncSourceConfigsCount() const { return 0; }
+    /**@}*/
 
     virtual const char*  getUsername() const;
+    virtual void setUsername(const string &value, bool temporarily = false);
     virtual const char*  getPassword() const;
+    virtual void setPassword(const string &value, bool temporarily = false);
     virtual bool getUseProxy() const;
+    virtual void setUseProxy(bool value, bool temporarily = false);
     virtual const char*  getProxyHost() const;
-    virtual int getProxyPort() const;
+    virtual void setProxyHost(const string &value, bool temporarily = false);
+    virtual int getProxyPort() const { return 0; }
     virtual const char* getProxyUsername() const;
+    virtual void setProxyUsername(const string &value, bool temporarily = false);
     virtual const char* getProxyPassword() const;
+    virtual void setProxyPassword(const string &value, bool temporarily = false);
     virtual const char*  getSyncURL() const;
-    virtual bool getServerAuthRequired() const;
+    virtual void setSyncURL(const string &value, bool temporarily = false);
     virtual const char*  getClientAuthType() const;
-    virtual const char*  getServerAuthType() const;
-    virtual const char*  getServerPWD() const;
-    virtual const char*  getServerID() const;
+    virtual void setClientAuthType(const string &value, bool temporarily = false);
     virtual bool getLoSupport() const;
+    virtual void setLoSupport(bool value, bool temporarily = false);
     virtual unsigned long getMaxMsgSize() const;
+    virtual void setMaxMsgSize(unsigned long value, bool temporarily = false);
     virtual unsigned int getMaxObjSize() const;
+    virtual void setMaxObjSize(unsigned int value, bool temporarily = false);
     virtual unsigned long getReadBufferSize() const;
+    virtual void setReadBufferSize(unsigned long value, bool temporarily = false);
     virtual bool  getCompression() const;
+    virtual void setCompression(bool value, bool temporarily = false);
     virtual unsigned int getResponseTimeout() const;
+    virtual void setResponseTimeout(unsigned int value, bool temporarily = false);
     virtual const char*  getDevID() const;
+    virtual void setDevID(const string &value, bool temporarily = false);
+
+    virtual bool getServerAuthRequired() const { return false; }
+    virtual const char*  getServerAuthType() const { return ""; }
+    virtual const char*  getServerPWD() const { return ""; }
+    virtual const char*  getServerID() const { return ""; }
 
     virtual const char*  getUserAgent() const { return "SyncEvolution"; }
     virtual const char*  getVerDTD() const { return "1.1"; }
@@ -314,11 +358,13 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     virtual bool getNocSupport() const { return false; }
 
     virtual const char*  getServerNonce() const;
-    virtual void setServerNonce(const char*  v);
+    virtual void setServerNonce(const char *value);
     virtual const char*  getClientNonce() const;
-    virtual void setClientNonce(const char*  v);
+    virtual void setClientNonce(const char *value);
     virtual const char*  getDevInfHash() const;
-    virtual void setDevInfHash(const char *hash);
+    virtual void setDevInfHash(const char *value);
+
+    /**@}*/
 
 private:
     string m_server;
@@ -375,55 +421,55 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
 
     static ConfigPropertyRegistry &getRegistry();
 
-    /** universal set method for properties */
-    virtual void setProperty(const string &property,
-                             const string &value,
-                             const string &comment = string(""));
-
-    /** temporarily override properties */
-    virtual void addConfigFilter(const string &property, const string &value);
-
-    /* SyncEvolution extensions */
-
-    /** user name to be used for authentication with the backend */
+    /**
+     * @defgroup EvolutionSyncSourceConfigExtensions
+     *
+     * @{
+     */
     virtual const char *getUser() const;
+    virtual void setUser(const string &value, bool temporarily = false);
 
-    /** password to be used for authentication with the backend */
-    virtual const char *getPassword() const;
+    const char *getPassword() const;
+    virtual void setPassword(const string &value, bool temporarily = false);
 
-    /** an arbitrary string identifying the database to read/write */
     virtual const char *getDatabaseID() const;
+    virtual void setDatabaseID(const string &value, bool temporarily = false);
+    /**@}*/
 
     /**
      * Returns the data source type configured as part of the given
      * configuration; different EvolutionSyncSources then check whether
      * they support that type. This call has to work before instantiating
-     * a source.
+     * a source and thus gets nodes explicitly.
      */
     static string getSourceType(const SyncSourceNodes &nodes);
+    virtual const char *getSourceType() const;
+    virtual void setSourceType(const string &value, bool temporarily = false);
+
+
+    /**@}*/
 
     /**
-     * returns the additional ID which identifies which of potentially
-     * many backends of the selected source type an EvolutionSyncSource is
-     * expected to work with
+     * @defgroup AbstractSyncSourceConfigAPI_not_yet_implemented
+     *
+     * These calls have to be implemented by EvolutionSyncSource
+     * instances. Some sources support more than one type. The
+     * configuration then selects the preferred format in
+     * the getSourceType() string.
+     * 
+     * @{
      */
-    /* static string getSourceID(const SyncSourceNodes &nodes); */
-
-
-    /* AbstractSyncSourceConfig API not yet implemented */
 
     /**
      * Returns the preferred mime type of the items handled by the sync source.
      * Example: "text/x-vcard"
      */
-    virtual const char *getType() const { return getMimeType(); }
     virtual const char *getMimeType() const = 0;
 
     /**
      * Returns the version of the mime type used by client.
      * Example: "2.1"
      */
-    virtual const char *getVersion() const { return getMimeVersion(); }
     virtual const char *getMimeVersion() const = 0;
 
     /**
@@ -435,13 +481,27 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
      */
     virtual const char* getSupportedTypes() const = 0;
 
-    /* AbstractSyncSourceConfig API implemented by this class */
-    virtual const char*  getName() const { return m_name.c_str(); }
+    /**@}*/
 
     /**
-     * Returns the SyncSource URI (used in SyncML addressing).
+     * @defgroup AbstractSyncSourceConfigAPI_implemented
+     * @{
+     */
+    virtual const char *getType() const { return getMimeType(); }
+    virtual const char *getVersion() const { return getMimeVersion(); }
+    virtual const char*  getName() const { return m_name.c_str(); }
+    /**@}*/
+
+    /**
+     * Returns the SyncSource URI: used in SyncML to address the data
+     * on the server.
+     *
+     * Each URI has to be unique during a sync session, i.e.
+     * two different sync sources cannot access the same data at
+     * the same time.
      */
     virtual const char*  getURI() const;
+    virtual void setURI(const string &value, bool temporarily = false);
 
     /**
      * Returns a comma separated list of the possible syncModes for the
@@ -455,6 +515,9 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
      * - one-way-from-server
      * - one-way-from-client
      * - addrchange (Funambol extension)
+     *
+     * This is hard-coded in SyncEvolution because changing it
+     * wouldn't have any effect (IMHO).
      */
     virtual const char*  getSyncModes() const { return "slow,two-way,one-way-from-server,one-way-from-client,refresh-from-server,refresh-from-client"; }
 
@@ -462,6 +525,7 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
      * Gets the default syncMode as one of the strings listed in setSyncModes.
      */
     virtual const char*  getSync() const;
+    virtual void setSync(const string &value, bool temporarily = false);
     
     /**
      * Specifies how the content of an outgoing item should be
@@ -470,6 +534,7 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
      * are listed in SyncItem::encodings.
      */
     virtual const char*  getEncoding() const;
+    virtual void setEncoding(const string &value, bool temporarily = false);
 
     /**
      * Sets the last sync timestamp. Called by the sync engine at
@@ -482,8 +547,8 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
      *
      * @param timestamp the last sync timestamp
      */
-    virtual void setLast(unsigned long timestamp);
     virtual unsigned long getLast() const;
+    virtual void setLast(unsigned long timestamp);
 
     /**
      * "des" enables an encryption mode which only the Funambol server
@@ -502,6 +567,8 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
      * @return an ArrayList of CTCap
      */
     virtual const ArrayList& getCtCaps() const { static const ArrayList dummy; return dummy; }
+
+    /**@}*/
 
  private:
     string m_name;

@@ -265,7 +265,7 @@ public:
         if (!config.exists()) {
             // no configuration yet
             config.setDefaults(server);
-            config.setProperty("deviceId", id == "1" ? "sc-api-nat" : "sc-pim-ppc");
+            config.setDevID(id == "1" ? "sc-api-nat" : "sc-pim-ppc");
         }
         for (SourceType sourceType = (SourceType)0; sourceType < TEST_MAX_SOURCE; sourceType = (SourceType)((int)sourceType + 1) ) {
             ClientTest::Config testconfig;
@@ -278,13 +278,13 @@ public:
                 config.setSourceDefaults(testconfig.sourceName);
                 sc = config.getSyncSourceConfig(testconfig.sourceName);
                 CPPUNIT_ASSERT(sc);
-                sc->setProperty("uri", testconfig.uri);
-                sc->setProperty("type", testconfig.type);
+                sc->setURI(testconfig.uri);
+                sc->setSourceType(testconfig.type);
             }
 
             // always set this property: the name might have changes since last test run
             string database = getDatabaseName(sourceType);
-            sc->setProperty("evolutionsource", database.c_str());
+            sc->setDatabaseID(database);
         }
         config.flush();
     }
@@ -449,12 +449,12 @@ public:
                 for (SyncSource **source = sources;
                      *source;
                      source++) {
-                    ((EvolutionSyncSource *)*source)->addConfigFilter("encoding", m_encoding ? m_encoding : "");
+                    ((EvolutionSyncSource *)*source)->setEncoding(m_encoding ? m_encoding : "", true);
                     (*source)->setPreferredSyncMode(m_syncMode);
                 }
-                addConfigFilter("loSupport", m_loSupport);
-                addConfigFilter("maxObjSize", m_maxObjSize);
-                addConfigFilter("maxMsgSize", m_maxMsgSize);
+                setLoSupport(m_loSupport, true);
+                setMaxObjSize(m_maxObjSize, true);
+                setMaxMsgSize(m_maxMsgSize, true);
                 EvolutionSyncClient::prepare(sources);
             }
 
