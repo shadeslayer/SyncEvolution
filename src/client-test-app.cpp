@@ -125,13 +125,22 @@ private:
 MacOSAddressBook MacOSAddressBook::m_singleton;
 
 
-/** a wrapper class which automatically does an open() in the constructor and a close() in the destructor */
+/**
+ * a wrapper class which automatically does an open() in the constructor and a close() in the destructor
+ * and ensures that the sync mode is "none" = testing mode
+ */
 template<class T> class TestEvolutionSyncSource : public T {
 public:
     TestEvolutionSyncSource(ECalSourceType type, const EvolutionSyncSourceParams &params) :
-        T(type, params) {}
+        T(type, params)
+    {
+        T::setSyncMode(SYNC_NONE);
+    }
     TestEvolutionSyncSource(const EvolutionSyncSourceParams &params) :
-        T(params) {}
+        T(params)
+    {
+        T::setSyncMode(SYNC_NONE);
+    }
 
     virtual int beginSync() {
         CPPUNIT_ASSERT_NO_THROW(T::open());
@@ -320,22 +329,24 @@ public:
             getTestData("vcard30", config);
             config.sourceName = "vcard21";
             config.uri = "card"; // Funambol
-            config.type = "text/x-vcard";            
+            config.type = "evolution-contacts:text/x-vcard";
             break;
          case TEST_CONTACT30_SOURCE:
             getTestData("vcard30", config);
+            config.type = "Evolution Address Book:text/vcard";
             break;
          case TEST_CALENDAR_SOURCE:
             getTestData("ical20", config);
+            config.type = "evolution-calendar";
             break;
          case TEST_TASK_SOURCE:
             getTestData("itodo20", config);
-            config.type = "text/x-todo"; // special type required by SyncEvolution
+            config.type = "evolution-todo";
             break;
          case TEST_MEMO_SOURCE:
             config.sourceName = "text";
             config.uri = "note"; // ScheduleWorld
-            config.type = "text/plain";
+            config.type = "Evolution Memos"; // use an alias here to test that
             config.insertItem =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -378,13 +389,13 @@ public:
          case TEST_SQLITE_CONTACT_SOURCE:
             getTestData("vcard21", config);
             config.sourceName = "sqlite";
-            config.type = "sqlite";
+            config.type = "sqlite-contacts";
             config.testcases = "testcases/vcard21_sqlite.vcf";
             break;
          case TEST_ADDRESS_BOOK_SOURCE:
             getTestData("vcard30", config);
             config.sourceName = "addressbook";
-            config.type = "addressbook";
+            config.type = "apple-contacts";
             break;
          default:
             CPPUNIT_ASSERT(sourceType < TEST_MAX_SOURCE);

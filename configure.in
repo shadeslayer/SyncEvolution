@@ -299,13 +299,6 @@ AC_PROG_CXX
 AC_PROG_LIBTOOL
 AC_PROG_MAKE_SET
 
-dnl which backends are available?
-if test "$enable_ebook" == "yes"; then
-        SYNCEVOLUTION_MODULES="$SYNCEVOLUTION_MODULES syncebook.la"
-fi
-if test "$enable_ecal" == "yes"; then
-        SYNCEVOLUTION_MODULES="$SYNCEVOLUTION_MODULES syncecal.la"
-fi
 if test "$enable_sqlite" == "yes"; then
         SYNCEVOLUTION_MODULES="$SYNCEVOLUTION_MODULES syncsqlite.la"
 fi
@@ -325,16 +318,14 @@ else
 fi
 
 dnl figure out whether we link all code statically or as modules
+AM_CONDITIONAL([ENABLE_MODULES], [test "$enable_shared" == "yes"])
 if test "$enable_shared" == "yes"; then
-        SYNCEVOLUTION_LTLIBRARIES="$SYNCEVOLUTION_MODULES"
-        AC_DEFINE(ENABLE_MODULES, 1, [enable dynamically opening sync source backends])
         SYNCEVOLUTION_LDADD="-Wl,-export-dynamic -rpath '\$(pkglibdir)'"
+        AC_DEFINE(ENABLE_MODULES, 1, [enable dynamically opening sync source backends])
 else
-        SYNCEVOLUTION_LDADD="$SYNCEVOLUTION_MODULES"
+        SYNCEVOLUTION_LDADD="\$(EXTRA_LTLIBRARIES)"
 fi
-AC_SUBST(SYNCEVOLUTION_LTLIBRARIES)
 AC_SUBST(SYNCEVOLUTION_LDADD)
-AC_SUBST(SYNCEVOLUTION_MODULES)
 
 dnl a quick-and-dirty way to detect compilation for the iPhone
 if test "$host" == "arm-apple-darwin"; then

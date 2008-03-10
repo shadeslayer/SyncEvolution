@@ -1559,22 +1559,4 @@ void AddressBookSource::logItem(SyncItem &item, const string &info, bool debug)
     }
 }
 
-
-#ifdef ENABLE_MODULES
-
-extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
-                                                          EvolutionSyncSourceConfig *sc,
-                                                          const string &changeId,
-                                                          const string &id,
-                                                          const string &mimeType)
-{
-    if (mimeType == "AddressBook") {
-        return new AddressBookSource(name, sc, changeId, id, EVC_FORMAT_VCARD_21);
-    } else {
-        return NULL;
-    }
-}
-
-#endif /* ENABLE_MODULES */
-
 #endif /* ENABLE_ADDRESSBOOK */

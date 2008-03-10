@@ -5,9 +5,14 @@ AM_CFLAGS = -Wall -Werror -Wno-return-type
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
-EXTRA_LTLIBRARIES = syncecal.la syncebook.la syncsqlite.la syncaddressbook.la
-MOSTLYCLEANFILES = syncecal.la syncebook.la syncsqlite.la syncaddressbook.la
-pkglib_LTLIBRARIES = @SYNCEVOLUTION_LTLIBRARIES@
+SYNCSOURCES = syncecal.la syncebook.la syncsqlite.la syncaddressbook.la
+MOSTLYCLEANFILES = $(SYNCSOURCES)
+if ENABLE_MODULES
+pkglib_LTLIBRARIES = $(SYNCSOURCES)
+else
+EXTRA_LTLIBRARIES = $(SYNCSOURCES)
+endif
+SYNCEVOLUTION_LDADD = @SYNCEVOLUTION_LDADD@
 EXTRA_PROGRAMS = client-test
 check_PROGRAMS = @CPPUNIT_TESTS@
 TESTS = @CPPUNIT_TESTS@
@@ -58,10 +63,18 @@ SYNCECAL_SOURCES = \
         EvolutionMemoSource.h \
 	EvolutionCalendarSource.cpp \
 	EvolutionMemoSource.cpp
+if ENABLE_MODULES
+else
+CORE_SOURCES += EvolutionCalendarSourceRegister.cpp
+endif
 
 SYNCEBOOK_SOURCES = \
         EvolutionContactSource.h \
 	EvolutionContactSource.cpp
+if ENABLE_MODULES
+else
+CORE_SOURCES += EvolutionContactSourceRegister.cpp
+endif
 
 SYNCSQLITE_SOURCES = \
 	TrackingSyncSource.h \
@@ -70,11 +83,19 @@ SYNCSQLITE_SOURCES = \
 	SQLiteUtil.cpp \
 	SQLiteContactSource.h \
 	SQLiteContactSource.cpp
+if ENABLE_MODULES
+else
+CORE_SOURCES += SQLiteContactSourceRegister.cpp
+endif
 
 SYNCADDRESSBOOK_SOURCES = \
 	AddressBookSource.h \
 	AddressBookConstants.cpp \
 	AddressBookSource.cpp
+if ENABLE_MODULES
+else
+CORE_SOURCES += AddressBookSourceRegister.cpp
+endif
 
 CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @ADDRESSBOOK_LIBS@ @LIBS@
 
@@ -86,14 +107,14 @@ syncevolution_SOURCES = \
 	syncevolution.cpp \
 	$(CORE_SOURCES)
 
-# SYNCEVOLUTION_LDADD@ will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
+# SYNCEVOLUTION_LDADD will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
 # if linking statically against them, empty otherwise;
 # either way this does not lead to a dependency on those libs - done explicitly
 #
 # LIBDBUS might be replaced with path to patched libdbus-1.a (required for
 # DBUS_DEFAULT_TIMEOUT hack on Maemo).
-syncevolution_LDADD = @SYNCEVOLUTION_LDADD@ @LIBDBUS@ $(CORE_LDADD)
-syncevolution_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
+syncevolution_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(CORE_LDADD)
+syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES)
 
 syncecal_la_SOURCES = $(SYNCECAL_SOURCES)
 syncecal_la_LIBADD = @ECAL_LIBS@
@@ -140,8 +161,8 @@ nodist_client_test_SOURCES = ClientTest.cpp client-test-main.cpp ClientTest.h
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS
 client_test_CXXFLAGS = `cppunit-config --cflags`
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
-client_test_LDADD = @SYNCEVOLUTION_MODULES@ @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
-client_test_DEPENDENCIES = @SYNCEVOLUTION_MODULES@
+client_test_LDADD = $(EXTRA_LTLIBRARIES) @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
+client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES)
 
 # copy test files for several reasons:
 # - automake expects them here

@@ -24,6 +24,7 @@
 using namespace std;
 
 #include "config.h"
+#include "EvolutionSyncSource.h"
 
 #ifdef ENABLE_EBOOK
 
@@ -924,25 +925,7 @@ EContact *EvolutionContactSource::getContact( const string &uid )
     }
 }
 
-#ifdef ENABLE_MODULES
-
-extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
-                                                          const SyncSourceNodes &nodes,
-                                                          const string &changeId)
-{
-    string sourceType = getSourceType(sc);
-
-    if (sourceType == "text/x-vcard") {
-        return new EvolutionContactSource(name, sc, changeId, id, EVC_FORMAT_VCARD_21);
-    } else if (sourceType == "text/vcard") {
-        return new EvolutionContactSource(name, sc, changeId, id, EVC_FORMAT_VCARD_30);
-    } else {
-        return NULL;
-    }
-}
-
-#else /* ENABLE_MODULES */
-
+#ifndef ENABLE_MODULES
 #ifdef ENABLE_UNIT_TESTS
 
 class EvolutionContactTest : public CppUnit::TestFixture {
@@ -1008,7 +991,10 @@ private:
 FUNAMBOL_TEST_SUITE_REGISTRATION(EvolutionContactTest);
 
 #endif
-
 #endif /* ENABLE_MODULES */
 
 #endif /* ENABLE_EBOOK */
+
+#ifdef ENABLE_MODULES
+# include "EvolutionContactSourceRegister.cpp"
+#endif

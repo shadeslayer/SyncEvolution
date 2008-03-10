@@ -17,6 +17,7 @@
  */
 
 #include "SyncEvolutionConfig.h"
+#include "EvolutionSyncSource.h"
 #include "FileConfigTree.h"
 
 #include <unistd.h>
@@ -127,9 +128,13 @@ static ConfigProperty syncPropProxyHost("proxyHost",
 static ConfigProperty syncPropProxyUsername("proxyUsername",
                                             "authentication for proxy");
 static ConfigProperty syncPropProxyPassword("proxyPassword", "");
-static ConfigProperty syncPropClientAuthType("clientAuthType",
-                                             "- 'syncml:auth-basic' for insecure method\n"
-                                             "- 'syncml:auth-md5' for secure method");
+static StringConfigProperty syncPropClientAuthType("clientAuthType",
+                                                   "- empty or \"md5\" for secure method (recommended)",
+                                                   "- \"basic\" for insecure method\n"
+                                                   "md5",
+                                                   Values() +
+                                                   (Aliases("syncml:auth-basic") + "basic") +
+                                                   (Aliases("syncml:auth-md5") + "md5" + ""));
 static ULongConfigProperty syncPropMaxMsgSize("maxMsgSize",
                                               "Support for large objects and limiting the message size was added in\n"
                                               "SyncEvolution 0.5, but still disabled in the example configurations\n"
@@ -258,7 +263,7 @@ void EvolutionSyncConfig::setDefaults(const string &serverTemplate)
          it != registry.end();
          ++it) {
         if (!(*it)->isHidden()) {
-            (*it)->setProperty(*m_configNode, (*it)->m_defValue);
+            (*it)->setProperty(*m_configNode, (*it)->getDefValue());
         }
     }
     flush();
@@ -273,7 +278,7 @@ void EvolutionSyncConfig::setSourceDefaults(const string &name)
          it != registry.end();
          ++it) {
         if (!(*it)->isHidden()) {
-            (*it)->setProperty(*nodes.m_configNode, (*it)->m_defValue);
+            (*it)->setProperty(*nodes.m_configNode, (*it)->getDefValue());
         }
     }
     nodes.m_configNode->flush();
@@ -301,29 +306,93 @@ static ConfigProperty sourcePropSync("sync",
                                      "  one-way-from-server = transmit changes from server\n"
                                      "  none                = synchronization disabled",
                                      "two-way");
+static class SourceTypeConfigProperty : public StringConfigProperty {
+public:
+    SourceTypeConfigProperty() :
+        StringConfigProperty("type",
+                             "Specifies the SyncEvolution backend and thus the\n"
+                             "data which is synchronized by this source. Some\n"
+                             "backends can exchange data in multiple formats.\n"
+                             "Some of them have a default format that is used\n"
+                             "automatically unless specified differently.\n"
+                             "Sometimes the format must be specified.\n"
+                             "\n"
+                             "In all cases the format of this configuration is\n"
+                             "  <backend>[:format]\n"
+                             "\n"
+                             "Here are some valid examples:\n"
+                             "  contacts - synchronize address book with default vCard 2.1 format\n"
+                             "  contacts:text/vcard - address book with vCard 3.0 format\n"
+                             "  calendar - synchronize events in iCalendar 2.0 format\n"
+                             "\n"
+                             "Sending and receiving items in the same format as used by the server for\n"
+                             "the uri selected below is essential. Errors while parsing and/or storing\n"
+                             "items on either client or server can be caused by a mismatch between\n"
+                             "type and uri.\n"
+                             "\n"
+                             "Here's the full list of potentially supported backends,\n"
+                             "valid <backend> values for each of them and possible\n"
+                             "formats. Note that SyncEvolution installations usually\n"
+                             "support only a subset of the backends; that's why e.g.\n"
+                             "\"addressbook\" is usually unambiguous although there are multiple\n"
+                             "address book backends.\n",
+                             "select backend",
+                             Values() +
+                             (Aliases("calendar") + "events") +
+                             (Aliases("calendar:text/calendar") + "text/calendar") +
+                             (Aliases("addressbook") + "contacts") +
+                             (Aliases("addressbook:text/x-vcard") + "text/x-vcard") +
+                             (Aliases("addressbook:text/vcard") + "text/vcard") +
+                             (Aliases("todo") + "tasks" + "text/x-todo") +
+                             (Aliases("memo") + "text/plain") +
+                             (Aliases("memo:text/calendar") + "text/x-journal"))
+    {}
 
-/** @todo: add aliases (contacts, calendar, todos, ...) and optional mime-type (contacts:text/x-vcard) */
-static ConfigProperty sourcePropSourceType("type",
-                                           "specifies the format of the data\n"
-                                           "\n"
-                                           "text/calendar    = Evolution calender data (in iCalendar 2.0 format)\n"
-                                           "text/x-todo      = Evolution task data (iCalendar 2.0)\n"
-                                           "text/x-journal   = Evolution memos (iCalendar 2.0) - not supported by any\n"
-                                           "                   known SyncML server and not actively tested\n"
-                                           "text/plain       = Evolution memos in plain text format, UTF-8 encoding,\n"
-                                           "                   first line acts as summary\n"
-                                           "text/x-vcard     = Evolution contact data in vCard 2.1 format\n"
-                                           "                   (works with most servers)\n"
-                                           "text/vcard       = Evolution contact data in vCard 3.0 (RFC 2425) format\n"
-                                           "                   (internal format of Evolution, preferred with servers\n"
-                                           "                   that support it and thus recommended for ScheduleWorld\n"
-                                           "                   together with the \"card3\" uri)\n"
-                                           "addressbook      = Mac OS X or iPhone address book\n"
-                                           "\n"
-                                           "Sending and receiving items in the same format as used by the server for\n"
-                                           "the uri selected below is essential. Errors while parsing and/or storing\n"
-                                           "items one either client or server can be caused by a mismatch between\n"
-                                           "type and uri.");
+    virtual string getComment() const {
+        stringstream enabled, disabled;
+        stringstream res;
+
+        SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
+        for (SourceRegistry::const_iterator it = registry.begin();
+             it != registry.end();
+             ++it) {
+            const string &comment = (*it)->m_typeDescr;
+            stringstream *curr = (*it)->m_enabled ? &enabled : &disabled;
+            *curr << comment;
+            if (comment.size() && comment[comment.size() - 1] != '\n') {
+                *curr << '\n';
+            }
+        }
+
+        res << StringConfigProperty::getComment();
+        if (enabled.str().size()) {
+            res << "\nCurrently active:\n" << enabled.str();
+        }
+        if (disabled.str().size()) {
+            res << "\nCurrently inactive:\n" << disabled.str();
+        }
+
+        return res.str();
+    }
+
+    virtual Values getValues() const {
+        Values res(StringConfigProperty::getValues());
+
+        const SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
+        for (SourceRegistry::const_iterator it = registry.begin();
+             it != registry.end();
+             ++it) {
+            for (Values::const_iterator v = (*it)->m_typeValues.begin();
+                 v != (*it)->m_typeValues.end();
+                 ++v) {
+                res.push_back(*v);
+            }
+        }
+
+        return res;
+    }
+} sourcePropSourceType;
+
 static ConfigProperty sourcePropDatabaseID("evolutionsource",
                                            "picks one of Evolution's data sources:\n"
                                            "enter either the name or the full URL\n"
@@ -383,6 +452,18 @@ const char *EvolutionSyncSourceConfig::getEncoding() const { return m_stringCach
 void EvolutionSyncSourceConfig::setEncoding(const string &value, bool temporarily) { sourcePropEncoding.setProperty(*m_nodes.m_configNode, value, temporarily); }
 unsigned long EvolutionSyncSourceConfig::getLast() const { return sourcePropLast.getProperty(*m_nodes.m_hiddenNode); }
 void EvolutionSyncSourceConfig::setLast(unsigned long timestamp) { sourcePropLast.setProperty(*m_nodes.m_hiddenNode, timestamp); }
-string EvolutionSyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.m_configNode); }
-const char *EvolutionSyncSourceConfig::getSourceType() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropSourceType); }
+string EvolutionSyncSourceConfig::getSourceTypeString(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.m_configNode); }
+pair<string, string> EvolutionSyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
+    string type = getSourceTypeString(nodes);
+    size_t colon = type.find(':');
+    if (colon != type.npos) {
+        string backend = type.substr(0, colon);
+        string format = type.substr(colon + 1);
+        sourcePropSourceType.normalizeValue(backend);
+        return pair<string, string>(backend, format);
+    } else {
+        return pair<string, string>(type, "");
+    }
+}
+pair<string, string> EvolutionSyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
 void EvolutionSyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*m_nodes.m_configNode, value, temporarily); }

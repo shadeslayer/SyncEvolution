@@ -20,6 +20,7 @@
 #ifndef INCL_EVOLUTIONSYNCSOURCE
 #define INCL_EVOLUTIONSYNCSOURCE
 
+#include "config.h"
 #include "SyncEvolutionConfig.h"
 #include "EvolutionSmartPtr.h"
 
@@ -39,13 +40,15 @@ using namespace std;
 #include <spdm/ManagementNode.h>
 #include <base/Log.h>
 
+class EvolutionSyncSource;
+
 /**
  * This set of parameters always has to be passed when constructing
  * EvolutionSyncSource instances.
  */
 struct EvolutionSyncSourceParams {
     /**
-     * @param    name        the named needed by SyncSource
+     * @param    name        the name needed by SyncSource
      * @param    nodes       a set of config nodes to be used by this source
      * @param    changeId    is used to track changes in the Evolution backend:
      *                       a unique string constructed from an ID for SyncEvolution
@@ -82,6 +85,83 @@ struct EvolutionSyncSourceParams {
     }
 };
 
+/**
+ * The SyncEvolution core has no knowledge of existing SyncSource
+ * implementations. Implementations have to register themselves
+ * by instantiating this class exactly once with information
+ * about themselves.
+ *
+ * It is also possible to add configuration options. For that define a
+ * derived class. In its constructor use
+ * EvolutionSyncSourceConfig::getRegistry()
+ * resp. EvolutionSyncConfig::getRegistry() to define new
+ * configuration properties. The advantage of registering them is that
+ * the user interface will automatically handle them like the
+ * predefined ones. The namespace of these configuration options
+ * is shared by all sources and the core.
+ *
+ * For properties with arbitrary names use the
+ * SyncSourceNodes::m_trackingNode.
+ */
+class RegisterSyncSource
+{
+ public:
+    /**
+     * Users select a SyncSource and its data format via the "type"
+     * config property. Backends have to add this kind of function to
+     * the SourceRegistry_t in order to be considered by the
+     * SyncSource creation mechanism.
+     *
+     * The function will be called to check whether the backend was
+     * meant by the user. It should return a new instance which will
+     * be freed by the caller or NULL if it does not support the
+     * selected type.
+     * 
+     * Inactive sources should return the special InactiveSource
+     * pointer value if they recognize without a doubt that the user
+     * wanted to instantiate them: for example, an inactive
+     * EvolutionContactSource will return NULL for "addressbook" but
+     * InactiveSource for "evolution-contacts".
+     */
+    typedef EvolutionSyncSource *(*Create_t)(const EvolutionSyncSourceParams &params);
+
+    /** special return value of Create_t, not a real sync source! */
+    static EvolutionSyncSource *const InactiveSource;
+
+    /**
+     * @param shortDescr     a few words identifying the data to be synchronized,
+     *                       e.g. "Evolution Calendar"
+     * @param enabled        true if the sync source can be instantiated,
+     *                       false if it was not enabled during compilation or is
+     *                       otherwise not functional
+     * @param create         factory function for sync sources of this type
+     * @param typeDescr      multiple lines separated by \n which get appended to
+     *                       the the description of the type property, e.g.
+     *                       "Evolution Memos = memo = evolution-memo\n"
+     *                       "   plain text in UTF-8 (default) = text/plain\n"
+     *                       "   iCalendar 2.0 = text/calendar\n"
+     *                       "   The later format is not tested because none of the\n"
+     *                       "   supported SyncML servers accepts it.\n"
+     * @param typeValues     the config accepts multiple names for the same internal
+     *                       type string; this value (which can be empty) is added to
+     *                       that list of aliases. E.g.
+     *                       Values() + (Aliases("evolution-memo") + "Evolution Memos")
+     */
+    RegisterSyncSource(const string &shortDescr,
+                       bool enabled,
+                       Create_t create,
+                       const string &typeDescr,
+                       const Values &typeValues);
+ public:
+    const string m_shortDescr;
+    bool m_enabled;
+    Create_t m_create;
+    const string m_typeDescr;
+    const Values m_typeValues;
+};
+    
+typedef list<const RegisterSyncSource *> SourceRegistry;
+
 
 /**
  * SyncEvolution accesses all sources through this interface.  This
@@ -109,10 +189,6 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
  public:
     /**
      * Creates a new Evolution sync source.
-     *
-     * @param    name        the named needed by SyncSource
-     * @param    nodes       a set of config nodes to be used by this source
-     * @param    changeId    is used to track changes in the Evolution backend
      */
     EvolutionSyncSource(const EvolutionSyncSourceParams &params) :
         SyncSource(params.m_name.c_str(), NULL),
@@ -128,6 +204,12 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
             setConfig(this);
         }
     virtual ~EvolutionSyncSource() {}
+
+    /**
+     * SyncSource implementations must register themselves here via
+     * RegisterSyncSource
+     */
+    static SourceRegistry &getSourceRegistry();
 
     struct source {
         source( const string &name, const string &uri ) :
@@ -237,15 +319,6 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      */
     static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params,
                                              bool error = true);
-
-    /**
-     * SyncSource backend modules have to provide this function under
-     * the "SyncEvolutionCreateSource" name (plan C name); it will then
-     * be called by the createSource() method.
-     *
-     * @return new sync source or NULL if the mime type is not supported
-     */
-    typedef EvolutionSyncSource *(*CreateSource_t)(const EvolutionSyncSourceParams &params);
 
     //
     // default implementation of SyncSource iterators

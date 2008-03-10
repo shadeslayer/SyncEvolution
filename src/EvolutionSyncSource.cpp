@@ -17,19 +17,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <config.h>
-
-#include "EvolutionSyncClient.h"
 #include "EvolutionSyncSource.h"
-#include "EvolutionContactSource.h"
-#include "EvolutionCalendarSource.h"
-#include "EvolutionMemoSource.h"
-#include "SQLiteContactSource.h"
-#include "AddressBookSource.h"
-
+#include "EvolutionSyncClient.h"
 #include <common/base/Log.h>
 
 #include <list>
+#include <sstream>
+using namespace std;
+
 #include <dlfcn.h>
 
 #ifdef HAVE_EDS
@@ -116,18 +111,73 @@ void EvolutionSyncSource::handleException()
     }
 }
 
+SourceRegistry &EvolutionSyncSource::getSourceRegistry()
+{
+    static SourceRegistry sourceRegistry;
+    return sourceRegistry;
+}
+
+RegisterSyncSource::RegisterSyncSource(const string &shortDescr,
+                                       bool enabled,
+                                       Create_t create,
+                                       const string &typeDescr,
+                                       const Values &typeValues) :
+    m_shortDescr(shortDescr),
+    m_enabled(enabled),
+    m_create(create),
+    m_typeDescr(typeDescr),
+    m_typeValues(typeValues)
+{
+    SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
+
+    // insert sorted by description to have deterministic ordering
+    for (SourceRegistry::iterator it = registry.begin();
+         it != registry.end();
+         ++it) {
+        if ((*it)->m_shortDescr > shortDescr) {
+            registry.insert(it, this);
+            return;
+        }
+    }
+    registry.push_back(this);
+}
+
+static ostream & operator << (ostream &out, const RegisterSyncSource &rhs)
+{
+    out << rhs.m_shortDescr << (rhs.m_enabled ? " (enabled)" : " (disabled)");
+}
+
+EvolutionSyncSource *const RegisterSyncSource::InactiveSource = (EvolutionSyncSource *)1;
+
+template<class T> string join(const string &sep, T begin, T end)
+{
+    stringstream res;
+
+    if (begin != end) {
+        res << *begin;
+        ++begin;
+        while (begin != end) {
+            res << sep;
+            res << *begin;
+        }
+    }
+
+    return res.str();
+}
+
 EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSourceParams &params, bool error)
 {
-    string sourceType = getSourceType(params.m_nodes);
+    string sourceTypeString = getSourceTypeString(params.m_nodes);
+    pair<string, string> sourceType = getSourceType(params.m_nodes);
 
-#ifdef ENABLE_MODULES
-    
-    static list<CreateSource_t>createSources;
     static bool scannedModules;
-    static string available;
-    static string missing;
+    static list<string> available;
+    static list<string> missing;
 
     if (!scannedModules) {
+        list<string> *state;
+
+#ifdef ENABLE_MODULES
         // possible extension: scan directories for matching module names instead of hard-coding known names
         const char *modules[] = {
             "syncebook.so.0",
@@ -140,58 +190,50 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
         for (int i = 0; modules[i]; i++) {
             void *dlhandle;
 
+            // Open the shared object so that backend can register
+            // itself. We keep that pointer, so never close the
+            // module!
             dlhandle = dlopen(modules[i], RTLD_NOW|RTLD_GLOBAL);
-            if (dlhandle) {
-                void *createSource = dlsym(dlhandle, "SyncEvolutionCreateSource");
-
-                if (createSource) {
-                    createSources.push_back((CreateSource_t)createSource);
-                } else {
-                    dlclose(dlhandle);
-                    dlhandle = NULL;
-                }
-            } else if(error) {
-                LOG.debug("%s", dlerror());
-            }
-
             // remember which modules were found and which were not
-            string &res(dlhandle ? available : missing);
-            if (res.size()) {
-                res += " ";
-            }
-            res += modules[i];
+            state = dlhandle ? &available : &missing;
+            state->push_back(modules[i]);
         }
+#else
+#endif
         scannedModules = true;
     }
 
-    for (list<CreateSource_t>::const_iterator it = createSources.begin();
-         it != createSources.end();
+    const SourceRegistry &registry(getSourceRegistry());
+    for (SourceRegistry::const_iterator it = registry.begin();
+         it != registry.end();
          ++it) {
-        EvolutionSyncSource *source = (*it)(params);
+        EvolutionSyncSource *source = (*it)->m_create(params);
         if (source) {
+            if (source == RegisterSyncSource::InactiveSource) {
+                EvolutionSyncClient::throwError(params.m_name + ": access to " + (*it)->m_shortDescr +
+                                                " not enabled, therefore type = " + sourceTypeString + " not supported");
+            }
             return source;
         }
     }
 
     if (error) {
-        string problem = params.m_name + ": type '" + sourceType + "' not supported";
+        string problem = params.m_name + ": type '" + sourceTypeString + "' not supported";
         if (available.size()) {
-            problem += " by any of the available backends (";
-            problem += available;
+            problem += " by any of the backends (";
+            problem += join(string(", "), registry.begin(), registry.end());
             problem += ")";
         }
         if (missing.size()) {
             problem += ". The following backend(s) were not found: ";
-            problem += missing;
+            problem += join(string(", "), missing.begin(), missing.end());
         }
         EvolutionSyncClient::throwError(problem);
     }
 
-#else // ENABLE_MODULES
-
-    if (sourceType == "text/x-vcard") {
+#if 0
 #ifdef ENABLE_EBOOK
-        return new EvolutionContactSource(params, EVC_FORMAT_VCARD_21);
+    return new EvolutionContactSource(params, EVC_FORMAT_VCARD_21);
 #else
         if (error) {
             EvolutionSyncClient::throwError(params.m_name + ": access to addressbooks not compiled into this binary, text/x-vcard not supported");
@@ -255,7 +297,8 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
         }
 #endif
     }
-#endif // ENABLE_MODULES
+#endif
+
 
     return NULL;
 }

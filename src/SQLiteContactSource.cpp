@@ -18,6 +18,7 @@
  */
 
 #include "config.h"
+#include "EvolutionSyncSource.h"
 
 #ifdef ENABLE_SQLITE
 
@@ -419,18 +420,8 @@ void SQLiteContactSource::logItem(SyncItem &item, const string &info, bool debug
     }
 }
 
+#endif /* ENABLE_SQLITE */
 
 #ifdef ENABLE_MODULES
-
-extern "C" EvolutionSyncSource *SyncEvolutionCreateSource(const string &name,
-                                                          EvolutionSyncSourceConfig *sc,
-                                                          const string &changeId,
-                                                          const string &id,
-                                                          const string &mimeType)
-{
-    return new SQLiteContactSource(name, sc, changeId, id);
-}
-
-#endif /* ENABLE_MODULES */
-
-#endif /* ENABLE_SQLITE */
+# include "SQLiteContactSourceRegister.cpp"
+#endif

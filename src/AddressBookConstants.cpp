@@ -17,6 +17,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <config.h>
+
+#ifdef ENABLE_ADDRESSBOOK
+
 #include <CoreFoundation/CoreFoundation.h>
 
 /**
@@ -135,3 +139,5 @@ public:
 #endif
     }
 } constants;
+
+#endif // ENABLE_ADDRESSBOOK

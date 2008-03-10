@@ -158,18 +158,7 @@ template<class T> typedef ref<T, true> iphoneref;
  */
 class AddressBookSource : public EvolutionSyncSource
 {
-  public:
-    /**
-     * Creates a new Evolution address book source.
-     *
-     * @param    changeId    is used to track changes in the Evolution backend;
-     *                       not specifying it implies that always all items are returned
-     * @param    id          identifies the backend; not specifying it makes this instance
-     *                       unusable for anything but listing backend databases
-     */
-    AddressBookSource(const string &name,
-                      const SyncSourceNodes &nodes,
-                      const string &changeId = string(""));
+    AddressBookSource(const EvolutionSyncSourceParams &params, bool asVCard30);
     AddressBookSource(const AddressBookSource &other);
     virtual ~AddressBookSource() { close(); }
 

@@ -34,9 +34,11 @@ class ConfigTree;
 struct SyncSourceNodes;
 
 /**
- * A property has a name and a comment.  Derived classes might have
+ * A property has a name and a comment. Derived classes might have
  * additional code to read and write the property from/to a
- * ConfigNode.
+ * ConfigNode. They might also one or more  of the properties
+ * on the fly, therefore the virtual get methods which return a
+ * string value and not just a reference.
  *
  * A default value is returned if the ConfigNode doesn't have
  * a value set (= empty string).
@@ -50,24 +52,94 @@ class ConfigProperty {
         m_hidden(false)
         {}
     
-    const string m_name, m_comment, m_defValue;
+    virtual string getName() const { return m_name; }
+    virtual string getComment() const { return m_comment; }
+    virtual string getDefValue() const { return m_defValue; }
 
     bool isHidden() const { return m_hidden; }
     void setHidden(bool hidden) { m_hidden = hidden; }
 
-    void setProperty(ConfigNode &node, const string &value) const { node.setProperty(m_name, value, m_comment); }
+    void setProperty(ConfigNode &node, const string &value) const { node.setProperty(getName(), value, getComment()); }
     void setProperty(FilterConfigNode &node, const string &value, bool temporarily = false) const {
         if (temporarily) {
             node.addFilter(m_name, value);
         } else {
-            node.setProperty(m_name, value, m_comment);
+            node.setProperty(m_name, value, getComment());
         }
     }
-    string getProperty(const ConfigNode &node) const { string res = node.readProperty(m_name); return res.size() ? res : m_defValue; }
+    virtual string getProperty(const ConfigNode &node) const { string res = node.readProperty(getName()); return res.size() ? res : getDefValue(); }
 
  private:
     bool m_hidden;
+    const string m_name, m_comment, m_defValue;
 };
+
+template<class T> class InitList : public list<T> {
+ public:
+    InitList() {}
+    InitList(const T &initialValue) {
+        push_back(initialValue);
+    }
+    InitList &operator + (const T &rhs) {
+        push_back(rhs);
+        return *this;
+    }
+    InitList &operator += (const T &rhs) {
+        push_back(rhs);
+        return *this;
+    }
+};
+typedef InitList<string> Aliases;
+typedef InitList<Aliases> Values;
+
+
+/**
+ * A string property which maps multiple different possible value
+ * strings to one generic value, ignoring the case. Values not listed
+ * are passed through unchanged. The first value in the list of
+ * aliases is the generic one.
+ *
+ * The addition operator is defined for the aliases so that they
+ * can be constructed more easily.
+ */
+class StringConfigProperty : public ConfigProperty {
+ public:
+    StringConfigProperty(const string &name, const string &comment,
+                         const string &def = string(""),
+                         const Values &values = Values()) :
+    ConfigProperty(name, comment, def),
+        m_values(values)
+        {}
+
+    void normalizeValue(string &res) const {
+        Values values = getValues();
+        for (Values::const_iterator value = values.begin();
+             value != values.end();
+             ++value) {
+            for (Aliases::const_iterator alias = value->begin();
+                 alias != value->end();
+                 ++alias) {
+                if (!strcasecmp(res.c_str(), alias->c_str())) {
+                    res = *value->begin();
+                    return;
+                }
+            }
+        }
+    }
+
+    virtual string getProperty(const ConfigNode &node) const {
+        string res = node.readProperty(getName());
+        normalizeValue(res);
+        return res;
+    }
+
+ protected:
+    virtual Values getValues() const { return m_values; }
+
+ private:
+    const Values m_values;
+};
+
 
 /**
  * Instead of reading and writing strings, this class interprets the content
@@ -83,26 +155,26 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
         ostringstream out;
 
         out << value;
-        node.setProperty(m_name, out.str(), m_comment);
+        node.setProperty(getName(), out.str(), getComment());
     }
     void setProperty(FilterConfigNode &node, const T &value, bool temporarily = false) const {
         ostringstream out;
 
         out << value;
         if (temporarily) {
-            node.addFilter(m_name, out.str());
+            node.addFilter(getName(), out.str());
         } else {
-            node.setProperty(m_name, out.str(), m_comment);
+            node.setProperty(getName(), out.str(), getComment());
         }
     }
 
-    int getProperty(ConfigNode &node) {
-        istringstream in(node.readProperty(m_name));
+    T getProperty(ConfigNode &node) {
+        istringstream in(node.readProperty(getName()));
         T res;
         if (in >> res) {
             return res;
         } else {
-            istringstream defStream(m_defValue);
+            istringstream defStream(getDefValue());
             defStream >> res;
             return res;
         }
@@ -126,18 +198,18 @@ class BoolConfigProperty : public ConfigProperty {
         {}
 
     void setProperty(ConfigNode &node, bool value) {
-        node.setProperty(m_name, value ? "1" : "0", m_comment);
+        node.setProperty(getName(), value ? "1" : "0", getComment());
     }
     void setProperty(FilterConfigNode &node, bool value, bool temporarily) {
         string v(value ? "1" : "0");
         if (temporarily) {
-            node.addFilter(m_name, v);
+            node.addFilter(getName(), v);
         } else {
-            node.setProperty(m_name, v, m_comment);
+            node.setProperty(getName(), v, getComment());
         }
     }
     int getProperty(ConfigNode &node) {
-        string res = node.readProperty(m_name);
+        string res = node.readProperty(getName());
 
         return !strcasecmp(res.c_str(), "T") ||
             !strcasecmp(res.c_str(), "TRUE") ||
@@ -160,7 +232,7 @@ class ConfigStringCache {
  public:
     const char *getProperty(const ConfigNode &node, const ConfigProperty &prop) {
         string value = prop.getProperty(node);
-        pair< map<string, string>::iterator, bool > res = m_cache.insert(pair<string,string>(prop.m_name, value));
+        pair< map<string, string>::iterator, bool > res = m_cache.insert(pair<string,string>(prop.getName(), value));
         if (!res.second) {
             res.first->second = value;
         }
@@ -447,10 +519,18 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
      * Returns the data source type configured as part of the given
      * configuration; different EvolutionSyncSources then check whether
      * they support that type. This call has to work before instantiating
-     * a source and thus gets nodes explicitly.
+     * a source and thus gets passed a node to read from.
+     *
+     * @return the pair of <backend> and the (possibly empty)
+     *         <format> specified in the "type" property; see
+     *         sourcePropSourceType in SyncEvolutionConfig.cpp
+     *         for details
      */
-    static string getSourceType(const SyncSourceNodes &nodes);
-    virtual const char *getSourceType() const;
+    static pair<string, string> getSourceType(const SyncSourceNodes &nodes);
+    static string getSourceTypeString(const SyncSourceNodes &nodes);
+    virtual pair<string, string> getSourceType() const;
+
+    /** set the source type in <backend>[:format] style */
     virtual void setSourceType(const string &value, bool temporarily = false);
 
 
