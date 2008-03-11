@@ -344,7 +344,7 @@ public:
                              (Aliases("addressbook:text/x-vcard") + "text/x-vcard") +
                              (Aliases("addressbook:text/vcard") + "text/vcard") +
                              (Aliases("todo") + "tasks" + "text/x-todo") +
-                             (Aliases("memo") + "text/plain") +
+                             (Aliases("memos") + "text/plain") +
                              (Aliases("memo:text/calendar") + "text/x-journal"))
     {}
 
