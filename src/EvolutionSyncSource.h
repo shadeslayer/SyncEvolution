@@ -238,6 +238,11 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      * and store it in a new SyncItem. The caller must
      * free that item. May throw exceptions.
      *
+     * The information that has to be set in the new item is:
+     * - content
+     * - UID
+     * - mime type
+     *
      * @param uid      identifies the item
      */
     virtual SyncItem *createItem(const string &uid) = 0;
