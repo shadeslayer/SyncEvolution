@@ -340,6 +340,7 @@ public:
                              Values() +
                              (Aliases("calendar") + "events") +
                              (Aliases("calendar:text/calendar") + "text/calendar") +
+                             (Aliases("calendar:text/x-vcalendar") + "text/x-vcalendar") +
                              (Aliases("addressbook") + "contacts") +
                              (Aliases("addressbook:text/x-vcard") + "text/x-vcard") +
                              (Aliases("addressbook:text/vcard") + "text/vcard") +
