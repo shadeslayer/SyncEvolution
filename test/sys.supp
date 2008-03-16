@@ -1,0 +1,225 @@
+# ==7846== Invalid read of size 8
+# ==7846==    at 0x4015B24: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x400A8F7: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x4006174: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x40085F7: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x4011C98: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x400DA05: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x401155A: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x93D74FF: (within /lib/libc-2.6.1.so)
+# ==7846==    by 0x400DA05: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x93D7666: __libc_dlopen_mode (in /lib/libc-2.6.1.so)
+# ==7846==    by 0x93B1F1C: __nss_lookup_function (in /lib/libc-2.6.1.so)
+# ==7846==    by 0xDB5345A: (within /lib/libnss_compat-2.6.1.so)
+# ==7846==  Address 0xDB076E8 is 16 bytes inside a block of size 21 alloc'd
+# ==7846==    at 0x4C21C16: malloc (vg_replace_malloc.c:149)
+# ==7846==    by 0x4008AF5: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x4011C98: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x400DA05: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x401155A: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x93D74FF: (within /lib/libc-2.6.1.so)
+# ==7846==    by 0x400DA05: (within /lib/ld-2.6.1.so)
+# ==7846==    by 0x93D7666: __libc_dlopen_mode (in /lib/libc-2.6.1.so)
+# ==7846==    by 0x93B1F1C: __nss_lookup_function (in /lib/libc-2.6.1.so)
+# ==7846==    by 0xDB5345A: (within /lib/libnss_compat-2.6.1.so)
+# ==7846==    by 0xDB54948: _nss_compat_getpwnam_r (in /lib/libnss_compat-2.6.1.so)
+# ==7846==    by 0x9367205: getpwnam_r (in /lib/libc-2.6.1.so)
+{
+   getpwnam (Ubuntu Gutsy, 64 bit)
+   Memcheck:Addr8
+   obj:/lib/ld-2.6.1.so
+   obj:/lib/ld-2.6.1.so
+   obj:/lib/ld-2.6.1.so
+   obj:/lib/ld-2.6.1.so
+   obj:/lib/ld-2.6.1.so
+   obj:/lib/ld-2.6.1.so
+   obj:/lib/ld-2.6.1.so
+   obj:/lib/libc-2.6.1.so
+   obj:/lib/ld-2.6.1.so
+   fun:__libc_dlopen_mode
+   fun:__nss_lookup_function
+   obj:/lib/libnss_compat-2.6.1.so
+}
+
+# ==10992== 156 (36 direct, 120 indirect) bytes in 1 blocks are definitely lost in loss record 7 of 29
+# ==10992==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==10992==    by 0x4610A09: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10992==    by 0x46110F6: __nss_database_lookup (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10992==    by 0x4142149: ???
+# ==10992==    by 0x4143664: ???
+# ==10992==    by 0x45C08A4: getpwnam_r (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10992==    by 0x4482145: g_get_any_init_do (gutils.c:1566)
+# ==10992==    by 0x4483A48: g_get_home_dir (gutils.c:1717)
+# ==10992==    by 0x43970FA: ORBit_option_parse (orbit-options.c:297)
+# ==10992==    by 0x439D619: CORBA_ORB_init (corba-orb.c:410)
+# ==10992==    by 0x434487D: bonobo_activation_orb_init (bonobo-activation-init.c:601)
+# ==10992==    by 0x415CCD2: (within /usr/lib/libgnome-2.so.0.1600.0)
+{
+   getpwnam_r
+   Memcheck:Leak
+   fun:malloc
+   obj:*
+   fun:*nss_database_lookup
+   obj:*
+   obj:*
+   fun:getpwnam_r
+}
+
+# ==7948== 292 (52 direct, 240 indirect) bytes in 1 blocks are definitely lost in loss record 7 of 53
+# ==7948==    at 0x4C21C16: malloc (vg_replace_malloc.c:149)
+# ==7948==    by 0x93B2120: (within /lib/libc-2.6.1.so)
+# ==7948==    by 0x93B29DE: __nss_database_lookup (in /lib/libc-2.6.1.so)
+# ==7948==    by 0xDB5343F: ???
+# ==7948==    by 0xDB54948: ???
+# ==7948==    by 0x9367205: getpwnam_r (in /lib/libc-2.6.1.so)
+# ==7948==    by 0x70FC3BF: (within /usr/lib/libglib-2.0.so.0.1400.1)
+# ==7948==    by 0x70FD9FA: g_get_user_name (in /usr/lib/libglib-2.0.so.0.1400.1)
+# ==7948==    by 0x5F1E3F4: gconf_get_daemon_dir (in /usr/lib/libgconf-2.so.4.1.2)
+# ==7948==    by 0x5F20440: gconf_activate_server (in /usr/lib/libgconf-2.so.4.1.2)
+# ==7948==    by 0x5F2B767: (within /usr/lib/libgconf-2.so.4.1.2)
+# ==7948==    by 0x5F2C2CD: (within /usr/lib/libgconf-2.so.4.1.2)
+{
+   getpwnam_r leak
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib/libc-*.so
+   fun:*nss_database_lookup
+   obj:*
+   obj:*
+   fun:getpwnam_r
+}
+
+# ==7948== 1,152 bytes in 4 blocks are possibly lost in loss record 19 of 53
+# ==7948==    at 0x4C20F3F: calloc (vg_replace_malloc.c:279)
+# ==7948==    by 0x4010F58: _dl_allocate_tls (in /lib/ld-2.6.1.so)
+# ==7948==    by 0x90B9A92: pthread_create@@GLIBC_2.2.5 (in /lib/libpthread-2.6.1.so)
+# ==7948==    by 0x6A512FB: (within /usr/lib/libgthread-2.0.so.0.1400.1)
+# ==7948==    by 0x70F279E: g_thread_create_full (in /usr/lib/libglib-2.0.so.0.1400.1)
+# ==7948==    by 0x70F4155: (within /usr/lib/libglib-2.0.so.0.1400.1)
+# ==7948==    by 0x70F430F: g_thread_pool_push (in /usr/lib/libglib-2.0.so.0.1400.1)
+# ==7948==    by 0x6607E18: giop_thread_request_push_key (in /usr/lib/libORBit-2.so.0.1.0)
+# ==7948==    by 0x661E3F3: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==7948==    by 0x661F41C: ORBit_handle_request (in /usr/lib/libORBit-2.so.0.1.0)
+# ==7948==    by 0x660A718: giop_connection_handle_input (in /usr/lib/libORBit-2.so.0.1.0)
+# ==7948==    by 0x662551F: (within /usr/lib/libORBit-2.so.0.1.0)
+{
+   thread local storage
+   Memcheck:Leak
+   fun:calloc
+   fun:*dl_allocate_tls
+   fun:pthread_create*
+}
+
+{
+   thread local storage
+   Memcheck:Leak
+   fun:calloc
+   obj:*
+   fun:*dl_allocate_tls
+   fun:pthread_create*
+}
+
+# ==10979== Conditional jump or move depends on uninitialised value(s)
+# ==10979==    at 0x4010DF3: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x400B729: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x4008202: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x46368CC: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10979==    by 0x4636A09: _dl_sym (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10979==    by 0x451DEE7: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x451E42C: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==    by 0x451DE7A: dlsym (in /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==    by 0x434A1E3: g_module_symbol (gmodule-dl.c:147)
+# ==10979==    by 0x434A6F1: g_module_open (gmodule.c:484)
+# ==10979==    by 0x4681D3A: e_data_server_module_load (e-data-server-module.c:77)
+{
+   dlsym
+   Memcheck:Cond
+   obj:*ld-2.3.6.so
+   obj:*ld-2.3.6.so
+   obj:*ld-2.3.6.so
+   obj:*libc-2.3.6*
+   fun:*dl*sym
+   fun:g_module_symbol
+}
+# ==10979== Invalid read of size 4
+# ==10979==    at 0x4010E00: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x4004B78: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x4006792: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x400A1F6: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x400A3CA: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x46344D4: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10979==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x4633EDE: _dl_open (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10979==    by 0x451DD8D: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x451E42C: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==  Address 0x4E71040 is 24 bytes inside a block of size 25 alloc'd
+# ==10979==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==10979==    by 0x4006B83: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x400A1F6: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x400A3CA: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x46344D4: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10979==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x4633EDE: _dl_open (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10979==    by 0x451DD8D: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x451E42C: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==    by 0x451DD20: dlopen (in /lib/tls/i686/cmov/libdl-2.3.6.so)
+{
+   dlopen
+   Memcheck:Addr4
+   obj:*ld-2.3.6.so
+   obj:*ld-2.3.6.so
+   obj:*ld-2.3.6.so
+   obj:*ld-2.3.6.so
+   obj:*ld-2.3.6.so
+   obj:*ld-2.3.6.so
+   obj:*tls/i686/cmov/libc-2.3.6.so
+   obj:*ld-2.3.6.so
+   fun:*dl*open
+   obj:*libdl-2.3.6*
+   obj:*ld-2.3.6.so
+   obj:*libdl-2.3.6*
+}
+
+# ==10979== Invalid read of size 4
+# ==10979==    at 0x4010C43: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x4006704: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x463446F: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10979==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x4633EDE: _dl_open (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==10979==    by 0x451DD8D: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==10979==    by 0x451E42C: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==    by 0x451DD20: dlopen (in /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==10979==    by 0x434A606: g_module_open (gmodule-dl.c:99)
+# ==10979==    by 0x4681D3A: e_data_server_module_load (e-data-server-module.c:77)
+# ==10979==    by 0x440B367: g_type_module_use (gtypemodule.c:190)
+# ==10979==  Address 0x4E7C410 is 112 bytes inside a block of size 114 alloc'd
+# ==10979==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==10979==    by 0x4457A95: g_malloc (gmem.c:131)
+# ==10979==    by 0x4470618: g_strdup (gstrfuncs.c:92)
+# ==10979==    by 0x434A99B: g_module_open (gmodule.c:386)
+# ==10979==    by 0x4681D3A: e_data_server_module_load (e-data-server-module.c:77)
+# ==10979==    by 0x440B367: g_type_module_use (gtypemodule.c:190)
+# ==10979==    by 0x468207F: e_data_server_module_load_file (e-data-server-module.c:175)
+# ==10979==    by 0x4682146: load_module_dir (e-data-server-module.c:202)
+# ==10979==    by 0x46821AA: e_data_server_module_init (e-data-server-module.c:219)
+# ==10979==    by 0x804B58F: main (server.c:379)
+{
+   dlopen II
+   Memcheck:Addr4
+   obj:*ld-2.3.6.so
+   obj:*ld-2.3.6.so
+   obj:*libc-2.3.6.so
+   obj:*ld-2.3.6.so
+   fun:*dl*open
+   obj:*libdl-2.3.6.so
+   obj:*ld-2.3.6.so
+   obj:*libdl-2.3.6.so
+   fun:dlopen
+   fun:g_module_open
+}

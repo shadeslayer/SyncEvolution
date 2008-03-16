@@ -1,0 +1,76 @@
+# ==7948== 74 (32 direct, 42 indirect) bytes in 2 blocks are definitely lost in loss record 4 of 53
+# ==7948==    at 0x4C22425: operator new(unsigned long) (vg_replace_malloc.c:167)
+# ==7948==    by 0x4B4FFA: DMTreeFactory::getDMTree(char const*) (lDMTreeFactory.cpp:58)
+# ==7948==    by 0x4B2C3C: DMTClientConfig::open() (lDMTClientConfig.cpp:212)
+# ==7948==    by 0x413E18: TestEvolution::TestEvolution(std::string const&) (client-test-app.cpp:304)
+# ==7948==    by 0x41313C: TestEvolution::TestEvolution(std::string const&) (client-test-app.cpp:217)
+# ==7948==    by 0x414205: RegisterTestEvolution::RegisterTestEvolution() (client-test-app.cpp:649)
+# ==7948==    by 0x40981A: __static_initialization_and_destruction_0(int, int) (client-test-app.cpp:669)
+# ==7948==    by 0x409844: _GLOBAL__I__ZN16MacOSAddressBook11m_singletonE (client-test-app.cpp:670)
+# ==7948==    by 0x4F9685: (within /scratch/work/sync/src/client-test)
+# ==7948==    by 0x40820A: (within /scratch/work/sync/src/client-test)
+{
+   general catchall for errors in client library files, detected because it uses new
+   Memcheck:Leak
+   fun:_Znwm
+}
+
+# ==7948== 
+# ==7948== 
+# ==7948== 36,301 bytes in 1,171 blocks are definitely lost in loss record 27 of 53
+# ==7948==    at 0x4C220C5: operator new[](unsigned long) (vg_replace_malloc.c:199)
+# ==7948==    by 0x4E29F7: DeviceManagementNode::gotoDir(bool) (lDeviceManagementNode.cpp:108)
+# ==7948==    by 0x4E2E73: DeviceManagementNode::update(bool) (lDeviceManagementNode.cpp:173)
+# ==7948==    by 0x4E351F: DeviceManagementNode::DeviceManagementNode(char const*) (lDeviceManagementNode.cpp:70)
+# ==7948==    by 0x4E1FE9: DMTree::readManagementNode(char const*) (lDMTree.cpp:87)
+# ==7948==    by 0x4B2CA5: DMTClientConfig::open() (lDMTClientConfig.cpp:215)
+# ==7948==    by 0x4B2F3A: DMTClientConfig::read() (lDMTClientConfig.cpp:134)
+# ==7948==    by 0x4134E0: TestEvolution::TestEvolution(std::string const&) (client-test-app.cpp:270)
+# ==7948==    by 0x41313C: TestEvolution::TestEvolution(std::string const&) (client-test-app.cpp:217)
+# ==7948==    by 0x414205: RegisterTestEvolution::RegisterTestEvolution() (client-test-app.cpp:649)
+# ==7948==    by 0x40981A: __static_initialization_and_destruction_0(int, int) (client-test-app.cpp:669)
+# ==7948==    by 0x409844: _GLOBAL__I__ZN16MacOSAddressBook11m_singletonE (client-test-app.cpp:670)
+{
+   general catchall for errors in client library files, detected because it uses new
+   Memcheck:Leak
+   fun:_Znam
+}
+
+# ==10986== 58 (16 direct, 42 indirect) bytes in 2 blocks are definitely lost in loss record 2 of 22
+# ==10986==    at 0x401DC55: operator new(unsigned) (vg_replace_malloc.c:163)
+# ==10986==    by 0x80FC697: DMTreeFactory::getDMTree(char const*) (lDMTreeFactory.cpp:58)
+# ==10986==    by 0x80FA918: DMTClientConfig::open() (lDMTClientConfig.cpp:212)
+# ==10986==    by 0x8059AA0: TestEvolution::TestEvolution(std::string const&) (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x8058C2F: TestEvolution::TestEvolution(std::string const&) (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x8059EAA: RegisterTestEvolution::RegisterTestEvolution() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x804F3B6: __static_initialization_and_destruction_0(int, int) (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x804F3EA: _GLOBAL__I__ZN16MacOSAddressBook11m_singletonE (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x812EB14: (within /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x804DD30: (within /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x812EAA8: __libc_csu_init (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x449FE5C: (below main) (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   general catchall for errors in client library files, detected because it uses new
+   Memcheck:Leak
+   fun:_Znwj
+}
+
+# ==10986== 62 bytes in 2 blocks are possibly lost in loss record 4 of 22
+# ==10986==    at 0x401D8E5: operator new[](unsigned) (vg_replace_malloc.c:195)
+# ==10986==    by 0x811DD33: DeviceManagementNode::gotoDir(bool) (lDeviceManagementNode.cpp:108)
+# ==10986==    by 0x811E5F2: DeviceManagementNode::update(bool) (lDeviceManagementNode.cpp:173)
+# ==10986==    by 0x811E9EB: DeviceManagementNode::DeviceManagementNode(char const*) (lDeviceManagementNode.cpp:70)
+# ==10986==    by 0x811D9D9: DMTree::readManagementNode(char const*) (lDMTree.cpp:87)
+# ==10986==    by 0x80FA954: DMTClientConfig::open() (lDMTClientConfig.cpp:215)
+# ==10986==    by 0x80FAB0C: DMTClientConfig::read() (lDMTClientConfig.cpp:134)
+# ==10986==    by 0x8059A5B: TestEvolution::TestEvolution(std::string const&) (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x8058C2F: TestEvolution::TestEvolution(std::string const&) (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x8059EAA: RegisterTestEvolution::RegisterTestEvolution() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x804F3B6: __static_initialization_and_destruction_0(int, int) (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10986==    by 0x804F3EA: _GLOBAL__I__ZN16MacOSAddressBook11m_singletonE (in /tmp/runtests/head/tmp/build/src/client-test)
+{
+   general catchall for errors in client library files, detected because it uses new
+   Memcheck:Leak
+   fun:_Znaj
+}
+
