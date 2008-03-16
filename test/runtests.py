@@ -500,7 +500,9 @@ class EvoSvn(Action):
         cd(self.workdir)
         shutil.copy2(os.path.join(self.makedir, "Makefile"), ".")
         shutil.copy2(os.path.join(self.makedir, "local.mk"), ".")
-        shutil.rmtree(self.resultdir)
+        if os.access(self.resultdir, os.F_OK):
+            shutil.rmtree(self.resultdir)
+        os.system("rm -f .stamp/*.install")
 	localmk = open("local.mk", "a")
 	localmk.write("PREFIX := %s\n" % self.resultdir)
 	localmk.close()
