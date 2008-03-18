@@ -37,6 +37,23 @@ static const string
 EVOLUTION_CALENDAR_PRODID("PRODID:-//ACME//NONSGML SyncEvolution//EN"),
 EVOLUTION_CALENDAR_VERSION("VERSION:2.0");
 
+class unrefECalChanges {
+ public:
+    /** free list of ECalChange instances */
+    static void unref(GList *pointer) {
+        if (pointer) {
+            GList *next = pointer;
+            do {
+                ECalChange *ecc = (ECalChange *)next->data;
+                g_object_unref(ecc->comp);
+                g_free(next->data);
+                next = next->next;
+            } while (next);
+            g_list_free(pointer);
+        }
+    }
+};
+
 EvolutionCalendarSource::EvolutionCalendarSource(ECalSourceType type,
                                                  const EvolutionSyncSourceParams &params) :
     EvolutionSyncSource(params),
@@ -167,6 +184,7 @@ void EvolutionCalendarSource::getChanges()
         if (!e_cal_get_changes(m_calendar, (char *)m_changeId.c_str(), &nextItem, &gerror)) {
             throwError( "reading changes", gerror );
         }
+        eptr<GList, GList, unrefECalChanges> listptr(nextItem);
         while (nextItem) {
             ECalChange *ecc = (ECalChange *)nextItem->data;
 
@@ -217,6 +235,7 @@ void EvolutionCalendarSource::beginSyncThrow(bool needAll,
                                            &gerror)) {
             throwError( "reading all items", gerror );
         }
+        eptr<GList> listptr(nextItem);
         while (nextItem) {
             const char *uid;
 
@@ -235,6 +254,7 @@ void EvolutionCalendarSource::beginSyncThrow(bool needAll,
         if (!e_cal_get_object_list_as_comp(m_calendar, "(contains? \"any\" \"\")", &nextItem, &gerror)) {
             throwError( "reading all items", gerror );
         }
+        eptr<GList> listptr(nextItem);
         while (nextItem) {
             const char *uid;
 
@@ -275,6 +295,7 @@ void EvolutionCalendarSource::exportData(ostream &out)
                                        &gerror)) {
         throwError( "reading all items", gerror );
     }
+    eptr<GList> listptr(nextItem);
     while (nextItem) {
         const char *uid;
         e_cal_component_get_uid(E_CAL_COMPONENT(nextItem->data), &uid);

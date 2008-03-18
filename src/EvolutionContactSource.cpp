@@ -37,6 +37,24 @@ using namespace std;
 
 using namespace vocl;
 
+class unrefEBookChanges {
+ public:
+    /** free list of EBookChange instances */
+    static void unref(GList *pointer) {
+        if (pointer) {
+            GList *next = pointer;
+            do {
+                EBookChange *ebc = (EBookChange *)next->data;
+                g_object_unref(ebc->contact);
+                g_free(next->data);
+                next = next->next;
+            } while (next);
+            g_list_free(pointer);
+        }
+    }
+};
+
+
 const EvolutionContactSource::extensions EvolutionContactSource::m_vcardExtensions;
 const EvolutionContactSource::unique EvolutionContactSource::m_uniqueProperties;
 
@@ -194,6 +212,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
         if (!e_book_get_contacts( m_addressbook, deleteItemsQuery, &nextItem, &gerror )) {
             throwError( "reading items to be deleted", gerror );
         }
+        eptr<GList> listptr(nextItem);
         for (;nextItem; nextItem = nextItem->next) {
             const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
                                                                 E_CONTACT_UID);
@@ -233,6 +252,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
         if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
             throwError( "reading all items", gerror );
         }
+        eptr<GList> listptr(nextItem);
         while (nextItem) {
             const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
                                                                 E_CONTACT_UID);
@@ -246,6 +266,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
         if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
             throwError( "reading changes", gerror );
         }
+        eptr<GList, GList, unrefEBookChanges> listptr(nextItem);
         while (nextItem) {
             EBookChange *ebc = (EBookChange *)nextItem->data;
 
@@ -280,6 +301,7 @@ void EvolutionContactSource::endSyncThrow()
         if (!e_book_get_changes( m_addressbook, (char *)m_changeId.c_str(), &nextItem, &gerror )) {
             throwError( "reading changes", gerror );
         }
+        eptr<GList, GList, unrefEBookChanges> listptr(nextItem);
     }
     resetItems();
     m_isModified = false;
@@ -299,6 +321,7 @@ void EvolutionContactSource::exportData(ostream &out)
     if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
         throwError( "reading all items", gerror );
     }
+    eptr<GList> listptr(nextItem);
     while (nextItem) {
         eptr<char> vcardstr(e_vcard_to_string(&E_CONTACT(nextItem->data)->parent,
                                               EVC_FORMAT_VCARD_30));
@@ -683,7 +706,9 @@ void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
                       getName(), key);
             break;
         }
+        eptr<EContact, GObject> contactptr( contact, "contact" );
         EContact *copy = e_contact_duplicate(contact);
+        eptr<EContact, GObject> contactcopyptr(copy);
         if(!copy ||
            ! e_book_add_contact(m_addressbook,
                                 copy,
@@ -758,6 +783,7 @@ int EvolutionContactSource::updateItemThrow(SyncItem& item)
                 throwError( string( "reading refresh contact " ) + uid,
                             gerror );
             }
+            eptr<EContact, GObject> contactptr( refresh_contact, "contact" );
             string nick = (const char *)e_contact_get_const(refresh_contact, E_CONTACT_NICKNAME);
             string nick_mod = nick + "_";
             e_contact_set(refresh_contact, E_CONTACT_NICKNAME, (void *)nick_mod.c_str());
@@ -830,6 +856,8 @@ void EvolutionContactSource::logItem(const string &uid, const string &info, bool
                                 uid.c_str(),
                                 &contact,
                                 &gerror )) {
+            eptr<EContact, GObject> contactptr(contact);
+
             const char *fileas = (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
             if (fileas) {
                 line += fileas;
@@ -842,6 +870,7 @@ void EvolutionContactSource::logItem(const string &uid, const string &info, bool
                 }
             }
         } else {
+            g_clear_error(&gerror);
             line += "<name unavailable>";
         }
         line += " (";
@@ -887,6 +916,8 @@ void EvolutionContactSource::logItem(SyncItem &item, const string &info, bool de
                                     item.getKey(),
                                     &contact,
                                     &gerror )) {
+                eptr<EContact, GObject> contactptr( contact, "contact" );
+
                 line += ", EV ";
                 const char *fileas = (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
                 if (fileas) {
@@ -907,21 +938,6 @@ void EvolutionContactSource::logItem(SyncItem &item, const string &info, bool de
         line += info;
         
         (LOG.*(debug ? &Log::debug : &Log::info))( "%s: %s", getName(), line.c_str() );
-    }
-}
-
-
-EContact *EvolutionContactSource::getContact( const string &uid )
-{
-    EContact *contact;
-    GError *gerror = NULL;
-    if (e_book_get_contact( m_addressbook,
-                            uid.c_str(),
-                            &contact,
-                            &gerror )) {
-        return contact;
-    } else {
-        return NULL;
     }
 }
 

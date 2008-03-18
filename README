@@ -160,6 +160,54 @@ The <options> in front of the server name are:
   for a "refresh-from-server" or "refresh-from-client" sync which
   clears all data at one end and copies all items from the other.
 
+--print-servers
+  Prints the names of all configured servers to stdout.
+
+--print-config|-p
+  Prints the complete configuration for the selected server
+  to stdout, including up-to-date comments for all properties. The
+  format is the normal .ini format with source configurations in
+  different sections introduced with [<source>] lines.
+
+-–configure|-c
+  Modify the configuration files for the selected server. If no such
+  configuration exists, then a new one is created using one of the
+  template configurations (see --template option). When creating
+  a new configuration only the active sources will be set to active
+  in the new configuration, i.e. "syncevolution -c scheduleworld addressbook"
+  followed by "syncevolution scheduleworld" will only synchronize the
+  address book.
+  In SyncEvolution <= 0.7 a different layout of configuration files
+  was used. Using --configure will automatically migrate to the new
+  layout and rename the old directory $HOME/.sync4j/evolution/<server> 
+  into $HOME/.sync4j/evolution/<server>.old to prevent accidental use
+  of the old configuration. WARNING: old SyncEvolution releases cannot
+  use the new configuration!
+
+--sync-property|-y <property>=<value>
+  Overrides a configuration property in the <server>/config.ini file
+  for the current synchronization run or permanently when --configure
+  is used to update the configuration. Can be used multiple times.
+  Specifying an unused property will trigger an error message.
+
+--source-property|-z <property>=<value>
+  Same as --sync-option, but applies to the configuration of all active
+  sources. "--sync <mode>" is a shortcut for "--source-option sync=<mode>".
+
+--properties|-r <file name>|-
+  Same as --sync-property and --source-property, but with properties
+  specified in a file with the same format that --print-config uses.
+  "-" reads from stdin.
+
+--template|-l <server name>
+  Can be used to select from one of the built-in default configurations
+  for known SyncML servers. Defaults to the <server> name, so --template
+  only has to be specified when creating multiple different configurations
+  for the same server.
+  SyncEvolution has configurations for:
+    scheduleworld = sync.scheduleworld.com
+    funambol = my.funambol.com
+
 --status|-t
   The changes made to local data since the last synchronization are
   shown without starting a new one. This can be used to see in advance
@@ -174,6 +222,29 @@ The <options> in front of the server name are:
 
 --version
   Prints the SyncEvolution version.
+
+Use Cases
+---------
+
+Migrate a configuration from the  <= 0.7 format to the current one:
+  $ syncevolution --configure scheduleworld
+
+Deactivate all sources:
+  $ syncevolution --configure --source-property sync=none scheduleworld
+
+Activate address book synchronization again, using the --sync shortcut:
+  $ syncevolution --configure --sync two-way scheduleworld addressbook
+
+Set up another configuration for scheduleworld under a different name:
+  $ syncevolution --sync-property user=joe \
+                  --sync-property password=foo \
+                  --template scheduleworld \
+                  scheduleworld_joe
+
+Edit all configuration properties at once:
+  $ syncevolution --print-config scheduleworld >config.ini
+  $ $EDITOR config.ini
+  $ syncevolution --configure --properties config.ini scheduleworld
 
 
 Configuration

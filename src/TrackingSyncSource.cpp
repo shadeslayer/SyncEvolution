@@ -124,7 +124,7 @@ void TrackingSyncSource::exportData(ostream &out)
          it != revisions.end();
          it++) {
         const string &uid = it->first;
-        eptr<SyncItem> item(createItem(uid), "sync item");
+        cxxptr<SyncItem> item(createItem(uid), "sync item");
 
         out << (char *)item->getData() << "\n";
     }

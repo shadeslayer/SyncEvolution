@@ -42,13 +42,6 @@ class EvolutionContactSource : public EvolutionSyncSource
     EvolutionContactSource(const EvolutionContactSource &other);
     virtual ~EvolutionContactSource() { close(); }
 
-    //
-    // utility function for testing:
-    // returns a pointer to an Evolution contact (memory owned
-    // by Evolution) with the given UID, NULL if not found or failure
-    //
-    EContact *getContact( const string &uid );
-
     // utility function: extract vcard from item in format suitable for Evolution
     string preparseVCard(SyncItem& item);
 

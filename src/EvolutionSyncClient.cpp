@@ -323,7 +323,7 @@ class SourceList : public vector<EvolutionSyncSource *> {
     bool m_doLogging;    /**< true iff additional files are to be written during sync */
     SyncClient &m_client; /**< client which holds the sync report after a sync */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
-    arrayptr<SyncSource *> m_sourceArray;  /** owns the array that is expected by SyncClient::sync() */
+    boost::scoped_array<SyncSource *> m_sourceArray;  /** owns the array that is expected by SyncClient::sync() */
     const bool m_quiet;  /**< avoid redundant printing to screen */
     string m_previousLogdir; /**< remember previous log dir before creating the new one */
 
@@ -581,17 +581,17 @@ public:
 
     /** returns current sources as array as expected by SyncClient::sync(), memory owned by this class */
     SyncSource **getSourceArray() {
-        m_sourceArray = new SyncSource *[size() + 1];
+        m_sourceArray.reset(new SyncSource *[size() + 1]);
 
         int index = 0;
         for (iterator it = begin();
              it != end();
              ++it) {
-            ((SyncSource **)m_sourceArray)[index] = *it;
+            m_sourceArray[index] = *it;
             index++;
         }
-        ((SyncSource **)m_sourceArray)[index] = 0;
-        return m_sourceArray;
+        m_sourceArray[index] = 0;
+        return &m_sourceArray[0];
     }
    
     ~SourceList() {

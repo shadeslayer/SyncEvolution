@@ -449,7 +449,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
                 } else {
                     // retrieve item with all its data
                     try {
-                        eptr<SyncItem> item(m_source.createItem(uid));
+                        cxxptr<SyncItem> item(m_source.createItem(uid));
                         if (item) {
                             item->setState(m_state);
                         }
