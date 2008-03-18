@@ -19,7 +19,7 @@
 #include "FilterConfigNode.h"
 
 FilterConfigNode::FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
-                                   const ConfigFilter_t &filter) :
+                                   const ConfigFilter &filter) :
     m_node(node),
     m_filter(filter)
 {
@@ -28,17 +28,17 @@ FilterConfigNode::FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
 void FilterConfigNode::addFilter(const string &property,
                                  const string &value)
 {
-    m_filter.insert(pair<string, string>(property, value));
+    m_filter.set(property, value);
 }
 
-void FilterConfigNode::setFilters(const ConfigFilter_t &filter)
+void FilterConfigNode::setFilter(const ConfigFilter &filter)
 {
     m_filter = filter;
 }
 
 string FilterConfigNode::readProperty(const string &property) const
 {
-    ConfigFilter_t::const_iterator it = m_filter.find(property);
+    ConfigFilter::const_iterator it = m_filter.find(property);
 
     if (it != m_filter.end()) {
         return it->second;
@@ -51,7 +51,7 @@ void FilterConfigNode::setProperty(const string &property,
                                    const string &value,
                                    const string &comment)
 {
-    ConfigFilter_t::iterator it = m_filter.find(property);
+    ConfigFilter::iterator it = m_filter.find(property);
 
     if (it != m_filter.end()) {
         m_filter.erase(it);
@@ -63,7 +63,7 @@ map<string, string> FilterConfigNode::readProperties()
 {
     map<string, string> res = m_node->readProperties();
 
-    for(ConfigFilter_t::iterator it = m_filter.begin();
+    for(ConfigFilter::iterator it = m_filter.begin();
         it != m_filter.end();
         it++) {
         res.insert(*it);
@@ -74,7 +74,7 @@ map<string, string> FilterConfigNode::readProperties()
 
 void FilterConfigNode::removeProperty(const string &property)
 {
-    ConfigFilter_t::iterator it = m_filter.find(property);
+    ConfigFilter::iterator it = m_filter.find(property);
 
     if (it != m_filter.end()) {
         m_filter.erase(it);

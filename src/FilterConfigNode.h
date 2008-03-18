@@ -39,17 +39,26 @@ using namespace std;
  */
 class FilterConfigNode : public ConfigNode {
  public:
-    typedef map<string, string> ConfigFilter_t;
+    class ConfigFilter : public  map<string, string> {
+    public:
+        /** add the mapping, regardless whether it exists already or not */
+        void set(const string &property, const string &value) {
+            pair<iterator, bool> inserted = insert(make_pair(property, value));
+            if (!inserted.second) {
+                inserted.first->second = value;
+            }
+        }
+    };
 
     FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
-                     const ConfigFilter_t &filter = ConfigFilter_t() );
+                     const ConfigFilter &filter = ConfigFilter() );
 
     /** add another entry to the list of filter properties */
     void addFilter(const string &property,
                    const string &value);
 
     /** replace current filter list with new one */
-    void setFilters(const ConfigFilter_t &filter);
+    void setFilter(const ConfigFilter &filter);
 
     /* ConfigNode API */
     virtual void flush() { m_node->flush(); }
@@ -62,7 +71,7 @@ class FilterConfigNode : public ConfigNode {
     virtual bool exists() { m_node->exists(); }
 
  private:
-    ConfigFilter_t m_filter;
+    ConfigFilter m_filter;
     boost::shared_ptr<ConfigNode> m_node;
 };
 

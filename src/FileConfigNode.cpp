@@ -222,6 +222,9 @@ map<string, string> FileConfigNode::readProperties() {
          it++) {
         const string &line = *it;
         if (getContent(line, property, value)) {
+            // don't care about the result: only the first instance
+            // of the property counts, so it doesn't matter when
+            // inserting it again later fails
             res.insert(pair<string, string>(property, value));
         }
     }
@@ -265,19 +268,15 @@ void FileConfigNode::setProperty(const string &property, const string &newvalue,
 
     // add each line of the comment as separate line in .ini file
     if (comment.size()) {
+        list<string> commentLines;
+        ConfigProperty::splitComment(comment, commentLines);
         if (m_lines.size()) {
             m_lines.push_back("");
         }
-        size_t start = 0;
-        while (true) {
-            size_t end = comment.find('\n', start);
-            if (end == comment.npos) {
-                m_lines.push_back(string("# ") + comment.substr(start));
-                break;
-            } else {
-                m_lines.push_back(string("# ") + comment.substr(start, end - start));
-                start = end + 1;
-            }
+        for (list<string>::const_iterator it = commentLines.begin();
+             it != commentLines.end();
+             ++it) {
+            m_lines.push_back(string("# " + *it));
         }
     }
 

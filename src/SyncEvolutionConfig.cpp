@@ -23,33 +23,36 @@
 #include <unistd.h>
 #include "config.h"
 
+void ConfigProperty::splitComment(const string &comment, list<string> &commentLines)
+{
+    size_t start = 0;
+
+    while (true) {
+        size_t end = comment.find('\n', start);
+        if (end == comment.npos) {
+            commentLines.push_back(comment.substr(start));
+            break;
+        } else {
+            commentLines.push_back(comment.substr(start, end - start));
+            start = end + 1;
+        }
+    }
+}
+
 EvolutionSyncConfig::EvolutionSyncConfig(const string &server) :
     m_server(server),
     m_oldLayout(false)
 {
     string root;
 
-    const char *homestr = getenv("HOME");
-    string home;
-    if (homestr) {
-        home = homestr;
-    }
-
     // search for configuration in various places...
     string confname;
-    root = home + "/.sync4j/evolution/" + server;
+    root = getOldRoot() + "/" + server;
     confname = root + "/spds/syncml/config.txt";
     if (!access(confname.c_str(), F_OK)) {
         m_oldLayout = true;
     } else {
-        const char *xdg_root_str = getenv("XDG_CONFIG_HOME");
-        string xdg_root;
-        if (xdg_root_str) {
-            xdg_root = xdg_root_str;
-        } else {
-            xdg_root = home + "/.config";
-        }
-        root = xdg_root + "/syncevolution/" + server;
+        root = getNewRoot() + "/" + server;
     }
 
     m_tree.reset(new FileConfigTree(root, m_oldLayout));
@@ -57,9 +60,31 @@ EvolutionSyncConfig::EvolutionSyncConfig(const string &server) :
     string path(m_oldLayout ? "spds/syncml" : "");
     boost::shared_ptr<ConfigNode> node;
     node = m_tree->open(path, false);
-    m_configNode.reset(new FilterConfigNode(node, FilterConfigNode::ConfigFilter_t()));
+    m_configNode.reset(new FilterConfigNode(node));
     m_hiddenNode = m_tree->open(path, true);
 }
+
+static void addServers(const string &root, EvolutionSyncConfig::ServerList &res) {
+    FileConfigTree tree(root, false);
+    list<string> servers = tree.getChildren("");
+    for (list<string>::const_iterator it = servers.begin();
+         it != servers.end();
+         ++it) {
+        res.push_back(pair<string, string>(*it, root + "/" + *it));
+    }
+}
+
+EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServers()
+{
+    ServerList res;
+
+    addServers(getOldRoot(), res);
+    addServers(getNewRoot(), res);
+
+    return res;
+}
+
+
 
 bool EvolutionSyncConfig::exists() const
 {

@@ -56,6 +56,9 @@ class ConfigProperty {
     virtual string getComment() const { return m_comment; }
     virtual string getDefValue() const { return m_defValue; }
 
+    /** split \n separated comment into lines without \n, appending them to commentLines */
+    static void splitComment(const string &comment, list<string> &commentLines);
+
     bool isHidden() const { return m_hidden; }
     void setHidden(bool hidden) { m_hidden = hidden; }
 
@@ -288,6 +291,15 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
      */
     EvolutionSyncConfig(const string &server);
 
+    typedef list< pair<string, string> > ServerList;
+
+    /**
+     * returns list of servers in either the old (.sync4j) or
+     * new config directory (.config), given as server name
+     * and absolute root of config
+     */
+    static ServerList getServers();
+
     /** true if the main configuration file already exists */
     bool exists() const;
 
@@ -300,6 +312,25 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     static ConfigPropertyRegistry &getRegistry();
 
     /**
+     * Replaces the property filter of either the sync properties or
+     * all sources. This can be used to e.g. temporarily override
+     * the active sync mode.
+     */
+    void setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter) {
+        if (sync) {
+            m_configNode->setFilter(filter);
+        } else {
+            m_sourceFilter = filter;
+        }
+    }
+
+    /**
+     * Read-only access to all configurable properties of the server,
+     * including any config filter set earlier.
+     */
+    virtual boost::shared_ptr<const FilterConfigNode> getProperties() const { return m_configNode; }
+
+    /**
      * Returns a wrapper around all properties of the given source
      * which are saved in the config tree. Note that this is different
      * from the set of sync source configs used by the SyncManager:
@@ -309,6 +340,8 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
      * EvolutionSyncClient. Those are complete whereas
      * PersistentEvolutionSyncSourceConfig only provides access to a
      * subset of the properties.
+     *
+     * Can be called for sources which do not exist yet.
      */
     virtual boost::shared_ptr<PersistentEvolutionSyncSourceConfig> getSyncSourceConfig(const string &name);
 
@@ -454,10 +487,25 @@ private:
     boost::shared_ptr<FilterConfigNode> m_configNode;
     boost::shared_ptr<ConfigNode> m_hiddenNode;
 
-    /** temporary overrides for source settings */
-    FilterConfigNode::ConfigFilter_t m_sourceFilter;
+    /** temporary overrides for sync or sync source settings */
+    FilterConfigNode::ConfigFilter m_sourceFilter;
 
     mutable ConfigStringCache m_stringCache;
+
+    static string getHome() {
+        const char *homestr = getenv("HOME");
+        return homestr ? homestr : ".";
+    }
+    
+    static string getOldRoot() {
+        return getHome() + "/.sync4j/evolution";
+    }
+
+    static string getNewRoot() {
+        const char *xdg_root_str = getenv("XDG_CONFIG_HOME");
+        return xdg_root_str ? xdg_root_str :
+            getHome() + "/.config/syncevolution";
+    }
 };
 
 /**
@@ -497,7 +545,7 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
     EvolutionSyncSourceConfig(const string &name, const SyncSourceNodes &nodes);
 
     static ConfigPropertyRegistry &getRegistry();
-
+    virtual boost::shared_ptr<const FilterConfigNode> getProperties() const { return m_nodes.m_configNode; }
     bool exists() const { return m_nodes.m_configNode->exists(); }
 
     /**

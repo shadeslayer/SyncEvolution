@@ -153,9 +153,13 @@ associated with this is that the server might not recognize items that
 it already has stored previously which then would lead to duplication
 of items.
 
-The <options> in front of the server name are:
+Here is a full description of all <options> that can be put in front
+of the server name. Whenever an option accepts multiple values, a
+question mark can be used to get a list of all valid values together
+with a help text.
 
 --sync|-s <mode>
+--sync|-s ?
   Temporarily synchronize the active sources in that mode. Useful
   for a "refresh-from-server" or "refresh-from-client" sync which
   clears all data at one end and copies all items from the other.
@@ -177,20 +181,33 @@ The <options> in front of the server name are:
   in the new configuration, i.e. "syncevolution -c scheduleworld addressbook"
   followed by "syncevolution scheduleworld" will only synchronize the
   address book.
+
+--migrate
   In SyncEvolution <= 0.7 a different layout of configuration files
-  was used. Using --configure will automatically migrate to the new
+  was used. Using --migrate will automatically migrate to the new
   layout and rename the old directory $HOME/.sync4j/evolution/<server> 
   into $HOME/.sync4j/evolution/<server>.old to prevent accidental use
   of the old configuration. WARNING: old SyncEvolution releases cannot
   use the new configuration!
+  The switch can also be used to migrate a configuration in the current
+  configuration directory: this preserves all property values, discards
+  obsolete properties and sets all comments exactly as if the configuration
+  had been created from scratch. WARNING: custom comments in the
+  configuration are not preserved.
+  --migrate implies --configure and can be combined with modifying
+  properties.
 
 --sync-property|-y <property>=<value>
+--sync-property|-y ?
+--sync-property|-y <property>=?
   Overrides a configuration property in the <server>/config.ini file
   for the current synchronization run or permanently when --configure
   is used to update the configuration. Can be used multiple times.
   Specifying an unused property will trigger an error message.
 
 --source-property|-z <property>=<value>
+--source-property|-z ?
+--source-property|-z <property>=?
   Same as --sync-option, but applies to the configuration of all active
   sources. "--sync <mode>" is a shortcut for "--source-option sync=<mode>".
 
@@ -226,24 +243,36 @@ The <options> in front of the server name are:
 Use Cases
 ---------
 
-Migrate a configuration from the  <= 0.7 format to the current one:
-  $ syncevolution --configure scheduleworld
+Migrate a configuration from the  <= 0.7 format to the current one
+and/or updates the configuration so that it looks like configurations
+created anew with the current syncevolution:
+  $ syncevolution --migrate scheduleworld
 
 Deactivate all sources:
-  $ syncevolution --configure --source-property sync=none scheduleworld
+  $ syncevolution --configure \
+                  --source-property sync=none \
+                  scheduleworld
 
 Activate address book synchronization again, using the --sync shortcut:
-  $ syncevolution --configure --sync two-way scheduleworld addressbook
+  $ syncevolution --configure \
+                  --sync two-way \
+                  scheduleworld addressbook
+
+Change the password for a configuration:
+  $ syncevolution --configure \
+                  --sync-property password=foo \
+                  scheduleworld
 
 Set up another configuration for scheduleworld under a different name:
-  $ syncevolution --sync-property user=joe \
+  $ syncevolution --configure \
+                  --sync-property user=joe \
                   --sync-property password=foo \
                   --template scheduleworld \
                   scheduleworld_joe
 
 Edit all configuration properties at once:
-  $ syncevolution --print-config scheduleworld >config.ini
-  $ $EDITOR config.ini
+  $ syncevolution --print-config scheduleworld >/tmp/config.ini
+  $ $EDITOR /tmp/config.ini
   $ syncevolution --configure --properties config.ini scheduleworld
 
 
