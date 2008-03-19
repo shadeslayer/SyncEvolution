@@ -176,6 +176,8 @@ a list of valid values.
   on-the-fly. When one or more sources are listed after the <server>
   name on the command line, then only the configs of those sources are
   printed. Using --quiet suppresses the comments for each property.
+  When setting a --template, then the reference configuration for
+  that server is printed instead of an existing configuration.
 
 -–configure|-c
   Modify the configuration files for the selected server. If no such

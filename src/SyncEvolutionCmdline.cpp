@@ -26,6 +26,7 @@
 #include <iostream>
 #include <memory>
 #include <set>
+#include <algorithm>
 using namespace std;
 
 #include <boost/shared_ptr.hpp>
@@ -138,10 +139,6 @@ bool SyncEvolutionCmdline::run() {
         }
     } else if (m_dontrun) {
         // user asked for information
-    } else if (m_server == "" && m_argc > 1) {
-        // Options given, but no server - not sure what the user wanted?!
-        usage(true, "server name missing");
-        return false;
     } else if (m_argc == 1) {
         const SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
         boost::shared_ptr<FilterConfigNode> configNode(new VolatileConfigNode());
@@ -169,28 +166,47 @@ bool SyncEvolutionCmdline::run() {
 
         usage(false);
     } else if (m_printConfig) {
-        EvolutionSyncConfig config(m_server);
-        if (m_sources.empty()) {
-            boost::shared_ptr<FilterConfigNode> syncProps(config.getProperties());
-            syncProps->setFilter(m_syncProps);
-            dumpProperties(*syncProps, config.getRegistry());
+        boost::shared_ptr<EvolutionSyncConfig> config;
+
+        if (m_template.empty()) {
+            config.reset(new EvolutionSyncConfig(m_server));
+            if (!config->exists()) {
+                cerr << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
+                return false;
+            }
+        } else {
+            config = EvolutionSyncConfig::createServerTemplate(m_template);
+            if (!config.get()) {
+                cerr << "ERROR: no configuration template for '" << m_template << "' available." << endl;
+                return false;
+            }
         }
 
-        list<string> sources = config.getSyncSources();
+        if (m_sources.empty()) {
+            boost::shared_ptr<FilterConfigNode> syncProps(config->getProperties());
+            syncProps->setFilter(m_syncProps);
+            dumpProperties(*syncProps, config->getRegistry());
+        }
+
+        list<string> sources = config->getSyncSources();
         for (list<string>::const_iterator it = sources.begin();
              it != sources.end();
              ++it) {
             if (m_sources.empty() ||
                 m_sources.find(*it) != m_sources.end()) {
                 m_out << endl << "[" << *it << "]" << endl;
-                boost::shared_ptr<PersistentEvolutionSyncSourceConfig> source(config.getSyncSourceConfig(*it));
+                boost::shared_ptr<PersistentEvolutionSyncSourceConfig> source(config->getSyncSourceConfig(*it));
                 boost::shared_ptr<FilterConfigNode> sourceProps(source->getProperties());
                 sourceProps->setFilter(m_sourceProps);
                 dumpProperties(*sourceProps, source->getRegistry());
             }
         }
+    } else if (m_server == "" && m_argc > 1) {
+        // Options given, but no server - not sure what the user wanted?!
+        usage(true, "server name missing");
+        return false;
     } else if (m_configure || m_migrate) {
-        /** TODO */
+        
     } else {
         EvolutionSyncClient client(m_server, true, m_sources);
         client.setQuiet(m_quiet);

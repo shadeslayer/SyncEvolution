@@ -20,6 +20,7 @@
 # define INCL_SYNCEVOLUTION_UTIL
 
 #include <sstream>
+#include <string>
 using namespace std;
 
 template<class T> string join(const string &sep, T begin, T end)
@@ -38,5 +39,36 @@ template<class T> string join(const string &sep, T begin, T end)
 
     return res.str();
 }
+
+/**
+ * remove multiple slashes in a row and dots directly after a slash if not followed by filename,
+ * remove trailing /
+ */
+inline string normalizePath(const string &path) {
+    string res;
+
+    res.reserve(path.size());
+    size_t index = 0;
+    while (index < path.size()) {
+        char curr = path[index];
+        res += curr;
+        index++;
+        if (curr == '/') {
+            while (index < path.size() &&
+                   (path[index] == '/' ||
+                    (path[index] == '.' &&
+                     index + 1 < path.size() &&
+                     (path[index + 1] == '.' ||
+                      path[index + 1] == '/')))) {
+                index++;
+            }
+        }
+    }
+    if (!res.empty() && res[res.size() - 1] == '/') {
+        res.resize(res.size() - 1);
+    }
+    return res;
+}
+
 
 #endif // INCL_SYNCEVOLUTION_UTIL

@@ -49,4 +49,4 @@ static RegisterSyncSource registerMe("SQLite Address Book",
                                      "SQLite Address Book = addressbook = contacts = sqlite-contacts\n"
                                      "   vCard 2.1 (default) = text/x-vcard\n",
                                      Values() +
-                                     (Aliases("SQLite Address Book") + "sqlite-contacts"));
+                                     (Aliases("SQLite Address Book") + "sqlite-contacts" + "sqlite"));

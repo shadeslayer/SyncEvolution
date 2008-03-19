@@ -385,10 +385,18 @@ class ConfigStringCache {
 class EvolutionSyncConfig : public AbstractSyncConfig {
  public:
     /**
-     * Opens the configuration for a specific server.
-     * Will succeed even if config does not yet exist.
+     * Opens the configuration for a specific server,
+     * searching for the config files in the usual
+     * places. Will succeed even if config does not
+     * yet exist: flushing such a config creates it.
+     *
+     * @param tree   if non-NULL, then this is used
+     *               as configuration tree instead of
+     *               searching for it; always uses the
+     *               current layout in that tree
      */
-    EvolutionSyncConfig(const string &server);
+    EvolutionSyncConfig(const string &server,
+                        boost::shared_ptr<ConfigTree> tree = boost::shared_ptr<ConfigTree>());
 
     typedef list< pair<string, string> > ServerList;
 
@@ -398,6 +406,21 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
      * and absolute root of config
      */
     static ServerList getServers();
+
+    /**
+     * returns list of available config templates, given as
+     * server name and comment
+     */
+    static ServerList getServerTemplates();
+
+    /**
+     * Creates a new instance of a configuration template.
+     * The result can be modified to set filters, but it
+     * cannot be flushed.
+     *
+     * @return NULL if no such template
+     */
+    static boost::shared_ptr<EvolutionSyncConfig> createServerTemplate(const string &server);
 
     /** true if the main configuration file already exists */
     bool exists() const;

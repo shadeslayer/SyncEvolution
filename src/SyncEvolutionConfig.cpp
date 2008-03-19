@@ -45,23 +45,27 @@ void ConfigProperty::throwValueError(const ConfigNode &node, const string &name,
     EvolutionSyncClient::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
-EvolutionSyncConfig::EvolutionSyncConfig(const string &server) :
+EvolutionSyncConfig::EvolutionSyncConfig(const string &server,
+                                         boost::shared_ptr<ConfigTree> tree) :
     m_server(server),
     m_oldLayout(false)
 {
     string root;
 
-    // search for configuration in various places...
-    string confname;
-    root = getOldRoot() + "/" + server;
-    confname = root + "/spds/syncml/config.txt";
-    if (!access(confname.c_str(), F_OK)) {
-        m_oldLayout = true;
+    if (tree.get() != NULL) {
+        m_tree = tree;
     } else {
-        root = getNewRoot() + "/" + server;
+        // search for configuration in various places...
+        string confname;
+        root = getOldRoot() + "/" + server;
+        confname = root + "/spds/syncml/config.txt";
+        if (!access(confname.c_str(), F_OK)) {
+            m_oldLayout = true;
+        } else {
+            root = getNewRoot() + "/" + server;
+        }
+        m_tree.reset(new FileConfigTree(root, m_oldLayout));
     }
-
-    m_tree.reset(new FileConfigTree(root, m_oldLayout));
 
     string path(m_oldLayout ? "spds/syncml" : "");
     boost::shared_ptr<ConfigNode> node;
@@ -90,7 +94,72 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServers()
     return res;
 }
 
+static const InitList< pair<string, string> > serverTemplates =
+    InitList< pair<string, string> >(pair<string, string>("funambol", "http://my.funambol.com")) +
+    pair<string, string>("scheduleworld", "http://sync.scheduleworld.com") +
+    pair<string, string>("synthesis", "http://www.synthesis.ch");
 
+EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
+{
+    return serverTemplates;
+}
+
+boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate(const string &server)
+{
+    boost::shared_ptr<ConfigTree> tree(new FileConfigTree("/dev/null", false));
+    boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(server, tree));
+    boost::shared_ptr<PersistentEvolutionSyncSourceConfig> source;
+
+    // set non-default values; this also creates the sync source configs
+    source = config->getSyncSourceConfig("addressbook");
+    source->setSourceType("addressbook");
+    source->setURI("card");
+    source = config->getSyncSourceConfig("calendar");
+    source->setSourceType("calendar");
+    source->setURI("event");
+    source = config->getSyncSourceConfig("todo");
+    source->setSourceType("todo");
+    source->setURI("task");
+    source = config->getSyncSourceConfig("memo");
+    source->setSourceType("memo");
+    source->setURI("note");
+
+    if (!strcasecmp(server.c_str(), "scheduleworld")) {
+        config->setSyncURL("http://sync.scheduleworld.com");
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("card3");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("event2");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("task2");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("note");
+    } else if (!strcasecmp(server.c_str(), "funambol")) {
+        config->setSyncURL("http://my.funambol.com");
+        source = config->getSyncSourceConfig("calendar");
+        source->setSync("disabled");
+        source = config->getSyncSourceConfig("todo");
+        source->setSync("disabled");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("disabled");
+    } else if (!strcasecmp(server.c_str(), "synthesis")) {
+        config->setSyncURL("http://www.synthesis.ch/sync");
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("contacts");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("events");
+        source->setSync("disabled");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("tasks");
+        source->setSync("disabled");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("notes");
+    } else {
+        config.reset();
+    }
+
+    return config;
+}
 
 bool EvolutionSyncConfig::exists() const
 {
@@ -385,7 +454,7 @@ public:
                              (Aliases("addressbook:text/x-vcard") + "text/x-vcard") +
                              (Aliases("addressbook:text/vcard") + "text/vcard") +
                              (Aliases("todo") + "tasks" + "text/x-todo") +
-                             (Aliases("memos") + "text/plain") +
+                             (Aliases("memo") + "memos" + "notes" + "text/plain") +
                              (Aliases("memo:text/calendar") + "text/x-journal"))
     {}
 

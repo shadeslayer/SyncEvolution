@@ -38,7 +38,7 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     }
 
     isMe = sourceType.first == "Evolution Memos";
-    if (isMe || sourceType.first == "memos") {
+    if (isMe || sourceType.first == "memo") {
         if (sourceType.second == "" || sourceType.second == "text/plain") {
 #ifdef ENABLE_ECAL
             return new EvolutionMemoSource(params);
@@ -84,7 +84,7 @@ static RegisterSyncSource registerMe("Evolution Calendar/Task Lists/Memos",
                                      "   always uses iCalendar 2.0\n"
                                      "Evolution Task Lists = todo = tasks = evolution-tasks\n"
                                      "   always uses iCalendar 2.0\n"
-                                     "Evolution Memos = memos = evolution-memos\n"
+                                     "Evolution Memos = memo = memos = evolution-memos\n"
                                      "   plain text in UTF-8 (default) = text/plain\n"
                                      "   iCalendar 2.0 = text/calendar\n"
                                      "   The later format is not tested because none of the\n"

@@ -21,6 +21,7 @@
 
 #include "FileConfigTree.h"
 #include "FileConfigNode.h"
+#include "SyncEvolutionUtil.h"
 
 #include <unistd.h>
 #include <sys/stat.h>
@@ -56,7 +57,7 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
     string fullpath;
     string filename;
     
-    fullpath = m_root + "/" + path + "/";
+    fullpath = normalizePath(m_root + "/" + path + "/");
     if (changeId.size()) {
         if (m_oldLayout) {
             fullpath += "changes_";
@@ -73,7 +74,7 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
             "config.ini";
     }
 
-    string fullname = fullpath + "/" + filename;
+    string fullname = normalizePath(fullpath + "/" + filename);
     NodeCache_t::iterator found = m_nodes.find(fullname);
     if (found != m_nodes.end()) {
         return found->second;
@@ -96,8 +97,9 @@ list<string> FileConfigTree::getChildren(const string &path)
     list<string> res;
 
     string fullpath;
-    fullpath = m_root + "/" + path;
+    fullpath = normalizePath(m_root + "/" + path);
 
+    // first look at existing files
     DIR *dir = opendir(fullpath.c_str());
     if (dir) {
         struct dirent *entry;
@@ -107,6 +109,36 @@ list<string> FileConfigTree::getChildren(const string &path)
             }
         }
         closedir(dir);
+    }
+
+    // Now also add those which have been created,
+    // but not saved yet. The full path must be
+    // <path>/<childname>/<filename>.
+    fullpath += "/";
+    for (NodeCache_t::iterator it = m_nodes.begin();
+         it != m_nodes.end();
+         it++) {
+        string currpath = it->first;
+        if (currpath.size() > fullpath.size() &&
+            currpath.substr(0, fullpath.size()) == fullpath) {
+            // path prefix matches, now check whether we have
+            // a real sibling, i.e. another full path below
+            // the prefix
+            size_t start = fullpath.size();
+            size_t end = currpath.find('/', start);
+            if (currpath.npos != end) {
+                // Okay, another path separator found.
+                // Now make sure we don't have yet another
+                // directory level.
+                if (currpath.npos == currpath.find('/', end + 1)) {
+                    // Insert it if not there yet.
+                    string name = currpath.substr(start, end - start);
+                    if (res.end() == find(res.begin(), res.end(), name)) {
+                        res.push_back(name);
+                    }
+                }
+            }
+        }
     }
 
     return res;
