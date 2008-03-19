@@ -359,8 +359,11 @@ void SyncEvolutionCmdline::dumpProperties(const ConfigNode &configuredProps,
          it != allProps.end();
          ++it) {
         if (!m_quiet) {
-            m_out << endl;
-            dumpComment(m_out, "# ", (*it)->getComment());
+            string comment = (*it)->getComment();
+            if (!comment.empty()) {
+                m_out << endl;
+                dumpComment(m_out, "# ", comment);
+            }
         }
         m_out << (*it)->getName() << " = " << (*it)->getProperty(configuredProps) << endl;
     }
