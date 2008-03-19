@@ -57,7 +57,7 @@ class SQLiteContactSource : public TrackingSyncSource
     /* implementation of EvolutionSyncSource interface */
     virtual void open();
     virtual void close();
-    virtual sources getSyncBackends() { return sources(); }
+    virtual sources getSyncBackends();
     virtual SyncItem *createItem(const string &uid);
     virtual string fileSuffix() { return "vcf"; }
     virtual const char *getMimeType() const { return "text/x-vcard"; }

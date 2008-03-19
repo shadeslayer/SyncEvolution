@@ -163,6 +163,15 @@ void SQLiteContactSource::close()
     m_sqlite.close();
 }
 
+SQLiteContactSource::sources SQLiteContactSource::getSyncBackends()
+{
+    sources res;
+
+    res.push_back(EvolutionSyncSource::source("<select database via file path>",
+                                              "file:///<absolute path>"));
+    return res;
+}
+
 void SQLiteContactSource::listAllItems(RevisionMap_t &revisions)
 {
     sqliteptr all(m_sqlite.prepareSQL("SELECT ROWID, CreationDate, ModificationDate FROM ABPerson;"));
