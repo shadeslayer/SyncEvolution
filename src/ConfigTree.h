@@ -62,6 +62,9 @@ class ConfigTree {
     /** ensure that all changes are saved persistently */
     virtual void flush() = 0;
 
+    /** a string identifying the root of the configuration - exact meaning varies */
+    virtual string getRootPath() const = 0;
+
     /**
      * Open the specified node. Opening it multiple
      * times will return the same instance, so the content

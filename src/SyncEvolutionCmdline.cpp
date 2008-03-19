@@ -23,6 +23,9 @@
 #include "EvolutionSyncClient.h"
 #include "SyncEvolutionUtil.h"
 
+#include <unistd.h>
+#include <errno.h>
+
 #include <iostream>
 #include <memory>
 #include <set>
@@ -83,6 +86,11 @@ bool SyncEvolutionCmdline::parse()
                 return false;
             }
             m_template = m_argv[opt];
+            if (m_template == "?") {
+                dumpServers("Available configuration templates:",
+                            EvolutionSyncConfig::getServerTemplates());
+                m_dontrun = true;
+            }
         } else if(!strcasecmp(m_argv[opt], "--print-servers")) {
             m_printServers = true;
         } else if(!strcasecmp(m_argv[opt], "--print-config") ||
@@ -126,17 +134,9 @@ bool SyncEvolutionCmdline::run() {
         usage(true);
     } else if (m_version) {
         printf("SyncEvolution %s\n", VERSION);
-    } else if (m_printServers) {
-        EvolutionSyncConfig::ServerList servers = EvolutionSyncConfig::getServers();
-        m_out << "Configured servers:" << endl;
-        for (EvolutionSyncConfig::ServerList::const_iterator it = servers.begin();
-             it != servers.end();
-             ++it) {
-            m_out << "   "  << it->first << " = " << it->second << endl;
-        }
-        if (!servers.size()) {
-            m_out << "   none" << endl;
-        }
+    } else if (m_printServers || m_server == "?") {
+        dumpServers("Configured servers:",
+                    EvolutionSyncConfig::getServers());
     } else if (m_dontrun) {
         // user asked for information
     } else if (m_argc == 1) {
@@ -206,7 +206,92 @@ bool SyncEvolutionCmdline::run() {
         usage(true, "server name missing");
         return false;
     } else if (m_configure || m_migrate) {
-        
+        // Both config changes and migration are implemented as copying from
+        // another config (template resp. old one). Migration also moves
+        // the old config.
+        boost::shared_ptr<EvolutionSyncConfig> from;
+        if (m_migrate) {
+            from.reset(new EvolutionSyncConfig(m_server));
+            if (!from->exists()) {
+                cerr << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
+                return false;
+            }
+
+            int counter = 0;
+            string oldRoot = from->getRootPath();
+            string suffix;
+            while (true) {
+                string newname;
+                ostringstream newsuffix;
+                newsuffix << ".old";
+                if (counter) {
+                    newsuffix << "." << counter;
+                }
+                suffix = newsuffix.str();
+                newname = oldRoot + suffix;
+                if (!rename(oldRoot.c_str(),
+                            newname.c_str())) {
+                    break;
+                } else if (errno != EEXIST && errno != ENOTEMPTY) {
+                    m_err << "ERROR: renaming " << oldRoot << " to " <<
+                        newname << ": " << strerror(errno) << endl;
+                    return false;
+                }
+                counter++;
+            }
+
+            from.reset(new EvolutionSyncConfig(m_server + suffix));
+        } else {
+            from.reset(new EvolutionSyncConfig(m_server));
+            if (!from->exists()) {
+                // creating from scratch, look for template
+                string configTemplate = m_template.empty() ? m_server : m_template;
+                from = EvolutionSyncConfig::createServerTemplate(configTemplate);
+                if (!from.get()) {
+                    cerr << "ERROR: no configuration template for '" << configTemplate << "' available." << endl;
+                    dumpServers("Available configuration templates:",
+                                EvolutionSyncConfig::getServerTemplates());
+                    return false;
+                }
+            }
+        }
+
+        // apply config changes on-the-fly
+        from->setConfigFilter(true, m_syncProps);
+        from->setConfigFilter(false, m_sourceProps);
+
+        // write into the requested configuration, creating it if necessary
+        boost::shared_ptr<EvolutionSyncConfig> to(new EvolutionSyncConfig(m_server));
+        static const bool visibility[2] = { false, true };
+        int i;
+        for (int i = 0; i < 2; i++ ) {
+            boost::shared_ptr<FilterConfigNode> fromSyncProps(from->getProperties(visibility[i]));
+            boost::shared_ptr<FilterConfigNode> toSyncProps(to->getProperties(visibility[i]));
+            copyProperties(*fromSyncProps, *toSyncProps, visibility[i], from->getRegistry());
+        }
+
+        list<string> sources = from->getSyncSources();
+        for (list<string>::const_iterator it = sources.begin();
+             it != sources.end();
+             ++it) {
+            bool found = m_sources.find(*it) != m_sources.end();
+
+            if (m_sources.empty() ||
+                m_migrate ||
+                found) {
+                boost::shared_ptr<PersistentEvolutionSyncSourceConfig> fromSource(from->getSyncSourceConfig(*it));
+                boost::shared_ptr<PersistentEvolutionSyncSourceConfig> toSource(to->getSyncSourceConfig(*it));
+
+                for (int i = 0; i < 2; i++ ) {
+                    boost::shared_ptr<FilterConfigNode> fromSourceProps(fromSource->getProperties(visibility[i]));
+                    boost::shared_ptr<FilterConfigNode> toSourceProps(toSource->getProperties(visibility[i]));
+                    copyProperties(*fromSourceProps, *toSourceProps, visibility[i], fromSource->getRegistry());
+                }
+            }
+        }
+
+        // done, now write it
+        to->flush();
     } else {
         EvolutionSyncClient client(m_server, true, m_sources);
         client.setQuiet(m_quiet);
@@ -352,12 +437,29 @@ void SyncEvolutionCmdline::listSources(EvolutionSyncSource &syncSource, const st
     }
 }
 
+void SyncEvolutionCmdline::dumpServers(const string &preamble,
+                                       const EvolutionSyncConfig::ServerList &servers)
+{
+    m_out << preamble << endl;
+    for (EvolutionSyncConfig::ServerList::const_iterator it = servers.begin();
+         it != servers.end();
+         ++it) {
+        m_out << "   "  << it->first << " = " << it->second << endl;
+    }
+    if (!servers.size()) {
+        m_out << "   none" << endl;
+    }
+}
+
 void SyncEvolutionCmdline::dumpProperties(const ConfigNode &configuredProps,
                                           const ConfigPropertyRegistry &allProps)
 {
     for (ConfigPropertyRegistry::const_iterator it = allProps.begin();
          it != allProps.end();
          ++it) {
+        if ((*it)->isHidden()) {
+            continue;
+        }
         if (!m_quiet) {
             string comment = (*it)->getComment();
             if (!comment.empty()) {
@@ -366,6 +468,22 @@ void SyncEvolutionCmdline::dumpProperties(const ConfigNode &configuredProps,
             }
         }
         m_out << (*it)->getName() << " = " << (*it)->getProperty(configuredProps) << endl;
+    }
+}
+
+void SyncEvolutionCmdline::copyProperties(const ConfigNode &fromProps,
+                                          ConfigNode &toProps,
+                                          bool hidden,
+                                          const ConfigPropertyRegistry &allProps)
+{
+    for (ConfigPropertyRegistry::const_iterator it = allProps.begin();
+         it != allProps.end();
+         ++it) {
+        if ((*it)->isHidden() == hidden) {
+            string name = (*it)->getName();
+            string value = fromProps.readProperty(name);
+            toProps.setProperty(name, value, (*it)->getComment());
+        }
     }
 }
 

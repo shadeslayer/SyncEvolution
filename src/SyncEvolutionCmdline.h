@@ -106,7 +106,15 @@ private:
      */
     void listSources(EvolutionSyncSource &syncSource, const string &header);
 
+    void dumpServers(const string &preamble,
+                     const EvolutionSyncConfig::ServerList &servers);
+
     void dumpProperties(const ConfigNode &configuredProps,
+                        const ConfigPropertyRegistry &allProps);
+
+    void copyProperties(const ConfigNode &fromProps,
+                        ConfigNode &toProps,
+                        bool hidden,
                         const ConfigPropertyRegistry &allProps);
 
     void dumpComment(ostream &stream,

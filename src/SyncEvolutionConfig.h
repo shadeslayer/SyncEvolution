@@ -398,6 +398,9 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     EvolutionSyncConfig(const string &server,
                         boost::shared_ptr<ConfigTree> tree = boost::shared_ptr<ConfigTree>());
 
+    /** absolute directory name of the configuration root */
+    string getRootPath() const;
+
     typedef list< pair<string, string> > ServerList;
 
     /**
@@ -447,10 +450,17 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     }
 
     /**
-     * Read-write access to all configurable properties of the server,
-     * including any config filter set earlier.
+     * Read-write access to all configurable properties of the server.
+     * The visible properties are passed through the config filter,
+     * which can be modified.
      */
-    virtual boost::shared_ptr<FilterConfigNode> getProperties() { return m_configNode; }
+    virtual boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) {
+        if (hidden) {
+            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenNode));
+        } else {
+            return m_configNode;
+        }
+    }
 
     /**
      * Returns a wrapper around all properties of the given source
@@ -667,7 +677,13 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
     EvolutionSyncSourceConfig(const string &name, const SyncSourceNodes &nodes);
 
     static ConfigPropertyRegistry &getRegistry();
-    virtual boost::shared_ptr<FilterConfigNode> getProperties() { return m_nodes.m_configNode; }
+    virtual boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) {
+        if (hidden) {
+            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_nodes.m_hiddenNode));
+        } else {
+            return m_nodes.m_configNode;
+        }
+    }
     bool exists() const { return m_nodes.m_configNode->exists(); }
 
     /**

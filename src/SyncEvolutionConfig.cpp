@@ -74,6 +74,11 @@ EvolutionSyncConfig::EvolutionSyncConfig(const string &server,
     m_hiddenNode = m_tree->open(path, true);
 }
 
+string EvolutionSyncConfig::getRootPath() const
+{
+    return m_tree->getRootPath();
+}
+
 static void addServers(const string &root, EvolutionSyncConfig::ServerList &res) {
     FileConfigTree tree(root, false);
     list<string> servers = tree.getChildren("");
@@ -124,7 +129,8 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     source->setSourceType("memo");
     source->setURI("note");
 
-    if (!strcasecmp(server.c_str(), "scheduleworld")) {
+    if (!strcasecmp(server.c_str(), "scheduleworld") ||
+        !strcasecmp(server.c_str(), "default")) {
         config->setSyncURL("http://sync.scheduleworld.com");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
@@ -253,7 +259,8 @@ static BoolConfigProperty syncPropLoSupport("loSupport", "", "T");
 static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "500000");
 
 static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)");
-static ConfigProperty syncPropServerNonce("serverNonce", "");
+static ConfigProperty syncPropServerNonce("serverNonce",
+                                          "used by the SyncML library internally; do not modify");
 static ConfigProperty syncPropClientNonce("clientNonce", "");
 static ConfigProperty syncPropDevInfHash("devInfoHash", "");
 static ConfigProperty syncPropLogDir("logdir",

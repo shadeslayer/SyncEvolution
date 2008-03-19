@@ -36,6 +36,11 @@ FileConfigTree::FileConfigTree(const string &root,
 {
 }
 
+string FileConfigTree::getRootPath() const
+{
+    return normalizePath(m_root);
+}
+
 void FileConfigTree::flush()
 {
     for (NodeCache_t::iterator it = m_nodes.begin();

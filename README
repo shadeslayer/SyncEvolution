@@ -222,14 +222,13 @@ a list of valid values.
   specified in a file with the same format that --print-config uses.
   "-" reads from stdin.
 
---template|-l <server name>
+--template|-l <server name>|default|?
   Can be used to select from one of the built-in default configurations
   for known SyncML servers. Defaults to the <server> name, so --template
   only has to be specified when creating multiple different configurations
-  for the same server.
-  SyncEvolution has configurations for:
-    scheduleworld = sync.scheduleworld.com
-    funambol = my.funambol.com
+  for the same server. "default" is an alias for "scheduleworld" and can be
+  used as the starting point for servers which do not have a built-in
+  configuration.
 
 --status|-t
   The changes made to local data since the last synchronization are
