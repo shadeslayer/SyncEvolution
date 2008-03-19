@@ -51,7 +51,7 @@ bool SyncEvolutionCmdline::parse()
             opt++;
             string param;
             string cmdopt(m_argv[opt - 1]);
-            if (!parseProp(m_validSyncProps, m_sourceProps,
+            if (!parseProp(m_validSourceProps, m_sourceProps,
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt],
                            "sync")) {
                 return false;
@@ -103,6 +103,9 @@ bool SyncEvolutionCmdline::parse()
             m_usage = true;
         } else if(!strcasecmp(m_argv[opt], "--version")) {
             m_version = true;
+        } else {
+            usage(false, string(m_argv[opt]) + ": unknown parameter");
+            return false;
         }
         opt++;
     }
@@ -253,7 +256,7 @@ bool SyncEvolutionCmdline::parseProp(const ConfigPropertyRegistry &validProps,
         } else {
             const ConfigProperty *prop = validProps.find(propstr);
             if (!prop) {
-                m_err << "ERROR: " << cmdOpt(opt, param) << "no such property" << endl;
+                m_err << "ERROR: " << cmdOpt(opt, param) << ": no such property" << endl;
                 return false;
             } else {
                 string error;
@@ -275,7 +278,7 @@ bool SyncEvolutionCmdline::listPropValues(const ConfigPropertyRegistry &validPro
 {
     const ConfigProperty *prop = validProps.find(propName);
     if (!prop) {
-        m_err << "ERROR: "<< opt << "no such property" << endl;
+        m_err << "ERROR: "<< opt << ": no such property" << endl;
         return false;
     } else {
         m_out << opt << endl;
