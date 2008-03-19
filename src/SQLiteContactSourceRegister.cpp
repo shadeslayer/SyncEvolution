@@ -21,7 +21,7 @@
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
-    bool isMe = sourceType.first == "sqlite-contacts";
+    bool isMe = sourceType.first == "SQLite Address Book";
 
 #ifndef ENABLE_SQLITE
     return isMe ? RegisterSyncSource::InactiveSource : NULL;
@@ -49,4 +49,4 @@ static RegisterSyncSource registerMe("SQLite Address Book",
                                      "SQLite Address Book = addressbook = contacts = sqlite-contacts\n"
                                      "   vCard 2.1 (default) = text/x-vcard\n",
                                      Values() +
-                                     (Aliases("sqlite-contacts") + "SQLite Address Book"));
+                                     (Aliases("SQLite Address Book") + "sqlite-contacts"));

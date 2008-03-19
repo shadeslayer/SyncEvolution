@@ -24,7 +24,7 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
     bool isMe;
 
-    isMe = sourceType.first == "evolution-tasks";
+    isMe = sourceType.first == "Evolution Task Lists";
     if (isMe || sourceType.first == "todo") {
         if (sourceType.second == "" || sourceType.second != "text/calendar") {
 #ifdef ENABLE_ECAL
@@ -37,7 +37,7 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
         }
     }
 
-    isMe = sourceType.first == "evolution-memos";
+    isMe = sourceType.first == "Evolution Memos";
     if (isMe || sourceType.first == "memos") {
         if (sourceType.second == "" || sourceType.second == "text/plain") {
 #ifdef ENABLE_ECAL
@@ -56,7 +56,7 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
         }
     }
 
-    isMe = sourceType.first == "evolution-calendar";
+    isMe = sourceType.first == "Evolution Calendar";
     if (isMe || sourceType.first == "calendar") {
         if (sourceType.second == "" || sourceType.second == "text/calendar" ||
             sourceType.second == "text/x-vcalendar" /* this is for backwards compatibility with broken configs */ ) {
@@ -90,6 +90,6 @@ static RegisterSyncSource registerMe("Evolution Calendar/Task Lists/Memos",
                                      "   The later format is not tested because none of the\n"
                                      "   supported SyncML servers accepts it.\n",
                                      Values() +
-                                     (Aliases("evolution-calendar") + "Evolution Calendar") +
-                                     (Aliases("evolution-tasks") + "Evolution Task Lists") +
-                                     (Aliases("evolution-memos") + "Evolution Memos"));
+                                     (Aliases("Evolution Calendar") + "evolution-calendar") +
+                                     (Aliases("Evolution Task Lists") + "evolution-tasks") +
+                                     (Aliases("Evolution Memos") + "evolution-memos"));

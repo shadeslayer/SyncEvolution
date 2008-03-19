@@ -34,6 +34,9 @@ class ConfigNode {
     /** free resources without saving */
     virtual ~ConfigNode() {}
 
+    /** a name for the node that the user can understand */
+    virtual string getName() const = 0;
+
     /**
      * save all changes persistently
      */

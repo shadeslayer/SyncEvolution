@@ -62,6 +62,8 @@ class FileConfigNode : public ConfigNode {
      */
     FileConfigNode(const string &path, const string &fileName);
 
+    virtual string getName() const { return m_path + "/" + m_fileName; }
+
     virtual void flush();
     virtual string readProperty(const string &property) const;
     virtual void setProperty(const string &property,

@@ -21,7 +21,7 @@
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
-    bool isMe = sourceType.first == "evolution-contacts";
+    bool isMe = sourceType.first == "Evolution Contacts";
 
 #ifndef ENABLE_EBOOK
     return isMe ? RegisterSyncSource::InactiveSource : NULL;
@@ -53,4 +53,4 @@ static RegisterSyncSource registerMe("Evolution Address Book",
                                      "   servers that support it. One such server is ScheduleWorld\n"
                                      "   together with the \"card3\" uri.\n",
                                      Values() +
-                                     (Aliases("evolution-contacts") + "Evolution Address Book"));
+                                     (Aliases("Evolution Address Book") + "evolution-contacts"));

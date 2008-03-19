@@ -53,6 +53,8 @@ class FilterConfigNode : public ConfigNode {
     FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
                      const ConfigFilter &filter = ConfigFilter() );
 
+    virtual string getName() const { return m_node->getName(); }
+
     /** add another entry to the list of filter properties */
     void addFilter(const string &property,
                    const string &value);

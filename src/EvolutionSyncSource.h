@@ -143,9 +143,11 @@ class RegisterSyncSource
      *                       "   The later format is not tested because none of the\n"
      *                       "   supported SyncML servers accepts it.\n"
      * @param typeValues     the config accepts multiple names for the same internal
-     *                       type string; this value (which can be empty) is added to
-     *                       that list of aliases. E.g.
-     *                       Values() + (Aliases("evolution-memo") + "Evolution Memos")
+     *                       type string; this list here is added to that list of
+     *                       aliases. It should contain at least one unique string
+     *                       the can be used to pick  this sync source among all
+     *                       SyncEvolution sync sources (testing, listing backends, ...).
+     *                       Example: Values() + (Aliases("Evolution Memos") + "evolution-memo")
      */
     RegisterSyncSource(const string &shortDescr,
                        bool enabled,

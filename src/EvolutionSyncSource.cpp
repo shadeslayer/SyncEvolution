@@ -19,10 +19,10 @@
 
 #include "EvolutionSyncSource.h"
 #include "EvolutionSyncClient.h"
+#include "SyncEvolutionUtil.h"
 #include <common/base/Log.h>
 
 #include <list>
-#include <sstream>
 using namespace std;
 
 #include <dlfcn.h>
@@ -148,22 +148,6 @@ static ostream & operator << (ostream &out, const RegisterSyncSource &rhs)
 }
 
 EvolutionSyncSource *const RegisterSyncSource::InactiveSource = (EvolutionSyncSource *)1;
-
-template<class T> string join(const string &sep, T begin, T end)
-{
-    stringstream res;
-
-    if (begin != end) {
-        res << *begin;
-        ++begin;
-        while (begin != end) {
-            res << sep;
-            res << *begin;
-        }
-    }
-
-    return res.str();
-}
 
 EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSourceParams &params, bool error)
 {

@@ -155,8 +155,8 @@ of items.
 
 Here is a full description of all <options> that can be put in front
 of the server name. Whenever an option accepts multiple values, a
-question mark can be used to get a list of all valid values together
-with a help text.
+question mark can be used to get the corresponding help text and/or
+a list of valid values.
 
 --sync|-s <mode>
 --sync|-s ?
@@ -171,7 +171,11 @@ with a help text.
   Prints the complete configuration for the selected server
   to stdout, including up-to-date comments for all properties. The
   format is the normal .ini format with source configurations in
-  different sections introduced with [<source>] lines.
+  different sections introduced with [<source>] lines. Can be combined
+  with --sync-property and --source-property to modify the configuration
+  on-the-fly. When one or more sources are listed after the <server>
+  name on the command line, then only the configs of those sources are
+  printed. Using --quiet suppresses the comments for each property.
 
 -–configure|-c
   Modify the configuration files for the selected server. If no such

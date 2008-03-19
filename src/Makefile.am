@@ -47,7 +47,11 @@ CORE_SOURCES  = \
         EvolutionSyncClient.h \
         EvolutionSyncSource.h \
 	EvolutionClientConfig.h \
+	SyncEvolutionUtil.h \
         \
+	SyncEvolutionCmdline.cpp \
+        SyncEvolutionCmdline.h \
+	\
         EvolutionSyncSource.cpp \
 	EvolutionSyncClient.cpp \
 	\

@@ -41,7 +41,10 @@ struct SyncSourceNodes;
  * string value and not just a reference.
  *
  * A default value is returned if the ConfigNode doesn't have
- * a value set (= empty string).
+ * a value set (= empty string). Invalid values in the configuration
+ * trigger an exception. Setting invalid values does not because
+ * it is not known where the value comes from - the caller should
+ * check it himself.
  */
 class ConfigProperty {
  public:
@@ -56,12 +59,21 @@ class ConfigProperty {
     virtual string getComment() const { return m_comment; }
     virtual string getDefValue() const { return m_defValue; }
 
+    /**
+     * Check whether the given value is okay.
+     * If not, then set an error string (one line, no punctuation).
+     *
+     * @return true if value is okay
+     */
+    virtual bool checkValue(const string &value, string &error) const { return true; }
+
     /** split \n separated comment into lines without \n, appending them to commentLines */
     static void splitComment(const string &comment, list<string> &commentLines);
 
     bool isHidden() const { return m_hidden; }
     void setHidden(bool hidden) { m_hidden = hidden; }
 
+    /** set value unconditionally, even if it is not valid */
     void setProperty(ConfigNode &node, const string &value) const { node.setProperty(getName(), value, getComment()); }
     void setProperty(FilterConfigNode &node, const string &value, bool temporarily = false) const {
         if (temporarily) {
@@ -70,7 +82,22 @@ class ConfigProperty {
             node.setProperty(m_name, value, getComment());
         }
     }
-    virtual string getProperty(const ConfigNode &node) const { string res = node.readProperty(getName()); return res.size() ? res : getDefValue(); }
+    virtual string getProperty(const ConfigNode &node) const {
+        string name = getName();
+        string value = node.readProperty(name);
+        if (value.size()) {
+            string error;
+            if (!checkValue(value, error)) {
+                throwValueError(node, name, value, error);
+            }
+            return value;
+        } else {
+            return getDefValue();
+        }
+    }
+
+ protected:
+    void throwValueError(const ConfigNode &node, const string &name, const string &value, const string &error) const;
 
  private:
     bool m_hidden;
@@ -114,7 +141,10 @@ class StringConfigProperty : public ConfigProperty {
         m_values(values)
         {}
 
-    void normalizeValue(string &res) const {
+    /**
+     * @return false if aliases are defined and the string is not one of them
+     */
+    bool normalizeValue(string &res) const {
         Values values = getValues();
         for (Values::const_iterator value = values.begin();
              value != values.end();
@@ -124,14 +154,55 @@ class StringConfigProperty : public ConfigProperty {
                  ++alias) {
                 if (!strcasecmp(res.c_str(), alias->c_str())) {
                     res = *value->begin();
-                    return;
+                    return true;
                 }
             }
         }
+        return values.empty();
+    }
+
+    /**
+     * This implementation accepts all values if no aliases
+     * are given, otherwise the value must be part of the aliases.
+     */
+    virtual bool checkValue(const string &propValue, string &error) const {
+        Values values = getValues();
+        if (values.empty()) {
+            return true;
+        }
+
+        ostringstream err;
+        err << "not one of the valid values (";
+        for (Values::const_iterator value = values.begin();
+             value != values.end();
+             ++value) {
+            if (value != values.begin()) {
+                err << ", ";
+            }
+            for (Aliases::const_iterator alias = value->begin();
+                 alias != value->end();
+                 ++alias) {
+                if (alias != value->begin()) {
+                    err << " = ";
+                }
+                if (alias->empty()) {
+                    err << "\"\"";
+                } else {
+                    err << *alias;
+                }
+                
+                if (!strcasecmp(propValue.c_str(), alias->c_str())) {
+                    return true;
+                }
+            }
+        }
+        err << ")";
+        error = err.str();
+        return false;
     }
 
     virtual string getProperty(const ConfigNode &node) const {
-        string res = node.readProperty(getName());
+        string res = ConfigProperty::getProperty(node);
         normalizeValue(res);
         return res;
     }
@@ -154,6 +225,20 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
     ConfigProperty(name, comment, defValue)
         {}
 
+    /**
+     * This implementation accepts all values that can be converted
+     * to the required type.
+     */
+    virtual bool checkValue(const string &value, string &error) const {
+        istringstream in(value);
+        T res;
+        if (in >> res) {
+            return true;
+        } else {
+            error = "cannot parse value";
+        }
+    }
+
     void setProperty(ConfigNode &node, const T &value) const {
         ostringstream out;
 
@@ -172,13 +257,18 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
     }
 
     T getProperty(ConfigNode &node) {
-        istringstream in(node.readProperty(getName()));
+        string name = getName();
+        string value = node.readProperty(name);
+        istringstream in(value);
         T res;
-        if (in >> res) {
-            return res;
-        } else {
+        if (value.empty()) {
             istringstream defStream(getDefValue());
             defStream >> res;
+            return res;
+        } else {
+            if (!(in >> res)) {
+                throwValueError(node, name, value, "cannot parse value");
+            }
             return res;
         }
     }
@@ -194,25 +284,21 @@ typedef TypedConfigProperty<unsigned long> ULongConfigProperty;
  * Instead of reading and writing strings, this class interprets the content
  * as boolean with T/F or 1/0 (default format).
  */
-class BoolConfigProperty : public ConfigProperty {
+class BoolConfigProperty : public StringConfigProperty {
  public:
     BoolConfigProperty(const string &name, const string &comment, const string &defValue = string("F")) :
-    ConfigProperty(name, comment, defValue )
+    StringConfigProperty(name, comment, defValue,
+                         Values() + (Aliases("1") + "T" + "TRUE") + (Aliases("0") + "F" + "FALSE"))
         {}
 
     void setProperty(ConfigNode &node, bool value) {
-        node.setProperty(getName(), value ? "1" : "0", getComment());
+        StringConfigProperty::setProperty(node, value ? "1" : "0");
     }
-    void setProperty(FilterConfigNode &node, bool value, bool temporarily) {
-        string v(value ? "1" : "0");
-        if (temporarily) {
-            node.addFilter(getName(), v);
-        } else {
-            node.setProperty(getName(), v, getComment());
-        }
+    void setProperty(FilterConfigNode &node, bool value, bool temporarily = false) {
+        StringConfigProperty::setProperty(node, value ? "1" : "0", temporarily);
     }
     int getProperty(ConfigNode &node) {
-        string res = node.readProperty(getName());
+        string res = ConfigProperty::getProperty(node);
 
         return !strcasecmp(res.c_str(), "T") ||
             !strcasecmp(res.c_str(), "TRUE") ||
@@ -224,7 +310,20 @@ class BoolConfigProperty : public ConfigProperty {
  * A registry for all properties which might be saved in the same ConfigNode.
  * Currently the same as a simple list. Someone else owns the instances.
  */
-typedef list<const ConfigProperty *> ConfigPropertyRegistry;
+class ConfigPropertyRegistry : public list<const ConfigProperty *> {
+ public:
+    /** case-insensitive search for property */
+    const ConfigProperty *find(const string &propName) const {
+        for (const_iterator it = begin();
+             it != end();
+             ++it) {
+            if (!strcasecmp((*it)->getName().c_str(), propName.c_str())) {
+                return *it;
+            }
+        }
+        return NULL;
+    }
+};
 
 /**
  * Store the current string value of a property in a cache
@@ -325,10 +424,10 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     }
 
     /**
-     * Read-only access to all configurable properties of the server,
+     * Read-write access to all configurable properties of the server,
      * including any config filter set earlier.
      */
-    virtual boost::shared_ptr<const FilterConfigNode> getProperties() const { return m_configNode; }
+    virtual boost::shared_ptr<FilterConfigNode> getProperties() { return m_configNode; }
 
     /**
      * Returns a wrapper around all properties of the given source
@@ -545,7 +644,7 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
     EvolutionSyncSourceConfig(const string &name, const SyncSourceNodes &nodes);
 
     static ConfigPropertyRegistry &getRegistry();
-    virtual boost::shared_ptr<const FilterConfigNode> getProperties() const { return m_nodes.m_configNode; }
+    virtual boost::shared_ptr<FilterConfigNode> getProperties() { return m_nodes.m_configNode; }
     bool exists() const { return m_nodes.m_configNode->exists(); }
 
     /**

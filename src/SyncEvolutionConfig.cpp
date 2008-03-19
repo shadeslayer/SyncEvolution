@@ -18,6 +18,7 @@
 
 #include "SyncEvolutionConfig.h"
 #include "EvolutionSyncSource.h"
+#include "EvolutionSyncClient.h"
 #include "FileConfigTree.h"
 
 #include <unistd.h>
@@ -37,6 +38,11 @@ void ConfigProperty::splitComment(const string &comment, list<string> &commentLi
             start = end + 1;
         }
     }
+}
+
+void ConfigProperty::throwValueError(const ConfigNode &node, const string &name, const string &value, const string &error) const
+{
+    EvolutionSyncClient::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
 EvolutionSyncConfig::EvolutionSyncConfig(const string &server) :
@@ -154,8 +160,8 @@ static ConfigProperty syncPropProxyUsername("proxyUsername",
                                             "authentication for proxy");
 static ConfigProperty syncPropProxyPassword("proxyPassword", "");
 static StringConfigProperty syncPropClientAuthType("clientAuthType",
-                                                   "- empty or \"md5\" for secure method (recommended)",
-                                                   "- \"basic\" for insecure method\n"
+                                                   "- empty or \"md5\" for secure method (recommended)\n"
+                                                   "- \"basic\" for insecure method",
                                                    "md5",
                                                    Values() +
                                                    (Aliases("syncml:auth-basic") + "basic") +
@@ -319,18 +325,27 @@ EvolutionSyncSourceConfig::EvolutionSyncSourceConfig(const string &name, const S
 {
 }
 
-static ConfigProperty sourcePropSync("sync",
-                                     "requests a certain synchronization mode:\n"
-                                     "  two-way             = only send/receive changes since last sync\n"
-                                     "  slow                = exchange all items\n"
-                                     "  refresh-from-client = discard all remote items and replace with\n"
-                                     "                        the items on the client\n"
-                                     "  refresh-from-server = discard all local items and replace with\n"
-                                     "                        the items on the server\n"
-                                     "  one-way-from-client = transmit changes from client\n"
-                                     "  one-way-from-server = transmit changes from server\n"
-                                     "  none                = synchronization disabled",
-                                     "two-way");
+static StringConfigProperty sourcePropSync("sync",
+                                           "requests a certain synchronization mode:\n"
+                                           "  two-way             = only send/receive changes since last sync\n"
+                                           "  slow                = exchange all items\n"
+                                           "  refresh-from-client = discard all remote items and replace with\n"
+                                           "                        the items on the client\n"
+                                           "  refresh-from-server = discard all local items and replace with\n"
+                                           "                        the items on the server\n"
+                                           "  one-way-from-client = transmit changes from client\n"
+                                           "  one-way-from-server = transmit changes from server\n"
+                                           "  none                = synchronization disabled",
+                                           "two-way",
+                                           Values() +
+                                           (Aliases("two-way")) +
+                                           (Aliases("slow")) +
+                                           (Aliases("refresh-from-client") + "refresh-client") +
+                                           (Aliases("refresh-from-server") + "refresh-server" + "refresh") +
+                                           (Aliases("one-way-from-client") + "one-way-client") +
+                                           (Aliases("one-way-from-server") + "one-way-server" + "one-way") +
+                                           (Aliases("disabled") + "none"));
+
 static class SourceTypeConfigProperty : public StringConfigProperty {
 public:
     SourceTypeConfigProperty() :
@@ -439,7 +454,10 @@ static ConfigProperty sourcePropUser("evolutionuser",
                                      "Evolution backend to hang.");
 static ConfigProperty sourcePropPassword("evolutionpassword", "");
 
-static ConfigProperty sourcePropEncoding("encoding", "\"b64\" enables base64 encoding of outgoing items (not recommended)");
+static StringConfigProperty sourcePropEncoding("encoding",
+                                               "\"b64\" enables base64 encoding of outgoing items (not recommended)",
+                                               "",
+                                               Values() + Aliases("b64") + Aliases(""));
 static ULongConfigProperty sourcePropLast("last",
                                           "used by the SyncML library internally; do not modify");
 
