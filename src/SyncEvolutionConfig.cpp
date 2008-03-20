@@ -69,9 +69,9 @@ EvolutionSyncConfig::EvolutionSyncConfig(const string &server,
 
     string path(m_oldLayout ? "spds/syncml" : "");
     boost::shared_ptr<ConfigNode> node;
-    node = m_tree->open(path, false);
+    node = m_tree->open(path, ConfigTree::visible);
     m_configNode.reset(new FilterConfigNode(node));
-    m_hiddenNode = m_tree->open(path, true);
+    m_hiddenNode = m_tree->open(path, ConfigTree::hidden);
 }
 
 string EvolutionSyncConfig::getRootPath() const
@@ -183,7 +183,7 @@ boost::shared_ptr<PersistentEvolutionSyncSourceConfig> EvolutionSyncConfig::getS
     return boost::shared_ptr<PersistentEvolutionSyncSourceConfig>(new PersistentEvolutionSyncSourceConfig(name, nodes));
 }
 
-list<string> EvolutionSyncConfig::getSyncSources()
+list<string> EvolutionSyncConfig::getSyncSources() const
 {
     return m_tree->getChildren(m_oldLayout ? "spds/sources" : "sources");
 }
@@ -198,15 +198,20 @@ SyncSourceNodes EvolutionSyncConfig::getSyncSourceNodes(const string &name,
     boost::shared_ptr<ConfigNode> node;
     string path = string(m_oldLayout ? "spds/sources/" : "sources/") + name;
 
-    node = m_tree->open(path, false);
+    node = m_tree->open(path, ConfigTree::visible);
     configNode.reset(new FilterConfigNode(node, m_sourceFilter));
-    hiddenNode = m_tree->open(path, true);
-    if (changeId.size()) {
-        trackingNode = m_tree->open(path, true, changeId);
-    }
+    hiddenNode = m_tree->open(path, ConfigTree::hidden);
+    trackingNode = m_tree->open(path, ConfigTree::other, changeId);
 
     return SyncSourceNodes(configNode, hiddenNode, trackingNode);
 }
+
+ConstSyncSourceNodes EvolutionSyncConfig::getSyncSourceNodes(const string &name,
+                                                             const string &changeId) const
+{
+    return const_cast<EvolutionSyncConfig *>(this)->getSyncSourceNodes(name, changeId);
+}
+
 
 static ConfigProperty syncPropSyncURL("syncURL",
                                       "the base URL of the SyncML server:\n"
@@ -389,6 +394,62 @@ void EvolutionSyncConfig::setSourceDefaults(const string &name)
         }
     }
     nodes.m_configNode->flush();
+}
+
+static void copyProperties(const ConfigNode &fromProps,
+                           ConfigNode &toProps,
+                           bool hidden,
+                           const ConfigPropertyRegistry &allProps)
+{
+    for (ConfigPropertyRegistry::const_iterator it = allProps.begin();
+         it != allProps.end();
+         ++it) {
+        if ((*it)->isHidden() == hidden) {
+            string name = (*it)->getName();
+            string value = fromProps.readProperty(name);
+            toProps.setProperty(name, value, (*it)->getComment());
+        }
+    }
+}
+
+static void copyProperties(const ConfigNode &fromProps,
+                           ConfigNode &toProps)
+{
+    map<string, string> props = fromProps.readProperties();
+
+    for (map<string, string>::const_iterator it = props.begin();
+         it != props.end();
+         ++it) {
+        string name = it->first;
+        string value = it->second;
+        toProps.setProperty(name, value);
+    }
+}
+
+void EvolutionSyncConfig::copy(const EvolutionSyncConfig &other,
+                               const set<string> *sourceFilter)
+{
+    static const bool visibility[2] = { false, true };
+    int i;
+    for (int i = 0; i < 2; i++ ) {
+        boost::shared_ptr<const FilterConfigNode> fromSyncProps(other.getProperties(visibility[i]));
+        boost::shared_ptr<FilterConfigNode> toSyncProps(this->getProperties(visibility[i]));
+        copyProperties(*fromSyncProps, *toSyncProps, visibility[i], other.getRegistry());
+    }
+
+    list<string> sources = other.getSyncSources();
+    for (list<string>::const_iterator it = sources.begin();
+         it != sources.end();
+         ++it) {
+        if (!sourceFilter ||
+            sourceFilter->find(*it) != sourceFilter->end()) {
+            ConstSyncSourceNodes fromNodes = other.getSyncSourceNodes(*it);
+            SyncSourceNodes toNodes = this->getSyncSourceNodes(*it);
+            copyProperties(*fromNodes.m_configNode, *toNodes.m_configNode, false, EvolutionSyncSourceConfig::getRegistry());
+            copyProperties(*fromNodes.m_hiddenNode, *toNodes.m_hiddenNode, true, EvolutionSyncSourceConfig::getRegistry());
+            copyProperties(*fromNodes.m_trackingNode, *toNodes.m_trackingNode);
+        }
+    }
 }
 
 const char *EvolutionSyncConfig::getSwv() const { return VERSION; }

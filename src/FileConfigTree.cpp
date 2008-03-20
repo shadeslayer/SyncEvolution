@@ -56,26 +56,32 @@ void FileConfigTree::reset()
 }
 
 boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
-                                                   bool hidden,
-                                                   const string &changeId)
+                                                   ConfigTree::PropertyType type,
+                                                   const string &otherId)
 {
     string fullpath;
     string filename;
     
     fullpath = normalizePath(m_root + "/" + path + "/");
-    if (changeId.size()) {
+    if (type == other) {
         if (m_oldLayout) {
-            fullpath += "changes_";
-            fullpath += changeId;
+            fullpath += "/changes";
+            if (!otherId.empty()) {
+                fullpath += "_";
+                fullpath += otherId;
+            }
             filename = "config.txt";
         } else {
-            filename += ".changes_";
-            filename += changeId;
+            filename += ".other";
+            if (!otherId.empty()) {
+                filename += "_";
+                filename += otherId;
+            }
             filename += ".ini";
         }
     } else {
         filename = m_oldLayout ? "config.txt" :
-            hidden ? ".internal.ini" :
+            type == hidden ? ".internal.ini" :
             "config.ini";
     }
 

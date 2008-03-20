@@ -26,12 +26,14 @@
 #include <list>
 #include <string>
 #include <sstream>
+#include <set>
 using namespace std;
 
 class EvolutionSyncSourceConfig;
 class PersistentEvolutionSyncSourceConfig;
 class ConfigTree;
 struct SyncSourceNodes;
+struct ConstSyncSourceNodes;
 
 /**
  * A property has a name and a comment. Derived classes might have
@@ -461,6 +463,8 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
             return m_configNode;
         }
     }
+    virtual boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<EvolutionSyncConfig *>(this)->getProperties(hidden); }
+
 
     /**
      * Returns a wrapper around all properties of the given source
@@ -476,11 +480,14 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
      * Can be called for sources which do not exist yet.
      */
     virtual boost::shared_ptr<PersistentEvolutionSyncSourceConfig> getSyncSourceConfig(const string &name);
+    virtual boost::shared_ptr<const PersistentEvolutionSyncSourceConfig> getSyncSourceConfig(const string &name) const {
+        return const_cast<EvolutionSyncConfig *>(this)->getSyncSourceConfig(name);
+    }
 
     /**
      * Returns list of all configured (not active!) sync sources.
      */
-    virtual list<string> getSyncSources();
+    virtual list<string> getSyncSources() const;
 
     /**
      * Creates config nodes for a certain node. The nodes are not
@@ -491,6 +498,8 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
      */
     SyncSourceNodes getSyncSourceNodes(const string &name,
                                        const string &trackName = "");
+    ConstSyncSourceNodes getSyncSourceNodes(const string &name,
+                                            const string &trackName = "") const;
 
     /**
      * create a new sync configuration for the current server name
@@ -503,6 +512,23 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
      * create a new sync source configuration
      */
     void setSourceDefaults(const string &name);
+
+    /**
+     * Copy all registered properties (hidden and visible) and the
+     * tracking node into the current config. This is done by reading
+     * all properties from the source config, which implies the unset
+     * properties will be set to their default values.  The current
+     * config is not cleared so additional, unregistered properties
+     * (should they exist) will continue to exist unchanged.
+     *
+     * The current config still needs to be flushed to make the
+     * changes permanent.
+     *
+     * @param sourceFilter   if NULL, then copy all sources; if not NULL,
+     *                       then only copy sources listed here
+     */
+    void copy(const EvolutionSyncConfig &other,
+              const set<string> *sourceFilter);
 
     /**
      * @defgroup SyncEvolutionSettings
@@ -664,7 +690,26 @@ struct SyncSourceNodes {
     const boost::shared_ptr<ConfigNode> m_hiddenNode;
     const boost::shared_ptr<ConfigNode> m_trackingNode;
 };
-    
+
+struct ConstSyncSourceNodes {
+    ConstSyncSourceNodes(const boost::shared_ptr<const FilterConfigNode> &configNode,
+                         const boost::shared_ptr<const ConfigNode> &hiddenNode,
+                         const boost::shared_ptr<const ConfigNode> &trackingNode) : 
+    m_configNode(configNode),
+        m_hiddenNode(hiddenNode),
+        m_trackingNode(trackingNode)
+    {}
+
+    ConstSyncSourceNodes(const SyncSourceNodes &other) :
+    m_configNode(other.m_configNode),
+        m_hiddenNode(other.m_hiddenNode),
+        m_trackingNode(other.m_trackingNode)
+    {}
+
+    const boost::shared_ptr<const FilterConfigNode> m_configNode;
+    const boost::shared_ptr<const ConfigNode> m_hiddenNode;
+    const boost::shared_ptr<const ConfigNode> m_trackingNode;
+};
 
 
 /**
@@ -677,13 +722,6 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
     EvolutionSyncSourceConfig(const string &name, const SyncSourceNodes &nodes);
 
     static ConfigPropertyRegistry &getRegistry();
-    virtual boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) {
-        if (hidden) {
-            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_nodes.m_hiddenNode));
-        } else {
-            return m_nodes.m_configNode;
-        }
-    }
     bool exists() const { return m_nodes.m_configNode->exists(); }
 
     /**

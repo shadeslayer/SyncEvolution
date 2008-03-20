@@ -195,10 +195,10 @@ bool SyncEvolutionCmdline::run() {
             if (m_sources.empty() ||
                 m_sources.find(*it) != m_sources.end()) {
                 m_out << endl << "[" << *it << "]" << endl;
-                boost::shared_ptr<PersistentEvolutionSyncSourceConfig> source(config->getSyncSourceConfig(*it));
-                boost::shared_ptr<FilterConfigNode> sourceProps(source->getProperties());
+                ConstSyncSourceNodes nodes = config->getSyncSourceNodes(*it);
+                boost::shared_ptr<FilterConfigNode> sourceProps(new FilterConfigNode(boost::shared_ptr<const ConfigNode>(nodes.m_configNode)));
                 sourceProps->setFilter(m_sourceProps);
-                dumpProperties(*sourceProps, source->getRegistry());
+                dumpProperties(*sourceProps, EvolutionSyncSourceConfig::getRegistry());
             }
         }
     } else if (m_server == "" && m_argc > 1) {
@@ -262,33 +262,7 @@ bool SyncEvolutionCmdline::run() {
 
         // write into the requested configuration, creating it if necessary
         boost::shared_ptr<EvolutionSyncConfig> to(new EvolutionSyncConfig(m_server));
-        static const bool visibility[2] = { false, true };
-        int i;
-        for (int i = 0; i < 2; i++ ) {
-            boost::shared_ptr<FilterConfigNode> fromSyncProps(from->getProperties(visibility[i]));
-            boost::shared_ptr<FilterConfigNode> toSyncProps(to->getProperties(visibility[i]));
-            copyProperties(*fromSyncProps, *toSyncProps, visibility[i], from->getRegistry());
-        }
-
-        list<string> sources = from->getSyncSources();
-        for (list<string>::const_iterator it = sources.begin();
-             it != sources.end();
-             ++it) {
-            bool found = m_sources.find(*it) != m_sources.end();
-
-            if (m_sources.empty() ||
-                m_migrate ||
-                found) {
-                boost::shared_ptr<PersistentEvolutionSyncSourceConfig> fromSource(from->getSyncSourceConfig(*it));
-                boost::shared_ptr<PersistentEvolutionSyncSourceConfig> toSource(to->getSyncSourceConfig(*it));
-
-                for (int i = 0; i < 2; i++ ) {
-                    boost::shared_ptr<FilterConfigNode> fromSourceProps(fromSource->getProperties(visibility[i]));
-                    boost::shared_ptr<FilterConfigNode> toSourceProps(toSource->getProperties(visibility[i]));
-                    copyProperties(*fromSourceProps, *toSourceProps, visibility[i], fromSource->getRegistry());
-                }
-            }
-        }
+        to->copy(*from, (m_migrate || m_sources.empty()) ? NULL : &m_sources);
 
         // done, now write it
         to->flush();
@@ -468,22 +442,6 @@ void SyncEvolutionCmdline::dumpProperties(const ConfigNode &configuredProps,
             }
         }
         m_out << (*it)->getName() << " = " << (*it)->getProperty(configuredProps) << endl;
-    }
-}
-
-void SyncEvolutionCmdline::copyProperties(const ConfigNode &fromProps,
-                                          ConfigNode &toProps,
-                                          bool hidden,
-                                          const ConfigPropertyRegistry &allProps)
-{
-    for (ConfigPropertyRegistry::const_iterator it = allProps.begin();
-         it != allProps.end();
-         ++it) {
-        if ((*it)->isHidden() == hidden) {
-            string name = (*it)->getName();
-            string value = fromProps.readProperty(name);
-            toProps.setProperty(name, value, (*it)->getComment());
-        }
     }
 }
 
