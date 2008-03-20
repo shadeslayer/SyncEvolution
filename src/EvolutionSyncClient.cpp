@@ -724,7 +724,7 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
         
         // is the source enabled?
         string sync = sc->getSync();
-        bool enabled = sync != "none" && sync != "";
+        bool enabled = sync != "disabled";
         bool overrideMode = false;
 
         // override state?
