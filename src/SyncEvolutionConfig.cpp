@@ -533,7 +533,7 @@ static ConfigProperty sourcePropPassword("evolutionpassword", "");
 static StringConfigProperty sourcePropEncoding("encoding",
                                                "\"b64\" enables base64 encoding of outgoing items (not recommended)",
                                                "",
-                                               Values() + Aliases("b64") + Aliases(""));
+                                               Values() + (Aliases("b64") + "bin") + Aliases(""));
 static ULongConfigProperty sourcePropLast("last",
                                           "used by the SyncML library internally; do not modify");
 
