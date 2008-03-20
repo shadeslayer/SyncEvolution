@@ -69,9 +69,9 @@ class FileConfigNode : public ConfigNode {
     virtual void setProperty(const string &property,
                              const string &value,
                              const string &comment = "");
-    virtual map<string, string> readProperties();
+    virtual map<string, string> readProperties() const;
     virtual void removeProperty(const string &property);
-    virtual bool exists() { return m_exists; }
+    virtual bool exists() const { return m_exists; }
 };
 
 #endif

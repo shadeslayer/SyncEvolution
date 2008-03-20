@@ -83,9 +83,8 @@ void FileConfigNode::read()
         }
         m_exists = true;
         fclose(file);
-    } else {
-        m_modified = true;
     }
+    m_modified = false;
 }
 
 void FileConfigNode::flush()
@@ -213,7 +212,7 @@ string FileConfigNode::readProperty(const string &property) const {
 
 
 
-map<string, string> FileConfigNode::readProperties() {
+map<string, string> FileConfigNode::readProperties() const {
     map<string, string> res;
     string value, property;
 

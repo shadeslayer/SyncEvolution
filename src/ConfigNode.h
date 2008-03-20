@@ -67,7 +67,7 @@ class ConfigNode {
      * Extract all list of all currently defined properties
      * and their values.
      */
-    virtual map<string, string> readProperties() = 0;
+    virtual map<string, string> readProperties() const = 0;
 
     /**
      * Remove a certain property.
@@ -79,7 +79,7 @@ class ConfigNode {
     /**
      * Node exists in backend storage.
      */
-    virtual bool exists() = 0;
+    virtual bool exists() const = 0;
 };
 
 #endif

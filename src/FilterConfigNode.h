@@ -50,10 +50,15 @@ class FilterConfigNode : public ConfigNode {
         }
     };
 
+    /** read-write access to underlying node */
     FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
-                     const ConfigFilter &filter = ConfigFilter() );
+                     const ConfigFilter &filter = ConfigFilter());
 
-    virtual string getName() const { return m_node->getName(); }
+    /** read-only access to underlying node */
+    FilterConfigNode(const boost::shared_ptr<const ConfigNode> &node,
+                     const ConfigFilter &filter = ConfigFilter());
+
+    virtual string getName() const { return m_readOnlyNode->getName(); }
 
     /** add another entry to the list of filter properties */
     void addFilter(const string &property,
@@ -63,18 +68,19 @@ class FilterConfigNode : public ConfigNode {
     void setFilter(const ConfigFilter &filter);
 
     /* ConfigNode API */
-    virtual void flush() { m_node->flush(); }
+    virtual void flush();
     virtual string readProperty(const string &property) const;
     virtual void setProperty(const string &property,
                              const string &value,
                              const string &comment = "");
-    virtual map<string, string> readProperties();
+    virtual map<string, string> readProperties() const;
     virtual void removeProperty(const string &property);
-    virtual bool exists() { m_node->exists(); }
+    virtual bool exists() const { m_readOnlyNode->exists(); }
 
  private:
     ConfigFilter m_filter;
     boost::shared_ptr<ConfigNode> m_node;
+    boost::shared_ptr<const ConfigNode> m_readOnlyNode;
 };
 
 #endif
