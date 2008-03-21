@@ -43,21 +43,31 @@ VOCL_SOURCES = \
 	vocl/VConverter.cpp
 
 CORE_SOURCES  = \
+	ConfigTree.h \
+	ConfigNode.h \
+	VolatileConfigNode.h \
         EvolutionSmartPtr.h \
-        EvolutionSyncClient.h \
-        EvolutionSyncSource.h \
-	EvolutionClientConfig.h \
 	SyncEvolutionUtil.h \
         \
 	SyncEvolutionCmdline.cpp \
         SyncEvolutionCmdline.h \
 	\
+        EvolutionSyncSource.h \
         EvolutionSyncSource.cpp \
+	\
+        EvolutionSyncClient.h \
 	EvolutionSyncClient.cpp \
 	\
+	SyncEvolutionConfig.h \
 	SyncEvolutionConfig.cpp \
+	\
+	FilterConfigNode.h \
 	FilterConfigNode.cpp \
+	\
+	FileConfigNode.h \
 	FileConfigNode.cpp \
+	\
+	FileConfigTree.h \
 	FileConfigTree.cpp \
 	\
 	$(VOCL_SOURCES)
@@ -152,9 +162,18 @@ SYNC4JSRC = @SYNC4JSRC@
 SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
 BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
 
-clean distclean mostlyclean maintainer-clean distdir : % : $(SYNC4J_SUBDIR)/%
-clean distclean mostlyclean maintainer-clean : % : %-am
-clean : testclean
+# include client library and boost in distribution
+dist-hook:
+	cp -r $(srcdir)/boost $(distdir)
+	[ ! "$(SYNC4J_SUBDIR)" ] || cp -r client-api $(distdir)
+	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
+
+clean-local:
+	rm -f *.test.vcf *.log *.tests *.diff *.dat
+	rm -rf $(SYNC4J_SUBDIR)
+
+distclean-local:
+	rm -rf @CLEAN_CLIENT_SRC@ # "client-api", only set when it was created by configure
 
 # With --disable-shared autotools links against libsync4j.a which does not
 # pull any of the test suites into the test binary, so they would not be
@@ -200,14 +219,6 @@ $(filter-out $(LOCAL_TEST_FILES), testcases) : % : $(SYNC4J_SUBDIR)/test/test/%
 	perl -e '$$_ = join("", <>); s/^(ADR|TEL|EMAIL|PHOTO).*?(?=^\S)//msg; print;' testcases/vcard21.vcf >testcases/vcard21_sqlite.vcf
 
 test : client-test testcases synccompare
-testclean :
-	rm -f *.test.vcf *.log *.tests *.diff
-
-$(SYNC4J_SUBDIR)/maintainer-clean $(SYNC4J_SUBDIR)/distclean :
-	rm -rf $(SYNC4J_SUBDIR) @CLEAN_CLIENT_SRC@
-
-$(SYNC4J_SUBDIR)/distdir :
-	[ ! "$(SYNC4J_SUBDIR)" ] || ( cp -r client-api $(distdir) && ( find $(distdir)/client-api -name .libs -o -name "*.o" -o -name "*.lo" -o -name CVS -name autom4te.cache | xargs rm -rf ) )
 
 # rule to satisfy automatic dependencies on header files
 $(SYNC4J_SUBDIR)/%.h :
