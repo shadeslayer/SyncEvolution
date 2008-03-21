@@ -170,9 +170,10 @@ dist-hook:
 
 clean-local:
 	rm -f *.test.vcf *.log *.tests *.diff *.dat
-	rm -rf $(SYNC4J_SUBDIR)
+	[ ! -d "$(SYNC4J_SUBDIR)" ] || (cd $(SYNC4J_SUBDIR) && make clean)
 
 distclean-local:
+	rm -rf $(SYNC4J_SUBDIR)
 	rm -rf @CLEAN_CLIENT_SRC@ # "client-api", only set when it was created by configure
 
 # With --disable-shared autotools links against libsync4j.a which does not
