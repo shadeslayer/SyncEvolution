@@ -1,7 +1,8 @@
 INCLUDES = @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @SYNC4J_CFLAGS@ @SQLITE_CFLAGS@ @ADDRESSBOOK_CFLAGS@
 
-# Please remove '-Wno-return-type' when Evo fixes the warning in their headers.
-AM_CFLAGS = -Wall -Werror -Wno-return-type
+# applies to sources in SyncEvolution repository, but not
+# the Funambol C++ client library
+SYNCEVOLUTION_CXXFLAGS = @SYNCEVOLUTION_CXXFLAGS@
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
@@ -128,23 +129,28 @@ syncevolution_SOURCES = \
 # LIBDBUS might be replaced with path to patched libdbus-1.a (required for
 # DBUS_DEFAULT_TIMEOUT hack on Maemo).
 syncevolution_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(CORE_LDADD)
+syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES)
 
 syncecal_la_SOURCES = $(SYNCECAL_SOURCES)
 syncecal_la_LIBADD = @ECAL_LIBS@
 syncecal_la_LDFLAGS = -module -rpath '$(pkglibdir)'
+syncecal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
 syncebook_la_SOURCES = $(SYNCEBOOK_SOURCES)
 syncebook_la_LIBADD = @EBOOK_LIBS@
 syncebook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
+syncebook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
 syncsqlite_la_SOURCES = $(SYNCSQLITE_SOURCES)
 syncsqlite_la_LIBADD = @SQLITE_LIBS@
 syncsqlite_la_LDFLAGS = -module -rpath '$(pkglibdir)'
+syncsqlite_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
 syncaddressbook_la_SOURCES = $(SYNCADDRESSBOOK_SOURCES)
 syncaddressbook_la_LIBADD = @ADDRESSBOOK_LIBS@
 syncaddressbook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
+syncaddressbook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
 EXTRA_PROGRAMS += vcardconverter
 vcardconverter_SOURCES = \
@@ -186,7 +192,7 @@ distclean-local:
 client_test_SOURCES = client-test-app.cpp $(CORE_SOURCES)
 nodist_client_test_SOURCES = ClientTest.cpp client-test-main.cpp ClientTest.h
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS
-client_test_CXXFLAGS = `cppunit-config --cflags`
+client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
 client_test_LDADD = $(EXTRA_LTLIBRARIES) @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
 client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES)

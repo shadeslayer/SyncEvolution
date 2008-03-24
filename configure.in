@@ -327,6 +327,12 @@ else
 fi
 AC_SUBST(SYNCEVOLUTION_LDADD)
 
+dnl CXXFLAGS gets applied to SyncEvolution and the client library.
+dnl For e.g. "-Wall -Werror" this might not be such a good idea;
+dnl SYNCEVOLUTION_CXXFLAGS can be used instead. It applies only
+dnl to the sources in the SyncEvolution repository.
+AC_SUBST(SYNCEVOLUTION_CXXFLAGS)
+
 dnl a quick-and-dirty way to detect compilation for the iPhone
 if test "$host" == "arm-apple-darwin"; then
    AC_DEFINE(IPHONE, 1, [compiling for iPhone])
