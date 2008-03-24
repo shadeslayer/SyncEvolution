@@ -168,9 +168,12 @@ dist-hook:
 	[ ! "$(SYNC4J_SUBDIR)" ] || cp -r client-api $(distdir)
 	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
 
-clean-local:
-	rm -f *.test.vcf *.log *.tests *.diff *.dat
+clean-local: testclean
 	[ ! -d "$(SYNC4J_SUBDIR)" ] || (cd $(SYNC4J_SUBDIR) && make clean)
+
+# files created during testing
+testclean:
+	rm -f *.test.vcf *.log *.tests *.diff *.dat
 
 distclean-local:
 	rm -rf $(SYNC4J_SUBDIR)
