@@ -568,6 +568,17 @@ public:
 
         return res;
     }
+
+    /** relax string checking: only the part before a colon has to match one of the aliases */
+    virtual bool checkValue(const string &value, string &error) const {
+        size_t colon = value.find(':');
+        if (colon != value.npos) {
+            string backend = value.substr(0, colon);
+            return StringConfigProperty::checkValue(backend, error);
+        } else {
+            return StringConfigProperty::checkValue(value, error);
+        }
+    }
 } sourcePropSourceType;
 
 static ConfigProperty sourcePropDatabaseID("evolutionsource",

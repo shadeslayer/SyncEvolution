@@ -955,6 +955,9 @@ protected:
      * cases not occurring with servers that are actively tested against.
      */
     void testImport() {
+        // this only tests that we can instantiate something under the type "addressbook";
+        // it might not be an EvolutionContactSource
+        boost::shared_ptr<EvolutionSyncSource> addressbook(EvolutionSyncSource::createTestingSource("addressbook", "addressbook", true));
         boost::shared_ptr<EvolutionContactSource> source21(dynamic_cast<EvolutionContactSource *>(EvolutionSyncSource::createTestingSource("evolutioncontactsource21", "evolution-contacts:text/x-vcard", true)));
         boost::shared_ptr<EvolutionContactSource> source30(dynamic_cast<EvolutionContactSource *>(EvolutionSyncSource::createTestingSource("evolutioncontactsource30", "Evolution Address Book:text/vcard", true)));
         string parsed;

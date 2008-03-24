@@ -21,7 +21,7 @@
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
-    bool isMe = sourceType.first == "Evolution Contacts";
+    bool isMe = sourceType.first == "Evolution Address Book";
 
 #ifndef ENABLE_EBOOK
     return isMe ? RegisterSyncSource::InactiveSource : NULL;
