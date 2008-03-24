@@ -103,7 +103,7 @@ SQLiteUtil::syncml_time_t SQLiteUtil::getTimeColumn(sqlite3_stmt *stmt, int col)
 string SQLiteUtil::time2str(SQLiteUtil::syncml_time_t t)
 {
     char buffer[128];
-    sprintf(buffer, "%lld", t);
+    sprintf(buffer, "%lu", t);
     return buffer;
 }
 

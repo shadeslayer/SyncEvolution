@@ -47,8 +47,8 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server,
     m_server(server),
     m_sources(sources),
     m_doLogging(doLogging),
-    m_quiet(false),
-    m_syncMode(SYNC_NONE)
+    m_syncMode(SYNC_NONE),
+    m_quiet(false)
 {
 }
 
@@ -273,9 +273,9 @@ public:
             vector<string> entries;
             getLogdirs(m_logdir, entries);
 
-            unsigned int deleted = 0;
+            int deleted = 0;
             for (vector<string>::iterator it = entries.begin();
-                 it != entries.end() && entries.size() - deleted > m_maxlogdirs;
+                 it != entries.end() && (int)entries.size() - deleted > m_maxlogdirs;
                  ++it, ++deleted) {
                 string path = m_logdir + "/" + *it;
                 string msg = "removing " + path;

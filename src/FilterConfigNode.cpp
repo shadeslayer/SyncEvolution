@@ -21,16 +21,16 @@
 
 FilterConfigNode::FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
                                    const ConfigFilter &filter) :
+    m_filter(filter),
     m_node(node),
-    m_readOnlyNode(node),
-    m_filter(filter)
+    m_readOnlyNode(node)
 {
 }
 
 FilterConfigNode::FilterConfigNode(const boost::shared_ptr<const ConfigNode> &node,
                                    const ConfigFilter &filter) :
-    m_readOnlyNode(node),
-    m_filter(filter)
+    m_filter(filter),
+    m_readOnlyNode(node)
 {
 }
 

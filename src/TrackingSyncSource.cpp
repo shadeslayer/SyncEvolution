@@ -40,7 +40,6 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
              it != props.end();
              it++) {
             const string &uid(it->first);
-            const string &modTime(it->second);
             m_deletedItems.addItem(uid.c_str());
             m_trackingNode->removeProperty(uid);
         }

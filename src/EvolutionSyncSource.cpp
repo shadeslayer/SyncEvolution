@@ -142,10 +142,12 @@ RegisterSyncSource::RegisterSyncSource(const string &shortDescr,
     registry.push_back(this);
 }
 
+#if 0
 static ostream & operator << (ostream &out, const RegisterSyncSource &rhs)
 {
     out << rhs.m_shortDescr << (rhs.m_enabled ? " (enabled)" : " (disabled)");
 }
+#endif
 
 EvolutionSyncSource *const RegisterSyncSource::InactiveSource = (EvolutionSyncSource *)1;
 
@@ -159,9 +161,9 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
     static list<string> missing;
 
     if (!scannedModules) {
+#ifdef ENABLE_MODULES
         list<string> *state;
 
-#ifdef ENABLE_MODULES
         // possible extension: scan directories for matching module names instead of hard-coding known names
         const char *modules[] = {
             "syncebook.so.0",
@@ -215,76 +217,17 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
         EvolutionSyncClient::throwError(problem);
     }
 
-#if 0
-#ifdef ENABLE_EBOOK
-    return new EvolutionContactSource(params, EVC_FORMAT_VCARD_21);
-#else
-        if (error) {
-            EvolutionSyncClient::throwError(params.m_name + ": access to addressbooks not compiled into this binary, text/x-vcard not supported");
-        }
-#endif
-    } else if (sourceType == "text/vcard") {
-#ifdef ENABLE_EBOOK
-        return new EvolutionContactSource(params, EVC_FORMAT_VCARD_30);
-#else
-        if (error) {
-            EvolutionSyncClient::throwError(params.m_name + ": access to addressbooks not compiled into this binary, text/vcard not supported");
-        }
-#endif
-    } else if (sourceType == "text/x-todo") {
-#ifdef ENABLE_ECAL
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, params);
-#else
-        if (error) {
-            EvolutionSyncClient::throwError(params.m_name + ": access to calendars not compiled into this binary, text/x-todo not supported");
-        }
-#endif
-    } else if (sourceType == "text/x-journal") {
-#ifdef ENABLE_ECAL
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, params);
-#else
-        if (error) {
-            EvolutionSyncClient::throwError(params.m_name + ": access to memos not compiled into this binary, text/x-journal not supported");
-        }
-#endif
-    } else if (sourceType == "text/plain") {
-#ifdef ENABLE_ECAL
-        return new EvolutionMemoSource(params);
-#else
-        if (error) {
-            EvolutionSyncClient::throwError(params.m_name + ": access to memos not compiled into this binary, text/plain not supported");
-        }
-#endif
-    } else if (sourceType == "text/calendar" ||
-               sourceType == "text/x-vcalendar") {
-#ifdef ENABLE_ECAL
-        return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, params);
-#else
-        if (error) {
-            EvolutionSyncClient::throwError(params.m_name + ": access to calendars not compiled into this binary, " + sourceType + " not supported");
-        }
-#endif
-    } else if (sourceType == "sqlite") {
-#ifdef ENABLE_SQLITE
-        return new SQLiteContactSource(params);
-#else
-        if (error) {
-            EvolutionSyncClient::throwError(params.m_name + ": access to sqlite not compiled into this binary, " + sourceType + " not supported");
-        }
-#endif
-    } else if (sourceType == "addressbook") {
-#ifdef ENABLE_ADDRESSBOOK
-        return new AddressBookSource(nodes);
-#else
-        if (error) {
-            EvolutionSyncClient::throwError(params.m_name + ": access to Mac OS X address book not compiled into this binary, not supported");
-        }
-#endif
-    }
-#endif
-
-
     return NULL;
+}
+
+EvolutionSyncSource *EvolutionSyncSource::createTestingSource(const string &name, const string &type, bool error)
+{
+    EvolutionSyncConfig config("testing");
+    SyncSourceNodes nodes = config.getSyncSourceNodes(name);
+    EvolutionSyncSourceParams params(name, nodes, "");
+    PersistentEvolutionSyncSourceConfig sourceconfig(name, nodes);
+    sourceconfig.setSourceType(type);
+    return createSource(params, error);
 }
 
 int EvolutionSyncSource::beginSync()

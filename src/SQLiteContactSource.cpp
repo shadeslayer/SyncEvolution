@@ -193,7 +193,6 @@ SyncItem *SQLiteContactSource::createItem(const string &uid)
 
     VObject vobj;
     string tmp;
-    const unsigned char *text;
 
     vobj.addProperty("BEGIN", "VCARD");
     vobj.addProperty("VERSION", "2.1");

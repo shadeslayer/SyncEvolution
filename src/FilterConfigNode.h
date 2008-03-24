@@ -75,7 +75,7 @@ class FilterConfigNode : public ConfigNode {
                              const string &comment = "");
     virtual map<string, string> readProperties() const;
     virtual void removeProperty(const string &property);
-    virtual bool exists() const { m_readOnlyNode->exists(); }
+    virtual bool exists() const { return m_readOnlyNode->exists(); }
 
  private:
     ConfigFilter m_filter;

@@ -430,7 +430,6 @@ void EvolutionSyncConfig::copy(const EvolutionSyncConfig &other,
                                const set<string> *sourceFilter)
 {
     static const bool visibility[2] = { false, true };
-    int i;
     for (int i = 0; i < 2; i++ ) {
         boost::shared_ptr<const FilterConfigNode> fromSyncProps(other.getProperties(visibility[i]));
         boost::shared_ptr<FilterConfigNode> toSyncProps(this->getProperties(visibility[i]));

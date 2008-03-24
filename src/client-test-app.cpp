@@ -527,6 +527,7 @@ private:
             break;
          default:
             CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
+            return "";
             break;
         }
     }

@@ -194,7 +194,6 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
                                             bool deleteLocal)
 {
     GError *gerror = NULL;
-    bool removedSome = false;
 
     eptr<EBookQuery> deleteItemsQuery;
     if (deleteLocal) {
@@ -575,7 +574,7 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
                     // Evolution cannot handle e.g. "WORK,VOICE". Split into
                     // different parts.
                     string buffer = type, value;
-                    int start = 0, end;
+                    size_t start = 0, end;
                     vprop->removeParameter("TYPE");
                     while ((end = buffer.find(',', start)) != buffer.npos) {
                         value = buffer.substr(start, end - start);
@@ -956,39 +955,39 @@ protected:
      * cases not occurring with servers that are actively tested against.
      */
     void testImport() {
-        EvolutionContactSource source21("foo", NULL, "", "", EVC_FORMAT_VCARD_21),
-            source30("foo", NULL, "", "", EVC_FORMAT_VCARD_30);
+        boost::shared_ptr<EvolutionContactSource> source21(dynamic_cast<EvolutionContactSource *>(EvolutionSyncSource::createTestingSource("evolutioncontactsource21", "evolution-contacts:text/x-vcard", true)));
+        boost::shared_ptr<EvolutionContactSource> source30(dynamic_cast<EvolutionContactSource *>(EvolutionSyncSource::createTestingSource("evolutioncontactsource30", "Evolution Address Book:text/vcard", true)));
         string parsed;
 
         // SF bug 1796086: sync with EGW: lost or messed up telephones
         parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;CELL:cell\r\nEND:VCARD\r\n";
         CPPUNIT_ASSERT_EQUAL(parsed,
-                             preparse(source21,
+                             preparse(*source21,
                                       "BEGIN:VCARD\nVERSION:2.1\nTEL;CELL:cell\nEND:VCARD\n",
                                       "text/x-vcard"));
 
         parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=CAR:car\r\nEND:VCARD\r\n";
         CPPUNIT_ASSERT_EQUAL(parsed,
-                             preparse(source21,
+                             preparse(*source21,
                                       "BEGIN:VCARD\nVERSION:2.1\nTEL;TYPE=CAR:car\nEND:VCARD\n",
                                       "text/x-vcard"));
 
         parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=HOME:home\r\nEND:VCARD\r\n";
         CPPUNIT_ASSERT_EQUAL(parsed,
-                             preparse(source21,
+                             preparse(*source21,
                                       "BEGIN:VCARD\nVERSION:2.1\nTEL:home\nEND:VCARD\n",
                                       "text/x-vcard"));
 
         // TYPE=PARCEL not supported by Evolution, used to represent Evolutions TYPE=OTHER
         parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=OTHER:other\r\nEND:VCARD\r\n";
         CPPUNIT_ASSERT_EQUAL(parsed,
-                             preparse(source21,
+                             preparse(*source21,
                                       "BEGIN:VCARD\nVERSION:2.1\nTEL;TYPE=PARCEL:other\nEND:VCARD\n",
                                       "text/x-vcard"));
 
         parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;TYPE=HOME;TYPE=VOICE:cell\r\nEND:VCARD\r\n";
         CPPUNIT_ASSERT_EQUAL(parsed,
-                             preparse(source21,
+                             preparse(*source21,
                                       "BEGIN:VCARD\nVERSION:2.1\nTEL;TYPE=HOME,VOICE:cell\nEND:VCARD\n",
                                       "text/x-vcard"));
     }

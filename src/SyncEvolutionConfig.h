@@ -51,11 +51,12 @@ struct ConstSyncSourceNodes;
 class ConfigProperty {
  public:
     ConfigProperty(const string &name, const string &comment, const string &def = string("")) :
-    m_name(name),
+        m_hidden(false),
+        m_name(name),
         m_comment(comment),
-        m_defValue(def),
-        m_hidden(false)
+        m_defValue(def)
         {}
+    virtual ~ConfigProperty() {}
     
     virtual string getName() const { return m_name; }
     virtual string getComment() const { return m_comment; }
@@ -238,6 +239,7 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
             return true;
         } else {
             error = "cannot parse value";
+            return false;
         }
     }
 

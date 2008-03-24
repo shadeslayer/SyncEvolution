@@ -200,8 +200,8 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
         m_newItems( *this, "new", SYNC_STATE_NEW ),
         m_updatedItems( *this, "updated", SYNC_STATE_UPDATED ),
         m_deletedItems( *this, "deleted", SYNC_STATE_DELETED ),
-        m_hasFailed( false ),
-        m_isModified( false )
+        m_isModified( false ),
+        m_hasFailed( false )
         {
             setConfig(this);
         }
@@ -318,14 +318,28 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     static void handleException();
 
     /**
-     * factory function for a EvolutionSyncSources that provides the
-     * given source type; for the other parameters see constructor
+     * factory function for a EvolutionSyncSource that provides the
+     * source type specified in the params.m_nodes.m_configNode
      *
      * @param error    throw a runtime error describing what the problem is if no matching source is found
      * @return NULL if no source can handle the given type
      */
     static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params,
                                              bool error = true);
+
+    /**
+     * Factory function for a EvolutionSyncSource with the given name
+     * and handling the kind of data specified by "type" (e.g.
+     * "Evolution Contacts:text/x-vcard").
+     *
+     * The source is instantiated with dummy configuration nodes under
+     * the pseudo server name "testing". This function is used for
+     * testing sync sources, not for real syncs.
+     *
+     * @param error    throw a runtime error describing what the problem is if no matching source is found
+     * @return NULL if no source can handle the given type
+     */
+    static EvolutionSyncSource *createTestingSource(const string &name, const string &type, bool error);
 
     //
     // default implementation of SyncSource iterators
