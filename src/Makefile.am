@@ -48,6 +48,8 @@ CORE_SOURCES  = \
 	ConfigNode.h \
 	VolatileConfigNode.h \
         EvolutionSmartPtr.h \
+	\
+	SyncEvolutionUtil.cpp \
 	SyncEvolutionUtil.h \
         \
 	SyncEvolutionCmdline.cpp \
@@ -194,7 +196,7 @@ nodist_client_test_SOURCES = ClientTest.cpp client-test-main.cpp ClientTest.h
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
-client_test_LDADD = $(EXTRA_LTLIBRARIES) @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
+client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
 client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES)
 
 # copy test files for several reasons:

@@ -19,6 +19,8 @@
 #ifndef INCL_SYNCEVOLUTION_UTIL
 # define INCL_SYNCEVOLUTION_UTIL
 
+#include <base/test.h>
+
 #include <sstream>
 #include <string>
 using namespace std;
@@ -69,6 +71,16 @@ inline string normalizePath(const string &path) {
     }
     return res;
 }
+
+/**
+ * Using this macro ensures that tests, even if defined in
+ * object files which are not normally linked into the test
+ * binary, are included in the test suite under the group
+ * "SyncEvolution".
+ */
+#define SYNCEVOLUTION_TEST_SUITE_REGISTRATION( ATestFixtureType ) \
+    CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ATestFixtureType, "SyncEvolution" ); \
+    extern "C" { int funambolAutoRegisterRegistry ## ATestFixtureType = 12345; }
 
 
 #endif // INCL_SYNCEVOLUTION_UTIL

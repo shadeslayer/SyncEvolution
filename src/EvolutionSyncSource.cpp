@@ -151,16 +151,9 @@ static ostream & operator << (ostream &out, const RegisterSyncSource &rhs)
 
 EvolutionSyncSource *const RegisterSyncSource::InactiveSource = (EvolutionSyncSource *)1;
 
-EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSourceParams &params, bool error)
-{
-    string sourceTypeString = getSourceTypeString(params.m_nodes);
-    pair<string, string> sourceType = getSourceType(params.m_nodes);
-
-    static bool scannedModules;
-    static list<string> available;
-    static list<string> missing;
-
-    if (!scannedModules) {
+static class ScannedModules {
+public:
+    ScannedModules() {
 #ifdef ENABLE_MODULES
         list<string> *state;
 
@@ -168,7 +161,7 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
         const char *modules[] = {
             "syncebook.so.0",
             "syncecal.so.0",
-	    "syncsqlite.so.0",
+            "syncsqlite.so.0",
             "addressbook.so.0",
             NULL
         };
@@ -181,13 +174,20 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
             // module!
             dlhandle = dlopen(modules[i], RTLD_NOW|RTLD_GLOBAL);
             // remember which modules were found and which were not
-            state = dlhandle ? &available : &missing;
+            state = dlhandle ? &m_available : &m_missing;
             state->push_back(modules[i]);
         }
-#else
 #endif
-        scannedModules = true;
     }
+    list<string> m_available;
+    list<string> m_missing;
+} scannedModules;
+
+
+EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSourceParams &params, bool error)
+{
+    string sourceTypeString = getSourceTypeString(params.m_nodes);
+    pair<string, string> sourceType = getSourceType(params.m_nodes);
 
     const SourceRegistry &registry(getSourceRegistry());
     for (SourceRegistry::const_iterator it = registry.begin();
@@ -205,14 +205,14 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
 
     if (error) {
         string problem = params.m_name + ": type '" + sourceTypeString + "' not supported";
-        if (available.size()) {
+        if (scannedModules.m_available.size()) {
             problem += " by any of the backends (";
-            problem += join(string(", "), registry.begin(), registry.end());
+            problem += join(string(", "), scannedModules.m_available.begin(), scannedModules.m_available.end());
             problem += ")";
         }
-        if (missing.size()) {
+        if (scannedModules.m_missing.size()) {
             problem += ". The following backend(s) were not found: ";
-            problem += join(string(", "), missing.begin(), missing.end());
+            problem += join(string(", "), scannedModules.m_missing.begin(), scannedModules.m_missing.end());
         }
         EvolutionSyncClient::throwError(problem);
     }
