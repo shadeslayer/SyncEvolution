@@ -1,28 +1,8 @@
-# ==8371== 556 bytes in 22 blocks are possibly lost in loss record 45 of 64
-# ==8371==    at 0x4C21C16: malloc (vg_replace_malloc.c:149)
-# ==8371==    by 0x70D842A: g_malloc (in /usr/lib/libglib-2.0.so.0.1400.1)
-# ==8371==    by 0x6611AEC: ORBit_alloc_string (in /usr/lib/libORBit-2.so.0.1.0)
-# ==8371==    by 0x66117FD: CORBA_string_dup (in /usr/lib/libORBit-2.so.0.1.0)
-# ==8371==    by 0x63D2EF4: Bonobo_ServerInfo_copy (in /usr/lib/libbonobo-activation.so.4.0.0)
-# ==8371==    by 0x63D2FCA: Bonobo_ServerInfoList_duplicate (in /usr/lib/libbonobo-activation.so.4.0.0)
-# ==8371==    by 0x63D12D0: bonobo_activation_query (in /usr/lib/libbonobo-activation.so.4.0.0)
-# ==8371==    by 0x50915BF: e_book_new (e-book.c:3234)
-# ==8371==    by 0x49851D: EvolutionContactSource::open() (EvolutionContactSource.cpp:125)
-# ==8371==    by 0x40F6F6: TestEvolutionSyncSource<EvolutionContactSource>::beginSync() (client-test-app.cpp:142)
-# ==8371==    by 0x42E136: LocalTests::testIterateTwice() (ClientTest.cpp:490)
-# ==8371==    by 0x48FDFB: CppUnit::TestCaller<LocalTests>::runTest() (TestCaller.h:166)
-{
-   server info
-   Memcheck:Leak
-   fun:malloc
-   fun:g_malloc
-   fun:ORBit_alloc_string
-   fun:CORBA_string_dup
-   fun:Bonobo_ServerInfo_copy
-   fun:Bonobo_ServerInfoList_duplicate
-   fun:bonobo_activation_query
-   fun:e_book_new
-}
+#
+# This file combines supressions common to all executables using Evolution libraries,
+# clients using libecal/libebook and evolution-data-server.
+
+##### common #####
 
 # ==8468== Use of uninitialised value of size 8
 # ==8468==    at 0x70F826E: g_utf8_offset_to_pointer (in /usr/lib/libglib-2.0.so.0.1400.1)
@@ -105,6 +85,138 @@
    obj:*libgobject-2.0*
    obj:*libgobject-2.0*
    fun:g_type_init_with_debug_flags
+}
+
+##### clients #####
+
+# ==8371== 556 bytes in 22 blocks are possibly lost in loss record 45 of 64
+# ==8371==    at 0x4C21C16: malloc (vg_replace_malloc.c:149)
+# ==8371==    by 0x70D842A: g_malloc (in /usr/lib/libglib-2.0.so.0.1400.1)
+# ==8371==    by 0x6611AEC: ORBit_alloc_string (in /usr/lib/libORBit-2.so.0.1.0)
+# ==8371==    by 0x66117FD: CORBA_string_dup (in /usr/lib/libORBit-2.so.0.1.0)
+# ==8371==    by 0x63D2EF4: Bonobo_ServerInfo_copy (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==8371==    by 0x63D2FCA: Bonobo_ServerInfoList_duplicate (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==8371==    by 0x63D12D0: bonobo_activation_query (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==8371==    by 0x50915BF: e_book_new (e-book.c:3234)
+# ==8371==    by 0x49851D: EvolutionContactSource::open() (EvolutionContactSource.cpp:125)
+# ==8371==    by 0x40F6F6: TestEvolutionSyncSource<EvolutionContactSource>::beginSync() (client-test-app.cpp:142)
+# ==8371==    by 0x42E136: LocalTests::testIterateTwice() (ClientTest.cpp:490)
+# ==8371==    by 0x48FDFB: CppUnit::TestCaller<LocalTests>::runTest() (TestCaller.h:166)
+{
+   server info
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:Bonobo_ServerInfo_copy
+   fun:Bonobo_ServerInfoList_duplicate
+   fun:bonobo_activation_query
+   fun:e_book_new
+}
+
+# ==4081== 34,300 bytes in 1,071 blocks are possibly lost in loss record 43 of 53
+# ==4081==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==4081==    by 0x42DD9FD: g_malloc0 (gmem.c:150)
+# ==4081==    by 0x483E675: ORBit_alloc_by_tc (allocators.c:373)
+# ==4081==    by 0x48399AC: ORBit_small_alloc (orbit-small.c:44)
+# ==4081==    by 0x484524B: IOP_ObjectKey_demarshal (iop-profiles.c:1043)
+# ==4081==    by 0x4845F80: ORBit_demarshal_IOR (iop-profiles.c:1399)
+# ==4081==    by 0x483CCBE: ORBit_demarshal_object (corba-object.c:608)
+# ==4081==    by 0x4843558: ORBit_demarshal_value (corba-any.c:545)
+# ==4081==    by 0x4839D45: orbit_small_demarshal (orbit-small.c:425)
+# ==4081==    by 0x483AB8C: ORBit_small_invoke_stub (orbit-small.c:663)
+# ==4081==    by 0x483AD7F: ORBit_small_invoke_stub_n (orbit-small.c:575)
+# ==4081==    by 0x4847671: ORBit_c_stub_invoke (poa.c:2643)
+# ==4081==    by 0x412FD0F: GNOME_Evolution_Addressbook_BookFactory_getBook (Evolution-DataServer-Addressbook-stubs.c:330)
+# ==4081==    by 0x413CDE2: fetch_corba_book (e-book.c:3246)
+# ==4081==    by 0x413E232: e_book_new (e-book.c:3730)
+# ==4081==    by 0x413E3FE: e_book_new_from_uri (e-book.c:3762)
+# ==4081==    by 0x810EF8A: EvolutionContactSource::open() (EvolutionContactSource.cpp:136)
+# ==4081==    by 0x8057875: TestEvolutionSyncSource<EvolutionContactSource>::beginSync() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==4081==    by 0x80ED371: LocalTests::update(CreateSource, char const*, bool) (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==4081==    by 0x80DBBC1: LocalTests::testChanges() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==4081==    by 0x810213A: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==4081==    by 0x4051C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4081==    by 0x40433ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4081==    by 0x404D8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4081==    by 0x404D613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4081==    by 0x405A390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4081==    by 0x4051637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4081==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4081==    by 0x4052229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4081==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_book_new
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc*
+   fun:ORBit_alloc_by_tc
+   fun:ORBit_small_alloc
+   fun:IOP_ObjectKey_demarshal
+   fun:ORBit_demarshal_IOR
+   fun:ORBit_demarshal_object
+   fun:ORBit_demarshal_value
+   fun:orbit_small_demarshal
+   fun:ORBit_small_invoke_stub
+   fun:ORBit_small_invoke_stub_n
+   fun:ORBit_c_stub_invoke
+   fun:GNOME_Evolution_Addressbook_BookFactory_getBook
+   fun:fetch_corba_book
+   fun:e_book_new
+   fun:e_book_new_from_uri
+}
+
+# ==4555== 33,240 bytes in 1,066 blocks are possibly lost in loss record 24 of 51
+# ==4555==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==4555==    by 0x42DD9FD: g_malloc0 (gmem.c:150)
+# ==4555==    by 0x483E675: ORBit_alloc_by_tc (allocators.c:373)
+# ==4555==    by 0x48399AC: ORBit_small_alloc (orbit-small.c:44)
+# ==4555==    by 0x4848F58: ORBit_POAObject_object_to_objkey (poa.c:384)
+# ==4555==    by 0x484D621: ORBit_OAObject_object_to_objkey (orbit-adaptor.c:327)
+# ==4555==    by 0x4846712: IOP_generate_profiles (iop-profiles.c:620)
+# ==4555==    by 0x483C826: ORBit_marshal_object (corba-object.c:573)
+# ==4555==    by 0x4843D06: ORBit_marshal_value (corba-any.c:173)
+# ==4555==    by 0x483964F: orbit_small_marshal (orbit-small.c:353)
+# ==4555==    by 0x483AB37: ORBit_small_invoke_stub (orbit-small.c:646)
+# ==4555==    by 0x483AD7F: ORBit_small_invoke_stub_n (orbit-small.c:575)
+# ==4555==    by 0x4847671: ORBit_c_stub_invoke (poa.c:2643)
+# ==4555==    by 0x412FD0F: GNOME_Evolution_Addressbook_BookFactory_getBook (Evolution-DataServer-Addressbook-stubs.c:330)
+# ==4555==    by 0x413CDE2: fetch_corba_book (e-book.c:3246)
+# ==4555==    by 0x413E232: e_book_new (e-book.c:3730)
+# ==4555==    by 0x413E3FE: e_book_new_from_uri (e-book.c:3762)
+# ==4555==    by 0x810EF8A: EvolutionContactSource::open() (EvolutionContactSource.cpp:136)
+# ==4555==    by 0x8057875: TestEvolutionSyncSource<EvolutionContactSource>::beginSync() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==4555==    by 0x80ED371: LocalTests::update(CreateSource, char const*, bool) (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==4555==    by 0x80E0566: LocalTests::testChanges() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==4555==    by 0x810213A: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==4555==    by 0x4051C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4555==    by 0x40433ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4555==    by 0x404D8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4555==    by 0x404D613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4555==    by 0x405A390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4555==    by 0x4051637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4555==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==4555==    by 0x4052229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_book_new II
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc*
+   fun:ORBit_alloc_by_tc
+   fun:ORBit_small_alloc
+   fun:ORBit_POAObject_object_to_objkey
+   fun:ORBit_OAObject_object_to_objkey
+   fun:IOP_generate_profiles
+   fun:ORBit_marshal_object
+   fun:ORBit_marshal_value
+   fun:orbit_small_marshal
+   fun:ORBit_small_invoke_stub
+   fun:ORBit_small_invoke_stub_n
+   fun:ORBit_c_stub_invoke
+   fun:GNOME_Evolution_Addressbook_BookFactory_getBook
+   fun:fetch_corba_book
+   fun:e_book_new
 }
 
 # ==14222== Syscall param writev(vector[...]) points to uninitialised byte(s)
@@ -538,6 +650,83 @@
    fun:fetch_corba_book
 }
 
+# ==3045== 5,012 bytes in 139 blocks are possibly lost in loss record 42 of 61
+# ==3045==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==3045==    by 0x42DC9FD: g_malloc0 (gmem.c:150)
+# ==3045==    by 0x483D6EC: ORBit_alloc_tcval (allocators.c:287)
+# ==3045==    by 0x4839DB8: ORBit_small_allocbuf (orbit-small.c:51)
+# ==3045==    by 0x484CB02: ORBit_adaptor_setup (orbit-adaptor.c:130)
+# ==3045==    by 0x484954D: ORBit_POA_new (poa.c:809)
+# ==3045==    by 0x48498DD: ORBit_POA_new_from (poa.c:838)
+# ==3045==    by 0x473A526: bonobo_poa_new_from (bonobo-main.c:462)
+# ==3045==    by 0x473A64A: bonobo_poa_get_threadedv (bonobo-main.c:400)
+# ==3045==    by 0x473A7C6: bonobo_poa_get_threaded (bonobo-main.c:442)
+# ==3045==    by 0x40F3977: e_cal_listener_new (e-cal-listener.c:1032)
+# ==3045==    by 0x40D8A63: e_cal_init (e-cal.c:1056)
+# ==3045==    by 0x428F065: g_type_create_instance (gtype.c:1569)
+# ==3045==    by 0x4273B21: g_object_constructor (gobject.c:1046)
+# ==3045==    by 0x4274308: g_object_newv (gobject.c:937)
+# ==3045==    by 0x4274EE6: g_object_new_valist (gobject.c:986)
+# ==3045==    by 0x427509F: g_object_new (gobject.c:795)
+# ==3045==    by 0x40D9DC1: e_cal_new (e-cal.c:1411)
+# ==3045==    by 0x40D9EB4: e_cal_new_from_uri (e-cal.c:1448)
+# ==3045==    by 0x80ED1C3: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:127)
+{
+   e_cal_init
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_tcval
+   fun:ORBit_small_allocbuf
+   fun:ORBit_adaptor_setup
+   fun:ORBit_POA_new
+   fun:ORBit_POA_new_from
+   fun:bonobo_poa_new_from
+   fun:bonobo_poa_get_threadedv
+   fun:bonobo_poa_get_threaded
+   fun:e_cal_listener_new
+   fun:e_cal_init
+}
+
+# ==3659== 2,804 bytes in 56 blocks are possibly lost in loss record 41 of 63
+# ==3659==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==3659==    by 0x42DC9FD: g_malloc0 (gmem.c:150)
+# ==3659==    by 0x42C7CDA: g_hash_table_new_full (ghash.c:358)
+# ==3659==    by 0x42C7D23: g_hash_table_new (ghash.c:318)
+# ==3659==    by 0x484952D: ORBit_POA_new (poa.c:807)
+# ==3659==    by 0x48498DD: ORBit_POA_new_from (poa.c:838)
+# ==3659==    by 0x473A526: bonobo_poa_new_from (bonobo-main.c:462)
+# ==3659==    by 0x473A64A: bonobo_poa_get_threadedv (bonobo-main.c:400)
+# ==3659==    by 0x473A7C6: bonobo_poa_get_threaded (bonobo-main.c:442)
+# ==3659==    by 0x40F3977: e_cal_listener_new (e-cal-listener.c:1032)
+# ==3659==    by 0x40D8A63: e_cal_init (e-cal.c:1056)
+# ==3659==    by 0x428F065: g_type_create_instance (gtype.c:1569)
+# ==3659==    by 0x4273B21: g_object_constructor (gobject.c:1046)
+# ==3659==    by 0x4274308: g_object_newv (gobject.c:937)
+# ==3659==    by 0x4274EE6: g_object_new_valist (gobject.c:986)
+# ==3659==    by 0x427509F: g_object_new (gobject.c:795)
+# ==3659==    by 0x40D9DC1: e_cal_new (e-cal.c:1411)
+# ==3659==    by 0x40D9EB4: e_cal_new_from_uri (e-cal.c:1448)
+# ==3659==    by 0x80ED1C3: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:127)
+# ==3659==    by 0x805676F: TestEvolutionSyncSource<EvolutionCalendarSource>::beginSync() (in /tmp/runtests/head/tmp/build/src/client-test)
+{
+   e_cal_init
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:g_hash_table_new_full
+   fun:g_hash_table_new
+   fun:ORBit_POA_new
+   fun:ORBit_POA_new_from
+   fun:bonobo_poa_new_from
+   fun:bonobo_poa_get_threadedv
+   fun:bonobo_poa_get_threaded
+   fun:e_cal_listener_new
+   fun:e_cal_init
+}
+
+##### evolution-data-server ####
+
 # ==32292== Syscall param pwrite64(buf) points to uninitialised byte(s)
 # ==32292==    at 0x4000792: (within /lib/ld-2.3.6.so)
 # ==32292==    by 0x40E0696: __os_io_eds (os_rw.c:62)
@@ -841,6 +1030,43 @@
    fun:build_change_list
 }
 
+# ==4555== 1,284 bytes in 36 blocks are possibly lost in loss record 20 of 51
+# ==4555==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==4555==    by 0x42DDA95: g_malloc (gmem.c:131)
+# ==4555==    by 0x42F2E32: g_slice_alloc (gslice.c:824)
+# ==4555==    by 0x42F40AA: g_slist_append (gslist.c:69)
+# ==4555==    by 0x40AB00C: scan_text (e-cal-component.c:653)
+# ==4555==    by 0x40AB141: scan_property (e-cal-component.c:705)
+# ==4555==    by 0x40AB7D5: scan_icalcomponent (e-cal-component.c:952)
+# ==4555==    by 0x40ABC5A: e_cal_component_set_icalcomponent (e-cal-component.c:1114)
+# ==4555==    by 0x40B855A: build_change_list (e-cal-listener.c:526)
+# ==4555==    by 0x40B862B: impl_notifyChanges (e-cal-listener.c:557)
+# ==4555==    by 0x4097F9D: _ORBIT_skel_small_GNOME_Evolution_Calendar_CalListener_notifyChanges (Evolution-DataServer-Calendar-common.c:220)
+# ==4555==    by 0x4847436: ORBit_POAObject_invoke (poa.c:1142)
+# ==4555==    by 0x484D664: ORBit_OAObject_invoke (orbit-adaptor.c:338)
+# ==4555==    by 0x483A5D8: ORBit_small_invoke_adaptor (orbit-small.c:844)
+# ==4555==    by 0x484B2B9: ORBit_POAObject_handle_request (poa.c:1351)
+# ==4555==    by 0x484B95B: ORBit_POAObject_invoke_incoming_request (poa.c:1421)
+# ==4555==    by 0x483313A: giop_thread_queue_process (giop.c:771)
+# ==4555==    by 0x48339D7: giop_request_handler_thread (giop.c:481)
+# ==4555==    by 0x42FF686: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==4555==    by 0x42FDAFE: g_thread_create_proxy (gthread.c:635)
+# ==4555==    by 0x425823F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==4555==    by 0x455749D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   build_change_list II
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_slice_alloc
+   fun:g_slist_append
+   fun:scan_text
+   fun:scan_property
+   fun:scan_icalcomponent
+   fun:e_cal_component_set_icalcomponent
+   fun:build_change_list
+}
+
 # ==2499== 129,660 (1,040 direct, 128,620 indirect) bytes in 65 blocks are definitely lost in loss record 24 of 61
 # ==2499==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
 # ==2499==    by 0x4123FD7: pvl_new_element (pvl.c:105)
@@ -897,9 +1123,39 @@
    CORBA exception
    Memcheck:Leak
    fun:calloc
-   fun:g_malloc0
+   fun:g_malloc*
    fun:ORBit_alloc_by_tc
    fun:ORBit_small_alloc
+   fun:CORBA_exception_set_system
+}
+
+# ==4555== 1,721,282 (450,615 direct, 1,270,667 indirect) bytes in 11,907 blocks are definitely lost in loss record 50 of 51
+# ==4555==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==4555==    by 0x42DDA95: g_malloc (gmem.c:131)
+# ==4555==    by 0x483E95D: ORBit_alloc_string (allocators.c:228)
+# ==4555==    by 0x483E618: CORBA_string_dup (corba-string.c:22)
+# ==4555==    by 0x483E14A: CORBA_exception_set (corba-env.c:118)
+# ==4555==    by 0x483E1F3: CORBA_exception_set_system (corba-env.c:102)
+# ==4555==    by 0x484C49D: ORBit_POA_handle_request (poa.c:1555)
+# ==4555==    by 0x484D802: ORBit_handle_request (orbit-adaptor.c:298)
+# ==4555==    by 0x4836917: giop_connection_handle_input (giop-recv-buffer.c:1312)
+# ==4555==    by 0x4854DBC: link_connection_io_handler (linc-connection.c:1412)
+# ==4555==    by 0x485765F: link_source_dispatch (linc-source.c:159)
+# ==4555==    by 0x42D599A: g_main_context_dispatch (gmain.c:2064)
+# ==4555==    by 0x42D8EB5: g_main_context_iterate (gmain.c:2697)
+# ==4555==    by 0x42D9276: g_main_loop_run (gmain.c:2905)
+# ==4555==    by 0x485331F: link_io_thread_fn (linc.c:396)
+# ==4555==    by 0x42FDAFE: g_thread_create_proxy (gthread.c:635)
+# ==4555==    by 0x425823F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==4555==    by 0x455749D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   CORBA exception II
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:CORBA_exception_set
    fun:CORBA_exception_set_system
 }
 
@@ -1006,6 +1262,80 @@
    fun:build_change_list
 }
 
+# ==4994== 981 bytes in 36 blocks are possibly lost in loss record 20 of 51
+# ==4994==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==4994==    by 0x42DDA95: g_malloc (gmem.c:131)
+# ==4994==    by 0x40AAFD2: scan_text (e-cal-component.c:649)
+# ==4994==    by 0x40AB141: scan_property (e-cal-component.c:705)
+# ==4994==    by 0x40AB7D5: scan_icalcomponent (e-cal-component.c:952)
+# ==4994==    by 0x40ABC5A: e_cal_component_set_icalcomponent (e-cal-component.c:1114)
+# ==4994==    by 0x40B855A: build_change_list (e-cal-listener.c:526)
+# ==4994==    by 0x40B862B: impl_notifyChanges (e-cal-listener.c:557)
+# ==4994==    by 0x4097F9D: _ORBIT_skel_small_GNOME_Evolution_Calendar_CalListener_notifyChanges (Evolution-DataServer-Calendar-common.c:220)
+# ==4994==    by 0x4847436: ORBit_POAObject_invoke (poa.c:1142)
+# ==4994==    by 0x484D664: ORBit_OAObject_invoke (orbit-adaptor.c:338)
+# ==4994==    by 0x483A5D8: ORBit_small_invoke_adaptor (orbit-small.c:844)
+# ==4994==    by 0x484B2B9: ORBit_POAObject_handle_request (poa.c:1351)
+# ==4994==    by 0x484B95B: ORBit_POAObject_invoke_incoming_request (poa.c:1421)
+# ==4994==    by 0x483313A: giop_thread_queue_process (giop.c:771)
+# ==4994==    by 0x48339D7: giop_request_handler_thread (giop.c:481)
+# ==4994==    by 0x42FF686: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==4994==    by 0x42FDAFE: g_thread_create_proxy (gthread.c:635)
+# ==4994==    by 0x425823F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==4994==    by 0x455749D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   build_change_list II
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:scan_text
+   fun:scan_property
+   fun:scan_icalcomponent
+   fun:e_cal_component_set_icalcomponent
+   fun:build_change_list
+}
+
+# ==4994== 1,751,365 (450,701 direct, 1,300,664 indirect) bytes in 11,902 blocks are definitely lost in loss record 50 of 51
+# ==4994==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==4994==    by 0x42DDA95: g_malloc (gmem.c:131)
+# ==4994==    by 0x42F2E32: g_slice_alloc (gslice.c:824)
+# ==4994==    by 0x42F3514: g_slice_alloc0 (gslice.c:833)
+# ==4994==    by 0x428FC2B: g_type_create_instance (gtype.c:1549)
+# ==4994==    by 0x4274B21: g_object_constructor (gobject.c:1046)
+# ==4994==    by 0x4275308: g_object_newv (gobject.c:937)
+# ==4994==    by 0x4275EE6: g_object_new_valist (gobject.c:986)
+# ==4994==    by 0x427609F: g_object_new (gobject.c:795)
+# ==4994==    by 0x40AA9A7: e_cal_component_new (e-cal-component.c:457)
+# ==4994==    by 0x40B853F: build_change_list (e-cal-listener.c:525)
+# ==4994==    by 0x40B862B: impl_notifyChanges (e-cal-listener.c:557)
+# ==4994==    by 0x4097F9D: _ORBIT_skel_small_GNOME_Evolution_Calendar_CalListener_notifyChanges (Evolution-DataServer-Calendar-common.c:220)
+# ==4994==    by 0x4847436: ORBit_POAObject_invoke (poa.c:1142)
+# ==4994==    by 0x484D664: ORBit_OAObject_invoke (orbit-adaptor.c:338)
+# ==4994==    by 0x483A5D8: ORBit_small_invoke_adaptor (orbit-small.c:844)
+# ==4994==    by 0x484B2B9: ORBit_POAObject_handle_request (poa.c:1351)
+# ==4994==    by 0x484B95B: ORBit_POAObject_invoke_incoming_request (poa.c:1421)
+# ==4994==    by 0x483313A: giop_thread_queue_process (giop.c:771)
+# ==4994==    by 0x48339D7: giop_request_handler_thread (giop.c:481)
+# ==4994==    by 0x42FF686: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==4994==    by 0x42FDAFE: g_thread_create_proxy (gthread.c:635)
+# ==4994==    by 0x425823F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==4994==    by 0x455749D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   build_change_list III
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_slice_alloc
+   fun:g_slice_alloc0
+   fun:g_type_create_instance
+   fun:g_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:e_cal_component_new
+   fun:build_change_list
+}
+
 # ==2499== 768 bytes in 6 blocks are possibly lost in loss record 32 of 61
 # ==2499==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
 # ==2499==    by 0x4121788: icalvalue_new_impl (icalvalue.c:75)
@@ -1070,36 +1400,6 @@
    fun:cal_get_changes_cb
 }
 
-# ==2499== 2,810,686 (155,063 direct, 2,655,623 indirect) bytes in 4,207 blocks are definitely lost in loss record 60 of 61
-# ==2499==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
-# ==2499==    by 0x42DCA95: g_malloc (gmem.c:131)
-# ==2499==    by 0x483D95D: ORBit_alloc_string (allocators.c:228)
-# ==2499==    by 0x483D618: CORBA_string_dup (corba-string.c:22)
-# ==2499==    by 0x483D14A: CORBA_exception_set (corba-env.c:118)
-# ==2499==    by 0x483D1F3: CORBA_exception_set_system (corba-env.c:102)
-# ==2499==    by 0x484B49D: ORBit_POA_handle_request (poa.c:1555)
-# ==2499==    by 0x484C802: ORBit_handle_request (orbit-adaptor.c:298)
-# ==2499==    by 0x4835917: giop_connection_handle_input (giop-recv-buffer.c:1312)
-# ==2499==    by 0x4853DBC: link_connection_io_handler (linc-connection.c:1412)
-# ==2499==    by 0x485665F: link_source_dispatch (linc-source.c:159)
-# ==2499==    by 0x42D499A: g_main_context_dispatch (gmain.c:2064)
-# ==2499==    by 0x42D7EB5: g_main_context_iterate (gmain.c:2697)
-# ==2499==    by 0x42D8276: g_main_loop_run (gmain.c:2905)
-# ==2499==    by 0x485231F: link_io_thread_fn (linc.c:396)
-# ==2499==    by 0x42FCAFE: g_thread_create_proxy (gthread.c:635)
-# ==2499==    by 0x425723F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
-# ==2499==    by 0x455649D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
-{
-   CORBA exception
-   Memcheck:Leak
-   fun:malloc
-   fun:g_malloc
-   fun:ORBit_alloc_string
-   fun:CORBA_string_dup
-   fun:CORBA_exception_set
-   fun:CORBA_exception_set_system
-}
-
 # ==2787== 20 bytes in 1 blocks are possibly lost in loss record 4 of 62
 # ==2787==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
 # ==2787==    by 0x4123F11: pvl_newlist (pvl.c:59)
@@ -1160,67 +1460,6 @@
    fun:g_malloc
    fun:g_strdup
    fun:cal_object_created_cb
-}
-
-# ==3045== 5,012 bytes in 139 blocks are possibly lost in loss record 42 of 61
-# ==3045==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
-# ==3045==    by 0x42DC9FD: g_malloc0 (gmem.c:150)
-# ==3045==    by 0x483D6EC: ORBit_alloc_tcval (allocators.c:287)
-# ==3045==    by 0x4839DB8: ORBit_small_allocbuf (orbit-small.c:51)
-# ==3045==    by 0x484CB02: ORBit_adaptor_setup (orbit-adaptor.c:130)
-# ==3045==    by 0x484954D: ORBit_POA_new (poa.c:809)
-# ==3045==    by 0x48498DD: ORBit_POA_new_from (poa.c:838)
-# ==3045==    by 0x473A526: bonobo_poa_new_from (bonobo-main.c:462)
-# ==3045==    by 0x473A64A: bonobo_poa_get_threadedv (bonobo-main.c:400)
-# ==3045==    by 0x473A7C6: bonobo_poa_get_threaded (bonobo-main.c:442)
-# ==3045==    by 0x40F3977: e_cal_listener_new (e-cal-listener.c:1032)
-# ==3045==    by 0x40D8A63: e_cal_init (e-cal.c:1056)
-# ==3045==    by 0x428F065: g_type_create_instance (gtype.c:1569)
-# ==3045==    by 0x4273B21: g_object_constructor (gobject.c:1046)
-# ==3045==    by 0x4274308: g_object_newv (gobject.c:937)
-# ==3045==    by 0x4274EE6: g_object_new_valist (gobject.c:986)
-# ==3045==    by 0x427509F: g_object_new (gobject.c:795)
-# ==3045==    by 0x40D9DC1: e_cal_new (e-cal.c:1411)
-# ==3045==    by 0x40D9EB4: e_cal_new_from_uri (e-cal.c:1448)
-# ==3045==    by 0x80ED1C3: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:127)
-{
-   e_cal_init
-   Memcheck:Leak
-   fun:calloc
-   fun:g_malloc0
-   fun:ORBit_alloc_tcval
-   fun:ORBit_small_allocbuf
-   fun:ORBit_adaptor_setup
-   fun:ORBit_POA_new
-   fun:ORBit_POA_new_from
-   fun:bonobo_poa_new_from
-   fun:bonobo_poa_get_threadedv
-   fun:bonobo_poa_get_threaded
-   fun:e_cal_listener_new
-   fun:e_cal_init
-}
-
-# ==3291== 24,852 (10,300 direct, 14,552 indirect) bytes in 100 blocks are definitely lost in loss record 38 of 43
-# ==3291==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
-# ==3291==    by 0x44579FD: g_malloc0 (gmem.c:150)
-# ==3291==    by 0x439A151: giop_recv_buffer_use_buf (giop-recv-buffer.c:1440)
-# ==3291==    by 0x439B8E8: giop_connection_handle_input (giop-recv-buffer.c:1218)
-# ==3291==    by 0x43B9DBC: link_connection_io_handler (linc-connection.c:1412)
-# ==3291==    by 0x43BC65F: link_source_dispatch (linc-source.c:159)
-# ==3291==    by 0x444F99A: g_main_context_dispatch (gmain.c:2064)
-# ==3291==    by 0x4452EB5: g_main_context_iterate (gmain.c:2697)
-# ==3291==    by 0x4453276: g_main_loop_run (gmain.c:2905)
-# ==3291==    by 0x43B831F: link_io_thread_fn (linc.c:396)
-# ==3291==    by 0x4477AFE: g_thread_create_proxy (gthread.c:635)
-# ==3291==    by 0x452723F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
-# ==3291==    by 0x45FF49D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
-{
-   giop_connection_handle_input
-   Memcheck:Leak
-   fun:calloc
-   fun:g_malloc0
-   fun:giop_recv_buffer_use_buf
-   fun:giop_connection_handle_input
 }
 
 # ==3291== 82,574 bytes in 476 blocks are definitely lost in loss record 42 of 43
@@ -1396,43 +1635,6 @@
    fun:e_cal_component_set_icalcomponent
    fun:e_cal_component_clone
    fun:cal_get_changes_cb
-}
-
-# ==3659== 2,804 bytes in 56 blocks are possibly lost in loss record 41 of 63
-# ==3659==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
-# ==3659==    by 0x42DC9FD: g_malloc0 (gmem.c:150)
-# ==3659==    by 0x42C7CDA: g_hash_table_new_full (ghash.c:358)
-# ==3659==    by 0x42C7D23: g_hash_table_new (ghash.c:318)
-# ==3659==    by 0x484952D: ORBit_POA_new (poa.c:807)
-# ==3659==    by 0x48498DD: ORBit_POA_new_from (poa.c:838)
-# ==3659==    by 0x473A526: bonobo_poa_new_from (bonobo-main.c:462)
-# ==3659==    by 0x473A64A: bonobo_poa_get_threadedv (bonobo-main.c:400)
-# ==3659==    by 0x473A7C6: bonobo_poa_get_threaded (bonobo-main.c:442)
-# ==3659==    by 0x40F3977: e_cal_listener_new (e-cal-listener.c:1032)
-# ==3659==    by 0x40D8A63: e_cal_init (e-cal.c:1056)
-# ==3659==    by 0x428F065: g_type_create_instance (gtype.c:1569)
-# ==3659==    by 0x4273B21: g_object_constructor (gobject.c:1046)
-# ==3659==    by 0x4274308: g_object_newv (gobject.c:937)
-# ==3659==    by 0x4274EE6: g_object_new_valist (gobject.c:986)
-# ==3659==    by 0x427509F: g_object_new (gobject.c:795)
-# ==3659==    by 0x40D9DC1: e_cal_new (e-cal.c:1411)
-# ==3659==    by 0x40D9EB4: e_cal_new_from_uri (e-cal.c:1448)
-# ==3659==    by 0x80ED1C3: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:127)
-# ==3659==    by 0x805676F: TestEvolutionSyncSource<EvolutionCalendarSource>::beginSync() (in /tmp/runtests/head/tmp/build/src/client-test)
-{
-   e_cal_init
-   Memcheck:Leak
-   fun:calloc
-   fun:g_malloc0
-   fun:g_hash_table_new_full
-   fun:g_hash_table_new
-   fun:ORBit_POA_new
-   fun:ORBit_POA_new_from
-   fun:bonobo_poa_new_from
-   fun:bonobo_poa_get_threadedv
-   fun:bonobo_poa_get_threaded
-   fun:e_cal_listener_new
-   fun:e_cal_init
 }
 
 # ==3807== 571 bytes in 2 blocks are possibly lost in loss record 48 of 62
@@ -1676,36 +1878,6 @@
    fun:build_change_list
 }
 
-# ==8454== 40,320 bytes in 1,080 blocks are possibly lost in loss record 23 of 66
-# ==8454==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
-# ==8454==    by 0x42DC9FD: g_malloc0 (gmem.c:150)
-# ==8454==    by 0x483D675: ORBit_alloc_by_tc (allocators.c:373)
-# ==8454==    by 0x48389AC: ORBit_small_alloc (orbit-small.c:44)
-# ==8454==    by 0x484424B: IOP_ObjectKey_demarshal (iop-profiles.c:1043)
-# ==8454==    by 0x4844F80: ORBit_demarshal_IOR (iop-profiles.c:1399)
-# ==8454==    by 0x483BCBE: ORBit_demarshal_object (corba-object.c:608)
-# ==8454==    by 0x4842558: ORBit_demarshal_value (corba-any.c:545)
-# ==8454==    by 0x4838D45: orbit_small_demarshal (orbit-small.c:425)
-# ==8454==    by 0x4839B8C: ORBit_small_invoke_stub (orbit-small.c:663)
-# ==8454==    by 0x4839D7F: ORBit_small_invoke_stub_n (orbit-small.c:575)
-# ==8454==    by 0x4846671: ORBit_c_stub_invoke (poa.c:2643)
-{
-   ORBit_c_stub_invoke
-   Memcheck:Leak
-   fun:calloc
-   fun:g_malloc0
-   fun:ORBit_alloc_by_tc
-   fun:ORBit_small_alloc
-   fun:IOP_ObjectKey_demarshal
-   fun:ORBit_demarshal_IOR
-   fun:ORBit_demarshal_object
-   fun:ORBit_demarshal_value
-   fun:orbit_small_demarshal
-   fun:ORBit_small_invoke_stub
-   fun:ORBit_small_invoke_stub_n
-   fun:ORBit_c_stub_invoke
-}
-
 # ==8454== 123,178 (12,160 direct, 111,018 indirect) bytes in 95 blocks are definitely lost in loss record 25 of 66
 # ==8454==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
 # ==8454==    by 0x4121788: icalvalue_new_impl (icalvalue.c:75)
@@ -1808,6 +1980,45 @@
    fun:e_data_book_new
 }
 
+# ==4068== 72,256 (30,172 direct, 42,084 indirect) bytes in 293 blocks are definitely lost in loss record 44 of 50
+# ==4068==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==4068==    by 0x44579FD: g_malloc0 (gmem.c:150)
+# ==4068==    by 0x551336C: e_cal_backend_file_events_init (e-cal-backend-file-events.c:103)
+# ==4068==    by 0x440A065: g_type_create_instance (gtype.c:1569)
+# ==4068==    by 0x43EEB21: g_object_constructor (gobject.c:1046)
+# ==4068==    by 0x43EF308: g_object_newv (gobject.c:937)
+# ==4068==    by 0x43EFF8E: g_object_new_valist (gobject.c:1027)
+# ==4068==    by 0x43F009F: g_object_new (gobject.c:795)
+# ==4068==    by 0x5512F1A: _events_new_backend (e-cal-backend-file-factory.c:73)
+# ==4068==    by 0x41294B4: e_cal_backend_factory_new_backend (e-cal-backend-factory.c:98)
+# ==4068==    by 0x4133420: impl_CalFactory_getCal (e-data-cal-factory.c:204)
+# ==4068==    by 0x411E3BB: _ORBIT_skel_small_GNOME_Evolution_Calendar_CalFactory_getCal (Evolution-DataServer-Calendar-common.c:244)
+# ==4068==    by 0x43AC436: ORBit_POAObject_invoke (poa.c:1142)
+# ==4068==    by 0x43B2664: ORBit_OAObject_invoke (orbit-adaptor.c:338)
+# ==4068==    by 0x439F5D8: ORBit_small_invoke_adaptor (orbit-small.c:844)
+# ==4068==    by 0x43B02B9: ORBit_POAObject_handle_request (poa.c:1351)
+# ==4068==    by 0x43B095B: ORBit_POAObject_invoke_incoming_request (poa.c:1421)
+# ==4068==    by 0x439813A: giop_thread_queue_process (giop.c:771)
+# ==4068==    by 0x43989D7: giop_request_handler_thread (giop.c:481)
+# ==4068==    by 0x4479686: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==4068==    by 0x4477AFE: g_thread_create_proxy (gthread.c:635)
+# ==4068==    by 0x452723F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==4068==    by 0x45FF49D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   new calendar
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:e_cal_backend_file_events_init
+   fun:g_type_create_instance
+   fun:g_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:_events_new_backend
+   fun:e_cal_backend_factory_new_backend
+   fun:impl_CalFactory_getCal
+}
 
 # ==4248== Conditional jump or move depends on uninitialised value(s)
 # ==4248==    at 0x4010DFE: (within /lib/ld-2.3.6.so)
