@@ -27,6 +27,7 @@
 #include <errno.h>
 
 #include <iostream>
+#include <sstream>
 #include <memory>
 #include <set>
 #include <algorithm>
@@ -496,3 +497,106 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "?' to get a list of valid parameters" << endl;
     }
 }
+
+#ifdef ENABLE_UNIT_TESTS
+
+/**
+ * Testing is based on a text representation of a directory
+ * hierarchy where each line is of the format
+ * <file path>:<line in file>
+ *
+ * The order of files is alphabetical, of lines in the file as
+ * in the file. Lines in the file without line break cannot
+ * be represented.
+ *
+ * The root of the hierarchy is not part of the representation
+ * itself.
+ */
+class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(SyncEvolutionCmdlineTest);
+    CPPUNIT_TEST(testFramework);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+
+    void testFramework() {
+        const string root("SyncEvolutionCmdlineTest");
+        const string content("baz:line\n"
+                             "foo:bar1\n"
+                             "foo:bar2\n");
+        createFiles(root, content);
+        string res = scanFiles(root);
+        CPPUNIT_ASSERT_EQUAL(content, res);
+    }
+
+private:
+
+    /** create directory hierarchy, overwriting previous content */
+    void createFiles(const string &root, const string &content) {
+        rm_r(root);
+
+        size_t start = 0;
+        ofstream out;
+        string outname;
+
+        out.exceptions(ios_base::badbit|ios_base::failbit);
+        while (start < content.size()) {
+            size_t delim = content.find(':', start);
+            size_t end = content.find('\n', start);
+            if (delim == content.npos ||
+                end == content.npos) {
+                // invalid content ?!
+                break;
+            }
+            string newname = content.substr(start, delim - start);
+            string line = content.substr(delim + 1, end - delim - 1);
+            if (newname != outname) {
+                if (out.is_open()) {
+                    out.close();
+                }
+                string fullpath = root + "/" + newname;
+                size_t fileoff = fullpath.rfind('/');
+                mkdir_p(fullpath.substr(0, fileoff));
+                out.open(fullpath.c_str());
+                outname = newname;
+            }
+            out << line << endl;
+            start = end + 1;
+        }
+    }
+
+    /** turn directory hierarchy into string */
+    string scanFiles(const string &root) {
+        ostringstream out;
+
+        scanFiles(root, "", out);
+        return out.str();
+    }
+    void scanFiles(const string &root, const string &dir, ostringstream &out) {
+        ReadDir readDir(root + "/" + dir);
+        sort(readDir.begin(), readDir.end());
+
+        for (ReadDir::const_iterator it = readDir.begin();
+             it != readDir.end();
+             ++it) {
+            ifstream in;
+            in.exceptions(ios_base::badbit);
+            in.open((root + "/" + *it).c_str());
+            string line;
+            while (!in.eof()) {
+                getline(in, line);
+                if (line.size() || !in.eof()) {
+                    if (dir.size()) {
+                        out << dir << "/";
+                    }
+                    out << *it << ":";
+                    out << line << '\n';
+                }
+            }
+        }
+    }
+};
+
+SYNCEVOLUTION_TEST_SUITE_REGISTRATION(SyncEvolutionCmdlineTest);
+
+#endif // ENABLE_UNIT_TESTS
