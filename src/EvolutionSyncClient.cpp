@@ -19,6 +19,7 @@
 
 #include "EvolutionSyncClient.h"
 #include "EvolutionSyncSource.h"
+#include "SyncEvolutionUtil.h"
 
 #include <posix/base/posixlog.h>
 
@@ -56,38 +57,6 @@ EvolutionSyncClient::~EvolutionSyncClient()
 {
 }
 
-/// remove all files in the given directory and the directory itself
-static void rmBackupDir(const string &dirname)
-{
-    DIR *dir = opendir(dirname.c_str());
-    if (!dir) {
-        EvolutionSyncClient::throwError(dirname + ": " + strerror(errno));
-    }
-    vector<string> entries;
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        entries.push_back(entry->d_name);
-    }
-    closedir(dir);
-
-    for (vector<string>::iterator it = entries.begin();
-         it != entries.end();
-         ++it) {
-        string path = dirname + "/" + *it;
-        if (unlink(path.c_str())
-            && errno != ENOENT
-#ifdef EISDIR
-            && errno != EISDIR
-#endif
-            ) {
-            EvolutionSyncClient::throwError(path + ": " + strerror(errno));
-        }
-    }
-
-    if (rmdir(dirname.c_str())) {
-        EvolutionSyncClient::throwError(dirname + ": " + strerror(errno));
-    }
-}
 
 // this class owns the logging directory and is responsible
 // for redirecting output at the start and end of sync (even
@@ -250,19 +219,15 @@ public:
 
     /** find all entries in a given directory, return as sorted array */
     void getLogdirs(const string &logdir, vector<string> &entries) {
-        DIR *dir = opendir(logdir.c_str());
-        if (!dir) {
-            EvolutionSyncClient::throwError(m_logdir + ": " + strerror(errno));
-        }
-        struct dirent *entry;
-        while ((entry = readdir(dir)) != NULL) {
-            if (strlen(entry->d_name) >= m_prefix.size() &&
-                !m_prefix.compare(0, m_prefix.size(), entry->d_name, m_prefix.size())) {
-                entries.push_back(entry->d_name);
+        ReadDir dir(logdir);
+        for (ReadDir::const_iterator it = dir.begin();
+             it != dir.end();
+             ++it) {
+            if (it->size() >= m_prefix.size() &&
+                !m_prefix.compare(0, m_prefix.size(), *it)) {
+                entries.push_back(*it);
             }
         }
-        closedir(dir);
-                
         sort(entries.begin(), entries.end());
     }
 
@@ -280,7 +245,7 @@ public:
                 string path = m_logdir + "/" + *it;
                 string msg = "removing " + path;
                 LOG.info(msg.c_str());
-                rmBackupDir(path);
+                rm_r(path);
             }
         }
     }

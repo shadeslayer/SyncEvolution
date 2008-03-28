@@ -18,14 +18,13 @@
 
 #include "FileConfigNode.h"
 #include "EvolutionSyncClient.h"
+#include "SyncEvolutionUtil.h"
 
 #include <boost/scoped_array.hpp>
 
 #include <unistd.h>
-#include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <dirent.h>
 
 /** @TODO: replace stdio.h with streams */
 
@@ -36,33 +35,6 @@ FileConfigNode::FileConfigNode(const string &path, const string &fileName) :
     m_exists(false)
 {
     read();
-}
-
-/** ensure that m_path is writable, otherwise throw error */
-static void mkdir_p(const string &path)
-{
-    boost::scoped_array<char> dirs(new char[path.size() + 1]);
-    char *curr = dirs.get();
-    strcpy(curr, path.c_str());
-    do {
-        char *nextdir = strchr(curr, '/');
-        if (nextdir) {
-            *nextdir = 0;
-            nextdir++;
-        }
-        if (*curr) {
-            if (access(dirs.get(),
-                       nextdir ? (R_OK|X_OK) : (R_OK|X_OK|W_OK)) &&
-                (errno != ENOENT ||
-                 mkdir(dirs.get(), 0777))) {
-                EvolutionSyncClient::throwError(string(dirs.get()) + ": " + strerror(errno));
-            }
-        }
-        if (nextdir) {
-            nextdir[-1] = '/';
-        }
-        curr = nextdir;
-    } while (curr);
 }
 
 void FileConfigNode::read()

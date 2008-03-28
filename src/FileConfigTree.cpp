@@ -96,11 +96,10 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
     }
 }
 
-static inline bool isNode(const string &dir, struct dirent *entry) {
+static inline bool isNode(const string &dir, const string &name) {
     struct stat buf;
-    string fullpath = dir + "/" + entry->d_name;
-    return (!stat(fullpath.c_str(), &buf) && S_ISDIR(buf.st_mode) &&
-        strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."));
+    string fullpath = dir + "/" + name;
+    return !stat(fullpath.c_str(), &buf) && S_ISDIR(buf.st_mode);
 }
  
 list<string> FileConfigTree::getChildren(const string &path)
@@ -111,15 +110,15 @@ list<string> FileConfigTree::getChildren(const string &path)
     fullpath = normalizePath(m_root + "/" + path);
 
     // first look at existing files
-    DIR *dir = opendir(fullpath.c_str());
-    if (dir) {
-        struct dirent *entry;
-        for (entry = readdir(dir); entry; entry = readdir(dir)) {
-            if (isNode(fullpath, entry)) {
-                res.push_back(entry->d_name);
+    if (!access(fullpath.c_str(), F_OK)) {
+        ReadDir dir(fullpath);
+        for (ReadDir::const_iterator it = dir.begin();
+             it != dir.end();
+             ++it) {
+            if (isNode(fullpath, *it)) {
+                res.push_back(*it);
             }
         }
-        closedir(dir);
     }
 
     // Now also add those which have been created,

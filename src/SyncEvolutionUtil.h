@@ -21,6 +21,7 @@
 
 #include <base/test.h>
 
+#include <vector>
 #include <sstream>
 #include <string>
 using namespace std;
@@ -46,31 +47,34 @@ template<class T> string join(const string &sep, T begin, T end)
  * remove multiple slashes in a row and dots directly after a slash if not followed by filename,
  * remove trailing /
  */
-inline string normalizePath(const string &path) {
-    string res;
+string normalizePath(const string &path);
 
-    res.reserve(path.size());
-    size_t index = 0;
-    while (index < path.size()) {
-        char curr = path[index];
-        res += curr;
-        index++;
-        if (curr == '/') {
-            while (index < path.size() &&
-                   (path[index] == '/' ||
-                    (path[index] == '.' &&
-                     index + 1 < path.size() &&
-                     (path[index + 1] == '.' ||
-                      path[index + 1] == '/')))) {
-                index++;
-            }
-        }
-    }
-    if (!res.empty() && res[res.size() - 1] == '/') {
-        res.resize(res.size() - 1);
-    }
-    return res;
-}
+/** ensure that m_path is writable, otherwise throw error */
+void mkdir_p(const string &path);
+
+/** remove a complete directory hierarchy; invoking on non-existant directory is okay */
+void rm_r(const string &path);
+
+/**
+ * A C++ wrapper around readir() which provides the names of all
+ * directory entries, excluding . and ..
+ *
+ */
+class ReadDir {
+ public:
+    ReadDir(const string &path);
+
+    typedef vector<string>::const_iterator const_iterator;
+    typedef vector<string>::iterator iterator;
+    iterator begin() { return m_entries.begin(); }
+    iterator end() { return m_entries.end(); }
+    const_iterator begin() const { return m_entries.begin(); }
+    const_iterator end() const { return m_entries.end(); }
+
+ private:
+    string m_path;
+    vector<string> m_entries;
+};
 
 /**
  * Using this macro ensures that tests, even if defined in

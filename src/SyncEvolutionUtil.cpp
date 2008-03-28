@@ -18,8 +18,123 @@
 
 #include <config.h>
 #include "SyncEvolutionUtil.h"
+#include "EvolutionSyncClient.h"
 #include <base/test.h>
+
+#include <boost/scoped_array.hpp>
+
+#include <errno.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 #ifdef ENABLE_UNIT_TESTS
 CPPUNIT_REGISTRY_ADD_TO_DEFAULT("SyncEvolution");
 #endif
+
+string normalizePath(const string &path)
+{
+    string res;
+
+    res.reserve(path.size());
+    size_t index = 0;
+    while (index < path.size()) {
+        char curr = path[index];
+        res += curr;
+        index++;
+        if (curr == '/') {
+            while (index < path.size() &&
+                   (path[index] == '/' ||
+                    (path[index] == '.' &&
+                     index + 1 < path.size() &&
+                     (path[index + 1] == '.' ||
+                      path[index + 1] == '/')))) {
+                index++;
+            }
+        }
+    }
+    if (!res.empty() && res[res.size() - 1] == '/') {
+        res.resize(res.size() - 1);
+    }
+    return res;
+}
+
+void mkdir_p(const string &path)
+{
+    boost::scoped_array<char> dirs(new char[path.size() + 1]);
+    char *curr = dirs.get();
+    strcpy(curr, path.c_str());
+    do {
+        char *nextdir = strchr(curr, '/');
+        if (nextdir) {
+            *nextdir = 0;
+            nextdir++;
+        }
+        if (*curr) {
+            if (access(dirs.get(),
+                       nextdir ? (R_OK|X_OK) : (R_OK|X_OK|W_OK)) &&
+                (errno != ENOENT ||
+                 mkdir(dirs.get(), 0777))) {
+                EvolutionSyncClient::throwError(string(dirs.get()) + ": " + strerror(errno));
+            }
+        }
+        if (nextdir) {
+            nextdir[-1] = '/';
+        }
+        curr = nextdir;
+    } while (curr);
+}
+
+void rm_r(const string &path)
+{
+    if (!unlink(path.c_str()) ||
+        errno == ENOENT) {
+        return;
+    }
+
+    if (errno != EISDIR) {
+        EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+    }
+
+    ReadDir dir(path);
+    for (ReadDir::const_iterator it = dir.begin();
+         it != dir.end();
+         ++it) {
+        rm_r(path + "/" + *it);
+    }
+    if (rmdir(path.c_str())) {
+        EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+    }
+}
+
+ReadDir::ReadDir(const string &path) : m_path(path)
+{
+    DIR *dir = NULL;
+
+    try {
+        dir = opendir(path.c_str());
+        if (!dir) {
+            EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+        }
+        errno = 0;
+        struct dirent *entry = readdir(dir);
+        while (entry) {
+            if (strcmp(entry->d_name, ".") &&
+                strcmp(entry->d_name, "..")) {
+                m_entries.push_back(entry->d_name);
+            }
+            entry = readdir(dir);
+        }
+        if (errno) {
+            EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+        }
+    } catch(...) {
+        if (dir) {
+            closedir(dir);
+        }
+        throw;
+    }
+
+    closedir(dir);
+}
