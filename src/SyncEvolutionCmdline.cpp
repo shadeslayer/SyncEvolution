@@ -528,7 +528,7 @@ static string diffStrings(const string &lhs, const string &rhs)
         ++lit;
     }
 
-    while (lit != string_split_iterator()) {
+    while (rit != string_split_iterator()) {
         res << "> " << *rit << endl;
         ++rit;
     }
@@ -567,8 +567,11 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(SyncEvolutionCmdlineTest);
     CPPUNIT_TEST(testFramework);
     CPPUNIT_TEST(testSetupScheduleWorld);
+    CPPUNIT_TEST(testSetupDefault);
+    CPPUNIT_TEST(testSetupRenamed);
     CPPUNIT_TEST(testSetupFunambol);
     CPPUNIT_TEST(testSetupSynthesis);
+    CPPUNIT_TEST(testPrintServers);
     CPPUNIT_TEST(testTemplate);
     
     CPPUNIT_TEST_SUITE_END();
@@ -653,8 +656,39 @@ protected:
         root += "/syncevolution/scheduleworld";
         rm_r(root);
         TestCmdline cmdline("--configure",
-                            "--template", "scheduleworld",
                             "scheduleworld",
+                            NULL);
+        cmdline.doit();
+        string res = scanFiles(root);
+        CPPUNIT_ASSERT_EQUAL_DIFF(string(m_scheduleWorldConfig), res);
+    }
+    void testSetupDefault() {
+        string root;
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        root = m_testDir;
+        root += "/syncevolution/some-other-server";
+        rm_r(root);
+        TestCmdline cmdline("--configure",
+                            "--template", "default",
+                            "some-other-server",
+                            NULL);
+        cmdline.doit();
+        string res = scanFiles(root);
+        CPPUNIT_ASSERT_EQUAL_DIFF(string(m_scheduleWorldConfig), res);
+    }
+    void testSetupRenamed() {
+        string root;
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        root = m_testDir;
+        root += "/syncevolution/scheduleworld2";
+        rm_r(root);
+        TestCmdline cmdline("--configure",
+                            "--template", "scheduleworld",
+                            "scheduleworld2",
                             NULL);
         cmdline.doit();
         string res = scanFiles(root);
@@ -669,7 +703,6 @@ protected:
         root += "/syncevolution/funambol";
         rm_r(root);
         TestCmdline cmdline("--configure",
-                            "--template", "funambol",
                             "funambol",
                             NULL);
         cmdline.doit();
@@ -715,7 +748,6 @@ protected:
         root += "/syncevolution/synthesis";
         rm_r(root);
         TestCmdline cmdline("--configure",
-                            "--template", "synthesis",
                             "synthesis",
                             NULL);
         cmdline.doit();
@@ -763,6 +795,25 @@ protected:
                                   "   synthesis = http://www.synthesis.ch\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
+    }
+
+    void testPrintServers() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+        testSetupScheduleWorld();
+        testSetupSynthesis();
+        testSetupFunambol();
+
+        TestCmdline cmdline("--print-servers", NULL);
+        cmdline.doit();
+        CPPUNIT_ASSERT_EQUAL_DIFF("Configured servers:\n"
+                                  "   scheduleworld = SyncEvolutionCmdlineTest/syncevolution/scheduleworld\n"
+                                  "   synthesis = SyncEvolutionCmdlineTest/syncevolution/synthesis\n"
+                                  "   funambol = SyncEvolutionCmdlineTest/syncevolution/funambol\n",
+                                  cmdline.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
     }
 
 
