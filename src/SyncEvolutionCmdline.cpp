@@ -462,12 +462,14 @@ void SyncEvolutionCmdline::dumpComment(ostream &stream,
 
 void SyncEvolutionCmdline::usage(bool full, const string &error, const string &param)
 {
-    m_out << m_argv[0] << endl;
-    m_out << m_argv[0] << " [<options>] <server> [<source> ...]" << endl;
-    m_out << m_argv[0] << " --help|-h" << endl;
-    m_out << m_argv[0] << " --version" << endl;
+    ostream &out(error.empty() ? m_out : m_err);
+
+    out << m_argv[0] << endl;
+    out << m_argv[0] << " [<options>] <server> [<source> ...]" << endl;
+    out << m_argv[0] << " --help|-h" << endl;
+    out << m_argv[0] << " --version" << endl;
     if (full) {
-        m_out << endl <<
+        out << endl <<
             "Options:" << endl <<
             "  --sync|-s <mode>" << endl <<
             "    Temporarily synchronize the active sources in that mode. Useful" << endl <<
@@ -491,15 +493,63 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
     }
 
     if (error != "") {
-        m_out << endl << "ERROR: " << error << endl;
+        out << endl << "ERROR: " << error << endl;
     }
     if (param != "") {
-        m_out << "INFO: use '" << param << (param[param.size() - 1] == '=' ? "" : " ") <<
+        out << "INFO: use '" << param << (param[param.size() - 1] == '=' ? "" : " ") <<
             "?' to get a list of valid parameters" << endl;
     }
 }
 
 #ifdef ENABLE_UNIT_TESTS
+
+/** simple line-by-line diff */
+static string diffStrings(const string &lhs, const string &rhs)
+{
+    ostringstream res;
+
+    typedef boost::split_iterator<string::const_iterator> string_split_iterator;
+    string_split_iterator lit =
+        boost::make_split_iterator(lhs, boost::first_finder("\n", boost::is_iequal()));
+    string_split_iterator rit =
+        boost::make_split_iterator(rhs, boost::first_finder("\n", boost::is_iequal()));
+    while (lit != string_split_iterator() &&
+           rit != string_split_iterator()) {
+        if (*lit != *rit) {
+            res << "< " << *lit << endl;
+            res << "> " << *rit << endl;
+        }
+        ++lit;
+        ++rit;
+    }
+
+    while (lit != string_split_iterator()) {
+        res << "< " << *lit << endl;
+        ++lit;
+    }
+
+    while (lit != string_split_iterator()) {
+        res << "> " << *rit << endl;
+        ++rit;
+    }
+
+    return res.str();
+}
+
+# define CPPUNIT_ASSERT_EQUAL_DIFF( expected, actual )      \
+    do { \
+        if (!CPPUNIT_NS::assertion_traits<string>::equal(expected,actual)) {     \
+            CPPUNIT_NS::Message cpputMsg_(string("expected:\n") +       \
+                                          expected);                    \
+            cpputMsg_.addDetail(string("actual:\n") +                   \
+                                actual);                                \
+            cpputMsg_.addDetail(string("diff:\n") +                     \
+                                diffStrings(expected, actual));         \
+            CPPUNIT_NS::Asserter::fail( cpputMsg_,                      \
+                                        CPPUNIT_SOURCELINE() );         \
+        } \
+    } while ( false )
+
 
 /**
  * Testing is based on a text representation of a directory
@@ -517,6 +567,10 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(SyncEvolutionCmdlineTest);
     CPPUNIT_TEST(testFramework);
     CPPUNIT_TEST(testSetupScheduleWorld);
+    CPPUNIT_TEST(testSetupFunambol);
+    CPPUNIT_TEST(testSetupSynthesis);
+    CPPUNIT_TEST(testTemplate);
+    
     CPPUNIT_TEST_SUITE_END();
     
 public:
@@ -586,24 +640,131 @@ protected:
                              "foo:bar2\n");
         createFiles(root, content);
         string res = scanFiles(root);
-        CPPUNIT_ASSERT_EQUAL(content, res);
+        CPPUNIT_ASSERT_EQUAL_DIFF(content, res);
     }
 
-    /** create a new configuration for ScheduleWorld */
+    /** create new configurations */
     void testSetupScheduleWorld() {
-        string root = m_testDir;
-        root += "/scheduleworld";
-        rm_r(root);
+        string root;
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
+
+        root = m_testDir;
+        root += "/syncevolution/scheduleworld";
+        rm_r(root);
         TestCmdline cmdline("--configure",
                             "--template", "scheduleworld",
                             "scheduleworld",
                             NULL);
         cmdline.doit();
         string res = scanFiles(root);
-        CPPUNIT_ASSERT_EQUAL(string(m_scheduleWorldConfig), res);
+        CPPUNIT_ASSERT_EQUAL_DIFF(string(m_scheduleWorldConfig), res);
     }
+    void testSetupFunambol() {
+        string root;
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        root = m_testDir;
+        root += "/syncevolution/funambol";
+        rm_r(root);
+        TestCmdline cmdline("--configure",
+                            "--template", "funambol",
+                            "funambol",
+                            NULL);
+        cmdline.doit();
+        string res = scanFiles(root);
+        string expected = m_scheduleWorldConfig;
+        boost::replace_first(expected,
+                             "syncURL = http://sync.scheduleworld.com",
+                             "syncURL = http://my.funambol.com");
+
+        boost::replace_first(expected,
+                             "addressbook/config.ini:uri = card3",
+                             "addressbook/config.ini:uri = card");
+        boost::replace_first(expected,
+                             "addressbook/config.ini:type = addressbook",
+                             "addressbook/config.ini:type = addressbook:text/x-vcard");
+
+        boost::replace_first(expected,
+                             "calendar/config.ini:uri = event2",
+                             "calendar/config.ini:uri = event");
+        boost::replace_first(expected,
+                             "calendar/config.ini:sync = two-way",
+                             "calendar/config.ini:sync = disabled");
+
+        boost::replace_first(expected,
+                             "memo/config.ini:sync = two-way",
+                             "memo/config.ini:sync = disabled");
+
+        boost::replace_first(expected,
+                             "todo/config.ini:uri = task2",
+                             "todo/config.ini:uri = task");
+        boost::replace_first(expected,
+                             "todo/config.ini:sync = two-way",
+                             "todo/config.ini:sync = disabled");
+        CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+    }
+
+    void testSetupSynthesis() {
+        string root;
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        root = m_testDir;
+        root += "/syncevolution/synthesis";
+        rm_r(root);
+        TestCmdline cmdline("--configure",
+                            "--template", "synthesis",
+                            "synthesis",
+                            NULL);
+        cmdline.doit();
+        string res = scanFiles(root);
+        string expected = m_scheduleWorldConfig;
+        boost::replace_first(expected,
+                             "syncURL = http://sync.scheduleworld.com",
+                             "syncURL = http://www.synthesis.ch/sync");
+
+        boost::replace_first(expected,
+                             "addressbook/config.ini:uri = card3",
+                             "addressbook/config.ini:uri = contacts");
+
+        boost::replace_first(expected,
+                             "calendar/config.ini:uri = event2",
+                             "calendar/config.ini:uri = events");
+        boost::replace_first(expected,
+                             "calendar/config.ini:sync = two-way",
+                             "calendar/config.ini:sync = disabled");
+
+        boost::replace_first(expected,
+                             "memo/config.ini:uri = note",
+                             "memo/config.ini:uri = notes");
+
+        boost::replace_first(expected,
+                             "todo/config.ini:uri = task2",
+                             "todo/config.ini:uri = tasks");
+        boost::replace_first(expected,
+                             "todo/config.ini:sync = two-way",
+                             "todo/config.ini:sync = disabled");
+        CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+    }
+
+    void testTemplate() {
+        TestCmdline failure("--template", NULL);
+        CPPUNIT_ASSERT(!failure.m_cmdline->parse());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
+        CPPUNIT_ASSERT(boost::ends_with(failure.m_err.str(), "ERROR: missing parameter for '--template'\n"));
+
+        TestCmdline help("--template", "?", NULL);
+        help.doit();
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                                  "   funambol = http://my.funambol.com\n"
+                                  "   scheduleworld = http://sync.scheduleworld.com\n"
+                                  "   synthesis = http://www.synthesis.ch\n",
+                                  help.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
+    }
+
 
     const string m_testDir;
     const string m_scheduleWorldConfig;
