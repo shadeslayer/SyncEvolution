@@ -23,6 +23,7 @@
 #include "spds/AbstractSyncConfig.h"
 #include "spds/AbstractSyncSourceConfig.h"
 #include <boost/shared_ptr.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <list>
 #include <string>
 #include <sstream>
@@ -155,7 +156,7 @@ class StringConfigProperty : public ConfigProperty {
             for (Aliases::const_iterator alias = value->begin();
                  alias != value->end();
                  ++alias) {
-                if (!strcasecmp(res.c_str(), alias->c_str())) {
+                if (boost::iequals(res, *alias)) {
                     res = *value->begin();
                     return true;
                 }
@@ -194,7 +195,7 @@ class StringConfigProperty : public ConfigProperty {
                     err << *alias;
                 }
                 
-                if (!strcasecmp(propValue.c_str(), alias->c_str())) {
+                if (boost::iequals(propValue, *alias)) {
                     return true;
                 }
             }
@@ -304,8 +305,8 @@ class BoolConfigProperty : public StringConfigProperty {
     int getProperty(ConfigNode &node) {
         string res = ConfigProperty::getProperty(node);
 
-        return !strcasecmp(res.c_str(), "T") ||
-            !strcasecmp(res.c_str(), "TRUE") ||
+        return boost::iequals(res, "T") ||
+            boost::iequals(res, "TRUE") ||
             atoi(res.c_str()) != 0;
     }
 };
@@ -321,7 +322,7 @@ class ConfigPropertyRegistry : public list<const ConfigProperty *> {
         for (const_iterator it = begin();
              it != end();
              ++it) {
-            if (!strcasecmp((*it)->getName().c_str(), propName.c_str())) {
+            if (boost::iequals((*it)->getName(), propName)) {
                 return *it;
             }
         }

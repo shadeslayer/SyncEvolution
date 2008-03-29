@@ -135,8 +135,8 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     source->setSourceType("memo");
     source->setURI("note");
 
-    if (!strcasecmp(server.c_str(), "scheduleworld") ||
-        !strcasecmp(server.c_str(), "default")) {
+    if (boost::iequals(server, "scheduleworld") ||
+        boost::iequals(server, "default")) {
         config->setSyncURL("http://sync.scheduleworld.com");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
@@ -146,7 +146,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setURI("task2");
         source = config->getSyncSourceConfig("memo");
         source->setURI("note");
-    } else if (!strcasecmp(server.c_str(), "funambol")) {
+    } else if (boost::iequals(server, "funambol")) {
         config->setSyncURL("http://my.funambol.com");
         source = config->getSyncSourceConfig("calendar");
         source->setSync("disabled");
@@ -154,7 +154,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setSync("disabled");
         source = config->getSyncSourceConfig("memo");
         source->setURI("disabled");
-    } else if (!strcasecmp(server.c_str(), "synthesis")) {
+    } else if (boost::iequals(server, "synthesis")) {
         config->setSyncURL("http://www.synthesis.ch/sync");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("contacts");

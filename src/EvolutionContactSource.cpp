@@ -34,8 +34,9 @@ using namespace std;
 
 #include <common/base/Log.h>
 #include "vocl/VConverter.h"
-
 using namespace vocl;
+
+#include <boost/algorithm/string.hpp>
 
 class unrefEBookChanges {
  public:
@@ -333,14 +334,6 @@ void EvolutionContactSource::exportData(ostream &out)
     }
 }
 
-string toupperstr(string str)
-{
-    for (size_t i = 0; i < str.size(); i++) {
-        str[i] = toupper(str[i]);
-    }
-    return str;
-}
-
 SyncItem *EvolutionContactSource::createItem(const string &uid)
 {
     logItem( uid, "extracting from EV", true );
@@ -469,7 +462,7 @@ SyncItem *EvolutionContactSource::createItem(const string &uid)
                 if (!param || !value) {
                     break;
                 }
-                parameters.push_back(pair<string, string>(toupperstr(param), toupperstr(value)));
+                parameters.push_back(pair<string, string>(boost::to_upper_copy(string(param)), boost::to_upper_copy(string(value))));
                 vprop->removeParameter(0);
             }
             while (parameters.size() > 0) {

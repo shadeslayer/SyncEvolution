@@ -33,6 +33,8 @@
 
 using namespace vocl;
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 enum {
     PERSON_LAST,
     PERSON_MIDDLE,
@@ -308,9 +310,9 @@ string SQLiteContactSource::insertItem(string &uid, const SyncItem &item)
 
     // synthesize sort keys: upper case with specific order of first/last name
     firstsort = first + " " + last;
-    transform(firstsort.begin(), firstsort.end(), firstsort.begin(), ::toupper);
+    boost::to_upper(firstsort);
     lastsort = last + " " + first;
-    transform(lastsort.begin(), lastsort.end(), lastsort.begin(), ::toupper);
+    boost::to_upper(lastsort);
 
     // optional fixed UID, potentially fixed creation time
     if (uid.size()) {

@@ -34,6 +34,7 @@
 using namespace std;
 
 #include <boost/shared_ptr.hpp>
+#include <boost/algorithm/string.hpp>
 
 SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, const char * const * argv, ostream &out, ostream &err) :
     m_argc(argc),
@@ -51,8 +52,8 @@ bool SyncEvolutionCmdline::parse()
         if (m_argv[opt][0] != '-') {
             break;
         }
-        if (!strcasecmp(m_argv[opt], "--sync") ||
-            !strcasecmp(m_argv[opt], "-s")) {
+        if (boost::iequals(m_argv[opt], "--sync") ||
+            boost::iequals(m_argv[opt], "-s")) {
             opt++;
             string param;
             string cmdopt(m_argv[opt - 1]);
@@ -61,26 +62,26 @@ bool SyncEvolutionCmdline::parse()
                            "sync")) {
                 return false;
             }
-        } else if(!strcasecmp(m_argv[opt], "--sync-property") ||
-                  !strcasecmp(m_argv[opt], "-y")) {
+        } else if(boost::iequals(m_argv[opt], "--sync-property") ||
+                  boost::iequals(m_argv[opt], "-y")) {
                 opt++;
                 if (!parseProp(m_validSyncProps, m_syncProps,
                                m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                     return false;
                 }
-        } else if(!strcasecmp(m_argv[opt], "--source-property") ||
-                  !strcasecmp(m_argv[opt], "-z")) {
+        } else if(boost::iequals(m_argv[opt], "--source-property") ||
+                  boost::iequals(m_argv[opt], "-z")) {
             opt++;
             if (!parseProp(m_validSourceProps, m_sourceProps,
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                 return false;
             }
-        } else if(!strcasecmp(m_argv[opt], "--properties") ||
-                  !strcasecmp(m_argv[opt], "-r")) {
+        } else if(boost::iequals(m_argv[opt], "--properties") ||
+                  boost::iequals(m_argv[opt], "-r")) {
             opt++;
             /* TODO */
-        } else if(!strcasecmp(m_argv[opt], "--template") ||
-                  !strcasecmp(m_argv[opt], "-l")) {
+        } else if(boost::iequals(m_argv[opt], "--template") ||
+                  boost::iequals(m_argv[opt], "-l")) {
             opt++;
             if (opt >= m_argc) {
                 usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
@@ -92,26 +93,26 @@ bool SyncEvolutionCmdline::parse()
                             EvolutionSyncConfig::getServerTemplates());
                 m_dontrun = true;
             }
-        } else if(!strcasecmp(m_argv[opt], "--print-servers")) {
+        } else if(boost::iequals(m_argv[opt], "--print-servers")) {
             m_printServers = true;
-        } else if(!strcasecmp(m_argv[opt], "--print-config") ||
-                  !strcasecmp(m_argv[opt], "-p")) {
+        } else if(boost::iequals(m_argv[opt], "--print-config") ||
+                  boost::iequals(m_argv[opt], "-p")) {
             m_printConfig = true;
-        } else if(!strcasecmp(m_argv[opt], "--configure") ||
-                  !strcasecmp(m_argv[opt], "-c")) {
+        } else if(boost::iequals(m_argv[opt], "--configure") ||
+                  boost::iequals(m_argv[opt], "-c")) {
             m_configure = true;
-        } else if(!strcasecmp(m_argv[opt], "--migrate")) {
+        } else if(boost::iequals(m_argv[opt], "--migrate")) {
             m_migrate = true;
-        } else if(!strcasecmp(m_argv[opt], "--status") ||
-                  !strcasecmp(m_argv[opt], "-t")) {
+        } else if(boost::iequals(m_argv[opt], "--status") ||
+                  boost::iequals(m_argv[opt], "-t")) {
             m_status = true;
-        } else if(!strcasecmp(m_argv[opt], "--quiet") ||
-                  !strcasecmp(m_argv[opt], "-q")) {
+        } else if(boost::iequals(m_argv[opt], "--quiet") ||
+                  boost::iequals(m_argv[opt], "-q")) {
             m_quiet = true;
-        } else if(!strcasecmp(m_argv[opt], "--help") ||
-                  !strcasecmp(m_argv[opt], "-h")) {
+        } else if(boost::iequals(m_argv[opt], "--help") ||
+                  boost::iequals(m_argv[opt], "-h")) {
             m_usage = true;
-        } else if(!strcasecmp(m_argv[opt], "--version")) {
+        } else if(boost::iequals(m_argv[opt], "--version")) {
             m_version = true;
         } else {
             usage(false, string(m_argv[opt]) + ": unknown parameter");
