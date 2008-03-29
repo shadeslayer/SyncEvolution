@@ -148,12 +148,14 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setURI("note");
     } else if (boost::iequals(server, "funambol")) {
         config->setSyncURL("http://my.funambol.com");
+        source = config->getSyncSourceConfig("addressbook");
+        source->setSourceType("addressbook:text/x-vcard");
         source = config->getSyncSourceConfig("calendar");
         source->setSync("disabled");
         source = config->getSyncSourceConfig("todo");
         source->setSync("disabled");
         source = config->getSyncSourceConfig("memo");
-        source->setURI("disabled");
+        source->setSync("disabled");
     } else if (boost::iequals(server, "synthesis")) {
         config->setSyncURL("http://www.synthesis.ch/sync");
         source = config->getSyncSourceConfig("addressbook");
