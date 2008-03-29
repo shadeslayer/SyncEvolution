@@ -662,7 +662,7 @@ private:
 
     static string getNewRoot() {
         const char *xdg_root_str = getenv("XDG_CONFIG_HOME");
-        return xdg_root_str ? xdg_root_str :
+        return xdg_root_str ? string(xdg_root_str) + "/syncevolution" :
             getHome() + "/.config/syncevolution";
     }
 };
