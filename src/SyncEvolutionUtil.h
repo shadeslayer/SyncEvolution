@@ -55,6 +55,9 @@ void mkdir_p(const string &path);
 /** remove a complete directory hierarchy; invoking on non-existant directory is okay */
 void rm_r(const string &path);
 
+/** true if the path refers to a directory */
+bool isDir(const string &path);
+
 /**
  * A C++ wrapper around readir() which provides the names of all
  * directory entries, excluding . and ..

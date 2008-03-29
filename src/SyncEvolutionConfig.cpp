@@ -115,6 +115,12 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(server, tree));
     boost::shared_ptr<PersistentEvolutionSyncSourceConfig> source;
 
+    config->setDefaults();
+    config->setSourceDefaults("addressbook");
+    config->setSourceDefaults("calendar");
+    config->setSourceDefaults("todo");
+    config->setSourceDefaults("memo");
+
     // set non-default values; this also creates the sync source configs
     source = config->getSyncSourceConfig("addressbook");
     source->setSourceType("addressbook");
@@ -367,7 +373,7 @@ int EvolutionSyncConfig::getLogLevel() const { return syncPropLogLevel.getProper
 void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
 
 
-void EvolutionSyncConfig::setDefaults(const string &serverTemplate)
+void EvolutionSyncConfig::setDefaults()
 {
     ConfigPropertyRegistry registry = getRegistry();
 
@@ -378,7 +384,6 @@ void EvolutionSyncConfig::setDefaults(const string &serverTemplate)
             (*it)->setProperty(*m_configNode, (*it)->getDefValue());
         }
     }
-    flush();
 }
 
 void EvolutionSyncConfig::setSourceDefaults(const string &name)
@@ -393,7 +398,6 @@ void EvolutionSyncConfig::setSourceDefaults(const string &name)
             (*it)->setProperty(*nodes.m_configNode, (*it)->getDefValue());
         }
     }
-    nodes.m_configNode->flush();
 }
 
 static void copyProperties(const ConfigNode &fromProps,

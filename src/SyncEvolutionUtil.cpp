@@ -108,6 +108,19 @@ void rm_r(const string &path)
     }
 }
 
+bool isDir(const string &path)
+{
+    DIR *dir = opendir(path.c_str());
+    if (dir) {
+        closedir(dir);
+        return true;
+    } else if (errno != ENOTDIR && errno != ENOENT) {
+        EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+    }
+
+    return false;
+}
+
 ReadDir::ReadDir(const string &path) : m_path(path)
 {
     DIR *dir = NULL;

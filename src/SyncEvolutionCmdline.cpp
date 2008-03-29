@@ -35,7 +35,7 @@ using namespace std;
 
 #include <boost/shared_ptr.hpp>
 
-SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, char **argv, ostream &out, ostream &err) :
+SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, const char * const * argv, ostream &out, ostream &err) :
     m_argc(argc),
     m_argv(argv),
     m_out(out),
@@ -515,13 +515,72 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
 class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(SyncEvolutionCmdlineTest);
     CPPUNIT_TEST(testFramework);
+    CPPUNIT_TEST(testSetupScheduleWorld);
     CPPUNIT_TEST_SUITE_END();
+    
+public:
+    SyncEvolutionCmdlineTest() :
+        m_testDir("SyncEvolutionCmdlineTest"),
+        m_scheduleWorldConfig(".internal.ini:serverNonce = \n"
+                              ".internal.ini:clientNonce = \n"
+                              ".internal.ini:devInfoHash = \n"
+                              "config.ini:syncURL = http://sync.scheduleworld.com\n"
+                              "config.ini:deviceId = \n"
+                              "config.ini:username = your SyncML server account name\n"
+                              "config.ini:password = your SyncML server password\n"
+                              "config.ini:logdir = \n"
+                              "config.ini:loglevel = 0\n"
+                              "config.ini:maxlogdirs = 0\n"
+                              "config.ini:useProxy = F\n"
+                              "config.ini:proxyHost = \n"
+                              "config.ini:proxyUsername = \n"
+                              "config.ini:proxyPassword = \n"
+                              "config.ini:clientAuthType = md5\n"
+                              "config.ini:maxMsgSize = 8192\n"
+                              "config.ini:maxObjSize = 500000\n"
+                              "config.ini:loSupport = T\n"
+                              "config.ini:enableCompression = F\n"
+                              "addressbook/.internal.ini:last = \n"
+                              "addressbook/config.ini:sync = two-way\n"
+                              "addressbook/config.ini:type = addressbook\n"
+                              "addressbook/config.ini:evolutionsource = \n"
+                              "addressbook/config.ini:uri = card3\n"
+                              "addressbook/config.ini:evolutionuser = \n"
+                              "addressbook/config.ini:evolutionpassword = \n"
+                              "addressbook/config.ini:encoding = \n"
+                              "calendar/.internal.ini:last = \n"
+                              "calendar/config.ini:sync = two-way\n"
+                              "calendar/config.ini:type = calendar\n"
+                              "calendar/config.ini:evolutionsource = \n"
+                              "calendar/config.ini:uri = event2\n"
+                              "calendar/config.ini:evolutionuser = \n"
+                              "calendar/config.ini:evolutionpassword = \n"
+                              "calendar/config.ini:encoding = \n"
+                              "memo/.internal.ini:last = \n"
+                              "memo/config.ini:sync = two-way\n"
+                              "memo/config.ini:type = memo\n"
+                              "memo/config.ini:evolutionsource = \n"
+                              "memo/config.ini:uri = note\n"
+                              "memo/config.ini:evolutionuser = \n"
+                              "memo/config.ini:evolutionpassword = \n"
+                              "memo/config.ini:encoding = \n"
+                              "todo/.internal.ini:last = \n"
+                              "todo/config.ini:sync = two-way\n"
+                              "todo/config.ini:type = todo\n"
+                              "todo/config.ini:evolutionsource = \n"
+                              "todo/config.ini:uri = task2\n"
+                              "todo/config.ini:evolutionuser = \n"
+                              "todo/config.ini:evolutionpassword = \n"
+                              "todo/config.ini:encoding = \n")
+    {}
 
 protected:
 
+    /** verify that createFiles/scanFiles themselves work */
     void testFramework() {
-        const string root("SyncEvolutionCmdlineTest");
+        const string root(m_testDir);
         const string content("baz:line\n"
+                             "caz/subdir:booh\n"
                              "foo:bar1\n"
                              "foo:bar2\n");
         createFiles(root, content);
@@ -529,7 +588,101 @@ protected:
         CPPUNIT_ASSERT_EQUAL(content, res);
     }
 
+    /** create a new configuration for ScheduleWorld */
+    void testSetupScheduleWorld() {
+        string root = m_testDir;
+        root += "/scheduleworld";
+        rm_r(root);
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+        TestCmdline cmdline("--configure",
+                            "--template", "scheduleworld",
+                            "scheduleworld",
+                            NULL);
+        cmdline.doit();
+        string res = scanFiles(root);
+        CPPUNIT_ASSERT_EQUAL(string(m_scheduleWorldConfig), res);
+    }
+
+    const string m_testDir;
+    const string m_scheduleWorldConfig;
+        
+
 private:
+
+    /**
+     * vararg constructor with NULL termination,
+     * out and error stream into stringstream members
+     */
+    class TestCmdline {
+    public:
+        TestCmdline(const char *arg, ...) {
+            va_list argList;
+            va_start (argList, arg);
+            for (const char *curr = arg;
+                 curr;
+                 curr = va_arg(argList, const char *)) {
+                m_argvstr.push_back(curr);
+            }
+            va_end(argList);
+
+            m_argv.reset(new const char *[m_argvstr.size() + 1]);
+            m_argv[0] = "client-test";
+            for (size_t index = 0;
+                 index < m_argvstr.size();
+                 ++index) {
+                m_argv[index + 1] = m_argvstr[index].c_str();
+            }
+
+            m_cmdline.set(new SyncEvolutionCmdline(m_argvstr.size() + 1, m_argv.get(), m_out, m_err), "cmdline");
+        }
+
+        void doit() {
+            bool success;
+            success = m_cmdline->parse() &&
+                m_cmdline->run();
+            if (m_err.str().size()) {
+                cerr << endl << m_err.str();
+            }
+            CPPUNIT_ASSERT(success);
+        }
+
+        ostringstream m_out, m_err;
+        cxxptr<SyncEvolutionCmdline> m_cmdline;
+
+    private:
+        vector<string> m_argvstr;
+        boost::scoped_array<const char *> m_argv;
+    };
+
+    /** temporarily set env variable, restore old value on destruction */
+    class ScopedEnvChange {
+    public:
+        ScopedEnvChange(const string &var, const string &value) :
+            m_var(var)
+        {
+            const char *oldval = getenv(var.c_str());
+            if (oldval) {
+                m_oldvalset = true;
+                m_oldval = oldval;
+            } else {
+                m_oldvalset = false;
+            }
+            setenv(var.c_str(), value.c_str(), 1);
+        }
+        ~ScopedEnvChange()
+        {
+            if (m_oldvalset) {
+                setenv(m_var.c_str(), m_oldval.c_str(), 1);
+            } else {
+                unsetenv(m_var.c_str());
+            } 
+        }
+    private:
+        string m_var, m_oldval;
+        bool m_oldvalset;
+    };
+            
 
     /** create directory hierarchy, overwriting previous content */
     void createFiles(const string &root, const string &content) {
@@ -566,31 +719,40 @@ private:
     }
 
     /** turn directory hierarchy into string */
-    string scanFiles(const string &root) {
+    string scanFiles(const string &root, bool onlyProps = true) {
         ostringstream out;
 
-        scanFiles(root, "", out);
+        scanFiles(root, "", out, onlyProps);
         return out.str();
     }
-    void scanFiles(const string &root, const string &dir, ostringstream &out) {
-        ReadDir readDir(root + "/" + dir);
+    void scanFiles(const string &root, const string &dir, ostringstream &out, bool onlyProps) {
+        string newroot = root;
+        newroot += "/";
+        newroot += dir;
+        ReadDir readDir(newroot);
         sort(readDir.begin(), readDir.end());
 
         for (ReadDir::const_iterator it = readDir.begin();
              it != readDir.end();
              ++it) {
-            ifstream in;
-            in.exceptions(ios_base::badbit);
-            in.open((root + "/" + *it).c_str());
-            string line;
-            while (!in.eof()) {
-                getline(in, line);
-                if (line.size() || !in.eof()) {
-                    if (dir.size()) {
-                        out << dir << "/";
+            if (isDir(newroot + "/" + *it)) {
+                scanFiles(newroot, *it, out, onlyProps);
+            } else {
+                ifstream in;
+                in.exceptions(ios_base::badbit /* failbit must not trigger exception because is set when reaching eof ?! */);
+                in.open((newroot + "/" + *it).c_str());
+                string line;
+                while (!in.eof()) {
+                    getline(in, line);
+                    if ((line.size() || !in.eof()) && 
+                        (!onlyProps ||
+                         line.size() && line[0] != '#')) {
+                        if (dir.size()) {
+                            out << dir << "/";
+                        }
+                        out << *it << ":";
+                        out << line << '\n';
                     }
-                    out << *it << ":";
-                    out << line << '\n';
                 }
             }
         }

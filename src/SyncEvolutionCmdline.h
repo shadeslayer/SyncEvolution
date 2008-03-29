@@ -34,7 +34,7 @@ public:
      * @param out      stdout stream for normal messages
      * @param err      stderr stream for error messages
      */
-    SyncEvolutionCmdline(int argc, char **argv, ostream &out, ostream &err);
+    SyncEvolutionCmdline(int argc, const char * const *argv, ostream &out, ostream &err);
 
     /**
      * parse the command line options
@@ -56,7 +56,7 @@ private:
     };
 
     int m_argc;
-    char **m_argv;
+    const char * const * m_argv;
     ostream &m_out, &m_err;
 
     Bool m_quiet;

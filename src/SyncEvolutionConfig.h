@@ -504,14 +504,12 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
                                             const string &trackName = "") const;
 
     /**
-     * create a new sync configuration for the current server name
-     *
-     * @name serverTemplate     use default settings for this server (e.g. "funambol", "scheduleworld")
+     * initialize all properties with their default value
      */
-    void setDefaults(const string &serverTemplate);
+    void setDefaults();
 
     /**
-     * create a new sync source configuration
+     * create a new sync source configuration with default values
      */
     void setSourceDefaults(const string &name);
 

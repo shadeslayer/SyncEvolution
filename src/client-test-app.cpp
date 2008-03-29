@@ -204,7 +204,7 @@ public:
         EvolutionSyncConfig config(string(server) + "_" + id);
         if (!config.exists()) {
             // no configuration yet
-            config.setDefaults(server);
+            config.setDefaults();
             config.setDevID(id == "1" ? "sc-api-nat" : "sc-pim-ppc");
         }
         for (SourceType sourceType = (SourceType)0; sourceType < TEST_MAX_SOURCE; sourceType = (SourceType)((int)sourceType + 1) ) {
