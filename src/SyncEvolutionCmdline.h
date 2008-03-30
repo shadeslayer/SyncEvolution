@@ -28,6 +28,8 @@ using namespace std;
 
 #include <boost/shared_ptr.hpp>
 
+class SyncEvolutionCmdlineTest;
+
 class SyncEvolutionCmdline {
 public:
     /**
@@ -125,6 +127,8 @@ private:
     void usage(bool full,
                const string &error = string(""),
                const string &param = string(""));
+
+    friend class SyncEvolutionCmdlineTest;
 };
 
 #endif // INCL_SYNC_EVOLUTION_CMDLINE

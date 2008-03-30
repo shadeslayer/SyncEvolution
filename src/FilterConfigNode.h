@@ -23,8 +23,11 @@
 #include <ConfigNode.h>
 #include <boost/shared_ptr.hpp>
 
+#include "SyncEvolutionUtil.h"
+
 #include <map>
 #include <utility>
+#include <vector>
 #include <string>
 using namespace std;
 
@@ -48,6 +51,18 @@ class FilterConfigNode : public ConfigNode {
                 inserted.first->second = value;
             }
         }
+
+        operator string () const {
+            vector<string> res;
+
+            for (const_iterator it = begin();
+                 it != end();
+                 ++it) {
+                res.push_back(it->first + " = " + it->second);
+            }
+            sort(res.begin(), res.end());
+            return join("\n", res.begin(), res.end());
+        }
     };
 
     /** read-write access to underlying node */
@@ -66,6 +81,7 @@ class FilterConfigNode : public ConfigNode {
 
     /** replace current filter list with new one */
     void setFilter(const ConfigFilter &filter);
+    const ConfigFilter &getFilter() const { return m_filter; }
 
     /* ConfigNode API */
     virtual void flush();

@@ -538,13 +538,15 @@ static string diffStrings(const string &lhs, const string &rhs)
 
 # define CPPUNIT_ASSERT_EQUAL_DIFF( expected, actual )      \
     do { \
-        if (!CPPUNIT_NS::assertion_traits<string>::equal(expected,actual)) {     \
+        string expected_ = (expected);                                  \
+        string actual_ = (actual);                                      \
+        if (expected_ != actual_) {                                     \
             CPPUNIT_NS::Message cpputMsg_(string("expected:\n") +       \
-                                          expected);                    \
+                                          expected_);                   \
             cpputMsg_.addDetail(string("actual:\n") +                   \
-                                actual);                                \
+                                actual_);                               \
             cpputMsg_.addDetail(string("diff:\n") +                     \
-                                diffStrings(expected, actual));         \
+                                diffStrings(expected_, actual_));       \
             CPPUNIT_NS::Asserter::fail( cpputMsg_,                      \
                                         CPPUNIT_SOURCELINE() );         \
         } \
@@ -573,7 +575,7 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testSetupSynthesis);
     CPPUNIT_TEST(testPrintServers);
     CPPUNIT_TEST(testTemplate);
-    
+    CPPUNIT_TEST(testSync);
     CPPUNIT_TEST_SUITE_END();
     
 public:
@@ -814,6 +816,52 @@ protected:
                                   "   funambol = SyncEvolutionCmdlineTest/syncevolution/funambol\n",
                                   cmdline.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+    }
+
+    void testSync() {
+        TestCmdline failure("--sync", NULL);
+        CPPUNIT_ASSERT(!failure.m_cmdline->parse());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
+        CPPUNIT_ASSERT(boost::ends_with(failure.m_err.str(), "ERROR: missing parameter for '--sync'\n"));
+
+        TestCmdline failure2("--sync", "foo", NULL);
+        CPPUNIT_ASSERT(!failure2.m_cmdline->parse());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", failure2.m_out.str());
+        CPPUNIT_ASSERT(boost::ends_with(failure2.m_err.str(), "ERROR: '--sync foo': not one of the valid values (two-way, slow, refresh-from-client = refresh-client, refresh-from-server = refresh-server = refresh, one-way-from-client = one-way-client, one-way-from-server = one-way-server = one-way, disabled = none)\n"));
+
+        TestCmdline help("--sync", "?", NULL);
+        help.doit();
+        CPPUNIT_ASSERT_EQUAL_DIFF("--sync\n"
+                                  "   requests a certain synchronization mode:\n"
+                                  "     two-way             = only send/receive changes since last sync\n"
+                                  "     slow                = exchange all items\n"
+                                  "     refresh-from-client = discard all remote items and replace with\n"
+                                  "                           the items on the client\n"
+                                  "     refresh-from-server = discard all local items and replace with\n"
+                                  "                           the items on the server\n"
+                                  "     one-way-from-client = transmit changes from client\n"
+                                  "     one-way-from-server = transmit changes from server\n"
+                                  "     none                = synchronization disabled\n",
+                                  help.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
+
+        TestCmdline filter("--sync", "refresh-from-server", NULL);
+        CPPUNIT_ASSERT(filter.m_cmdline->parse());
+        CPPUNIT_ASSERT(!filter.m_cmdline->run());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", filter.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("sync = refresh-from-server",
+                                  string(filter.m_cmdline->m_sourceProps));
+        CPPUNIT_ASSERT_EQUAL_DIFF("",
+                                  string(filter.m_cmdline->m_syncProps));
+
+        TestCmdline filter2("--source-property", "sync=refresh", NULL);
+        CPPUNIT_ASSERT(filter2.m_cmdline->parse());
+        CPPUNIT_ASSERT(!filter2.m_cmdline->run());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", filter2.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("sync = refresh",
+                                  string(filter2.m_cmdline->m_sourceProps));
+        CPPUNIT_ASSERT_EQUAL_DIFF("",
+                                  string(filter2.m_cmdline->m_syncProps));
     }
 
 
