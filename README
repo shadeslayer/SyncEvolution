@@ -231,6 +231,9 @@ a list of valid values.
   for the same server. "default" is an alias for "scheduleworld" and can be
   used as the starting point for servers which do not have a built-in
   configuration.
+  Each template contains a pseudo-random device ID. Therefore setting the
+  "deviceId" sync property is only necessary when manually recreating a
+  configuration or when a more descriptive name is desired.
 
 --status|-t
   The changes made to local data since the last synchronization are

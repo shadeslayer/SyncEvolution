@@ -116,6 +116,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     boost::shared_ptr<PersistentEvolutionSyncSourceConfig> source;
 
     config->setDefaults();
+    config->setDevID(string("uuid-") + UUID());
     config->setSourceDefaults("addressbook");
     config->setSourceDefaults("calendar");
     config->setSourceDefaults("todo");

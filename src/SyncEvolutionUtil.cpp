@@ -121,6 +121,29 @@ bool isDir(const string &path)
     return false;
 }
 
+UUID::UUID()
+{
+    static class InitSRand {
+    public:
+        InitSRand() {
+            srand(time(NULL));
+        }
+    } initSRand;
+
+    char buffer[16 * 4 + 5];
+    sprintf(buffer, "%08x-%04x-%04x-%02x%02x-%08x%04x",
+            rand() & 0xFFFFFFFF,
+            rand() & 0xFFFF,
+            rand() & 0x0FFF | 0x4000 /* RFC 4122 time_hi_and_version */,
+            rand() & 0xBF | 0x80 /* clock_seq_hi_and_reserved */,
+            rand() & 0xFF,
+            rand() & 0xFFFFFFFF,
+            rand() & 0xFFFF
+            );
+    this->assign(buffer);
+}
+
+
 ReadDir::ReadDir(const string &path) : m_path(path)
 {
     DIR *dir = NULL;

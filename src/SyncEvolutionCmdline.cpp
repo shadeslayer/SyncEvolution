@@ -721,7 +721,7 @@ public:
                               ".internal.ini:clientNonce = \n"
                               ".internal.ini:devInfoHash = \n"
                               "config.ini:syncURL = http://sync.scheduleworld.com\n"
-                              "config.ini:deviceId = \n"
+                              "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
                               "config.ini:username = your SyncML server account name\n"
                               "config.ini:password = your SyncML server password\n"
                               "config.ini:logdir = \n"
@@ -784,6 +784,15 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF(content, res);
     }
 
+    void removeRandomUUID(string &buffer) {
+        string uuidstr = "deviceId = uuid-";
+        size_t uuid = buffer.find(uuidstr);
+        CPPUNIT_ASSERT(uuid != buffer.npos);
+        size_t end = buffer.find("\n", uuid + uuidstr.size());
+        CPPUNIT_ASSERT(end != buffer.npos);
+        buffer.replace(uuid, end - uuid, "deviceId = fixed-devid");
+    }
+
     /** create new configurations */
     void testSetupScheduleWorld() {
         string root;
@@ -802,6 +811,7 @@ protected:
                                 NULL);
             cmdline.doit();
             string res = scanFiles(root);
+            removeRandomUUID(res);
             string expected = m_scheduleWorldConfig;
             boost::replace_first(expected,
                                  "proxyHost = ",
@@ -818,6 +828,7 @@ protected:
         {
             rm_r(root);
             TestCmdline cmdline("--configure",
+                                "--sync-property", "deviceID = fixed-devid",
                                 "scheduleworld",
                                 NULL);
             cmdline.doit();
@@ -835,6 +846,7 @@ protected:
         rm_r(root);
         TestCmdline cmdline("--configure",
                             "--template", "default",
+                            "--sync-property", "deviceID = fixed-devid",
                             "some-other-server",
                             NULL);
         cmdline.doit();
@@ -851,6 +863,7 @@ protected:
         rm_r(root);
         TestCmdline cmdline("--configure",
                             "--template", "scheduleworld",
+                            "--sync-property", "deviceID = fixed-devid",
                             "scheduleworld2",
                             NULL);
         cmdline.doit();
@@ -866,6 +879,7 @@ protected:
         root += "/syncevolution/funambol";
         rm_r(root);
         TestCmdline cmdline("--configure",
+                            "--sync-property", "deviceID = fixed-devid",
                             "funambol",
                             NULL);
         cmdline.doit();
@@ -882,6 +896,7 @@ protected:
         root += "/syncevolution/synthesis";
         rm_r(root);
         TestCmdline cmdline("--configure",
+                            "--sync-property", "deviceID = fixed-devid",
                             "synthesis",
                             NULL);
         cmdline.doit();
@@ -963,6 +978,7 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string actual = cmdline.m_out.str();
+            removeRandomUUID(actual);
             string filtered = filterConfig(actual);
             CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(m_scheduleWorldConfig)),
                                       filtered);
@@ -974,8 +990,10 @@ protected:
             TestCmdline cmdline("--print-config", "--template", "default", NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            string actual = filterConfig(cmdline.m_out.str());
+            removeRandomUUID(actual);
             CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(m_scheduleWorldConfig)),
-                                      filterConfig(cmdline.m_out.str()));
+                                      actual);
         }
 
         {
@@ -1000,8 +1018,10 @@ protected:
             boost::replace_all(expected,
                                "sync = two-way",
                                "sync = disabled");
+            string actual = filterConfig(cmdline.m_out.str());
+            removeRandomUUID(actual);
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
-                                      filterConfig(cmdline.m_out.str()));
+                                      actual);
         }
 
         {
@@ -1011,8 +1031,10 @@ protected:
                                 NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            string actual = cmdline.m_out.str();
+            removeRandomUUID(actual);
             CPPUNIT_ASSERT_EQUAL_DIFF(internalToIni(m_scheduleWorldConfig),
-                                      cmdline.m_out.str());
+                                      actual);
         }
         
     }

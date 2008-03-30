@@ -79,6 +79,22 @@ void rm_r(const string &path);
 bool isDir(const string &path);
 
 /**
+ * This is a simplified implementation of a class representing and calculating
+ * UUIDs v4 inspired from RFC 4122. We do not use cryptographic pseudo-random
+ * numbers, instead we rely on rand/srand.
+ *
+ * We initialize the random generation with the system time given by time(), but
+ * only once.
+ *
+ * Instantiating this class will generate a new unique UUID, available afterwards
+ * in the base string class.
+ */
+class UUID : public string {
+ public:
+    UUID();
+};
+
+/**
  * A C++ wrapper around readir() which provides the names of all
  * directory entries, excluding . and ..
  *
