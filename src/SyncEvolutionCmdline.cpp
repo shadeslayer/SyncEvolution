@@ -161,7 +161,7 @@ bool SyncEvolutionCmdline::run() {
                     auto_ptr<EvolutionSyncSource> source(EvolutionSyncSource::createSource(params, false));
                     if (source.get() != NULL) {
                         listSources(*source, join(" = ", alias->begin(), alias->end()));
-                        cout << "\n";
+                        m_out << "\n";
                     }
                 }
             }
@@ -413,8 +413,10 @@ bool SyncEvolutionCmdline::listProperties(const ConfigPropertyRegistry &validPro
             string newComment = (*prop)->getComment();
 
             if (newComment != "") {
-                dumpComment(m_out, "   ", comment);
-                m_out << endl;
+                if (!comment.empty()) {
+                    dumpComment(m_out, "   ", comment);
+                    m_out << endl;
+                }
                 comment = newComment;
             }
             m_out << (*prop)->getName() << ":" << endl;
@@ -610,6 +612,30 @@ static string filterConfig(const string &buffer)
     return res.str();
 }
 
+// remove lines indented with spaces
+static string filterIndented(const string &buffer)
+{
+    ostringstream res;
+    bool first = true;
+
+    typedef boost::split_iterator<string::const_iterator> string_split_iterator;
+    for (string_split_iterator it =
+             boost::make_split_iterator(buffer, boost::first_finder("\n", boost::is_iequal()));
+         it != string_split_iterator();
+         ++it) {
+        if (!boost::starts_with(*it, " ")) {
+            if (!first) {
+                res << endl;
+            } else {
+                first = false;
+            }
+            res << *it;
+        }
+    }
+
+    return res.str();
+}
+
 // convert the internal config dump to .ini style
 static string internalToIni(const string &config)
 {
@@ -631,9 +657,11 @@ static string internalToIni(const string &config)
         if (boost::contains(prefix, ".internal.ini")) {
             continue;
         }
+        // sources/<name>/config.ini
         size_t slash = prefix.find('/');
-        if (slash != line.npos) {
-            string newsource = prefix.substr(0, slash);
+        size_t endslash = prefix.rfind('/');
+        if (slash != line.npos && endslash != line.npos) {
+            string newsource = prefix.substr(slash + 1, endslash - slash - 1);
             if (newsource != section) {
                 res << endl << "[" << newsource << "]" << endl;
                 section = newsource;
@@ -676,6 +704,8 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testTemplate);
     CPPUNIT_TEST(testSync);
     CPPUNIT_TEST(testConfigure);
+    CPPUNIT_TEST(testListSources);
+    CPPUNIT_TEST(testMigrate);
     CPPUNIT_TEST_SUITE_END();
     
 public:
@@ -700,38 +730,38 @@ public:
                               "config.ini:maxObjSize = 500000\n"
                               "config.ini:loSupport = T\n"
                               "config.ini:enableCompression = F\n"
-                              "addressbook/.internal.ini:last = \n"
-                              "addressbook/config.ini:sync = two-way\n"
-                              "addressbook/config.ini:type = addressbook\n"
-                              "addressbook/config.ini:evolutionsource = \n"
-                              "addressbook/config.ini:uri = card3\n"
-                              "addressbook/config.ini:evolutionuser = \n"
-                              "addressbook/config.ini:evolutionpassword = \n"
-                              "addressbook/config.ini:encoding = \n"
-                              "calendar/.internal.ini:last = \n"
-                              "calendar/config.ini:sync = two-way\n"
-                              "calendar/config.ini:type = calendar\n"
-                              "calendar/config.ini:evolutionsource = \n"
-                              "calendar/config.ini:uri = event2\n"
-                              "calendar/config.ini:evolutionuser = \n"
-                              "calendar/config.ini:evolutionpassword = \n"
-                              "calendar/config.ini:encoding = \n"
-                              "memo/.internal.ini:last = \n"
-                              "memo/config.ini:sync = two-way\n"
-                              "memo/config.ini:type = memo\n"
-                              "memo/config.ini:evolutionsource = \n"
-                              "memo/config.ini:uri = note\n"
-                              "memo/config.ini:evolutionuser = \n"
-                              "memo/config.ini:evolutionpassword = \n"
-                              "memo/config.ini:encoding = \n"
-                              "todo/.internal.ini:last = \n"
-                              "todo/config.ini:sync = two-way\n"
-                              "todo/config.ini:type = todo\n"
-                              "todo/config.ini:evolutionsource = \n"
-                              "todo/config.ini:uri = task2\n"
-                              "todo/config.ini:evolutionuser = \n"
-                              "todo/config.ini:evolutionpassword = \n"
-                              "todo/config.ini:encoding = \n")
+                              "sources/addressbook/.internal.ini:last = \n"
+                              "sources/addressbook/config.ini:sync = two-way\n"
+                              "sources/addressbook/config.ini:type = addressbook\n"
+                              "sources/addressbook/config.ini:evolutionsource = \n"
+                              "sources/addressbook/config.ini:uri = card3\n"
+                              "sources/addressbook/config.ini:evolutionuser = \n"
+                              "sources/addressbook/config.ini:evolutionpassword = \n"
+                              "sources/addressbook/config.ini:encoding = \n"
+                              "sources/calendar/.internal.ini:last = \n"
+                              "sources/calendar/config.ini:sync = two-way\n"
+                              "sources/calendar/config.ini:type = calendar\n"
+                              "sources/calendar/config.ini:evolutionsource = \n"
+                              "sources/calendar/config.ini:uri = event2\n"
+                              "sources/calendar/config.ini:evolutionuser = \n"
+                              "sources/calendar/config.ini:evolutionpassword = \n"
+                              "sources/calendar/config.ini:encoding = \n"
+                              "sources/memo/.internal.ini:last = \n"
+                              "sources/memo/config.ini:sync = two-way\n"
+                              "sources/memo/config.ini:type = memo\n"
+                              "sources/memo/config.ini:evolutionsource = \n"
+                              "sources/memo/config.ini:uri = note\n"
+                              "sources/memo/config.ini:evolutionuser = \n"
+                              "sources/memo/config.ini:evolutionpassword = \n"
+                              "sources/memo/config.ini:encoding = \n"
+                              "sources/todo/.internal.ini:last = \n"
+                              "sources/todo/config.ini:sync = two-way\n"
+                              "sources/todo/config.ini:type = todo\n"
+                              "sources/todo/config.ini:evolutionsource = \n"
+                              "sources/todo/config.ini:uri = task2\n"
+                              "sources/todo/config.ini:evolutionuser = \n"
+                              "sources/todo/config.ini:evolutionpassword = \n"
+                              "sources/todo/config.ini:encoding = \n")
     {}
 
 protected:
@@ -1031,7 +1061,86 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
+        rm_r(m_testDir);
         testSetupScheduleWorld();
+
+        string syncProperties("syncURL:\n"
+                              "\n"
+                              "deviceId:\n"
+                              "\n"
+                              "username:\n"
+                              "password:\n"
+                              "\n"
+                              "logdir:\n"
+                              "\n"
+                              "loglevel:\n"
+                              "\n"
+                              "maxlogdirs:\n"
+                              "\n"
+                              "useProxy:\n"
+                              "\n"
+                              "proxyHost:\n"
+                              "\n"
+                              "proxyUsername:\n"
+                              "proxyPassword:\n"
+                              "\n"
+                              "clientAuthType:\n"
+                              "\n"
+                              "maxMsgSize:\n"
+                              "maxObjSize:\n"
+                              "loSupport:\n"
+                              "\n"
+                              "enableCompression:\n");
+        string sourceProperties("sync:\n"
+                                "\n"
+                                "type:\n"
+                                "\n"
+                                "evolutionsource:\n"
+                                "\n"
+                                "uri:\n"
+                                "\n"
+                                "evolutionuser:\n"
+                                "evolutionpassword:\n"
+                                "\n"
+                                "encoding:\n");
+
+        {
+            TestCmdline cmdline("--sync-property", "?",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(syncProperties,
+                                      filterIndented(cmdline.m_out.str()));
+        }
+
+        {
+            TestCmdline cmdline("--source-property", "?",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(sourceProperties,
+                                      filterIndented(cmdline.m_out.str()));
+        }
+
+        {
+            TestCmdline cmdline("--source-property", "?",
+                                "--sync-property", "?",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(sourceProperties + syncProperties,
+                                      filterIndented(cmdline.m_out.str()));
+        }
+
+        {
+            TestCmdline cmdline("--sync-property", "?",
+                                "--source-property", "?",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(syncProperties + sourceProperties,
+                                      filterIndented(cmdline.m_out.str()));
+        }
 
         string expected;
 
@@ -1075,9 +1184,9 @@ protected:
         {
             TestCmdline cmdline("--configure",
                                 "--sync", "two-way",
-                                "--source-property", "evolutionsource=source",
+                                "-z", "evolutionsource=source",
                                 "--sync-property", "maxlogdirs=10",
-                                "--sync-property", "LOGDIR=logdir",
+                                "-y", "LOGDIR=logdir",
                                 "scheduleworld",
                                 NULL);
             cmdline.doit();
@@ -1103,6 +1212,104 @@ protected:
         }
     }
 
+    void testListSources() {
+        TestCmdline cmdline(NULL);
+        cmdline.doit();
+        CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+        // exact output varies, do not test
+    }
+
+    void testMigrate() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+        string oldRoot = m_testDir + "/.sync4j/evolution/scheduleworld";
+        string newRoot = m_testDir + "/syncevolution/scheduleworld";
+
+        string oldConfig = m_scheduleWorldConfig;
+        boost::replace_all(oldConfig,
+                           ".internal.ini",
+                           "config.ini");
+        InitList<string> sources = InitList<string>("addressbook") +
+            "calendar" +
+            "memo" +
+            "todo";
+        BOOST_FOREACH(string &source, sources) {
+            boost::replace_all(oldConfig,
+                               string("sources/") + source + "/config.ini",
+                               string("spds/sources/") + source + "/config.txt");
+        }
+        boost::replace_all(oldConfig,
+                           "config.ini",
+                           "spds/syncml/config.txt");
+
+        {
+            // migrate old config
+            createFiles(oldRoot, oldConfig);
+            string createdConfig = scanFiles(oldRoot);
+            TestCmdline cmdline("--migrate",
+                                "scheduleworld",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+
+            string migratedConfig = scanFiles(newRoot);
+            CPPUNIT_ASSERT_EQUAL_DIFF(m_scheduleWorldConfig, migratedConfig);
+            string renamedConfig = scanFiles(oldRoot + ".old");
+            CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
+        }
+
+        {
+            // rewrite existing config
+            createFiles(newRoot,
+                        "config.ini:# obsolete comment\n"
+                        "config.ini:obsoleteprop = foo\n",
+                        true);
+            string createdConfig = scanFiles(newRoot);
+
+            TestCmdline cmdline("--migrate",
+                                "scheduleworld",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+
+            string migratedConfig = scanFiles(newRoot);
+            CPPUNIT_ASSERT_EQUAL_DIFF(m_scheduleWorldConfig, migratedConfig);
+            string renamedConfig = scanFiles(newRoot + ".old");
+            CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
+        }
+
+        {
+            // migrate old config with changes, a second time
+            createFiles(oldRoot, oldConfig);
+            createFiles(oldRoot,
+                        "spds/sources/addressbook/changes/config.txt:foo = bar\n"
+                        "spds/sources/addressbook/changes/config.txt:foo2 = bar2\n",
+                        true);
+            string createdConfig = scanFiles(oldRoot);
+            rm_r(newRoot);
+            TestCmdline cmdline("--migrate",
+                                "scheduleworld",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+
+            string migratedConfig = scanFiles(newRoot);
+            string expected = m_scheduleWorldConfig;
+            boost::replace_first(expected,
+                                 "sources/addressbook/config.ini",
+                                 "sources/addressbook/.other.ini:foo = bar\n"
+                                 "sources/addressbook/.other.ini:foo2 = bar2\n"
+                                 "sources/addressbook/config.ini");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
+            string renamedConfig = scanFiles(oldRoot + ".old.1");
+            CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
+        }
+    }
 
     const string m_testDir;
     const string m_scheduleWorldConfig;
@@ -1251,8 +1458,10 @@ private:
             
 
     /** create directory hierarchy, overwriting previous content */
-    void createFiles(const string &root, const string &content) {
-        rm_r(root);
+    void createFiles(const string &root, const string &content, bool append = false) {
+        if (!append) {
+            rm_r(root);
+        }
 
         size_t start = 0;
         ofstream out;
@@ -1276,7 +1485,8 @@ private:
                 string fullpath = root + "/" + newname;
                 size_t fileoff = fullpath.rfind('/');
                 mkdir_p(fullpath.substr(0, fileoff));
-                out.open(fullpath.c_str());
+                out.open(fullpath.c_str(),
+                         append ? ios_base::out : (ios_base::out|ios_base::trunc));
                 outname = newname;
             }
             out << line << endl;
@@ -1302,7 +1512,7 @@ private:
              it != readDir.end();
              ++it) {
             if (isDir(newroot + "/" + *it)) {
-                scanFiles(newroot, *it, out, onlyProps);
+                scanFiles(root, dir + (dir.empty() ? "" : "/") + *it, out, onlyProps);
             } else {
                 ifstream in;
                 in.exceptions(ios_base::badbit /* failbit must not trigger exception because is set when reaching eof ?! */);
