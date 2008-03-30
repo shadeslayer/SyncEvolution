@@ -35,6 +35,7 @@ using namespace std;
 
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 
 SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, const char * const * argv, ostream &out, ostream &err) :
     m_argc(argc),
@@ -88,7 +89,7 @@ bool SyncEvolutionCmdline::parse()
                 return false;
             }
             m_template = m_argv[opt];
-            if (m_template == "?") {
+            if (boost::trim_copy(m_template) == "?") {
                 dumpServers("Available configuration templates:",
                             EvolutionSyncConfig::getServerTemplates());
                 m_dontrun = true;
@@ -136,7 +137,7 @@ bool SyncEvolutionCmdline::run() {
         usage(true);
     } else if (m_version) {
         printf("SyncEvolution %s\n", VERSION);
-    } else if (m_printServers || m_server == "?") {
+    } else if (m_printServers || boost::trim_copy(m_server) == "?") {
         dumpServers("Configured servers:",
                     EvolutionSyncConfig::getServers());
     } else if (m_dontrun) {
@@ -215,6 +216,8 @@ bool SyncEvolutionCmdline::run() {
         usage(true, "server name missing");
         return false;
     } else if (m_configure || m_migrate) {
+        bool fromScratch = false;
+
         // Both config changes and migration are implemented as copying from
         // another config (template resp. old one). Migration also moves
         // the old config.
@@ -254,6 +257,7 @@ bool SyncEvolutionCmdline::run() {
             from.reset(new EvolutionSyncConfig(m_server));
             if (!from->exists()) {
                 // creating from scratch, look for template
+                fromScratch = true;
                 string configTemplate = m_template.empty() ? m_server : m_template;
                 from = EvolutionSyncConfig::createServerTemplate(configTemplate);
                 if (!from.get()) {
@@ -271,7 +275,16 @@ bool SyncEvolutionCmdline::run() {
 
         // write into the requested configuration, creating it if necessary
         boost::shared_ptr<EvolutionSyncConfig> to(new EvolutionSyncConfig(m_server));
-        to->copy(*from, (m_migrate || m_sources.empty()) ? NULL : &m_sources);
+        to->copy(*from, NULL);
+
+        // activate only the selected sources
+        if (fromScratch && !m_sources.empty()) {
+            list<string> configuredSources = to->getSyncSources();
+            BOOST_FOREACH(const string &source, configuredSources) {
+                boost::shared_ptr<PersistentEvolutionSyncSourceConfig> sourceConfig(to->getSyncSourceConfig(source));
+                sourceConfig->setSync(m_sources.find(source) != m_sources.end() ? "two-way" : "disabled");
+            }
+        }
 
         // done, now write it
         to->flush();
@@ -311,7 +324,7 @@ bool SyncEvolutionCmdline::parseProp(const ConfigPropertyRegistry &validProps,
     if (!param) {
         usage(true, string("missing parameter for ") + cmdOpt(opt, param));
         return false;
-    } else if (!strcmp(param, "?")) {
+    } else if (boost::trim_copy(string(param)) == "?") {
         m_dontrun = true;
         if (propname) {
             return listPropValues(validProps, propname, opt);
@@ -334,7 +347,10 @@ bool SyncEvolutionCmdline::parseProp(const ConfigPropertyRegistry &validProps,
             paramstr.assign(equal + 1);
         }
 
-        if (paramstr == "?") {
+        boost::trim(propstr);
+        boost::trim_left(paramstr);
+
+        if (boost::trim_copy(paramstr) == "?") {
             m_dontrun = true;
             return listPropValues(validProps, propstr, cmdOpt(opt, param));
         } else {
@@ -739,13 +755,38 @@ protected:
 
         root = m_testDir;
         root += "/syncevolution/scheduleworld";
-        rm_r(root);
-        TestCmdline cmdline("--configure",
-                            "scheduleworld",
-                            NULL);
-        cmdline.doit();
-        string res = scanFiles(root);
-        CPPUNIT_ASSERT_EQUAL_DIFF(string(m_scheduleWorldConfig), res);
+
+        {
+            rm_r(root);
+            TestCmdline cmdline("--configure",
+                                "--sync-property", "proxyHost = proxy",
+                                "scheduleworld",
+                                "addressbook",
+                                NULL);
+            cmdline.doit();
+            string res = scanFiles(root);
+            string expected = m_scheduleWorldConfig;
+            boost::replace_first(expected,
+                                 "proxyHost = ",
+                                 "proxyHost = proxy");
+            boost::replace_all(expected,
+                               "sync = two-way",
+                               "sync = disabled");
+            boost::replace_first(expected,
+                                 "addressbook/config.ini:sync = disabled",
+                                 "addressbook/config.ini:sync = two-way");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+        }
+
+        {
+            rm_r(root);
+            TestCmdline cmdline("--configure",
+                                "scheduleworld",
+                                NULL);
+            cmdline.doit();
+            string res = scanFiles(root);
+            CPPUNIT_ASSERT_EQUAL_DIFF(string(m_scheduleWorldConfig), res);
+        }
     }
     void testSetupDefault() {
         string root;
@@ -817,7 +858,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
         CPPUNIT_ASSERT_EQUAL(string("ERROR: missing parameter for '--template'\n"), lastLine(failure.m_err.str()));
 
-        TestCmdline help("--template", "?", NULL);
+        TestCmdline help("--template", "? ", NULL);
         help.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                                   "   funambol = http://my.funambol.com\n"
@@ -950,7 +991,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("", failure2.m_out.str());
         CPPUNIT_ASSERT_EQUAL(string("ERROR: '--sync foo': not one of the valid values (two-way, slow, refresh-from-client = refresh-client, refresh-from-server = refresh-server = refresh, one-way-from-client = one-way-client, one-way-from-server = one-way-server = one-way, disabled = none)\n"), lastLine(failure2.m_err.str()));
 
-        TestCmdline help("--sync", "?", NULL);
+        TestCmdline help("--sync", " ?", NULL);
         help.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("--sync\n"
                                   "   requests a certain synchronization mode:\n"
