@@ -721,7 +721,6 @@ public:
                               ".internal.ini:clientNonce = \n"
                               ".internal.ini:devInfoHash = \n"
                               "config.ini:syncURL = http://sync.scheduleworld.com\n"
-                              "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
                               "config.ini:username = your SyncML server account name\n"
                               "config.ini:password = your SyncML server password\n"
                               "config.ini:logdir = \n"
@@ -732,6 +731,7 @@ public:
                               "config.ini:proxyUsername = \n"
                               "config.ini:proxyPassword = \n"
                               "config.ini:clientAuthType = md5\n"
+                              "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
                               "config.ini:maxMsgSize = 8192\n"
                               "config.ini:maxObjSize = 500000\n"
                               "config.ini:loSupport = T\n"
@@ -1062,7 +1062,7 @@ protected:
                                   "                           the items on the server\n"
                                   "     one-way-from-client = transmit changes from client\n"
                                   "     one-way-from-server = transmit changes from server\n"
-                                  "     none                = synchronization disabled\n",
+                                  "     none (or disabled)  = synchronization disabled\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
 
@@ -1095,8 +1095,6 @@ protected:
 
         string syncProperties("syncURL:\n"
                               "\n"
-                              "deviceId:\n"
-                              "\n"
                               "username:\n"
                               "password:\n"
                               "\n"
@@ -1114,6 +1112,8 @@ protected:
                               "proxyPassword:\n"
                               "\n"
                               "clientAuthType:\n"
+                              "\n"
+                              "deviceId:\n"
                               "\n"
                               "maxMsgSize:\n"
                               "maxObjSize:\n"

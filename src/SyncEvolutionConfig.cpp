@@ -223,19 +223,17 @@ ConstSyncSourceNodes EvolutionSyncConfig::getSyncSourceNodes(const string &name,
 
 
 static ConfigProperty syncPropSyncURL("syncURL",
-                                      "the base URL of the SyncML server:\n"
-                                      "- Sync4j 2.3\n"
-                                      "syncURL = http://localhost:8080/sync4j/sync\n"
-                                      "- Funambol >= 3.0\n"
-                                      "syncURL = http://localhost:8080/funambol/ds\n"
-                                      "- myFUNAMBOL\n"
-                                      "syncURL = http://my.funambol.com/sync\n"
-                                      "- sync.scheduleworld.com");
+                                      "the base URL of the SyncML server which is to be used for SyncML;\n"
+                                      "some examples:\n"
+                                      "- http://my.funambol.com\n"
+                                      "- http://sync.scheduleworld.com/funambol/ds\n"
+                                      "- http://www.synthesis.ch/sync\n");
 static ConfigProperty syncPropDevID("deviceId",
                                     "the SyncML server gets this string and will use it to keep track of\n"
                                     "changes that still need to be synchronized with this particular\n"
-                                    "client; it must be set to something unique if SyncEvolution is used\n"
-                                    "to synchronize data between different computers");
+                                    "client; it must be set to something unique (like the pseudo-random\n"
+                                    "UUID created automatically for new configurations) among all clients\n"
+                                    "accessing the same server");
 static ConfigProperty syncPropUsername("username",
                                        "authorization for the SyncML server",
                                        "your SyncML server account name");
@@ -283,11 +281,7 @@ static ConfigProperty syncPropLogDir("logdir",
                                      "directory \"$TMPDIR/SyncEvolution-<username>-<server>\" will\n"
                                      "be used to keep the data of just the latest synchronization run;\n"
                                      "if \"none\", then no backups of the databases are made and any\n"
-                                     "output is printed directly instead of writing it into a log\n"
-                                     "\n"
-                                     "When writing into a log nothing will be shown during the\n"
-                                     "synchronization. Instead the important messages are extracted\n"
-                                     "automatically from the log at the end.");
+                                     "output is printed directly to the screen\n");
 static IntConfigProperty syncPropMaxLogDirs("maxlogdirs",
                                             "Unless this option is set, SyncEvolution will never delete\n"
                                             "anything in the \"logdir\". If set, the oldest directories and\n"
@@ -308,7 +302,6 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
 
     if (!initialized) {
         registry.push_back(&syncPropSyncURL);
-        registry.push_back(&syncPropDevID);
         registry.push_back(&syncPropUsername);
         registry.push_back(&syncPropPassword);
         registry.push_back(&syncPropLogDir);
@@ -319,6 +312,7 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropProxyUsername);
         registry.push_back(&syncPropProxyPassword);
         registry.push_back(&syncPropClientAuthType);
+        registry.push_back(&syncPropDevID);
         registry.push_back(&syncPropMaxMsgSize);
         registry.push_back(&syncPropMaxObjSize);
         registry.push_back(&syncPropLoSupport);
@@ -478,7 +472,7 @@ static StringConfigProperty sourcePropSync("sync",
                                            "                        the items on the server\n"
                                            "  one-way-from-client = transmit changes from client\n"
                                            "  one-way-from-server = transmit changes from server\n"
-                                           "  none                = synchronization disabled",
+                                           "  none (or disabled)  = synchronization disabled",
                                            "two-way",
                                            Values() +
                                            (Aliases("two-way")) +
@@ -514,10 +508,10 @@ public:
                              "type and uri.\n"
                              "\n"
                              "Here's the full list of potentially supported backends,\n"
-                             "valid <backend> values for each of them and possible\n"
+                             "valid <backend> values for each of them, and possible\n"
                              "formats. Note that SyncEvolution installations usually\n"
                              "support only a subset of the backends; that's why e.g.\n"
-                             "\"addressbook\" is usually unambiguous although there are multiple\n"
+                             "\"addressbook\" is unambiguous although there are multiple\n"
                              "address book backends.\n",
                              "select backend",
                              Values() +
@@ -589,7 +583,7 @@ public:
 } sourcePropSourceType;
 
 static ConfigProperty sourcePropDatabaseID("evolutionsource",
-                                           "picks one of Evolution's data sources:\n"
+                                           "picks one of backend data sources:\n"
                                            "enter either the name or the full URL\n"
                                            "\n"
                                            "To get a full list of available data sources,\n"
@@ -601,11 +595,11 @@ static ConfigProperty sourcePropURI("uri",
                                     "this is appended to the server's URL to identify the\n"
                                     "server's database");
 static ConfigProperty sourcePropUser("evolutionuser",
-                                     "authentication for Evolution source\n"
+                                     "authentication for backend data source\n"
                                      "\n"
                                      "Warning: setting evolutionuser/password in cases where it is not\n"
-                                     "needed as with local calendars and addressbooks can cause the\n"
-                                     "Evolution backend to hang.");
+                                     "needed, as for example with local Evolution calendars and addressbooks,\n"
+                                     "can cause the Evolution backend to hang.");
 static ConfigProperty sourcePropPassword("evolutionpassword", "");
 
 static StringConfigProperty sourcePropEncoding("encoding",
