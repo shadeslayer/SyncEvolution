@@ -654,17 +654,22 @@ static string internalToIni(const string &config)
 
         size_t colon = line.find(':');
         string prefix = line.substr(0, colon);
-        if (boost::contains(prefix, ".internal.ini")) {
+        if (boost::contains(prefix, ".internal.ini") ||
+            boost::contains(line, "= internal value")) {
             continue;
         }
-        // sources/<name>/config.ini
-        size_t slash = prefix.find('/');
+        // sources/<name>/config.ini or
+        // spds/sources/<name>/config.ini
         size_t endslash = prefix.rfind('/');
-        if (slash != line.npos && endslash != line.npos) {
-            string newsource = prefix.substr(slash + 1, endslash - slash - 1);
-            if (newsource != section) {
-                res << endl << "[" << newsource << "]" << endl;
-                section = newsource;
+        if (endslash != line.npos && endslash > 1) {
+            size_t slash = prefix.rfind('/', endslash - 1);
+            if (slash != line.npos) {
+                string newsource = prefix.substr(slash + 1, endslash - slash - 1);
+                if (newsource != section &&
+                    newsource != "syncml") {
+                    res << endl << "[" << newsource << "]" << endl;
+                    section = newsource;
+                }
             }
         }
         string assignment = line.substr(colon + 1);
@@ -704,6 +709,7 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testTemplate);
     CPPUNIT_TEST(testSync);
     CPPUNIT_TEST(testConfigure);
+    CPPUNIT_TEST(testOldConfigure);
     CPPUNIT_TEST(testListSources);
     CPPUNIT_TEST(testMigrate);
     CPPUNIT_TEST_SUITE_END();
@@ -1063,6 +1069,7 @@ protected:
 
         rm_r(m_testDir);
         testSetupScheduleWorld();
+        doConfigure(ScheduleWorldConfig(), "sources/addressbook/config.ini:");
 
         string syncProperties("syncURL:\n"
                               "\n"
@@ -1141,7 +1148,29 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF(syncProperties + sourceProperties,
                                       filterIndented(cmdline.m_out.str()));
         }
+    }
 
+    void testOldConfigure() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        string oldConfig = OldScheduleWorldConfig();
+        InitList<string> props = InitList<string>("serverNonce") +
+            "clientNonce" +
+            "devInfoHash" +
+            "last";
+        BOOST_FOREACH(string &prop, props) {
+            boost::replace_all(oldConfig,
+                               prop + " = ",
+                               prop + " = internal value");
+        }
+
+        rm_r(m_testDir);
+        createFiles(m_testDir + "/.sync4j/evolution/scheduleworld", oldConfig);
+        doConfigure(oldConfig, "spds/sources/addressbook/config.txt:");
+    }
+
+    void doConfigure(const string &SWConfig, const string &addressbookPrefix) {
         string expected;
 
         {
@@ -1152,7 +1181,7 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
-            expected = filterConfig(internalToIni(m_scheduleWorldConfig));
+            expected = filterConfig(internalToIni(SWConfig));
             boost::replace_all(expected,
                                "sync = two-way",
                                "sync = disabled");
@@ -1169,13 +1198,13 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
-            expected = m_scheduleWorldConfig;
+            expected = SWConfig;
             boost::replace_all(expected,
                                "sync = two-way",
                                "sync = disabled");
             boost::replace_first(expected,
-                                 "addressbook/config.ini:sync = disabled",
-                                 "addressbook/config.ini:sync = one-way-from-server");
+                                 addressbookPrefix + "sync = disabled",
+                                 addressbookPrefix + "sync = one-way-from-server");
             expected = filterConfig(internalToIni(expected));
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
                                       filterConfig(printConfig("scheduleworld")));
@@ -1227,22 +1256,7 @@ protected:
         string oldRoot = m_testDir + "/.sync4j/evolution/scheduleworld";
         string newRoot = m_testDir + "/syncevolution/scheduleworld";
 
-        string oldConfig = m_scheduleWorldConfig;
-        boost::replace_all(oldConfig,
-                           ".internal.ini",
-                           "config.ini");
-        InitList<string> sources = InitList<string>("addressbook") +
-            "calendar" +
-            "memo" +
-            "todo";
-        BOOST_FOREACH(string &source, sources) {
-            boost::replace_all(oldConfig,
-                               string("sources/") + source + "/config.ini",
-                               string("spds/sources/") + source + "/config.txt");
-        }
-        boost::replace_all(oldConfig,
-                           "config.ini",
-                           "spds/syncml/config.txt");
+        string oldConfig = OldScheduleWorldConfig();
 
         {
             // migrate old config
@@ -1361,6 +1375,30 @@ private:
         vector<string> m_argvstr;
         boost::scoped_array<const char *> m_argv;
     };
+
+    string ScheduleWorldConfig() {
+        return m_scheduleWorldConfig;
+    }
+
+    string OldScheduleWorldConfig() {
+        string oldConfig = m_scheduleWorldConfig;
+        boost::replace_all(oldConfig,
+                           ".internal.ini",
+                           "config.ini");
+        InitList<string> sources = InitList<string>("addressbook") +
+            "calendar" +
+            "memo" +
+            "todo";
+        BOOST_FOREACH(string &source, sources) {
+            boost::replace_all(oldConfig,
+                               string("sources/") + source + "/config.ini",
+                               string("spds/sources/") + source + "/config.txt");
+        }
+        boost::replace_all(oldConfig,
+                           "config.ini",
+                           "spds/syncml/config.txt");
+        return oldConfig;
+    }
 
     string FunambolConfig() {
         string config = m_scheduleWorldConfig;
