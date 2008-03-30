@@ -186,7 +186,9 @@ a list of valid values.
   a new configuration only the active sources will be set to active
   in the new configuration, i.e. "syncevolution -c scheduleworld addressbook"
   followed by "syncevolution scheduleworld" will only synchronize the
-  address book.
+  address book. The other sources are created in a disabled state.
+  When modifying an existing configuration and sources are specified,
+  then the source properties of only those sources are modified.
 
 --migrate
   In SyncEvolution <= 0.7 a different layout of configuration files

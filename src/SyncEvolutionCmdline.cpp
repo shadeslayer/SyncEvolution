@@ -275,7 +275,7 @@ bool SyncEvolutionCmdline::run() {
 
         // write into the requested configuration, creating it if necessary
         boost::shared_ptr<EvolutionSyncConfig> to(new EvolutionSyncConfig(m_server));
-        to->copy(*from, NULL);
+        to->copy(*from, !fromScratch && !m_sources.empty() ? &m_sources : NULL);
 
         // activate only the selected sources
         if (fromScratch && !m_sources.empty()) {
@@ -675,6 +675,7 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testPrintConfig);
     CPPUNIT_TEST(testTemplate);
     CPPUNIT_TEST(testSync);
+    CPPUNIT_TEST(testConfigure);
     CPPUNIT_TEST_SUITE_END();
     
 public:
@@ -1026,6 +1027,82 @@ protected:
                                   string(filter2.m_cmdline->m_syncProps));
     }
 
+    void testConfigure() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        testSetupScheduleWorld();
+
+        string expected;
+
+        {
+            TestCmdline cmdline("--configure",
+                                "--source-property", "sync = disabled",
+                                "scheduleworld",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            expected = filterConfig(internalToIni(m_scheduleWorldConfig));
+            boost::replace_all(expected,
+                               "sync = two-way",
+                               "sync = disabled");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      filterConfig(printConfig("scheduleworld")));
+        }
+
+        {
+            TestCmdline cmdline("--configure",
+                                "--source-property", "sync = one-way-from-server",
+                                "scheduleworld",
+                                "addressbook",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            expected = m_scheduleWorldConfig;
+            boost::replace_all(expected,
+                               "sync = two-way",
+                               "sync = disabled");
+            boost::replace_first(expected,
+                                 "addressbook/config.ini:sync = disabled",
+                                 "addressbook/config.ini:sync = one-way-from-server");
+            expected = filterConfig(internalToIni(expected));
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      filterConfig(printConfig("scheduleworld")));
+        }
+
+        {
+            TestCmdline cmdline("--configure",
+                                "--sync", "two-way",
+                                "--source-property", "evolutionsource=source",
+                                "--sync-property", "maxlogdirs=10",
+                                "--sync-property", "LOGDIR=logdir",
+                                "scheduleworld",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            boost::replace_all(expected,
+                               "sync = one-way-from-server",
+                               "sync = two-way");
+            boost::replace_all(expected,
+                               "sync = disabled",
+                               "sync = two-way");
+            boost::replace_all(expected,
+                               "evolutionsource = ",
+                               "evolutionsource = source");
+            boost::replace_all(expected,
+                               "maxlogdirs = 0",
+                               "maxlogdirs = 10");
+            boost::replace_all(expected,
+                               "logdir = ",
+                               "logdir = logdir");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      filterConfig(printConfig("scheduleworld")));
+        }
+    }
+
 
     const string m_testDir;
     const string m_scheduleWorldConfig;
@@ -1245,6 +1322,16 @@ private:
                 }
             }
         }
+    }
+
+    string printConfig(const string &server) {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        TestCmdline cmdline("--print-config", server.c_str(), NULL);
+        cmdline.doit();
+        CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+        return cmdline.m_out.str();
     }
 };
 

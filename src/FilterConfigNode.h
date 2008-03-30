@@ -22,6 +22,7 @@
 
 #include <ConfigNode.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 
 #include "SyncEvolutionUtil.h"
 
@@ -42,11 +43,11 @@ using namespace std;
  */
 class FilterConfigNode : public ConfigNode {
  public:
-    class ConfigFilter : public  map<string, string> {
+    class ConfigFilter : public map<string, string> {
     public:
         /** add the mapping, regardless whether it exists already or not */
         void set(const string &property, const string &value) {
-            pair<iterator, bool> inserted = insert(make_pair(property, value));
+            pair<iterator, bool> inserted = insert(make_pair(boost::to_lower_copy(property), value));
             if (!inserted.second) {
                 inserted.first->second = value;
             }
@@ -62,6 +63,14 @@ class FilterConfigNode : public ConfigNode {
             }
             sort(res.begin(), res.end());
             return join("\n", res.begin(), res.end());
+        }
+
+        iterator find(const string &property) {
+            return map<string, string>::find(boost::to_lower_copy(property));
+        }
+
+        const_iterator find(const string &property) const {
+            return map<string, string>::find(boost::to_lower_copy(property));
         }
     };
 
