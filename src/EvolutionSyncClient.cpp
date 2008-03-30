@@ -33,6 +33,8 @@
 #include <stdexcept>
 using namespace std;
 
+#include <boost/algorithm/string/predicate.hpp>
+
 #include <sys/stat.h>
 #include <pwd.h>
 #include <unistd.h>
@@ -223,8 +225,7 @@ public:
         for (ReadDir::const_iterator it = dir.begin();
              it != dir.end();
              ++it) {
-            if (it->size() >= m_prefix.size() &&
-                !m_prefix.compare(0, m_prefix.size(), *it)) {
+            if (boost::starts_with(*it, m_prefix)) {
                 entries.push_back(*it);
             }
         }

@@ -81,13 +81,15 @@ EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
     }
 
     EvolutionSyncSource::sources result;
-
+    bool first = true;
     for (GSList *g = e_source_list_peek_groups (sources); g; g = g->next) {
         ESourceGroup *group = E_SOURCE_GROUP (g->data);
         for (GSList *s = e_source_group_peek_sources (group); s; s = s->next) {
             ESource *source = E_SOURCE (s->data);
             result.push_back( EvolutionSyncSource::source( e_source_peek_name(source),
-                                                           e_source_get_uri(source) ) );
+                                                           e_source_get_uri(source),
+                                                           first ) );
+            first = false;
         }
     }
 
@@ -108,7 +110,7 @@ EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
 
         if (book) {
             const char *uri = e_book_get_uri (book);
-            result.push_back (EvolutionSyncSource::source (name, uri));
+            result.push_back (EvolutionSyncSource::source (name, uri, true));
         }
     }
     
@@ -129,11 +131,11 @@ void EvolutionContactSource::open()
     if (!source) {
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
-        if (id == "<<system>>") {
+        if (id.empty() || id == "<<system>>") {
             m_addressbook.set( e_book_new_system_addressbook (&gerror), "system address book" );
-        } else if (id == "<<default>>") {
+        } else if (id.empty() || id == "<<default>>") {
             m_addressbook.set( e_book_new_default_addressbook (&gerror), "default address book" );
-        } else if (!id.compare(0, 7, "file://")) {
+        } else if (boost::starts_with(id, "file://")) {
             m_addressbook.set(e_book_new_from_uri(id.c_str(), &gerror), "creating address book");
         } else {
             throwError(string(getName()) + ": no such address book: '" + id + "'");

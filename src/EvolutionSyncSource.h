@@ -214,10 +214,11 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     static SourceRegistry &getSourceRegistry();
 
     struct source {
-        source( const string &name, const string &uri ) :
-            m_name( name ), m_uri( uri ) {}
+    source( const string &name, const string &uri, bool isDefault = false ) :
+        m_name( name ), m_uri( uri ), m_isDefault(isDefault) {}
         string m_name;
         string m_uri;
+        bool m_isDefault;
     };
     typedef vector<source> sources;
     

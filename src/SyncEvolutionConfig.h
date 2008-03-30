@@ -24,6 +24,7 @@
 #include "spds/AbstractSyncSourceConfig.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <list>
 #include <string>
 #include <sstream>
@@ -54,7 +55,7 @@ class ConfigProperty {
     ConfigProperty(const string &name, const string &comment, const string &def = string("")) :
         m_hidden(false),
         m_name(name),
-        m_comment(comment),
+        m_comment(boost::trim_right_copy(comment)),
         m_defValue(def)
         {}
     virtual ~ConfigProperty() {}

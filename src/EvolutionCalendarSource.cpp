@@ -97,13 +97,15 @@ EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
     }
 
     EvolutionSyncSource::sources result;
-
+    bool first = true;
     for (GSList *g = e_source_list_peek_groups (sources); g; g = g->next) {
         ESourceGroup *group = E_SOURCE_GROUP (g->data);
         for (GSList *s = e_source_group_peek_sources (group); s; s = s->next) {
             ESource *source = E_SOURCE (s->data);
             result.push_back( EvolutionSyncSource::source( e_source_peek_name(source),
-                                                           e_source_get_uri(source) ) );
+                                                           e_source_get_uri(source),
+                                                           first ) );
+            first = false;
         }
     }
     return result;

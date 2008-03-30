@@ -169,7 +169,7 @@ SQLiteContactSource::sources SQLiteContactSource::getSyncBackends()
 {
     sources res;
 
-    res.push_back(EvolutionSyncSource::source("<select database via file path>",
+    res.push_back(EvolutionSyncSource::source("select database via file path",
                                               "file:///<absolute path>"));
     return res;
 }

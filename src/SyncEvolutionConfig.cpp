@@ -550,7 +550,7 @@ public:
             res << "\nCurrently inactive:\n" << disabled.str();
         }
 
-        return res.str();
+        return boost::trim_right_copy(res.str());
     }
 
     virtual Values getValues() const {
@@ -583,14 +583,20 @@ public:
 } sourcePropSourceType;
 
 static ConfigProperty sourcePropDatabaseID("evolutionsource",
-                                           "picks one of backend data sources:\n"
-                                           "enter either the name or the full URL\n"
+                                           "Picks one of backend data sources:\n"
+                                           "enter either the name or the full URL.\n"
+                                           "Most backends have a default data source,\n"
+                                           "like for example the system address book.\n"
+                                           "Not setting this property selects that default\n"
+                                           "data source.\n"
                                            "\n"
                                            "To get a full list of available data sources,\n"
                                            "run syncevolution without parameters. The name\n"
                                            "is printed in front of the colon, followed by\n"
                                            "the URL. Usually the name is unique and can be\n"
-                                           "used to reference the data source.");
+                                           "used to reference the data source. The default\n"
+                                           "data source is marked with <default> after the\n"
+                                           "URL, if there is a default.\n");
 static ConfigProperty sourcePropURI("uri",
                                     "this is appended to the server's URL to identify the\n"
                                     "server's database");

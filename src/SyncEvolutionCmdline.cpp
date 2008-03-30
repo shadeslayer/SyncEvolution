@@ -434,7 +434,11 @@ void SyncEvolutionCmdline::listSources(EvolutionSyncSource &syncSource, const st
     for (EvolutionSyncSource::sources::const_iterator it = sources.begin();
          it != sources.end();
          it++) {
-        m_out << "   " << it->m_name << " (" << it->m_uri << ")\n";
+        m_out << "   " << it->m_name << " (" << it->m_uri << ")";
+        if (it->m_isDefault) {
+            m_out << " <default>";
+        }
+        m_out << endl;
     }
 }
 
