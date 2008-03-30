@@ -97,7 +97,8 @@ class FilterConfigNode : public ConfigNode {
     virtual string readProperty(const string &property) const;
     virtual void setProperty(const string &property,
                              const string &value,
-                             const string &comment = "");
+                             const string &comment = "",
+                             const string *defValue = NULL);
     virtual map<string, string> readProperties() const;
     virtual void removeProperty(const string &property);
     virtual bool exists() const { return m_readOnlyNode->exists(); }

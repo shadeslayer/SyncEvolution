@@ -53,6 +53,7 @@ struct ConstSyncSourceNodes;
 class ConfigProperty {
  public:
     ConfigProperty(const string &name, const string &comment, const string &def = string("")) :
+        m_obligatory(false),
         m_hidden(false),
         m_name(name),
         m_comment(boost::trim_right_copy(comment)),
@@ -78,6 +79,9 @@ class ConfigProperty {
     bool isHidden() const { return m_hidden; }
     void setHidden(bool hidden) { m_hidden = hidden; }
 
+    bool isObligatory() const { return m_obligatory; }
+    void setObligatory(bool obligatory) { m_obligatory = obligatory; }
+
     /** set value unconditionally, even if it is not valid */
     void setProperty(ConfigNode &node, const string &value) const { node.setProperty(getName(), value, getComment()); }
     void setProperty(FilterConfigNode &node, const string &value, bool temporarily = false) const {
@@ -87,7 +91,18 @@ class ConfigProperty {
             node.setProperty(m_name, value, getComment());
         }
     }
-    virtual string getProperty(const ConfigNode &node) const {
+
+    /** set default value of a property, marked as default unless forced setting */
+    void setDefaultProperty(ConfigNode &node, bool force) const {
+        string defValue = getDefValue();
+        node.setProperty(m_name, defValue, getComment(), force ? NULL : &defValue);
+    }
+
+    /**
+     * @retval isDefault    return true if the node had no value set and
+     *                      the default was returned instead
+     */
+    virtual string getProperty(const ConfigNode &node, bool *isDefault = NULL) const {
         string name = getName();
         string value = node.readProperty(name);
         if (value.size()) {
@@ -95,8 +110,14 @@ class ConfigProperty {
             if (!checkValue(value, error)) {
                 throwValueError(node, name, value, error);
             }
+            if (isDefault) {
+                *isDefault = false;
+            }
             return value;
         } else {
+            if (isDefault) {
+                *isDefault = true;
+            }
             return getDefValue();
         }
     }
@@ -105,6 +126,7 @@ class ConfigProperty {
     void throwValueError(const ConfigNode &node, const string &name, const string &value, const string &error) const;
 
  private:
+    bool m_obligatory;
     bool m_hidden;
     const string m_name, m_comment, m_defValue;
 };
@@ -206,8 +228,8 @@ class StringConfigProperty : public ConfigProperty {
         return false;
     }
 
-    virtual string getProperty(const ConfigNode &node) const {
-        string res = ConfigProperty::getProperty(node);
+    virtual string getProperty(const ConfigNode &node, bool *isDefault = NULL) const {
+        string res = ConfigProperty::getProperty(node, isDefault);
         normalizeValue(res);
         return res;
     }
@@ -262,7 +284,7 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
         }
     }
 
-    T getProperty(ConfigNode &node) {
+    T getProperty(ConfigNode &node, bool *isDefault = NULL) {
         string name = getName();
         string value = node.readProperty(name);
         istringstream in(value);
@@ -270,10 +292,16 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
         if (value.empty()) {
             istringstream defStream(getDefValue());
             defStream >> res;
+            if (isDefault) {
+                *isDefault = true;
+            }
             return res;
         } else {
             if (!(in >> res)) {
                 throwValueError(node, name, value, "cannot parse value");
+            }
+            if (isDefault) {
+                *isDefault = false;
             }
             return res;
         }
@@ -303,8 +331,8 @@ class BoolConfigProperty : public StringConfigProperty {
     void setProperty(FilterConfigNode &node, bool value, bool temporarily = false) {
         StringConfigProperty::setProperty(node, value ? "1" : "0", temporarily);
     }
-    int getProperty(ConfigNode &node) {
-        string res = ConfigProperty::getProperty(node);
+    int getProperty(ConfigNode &node, bool *isDefault = NULL) {
+        string res = ConfigProperty::getProperty(node, isDefault);
 
         return boost::iequals(res, "T") ||
             boost::iequals(res, "TRUE") ||

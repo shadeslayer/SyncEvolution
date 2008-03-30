@@ -302,8 +302,11 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
 
     if (!initialized) {
         registry.push_back(&syncPropSyncURL);
+        syncPropSyncURL.setObligatory(true);
         registry.push_back(&syncPropUsername);
+        syncPropUsername.setObligatory(true);
         registry.push_back(&syncPropPassword);
+        syncPropPassword.setObligatory(true);
         registry.push_back(&syncPropLogDir);
         registry.push_back(&syncPropLogLevel);
         registry.push_back(&syncPropMaxLogDirs);
@@ -313,6 +316,7 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropProxyPassword);
         registry.push_back(&syncPropClientAuthType);
         registry.push_back(&syncPropDevID);
+        syncPropDevID.setObligatory(true);
         registry.push_back(&syncPropMaxMsgSize);
         registry.push_back(&syncPropMaxObjSize);
         registry.push_back(&syncPropLoSupport);
@@ -369,32 +373,28 @@ void EvolutionSyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropM
 int EvolutionSyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
 
-
-void EvolutionSyncConfig::setDefaults()
+static void setDefaultProps(const ConfigPropertyRegistry &registry,
+                            boost::shared_ptr<FilterConfigNode> node)
 {
-    ConfigPropertyRegistry registry = getRegistry();
-
     for (ConfigPropertyRegistry::const_iterator it = registry.begin();
          it != registry.end();
          ++it) {
         if (!(*it)->isHidden()) {
-            (*it)->setProperty(*m_configNode, (*it)->getDefValue());
+            (*it)->setDefaultProperty(*node, (*it)->isObligatory());
         }
-    }
+    }    
+}
+
+void EvolutionSyncConfig::setDefaults()
+{
+    setDefaultProps(getRegistry(), m_configNode);
 }
 
 void EvolutionSyncConfig::setSourceDefaults(const string &name)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
-    ConfigPropertyRegistry registry = EvolutionSyncSourceConfig::getRegistry();
-
-    for (ConfigPropertyRegistry::const_iterator it = registry.begin();
-         it != registry.end();
-         ++it) {
-        if (!(*it)->isHidden()) {
-            (*it)->setProperty(*nodes.m_configNode, (*it)->getDefValue());
-        }
-    }
+    setDefaultProps(EvolutionSyncSourceConfig::getRegistry(),
+                    nodes.m_configNode);
 }
 
 static void copyProperties(const ConfigNode &fromProps,
@@ -407,8 +407,10 @@ static void copyProperties(const ConfigNode &fromProps,
          ++it) {
         if ((*it)->isHidden() == hidden) {
             string name = (*it)->getName();
-            string value = fromProps.readProperty(name);
-            toProps.setProperty(name, value, (*it)->getComment());
+            bool isDefault;
+            string value = (*it)->getProperty(fromProps, &isDefault);
+            toProps.setProperty(name, value, (*it)->getComment(),
+                                isDefault ? &value : NULL);
         }
     }
 }
@@ -622,7 +624,9 @@ ConfigPropertyRegistry &EvolutionSyncSourceConfig::getRegistry()
 
     if (!initialized) {
         registry.push_back(&sourcePropSync);
+        sourcePropSync.setObligatory(true);
         registry.push_back(&sourcePropSourceType);
+        sourcePropSourceType.setObligatory(true);
         registry.push_back(&sourcePropDatabaseID);
         registry.push_back(&sourcePropURI);
         registry.push_back(&sourcePropUser);

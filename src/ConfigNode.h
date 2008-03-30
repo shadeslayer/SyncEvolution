@@ -58,14 +58,21 @@ class ConfigNode {
      * @param comment    a comment explaining what the property is about, with
      *                   \n separating lines; might be used by the backend 
      *                   when adding a new property
+     * @param defValue   If a defValue is provided and the value
+     *                   matches the default, then the node is asked to
+     *                   remember that the value hasn't really been changed.
+     *                   An implementation can decide to not support this.
      */
     virtual void setProperty(const string &property,
                              const string &value,
-                             const string &comment = string("")) = 0;
+                             const string &comment = string(""),
+                             const string *defValue = NULL) = 0;
 
     /**
      * Extract all list of all currently defined properties
-     * and their values.
+     * and their values. Does not include values which were
+     * initialized with their defaults, if the implementation
+     * remembers that.
      */
     virtual map<string, string> readProperties() const = 0;
 

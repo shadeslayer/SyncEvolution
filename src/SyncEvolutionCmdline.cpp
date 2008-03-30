@@ -89,6 +89,7 @@ bool SyncEvolutionCmdline::parse()
                 return false;
             }
             m_template = m_argv[opt];
+            m_configure = true;
             if (boost::trim_copy(m_template) == "?") {
                 dumpServers("Available configuration templates:",
                             EvolutionSyncConfig::getServerTemplates());
@@ -472,6 +473,11 @@ void SyncEvolutionCmdline::dumpProperties(const ConfigNode &configuredProps,
                 dumpComment(m_out, "# ", comment);
             }
         }
+        bool isDefault;
+        (*it)->getProperty(configuredProps, &isDefault);
+        if (isDefault) {
+            m_out << "# ";
+        }
         m_out << (*it)->getName() << " = " << (*it)->getProperty(configuredProps) << endl;
     }
 }
@@ -596,8 +602,23 @@ static string lastLine(const string &buffer)
     return buffer.substr(line + 1);
 }
 
-// remove lines starting with # from buffer,
-// empty lines
+// true if <word> =
+static bool isPropAssignment(const string &buffer) {
+    size_t start = 0;
+    while (start < buffer.size() &&
+           !isspace(buffer[start])) {
+        start++;
+    }
+    if (start + 3 <= buffer.size() &&
+        buffer.substr(start, 3) == " = ") {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// remove pure comment lines from buffer,
+// also empty lines
 static string filterConfig(const string &buffer)
 {
     ostringstream res;
@@ -607,9 +628,11 @@ static string filterConfig(const string &buffer)
              boost::make_split_iterator(buffer, boost::first_finder("\n", boost::is_iequal()));
          it != string_split_iterator();
          ++it) {
-        if (!boost::starts_with(*it, "#") &&
-            !it->empty()) {
-            res << *it << endl;
+        string line = boost::copy_range<string>(*it);
+        if (!line.empty() &&
+            (!boost::starts_with(line, "# ") ||
+             isPropAssignment(line.substr(2)))) {
+            res << line << endl;
         }
     }
 
@@ -721,57 +744,57 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
 public:
     SyncEvolutionCmdlineTest() :
         m_testDir("SyncEvolutionCmdlineTest"),
-        m_scheduleWorldConfig(".internal.ini:serverNonce = \n"
-                              ".internal.ini:clientNonce = \n"
-                              ".internal.ini:devInfoHash = \n"
+        m_scheduleWorldConfig(".internal.ini:# serverNonce = \n"
+                              ".internal.ini:# clientNonce = \n"
+                              ".internal.ini:# devInfoHash = \n"
                               "config.ini:syncURL = http://sync.scheduleworld.com\n"
                               "config.ini:username = your SyncML server account name\n"
                               "config.ini:password = your SyncML server password\n"
-                              "config.ini:logdir = \n"
-                              "config.ini:loglevel = 0\n"
-                              "config.ini:maxlogdirs = 0\n"
-                              "config.ini:useProxy = F\n"
-                              "config.ini:proxyHost = \n"
-                              "config.ini:proxyUsername = \n"
-                              "config.ini:proxyPassword = \n"
-                              "config.ini:clientAuthType = md5\n"
+                              "config.ini:# logdir = \n"
+                              "config.ini:# loglevel = 0\n"
+                              "config.ini:# maxlogdirs = 0\n"
+                              "config.ini:# useProxy = 0\n"
+                              "config.ini:# proxyHost = \n"
+                              "config.ini:# proxyUsername = \n"
+                              "config.ini:# proxyPassword = \n"
+                              "config.ini:# clientAuthType = syncml:auth-md5\n"
                               "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
-                              "config.ini:maxMsgSize = 8192\n"
-                              "config.ini:maxObjSize = 500000\n"
-                              "config.ini:loSupport = T\n"
-                              "config.ini:enableCompression = F\n"
-                              "sources/addressbook/.internal.ini:last = \n"
+                              "config.ini:# maxMsgSize = 8192\n"
+                              "config.ini:# maxObjSize = 500000\n"
+                              "config.ini:# loSupport = 1\n"
+                              "config.ini:# enableCompression = 0\n"
+                              "sources/addressbook/.internal.ini:# last = 0\n"
                               "sources/addressbook/config.ini:sync = two-way\n"
                               "sources/addressbook/config.ini:type = addressbook\n"
-                              "sources/addressbook/config.ini:evolutionsource = \n"
+                              "sources/addressbook/config.ini:# evolutionsource = \n"
                               "sources/addressbook/config.ini:uri = card3\n"
-                              "sources/addressbook/config.ini:evolutionuser = \n"
-                              "sources/addressbook/config.ini:evolutionpassword = \n"
-                              "sources/addressbook/config.ini:encoding = \n"
-                              "sources/calendar/.internal.ini:last = \n"
+                              "sources/addressbook/config.ini:# evolutionuser = \n"
+                              "sources/addressbook/config.ini:# evolutionpassword = \n"
+                              "sources/addressbook/config.ini:# encoding = \n"
+                              "sources/calendar/.internal.ini:# last = 0\n"
                               "sources/calendar/config.ini:sync = two-way\n"
                               "sources/calendar/config.ini:type = calendar\n"
-                              "sources/calendar/config.ini:evolutionsource = \n"
+                              "sources/calendar/config.ini:# evolutionsource = \n"
                               "sources/calendar/config.ini:uri = event2\n"
-                              "sources/calendar/config.ini:evolutionuser = \n"
-                              "sources/calendar/config.ini:evolutionpassword = \n"
-                              "sources/calendar/config.ini:encoding = \n"
-                              "sources/memo/.internal.ini:last = \n"
+                              "sources/calendar/config.ini:# evolutionuser = \n"
+                              "sources/calendar/config.ini:# evolutionpassword = \n"
+                              "sources/calendar/config.ini:# encoding = \n"
+                              "sources/memo/.internal.ini:# last = 0\n"
                               "sources/memo/config.ini:sync = two-way\n"
                               "sources/memo/config.ini:type = memo\n"
-                              "sources/memo/config.ini:evolutionsource = \n"
+                              "sources/memo/config.ini:# evolutionsource = \n"
                               "sources/memo/config.ini:uri = note\n"
-                              "sources/memo/config.ini:evolutionuser = \n"
-                              "sources/memo/config.ini:evolutionpassword = \n"
-                              "sources/memo/config.ini:encoding = \n"
-                              "sources/todo/.internal.ini:last = \n"
+                              "sources/memo/config.ini:# evolutionuser = \n"
+                              "sources/memo/config.ini:# evolutionpassword = \n"
+                              "sources/memo/config.ini:# encoding = \n"
+                              "sources/todo/.internal.ini:# last = 0\n"
                               "sources/todo/config.ini:sync = two-way\n"
                               "sources/todo/config.ini:type = todo\n"
-                              "sources/todo/config.ini:evolutionsource = \n"
+                              "sources/todo/config.ini:# evolutionsource = \n"
                               "sources/todo/config.ini:uri = task2\n"
-                              "sources/todo/config.ini:evolutionuser = \n"
-                              "sources/todo/config.ini:evolutionpassword = \n"
-                              "sources/todo/config.ini:encoding = \n")
+                              "sources/todo/config.ini:# evolutionuser = \n"
+                              "sources/todo/config.ini:# evolutionpassword = \n"
+                              "sources/todo/config.ini:# encoding = \n")
     {}
 
 protected:
@@ -781,11 +804,24 @@ protected:
         const string root(m_testDir);
         const string content("baz:line\n"
                              "caz/subdir:booh\n"
+                             "caz/subdir2/sub:# comment\n"
+                             "caz/subdir2/sub:# foo = bar\n"
+                             "caz/subdir2/sub:# empty = \n"
+                             "caz/subdir2/sub:# another comment\n"
                              "foo:bar1\n"
+                             "foo:\n"
+                             "foo: \n"
                              "foo:bar2\n");
+        const string filtered("baz:line\n"
+                              "caz/subdir:booh\n"
+                              "caz/subdir2/sub:# foo = bar\n"
+                              "caz/subdir2/sub:# empty = \n"
+                              "foo:bar1\n"
+                              "foo: \n"
+                              "foo:bar2\n");
         createFiles(root, content);
         string res = scanFiles(root);
-        CPPUNIT_ASSERT_EQUAL_DIFF(content, res);
+        CPPUNIT_ASSERT_EQUAL_DIFF(filtered, res);
     }
 
     void removeRandomUUID(string &buffer) {
@@ -818,7 +854,7 @@ protected:
             removeRandomUUID(res);
             string expected = m_scheduleWorldConfig;
             boost::replace_first(expected,
-                                 "proxyHost = ",
+                                 "# proxyHost = ",
                                  "proxyHost = proxy");
             boost::replace_all(expected,
                                "sync = two-way",
@@ -840,6 +876,7 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF(string(m_scheduleWorldConfig), res);
         }
     }
+
     void testSetupDefault() {
         string root;
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
@@ -1254,13 +1291,13 @@ protected:
                                "sync = disabled",
                                "sync = two-way");
             boost::replace_all(expected,
-                               "evolutionsource = ",
+                               "# evolutionsource = ",
                                "evolutionsource = source");
             boost::replace_all(expected,
-                               "maxlogdirs = 0",
+                               "# maxlogdirs = 0",
                                "maxlogdirs = 10");
             boost::replace_all(expected,
-                               "logdir = ",
+                               "# logdir = ",
                                "logdir = logdir");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
                                       filterConfig(printConfig("scheduleworld")));
@@ -1565,6 +1602,7 @@ private:
         scanFiles(root, "", out, onlyProps);
         return out.str();
     }
+
     void scanFiles(const string &root, const string &dir, ostringstream &out, bool onlyProps) {
         string newroot = root;
         newroot += "/";
@@ -1586,7 +1624,9 @@ private:
                     getline(in, line);
                     if ((line.size() || !in.eof()) && 
                         (!onlyProps ||
-                         line.size() && line[0] != '#')) {
+                         (boost::starts_with(line, "# ") ?
+                          isPropAssignment(line.substr(2)) :
+                          !line.empty()))) {
                         if (dir.size()) {
                             out << dir << "/";
                         }

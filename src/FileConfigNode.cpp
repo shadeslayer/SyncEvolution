@@ -99,7 +99,9 @@ void FileConfigNode::flush()
  */
 static bool getContent(const string &line,
                        string &property,
-                       string &value)
+                       string &value,
+                       bool &isComment,
+                       bool fuzzyComments)
 {
     size_t start = 0;
     while (start < line.size() &&
@@ -107,10 +109,27 @@ static bool getContent(const string &line,
         start++;
     }
 
-    // empty line or comment?
-    if (start == line.size() ||
-        line[start] == '#') {
+    // empty line?
+    if (start == line.size()) {
         return false;
+    }
+
+    // Comment? Potentially keep reading, might be commented out assignment.
+    isComment = false;
+    if (line[start] == '#') {
+        if (!fuzzyComments) {
+            return false;
+        }
+        isComment = true;
+    }
+
+    // recognize # <word> = <value> as commented out (= default) value
+    if (isComment) {
+        start++;
+        while (start < line.size() &&
+               isspace(line[start])) {
+            start++;
+        }
     }
 
     // extract property
@@ -121,7 +140,6 @@ static bool getContent(const string &line,
     }
     property = line.substr(start, end - start);
 
-
     // skip assignment 
     start = end;
     while (start < line.size() &&
@@ -130,6 +148,7 @@ static bool getContent(const string &line,
     }
     if (start == line.size() ||
         line[start] != '=') {
+        // invalid syntax or we tried to read a comment as assignment
         return false;
     }
 
@@ -160,11 +179,13 @@ static bool getContent(const string &line,
  */
 static bool getValue(const string &line,
                      const string &property,
-                     string &value)
+                     string &value,
+                     bool &isComment,
+                     bool fuzzyComments)
 
 {
     string curProp;
-    return getContent(line, curProp, value) &&
+    return getContent(line, curProp, value, isComment, fuzzyComments) &&
         !strcasecmp(curProp.c_str(), property.c_str());
 }
 
@@ -175,7 +196,9 @@ string FileConfigNode::readProperty(const string &property) const {
          it != m_lines.end();
          it++) {
         const string &line = *it;
-        if (getValue(line, property, value)) {
+        bool isComment;
+
+        if (getValue(line, property, value, isComment, false)) {
             return value;
         }
     }
@@ -192,7 +215,8 @@ map<string, string> FileConfigNode::readProperties() const {
          it != m_lines.end();
          it++) {
         const string &line = *it;
-        if (getContent(line, property, value)) {
+        bool isComment;
+        if (getContent(line, property, value, isComment, false)) {
             // don't care about the result: only the first instance
             // of the property counts, so it doesn't matter when
             // inserting it again later fails
@@ -209,8 +233,8 @@ void FileConfigNode::removeProperty(const string &property)
     list<string>::iterator it = m_lines.begin();
     while (it != m_lines.end()) {
         const string &line = *it;
-
-        if (getValue(line, property, value)) {
+        bool isComment;
+        if (getValue(line, property, value, isComment, false)) {
             it = m_lines.erase(it);
             m_modified = true;
         } else {
@@ -219,17 +243,30 @@ void FileConfigNode::removeProperty(const string &property)
     }
 }
 
-void FileConfigNode::setProperty(const string &property, const string &newvalue, const string &comment) {
-    string newstr = property + " = " + newvalue;
+void FileConfigNode::setProperty(const string &property,
+                                 const string &newvalue,
+                                 const string &comment,
+                                 const string *defValue) {
+    string newstr;
     string oldvalue;
+    bool isDefault = false;
+
+    if (defValue &&
+        *defValue == newvalue) {
+        newstr += "# ";
+        isDefault = true;
+    }
+    newstr += property + " = " + newvalue;
 
     for (list<string>::iterator it = m_lines.begin();
          it != m_lines.end();
          it++) {
         const string &line = *it;
+        bool isComment;
 
-        if (getValue(line, property, oldvalue)) {
-            if (newvalue != oldvalue) {
+        if (getValue(line, property, oldvalue, isComment, true)) {
+            if (newvalue != oldvalue ||
+                isComment && !isDefault) {
                 *it = newstr;
                 m_modified = true;
             }

@@ -290,6 +290,13 @@ Configuration
 -------------
 
 The configuration file of a certain <server> is stored in
+   $XDG_CONFIG_HOME/syncevolution/<server>/config.ini
+with " $HOME/.config" as fallback if XDG_CONFIG_HOME is not
+set. Each data source is configured in
+   $XDG_CONFIG_HOME/syncevolution/sources/<source>/config.ini
+
+The configuration of older SyncEvolution releases in the
+following directory is also still supported:
    $HOME/.sync4j/evolution/<server>/spds/syncml/config.txt
 
 The format is a simple list of
@@ -301,25 +308,21 @@ put quotation marks around <value>, they would be treated as part of the
 value itself. Lines starting with a hash (#) after optional leading
 spaces are treated as comments and skipped.
 
-Each data source is configured in
-   $HOME/.sync4j/evolution/<server>/spds/sources/<source>/config.txt
-
-See "scheduleworld/spds/syncml/config.txt" for options in the server
-configuration and "scheduleworld/spds/sources/addressbook/config.txt"
-for options in the data source configuration. In packages of SyncEvolution
-these files might be installed in [/usr/local]/shared/doc/syncevolution.
-Another example configuration "funambol" is provided for use with a 
-local Funambol installation.
-
-Normally at least the following configuration options need to be adapted:
-  spds/syncml
+All supported properties are listed in the template configurations.
+Those which have reasonable defaults do not have to be set and are
+commented out in the template configurations. Normally at least the
+following configuration options need to be adapted:
+  config.ini
       syncURL
-      deviceId
       username
       password
-  spds/sources
+  sources/*/config.ini
       uri
-      evolutionsource
+      type
+
+See "syncevolution --sync-property ?" for options in the server
+configuration and "syncevolution --source-property ?"
+for options in each data source configuration.
 
 Each data source corresponds to one database at the SyncML server.
 The local data source is determined by the type of data given in
@@ -330,9 +333,8 @@ of a data source that SyncEvolution prints then.
 
 The "uri" property is used to identify with which database on the
 SyncML server the local data is to be synchronized. Each server
-usually documents what needs to be configured here. The provided
-configurations for ScheduleWorld and myFUNAMBOL already have this set
-correctly.
+usually documents what needs to be configured here. The template
+configurations already have this set correctly.
 
 One can synchronize with multiple server databases in one run, but the
 same server database can only be accessed once. To synchronize the
@@ -340,9 +342,9 @@ same server database with multiple local data sources, one
 has to setup two independent configurations with different "deviceId"
 settings and synchronize them separately. To create such a setup simply
 copy the whole configuration tree of the server, e.g.:
-  cp -r ~/.sync4j/evolution/localhost ~/.sync4j/evolution/localhost_copy
-and then edit ~/.sync4j/evolution/localhost_copy/spds/syncml/config.txt
-to update the "deviceId" and the sources/*/config.txt files to update
+  cp -r ~/.config/syncevolution/localhost ~/.config/syncevolution/localhost_copy
+and then edit ~/.config/syncevolution/localhost_copy/config.ini
+to update the "deviceId" and the sources/*/config.ini files to update
 the "evolutionsource".
 
 If an Evolution data source requires authentication, the

@@ -58,7 +58,8 @@ string FilterConfigNode::readProperty(const string &property) const
 
 void FilterConfigNode::setProperty(const string &property,
                                    const string &value,
-                                   const string &comment)
+                                   const string &comment,
+                                   const string *defValue)
 {
     ConfigFilter::iterator it = m_filter.find(property);
 
@@ -69,7 +70,7 @@ void FilterConfigNode::setProperty(const string &property,
     if (it != m_filter.end()) {
         m_filter.erase(it);
     }
-    m_node->setProperty(property, value, comment);
+    m_node->setProperty(property, value, comment, defValue);
 }
 
 map<string, string> FilterConfigNode::readProperties() const
