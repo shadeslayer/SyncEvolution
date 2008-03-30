@@ -171,15 +171,19 @@ bool SyncEvolutionCmdline::run() {
         boost::shared_ptr<EvolutionSyncConfig> config;
 
         if (m_template.empty()) {
+            if (m_server.empty()) {
+                m_err << "ERROR: --print-config requires either a --template or a server name." << endl;
+                return false;
+            }
             config.reset(new EvolutionSyncConfig(m_server));
             if (!config->exists()) {
-                cerr << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
+                m_err << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
                 return false;
             }
         } else {
             config = EvolutionSyncConfig::createServerTemplate(m_template);
             if (!config.get()) {
-                cerr << "ERROR: no configuration template for '" << m_template << "' available." << endl;
+                m_err << "ERROR: no configuration template for '" << m_template << "' available." << endl;
                 return false;
             }
         }
@@ -190,8 +194,11 @@ bool SyncEvolutionCmdline::run() {
             dumpProperties(*syncProps, config->getRegistry());
         }
 
-        list<string> sources = config->getSyncSources();
-        for (list<string>::const_iterator it = sources.begin();
+        list<string> sourceList = config->getSyncSources();
+        vector<string> sources;
+        append(sources, sourceList);
+        sort(sources.begin(), sources.end());
+        for (vector<string>::const_iterator it = sources.begin();
              it != sources.end();
              ++it) {
             if (m_sources.empty() ||
@@ -215,7 +222,7 @@ bool SyncEvolutionCmdline::run() {
         if (m_migrate) {
             from.reset(new EvolutionSyncConfig(m_server));
             if (!from->exists()) {
-                cerr << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
+                m_err << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
                 return false;
             }
 
@@ -250,7 +257,7 @@ bool SyncEvolutionCmdline::run() {
                 string configTemplate = m_template.empty() ? m_server : m_template;
                 from = EvolutionSyncConfig::createServerTemplate(configTemplate);
                 if (!from.get()) {
-                    cerr << "ERROR: no configuration template for '" << configTemplate << "' available." << endl;
+                    m_err << "ERROR: no configuration template for '" << configTemplate << "' available." << endl;
                     dumpServers("Available configuration templates:",
                                 EvolutionSyncConfig::getServerTemplates());
                     return false;
@@ -501,7 +508,7 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
     }
 }
 
-#ifdef ENABLE_UNIT_TESTS
+#ifdef ENABLE_INTEGRATION_TESTS
 
 /** simple line-by-line diff */
 static string diffStrings(const string &lhs, const string &rhs)
@@ -552,6 +559,81 @@ static string diffStrings(const string &lhs, const string &rhs)
         } \
     } while ( false )
 
+// returns last line, including trailing line break, empty if input is empty
+static string lastLine(const string &buffer)
+{
+    if (buffer.size() < 2) {
+        return buffer;
+    }
+
+    size_t line = buffer.rfind("\n", buffer.size() - 2);
+    if (line == buffer.npos) {
+        return buffer;
+    }
+
+    return buffer.substr(line + 1);
+}
+
+// remove lines starting with # from buffer,
+// empty lines
+static string filterConfig(const string &buffer)
+{
+    ostringstream res;
+
+    typedef boost::split_iterator<string::const_iterator> string_split_iterator;
+    for (string_split_iterator it =
+             boost::make_split_iterator(buffer, boost::first_finder("\n", boost::is_iequal()));
+         it != string_split_iterator();
+         ++it) {
+        if (!boost::starts_with(*it, "#") &&
+            !it->empty()) {
+            res << *it << endl;
+        }
+    }
+
+    return res.str();
+}
+
+// convert the internal config dump to .ini style
+static string internalToIni(const string &config)
+{
+    ostringstream res;
+
+    string section;
+    typedef boost::split_iterator<string::const_iterator> string_split_iterator;
+    for (string_split_iterator it =
+             boost::make_split_iterator(config, boost::first_finder("\n", boost::is_iequal()));
+         it != string_split_iterator();
+         ++it) {
+        string line(it->begin(), it->end());
+        if (line.empty()) {
+            continue;
+        }
+
+        size_t colon = line.find(':');
+        string prefix = line.substr(0, colon);
+        if (boost::contains(prefix, ".internal.ini")) {
+            continue;
+        }
+        size_t slash = prefix.find('/');
+        if (slash != line.npos) {
+            string newsource = prefix.substr(0, slash);
+            if (newsource != section) {
+                res << endl << "[" << newsource << "]" << endl;
+                section = newsource;
+            }
+        }
+        string assignment = line.substr(colon + 1);
+        // substitude aliases with generic values
+        boost::replace_first(assignment, "= F", "= 0");
+        boost::replace_first(assignment, "= T", "= 1");
+        boost::replace_first(assignment, "= md5", "= syncml:auth-md5");
+        res << assignment << endl;
+    }
+
+    return res.str();
+}
+
 
 /**
  * Testing is based on a text representation of a directory
@@ -574,6 +656,7 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testSetupFunambol);
     CPPUNIT_TEST(testSetupSynthesis);
     CPPUNIT_TEST(testPrintServers);
+    CPPUNIT_TEST(testPrintConfig);
     CPPUNIT_TEST(testTemplate);
     CPPUNIT_TEST(testSync);
     CPPUNIT_TEST_SUITE_END();
@@ -709,36 +792,7 @@ protected:
                             NULL);
         cmdline.doit();
         string res = scanFiles(root);
-        string expected = m_scheduleWorldConfig;
-        boost::replace_first(expected,
-                             "syncURL = http://sync.scheduleworld.com",
-                             "syncURL = http://my.funambol.com");
-
-        boost::replace_first(expected,
-                             "addressbook/config.ini:uri = card3",
-                             "addressbook/config.ini:uri = card");
-        boost::replace_first(expected,
-                             "addressbook/config.ini:type = addressbook",
-                             "addressbook/config.ini:type = addressbook:text/x-vcard");
-
-        boost::replace_first(expected,
-                             "calendar/config.ini:uri = event2",
-                             "calendar/config.ini:uri = event");
-        boost::replace_first(expected,
-                             "calendar/config.ini:sync = two-way",
-                             "calendar/config.ini:sync = disabled");
-
-        boost::replace_first(expected,
-                             "memo/config.ini:sync = two-way",
-                             "memo/config.ini:sync = disabled");
-
-        boost::replace_first(expected,
-                             "todo/config.ini:uri = task2",
-                             "todo/config.ini:uri = task");
-        boost::replace_first(expected,
-                             "todo/config.ini:sync = two-way",
-                             "todo/config.ini:sync = disabled");
-        CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+        CPPUNIT_ASSERT_EQUAL_DIFF(FunambolConfig(), res);
     }
 
     void testSetupSynthesis() {
@@ -754,40 +808,14 @@ protected:
                             NULL);
         cmdline.doit();
         string res = scanFiles(root);
-        string expected = m_scheduleWorldConfig;
-        boost::replace_first(expected,
-                             "syncURL = http://sync.scheduleworld.com",
-                             "syncURL = http://www.synthesis.ch/sync");
-
-        boost::replace_first(expected,
-                             "addressbook/config.ini:uri = card3",
-                             "addressbook/config.ini:uri = contacts");
-
-        boost::replace_first(expected,
-                             "calendar/config.ini:uri = event2",
-                             "calendar/config.ini:uri = events");
-        boost::replace_first(expected,
-                             "calendar/config.ini:sync = two-way",
-                             "calendar/config.ini:sync = disabled");
-
-        boost::replace_first(expected,
-                             "memo/config.ini:uri = note",
-                             "memo/config.ini:uri = notes");
-
-        boost::replace_first(expected,
-                             "todo/config.ini:uri = task2",
-                             "todo/config.ini:uri = tasks");
-        boost::replace_first(expected,
-                             "todo/config.ini:sync = two-way",
-                             "todo/config.ini:sync = disabled");
-        CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+        CPPUNIT_ASSERT_EQUAL_DIFF(SynthesisConfig(), res);
     }
 
     void testTemplate() {
         TestCmdline failure("--template", NULL);
         CPPUNIT_ASSERT(!failure.m_cmdline->parse());
         CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
-        CPPUNIT_ASSERT(boost::ends_with(failure.m_err.str(), "ERROR: missing parameter for '--template'\n"));
+        CPPUNIT_ASSERT_EQUAL(string("ERROR: missing parameter for '--template'\n"), lastLine(failure.m_err.str()));
 
         TestCmdline help("--template", "?", NULL);
         help.doit();
@@ -818,16 +846,109 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
     }
 
+    void testPrintConfig() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+        testSetupFunambol();
+
+        {
+            TestCmdline failure("--print-config", NULL);
+            CPPUNIT_ASSERT(failure.m_cmdline->parse());
+            CPPUNIT_ASSERT(!failure.m_cmdline->run());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
+            CPPUNIT_ASSERT_EQUAL(string("ERROR: --print-config requires either a --template or a server name.\n"),
+                                 lastLine(failure.m_err.str()));
+        }
+
+        {
+            TestCmdline failure("--print-config", "foo", NULL);
+            CPPUNIT_ASSERT(failure.m_cmdline->parse());
+            CPPUNIT_ASSERT(!failure.m_cmdline->run());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
+            CPPUNIT_ASSERT_EQUAL(string("ERROR: server 'foo' has not been configured yet.\n"),
+                                 lastLine(failure.m_err.str()));
+        }
+
+        {
+            TestCmdline failure("--print-config", "--template", "foo", NULL);
+            CPPUNIT_ASSERT(failure.m_cmdline->parse());
+            CPPUNIT_ASSERT(!failure.m_cmdline->run());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
+            CPPUNIT_ASSERT_EQUAL(string("ERROR: no configuration template for 'foo' available.\n"),
+                                 lastLine(failure.m_err.str()));
+        }
+
+        {
+            TestCmdline cmdline("--print-config", "--template", "scheduleworld", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            string actual = cmdline.m_out.str();
+            string filtered = filterConfig(actual);
+            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(m_scheduleWorldConfig)),
+                                      filtered);
+            // there should have been comments
+            CPPUNIT_ASSERT(actual.size() > filtered.size());
+        }
+
+        {
+            TestCmdline cmdline("--print-config", "--template", "default", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(m_scheduleWorldConfig)),
+                                      filterConfig(cmdline.m_out.str()));
+        }
+
+        {
+            TestCmdline cmdline("--print-config", "funambol", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(FunambolConfig())),
+                                      filterConfig(cmdline.m_out.str()));
+        }
+
+        {
+            TestCmdline cmdline("--print-config", "--template", "scheduleworld",
+                                "--sync-property", "syncURL=foo",
+                                "--source-property", "sync=disabled",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            string expected = filterConfig(internalToIni(m_scheduleWorldConfig));
+            boost::replace_first(expected,
+                                 "syncURL = http://sync.scheduleworld.com",
+                                 "syncURL = foo");
+            boost::replace_all(expected,
+                               "sync = two-way",
+                               "sync = disabled");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      filterConfig(cmdline.m_out.str()));
+        }
+
+        {
+            TestCmdline cmdline("--print-config", "--quiet",
+                                "--template", "scheduleworld",
+                                "funambol",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(internalToIni(m_scheduleWorldConfig),
+                                      cmdline.m_out.str());
+        }
+        
+    }
+
     void testSync() {
         TestCmdline failure("--sync", NULL);
         CPPUNIT_ASSERT(!failure.m_cmdline->parse());
         CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
-        CPPUNIT_ASSERT(boost::ends_with(failure.m_err.str(), "ERROR: missing parameter for '--sync'\n"));
+        CPPUNIT_ASSERT_EQUAL(string("ERROR: missing parameter for '--sync'\n"), lastLine(failure.m_err.str()));
 
         TestCmdline failure2("--sync", "foo", NULL);
         CPPUNIT_ASSERT(!failure2.m_cmdline->parse());
         CPPUNIT_ASSERT_EQUAL_DIFF("", failure2.m_out.str());
-        CPPUNIT_ASSERT(boost::ends_with(failure2.m_err.str(), "ERROR: '--sync foo': not one of the valid values (two-way, slow, refresh-from-client = refresh-client, refresh-from-server = refresh-server = refresh, one-way-from-client = one-way-client, one-way-from-server = one-way-server = one-way, disabled = none)\n"));
+        CPPUNIT_ASSERT_EQUAL(string("ERROR: '--sync foo': not one of the valid values (two-way, slow, refresh-from-client = refresh-client, refresh-from-server = refresh-server = refresh, one-way-from-client = one-way-client, one-way-from-server = one-way-server = one-way, disabled = none)\n"), lastLine(failure2.m_err.str()));
 
         TestCmdline help("--sync", "?", NULL);
         help.doit();
@@ -915,6 +1036,72 @@ private:
         vector<string> m_argvstr;
         boost::scoped_array<const char *> m_argv;
     };
+
+    string FunambolConfig() {
+        string config = m_scheduleWorldConfig;
+
+        boost::replace_first(config,
+                             "syncURL = http://sync.scheduleworld.com",
+                             "syncURL = http://my.funambol.com");
+
+        boost::replace_first(config,
+                             "addressbook/config.ini:uri = card3",
+                             "addressbook/config.ini:uri = card");
+        boost::replace_first(config,
+                             "addressbook/config.ini:type = addressbook",
+                             "addressbook/config.ini:type = addressbook:text/x-vcard");
+
+        boost::replace_first(config,
+                             "calendar/config.ini:uri = event2",
+                             "calendar/config.ini:uri = event");
+        boost::replace_first(config,
+                             "calendar/config.ini:sync = two-way",
+                             "calendar/config.ini:sync = disabled");
+
+        boost::replace_first(config,
+                             "memo/config.ini:sync = two-way",
+                             "memo/config.ini:sync = disabled");
+
+        boost::replace_first(config,
+                             "todo/config.ini:uri = task2",
+                             "todo/config.ini:uri = task");
+        boost::replace_first(config,
+                             "todo/config.ini:sync = two-way",
+                             "todo/config.ini:sync = disabled");
+
+        return config;
+    }
+
+    string SynthesisConfig() {
+        string config = m_scheduleWorldConfig;
+        boost::replace_first(config,
+                             "syncURL = http://sync.scheduleworld.com",
+                             "syncURL = http://www.synthesis.ch/sync");
+
+        boost::replace_first(config,
+                             "addressbook/config.ini:uri = card3",
+                             "addressbook/config.ini:uri = contacts");
+
+        boost::replace_first(config,
+                             "calendar/config.ini:uri = event2",
+                             "calendar/config.ini:uri = events");
+        boost::replace_first(config,
+                             "calendar/config.ini:sync = two-way",
+                             "calendar/config.ini:sync = disabled");
+
+        boost::replace_first(config,
+                             "memo/config.ini:uri = note",
+                             "memo/config.ini:uri = notes");
+
+        boost::replace_first(config,
+                             "todo/config.ini:uri = task2",
+                             "todo/config.ini:uri = tasks");
+        boost::replace_first(config,
+                             "todo/config.ini:sync = two-way",
+                             "todo/config.ini:sync = disabled");
+
+        return config;
+    }
 
     /** temporarily set env variable, restore old value on destruction */
     class ScopedEnvChange {

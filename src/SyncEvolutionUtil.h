@@ -26,6 +26,7 @@
 #include <string>
 using namespace std;
 
+/** concatenate all members of an iterator range, using sep between each pair of entries */
 template<class T> string join(const string &sep, T begin, T end)
 {
     stringstream res;
@@ -42,6 +43,25 @@ template<class T> string join(const string &sep, T begin, T end)
 
     return res.str();
 }
+
+/** append all entries in iterator range at the end of another container */
+template<class LHS, class RHS> void append(LHS &lhs, const RHS &rhs)
+{
+    for (typename RHS::const_iterator it = rhs.begin();
+         it != rhs.end();
+         ++it) {
+        lhs.push_back(*it);
+    }
+}
+template<class LHS, class IT> void append(LHS &lhs, const IT &begin, const IT &end)
+{
+    for (IT it = begin;
+         it != end;
+         ++it) {
+        lhs.push_back(*it);
+    }
+}
+
 
 /**
  * remove multiple slashes in a row and dots directly after a slash if not followed by filename,
