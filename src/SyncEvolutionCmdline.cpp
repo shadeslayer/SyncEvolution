@@ -396,7 +396,7 @@ bool SyncEvolutionCmdline::listPropValues(const ConfigPropertyRegistry &validPro
                 m_out << "   " << *line << endl;
             }
         } else {
-            m_out << "   no documentation available";
+            m_out << "   no documentation available" << endl;
         }
         return true;
     }
