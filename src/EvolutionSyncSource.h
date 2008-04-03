@@ -428,7 +428,6 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;
     virtual void logItem(SyncItem &item, const string &info, bool debug = false) = 0;
 
-    const boost::shared_ptr<EvolutionSyncSourceConfig> m_syncSourceConfig;
     const string m_changeId;
 
     class itemList : public set<string> {

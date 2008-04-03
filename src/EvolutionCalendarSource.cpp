@@ -114,7 +114,7 @@ EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
 char *EvolutionCalendarSource::authenticate(const char *prompt,
                                             const char *key)
 {
-    const char *passwd = m_syncSourceConfig ? m_syncSourceConfig->getPassword() : NULL;
+    const char *passwd = getPassword();
 
     LOG.debug("%s: authentication requested, prompt \"%s\", key \"%s\" => %s",
               getName(), prompt, key,

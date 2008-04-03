@@ -157,8 +157,8 @@ void EvolutionContactSource::open()
     // users are not expected to configure an authentication method,
     // so pick one automatically if the user indicated that he wants authentication
     // by setting user or password
-    const char *user = m_syncSourceConfig ? m_syncSourceConfig->getUser() : NULL,
-        *passwd = m_syncSourceConfig ? m_syncSourceConfig->getPassword() : NULL;
+    const char *user = getUser(),
+        *passwd = getPassword();
     if (user && user[0] || passwd && passwd[0]) {
         GList *authmethod;
         if (!e_book_get_supported_auth_methods(m_addressbook, &authmethod, &gerror)) {

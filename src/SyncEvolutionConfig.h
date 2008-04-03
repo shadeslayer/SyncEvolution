@@ -313,6 +313,47 @@ typedef TypedConfigProperty<unsigned int> UIntConfigProperty;
 typedef TypedConfigProperty<long> LongConfigProperty;
 typedef TypedConfigProperty<unsigned long> ULongConfigProperty;
 
+/**
+ * This interface has to be provided by the user of the config
+ * to let the config code interact with the user.
+ */
+class ConfigUserInterface {
+ public:
+    virtual ~ConfigUserInterface() {}
+
+    /**
+     * A helper function which interactively asks the user for
+     * a certain password. May throw errors.
+     *
+     * @param descr     A simple string explaining what the password is needed for,
+     *                  e.g. "SyncML server". This string alone has to be enough
+     *                  for the user to know what the password is for, i.e. the
+     *                  string has to be unique.
+     * @return entered password
+     */
+    virtual string askPassword(const string &descr) = 0;
+};
+
+class PasswordConfigProperty : public ConfigProperty {
+ public:
+    PasswordConfigProperty(const string &name, const string &comment, const string &def = string("")) :
+       ConfigProperty(name, comment, def)
+           {}
+
+    /**
+     * Check the password and cache the result.
+     */
+    virtual void checkPassword(ConfigNode &node,
+                               ConfigUserInterface &ui,
+                               const string &descr,
+                               string &cachedPassword);
+
+    /**
+     * return the cached value if necessary and possible
+     */
+    virtual string getCachedProperty(ConfigNode &node,
+                                     const string &cachedPassword);
+};
 
 /**
  * Instead of reading and writing strings, this class interprets the content
@@ -368,7 +409,11 @@ class ConfigStringCache {
  public:
     const char *getProperty(const ConfigNode &node, const ConfigProperty &prop) {
         string value = prop.getProperty(node);
-        pair< map<string, string>::iterator, bool > res = m_cache.insert(pair<string,string>(prop.getName(), value));
+        return storeString(prop.getName(), value);
+    }
+
+    const char *storeString(const string &key, const string &value) {
+        pair< map<string, string>::iterator, bool > res = m_cache.insert(pair<string,string>(key, value));
         if (!res.second) {
             res.first->second = value;
         }
@@ -432,7 +477,7 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     EvolutionSyncConfig(const string &server,
                         boost::shared_ptr<ConfigTree> tree = boost::shared_ptr<ConfigTree>());
 
-    /** absolute directory name of the configuration root */
+   /** absolute directory name of the configuration root */
     string getRootPath() const;
 
     typedef list< pair<string, string> > ServerList;
@@ -610,6 +655,15 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     virtual void setUsername(const string &value, bool temporarily = false);
     virtual const char*  getPassword() const;
     virtual void setPassword(const string &value, bool temporarily = false);
+
+    /**
+     * Look at the password setting and if it requires user interaction,
+     * get it from the user. Then store it for later usage in getPassword().
+     * Without this call, getPassword() returns the original, unmodified
+     * config string.
+     */
+    virtual void checkPassword(ConfigUserInterface &ui);
+
     virtual bool getUseProxy() const;
     virtual void setUseProxy(bool value, bool temporarily = false);
     virtual const char*  getProxyHost() const;
@@ -618,6 +672,7 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     virtual const char* getProxyUsername() const;
     virtual void setProxyUsername(const string &value, bool temporarily = false);
     virtual const char* getProxyPassword() const;
+    virtual void checkProxyPassword(ConfigUserInterface &ui);
     virtual void setProxyPassword(const string &value, bool temporarily = false);
     virtual const char*  getSyncURL() const;
     virtual void setSyncURL(const string &value, bool temporarily = false);
@@ -667,6 +722,8 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
 private:
     string m_server;
     bool m_oldLayout;
+    string m_cachedPassword;
+    string m_cachedProxyPassword;
 
     /** holds all config nodes relative to the root that we found */
     boost::shared_ptr<ConfigTree> m_tree;
@@ -764,6 +821,9 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
 
     const char *getPassword() const;
     virtual void setPassword(const string &value, bool temporarily = false);
+
+    /** same as EvolutionSyncConfig::checkPassword() */
+    virtual void checkPassword(ConfigUserInterface &ui);
 
     virtual const char *getDatabaseID() const;
     virtual void setDatabaseID(const string &value, bool temporarily = false);
@@ -915,6 +975,7 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
     string m_name;
     SyncSourceNodes m_nodes;
     mutable ConfigStringCache m_stringCache;
+    string m_cachedPassword;
 };
 
 /**

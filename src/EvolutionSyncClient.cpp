@@ -34,6 +34,7 @@
 using namespace std;
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/foreach.hpp>
 
 #include <sys/stat.h>
 #include <pwd.h>
@@ -590,6 +591,26 @@ void unref(SourceList *sourceList)
     delete sourceList;
 }
 
+string EvolutionSyncClient::askPassword(const string &descr)
+{
+    char buffer[256];
+
+    printf("Enter password for %s: ",
+           descr.c_str());
+    fflush(stdout);
+    if (fgets(buffer, sizeof(buffer), stdin) &&
+        strcmp(buffer, "\n")) {
+        size_t len = strlen(buffer);
+        if (len && buffer[len - 1] == '\n') {
+            buffer[len - 1] = 0;
+        }
+        return buffer;
+    } else {
+        throwError(string("could not read password for ") + descr);
+        return "";
+    }
+}
+
 void EvolutionSyncClient::throwError(const string &error)
 {
 #ifdef IPHONE
@@ -778,6 +799,15 @@ int EvolutionSyncClient::sync()
 
         // give derived class also a chance to update the configs
         prepare(sourceList.getSourceArray());
+
+        // ask for passwords now
+        checkPassword(*this);
+        if (getUseProxy()) {
+            checkProxyPassword(*this);
+        }
+        BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+            source->checkPassword(*this);
+        }
 
         // start background thread if not running yet:
         // necessary to catch problems with Evolution backend

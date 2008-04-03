@@ -235,17 +235,26 @@ static ConfigProperty syncPropDevID("deviceId",
                                     "UUID created automatically for new configurations) among all clients\n"
                                     "accessing the same server");
 static ConfigProperty syncPropUsername("username",
-                                       "authorization for the SyncML server",
+                                       "user name used for authorization with the SyncML server",
                                        "your SyncML server account name");
-static ConfigProperty syncPropPassword("password", "",
-                                       "your SyncML server password");
+static PasswordConfigProperty syncPropPassword("password",
+                                               "password used for authorization with the SyncML server;\n"
+                                               "in addition to specifying it directly as plain text, it can\n"
+                                               "also be read from the standard input or from an environment\n"
+                                               "variable of your choice:\n"
+                                               "  plain text: password = <insert your password here>\n"
+                                               "         ask: password = -\n"
+                                               "env variable: password = ${<name of environment variable>}\n",
+                                               "your SyncML server password");
 static BoolConfigProperty syncPropUseProxy("useProxy",
                                            "set to T to enable an HTTP proxy");
 static ConfigProperty syncPropProxyHost("proxyHost",
                                         "proxy URL (http://<host>:<port>)");
 static ConfigProperty syncPropProxyUsername("proxyUsername",
-                                            "authentication for proxy");
-static ConfigProperty syncPropProxyPassword("proxyPassword", "");
+                                            "authentication for proxy: username");
+static PasswordConfigProperty syncPropProxyPassword("proxyPassword",
+                                                    "proxy password, can be specified in different ways,\n"
+                                                    "see SyncML server password for details\n");
 static StringConfigProperty syncPropClientAuthType("clientAuthType",
                                                    "- empty or \"md5\" for secure method (recommended)\n"
                                                    "- \"basic\" for insecure method",
@@ -336,16 +345,68 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
 
 const char *EvolutionSyncConfig::getUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropUsername); }
 void EvolutionSyncConfig::setUsername(const string &value, bool temporarily) { syncPropUsername.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getPassword() const { return m_stringCache.getProperty(*m_configNode, syncPropPassword); }
-void EvolutionSyncConfig::setPassword(const string &value, bool temporarily) { syncPropPassword.setProperty(*m_configNode, value, temporarily); }
+const char *EvolutionSyncConfig::getPassword() const {
+    string password = syncPropPassword.getCachedProperty(*m_configNode, m_cachedPassword);
+    return m_stringCache.storeString(syncPropPassword.getName(), password);
+}
+void EvolutionSyncConfig::checkPassword(ConfigUserInterface &ui) {
+    syncPropPassword.checkPassword(*m_configNode, ui, "SyncML server", m_cachedPassword);
+}
+
+void PasswordConfigProperty::checkPassword(ConfigNode &node,
+                                           ConfigUserInterface &ui,
+                                           const string &descr,
+                                           string &cachedPassword)
+{
+    string password = getProperty(node);
+
+    if (password == "-") {
+        password = ui.askPassword(descr);
+    } else if(boost::starts_with(password, "${") &&
+              boost::ends_with(password, "}")) {
+        string envname = password.substr(2, password.size() - 3);
+        const char *envval = getenv(envname.c_str());
+        if (!envval) {
+            EvolutionSyncClient::throwError(string("the environment variable '") +
+                                            envname +
+                                            "' for the '" +
+                                            descr +
+                                            "' password is not set");
+        } else {
+            password = envval;
+        }
+    }
+    cachedPassword = password;
+}
+
+string PasswordConfigProperty::getCachedProperty(ConfigNode &node,
+                                                 const string &cachedPassword)
+{
+    string password;
+
+    if (!cachedPassword.empty()) {
+        password = cachedPassword;
+    } else {
+        password = getProperty(node);
+    }
+    return password;
+}
+
+void EvolutionSyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*m_configNode, value, temporarily); }
 bool EvolutionSyncConfig::getUseProxy() const { return syncPropUseProxy.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getProxyHost() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyHost); }
 void EvolutionSyncConfig::setProxyHost(const string &value, bool temporarily) { syncPropProxyHost.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getProxyUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyUsername); }
 void EvolutionSyncConfig::setProxyUsername(const string &value, bool temporarily) { syncPropProxyUsername.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getProxyPassword() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyPassword); }
-void EvolutionSyncConfig::setProxyPassword(const string &value, bool temporarily) { syncPropProxyPassword.setProperty(*m_configNode, value, temporarily); }
+const char *EvolutionSyncConfig::getProxyPassword() const {
+    string password = syncPropProxyPassword.getCachedProperty(*m_configNode, m_cachedProxyPassword);
+    return m_stringCache.storeString(syncPropProxyPassword.getName(), password);
+}
+void EvolutionSyncConfig::checkProxyPassword(ConfigUserInterface &ui) {
+    syncPropProxyPassword.checkPassword(*m_configNode, ui, "proxy", m_cachedProxyPassword);
+}
+void EvolutionSyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cachedProxyPassword = ""; syncPropProxyPassword.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getSyncURL() const { return m_stringCache.getProperty(*m_configNode, syncPropSyncURL); }
 void EvolutionSyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getClientAuthType() const { return m_stringCache.getProperty(*m_configNode, syncPropClientAuthType); }
@@ -603,12 +664,13 @@ static ConfigProperty sourcePropURI("uri",
                                     "this is appended to the server's URL to identify the\n"
                                     "server's database");
 static ConfigProperty sourcePropUser("evolutionuser",
-                                     "authentication for backend data source\n"
+                                     "authentication for backend data source; password can be specified\n"
+                                     "in multiple ways, see SyncML server password for details\n"
                                      "\n"
                                      "Warning: setting evolutionuser/password in cases where it is not\n"
                                      "needed, as for example with local Evolution calendars and addressbooks,\n"
                                      "can cause the Evolution backend to hang.");
-static ConfigProperty sourcePropPassword("evolutionpassword", "");
+static PasswordConfigProperty sourcePropPassword("evolutionpassword", "");
 
 static StringConfigProperty sourcePropEncoding("encoding",
                                                "\"b64\" enables base64 encoding of outgoing items (not recommended)",
@@ -644,8 +706,14 @@ const char *EvolutionSyncSourceConfig::getDatabaseID() const { return m_stringCa
 void EvolutionSyncSourceConfig::setDatabaseID(const string &value, bool temporarily) { sourcePropDatabaseID.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getUser() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropUser); }
 void EvolutionSyncSourceConfig::setUser(const string &value, bool temporarily) { sourcePropUser.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *EvolutionSyncSourceConfig::getPassword() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropPassword); }
-void EvolutionSyncSourceConfig::setPassword(const string &value, bool temporarily) { sourcePropPassword.setProperty(*m_nodes.m_configNode, value, temporarily); }
+const char *EvolutionSyncSourceConfig::getPassword() const {
+    string password = sourcePropPassword.getCachedProperty(*m_nodes.m_configNode, m_cachedPassword);
+    return m_stringCache.storeString(sourcePropPassword.getName(), password);
+}
+void EvolutionSyncSourceConfig::checkPassword(ConfigUserInterface &ui) {
+    sourcePropPassword.checkPassword(*m_nodes.m_configNode, ui, m_name + " backend", m_cachedPassword);
+}
+void EvolutionSyncSourceConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; sourcePropPassword.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getURI() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropURI); }
 void EvolutionSyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getSync() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropSync); }
