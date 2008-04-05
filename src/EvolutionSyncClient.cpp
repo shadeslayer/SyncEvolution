@@ -34,6 +34,7 @@
 using namespace std;
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/foreach.hpp>
 
 #include <sys/stat.h>
@@ -728,9 +729,12 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
         }
         
         if (enabled) {
+            string url = getSyncURL();
+            boost::replace_first(url, "https://", "http://"); // do not distinguish between protocol in change tracking
+            string changeId = string("sync4jevolution:") + url + "/" + name;
             EvolutionSyncSourceParams params(name,
                                              getSyncSourceNodes(name),
-                                             string("sync4jevolution:") + getSyncURL() + "/" + name);
+                                             changeId);
             // the sync mode has to be set before instantiating the source
             // because the client library reads the preferredSyncMode at that time:
             // have to take a shortcut and set the property via its name

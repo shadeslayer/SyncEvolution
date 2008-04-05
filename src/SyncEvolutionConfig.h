@@ -685,6 +685,12 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     virtual unsigned int getMaxObjSize() const;
     virtual void setMaxObjSize(unsigned int value, bool temporarily = false);
     virtual unsigned long getReadBufferSize() const { return 0; }
+    virtual const char* getSSLServerCertificates() const;
+    virtual void setSSLServerCertificates(const string &value, bool temporarily = false);
+    virtual bool getSSLVerifyServer() const;
+    virtual void setSSLVerifyServer(bool value, bool temporarily = false);
+    virtual bool getSSLVerifyHost() const;
+    virtual void setSSLVerifyHost(bool value, bool temporarily = false);
     virtual bool  getCompression() const;
     virtual void setCompression(bool value, bool temporarily = false);
     virtual unsigned int getResponseTimeout() const { return 0; }

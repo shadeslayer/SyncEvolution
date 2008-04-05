@@ -303,6 +303,23 @@ static IntConfigProperty syncPropLogLevel("loglevel",
                                           "- 1 = only ERROR messages\n"
                                           "- 2 = also INFO messages\n"
                                           "- 3 = also DEBUG messages");
+static ConfigProperty syncPropSSLServerCertificates("SSLServerCertificates",
+                                                    "A string specifying the location of the certificates\n"
+                                                    "used to authenticate the server. When empty, the\n"
+                                                    "system's default location will be searched.");
+static BoolConfigProperty syncPropSSLVerifyServer("SSLVerifyServer",
+                                                  "The client refuses to establish the connection unless\n"
+                                                  "the server presents a valid certificate. Disabling this\n"
+                                                  "option considerably reduces the security of SSL\n"
+                                                  "(man-in-the-middle attacks become possible) and is not\n"
+                                                  "recommended.\n",
+                                                  "1");
+static BoolConfigProperty syncPropSSLVerifyHost("SSLVerifyHost",
+                                                "The client refuses to establish the connection unless the\n"
+                                                "server's certificate matches its host name. In cases where\n"
+                                                "the certificate still seems to be valid it might make sense\n"
+                                                "to disable this option and allow such connections.\n",
+                                                "1");
 
 ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
 {
@@ -330,6 +347,9 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropMaxObjSize);
         registry.push_back(&syncPropLoSupport);
         registry.push_back(&syncPropCompression);
+        registry.push_back(&syncPropSSLServerCertificates);
+        registry.push_back(&syncPropSSLVerifyServer);
+        registry.push_back(&syncPropSSLVerifyHost);
 
         registry.push_back(&syncPropServerNonce);
         syncPropServerNonce.setHidden(true);
@@ -433,6 +453,12 @@ int EvolutionSyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getPr
 void EvolutionSyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*m_configNode, value, temporarily); }
 int EvolutionSyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
+const char* EvolutionSyncConfig::getSSLServerCertificates() const { return m_stringCache.getProperty(*m_configNode, syncPropSSLServerCertificates); }
+void EvolutionSyncConfig::setSSLServerCertificates(const string &value, bool temporarily) { syncPropSSLServerCertificates.setProperty(*m_configNode, value, temporarily); }
+bool EvolutionSyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setSSLVerifyServer(bool value, bool temporarily) { syncPropSSLVerifyServer.setProperty(*m_configNode, value, temporarily); }
+bool EvolutionSyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHost.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncPropSSLVerifyHost.setProperty(*m_configNode, value, temporarily); }
 
 static void setDefaultProps(const ConfigPropertyRegistry &registry,
                             boost::shared_ptr<FilterConfigNode> node)

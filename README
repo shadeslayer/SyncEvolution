@@ -359,6 +359,20 @@ empty.
 *** the Evolution backend to hang.
 ***
 
+SSL encryption of the HTTP connection is supported if the underlying
+platform supports it. In order to enable it, use a syncURL with https
+instead of http prefix. Not all servers support this, though. In the
+default configuration, servers must present a trusted certificate
+where the host name of the certificate matches the host name of the
+URL. Configuration settings can be used to relax this checking, but
+this makes the connection less secure and is not recommended.
+
+If you get errors about a missing certificate file under
+/etc/ssl/certs, then check whether the system packages which provide
+that file are installed. On Debian/Ubuntu the package is called
+"ca-certificates". Alternatively it is possible to specify a different
+location of a custom certificate file in the configuration.
+
 
 Automatic Backups and Logging
 -----------------------------
