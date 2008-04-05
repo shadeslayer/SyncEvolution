@@ -299,7 +299,7 @@ bool SyncEvolutionCmdline::run() {
         if (m_status) {
             client.status();
         } else {
-            client.sync();
+            return client.sync() == 0;
         }
     }
 
