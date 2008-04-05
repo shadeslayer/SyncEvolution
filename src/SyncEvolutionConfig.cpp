@@ -20,6 +20,8 @@
 #include "EvolutionSyncSource.h"
 #include "EvolutionSyncClient.h"
 #include "FileConfigTree.h"
+#include "VolatileConfigTree.h"
+#include "VolatileConfigNode.h"
 
 #include <unistd.h>
 #include "config.h"
@@ -43,6 +45,14 @@ void ConfigProperty::splitComment(const string &comment, list<string> &commentLi
 void ConfigProperty::throwValueError(const ConfigNode &node, const string &name, const string &value, const string &error) const
 {
     EvolutionSyncClient::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
+}
+
+EvolutionSyncConfig::EvolutionSyncConfig() :
+    m_oldLayout(false)
+{
+    m_tree.reset(new VolatileConfigTree());
+    m_configNode.reset(new VolatileConfigNode());
+    m_hiddenNode = m_configNode;
 }
 
 EvolutionSyncConfig::EvolutionSyncConfig(const string &server,

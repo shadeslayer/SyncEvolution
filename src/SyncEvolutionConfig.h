@@ -477,6 +477,12 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     EvolutionSyncConfig(const string &server,
                         boost::shared_ptr<ConfigTree> tree = boost::shared_ptr<ConfigTree>());
 
+    /**
+     * Creates a temporary configuration.
+     * Can be copied around, but not flushed.
+     */
+    EvolutionSyncConfig();
+
    /** absolute directory name of the configuration root */
     string getRootPath() const;
 
