@@ -561,6 +561,16 @@ public:
         m_sourceArray[index] = 0;
         return &m_sourceArray[0];
     }
+
+    /** returns names of active sources */
+    set<string> getSources() {
+        set<string> res;
+
+        BOOST_FOREACH(SyncSource *source, *this) {
+            res.insert(source->getName());
+        }
+        return res;
+    }
    
     ~SourceList() {
         // free sync sources
@@ -747,9 +757,6 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
                 throwError(name + ": type unknown" );
             }
             sourceList.push_back(syncSource);
-            
-            // also open it; failing now is still safe
-            syncSource->open();    
         }
     }
 
@@ -799,10 +806,19 @@ int EvolutionSyncClient::sync()
         time_t now = time(NULL);
         LOG.LOG_DEVELOPER("current UTC date and time: %s", asctime(gmtime(&now)));
 
+        // instantiate backends, but do not open them yet
         initSources(sourceList);
 
-        // give derived class also a chance to update the configs
-        prepare(sourceList.getSourceArray());
+        // request all config properties once: throwing exceptions
+        // now is okay, whereas later it would lead to leaks in the
+        // not exception safe client library
+        EvolutionSyncConfig dummy;
+        set<string> activeSources = sourceList.getSources();
+        dummy.copy(*this, &activeSources);
+
+        // start background thread if not running yet:
+        // necessary to catch problems with Evolution backend
+        startLoopThread();
 
         // ask for passwords now
         checkPassword(*this);
@@ -813,9 +829,13 @@ int EvolutionSyncClient::sync()
             source->checkPassword(*this);
         }
 
-        // start background thread if not running yet:
-        // necessary to catch problems with Evolution backend
-        startLoopThread();
+        // open each source - failing now is still safe
+        BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+            source->open();
+        }
+
+        // give derived class also a chance to update the configs
+        prepare(sourceList.getSourceArray());
 
         // ready to go: dump initial databases and prepare for final report
         sourceList.syncPrepare();
