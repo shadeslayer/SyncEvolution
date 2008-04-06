@@ -115,6 +115,7 @@ CORE_SOURCES += AddressBookSourceRegister.cpp
 endif
 
 CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @ADDRESSBOOK_LIBS@ @LIBS@
+CORE_DEP = @SYNC4J_DEP@
 
 # put link to static c++ library into current directory, needed if compiling with --enable-static-c++
 libstdc++.a :
@@ -132,7 +133,7 @@ syncevolution_SOURCES = \
 # DBUS_DEFAULT_TIMEOUT hack on Maemo).
 syncevolution_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(CORE_LDADD)
 syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
-syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES)
+syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 
 syncecal_la_SOURCES = $(SYNCECAL_SOURCES)
 syncecal_la_LIBADD = @ECAL_LIBS@
@@ -170,6 +171,8 @@ SYNC4JSRC = @SYNC4JSRC@
 SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
 BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
 
+@SYNC4J_LIB@ : $(SYNC4J_SUBDIR)/all
+
 # include client library and boost in distribution
 dist-hook:
 	cp -r $(srcdir)/boost $(distdir)
@@ -192,12 +195,13 @@ distclean-local:
 # executed. The workaround is to explicitly set them as undefined on the
 # link line.
 client_test_SOURCES = client-test-app.cpp $(CORE_SOURCES)
-nodist_client_test_SOURCES = ClientTest.cpp client-test-main.cpp ClientTest.h
+CLIENT_LIB_TEST_FILES = ClientTest.h ClientTest.cpp client-test-main.cpp
+nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
 client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
-client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES)
+client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 
 # copy test files for several reasons:
 # - automake expects them here
@@ -208,12 +212,14 @@ client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES)
 LOCAL_TEST_FILES=$(notdir $(wildcard $(srcdir)/../test/*))
 
 # sources from SyncEvolution
-$(filter $(LOCAL_TEST_FILES), ClientTest.h ClientTest.cpp client-test-main.cpp) : % : $(srcdir)/../test/%
+$(filter $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES)) : % : $(srcdir)/../test/%
 	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
 
 # sources from compiled client library
-$(filter-out $(LOCAL_TEST_FILES), ClientTest.h ClientTest.cpp client-test-main.cpp) : % : $(SYNC4J_SUBDIR)/test/test/%
+$(filter-out $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES)) : % : $(SYNC4J_SUBDIR)/test/test/%
 	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
+
+$(CLIENT_LIB_TEST_FILES:%=$(SYNC4J_SUBDIR)/test/test/%): @SYNC4J_DEP@
 
 # extra dependency - don't remember why
 ClientTest.cpp : ClientTest.h
