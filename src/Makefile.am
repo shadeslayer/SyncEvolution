@@ -47,6 +47,7 @@ CORE_SOURCES  = \
 	ConfigTree.h \
 	ConfigNode.h \
 	VolatileConfigNode.h \
+	VolatileConfigTree.h \
         EvolutionSmartPtr.h \
 	\
 	SyncEvolutionUtil.cpp \
