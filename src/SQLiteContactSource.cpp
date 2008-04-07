@@ -237,8 +237,9 @@ SyncItem *SQLiteContactSource::createItem(const string &uid)
     return item.release();
 }
 
-string SQLiteContactSource::insertItem(string &uid, const SyncItem &item, bool &merged)
+TrackingSyncSource::InsertItemResult SQLiteContactSource::insertItem(const string &uid, const SyncItem &item)
 {
+    string newuid = uid;
     string creationTime;
     std::auto_ptr<VObject> vobj(VConverter::parse((char *)((SyncItem &)item).getData()));
     if (vobj.get() == 0) {
@@ -365,9 +366,11 @@ string SQLiteContactSource::insertItem(string &uid, const SyncItem &item, bool &
                       
     if (!uid.size()) {
         // figure out which UID was assigned to the new contact
-        uid = m_sqlite.findColumn("SQLITE_SEQUENCE", "NAME", "ABPerson", "SEQ", "");
+        newuid = m_sqlite.findColumn("SQLITE_SEQUENCE", "NAME", "ABPerson", "SEQ", "");
     }
-    return m_sqlite.time2str(modificationTime);
+    return InsertItemResult(newuid,
+                            m_sqlite.time2str(modificationTime),
+                            false);
 }
 
 

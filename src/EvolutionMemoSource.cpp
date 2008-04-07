@@ -78,7 +78,7 @@ SyncItem *EvolutionMemoSource::createItem(const string &luid)
     return item.release();
 }
 
-string EvolutionMemoSource::insertItem(string &luid, const SyncItem &item, bool &merged)
+EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const string &luid, const SyncItem &item)
 {
     const char *type = item.getDataType();
 
@@ -89,10 +89,12 @@ string EvolutionMemoSource::insertItem(string &luid, const SyncItem &item, bool 
         !strcasecmp(type, "raw") ||
         !strcasecmp(type, "text/x-vcalendar") ||
         !strcasecmp(type, "text/calendar")) {
-        return EvolutionCalendarSource::insertItem(luid, item, merged);
+        return EvolutionCalendarSource::insertItem(luid, item);
     }
     
     bool update = !luid.empty();
+    bool merged = false;
+    string newluid = luid;
     string modTime;
 
     eptr<char> text;
@@ -157,7 +159,7 @@ string EvolutionMemoSource::insertItem(string &luid, const SyncItem &item, bool 
             }
         } else {
             ItemID id(uid, "");
-            luid = id.getLUID();
+            newluid = id.getLUID();
             modTime = getItemModTime(id);
         }
     }
@@ -172,11 +174,11 @@ string EvolutionMemoSource::insertItem(string &luid, const SyncItem &item, bool 
             throwError(string("updating memo item ") + item.getKey(), gerror);
         }
         ItemID id = getItemID(subcomp);
-        luid = id.getLUID();
+        newluid = id.getLUID();
         modTime = getItemModTime(id);
     }
 
-    return modTime;
+    return InsertItemResult(newluid, modTime, merged);
 }
 
 #endif /* ENABLE_ECAL */

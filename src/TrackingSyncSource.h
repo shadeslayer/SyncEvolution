@@ -95,6 +95,27 @@ class TrackingSyncSource : public EvolutionSyncSource
      */
     virtual void listAllItems(RevisionMap_t &revisions) = 0;
 
+    class InsertItemResult {
+    public:
+        /**
+         * @param uid       the uid after the operation; if it hasn't changed during
+         *                  an update, then return the original uid
+         * @param revision  the revision string after the operation
+         * @param merged    set this to true if an existing item was updated instead of adding it
+         */
+        InsertItemResult(const string &uid,
+                         const string &revision,
+                         bool merged) :
+        m_uid(uid),
+            m_revision(revision),
+            m_merged(merged)
+            {}
+
+        const string m_uid;
+        const string m_revision;
+        const bool m_merged;
+    };
+
     /**
      * Create or modify an item.
      *
@@ -110,14 +131,11 @@ class TrackingSyncSource : public EvolutionSyncSource
      *
      * Errors are signalled by throwing an exception. 
      *
-     * @param uid      in: identifies the item to be modified, empty for creating;
-     *                 out: UID after the operation
+     * @param uid      identifies the item to be modified, empty for creating
      * @param item     contains the new content of the item and its MIME type
-     * @retval merged  set this to true if an existing item was updated instead of adding it;
-     *                 guaranteed to be initialized to false before the call
-     * @return the new revision string
+     * @return the result of inserting the item
      */
-    virtual string insertItem(string &uid, const SyncItem &item, bool &merged) = 0;
+    virtual InsertItemResult insertItem(const string &uid, const SyncItem &item) = 0;
 
     /**
      * Extract information for the item identified by UID

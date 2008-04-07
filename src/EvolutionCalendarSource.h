@@ -74,7 +74,7 @@ class EvolutionCalendarSource : public TrackingSyncSource
     // implementation of TrackingSyncSource callbacks
     //
     virtual void listAllItems(RevisionMap_t &revisions);
-    virtual string insertItem(string &luid, const SyncItem &item, bool &merged);
+    virtual InsertItemResult insertItem(const string &luid, const SyncItem &item);
     virtual void setItemStatusThrow(const char *key, int status);
     virtual void deleteItem(const string &luid);
     virtual void flush();

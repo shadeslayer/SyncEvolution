@@ -134,26 +134,22 @@ void TrackingSyncSource::exportData(ostream &out)
 
 int TrackingSyncSource::addItemThrow(SyncItem& item)
 {
-    string uid;
-    bool merged = false;
-    string revision = insertItem(uid, item, merged);
-    item.setKey(uid.c_str());
-    m_trackingNode->setProperty(uid, revision);
-    return merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
+    InsertItemResult res = insertItem("", item);
+    item.setKey(res.m_uid.c_str());
+    m_trackingNode->setProperty(res.m_uid, res.m_revision);
+    return res.m_merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
 }
 
 int TrackingSyncSource::updateItemThrow(SyncItem& item)
 {
-    const string olduid = item.getKey();
-    string newuid = olduid;
-    bool merged = false;
-    string revision = insertItem(newuid, item, merged);
-    if (olduid != newuid) {
-        m_trackingNode->removeProperty(olduid);
+    const string uid = item.getKey();
+    InsertItemResult res = insertItem(uid, item);
+    if (res.m_uid != uid) {
+        m_trackingNode->removeProperty(uid);
     }
-    item.setKey(newuid.c_str());
-    m_trackingNode->setProperty(newuid, revision);
-    return merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
+    item.setKey(res.m_uid.c_str());
+    m_trackingNode->setProperty(res.m_uid, res.m_revision);
+    return res.m_merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
 }
 
 int TrackingSyncSource::deleteItemThrow(SyncItem& item)

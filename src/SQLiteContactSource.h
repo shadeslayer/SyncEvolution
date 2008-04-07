@@ -68,7 +68,7 @@ class SQLiteContactSource : public TrackingSyncSource
 
     /* implementation of TrackingSyncSource interface */
     virtual void listAllItems(RevisionMap_t &revisions);
-    virtual string insertItem(string &uid, const SyncItem &item, bool &merged);
+    virtual InsertItemResult insertItem(const string &uid, const SyncItem &item);
     virtual void deleteItem(const string &uid);
     virtual void flush();
 

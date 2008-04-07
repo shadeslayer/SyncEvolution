@@ -240,9 +240,11 @@ void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
     TrackingSyncSource::setItemStatusThrow(key, status);
 }
 
-string EvolutionCalendarSource::insertItem(string &luid, const SyncItem &item, bool &merged)
+EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(const string &luid, const SyncItem &item)
 {
     bool update = !luid.empty();
+    bool merged = false;
+    string newluid = luid;
     string data = (const char *)item.getData();
     string modTime;
 
@@ -333,7 +335,7 @@ string EvolutionCalendarSource::insertItem(string &luid, const SyncItem &item, b
             }
         } else {
             ItemID id(uid, "");
-            luid = id.getLUID();
+            newluid = id.getLUID();
             modTime = getItemModTime(id);
         }
     }
@@ -353,11 +355,11 @@ string EvolutionCalendarSource::insertItem(string &luid, const SyncItem &item, b
             throwError(string("updating calendar item ") + item.getKey(), gerror);
         }
         ItemID id = getItemID(subcomp);
-        luid = id.getLUID();
+        newluid = id.getLUID();
         modTime = getItemModTime(id);
     }
 
-    return modTime;
+    return InsertItemResult(newluid, modTime, merged);
 }
 
 void EvolutionCalendarSource::deleteItem(const string &luid)
