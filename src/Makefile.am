@@ -241,6 +241,7 @@ $(filter-out $(LOCAL_TEST_FILES), testcases) : % : $(SYNC4J_SUBDIR)/test/test/%
 	perl -e '$$_ = join("", <>); s/^(ADR|TEL|EMAIL|PHOTO).*?(?=^\S)//msg; print;' testcases/vcard21.vcf >testcases/vcard21_sqlite.vcf
 
 test : client-test testcases synccompare
+.PHONY : test
 
 # rule to satisfy automatic dependencies on header files
 $(SYNC4J_SUBDIR)/%.h :
