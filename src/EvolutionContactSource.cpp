@@ -232,7 +232,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
                 if (!deleted) {
                     continue;
                 }
-                logItem(uid, "deleting item scheduled for removal", true);
+                logItem(string(uid), "deleting item scheduled for removal", true);
                 if (needPartial) {
                     // the observation is that the deleted item is not listed again
                     // below; apparently only changes made by someone else are recorded
@@ -495,7 +495,7 @@ SyncItem *EvolutionContactSource::createItem(const string &uid)
 
 string EvolutionContactSource::preparseVCard(SyncItem& item)
 {
-    string data = getData(item);
+    string data = (const char *)item.getData();
     // convert to 3.0 to get rid of quoted-printable encoded
     // non-ASCII chars, because Evolution does not support
     // decoding them
@@ -876,7 +876,7 @@ void EvolutionContactSource::logItem(const string &uid, const string &info, bool
     }
 }
 
-void EvolutionContactSource::logItem(SyncItem &item, const string &info, bool debug)
+void EvolutionContactSource::logItem(const SyncItem &item, const string &info, bool debug)
 {
     if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
         string line;

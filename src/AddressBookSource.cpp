@@ -1499,7 +1499,7 @@ void AddressBookSource::logItem(const string &uid, const string &info, bool debu
     }
 }
 
-void AddressBookSource::logItem(SyncItem &item, const string &info, bool debug)
+void AddressBookSource::logItem(const SyncItem &item, const string &info, bool debug)
 {
     if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
         string line;

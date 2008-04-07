@@ -77,17 +77,6 @@ void EvolutionSyncSource::resetItems()
     m_deletedItems.clear();
 }
 
-string EvolutionSyncSource::getData(SyncItem& item)
-{
-    char *mem = (char *)malloc(item.getDataSize() + 1);
-    memcpy(mem, item.getData(), item.getDataSize());
-    mem[item.getDataSize()] = 0;
-
-    string res(mem);
-    free(mem);
-    return res;
-}
-
 string EvolutionSyncSource::getPropertyValue(ManagementNode &node, const string &property)
 {
     char *value = node.readPropertyValue(property.c_str());

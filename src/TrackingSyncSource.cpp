@@ -17,10 +17,13 @@
  */
 
 #include "TrackingSyncSource.h"
+#include "SafeConfigNode.h"
+
+#include <ctype.h>
 
 TrackingSyncSource::TrackingSyncSource(const EvolutionSyncSourceParams &params) :
     EvolutionSyncSource(params),
-    m_trackingNode(params.m_nodes.m_trackingNode)
+    m_trackingNode(new SafeConfigNode(params.m_nodes.m_trackingNode))
 {
 }
 
@@ -132,23 +135,25 @@ void TrackingSyncSource::exportData(ostream &out)
 int TrackingSyncSource::addItemThrow(SyncItem& item)
 {
     string uid;
-    string revision = insertItem(uid, item);
+    bool merged = false;
+    string revision = insertItem(uid, item, merged);
     item.setKey(uid.c_str());
     m_trackingNode->setProperty(uid, revision);
-    return STC_OK;
+    return merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
 }
 
 int TrackingSyncSource::updateItemThrow(SyncItem& item)
 {
     const string olduid = item.getKey();
     string newuid = olduid;
-    string revision = insertItem(newuid, item);
+    bool merged = false;
+    string revision = insertItem(newuid, item, merged);
     if (olduid != newuid) {
         m_trackingNode->removeProperty(olduid);
     }
     item.setKey(newuid.c_str());
     m_trackingNode->setProperty(newuid, revision);
-    return STC_OK;
+    return merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
 }
 
 int TrackingSyncSource::deleteItemThrow(SyncItem& item)

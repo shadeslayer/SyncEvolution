@@ -237,7 +237,7 @@ SyncItem *SQLiteContactSource::createItem(const string &uid)
     return item.release();
 }
 
-string SQLiteContactSource::insertItem(string &uid, const SyncItem &item)
+string SQLiteContactSource::insertItem(string &uid, const SyncItem &item, bool &merged)
 {
     string creationTime;
     std::auto_ptr<VObject> vobj(VConverter::parse((char *)((SyncItem &)item).getData()));
@@ -405,10 +405,10 @@ void SQLiteContactSource::logItem(const string &uid, const string &info, bool de
     }
 }
 
-void SQLiteContactSource::logItem(SyncItem &item, const string &info, bool debug)
+void SQLiteContactSource::logItem(const SyncItem &item, const string &info, bool debug)
 {
     if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
-        string data(getData(item));
+        string data = (const char *)item.getData();
 
         // avoid pulling in a full vcard parser by just searching for a specific property,
         // FN in this case

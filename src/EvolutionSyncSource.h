@@ -301,9 +301,6 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     bool hasFailed() { return m_hasFailed; }
     void setFailed(bool failed) { m_hasFailed = failed; }
 
-    /** convenience function: copies item's data into string */
-    static string getData(SyncItem& item);
-
     /**
      * convenience function: gets property as string class
      *
@@ -371,6 +368,15 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     virtual int deleteItem(SyncItem& item);
 
     /**
+     * The client library invokes this call to delete all local
+     * items. SyncSources derived from EvolutionSyncSource should
+     * take care of that when beginSyncThrow() is called with
+     * deleteLocal == true and thus do not need to implement
+     * this method.
+     */
+    virtual void removeAllItems() {}
+
+    /**
      * Disambiguate getName(): we have inherited it from both SyncSource and
      * AbstractSyncSourceConfig. Both must return the same string.
      */
@@ -426,7 +432,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
 
     /** log a one-line info about an item */
     virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;
-    virtual void logItem(SyncItem &item, const string &info, bool debug = false) = 0;
+    virtual void logItem(const SyncItem &item, const string &info, bool debug = false) = 0;
 
     const string m_changeId;
 

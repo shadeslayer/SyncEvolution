@@ -803,8 +803,6 @@ int EvolutionSyncClient::sync()
         LOG.LOG_DEVELOPER("SyncML server account: %s", getUsername());
         LOG.LOG_DEVELOPER("client: SyncEvolution %s for %s",
                           getSwv(), getDevType());
-        time_t now = time(NULL);
-        LOG.LOG_DEVELOPER("current UTC date and time: %s", asctime(gmtime(&now)));
 
         // instantiate backends, but do not open them yet
         initSources(sourceList);
