@@ -893,6 +893,12 @@ void EvolutionSyncClient::status()
 
     SourceList sourceList(m_server, false, *this, false);
     initSources(sourceList);
+    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+        source->checkPassword(*this);
+    }
+    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+        source->open();
+    }
 
     sourceList.setLogdir(getLogDir(), 0, LOG_LEVEL_NONE);
     LOG.setLevel(LOG_LEVEL_INFO);
