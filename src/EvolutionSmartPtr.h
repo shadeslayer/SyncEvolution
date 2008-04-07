@@ -39,6 +39,11 @@ using namespace std;
 #include <boost/scoped_array.hpp>
 #include <boost/shared_ptr.hpp>
 
+template<class T> class EvolutionUnrefFree {
+ public:
+    static void unref(T *pointer) { free(pointer); }
+};
+
 class EvolutionUnref {
  public:
     /**
