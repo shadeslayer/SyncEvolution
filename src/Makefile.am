@@ -68,6 +68,9 @@ CORE_SOURCES  = \
 	FilterConfigNode.h \
 	FilterConfigNode.cpp \
 	\
+	SafeConfigNode.h \
+	SafeConfigNode.cpp \
+	\
 	FileConfigNode.h \
 	FileConfigNode.cpp \
 	\
