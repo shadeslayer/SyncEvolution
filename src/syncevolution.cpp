@@ -66,14 +66,18 @@ extern "C" EContact *e_contact_new_from_vcard(const char *vcard)
 class CmdLineLogger : public POSIXLog {
 protected:
     virtual void printLine(bool firstLine,
+                           time_t time,
                            const char *fullTime,
                            const char *shortTime,
+                           const char *utcTime,
                            LogLevel level,
                            const char *levelPrefix,
                            const char *line) {
         POSIXLog::printLine(firstLine,
+                            time,
                             fullTime,
                             shortTime,
+                            utcTime,
                             level,
                             levelPrefix,
                             line);
