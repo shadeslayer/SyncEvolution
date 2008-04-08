@@ -30,29 +30,21 @@ using namespace std;
 #include "EvolutionSmartPtr.h"
 
 #include <common/base/Log.h>
-#include <common/vocl/VObject.h>
-#include <common/vocl/VConverter.h>
 
 static const string
 EVOLUTION_CALENDAR_PRODID("PRODID:-//ACME//NONSGML SyncEvolution//EN"),
 EVOLUTION_CALENDAR_VERSION("VERSION:2.0");
 
-class unrefECalChanges {
+class unrefECalObjectList {
  public:
     /** free list of ECalChange instances */
     static void unref(GList *pointer) {
         if (pointer) {
-            GList *next = pointer;
-            do {
-                ECalChange *ecc = (ECalChange *)next->data;
-                g_object_unref(ecc->comp);
-                g_free(next->data);
-                next = next->next;
-            } while (next);
-            g_list_free(pointer);
+            e_cal_free_object_list(pointer);
         }
     }
 };
+
 
 EvolutionCalendarSource::EvolutionCalendarSource(ECalSourceType type,
                                                  const EvolutionSyncSourceParams &params) :
@@ -172,7 +164,7 @@ void EvolutionCalendarSource::listAllItems(RevisionMap_t &revisions)
     GList *nextItem;
         
     if (!e_cal_get_object_list_as_comp(m_calendar,
-                                       "(contains? \"any\" \"\")",
+                                       "#t",
                                        &nextItem,
                                        &gerror)) {
         throwError( "reading all items", gerror );
@@ -316,47 +308,58 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         ItemID id = getItemID(subcomp);
         const char *uid = NULL;
 
-        // TODO: create detached recurrences
+        // Trying to add a normal event which already exists leads to a
+        // gerror->domain == E_CALENDAR_ERROR
+        // gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS
+        // error. Depending on the Evolution version, the subcomp
+        // UID gets removed (>= 2.12) or remains unchanged.
+        //
+        // Existing detached recurrences are silently updated when
+        // trying to add them. This breaks our return code and change
+        // tracking.
+        //
+        // Escape this madness by checking the existence ourselve first.
 
-        if(!e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
-            if (gerror->domain == E_CALENDAR_ERROR &&
-                gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
-                // Deal with error due to adding already existing item, that can happen,
-                // for example with a "dumb" server which cannot pair items by UID.
-                logItem(item, "exists already, updating instead");
-                merged = true;
-                g_clear_error(&gerror);
+        icalcomponent *comp;
+        if (!e_cal_get_object(m_calendar,
+                              id.m_uid.c_str(),
+                              !id.m_rid.empty() ? id.m_rid.c_str() : NULL,
+                              &comp,
+                              &gerror)) {
+            if (gerror->domain != E_CALENDAR_ERROR ||
+                gerror->code != E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
+                throwError("checking for item", gerror);
+            }
+            g_clear_error(&gerror);
 
-                // Starting with Evolution 2.12, the old UID was removed during
-                // e_cal_create_object(). Restore it so that the updating below works.
-                icalcomponent_set_uid(subcomp, id.m_uid.c_str());
+            // this works for normal events and detached occurrences alike
+            if(e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
+                // the recurrence ID shouldn't have changed
+                ItemID newid(uid, id.m_rid);
+                newluid = newid.getLUID();
+                modTime = getItemModTime(newid);
             } else {
                 throwError( "storing new calendar item", gerror );
             }
         } else {
-            ItemID id(uid, "");
+            ItemID id = getItemID(comp);
+            icalcomponent_free(comp);
             newluid = id.getLUID();
-            modTime = getItemModTime(id);
+            logItem(item, "exists already, updating instead");
+            merged = true;
         }
     }
 
     if (update || merged) {
-        // TODO: update detached recurrence
-
-        // ensure that the component has the right UID - some servers replace it
-        // inside the VEVENT, but luckily the SyncML standard requires them to
-        // provide the original UID in an update
-        if (update && item.getKey() && item.getKey()[0]) {
-            ItemID id = ItemID::parseLUID(item.getKey());
-            icalcomponent_set_uid(subcomp, id.m_uid.c_str());
-        }
-        
-        if (!e_cal_modify_object(m_calendar, subcomp, CALOBJ_MOD_ALL, &gerror)) {
+        ItemID oldid = ItemID::parseLUID(newluid);
+        if (!e_cal_modify_object(m_calendar, subcomp,
+                                 oldid.m_rid.empty() ? CALOBJ_MOD_ALL : CALOBJ_MOD_THIS,
+                                 &gerror)) {
             throwError(string("updating calendar item ") + item.getKey(), gerror);
         }
-        ItemID id = getItemID(subcomp);
-        newluid = id.getLUID();
-        modTime = getItemModTime(id);
+        ItemID newid = getItemID(subcomp);
+        newluid = newid.getLUID();
+        modTime = getItemModTime(newid);
     }
 
     return InsertItemResult(newluid, modTime, merged);
@@ -367,9 +370,13 @@ void EvolutionCalendarSource::deleteItem(const string &luid)
     GError *gerror = NULL;
     ItemID id = ItemID::parseLUID(luid);
 
-    // TODO: support detached recurrences
-
-    if (!e_cal_remove_object(m_calendar, id.m_uid.c_str(), &gerror)) {
+    if (id.m_rid.empty() ?
+        !e_cal_remove_object(m_calendar, id.m_uid.c_str(), &gerror) :
+        !e_cal_remove_object_with_mod(m_calendar,
+                                      id.m_uid.c_str(),
+                                      id.m_rid.c_str(),
+                                      CALOBJ_MOD_THIS,
+                                      &gerror)) {
         if (gerror->domain == E_CALENDAR_ERROR &&
             gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
             LOG.debug("%s: %s: request to delete non-existant item ignored",
