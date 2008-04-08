@@ -374,7 +374,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      * deleteLocal == true and thus do not need to implement
      * this method.
      */
-    virtual void removeAllItems() {}
+    virtual int removeAllItems() { return 0; }
 
     /**
      * Disambiguate getName(): we have inherited it from both SyncSource and

@@ -81,7 +81,7 @@ public:
     virtual int addItem(SyncItem& item) { return m_source->addItem(item); }
     virtual int updateItem(SyncItem& item) { return m_source->updateItem(item); }
     virtual int deleteItem(SyncItem& item) { return m_source->deleteItem(item); }
-    virtual void removeAllItems() { m_source->removeAllItems(); }
+    virtual int removeAllItems() { return m_source->removeAllItems(); }
     const char *getName() { return m_source->getName(); }
     virtual ArrayElement* clone() { return NULL; }
 
