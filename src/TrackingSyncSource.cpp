@@ -37,7 +37,8 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
     // slow sync or refresh-from-server/client: clear tracking node and
     // recreate it based on current content of database
     if (!needPartial) {
-        map<string, string> props = m_trackingNode->readProperties();
+        map<string, string> props;
+        m_trackingNode->readProperties(props);
 
         for (map<string, string>::iterator it = props.begin();
              it != props.end();
@@ -83,7 +84,8 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
 
     // clear information about all items that we recognized as deleted
     if (needPartial) {
-        map<string, string> props = m_trackingNode->readProperties();
+        map<string, string> props;
+        m_trackingNode->readProperties(props);
 
         for (map<string, string>::iterator it = props.begin();
              it != props.end();

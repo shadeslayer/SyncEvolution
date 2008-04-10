@@ -73,17 +73,15 @@ void FilterConfigNode::setProperty(const string &property,
     m_node->setProperty(property, value, comment, defValue);
 }
 
-map<string, string> FilterConfigNode::readProperties() const
+void FilterConfigNode::readProperties(map<string, string> &props) const
 {
-    map<string, string> res = m_readOnlyNode->readProperties();
+    m_readOnlyNode->readProperties(props);
 
     for(ConfigFilter::const_iterator it = m_filter.begin();
         it != m_filter.end();
         it++) {
-        res.insert(*it);
+        props.insert(*it);
     }
-
-    return res;
 }
 
 void FilterConfigNode::removeProperty(const string &property)

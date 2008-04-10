@@ -207,7 +207,7 @@ string FileConfigNode::readProperty(const string &property) const {
 
 
 
-map<string, string> FileConfigNode::readProperties() const {
+void FileConfigNode::readProperties(map<string, string> &props) const {
     map<string, string> res;
     string value, property;
 
@@ -220,10 +220,9 @@ map<string, string> FileConfigNode::readProperties() const {
             // don't care about the result: only the first instance
             // of the property counts, so it doesn't matter when
             // inserting it again later fails
-            res.insert(pair<string, string>(property, value));
+            props.insert(pair<string, string>(property, value));
         }
     }
-    return res;
 }
 
 void FileConfigNode::removeProperty(const string &property)

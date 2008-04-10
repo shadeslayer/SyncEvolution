@@ -48,10 +48,10 @@ void SafeConfigNode::setProperty(const string &property,
                         defValue);
 }
 
-map<string, string> SafeConfigNode::readProperties() const
+void SafeConfigNode::readProperties(map<string, string> &props) const
 {
-    map<string, string> original = m_readOnlyNode->readProperties(),
-        res;
+    map<string, string> original;
+    m_readOnlyNode->readProperties(original);
 
     for(map<string, string>::iterator it = original.begin();
         it != original.end();
@@ -59,10 +59,8 @@ map<string, string> SafeConfigNode::readProperties() const
         string key = unescape(it->first);
         string value = unescape(it->second);
 
-        res.insert(make_pair(key, value));
+        props.insert(make_pair(key, value));
     }
-
-    return res;
 }
 
 void SafeConfigNode::removeProperty(const string &property)

@@ -73,8 +73,11 @@ class ConfigNode {
      * and their values. Does not include values which were
      * initialized with their defaults, if the implementation
      * remembers that.
+     *
+     * @retval props    to be filled with key/value pairs; guaranteed
+     *                  to be empty before the call
      */
-    virtual map<string, string> readProperties() const = 0;
+    virtual void readProperties(map<string, string> &props) const = 0;
 
     /**
      * Remove a certain property.

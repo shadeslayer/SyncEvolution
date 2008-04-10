@@ -515,7 +515,8 @@ static void copyProperties(const ConfigNode &fromProps,
 static void copyProperties(const ConfigNode &fromProps,
                            ConfigNode &toProps)
 {
-    map<string, string> props = fromProps.readProperties();
+    map<string, string> props;
+    fromProps.readProperties(props);
 
     for (map<string, string>::const_iterator it = props.begin();
          it != props.end();
