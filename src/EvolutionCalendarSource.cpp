@@ -351,9 +351,15 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
     }
 
     if (update || merged) {
-        ItemID oldid = ItemID::parseLUID(newluid);
+        ItemID id = ItemID::parseLUID(newluid);
+
+        // ensure that the component has the right UID
+        if (update && !id.m_uid.empty()) {
+            icalcomponent_set_uid(subcomp, id.m_uid.c_str());
+        }
+
         if (!e_cal_modify_object(m_calendar, subcomp,
-                                 oldid.m_rid.empty() ? CALOBJ_MOD_ALL : CALOBJ_MOD_THIS,
+                                 id.m_rid.empty() ? CALOBJ_MOD_ALL : CALOBJ_MOD_THIS,
                                  &gerror)) {
             throwError(string("updating calendar item ") + item.getKey(), gerror);
         }

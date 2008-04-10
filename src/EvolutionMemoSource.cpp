@@ -165,17 +165,19 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
     }
 
     if (update || merged) {
+        ItemID id = ItemID::parseLUID(newluid);
+
         // ensure that the component has the right UID
-        if (update && item.getKey() && item.getKey()[0]) {
-            icalcomponent_set_uid(subcomp, item.getKey());
+        if (update && !id.m_uid.empty()) {
+            icalcomponent_set_uid(subcomp, id.m_uid.c_str());
         }
-        
+
         if (!e_cal_modify_object(m_calendar, subcomp, CALOBJ_MOD_ALL, &gerror)) {
             throwError(string("updating memo item ") + item.getKey(), gerror);
         }
-        ItemID id = getItemID(subcomp);
-        newluid = id.getLUID();
-        modTime = getItemModTime(id);
+        ItemID newid = getItemID(subcomp);
+        newluid = newid.getLUID();
+        modTime = getItemModTime(newid);
     }
 
     return InsertItemResult(newluid, modTime, merged);
