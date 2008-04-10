@@ -18,12 +18,14 @@
 
 #include "TrackingSyncSource.h"
 #include "SafeConfigNode.h"
+#include "PrefixConfigNode.h"
 
 #include <ctype.h>
 
 TrackingSyncSource::TrackingSyncSource(const EvolutionSyncSourceParams &params) :
     EvolutionSyncSource(params),
-    m_trackingNode(new SafeConfigNode(params.m_nodes.m_trackingNode))
+    m_trackingNode(new PrefixConfigNode("item-",
+                                        boost::shared_ptr<ConfigNode>(new SafeConfigNode(params.m_nodes.m_trackingNode))))
 {
 }
 

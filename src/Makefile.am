@@ -71,6 +71,9 @@ CORE_SOURCES  = \
 	SafeConfigNode.h \
 	SafeConfigNode.cpp \
 	\
+	PrefixConfigNode.h \
+	PrefixConfigNode.cpp \
+	\
 	FileConfigNode.h \
 	FileConfigNode.cpp \
 	\
