@@ -508,25 +508,97 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
     if (full) {
         out << endl <<
             "Options:" << endl <<
-            "  --sync|-s <mode>" << endl <<
-            "    Temporarily synchronize the active sources in that mode. Useful" << endl <<
-            "    for a 'refresh-from-server' or 'refresh-from-client' sync which" << endl <<
-            "    clears all data at one end and copies all items from the other." << endl <<
-            "  " << endl <<
-            "  --status|-t" << endl <<
-            "    The changes made to local data since the last synchronization are" << endl <<
-            "    shown without starting a new one. This can be used to see in advance" << endl <<
-            "    whether the local data needs to be synchronized with the server." << endl <<
-            "  " << endl <<
-            "  --quiet|-q" << endl <<
-            "    Suppresses most of the normal output during a synchronization. The" << endl <<
-            "    log file still contains all the information." << endl <<
-            "  " << endl <<
-            "  --help|-h" << endl <<
-            "    Prints usage information." << endl <<
-            "  " << endl <<
-            "  --version" << endl <<
-            "    Prints the SyncEvolution version." << endl;
+            "--sync|-s <mode>" << endl <<
+            "--sync|-s ?" << endl <<
+            "  Temporarily synchronize the active sources in that mode. Useful" << endl <<
+            "  for a \"refresh-from-server\" or \"refresh-from-client\" sync which" << endl <<
+            "  clears all data at one end and copies all items from the other." << endl <<
+            "" << endl <<
+            "--print-servers" << endl <<
+            "  Prints the names of all configured servers to stdout." << endl <<
+            "" << endl <<
+            "--print-config|-p" << endl <<
+            "  Prints the complete configuration for the selected server" << endl <<
+            "  to stdout, including up-to-date comments for all properties. The" << endl <<
+            "  format is the normal .ini format with source configurations in" << endl <<
+            "  different sections introduced with [<source>] lines. Can be combined" << endl <<
+            "  with --sync-property and --source-property to modify the configuration" << endl <<
+            "  on-the-fly. When one or more sources are listed after the <server>" << endl <<
+            "  name on the command line, then only the configs of those sources are" << endl <<
+            "  printed. Using --quiet suppresses the comments for each property." << endl <<
+            "  When setting a --template, then the reference configuration for" << endl <<
+            "  that server is printed instead of an existing configuration." << endl <<
+            "" << endl <<
+            "-–configure|-c" << endl <<
+            "  Modify the configuration files for the selected server. If no such" << endl <<
+            "  configuration exists, then a new one is created using one of the" << endl <<
+            "  template configurations (see --template option). When creating" << endl <<
+            "  a new configuration only the active sources will be set to active" << endl <<
+            "  in the new configuration, i.e. \"syncevolution -c scheduleworld addressbook\"" << endl <<
+            "  followed by \"syncevolution scheduleworld\" will only synchronize the" << endl <<
+            "  address book. The other sources are created in a disabled state." << endl <<
+            "  When modifying an existing configuration and sources are specified," << endl <<
+            "  then the source properties of only those sources are modified." << endl <<
+            "" << endl <<
+            "--migrate" << endl <<
+            "  In SyncEvolution <= 0.7 a different layout of configuration files" << endl <<
+            "  was used. Using --migrate will automatically migrate to the new" << endl <<
+            "  layout and rename the old directory $HOME/.sync4j/evolution/<server> " << endl <<
+            "  into $HOME/.sync4j/evolution/<server>.old to prevent accidental use" << endl <<
+            "  of the old configuration. WARNING: old SyncEvolution releases cannot" << endl <<
+            "  use the new configuration!" << endl <<
+            "  The switch can also be used to migrate a configuration in the current" << endl <<
+            "  configuration directory: this preserves all property values, discards" << endl <<
+            "  obsolete properties and sets all comments exactly as if the configuration" << endl <<
+            "  had been created from scratch. WARNING: custom comments in the" << endl <<
+            "  configuration are not preserved." << endl <<
+            "  --migrate implies --configure and can be combined with modifying" << endl <<
+            "  properties." << endl <<
+            "" << endl <<
+            "--sync-property|-y <property>=<value>" << endl <<
+            "--sync-property|-y ?" << endl <<
+            "--sync-property|-y <property>=?" << endl <<
+            "  Overrides a configuration property in the <server>/config.ini file" << endl <<
+            "  for the current synchronization run or permanently when --configure" << endl <<
+            "  is used to update the configuration. Can be used multiple times." << endl <<
+            "  Specifying an unused property will trigger an error message." << endl <<
+            "" << endl <<
+            "--source-property|-z <property>=<value>" << endl <<
+            "--source-property|-z ?" << endl <<
+            "--source-property|-z <property>=?" << endl <<
+            "  Same as --sync-option, but applies to the configuration of all active" << endl <<
+            "  sources. \"--sync <mode>\" is a shortcut for \"--source-option sync=<mode>\"." << endl <<
+            "" << endl <<
+            "--properties|-r <file name>|- [NOT IMPLEMENTED]" << endl <<
+            "  Same as --sync-property and --source-property, but with properties" << endl <<
+            "  specified in a file with the same format that --print-config uses." << endl <<
+            "  \"-\" reads from stdin." << endl <<
+            "" << endl <<
+            "--template|-l <server name>|default|?" << endl <<
+            "  Can be used to select from one of the built-in default configurations" << endl <<
+            "  for known SyncML servers. Defaults to the <server> name, so --template" << endl <<
+            "  only has to be specified when creating multiple different configurations" << endl <<
+            "  for the same server. \"default\" is an alias for \"scheduleworld\" and can be" << endl <<
+            "  used as the starting point for servers which do not have a built-in" << endl <<
+            "  configuration." << endl <<
+            "  Each template contains a pseudo-random device ID. Therefore setting the" << endl <<
+            "  \"deviceId\" sync property is only necessary when manually recreating a" << endl <<
+            "  configuration or when a more descriptive name is desired." << endl <<
+            "" << endl <<
+            "--status|-t" << endl <<
+            "  The changes made to local data since the last synchronization are" << endl <<
+            "  shown without starting a new one. This can be used to see in advance" << endl <<
+            "  whether the local data needs to be synchronized with the server." << endl <<
+            "" << endl <<
+            "--quiet|-q" << endl <<
+            "  Suppresses most of the normal output during a synchronization. The" << endl <<
+            "  log file still contains all the information." << endl <<
+            "" << endl <<
+            "--help|-h" << endl <<
+            "  Prints usage information." << endl <<
+            "" << endl <<
+            "--version" << endl <<
+            "  Prints the SyncEvolution version." << endl;
     }
 
     if (error != "") {
