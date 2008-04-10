@@ -181,11 +181,6 @@ class AddressBookSource : public EvolutionSyncSource
     virtual SyncItem *createItem(const string &uid) { return createItem(uid, m_asVCard30); }
     virtual SyncItem *createItem(const string &uid, bool asVCard30);
     
-    //
-    // implementation of SyncSource
-    //
-    virtual ArrayElement *clone() { return new AddressBookSource(*this); }
-    
   protected:
     //
     // implementation of EvolutionSyncSource callbacks

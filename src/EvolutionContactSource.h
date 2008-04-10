@@ -59,11 +59,6 @@ class EvolutionContactSource : public EvolutionSyncSource
    
     virtual SyncItem *createItem(const string &uid);
     
-    //
-    // implementation of SyncSource
-    //
-    virtual ArrayElement *clone() { return new EvolutionContactSource(*this); }
-    
   protected:
     //
     // implementation of EvolutionSyncSource callbacks

@@ -64,11 +64,6 @@ class EvolutionCalendarSource : public TrackingSyncSource
    
     virtual SyncItem *createItem(const string &luid);
 
-    //
-    // implementation of SyncSource
-    //
-    virtual ArrayElement *clone() { return new EvolutionCalendarSource(*this); }
-
   protected:
     //
     // implementation of TrackingSyncSource callbacks

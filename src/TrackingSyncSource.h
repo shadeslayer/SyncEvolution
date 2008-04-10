@@ -208,9 +208,6 @@ class TrackingSyncSource : public EvolutionSyncSource
     virtual int updateItemThrow(SyncItem& item);
     virtual int deleteItemThrow(SyncItem& item);
 
-    /** cannot be cloned because clones would have to coordinate access to change tracking */
-    ArrayElement *clone() { return NULL; }
-
     boost::shared_ptr<ConfigNode> m_trackingNode;
 };
 

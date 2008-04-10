@@ -44,11 +44,6 @@ class EvolutionMemoSource : public EvolutionCalendarSource
     virtual const char *getMimeType() const { return "text/plain"; }
     virtual const char *getMimeVersion() const { return "1.0"; }
     virtual const char *getSupportedTypes() const { return "text/plain:1.0"; }
-
-    //
-    // implementation of SyncSource
-    //
-    virtual ArrayElement *clone() { return new EvolutionMemoSource(*this); }
 };
 
 #endif // ENABLE_ECAL
