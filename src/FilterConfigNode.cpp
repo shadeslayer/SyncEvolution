@@ -101,7 +101,7 @@ void FilterConfigNode::removeProperty(const string &property)
 void FilterConfigNode::flush()
 {
     if (!m_node.get()) {
-        EvolutionSyncClient::throwError(getName() + ": read-only, flushing allowed");
+        EvolutionSyncClient::throwError(getName() + ": read-only, flushing not allowed");
     }
     m_node->flush();
 }
