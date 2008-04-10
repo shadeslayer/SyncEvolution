@@ -121,9 +121,10 @@ class TrackingSyncSource : public EvolutionSyncSource
      *
      * The sync source should be flexible: if the UID is non-empty, it
      * shall modify the item referenced by the UID. If the UID is
-     * empty, but the item already exists (e.g., a calendar event
-     * which was imported by the user manually), then the existing
-     * item should also be updated.
+     * empty, the normal operation is to add it. But if the item
+     * already exists (e.g., a calendar event which was imported
+     * by the user manually), then the existing item should be
+     * updated also in the second case.
      *
      * Passing a UID of an item which does not exist is an error.
      * This error should be reported instead of covering it up by
