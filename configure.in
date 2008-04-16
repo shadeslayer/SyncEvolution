@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(src/syncevolution.cpp)
-AM_INIT_AUTOMAKE(syncevolution, 0.7)
+AM_INIT_AUTOMAKE(syncevolution, 0.8-alpha1)
 AM_CONFIG_HEADER(config.h)
 AC_LIBTOOL_DLOPEN
 
@@ -256,6 +256,7 @@ if test "$enable_ebook" = "yes"; then
         enable_any="yes"
 fi
 
+AM_CONDITIONAL([ENABLE_ECAL], [test "$enable_ecal" == "yes"])
 if test "$enable_ecal" = "yes"; then
         test "x${ECALFOUND}" == "xyes" || AC_MSG_ERROR([--enable-ecal requires pkg-config information for libecal, which was not found"])
         AC_DEFINE(ENABLE_ECAL, 1, [libecal available])
