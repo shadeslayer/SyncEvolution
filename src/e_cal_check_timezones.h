@@ -64,7 +64,8 @@ G_BEGIN_DECLS
  *                  modified by this call
  * @param tzlookup  a callback function which is called to retrieve
  *                  a calendar's VTIMEZONE definition; the returned
- *                  definition is freed by e_cal_check_timezones();
+ *                  definition is *not* freed by e_cal_check_timezones()
+ *                  (to be compatible with e_cal_get_timezone());
  *                  NULL indicates that no such timezone exists
  *                  or an error occurred
  * @param custom    an arbitrary pointer which is passed through to

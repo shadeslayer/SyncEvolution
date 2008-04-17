@@ -234,6 +234,60 @@ protected:
             "END:VCALENDAR\n";
         CPPUNIT_ASSERT_NO_THROW(luid = addItem(source, notimezone));
 
+        // fake VTIMEZONE where daylight saving starts on first Sunday in March
+        string fake_march = 
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "BEGIN:VTIMEZONE\n"
+            "TZID:FAKE\n"
+            "BEGIN:STANDARD\n"
+            "TZOFFSETFROM:-0400\n"
+            "TZOFFSETTO:-0500\n"
+            "TZNAME:EST MARCH\n"
+            "DTSTART:19701025T020000\n"
+            "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=-1SU;BYMONTH=10\n"
+            "END:STANDARD\n"
+            "BEGIN:DAYLIGHT\n"
+            "TZOFFSETFROM:-0500\n"
+            "TZOFFSETTO:-0400\n"
+            "TZNAME:EDT\n"
+            "DTSTART:19700405T020000\n"
+            "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=1SU;BYMONTH=3\n"
+            "END:DAYLIGHT\n"
+            "END:VTIMEZONE\n"
+            "BEGIN:VEVENT\n"
+            "UID:artificial-4\n"
+            "DTSTAMP:20060416T205224Z\n"
+            "DTSTART;TZID=FAKE:20060406T140000\n"
+            "DTEND;TZID=FAKE:20060406T143000\n"
+            "TRANSP:OPAQUE\n"
+            "SEQUENCE:2\n"
+            "SUMMARY:fake timezone with daylight starting in March\n"
+            "CLASS:PUBLIC\n"
+            "CREATED:20060416T205301Z\n"
+            "LAST-MODIFIED:20060416T205301Z\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+        CPPUNIT_ASSERT_NO_THROW(luid = addItem(source, fake_march));
+
+        string fake_may = fake_march;
+        boost::replace_first(fake_may,
+                             "UID:artificial-4",
+                             "UID:artificial-5");
+        boost::replace_first(fake_may,
+                             "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=1SU;BYMONTH=3",
+                             "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=1SU;BYMONTH=5");
+        boost::replace_first(fake_may,
+                             "starting in March",
+                             "starting in May");
+        boost::replace_first(fake_may,
+                             "TZNAME:EST MARCH",
+                             "TZNAME:EST MAY");
+        CPPUNIT_ASSERT_NO_THROW(luid = addItem(source, fake_may));
+
+        // insert again, shouldn't re-add timezone
+        CPPUNIT_ASSERT_NO_THROW(luid = addItem(source, fake_may));
     }
 };
 

@@ -102,6 +102,9 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
     icalcomponent *subcomp = NULL;
     icaltimezone *zone = icaltimezone_new();
     char *key = NULL, *value = NULL;
+    char *buffer = NULL;
+    char *zonestr = NULL;
+    char *tzid = NULL;
 
     /** a hash from old to new tzid; strings dynamically allocated */
     GHashTable *mapping = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
@@ -116,12 +119,13 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
     subcomp = icalcomponent_get_first_component(comp,
                                                 ICAL_VTIMEZONE_COMPONENT);
     while (subcomp) {
-        const char *tzid;
         if (icaltimezone_set_component(zone, subcomp)) {
-            tzid = icaltimezone_get_tzid(zone);
+            g_free(tzid);
+            tzid = g_strdup(icaltimezone_get_tzid(zone));
             if (tzid) {
                 const char *newtzid = e_cal_match_tzid(tzid);
                 if (newtzid) {
+                    /* matched against system time zone */
                     g_free(key);
                     key = g_strdup(tzid);
                     if (!key) {
@@ -137,6 +141,85 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
                     g_hash_table_insert(mapping, key, value);
                     key =
                         value = NULL;
+                } else {
+                    zonestr = g_strdup(icalcomponent_as_ical_string(subcomp));
+
+                    /* check for collisions with existing timezones */
+                    int counter;
+                    for (counter = 0;
+                         counter < 100 /* sanity limit */;
+                         counter++) {
+                        icaltimezone *existing_zone;
+
+                        if (counter) {
+                            g_free(value);
+                            value = g_strdup_printf("%s %d", tzid, counter);
+                        }
+                        existing_zone = tzlookup(counter ? value : tzid,
+                                                 custom,
+                                                 error);
+                        if (!existing_zone) {
+                            if (*error) {
+                                goto failed;
+                            } else {
+                                break;
+                            }
+                        }
+                        g_free(buffer);
+                        buffer = g_strdup(icalcomponent_as_ical_string(icaltimezone_get_component(existing_zone)));
+
+                        if (counter) {
+                            char *fulltzid = g_strdup_printf("TZID:%s", value);
+                            size_t baselen = strlen("TZID:") + strlen(tzid);
+                            size_t fulllen = strlen(fulltzid);
+                            char *tzidprop;
+                            /*
+                             * Map TZID with counter suffix back to basename.
+                             */
+                            tzidprop = strstr(buffer, fulltzid);
+                            g_assert(tzidprop);
+                            if (tzidprop) {
+                                g_assert(baselen < fulllen);
+                                memmove(tzidprop + baselen,
+                                        tzidprop + fulllen,
+                                        strlen(tzidprop + fulllen) + 1);
+                            }
+                            g_free(fulltzid);
+                        }
+                            
+
+                        /*
+                         * If the strings are identical, then the
+                         * VTIMEZONE definitions are identical.  If
+                         * they are not identical, then VTIMEZONE
+                         * definitions might still be semantically
+                         * correct and we waste some space by
+                         * needlesly duplicating the VTIMEZONE. This
+                         * is expected to occur rarely (if at all) in
+                         * practice.
+                         */
+                        if (!strcmp(zonestr, buffer)) {
+                            break;
+                        }
+                    }
+
+                    if (!counter) {
+                        /* does not exist, nothing to do */
+                    } else {
+                        /* timezone renamed */
+                        icalproperty *prop = icalcomponent_get_first_property(subcomp,
+                                                                              ICAL_TZID_PROPERTY);
+                        while (prop) {
+                            icalproperty_set_value_from_string(prop, value, "NO");
+                            prop = icalcomponent_get_next_property(subcomp,
+                                                                   ICAL_ANY_PROPERTY);
+                        }
+                        g_free(key);
+                        key = g_strdup(tzid);
+                        g_hash_table_insert(mapping, key, value);
+                        key =
+                            value = NULL;
+                    }
                 }
             }
         }
@@ -167,9 +250,11 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
                                                                         ICAL_ANY_PARAMETER);
                 while (param) {
                     if (icalparameter_isa(param) == ICAL_TZID_PARAMETER) {
-                        const char *tzid = icalparameter_get_tzid(param);
                         const char *oldtzid;
                         const char *newtzid;
+
+                        g_free(tzid);
+                        tzid = g_strdup(icalparameter_get_tzid(param));
                         
                         if (!g_hash_table_lookup_extended(mapping,
                                                           tzid,
@@ -207,6 +292,9 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
     if (zone) {
         icaltimezone_free(zone, 1);
     }
+    g_free(tzid);
+    g_free(zonestr);
+    g_free(buffer);
     g_free(key);
     g_free(value);
     
@@ -221,9 +309,18 @@ icaltimezone *e_cal_tzlookup_ecal(const char *tzid,
     icaltimezone *zone = NULL;
 
     if (e_cal_get_timezone(ecal, tzid, &zone, error)) {
-        g_assert(zone);
+        g_assert(*error == NULL);
         return zone;
     } else {
+        g_assert(*error);
+        if ((*error)->domain == E_CALENDAR_ERROR &&
+            (*error)->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
+            /*
+             * we had to trigger this error to check for the timezone existance,
+             * clear it and return NULL
+             */
+            g_clear_error(error);
+        }
         return NULL;
     }
 }
