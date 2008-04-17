@@ -101,6 +101,9 @@ static RegisterSyncSource registerMe("Evolution Calendar/Task List/Memos",
 class EvolutionCalendarTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(EvolutionCalendarTest);
     CPPUNIT_TEST(testInstantiate);
+    CPPUNIT_TEST(testOpenDefaultCalendar);
+    CPPUNIT_TEST(testOpenDefaultTodo);
+    CPPUNIT_TEST(testOpenDefaultMemo);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -119,6 +122,24 @@ protected:
         source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-memos", true));
         source.reset(EvolutionSyncSource::createTestingSource("calendar", "Evolution Memos:text/plain", true));
         source.reset(EvolutionSyncSource::createTestingSource("calendar", "Evolution Memos:text/calendar", true));
+    }
+
+    void testOpenDefaultCalendar() {
+        boost::shared_ptr<EvolutionSyncSource> source;
+        source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-calendar", true, NULL));
+        CPPUNIT_ASSERT_NO_THROW(source->open());
+    }
+
+    void testOpenDefaultTodo() {
+        boost::shared_ptr<EvolutionSyncSource> source;
+        source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-tasks", true, NULL));
+        CPPUNIT_ASSERT_NO_THROW(source->open());
+    }
+
+    void testOpenDefaultMemo() {
+        boost::shared_ptr<EvolutionSyncSource> source;
+        source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-memos", true, NULL));
+        CPPUNIT_ASSERT_NO_THROW(source->open());
     }
 };
 

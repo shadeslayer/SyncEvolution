@@ -210,13 +210,17 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
     return NULL;
 }
 
-EvolutionSyncSource *EvolutionSyncSource::createTestingSource(const string &name, const string &type, bool error)
+EvolutionSyncSource *EvolutionSyncSource::createTestingSource(const string &name, const string &type, bool error,
+                                                              const char *prefix)
 {
     EvolutionSyncConfig config("testing");
     SyncSourceNodes nodes = config.getSyncSourceNodes(name);
     EvolutionSyncSourceParams params(name, nodes, "");
     PersistentEvolutionSyncSourceConfig sourceconfig(name, nodes);
     sourceconfig.setSourceType(type);
+    if (prefix) {
+        sourceconfig.setDatabaseID(string(prefix) + "_" + name + "_1");
+    }
     return createSource(params, error);
 }
 

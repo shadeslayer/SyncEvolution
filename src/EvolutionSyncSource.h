@@ -332,12 +332,16 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      *
      * The source is instantiated with dummy configuration nodes under
      * the pseudo server name "testing". This function is used for
-     * testing sync sources, not for real syncs.
+     * testing sync sources, not for real syncs. If the prefix is set,
+     * then <prefix>_<name>_1 is used as database, just as in the
+     * Client::Sync and Client::Source tests. Otherwise the default
+     * database is used.
      *
      * @param error    throw a runtime error describing what the problem is if no matching source is found
      * @return NULL if no source can handle the given type
      */
-    static EvolutionSyncSource *createTestingSource(const string &name, const string &type, bool error);
+    static EvolutionSyncSource *createTestingSource(const string &name, const string &type, bool error,
+                                                    const char *prefix = getenv("CLIENT_TEST_EVOLUTION_PREFIX"));
 
     //
     // default implementation of SyncSource iterators
