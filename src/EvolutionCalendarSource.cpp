@@ -28,6 +28,7 @@ using namespace std;
 #include "EvolutionCalendarSource.h"
 #include "EvolutionMemoSource.h"
 #include "EvolutionSmartPtr.h"
+#include "e_cal_check_timezones.h"
 
 #include <common/base/Log.h>
 
@@ -278,6 +279,15 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
     }
 
     GError *gerror = NULL;
+
+    // fix up TZIDs
+    if (!e_cal_check_timezones(icomp,
+                               e_cal_tzlookup_ecal,
+                               (const void *)m_calendar.get(),
+                               &gerror)) {
+        throwError(string("fixing timezones") + data,
+                   gerror);
+    }
 
     // insert before adding/updating the event so that the new VTIMEZONE is
     // immediately available should anyone want it

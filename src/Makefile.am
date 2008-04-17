@@ -92,6 +92,12 @@ else
 CORE_SOURCES += EvolutionCalendarSourceRegister.cpp
 endif
 
+if ENABLE_ECAL
+SYNCECAL_SOURCES += \
+	e_cal_check_timezones.c \
+	e_cal_check_timezones.h
+endif
+
 SYNCEBOOK_SOURCES = \
         EvolutionContactSource.h \
 	EvolutionContactSource.cpp

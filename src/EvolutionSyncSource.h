@@ -386,6 +386,27 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      */
     const char *getName() { return SyncSource::getName(); }
 
+    /**
+     * source specific part of beginSync() - throws exceptions in case of error
+     *
+     * @param needAll           fill m_allItems
+     * @param needPartial       fill m_new/deleted/modifiedItems
+     * @param deleteLocal       erase all items
+     */
+    virtual void beginSyncThrow(bool needAll,
+                                bool needPartial,
+                                bool deleteLocal) = 0;
+
+    /**
+     * source specific part of endSync/setItemStatus/addItem/updateItem/deleteItem:
+     * throw exception in case of error
+     */
+    virtual void endSyncThrow() = 0;
+    virtual void setItemStatusThrow(const char *key, int status);
+    virtual int addItemThrow(SyncItem& item) = 0;
+    virtual int updateItemThrow(SyncItem& item) = 0;
+    virtual int deleteItemThrow(SyncItem& item) = 0;
+
   protected:
 #ifdef HAVE_EDS
     /**
@@ -411,28 +432,6 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
                      , GError *gerror = NULL
 #endif
                      );
-
-    /**
-     * source specific part of beginSync() - throws exceptions in case of error
-     *
-     * @param needAll           fill m_allItems
-     * @param needPartial       fill m_new/deleted/modifiedItems
-     * @param deleteLocal       erase all items
-     */
-    virtual void beginSyncThrow(bool needAll,
-                                bool needPartial,
-                                bool deleteLocal) = 0;
-
-    /**
-     * source specific part of endSync/setItemStatus/addItem/updateItem/deleteItem:
-     * throw exception in case of error
-     */
-    virtual void endSyncThrow() = 0;
-    virtual void setItemStatusThrow(const char *key, int status);
-    virtual int addItemThrow(SyncItem& item) = 0;
-    virtual int updateItemThrow(SyncItem& item) = 0;
-    virtual int deleteItemThrow(SyncItem& item) = 0;
-
 
     /** log a one-line info about an item */
     virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;

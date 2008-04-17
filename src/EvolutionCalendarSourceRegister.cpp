@@ -20,6 +20,8 @@
 #include "EvolutionMemoSource.h"
 #include "SyncEvolutionUtil.h"
 
+#include <boost/algorithm/string.hpp>
+
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
@@ -104,9 +106,20 @@ class EvolutionCalendarTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testOpenDefaultCalendar);
     CPPUNIT_TEST(testOpenDefaultTodo);
     CPPUNIT_TEST(testOpenDefaultMemo);
+    CPPUNIT_TEST(testTimezones);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
+    static string addItem(boost::shared_ptr<EvolutionSyncSource> source,
+                          string &data) {
+        SyncItem item;
+
+        item.setData(data.c_str(), data.size());
+        source->addItemThrow(item);
+        CPPUNIT_ASSERT(item.getKey());
+        return item.getKey();
+    }
+
     void testInstantiate() {
         boost::shared_ptr<EvolutionSyncSource> source;
         source.reset(EvolutionSyncSource::createTestingSource("calendar", "calendar", true));
@@ -140,6 +153,87 @@ protected:
         boost::shared_ptr<EvolutionSyncSource> source;
         source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-memos", true, NULL));
         CPPUNIT_ASSERT_NO_THROW(source->open());
+    }
+
+    void testTimezones() {
+        const char *prefix = getenv("CLIENT_TEST_EVOLUTION_PREFIX");
+        if (!prefix) {
+            prefix = "SyncEvolution_Test_";
+        }
+
+        boost::shared_ptr<EvolutionSyncSource> source;
+        source.reset(EvolutionSyncSource::createTestingSource("ical20", "evolution-calendar", true, prefix));
+        CPPUNIT_ASSERT_NO_THROW(source->open());
+
+        string newyork = 
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "BEGIN:VTIMEZONE\n"
+            "TZID:America/New_York\n"
+            "BEGIN:STANDARD\n"
+            "TZOFFSETFROM:-0400\n"
+            "TZOFFSETTO:-0500\n"
+            "TZNAME:EST\n"
+            "DTSTART:19701025T020000\n"
+            "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=-1SU;BYMONTH=10\n"
+            "END:STANDARD\n"
+            "BEGIN:DAYLIGHT\n"
+            "TZOFFSETFROM:-0500\n"
+            "TZOFFSETTO:-0400\n"
+            "TZNAME:EDT\n"
+            "DTSTART:19700405T020000\n"
+            "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=1SU;BYMONTH=4\n"
+            "END:DAYLIGHT\n"
+            "END:VTIMEZONE\n"
+            "BEGIN:VEVENT\n"
+            "UID:artificial\n"
+            "DTSTAMP:20060416T205224Z\n"
+            "DTSTART;TZID=America/New_York:20060406T140000\n"
+            "DTEND;TZID=America/New_York:20060406T143000\n"
+            "TRANSP:OPAQUE\n"
+            "SEQUENCE:2\n"
+            "SUMMARY:timezone New York with custom definition\n"
+            "DESCRIPTION:timezone New York with custom definition\n"
+            "CLASS:PUBLIC\n"
+            "CREATED:20060416T205301Z\n"
+            "LAST-MODIFIED:20060416T205301Z\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+
+        string luid;
+        CPPUNIT_ASSERT_NO_THROW(luid = addItem(source, newyork));
+
+        string newyork_suffix = newyork;
+        boost::replace_first(newyork_suffix,
+                             "UID:artificial",
+                             "UID:artificial-2");
+        boost::replace_all(newyork_suffix,
+                           "TZID:America/New_York",
+                           "TZID://FOOBAR/America/New_York-SUFFIX");
+        CPPUNIT_ASSERT_NO_THROW(luid = addItem(source, newyork_suffix));
+
+        
+        string notimezone = 
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "BEGIN:VEVENT\n"
+            "UID:artificial-3\n"
+            "DTSTAMP:20060416T205224Z\n"
+            "DTSTART;TZID=America/New_York:20060406T140000\n"
+            "DTEND;TZID=America/New_York:20060406T143000\n"
+            "TRANSP:OPAQUE\n"
+            "SEQUENCE:2\n"
+            "SUMMARY:timezone New York without custom definition\n"
+            "DESCRIPTION:timezone New York without custom definition\n"
+            "CLASS:PUBLIC\n"
+            "CREATED:20060416T205301Z\n"
+            "LAST-MODIFIED:20060416T205301Z\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+        CPPUNIT_ASSERT_NO_THROW(luid = addItem(source, notimezone));
+
     }
 };
 
