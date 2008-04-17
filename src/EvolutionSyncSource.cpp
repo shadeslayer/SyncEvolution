@@ -219,7 +219,7 @@ EvolutionSyncSource *EvolutionSyncSource::createTestingSource(const string &name
     PersistentEvolutionSyncSourceConfig sourceconfig(name, nodes);
     sourceconfig.setSourceType(type);
     if (prefix) {
-        sourceconfig.setDatabaseID(string(prefix) + "_" + name + "_1");
+        sourceconfig.setDatabaseID(string(prefix) + name + "_1");
     }
     return createSource(params, error);
 }
