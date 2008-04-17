@@ -29,9 +29,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#ifdef ENABLE_UNIT_TESTS
 CPPUNIT_REGISTRY_ADD_TO_DEFAULT("SyncEvolution");
-#endif
 
 string normalizePath(const string &path)
 {
