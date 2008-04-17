@@ -141,6 +141,11 @@ Building a Release
 - increase version number in configure.in/AM_INIT_AUTOMAKE
 - ensure files were updated:
   ./ChangeLog ./NEWS debian/changelog
+
+  For prereleases use "old version"+"new prerelease"-1 as
+  package version. That ensures that package versions are
+  higher than the old release, but lower than the final
+  release.
 - make distcheck
 - compile binary .tar.gz packages for different Evolution versions;
   done automatically by runtests.py on estamos.de (= Debian 3.0), using different Garnome
