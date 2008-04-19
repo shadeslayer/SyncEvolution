@@ -94,8 +94,8 @@ endif
 
 if ENABLE_ECAL
 SYNCECAL_SOURCES += \
-	e_cal_check_timezones.c \
-	e_cal_check_timezones.h
+	e-cal-check-timezones.c \
+	e-cal-check-timezones.h
 endif
 
 SYNCEBOOK_SOURCES = \

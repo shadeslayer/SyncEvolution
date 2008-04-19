@@ -28,7 +28,7 @@ using namespace std;
 #include "EvolutionCalendarSource.h"
 #include "EvolutionMemoSource.h"
 #include "EvolutionSmartPtr.h"
-#include "e_cal_check_timezones.h"
+#include "e-cal-check-timezones.h"
 
 #include <common/base/Log.h>
 

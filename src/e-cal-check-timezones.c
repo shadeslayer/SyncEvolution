@@ -17,7 +17,7 @@
  * 02111-1307  USA
  */
 
-#include "e_cal_check_timezones.h"
+#include "e-cal-check-timezones.h"
 #include <libecal/e-cal.h>
 #include <string.h>
 
@@ -330,7 +330,6 @@ icaltimezone *e_cal_tzlookup_icomp(const char *tzid,
                                    GError **error)
 {
     const icalcomponent *icomp = custom;
-    /* TODO */
 
-    return NULL;
+    return icalcomponent_get_timezone(icomp, tzid);
 }
