@@ -38,6 +38,16 @@
 
 #include "EvolutionSyncClient.h"
 #include "EvolutionSyncSource.h"
+#include "SyncEvolutionUtil.h"
+
+/*
+ * always provide this test class, even if not used:
+ * that way the test scripts can unconditionally
+ * invoke "client-test SyncEvolution"
+ */
+#ifndef ENABLE_UNIT_TESTS
+CPPUNIT_REGISTRY_ADD_TO_DEFAULT("SyncEvolution");
+#endif
 
 /**
  * a wrapper class which automatically does an open() in the constructor and a close() in the destructor
