@@ -1,1664 +1,2835 @@
-2007-12-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2008-03-16 08:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/client.supp, test/evo.supp, test/sys.supp: valgrind
+	  suppression rules
+	  
+	  The files were originally created for: sys = Debian Etch evo =
+	  Evolution trunk ~ 2.22 client = Funambol C++ client library post
+	  6.5
+
+2008-03-16 08:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: fixed rebuild of Evolution trunk: install stamp
+	  must be removed, otherwise it won't reinstall
+
+2008-03-13 19:42  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSourceRegister.cpp: support text/x-vcalendar
+	  to be backwards compatible way with old configs
+
+2008-03-13 19:41  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionConfig.cpp: added text/x-vcalendar alias
+
+2008-03-13 19:41  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.h: clarified which data has to be set in
+	  createItem()
+
+2008-03-11 22:13  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSourceRegister.cpp,
+	  src/SyncEvolutionConfig.cpp: fixed memo type property
+
+2008-03-10 22:45  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in, src/AddressBookConstants.cpp,
+	  src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/AddressBookSourceRegister.cpp,
+	  src/EvolutionCalendarSource.cpp,
+	  src/EvolutionCalendarSourceRegister.cpp,
+	  src/EvolutionContactSource.cpp,
+	  src/EvolutionContactSourceRegister.cpp,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h,
+	  src/Makefile.am, src/SQLiteContactSource.cpp,
+	  src/SQLiteContactSourceRegister.cpp, src/SyncEvolutionConfig.cpp,
+	  src/SyncEvolutionConfig.h, src/client-test-app.cpp: - implemented
+	  value aliases for the configuration - rewrote interpretation of
+	  "type" property: is now a combination of backend and mime type -
+	  improved registration of sync sources (RegisterSyncSource)
+
+2008-03-09 19:08  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/FileConfigNode.cpp, src/SyncEvolutionConfig.cpp,
+	  src/SyncEvolutionConfig.h, src/client-test-app.cpp: implemented
+	  default values and creating config, cleaned up some properties
+
+2008-03-09 17:11  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: added comment about setting sync
+	  mode
+
+2008-03-09 16:57  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionConfig.cpp, src/SyncEvolutionConfig.h,
+	  src/client-test-app.cpp: replaced direct setting of properties
+	  with set methods
+
+2008-03-09 14:20  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionMemoSource.h: adapted to new prototype of virtual
+	  mime type functions
+
+2008-03-08 10:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: set DEVICE_TYPE: this is used as part of the DevInf
+	  to distinguish different SyncEvolution platforms
+
+2008-03-07 16:49  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/boost, src/boost/assert.hpp, src/boost/checked_delete.hpp,
+	  src/boost/config, src/boost/config.hpp, src/boost/config/abi,
+	  src/boost/config/abi/borland_prefix.hpp,
+	  src/boost/config/abi/borland_suffix.hpp,
+	  src/boost/config/abi/msvc_prefix.hpp,
+	  src/boost/config/abi/msvc_suffix.hpp,
+	  src/boost/config/abi_prefix.hpp, src/boost/config/abi_suffix.hpp,
+	  src/boost/config/auto_link.hpp, src/boost/config/compiler,
+	  src/boost/config/compiler/borland.hpp,
+	  src/boost/config/compiler/comeau.hpp,
+	  src/boost/config/compiler/common_edg.hpp,
+	  src/boost/config/compiler/compaq_cxx.hpp,
+	  src/boost/config/compiler/digitalmars.hpp,
+	  src/boost/config/compiler/gcc.hpp,
+	  src/boost/config/compiler/gcc_xml.hpp,
+	  src/boost/config/compiler/greenhills.hpp,
+	  src/boost/config/compiler/hp_acc.hpp,
+	  src/boost/config/compiler/intel.hpp,
+	  src/boost/config/compiler/kai.hpp,
+	  src/boost/config/compiler/metrowerks.hpp,
+	  src/boost/config/compiler/mpw.hpp,
+	  src/boost/config/compiler/sgi_mipspro.hpp,
+	  src/boost/config/compiler/sunpro_cc.hpp,
+	  src/boost/config/compiler/vacpp.hpp,
+	  src/boost/config/compiler/visualc.hpp, src/boost/config/no_tr1,
+	  src/boost/config/no_tr1/complex.hpp,
+	  src/boost/config/no_tr1/functional.hpp,
+	  src/boost/config/no_tr1/memory.hpp,
+	  src/boost/config/no_tr1/utility.hpp, src/boost/config/platform,
+	  src/boost/config/platform/aix.hpp,
+	  src/boost/config/platform/amigaos.hpp,
+	  src/boost/config/platform/beos.hpp,
+	  src/boost/config/platform/bsd.hpp,
+	  src/boost/config/platform/cygwin.hpp,
+	  src/boost/config/platform/hpux.hpp,
+	  src/boost/config/platform/irix.hpp,
+	  src/boost/config/platform/linux.hpp,
+	  src/boost/config/platform/macos.hpp,
+	  src/boost/config/platform/qnxnto.hpp,
+	  src/boost/config/platform/solaris.hpp,
+	  src/boost/config/platform/win32.hpp,
+	  src/boost/config/posix_features.hpp,
+	  src/boost/config/requires_threads.hpp,
+	  src/boost/config/select_compiler_config.hpp,
+	  src/boost/config/select_platform_config.hpp,
+	  src/boost/config/select_stdlib_config.hpp,
+	  src/boost/config/stdlib, src/boost/config/stdlib/dinkumware.hpp,
+	  src/boost/config/stdlib/libcomo.hpp,
+	  src/boost/config/stdlib/libstdcpp3.hpp,
+	  src/boost/config/stdlib/modena.hpp,
+	  src/boost/config/stdlib/msl.hpp,
+	  src/boost/config/stdlib/roguewave.hpp,
+	  src/boost/config/stdlib/sgi.hpp,
+	  src/boost/config/stdlib/stlport.hpp,
+	  src/boost/config/stdlib/vacpp.hpp, src/boost/config/suffix.hpp,
+	  src/boost/config/user.hpp, src/boost/copyright, src/boost/detail,
+	  src/boost/detail/bad_weak_ptr.hpp,
+	  src/boost/detail/shared_count.hpp,
+	  src/boost/detail/sp_counted_base.hpp,
+	  src/boost/detail/sp_counted_base_cw_ppc.hpp,
+	  src/boost/detail/sp_counted_base_cw_x86.hpp,
+	  src/boost/detail/sp_counted_base_gcc_ia64.hpp,
+	  src/boost/detail/sp_counted_base_gcc_ppc.hpp,
+	  src/boost/detail/sp_counted_base_gcc_x86.hpp,
+	  src/boost/detail/sp_counted_base_nt.hpp,
+	  src/boost/detail/sp_counted_base_pt.hpp,
+	  src/boost/detail/sp_counted_base_w32.hpp,
+	  src/boost/detail/sp_counted_impl.hpp,
+	  src/boost/detail/workaround.hpp, src/boost/intrusive_ptr.hpp,
+	  src/boost/scoped_array.hpp, src/boost/scoped_ptr.hpp,
+	  src/boost/shared_ptr.hpp, src/boost/smart_ptr.hpp,
+	  src/boost/throw_exception.hpp, src/boost/weak_ptr.hpp: imported
+	  libboost-dev 1.34.1-2ubuntu1.1 headers to avoid build dependency
+	  on Boost
+
+2008-03-06 22:23  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/ConfigNode.h, src/ConfigTree.h, src/DeviceManagementNode.cpp,
+	  src/DeviceManagementNode.h, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionCalendarSource.h, src/EvolutionClientConfig.h,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionMemoSource.h, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp,
+	  src/EvolutionSyncSource.h, src/FileConfigNode.cpp,
+	  src/FileConfigNode.h, src/FileConfigTree.cpp,
+	  src/FileConfigTree.h, src/FilterConfigNode.cpp,
+	  src/FilterConfigNode.h, src/Makefile.am,
+	  src/SQLiteContactSource.cpp, src/SQLiteContactSource.h,
+	  src/SyncEvolutionConfig.cpp, src/SyncEvolutionConfig.h,
+	  src/TrackingSyncSource.cpp, src/TrackingSyncSource.h,
+	  src/VolatileConfigNode.h, src/client-test-app.cpp,
+	  src/syncevolution.cpp: - introduced new SyncEvolution config
+	  handling - cleaned up passing of SyncSource creation parameters -
+	  reads old configs and should also work with new layout (not
+	  tested yet)
+
+2008-03-01 20:13  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am, src/TestEvolution.cpp: removed obsolete
+	  TestEvolution (was moved into client library)
+
+2008-02-24 17:59  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp: fixed iteration over address book
+	  authentication methods in error case
+	  
+	  In practice this code was never executed: if no password or user
+	  are configured, then it is skipped to avoid hanging in
+	  e_book_get_supported_auth_methods() (seen in Evolution 2.12.1 and
+	  older versions). If it is not skipped, then authentication
+	  hopefully works and the loop exits.
+
+2008-02-14 19:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp: revised
+	  error handling: lastError* variables are now hidden, use new
+	  methods
+
+2008-02-14 19:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/syncevolution.cpp: SF #1893582: compiler error due to missing
+	  include <memory>
+
+2008-02-13 22:28  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: check out SyncEvolution from Subversion
+
+2008-02-11 21:28  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: added building of Evolution trunk
+
+2008-02-11 21:14  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionClientConfig.h: client library no longer uses
+	  BOOL=int, instead use real bool
+
+2008-02-03 11:23  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TrackingSyncSource.cpp: always rebuild local tracking status
+	  during slow and refresh syncs
+
+2008-02-03 11:18  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/client-test-app.cpp: change tracking for Client::Source must
+	  distinguish between database and source accessing it
+
+2008-02-03 11:17  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SQLiteContactSource.h: typo: mime-type must not include
+	  version (only matters for Synthesis at the moment)
+
+2008-02-02 21:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am, src/SQLiteContactSource.cpp,
+	  src/SQLiteContactSource.h, src/SQLiteUtil.cpp, src/SQLiteUtil.h,
+	  src/client-test-app.cpp: turned SQLiteContactSource into a better
+	  example sync source
+	  
+	  - simplified the database schema by removing unused tables -
+	  added more per-contact properties missing in the original Apple
+	  schema - added comments - implemented storing of properties with
+	  1:1 mapping to columns in database - simplified the test cases
+	  used for sqlite
+	  
+	  Client::Source::sqlite passes now. Client::Sync::sqlite still had
+	  some issues, partly network timeouts due to load on the server,
+	  partly problems in the client (?).
+
+2008-02-02 21:34  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* debian/changelog, debian/rules: avoid docpurge by installing
+	  example configs into /usr/lib/syncevolution/doc
+
+2008-02-02 21:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING: beware of the need to update 'stable' and 'chinook'
+	  repositories when releasing for Maemo
+
+2008-02-02 21:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/vocl/VObject.cpp, src/vocl/VObject.h: added another const
+	  qualifier
+
+2008-02-02 15:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SQLiteContactSource.cpp: - log extracting items at debug
+	  level - fixed parsing of N property: it mixed up first and middle
+	  name
+
+2008-01-29 19:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* debian/changelog: # updated
+
+2008-01-29 19:21  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* debian/dbus-wrapper.cpp, debian/rules: replaced linking against
+	  modified libdbus with a wrapper for the relevant dbus function
+	  
+	  The wrapper for dbus_connection_send_with_reply() sets the
+	  increased timeout if necessary, then calls the original
+	  implementation via dlsym(RTLD_NEXT). This ensures that always the
+	  right libdbus of the host system is used, which is necessary for
+	  ITOS2008 (which has a version which is incompatible with
+	  ITOS2007/06).
+
+2008-01-19 20:11  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* debian/changelog, debian/rules: - patch libtool so that -Wl is
+	  inserted at the beginning of the command line used to build
+	  modules - added -Wl,--as-needed to LDFLAGS during compilation
+
+2008-01-14 21:25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp, src/Makefile.am,
+	  src/SQLiteContactSource.cpp, src/SQLiteContactSource.h,
+	  src/SQLiteUtil.cpp, src/SQLiteUtil.h, src/TrackingSyncSource.cpp,
+	  src/TrackingSyncSource.h, src/client-test-app.cpp: implemented
+	  full change tracking in demo SQLiteContactSource with new
+	  TrackingSyncSource base class
+
+2008-01-14 21:23  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSmartPtr.h: added transferring pointer and its
+	  ownership from one smart pointer to another
+
+2008-01-13 01:41  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionMemoSource.cpp, src/EvolutionMemoSource.h,
+	  src/EvolutionSmartPtr.h, src/EvolutionSyncSource.h,
+	  src/SQLiteContactSource.cpp, src/SQLiteContactSource.h,
+	  src/TestEvolution.cpp: removed SyncState parameter out of all
+	  createItem() implementations into the caller; requires smartptr
+	  release()
+
+2008-01-12 23:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING, configure.in, src/Makefile.am,
+	  src/SQLiteContactSource.cpp, src/SQLiteContactSource.h,
+	  src/SQLiteSyncSource.cpp, src/SQLiteSyncSource.h,
+	  src/SQLiteUtil.cpp, src/SQLiteUtil.h: Replaced "is a"
+	  SQLiteSyncSource with "has a" SQLiteUtil instance in
+	  SQLiteContactSource. This is a first step towards deriving
+	  SQLiteContactSource from a sync source base class which does
+	  change tracking.
+
+2008-01-12 22:57  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.h: with the 'abstract config' patch
+	  applied SyncManagerConfig.h must be included explicitly
+
+2008-01-12 22:53  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp, src/syncevolution.cpp: Use the new
+	  singleton implementation for logging, if available.
+	  LOG_HAVE_SET_LOGGER and LOG_HAVE_DEVELOPER preprocessor symbols
+	  in the new Log.h header file are checked to detect that.
+
+2007-12-21 14:08  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile.am, debian/changelog: need an epoch to make .deb
+	  versions larger than in the -pre .debs
+
+2007-12-17 19:30  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, NEWS, configure.in, debian/changelog: # SyncEvolution
+	  0.7
+
+2007-12-17 18:58  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* Makefile.am, README, etc/source-config.txt, test/runtests.py:
-	fixed building of .deb (docdir and description)
-	- the new checkinstall --docdir=: syntax is used to avoid adding the name twice
-	- description-pak was not created and thus missing from package
+	  fixed building of .deb (docdir and description) - the new
+	  checkinstall --docdir=: syntax is used to avoid adding the name
+	  twice - description-pak was not created and thus missing from
+	  package
 
-2007-12-15  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-12-15 16:43  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncClient.cpp:
-	disabled the background glib event loop again because it caused segfaults
+	* src/EvolutionSyncClient.cpp: disabled the background glib event
+	  loop again because it caused segfaults
+	  
+	  Without the event loop SyncEvolution will get stuck again in EDS
+	  API calls when the EDS dies, but that is the lesser evil.
 
-	Without the event loop SyncEvolution will get stuck again in EDS API calls
-	when the EDS dies, but that is the lesser evil.
+2007-12-10 19:59  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-12-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionSyncClient.cpp: myFUNAMBOL does not like empty types
+	  in the capability, so always send a valid (even if wrong) type
 
-	* src/EvolutionSyncClient.cpp:
-	myFUNAMBOL does not like empty types in the capability, so always send a valid (even if wrong) type
+2007-12-09 16:16  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-12-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionMemoSource.cpp: text/plain requires \r\n line
+	  breaks: - send in that format now - accept both \r\n and \n line
+	  breaks for incoming memos
 
-	* src/EvolutionMemoSource.cpp: text/plain requires \r\n line breaks:
-	- send in that format now
-	- accept both \r\n and \n line breaks for incoming memos
-
-2007-12-07  Patrick Ohly  <Patrick.Ohly@gmx.de>
-
-	* src/EvolutionSyncClient.cpp:
-	avoid empty strings in DevInf structure, they might cause failures with myFUNAMBOL
-
-2007-12-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
-
-	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionMemoSource.cpp:
-	Implemented support for sending/receiving all VEVENTs with the same UID
-	as one SyncML item. This turned out to be incompatible with what most
-	SyncML servers do, so it will be necessary to switch to a model where
-	each VEVENT is one item and the LUID is UID+RECURRENCE-ID.
+2007-12-06 18:53  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: fixed typo in getting started section
 
+2007-12-06 18:53  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* HACKING: added list of debug packages
 
-2007-12-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-12-01 21:26  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/client-test-app.cpp:
-	dump core if test fails instead of simply exiting
+	* src/client-test-app.cpp: dump core if test fails instead of
+	  simply exiting
+
+2007-12-01 21:07  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* test/runtests.py: added the possibility to run under valgrind
 
-	* src/EvolutionSyncClient.cpp:
-	avoid including invalid information about inactive sources in DevInf by clearing it
+2007-12-01 21:04  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionMemoSource.h:
-	need to set mime type, required for correct DevInf (expected by Synthesis server)
+	* src/EvolutionSyncClient.cpp: avoid including invalid information
+	  about inactive sources in DevInf by clearing it
 
-2007-11-30  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-12-01 21:03  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	bugfix: vCard 3.0 with mixed case were not converted properly to vCard 2.1
-	by SyncEvolution (must convert to upper case because vCard 2.1 only allows
-	that), leading to problems with mapping phone numbers in the Funambol server.
-	Diagnosed and reported by Paul McDermott, thanks a lot!
+	* src/EvolutionMemoSource.h: need to set mime type, required for
+	  correct DevInf (expected by Synthesis server)
 
-	* test/runtests.py:
-	- changed configure/build so that it also builds .deb (default prefix + DESTDIR for install)
-	- updated config for servers
+2007-11-30 22:40  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-11-28  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionContactSource.cpp: bugfix: vCard 3.0 with mixed case
+	  were not converted properly to vCard 2.1 by SyncEvolution (must
+	  convert to upper case because vCard 2.1 only allows that),
+	  leading to problems with mapping phone numbers in the Funambol
+	  server. Diagnosed and reported by Paul McDermott, thanks a lot!
 
-	* src/EvolutionSyncClient.cpp:
-	avoid delivering SIGALRM to background thread - glib/ebook crash when that happens
+2007-11-30 20:14  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/client-test-app.cpp:
-	avoid lengthy objdump -l -C output in error handler, exit to prevent repeated segfault invocation
+	* test/runtests.py: - changed configure/build so that it also
+	  builds .deb (default prefix + DESTDIR for install) - updated
+	  config for servers
 
-2007-11-22  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-11-28 18:05  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncClient.cpp:
-	added better error message when 'syncevolution' is started with non-existant sources as parameter
+	* src/EvolutionSyncClient.cpp: avoid delivering SIGALRM to
+	  background thread - glib/ebook crash when that happens
 
-2007-11-21  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-11-28 18:03  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/client-test-app.cpp, configure.in:
-	Added stack dumping in case of SIGABRT, SIGSEGV, SIGILL.
-	Both valgrind and glibc backtrace() are used: the former automatically
-	looks up source code, the later can handle stack back traces out of a signal
-	handler. objdump is called so that the addresses printed by backtrace()
-	can be associated with source code.
+	* src/client-test-app.cpp: avoid lengthy objdump -l -C output in
+	  error handler, exit to prevent repeated segfault invocation
 
-2007-11-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-11-22 21:06  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/AddressBookSource.cpp:
-	last minute fix for iPhone 0.7 pre2: removed debug output
+	* src/EvolutionSyncClient.cpp: added better error message when
+	  'syncevolution' is started with non-existant sources as parameter
 
-	* src/EvolutionSyncClient.cpp:
-	clarified post-sync comparison by adding 'Changes applied to client during synchronization'
+2007-11-21 22:09  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-11-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* configure.in, src/client-test-app.cpp: Added stack dumping in
+	  case of SIGABRT, SIGSEGV, SIGILL. Both valgrind and glibc
+	  backtrace() are used: the former automatically looks up source
+	  code, the later can handle stack back traces out of a signal
+	  handler. objdump is called so that the addresses printed by
+	  backtrace() can be associated with source code.
 
-	* src/EvolutionContactSource.cpp:
-	Evolution 2.12 generates contacts with e.g. TYPE=VOICE,WORK. This needs to be split into TYPE=VOICE;TYPE=WORK when converting to 2.1, otherwise myFUNAMBOL drops the phone numbers with the (in 2.1) incorrect TYPE
+2007-11-10 16:10  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* README, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/syncevolution.cpp:
-	- revised an updated usage instructions (myFUNAMBOL instead of Funambol)
-	- added dumping of local changes before sync (works best with logdir)
-	- added command line options:
+	* src/AddressBookSource.cpp: last minute fix for iPhone 0.7 pre2:
+	  removed debug output
 
-	  --sync|-s <mode>
-	    Temporarily synchronize the active sources in that mode. Useful
-	    for a 'refresh-from-server' or 'refresh-from-client' sync which
-	    clears all data at one end and copies all items from the other.
+2007-11-10 13:26  Patrick Ohly <patrick.ohly@gmx.de>
 
-	  --status|-t
-	    The changes made to local data since the last synchronization are
-	    shown without starting a new one. This can be used to see in advance
-	    whether the local data needs to be synchronized with the server.
+	* src/EvolutionSyncClient.cpp: clarified post-sync comparison by
+	  adding 'Changes applied to client during synchronization'
 
-	  --quiet|-q
-	    Suppresses most of the normal output during a synchronization. The
-	    log file still contains all the information.
+2007-11-10 12:59  Patrick Ohly <patrick.ohly@gmx.de>
 
-	  --help|-h
-	    Prints usage information.
+	* configure.in: # bumped version
 
-	  --version
-	    Prints the SyncEvolution version.
+2007-11-10 12:58  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: # bumped version
+
+2007-11-08 22:20  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, NEWS, debian/changelog: # updated
+
+2007-11-08 22:18  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp: Evolution 2.12 generates contacts
+	  with e.g. TYPE=VOICE,WORK. This needs to be split into
+	  TYPE=VOICE;TYPE=WORK when converting to 2.1, otherwise myFUNAMBOL
+	  drops the phone numbers with the (in 2.1) incorrect TYPE
+
+2007-11-08 21:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/syncevolution.cpp: - revised an updated usage instructions
+	  (myFUNAMBOL instead of Funambol) - added dumping of local changes
+	  before sync (works best with logdir) - added command line
+	  options:
+	  
+	  --sync|-s <mode> Temporarily synchronize the active sources in
+	  that mode. Useful for a 'refresh-from-server' or
+	  'refresh-from-client' sync which clears all data at one end and
+	  copies all items from the other.
+	  
+	  --status|-t The changes made to local data since the last
+	  synchronization are shown without starting a new one. This can be
+	  used to see in advance whether the local data needs to be
+	  synchronized with the server.
+	  
+	  --quiet|-q Suppresses most of the normal output during a
+	  synchronization. The log file still contains all the information.
+	  
+	  --help|-h Prints usage information.
+	  
+	  --version Prints the SyncEvolution version.
+
+2007-11-08 21:19  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* HACKING: separated compile and release instructions
 
-	* etc/source-config.txt:
-	let the default source configs access the default Evolution databases: less work for users to configure it
+2007-11-08 20:54  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-11-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* etc/source-config.txt: let the default source configs access the
+	  default Evolution databases: less work for users to configure it
 
-	* src/AddressBookSource.cpp:
-	fixed iPhone photo import/export: that API wasn't as expected and therefore was
-	called incorrectly. Importing photos crashed, exporting them may have failed
-	randomly and/or picked the wrong size of the photo.
+2007-11-05 22:02  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-11-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/AddressBookSource.cpp: fixed iPhone photo import/export: that
+	  API wasn't as expected and therefore was called incorrectly.
+	  Importing photos crashed, exporting them may have failed randomly
+	  and/or picked the wrong size of the photo.
 
-	* src/AddressBookSource.cpp, src/AddressBookSource.h, src/vocl/VObject.cpp, src/vocl/VObject.h:
-	when configured to use ScheduleWorld card3 URI, then switch to sending vCard 3.0 (easier to parse by SW); always dump contacts as vCard 3.0 (avoids quoted-printable in synccompare output)
+2007-11-04 21:10  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/vocl/VProperty.cpp:
-	bug fix: TYPE with multiple comma-separated values (vCard 3.0, e.g. TYPE=WORK,VOICE) was not decoded as intended => downloading into iPhone from SW card3 URI did not set type correctly
+	* src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/vocl/VObject.cpp, src/vocl/VObject.h: when configured to use
+	  ScheduleWorld card3 URI, then switch to sending vCard 3.0 (easier
+	  to parse by SW); always dump contacts as vCard 3.0 (avoids
+	  quoted-printable in synccompare output)
 
-	* src/EvolutionSyncClient.cpp:
-	dump user name, date and SyncEvolution at beginning of debug log
+2007-11-04 21:07  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/syncml-config.txt:
-	Replaced guest/guest credentials with "your SyncML server account name"
-	and "your SyncML server password" to make it clear that something must
-	be entered there. Some servers also really have "guest/guest" demo
-	accounts.
+	* src/vocl/VProperty.cpp: bug fix: TYPE with multiple
+	  comma-separated values (vCard 3.0, e.g. TYPE=WORK,VOICE) was not
+	  decoded as intended => downloading into iPhone from SW card3 URI
+	  did not set type correctly
 
-2007-11-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-11-04 17:33  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp:
-	Detect unexpected crashes of the Evolution Data Server. A workaround for
-	the fact that the synchronous EDS API calls block infinitely in that case.
-	- drive default glib event look in background thread
-	- listen for "backend-died" signals
-	- if triggered, print a message ("Evolution Data Server has died unexpectedly,
-	  database no longer available.") and abort the process (other error handling is
-	  impossible)
-	- for contacts instead of "database" "contacts" is printed
+	* src/EvolutionSyncClient.cpp: dump user name, date and
+	  SyncEvolution at beginning of debug log
 
-	* src/EvolutionCalendarSource.cpp:
-	adapted calendar event insert/update to Evolution 2.12: the UID needs to be restored, otherwise the Evolution backend crashes (GNOME issue #488881)
+2007-11-04 16:57  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-11-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* etc/syncml-config.txt: Replaced guest/guest credentials with
+	  "your SyncML server account name" and "your SyncML server
+	  password" to make it clear that something must be entered there.
+	  Some servers also really have "guest/guest" demo accounts.
+
+2007-11-03 17:07  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/EvolutionSyncSource.cpp: Detect unexpected crashes of the
+	  Evolution Data Server. A workaround for the fact that the
+	  synchronous EDS API calls block infinitely in that case. - drive
+	  default glib event look in background thread - listen for
+	  "backend-died" signals - if triggered, print a message
+	  ("Evolution Data Server has died unexpectedly, database no longer
+	  available.") and abort the process (other error handling is
+	  impossible) - for contacts instead of "database" "contacts" is
+	  printed
+
+2007-11-03 13:30  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp: adapted calendar event
+	  insert/update to Evolution 2.12: the UID needs to be restored,
+	  otherwise the Evolution backend crashes (GNOME issue #488881)
+
+2007-11-01 13:03  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/AddressBookSource.cpp: fixed compile errors on Mac OS X
 
-2007-10-25  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-10-25 21:10  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* Makefile.am, src/shlibs.local:
-	added package release number and dependency calculation for local Evolution libs without installed .debs
+	* Makefile.am, src/shlibs.local: added package release number and
+	  dependency calculation for local Evolution libs without installed
+	  .debs
 
-	* test/Makefile.am:
-	ClientTest.cpp and synccompare.pl are back in C++ library
+2007-10-25 17:15  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-10-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* test/Makefile.am: ClientTest.cpp and synccompare.pl are back in
+	  C++ library
 
-	* src/Makefile.am:
-	synccompare.pl wasn't found in client library because search rule had the wrong directory
+2007-10-24 16:20  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/syncevolution.cpp:
-	workaround for dependency on size_t in client library Log.h: include stddef.h first
+	* src/Makefile.am: synccompare.pl wasn't found in client library
+	  because search rule had the wrong directory
 
-	* src/vocl/VObject.cpp, src/vocl/VProperty.cpp:
-	adapted to ArrayList::remove() -> removeElementAt() renaming
+2007-10-24 16:19  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-10-23  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/syncevolution.cpp: workaround for dependency on size_t in
+	  client library Log.h: include stddef.h first
 
-	* src/DeviceManagementNode.cpp:
-	same patch as in client library: chop trailing white spaces
+2007-10-24 16:18  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-10-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/vocl/VObject.cpp, src/vocl/VProperty.cpp: adapted to
+	  ArrayList::remove() -> removeElementAt() renaming
 
-	* Makefile.am:
-	added packaging via checkinstall as deb (working) and rpm (somehow not working)
+2007-10-23 21:21  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-10-14  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/DeviceManagementNode.cpp: same patch as in client library:
+	  chop trailing white spaces
 
-	* src/AddressBookSource.cpp:
-	- consistently ignore all empty strings when reading vcard
-	- interpret date time stamps relative to current system time zone (like GUI does)
+2007-10-23 21:20  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncClient.cpp:
-	improved error handling: catch errors during post-processing and continue
+	* test/ClientTest.cpp, test/synccompare.pl: # pushed sources back
+	  into SyncML client library
 
-	* etc/source-config.txt:
-	SF #1764123: SyncCap is not generated unless syncModes are configured: added a comment to example config
+2007-10-21 21:23  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncClient.cpp:
-	added a table which summarizes the changes made on client and server
+	* debian/changelog: # added remark about updated upstream
 
-	* src/EvolutionSyncClient.cpp:
-	replaced ambiguous 'Modifications:' with 'Changes applied during synchronization:'
+2007-10-21 21:23  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/Makefile.am, etc/syncml-config.txt:
-	use myFUNAMBOL instead of localhost for funambol demo config
+	* Makefile.am: # updated packaging: added provides/conflicts
 
-	* src/AddressBookSource.cpp:
-	avoid setting empty strings: the iPhone GUI adds redundant space around the empty property (e.g. middle name)
+2007-10-18 08:04  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* test/synccompare.pl:
-	perl is not installed as /usr/bin/perl on iPhone: let /usr/bin/env find it
+	* NEWS: # extended description of logging
 
-	* src/AddressBookSource.cpp, src/AddressBookSource.h:
-	use vCard 2.1 instead of 3.0 for iPhone: avoids parsing problems in myFUNAMBOL
+2007-10-18 08:03  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile.am, configure.in, test/Makefile.am: # fixed distcheck
+	  problem
+
+2007-10-17 21:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, NEWS, description: # updated
+
+2007-10-17 21:08  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile.am: added packaging via checkinstall as deb (working)
+	  and rpm (somehow not working)
+
+2007-10-17 21:07  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: # version bump
+
+2007-10-14 20:31  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: #updated
+
+2007-10-14 18:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/AddressBookSource.cpp: - consistently ignore all empty
+	  strings when reading vcard - interpret date time stamps relative
+	  to current system time zone (like GUI does)
+
+2007-10-14 18:19  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: improved error handling: catch
+	  errors during post-processing and continue
+
+2007-10-14 16:30  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/source-config.txt: SF #1764123: SyncCap is not generated
+	  unless syncModes are configured: added a comment to example
+	  config
+
+2007-10-14 16:25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: added a table which summarizes the
+	  changes made on client and server
+
+2007-10-14 14:49  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: replaced ambiguous 'Modifications:'
+	  with 'Changes applied during synchronization:'
+
+2007-10-14 14:45  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/Makefile.am, etc/syncml-config.txt: use myFUNAMBOL instead of
+	  localhost for funambol demo config
+
+2007-10-14 14:44  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/AddressBookSource.cpp: avoid setting empty strings: the
+	  iPhone GUI adds redundant space around the empty property (e.g.
+	  middle name)
+
+2007-10-14 14:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/synccompare.pl: perl is not installed as /usr/bin/perl on
+	  iPhone: let /usr/bin/env find it
+
+2007-10-14 14:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/AddressBookSource.cpp, src/AddressBookSource.h: use vCard 2.1
+	  instead of 3.0 for iPhone: avoids parsing problems in myFUNAMBOL
+
+2007-10-14 13:57  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* configure.in: reset version to alpha (less than pre)
 
-2007-10-13  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-10-13 20:24  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: updated package commands for Debian 4.0
 
-	* test/synccompare.pl: ScheduleWorld no longer drops department/office
+2007-10-13 20:23  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncClient.cpp:
-	fixed segfault due to unintentional infinite recursion in new throwError() call
+	* test/synccompare.pl: ScheduleWorld no longer drops
+	  department/office
 
-2007-10-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-10-13 16:04  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	SF #1796086: also added all the other predefined TYPE values from vCard 2.1/3.0
+	* src/EvolutionSyncClient.cpp: fixed segfault due to unintentional
+	  infinite recursion in new throwError() call
 
-	* test/ClientTest.cpp:
-	temporary fork of 1.25: handle testComplexUpdate where some (but not all) sources have a complex update item
+2007-10-12 20:21  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncSource.cpp:
-	fixed compile error with enabled modules (missing comma)
+	* src/EvolutionContactSource.cpp: SF #1796086: also added all the
+	  other predefined TYPE values from vCard 2.1/3.0
 
-2007-10-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-10-12 18:02  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/AddressBookSource.cpp, src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp:
-	added workaround for missing exception handling on iPhone (http://code.google.com/p/iphone-dev/issues/detail?id=48)
+	* test/ClientTest.cpp: temporary fork of 1.25: handle
+	  testComplexUpdate where some (but not all) sources have a complex
+	  update item
 
-2007-10-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-10-12 16:50  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* Makefile.am, SyncEvolution.plist.in, configure.in:
-	added iPhone Installer.app packaging
+	* src/EvolutionSyncSource.cpp: fixed compile error with enabled
+	  modules (missing comma)
 
-2007-10-07  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-10-11 21:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/AddressBookSource.cpp, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp: added
+	  workaround for missing exception handling on iPhone
+	  (http://code.google.com/p/iphone-dev/issues/detail?id=48)
+
+2007-10-10 22:27  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile.am, SyncEvolution.plist.in, configure.in: added iPhone
+	  Installer.app packaging
+
+2007-10-07 19:24  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* HACKING: added compile/packaging information
 
-	* src/AddressBookSource.h, src/EvolutionSyncClient.cpp, configure.in, src/AddressBookSource.cpp:
-	problem with C++ output stream (http://code.google.com/p/iphone-dev/issues/detail?id=48):
-	throws exception although everything is fine - disabled exceptions in one case and replaced
-	with ANSI C calls in another
+2007-10-07 19:06  Patrick Ohly <patrick.ohly@gmx.de>
 
-	IPHONE define now in configure (cleaner).
+	* configure.in, src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/EvolutionSyncClient.cpp: problem with C++ output stream
+	  (http://code.google.com/p/iphone-dev/issues/detail?id=48): throws
+	  exception although everything is fine - disabled exceptions in
+	  one case and replaced with ANSI C calls in another
+	  
+	  IPHONE define now in configure (cleaner).
+	  
+	  Creating contacts twice (during dump and when sending) caused
+	  crash - ref counting problem? Disabled any CFRelease() for now on
+	  iPhone.
+	  
+	  compile error fix for Mac OS X (probably more necessary)
 
-	Creating contacts twice (during dump and when sending) caused crash - ref counting problem?
-	Disabled any CFRelease() for now on iPhone.
+2007-10-07 12:27  Patrick Ohly <patrick.ohly@gmx.de>
 
-	compile error fix for Mac OS X (probably more necessary)
+	* src/AddressBookSource.cpp: removed debug output which was added
+	  to track down crashes and now is no longer useful
 
-	* src/AddressBookSource.cpp:
-	removed debug output which was added to track down crashes and now is no longer useful
+2007-10-07 12:19  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/AddressBookSource.cpp, src/AddressBookSource.h:
-	added comments, some cleanups
+	* src/AddressBookSource.cpp, src/AddressBookSource.h: added
+	  comments, some cleanups
 
-2007-10-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-10-06 22:13  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/AddressBookSource.cpp:
-	workarounds for ABMutableMultiValueRef on iPhone:
-	- cannot be released
-	- cannot be turned into a string
+	* src/AddressBookSource.cpp: workarounds for ABMutableMultiValueRef
+	  on iPhone: - cannot be released - cannot be turned into a string
+	  
+	  improved phone number mapping
+	  
+	  => all properties enabled now
 
-	improved phone number mapping
+2007-10-04 20:54  Patrick Ohly <patrick.ohly@gmx.de>
 
-	=> all properties enabled now
+	* HACKING, configure.in, src/AddressBookConstants.cpp,
+	  src/AddressBookSource.cpp, src/AddressBookSource.h: port to
+	  iPhone: lots of hacks and debug output, none of the multiprops
+	  supported yet (use unknown format in API)
 
-2007-10-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-10-04 20:46  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* HACKING, configure.in, src/AddressBookConstants.cpp, src/AddressBookSource.cpp, src/AddressBookSource.h:
-	port to iPhone: lots of hacks and debug output, none of the multiprops supported yet (use unknown format in API)
+	* src/syncevolution.cpp: disable buffering to stdout/stderr:
+	  ensures that printf output appears immediately without explicit
+	  fflush()
 
-	* src/syncevolution.cpp:
-	disable buffering to stdout/stderr: ensures that printf output appears immediately without explicit fflush()
+2007-10-04 20:45  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	SF #1796086: sync with EGW: lost or messed up telephones - SyncEvolution incorrectly added TYPE=OTHER to phone numbers sent with e.g. CELL instead of TYPE=CELL
+	* src/EvolutionContactSource.cpp: SF #1796086: sync with EGW: lost
+	  or messed up telephones - SyncEvolution incorrectly added
+	  TYPE=OTHER to phone numbers sent with e.g. CELL instead of
+	  TYPE=CELL
 
-2007-09-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-09-24 21:26  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* debian/changelog, debian/control:
-	SF #1781652: Nokia 770/800: uninstallable package fixed by setting category
+	* ChangeLog, NEWS: # updated
 
-	* src/Makefile.am:
-	removed patching of CATEGORIES (recent client library has the fix)
-	added possibility to update/commit test suite files in SyncEvolution test dir, then later move them back to client library
+2007-09-24 21:26  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/AddressBookConstants.cpp, src/Makefile.am:
-	workaround if address book library misses constants
+	* debian/changelog, debian/control: SF #1781652: Nokia 770/800:
+	  uninstallable package fixed by setting category
+
+2007-09-24 21:25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am: removed patching of CATEGORIES (recent client
+	  library has the fix) added possibility to update/commit test
+	  suite files in SyncEvolution test dir, then later move them back
+	  to client library
+
+2007-09-24 21:21  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/AddressBookConstants.cpp, src/Makefile.am: workaround if
+	  address book library misses constants
+
+2007-09-24 21:17  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/client-test-app.cpp: fixed compile errors
 
-2007-08-25  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-08-25 14:03  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/Makefile.am:
-	fixed SF 1767329: example configs were in share/share directory
+	* configure.in: # bumped version
 
-	* src/DeviceManagementNode.h, src/SQLiteSyncSource.cpp:
-	fixed compile error
+2007-08-25 14:03  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/Makefile.am: fixed SF 1767329: example configs were in
+	  share/share directory
+
+2007-08-25 14:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/DeviceManagementNode.h, src/SQLiteSyncSource.cpp: fixed
+	  compile error
+
+2007-08-25 13:23  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionSyncSource.cpp, src/client-test-app.cpp:
-	unsuccessful attempt to work around the 'one address book per user' limitation in order to get automated sync testing working
+	  unsuccessful attempt to work around the 'one address book per
+	  user' limitation in order to get automated sync testing working
 
-	* src/AddressBookSource.cpp, src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
-	less verbose INFO logging: extracting items is now logged as DEBUG
+2007-08-25 13:22  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-08-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/AddressBookSource.cpp, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionContactSource.cpp: less verbose INFO logging:
+	  extracting items is now logged as DEBUG
 
-	* test/synccompare.pl, src/AddressBookSource.cpp, src/AddressBookSource.h, src/Makefile.am, src/vocl/VProperty.cpp:
-	added custom vcard 3.0 <-> AddressBook conversion: needed to make vcard representation close to what SyncML servers understand
+2007-08-24 21:27  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-08-21  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/Makefile.am, src/vocl/VProperty.cpp, test/synccompare.pl:
+	  added custom vcard 3.0 <-> AddressBook conversion: needed to make
+	  vcard representation close to what SyncML servers understand
 
-	* src/AddressBookSource.cpp, src/AddressBookSource.h, src/DeviceManagementNode.cpp, src/DeviceManagementNode.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/client-test-app.cpp, src/syncevolution.cpp:
-	finished change tracking, update and delete - still needs improved import/export with own functions because Address Book vcard parser merges X- properties into NOTE and cannot update contact
+2007-08-21 20:15  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-08-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/DeviceManagementNode.cpp, src/DeviceManagementNode.h,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp,
+	  src/EvolutionSyncSource.h, src/Makefile.am,
+	  src/client-test-app.cpp, src/syncevolution.cpp: finished change
+	  tracking, update and delete - still needs improved import/export
+	  with own functions because Address Book vcard parser merges X-
+	  properties into NOTE and cannot update contact
 
-	* configure.in, src/AddressBookSource.cpp, src/AddressBookSource.h, src/EvolutionSmartPtr.h, src/EvolutionSyncSource.cpp, src/Makefile.am, src/client-test-app.cpp:
-	added initial support for Mac OS X address book: no change tracking, no updating
+2007-08-19 19:11  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/SQLiteSyncSource.cpp:
-	fixed incorrect extraction of text columns from SQLite
+	* configure.in, src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/EvolutionSmartPtr.h, src/EvolutionSyncSource.cpp,
+	  src/Makefile.am, src/client-test-app.cpp: added initial support
+	  for Mac OS X address book: no change tracking, no updating
 
-2007-08-13  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-08-19 09:51  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/SQLiteContactSource.cpp, src/SQLiteContactSource.h, src/SQLiteSyncSource.cpp, src/SQLiteSyncSource.h, src/client-test-app.cpp, src/syncevolution.cpp, src/vocl/VObject.cpp, src/vocl/VObject.h, configure.in:
-	added a sync source which stores contacts in a SQLite database
+	* configure.in: # version bump
 
-2007-07-13  Patrick Ohly <patrick.ohly@gmx.de>
+2007-08-19 09:49  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/source-config.txt, etc/Makefile.am:
-	fixed name of example source configs (broke during the changes for 0.6 pre)
+	* src/SQLiteSyncSource.cpp: fixed incorrect extraction of text
+	  columns from SQLite
 
-2007-06-28  Patrick Ohly <patrick.ohly@gmx.de>
+2007-08-13 20:46  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp, src/client-test-app.cpp:
-	Maemo address book delete support works now: one has to search for X-OSSO-CONTACT-STATE:DELETED manually
+	* configure.in, src/EvolutionCalendarSource.h,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h,
+	  src/Makefile.am, src/SQLiteContactSource.cpp,
+	  src/SQLiteContactSource.h, src/SQLiteSyncSource.cpp,
+	  src/SQLiteSyncSource.h, src/client-test-app.cpp,
+	  src/syncevolution.cpp, src/vocl/VObject.cpp, src/vocl/VObject.h:
+	  added a sync source which stores contacts in a SQLite database
 
-2007-06-27  Patrick Ohly <patrick.ohly@gmx.de>
+2007-07-13 20:32  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp, src/client-test-app.cpp:
-	- added test for X-OSSO-CONTACT-STATE:DELETED handling
-	- contacts marked for deletion are now deleted by SyncEvolution (but code fails test...)
-	- made it possible to run client-test with EDS-DBus
+	* ChangeLog, NEWS, debian/changelog: # mention fixed example
+	  configs
 
-2007-06-25  Patrick Ohly <patrick.ohly@gmx.de>
+2007-07-13 20:28  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am: when using older test data fix the broken CATEGORIES
+	* etc/Makefile.am, etc/source-config.txt: fixed name of example
+	  source configs (broke during the changes for 0.6 pre)
 
-2007-06-24  Patrick Ohly <patrick.ohly@gmx.de>
+2007-07-09 20:42  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: # ignore known problems
+
+2007-07-09 20:29  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: # updated to new test system, added some
+	  command line parameters
+
+2007-07-09 20:24  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, HACKING, NEWS, configure.in, debian/changelog: #
+	  release 0.6
+
+2007-06-28 20:11  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp, src/client-test-app.cpp: Maemo
+	  address book delete support works now: one has to search for
+	  X-OSSO-CONTACT-STATE:DELETED manually
+
+2007-06-27 20:24  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp, src/client-test-app.cpp: - added
+	  test for X-OSSO-CONTACT-STATE:DELETED handling - contacts marked
+	  for deletion are now deleted by SyncEvolution (but code fails
+	  test...) - made it possible to run client-test with EDS-DBus
+
+2007-06-25 19:49  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am: when using older test data fix the broken
+	  CATEGORIES
+
+2007-06-24 17:19  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: fixed invalid path names
 
-	* src/EvolutionCalendarSource.cpp:
-	workaround for Evolution bug in the calendar import/export:
-	Evolution uses \, as separator for CATEGORIES, but the standard
-	specifies a plain comma. The effect was that multiple categories were
-	treated as one category with commas by ScheduleWorld. Events imported
-	into Evolution were stored incorrectly and the GUI only used the last
-	category.
+2007-06-24 17:19  Patrick Ohly <patrick.ohly@gmx.de>
 
-	As a workaround SyncEvolution now converts back and forth between , and \,
+	* src/EvolutionCalendarSource.cpp: workaround for Evolution bug in
+	  the calendar import/export: Evolution uses \, as separator for
+	  CATEGORIES, but the standard specifies a plain comma. The effect
+	  was that multiple categories were treated as one category with
+	  commas by ScheduleWorld. Events imported into Evolution were
+	  stored incorrectly and the GUI only used the last category.
+	  
+	  As a workaround SyncEvolution now converts back and forth between
+	  , and \,
 
-2007-06-19  Patrick Ohly <patrick.ohly@gmx.de>
+2007-06-19 17:36  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* HACKING: updated testing instructions
 
-2007-04-21  Patrick Ohly <Patrick.Ohly@gmx.de>
+2007-04-23 19:44  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncSource.cpp, src/EvolutionSyncClient.cpp:
-	fixed error handling: a failed source was not forced into a slow sync, one failed source prevented saving configs of not-failed ones
+	* NEWS: # updated version of C++ client library
 
-	* src/EvolutionSyncClient.cpp, etc/localhost_1/spds/sources/addressbook_1/config.txt, etc/localhost_1/spds/syncml/config.txt, etc/source-config.txt, etc/syncml-config.txt, etc/Makefile.am, README, HACKING:
-	- improved logging: log file and backup can be avoided with logdir=none,
-	  loglevel is configurable
-	- fixed off-by-one counting of months in backup directory names
-	- only one example configuration per server, users typically do not
+2007-04-22 19:49  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* NEWS: # entry for 0.6 pre2
+
+2007-04-22 19:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2007-04-22 19:47  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: # minor edits
+
+2007-04-21 13:14  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp: fixed
+	  error handling: a failed source was not forced into a slow sync,
+	  one failed source prevented saving configs of not-failed ones
+
+2007-04-21 12:33  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING, README, etc/Makefile.am, etc/localhost_1,
+	  etc/source-config.txt, etc/syncml-config.txt,
+	  src/EvolutionSyncClient.cpp: - improved logging: log file and
+	  backup can be avoided with logdir=none, loglevel is configurable
+	  - fixed off-by-one counting of months in backup directory names -
+	  only one example configuration per server, users typically do not
 	  need the _1/2 suffices and the testing system no longer has to be
-	  configured manually either
-	- documented the switch from the original SyncEvolution testing to its
-	  successor, the generic Funambol C++ client testing framework
+	  configured manually either - documented the switch from the
+	  original SyncEvolution testing to its successor, the generic
+	  Funambol C++ client testing framework
 
-2007-04-15  Patrick Ohly <Patrick.Ohly@gmx.de>
+2007-04-15 19:30  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/client-test-app.cpp:
-	fixed compile problem on Debian 3.1/older gcc
+	* src/client-test-app.cpp: fixed compile problem on Debian
+	  3.1/older gcc
 
-	* src/client-test-app.cpp, src/EvolutionSyncSource.cpp, src/Makefile.am, src/EvolutionMemoSource.cpp, src/EvolutionMemoSource.h, etc/localhost_1/spds/sources/addressbook_1/config.txt, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, etc/Makefile.am:
-	added synchronization of Memos as plain text
+2007-04-15 13:42  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/Makefile.am,
+	  etc/localhost_1/spds/sources/addressbook_1/config.txt,
+	  src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionMemoSource.cpp, src/EvolutionMemoSource.h,
+	  src/EvolutionSyncSource.cpp, src/Makefile.am,
+	  src/client-test-app.cpp: added synchronization of Memos as plain
+	  text
+
+2007-04-15 13:41  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* HACKING: added note about building Maemo package with fakeroot
 
-2007-04-14  Patrick Ohly <Patrick.Ohly@gmx.de>
+2007-04-14 15:34  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* debian/rules: avoid unwanted dependencies caused by optional modules
+	* debian/rules: avoid unwanted dependencies caused by optional
+	  modules
 
-	* debian/changelog, configure.in: bumped to 0.6 pre2
+2007-04-14 15:32  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/client-test-app.cpp:
-	minor changes about ifdef ENABLE, added comment avoid vcard21, FIXED itodo20 type
+	* configure.in, debian/changelog: bumped to 0.6 pre2
 
-2007-04-12  Patrick Ohly <Patrick.Ohly@gmx.de>
+2007-04-14 15:31  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/client-test-app.cpp:
-	always set encoding, we might have to overwrite an encoding set earlier
+	* src/client-test-app.cpp: minor changes about ifdef ENABLE, added
+	  comment avoid vcard21, FIXED itodo20 type
 
-2007-04-11  Patrick Ohly <Patrick.Ohly@gmx.de>
+2007-04-12 20:04  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	type OTHER was converted to PARCEL when sending to server, but PARCEL was then not converted back to OTHER, but rather into HOME
+	* src/client-test-app.cpp: always set encoding, we might have to
+	  overwrite an encoding set earlier
 
-	* src/client-test-app.cpp:
-	- source type was not set in new configs as intended
-	- fixed confusion with source index vs. type (broke testing of e.g. ical20)
+2007-04-11 21:23  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-04-09  Patrick Ohly <Patrick.Ohly@gmx.de>
+	* src/EvolutionContactSource.cpp: type OTHER was converted to
+	  PARCEL when sending to server, but PARCEL was then not converted
+	  back to OTHER, but rather into HOME
+
+2007-04-11 21:03  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/client-test-app.cpp: - source type was not set in new configs
+	  as intended - fixed confusion with source index vs. type (broke
+	  testing of e.g. ical20)
+
+2007-04-09 19:59  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
-	avoid not freeing error/overwriting error when trying again
+	  avoid not freeing error/overwriting error when trying again
 
-	* src/client-test-app.cpp:
-	fixed incorrect mapping from selected source to type
+2007-04-09 19:58  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncClient.cpp:
-	always summarize ERROR/INFO messages at the end, even if sync didn't start - there might be errors which prevent starting it
+	* src/client-test-app.cpp: fixed incorrect mapping from selected
+	  source to type
 
-2007-04-06  Patrick Ohly <Patrick.Ohly@gmx.de>
+2007-04-09 19:58  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am:
-	need to declare new files so that it gets included in distribution
+	* src/EvolutionSyncClient.cpp: always summarize ERROR/INFO messages
+	  at the end, even if sync didn't start - there might be errors
+	  which prevent starting it
 
-2007-04-02  Patrick Ohly <Patrick.Ohly@gmx.de>
+2007-04-06 17:32  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am:
-	fixed distribution after taking several files from C++ client library
+	* src/Makefile.am: need to declare new files so that it gets
+	  included in distribution
 
-2007-04-01  Patrick Ohly <Patrick.Ohly@gmx.de>
+2007-04-02 17:57  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/client-test-app.cpp:
-	added CLIENT_TEST_EVOLUTION_PREFIX which overrides the evolutionsource setting in test configs; default SyncEvolution_Test_
+	* src/Makefile.am: fixed distribution after taking several files
+	  from C++ client library
 
-	* src/EvolutionCalendarSource.cpp:
-	avoid e_cal_new_system_memos(), it breaks compilation with older Evolution
+2007-04-01 18:26  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp, src/client-test-app.cpp, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
-	added the possibility to create databases if evolutionsource is set to a file:// uri
+	* src/client-test-app.cpp: added CLIENT_TEST_EVOLUTION_PREFIX which
+	  overrides the evolutionsource setting in test configs; default
+	  SyncEvolution_Test_
 
-	* src/Makefile.am:
-	explicit dependency on modules is needed for client-test
+2007-04-01 17:59  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-03-31  Patrick Ohly <Patrick.Ohly@gmx.de>
+	* src/EvolutionCalendarSource.cpp: avoid e_cal_new_system_memos(),
+	  it breaks compilation with older Evolution
 
-	* src/Algorithm/Artistic, src/Algorithm/Diff.pm, src/Algorithm/README, src/Algorithm/copyright, src/EvolutionClientConfig.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/Makefile.am, src/client-test-app.cpp:
-	synccompare and test suite are now taken from C++ client library
+2007-04-01 13:02  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-03-26  Patrick Ohly <Patrick.Ohly@gmx.de>
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionContactSource.cpp, src/client-test-app.cpp: added
+	  the possibility to create databases if evolutionsource is set to
+	  a file:// uri
 
-	* debian/control, debian/changelog, README, NEWS, ChangeLog, HACKING:
-	various release preparations
+2007-04-01 12:41  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am: explicit dependency on modules is needed for
+	  client-test
+
+2007-03-31 16:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Algorithm, src/EvolutionClientConfig.h,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/Makefile.am, src/client-test-app.cpp: synccompare and test
+	  suite are now taken from C++ client library
+
+2007-03-26 20:35  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, HACKING, NEWS, README, debian/changelog,
+	  debian/control: various release preparations
+
+2007-03-26 19:43  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* configure.in: streamlined dependencies and their checking
 
-	* src/Makefile.am, configure.in:
-	do not remove src/client-api unless it was copied by configure
+2007-03-26 19:09  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-03-25  Patrick Ohly <Patrick.Ohly@gmx.de>
+	* configure.in, src/Makefile.am: do not remove src/client-api
+	  unless it was copied by configure
 
-	* src/Makefile.am, HACKING, configure.in, debian/rules:
-	- fixed building synccompare for Maemo
-	- added/fixed rules to build for Maemo
-	- add new Algorithm::Diff files to source distribution
+2007-03-25 20:22  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	fixed uninitialized memory read under Maemo
+	* ChangeLog: # updated
 
-	* src/normalize_vcard.pl:
-	Algorithm::Diff: check whether files really have changed
+2007-03-25 20:20  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Algorithm/copyright, src/Algorithm/README, src/Algorithm/Diff.pm, src/Algorithm/Artistic, src/normalize_vcard.pl, src/Makefile.am:
-	- use Algorithm::Diff instead of external diff tool in synccompare;
-	  Algorithm::Diff is embedded in synccompare to keep it self-contained
-	- tput must be called without redirection of stderr, otherwise it did
-	  not find the current number of columns
+	* configure.in: # version bump
 
-2007-03-24  Patrick Ohly <Patrick.Ohly@gmx.de>
+2007-03-25 20:19  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING, configure.in, debian/rules, src/Makefile.am: - fixed
+	  building synccompare for Maemo - added/fixed rules to build for
+	  Maemo - add new Algorithm::Diff files to source distribution
+
+2007-03-25 20:17  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp: fixed uninitialized memory read
+	  under Maemo
+
+2007-03-25 18:05  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/normalize_vcard.pl: Algorithm::Diff: check whether files
+	  really have changed
+
+2007-03-25 16:42  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Algorithm, src/Algorithm/Artistic, src/Algorithm/Diff.pm,
+	  src/Algorithm/README, src/Algorithm/copyright, src/Makefile.am,
+	  src/normalize_vcard.pl: - use Algorithm::Diff instead of external
+	  diff tool in synccompare; Algorithm::Diff is embedded in
+	  synccompare to keep it self-contained - tput must be called
+	  without redirection of stderr, otherwise it did not find the
+	  current number of columns
+
+2007-03-24 22:51  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp: additional error check
 
-	* src/EvolutionSyncSource.cpp:
-	dlopen(RTLD_GLOBAL) fixes obscure libebook failures on Maemo; dlopen() errors can occur due to missing modules, only print as debug to avoid failure message after sync
+2007-03-24 22:50  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/Makefile.am:
-	also need to uninstall doc files, distcheck complains otherwise
+	* src/EvolutionSyncSource.cpp: dlopen(RTLD_GLOBAL) fixes obscure
+	  libebook failures on Maemo; dlopen() errors can occur due to
+	  missing modules, only print as debug to avoid failure message
+	  after sync
 
-	* src/vocl/VObject.cpp, src/EvolutionContactSource.cpp, src/testVCard.vcf:
-	workaround for Funambol 3.0 trailing = parser bug
+2007-03-24 21:51  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/localhost_1/spds/syncml/config.txt:
-	enable large object support and max message limit by default
+	* etc/Makefile.am: also need to uninstall doc files, distcheck
+	  complains otherwise
 
-	* src/syncevolution.cpp, configure.in, dbus-timeout.patch, src/Makefile.am:
-	added configurable hacks for Maemo (--enable-maemo):
-	- set the (non-standard!) DBUS_DEFAULT_TIMEOUT; see dbus-timeout.patch
-	- wrap e_book_from_string() to fix invalid parameter
-	- don't use UTF-8 encoding in Perl script
+2007-03-24 17:14  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/normalize_vcard.pl: BusyBox's mktemp on Maemo requires parameter
+	* src/EvolutionContactSource.cpp, src/testVCard.vcf,
+	  src/vocl/VObject.cpp: workaround for Funambol 3.0 trailing =
+	  parser bug
+
+2007-03-24 15:54  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/localhost_1/spds/syncml/config.txt: enable large object
+	  support and max message limit by default
+
+2007-03-24 15:47  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in, dbus-timeout.patch, src/Makefile.am,
+	  src/syncevolution.cpp: added configurable hacks for Maemo
+	  (--enable-maemo): - set the (non-standard!) DBUS_DEFAULT_TIMEOUT;
+	  see dbus-timeout.patch - wrap e_book_from_string() to fix invalid
+	  parameter - don't use UTF-8 encoding in Perl script
+
+2007-03-24 15:44  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/normalize_vcard.pl: BusyBox's mktemp on Maemo requires
+	  parameter
+
+2007-03-24 15:43  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2007-03-24 15:43  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* etc/Makefile.am: new internal docdir was not actually used
 
+2007-03-24 15:06  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* debian/compat, debian/control: Maemo only has debhelper 4
 
-	* src/EvolutionSyncSource.cpp:
-	fixed compile error without calendar support
+2007-03-24 15:06  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-03-23  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionSyncSource.cpp: fixed compile error without calendar
+	  support
 
-	* src/EvolutionCalendarSource.cpp:
-	added error checking for broken events which cannot be converted to iCal, e.g. because of a missing timezone definition (SF #1685637)
+2007-03-23 22:05  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp: added error checking for broken
+	  events which cannot be converted to iCal, e.g. because of a
+	  missing timezone definition (SF #1685637)
+
+2007-03-23 21:00  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp:
-	Errors while writing the initial datatbase dumps was not handled
-	properly and led to a direct dump of the error exception. Now the
-	error is logged first and the '.after' dump is skipped.
+	  Errors while writing the initial datatbase dumps was not handled
+	  properly and led to a direct dump of the error exception. Now the
+	  error is logged first and the '.after' dump is skipped.
 
-	* etc/Makefile.am:
-	fixed compatibility problem with older automake/autoconf which does not have docdir yet
+2007-03-23 20:23  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-03-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* etc/Makefile.am: fixed compatibility problem with older
+	  automake/autoconf which does not have docdir yet
 
-	* etc/Makefile.am:
-	install into $(docdir), not etc; also use "funambol_*" instead of "localhost_"
+2007-03-19 22:00  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/Makefile.am: install into $(docdir), not etc; also use
+	  "funambol_*" instead of "localhost_"
+
+2007-03-19 21:57  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* debian/README.Debian: no special comment for Debian needed
 
-2007-03-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-03-12 20:29  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* debian/control, debian/copyright, debian/docs, debian/rules, debian/README.Debian, debian/changelog, debian/compat:
-	added packaging for Debian
+	* debian, debian/README.Debian, debian/changelog, debian/compat,
+	  debian/control, debian/copyright, debian/docs, debian/rules:
+	  added packaging for Debian
 
-2007-03-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-03-11 22:13  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/syncevolution.cpp, src/EvolutionSyncClient.cpp, src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, configure.in:
-	--enable-ecal/ebook are only enabled by default if the libs are present
-	--enable-shared will build backends as modules which are loaded dynamically if possible (off by default)
+	* configure.in, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h,
+	  src/Makefile.am, src/syncevolution.cpp: --enable-ecal/ebook are
+	  only enabled by default if the libs are present --enable-shared
+	  will build backends as modules which are loaded dynamically if
+	  possible (off by default)
 
-2007-02-22  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-02-22 19:33  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/async.patch: patch switches to async version of the Evolution API
+	* src/async.patch: patch switches to async version of the Evolution
+	  API
 
-2007-01-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-01-26 22:32  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionSyncClient.cpp: fixed free/delete [] mismatch
 
-2007-01-22  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-01-22 20:13  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am:
-	fixed distdir target that broke in yesterday's commit
+	* src/Makefile.am: fixed distdir target that broke in yesterday's
+	  commit
 
-2007-01-21  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-01-21 16:14  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am, configure.in:
-	added --enable-static-cxx to link libstdc++ statically
+	* configure.in, src/Makefile.am: added --enable-static-cxx to link
+	  libstdc++ statically
 
-2007-01-20  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-01-20 14:19  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* test/runtests.py:
-	fixed problem of deleting read-only install directories
+	* test/runtests.py: fixed problem of deleting read-only install
+	  directories
 
-	* etc/Makefile.am:
-	memo config now also included for localhost, but disabled by default
+2007-01-20 14:17  Patrick Ohly <patrick.ohly@gmx.de>
 
-2007-01-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* etc/Makefile.am: memo config now also included for localhost, but
+	  disabled by default
+
+2007-01-11 20:34  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* test/runtests.py: added cross-compilation
 
-2007-01-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-01-09 21:25  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* configure.in:
-	pass cross-compilation options through to configure of client library
+	* configure.in: pass cross-compilation options through to configure
+	  of client library
 
-2007-01-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-01-04 22:13  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am, src/TestEvolution.cpp, src/testMemo.ics:
-	added testing of memos
+	* src/Makefile.am, src/TestEvolution.cpp, src/testMemo.ics: added
+	  testing of memos
 
-	* etc/localhost_1/spds/sources/addressbook_1/config.txt, src/EvolutionCalendarSource.h, src/EvolutionSyncSource.cpp, src/syncevolution.cpp, README, etc/Makefile.am:
-	added support for synchronizing Evolution memos in iCalendar 2.0 VJOURNAL format
+2007-01-04 20:54  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* configure.in:
-	bumped version, clean up copy of client library sources some more
+	* README, etc/Makefile.am,
+	  etc/localhost_1/spds/sources/addressbook_1/config.txt,
+	  src/EvolutionCalendarSource.h, src/EvolutionSyncSource.cpp,
+	  src/syncevolution.cpp: added support for synchronizing Evolution
+	  memos in iCalendar 2.0 VJOURNAL format
+
+2007-01-04 20:52  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: bumped version, clean up copy of client library
+	  sources some more
+
+2007-01-04 20:43  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/Makefile.am: fixed problem with 'make dist'
 
-2007-01-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2007-01-03 20:58  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	avoid adding the non-standard TYPE=OTHER, better use HOME instead (that's also the default in the Synthesis server)
+	* src/EvolutionContactSource.cpp: avoid adding the non-standard
+	  TYPE=OTHER, better use HOME instead (that's also the default in
+	  the Synthesis server)
 
-	* configure.in:
-	autoconf checks must not be inside conditional code (fixes 'conditional AMDEP was never defined' error)
+2007-01-03 20:12  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-12-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* configure.in: autoconf checks must not be inside conditional code
+	  (fixes 'conditional AMDEP was never defined' error)
+
+2006-12-17 22:10  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/client-test-app.cpp: adapted to update test API
 
+2006-12-17 16:33  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* src/Makefile.am: ignore changes in autotools generated files
+
+2006-12-17 16:33  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionSyncClient.cpp: fixed missing return code
 
-2006-12-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-12-10 17:35  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp, src/TestMain.cpp, src/client-test-app.cpp, src/syncevolution.cpp, src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/EvolutionContactSource.h, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionCalendarSource.cpp, COPYING:
-	copyright transfer to Funambol
+	* COPYING, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp,
+	  src/EvolutionContactSource.h, src/EvolutionSmartPtr.h,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h,
+	  src/TestEvolution.cpp, src/TestMain.cpp, src/client-test-app.cpp,
+	  src/syncevolution.cpp: copyright transfer to Funambol
 
-2006-12-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-12-09 17:50  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/client-test-app.cpp:
-	adapted to new C++ client library test suite interface, finished configuration for calendars and tasks
+	* src/client-test-app.cpp: adapted to new C++ client library test
+	  suite interface, finished configuration for calendars and tasks
 
-	* src/normalize_vcard.pl:
-	ignore differences caused by exporting vCard with ADR;TYPE=PARCEL instead of ADR;TYPE=OTHER
+2006-12-09 16:25  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-12-07  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/normalize_vcard.pl: ignore differences caused by exporting
+	  vCard with ADR;TYPE=PARCEL instead of ADR;TYPE=OTHER
+
+2006-12-07 22:27  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/client-test-app.cpp: support testing with two clients
 
-2006-12-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-12-05 22:24  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/client-test-app.cpp: adapted contacts to full set of local tests
+	* src/client-test-app.cpp: adapted contacts to full set of local
+	  tests
 
-	* src/normalize_vcard.pl:
-	avoid tput error when no valid terminal is set
+2006-12-05 22:24  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-12-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/normalize_vcard.pl: avoid tput error when no valid terminal
+	  is set
 
-	* configure.in, src/Makefile.am, src/client-test-app.cpp:
-	use the new C++ client library testing framework
+2006-12-01 22:50  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-11-27  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* configure.in, src/Makefile.am, src/client-test-app.cpp: use the
+	  new C++ client library testing framework
 
-	* src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp, src/vocl/VProperty.cpp:
-	adapted to const qualifier changes in client library and fixed minor memory leak
+2006-11-27 21:08  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-11-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncSource.cpp, src/vocl/VProperty.cpp: adapted to
+	  const qualifier changes in client library and fixed minor memory
+	  leak
 
-	* test/runtests.py:
-	added building of release packages, adapted to some more known server limitations
+2006-11-12 12:46  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp:
-	renamed testRefreshSync to testRefreshFromServerSync and added testRefreshFromClient
+	* ChangeLog, NEWS: # updates for 0.5 release
 
-	* src/normalize_vcard.pl: ignore known limitations of Synthesis server
+2006-11-12 12:42  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-11-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* test/runtests.py: added building of release packages, adapted to
+	  some more known server limitations
+
+2006-11-12 12:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestEvolution.cpp: renamed testRefreshSync to
+	  testRefreshFromServerSync and added testRefreshFromClient
+
+2006-11-12 12:39  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/normalize_vcard.pl: ignore known limitations of Synthesis
+	  server
+
+2006-11-11 20:21  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* NEWS, configure.in: 0.5 release
 
-	* src/EvolutionContactSource.h, src/EvolutionSyncSource.h, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, ChangeLog:
-	messages about local changes are now logged as DEBUG and not INFO because they were confusing for users; now they are not visible in the final report
+2006-11-11 20:21  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-11-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* ChangeLog: # updated
 
-	* src/EvolutionContactSource.h, src/EvolutionSyncSource.h, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, ChangeLog:
-	messages about local changes are now logged as DEBUG and not INFO because they were confusing for users; now they are not visible in the final report
+2006-11-11 16:00  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-11-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* ChangeLog, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp,
+	  src/EvolutionContactSource.h, src/EvolutionSyncSource.h: messages
+	  about local changes are now logged as DEBUG and not INFO because
+	  they were confusing for users; now they are not visible in the
+	  final report
 
-	* src/EvolutionSyncSource.cpp, src/TestEvolution.cpp, README, etc/localhost_1/spds/syncml/config.txt:
-	added support and testing of one-way-from-client/server
+2006-11-04 13:00  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-11-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* README, etc/localhost_1/spds/syncml/config.txt,
+	  src/EvolutionSyncSource.cpp, src/TestEvolution.cpp: added support
+	  and testing of one-way-from-client/server
 
-	* src/TestEvolution.cpp:
-	TaskSync tests for large object support failed because the test item didn't have the expected DESCRIPTION to stuff the item's size
+2006-11-03 17:41  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* HACKING, src/TestMain.cpp:
-	allow running multiple tests by specifying them on the command line
+	* src/TestEvolution.cpp: TaskSync tests for large object support
+	  failed because the test item didn't have the expected DESCRIPTION
+	  to stuff the item's size
 
-2006-11-02  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-11-03 17:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING, src/TestMain.cpp: allow running multiple tests by
+	  specifying them on the command line
+
+2006-11-02 21:03  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README, etc/localhost_1/spds/sources/addressbook_1/config.txt:
-	added warning about setting evolutionuser/password when not needed -> causes backend to hang
+	  added warning about setting evolutionuser/password when not
+	  needed -> causes backend to hang
 
-	* src/normalize_vcard.pl:
-	PHOTO/NOTE update for EGroupware and Funambol portal
+2006-11-02 20:29  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp:
-	use simpler data for update test, moved complex contact update into testComplexUpdate
+	* src/normalize_vcard.pl: PHOTO/NOTE update for EGroupware and
+	  Funambol portal
 
-2006-11-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-11-02 20:28  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/normalize_vcard.pl:
-	avoid that patterns accidentally run over line ends, added special cases for Funambol and EGroupware server
+	* src/TestEvolution.cpp: use simpler data for update test, moved
+	  complex contact update into testComplexUpdate
 
-	* test/runtests.py:
-	allow to build arbitrary combinations of client library and SyncEvolution
+2006-11-01 20:08  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	<<system>> and <<default>> can be used to reference the system and the default address books, respectively
+	* src/normalize_vcard.pl: avoid that patterns accidentally run over
+	  line ends, added special cases for Funambol and EGroupware server
 
-	* src/Makefile.am:
-	cppunit-config was not called when compiling C++ code, therefore it was only found if in the default search path
+2006-11-01 16:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: allow to build arbitrary combinations of client
+	  library and SyncEvolution
+
+2006-11-01 12:59  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp: <<system>> and <<default>> can be
+	  used to reference the system and the default address books,
+	  respectively
+
+2006-11-01 12:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am: cppunit-config was not called when compiling C++
+	  code, therefore it was only found if in the default search path
+
+2006-11-01 11:24  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/TestEvolution.cpp: made test coverage configurable
 
-2006-10-29  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-10-29 15:23  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp:
-	added testLargeObjectBin, changed calendar UID so that without support for special characters in the key the sync fails
+	* src/TestEvolution.cpp: added testLargeObjectBin, changed calendar
+	  UID so that without support for special characters in the key the
+	  sync fails
 
-	* src/EvolutionSyncClient.cpp:
-	VerDTD must be configured, otherwise Funambol 3.0a (but not 3.0b5) fails during the second sync
+2006-10-29 15:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: VerDTD must be configured, otherwise
+	  Funambol 3.0a (but not 3.0b5) fails during the second sync
+
+2006-10-29 15:21  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* etc/localhost_1/spds/sources/addressbook_1/config.txt:
-	documentation got the direction in refresh-from-client/server wrong
+	  documentation got the direction in refresh-from-client/server
+	  wrong
 
-2006-10-28  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-10-28 08:52  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* test/runtests.py:
-	filter out private information from logs, added --tag parameter
+	* test/runtests.py: filter out private information from logs, added
+	  --tag parameter
 
-2006-10-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-10-04 19:39  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncClient.cpp: setting config is no longer necessary
+	* src/EvolutionSyncClient.cpp: setting config is no longer
+	  necessary
 
-	* src/TestEvolution.cpp:
-	disabled testLargeObjectEncoded again, it requires a suitable server
+2006-10-04 19:38  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-10-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/TestEvolution.cpp: disabled testLargeObjectEncoded again, it
+	  requires a suitable server
+
+2006-10-03 11:49  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/TestEvolution.cpp: enabled encoded LargeObject support test
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h:
-	adapted to new API
+2006-10-03 11:44  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/normalize_vcard.pl: ignore some known Synthesis data conversions
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h: adapted
+	  to new API
 
-2006-09-28  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-10-03 11:43  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp:
-	force server to split large items when LargeObject support is enabled
+	* src/normalize_vcard.pl: ignore some known Synthesis data
+	  conversions
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp, src/syncevolution.cpp:
-	adapted to additional SyncSourceConfig parameter in SyncSource constructor, added testing of LargeObject support
+2006-09-28 23:07  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestEvolution.cpp: force server to split large items when
+	  LargeObject support is enabled
+
+2006-09-28 23:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h,
+	  src/TestEvolution.cpp, src/syncevolution.cpp: adapted to
+	  additional SyncSourceConfig parameter in SyncSource constructor,
+	  added testing of LargeObject support
+
+2006-09-28 22:56  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/testVCard.vcf: make names unique again
 
-2006-09-16  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-09-16 09:00  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.h:
-	adapted to C++ client API change: supported datatypes now in config
+	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.h,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.h: adapted
+	  to C++ client API change: supported datatypes now in config
 
-2006-09-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-09-16 08:59  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* test/runtests.py:
-	removed default values, added egroupware testing, improved log file copying
+	* configure.in: # bumped version to 0.5-CVS
+
+2006-09-11 17:41  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-09-11 17:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: removed default values, added egroupware
+	  testing, improved log file copying
+
+2006-09-11 17:39  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-09-11 17:38  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* NEWS: created entry for 0.3 -> 0.4 changes
 
-2006-09-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-09-11 17:38  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp:
-	avoid refresh-from-server sync whenever possible because eGroupware server does not support it
+	* ChangeLog: # updated
+
+2006-09-11 17:27  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: # bumped to 0.4
+
+2006-09-10 20:43  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestEvolution.cpp: avoid refresh-from-server sync whenever
+	  possible because eGroupware server does not support it
+
+2006-09-10 20:40  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/normalize_vcard.pl: DTSTAMP may vary
 
+2006-09-10 18:52  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* README: minor updates for 0.4
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
-	do not treat requests to delete non-existant items as error, instead log the event (grep for DEBUG and non-existant) and proceed - this is currently necessary with ScheduleWorld server
+2006-09-10 14:43  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
-	added missing space to error messages
+	  do not treat requests to delete non-existant items as error,
+	  instead log the event (grep for DEBUG and non-existant) and
+	  proceed - this is currently necessary with ScheduleWorld server
 
-2006-09-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-09-10 08:06  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.cpp:
-	do not overwrite the UID in an addItem operation even if we fall back to an update
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
+	  added missing space to error messages
 
-	* src/EvolutionContactSource.cpp, src/TestEvolution.cpp:
-	split TYPE parameter with commas into different parameters to help Evolution parse it (the overview display didn't handle this, the editor did)
+2006-09-09 14:58  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-09-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionCalendarSource.cpp: do not overwrite the UID in an
+	  addItem operation even if we fall back to an update
 
-	* src/TestMain.cpp:
-	added TEST_EVOLUTION_ALARM to have some means of aborting when a test takes too long
+2006-09-09 08:36  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncClient.cpp:
-	deviceId property was renamed -> restored compatibility with old configs
+	* src/EvolutionContactSource.cpp, src/TestEvolution.cpp: split TYPE
+	  parameter with commas into different parameters to help Evolution
+	  parse it (the overview display didn't handle this, the editor
+	  did)
+
+2006-09-08 20:38  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestMain.cpp: added TEST_EVOLUTION_ALARM to have some means
+	  of aborting when a test takes too long
+
+2006-09-08 19:57  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp: deviceId property was renamed ->
+	  restored compatibility with old configs
+
+2006-09-08 19:55  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionSyncSource.cpp: added one-way from server/client
 
-2006-09-07  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-09-07 21:05  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h:
-	adapted to official DevInf API with one patch: config passed to SyncClient::conf()
+	* ChangeLog, NEWS: # updated
 
-	* src/EvolutionCalendarSource.cpp:
-	beware to not overwrite valid UID with empty one (some tests broke due to this recent change)
+2006-09-07 20:59  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am:
-	excluded automatically generated files from client-api-diff
+	* configure.in: # set version to CVS again
 
-	* src/TestMain.cpp:
-	newline was missing after successfully completed test
+2006-09-07 19:47  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-08-31  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp,
+	  src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncClient.h, src/EvolutionSyncSource.h: adapted to
+	  official DevInf API with one patch: config passed to
+	  SyncClient::conf()
 
-	* src/EvolutionCalendarSource.cpp:
-	SF issue 1511951: support copying changes back from EGroupware server by not expecting the UID of calendar items to be unmodified
+2006-09-07 19:06  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestMain.cpp:
-	merged listeners so that failure message is generated in just one place
+	* src/EvolutionCalendarSource.cpp: beware to not overwrite valid
+	  UID with empty one (some tests broke due to this recent change)
 
-2006-08-30  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-09-07 18:29  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestMain.cpp:
-	print failure summary to cerr, like the rest of the messages
+	* src/Makefile.am: excluded automatically generated files from
+	  client-api-diff
 
-2006-08-27  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-09-07 18:28  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestMain.cpp: newline was missing after successfully
+	  completed test
+
+2006-08-31 21:34  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp: SF issue 1511951: support
+	  copying changes back from EGroupware server by not expecting the
+	  UID of calendar items to be unmodified
+
+2006-08-31 21:24  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestMain.cpp: merged listeners so that failure message is
+	  generated in just one place
+
+2006-08-30 20:41  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestMain.cpp: print failure summary to cerr, like the rest of
+	  the messages
+
+2006-08-27 20:38  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* test/runtests.py: add number to preserve ordering of actions
 
+2006-08-27 20:11  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* test/runtests.py: added --skip option, made reporting a bit nicer
 
-	* src/TestMain.cpp:
-	added support for ignoring the failure of certain tests by listing them in TEST_EVOLUTION_FAILURES
+2006-08-27 17:52  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-08-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/TestMain.cpp: added support for ignoring the failure of
+	  certain tests by listing them in TEST_EVOLUTION_FAILURES
 
-	* test/runtests.py:
-	executes CVS checkout, compilation and testing automatically
+2006-08-26 15:44  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-08-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* test, test/runtests.py: executes CVS checkout, compilation and
+	  testing automatically
+
+2006-08-21 20:35  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: # version bump
+
+2006-08-21 20:35  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-08-21 20:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* NEWS: # polished news a bit for 0.4 pre2
+
+2006-08-19 14:42  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: new server is www.estamos.de
 
-	* configure.in:
-	better error message when Evolution development files are missing
+2006-08-19 12:37  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: better error message when Evolution development
+	  files are missing
+
+2006-08-19 08:42  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
-	moved reading of changes into helper function so that it can be used in the pre- and post-processing
+	  moved reading of changes into helper function so that it can be
+	  used in the pre- and post-processing
 
-2006-08-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-08-17 21:39  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* README: new server is www.estamos.de
+	* NEWS, src/EvolutionSyncSource.cpp, src/TestEvolution.cpp: ensure
+	  that after refresh-from-client items are not sent again
 
-	* configure.in:
-	better error message when Evolution development files are missing
+2006-08-17 20:39  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
-	moved reading of changes into helper function so that it can be used in the pre- and post-processing
+	* src/EvolutionCalendarSource.cpp, src/EvolutionSyncSource.h,
+	  src/TestEvolution.cpp: changed list into a set to be more
+	  resilient against getting UIDs multiple times
 
-2006-08-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-08-17 20:26  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* NEWS, src/EvolutionSyncSource.cpp, src/TestEvolution.cpp:
-	ensure that after refresh-from-client items are not sent again
+	* NEWS, README, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.h:
+	  implemented Evolution authentication
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp:
-	changed list into a set to be more resilient against getting UIDs multiple times
+2006-08-15 19:20  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.h, NEWS, README, src/EvolutionCalendarSource.cpp:
-	implemented Evolution authentication
+	* NEWS, src/normalize_vcard.pl: normalizing ORG must not extend
+	  into other properties
 
-2006-08-15  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-08-14 20:52  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/normalize_vcard.pl, NEWS:
-	normalizing ORG must not extend into other properties
+	* NEWS, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp,
+	  src/EvolutionContactSource.h, src/EvolutionSmartPtr.h,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/syncevolution.cpp: - rename qptr to eptr to avoid name clash
+	  with sstring - moved unref() into global name space so that more
+	  unref() functions can be added (otherwise local methods shadow
+	  the global functions) - use eptr for SourceList (wasn't
+	  destructed in case of error otherwise and logging in 0.4 pre
+	  continued to go to file) - check for server configuration and
+	  abort in prepare if none given with a suitable error message
 
-2006-08-14  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-08-14 20:46  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/syncevolution.cpp, NEWS:
-	- rename qptr to eptr to avoid name clash with sstring
-	- moved unref() into global name space so that more unref() functions
-	  can be added (otherwise local methods shadow the global functions)
-	- use eptr for SourceList (wasn't destructed in case of error otherwise and
-	  logging in 0.4 pre continued to go to file)
-	- check for server configuration and abort in prepare if none given with
-	  a suitable error message
+	* NEWS, src/vocl/VObject.cpp: avoid CHARSET=UTF-8 without
+	  quoted-printable encoding
 
-	* NEWS, src/vocl/VObject.cpp:
-	avoid CHARSET=UTF-8 without quoted-printable encoding
+2006-08-13 20:16  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-08-13  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* ChangeLog: # updated
 
-	* src/testVCard.vcf: added some more test cases for special characters
+2006-08-13 20:15  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.h:
-	send configured vCard format as part of DevInf (Synthesis server gets confused otherwise)
+	* configure.in: # version is back to 0.4-cvs
 
-	* src/vocl/VObject.cpp:
-	do not send CHARSET for vCard 3.0, not needed and illegal
+2006-08-13 20:14  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-08-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* NEWS: # added next release and comments about two fixes
 
-	* src/vocl/VObject.cpp:
-	always treat single ; as normal character in single-value properties
+2006-08-13 20:14  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* NEWS, configure.in, src/Makefile.am, src/syncevolution.cpp:
-	now compiles on Maemo
+	* src/testVCard.vcf: added some more test cases for special
+	  characters
+
+2006-08-13 20:12  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.h: send configured vCard format as
+	  part of DevInf (Synthesis server gets confused otherwise)
+
+2006-08-13 20:11  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/vocl/VObject.cpp: do not send CHARSET for vCard 3.0, not
+	  needed and illegal
+
+2006-08-06 16:27  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* NEWS: # bumped version
+
+2006-08-06 16:03  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-08-06 16:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/vocl/VObject.cpp: always treat single ; as normal character
+	  in single-value properties
+
+2006-08-06 15:54  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: # bumped version
+
+2006-08-06 15:53  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-08-06 15:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* NEWS, configure.in, src/Makefile.am, src/syncevolution.cpp: now
+	  compiles on Maemo
+
+2006-08-06 15:48  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* HACKING: added note about .patches
 
-	* configure.in:
-	C++ client library may or may not already contain the files generated by the autotools
+2006-08-06 14:42  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/localhost_1/spds/sources/addressbook_1/config.txt:
-	since adding the sync-mode-name.patch more comprehensible names are supported
+	* configure.in: C++ client library may or may not already contain
+	  the files generated by the autotools
 
-	* src/TestEvolution.cpp, NEWS, src/EvolutionCalendarSource.cpp:
-	workaround for incomplete result of e_cal_get_changes()
+2006-08-06 14:40  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* NEWS, README, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h, src/TestEvolution.cpp, src/syncevolution.cpp:
-	- adapted to new SyncClient API: configuration tree handling is now part
-	  of the library
-	- do not reset anchors after failure: allows to proceed with two-way sync
+	* etc/localhost_1/spds/sources/addressbook_1/config.txt: since
+	  adding the sync-mode-name.patch more comprehensible names are
+	  supported
 
-2006-08-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-08-06 12:41  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/vocl/VObject.cpp:
-	always treat single ; as normal character in single-value properties
+	* NEWS, src/EvolutionCalendarSource.cpp, src/TestEvolution.cpp:
+	  workaround for incomplete result of e_cal_get_changes()
 
-	* NEWS, configure.in, src/Makefile.am, src/syncevolution.cpp:
-	now compiles on Maemo
+2006-08-06 07:56  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* HACKING: added note about .patches
+	* NEWS, README, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncClient.h, src/EvolutionSyncSource.h,
+	  src/TestEvolution.cpp, src/syncevolution.cpp: - adapted to new
+	  SyncClient API: configuration tree handling is now part of the
+	  library - do not reset anchors after failure: allows to proceed
+	  with two-way sync
 
-	* configure.in:
-	C++ client library may or may not already contain the files generated by the autotools
+2006-07-27 19:42  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/localhost_1/spds/sources/addressbook_1/config.txt:
-	since adding the sync-mode-name.patch more comprehensible names are supported
+	* src/EvolutionSyncSource.h: ensure that deleted items have a sane
+	  datatype (in particular avoid text/x-todo)
 
-	* src/TestEvolution.cpp, NEWS, src/EvolutionCalendarSource.cpp:
-	workaround for incomplete result of e_cal_get_changes()
-
-	* NEWS, README, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h, src/TestEvolution.cpp, src/syncevolution.cpp:
-	- adapted to new SyncClient API: configuration tree handling is now part
-	  of the library
-	- do not reset anchors after failure: allows to proceed with two-way sync
-
-2006-07-27  Patrick Ohly  <Patrick.Ohly@gmx.de>
-
-	* src/EvolutionSyncSource.h:
-	ensure that deleted items have a sane datatype (in particular avoid text/x-todo)
+2006-07-27 19:41  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp: fixed compiler warning
 
-2006-07-25  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-07-25 21:25  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.h, src/EvolutionCalendarSource.h:
-	added inclusion of config.h (needed since adding ENABLE_ECAL/EBOOK)
-	added meta information callbacks
+	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.h:
+	  added inclusion of config.h (needed since adding
+	  ENABLE_ECAL/EBOOK) added meta information callbacks
 
-2006-07-23  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-07-23 10:27  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* configure.in, src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSmartPtr.h, src/EvolutionSyncSource.cpp, src/syncevolution.cpp:
-	added --disable-ecal/ebook for installations without the required libs
+	* configure.in, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp,
+	  src/EvolutionContactSource.h, src/EvolutionSmartPtr.h,
+	  src/EvolutionSyncSource.cpp, src/syncevolution.cpp: added
+	  --disable-ecal/ebook for installations without the required libs
 
-	* src/EvolutionSyncClient.h:
-	implemented more of the new meta info calls
+2006-07-23 09:36  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/localhost_1/spds/syncml/config.txt: firstTimeSyncMode is not used
+	* src/EvolutionSyncClient.h: implemented more of the new meta info
+	  calls
 
-2006-07-18  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-07-23 04:42  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* NEWS: # updated
+
+2006-07-23 04:41  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/localhost_1/spds/syncml/config.txt: firstTimeSyncMode is not
+	  used
+
+2006-07-18 21:25  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* configure.in: bumped version
 
-	* src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h:
-	use the new SyncClient API to set a default 'SyncEvolution x.y' as HTTP user agent
+2006-07-18 21:24  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-07-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h: use the
+	  new SyncClient API to set a default 'SyncEvolution x.y' as HTTP
+	  user agent
 
-	* src/testVCard.vcf, src/vocl/VObject.cpp:
-	changed vCard 2.1 parser to make it compatible with servers
-	which send a verbatim semicolon as part of properties where
-	the semicolon has no special meaning
+2006-07-17 19:37  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-07-14  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/testVCard.vcf, src/vocl/VObject.cpp: changed vCard 2.1 parser
+	  to make it compatible with servers which send a verbatim
+	  semicolon as part of properties where the semicolon has no
+	  special meaning
 
-	* src/EvolutionContactSource.cpp:
-	must always pass vCard through decoding/encoding to ensure that CHARSET is added as needed
+2006-07-14 21:23  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp:
-	due to cut-and-paste error the ContactStress test was executed instead of Calendar/TaskStress
+	* src/EvolutionContactSource.cpp: must always pass vCard through
+	  decoding/encoding to ensure that CHARSET is added as needed
 
-	* src/normalize_vcard.pl:
-	ignore some more irrelevant differences with Synthesis server
+2006-07-14 21:22  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/vocl/VConverter.cpp, src/vocl/VConverter.h:
-	fixed decoding of quoted-printable soft line breaks, fixed unfolding of vCard 2.1
+	* src/TestEvolution.cpp: due to cut-and-paste error the
+	  ContactStress test was executed instead of Calendar/TaskStress
 
-	* src/vocl/VObject.cpp:
-	must add CHARSET=UTF-8 if non-ASCII character is found because default charset is not well-defined
+2006-07-14 21:21  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/normalize_vcard.pl: ignore some more irrelevant differences
+	  with Synthesis server
+
+2006-07-14 21:20  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/vocl/VConverter.cpp, src/vocl/VConverter.h: fixed decoding of
+	  quoted-printable soft line breaks, fixed unfolding of vCard 2.1
+
+2006-07-14 21:19  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/vocl/VObject.cpp: must add CHARSET=UTF-8 if non-ASCII
+	  character is found because default charset is not well-defined
+
+2006-07-14 20:58  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/testVCard.vcf: added folding and XML entities test cases
 
-2006-07-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-07-08 18:25  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README, etc/localhost_1/spds/sources/addressbook_1/config.txt:
-	emphasized the need to chose the right uri/type combination, in particular with ScheduleWorld
+	  emphasized the need to chose the right uri/type combination, in
+	  particular with ScheduleWorld
 
-2006-07-02  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-07-02 16:30  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* NEWS, etc/localhost_1/spds/syncml/config.txt:
-	added support for setting HTTP user agent
+	* NEWS, etc/localhost_1/spds/syncml/config.txt: added support for
+	  setting HTTP user agent
 
-	* src/TestEvolution.cpp:
-	special characters in test cases were not escaped properly
+2006-07-02 16:05  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp:
-	testMerge() dumps the result of conflict resolution, but no longer makes any assumptions about it
+	* src/TestEvolution.cpp: special characters in test cases were not
+	  escaped properly
 
-2006-06-27  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-07-02 15:46  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestEvolution.cpp: testMerge() dumps the result of conflict
+	  resolution, but no longer makes any assumptions about it
+
+2006-06-27 21:25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, NEWS: # update
+
+2006-06-27 21:24  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: moved some content to new home page, added link to it
 
-	* src/syncevolution.cpp:
-	listing Evolution databases showed calendars twice instead of task lists
+2006-06-27 16:26  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-06-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/syncevolution.cpp: listing Evolution databases showed
+	  calendars twice instead of task lists
 
-	* README:
-	changed comments about Evolution versions affected by known problems
+2006-06-26 21:09  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: changed comments about Evolution versions affected by
+	  known problems
+
+2006-06-26 21:00  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: minor clarifications
 
-	* etc/localhost_1/spds/syncml/config.txt:
-	workaround for problems during slow-sync if items are split between different messages
+2006-06-26 20:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/localhost_1/spds/syncml/config.txt: workaround for problems
+	  during slow-sync if items are split between different messages
+
+2006-06-26 20:28  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp: clarified unknown name text
 
-	* src/EvolutionContactSource.cpp, src/normalize_vcard.pl:
-	added special handling of TEL;TYPE=PREF,VOICE
+2006-06-26 20:24  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-06-22  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionContactSource.cpp, src/normalize_vcard.pl: added
+	  special handling of TEL;TYPE=PREF,VOICE
+
+2006-06-22 19:19  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/TestEvolution.cpp: added *Stress::testManyItems
 
-2006-06-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-06-19 16:23  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionSyncClient.cpp: always use two digits in file name
 
-2006-06-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-06-17 20:07  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncSource.cpp:
-	never executed delete since adding workaround (wrong brackets)
+	* src/EvolutionSyncSource.cpp: never executed delete since adding
+	  workaround (wrong brackets)
+
+2006-06-17 16:20  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/normalize_vcard.pl: remove redundant VALUE=DATE-TIME
 
+2006-06-17 16:17  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* src/testCalendar.ics: added test case with BYSETPOS=-1
 
-	* src/testCalendar.ics:
-	added more special characters - double quotation marks currently not tested because of Evolution's invalid encoding of them
+2006-06-17 14:34  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* README:
-	documented need to enter new address book to avoid 'EBookStatus returned 19'
+	* src/testCalendar.ics: added more special characters - double
+	  quotation marks currently not tested because of Evolution's
+	  invalid encoding of them
 
-2006-06-15  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-06-17 13:09  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/normalize_vcard.pl, src/testTask.ics:
-	relax comparison of RRULE BYDAY, modified task test case to always use its own VTIMEZONE
+	* README: documented need to enter new address book to avoid
+	  'EBookStatus returned 19'
+
+2006-06-15 16:15  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/normalize_vcard.pl, src/testTask.ics: relax comparison of
+	  RRULE BYDAY, modified task test case to always use its own
+	  VTIMEZONE
+
+2006-06-15 16:14  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/testVCard.vcf: added test case with empty EMAIL: property
 
-	* src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h:
-	added safety check to avoid segfaults if server sends no data for item
+2006-06-15 15:12  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h: added
+	  safety check to avoid segfaults if server sends no data for item
+
+2006-06-15 13:49  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: some more comments about compiling on Debian Sarge
 
+2006-06-15 13:48  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* src/Makefile.am: added Test.h to distribution
+
+2006-06-15 10:29  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-06-15 10:28  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/Makefile.am: added testTask.ics
 
-	* etc/localhost_1/spds/syncml/config.txt, README, etc/localhost_1/spds/sources/addressbook_1/config.txt:
-	clarified documentation and adapted to current status of SyncEvolution, ScheduleWorld and Funambol
+2006-06-15 09:35  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-06-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* README, etc/localhost_1/spds/sources/addressbook_1/config.txt,
+	  etc/localhost_1/spds/syncml/config.txt: clarified documentation
+	  and adapted to current status of SyncEvolution, ScheduleWorld and
+	  Funambol
+
+2006-06-12 21:33  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* Makefile.am: also add NEWS and COPYING to distribution
 
+2006-06-12 21:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-06-12 21:21  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* NEWS: comments on 0.3
 
-	* configure.in: bumped version to 0.3
-
-	* README:
-	some more proof-reading - terms are still not used consistently
-
-	* src/syncevolution.cpp, src/EvolutionContactSource.cpp:
-	made output a bit nicer
-
-	* src/vocl/vcardconverter.cpp, src/Makefile.am:
-	also imported the vcardconverter program from the Funambol CVS
-
-	* src/vocl/VObject.cpp: readded the removal of CHARSET
-
-2006-06-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-06-12 21:09  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* configure.in: bumped version to 0.3
 
-	* README:
-	some more proof-reading - terms are still not used consistently
+2006-06-12 21:01  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/syncevolution.cpp, src/EvolutionContactSource.cpp:
-	made output a bit nicer
+	* README: some more proof-reading - terms are still not used
+	  consistently
 
-	* src/vocl/vcardconverter.cpp, src/Makefile.am:
-	also imported the vcardconverter program from the Funambol CVS
+2006-06-12 20:59  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/vocl/VObject.cpp: readded the removal of CHARSET
+	* src/EvolutionContactSource.cpp, src/syncevolution.cpp: made
+	  output a bit nicer
 
-2006-06-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-06-12 17:51  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* README:
-	some more proof-reading - terms are still not used consistently
+	* src/Makefile.am, src/vocl/vcardconverter.cpp: also imported the
+	  vcardconverter program from the Funambol CVS
 
-	* src/syncevolution.cpp, src/EvolutionContactSource.cpp:
-	made output a bit nicer
-
-	* src/vocl/vcardconverter.cpp, src/Makefile.am:
-	also imported the vcardconverter program from the Funambol CVS
+2006-06-12 17:50  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/vocl/VObject.cpp: readded the removal of CHARSET
 
-2006-06-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-06-11 21:54  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.cpp:
-	importing new timezones before their events works better (e.g. with Evolution 2.4)
+	* src/EvolutionCalendarSource.cpp: importing new timezones before
+	  their events works better (e.g. with Evolution 2.4)
 
-	* README:
-	added remark about Evolution 2.0.4 GUI problem with new VTIMEZONE defs
+2006-06-11 21:53  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: added remark about Evolution 2.0.4 GUI problem with new
+	  VTIMEZONE defs
+
+2006-06-11 21:52  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/testCalendar.ics: use a TZID that no-one else knows
 
-	* src/TestEvolution.cpp:
-	testImport should leave the items imported - moved import/delete into its own test
+2006-06-11 21:35  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp:
-	fixed several compiler warnings
+	* src/TestEvolution.cpp: testImport should leave the items imported
+	  - moved import/delete into its own test
 
-	* src/normalize_vcard.pl: allow sync.scheduleworld.com to replace TZIDs
+2006-06-11 20:07  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSmartPtr.h:
-	explicitly reference class member (required by g++ 4.1, but not g++ 3.3.5)
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h,
+	  src/TestEvolution.cpp: fixed several compiler warnings
 
-	* src/vocl/VConverter.h, src/vocl/VObject.cpp, src/vocl/VObject.h, src/vocl/VProperty.cpp, src/vocl/VProperty.h, src/vocl/posixadapter.h, src/EvolutionContactSource.cpp, src/Makefile.am, src/vocl/README, src/vocl/VConverter.cpp:
-	added a copy of the relevant VOCL classes to be independent of incompatible changes upstream
+2006-06-11 19:35  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/normalize_vcard.pl: allow sync.scheduleworld.com to replace
+	  TZIDs
+
+2006-06-11 19:12  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSmartPtr.h: explicitly reference class member
+	  (required by g++ 4.1, but not g++ 3.3.5)
+
+2006-06-11 13:09  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp, src/Makefile.am, src/vocl,
+	  src/vocl/README, src/vocl/VConverter.cpp, src/vocl/VConverter.h,
+	  src/vocl/VObject.cpp, src/vocl/VObject.h, src/vocl/VProperty.cpp,
+	  src/vocl/VProperty.h, src/vocl/posixadapter.h: added a copy of
+	  the relevant VOCL classes to be independent of incompatible
+	  changes upstream
+
+2006-06-11 13:06  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-06-11 08:56  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
-	added sanity checks for using the results of Evolution's change tracking: invalid UIDs have been observed
+	  added sanity checks for using the results of Evolution's change
+	  tracking: invalid UIDs have been observed
 
-2006-06-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-06-10 12:26  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionSmartPtr.h, src/EvolutionSyncSource.cpp:
-	fixed memory leaks
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionContactSource.cpp, src/EvolutionSmartPtr.h,
+	  src/EvolutionSyncSource.cpp: fixed memory leaks
 
-	* configure.in:
-	remove unwanted files in case someone has compiled in the sync4j src dir
+2006-06-10 12:21  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-06-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* configure.in: remove unwanted files in case someone has compiled
+	  in the sync4j src dir
 
-	* src/testVCard.vcf:
-	avoid trailing space at end of NOTE, might not be preserved
+2006-06-08 18:12  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-06-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/testVCard.vcf: avoid trailing space at end of NOTE, might not
+	  be preserved
 
-	* etc/localhost_1/spds/sources/addressbook_1/config.txt, etc/Makefile.am:
-	fixed type for scheduleworld
+2006-06-06 19:38  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/Makefile.am,
+	  etc/localhost_1/spds/sources/addressbook_1/config.txt: fixed type
+	  for scheduleworld
+
+2006-06-06 19:34  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/TestEvolution.cpp: STATUS expected by libical
 
-	* src/TestEvolution.cpp:
-	split testDeleteAll into two tests, one for each method
+2006-06-06 18:28  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestEvolution.cpp: split testDeleteAll into two tests, one
+	  for each method
+
+2006-06-06 17:48  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
-	added support for custom timezones
+	  added support for custom timezones
+
+2006-06-06 17:45  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/testTask.ics: removed libical error message
 
-	* src/testCalendar.ics:
-	fixed invalid CREATED/LAST-MODIFIED, must be in UTC - broken by importing/exporting again, though
+2006-06-06 17:45  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-06-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/testCalendar.ics: fixed invalid CREATED/LAST-MODIFIED, must
+	  be in UTC - broken by importing/exporting again, though
+
+2006-06-05 22:27  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/syncevolution.cpp: avoid copying incomplete type in catch
 
-	* README, src/normalize_vcard.pl:
-	ignore known problems with contact properties in scheduleworld
+2006-06-05 21:21  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-06-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* README, src/normalize_vcard.pl: ignore known problems with
+	  contact properties in scheduleworld
 
-	* src/TestEvolution.cpp:
-	got rid of the remaining files with :: in the name
+2006-06-01 20:06  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp: added test for add-update-download sequence
+	* src/TestEvolution.cpp: got rid of the remaining files with :: in
+	  the name
 
-	* src/normalize_vcard.pl:
-	adapted to syncing with sync.scheduleworld.com
+2006-06-01 20:05  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	added mapping for ADR;TYPE=OTHER for scheduleworld
+	* ChangeLog: # updated
 
-	* etc/Makefile.am, etc/localhost_1/spds/syncml/config.txt:
-	updated references to sync.scheduleworld.com
+2006-06-01 19:29  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/localhost_1/spds/sources/addressbook_1/config.txt:
-	comments explain how to obtain valid Evolution sources
+	* src/TestEvolution.cpp: added test for add-update-download
+	  sequence
 
-2006-05-29  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-06-01 18:06  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/normalize_vcard.pl: adapted to syncing with
+	  sync.scheduleworld.com
+
+2006-06-01 18:05  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp: added mapping for ADR;TYPE=OTHER
+	  for scheduleworld
+
+2006-06-01 18:04  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/Makefile.am, etc/localhost_1/spds/syncml/config.txt: updated
+	  references to sync.scheduleworld.com
+
+2006-06-01 18:03  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/localhost_1/spds/sources/addressbook_1/config.txt: comments
+	  explain how to obtain valid Evolution sources
+
+2006-05-29 19:32  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp, src/EvolutionSyncSource.cpp:
-	better error logging
+	  better error logging
+
+2006-05-29 19:32  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/testVCard.vcf: fixed typo
 
+2006-05-29 19:31  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* src/testCalendar.ics: adapted to scheduleworld.com
 
-	* src/normalize_vcard.pl:
-	use simpler diff output and transform into side-by-side oneself (simpler code, less fragile, handles UTF-8)
+2006-05-29 19:30  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-05-28  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/normalize_vcard.pl: use simpler diff output and transform
+	  into side-by-side oneself (simpler code, less fragile, handles
+	  UTF-8)
 
-	* src/Test.h, src/TestEvolution.cpp, src/TestMain.cpp:
-	avoid filenames with colons in the name
+2006-05-28 16:24  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-05-27  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/Test.h, src/TestEvolution.cpp, src/TestMain.cpp: avoid
+	  filenames with colons in the name
 
-	* src/normalize_vcard.pl:
-	adapt automatically to console size if tput is available
+2006-05-27 16:33  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/normalize_vcard.pl, README:
-	made the diff output nicer: full items shown, separated by lines
+	* src/normalize_vcard.pl: adapt automatically to console size if
+	  tput is available
 
-2006-05-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-05-27 15:57  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/normalize_vcard.pl:
-	massage the full diff output so that it is easier to read and contains exactly the full vcard/vcalendar for each change
+	* README, src/normalize_vcard.pl: made the diff output nicer: full
+	  items shown, separated by lines
 
-	* src/normalize_vcard.pl:
-	added indention for nested BEGIN/END blocks in iCalendar
+2006-05-26 21:38  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* HACKING, src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp, src/syncevolution.cpp:
-	cleaned up error reporting and exception handling
+	* src/normalize_vcard.pl: massage the full diff output so that it
+	  is easier to read and contains exactly the full vcard/vcalendar
+	  for each change
 
-2006-05-25  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-05-26 19:34  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* README, src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h:
-	cleaned up error handling and logging, in particular when using multiple sources at once
+	* src/normalize_vcard.pl: added indention for nested BEGIN/END
+	  blocks in iCalendar
+
+2006-05-26 12:49  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionContactSource.cpp, src/EvolutionSmartPtr.h,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp,
+	  src/EvolutionSyncSource.h, src/TestEvolution.cpp,
+	  src/syncevolution.cpp: cleaned up error reporting and exception
+	  handling
+
+2006-05-25 17:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README, src/EvolutionCalendarSource.cpp,
+	  src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h: cleaned
+	  up error handling and logging, in particular when using multiple
+	  sources at once
+
+2006-05-25 16:33  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* configure.in: avoid copying temporary C++ API files
 
+2006-05-25 14:42  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* src/testVCard.vcf: added buffer overflow test case
 
-	* src/EvolutionSyncSource.cpp, src/TestEvolution.cpp:
-	added test for slow-sync and added handling of the STC_ALREADY_EXISTS encountered then; twinning is currently broken in Funambol 3.0 beta 3, see #305357
+2006-05-25 10:35  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp, src/TestEvolution.cpp: added test
+	  for slow-sync and added handling of the STC_ALREADY_EXISTS
+	  encountered then; twinning is currently broken in Funambol 3.0
+	  beta 3, see #305357
+
+2006-05-25 09:14  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: added remark that text has to be exchanged as UTF-8
 
-	* src/testVCard.vcf:
-	added test case with explicit CHARSET="UTF-8" to test how the updated client library deals with it
+2006-05-25 09:14  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-05-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/testVCard.vcf: added test case with explicit CHARSET="UTF-8"
+	  to test how the updated client library deals with it
+
+2006-05-24 19:38  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionSyncClient.cpp: utility was renamed
 
-2006-05-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-05-05 20:52  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # added logs
+
+2006-05-05 20:44  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: # added prerelease note about scheduleworld
+
+2006-05-05 20:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: # bumped version
+
+2006-05-05 20:38  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp: fixed new[]/free() mismatch
 
-2006-05-01  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-05-01 14:01  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h:
-	generate iCalendar items with VTIMEZONE definitions
+	  generate iCalendar items with VTIMEZONE definitions
+
+2006-05-01 09:23  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: added scheduleworld as preferred server
 
-2006-04-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-04-26 20:44  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* etc/Makefile.am, etc/localhost_1/spds/sources/addressbook_1/config.txt, src/EvolutionContactSource.cpp, src/EvolutionSyncSource.cpp:
-	added possibility to choose between sending vCard 2.1 and 3.0
+	* etc/Makefile.am,
+	  etc/localhost_1/spds/sources/addressbook_1/config.txt,
+	  src/EvolutionContactSource.cpp, src/EvolutionSyncSource.cpp:
+	  added possibility to choose between sending vCard 2.1 and 3.0
 
-2006-04-24  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-04-24 20:47  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* README: syncing multiple databases at the same time now worked okay
+	* README: syncing multiple databases at the same time now worked
+	  okay
 
-	* src/TestEvolution.cpp:
-	avoid the problematic timezones in the basic tests
+2006-04-24 20:39  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.cpp:
-	write the required PRODID and VERSION for iCalendar entries
+	* src/TestEvolution.cpp: avoid the problematic timezones in the
+	  basic tests
 
-	* src/normalize_vcard.pl: avoid eating the trailing newline after PHOTO
+2006-04-24 20:38  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* HACKING, etc/Makefile.am, etc/localhost_1/spds/syncml/config.txt, src/TestEvolution.cpp, src/normalize_vcard.pl:
-	added support for testing against www.scheduleworld.com
+	* src/EvolutionCalendarSource.cpp: write the required PRODID and
+	  VERSION for iCalendar entries
+
+2006-04-24 20:00  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/normalize_vcard.pl: avoid eating the trailing newline after
+	  PHOTO
+
+2006-04-24 18:49  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING, etc/Makefile.am, etc/localhost_1/spds/syncml/config.txt,
+	  src/TestEvolution.cpp, src/normalize_vcard.pl: added support for
+	  testing against www.scheduleworld.com
+
+2006-04-24 17:32  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/normalize_vcard.pl: fixed the fix of EMAIL normalization...
 
-	* src/normalize_vcard.pl:
-	hide differences due to different PHOTO parameters, fixed EMAIL;INTERNET;OTHER
+2006-04-24 16:37  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-04-23  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/normalize_vcard.pl: hide differences due to different PHOTO
+	  parameters, fixed EMAIL;INTERNET;OTHER
 
-	* etc/Makefile.am, README:
-	avoid problems with ChangeSourceUriSynclet by using sc-pim-ppc for second client
+2006-04-23 21:43  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* etc/Makefile.am: avoid problems with ChangeSourceUriSynclet by
+	  using sc-pim-ppc for second client
+
+2006-04-23 19:45  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: avoid problems with ChangeSourceUriSynclet by using
+	  sc-pim-ppc for second client
+
+2006-04-23 19:44  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp: also treat INTERNET as TYPE
 
-2006-04-17  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-04-17 17:55  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am, src/TestEvolution.cpp, src/testTask.ics:
-	added testing of tasks
+	* ChangeLog: # updated
+
+2006-04-17 17:54  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am, src/TestEvolution.cpp, src/testTask.ics: added
+	  testing of tasks
+
+2006-04-17 17:53  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* HACKING: test names have changed
 
+2006-04-17 17:34  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-04-17 17:28  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* README: added warnings about known-problems
 
-	* src/testCalendar.ics:
-	temporarily removed some problematic characters (forge tracker #304786)
+2006-04-17 17:12  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/testCalendar.ics: temporarily removed some problematic
+	  characters (forge tracker #304786)
+
+2006-04-17 15:59  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README, src/Makefile.am, src/TestEvolution.cpp, src/TestMain.cpp:
-	- renamed normalize script to synccompare because it now applies to both calendar, tasks and contacts
-	- temporary files in test suite now start with the name of the test they belong to
+	  - renamed normalize script to synccompare because it now applies
+	  to both calendar, tasks and contacts - temporary files in test
+	  suite now start with the name of the test they belong to
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/TestEvolution.cpp, src/testCalendar.ics, src/testTask.ics:
-	- renamed "test" program to "TestEvolution"
-	- copy original test cases to fit the name expected by TestEvolution and to have
-	  them in the build directory
-	- handle merge with existing item in addItem(): return special status
+2006-04-17 09:41  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h,
+	  src/Makefile.am, src/TestEvolution.cpp, src/testCalendar.ics,
+	  src/testTask.ics: - renamed "test" program to "TestEvolution" -
+	  copy original test cases to fit the name expected by
+	  TestEvolution and to have them in the build directory - handle
+	  merge with existing item in addItem(): return special status
+
+2006-04-17 09:37  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/normalize_vcard.pl: now also handles calendar comparison
 
-2006-04-14  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-04-14 11:36  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionCalendarSource.h:
-	added some support for inserting already existing item
+	* src/EvolutionCalendarSource.h: added some support for inserting
+	  already existing item
+
+2006-04-14 11:30  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/TestEvolution.cpp: instantiate test for calendar
 
-	* src/EvolutionCalendarSource.cpp:
-	added some support for inserting already existing item
+2006-04-14 11:30  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-04-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionCalendarSource.cpp: added some support for inserting
+	  already existing item
 
-	* src/TestEvolution.cpp:
-	refactored code so that test suites can be built from the base template TestEvolution class:
-	currently defined are ContactSource (local tests) and ContactSync (synchronization with server), tests work exactly as before
+2006-04-12 21:05  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	text/x-vcard is more suitable for vcard 2.1
+	* ChangeLog: # updated
 
-2006-04-09  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-04-12 21:03  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp:
-	made sleep configurable (off by default), synchronize only one source
+	* src/TestEvolution.cpp: refactored code so that test suites can be
+	  built from the base template TestEvolution class: currently
+	  defined are ContactSource (local tests) and ContactSync
+	  (synchronization with server), tests work exactly as before
 
-	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/TestEvolution.cpp, src/syncevolution.cpp, etc/Makefile.am, etc/localhost_1/spds/sources/addressbook_1/config.txt, README, configure.in:
-	- added support for calendars and tasks: not yet tested automatically
-	  but manual tests show that it works in principle, albeit with some
-	  loss of attributes in the server for calendars (time zone)
-	- removed "disabled" configuration option, use "sync = none" instead
-	- added selection of databases to synchronize via additional command
-	  line parameters
+2006-04-12 21:01  Patrick Ohly <patrick.ohly@gmx.de>
 
-	Source:
-	- Refactored code so that EvolutionSyncSource contains the client-library
-	  facing code and commong logging/error handling. EvolutionContactSource
-	  and EvolutionCalendarSource (for both calendars and tasks) can now
-	  indicate errors via exceptions in all functions.
+	* src/EvolutionContactSource.cpp: text/x-vcard is more suitable for
+	  vcard 2.1
 
-2006-04-06  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-04-09 21:56  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* README, configure.in, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h, src/TestEvolution.cpp, src/syncevolution.cpp:
-	adapted to head revision of Sync4j C++ client library
+	* src/TestEvolution.cpp: made sleep configurable (off by default),
+	  synchronize only one source
+
+2006-04-09 11:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README, configure.in, etc/Makefile.am,
+	  etc/localhost_1/spds/sources/addressbook_1/config.txt,
+	  src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp,
+	  src/EvolutionSyncSource.h, src/Makefile.am,
+	  src/TestEvolution.cpp, src/syncevolution.cpp: - added support for
+	  calendars and tasks: not yet tested automatically but manual
+	  tests show that it works in principle, albeit with some loss of
+	  attributes in the server for calendars (time zone) - removed
+	  "disabled" configuration option, use "sync = none" instead -
+	  added selection of databases to synchronize via additional
+	  command line parameters
+	  
+	  Source: - Refactored code so that EvolutionSyncSource contains
+	  the client-library facing code and commong logging/error
+	  handling. EvolutionContactSource and EvolutionCalendarSource (for
+	  both calendars and tasks) can now indicate errors via exceptions
+	  in all functions.
+
+2006-04-06 17:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README, configure.in, src/EvolutionContactSource.cpp,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/EvolutionSyncSource.h, src/TestEvolution.cpp,
+	  src/syncevolution.cpp: adapted to head revision of Sync4j C++
+	  client library
+
+2006-04-06 17:01  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/Makefile.am: testVCard.vcf was missing in source distribution
 
-2006-03-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-03-26 17:17  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/sync4j-client-api-sdkcpp_3_0_6a.diff:
-	fix for #304805: testing return code of SyncClient::beginSync()
+	* src/sync4j-client-api-sdkcpp_3_0_6a.diff: fix for #304805:
+	  testing return code of SyncClient::beginSync()
 
-2006-03-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-03-19 21:38  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* NEWS, README, configure.in, etc/localhost_1/spds/syncml/config.txt, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h, src/Makefile.am, src/syncevolution.cpp:
-	- implemented automatic backups, logging and database comparison
-	- prepared 0.2 release
+	* ChangeLog: # updated
 
-	* src/EvolutionContactSource.cpp:
-	set TYPE=OTHER also for EMAIL if no other type found
+2006-03-19 21:37  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/normalize_vcard.pl:
-	ignore some more irrelevant vcard differences (TYPE=PREF, extra separators)
+	* NEWS, README, configure.in,
+	  etc/localhost_1/spds/syncml/config.txt,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/EvolutionSyncSource.h, src/Makefile.am,
+	  src/syncevolution.cpp: - implemented automatic backups, logging
+	  and database comparison - prepared 0.2 release
 
-	* src/sync4j-client-api-sdkcpp_3_0_6a.diff, src/testVCard.vcf:
-	when using quoted-printable, also encode non-ASCII for consistency
+2006-03-19 09:55  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-03-19  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionContactSource.cpp: set TYPE=OTHER also for EMAIL if
+	  no other type found
 
-	* NEWS, README, configure.in, etc/localhost_1/spds/syncml/config.txt, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.h, src/Makefile.am, src/syncevolution.cpp:
-	- implemented automatic backups, logging and database comparison
-	- prepared 0.2 release
+2006-03-19 09:54  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	set TYPE=OTHER also for EMAIL if no other type found
+	* src/normalize_vcard.pl: ignore some more irrelevant vcard
+	  differences (TYPE=PREF, extra separators)
 
-	* src/normalize_vcard.pl:
-	ignore some more irrelevant vcard differences (TYPE=PREF, extra separators)
+2006-03-19 09:53  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/sync4j-client-api-sdkcpp_3_0_6a.diff, src/testVCard.vcf:
-	when using quoted-printable, also encode non-ASCII for consistency
+	* src/sync4j-client-api-sdkcpp_3_0_6a.diff, src/testVCard.vcf: when
+	  using quoted-printable, also encode non-ASCII for consistency
 
-2006-03-18  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-03-18 18:07  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am, configure.in:
-	make full copy of client lib C++ sources,
-	added src/client-api-diff target to compare against original sources
+	* configure.in, src/Makefile.am: make full copy of client lib C++
+	  sources, added src/client-api-diff target to compare against
+	  original sources
 
-	* src/sync4j-client-api-sdkcpp_3_0_6a.diff:
-	changes for SyncEvolution not in Funambol CVS since sdkcpp_3_0_6a
+2006-03-18 18:06  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestMain.cpp: reset stdout/stderr before printing final result
+	* src/sync4j-client-api-sdkcpp_3_0_6a.diff: changes for
+	  SyncEvolution not in Funambol CVS since sdkcpp_3_0_6a
 
-	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
-	ensure that unique properties occur not more than once
+2006-03-18 17:44  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/TestEvolution.cpp: test adding multiple business phone numbers
+	* src/TestMain.cpp: reset stdout/stderr before printing final
+	  result
 
-	* src/Makefile.am, src/TestEvolution.cpp, src/testVCard.vcf, src/.cvsignore, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncSource.h:
-	test for copying via server now transmits testVCard.vcf and also compares against it
+2006-03-18 17:34  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/normalize_vcard.pl:
-	format normalized vcards with 60 columns for easier side-by-side diff
+	* ChangeLog: # updated
 
-2006-03-18  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-03-18 17:30  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
-	ensure that unique properties occur not more than once
+	* README: # reflect current status
 
-	* src/TestEvolution.cpp: test adding multiple business phone numbers
+2006-03-18 14:33  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am, src/TestEvolution.cpp, src/testVCard.vcf, src/.cvsignore, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncSource.h:
-	test for copying via server now transmits testVCard.vcf and also compares against it
+	* NEWS: # initial release
 
-	* src/normalize_vcard.pl:
-	format normalized vcards with 60 columns for easier side-by-side diff
-
-2006-03-15  Patrick Ohly  <Patrick.Ohly@gmx.de>
-
-	* src/.cvsignore, src/Makefile.am, src/normalize_vcard.pl, README:
-	normalize_vcard can now also compare two files automatically; it's also installed without .pl suffix
-
-2006-03-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
-
-	* README, configure.in:
-	update README and version in preparation for release
+2006-03-18 14:18  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
-	added workarounds for FBURL/CALURI and ADR without TYPE
+	  ensure that unique properties occur not more than once
 
-	* src/.cvsignore, src/Makefile.am, src/TestEvolution.cpp, src/normalize_vcard.pl, README, configure.in:
-	replaced verification with vcard comparion via normalize_vcard.pl
+2006-03-18 14:17  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am, etc/Makefile.am, .cvsignore, Makefile.am, autogen.sh:
-	fixed maintainer-cleanup
+	* src/TestEvolution.cpp: test adding multiple business phone
+	  numbers
 
-	* .cvsignore, config.h.in, src/.cvsignore, src/Makefile.in, etc/.cvsignore, etc/Makefile.in, HACKING, Makefile.in, config.guess, config.sub, configure, depcomp, install-sh, ltmain.sh, missing, mkinstalldirs:
-	removed pregenerated autotools files from CVS - use autogen.sh
+2006-03-18 13:35  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/.cvsignore, src/Makefile.am, src/Makefile.in, etc/Makefile.in, .cvsignore, HACKING, Makefile.am, Makefile.in, README, configure, configure.in:
-	integrated compilation of Sync4j C++ client library + distribution of its source
+	* src, src/.cvsignore, src/EvolutionContactSource.cpp,
+	  src/EvolutionContactSource.h, src/EvolutionSyncSource.h,
+	  src/Makefile.am, src/TestEvolution.cpp, src/testVCard.vcf: test
+	  for copying via server now transmits testVCard.vcf and also
+	  compares against it
 
-2006-03-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-03-18 13:29  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* README, configure.in:
-	update README and version in preparation for release
+	* src/normalize_vcard.pl: format normalized vcards with 60 columns
+	  for easier side-by-side diff
+
+2006-03-15 22:09  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README, src, src/.cvsignore, src/Makefile.am,
+	  src/normalize_vcard.pl: normalize_vcard can now also compare two
+	  files automatically; it's also installed without .pl suffix
+
+2006-03-12 22:39  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
+
+2006-03-12 22:31  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README, configure.in: update README and version in preparation
+	  for release
+
+2006-03-12 22:30  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
-	added workarounds for FBURL/CALURI and ADR without TYPE
+	  added workarounds for FBURL/CALURI and ADR without TYPE
 
-	* src/.cvsignore, src/Makefile.am, src/TestEvolution.cpp, src/normalize_vcard.pl, README, configure.in:
-	replaced verification with vcard comparion via normalize_vcard.pl
+2006-03-12 20:36  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/Makefile.am, etc/Makefile.am, .cvsignore, Makefile.am, autogen.sh:
-	fixed maintainer-cleanup
+	* README, configure.in, src, src/.cvsignore, src/Makefile.am,
+	  src/TestEvolution.cpp, src/normalize_vcard.pl: replaced
+	  verification with vcard comparion via normalize_vcard.pl
 
-	* .cvsignore, config.h.in, src/.cvsignore, src/Makefile.in, etc/.cvsignore, etc/Makefile.in, HACKING, Makefile.in, config.guess, config.sub, configure, depcomp, install-sh, ltmain.sh, missing, mkinstalldirs:
-	removed pregenerated autotools files from CVS - use autogen.sh
+2006-03-12 10:31  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/.cvsignore, src/Makefile.am, src/Makefile.in, etc/Makefile.in, .cvsignore, HACKING, Makefile.am, Makefile.in, README, configure, configure.in:
-	integrated compilation of Sync4j C++ client library + distribution of its source
+	* ChangeLog: # updated
 
-2006-03-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-03-12 10:29  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* aclocal.m4, autogen.sh, configure, configure.in, etc/Makefile.am, etc/Makefile.in, etc/localhost_1/spds/sources/addressbook_1/config.txt, src/.cvsignore, src/Makefile.am, src/Makefile.in, src/TestEvolution.cpp, src/normalize_vcard.pl, src/sync4jevolution.cpp, src/syncevolution.cpp, test/normalize_vcard.pl, .cvsignore, COPYING, HACKING, Makefile.am, Makefile.in, README:
-	preparations for a release as 'SyncEvolution'
+	* ., .cvsignore, Makefile.am, autogen.sh, etc/Makefile.am,
+	  src/Makefile.am: fixed maintainer-cleanup
 
-	* src/TestEvolution.cpp:
-	restrict the usage of the problematic CALURI/FBURL to a few specific test cases
+2006-03-12 10:10  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-03-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* ., .cvsignore: removed pregenerated autotools files from CVS -
+	  use autogen.sh
 
-	* src/TestEvolution.cpp:
-	restrict the usage of the problematic CALURI/FBURL to a few specific test cases
+2006-03-12 10:10  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-02-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* ., .cvsignore, HACKING, Makefile.in, config.guess, config.h.in,
+	  config.sub, configure, depcomp, etc, etc/.cvsignore,
+	  etc/Makefile.in, install-sh, ltmain.sh, missing, mkinstalldirs,
+	  src, src/.cvsignore, src/Makefile.in: removed pregenerated
+	  autotools files from CVS - use autogen.sh
 
-	* src/TestEvolution.cpp:
-	check some more vcard fields (however, different order of entries still breaks comparison)
+2006-03-12 09:48  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* configure, configure.in:
-	try most recent Evolution versions first, because shared objects are not upward-compatible
+	* ., .cvsignore, HACKING, Makefile.am, Makefile.in, README,
+	  configure, configure.in, etc/Makefile.in, src, src/.cvsignore,
+	  src/Makefile.am, src/Makefile.in: integrated compilation of
+	  Sync4j C++ client library + distribution of its source
 
-2006-02-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-03-11 19:23  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* ChangeLog:
-	started to use emac's vc-update-change-log to update the ChangeLog
+	* ., .cvsignore, COPYING, HACKING, Makefile.am, Makefile.in,
+	  README, aclocal.m4, autogen.sh, configure, configure.in,
+	  etc/Makefile.am, etc/Makefile.in,
+	  etc/localhost_1/spds/sources/addressbook_1/config.txt, src,
+	  src/.cvsignore, src/Makefile.am, src/Makefile.in,
+	  src/TestEvolution.cpp, src/normalize_vcard.pl,
+	  src/sync4jevolution.cpp, src/syncevolution.cpp, test:
+	  preparations for a release as 'SyncEvolution'
 
-	* etc/localhost_1/spds/sources/addressbook_1/config.txt:
-	added support for the new refresh-client/server sync modes
+2006-03-11 18:08  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* README: added known problems and support section, updated compiling
+	* ChangeLog: *** empty log message ***
 
-	* src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp:
-	added support for the new refresh-client/server sync modes
+2006-03-11 16:30  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-02-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/TestEvolution.cpp: restrict the usage of the problematic
+	  CALURI/FBURL to a few specific test cases
 
-	* README: added known problems and support section, updated compiling
+2006-02-26 18:12  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TestEvolution.cpp: check some more vcard fields (however,
+	  different order of entries still breaks comparison)
+
+2006-02-26 18:10  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure, configure.in: try most recent Evolution versions
+	  first, because shared objects are not upward-compatible
+
+2006-02-04 20:25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: started to use emac's vc-update-change-log to update
+	  the ChangeLog
+
+2006-02-04 20:22  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* etc/localhost_1/spds/sources/addressbook_1/config.txt,
-	  src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h, src/TestEvolution.cpp:
-	added support for the new refresh-client/server sync modes
+	  src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h,
+	  src/TestEvolution.cpp: added support for the new
+	  refresh-client/server sync modes
 
-2006-01-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-02-04 20:21  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: added known problems and support section, updated
+	  compiling
+
+2006-01-26 20:09  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* README: added POHLY-SYNC4JEVOLUTION-CHECKED
 
-2006-01-23  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-01-23 22:25  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp: removed redundant code
 
-	* README, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/TestEvolution.cpp:
-	added conflict handling
+2006-01-23 21:51  Patrick Ohly <patrick.ohly@gmx.de>
 
-2006-01-21  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* README, src/EvolutionContactSource.cpp,
+	  src/EvolutionContactSource.h, src/TestEvolution.cpp: added
+	  conflict handling
+
+2006-01-21 17:13  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* HACKING, src/TestMain.cpp: allow running just one test
 
-	* src/TestEvolution.cpp, README:
-	list the major features explicitly and improved tests to actually check copying/updating
+2006-01-21 17:06  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README, src/TestEvolution.cpp: list the major features explicitly
+	  and improved tests to actually check copying/updating
+
+2006-01-21 15:52  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* HACKING: mention setup of unit testing
 
+2006-01-21 15:52  Patrick Ohly <patrick.ohly@gmx.de>
+
 	* README: update to reflect current status
+
+2006-01-21 15:37  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/TestEvolution.cpp: minor changes to make it easier to debug
 
-2006-01-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2006-01-08 21:49  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/TestEvolution.cpp:
-	added test cases for vcard conversion
-	use VOCL classes to fix vcard encoding
+	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/TestEvolution.cpp: added test cases for vcard conversion use
+	  VOCL classes to fix vcard encoding
 
-2005-12-12  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2005-12-12 19:15  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionContactSource.cpp:
-	a deleted item without data returns getDataSize() -1
+	* src/EvolutionContactSource.cpp: a deleted item without data
+	  returns getDataSize() -1
 
-2005-12-11  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2005-12-11 17:13  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* HACKING, src/.cvsignore, src/EvolutionContactSource.cpp, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/TestEvolution.cpp:
-	added unit testing for syncing, needs some support in core classes (overriding sync mode, full lists)
+	* HACKING, src, src/.cvsignore, src/EvolutionContactSource.cpp,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/TestEvolution.cpp: added unit testing for syncing, needs some
+	  support in core classes (overriding sync mode, full lists)
 
-2005-12-10  Patrick Ohly  <Patrick.Ohly@gmx.de>
-
-	* src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h:
-	implemented distinction between different sync modes: 'refresh' requires deleting items, scanning is different for full and partial sync
-
-	* etc/.cvsignore, etc/Makefile.am, etc/Makefile.in, etc/localhost_1/spds/sources/addressbook_1/config.txt, etc/localhost_1/spds/syncml/config.txt, src/Makefile.in, test/normalize_vcard.pl, Makefile.am, Makefile.in, README, aclocal.m4, configure, configure.in:
-	added testing of syncing
+2005-12-10 21:10  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h:
-	added some more debug logging
+	  implemented distinction between different sync modes: 'refresh'
+	  requires deleting items, scanning is different for full and
+	  partial sync
 
-2005-12-04  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2005-12-10 19:16  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile.am, Makefile.in, README, aclocal.m4, configure,
+	  configure.in, etc, etc/.cvsignore, etc/Makefile.am,
+	  etc/Makefile.in, etc/localhost_1, etc/localhost_1/spds,
+	  etc/localhost_1/spds/sources,
+	  etc/localhost_1/spds/sources/addressbook_1,
+	  etc/localhost_1/spds/sources/addressbook_1/config.txt,
+	  etc/localhost_1/spds/syncml,
+	  etc/localhost_1/spds/syncml/config.txt, src/Makefile.in, test,
+	  test/normalize_vcard.pl: added testing of syncing
+
+2005-12-10 17:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h: added
+	  some more debug logging
+
+2005-12-04 19:49  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp: more convervative logging
 
-2005-12-03  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2005-12-03 16:06  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionSyncClient.cpp, src/sync4jevolution.cpp:
-	fixed/extended error detection at the end of the sync
+	  fixed/extended error detection at the end of the sync
+
+2005-12-03 14:35  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionContactSource.cpp, src/EvolutionContactSource.h:
-	added logging of contact vcards
-	added hack to make Evolution's vcard V3.0 compatible with Sync4j 2.3b3 (needs to be remove or made configurable)
+	  added logging of contact vcards added hack to make Evolution's
+	  vcard V3.0 compatible with Sync4j 2.3b3 (needs to be remove or
+	  made configurable)
 
-	* src/EvolutionSyncSource.cpp:
-	strip special characters, Evolution gets confused by them
+2005-12-03 14:33  Patrick Ohly <patrick.ohly@gmx.de>
 
-2005-11-26  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* src/EvolutionSyncSource.cpp: strip special characters, Evolution
+	  gets confused by them
 
-	* README, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h, src/Makefile.am, src/Makefile.in, src/TestEvolution.cpp, src/sync4jevolution.cpp:
-	implemented front-end based on new SyncML C++ config API
-	implemented the new begin/endSync() callbacks
-	explain the change tracking and error handling
-	-> copying from server works, the other way around fails, probably because of vcard 3.0 parsing problems on the server
+2005-11-26 21:16  Patrick Ohly <patrick.ohly@gmx.de>
 
-2005-11-25  Patrick Ohly  <Patrick.Ohly@gmx.de>
+	* README, src/EvolutionContactSource.cpp,
+	  src/EvolutionContactSource.h, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp,
+	  src/EvolutionSyncSource.h, src/Makefile.am, src/Makefile.in,
+	  src/TestEvolution.cpp, src/sync4jevolution.cpp: implemented
+	  front-end based on new SyncML C++ config API implemented the new
+	  begin/endSync() callbacks explain the change tracking and error
+	  handling -> copying from server works, the other way around
+	  fails, probably because of vcard 3.0 parsing problems on the
+	  server
 
-	* INSTALL, README, configure, configure.in, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/TestEvolution.cpp, src/sync4jevolution.cpp:
-	adapted to Sync4j C++ client API 3.x
+2005-11-25 20:53  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h:
-	base class with functionality common to all Evolution sync sources
+	* INSTALL, README, configure, configure.in,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/TestEvolution.cpp, src/sync4jevolution.cpp: adapted to Sync4j
+	  C++ client API 3.x
 
-2005-11-05  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2005-11-25 20:50  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* .cvsignore, HACKING, README, src/.cvsignore, src/EvolutionContactSource.cpp, src/EvolutionContactSource.h, src/EvolutionSmartPtr.h, src/Makefile.am, src/Makefile.in, src/TestEvolution.cpp, src/TestMain.cpp, src/sync4jevolution.cpp, src/valgrind.supp:
-	first working version of SyncSource for Evolution contacts (requires Sync4j C++ API 2.0, not currently available)
-	added unit testing
+	* src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h: base
+	  class with functionality common to all Evolution sync sources
 
-2005-10-08  Patrick Ohly  <Patrick.Ohly@gmx.de>
+2005-11-05 22:04  Patrick Ohly <patrick.ohly@gmx.de>
 
-	* .cvsignore, AUTHORS, COPYING, ChangeLog, INSTALL, Makefile.am, Makefile.in, NEWS, README, aclocal.m4, config.guess, config.h.in, config.sub, configure, configure.in, depcomp, install-sh, ltmain.sh, missing, mkinstalldirs, src/.cvsignore, src/Makefile.am, src/Makefile.in, src/sync4jevolution.cpp:
-	setup framework
+	* ., .cvsignore, HACKING, README, src, src/.cvsignore,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionSmartPtr.h, src/Makefile.am, src/Makefile.in,
+	  src/TestEvolution.cpp, src/TestMain.cpp, src/sync4jevolution.cpp,
+	  src/valgrind.supp: first working version of SyncSource for
+	  Evolution contacts (requires Sync4j C++ API 2.0, not currently
+	  available) added unit testing
 
+2005-10-08 12:03  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ., .cvsignore, AUTHORS, COPYING, ChangeLog, INSTALL, Makefile.am,
+	  Makefile.in, NEWS, README, aclocal.m4, config.guess, config.h.in,
+	  config.sub, configure, configure.in, depcomp, install-sh,
+	  ltmain.sh, missing, mkinstalldirs, src, src/.cvsignore,
+	  src/Makefile.am, src/Makefile.in, src/sync4jevolution.cpp: setup
+	  framework
+
+2005-10-08 12:03  
+
+	* branches, tags, .: New repository initialized by cvs2svn.
 

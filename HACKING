@@ -127,14 +127,6 @@ work on Debian GNU/Linux 3.1 ("Sarge") - feel free
 to add more for your system.
 
 
-CVS
----
-
-Please add your changes to the ChangeLog file. The
-Emacs vc-update-change-log = C-x v a command collects
-the latest CVS commit messages and adds them automatically.
-
-
 Building a Release
 ------------------
 
@@ -146,6 +138,10 @@ Building a Release
   package version. That ensures that package versions are
   higher than the old release, but lower than the final
   release.
+
+  To update the ChangeLog file use "./svn2cl.sh". It invokes
+  svn2cl with the right options.
+
 - make distcheck
 - compile binary .tar.gz packages for different Evolution versions;
   done automatically by runtests.py on estamos.de (= Debian 3.0), using different Garnome
