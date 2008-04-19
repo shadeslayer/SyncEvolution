@@ -1,3 +1,95 @@
+SyncEvolution 0.7 -> 0.8 alpha 1, 19.04.2008
+--------------------------------------------
+C++ client library: a snapshot of the development version
+
+Updating user configuration: this version introduces a new, simplified
+configuration layout. Old configurations still work. They can be
+converted to the new format via a new "--migrate" command line option.
+
+*** WARNING ***: this version uses a different change tracking for
+calendars, task lists and memos. After switching from a previous
+release to the current one or vice versa, do a "syncevolution --sync
+--refresh-from-server" once to reset the change tracking. Not doing so
+can result in applying the same changes to the server multiple times
+and thus duplicates.
+
+* New configuration file layout: following the freedesktop.org
+  recommendation, new configurations are stored in
+  $XDG_CONFIG_HOME/syncevolution or $HOME/.config/syncevolution if
+  XDG_CONFIG_HOME is not set. The old layout under
+  $HOME/.sync4j/evolution is still supported.
+
+* New command line options: new configurations can be created by
+  syncevolution itself (--configure), including setting of all
+  configuration properties (--sync-property, --source-property).
+  The configuration can dumped to stdout (--print-config), with or
+  without comments explaining each property (--quiet). See the
+  README for details.
+
+* The "evolutionsource" source property no longer has to be configured.
+  If left blank, the default client database will be synchronized.
+
+* Selecting which kind of data is to be synchronized under a specific
+  source name is a lot easier now and the same on all supported
+  platforms: the SyncEvolution backends can be selected via aliases
+  (e.g. "contacts") and the format is specified via an optional
+  MIME type (e.g. "contacts:text/x-vcard"). In the unlikely situation
+  that multiple backends are active which can synchronize the same
+  kind of data, then the right one can be selected by the unique
+  name of the backend (e.g. "Evolution Address Book").
+
+* New configurations automatically get a random client ID string.
+  Setting it manually is still possible, but no longer necessary.
+
+* All passwords can be read from stdin at runtime or an environment
+  variable (see "--sync-property password=?" or README for details).
+  Both avoids the less secure storing of plain text passwords in the
+  configuration files (SF #1832458).
+
+* Detached recurrences: meeting series where some occurrences were
+  modified are now supported. Previously only the main event was
+  synchronized. All exceptions got lost when copying back from the
+  server. ***WARNING***: such events are accepted by ScheduleWorld,
+  but not propagated to other clients. Under investigation.
+
+* Time zone support: the time zones of incoming events are mapped
+  to native time zone definitions whenever possible. Currently
+  this works if the TZID follows the Olson naming scheme with a
+  location at the end. Matching the time zone has the advantage of
+  being able to update the time zone definition without having to
+  recreate the event. If matching fails and the VTIMEZONE definition
+  differs from one already imported earlier, then SyncEvolution works
+  arounds limitation in Evolution by renaming the time zone.
+  Previously the new event used the old and most likely out-dated
+  time zone definition.
+
+  ***WARNING***: Evolution itself does not do either of these steps
+  itself yet, thus importing meeting invitations via Evolution still
+  fails in some cases. The code implementing the time zone handling
+  described above was written with inclusion into Evolution itself in
+  mind; a discussion with the Evolution developers about that is in
+  progress.
+
+* On Maemo/Nokia Internet Tablets, calendar synchronization now
+  works because the new calendar change tracking no longer depends
+  on some of the backend calls which used to fail (SF #1734977).
+
+* Added SSL configuration options: certificate checking can be
+  relaxed or disabled completely (SF #1852647).
+
+* Adding support for new local data sources is easier now. The
+  SyncEvolution frame work itself never depended on GNOME or
+  Evolution, only the Evolution data sources did. If you want
+  support for other ways of storing your data, consider writing
+  a new data source - it is really easy. See EvolutionSyncSource
+  or TrackingSyncSource for details.
+
+* Messages are printed to the screen immediately. More readable
+  log file format.
+
+ * Various other minor changes and fixes.
+
+
 SyncEvolution 0.6 -> 0.7, 17.12.2007
 ------------------------------------
 C++ client library: r_6_5_3_1
