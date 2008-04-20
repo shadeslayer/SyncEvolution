@@ -224,8 +224,17 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
                                                           E_CONTACT_OSSO_CONTACT_STATE);
                 bool deleted = false;
                 while (nextState) {
-                    if (nextState->data && !strcmp((char *)nextState->data, "DELETED")) {
-                        deleted = true;
+                    LOG.debug("checking X-OSSO-CONTACT-STATE %p of uid %s",
+                              nextState->data, uid);
+                    if ((char *)nextState->data < (char *)1024) {
+                        LOG.info("broken X-OSSO-CONTACT-STATE %p, please report this to the SyncEvolution developer",
+                                 nextState->data);
+                    } else {
+                        LOG.debug("X-OSSO-CONTACT-STATE %p = %s",
+                                  nextState->data, (char *)nextState->data);
+                        if (nextState->data && !strcmp((char *)nextState->data, "DELETED")) {
+                            deleted = true;
+                        }
                     }
                     nextState = nextState->next;
                 }
