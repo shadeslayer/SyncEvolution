@@ -168,7 +168,7 @@ Compiling for Maemo
   unpack source archive in Scratchbox (for maximum compatibility: use Mistral 2.0
   rootstrap; for support of all backends: ensure that the EDS-DBus calendar dev packages
   are installed),
-  DEB_BUILD_OPTIONS=maemo=<path of directory with patched libdbus-1.a> fakeroot dpkg-buildpackage
+  DEB_BUILD_OPTIONS=maemo fakeroot dpkg-buildpackage
   NOTE: dpkg-buildpackage -rfakeroot does *not* work as it leads to strange problems executing a.out
   during the client-src configure.
 
