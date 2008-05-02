@@ -147,7 +147,7 @@
 # ==4081==    by 0x4052229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
 # ==4081==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
 {
-   e_book_new
+   e_book_new II
    Memcheck:Leak
    fun:calloc
    fun:g_malloc*
@@ -199,7 +199,7 @@
 # ==4555==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
 # ==4555==    by 0x4052229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
 {
-   e_book_new II
+   e_book_new III
    Memcheck:Leak
    fun:calloc
    fun:g_malloc*
@@ -218,6 +218,105 @@
    fun:fetch_corba_book
    fun:e_book_new
 }
+
+# ==10697== 769 bytes in 27 blocks are possibly lost in loss record 18 of 51
+# ==10697==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==10697==    by 0x42DDA95: g_malloc (gmem.c:131)
+# ==10697==    by 0x483E95D: ORBit_alloc_string (allocators.c:228)
+# ==10697==    by 0x483E618: CORBA_string_dup (corba-string.c:22)
+# ==10697==    by 0x4785649: Bonobo_ServerInfo_copy (bonobo-activation-server-info.c:166)
+# ==10697==    by 0x478573F: Bonobo_ServerInfoList_duplicate (bonobo-activation-server-info.c:212)
+# ==10697==    by 0x4783701: bonobo_activation_query (bonobo-activation-activate.c:238)
+# ==10697==    by 0x413C9FC: activate_factories_for_uri (e-book.c:3144)
+# ==10697==    by 0x413CBF5: fetch_corba_book (e-book.c:3208)
+# ==10697==    by 0x413E232: e_book_new (e-book.c:3730)
+# ==10697==    by 0x413E3FE: e_book_new_from_uri (e-book.c:3762)
+# ==10697==    by 0x810BCAA: EvolutionContactSource::open() (EvolutionContactSource.cpp:136)
+# ==10697==    by 0x80558CE: TestEvolutionSyncSource::beginSync() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10697==    by 0x8090A29: LocalTests::testIterateTwice() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10697==    by 0x80FE7C6: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==10697==    by 0x4051C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x40433ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x404D8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x404D613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x405A390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x4051637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x4052229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x4052229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x405A009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x405C72F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x405FF2A: CppUnit::TextTestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x405FFA1: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==10697==    by 0x8102024: main (in /tmp/runtests/head/tmp/build/src/client-test)
+{
+   e_book_new IV
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:Bonobo_ServerInfo_copy
+   fun:Bonobo_ServerInfoList_duplicate
+   fun:bonobo_activation_query
+   fun:activate_factories_for_uri
+   fun:fetch_corba_book
+   fun:e_book_new
+}
+
+# ==5064== 33,588 bytes in 1,069 blocks are possibly lost in loss record 43 of 50
+# ==5064==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==5064==    by 0x42DC994: g_malloc0 (gmem.c:151)
+# ==5064==    by 0x483D6EC: ORBit_alloc_tcval (allocators.c:287)
+# ==5064==    by 0x4839DB8: ORBit_small_allocbuf (orbit-small.c:51)
+# ==5064==    by 0x4847F7D: ORBit_POAObject_object_to_objkey (poa.c:387)
+# ==5064==    by 0x484C621: ORBit_OAObject_object_to_objkey (orbit-adaptor.c:327)
+# ==5064==    by 0x4845712: IOP_generate_profiles (iop-profiles.c:620)
+# ==5064==    by 0x483B826: ORBit_marshal_object (corba-object.c:573)
+# ==5064==    by 0x4842D06: ORBit_marshal_value (corba-any.c:173)
+# ==5064==    by 0x483864F: orbit_small_marshal (orbit-small.c:353)
+# ==5064==    by 0x4839B37: ORBit_small_invoke_stub (orbit-small.c:646)
+# ==5064==    by 0x4839D7F: ORBit_small_invoke_stub_n (orbit-small.c:575)
+# ==5064==    by 0x4846671: ORBit_c_stub_invoke (poa.c:2643)
+# ==5064==    by 0x412FD2F: GNOME_Evolution_Addressbook_BookFactory_getBook (Evolution-DataServer-Addressbook-stubs.c:330)
+# ==5064==    by 0x413CE08: fetch_corba_book (e-book.c:3246)
+# ==5064==    by 0x413E258: e_book_new (e-book.c:3730)
+# ==5064==    by 0x413E424: e_book_new_from_uri (e-book.c:3762)
+# ==5064==    by 0x8143E5F: EvolutionContactSource::open() (EvolutionContactSource.cpp:139)
+# ==5064==    by 0x8056656: TestEvolutionSyncSource::beginSync() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==5064==    by 0x8126377: LocalTests::insert(CreateSource, char const*) (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==5064==    by 0x80C4B9B: LocalTests::testSimpleInsert() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==5064==    by 0x8114B68: LocalTests::testChanges() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==5064==    by 0x8136796: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==5064==    by 0x4051C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5064==    by 0x40433ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5064==    by 0x404D8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5064==    by 0x404D613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5064==    by 0x405A390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5064==    by 0x4051637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5064==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_book_new V
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_tcval
+   fun:ORBit_small_allocbuf
+   fun:ORBit_POAObject_object_to_objkey
+   fun:ORBit_OAObject_object_to_objkey
+   fun:IOP_generate_profiles
+   fun:ORBit_marshal_object
+   fun:ORBit_marshal_value
+   fun:orbit_small_marshal
+   fun:ORBit_small_invoke_stub
+   fun:ORBit_small_invoke_stub_n
+   fun:ORBit_c_stub_invoke
+   fun:GNOME_Evolution_Addressbook_BookFactory_getBook
+   fun:fetch_corba_book
+   fun:e_book_new
+}
+
 
 # ==14222== Syscall param writev(vector[...]) points to uninitialised byte(s)
 # ==14222==    at 0x4000792: (within /lib/ld-2.3.6.so)
@@ -1089,7 +1188,7 @@
 # ==2499==    by 0x42FCAFE: g_thread_create_proxy (gthread.c:635)
 # ==2499==    by 0x425723F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
 {
-   build_change_list
+   build_change_list III
    Memcheck:Leak
    fun:malloc
    fun:pvl_new_element
@@ -1181,7 +1280,7 @@
 # ==2499==    by 0x42FE686: g_thread_pool_thread_proxy (gthreadpool.c:265)
 # ==2499==    by 0x42FCAFE: g_thread_create_proxy (gthread.c:635)
 {
-   build_change_list
+   build_change_list IV
    Memcheck:Leak
    fun:malloc
    fun:icalvalue_new_impl
@@ -1216,7 +1315,7 @@
 # ==2499==    by 0x42FCAFE: g_thread_create_proxy (gthread.c:635)
 # ==2499==    by 0x425723F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
 {
-   build_change_list
+   build_change_list V
    Memcheck:Leak
    fun:malloc
    fun:pvl_newlist
@@ -1250,7 +1349,7 @@
 # ==3045==    by 0x42FCAFE: g_thread_create_proxy (gthread.c:635)
 # ==3045==    by 0x425723F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
 {
-   build_change_list
+   build_change_list VI
    Memcheck:Leak
    fun:malloc
    fun:icalvalue_new_impl
@@ -1284,7 +1383,7 @@
 # ==4994==    by 0x425823F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
 # ==4994==    by 0x455749D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
 {
-   build_change_list II
+   build_change_list VII
    Memcheck:Leak
    fun:malloc
    fun:g_malloc
@@ -1321,7 +1420,7 @@
 # ==4994==    by 0x425823F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
 # ==4994==    by 0x455749D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
 {
-   build_change_list III
+   build_change_list VIII
    Memcheck:Leak
    fun:malloc
    fun:g_malloc
@@ -1333,6 +1432,43 @@
    fun:g_object_new_valist
    fun:g_object_new
    fun:e_cal_component_new
+   fun:build_change_list
+}
+
+# ==10697== 150,925 (15,744 direct, 135,181 indirect) bytes in 123 blocks are definitely lost in loss record 35 of 51
+# ==10697==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==10697==    by 0x40E786C: icalvalue_new_impl (icalvalue.c:75)
+# ==10697==    by 0x40D0E07: icalvalue_new_integer (icalderivedvalue.c:505)
+# ==10697==    by 0x40E8079: icalvalue_new_from_string_with_error (icalvalue.c:440)
+# ==10697==    by 0x40E8866: icalvalue_new_from_string (icalvalue.c:665)
+# ==10697==    by 0x40DA641: icalparser_add_line (icalparser.c:959)
+# ==10697==    by 0x40D9CA3: icalparser_parse (icalparser.c:591)
+# ==10697==    by 0x40DAAF2: icalparser_parse_string (icalparser.c:1132)
+# ==10697==    by 0x40B8531: build_change_list (e-cal-listener.c:521)
+# ==10697==    by 0x40B862B: impl_notifyChanges (e-cal-listener.c:557)
+# ==10697==    by 0x4097F9D: _ORBIT_skel_small_GNOME_Evolution_Calendar_CalListener_notifyChanges (Evolution-DataServer-Calendar-common.c:220)
+# ==10697==    by 0x4847436: ORBit_POAObject_invoke (poa.c:1142)
+# ==10697==    by 0x484D664: ORBit_OAObject_invoke (orbit-adaptor.c:338)
+# ==10697==    by 0x483A5D8: ORBit_small_invoke_adaptor (orbit-small.c:844)
+# ==10697==    by 0x484B2B9: ORBit_POAObject_handle_request (poa.c:1351)
+# ==10697==    by 0x484B95B: ORBit_POAObject_invoke_incoming_request (poa.c:1421)
+# ==10697==    by 0x483313A: giop_thread_queue_process (giop.c:771)
+# ==10697==    by 0x48339D7: giop_request_handler_thread (giop.c:481)
+# ==10697==    by 0x42FF686: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==10697==    by 0x42FDAFE: g_thread_create_proxy (gthread.c:635)
+# ==10697==    by 0x425823F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==10697==    by 0x455749D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   build_change_list IX
+   Memcheck:Leak
+   fun:malloc
+   fun:icalvalue_new_impl
+   fun:icalvalue_new_integer
+   fun:icalvalue_new_from_string_with_error
+   fun:icalvalue_new_from_string
+   fun:icalparser_add_line
+   fun:icalparser_parse
+   fun:icalparser_parse_string
    fun:build_change_list
 }
 
@@ -2018,6 +2154,62 @@
    fun:_events_new_backend
    fun:e_cal_backend_factory_new_backend
    fun:impl_CalFactory_getCal
+}
+
+# ==17481== 89,664 (37,348 direct, 52,316 indirect) bytes in 362 blocks are definitely lost in loss record 45 of 50
+# ==17481==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==17481==    by 0x44579FD: g_malloc0 (gmem.c:150)
+# ==17481==    by 0x439A151: giop_recv_buffer_use_buf (giop-recv-buffer.c:1440)
+# ==17481==    by 0x439B8E8: giop_connection_handle_input (giop-recv-buffer.c:1218)
+# ==17481==    by 0x43B9DBC: link_connection_io_handler (linc-connection.c:1412)
+# ==17481==    by 0x43BC65F: link_source_dispatch (linc-source.c:159)
+# ==17481==    by 0x444F99A: g_main_context_dispatch (gmain.c:2064)
+# ==17481==    by 0x4452EB5: g_main_context_iterate (gmain.c:2697)
+# ==17481==    by 0x4453276: g_main_loop_run (gmain.c:2905)
+# ==17481==    by 0x43B831F: link_io_thread_fn (linc.c:396)
+# ==17481==    by 0x4477AFE: g_thread_create_proxy (gthread.c:635)
+# ==17481==    by 0x452723F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==17481==    by 0x45FF49D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   <insert a suppression name here>
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:giop_recv_buffer_use_buf
+   fun:giop_connection_handle_input
+   fun:link_connection_io_handler
+   fun:link_source_dispatch
+   fun:g_main_context_dispatch
+   fun:g_main_context_iterate
+   fun:g_main_loop_run
+}
+
+# ==10684== 2,203 bytes in 11 blocks are possibly lost in loss record 30 of 49
+# ==10684==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==10684==    by 0x4457A95: g_malloc (gmem.c:131)
+# ==10684==    by 0x43A3925: ORBit_alloc_simple (allocators.c:241)
+# ==10684==    by 0x43A8760: ORBit_demarshal_value (corba-any.c:683)
+# ==10684==    by 0x43A827F: ORBit_demarshal_value (corba-any.c:561)
+# ==10684==    by 0x43A86D6: ORBit_demarshal_value (corba-any.c:704)
+# ==10684==    by 0x439AA83: giop_IOP_ServiceContextList_demarshal (giop-recv-buffer.c:88)
+# ==10684==    by 0x439AADE: giop_recv_buffer_demarshal_reply_1_2 (giop-recv-buffer.c:270)
+# ==10684==    by 0x439B89A: giop_connection_handle_input (giop-recv-buffer.c:419)
+# ==10684==    by 0x43B9DBC: link_connection_io_handler (linc-connection.c:1412)
+# ==10684==    by 0x43BC65F: link_source_dispatch (linc-source.c:159)
+# ==10684==    by 0x444F99A: g_main_context_dispatch (gmain.c:2064)
+# ==10684==    by 0x4452EB5: g_main_context_iterate (gmain.c:2697)
+# ==10684==    by 0x4453276: g_main_loop_run (gmain.c:2905)
+# ==10684==    by 0x43B831F: link_io_thread_fn (linc.c:396)
+# ==10684==    by 0x4477AFE: g_thread_create_proxy (gthread.c:635)
+# ==10684==    by 0x452723F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==10684==    by 0x45FF49D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   ORBit demarshal
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_simple
+   fun:ORBit_demarshal_value
 }
 
 # ==4248== Conditional jump or move depends on uninitialised value(s)
