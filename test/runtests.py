@@ -591,7 +591,7 @@ context.add(dist)
 
 evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
-                                  [ "Client::Source" ],
+                                  [ "Client::Source", "SyncEvolution" ],
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
 
