@@ -94,6 +94,8 @@ endif
 
 if ENABLE_ECAL
 SYNCECAL_SOURCES += \
+	libical/icalstrdup.c \
+	libical/icalstrdup.h \
 	e-cal-check-timezones.c \
 	e-cal-check-timezones.h
 endif
@@ -150,7 +152,9 @@ syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 
 syncecal_la_SOURCES = $(SYNCECAL_SOURCES)
 syncecal_la_LIBADD = @ECAL_LIBS@
-syncecal_la_LDFLAGS = -module -rpath '$(pkglibdir)'
+# _GNU_SOURCE and -ldl for libical.c + dlsym():
+syncecal_la_CPPFLAGS = -D_GNU_SOURCE
+syncecal_la_LDFLAGS = -module -rpath '$(pkglibdir)' -ldl
 syncecal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
 syncebook_la_SOURCES = $(SYNCEBOOK_SOURCES)

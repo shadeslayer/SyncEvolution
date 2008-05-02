@@ -24,6 +24,9 @@ using namespace std;
 
 #ifdef ENABLE_ECAL
 
+// include first, it sets HANDLE_LIBICAL_MEMORY for us
+#include "libical/icalstrdup.h"
+
 #include "EvolutionSyncClient.h"
 #include "EvolutionCalendarSource.h"
 #include "EvolutionMemoSource.h"
@@ -562,11 +565,11 @@ string EvolutionCalendarSource::icalTime2Str(const icaltimetype &tt)
     if (!memcmp(&tt, &null, sizeof(null))) {
         return "";
     } else {
-        const char *timestr = icaltime_as_ical_string(tt);
+        eptr<char> timestr(ical_strdup(icaltime_as_ical_string(tt)));
         if (!timestr) {
             throwError("cannot convert to time string");
         }
-        return timestr;
+        return timestr.get();
     }
 }
 

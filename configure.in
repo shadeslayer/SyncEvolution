@@ -65,7 +65,7 @@ AC_ARG_WITH(patched-libdbus,
             [LIBDBUS="-L$withval"])
 AC_SUBST(LIBDBUS)
 
-AC_CHECK_HEADERS(signal.h)
+AC_CHECK_HEADERS(signal.h dlfcn.h)
 
 # cppunit needed?
 if test $enable_unit_tests == "yes" || test $enable_integration_tests == yes; then

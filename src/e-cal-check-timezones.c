@@ -17,6 +17,8 @@
  * 02111-1307  USA
  */
 
+#include "libical/icalstrdup.h"
+
 #include "e-cal-check-timezones.h"
 #include <libecal/e-cal.h>
 #include <string.h>
@@ -142,7 +144,7 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
                     key =
                         value = NULL;
                 } else {
-                    zonestr = g_strdup(icalcomponent_as_ical_string(subcomp));
+                    zonestr = ical_strdup(icalcomponent_as_ical_string(subcomp));
 
                     /* check for collisions with existing timezones */
                     int counter;
@@ -166,7 +168,7 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
                             }
                         }
                         g_free(buffer);
-                        buffer = g_strdup(icalcomponent_as_ical_string(icaltimezone_get_component(existing_zone)));
+                        buffer = ical_strdup(icalcomponent_as_ical_string(icaltimezone_get_component(existing_zone)));
 
                         if (counter) {
                             char *fulltzid = g_strdup_printf("TZID:%s", value);
