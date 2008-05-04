@@ -47,7 +47,7 @@ char *ical_strdup(const char *x)
     }
 
     if (patch_status == PATCH_FOUND) {
-        /* patch applied, not need to copy */
+        /* patch applied, no need to copy */
         return (char *)x;
     }
 #endif
