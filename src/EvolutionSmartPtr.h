@@ -27,6 +27,7 @@
 #include <libebook/e-book.h>
 #endif
 #ifdef ENABLE_ECAL
+# define HANDLE_LIBICAL_MEMORY 1
 #include <libecal/e-cal.h>
 #endif
 #endif
