@@ -62,6 +62,8 @@ G_BEGIN_DECLS
  *                  VTIMEZONE and arbitrary other components, in
  *                  arbitrary order: these other components are
  *                  modified by this call
+ * @param comps,    a list of icalcomponent instances which
+ *                  also have to be patched; may be NULL
  * @param tzlookup  a callback function which is called to retrieve
  *                  a calendar's VTIMEZONE definition; the returned
  *                  definition is *not* freed by e_cal_check_timezones()
@@ -74,6 +76,7 @@ G_BEGIN_DECLS
  * @return TRUE if successful, FALSE otherwise.
  */
 gboolean e_cal_check_timezones(icalcomponent *comp,
+                               GList *comps,
                                icaltimezone *(*tzlookup)(const char *tzid,
                                                          const void *custom,
                                                          GError **error),

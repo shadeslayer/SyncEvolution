@@ -285,6 +285,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
 
     // fix up TZIDs
     if (!e_cal_check_timezones(icomp,
+                               NULL,
                                e_cal_tzlookup_ecal,
                                (const void *)m_calendar.get(),
                                &gerror)) {

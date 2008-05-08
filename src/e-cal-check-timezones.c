@@ -17,7 +17,18 @@
  * 02111-1307  USA
  */
 
-#include "libical/icalstrdup.h"
+#ifndef HANDLE_LIBICAL_MEMORY
+# define HANDLE_LIBICAL_MEMORY 1
+#endif
+#include <libical/ical.h>
+
+#ifdef LIBICAL_MEMFIXES
+/* avoid dependency on icalstrdup.h, works when compiling as part of EDS >= 2.22 */
+# define ical_strdup(_x) (_x)
+#else
+/* use icalstrdup.h to get runtime detection of memory fix patch */
+# include "libical/icalstrdup.h"
+#endif
 
 #include "e-cal-check-timezones.h"
 #include <libecal/e-cal.h>
@@ -91,9 +102,49 @@ static const char *e_cal_match_tzid(const char *tzid)
     return NULL;
 }
 
+static void patch_tzids(icalcomponent *subcomp,
+                        GHashTable *mapping)
+{
+    char *tzid = NULL;
 
+    if (icalcomponent_isa(subcomp) != ICAL_VTIMEZONE_COMPONENT) {
+        icalproperty *prop = icalcomponent_get_first_property(subcomp,
+                                                              ICAL_ANY_PROPERTY);
+        while (prop) {
+            icalparameter *param = icalproperty_get_first_parameter(prop,
+                                                                    ICAL_ANY_PARAMETER);
+            while (param) {
+                if (icalparameter_isa(param) == ICAL_TZID_PARAMETER) {
+                    const char *oldtzid;
+                    const char *newtzid;
+
+                    g_free(tzid);
+                    tzid = g_strdup(icalparameter_get_tzid(param));
+
+                    if (!g_hash_table_lookup_extended(mapping,
+                                                      tzid,
+                                                      (gpointer *)&oldtzid,
+                                                      (gpointer *)&newtzid)) {
+                        /* Corresponding VTIMEZONE not seen before! */
+                        newtzid = e_cal_match_tzid(tzid);
+                    }
+                    if (newtzid) {
+                        icalparameter_set_tzid(param, newtzid);
+                    }
+                }
+                param = icalproperty_get_next_parameter(prop,
+                                                        ICAL_ANY_PARAMETER);
+            }
+            prop = icalcomponent_get_next_property(subcomp,
+                                                   ICAL_ANY_PROPERTY);
+        }
+    }
+
+    g_free(tzid);
+}
 
 gboolean e_cal_check_timezones(icalcomponent *comp,
+                               GList *comps,
                                icaltimezone *(*tzlookup)(const char *tzid,
                                                          const void *custom,
                                                          GError **error),
@@ -107,6 +158,7 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
     char *buffer = NULL;
     char *zonestr = NULL;
     char *tzid = NULL;
+    GList *l;
 
     /** a hash from old to new tzid; strings dynamically allocated */
     GHashTable *mapping = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
@@ -244,40 +296,13 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
          * definitions. That would just make the code more complex for
          * little additional gain.
          */
-        if (icalcomponent_isa(subcomp) != ICAL_VTIMEZONE_COMPONENT) {
-            icalproperty *prop = icalcomponent_get_first_property(subcomp,
-                                                                  ICAL_ANY_PROPERTY);
-            while (prop) {
-                icalparameter *param = icalproperty_get_first_parameter(prop,
-                                                                        ICAL_ANY_PARAMETER);
-                while (param) {
-                    if (icalparameter_isa(param) == ICAL_TZID_PARAMETER) {
-                        const char *oldtzid;
-                        const char *newtzid;
-
-                        g_free(tzid);
-                        tzid = g_strdup(icalparameter_get_tzid(param));
-                        
-                        if (!g_hash_table_lookup_extended(mapping,
-                                                          tzid,
-                                                          (gpointer *)&oldtzid,
-                                                          (gpointer *)&newtzid)) {
-                            /* Corresponding VTIMEZONE not seen before! */
-                            newtzid = e_cal_match_tzid(tzid);
-                        }
-                        if (newtzid) {
-                            icalparameter_set_tzid(param, newtzid);
-                        }
-                    }
-                    param = icalproperty_get_next_parameter(prop,
-                                                            ICAL_ANY_PARAMETER);
-                }
-                prop = icalcomponent_get_next_property(subcomp,
-                                                       ICAL_ANY_PROPERTY);
-            }
-        }
+        patch_tzids (subcomp, mapping);
         subcomp = icalcomponent_get_next_component(comp,
                                                    ICAL_ANY_COMPONENT);
+    }
+
+    for (l = comps; l; l = l->next) {
+        patch_tzids (l->data, mapping);
     }
     
     goto done;
