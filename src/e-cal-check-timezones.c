@@ -143,6 +143,29 @@ static void patch_tzids(icalcomponent *subcomp,
     g_free(tzid);
 }
 
+static void addsystemtz(gpointer key,
+                        gpointer value,
+                        gpointer user_data)
+{
+    const char *tzid = key;
+    const char *location;
+    icalcomponent *comp = user_data;
+    icaltimezone *zone;
+
+    /* need to find the location again inside the tzid */
+    location = strchr(tzid, '/');
+    while (location) {
+        zone = icaltimezone_get_builtin_timezone(location + 1);
+
+        if (zone) {
+            icalcomponent_add_component(comp,
+                                        icalcomponent_new_clone(icaltimezone_get_component(zone)));
+            break;
+        }
+        location = strchr(location + 1, '/');
+    }
+}
+
 gboolean e_cal_check_timezones(icalcomponent *comp,
                                GList *comps,
                                icaltimezone *(*tzlookup)(const char *tzid,
@@ -162,6 +185,9 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
 
     /** a hash from old to new tzid; strings dynamically allocated */
     GHashTable *mapping = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+
+    /** a hash of all system time zone IDs which have to be added; strings are shared with mapping hash */
+    GHashTable *systemtzids = g_hash_table_new(g_str_hash, g_str_equal);
 
     *error = NULL;
 
@@ -193,6 +219,7 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
                     }
 
                     g_hash_table_insert(mapping, key, value);
+                    g_hash_table_insert(systemtzids, value, NULL);
                     key =
                         value = NULL;
                 } else {
@@ -294,7 +321,8 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
          *
          * Note that no attempt is made to remove unused VTIMEZONE
          * definitions. That would just make the code more complex for
-         * little additional gain.
+         * little additional gain. However, newly used time zones are
+         * added below.
          */
         patch_tzids (subcomp, mapping);
         subcomp = icalcomponent_get_next_component(comp,
@@ -304,6 +332,12 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
     for (l = comps; l; l = l->next) {
         patch_tzids (l->data, mapping);
     }
+
+    /*
+     * add system time zones that we mapped to: adding them ensures
+     * that the VCALENDAR remains consistent
+     */
+    g_hash_table_foreach(systemtzids, addsystemtz, comp);
     
     goto done;
  nomem:
@@ -315,6 +349,9 @@ gboolean e_cal_check_timezones(icalcomponent *comp,
  done:
     if (mapping) {
         g_hash_table_destroy(mapping);
+    }
+    if (systemtzids) {
+        g_hash_table_destroy(systemtzids);
     }
     if (zone) {
         icaltimezone_free(zone, 1);
@@ -356,7 +393,7 @@ icaltimezone *e_cal_tzlookup_icomp(const char *tzid,
                                    const void *custom,
                                    GError **error)
 {
-    const icalcomponent *icomp = custom;
+    icalcomponent *icomp = (icalcomponent *)custom;
 
-    return icalcomponent_get_timezone(icomp, tzid);
+    return icalcomponent_get_timezone(icomp, (char *)tzid);
 }
