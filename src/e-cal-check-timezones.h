@@ -106,6 +106,12 @@ icaltimezone *e_cal_tzlookup_icomp(const char *tzid,
                                    const void *custom,
                                    GError **error);
 
+/**
+ * matches a TZID against the system timezone definitions
+ * and returns the matching TZID, or NULL if none found
+ */
+const char *e_cal_match_tzid(const char *tzid);
+
 G_END_DECLS
 
 #endif /* E_CAL_CHECK_TIMEZONES_H */

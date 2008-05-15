@@ -72,11 +72,7 @@ static const char *e_cal_match_location(const char *location)
     return NULL;
 }
 
-/**
- * matches a TZID against the system timezone definitions
- * and returns the matching TZID, or NULL if none found
- */
-static const char *e_cal_match_tzid(const char *tzid)
+const char *e_cal_match_tzid(const char *tzid)
 {
     const char *location;
     const char *systzid;
