@@ -33,6 +33,7 @@
 #include "e-cal-check-timezones.h"
 #include <libecal/e-cal.h>
 #include <string.h>
+#include <ctype.h>
 
 /**
  * Matches a location to a system timezone definition via a fuzzy
@@ -79,6 +80,35 @@ static const char *e_cal_match_tzid(const char *tzid)
 {
     const char *location;
     const char *systzid;
+    size_t len = strlen(tzid);
+    ssize_t eostr;
+
+    /*
+     * Try without any trailing spaces/digits: they might have been added
+     * by e_cal_check_timezones() in order to distinguish between
+     * different incompatible definitions. At that time mapping
+     * to system time zones must have failed, but perhaps now
+     * we have better code and it succeeds...
+     */
+    eostr = len - 1;
+    while (eostr >= 0 &&
+           isdigit(tzid[eostr])) {
+        eostr--;
+    }
+    while (eostr >= 0 &&
+           isspace(tzid[eostr])) {
+        eostr--;
+    }
+    if (eostr + 1 < len) {
+        char *strippedtzid = g_strndup(tzid, eostr + 1);
+        if (strippedtzid) {
+            systzid = e_cal_match_tzid(strippedtzid);
+            g_free(strippedtzid);
+            if (systzid) {
+                return systzid;
+            }
+        }
+    }
 
     /*
      * old-style Evolution: /softwarestudio.org/Olson_20011030_5/America/Denver
