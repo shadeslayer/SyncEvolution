@@ -178,21 +178,14 @@ static void addsystemtz(gpointer key,
                         gpointer user_data)
 {
     const char *tzid = key;
-    const char *location;
     icalcomponent *comp = user_data;
     icaltimezone *zone;
 
-    /* need to find the location again inside the tzid */
-    location = strchr(tzid, '/');
-    while (location) {
-        zone = icaltimezone_get_builtin_timezone(location + 1);
-
-        if (zone) {
-            icalcomponent_add_component(comp,
-                                        icalcomponent_new_clone(icaltimezone_get_component(zone)));
-            break;
-        }
-        location = strchr(location + 1, '/');
+    zone = icaltimezone_get_builtin_timezone_from_tzid(tzid);
+    g_assert(zone);
+    if (zone) {
+        icalcomponent_add_component(comp,
+                                    icalcomponent_new_clone(icaltimezone_get_component(zone)));
     }
 }
 
