@@ -26,10 +26,6 @@
 #include <dbus/dbus.h>
 #include <glib.h>
 
-#ifdef USE_DBUS_GLIB
-#include <dbus/dbus-glib-lowlevel.h>
-#endif
-
 #ifdef NEED_DBUS_WATCH_GET_UNIX_FD
 #define dbus_watch_get_unix_fd dbus_watch_get_fd
 #endif
@@ -57,7 +53,6 @@ typedef struct {
 	guint id;
 } TimeoutData;
 
-#ifndef USE_DBUS_GLIB
 static gboolean dispatch_message(void *data)
 {
 	DBusConnection *connection = data;
@@ -305,7 +300,6 @@ static void wakeup_context(void *user_data)
 
 	g_main_context_wakeup(data->context);
 }
-#endif
 
 /**
  * Setup connection with main context
@@ -320,11 +314,6 @@ static void wakeup_context(void *user_data)
 void g_dbus_setup_connection(DBusConnection *connection,
 						GMainContext *context)
 {
-#ifdef USE_DBUS_GLIB
-	DBG("connection %p context %p", connection, context);
-
-	dbus_connection_setup_with_g_main(connection, context);
-#else
 	ConnectionData *data;
 
 	DBG("connection %p context %p", connection, context);
@@ -364,7 +353,6 @@ void g_dbus_setup_connection(DBusConnection *connection,
 
 	dbus_connection_set_wakeup_main_function(connection,
 						wakeup_context, data, NULL);
-#endif
 }
 
 /**
@@ -434,10 +422,6 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 
 	g_dbus_setup_connection(connection, NULL);
 
-#ifndef USE_DBUS_GLIB
-	dbus_connection_unref(connection);
-#endif
-
 	return connection;
 }
 
@@ -468,10 +452,6 @@ DBusConnection *g_dbus_setup_address(const char *address, DBusError *error)
 		return NULL;
 
 	g_dbus_setup_connection(connection, NULL);
-
-#ifndef USE_DBUS_GLIB
-	dbus_connection_unref(connection);
-#endif
 
 	return connection;
 }
