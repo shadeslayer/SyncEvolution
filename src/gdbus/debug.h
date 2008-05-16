@@ -2,7 +2,7 @@
  *
  *  Library for simple D-Bus integration with GLib
  *
- *  Copyright (C) 2007  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2007-2008 Intel Corporation. All rights reserved.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
