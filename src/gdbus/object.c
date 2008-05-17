@@ -36,6 +36,7 @@
 static dbus_int32_t connection_slot = -1;
 
 typedef struct {
+	GStaticMutex mutex;
 	GSList *objects;
 } ConnectionData;
 
@@ -681,6 +682,8 @@ gboolean g_dbus_register_object(DBusConnection *connection, const char *path,
 			return 0;
 		}
 
+		g_static_mutex_init(&data->mutex);
+
 		if (dbus_connection_set_data(connection, connection_slot,
 							data, NULL) == FALSE) {
 			dbus_connection_free_data_slot(&connection_slot);
@@ -709,7 +712,11 @@ gboolean g_dbus_register_object(DBusConnection *connection, const char *path,
 
 	DBG("object data %p", object);
 
+	g_static_mutex_lock(&data->mutex);
+
 	data->objects = g_slist_append(data->objects, object);
+
+	g_static_mutex_unlock(&data->mutex);
 
 	update_parent(connection, path);
 
@@ -743,14 +750,20 @@ gboolean g_dbus_unregister_object(DBusConnection *connection, const char *path)
 	if (object == NULL)
 		return FALSE;
 
+	g_static_mutex_lock(&data->mutex);
+
 	data->objects = g_slist_remove(data->objects, object);
+
+	g_static_mutex_unlock(&data->mutex);
 
 	dbus_connection_free_data_slot(&connection_slot);
 
 	DBG("connection slot %d", connection_slot);
 
-	if (connection_slot < 0)
+	if (connection_slot < 0) {
+		g_static_mutex_free(&data->mutex);
 		g_free(data);
+	}
 
 	if (dbus_connection_unregister_object_path(connection, path) == FALSE)
 		return FALSE;
@@ -793,6 +806,8 @@ gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
 
 	pathlen = strlen(path);
 
+	g_static_mutex_lock(&data->mutex);
+
 	for (list = data->objects; list; list = list->next) {
 		ObjectData *object = list->data;
 
@@ -813,6 +828,8 @@ gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
 
 		DBG("connection slot %d", connection_slot);
 	}
+
+	g_static_mutex_unlock(&data->mutex);
 
 	result = g_dbus_unregister_object(connection, path);
 	if (result == FALSE)
@@ -845,6 +862,8 @@ void g_dbus_unregister_all_objects(DBusConnection *connection)
 
 	DBG("connection data %p", data);
 
+	g_static_mutex_lock(&data->mutex);
+
 	for (list = data->objects; list; list = list->next) {
 		ObjectData *object = list->data;
 
@@ -859,6 +878,8 @@ void g_dbus_unregister_all_objects(DBusConnection *connection)
 	}
 
 	g_slist_free(data->objects);
+
+	g_static_mutex_unlock(&data->mutex);
 
 	g_free(data);
 }
