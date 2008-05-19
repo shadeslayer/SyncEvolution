@@ -974,6 +974,112 @@ gboolean g_dbus_unregister_interface(DBusConnection *connection,
 	return TRUE;
 }
 
+/**
+ * Send message
+ * @param connection the connection
+ * @param message the message to send
+ * @return TRUE on success
+ *
+ * Send message via the given D-Bus connection.
+ *
+ * The reference count for the message will be decremented by this
+ * function.
+ */
+gboolean g_dbus_send_message(DBusConnection *connection, DBusMessage *message)
+{
+	dbus_bool_t result;
+
+	DBG("connection %p message %p", connection, message);
+
+	result = dbus_connection_send(connection, message, NULL);
+
+	dbus_message_unref(message);
+
+	return result;
+}
+
+/**
+ * Send error reply
+ * @param connection the connection
+ * @param message the originating message
+ * @param name the error name
+ * @param text the error description
+ * @return TRUE on success
+ *
+ * Send error reply for the given message and via the given D-Bus
+ * connection.
+ */
+gboolean g_dbus_send_error(DBusConnection *connection, DBusMessage *message,
+					const char *name, const char *text)
+{
+	DBusMessage *error;
+
+	DBG("connection %p message %p", connection, message);
+
+	error = dbus_message_new_error(message, name, text);
+	if (error == NULL)
+		return FALSE;
+
+	return g_dbus_send_message(connection, error);
+}
+
+/**
+ * Send reply message
+ * @param connection the connection
+ * @param message the originating message
+ * @param type first argument type
+ * @param args argument list
+ * @return TRUE on success
+ *
+ * Send reply for the given message and via the given D-Bus
+ * connection.
+ */
+gboolean g_dbus_send_reply_valist(DBusConnection *connection,
+				DBusMessage *message, int type, va_list args)
+{
+	DBusMessage *reply;
+
+	DBG("connection %p message %p", connection, message);
+
+	reply = dbus_message_new_method_return(message);
+	if (reply == NULL)
+		return FALSE;
+
+	if (dbus_message_append_args_valist(reply, type, args) == FALSE) {
+		dbus_message_unref(reply);
+		return FALSE;
+	}
+
+	return g_dbus_send_message(connection, reply);
+}
+
+/**
+ * Send reply message
+ * @param connection the connection
+ * @param message the originating message
+ * @param type first argument type
+ * @return TRUE on success
+ *
+ * Send reply for the given message and via the given D-Bus
+ * connection.
+ */
+gboolean g_dbus_send_reply(DBusConnection *connection,
+				DBusMessage *message, int type, ...)
+{
+	va_list args;
+	gboolean result;
+
+	DBG("connection %p message %p", connection, message);
+
+	va_start(args, type);
+
+	result = g_dbus_send_reply_valist(connection, message, type, args);
+
+	va_end(args);
+
+	return result;
+}
+
 static GDBusSignalTable *find_signal(GSList *interfaces,
 				const char *interface, const char *name)
 {
