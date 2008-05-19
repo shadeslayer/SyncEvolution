@@ -975,6 +975,75 @@ gboolean g_dbus_unregister_interface(DBusConnection *connection,
 }
 
 /**
+ * Create error reply
+ * @param message the originating message
+ * @param name the error name
+ * @param text the error description
+ * @return reply message on success
+ *
+ * Create error reply for the given message.
+ */
+DBusMessage *g_dbus_create_error(DBusMessage *message,
+					const char *name, const char *text)
+{
+	DBG("message %p", message);
+
+	return dbus_message_new_error(message, name, text);
+}
+
+/**
+ * Create reply message
+ * @param message the originating message
+ * @param type first argument type
+ * @param args argument list
+ * @return reply message on success
+ *
+ * Create reply for the given message.
+ */
+DBusMessage *g_dbus_create_reply_valist(DBusMessage *message,
+						int type, va_list args)
+{
+	DBusMessage *reply;
+
+	DBG("message %p", message);
+
+	reply = dbus_message_new_method_return(message);
+	if (reply == NULL)
+		return NULL;
+
+	if (dbus_message_append_args_valist(reply, type, args) == FALSE) {
+		dbus_message_unref(reply);
+		return NULL;
+	}
+
+	return reply;
+}
+
+/**
+ * Create reply message
+ * @param message the originating message
+ * @param type first argument type
+ * @return reply message on success
+ *
+ * Create reply for the given message.
+ */
+DBusMessage *g_dbus_create_reply(DBusMessage *message, int type, ...)
+{
+	va_list args;
+	DBusMessage *reply;
+
+	DBG("message %p", message);
+
+	va_start(args, type);
+
+	reply = g_dbus_create_reply_valist(message, type, args);
+
+	va_end(args);
+
+	return reply;
+}
+
+/**
  * Send message
  * @param connection the connection
  * @param message the message to send
