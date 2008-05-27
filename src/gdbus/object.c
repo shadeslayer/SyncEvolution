@@ -980,17 +980,44 @@ gboolean g_dbus_unregister_interface(DBusConnection *connection,
  * Create error reply
  * @param message the originating message
  * @param name the error name
- * @param text the error description
+ * @param format the error description
+ * @param args argument list
  * @return reply message on success
  *
  * Create error reply for the given message.
  */
-DBusMessage *g_dbus_create_error(DBusMessage *message,
-					const char *name, const char *text)
+DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
+						const char *format, va_list args)
 {
-	DBG("message %p", message);
+	DBG("message %p name %s", message, name);
 
-	return dbus_message_new_error(message, name, text);
+	return dbus_message_new_error(message, name, NULL);
+}
+
+/**
+ * Create error reply
+ * @param message the originating message
+ * @param name the error name
+ * @param format the error description
+ * @return reply message on success
+ *
+ * Create error reply for the given message.
+ */
+DBusMessage *g_dbus_create_error(DBusMessage *message, const char *name,
+						const char *format, ...)
+{
+	va_list args;
+	DBusMessage *reply;
+
+	DBG("message %p name %s", message, name);
+
+	va_start(args, format);
+
+	reply = g_dbus_create_error_valist(message, name, format, args);
+
+	va_end(args);
+
+	return reply;
 }
 
 /**
@@ -1074,20 +1101,26 @@ gboolean g_dbus_send_message(DBusConnection *connection, DBusMessage *message)
  * @param connection the connection
  * @param message the originating message
  * @param name the error name
- * @param text the error description
+ * @param format the error description
  * @return TRUE on success
  *
  * Send error reply for the given message and via the given D-Bus
  * connection.
  */
 gboolean g_dbus_send_error(DBusConnection *connection, DBusMessage *message,
-					const char *name, const char *text)
+				const char *name, const char *format, ...)
 {
+	va_list args;
 	DBusMessage *error;
 
 	DBG("connection %p message %p", connection, message);
 
-	error = dbus_message_new_error(message, name, text);
+	va_start(args, format);
+
+	error = g_dbus_create_error(message, name, format, args);
+
+	va_end(args);
+
 	if (error == NULL)
 		return FALSE;
 

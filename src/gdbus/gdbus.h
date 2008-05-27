@@ -158,15 +158,18 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
 gboolean g_dbus_unregister_interface(DBusConnection *connection,
 					const char *path, const char *name);
 
-DBusMessage *g_dbus_create_error(DBusMessage *message,
-					const char *name, const char *text);
+DBusMessage *g_dbus_create_error(DBusMessage *message, const char *name,
+						const char *format, ...);
+DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
+					const char *format, va_list args);
 DBusMessage *g_dbus_create_reply(DBusMessage *message, int type, ...);
 DBusMessage *g_dbus_create_reply_valist(DBusMessage *message,
 						int type, va_list args);
 
 gboolean g_dbus_send_message(DBusConnection *connection, DBusMessage *message);
 gboolean g_dbus_send_error(DBusConnection *connection, DBusMessage *message,
-					const char *name, const char *text);
+				const char *name, const char *format, ...);
+
 gboolean g_dbus_send_reply(DBusConnection *connection,
 				DBusMessage *message, int type, ...);
 gboolean g_dbus_send_reply_valist(DBusConnection *connection,
