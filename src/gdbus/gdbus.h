@@ -142,8 +142,7 @@ gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
  * @{
  */
 
-gboolean g_dbus_register_object(DBusConnection *connection, const char *path,
-				void *user_data, GDBusDestroyFunction destroy);
+gboolean g_dbus_register_object(DBusConnection *connection, const char *path);
 gboolean g_dbus_unregister_object(DBusConnection *connection, const char *path);
 gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
 							const char *path);
@@ -153,7 +152,9 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
 					const char *path, const char *name,
 					GDBusMethodTable *methods,
 					GDBusSignalTable *signals,
-					GDBusPropertyTable *properties);
+					GDBusPropertyTable *properties,
+					void *user_data,
+					GDBusDestroyFunction destroy);
 gboolean g_dbus_unregister_interface(DBusConnection *connection,
 					const char *path, const char *name);
 

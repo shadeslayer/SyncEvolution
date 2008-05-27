@@ -44,8 +44,6 @@ typedef struct {
 	char *path;
 	GSList *interfaces;
 	char *introspect;
-	void *user_data;
-	GDBusDestroyFunction destroy;
 } ObjectData;
 
 typedef struct {
@@ -53,6 +51,8 @@ typedef struct {
 	GDBusMethodTable *methods;
 	GDBusSignalTable *signals;
 	GDBusPropertyTable *properties;
+	void *user_data;
+	GDBusDestroyFunction destroy;
 } InterfaceData;
 
 static InterfaceData *find_interface(GSList *interfaces, const char *name)
@@ -346,6 +346,7 @@ static DBusHandlerResult properties_get(DBusConnection *connection,
 	DBusMessageIter iter, value;
 	dbus_bool_t result;
 	const char *interface, *name;
+	InterfaceData *iface;
 
 	DBG("connection %p message %p object data %p",
 					connection, message, data);
@@ -360,8 +361,8 @@ static DBusHandlerResult properties_get(DBusConnection *connection,
 
 	DBG("interface %s name %s", interface, name);
 
-	property = find_property(find_interface(data->interfaces,
-							interface), name);
+	iface = find_interface(data->interfaces, interface);
+	property = find_property(iface, name);
 	if (property == NULL)
 		return send_error(connection, message,
 				DBUS_ERROR_BAD_ADDRESS, "Property not found");
@@ -380,7 +381,7 @@ static DBusHandlerResult properties_get(DBusConnection *connection,
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT,
 						property->type, &value);
 
-	result = property->get(connection, &value, data->user_data);
+	result = property->get(connection, &value, iface->user_data);
 
 	dbus_message_iter_close_container(&iter, &value);
 
@@ -400,6 +401,7 @@ static DBusHandlerResult properties_set(DBusConnection *connection,
 	GDBusPropertyTable *property;
 	DBusMessageIter iter, value;
 	const char *interface, *name;
+	InterfaceData *iface;
 
 	DBG("connection %p message %p object data %p",
 					connection, message, data);
@@ -421,8 +423,8 @@ static DBusHandlerResult properties_set(DBusConnection *connection,
 
 	DBG("interface %s name %s", interface, name);
 
-	property = find_property(find_interface(data->interfaces,
-							interface), name);
+	iface = find_interface(data->interfaces, interface);
+	property = find_property(iface, name);
 	if (property == NULL)
 		return send_error(connection, message,
 				DBUS_ERROR_BAD_ADDRESS, "Property not found");
@@ -438,7 +440,7 @@ static DBusHandlerResult properties_set(DBusConnection *connection,
 
 	dbus_message_append_args(reply, DBUS_TYPE_INVALID);
 
-	if (property->set(connection, &value, data->user_data) == FALSE) {
+	if (property->set(connection, &value, iface->user_data) == FALSE) {
 		dbus_message_unref(reply);
 		return send_error(connection, message, DBUS_ERROR_FAILED,
 						"Writing to property failed");
@@ -488,7 +490,7 @@ static void do_getall(DBusConnection *connection, DBusMessageIter *iter,
 		dbus_message_iter_open_container(&entry, DBUS_TYPE_VARIANT,
 						property->type, &value);
 
-		result = property->get(connection, &value, data->user_data);
+		result = property->get(connection, &value, interface->user_data);
 
 		dbus_message_iter_close_container(&entry, &value);
 
@@ -597,7 +599,7 @@ static DBusHandlerResult handle_message(DBusConnection *connection,
 			continue;
 
 		reply = method->function(connection,
-						message, data->user_data);
+						message, interface->user_data);
 
 		if (method->flags & G_DBUS_METHOD_FLAG_NOREPLY) {
 			if (reply != NULL)
@@ -633,14 +635,14 @@ static void handle_unregister(DBusConnection *connection, void *user_data)
 
 		DBG("interface data %p name %s", interface, interface->name);
 
+		if (interface->destroy)
+			interface->destroy(interface->user_data);
+
 		g_free(interface->name);
 		g_free(interface);
 	}
 
 	g_slist_free(data->interfaces);
-
-	if (data->destroy)
-		data->destroy(data->user_data);
 
 	g_free(data->introspect);
 	g_free(data);
@@ -655,14 +657,11 @@ static DBusObjectPathVTable object_table = {
  * Register path in object hierarchy
  * @param connection the connection
  * @param path object path
- * @param user_data user data to assign to object path
- * @param destroy function called to destroy user_data
  * @return TRUE on success
  *
  * Registers a path in the object hierarchy.
  */
-gboolean g_dbus_register_object(DBusConnection *connection, const char *path,
-				void *user_data, GDBusDestroyFunction destroy)
+gboolean g_dbus_register_object(DBusConnection *connection, const char *path)
 {
 	ConnectionData *data;
 	ObjectData *object;
@@ -699,9 +698,6 @@ gboolean g_dbus_register_object(DBusConnection *connection, const char *path,
 	object->path = g_strdup(path);
 	object->interfaces = NULL;
 	object->introspect = generate_introspect(connection, path, object);
-
-	object->user_data = user_data;
-	object->destroy = destroy;
 
 	if (dbus_connection_register_object_path(connection, path,
 					&object_table, object) == FALSE) {
@@ -892,6 +888,8 @@ void g_dbus_unregister_all_objects(DBusConnection *connection)
  * @param methods method table
  * @param signals signal table
  * @param properties property table
+ * @param user_data user data to assign to interface
+ * @param destroy function called to destroy user_data
  * @return TRUE on success
  *
  * Registers an interface for the given path in the
@@ -902,7 +900,9 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
 					const char *path, const char *name,
 					GDBusMethodTable *methods,
 					GDBusSignalTable *signals,
-					GDBusPropertyTable *properties)
+					GDBusPropertyTable *properties,
+					void *user_data,
+					GDBusDestroyFunction destroy)
 {
 	ObjectData *object;
 	InterfaceData *interface;
@@ -925,6 +925,8 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
 	interface->methods = methods;
 	interface->signals = signals;
 	interface->properties = properties;
+	interface->user_data = user_data;
+	interface->destroy = destroy;
 
 	object->interfaces = g_slist_append(object->interfaces, interface);
 
