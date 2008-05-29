@@ -50,7 +50,7 @@ typedef struct {
 	DBusConnection *connection;
 	guint id;
 	void *user_data;
-	GDBusWatchFunction function;
+	GDBusDisconnectFunction function;
 	GDBusDestroyFunction destroy;
 } DisconnectData;
 
@@ -290,8 +290,9 @@ static void disconnect_function(void *user_data)
 {
 	DisconnectData *data = user_data;
 
-	if (data->function(data->user_data) == FALSE)
-		g_dbus_remove_watch(data->connection, data->id);
+	data->function(data->user_data);
+
+	g_dbus_remove_watch(data->connection, data->id);
 }
 
 static void disconnect_release(void *user_data)
@@ -310,9 +311,12 @@ static void disconnect_release(void *user_data)
  *
  * Add new watch to listen for disconnect of a client
  * for the given connection.
+ *
+ * After the callback has been called, this watch will be
+ * automatically removed.
  */
 guint g_dbus_add_disconnect_watch(DBusConnection *connection,
-				const char *name, GDBusWatchFunction function,
+				const char *name, GDBusDisconnectFunction function,
 				void *user_data, GDBusDestroyFunction destroy)
 {
 	DisconnectData *data;
