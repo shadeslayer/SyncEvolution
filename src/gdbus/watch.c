@@ -41,8 +41,8 @@ typedef struct {
 	guint id;
 	char *name;
 	void *user_data;
-	GDBusConnectFunction connect;
-	GDBusDisconnectFunction disconn;
+	GDBusWatchFunction connect;
+	GDBusWatchFunction disconn;
 	GDBusDestroyFunction destroy;
 } WatchData;
 
@@ -50,7 +50,7 @@ typedef struct {
 	DBusConnection *connection;
 	guint id;
 	void *user_data;
-	GDBusDisconnectFunction function;
+	GDBusWatchFunction function;
 	GDBusDestroyFunction destroy;
 } DisconnectData;
 
@@ -105,8 +105,8 @@ static DBusHandlerResult filter_function(DBusConnection *connection,
  * of a client for the given connection.
  */
 guint g_dbus_add_watch(DBusConnection *connection, const char *name,
-				GDBusConnectFunction connect,
-				GDBusDisconnectFunction disconnect,
+				GDBusWatchFunction connect,
+				GDBusWatchFunction disconnect,
 				void *user_data, GDBusDestroyFunction destroy)
 {
 	ConnectionData *data;
@@ -316,7 +316,7 @@ static void disconnect_release(void *user_data)
  * automatically removed.
  */
 guint g_dbus_add_disconnect_watch(DBusConnection *connection,
-				const char *name, GDBusDisconnectFunction function,
+				const char *name, GDBusWatchFunction function,
 				void *user_data, GDBusDestroyFunction destroy)
 {
 	DisconnectData *data;

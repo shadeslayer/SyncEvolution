@@ -510,7 +510,7 @@ static DBusHandlerResult disconnect_filter(DBusConnection *connection,
  * D-Bus message bus exits.
  */
 gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
-				GDBusDisconnectFunction function,
+				GDBusWatchFunction function,
 				void *user_data, DBusFreeFunction destroy)
 {
 	dbus_connection_set_exit_on_disconnect(connection, FALSE);
