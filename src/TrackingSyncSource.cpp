@@ -94,7 +94,7 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
              it++) {
             const string &uid(it->first);
             if (m_allItems.find(uid) == m_allItems.end()) {
-                m_deletedItems.addItem(uid.c_str());
+                m_deletedItems.addItem(uid);
                 m_trackingNode->removeProperty(uid);
             }
         }
