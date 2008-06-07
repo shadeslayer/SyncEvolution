@@ -376,9 +376,11 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      * items. SyncSources derived from EvolutionSyncSource should
      * take care of that when beginSyncThrow() is called with
      * deleteLocal == true and thus do not need to implement
-     * this method.
+     * this method. If a derived source doesn't do that, then the
+     * implementation of this call will simply iterate over all
+     * stored LUIDs and remove them.
      */
-    virtual int removeAllItems() { return 0; }
+    virtual int removeAllItems();
 
     /**
      * Disambiguate getName(): we have inherited it from both SyncSource and

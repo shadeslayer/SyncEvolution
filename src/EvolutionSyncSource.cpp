@@ -347,6 +347,27 @@ int EvolutionSyncSource::deleteItem(SyncItem& item)
     return processItem("delete", &EvolutionSyncSource::deleteItemThrow, item, false);
 }
 
+int EvolutionSyncSource::removeAllItems()
+{
+    int status = STC_OK;
+    
+    try {
+        for (itemList::const_iterator it = m_allItems.begin();
+             it != m_allItems.end();
+             ++it) {
+            SyncItem item;
+            item.setKey(it->c_str());
+            logItem(item, "delete all items");
+            deleteItemThrow(item);
+        }
+    } catch (...) {
+        handleException();
+        setFailed(true);
+        status = STC_COMMAND_FAILED;
+    }
+    return status;
+}
+
 int EvolutionSyncSource::processItem(const char *action,
                                      int (EvolutionSyncSource::*func)(SyncItem& item),
                                      SyncItem& item,
