@@ -359,6 +359,7 @@ int EvolutionSyncSource::removeAllItems()
             item.setKey(it->c_str());
             logItem(item, "delete all items");
             deleteItemThrow(item);
+            m_isModified = true;
         }
     } catch (...) {
         handleException();
