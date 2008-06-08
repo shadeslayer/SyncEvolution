@@ -214,7 +214,7 @@ distclean-local:
 client_test_SOURCES = client-test-app.cpp $(CORE_SOURCES)
 CLIENT_LIB_TEST_FILES = ClientTest.h ClientTest.cpp client-test-main.cpp
 nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
-client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS
+client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DLINKED_ITEMS_RELAXED_SEMANTIC=0
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
 client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)

@@ -166,7 +166,8 @@ void EvolutionCalendarSource::listAllItems(RevisionMap_t &revisions)
 {
     GError *gerror = NULL;
     GList *nextItem;
-        
+
+    m_allLUIDs.clear();
     if (!e_cal_get_object_list_as_comp(m_calendar,
                                        "#t",
                                        &nextItem,
@@ -180,6 +181,7 @@ void EvolutionCalendarSource::listAllItems(RevisionMap_t &revisions)
         string luid = id.getLUID();
         string modTime = getItemModTime(ecomp);
 
+        m_allLUIDs.insert(luid);
         revisions.insert(make_pair(luid, modTime));
         nextItem = nextItem->next;
     }
@@ -240,6 +242,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
 {
     bool update = !luid.empty();
     bool merged = false;
+    bool detached = false;
     string newluid = luid;
     string data = (const char *)item.getData();
     string modTime;
@@ -332,39 +335,40 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         // trying to add them. This breaks our return code and change
         // tracking.
         //
-        // Escape this madness by checking the existence ourselve first.
-
-        icalcomponent *comp;
-        if (!e_cal_get_object(m_calendar,
-                              id.m_uid.c_str(),
-                              !id.m_rid.empty() ? id.m_rid.c_str() : NULL,
-                              &comp,
-                              &gerror)) {
-            if (gerror->domain != E_CALENDAR_ERROR ||
-                gerror->code != E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
-                throwError("checking for item", gerror);
-            }
-            g_clear_error(&gerror);
-
-            // this works for normal events and detached occurrences alike
-            if(e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
-                // the recurrence ID shouldn't have changed
-                ItemID newid(uid, id.m_rid);
-                newluid = newid.getLUID();
-                modTime = getItemModTime(newid);
-            } else {
-                throwError( "storing new calendar item", gerror );
-            }
-        } else {
-            ItemID id = getItemID(comp);
-            icalcomponent_free(comp);
-            newluid = id.getLUID();
+        // Escape this madness by checking the existence ourselve first
+        // based on our list of existing LUIDs. Note that this list is
+        // not updated during a sync. This is correct as long as no LUID
+        // gets used twice during a sync (examples: add + add, delete + add),
+        // which should never happen.
+        newluid = id.getLUID();
+        if (m_allLUIDs.find(newluid) != m_allLUIDs.end()) {
             logItem(item, "exists already, updating instead");
             merged = true;
+        } else {
+            // if this is a detached recurrence, then we
+            // must use e_cal_modify_object() below if
+            // the parent already exists
+            if (!id.m_rid.empty() &&
+                m_allLUIDs.find(ItemID::getLUID(id.m_uid, "")) != m_allLUIDs.end()) {
+                detached = true;
+            } else {
+                // creating new objects works for normal events and detached occurrences alike
+                if(e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
+                    // Evolution workaround: don't rely on uid being set if we already had
+                    // one. In Evolution 2.12.1 it was set to garbage. The recurrence ID
+                    // shouldn't have changed either.
+                    ItemID newid(!id.m_uid.empty() ? id.m_uid : uid, id.m_rid);
+                    newluid = newid.getLUID();
+                    modTime = getItemModTime(newid);
+                    m_allLUIDs.insert(newluid);
+                } else {
+                    throwError( "storing new calendar item", gerror );
+                }
+            }
         }
     }
 
-    if (update || merged) {
+    if (update || merged || detached) {
         ItemID id = ItemID::parseLUID(newluid);
 
         // ensure that the component has the right UID
@@ -373,7 +377,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         }
 
         if (!e_cal_modify_object(m_calendar, subcomp,
-                                 id.m_rid.empty() ? CALOBJ_MOD_ALL : CALOBJ_MOD_THIS,
+                                 CALOBJ_MOD_THIS,
                                  &gerror)) {
             throwError(string("updating calendar item ") + item.getKey(), gerror);
         }
@@ -390,6 +394,12 @@ void EvolutionCalendarSource::deleteItem(const string &luid)
     GError *gerror = NULL;
     ItemID id = ItemID::parseLUID(luid);
 
+    /*
+     * Removing the parent item also removes all children.
+     * Evolution does that automatically, there doesn't seem
+     * to be a way around that. Calling e_cal_remove_object_with_mod()
+     * without valid rid confuses Evolution, don't do it.
+     */
     if (id.m_rid.empty() ?
         !e_cal_remove_object(m_calendar, id.m_uid.c_str(), &gerror) :
         !e_cal_remove_object_with_mod(m_calendar,
@@ -406,6 +416,10 @@ void EvolutionCalendarSource::deleteItem(const string &luid)
             throwError( string( "deleting calendar item " ) + luid,
                         gerror );
         }
+    }
+    set<string>::iterator it = m_allLUIDs.find(luid);
+    if (it != m_allLUIDs.end()) {
+        m_allLUIDs.erase(it);
     }
 }
 
@@ -429,10 +443,45 @@ void EvolutionCalendarSource::logItem(const string &luid, const string &info, bo
     }
 }
 
+/**
+ * quick and dirty parser for simple, single-line properties
+ * @param keyword   must include leading \n and trailing :
+ */
+static string extractProp(const char *data, const char *keyword)
+{
+    string prop;
+
+    const char *keyptr = strstr(data, keyword);
+    if (keyptr) {
+        const char *end = strpbrk(keyptr + 1, "\n\r");
+        if (end) {
+            prop.assign(keyptr + strlen(keyword), end - keyptr - strlen(keyword));
+        } else {
+            prop.assign(keyptr + strlen(keyword));
+        }
+    }
+    return prop;
+}
+
 void EvolutionCalendarSource::logItem(const SyncItem &item, const string &info, bool debug)
 {
     if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
-        (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s: %s", getName(), item.getKey(), info.c_str());
+        const char *keyptr = item.getKey();
+        string key;
+        if (!keyptr || !keyptr[0]) {
+            // get UID from data via simple string search; doesn't have to be perfect
+            const char *data = (const char *)item.getData();
+            string uid = extractProp(data, "\nUID:");
+            string rid = extractProp(data, "\nRECURRENCE-ID:");
+            if (uid.empty()) {
+                key = "<<no UID>>";
+            } else {
+                key = ItemID::getLUID(uid, rid);
+            }
+        } else {
+            key = keyptr;
+        }
+        (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s: %s", getName(), key.c_str(), info.c_str());
     }
 }
 

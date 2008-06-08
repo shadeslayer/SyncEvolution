@@ -168,6 +168,15 @@ class EvolutionCalendarSource : public TrackingSyncSource
      * Convert to string in canonical representation.
      */
     string icalTime2Str(const struct icaltimetype &tt);
+
+    /**
+     * A set of all existing objects. Initialized in the last call to
+     * listAllItems() and then updated as items get
+     * added/removed. Used to decide how insertItem() has to be
+     * implemented without the troublesome querying of the EDS
+     * backend.
+     */
+    set<string> m_allLUIDs;
 };
 
 #else
