@@ -852,7 +852,7 @@ public:
                               "sources/calendar/config.ini:sync = two-way\n"
                               "sources/calendar/config.ini:type = calendar\n"
                               "sources/calendar/config.ini:# evolutionsource = \n"
-                              "sources/calendar/config.ini:uri = event2\n"
+                              "sources/calendar/config.ini:uri = cal2\n"
                               "sources/calendar/config.ini:# evolutionuser = \n"
                               "sources/calendar/config.ini:# evolutionpassword = \n"
                               "sources/calendar/config.ini:# encoding = \n"
@@ -1563,7 +1563,7 @@ private:
                              "addressbook/config.ini:type = addressbook:text/x-vcard");
 
         boost::replace_first(config,
-                             "calendar/config.ini:uri = event2",
+                             "calendar/config.ini:uri = cal2",
                              "calendar/config.ini:uri = event");
         boost::replace_first(config,
                              "calendar/config.ini:sync = two-way",
@@ -1594,7 +1594,7 @@ private:
                              "addressbook/config.ini:uri = contacts");
 
         boost::replace_first(config,
-                             "calendar/config.ini:uri = event2",
+                             "calendar/config.ini:uri = cal2",
                              "calendar/config.ini:uri = events");
         boost::replace_first(config,
                              "calendar/config.ini:sync = two-way",
