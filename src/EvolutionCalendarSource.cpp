@@ -134,9 +134,9 @@ void EvolutionCalendarSource::open()
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
         if (id == "<<system>>" && m_newSystem) {
-            m_calendar.set(m_newSystem(), string("system ") + m_typeName);
+            m_calendar.set(m_newSystem(), (string("system ") + m_typeName).c_str());
         } else if (!id.compare(0, 7, "file://")) {
-            m_calendar.set(e_cal_new_from_uri(id.c_str(), m_type), string("creating ") + m_typeName);
+            m_calendar.set(e_cal_new_from_uri(id.c_str(), m_type), (string("creating ") + m_typeName).c_str());
         } else {
             throwError(string("not found: '") + id + "'");
         }
