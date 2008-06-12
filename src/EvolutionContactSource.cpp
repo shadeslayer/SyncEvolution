@@ -364,7 +364,7 @@ SyncItem *EvolutionContactSource::createItem(const string &uid)
     if (!vcardstr) {
         throwError( string( "contact from Evolution " ) + uid, NULL );
     }
-    LOG.debug( vcardstr );
+    LOG.debug("%s", vcardstr.get());
 
     std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
     if (vobj.get() == 0) {
@@ -508,7 +508,7 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     // convert to 3.0 to get rid of quoted-printable encoded
     // non-ASCII chars, because Evolution does not support
     // decoding them
-    LOG.debug(data.c_str());
+    LOG.debug("%s", data.c_str());
     std::auto_ptr<VObject> vobj(VConverter::parse((char *)data.c_str()));
     if (vobj.get() == 0) {
         throwError( string( "parsing contact " ) + item.getKey(), NULL );

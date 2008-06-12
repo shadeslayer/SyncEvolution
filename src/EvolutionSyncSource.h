@@ -469,16 +469,14 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
             sort(m_sorted.begin(), m_sorted.end());
 
             m_it = m_sorted.begin();
-            string buffer = string( "start scanning " ) + m_type + " items";
-            LOG.debug( buffer.c_str() );
+            LOG.debug("start scanning %s items", m_type.c_str());
             return iterate();
         }
         /** return current item if available, step to next one */
         SyncItem *iterate() {
             if (m_it != m_sorted.end()) {
                 const string &uid( *m_it );
-                string buffer = string( "next " ) + m_type + " item: " + uid;
-                LOG.debug( buffer.c_str() );
+                LOG.debug("next %s item: %s", m_type.c_str(), uid.c_str());
                 ++m_it;
                 if (&m_source.m_deletedItems == this) {
                     // just tell caller the uid of the deleted item
