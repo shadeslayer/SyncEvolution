@@ -89,7 +89,7 @@ EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
     GError *gerror = NULL;
 
     if (!e_cal_get_sources(&sources, m_type, &gerror)) {
-        throwError("unable to access calendars", gerror);
+        throwError("unable to access backend databases", gerror);
     }
 
     EvolutionSyncSource::sources result;
@@ -124,7 +124,7 @@ void EvolutionCalendarSource::open()
     GError *gerror = NULL;
 
     if (!e_cal_get_sources(&sources, m_type, &gerror)) {
-        throwError("unable to access calendars", gerror);
+        throwError("unable to access backend databases", gerror);
     }
 
     string id = getDatabaseID();    
@@ -134,9 +134,9 @@ void EvolutionCalendarSource::open()
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
         if (id == "<<system>>" && m_newSystem) {
-            m_calendar.set(m_newSystem(), "system calendar/tasks/memos");
+            m_calendar.set(m_newSystem(), string("system ") + m_typeName);
         } else if (!id.compare(0, 7, "file://")) {
-            m_calendar.set(e_cal_new_from_uri(id.c_str(), m_type), "creating calendar/tasks/memos");
+            m_calendar.set(e_cal_new_from_uri(id.c_str(), m_type), string("creating ") + m_typeName);
         } else {
             throwError(string("not found: '") + id + "'");
         }
@@ -152,7 +152,7 @@ void EvolutionCalendarSource::open()
         g_clear_error(&gerror);
         sleep(5);
         if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
-            throwError( "opening calendar", gerror );
+            throwError(string("opening ") + m_typeName, gerror );
         }
     }
 
@@ -231,7 +231,7 @@ void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
 {
     switch (status) {
     case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA:
-         LOG.error("%s: calendar item %.80s: conflict, will be replaced by server\n",
+         LOG.error("%s: item %.80s: conflict, will be replaced by server\n",
                    getName(), key);
         break;
     }
@@ -362,7 +362,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
                     modTime = getItemModTime(newid);
                     m_allLUIDs.insert(newluid);
                 } else {
-                    throwError( "storing new calendar item", gerror );
+                    throwError("storing new item", gerror);
                 }
             }
         }
@@ -379,7 +379,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         if (!e_cal_modify_object(m_calendar, subcomp,
                                  CALOBJ_MOD_THIS,
                                  &gerror)) {
-            throwError(string("updating calendar item ") + item.getKey(), gerror);
+            throwError(string("updating item ") + item.getKey(), gerror);
         }
         ItemID newid = getItemID(subcomp);
         newluid = newid.getLUID();
@@ -413,8 +413,7 @@ void EvolutionCalendarSource::deleteItem(const string &luid)
                       getName(), luid.c_str());
             g_clear_error(&gerror);
         } else {
-            throwError( string( "deleting calendar item " ) + luid,
-                        gerror );
+            throwError(string("deleting item " ) + luid, gerror);
         }
     }
     set<string>::iterator it = m_allLUIDs.find(luid);
@@ -593,7 +592,7 @@ string EvolutionCalendarSource::getItemModTime(ECalComponent *ecomp)
 {
     struct icaltimetype *modTime;
     e_cal_component_get_last_modified(ecomp, &modTime);
-    eptr<struct icaltimetype, struct icaltimetype, EvolutionUnrefFree<struct icaltimetype> > modTimePtr(modTime, "calendar item without modification time");
+    eptr<struct icaltimetype, struct icaltimetype, EvolutionUnrefFree<struct icaltimetype> > modTimePtr(modTime, "item without modification time");
     return icalTime2Str(*modTimePtr);
 }
 
@@ -602,7 +601,7 @@ string EvolutionCalendarSource::getItemModTime(const ItemID &id)
     eptr<icalcomponent> icomp(retrieveItem(id));
     icalproperty *lastModified = icalcomponent_get_first_property(icomp, ICAL_LASTMODIFIED_PROPERTY);
     if (!lastModified) {
-        throwError("getItemModTime(): calendar item without modification time");
+        throwError("getItemModTime(): item without modification time");
     }
     struct icaltimetype modTime = icalproperty_get_lastmodified(lastModified);
     return icalTime2Str(modTime);
