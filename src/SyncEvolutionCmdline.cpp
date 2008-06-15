@@ -60,7 +60,7 @@ bool SyncEvolutionCmdline::parse()
             string cmdopt(m_argv[opt - 1]);
             if (!parseProp(m_validSourceProps, m_sourceProps,
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt],
-                           "sync")) {
+                           EvolutionSyncSourceConfig::m_sourcePropSync.getName().c_str())) {
                 return false;
             }
         } else if(boost::iequals(m_argv[opt], "--sync-property") ||

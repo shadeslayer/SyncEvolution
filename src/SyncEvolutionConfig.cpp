@@ -562,7 +562,7 @@ EvolutionSyncSourceConfig::EvolutionSyncSourceConfig(const string &name, const S
 {
 }
 
-static StringConfigProperty sourcePropSync("sync",
+StringConfigProperty EvolutionSyncSourceConfig::m_sourcePropSync("sync",
                                            "requests a certain synchronization mode:\n"
                                            "  two-way             = only send/receive changes since last sync\n"
                                            "  slow                = exchange all items\n"
@@ -722,8 +722,8 @@ ConfigPropertyRegistry &EvolutionSyncSourceConfig::getRegistry()
     static bool initialized;
 
     if (!initialized) {
-        registry.push_back(&sourcePropSync);
-        sourcePropSync.setObligatory(true);
+        registry.push_back(&EvolutionSyncSourceConfig::m_sourcePropSync);
+        EvolutionSyncSourceConfig::m_sourcePropSync.setObligatory(true);
         registry.push_back(&sourcePropSourceType);
         sourcePropSourceType.setObligatory(true);
         registry.push_back(&sourcePropDatabaseID);
@@ -753,8 +753,8 @@ void EvolutionSyncSourceConfig::checkPassword(ConfigUserInterface &ui) {
 void EvolutionSyncSourceConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; sourcePropPassword.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getURI() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropURI); }
 void EvolutionSyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *EvolutionSyncSourceConfig::getSync() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropSync); }
-void EvolutionSyncSourceConfig::setSync(const string &value, bool temporarily) { sourcePropSync.setProperty(*m_nodes.m_configNode, value, temporarily); }
+const char *EvolutionSyncSourceConfig::getSync() const { return m_stringCache.getProperty(*m_nodes.m_configNode, m_sourcePropSync); }
+void EvolutionSyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getEncoding() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropEncoding); }
 void EvolutionSyncSourceConfig::setEncoding(const string &value, bool temporarily) { sourcePropEncoding.setProperty(*m_nodes.m_configNode, value, temporarily); }
 unsigned long EvolutionSyncSourceConfig::getLast() const { return sourcePropLast.getProperty(*m_nodes.m_hiddenNode); }

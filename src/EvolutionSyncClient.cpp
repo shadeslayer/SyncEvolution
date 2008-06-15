@@ -709,6 +709,19 @@ unsigned int EvolutionSyncClient::getAbstractSyncSourceConfigsCount() const
     return m_sourceListPtr ? m_sourceListPtr->size() : 0;
 }
 
+void EvolutionSyncClient::setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter)
+{
+    map<string, string>::const_iterator hasSync = filter.find(EvolutionSyncSourceConfig::m_sourcePropSync.getName());
+
+    if (!sync && hasSync != filter.end()) {
+        m_overrideMode = hasSync->second;
+        FilterConfigNode::ConfigFilter strippedFilter = filter;
+        strippedFilter.erase(EvolutionSyncSourceConfig::m_sourcePropSync.getName());
+        EvolutionSyncConfig::setConfigFilter(sync, strippedFilter);
+    } else {
+        EvolutionSyncConfig::setConfigFilter(sync, filter);
+    }
+}
 
 void EvolutionSyncClient::initSources(SourceList &sourceList)
 {
@@ -723,13 +736,15 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
         // is the source enabled?
         string sync = sc->getSync();
         bool enabled = sync != "disabled";
-        bool overrideMode = false;
+        string overrideMode = m_overrideMode;
 
         // override state?
         if (m_sources.size()) {
             if (m_sources.find(sc->getName()) != m_sources.end()) {
                 if (!enabled) {
-                    overrideMode = true;
+                    if (overrideMode.empty()) {
+                        overrideMode = "two-way";
+                    }
                     enabled = true;
                 }
                 unmatchedSources.erase(sc->getName());
@@ -746,10 +761,10 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
                                              getSyncSourceNodes(name),
                                              changeId);
             // the sync mode has to be set before instantiating the source
-            // because the client library reads the preferredSyncMode at that time:
-            // have to take a shortcut and set the property via its name
-            if (overrideMode) {
-                params.m_nodes.m_configNode->addFilter("sync", "two-way");
+            // because the client library reads the preferredSyncMode at that time
+            if (!overrideMode.empty()) {
+                params.m_nodes.m_configNode->addFilter(EvolutionSyncSourceConfig::m_sourcePropSync.getName(),
+                                                       overrideMode);
             }
             EvolutionSyncSource *syncSource =
                 EvolutionSyncSource::createSource(params);

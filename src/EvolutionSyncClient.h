@@ -131,6 +131,16 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
     virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(unsigned int i) const;
     virtual unsigned int getAbstractSyncSourceConfigsCount() const;
 
+    /**
+     * intercept config filters
+     *
+     * This call removes the "sync" source property and remembers
+     * it separately because it has to be applied to only the active
+     * sync sources; the generic config handling code would apply
+     * it to all sources.
+     */
+    virtual void setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter);
+
   protected:
     /**
      * Callback for derived classes: called after setting up the client's
@@ -148,6 +158,11 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
      * them for reading without changing their state yet
      */
     void initSources(SourceList &sourceList);
+
+    /**
+     * override sync mode of all active sync sources if set
+     */
+    string m_overrideMode;
 };
 
 #endif // INCL_EVOLUTIONSYNCCLIENT
