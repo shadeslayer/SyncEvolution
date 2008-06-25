@@ -46,16 +46,49 @@ SyncItem *EvolutionMemoSource::createItem(const string &luid)
     if (!journal) {
         journal = comp;
     }
+    icalproperty *summaryprop = icalcomponent_get_first_property(journal, ICAL_SUMMARY_PROPERTY);
+    string summary;
+    if (summaryprop) {
+        const char *summaryptr = icalproperty_get_summary(summaryprop);
+        if (summaryptr) {
+            summary = summaryptr;
+        }
+    }
     icalproperty *desc = icalcomponent_get_first_property(journal, ICAL_DESCRIPTION_PROPERTY);
     if (desc) {
         const char *text = icalproperty_get_description(desc);
         if (text) {
-            // replace all \n with \r\n: in the worst case the text
-            // becomes twice as long
-            eptr<char> dostext((char *)malloc(strlen(text) * 2 + 1));
+            size_t len = strlen(text);
+            bool insertSummary = false;
+            const char *eol;
+
+            // Check the first line: if it is the same as the summary,
+            // then ignore the summary. Otherwise include the summary
+            // as first line in the text body. At a receiving Evolution
+            // the summary will remain part of the text for compatibility
+            // with other clients which might use the first line as part
+            // of the normal text.
+            eol = strchr(text, '\n');
+            if (!eol) {
+                eol = text + len;
+            }
+            if (summary.size() &&
+                summary.compare(0, summary.size(), text, eol - text)) {
+                insertSummary = true;
+            }
+
+            // Replace all \n with \r\n: in the worst case the text
+            // becomes twice as long. Also make room for summary.
+            eptr<char> dostext((char *)malloc(len * 2 + 1 +
+                                              (insertSummary ? summary.size() + 2 : 0)));
             const char *from = text;
             char *to = dostext;
-            const char *eol = strchr(from, '\n');
+            if (insertSummary) {
+                memcpy(to, summary.c_str(), summary.size());
+                memcpy(to + summary.size(), "\r\n", 2);
+                to += summary.size() + 2;
+            }
+            eol = strchr(from, '\n');
             while (eol) {
                 size_t linelen = eol - from;
                 memcpy(to, from, linelen);
