@@ -352,6 +352,19 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
                 m_allLUIDs.find(ItemID::getLUID(id.m_uid, "")) != m_allLUIDs.end()) {
                 detached = true;
             } else {
+                // Creating the parent while children are already in
+                // the calendar confuses EDS (at least 2.12): the
+                // parent is stored in the .ics with the old UID, but
+                // the uid returned to the caller is a different
+                // one. Retrieving the item then fails. Avoid this
+                // problem by removing the children from the calendar,
+                // adding the parent, then updating it with the
+                // saved children.
+                ICalComps_t children;
+                if (id.m_rid.empty()) {
+                    children = removeEvents(id.m_uid, true);
+                }
+
                 // creating new objects works for normal events and detached occurrences alike
                 if(e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
                     // Evolution workaround: don't rely on uid being set if we already had
@@ -363,6 +376,18 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
                     m_allLUIDs.insert(newluid);
                 } else {
                     throwError("storing new item", gerror);
+                }
+
+                // Recreate any children removed earlier: when we get here,
+                // the parent exists and we must update it.
+                for (ICalComps_t::const_iterator it = children.begin();
+                     it != children.end();
+                     ++it) {
+                    if (!e_cal_modify_object(m_calendar, **it,
+                                             CALOBJ_MOD_THIS,
+                                             &gerror)) {
+                        throwError(string("recreating item ") + item.getKey(), gerror);
+                    }
                 }
             }
         }
@@ -389,24 +414,76 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
     return InsertItemResult(newluid, modTime, merged);
 }
 
+EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const string &uid, bool returnOnlyChildren)
+{
+    ICalComps_t events;
+    set<string>::const_iterator it;
+
+    for (it = m_allLUIDs.begin();
+         it != m_allLUIDs.end();
+         ++it) {
+        ItemID id = ItemID::parseLUID(*it);
+
+        if (id.m_uid == uid) {
+            icalcomponent *icomp = retrieveItem(id);
+            if (icomp) {
+                if (id.m_rid.empty() && returnOnlyChildren) {
+                    icalcomponent_free(icomp);
+                } else {
+                    events.push_back(ICalComps_t::value_type(new eptr<icalcomponent>(icomp)));
+                }
+            }
+        }
+    }
+
+    // removes all events with that UID, including children
+    GError *gerror = NULL;
+    if(!e_cal_remove_object(m_calendar,
+                            uid.c_str(),
+                            &gerror)) {
+        if (gerror->domain == E_CALENDAR_ERROR &&
+            gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
+            LOG.debug("%s: %s: request to delete non-existant item ignored",
+                      getName(), uid.c_str());
+            g_clear_error(&gerror);
+        } else {
+            throwError(string("deleting item " ) + uid, gerror);
+        }
+    }
+
+    return events;
+}
+
 void EvolutionCalendarSource::deleteItem(const string &luid)
 {
     GError *gerror = NULL;
     ItemID id = ItemID::parseLUID(luid);
 
-    /*
-     * Removing the parent item also removes all children.
-     * Evolution does that automatically, there doesn't seem
-     * to be a way around that. Calling e_cal_remove_object_with_mod()
-     * without valid rid confuses Evolution, don't do it.
-     */
-    if (id.m_rid.empty() ?
-        !e_cal_remove_object(m_calendar, id.m_uid.c_str(), &gerror) :
-        !e_cal_remove_object_with_mod(m_calendar,
-                                      id.m_uid.c_str(),
-                                      id.m_rid.c_str(),
-                                      CALOBJ_MOD_THIS,
-                                      &gerror)) {
+    if (id.m_rid.empty()) {
+        /*
+         * Removing the parent item also removes all children. Evolution
+         * does that automatically. Calling e_cal_remove_object_with_mod()
+         * without valid rid confuses Evolution, don't do it. As a workaround
+         * remove all items with the given uid and if we only wanted to
+         * delete the parent, then recreate the children.
+         */
+        ICalComps_t children = removeEvents(id.m_uid, true);
+
+        // recreate children
+        for (ICalComps_t::const_iterator it = children.begin();
+             it != children.end();
+             ++it) {
+            char *uid;
+
+            if (!e_cal_create_object(m_calendar, **it, &uid, &gerror)) {
+                throwError(string("recreating item ") + luid, gerror);
+            }
+        }
+    } else if(!e_cal_remove_object_with_mod(m_calendar,
+                                            id.m_uid.c_str(),
+                                            id.m_rid.c_str(),
+                                            CALOBJ_MOD_THIS,
+                                            &gerror)) {
         if (gerror->domain == E_CALENDAR_ERROR &&
             gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
             LOG.debug("%s: %s: request to delete non-existant item ignored",

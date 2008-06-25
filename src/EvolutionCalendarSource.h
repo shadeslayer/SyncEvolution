@@ -177,6 +177,28 @@ class EvolutionCalendarSource : public TrackingSyncSource
      * backend.
      */
     set<string> m_allLUIDs;
+
+    /**
+     * A list of ref-counted smart pointers to icalcomponents.
+     * The list members can be copied; destroying the last instance
+     * will destroy the smart pointer, which then calls
+     * icalcomponent_free().
+     */
+    typedef list< boost::shared_ptr< eptr<icalcomponent> > > ICalComps_t;
+
+    /**
+     * Utility function which extracts all icalcomponents with
+     * the given UID, stores them in a list and then removes
+     * them from the calendar. Trying to remove a non-existant
+     * UID is logged, but not an error. It simply returns an
+     * empty list.
+     *
+     * Relies on m_allLUIDs, but does not update it. The caller must
+     * ensure that the calendar remains in a consistent state.
+     *
+     * @param returnOnlyChildren    remove whole series, but only return children in list
+     */
+    ICalComps_t removeEvents(const string &uid, bool returnOnlyChildren);
 };
 
 #else
