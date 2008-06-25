@@ -358,6 +358,5 @@ AC_CHECK_HEADERS(stdarg.h valgrind/valgrind.h execinfo.h)
 AC_OUTPUT([
 Makefile
 src/Makefile
-etc/Makefile
 test/Makefile
 ])
