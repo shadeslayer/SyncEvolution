@@ -219,11 +219,6 @@ a list of valid values.
   Same as --sync-option, but applies to the configuration of all active
   sources. "--sync <mode>" is a shortcut for "--source-option sync=<mode>".
 
---properties|-r <file name>|- [NOT IMPLEMENTED]
-  Same as --sync-property and --source-property, but with properties
-  specified in a file with the same format that --print-config uses.
-  "-" reads from stdin.
-
 --template|-l <server name>|default|?
   Can be used to select from one of the built-in default configurations
   for known SyncML servers. Defaults to the <server> name, so --template

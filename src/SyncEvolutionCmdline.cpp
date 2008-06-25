@@ -569,11 +569,6 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "  Same as --sync-option, but applies to the configuration of all active" << endl <<
             "  sources. \"--sync <mode>\" is a shortcut for \"--source-option sync=<mode>\"." << endl <<
             "" << endl <<
-            "--properties|-r <file name>|- [NOT IMPLEMENTED]" << endl <<
-            "  Same as --sync-property and --source-property, but with properties" << endl <<
-            "  specified in a file with the same format that --print-config uses." << endl <<
-            "  \"-\" reads from stdin." << endl <<
-            "" << endl <<
             "--template|-l <server name>|default|?" << endl <<
             "  Can be used to select from one of the built-in default configurations" << endl <<
             "  for known SyncML servers. Defaults to the <server> name, so --template" << endl <<
