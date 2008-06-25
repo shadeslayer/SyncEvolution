@@ -283,7 +283,7 @@ public:
             break;
          case TEST_TASK_SOURCE:
             getTestData("itodo20", config);
-            config.type = "evolution-todo";
+            config.type = "evolution-tasks";
             break;
          case TEST_MEMO_SOURCE:
             config.sourceName = "text";
