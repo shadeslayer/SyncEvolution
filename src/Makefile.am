@@ -153,7 +153,11 @@ syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 syncecal_la_SOURCES = $(SYNCECAL_SOURCES)
 syncecal_la_LIBADD = @ECAL_LIBS@
 # _GNU_SOURCE and -ldl for libical.c + dlsym():
-syncecal_la_CPPFLAGS = -D_GNU_SOURCE
+syncecal_la_CPPFLAGS = -D_GNU_SOURCE \
+	-De_cal_check_timezones=syncevolution_check_timezones \
+	-De_cal_tzlookup_ecal=syncevolution_tzlookup_ecal \
+	-De_cal_tzlookup_icomp=syncevolution_tzlookup_icomp \
+	-De_cal_match_tzid=syncevolution_match_tzid
 syncecal_la_LDFLAGS = -module -rpath '$(pkglibdir)' -ldl
 syncecal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
