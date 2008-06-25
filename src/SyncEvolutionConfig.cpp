@@ -112,7 +112,8 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServers()
 static const InitList< pair<string, string> > serverTemplates =
     InitList< pair<string, string> >(pair<string, string>("funambol", "http://my.funambol.com")) +
     pair<string, string>("scheduleworld", "http://sync.scheduleworld.com") +
-    pair<string, string>("synthesis", "http://www.synthesis.ch");
+    pair<string, string>("synthesis", "http://www.synthesis.ch") +
+    pair<string, string>("memotoo", "http://www.memotoo.com");
 
 EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
 {
@@ -179,6 +180,16 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setSync("disabled");
         source = config->getSyncSourceConfig("memo");
         source->setURI("notes");
+    } else if (boost::iequals(server, "memotoo")) {
+        config->setSyncURL("http://sync.memotoo.com/syncML");
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("con");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("cal");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("task");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("note");
     } else {
         config.reset();
     }
