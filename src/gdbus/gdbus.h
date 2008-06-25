@@ -138,12 +138,6 @@ gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
  * @{
  */
 
-gboolean g_dbus_register_object(DBusConnection *connection, const char *path);
-gboolean g_dbus_unregister_object(DBusConnection *connection, const char *path);
-gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
-							const char *path);
-void g_dbus_unregister_all_objects(DBusConnection *connection);
-
 gboolean g_dbus_register_interface(DBusConnection *connection,
 					const char *path, const char *name,
 					GDBusMethodTable *methods,

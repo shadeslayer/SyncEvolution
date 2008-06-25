@@ -661,7 +661,8 @@ static DBusObjectPathVTable object_table = {
  *
  * Registers a path in the object hierarchy.
  */
-gboolean g_dbus_register_object(DBusConnection *connection, const char *path)
+static gboolean g_dbus_register_object(DBusConnection *connection,
+							const char *path)
 {
 	ConnectionData *data;
 	ObjectData *object;
@@ -728,7 +729,8 @@ gboolean g_dbus_register_object(DBusConnection *connection, const char *path)
  * Unregister the given path in the object hierarchy and
  * free the assigned data structures.
  */
-gboolean g_dbus_unregister_object(DBusConnection *connection, const char *path)
+static gboolean g_dbus_unregister_object(DBusConnection *connection,
+							const char *path)
 {
 	ConnectionData *data;
 	ObjectData *object;
@@ -769,6 +771,7 @@ gboolean g_dbus_unregister_object(DBusConnection *connection, const char *path)
 	return TRUE;
 }
 
+#if 0
 /**
  * Unregister object hierarchy
  * @param connection the connection
@@ -778,7 +781,7 @@ gboolean g_dbus_unregister_object(DBusConnection *connection, const char *path)
  * Unregister the given path and all subpaths in the
  * object hierarchy and free all assigned data strcutures.
  */
-gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
+static gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
 							const char *path)
 {
 	ConnectionData *data;
@@ -842,7 +845,7 @@ gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
  *
  * Unregister the all paths in the object hierarchy.
  */
-void g_dbus_unregister_all_objects(DBusConnection *connection)
+static void g_dbus_unregister_all_objects(DBusConnection *connection)
 {
 	ConnectionData *data;
 	GSList *list;
@@ -879,6 +882,7 @@ void g_dbus_unregister_all_objects(DBusConnection *connection)
 
 	g_free(data);
 }
+#endif
 
 /**
  * Register interface
@@ -908,6 +912,9 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
 	InterfaceData *interface;
 
 	DBG("connection %p path %s name %s", connection, path, name);
+
+	if (g_dbus_register_object(connection, path) == FALSE)
+		return FALSE;
 
 	if (dbus_connection_get_object_path_data(connection,
 					path, (void *) &object) == FALSE)
@@ -972,6 +979,8 @@ gboolean g_dbus_unregister_interface(DBusConnection *connection,
 
 	g_free(object->introspect);
 	object->introspect = generate_introspect(connection, path, object);
+
+	g_dbus_unregister_object(connection, path);
 
 	return TRUE;
 }

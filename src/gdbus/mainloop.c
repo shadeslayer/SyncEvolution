@@ -270,7 +270,7 @@ static void free_connection(void *memory)
 
 	g_dbus_remove_all_watches(data->connection);
 
-	g_dbus_unregister_all_objects(data->connection);
+	//g_dbus_unregister_all_objects(data->connection);
 
 	dbus_connection_unref(data->connection);
 
