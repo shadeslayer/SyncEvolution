@@ -140,7 +140,7 @@ if test ! "$SYNC4J"; then
         SYNC4J_SUBDIR=$PWD/src/client-api.build
         SYNC4J_DEP=$PWD/src/client-api.build/src/libsync4j.la
 
-        SYNC4J_CFLAGS="-I$SYNC4J_SUBDIR/include/common -I$SYNC4J_SUBDIR/include -I$SYNC4J_SUBDIR/test"
+        SYNC4J_CFLAGS="-I$SYNC4J_SUBDIR/include/posix -I$SYNC4J_SUBDIR/include/common -I$SYNC4J_SUBDIR/include -I$SYNC4J_SUBDIR/test"
         SYNC4J_LIBS="-L$SYNC4J_SUBDIR/src -lsync4j"
 
         AC_MSG_NOTICE( [configuring the client library] )
@@ -152,7 +152,7 @@ if test ! "$SYNC4J"; then
     fi
 else
     if test -f $SYNC4J/include/sync4j/common/spds/SyncItem.h; then
-        SYNC4J_CFLAGS="-I$SYNC4J/include/sync4j/common -I$SYNC4J/include/sync4j"
+        SYNC4J_CFLAGS="-I$SYNC4J/include/sync4j/posix -I$SYNC4J/include/sync4j/common -I$SYNC4J/include/sync4j"
         SYNC4J_LIBS="-L$SYNC4J/lib -lsync4j"
     else
         AC_MSG_ERROR( [$SYNC4J does seem to be valid (e.g. include/sync4j/spds/common/SyncItem.h is missing)] )
