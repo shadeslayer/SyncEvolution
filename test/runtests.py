@@ -367,7 +367,8 @@ class SyncEvolutionTest(Action):
         self.runner = runner
         self.tests = tests
         self.testenv = testenv
-        self.dependencies.append(build.name)
+        if build.name:
+            self.dependencies.append(build.name)
         self.lineFilter = lineFilter
         self.testPrefix = testPrefix
 
@@ -473,6 +474,9 @@ parser.add_option("", "--subject",
 parser.add_option("", "--evosvn",
                   action="append", type="string", dest="evosvn", default=[],
                   help="<name>=<path>: compiles Evolution from source under a short name, using Paul Smith's Makefile and config as found in <path>")
+parser.add_option("", "--prebuilt",
+                  action="append", type="string", dest="prebuilt", default=[],
+                  help="a directory where SyncEvolution was build before: enables testing using those binaries (can be used multiple times)")
 
 (options, args) = parser.parse_args()
 if options.recipients and not options.sender:
@@ -518,6 +522,15 @@ for evosvn in options.evosvn:
                     path,
                     "SUDO=true")
     context.add(evosvn)
+
+for prebuilt in options.prebuilt:
+    pre = Action("")
+    pre.builddir = prebuilt
+    if prebuilt:
+        context.add(SyncEvolutionTest("evolution-prebuilt-" + os.path.basename(prebuilt), pre,
+                                      "", options.shell,
+                                      [ "Client::Source", "SyncEvolution" ],
+                                      testPrefix=options.testprefix))
 
 class SyncEvolutionCheckout(SVNCheckout):
     def __init__(self, name, revision):
