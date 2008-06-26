@@ -184,6 +184,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         config->setSyncURL("http://sync.memotoo.com/syncML");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("con");
+        source->setSourceType("addressbook:text/x-vcard");
         source = config->getSyncSourceConfig("calendar");
         source->setURI("cal");
         source = config->getSyncSourceConfig("todo");
