@@ -149,7 +149,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
 
     if (boost::iequals(server, "scheduleworld") ||
         boost::iequals(server, "default")) {
-        config->setSyncURL("http://sync.scheduleworld.com");
+        config->setSyncURL("http://sync.scheduleworld.com/funambol/ds");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
         source = config->getSyncSourceConfig("calendar");

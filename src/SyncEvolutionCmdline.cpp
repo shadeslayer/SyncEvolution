@@ -816,7 +816,7 @@ public:
         m_scheduleWorldConfig(".internal.ini:# serverNonce = \n"
                               ".internal.ini:# clientNonce = \n"
                               ".internal.ini:# devInfoHash = \n"
-                              "config.ini:syncURL = http://sync.scheduleworld.com\n"
+                              "config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
                               "config.ini:username = your SyncML server account name\n"
                               "config.ini:password = your SyncML server password\n"
                               "config.ini:# logdir = \n"
@@ -1126,7 +1126,7 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string expected = filterConfig(internalToIni(m_scheduleWorldConfig));
             boost::replace_first(expected,
-                                 "syncURL = http://sync.scheduleworld.com",
+                                 "syncURL = http://sync.scheduleworld.com/funambol/ds",
                                  "syncURL = foo");
             boost::replace_all(expected,
                                "sync = two-way",
@@ -1547,7 +1547,7 @@ private:
         string config = m_scheduleWorldConfig;
 
         boost::replace_first(config,
-                             "syncURL = http://sync.scheduleworld.com",
+                             "syncURL = http://sync.scheduleworld.com/funambol/ds",
                              "syncURL = http://my.funambol.com");
 
         boost::replace_first(config,
@@ -1581,7 +1581,7 @@ private:
     string SynthesisConfig() {
         string config = m_scheduleWorldConfig;
         boost::replace_first(config,
-                             "syncURL = http://sync.scheduleworld.com",
+                             "syncURL = http://sync.scheduleworld.com/funambol/ds",
                              "syncURL = http://www.synthesis.ch/sync");
 
         boost::replace_first(config,
