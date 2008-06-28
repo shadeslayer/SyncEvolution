@@ -153,7 +153,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
         source = config->getSyncSourceConfig("calendar");
-        source->setURI("event2");
+        source->setURI("cal2");
         source = config->getSyncSourceConfig("todo");
         source->setURI("task2");
         source = config->getSyncSourceConfig("memo");
