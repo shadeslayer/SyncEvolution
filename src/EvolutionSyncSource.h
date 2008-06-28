@@ -442,8 +442,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     const string m_changeId;
 
     class itemList : public set<string> {
-        vector<string>::const_iterator m_it;
-        vector<string> m_sorted;
+        const_iterator m_it;
         EvolutionSyncSource &m_source;
         const string m_type;
         const SyncState m_state;
@@ -457,24 +456,20 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
         /**
          * start iterating, return first item if available
          *
-         * Sorts in increasing lexical order. This is not required by
+         * Lists items in increasing lexical order. This is not required by
          * the SyncML standard, but it makes debugging easier. The
          * EvolutionCalendarSource relies on it: its uids are shorter
          * for parent items and thus they appear in the list before
          * their children.
          */
         SyncItem *start() {
-            m_sorted.resize(size());
-            copy(begin(), end(), m_sorted.begin());
-            sort(m_sorted.begin(), m_sorted.end());
-
-            m_it = m_sorted.begin();
+            m_it = begin();
             LOG.debug("start scanning %s items", m_type.c_str());
             return iterate();
         }
         /** return current item if available, step to next one */
         SyncItem *iterate() {
-            if (m_it != m_sorted.end()) {
+            if (m_it != end()) {
                 const string &uid( *m_it );
                 LOG.debug("next %s item: %s", m_type.c_str(), uid.c_str());
                 ++m_it;
