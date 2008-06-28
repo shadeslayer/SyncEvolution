@@ -899,7 +899,9 @@ void EvolutionContactSource::logItem(const SyncItem &item, const string &info, b
 
         size_t offset = vcard.find( "FN:");
         if (offset != vcard.npos) {
-            int len = vcard.find( "\r", offset ) - offset - 3;
+            // accept both "\r\n" and "\n" as line termination:
+            // "\r\n" is the standard, but MemoToo does not follow that
+            int len = vcard.find_first_of("\r\n", offset) - offset - 3;
             line += vcard.substr( offset + 3, len );
         } else {
             line += "<unnamed contact>";
