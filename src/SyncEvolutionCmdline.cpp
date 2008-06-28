@@ -1028,7 +1028,8 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                                   "   funambol = http://my.funambol.com\n"
                                   "   scheduleworld = http://sync.scheduleworld.com\n"
-                                  "   synthesis = http://www.synthesis.ch\n",
+                                  "   synthesis = http://www.synthesis.ch\n"
+                                  "   memotoo = http://www.memotoo.com\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
     }
@@ -1548,7 +1549,7 @@ private:
 
         boost::replace_first(config,
                              "syncURL = http://sync.scheduleworld.com/funambol/ds",
-                             "syncURL = http://my.funambol.com");
+                             "syncURL = http://my.funambol.com/sync");
 
         boost::replace_first(config,
                              "addressbook/config.ini:uri = card3",

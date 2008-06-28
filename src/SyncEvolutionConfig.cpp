@@ -159,7 +159,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source = config->getSyncSourceConfig("memo");
         source->setURI("note");
     } else if (boost::iequals(server, "funambol")) {
-        config->setSyncURL("http://my.funambol.com");
+        config->setSyncURL("http://my.funambol.com/sync");
         source = config->getSyncSourceConfig("addressbook");
         source->setSourceType("addressbook:text/x-vcard");
         source = config->getSyncSourceConfig("calendar");
