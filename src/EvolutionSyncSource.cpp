@@ -349,7 +349,7 @@ int EvolutionSyncSource::deleteItem(SyncItem& item)
 
 int EvolutionSyncSource::removeAllItems()
 {
-    int status = STC_OK;
+    int status = 0;
     
     try {
         for (itemList::const_iterator it = m_allItems.begin();
@@ -364,7 +364,7 @@ int EvolutionSyncSource::removeAllItems()
     } catch (...) {
         handleException();
         setFailed(true);
-        status = STC_COMMAND_FAILED;
+        status = 1;
     }
     return status;
 }
