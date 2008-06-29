@@ -491,6 +491,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
                         return item.release();
                     } catch(...) {
                         EvolutionSyncSource::handleException();
+                        m_source.setFailed(true);
                         return NULL;
                     }
                 }
