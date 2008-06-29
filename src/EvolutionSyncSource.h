@@ -379,6 +379,8 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      * this method. If a derived source doesn't do that, then the
      * implementation of this call will simply iterate over all
      * stored LUIDs and remove them.
+     *
+     * @return 0 for success, non-zero for failure
      */
     virtual int removeAllItems();
 
