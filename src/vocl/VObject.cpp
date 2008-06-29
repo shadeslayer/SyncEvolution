@@ -17,6 +17,9 @@
  * MA 02111-1307 USA
  */
 
+// this code originally comes from the client library
+// and needs some of the internal defines in
+// posixadapter.h
 #include "posixadapter.h"
 
 #include "base/util/utils.h"
