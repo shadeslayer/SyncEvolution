@@ -615,6 +615,13 @@ scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       testPrefix=options.testprefix)
 context.add(scheduleworldtest)
 
+memotootest = SyncEvolutionTest("memotoo", compile,
+                                "", options.shell,
+                                [ "Client::Sync" ],
+                                "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SOURCES=ical20,vcard21,itodo20,text CLIENT_TEST_SERVER=memotoo CLIENT_TEST_DELAY=15",
+                                testPrefix=options.testprefix)
+context.add(memotootest)
+
 egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    "", options.shell,
                                    [ "Client::Sync::vcard21", "Client::Sync::ical20::testCopy", "Client::Sync::ical20::testUpdate", "Client::Sync::ical20::testDelete", \
@@ -667,6 +674,7 @@ class FunambolTest(SyncEvolutionTest):
         SyncEvolutionTest.__init__(self, name, build, serverlogs,
                                    runner, [ ],
                                    "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol",
+                                   lineFilter=lambda x: x.replace('dogfood.funambol.com','<host hidden>'),
                                    testPrefix=testPrefix)
         self.funamboldir = funamboldir
         # self.dependencies.append(evolutiontest.name)
