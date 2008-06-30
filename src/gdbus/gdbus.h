@@ -51,6 +51,10 @@ typedef void (* GDBusDestroyFunction) (void *user_data);
 /** Watch function */
 typedef void (* GDBusWatchFunction) (void *user_data);
 
+/** Signal function */
+typedef gboolean (* GDBusSignalFunction) (DBusConnection *connection,
+					DBusMessage *message, void *user_data);
+
 /** @} */
 
 /**
@@ -179,12 +183,15 @@ gboolean g_dbus_emit_signal_valist(DBusConnection *connection,
  * @{
  */
 
-guint g_dbus_add_watch(DBusConnection *connection, const char *name,
+guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
 				GDBusWatchFunction connect,
 				GDBusWatchFunction disconnect,
 				void *user_data, GDBusDestroyFunction destroy);
 guint g_dbus_add_disconnect_watch(DBusConnection *connection,
 				const char *name, GDBusWatchFunction function,
+				void *user_data, GDBusDestroyFunction destroy);
+guint g_dbus_add_signal_watch(DBusConnection *connection,
+				const char *rule, GDBusSignalFunction function,
 				void *user_data, GDBusDestroyFunction destroy);
 gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag);
 void g_dbus_remove_all_watches(DBusConnection *connection);

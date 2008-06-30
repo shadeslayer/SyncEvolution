@@ -34,6 +34,7 @@ static dbus_int32_t connection_slot = -1;
 
 typedef struct {
 	GSList *watches;
+	GSList *handlers;
 	guint next_id;
 } ConnectionData;
 
@@ -54,7 +55,41 @@ typedef struct {
 	GDBusDestroyFunction destroy;
 } DisconnectData;
 
-static DBusHandlerResult filter_function(DBusConnection *connection,
+typedef struct {
+	guint id;
+	void *user_data;
+	GDBusSignalFunction function;
+	GDBusDestroyFunction destroy;
+} SignalData;
+
+static DBusHandlerResult signal_function(DBusConnection *connection,
+					DBusMessage *message, void *user_data)
+{
+	ConnectionData *data = user_data;
+	GSList *list;
+
+	DBG("connection %p message %p", connection, message);
+
+	for (list = data->handlers; list; list = list->next) {
+		SignalData *signal = list->data;
+		gboolean result;
+
+		if (signal->function == NULL)
+			continue;
+
+		result = signal->function(connection, message,
+							signal->user_data);
+		if (result == TRUE)
+			continue;
+
+		if (signal->destroy != NULL)
+			signal->destroy(signal->user_data);
+	}
+
+	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+}
+
+static DBusHandlerResult owner_function(DBusConnection *connection,
 					DBusMessage *message, void *user_data)
 {
 	ConnectionData *data = user_data;
@@ -62,10 +97,6 @@ static DBusHandlerResult filter_function(DBusConnection *connection,
 	const char *name, *old, *new;
 
 	DBG("connection %p message %p", connection, message);
-
-	if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS,
-						"NameOwnerChanged") == FALSE)
-		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
 	if (dbus_message_get_args(message, NULL, DBUS_TYPE_STRING, &name,
 						DBUS_TYPE_STRING, &old,
@@ -91,6 +122,60 @@ static DBusHandlerResult filter_function(DBusConnection *connection,
 	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
+static DBusHandlerResult filter_function(DBusConnection *connection,
+					DBusMessage *message, void *user_data)
+{
+	if (dbus_message_is_signal(message, DBUS_INTERFACE_DBUS,
+						"NameOwnerChanged") == TRUE)
+		return owner_function(connection, message, user_data);
+
+	if (dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
+		return signal_function(connection, message, user_data);
+
+	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+}
+
+static ConnectionData *get_connection_data(DBusConnection *connection)
+{
+	ConnectionData *data;
+	dbus_bool_t result;
+
+	DBG("connection %p", connection);
+
+	if (dbus_connection_allocate_data_slot(&connection_slot) == FALSE)
+		return NULL;
+
+	DBG("connection slot %d", connection_slot);
+
+	data = dbus_connection_get_data(connection, connection_slot);
+	if (data == NULL) {
+		data = g_try_new0(ConnectionData, 1);
+		if (data == NULL) {
+			dbus_connection_free_data_slot(&connection_slot);
+			return NULL;
+		}
+
+		data->next_id = 1;
+
+		if (dbus_connection_set_data(connection, connection_slot,
+							data, NULL) == FALSE) {
+			dbus_connection_free_data_slot(&connection_slot);
+			g_free(data);
+			return NULL;
+		}
+
+		result = dbus_connection_add_filter(connection,
+						filter_function, data, NULL);
+	}
+
+	return data;
+}
+
+static void put_connection_data(DBusConnection *connection)
+{
+	dbus_connection_free_data_slot(&connection_slot);
+}
+
 /**
  * Add new watch functions
  * @param connection the connection
@@ -104,7 +189,7 @@ static DBusHandlerResult filter_function(DBusConnection *connection,
  * Add new watch to listen for connects and/or disconnects
  * of a client for the given connection.
  */
-guint g_dbus_add_watch(DBusConnection *connection, const char *name,
+guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
 				GDBusWatchFunction connect,
 				GDBusWatchFunction disconnect,
 				void *user_data, GDBusDestroyFunction destroy)
@@ -112,36 +197,13 @@ guint g_dbus_add_watch(DBusConnection *connection, const char *name,
 	ConnectionData *data;
 	WatchData *watch;
 	DBusError error;
-	dbus_bool_t result;
 	gchar *match;
 
 	DBG("connection %p name %s", connection, name);
 
-	if (dbus_connection_allocate_data_slot(&connection_slot) == FALSE)
+	data = get_connection_data(connection);
+	if (data == NULL)
 		return 0;
-
-	DBG("connection slot %d", connection_slot);
-
-	data = dbus_connection_get_data(connection, connection_slot);
-	if (data == NULL) {
-		data = g_try_new0(ConnectionData, 1);
-		if (data == NULL) {
-			dbus_connection_free_data_slot(&connection_slot);
-			return 0;
-		}
-
-		data->next_id = 1;
-
-		if (dbus_connection_set_data(connection, connection_slot,
-							data, NULL) == FALSE) {
-			dbus_connection_free_data_slot(&connection_slot);
-			g_free(data);
-			return 0;
-		}
-
-		result = dbus_connection_add_filter(connection,
-						filter_function, data, NULL);
-	}
 
 	DBG("connection data %p", data);
 
@@ -189,7 +251,7 @@ error:
 		g_free(watch->name);
 	g_free(watch);
 
-	dbus_connection_free_data_slot(&connection_slot);
+	put_connection_data(connection);
 
 	return 0;
 }
@@ -222,6 +284,18 @@ gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag)
 				watch->destroy(watch->user_data);
 			g_free(watch->name);
 			g_free(watch);
+			goto done;
+		}
+	}
+
+	for (list = data->handlers; list; list = list->next) {
+		SignalData *signal = list->data;
+
+		if (signal->id == tag) {
+			data->handlers = g_slist_remove(data->handlers, signal);
+			if (signal->destroy != NULL)
+				signal->destroy(signal->user_data);
+			g_free(signal);
 			goto done;
 		}
 	}
@@ -281,6 +355,22 @@ void g_dbus_remove_all_watches(DBusConnection *connection)
 
 	g_slist_free(data->watches);
 
+	for (list = data->handlers; list; list = list->next) {
+		SignalData *signal = list->data;
+
+		DBG("signal data %p tag %d", signal, signal->id);
+
+		if (signal->destroy != NULL)
+			signal->destroy(signal->user_data);
+		g_free(signal);
+
+		dbus_connection_free_data_slot(&connection_slot);
+
+		DBG("connection slot %d", connection_slot);
+	}
+
+	g_slist_free(data->handlers);
+
 	dbus_connection_remove_filter(connection, filter_function, data);
 
 	g_free(data);
@@ -331,7 +421,7 @@ guint g_dbus_add_disconnect_watch(DBusConnection *connection,
 	data->function = function;
 	data->destroy = destroy;
 
-	data->id = g_dbus_add_watch(connection, name, NULL,
+	data->id = g_dbus_add_service_watch(connection, name, NULL,
 			disconnect_function, data, disconnect_release);
 
 	if (data->id == 0) {
@@ -340,4 +430,69 @@ guint g_dbus_add_disconnect_watch(DBusConnection *connection,
 	}
 
 	return data->id;
+}
+
+/**
+ * Add disconect watch
+ * @param connection the connection
+ * @param rule matching rule for this signal
+ * @param function function called when signal arrives
+ * @param user_data user data to pass to the function
+ * @param destroy function called to destroy user_data
+ * @return identifier of the watch
+ *
+ * Add new watch to listen for specific signals of
+ * a client for the given connection.
+ *
+ * If the callback returns FALSE this watch will be
+ * automatically removed.
+ */
+guint g_dbus_add_signal_watch(DBusConnection *connection,
+				const char *rule, GDBusSignalFunction function,
+				void *user_data, GDBusDestroyFunction destroy)
+{
+	ConnectionData *data;
+	SignalData *signal;
+	DBusError error;
+
+	DBG("connection %p name %s", connection, name);
+
+	data = get_connection_data(connection);
+	if (data == NULL)
+		return 0;
+
+	DBG("connection data %p", data);
+
+	signal = g_try_new0(SignalData, 1);
+	if (signal == NULL)
+		goto error;
+
+	signal->user_data = user_data;
+
+	signal->function = function;
+	signal->destroy = destroy;
+
+	dbus_error_init(&error);
+
+	dbus_bus_add_match(connection, rule, &error);
+
+	if (dbus_error_is_set(&error) == TRUE) {
+		dbus_error_free(&error);
+		goto error;
+	}
+
+	signal->id = data->next_id++;
+
+	data->handlers = g_slist_append(data->handlers, signal);
+
+	DBG("tag %d", signal->id);
+
+	return signal->id;
+
+error:
+	g_free(signal);
+
+	put_connection_data(connection);
+
+	return 0;
 }
