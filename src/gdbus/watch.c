@@ -455,7 +455,7 @@ guint g_dbus_add_signal_watch(DBusConnection *connection,
 	SignalData *signal;
 	DBusError error;
 
-	DBG("connection %p name %s", connection, name);
+	DBG("connection %p rule %s", connection, rule);
 
 	data = get_connection_data(connection);
 	if (data == NULL)
