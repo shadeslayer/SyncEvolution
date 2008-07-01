@@ -21,5 +21,5 @@
 
 #include <glib/gmessages.h>
 
-//#define DBG(fmt, arg...)  g_debug("%s: " fmt "\n" , __FUNCTION__ , ## arg)
+//#define DBG(fmt, arg...)  g_debug("%s: " fmt, __FUNCTION__ , ## arg)
 #define DBG(fmt, arg...)
