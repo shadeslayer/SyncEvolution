@@ -1,3 +1,338 @@
+2008-07-02 20:00  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/shlibs.local: SF #1993109: for Evolution 2.6 use .deb
+	  dependencies which work with Ubuntu 6.06 LTS
+
+2008-07-02 19:36  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionCmdline.cpp: SF #1991286: when creating config
+	  for the first time, only enable sync sources which can be
+	  synchronized
+	  
+	  The check for that was completely missing. Now SyncEvolution
+	  checks that the backend is available and there is at least one
+	  database (the first one will be synchronized unless explicitly
+	  changed). If these checks fail and the sync source was explicitly
+	  requested by the user by listing it after the server name, then
+	  an error is printed and no configuration is written. If the user
+	  wants the default setup, then the source is silently disabled.
+
+2008-07-02 19:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am: fixed problem with loading calendar backend
+	  dynamically on Maemo (depends on TrackingSyncSource being in the
+	  main binary)
+
+2008-07-02 19:30  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp: avoid useless 'list: unable to
+	  access calendars: failure' error message
+	  
+	  The error was printed when listing databases failed without
+	  setting an error, like on Maemo where memos are not supported by
+	  the Evolution backend.
+
+2008-06-29 17:59  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: added MemoToo
+
+2008-06-29 16:19  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.h: remember failure when iterating over
+	  items
+
+2008-06-29 16:17  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/vocl/VObject.cpp, src/vocl/posixadapter.h: adapted to new C++
+	  client library posixadapter.h
+
+2008-06-29 16:16  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp: return code of removeAllItems() is
+	  error code, not SyncML status
+
+2008-06-29 16:15  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.h: clarified return code of inherited
+	  removeAllItems() method
+
+2008-06-29 08:56  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/vocl/posixadapter.h: fixed compile errors due to wchar
+	  redefines
+
+2008-06-28 21:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionCmdline.cpp, src/SyncEvolutionConfig.cpp: added
+	  memotoo to expected list of templates, fixed Funambol syncURL
+
+2008-06-28 20:43  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.h: removed extra sorting, std::set is
+	  already guaranteed to return entries in ascending order
+
+2008-06-28 20:04  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionConfig.cpp: fixed wrong URI in ScheduleWorld
+	  template
+
+2008-06-28 19:55  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp: MemoToo sends vcards with just \n
+	  line termination, handle that when extracting FN
+
+2008-06-28 13:27  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionCmdline.cpp, src/SyncEvolutionConfig.cpp: fixed
+	  wrong syncURL in ScheduleWorld template
+
+2008-06-26 20:29  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: added --prebuilt: testing with precompiled
+	  SyncEvolution
+
+2008-06-26 20:24  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionConfig.cpp: MemoToo prefers vCard 2.1 over 3.0
+
+2008-06-25 20:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile.am: rename SyncEvolution's copy of the libecal
+	  timezone functions
+	  
+	  Currently the functions are identical, but at some point they
+	  might diverge. Avoid conflicts by using different names.
+
+2008-06-25 20:11  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile.am, configure.in, etc: removed obsolete example config
+	  files
+
+2008-06-25 20:10  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: adapted to the official include flags (posix before
+	  common)
+
+2008-06-25 19:54  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionMemoSource.cpp: added synchronization of Evolution
+	  memo summary
+	  
+	  Most devices only synchronize plain text and do not have a
+	  separate summary field. Such an extra summary field was added to
+	  Evolution after memo support was initially implemented in
+	  SyncEvolution, therefore SyncEvolution did not transmit that
+	  field.
+	  
+	  Added transmitting the summary by inserting it as first line of
+	  the plain text blob *if* it is not already identical with the
+	  first line. When receiving a memo, the summary is set from the
+	  first line *without* removing the first line because the first
+	  line might have been used as a normal part of the memo.
+
+2008-06-25 19:29  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README, src/SyncEvolutionCmdline.cpp: removed --properties
+	  option: not implemented yet
+
+2008-06-25 18:51  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionConfig.cpp: added MemoToo server template
+
+2008-06-25 18:51  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/client-test-app.cpp: fixed typo (evolution-todo ->
+	  evolution-tasks)
+
+2008-06-25 17:21  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/Makefile.am: made detached recurrence handling more resilient
+	  
+	  Child items can now be inserted without the corresponding parent
+	  or before the parent. Semantically this makes no sense, but
+	  servers which do not know about the semantic might do it. Also
+	  removing the parent without the children is now supported.
+	  
+	  Technically this has to workaround limitations of the EDS API and
+	  is done as: * child before parent: temporarily save and remove
+	  children, insert parent, update parent with children * remove
+	  parent, but not child: temporarily save and remove children,
+	  reinsert after removal of parent
+
+2008-06-15 21:31  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncClient.cpp, src/EvolutionSyncClient.h,
+	  src/SyncEvolutionCmdline.cpp, src/SyncEvolutionConfig.cpp,
+	  src/SyncEvolutionConfig.h: regression in 0.8 alpha 1: setting
+	  sync mode during status query or sync affected *all* sources,
+	  even the disabled ones
+	  
+	  The intented behavior is that inactive sources can only be
+	  activated by listing them explicitly after the server name. Fixed
+	  by moving the handling of the sync mode override from the generic
+	  config handling to EvolutionSyncClient, which knows about this
+	  special semantic.
+	  
+	  Minor code cleanup: avoid duplicating the "sync" string by
+	  declaring the syncSourceProp as member of
+	  EvolutionSyncSourceConfig.
+
+2008-06-12 19:52  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/e-cal-check-timezones.c, src/e-cal-check-timezones.h:
+	  addressed Chenthill's code review comments #49 and #50
+	  
+	  - copyright transfer - API documentation moved to .c file and
+	  reformatted - simplified iterating over TZID parameter - removed
+	  g_assert
+	  
+	  Also implemented out-of-memory error handling. If allocating a
+	  GError fails, the process is aborted by calling g_error().
+
+2008-06-12 18:55  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionCmdline.cpp: scheduleworld config template:
+	  calendar was using 'event2' instead of the correct 'cal2' URI
+
+2008-06-12 18:47  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp, src/EvolutionSyncSource.h: fixed
+	  segfaults for certain data
+	  
+	  SyncEvolution contained code which calls the LOG macros with a
+	  pointer to a string buffer (LOG.debug(data)) which used to be
+	  okay when those calls dumped the data verbatim, but now can
+	  segfault since printf style formatting was added. Now
+	  LOG.debug("%s", data) is used.
+
+2008-06-12 18:43  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp: fixed compile error
+
+2008-06-12 16:39  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp: removed/replaced 'calendar'
+	  string from message in libecal backend because it is also used
+	  for memos and tasks
+
+2008-06-08 12:10  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionSyncSource.h, src/Makefile.am: fixed modifying
+	  parent/child (=detached) calendar items
+	  
+	  - must track which items exist locally because asking for a
+	  detached recurrence succeeds even if the object doesn't exist
+	  yet; also reduces communication with backend - new child items
+	  must be created via e_cal_modify_object() - log adding new items
+	  with extracted UID/RECURRENCE-ID - sort item lists so that parent
+	  items are processed first (required by ScheduleWorld)
+	  
+	  More work is needed to handle semantically not quite correct
+	  situations, like adding a child without a parent.
+
+2008-06-07 19:46  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TrackingSyncSource.cpp: avoid redundant conversion to C
+	  string
+
+2008-06-07 19:31  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp: removeAllItems() must mark source as
+	  modified (EvolutionContactSource depends on it)
+
+2008-06-07 18:53  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h:
+	  implemented SyncSource::removeAllItems()
+	  
+	  It is needed for the testing framework.
+
+2008-05-15 17:05  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/e-cal-check-timezones.c, src/e-cal-check-timezones.h:
+	  e_cal_match_tzid() is now public: required for mapping TZIDs of
+	  existing events
+
+2008-05-15 17:04  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/e-cal-check-timezones.c: use
+	  icaltimezone_get_builtin_timezone_from_tzid()
+
+2008-05-15 17:01  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/e-cal-check-timezones.c: try to strip trailing sequence
+	  number when mapping TZIDs
+
+2008-05-12 20:56  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/e-cal-check-timezones.c: add system time zones to VCALENDAR
+	  if they are getting used because of mapping (keeps VCALENDAR
+	  consistent)
+
+2008-05-08 20:45  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/e-cal-check-timezones.c,
+	  src/e-cal-check-timezones.h: optionally patch components stored
+	  in a GList (required by evolution-exchange)
+
+2008-05-04 15:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/libical/icalstrdup.c: fixed spelling mistake
+
+2008-05-04 15:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSmartPtr.h: must define HANDLE_LIBICAL_MEMORY to
+	  avoid compiler warning
+
+2008-05-02 19:05  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in, src/EvolutionCalendarSource.cpp, src/Makefile.am,
+	  src/e-cal-check-timezones.c, src/libical,
+	  src/libical/icalstrdup.c, src/libical/icalstrdup.h: GNOME
+	  Bugzilla #516408: always free ical strings, duplicate when
+	  necessary
+
+2008-05-02 17:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: also test SyncEvolution unit tests in addition
+	  to testing framework tests
+
+2008-05-02 17:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/evo.supp: suppressed all known leaks with trunk from April
+	  1st
+
+2008-04-20 12:38  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING: Maemo no longer uses patched libdbus
+
+2008-04-20 12:36  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* authors.xml: account -> user mapping for svn2cl
+
+2008-04-20 12:34  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionContactSource.cpp: SF #1947050: added sanity checks
+	  around string access of X-OSSO-CONTACT-STATE
+
+2008-04-19 13:26  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/Makefile.am,
+	  src/e-cal-check-timezones.c, src/e-cal-check-timezones.h,
+	  src/e_cal_check_timezones.c, src/e_cal_check_timezones.h:
+	  finished proposal for inclusion of e_cal_check_timezones() into
+	  Evolution
+	  
+	  - renamed files to comply with Evolution naming conventions -
+	  implemented time zone lookup for file backend
+
+2008-04-19 10:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* svn2cl.sh: svn checkout must be up-to-date for svn2cl to produce
+	  complete results
+
 2008-04-19 09:11  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* ChangeLog, HACKING, svn2cl.sh: generate ChangeLog from Subversion
