@@ -280,12 +280,63 @@ bool SyncEvolutionCmdline::run() {
         boost::shared_ptr<EvolutionSyncConfig> to(new EvolutionSyncConfig(m_server));
         to->copy(*from, !fromScratch && !m_sources.empty() ? &m_sources : NULL);
 
-        // activate only the selected sources
-        if (fromScratch && !m_sources.empty()) {
+        // Sources are active now according to the server default.
+        // Disable all sources not selected by user (if any selected)
+        // and those which have no database.
+        if (fromScratch) {
             list<string> configuredSources = to->getSyncSources();
+            set<string> sources = m_sources;
+            
             BOOST_FOREACH(const string &source, configuredSources) {
                 boost::shared_ptr<PersistentEvolutionSyncSourceConfig> sourceConfig(to->getSyncSourceConfig(source));
-                sourceConfig->setSync(m_sources.find(source) != m_sources.end() ? "two-way" : "disabled");
+                string disable = "";
+                set<string>::iterator entry = sources.find(source);
+                bool selected = entry != sources.end();
+
+                if (!m_sources.empty() &&
+                    !selected) {
+                    disable = "not selected";
+                } else {
+                    if (entry != sources.end()) {
+                        // The command line parameter matched a valid source.
+                        // All entries left afterwards must have been typos.
+                        sources.erase(entry);
+                    }
+
+                    // check whether the sync source works
+                    EvolutionSyncSourceParams params("list", to->getSyncSourceNodes(source), "");
+                    auto_ptr<EvolutionSyncSource> syncSource(EvolutionSyncSource::createSource(params, false));
+                    if (syncSource.get() == NULL) {
+                        disable = "no backend available";
+                    } else {
+                        try {
+                            EvolutionSyncSource::sources datasources = syncSource->getSyncBackends();
+                            if (datasources.empty()) {
+                                disable = "no database to synchronize";
+                            }
+                        } catch (...) {
+                            disable = "backend failed";
+                        }
+                    }
+                }
+
+                if (!disable.empty()) {
+                    // abort if the user explicitly asked for the sync source
+                    // and it cannot be enabled, otherwise disable it silently
+                    if (selected) {
+                        EvolutionSyncClient::throwError(source + ": " + disable);
+                    }
+                    sourceConfig->setSync("disabled");
+                } else if (selected) {
+                    // user absolutely wants it: enable even if off by default
+                    FilterConfigNode::ConfigFilter::const_iterator sync =
+                        m_sourceProps.find(EvolutionSyncSourceConfig::m_sourcePropSync.getName());
+                    sourceConfig->setSync(sync == m_sourceProps.end() ? "two-way" : sync->second);
+                }
+            }
+
+            if (!sources.empty()) {
+                EvolutionSyncClient::throwError(string("no such source(s): ") + boost::join(sources, " "));
             }
         }
 
