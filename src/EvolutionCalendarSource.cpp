@@ -87,12 +87,17 @@ EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
 {
     ESourceList *sources = NULL;
     GError *gerror = NULL;
+    EvolutionSyncSource::sources result;
 
     if (!e_cal_get_sources(&sources, m_type, &gerror)) {
+        // ignore unspecific errors (like on Maemo with no support for memos)
+        // and simply return an empty list
+        if (!gerror) {
+            return result;
+        }
         throwError("unable to access backend databases", gerror);
     }
 
-    EvolutionSyncSource::sources result;
     bool first = true;
     for (GSList *g = e_source_list_peek_groups (sources); g; g = g->next) {
         ESourceGroup *group = E_SOURCE_GROUP (g->data);
