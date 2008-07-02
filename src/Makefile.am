@@ -80,6 +80,9 @@ CORE_SOURCES  = \
 	FileConfigTree.h \
 	FileConfigTree.cpp \
 	\
+	TrackingSyncSource.h \
+	TrackingSyncSource.cpp \
+	\
 	$(VOCL_SOURCES)
 
 SYNCECAL_SOURCES = \
@@ -109,8 +112,6 @@ CORE_SOURCES += EvolutionContactSourceRegister.cpp
 endif
 
 SYNCSQLITE_SOURCES = \
-	TrackingSyncSource.h \
-	TrackingSyncSource.cpp \
 	SQLiteUtil.h \
 	SQLiteUtil.cpp \
 	SQLiteContactSource.h \
