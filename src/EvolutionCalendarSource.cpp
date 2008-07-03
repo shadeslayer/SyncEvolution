@@ -103,9 +103,10 @@ EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
         ESourceGroup *group = E_SOURCE_GROUP (g->data);
         for (GSList *s = e_source_group_peek_sources (group); s; s = s->next) {
             ESource *source = E_SOURCE (s->data);
-            result.push_back( EvolutionSyncSource::source( e_source_peek_name(source),
-                                                           e_source_get_uri(source),
-                                                           first ) );
+            eptr<char> uri(e_source_get_uri(source));
+            result.push_back(EvolutionSyncSource::source(e_source_peek_name(source),
+                                                         uri ? uri.get() : "",
+                                                         first));
             first = false;
         }
     }
