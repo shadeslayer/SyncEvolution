@@ -22,6 +22,8 @@
 #include "SyncEvolutionUtil.h"
 #include <common/base/Log.h>
 
+#include <boost/algorithm/string.hpp>
+
 #include <list>
 using namespace std;
 
@@ -197,12 +199,12 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
         string problem = params.m_name + ": type '" + sourceTypeString + "' not supported";
         if (scannedModules.m_available.size()) {
             problem += " by any of the backends (";
-            problem += join(string(", "), scannedModules.m_available.begin(), scannedModules.m_available.end());
+            problem += boost::join(scannedModules.m_available, ", ");
             problem += ")";
         }
         if (scannedModules.m_missing.size()) {
             problem += ". The following backend(s) were not found: ";
-            problem += join(string(", "), scannedModules.m_missing.begin(), scannedModules.m_missing.end());
+            problem += boost::join(scannedModules.m_missing, ", ");
         }
         EvolutionSyncClient::throwError(problem);
     }

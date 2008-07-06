@@ -34,44 +34,6 @@ public:
     bool operator()(const T &x, const T &y) const { return boost::to_lower_copy(x) < boost::to_lower_copy(y); }
 };
 
-
-/** concatenate all members of an iterator range, using sep between each pair of entries */
-template<class T> string join(const string &sep, T begin, T end)
-{
-    stringstream res;
-
-    if (begin != end) {
-        res << *begin;
-        ++begin;
-        while (begin != end) {
-            res << sep;
-            res << *begin;
-            ++begin;
-        }
-    }
-
-    return res.str();
-}
-
-/** append all entries in iterator range at the end of another container */
-template<class LHS, class RHS> void append(LHS &lhs, const RHS &rhs)
-{
-    for (typename RHS::const_iterator it = rhs.begin();
-         it != rhs.end();
-         ++it) {
-        lhs.push_back(*it);
-    }
-}
-template<class LHS, class IT> void append(LHS &lhs, const IT &begin, const IT &end)
-{
-    for (IT it = begin;
-         it != end;
-         ++it) {
-        lhs.push_back(*it);
-    }
-}
-
-
 /**
  * remove multiple slashes in a row and dots directly after a slash if not followed by filename,
  * remove trailing /

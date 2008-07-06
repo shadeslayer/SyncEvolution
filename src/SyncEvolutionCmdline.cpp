@@ -163,7 +163,7 @@ bool SyncEvolutionCmdline::run() {
                     configNode->setProperty("type", *alias->begin());
                     auto_ptr<EvolutionSyncSource> source(EvolutionSyncSource::createSource(params, false));
                     if (source.get() != NULL) {
-                        listSources(*source, join(" = ", alias->begin(), alias->end()));
+                        listSources(*source, boost::join(*alias, " = "));
                         m_out << "\n";
                     }
                 }
@@ -198,11 +198,9 @@ bool SyncEvolutionCmdline::run() {
             dumpProperties(*syncProps, config->getRegistry());
         }
 
-        list<string> sourceList = config->getSyncSources();
-        vector<string> sources;
-        append(sources, sourceList);
-        sort(sources.begin(), sources.end());
-        for (vector<string>::const_iterator it = sources.begin();
+        list<string> sources = config->getSyncSources();
+        sources.sort();
+        for (list<string>::const_iterator it = sources.begin();
              it != sources.end();
              ++it) {
             if (m_sources.empty() ||

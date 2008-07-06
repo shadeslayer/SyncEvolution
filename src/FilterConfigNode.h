@@ -23,6 +23,7 @@
 #include <ConfigNode.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "SyncEvolutionUtil.h"
 
@@ -56,7 +57,7 @@ class FilterConfigNode : public ConfigNode {
                 res.push_back(it->first + " = " + it->second);
             }
             sort(res.begin(), res.end());
-            return join("\n", res.begin(), res.end());
+            return boost::join(res, "\n");
         }
     };
 
