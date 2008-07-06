@@ -59,7 +59,7 @@ void SafeConfigNode::readProperties(map<string, string> &props) const
         string key = unescape(it->first);
         string value = unescape(it->second);
 
-        props.insert(make_pair(key, value));
+        props[key] = value;
     }
 }
 

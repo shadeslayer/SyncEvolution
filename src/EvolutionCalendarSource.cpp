@@ -188,7 +188,7 @@ void EvolutionCalendarSource::listAllItems(RevisionMap_t &revisions)
         string modTime = getItemModTime(ecomp);
 
         m_allLUIDs.insert(luid);
-        revisions.insert(make_pair(luid, modTime));
+        revisions[luid] = modTime;
         nextItem = nextItem->next;
     }
 }

@@ -65,7 +65,7 @@ void PrefixConfigNode::readProperties(map<string, string> &props) const
         string value = it->second;
 
         if (boost::starts_with(key, m_prefix)) {
-            props.insert(make_pair(key.substr(m_prefix.size()), value));
+            props[key.substr(m_prefix.size())] = value;
         }
     }
 }
