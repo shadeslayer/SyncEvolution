@@ -21,10 +21,19 @@
 
 #include <base/test.h>
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 #include <vector>
 #include <sstream>
 #include <string>
 using namespace std;
+
+/** case-insensitive comparison for assoziative containers */
+template <class T> class Nocase : public std::binary_function<T, T, bool> {
+public:
+    bool operator()(const T &x, const T &y) const { return boost::to_lower_copy(x) < boost::to_lower_copy(y); }
+};
+
 
 /** concatenate all members of an iterator range, using sep between each pair of entries */
 template<class T> string join(const string &sep, T begin, T end)

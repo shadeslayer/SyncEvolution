@@ -418,7 +418,7 @@ bool SyncEvolutionCmdline::parseProp(const ConfigPropertyRegistry &validProps,
                     m_err << "ERROR: " << cmdOpt(opt, param) << ": " << error << endl;
                     return false;
                 } else {
-                    props.set(propstr, paramstr);
+                    props[propstr] = paramstr;
                     return true;                        
                 }
             }

@@ -37,7 +37,7 @@ FilterConfigNode::FilterConfigNode(const boost::shared_ptr<const ConfigNode> &no
 void FilterConfigNode::addFilter(const string &property,
                                  const string &value)
 {
-    m_filter.set(property, value);
+    m_filter[property] = value;
 }
 
 void FilterConfigNode::setFilter(const ConfigFilter &filter)
