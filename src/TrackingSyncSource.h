@@ -98,8 +98,8 @@ class TrackingSyncSource : public EvolutionSyncSource
     class InsertItemResult {
     public:
         /**
-         * @param uid       the uid after the operation; if it hasn't changed during
-         *                  an update, then return the original uid
+         * @param uid       the uid after the operation; during an update the uid must
+         *                  not be changed, so return the original one here
          * @param revision  the revision string after the operation
          * @param merged    set this to true if an existing item was updated instead of adding it
          */
