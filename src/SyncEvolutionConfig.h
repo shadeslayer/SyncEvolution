@@ -413,11 +413,8 @@ class ConfigStringCache {
     }
 
     const char *storeString(const string &key, const string &value) {
-        pair< map<string, string>::iterator, bool > res = m_cache.insert(pair<string,string>(key, value));
-        if (!res.second) {
-            res.first->second = value;
-        }
-        return res.first->second.c_str();
+        const string &entry = m_cache[key] = value;
+        return entry.c_str();
     }
 
  private:
