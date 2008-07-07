@@ -126,7 +126,12 @@ UUID::UUID()
     static class InitSRand {
     public:
         InitSRand() {
-            srand(time(NULL));
+            ifstream seedsource("/dev/urandom");
+            unsigned int seed;
+            if (!seedsource.get((char *)&seed, sizeof(seed))) {
+                seed = time(NULL);
+            }
+            srand(seed);
         }
     } initSRand;
 
