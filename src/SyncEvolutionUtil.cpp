@@ -22,6 +22,7 @@
 #include <base/test.h>
 
 #include <boost/scoped_array.hpp>
+#include <fstream>
 
 #include <errno.h>
 #include <unistd.h>
