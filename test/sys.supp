@@ -223,3 +223,120 @@
    fun:dlopen
    fun:g_module_open
 }
+
+# ==9785== Thread 2:
+# ==9785== Invalid free() / delete / delete[]
+# ==9785==    at 0x401D0CA: free (vg_replace_malloc.c:233)
+# ==9785==    by 0x45987BD: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9785==    by 0x4597F71: __libc_freeres (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9785==    by 0x40191F6: _vgnU_freeres (vg_preloaded.c:60)
+# ==9785==    by 0x454E8F2: poll (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9785==    by 0x42C3EB8: g_main_context_iterate (gmain.c:2945)
+# ==9785==    by 0x42C4246: g_main_loop_run (gmain.c:2844)
+# ==9785==    by 0x413E691: startup_mainloop (e-book.c:3773)
+# ==9785==    by 0x42E877E: g_thread_create_proxy (gthread.c:635)
+# ==9785==    by 0x435A23F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==9785==    by 0x455849D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9785==  Address 0x45E3098 is not stack'd, malloc'd or (recently) free'd
+#
+# ==11515== Invalid free() / delete / delete[]
+# ==11515==    at 0x401D0CA: free (vg_replace_malloc.c:233)
+# ==11515==    by 0x45987BD: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==11515==    by 0x4597F71: __libc_freeres (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==11515==    by 0x40191F6: _vgnU_freeres (vg_preloaded.c:60)
+# ==11515==    by 0x451AE03: _Exit (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==11515==    by 0x44A1EAF: (below main) (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==11515==  Address 0x45E3098 is not stack'd, malloc'd or (recently) free'd
+{
+   invalid free in libc_freeres
+   Memcheck:Free
+   fun:free
+   obj:/lib/tls/i686/cmov/libc-2.3.6.so
+   fun:__libc_freeres
+   fun:_vgnU_freeres
+}
+
+# ==9770== Invalid read of size 4
+# ==9770==    at 0x4010E17: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x400B729: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x4008202: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x46358CC: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9770==    by 0x4635A09: _dl_sym (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9770==    by 0x451CEE7: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==9770==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x451D42C: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==9770==    by 0x451CE7A: dlsym (in /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==9770==    by 0x434A1E3: g_module_symbol (gmodule-dl.c:147)
+# ==9770==    by 0x434A6F1: g_module_open (gmodule.c:484)
+# ==9770==    by 0x4680A0B: e_data_server_module_load (e-data-server-module.c:77)
+# ==9770==    by 0x4409DB7: g_type_module_use (gtypemodule.c:190)
+# ==9770==    by 0x4680D50: e_data_server_module_load_file (e-data-server-module.c:175)
+# ==9770==    by 0x4680E17: load_module_dir (e-data-server-module.c:202)
+# ==9770==    by 0x4680E7B: e_data_server_module_init (e-data-server-module.c:219)
+# ==9770==    by 0x804B5BF: main (server.c:379)
+# ==9770==  Address 0x4E48A24 is 124 bytes inside a block of size 125 alloc'd
+# ==9770==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==9770==    by 0x4005DA5: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x4006704: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x463346F: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9770==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x4632EDE: _dl_open (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9770==    by 0x451CD8D: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==9770==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x451D42C: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==9770==    by 0x451CD20: dlopen (in /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==9770==    by 0x434A606: g_module_open (gmodule-dl.c:99)
+# ==9770==    by 0x4680A0B: e_data_server_module_load (e-data-server-module.c:77)
+# ==9770==    by 0x4409DB7: g_type_module_use (gtypemodule.c:190)
+# ==9770==    by 0x4680D50: e_data_server_module_load_file (e-data-server-module.c:175)
+# ==9770==    by 0x4680E17: load_module_dir (e-data-server-module.c:202)
+# ==9770==    by 0x4680E7B: e_data_server_module_init (e-data-server-module.c:219)
+# ==9770==    by 0x804B5BF: main (server.c:379)
+{
+   dl_sym
+   Memcheck:Addr4
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/*libc-*.so
+   fun:_dl_sym
+}
+
+# ==9770==    at 0x4010DD3: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x4004B78: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x4006792: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x463346F: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9770==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x4632EDE: _dl_open (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==9770==    by 0x451CD8D: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==9770==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==9770==    by 0x451D42C: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==9770==    by 0x451CD20: dlopen (in /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==9770==    by 0x434A606: g_module_open (gmodule-dl.c:99)
+# ==9770==    by 0x4680A0B: e_data_server_module_load (e-data-server-module.c:77)
+# ==9770==    by 0x4409DB7: g_type_module_use (gtypemodule.c:190)
+# ==9770==    by 0x4680D50: e_data_server_module_load_file (e-data-server-module.c:175)
+# ==9770==    by 0x4680E17: load_module_dir (e-data-server-module.c:202)
+# ==9770==    by 0x4680E7B: e_data_server_module_init (e-data-server-module.c:219)
+# ==9770==    by 0x804B5BF: main (server.c:379)
+# ==9770==  Address 0x4E69920 is 128 bytes inside a block of size 130 alloc'd
+# ==9770==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==9770==    by 0x4456A1C: g_malloc (gmem.c:131)
+# ==9770==    by 0x446F378: g_strdup (gstrfuncs.c:92)
+# ==9770==    by 0x434A99B: g_module_open (gmodule.c:386)
+# ==9770==    by 0x4680A0B: e_data_server_module_load (e-data-server-module.c:77)
+# ==9770==    by 0x4409DB7: g_type_module_use (gtypemodule.c:190)
+# ==9770==    by 0x4680D50: e_data_server_module_load_file (e-data-server-module.c:175)
+# ==9770==    by 0x4680E17: load_module_dir (e-data-server-module.c:202)
+# ==9770==    by 0x4680E7B: e_data_server_module_init (e-data-server-module.c:219)
+# ==9770==    by 0x804B5BF: main (server.c:379)
+{
+   dl_open
+   Memcheck:Addr4
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/ld-2.3.6.so
+   obj:/lib/*libc-*.so
+   obj:/lib/ld-*.so
+   fun:_dl_open
+}

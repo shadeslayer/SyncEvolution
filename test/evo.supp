@@ -317,6 +317,95 @@
    fun:e_book_new
 }
 
+# ==9785== 33,744 bytes in 1,081 blocks are possibly lost in loss record 31 of 38
+# ==9785==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==9785==    by 0x42C8994: g_malloc0 (gmem.c:151)
+# ==9785==    by 0x483B6EC: ORBit_alloc_tcval (allocators.c:287)
+# ==9785==    by 0x4837DB8: ORBit_small_allocbuf (orbit-small.c:51)
+# ==9785==    by 0x4846323: ORBit_POA_create_object_T (poa.c:363)
+# ==9785==    by 0x4846553: PortableServer_POA_servant_to_reference (poa.c:2330)
+# ==9785==    by 0x473E416: bonobo_object_constructor (bonobo-object.c:791)
+# ==9785==    by 0x41677C7: g_object_newv (gobject.c:937)
+# ==9785==    by 0x416840E: g_object_new_valist (gobject.c:1027)
+# ==9785==    by 0x416851F: g_object_new (gobject.c:795)
+# ==9785==    by 0x41313D8: e_book_listener_new (e-book-listener.c:412)
+# ==9785==    by 0x413D2E4: fetch_corba_book (e-book.c:3313)
+# ==9785==    by 0x413E8B4: e_book_new (e-book.c:3824)
+# ==9785==    by 0x413EA80: e_book_new_from_uri (e-book.c:3856)
+# ==9785==    by 0x8182AA1: EvolutionContactSource::open() (EvolutionContactSource.cpp:139)
+# ==9785==    by 0x8056932: TestEvolutionSyncSource::beginSync() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==9785==    by 0x8100DB5: LocalTests::insert(CreateSource, char const*) (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==9785==    by 0x8099539: LocalTests::testLocalDeleteAll() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==9785==    by 0x809DB20: LocalTests::testImport() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==9785==    by 0x8092A6D: LocalTests::testImportDelete() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==9785==    by 0x8173F04: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==9785==    by 0x4051C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==9785==    by 0x40433ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==9785==    by 0x404D8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==9785==    by 0x404D613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==9785==    by 0x405A390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==9785==    by 0x4051637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==9785==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==9785==    by 0x4052229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==9785==    by 0x40522FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_book_new VI
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_tcval
+   fun:ORBit_small_allocbuf
+   fun:ORBit_POA_create_object_T
+   fun:PortableServer_POA_servant_to_reference
+   fun:bonobo_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:e_book_listener_new
+   fun:fetch_corba_book
+   fun:e_book_new
+}
+
+# ==3335== 76,364 bytes in 2,526 blocks are possibly lost in loss record 28 of 47
+# ==3335==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==3335==    by 0x4456994: g_malloc0 (gmem.c:151)
+# ==3335==    by 0x43A36EC: ORBit_alloc_tcval (allocators.c:287)
+# ==3335==    by 0x439FDB8: ORBit_small_allocbuf (orbit-small.c:51)
+# ==3335==    by 0x43AE323: ORBit_POA_create_object_T (poa.c:363)
+# ==3335==    by 0x43AE553: PortableServer_POA_servant_to_reference (poa.c:2330)
+# ==3335==    by 0x42FE416: bonobo_object_constructor (bonobo-object.c:791)
+# ==3335==    by 0x43ED7C7: g_object_newv (gobject.c:937)
+# ==3335==    by 0x43EE40E: g_object_new_valist (gobject.c:1027)
+# ==3335==    by 0x43EE51F: g_object_new (gobject.c:795)
+# ==3335==    by 0x404B0F3: e_data_book_new (e-data-book.c:943)
+# ==3335==    by 0x4047BA8: impl_GNOME_Evolution_Addressbook_BookFactory_getBook (e-data-book-factory.c:351)
+# ==3335==    by 0x4038E62: _ORBIT_skel_small_GNOME_Evolution_Addressbook_BookFactory_getBook (Evolution-DataServer-Addressbook-common.c:180)
+# ==3335==    by 0x43AC436: ORBit_POAObject_invoke (poa.c:1142)
+# ==3335==    by 0x43B2664: ORBit_OAObject_invoke (orbit-adaptor.c:338)
+# ==3335==    by 0x439F5D8: ORBit_small_invoke_adaptor (orbit-small.c:844)
+# ==3335==    by 0x43B02B9: ORBit_POAObject_handle_request (poa.c:1351)
+# ==3335==    by 0x43B095B: ORBit_POAObject_invoke_incoming_request (poa.c:1421)
+# ==3335==    by 0x439813A: giop_thread_queue_process (giop.c:771)
+# ==3335==    by 0x43989D7: giop_request_handler_thread (giop.c:481)
+# ==3335==    by 0x4478306: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==3335==    by 0x447677E: g_thread_create_proxy (gthread.c:635)
+# ==3335==    by 0x452623F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==3335==    by 0x45FE49D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   e_book_new VII
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_tcval
+   fun:ORBit_small_allocbuf
+   fun:ORBit_POA_create_object_T
+   fun:PortableServer_POA_servant_to_reference
+   fun:bonobo_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:e_data_book_new
+}
 
 # ==14222== Syscall param writev(vector[...]) points to uninitialised byte(s)
 # ==14222==    at 0x4000792: (within /lib/ld-2.3.6.so)
@@ -822,6 +911,359 @@
    fun:bonobo_poa_get_threaded
    fun:e_cal_listener_new
    fun:e_cal_init
+}
+
+# ==24572== 1,436 bytes in 44 blocks are possibly lost in loss record 21 of 37
+# ==24572==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==24572==    by 0x4292A1C: g_malloc (gmem.c:131)
+# ==24572==    by 0x481695D: ORBit_alloc_string (allocators.c:228)
+# ==24572==    by 0x4816618: CORBA_string_dup (corba-string.c:22)
+# ==24572==    by 0x4759691: Bonobo_ServerInfo_copy (bonobo-activation-server-info.c:171)
+# ==24572==    by 0x475973F: Bonobo_ServerInfoList_duplicate (bonobo-activation-server-info.c:212)
+# ==24572==    by 0x4757701: bonobo_activation_query (bonobo-activation-activate.c:238)
+# ==24572==    by 0x404A90C: get_factories (e-cal.c:1011)
+# ==24572==    by 0x404B8CF: fetch_corba_cal (e-cal.c:1277)
+# ==24572==    by 0x404BDFD: e_cal_new (e-cal.c:1413)
+# ==24572==    by 0x404BED4: e_cal_new_from_uri (e-cal.c:1448)
+# ==24572==    by 0x81B5352: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:139)
+# ==24572==    by 0x8057060: TestEvolutionSyncSource::beginSync() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==24572==    by 0x80E9A9B: LocalTests::testIterateTwice() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==24572==    by 0x81AF4B4: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head/tmp/build/src/client-test)
+# ==24572==    by 0x4375C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x43673ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x43718D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x4371613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x437E390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x4375637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x43762FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x4376229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x43762FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x4376229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x437E009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x438072F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x4383F2A: CppUnit::TextTestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x4383FA1: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==24572==    by 0x81B2E50: main (in /tmp/runtests/head/tmp/build/src/client-test)
+{
+   e_cal_new
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:Bonobo_ServerInfo_copy
+   fun:Bonobo_ServerInfoList_duplicate
+   fun:bonobo_activation_query
+   fun:get_factories
+   fun:fetch_corba_cal
+   fun:e_cal_new
+}
+
+# ==8850== 1,557 bytes in 48 blocks are possibly lost in loss record 21 of 37
+# ==8850==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==8850==    by 0x4292A1C: g_malloc (gmem.c:131)
+# ==8850==    by 0x481695D: ORBit_alloc_string (allocators.c:228)
+# ==8850==    by 0x4816618: CORBA_string_dup (corba-string.c:22)
+# ==8850==    by 0x475956C: Bonobo_ActivationProperty_copy (bonobo-activation-server-info.c:141)
+# ==8850==    by 0x4759601: CORBA_sequence_Bonobo_ActivationProperty_copy (bonobo-activation-server-info.c:157)
+# ==8850==    by 0x47596A3: Bonobo_ServerInfo_copy (bonobo-activation-server-info.c:173)
+# ==8850==    by 0x475973F: Bonobo_ServerInfoList_duplicate (bonobo-activation-server-info.c:212)
+# ==8850==    by 0x4757701: bonobo_activation_query (bonobo-activation-activate.c:238)
+# ==8850==    by 0x404A90C: get_factories (e-cal.c:1011)
+# ==8850==    by 0x404B8CF: fetch_corba_cal (e-cal.c:1277)
+# ==8850==    by 0x404BDFD: e_cal_new (e-cal.c:1413)
+# ==8850==    by 0x404BED4: e_cal_new_from_uri (e-cal.c:1448)
+# ==8850==    by 0x81B5352: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:139)
+# ==8850==    by 0x8057060: TestEvolutionSyncSource::beginSync() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==8850==    by 0x80E9A9B: LocalTests::testIterateTwice() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==8850==    by 0x81AF4B4: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==8850==    by 0x4375C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x43673ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x43718D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x4371613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x437E390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x4375637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x43762FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x4376229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x43762FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x4376229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x437E009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x438072F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8850==    by 0x4383F2A: CppUnit::TextTestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_cal_new II
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:Bonobo_ActivationProperty_copy
+   fun:CORBA_sequence_Bonobo_ActivationProperty_copy
+   fun:Bonobo_ServerInfo_copy
+   fun:Bonobo_ServerInfoList_duplicate
+   fun:bonobo_activation_query
+   fun:get_factories
+   fun:fetch_corba_cal
+   fun:e_cal_new
+}
+
+# ==8696== 2,940 (2,868 direct, 72 indirect) bytes in 18 blocks are definitely lost in loss record 29 of 36
+# ==8696==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==8696==    by 0x4293A1C: g_malloc (gmem.c:131)
+# ==8696==    by 0x4715F89: bonobo_object_instance_init (bonobo-object.c:958)
+# ==8696==    by 0x42458FB: g_type_create_instance (gtype.c:1567)
+# ==8696==    by 0x422C571: g_object_constructor (gobject.c:1046)
+# ==8696==    by 0x47162B0: bonobo_object_constructor (bonobo-object.c:820)
+# ==8696==    by 0x422A7C7: g_object_newv (gobject.c:937)
+# ==8696==    by 0x422B366: g_object_new_valist (gobject.c:986)
+# ==8696==    by 0x422B51F: g_object_new (gobject.c:795)
+# ==8696==    by 0x470B526: bonobo_moniker_context_new (bonobo-moniker-context.c:71)
+# ==8696==    by 0x470CAF6: bonobo_context_init (bonobo-context.c:91)
+# ==8696==    by 0x4710A16: bonobo_init_full (bonobo-main.c:234)
+# ==8696==    by 0x4710B15: bonobo_init (bonobo-main.c:256)
+# ==8696==    by 0x404BCA7: e_cal_activate (e-cal.c:1324)
+# ==8696==    by 0x404BFDC: e_cal_new (e-cal.c:1410)
+# ==8696==    by 0x81B7355: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:145)
+# ==8696==    by 0x80CCE68: EvolutionCalendarTest::testOpenDefaultCalendar() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==8696==    by 0x80C5DBC: CppUnit::TestCaller<EvolutionCalendarTest>::runTest() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==8696==    by 0x4376C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x43683ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x43728D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x4372613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x437F390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x4376637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x437F009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==8696==    by 0x438172F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_cal_new III
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:bonobo_object_instance_init
+   fun:g_type_create_instance
+   fun:g_object_constructor
+   fun:bonobo_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:bonobo_moniker_context_new
+   fun:bonobo_context_init
+   fun:bonobo_init_full
+   fun:bonobo_init
+   fun:e_cal_activate
+   fun:e_cal_new
+}
+
+# ==5228== 1,456 (496 direct, 960 indirect) bytes in 4 blocks are definitely lost in loss record 25 of 36
+# ==5228==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==5228==    by 0x4293994: g_malloc0 (gmem.c:151)
+# ==5228==    by 0x4823428: ORBit_POA_new (poa.c:786)
+# ==5228==    by 0x48238DD: ORBit_POA_new_from (poa.c:838)
+# ==5228==    by 0x4710526: bonobo_poa_new_from (bonobo-main.c:462)
+# ==5228==    by 0x471064A: bonobo_poa_get_threadedv (bonobo-main.c:400)
+# ==5228==    by 0x47107C6: bonobo_poa_get_threaded (bonobo-main.c:442)
+# ==5228==    by 0x4065D47: e_cal_listener_new (e-cal-listener.c:1032)
+# ==5228==    by 0x404AC93: e_cal_init (e-cal.c:1057)
+# ==5228==    by 0x4245AD5: g_type_create_instance (gtype.c:1575)
+# ==5228==    by 0x422C571: g_object_constructor (gobject.c:1046)
+# ==5228==    by 0x422A7C7: g_object_newv (gobject.c:937)
+# ==5228==    by 0x422B366: g_object_new_valist (gobject.c:986)
+# ==5228==    by 0x422B51F: g_object_new (gobject.c:795)
+# ==5228==    by 0x404BFF1: e_cal_new (e-cal.c:1412)
+# ==5228==    by 0x81B58F5: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:145)
+# ==5228==    by 0x80CB1FC: EvolutionCalendarTest::testOpenDefaultMemo() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==5228==    by 0x80C4FC0: CppUnit::TestCaller<EvolutionCalendarTest>::runTest() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==5228==    by 0x4376C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43683ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43728D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4372613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x437F390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4376637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x437F009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x438172F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_cal_new IV
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_POA_new
+   fun:ORBit_POA_new_from
+   fun:bonobo_poa_new_from
+   fun:bonobo_poa_get_threadedv
+   fun:bonobo_poa_get_threaded
+   fun:e_cal_listener_new
+   fun:e_cal_init
+   fun:g_type_create_instance
+   fun:g_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:e_cal_new
+}
+
+# ==5228== 1,668 bytes in 48 blocks are possibly lost in loss record 28 of 36
+# ==5228==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==5228==    by 0x4293994: g_malloc0 (gmem.c:151)
+# ==5228==    by 0x4817675: ORBit_alloc_by_tc (allocators.c:373)
+# ==5228==    by 0x48129AC: ORBit_small_alloc (orbit-small.c:44)
+# ==5228==    by 0x48222FD: ORBit_POA_create_object_T (poa.c:361)
+# ==5228==    by 0x4822553: PortableServer_POA_servant_to_reference (poa.c:2330)
+# ==5228==    by 0x4716416: bonobo_object_constructor (bonobo-object.c:791)
+# ==5228==    by 0x422A7C7: g_object_newv (gobject.c:937)
+# ==5228==    by 0x422B366: g_object_new_valist (gobject.c:986)
+# ==5228==    by 0x422B51F: g_object_new (gobject.c:795)
+# ==5228==    by 0x4720002: bonobo_running_context_new (bonobo-running-context.c:394)
+# ==5228==    by 0x470CB06: bonobo_context_init (bonobo-context.c:92)
+# ==5228==    by 0x4710A16: bonobo_init_full (bonobo-main.c:234)
+# ==5228==    by 0x4710B15: bonobo_init (bonobo-main.c:256)
+# ==5228==    by 0x404BCA7: e_cal_activate (e-cal.c:1324)
+# ==5228==    by 0x404BFDC: e_cal_new (e-cal.c:1410)
+# ==5228==    by 0x81B58F5: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:145)
+# ==5228==    by 0x80CC06C: EvolutionCalendarTest::testOpenDefaultCalendar() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==5228==    by 0x80C4FC0: CppUnit::TestCaller<EvolutionCalendarTest>::runTest() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==5228==    by 0x4376C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43683ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43728D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4372613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x437F390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4376637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x437F009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_cal_new V
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_by_tc
+   fun:ORBit_small_alloc
+   fun:ORBit_POA_create_object_T
+   fun:PortableServer_POA_servant_to_reference
+   fun:bonobo_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:bonobo_running_context_new
+   fun:bonobo_context_init
+   fun:bonobo_init_full
+   fun:bonobo_init
+   fun:e_cal_activate
+   fun:e_cal_new
+}
+
+# ==5228== 2,940 (2,904 direct, 36 indirect) bytes in 18 blocks are definitely lost in loss record 29 of 36
+# ==5228==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==5228==    by 0x4293A1C: g_malloc (gmem.c:131)
+# ==5228==    by 0x42A8B92: g_slice_alloc (gslice.c:824)
+# ==5228==    by 0x42A9274: g_slice_alloc0 (gslice.c:833)
+# ==5228==    by 0x424569B: g_type_create_instance (gtype.c:1555)
+# ==5228==    by 0x422C571: g_object_constructor (gobject.c:1046)
+# ==5228==    by 0x47162B0: bonobo_object_constructor (bonobo-object.c:820)
+# ==5228==    by 0x422A7C7: g_object_newv (gobject.c:937)
+# ==5228==    by 0x422B366: g_object_new_valist (gobject.c:986)
+# ==5228==    by 0x422B51F: g_object_new (gobject.c:795)
+# ==5228==    by 0x470B526: bonobo_moniker_context_new (bonobo-moniker-context.c:71)
+# ==5228==    by 0x470CAF6: bonobo_context_init (bonobo-context.c:91)
+# ==5228==    by 0x4710A16: bonobo_init_full (bonobo-main.c:234)
+# ==5228==    by 0x4710B15: bonobo_init (bonobo-main.c:256)
+# ==5228==    by 0x404BCA7: e_cal_activate (e-cal.c:1324)
+# ==5228==    by 0x404BFDC: e_cal_new (e-cal.c:1410)
+# ==5228==    by 0x81B58F5: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:145)
+# ==5228==    by 0x80CC06C: EvolutionCalendarTest::testOpenDefaultCalendar() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==5228==    by 0x80C4FC0: CppUnit::TestCaller<EvolutionCalendarTest>::runTest() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==5228==    by 0x4376C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43683ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43728D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4372613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x437F390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4376637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==5228==    by 0x437F009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_cal_new VI
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_slice_alloc
+   fun:g_slice_alloc0
+   fun:g_type_create_instance
+   fun:g_object_constructor
+   fun:bonobo_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:bonobo_moniker_context_new
+   fun:bonobo_context_init
+   fun:bonobo_init_full
+   fun:bonobo_init
+   fun:e_cal_activate
+   fun:e_cal_new
+}
+
+# ==28454== 2,714 (2,646 direct, 68 indirect) bytes in 13 blocks are definitely lost in loss record 32 of 39
+# ==28454==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==28454==    by 0x4293A1C: g_malloc (gmem.c:131)
+# ==28454==    by 0x42A8B92: g_slice_alloc (gslice.c:824)
+# ==28454==    by 0x428997A: g_list_append (glist.c:122)
+# ==28454==    by 0x4715F74: bonobo_object_instance_init (bonobo-object.c:954)
+# ==28454==    by 0x42458FB: g_type_create_instance (gtype.c:1567)
+# ==28454==    by 0x422C571: g_object_constructor (gobject.c:1046)
+# ==28454==    by 0x47162B0: bonobo_object_constructor (bonobo-object.c:820)
+# ==28454==    by 0x422A7C7: g_object_newv (gobject.c:937)
+# ==28454==    by 0x422B366: g_object_new_valist (gobject.c:986)
+# ==28454==    by 0x422B51F: g_object_new (gobject.c:795)
+# ==28454==    by 0x470B526: bonobo_moniker_context_new (bonobo-moniker-context.c:71)
+# ==28454==    by 0x470CAF6: bonobo_context_init (bonobo-context.c:91)
+# ==28454==    by 0x4710A16: bonobo_init_full (bonobo-main.c:234)
+# ==28454==    by 0x4710B15: bonobo_init (bonobo-main.c:256)
+# ==28454==    by 0x404BCA7: e_cal_activate (e-cal.c:1324)
+# ==28454==    by 0x404BFDC: e_cal_new (e-cal.c:1410)
+# ==28454==    by 0x81B9345: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:151)
+# ==28454==    by 0x80CEBC4: EvolutionCalendarTest::testOpenDefaultCalendar() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==28454==    by 0x80C7B18: CppUnit::TestCaller<EvolutionCalendarTest>::runTest() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==28454==    by 0x4376C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==28454==    by 0x43683ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==28454==    by 0x43728D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==28454==    by 0x4372613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==28454==    by 0x437F390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==28454==    by 0x4376637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==28454==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==28454==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==28454==    by 0x43772FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==28454==    by 0x4377229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_cal_init VII
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_slice_alloc
+   fun:g_list_append
+   fun:bonobo_object_instance_init
+   fun:g_type_create_instance
+   fun:g_object_constructor
+   fun:bonobo_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:bonobo_moniker_context_new
+   fun:bonobo_context_init
+   fun:bonobo_init_full
+   fun:bonobo_init
+   fun:e_cal_activate
+   fun:e_cal_new
 }
 
 ##### evolution-data-server ####
@@ -2212,6 +2654,66 @@
    fun:ORBit_demarshal_value
 }
 
+# ==10419== 2,714 (2,646 direct, 68 indirect) bytes in 13 blocks are definitely lost in loss record 32 of 39
+# ==10419==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==10419==    by 0x4293A1C: g_malloc (gmem.c:131)
+# ==10419==    by 0x42AC378: g_strdup (gstrfuncs.c:92)
+# ==10419==    by 0x404A57D: cal_add_timezone_cb (e-cal.c:800)
+# ==10419==    by 0x4049375: e_cal_marshal_VOID__INT_STRING (e-cal-marshal.c:82)
+# ==10419==    by 0x42252FA: g_closure_invoke (gclosure.c:490)
+# ==10419==    by 0x42360DC: signal_emit_unlocked_R (gsignal.c:2440)
+# ==10419==    by 0x42375D8: g_signal_emit_valist (gsignal.c:2199)
+# ==10419==    by 0x4237788: g_signal_emit (gsignal.c:2243)
+# ==10419==    by 0x40647FA: impl_notifyTimezoneAdded (e-cal-listener.c:486)
+# ==10419==    by 0x4044155: _ORBIT_skel_small_GNOME_Evolution_Calendar_CalListener_notifyTimezoneAdded (Evolution-DataServer-Calendar-common.c:212)
+# ==10419==    by 0x4820436: ORBit_POAObject_invoke (poa.c:1142)
+# ==10419==    by 0x4826664: ORBit_OAObject_invoke (orbit-adaptor.c:338)
+# ==10419==    by 0x48135D8: ORBit_small_invoke_adaptor (orbit-small.c:844)
+# ==10419==    by 0x48242B9: ORBit_POAObject_handle_request (poa.c:1351)
+# ==10419==    by 0x482495B: ORBit_POAObject_invoke_incoming_request (poa.c:1421)
+# ==10419==    by 0x480C13A: giop_thread_queue_process (giop.c:771)
+# ==10419==    by 0x480C9D7: giop_request_handler_thread (giop.c:481)
+# ==10419==    by 0x42B5306: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==10419==    by 0x42B377E: g_thread_create_proxy (gthread.c:635)
+# ==10419==    by 0x420F23F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==10419==    by 0x455549D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_strdup
+   fun:cal_add_timezone_cb
+}
+
+# ==9770== 74,348 bytes in 2,506 blocks are possibly lost in loss record 36 of 53
+# ==9770==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==9770==    by 0x4456994: g_malloc0 (gmem.c:151)
+# ==9770==    by 0x43A36EC: ORBit_alloc_tcval (allocators.c:287)
+# ==9770==    by 0x439FDB8: ORBit_small_allocbuf (orbit-small.c:51)
+# ==9770==    by 0x43AA267: IOP_ObjectKey_demarshal (iop-profiles.c:1045)
+# ==9770==    by 0x43AAF80: ORBit_demarshal_IOR (iop-profiles.c:1399)
+# ==9770==    by 0x43A1CBE: ORBit_demarshal_object (corba-object.c:608)
+# ==9770==    by 0x43A8558: ORBit_demarshal_value (corba-any.c:545)
+# ==9770==    by 0x439F7C0: ORBit_small_invoke_adaptor (orbit-small.c:785)
+# ==9770==    by 0x43B02B9: ORBit_POAObject_handle_request (poa.c:1351)
+# ==9770==    by 0x43B095B: ORBit_POAObject_invoke_incoming_request (poa.c:1421)
+# ==9770==    by 0x439813A: giop_thread_queue_process (giop.c:771)
+# ==9770==    by 0x43989D7: giop_request_handler_thread (giop.c:481)
+# ==9770==    by 0x4478306: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==9770==    by 0x447677E: g_thread_create_proxy (gthread.c:635)
+# ==9770==    by 0x452623F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
+# ==9770==    by 0x45FE49D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
+{
+   ORBit demarshal II
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_tcval
+   fun:ORBit_small_allocbuf
+   fun:IOP_ObjectKey_demarshal
+   fun:ORBit_demarshal_IOR
+}
+
 # ==4248== Conditional jump or move depends on uninitialised value(s)
 # ==4248==    at 0x4010DFE: (within /lib/ld-2.3.6.so)
 # ==4248==    by 0x400B729: (within /lib/ld-2.3.6.so)
@@ -2233,5 +2735,56 @@
 {
    dlsym/dlopen
    Memcheck:Cond
+   obj:*ld-2.3.6.so
+}
+
+# ==2935== Invalid read of size 4
+# ==2935==    at 0x4010DD3: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x4005F5B: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x4006431: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x4006A51: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x400A1F6: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x400A3CA: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x46334D4: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==2935==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x4632EDE: _dl_open (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==2935==    by 0x451CD8D: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==2935==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x451D42C: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==2935==    by 0x451CD20: dlopen (in /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==2935==    by 0x434A606: g_module_open (gmodule-dl.c:99)
+# ==2935==    by 0x4680A0B: e_data_server_module_load (e-data-server-module.c:77)
+# ==2935==    by 0x4409DB7: g_type_module_use (gtypemodule.c:190)
+# ==2935==    by 0x4680D50: e_data_server_module_load_file (e-data-server-module.c:175)
+# ==2935==    by 0x4680E17: load_module_dir (e-data-server-module.c:202)
+# ==2935==    by 0x4680E7B: e_data_server_module_init (e-data-server-module.c:219)
+# ==2935==    by 0x804B5BF: main (server.c:379)
+# ==2935==  Address 0x4E49E84 is 132 bytes inside a block of size 134 alloc'd
+# ==2935==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==2935==    by 0x4005DA5: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x4005EE5: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x4006431: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x4006A51: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x400A1F6: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x400A3CA: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x46334D4: (within /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==2935==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x4632EDE: _dl_open (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==2935==    by 0x451CD8D: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==2935==    by 0x400B44E: (within /lib/ld-2.3.6.so)
+# ==2935==    by 0x451D42C: (within /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==2935==    by 0x451CD20: dlopen (in /lib/tls/i686/cmov/libdl-2.3.6.so)
+# ==2935==    by 0x434A606: g_module_open (gmodule-dl.c:99)
+# ==2935==    by 0x4680A0B: e_data_server_module_load (e-data-server-module.c:77)
+# ==2935==    by 0x4409DB7: g_type_module_use (gtypemodule.c:190)
+# ==2935==    by 0x4680D50: e_data_server_module_load_file (e-data-server-module.c:175)
+# ==2935==    by 0x4680E17: load_module_dir (e-data-server-module.c:202)
+# ==2935==    by 0x4680E7B: e_data_server_module_init (e-data-server-module.c:219)
+# ==2935==    by 0x804B5BF: main (server.c:379)
+{
+   dlsym/dlopen II
+   Memcheck:Addr4
    obj:*ld-2.3.6.so
 }
