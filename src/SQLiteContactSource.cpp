@@ -165,13 +165,13 @@ void SQLiteContactSource::close()
     m_sqlite.close();
 }
 
-SQLiteContactSource::sources SQLiteContactSource::getSyncBackends()
+SQLiteContactSource::Databases SQLiteContactSource::getDatabases()
 {
-    sources res;
+    Databases result;
 
-    res.push_back(EvolutionSyncSource::source("select database via file path",
-                                              "file:///<absolute path>"));
-    return res;
+    result.push_back(Database("select database via file path",
+                              "file:///<absolute path>"));
+    return result;
 }
 
 void SQLiteContactSource::listAllItems(RevisionMap_t &revisions)

@@ -83,11 +83,11 @@ EvolutionCalendarSource::EvolutionCalendarSource( const EvolutionCalendarSource 
     }
 }
 
-EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
+EvolutionSyncSource::Databases EvolutionCalendarSource::getDatabases()
 {
     ESourceList *sources = NULL;
     GError *gerror = NULL;
-    EvolutionSyncSource::sources result;
+    Databases result;
 
     if (!e_cal_get_sources(&sources, m_type, &gerror)) {
         // ignore unspecific errors (like on Maemo with no support for memos)
@@ -104,9 +104,9 @@ EvolutionSyncSource::sources EvolutionCalendarSource::getSyncBackends()
         for (GSList *s = e_source_group_peek_sources (group); s; s = s->next) {
             ESource *source = E_SOURCE (s->data);
             eptr<char> uri(e_source_get_uri(source));
-            result.push_back(EvolutionSyncSource::source(e_source_peek_name(source),
-                                                         uri ? uri.get() : "",
-                                                         first));
+            result.push_back(Database(e_source_peek_name(source),
+                                      uri ? uri.get() : "",
+                                      first));
             first = false;
         }
     }

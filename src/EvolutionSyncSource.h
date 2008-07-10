@@ -213,20 +213,20 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      */
     static SourceRegistry &getSourceRegistry();
 
-    struct source {
-    source( const string &name, const string &uri, bool isDefault = false ) :
+    struct Database {
+    Database(const string &name, const string &uri, bool isDefault = false) :
         m_name( name ), m_uri( uri ), m_isDefault(isDefault) {}
         string m_name;
         string m_uri;
         bool m_isDefault;
     };
-    typedef vector<source> sources;
+    typedef vector<Database> Databases;
     
     /**
-     * returns a list of all know sources for the kind of items
+     * returns a list of all know data sources for the kind of items
      * supported by this sync source
      */
-    virtual sources getSyncBackends() = 0;
+    virtual Databases getDatabases() = 0;
 
     /**
      * Actually opens the data source specified in the constructor,
@@ -302,18 +302,12 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     void setFailed(bool failed) { m_hasFailed = failed; }
 
     /**
-     * convenience function: gets property as string class
-     *
-     * @return empty string if property not found, otherwise its value
+     * Convenience function, to be called inside a catch() block of
+     * the sync source.
+     * Rethrows the exception to determine what it is, then logs it
+     * as an error and sets the state of the sync source to failed.
      */
-    static string getPropertyValue(ManagementNode &node, const string &property);
-
-    /**
-     * convenience function, to be called inside a catch() block:
-     * rethrows the exception to determine what it is, then logs it
-     * as an error
-     */
-    static void handleException();
+    void handleException();
 
     /**
      * factory function for a EvolutionSyncSource that provides the
@@ -353,23 +347,23 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     // their own position marker, but as they are never called in
     // parallel that's okay.
     //
-    virtual SyncItem* getFirstItem() { return m_allItems.start(); }
-    virtual SyncItem* getNextItem() { return m_allItems.iterate(); }
-    virtual SyncItem* getFirstNewItem() { return m_newItems.start(); }
-    virtual SyncItem* getNextNewItem() { return m_newItems.iterate(); }
-    virtual SyncItem* getFirstUpdatedItem() { return m_updatedItems.start(); }
-    virtual SyncItem* getNextUpdatedItem() { return m_updatedItems.iterate(); }
-    virtual SyncItem* getFirstDeletedItem() { return m_deletedItems.start(); }
-    virtual SyncItem* getNextDeletedItem() { return m_deletedItems.iterate(); }
-    virtual SyncItem* getFirstItemKey() { return getFirstItem(); }
-    virtual SyncItem* getNextItemKey() { return getNextItem(); }
+    virtual SyncItem* getFirstItem() throw() { return m_allItems.start(); }
+    virtual SyncItem* getNextItem() throw() { return m_allItems.iterate(); }
+    virtual SyncItem* getFirstNewItem() throw() { return m_newItems.start(); }
+    virtual SyncItem* getNextNewItem() throw() { return m_newItems.iterate(); }
+    virtual SyncItem* getFirstUpdatedItem() throw() { return m_updatedItems.start(); }
+    virtual SyncItem* getNextUpdatedItem() throw() { return m_updatedItems.iterate(); }
+    virtual SyncItem* getFirstDeletedItem() throw() { return m_deletedItems.start(); }
+    virtual SyncItem* getNextDeletedItem() throw() { return m_deletedItems.iterate(); }
+    virtual SyncItem* getFirstItemKey() throw() { return getFirstItem(); }
+    virtual SyncItem* getNextItemKey() throw() { return getNextItem(); }
 
-    virtual int beginSync();
-    virtual int endSync();
-    virtual void setItemStatus(const char *key, int status);
-    virtual int addItem(SyncItem& item);
-    virtual int updateItem(SyncItem& item);
-    virtual int deleteItem(SyncItem& item);
+    virtual int beginSync() throw();
+    virtual int endSync() throw();
+    virtual void setItemStatus(const char *key, int status) throw();
+    virtual int addItem(SyncItem& item) throw();
+    virtual int updateItem(SyncItem& item) throw();
+    virtual int deleteItem(SyncItem& item) throw();
 
     /**
      * The client library invokes this call to delete all local
@@ -382,13 +376,13 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      *
      * @return 0 for success, non-zero for failure
      */
-    virtual int removeAllItems();
+    virtual int removeAllItems() throw();
 
     /**
      * Disambiguate getName(): we have inherited it from both SyncSource and
      * AbstractSyncSourceConfig. Both must return the same string.
      */
-    const char *getName() { return SyncSource::getName(); }
+    const char *getName()  throw() { return SyncSource::getName(); }
 
     /**
      * source specific part of beginSync() - throws exceptions in case of error
@@ -424,7 +418,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
 #endif
 
     /**
-     * throw an exception after a Gnome action failed and
+     * throw an exception after an operation failed and
      * remember that this instance has failed
      *
      * @param action     a string describing what was attempted
@@ -443,18 +437,19 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
 
     const string m_changeId;
 
-    class itemList : public set<string> {
+    class Items : public set<string> {
         const_iterator m_it;
         EvolutionSyncSource &m_source;
         const string m_type;
         const SyncState m_state;
 
       public:
-        itemList( EvolutionSyncSource &source, const string &type, SyncState state ) :
+        Items( EvolutionSyncSource &source, const string &type, SyncState state ) :
             m_source( source ),
             m_type( type ),
             m_state( state )
         {}
+
         /**
          * start iterating, return first item if available
          *
@@ -464,58 +459,21 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
          * for parent items and thus they appear in the list before
          * their children.
          */
-        SyncItem *start() {
-            m_it = begin();
-            LOG.debug("start scanning %s items", m_type.c_str());
-            return iterate();
-        }
+        SyncItem *start();
+
         /** return current item if available, step to next one */
-        SyncItem *iterate() {
-            if (m_it != end()) {
-                const string &uid( *m_it );
-                LOG.debug("next %s item: %s", m_type.c_str(), uid.c_str());
-                ++m_it;
-                if (&m_source.m_deletedItems == this) {
-                    // just tell caller the uid of the deleted item
-                    // and the type that it probably had
-                    SyncItem *item = new SyncItem( uid.c_str() );
-                    item->setDataType(m_source.getMimeType());
-                    return item;
-                } else {
-                    // retrieve item with all its data
-                    try {
-                        cxxptr<SyncItem> item(m_source.createItem(uid));
-                        if (item) {
-                            item->setState(m_state);
-                        }
-                        return item.release();
-                    } catch(...) {
-                        EvolutionSyncSource::handleException();
-                        m_source.setFailed(true);
-                        return NULL;
-                    }
-                }
-            } else {
-                return NULL;
-            }
-        }
+        SyncItem *iterate();
 
         /**
          * add to list, with logging
          *
          * @return true if the item had not been added before
          */
-        bool addItem(const string &uid) {
-            pair<iterator, bool> res = insert(uid);
-            if (res.second) {
-                m_source.logItem(uid, m_type, true);
-            }
-            return res.second;
-        }
+        bool addItem(const string &uid);
     };
     
     /** UIDs of all/all new/all updated/all deleted items */
-    itemList m_allItems,
+    Items m_allItems,
         m_newItems,
         m_updatedItems,
         m_deletedItems;
@@ -535,7 +493,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     int processItem(const char *action,
                     int (EvolutionSyncSource::*func)(SyncItem& item),
                     SyncItem& item,
-                    bool needData);
+                    bool needData) throw();
 
     /** keeps track of failure state */
     bool m_hasFailed;

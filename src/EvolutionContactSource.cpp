@@ -72,7 +72,7 @@ EvolutionContactSource::EvolutionContactSource( const EvolutionContactSource &ot
 {
 }
 
-EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
+EvolutionSyncSource::Databases EvolutionContactSource::getDatabases()
 {
     ESourceList *sources = NULL;
 
@@ -80,14 +80,14 @@ EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
         EvolutionSyncClient::throwError("unable to access address books");
     }
 
-    EvolutionSyncSource::sources result;
+    Databases result;
     bool first = true;
     for (GSList *g = e_source_list_peek_groups (sources); g; g = g->next) {
         ESourceGroup *group = E_SOURCE_GROUP (g->data);
         for (GSList *s = e_source_group_peek_sources (group); s; s = s->next) {
             ESource *source = E_SOURCE (s->data);
             eptr<char> uri(e_source_get_uri(source));
-            result.push_back(EvolutionSyncSource::source(e_source_peek_name(source),
+            result.push_back(Database(e_source_peek_name(source),
                                                          uri ? uri.get() : "",
                                                          first));
             first = false;
@@ -111,7 +111,7 @@ EvolutionSyncSource::sources EvolutionContactSource::getSyncBackends()
 
         if (book) {
             const char *uri = e_book_get_uri (book);
-            result.push_back (EvolutionSyncSource::source (name, uri, true));
+            result.push_back(Database(name, uri, true));
         }
     }
     

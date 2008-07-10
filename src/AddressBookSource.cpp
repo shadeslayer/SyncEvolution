@@ -1213,11 +1213,11 @@ AddressBookSource::AddressBookSource(const AddressBookSource &other) :
     m_modNodeName(other.m_modNodeName)
 {}
 
-EvolutionSyncSource::sources AddressBookSource::getSyncBackends()
+EvolutionSyncSource::Databases AddressBookSource::getDatabases()
 {
-    EvolutionSyncSource::sources result;
+    Databases result;
 
-    result.push_back(EvolutionSyncSource::source("<<system>>", ""));
+    result.push_back(Database("<<system>>", ""));
     return result;
 }
 

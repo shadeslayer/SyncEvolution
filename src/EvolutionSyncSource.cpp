@@ -23,6 +23,7 @@
 #include <common/base/Log.h>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 
 #include <list>
 using namespace std;
@@ -67,6 +68,7 @@ void EvolutionSyncSource::throwError( const string &action
 #endif
         gerrorstr = ": failure";
 
+    setFailed(true);
     EvolutionSyncClient::throwError(string(getName()) + ": " + action + gerrorstr);
 }
 
@@ -79,19 +81,6 @@ void EvolutionSyncSource::resetItems()
     m_deletedItems.clear();
 }
 
-string EvolutionSyncSource::getPropertyValue(ManagementNode &node, const string &property)
-{
-    char *value = node.readPropertyValue(property.c_str());
-    string res;
-
-    if (value) {
-        res = value;
-        delete [] value;
-    }
-
-    return res;
-}
-
 void EvolutionSyncSource::handleException()
 {
     try {
@@ -100,6 +89,7 @@ void EvolutionSyncSource::handleException()
         setErrorF(getLastErrorCode() == ERR_NONE ? ERR_UNSPECIFIED : getLastErrorCode(),
                   "%s", ex.what());
         LOG.error("%s", getLastErrorMsg());
+        setFailed(true);
     }
 }
 
@@ -226,7 +216,7 @@ EvolutionSyncSource *EvolutionSyncSource::createTestingSource(const string &name
     return createSource(params, error);
 }
 
-int EvolutionSyncSource::beginSync()
+int EvolutionSyncSource::beginSync() throw()
 {
     string buffer;
     buffer += getName();
@@ -301,19 +291,17 @@ int EvolutionSyncSource::beginSync()
         beginSyncThrow(needAll, needPartial, deleteLocal);
     } catch( ... ) {
         handleException();
-        setFailed(true);
         return 1;
     }
     return 0;
 }
 
-int EvolutionSyncSource::endSync()
+int EvolutionSyncSource::endSync() throw()
 {
     try {
         endSyncThrow();
     } catch ( ... ) {
         handleException();
-        setFailed(true);
     }
 
     // Do _not_ tell the caller (SyncManager) if an error occurred
@@ -323,49 +311,45 @@ int EvolutionSyncSource::endSync()
     return 0;
 }
 
-void EvolutionSyncSource::setItemStatus(const char *key, int status)
+void EvolutionSyncSource::setItemStatus(const char *key, int status) throw()
 {
     try {
         // TODO: logging
         setItemStatusThrow(key, status);
     } catch (...) {
         handleException();
-        setFailed(true);
     }
 }
 
-int EvolutionSyncSource::addItem(SyncItem& item)
+int EvolutionSyncSource::addItem(SyncItem& item) throw()
 {
     return processItem("add", &EvolutionSyncSource::addItemThrow, item, true);
 }
 
-int EvolutionSyncSource::updateItem(SyncItem& item)
+int EvolutionSyncSource::updateItem(SyncItem& item) throw()
 {
     return processItem("update", &EvolutionSyncSource::updateItemThrow, item, true);
 }
 
-int EvolutionSyncSource::deleteItem(SyncItem& item)
+int EvolutionSyncSource::deleteItem(SyncItem& item) throw()
 {
     return processItem("delete", &EvolutionSyncSource::deleteItemThrow, item, false);
 }
 
-int EvolutionSyncSource::removeAllItems()
+int EvolutionSyncSource::removeAllItems() throw()
 {
     int status = 0;
     
     try {
-        for (itemList::const_iterator it = m_allItems.begin();
-             it != m_allItems.end();
-             ++it) {
+        BOOST_FOREACH(const string &key, m_allItems) {
             SyncItem item;
-            item.setKey(it->c_str());
+            item.setKey(key.c_str());
             logItem(item, "delete all items");
             deleteItemThrow(item);
             m_isModified = true;
         }
     } catch (...) {
         handleException();
-        setFailed(true);
         status = 1;
     }
     return status;
@@ -374,7 +358,7 @@ int EvolutionSyncSource::removeAllItems()
 int EvolutionSyncSource::processItem(const char *action,
                                      int (EvolutionSyncSource::*func)(SyncItem& item),
                                      SyncItem& item,
-                                     bool needData)
+                                     bool needData) throw()
 {
     int status = STC_COMMAND_FAILED;
     
@@ -392,7 +376,6 @@ int EvolutionSyncSource::processItem(const char *action,
         m_isModified = true;
     } catch (...) {
         handleException();
-        setFailed(true);
     }
     return status;
 }
@@ -410,4 +393,49 @@ void EvolutionSyncSource::setItemStatusThrow(const char *key, int status)
             setFailed(true);
         }
     }
+}
+
+SyncItem *EvolutionSyncSource::Items::start()
+{
+    m_it = begin();
+    LOG.debug("start scanning %s items", m_type.c_str());
+    return iterate();
+}
+
+SyncItem *EvolutionSyncSource::Items::iterate()
+{
+    if (m_it != end()) {
+        const string &uid( *m_it );
+        LOG.debug("next %s item: %s", m_type.c_str(), uid.c_str());
+        ++m_it;
+        if (&m_source.m_deletedItems == this) {
+            // just tell caller the uid of the deleted item
+            // and the type that it probably had
+            SyncItem *item = new SyncItem( uid.c_str() );
+            item->setDataType(m_source.getMimeType());
+            return item;
+        } else {
+            // retrieve item with all its data
+            try {
+                cxxptr<SyncItem> item(m_source.createItem(uid));
+                if (item) {
+                    item->setState(m_state);
+                }
+                return item.release();
+            } catch(...) {
+                m_source.handleException();
+                return NULL;
+            }
+        }
+    } else {
+        return NULL;
+    }
+}
+
+bool EvolutionSyncSource::Items::addItem(const string &uid) {
+    pair<iterator, bool> res = insert(uid);
+    if (res.second) {
+        m_source.logItem(uid, m_type, true);
+    }
+    return res.second;
 }

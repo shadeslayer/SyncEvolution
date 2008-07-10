@@ -48,7 +48,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     //
     // implementation of EvolutionSyncSource
     //
-    virtual sources getSyncBackends();
+    virtual Databases getDatabases();
     virtual void open();
     virtual void close(); 
     virtual void exportData(ostream &out);

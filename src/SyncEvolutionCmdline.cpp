@@ -308,8 +308,8 @@ bool SyncEvolutionCmdline::run() {
                         disable = "no backend available";
                     } else {
                         try {
-                            EvolutionSyncSource::sources datasources = syncSource->getSyncBackends();
-                            if (datasources.empty()) {
+                            EvolutionSyncSource::Databases databases = syncSource->getDatabases();
+                            if (databases.empty()) {
                                 disable = "no database to synchronize";
                             }
                         } catch (...) {
@@ -481,13 +481,11 @@ bool SyncEvolutionCmdline::listProperties(const ConfigPropertyRegistry &validPro
 void SyncEvolutionCmdline::listSources(EvolutionSyncSource &syncSource, const string &header)
 {
     m_out << header << ":\n";
-    EvolutionSyncSource::sources sources = syncSource.getSyncBackends();
+    EvolutionSyncSource::Databases databases = syncSource.getDatabases();
 
-    for (EvolutionSyncSource::sources::const_iterator it = sources.begin();
-         it != sources.end();
-         it++) {
-        m_out << "   " << it->m_name << " (" << it->m_uri << ")";
-        if (it->m_isDefault) {
+    BOOST_FOREACH(const EvolutionSyncSource::Database &database, databases) {
+        m_out << "   " << database.m_name << " (" << database.m_uri << ")";
+        if (database.m_isDefault) {
             m_out << " <default>";
         }
         m_out << endl;

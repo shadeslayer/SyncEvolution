@@ -70,7 +70,7 @@ class TrackingSyncSource : public EvolutionSyncSource
      * returns a list of all know sources for the kind of items
      * supported by this sync source
      */
-    virtual sources getSyncBackends() = 0;
+    virtual Databases getDatabases() = 0;
 
     /**
      * Actually opens the data source specified in the constructor,
