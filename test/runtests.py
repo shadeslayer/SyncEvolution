@@ -141,7 +141,7 @@ class Action:
 class Context:
     """Provides services required by actions and handles running them."""
 
-    def __init__(self, tmpdir, resultdir, uri, workdir, mailtitle, sender, recipients, enabled, skip, nologs):
+    def __init__(self, tmpdir, resultdir, uri, workdir, mailtitle, sender, recipients, enabled, skip, nologs, setupcmd):
         # preserve normal stdout because stdout/stderr will be redirected
         self.out = os.fdopen(os.dup(1), "w")
         self.todo = []
@@ -157,6 +157,7 @@ class Context:
         self.enabled = enabled
         self.skip = skip
         self.nologs = nologs
+        self.setupcmd = setupcmd
 
     def runCommand(self, cmd):
         """Log and run the given command, throwing an exception if it fails."""
@@ -376,6 +377,8 @@ class SyncEvolutionTest(Action):
         resdir = os.getcwd()
         os.chdir(self.srcdir)
         try:
+            if context.setupcmd:
+                context.runCommand("%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name))
             basecmd = "%s CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
             context.runCommand("make testclean test")
             if self.tests:
@@ -477,6 +480,9 @@ parser.add_option("", "--evosvn",
 parser.add_option("", "--prebuilt",
                   action="append", type="string", dest="prebuilt", default=[],
                   help="a directory where SyncEvolution was build before: enables testing using those binaries (can be used multiple times)")
+parser.add_option("", "--setup-command",
+                  type="string", dest="setupcmd",
+                  help="invoked with <test name> <args to start syncevolution>, should setup local account for the test")
 
 (options, args) = parser.parse_args()
 if options.recipients and not options.sender:
@@ -485,7 +491,7 @@ if options.recipients and not options.sender:
 
 context = Context(options.tmpdir, options.resultdir, options.uri, options.workdir,
                   options.subject, options.sender, options.recipients,
-                  options.enabled, options.skip, options.nologs)
+                  options.enabled, options.skip, options.nologs, options.setupcmd)
 
 class EvoSvn(Action):
     """Builds Evolution from SVN using Paul Smith's Evolution Makefile."""
