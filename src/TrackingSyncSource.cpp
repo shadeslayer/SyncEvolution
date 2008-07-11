@@ -42,20 +42,16 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
         map<string, string> props;
         m_trackingNode->readProperties(props);
 
-        for (map<string, string>::iterator it = props.begin();
-             it != props.end();
-             it++) {
-            const string &uid(it->first);
+        BOOST_FOREACH(const StringPair &prop, props) {
+            const string &uid(prop.first);
             m_deletedItems.addItem(uid.c_str());
             m_trackingNode->removeProperty(uid);
         }
     }
 
-    for (RevisionMap_t::const_iterator it = revisions.begin();
-         it != revisions.end();
-         it++) {
-        const string &uid = it->first;
-        const string &revision = it->second;
+    BOOST_FOREACH(const StringPair &mapping, revisions) {
+        const string &uid = mapping.first;
+        const string &revision = mapping.second;
 
         if (deleteLocal) {
             deleteItem(uid);
@@ -89,10 +85,8 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
         map<string, string> props;
         m_trackingNode->readProperties(props);
 
-        for (map<string, string>::iterator it = props.begin();
-             it != props.end();
-             it++) {
-            const string &uid(it->first);
+        BOOST_FOREACH(const StringPair &mapping, props) {
+            const string &uid(mapping.first);
             if (m_allItems.find(uid) == m_allItems.end()) {
                 m_deletedItems.addItem(uid);
                 m_trackingNode->removeProperty(uid);
@@ -126,10 +120,8 @@ void TrackingSyncSource::exportData(ostream &out)
     RevisionMap_t revisions;
     listAllItems(revisions);
 
-    for (RevisionMap_t::const_iterator it = revisions.begin();
-         it != revisions.end();
-         it++) {
-        const string &uid = it->first;
+    BOOST_FOREACH(const StringPair &mapping, revisions) {
+        const string &uid = mapping.first;
         cxxptr<SyncItem> item(createItem(uid), "sync item");
 
         out << (char *)item->getData() << "\n";

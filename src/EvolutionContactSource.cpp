@@ -37,6 +37,7 @@ using namespace std;
 using namespace vocl;
 
 #include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 
 class unrefEBookChanges {
  public:
@@ -459,10 +460,8 @@ SyncItem *EvolutionContactSource::createItem(const string &uid)
                 }
                 vprop->removeParameter("TYPE");
             }
-            for(list<string>::const_iterator it = types.begin();
-                it != types.end();
-                ++it) {
-                vprop->addParameter("TYPE", it->c_str());
+            BOOST_FOREACH(const string &type, types) {
+                vprop->addParameter("TYPE", type.c_str());
             }
 
             // Also make all strings uppercase because 3.0 is

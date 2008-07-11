@@ -21,6 +21,7 @@
 #include "SyncEvolutionUtil.h"
 
 #include <boost/scoped_array.hpp>
+#include <boost/foreach.hpp>
 
 #include <unistd.h>
 #include <errno.h>
@@ -72,10 +73,8 @@ void FileConfigNode::flush()
 
     FILE *file = fopen(tmpFilename.c_str(), "w");
     if (file) {
-        for (list<string>::const_iterator it = m_lines.begin();
-             it != m_lines.end();
-             it++) {
-            fprintf(file, "%s\n", it->c_str());
+        BOOST_FOREACH(const string &line, m_lines) {
+            fprintf(file, "%s\n", line.c_str());
         }
         fflush(file);
         bool failed = ferror(file);
@@ -192,10 +191,7 @@ static bool getValue(const string &line,
 string FileConfigNode::readProperty(const string &property) const {
     string value;
 
-    for (list<string>::const_iterator it = m_lines.begin();
-         it != m_lines.end();
-         it++) {
-        const string &line = *it;
+    BOOST_FOREACH(const string &line, m_lines) {
         bool isComment;
 
         if (getValue(line, property, value, isComment, false)) {
@@ -211,10 +207,7 @@ void FileConfigNode::readProperties(map<string, string> &props) const {
     map<string, string> res;
     string value, property;
 
-    for (list<string>::const_iterator it = m_lines.begin();
-         it != m_lines.end();
-         it++) {
-        const string &line = *it;
+    BOOST_FOREACH(const string &line, m_lines) {
         bool isComment;
         if (getContent(line, property, value, isComment, false)) {
             // don't care about the result: only the first instance
@@ -257,16 +250,13 @@ void FileConfigNode::setProperty(const string &property,
     }
     newstr += property + " = " + newvalue;
 
-    for (list<string>::iterator it = m_lines.begin();
-         it != m_lines.end();
-         it++) {
-        const string &line = *it;
+    BOOST_FOREACH(string &line, m_lines) {
         bool isComment;
 
         if (getValue(line, property, oldvalue, isComment, true)) {
             if (newvalue != oldvalue ||
                 isComment && !isDefault) {
-                *it = newstr;
+                line = newstr;
                 m_modified = true;
             }
             return;
@@ -280,10 +270,8 @@ void FileConfigNode::setProperty(const string &property,
         if (m_lines.size()) {
             m_lines.push_back("");
         }
-        for (list<string>::const_iterator it = commentLines.begin();
-             it != commentLines.end();
-             ++it) {
-            m_lines.push_back(string("# " + *it));
+        BOOST_FOREACH(const string &comment, commentLines) {
+            m_lines.push_back(string("# ") + comment);
         }
     }
 

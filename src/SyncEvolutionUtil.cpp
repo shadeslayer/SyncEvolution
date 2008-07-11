@@ -22,6 +22,7 @@
 #include <base/test.h>
 
 #include <boost/scoped_array.hpp>
+#include <boost/foreach.hpp>
 #include <fstream>
 
 #include <errno.h>
@@ -99,10 +100,8 @@ void rm_r(const string &path)
     }
 
     ReadDir dir(path);
-    for (ReadDir::const_iterator it = dir.begin();
-         it != dir.end();
-         ++it) {
-        rm_r(path + "/" + *it);
+    BOOST_FOREACH(const string &entry, dir) {
+        rm_r(path + "/" + entry);
     }
     if (rmdir(path.c_str())) {
         EvolutionSyncClient::throwError(path + ": " + strerror(errno));

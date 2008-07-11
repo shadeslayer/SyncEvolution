@@ -113,9 +113,9 @@ RegisterSyncSource::RegisterSyncSource(const string &shortDescr,
     SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
 
     // insert sorted by description to have deterministic ordering
-    for (SourceRegistry::iterator it = registry.begin();
-         it != registry.end();
-         ++it) {
+    for(SourceRegistry::iterator it = registry.begin();
+        it != registry.end();
+        ++it) {
         if ((*it)->m_shortDescr > shortDescr) {
             registry.insert(it, this);
             return;
@@ -172,13 +172,11 @@ EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSource
     pair<string, string> sourceType = getSourceType(params.m_nodes);
 
     const SourceRegistry &registry(getSourceRegistry());
-    for (SourceRegistry::const_iterator it = registry.begin();
-         it != registry.end();
-         ++it) {
-        EvolutionSyncSource *source = (*it)->m_create(params);
+    BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
+        EvolutionSyncSource *source = sourceInfos->m_create(params);
         if (source) {
             if (source == RegisterSyncSource::InactiveSource) {
-                EvolutionSyncClient::throwError(params.m_name + ": access to " + (*it)->m_shortDescr +
+                EvolutionSyncClient::throwError(params.m_name + ": access to " + sourceInfos->m_shortDescr +
                                                 " not enabled, therefore type = " + sourceTypeString + " not supported");
             }
             return source;

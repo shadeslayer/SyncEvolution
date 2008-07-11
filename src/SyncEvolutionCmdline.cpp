@@ -153,17 +153,13 @@ bool SyncEvolutionCmdline::run() {
         SyncSourceNodes nodes(configNode, hiddenNode, trackingNode);
         EvolutionSyncSourceParams params("list", nodes, "");
         
-        for (SourceRegistry::const_iterator source = registry.begin();
-             source != registry.end();
-             ++source) {
-            for (Values::const_iterator alias = (*source)->m_typeValues.begin();
-                 alias != (*source)->m_typeValues.end();
-                 ++alias) {
-                if (!alias->empty() && (*source)->m_enabled) {
-                    configNode->setProperty("type", *alias->begin());
+        BOOST_FOREACH(const RegisterSyncSource *source, registry) {
+            BOOST_FOREACH(const Values::value_type &alias, source->m_typeValues) {
+                if (!alias.empty() && source->m_enabled) {
+                    configNode->setProperty("type", *alias.begin());
                     auto_ptr<EvolutionSyncSource> source(EvolutionSyncSource::createSource(params, false));
                     if (source.get() != NULL) {
-                        listSources(*source, boost::join(*alias, " = "));
+                        listSources(*source, boost::join(alias, " = "));
                         m_out << "\n";
                     }
                 }
@@ -200,13 +196,11 @@ bool SyncEvolutionCmdline::run() {
 
         list<string> sources = config->getSyncSources();
         sources.sort();
-        for (list<string>::const_iterator it = sources.begin();
-             it != sources.end();
-             ++it) {
+        BOOST_FOREACH(const string &name, sources) {
             if (m_sources.empty() ||
-                m_sources.find(*it) != m_sources.end()) {
-                m_out << endl << "[" << *it << "]" << endl;
-                ConstSyncSourceNodes nodes = config->getSyncSourceNodes(*it);
+                m_sources.find(name) != m_sources.end()) {
+                m_out << endl << "[" << name << "]" << endl;
+                ConstSyncSourceNodes nodes = config->getSyncSourceNodes(name);
                 boost::shared_ptr<FilterConfigNode> sourceProps(new FilterConfigNode(boost::shared_ptr<const ConfigNode>(nodes.m_configNode)));
                 sourceProps->setFilter(m_sourceProps);
                 dumpProperties(*sourceProps, EvolutionSyncSourceConfig::getRegistry());
@@ -439,10 +433,8 @@ bool SyncEvolutionCmdline::listPropValues(const ConfigPropertyRegistry &validPro
         if (comment != "") {
             list<string> commentLines;
             ConfigProperty::splitComment(comment, commentLines);
-            for (list<string>::const_iterator line = commentLines.begin();
-                 line != commentLines.end();
-                 ++line) {
-                m_out << "   " << *line << endl;
+            BOOST_FOREACH(const string &line, commentLines) {
+                m_out << "   " << line << endl;
             }
         } else {
             m_out << "   no documentation available" << endl;
@@ -458,11 +450,9 @@ bool SyncEvolutionCmdline::listProperties(const ConfigPropertyRegistry &validPro
     // Remember that comment and print it as late as possible,
     // that way related properties preceed their comment.
     string comment;
-    for (ConfigPropertyRegistry::const_iterator prop = validProps.begin();
-         prop != validProps.end();
-         ++prop) {
-        if (!(*prop)->isHidden()) {
-            string newComment = (*prop)->getComment();
+    BOOST_FOREACH(const ConfigProperty *prop, validProps) {
+        if (!prop->isHidden()) {
+            string newComment = prop->getComment();
 
             if (newComment != "") {
                 if (!comment.empty()) {
@@ -471,7 +461,7 @@ bool SyncEvolutionCmdline::listProperties(const ConfigPropertyRegistry &validPro
                 }
                 comment = newComment;
             }
-            m_out << (*prop)->getName() << ":" << endl;
+            m_out << prop->getName() << ":" << endl;
         }
     }
     dumpComment(m_out, "   ", comment);
@@ -496,10 +486,8 @@ void SyncEvolutionCmdline::dumpServers(const string &preamble,
                                        const EvolutionSyncConfig::ServerList &servers)
 {
     m_out << preamble << endl;
-    for (EvolutionSyncConfig::ServerList::const_iterator it = servers.begin();
-         it != servers.end();
-         ++it) {
-        m_out << "   "  << it->first << " = " << it->second << endl;
+    BOOST_FOREACH(const EvolutionSyncConfig::ServerList::value_type &server,servers) {
+        m_out << "   "  << server.first << " = " << server.second << endl;
     }
     if (!servers.size()) {
         m_out << "   none" << endl;
@@ -509,25 +497,23 @@ void SyncEvolutionCmdline::dumpServers(const string &preamble,
 void SyncEvolutionCmdline::dumpProperties(const ConfigNode &configuredProps,
                                           const ConfigPropertyRegistry &allProps)
 {
-    for (ConfigPropertyRegistry::const_iterator it = allProps.begin();
-         it != allProps.end();
-         ++it) {
-        if ((*it)->isHidden()) {
+    BOOST_FOREACH(const ConfigProperty *prop, allProps) {
+        if (prop->isHidden()) {
             continue;
         }
         if (!m_quiet) {
-            string comment = (*it)->getComment();
+            string comment = prop->getComment();
             if (!comment.empty()) {
                 m_out << endl;
                 dumpComment(m_out, "# ", comment);
             }
         }
         bool isDefault;
-        (*it)->getProperty(configuredProps, &isDefault);
+        prop->getProperty(configuredProps, &isDefault);
         if (isDefault) {
             m_out << "# ";
         }
-        m_out << (*it)->getName() << " = " << (*it)->getProperty(configuredProps) << endl;
+        m_out << prop->getName() << " = " << prop->getProperty(configuredProps) << endl;
     }
 }
 
@@ -537,10 +523,8 @@ void SyncEvolutionCmdline::dumpComment(ostream &stream,
 {
     list<string> commentLines;
     ConfigProperty::splitComment(comment, commentLines);
-    for (list<string>::const_iterator line = commentLines.begin();
-         line != commentLines.end();
-         ++line) {
-        stream << prefix << *line << endl;
+    BOOST_FOREACH(const string &line, commentLines) {
+        stream << prefix << line << endl;
     }
 }
 
@@ -1738,15 +1722,13 @@ private:
         ReadDir readDir(newroot);
         sort(readDir.begin(), readDir.end());
 
-        for (ReadDir::const_iterator it = readDir.begin();
-             it != readDir.end();
-             ++it) {
-            if (isDir(newroot + "/" + *it)) {
-                scanFiles(root, dir + (dir.empty() ? "" : "/") + *it, out, onlyProps);
+        BOOST_FOREACH(const string &entry, readDir) {
+            if (isDir(newroot + "/" + entry)) {
+                scanFiles(root, dir + (dir.empty() ? "" : "/") + entry, out, onlyProps);
             } else {
                 ifstream in;
                 in.exceptions(ios_base::badbit /* failbit must not trigger exception because is set when reaching eof ?! */);
-                in.open((newroot + "/" + *it).c_str());
+                in.open((newroot + "/" + entry).c_str());
                 string line;
                 while (!in.eof()) {
                     getline(in, line);
@@ -1758,7 +1740,7 @@ private:
                         if (dir.size()) {
                             out << dir << "/";
                         }
-                        out << *it << ":";
+                        out << entry << ":";
                         out << line << '\n';
                     }
                 }

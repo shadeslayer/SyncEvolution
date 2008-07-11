@@ -25,6 +25,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/foreach.hpp>
 #include <list>
 #include <string>
 #include <sstream>
@@ -173,14 +174,10 @@ class StringConfigProperty : public ConfigProperty {
      */
     bool normalizeValue(string &res) const {
         Values values = getValues();
-        for (Values::const_iterator value = values.begin();
-             value != values.end();
-             ++value) {
-            for (Aliases::const_iterator alias = value->begin();
-                 alias != value->end();
-                 ++alias) {
-                if (boost::iequals(res, *alias)) {
-                    res = *value->begin();
+        BOOST_FOREACH(const Values::value_type &value, values) {
+            BOOST_FOREACH(const string &alias, value) {
+                if (boost::iequals(res, alias)) {
+                    res = *value.begin();
                     return true;
                 }
             }
@@ -200,25 +197,27 @@ class StringConfigProperty : public ConfigProperty {
 
         ostringstream err;
         err << "not one of the valid values (";
-        for (Values::const_iterator value = values.begin();
-             value != values.end();
-             ++value) {
-            if (value != values.begin()) {
+        bool firstval = true;
+        BOOST_FOREACH(const Values::value_type &value, values) {
+            if (!firstval) {
                 err << ", ";
+            } else {
+                firstval = false;
             }
-            for (Aliases::const_iterator alias = value->begin();
-                 alias != value->end();
-                 ++alias) {
-                if (alias != value->begin()) {
+            bool firstalias = true;
+            BOOST_FOREACH(const string &alias, value) {
+                if (!firstalias) {
                     err << " = ";
+                } else {
+                    firstalias = false;
                 }
-                if (alias->empty()) {
+                if (alias.empty()) {
                     err << "\"\"";
                 } else {
-                    err << *alias;
+                    err << alias;
                 }
                 
-                if (boost::iequals(propValue, *alias)) {
+                if (boost::iequals(propValue, alias)) {
                     return true;
                 }
             }
@@ -389,11 +388,9 @@ class ConfigPropertyRegistry : public list<const ConfigProperty *> {
  public:
     /** case-insensitive search for property */
     const ConfigProperty *find(const string &propName) const {
-        for (const_iterator it = begin();
-             it != end();
-             ++it) {
-            if (boost::iequals((*it)->getName(), propName)) {
-                return *it;
+        BOOST_FOREACH(const ConfigProperty *prop, *this) {
+            if (boost::iequals(prop->getName(), propName)) {
+                return prop;
             }
         }
         return NULL;

@@ -23,6 +23,11 @@
 #include "VolatileConfigTree.h"
 #include "VolatileConfigNode.h"
 
+#include <boost/foreach.hpp>
+#include <iterator>
+#include <algorithm>
+#include <functional>
+
 #include <unistd.h>
 #include "config.h"
 
@@ -92,10 +97,8 @@ string EvolutionSyncConfig::getRootPath() const
 static void addServers(const string &root, EvolutionSyncConfig::ServerList &res) {
     FileConfigTree tree(root, false);
     list<string> servers = tree.getChildren("");
-    for (list<string>::const_iterator it = servers.begin();
-         it != servers.end();
-         ++it) {
-        res.push_back(pair<string, string>(*it, root + "/" + *it));
+    BOOST_FOREACH(const string &server, servers) {
+        res.push_back(pair<string, string>(server, root + "/" + server));
     }
 }
 
@@ -485,11 +488,9 @@ void EvolutionSyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncP
 static void setDefaultProps(const ConfigPropertyRegistry &registry,
                             boost::shared_ptr<FilterConfigNode> node)
 {
-    for (ConfigPropertyRegistry::const_iterator it = registry.begin();
-         it != registry.end();
-         ++it) {
-        if (!(*it)->isHidden()) {
-            (*it)->setDefaultProperty(*node, (*it)->isObligatory());
+    BOOST_FOREACH(const ConfigProperty *prop, registry) {
+        if (!prop->isHidden()) {
+            prop->setDefaultProperty(*node, prop->isObligatory());
         }
     }    
 }
@@ -511,14 +512,12 @@ static void copyProperties(const ConfigNode &fromProps,
                            bool hidden,
                            const ConfigPropertyRegistry &allProps)
 {
-    for (ConfigPropertyRegistry::const_iterator it = allProps.begin();
-         it != allProps.end();
-         ++it) {
-        if ((*it)->isHidden() == hidden) {
-            string name = (*it)->getName();
+    BOOST_FOREACH(const ConfigProperty *prop, allProps) {
+        if (prop->isHidden() == hidden) {
+            string name = prop->getName();
             bool isDefault;
-            string value = (*it)->getProperty(fromProps, &isDefault);
-            toProps.setProperty(name, value, (*it)->getComment(),
+            string value = prop->getProperty(fromProps, &isDefault);
+            toProps.setProperty(name, value, prop->getComment(),
                                 isDefault ? &value : NULL);
         }
     }
@@ -530,12 +529,8 @@ static void copyProperties(const ConfigNode &fromProps,
     map<string, string> props;
     fromProps.readProperties(props);
 
-    for (map<string, string>::const_iterator it = props.begin();
-         it != props.end();
-         ++it) {
-        string name = it->first;
-        string value = it->second;
-        toProps.setProperty(name, value);
+    BOOST_FOREACH(const StringPair &prop, props) {
+        toProps.setProperty(prop.first, prop.second);
     }
 }
 
@@ -550,13 +545,11 @@ void EvolutionSyncConfig::copy(const EvolutionSyncConfig &other,
     }
 
     list<string> sources = other.getSyncSources();
-    for (list<string>::const_iterator it = sources.begin();
-         it != sources.end();
-         ++it) {
+    BOOST_FOREACH(const string &sourceName, sources) {
         if (!sourceFilter ||
-            sourceFilter->find(*it) != sourceFilter->end()) {
-            ConstSyncSourceNodes fromNodes = other.getSyncSourceNodes(*it);
-            SyncSourceNodes toNodes = this->getSyncSourceNodes(*it);
+            sourceFilter->find(sourceName) != sourceFilter->end()) {
+            ConstSyncSourceNodes fromNodes = other.getSyncSourceNodes(sourceName);
+            SyncSourceNodes toNodes = this->getSyncSourceNodes(sourceName);
             copyProperties(*fromNodes.m_configNode, *toNodes.m_configNode, false, EvolutionSyncSourceConfig::getRegistry());
             copyProperties(*fromNodes.m_hiddenNode, *toNodes.m_hiddenNode, true, EvolutionSyncSourceConfig::getRegistry());
             copyProperties(*fromNodes.m_trackingNode, *toNodes.m_trackingNode);
@@ -643,11 +636,9 @@ public:
         stringstream res;
 
         SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
-        for (SourceRegistry::const_iterator it = registry.begin();
-             it != registry.end();
-             ++it) {
-            const string &comment = (*it)->m_typeDescr;
-            stringstream *curr = (*it)->m_enabled ? &enabled : &disabled;
+        BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
+            const string &comment = sourceInfos->m_typeDescr;
+            stringstream *curr = sourceInfos->m_enabled ? &enabled : &disabled;
             *curr << comment;
             if (comment.size() && comment[comment.size() - 1] != '\n') {
                 *curr << '\n';
@@ -669,14 +660,10 @@ public:
         Values res(StringConfigProperty::getValues());
 
         const SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
-        for (SourceRegistry::const_iterator it = registry.begin();
-             it != registry.end();
-             ++it) {
-            for (Values::const_iterator v = (*it)->m_typeValues.begin();
-                 v != (*it)->m_typeValues.end();
-                 ++v) {
-                res.push_back(*v);
-            }
+        BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
+            copy(sourceInfos->m_typeValues.begin(),
+                 sourceInfos->m_typeValues.end(),
+                 back_inserter(res));
         }
 
         return res;

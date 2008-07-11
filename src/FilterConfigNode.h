@@ -48,17 +48,7 @@ class FilterConfigNode : public ConfigNode {
     class ConfigFilter : public map<string, string, Nocase<string> > {
     public:
         /** format as <key> = <value> lines */
-        operator string () const {
-            vector<string> res;
-
-            for (const_iterator it = begin();
-                 it != end();
-                 ++it) {
-                res.push_back(it->first + " = " + it->second);
-            }
-            sort(res.begin(), res.end());
-            return boost::join(res, "\n");
-        }
+        operator string () const;
     };
 
     /** read-write access to underlying node */

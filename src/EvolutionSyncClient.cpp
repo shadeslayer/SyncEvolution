@@ -224,11 +224,9 @@ public:
     /** find all entries in a given directory, return as sorted array */
     void getLogdirs(const string &logdir, vector<string> &entries) {
         ReadDir dir(logdir);
-        for (ReadDir::const_iterator it = dir.begin();
-             it != dir.end();
-             ++it) {
-            if (boost::starts_with(*it, m_prefix)) {
-                entries.push_back(*it);
+        BOOST_FOREACH(const string &entry, dir) {
+            if (boost::starts_with(entry, m_prefix)) {
+                entries.push_back(entry);
             }
         }
         sort(entries.begin(), entries.end());
@@ -318,13 +316,11 @@ public:
         out.exceptions(ios_base::badbit|ios_base::failbit|ios_base::eofbit);
 #endif
 
-        for( iterator it = begin();
-             it != end();
-             ++it ) {
-            string file = databaseName(**it, suffix);
+        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+            string file = databaseName(*source, suffix);
             LOG.debug("creating %s", file.c_str());
             out.open(file.c_str());
-            (*it)->exportData(out);
+            source->exportData(out);
             out.close();
             LOG.debug("%s created", file.c_str());
         }
@@ -332,12 +328,10 @@ public:
 
     /** remove database dumps with a specific suffix */
     void removeDatabases(const string &removeSuffix) {
-        for( iterator it = begin();
-             it != end();
-             ++it ) {
+        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
             string file;
 
-            file = databaseName(**it, removeSuffix);
+            file = databaseName(*source, removeSuffix);
             unlink(file.c_str());
         }
     }
@@ -383,12 +377,10 @@ public:
         }
 
         cout << "Local changes to be applied to server during synchronization:\n";
-        for( iterator it = begin();
-             it != end();
-             ++it ) {
-            string oldFile = databaseName(**it, oldSuffix, m_previousLogdir);
-            string newFile = databaseName(**it, newSuffix);
-            cout << "*** " << (*it)->getName() << " ***\n" << flush;
+        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+            string oldFile = databaseName(*source, oldSuffix, m_previousLogdir);
+            string newFile = databaseName(*source, newSuffix);
+            cout << "*** " << source->getName() << " ***\n" << flush;
             string cmd = string("env CLIENT_TEST_COMPARISON_FAILED=10 CLIENT_TEST_LEFT_NAME='after last sync' CLIENT_TEST_RIGHT_NAME='current data' CLIENT_TEST_REMOVED='removed since last sync' CLIENT_TEST_ADDED='added since last sync' synccompare 2>/dev/null '" ) +
                 oldFile + "' '" + newFile + "'";
             int ret = system(cmd.c_str());
@@ -525,13 +517,11 @@ public:
                 // compare databases?
                 if (!m_quiet && m_prepared) {
                     cout << "\nChanges applied to client during synchronization:\n";
-                    for( iterator it = begin();
-                         it != end();
-                         ++it ) {
-                        cout << "*** " << (*it)->getName() << " ***\n" << flush;
+                    BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+                        cout << "*** " << source->getName() << " ***\n" << flush;
 
-                        string before = databaseName(**it, "before");
-                        string after = databaseName(**it, "after");
+                        string before = databaseName(*source, "before");
+                        string after = databaseName(*source, "after");
                         string cmd = string("synccompare '" ) +
                             before + "' '" + after +
                             "' && echo 'no changes'";
@@ -552,10 +542,8 @@ public:
         m_sourceArray.reset(new SyncSource *[size() + 1]);
 
         int index = 0;
-        for (iterator it = begin();
-             it != end();
-             ++it) {
-            m_sourceArray[index] = *it;
+        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+            m_sourceArray[index] = source;
             index++;
         }
         m_sourceArray[index] = 0;
@@ -566,7 +554,7 @@ public:
     set<string> getSources() {
         set<string> res;
 
-        BOOST_FOREACH(SyncSource *source, *this) {
+        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
             res.insert(source->getName());
         }
         return res;
@@ -574,20 +562,16 @@ public:
    
     ~SourceList() {
         // free sync sources
-        for( iterator it = begin();
-             it != end();
-             ++it ) {
-            delete *it;
+        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+            delete source;
         }
     }
 
     /** find sync source by name */
     EvolutionSyncSource *operator [] (const string &name) {
-        for (iterator it = begin();
-             it != end();
-             ++it) {
-            if (name == (*it)->getName()) {
-                return *it;
+        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+            if (name == source->getName()) {
+                return source;
             }
         }
         return NULL;
@@ -727,10 +711,7 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
 {
     set<string> unmatchedSources = m_sources;
     list<string> configuredSources = getSyncSources();
-    for (list<string>::const_iterator it = configuredSources.begin();
-         it != configuredSources.end();
-         it++) {
-        const string &name(*it);
+    BOOST_FOREACH(const string &name, configuredSources) {
         boost::shared_ptr<PersistentEvolutionSyncSourceConfig> sc(getSyncSourceConfig(name));
         
         // is the source enabled?
@@ -777,17 +758,7 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
 
     // check whether there were any sources specified which do not exist
     if (unmatchedSources.size()) {
-        string sources;
-
-        for (set<string>::const_iterator it = unmatchedSources.begin();
-             it != unmatchedSources.end();
-             it++) {
-            if (sources.size()) {
-                sources += " ";
-            }
-            sources += *it;
-        }
-        throwError(string("no such source(s): ") + sources);
+        throwError(string("no such source(s): ") + boost::join(unmatchedSources, " "));
     }
 }
 

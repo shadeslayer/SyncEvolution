@@ -53,11 +53,9 @@ void SafeConfigNode::readProperties(map<string, string> &props) const
     map<string, string> original;
     m_readOnlyNode->readProperties(original);
 
-    for(map<string, string>::iterator it = original.begin();
-        it != original.end();
-        ++it) {
-        string key = unescape(it->first);
-        string value = unescape(it->second);
+    BOOST_FOREACH(const StringPair &prop, original) {
+        string key = unescape(prop.first);
+        string value = unescape(prop.second);
 
         props[key] = value;
     }

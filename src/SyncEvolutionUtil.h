@@ -22,17 +22,28 @@
 #include <base/test.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <vector>
 #include <sstream>
 #include <string>
+#include <utility>
 using namespace std;
 
-/** case-insensitive comparison for assoziative containers */
+/** case-insensitive less than for assoziative containers */
 template <class T> class Nocase : public std::binary_function<T, T, bool> {
 public:
-    bool operator()(const T &x, const T &y) const { return boost::to_lower_copy(x) < boost::to_lower_copy(y); }
+    bool operator()(const T &x, const T &y) const { return boost::ilexicographical_compare(x, y); }
 };
+
+/** case-insensitive equals */
+template <class T> class Iequals : public std::binary_function<T, T, bool> {
+public:
+    bool operator()(const T &x, const T &y) const { return boost::iequals(x, y); }
+};
+
+/** shorthand, primarily useful for BOOST_FOREACH macro */
+typedef pair<string, string> StringPair;
 
 /**
  * remove multiple slashes in a row and dots directly after a slash if not followed by filename,

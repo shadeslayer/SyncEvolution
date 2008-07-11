@@ -35,6 +35,8 @@ using namespace std;
 
 #include <common/base/Log.h>
 
+#include <boost/foreach.hpp>
+
 static const string
 EVOLUTION_CALENDAR_PRODID("PRODID:-//ACME//NONSGML SyncEvolution//EN"),
 EVOLUTION_CALENDAR_VERSION("VERSION:2.0");
@@ -386,10 +388,8 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
 
                 // Recreate any children removed earlier: when we get here,
                 // the parent exists and we must update it.
-                for (ICalComps_t::const_iterator it = children.begin();
-                     it != children.end();
-                     ++it) {
-                    if (!e_cal_modify_object(m_calendar, **it,
+                BOOST_FOREACH(boost::shared_ptr< eptr<icalcomponent> > &icalcomp, children) {
+                    if (!e_cal_modify_object(m_calendar, *icalcomp,
                                              CALOBJ_MOD_THIS,
                                              &gerror)) {
                         throwError(string("recreating item ") + item.getKey(), gerror);
@@ -423,12 +423,9 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
 EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const string &uid, bool returnOnlyChildren)
 {
     ICalComps_t events;
-    set<string>::const_iterator it;
 
-    for (it = m_allLUIDs.begin();
-         it != m_allLUIDs.end();
-         ++it) {
-        ItemID id = ItemID::parseLUID(*it);
+    BOOST_FOREACH(const string &luid, m_allLUIDs) {
+        ItemID id = ItemID::parseLUID(luid);
 
         if (id.m_uid == uid) {
             icalcomponent *icomp = retrieveItem(id);
@@ -476,12 +473,10 @@ void EvolutionCalendarSource::deleteItem(const string &luid)
         ICalComps_t children = removeEvents(id.m_uid, true);
 
         // recreate children
-        for (ICalComps_t::const_iterator it = children.begin();
-             it != children.end();
-             ++it) {
+        BOOST_FOREACH(boost::shared_ptr< eptr<icalcomponent> > &icalcomp, children) {
             char *uid;
 
-            if (!e_cal_create_object(m_calendar, **it, &uid, &gerror)) {
+            if (!e_cal_create_object(m_calendar, *icalcomp, &uid, &gerror)) {
                 throwError(string("recreating item ") + luid, gerror);
             }
         }
@@ -499,10 +494,7 @@ void EvolutionCalendarSource::deleteItem(const string &luid)
             throwError(string("deleting item " ) + luid, gerror);
         }
     }
-    set<string>::iterator it = m_allLUIDs.find(luid);
-    if (it != m_allLUIDs.end()) {
-        m_allLUIDs.erase(it);
-    }
+    m_allLUIDs.erase(luid);
 }
 
 void EvolutionCalendarSource::flush()

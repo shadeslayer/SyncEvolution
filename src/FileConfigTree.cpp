@@ -23,6 +23,8 @@
 #include "FileConfigNode.h"
 #include "SyncEvolutionUtil.h"
 
+#include <boost/foreach.hpp>
+
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -43,10 +45,8 @@ string FileConfigTree::getRootPath() const
 
 void FileConfigTree::flush()
 {
-    for (NodeCache_t::iterator it = m_nodes.begin();
-         it != m_nodes.end();
-         it++) {
-        it->second->flush();
+    BOOST_FOREACH(const NodeCache_t::value_type &node, m_nodes) {
+        node.second->flush();
     }
 }
 
@@ -91,8 +91,7 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
         return found->second;
     } else {
         boost::shared_ptr<ConfigNode> node(new FileConfigNode(fullpath, filename));
-        pair<NodeCache_t::iterator, bool> inserted = m_nodes.insert(NodeCache_t::value_type(fullname, node));
-        return node;
+        return m_nodes[fullname] = node;
     }
 }
 
@@ -112,11 +111,9 @@ list<string> FileConfigTree::getChildren(const string &path)
     // first look at existing files
     if (!access(fullpath.c_str(), F_OK)) {
         ReadDir dir(fullpath);
-        for (ReadDir::const_iterator it = dir.begin();
-             it != dir.end();
-             ++it) {
-            if (isNode(fullpath, *it)) {
-                res.push_back(*it);
+        BOOST_FOREACH(const string entry, dir) {
+            if (isNode(fullpath, entry)) {
+                res.push_back(entry);
             }
         }
     }
@@ -125,10 +122,8 @@ list<string> FileConfigTree::getChildren(const string &path)
     // but not saved yet. The full path must be
     // <path>/<childname>/<filename>.
     fullpath += "/";
-    for (NodeCache_t::iterator it = m_nodes.begin();
-         it != m_nodes.end();
-         it++) {
-        string currpath = it->first;
+    BOOST_FOREACH(const NodeCache_t::value_type &node, m_nodes) {
+        string currpath = node.first;
         if (currpath.size() > fullpath.size() &&
             currpath.substr(0, fullpath.size()) == fullpath) {
             // path prefix matches, now check whether we have
