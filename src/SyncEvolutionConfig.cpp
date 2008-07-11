@@ -130,7 +130,11 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     boost::shared_ptr<PersistentEvolutionSyncSourceConfig> source;
 
     config->setDefaults();
-    config->setDevID(string("uuid-") + UUID());
+    // The prefix is important: without it, myFUNAMBOL 6.x and 7.0 map
+    // all SyncEvolution instances to the single phone that they support,
+    // which leads to unwanted slow syncs when switching between multiple
+    // instances.
+    config->setDevID(string("sc-pim-") + UUID());
     config->setSourceDefaults("addressbook");
     config->setSourceDefaults("calendar");
     config->setSourceDefaults("todo");
