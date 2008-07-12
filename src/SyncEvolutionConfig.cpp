@@ -159,6 +159,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         config->setSyncURL("http://sync.scheduleworld.com/funambol/ds");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
+        source->setSourceType("addressbook:text/vcard");
         source = config->getSyncSourceConfig("calendar");
         source->setURI("cal2");
         source = config->getSyncSourceConfig("todo");
@@ -167,8 +168,6 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setURI("note");
     } else if (boost::iequals(server, "funambol")) {
         config->setSyncURL("http://my.funambol.com/sync");
-        source = config->getSyncSourceConfig("addressbook");
-        source->setSourceType("addressbook:text/x-vcard");
         source = config->getSyncSourceConfig("calendar");
         source->setSync("disabled");
         source = config->getSyncSourceConfig("todo");
@@ -191,7 +190,6 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         config->setSyncURL("http://sync.memotoo.com/syncML");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("con");
-        source->setSourceType("addressbook:text/x-vcard");
         source = config->getSyncSourceConfig("calendar");
         source->setURI("cal");
         source = config->getSyncSourceConfig("todo");
@@ -254,7 +252,7 @@ ConstSyncSourceNodes EvolutionSyncConfig::getSyncSourceNodes(const string &name,
 static ConfigProperty syncPropSyncURL("syncURL",
                                       "the base URL of the SyncML server which is to be used for SyncML;\n"
                                       "some examples:\n"
-                                      "- http://my.funambol.com\n"
+                                      "- http://my.funambol.com/sync\n"
                                       "- http://sync.scheduleworld.com/funambol/ds\n"
                                       "- http://www.synthesis.ch/sync\n");
 static ConfigProperty syncPropDevID("deviceId",

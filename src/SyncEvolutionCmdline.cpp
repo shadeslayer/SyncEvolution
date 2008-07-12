@@ -868,7 +868,7 @@ public:
                               "config.ini:# SSLVerifyHost = 1\n"
                               "sources/addressbook/.internal.ini:# last = 0\n"
                               "sources/addressbook/config.ini:sync = two-way\n"
-                              "sources/addressbook/config.ini:type = addressbook\n"
+                              "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
                               "sources/addressbook/config.ini:# evolutionsource = \n"
                               "sources/addressbook/config.ini:uri = card3\n"
                               "sources/addressbook/config.ini:# evolutionuser = \n"
@@ -928,7 +928,7 @@ protected:
     }
 
     void removeRandomUUID(string &buffer) {
-        string uuidstr = "deviceId = uuid-";
+        string uuidstr = "deviceId = sc-pim-";
         size_t uuid = buffer.find(uuidstr);
         CPPUNIT_ASSERT(uuid != buffer.npos);
         size_t end = buffer.find("\n", uuid + uuidstr.size());
@@ -1586,8 +1586,8 @@ private:
                              "addressbook/config.ini:uri = card3",
                              "addressbook/config.ini:uri = card");
         boost::replace_first(config,
-                             "addressbook/config.ini:type = addressbook",
-                             "addressbook/config.ini:type = addressbook:text/x-vcard");
+                             "addressbook/config.ini:type = addressbook:text/vcard",
+                             "addressbook/config.ini:type = addressbook");
 
         boost::replace_first(config,
                              "calendar/config.ini:uri = cal2",
@@ -1619,6 +1619,9 @@ private:
         boost::replace_first(config,
                              "addressbook/config.ini:uri = card3",
                              "addressbook/config.ini:uri = contacts");
+        boost::replace_first(config,
+                             "addressbook/config.ini:type = addressbook:text/vcard",
+                             "addressbook/config.ini:type = addressbook");
 
         boost::replace_first(config,
                              "calendar/config.ini:uri = cal2",
