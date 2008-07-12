@@ -52,7 +52,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     virtual void open();
     virtual void close(); 
     virtual void exportData(ostream &out);
-    virtual string fileSuffix() { return "vcf"; }
+    virtual string fileSuffix() const { return "vcf"; }
     virtual const char *getMimeType() const;
     virtual const char *getMimeVersion() const;
     virtual const char *getSupportedTypes() const { return "text/vcard:3.0,text/x-vcard:2.1"; }

@@ -59,7 +59,7 @@ class SQLiteContactSource : public TrackingSyncSource
     virtual void close();
     virtual Databases getDatabases();
     virtual SyncItem *createItem(const string &uid);
-    virtual string fileSuffix() { return "vcf"; }
+    virtual string fileSuffix() const { return "vcf"; }
     virtual const char *getMimeType() const { return "text/x-vcard"; }
     virtual const char *getMimeVersion() const { return "2.1"; }
     virtual const char *getSupportedTypes()const { return "text/vcard:3.0,text/x-vcard:2.1"; }

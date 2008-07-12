@@ -169,7 +169,7 @@ class TrackingSyncSource : public EvolutionSyncSource
     /**
      * file suffix for database files
      */
-    virtual string fileSuffix() = 0;
+    virtual string fileSuffix() const = 0;
 
     /**
      * Returns the preferred mime type of the items handled by the sync source.
