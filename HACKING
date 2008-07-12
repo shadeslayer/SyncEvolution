@@ -208,17 +208,21 @@ Compiling for iPhone
 Compiling for Mac OS X
 ----------------------
 
-  <path>/configure --with-sync4j-src= --enable-addressbook
-  make CFLAGS="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386" \
-       LDFLAGS="-Wl,-syslibroot,/Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386"
+  Configuring for development:
+  <path>/configure --with-sync4j-src=<path> \
+              --enable-addressbook \
+              SYNCEVOLUTION_CXXFLAGS="-Wall -Werror -Wno-unknown-pragmas" \
+              CXXFLAGS=-g \
+              CFLAGS=-g
 
+
+
+  Compiling final release:
   ./configure --enable-addressbook \
               CXXFLAGS="-O -g -arch i386 -arch ppc" \
               CFLAGS="-O -g -arch i386 -arch ppc" \
               LDFLAGS="-arch i386 -arch ppc" --disable-dependency-tracking
 
-  TODO: --disable-dependency-tracking an client-api weiterreichen
-  
   Fine-grained memory checking:
     MallocStackLogging=1 MallocStackLoggingNoCompact=1 \
     MallocScribble=1 MallocPreScribble=1 MallocGuardEdges=1 \
