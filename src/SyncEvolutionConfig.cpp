@@ -256,11 +256,12 @@ static ConfigProperty syncPropSyncURL("syncURL",
                                       "- http://sync.scheduleworld.com/funambol/ds\n"
                                       "- http://www.synthesis.ch/sync\n");
 static ConfigProperty syncPropDevID("deviceId",
-                                    "the SyncML server gets this string and will use it to keep track of\n"
+                                    "The SyncML server gets this string and will use it to keep track of\n"
                                     "changes that still need to be synchronized with this particular\n"
                                     "client; it must be set to something unique (like the pseudo-random\n"
-                                    "UUID created automatically for new configurations) among all clients\n"
-                                    "accessing the same server");
+                                    "string created automatically for new configurations) among all clients\n"
+                                    "accessing the same server.\n"
+                                    "myFUNAMBOL also requires that the string starts with sc-pim-");
 static ConfigProperty syncPropUsername("username",
                                        "user name used for authorization with the SyncML server",
                                        "your SyncML server account name");
