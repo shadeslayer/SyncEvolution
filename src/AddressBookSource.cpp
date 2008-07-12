@@ -129,7 +129,7 @@ static string CFString2Std(CFStringRef cfstring)
 
     CFIndex len = CFStringGetLength(cfstring) * 2 + 1;
     for (int tries = 0; tries < 3; tries++) {
-        boost::scoped_array<char> buf(new char[len], "buffer");
+        arrayptr<char> buf(new char[len], "buffer");
         if (CFStringGetCString(cfstring, buf, len, kCFStringEncodingUTF8)) {
             return string((char *)buf);
         }
@@ -285,7 +285,7 @@ public:
         VProperty *photo = vobj->getProperty("PHOTO");
         if (photo) {
             int len;
-            boost::scoped_array<char> decoded((char *)b64_decode(len, photo->getValue()), "photo");
+            arrayptr<char> decoded((char *)b64_decode(len, photo->getValue()), "photo");
             ref<CFDataRef> data(CFDataCreate(NULL, (UInt8 *)(char *)decoded, len));
             if (!PersonSetImageDataWrapper(m_person, data)) {
                 EvolutionSyncClient::throwError("cannot set photo data");
@@ -378,7 +378,7 @@ public:
 
         m_vobj.addProperty("END", "VCARD");
         m_vobj.fromNativeEncoding();
-        boost::scoped_array<char> finalstr(m_vobj.toString(), "VOCL string");
+        arrayptr<char> finalstr(m_vobj.toString(), "VOCL string");
         m_vcard = (char *)finalstr;
     }
 
@@ -639,7 +639,7 @@ private:
         if (!value || !value[0]) {
             return;
         }
-        boost::scoped_array<char> buffer(wstrdup(value));
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
@@ -692,7 +692,7 @@ private:
         if (!value || !value[0]) {
             return;
         }
-        boost::scoped_array<char> buffer(wstrdup(value));
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
@@ -779,7 +779,7 @@ private:
         if (!value || !value[0]) {
             return;
         }
-        boost::scoped_array<char> buffer(wstrdup(value));
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         ref<CFMutableDictionaryRef> dict(CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
@@ -875,7 +875,7 @@ private:
         if (!value || !value[0]) {
             return;
         }
-        boost::scoped_array<char> buffer(wstrdup(value));
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
@@ -973,7 +973,7 @@ private:
         if (!value || !value[0]) {
             return;
         }
-        boost::scoped_array<char> buffer(wstrdup(value));
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         char *last = my_strtok_r(buffer, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
@@ -1014,7 +1014,7 @@ private:
         if (!value || !value[0]) {
             return;
         }
-        boost::scoped_array<char> buffer(wstrdup(value));
+        arrayptr<char> buffer(wstrdup(value));
         char *saveptr, *endptr;
 
         char *company = my_strtok_r(buffer, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
@@ -1162,7 +1162,7 @@ kABManagerLabel
 };
 
 
-double AddressBookSource::getModTime(ABRecordRef record)
+string AddressBookSource::getModTime(ABRecordRef record)
 {
     double absolute;
 #ifdef IPHONE
@@ -1185,33 +1185,18 @@ double AddressBookSource::getModTime(ABRecordRef record)
     // together with a sleep of 1 second in endSyncThrow() this ensures
     // that our time stamps are always >= the stored time stamp even if
     // the time stamp is rounded in the database
-    return ceil(absolute);
+    char buffer[128];
+    sprintf(buffer, "%.0f", ceil(absolute));
+    return buffer;
 }
 
 
-AddressBookSource::AddressBookSource(const string &name,
-                                     EvolutionSyncSourceConfig *sc,
-                                     const string &changeId,
-                                     const string &id,
-                                     const string &configPath) :
-    EvolutionSyncSource(name, sc, changeId, id),
-    m_asVCard30(false)
+AddressBookSource::AddressBookSource(const EvolutionSyncSourceParams &params, bool asVCard30) :
+    TrackingSyncSource(params),
+    m_asVCard30(asVCard30),
+    m_addressbook(0)
 {
-    m_modNodeName = configPath + "/changes_" + changeId;
-
-    // hack: when configured to talk with ScheduleWorld "card3" URI then
-    // switch to sending vCard 3.0. A better solution would be to wait for
-    // server SyncCap information, but this is not currently possible (not sent
-    // by SW, not made available to Sync Source (?)).
-    if (sc && sc->getURI() && !strcasecmp(sc->getURI(), "card3")) {
-        setVCard30(true);
-    }
 }
-
-AddressBookSource::AddressBookSource(const AddressBookSource &other) :
-    EvolutionSyncSource(other),
-    m_modNodeName(other.m_modNodeName)
-{}
 
 EvolutionSyncSource::Databases AddressBookSource::getDatabases()
 {
@@ -1227,13 +1212,9 @@ void AddressBookSource::open()
     if (!m_addressbook) {
         throwError("opening address book");
     }
-    m_modTimes.set(new spdm::DeviceManagementNode(m_modNodeName.c_str()), "change management node");
-    m_modTimes->setAutosave(FALSE);
 }
 
-void AddressBookSource::beginSyncThrow(bool needAll,
-                                       bool needPartial,
-                                       bool deleteLocal)
+void AddressBookSource::listAllItems(RevisionMap_t &revisions)
 {
     ref<CFArrayRef> allPersons(ABCopyArrayOfAllPeople(m_addressbook), "list of all people");
 
@@ -1241,63 +1222,18 @@ void AddressBookSource::beginSyncThrow(bool needAll,
         ref<CFStringRef> cfuid(ABRecordCopyUniqueId((ABRecordRef)CFArrayGetValueAtIndex(allPersons, i)), "reading UID");
         string uid(CFString2Std(cfuid));
 
-        if (deleteLocal) {
-            if (!ABRemoveRecord(m_addressbook, (ABRecordRef)CFArrayGetValueAtIndex(allPersons, i))) {
-                throwError("deleting contact");
-            }
-        } else {
-            m_allItems.addItem(uid);
-            if (needPartial) {
-                eptr<char> serverModTimeStr(m_modTimes->readPropertyValue(uid.c_str()));
-                double itemModTime = getModTime((ABRecordRef)CFArrayGetValueAtIndex(allPersons, i));
-                char buffer[80];
-
-                sprintf(buffer, "%.8f", itemModTime);
-                if (!serverModTimeStr || !serverModTimeStr[0]) {
-                    m_newItems.addItem(uid);
-                    m_modTimes->setPropertyValue(uid.c_str(), buffer);
-                } else {
-                    double serverModTime = strtod(serverModTimeStr, NULL);
-                    if (itemModTime > serverModTime) {
-                        m_updatedItems.addItem(uid);
-                        m_modTimes->setPropertyValue(uid.c_str(), buffer);
-                    }
-                }
-            }
-        }
-    }
-
-    if (needPartial) {
-        ArrayList uids;
-        ArrayList modTimes;
-        m_modTimes->readProperties(&uids, &modTimes);
-        for (int i = 0; i < uids.size(); i++ ) {
-            const StringBuffer *uid = (StringBuffer *)uids[i];
-            if (m_allItems.find(uid->c_str()) == m_allItems.end()) {
-                m_deletedItems.addItem(uid->c_str());
-                m_modTimes->removeProperty(uid->c_str());
-            }
-        }
-    }
-            
-    if (!needAll) {
-        m_allItems.clear();
+        revisions[uid] = getModTime((ABRecordRef)CFArrayGetValueAtIndex(allPersons, i));
     }
 }
 
-void AddressBookSource::endSyncThrow()
+void AddressBookSource::close()
 {
-    resetItems();
-
     if (m_addressbook && !hasFailed()) {
         LOG.debug("flushing address book");
-
         // store changes persistently
         if (!ABSave(m_addressbook)) {
             throwError("saving address book");
         }
-
-        m_modTimes->update(FALSE);
 
         // time stamps are rounded to next second,
         // so to prevent changes in that range of inaccurracy
@@ -1306,13 +1242,8 @@ void AddressBookSource::endSyncThrow()
 
         LOG.debug("done with address book");
     }
-}
-
-void AddressBookSource::close()
-{
-    endSyncThrow();
+    
     m_addressbook = NULL;
-    m_modTimes = NULL;
 }
 
 void AddressBookSource::exportData(ostream &out)
@@ -1324,7 +1255,7 @@ void AddressBookSource::exportData(ostream &out)
         CFStringRef descr = CFCopyDescription(person);
         ref<CFStringRef> cfuid(ABRecordCopyUniqueId(person), "reading UID");
         string uid(CFString2Std(cfuid));
-        eptr<SyncItem> item(createItem(uid, true), "sync item");
+        cxxptr<SyncItem> item(createItem(uid, true), "sync item");
 
         out << (char *)item->getData() << "\n";
     }
@@ -1355,31 +1286,21 @@ SyncItem *AddressBookSource::createItem(const string &uid, bool asVCard30)
 
     item->setDataType(getMimeType());
     item->setModificationTime(0);
-    item->setState(state);
 
     return item.release();
 }
 
-int AddressBookSource::addItemThrow(SyncItem& item)
+AddressBookSource::InsertItemResult AddressBookSource::insertItem(const string &luid, const SyncItem &item)
 {
-    return insertItem(item, NULL);
-}
-
-int AddressBookSource::updateItemThrow(SyncItem& item)
-{
-    return insertItem(item, item.getKey());
-}
-
-int AddressBookSource::insertItem(SyncItem &item, const char *uid)
-{
-    int status = STC_OK;
-    string data(getData(item));
+    bool update = !luid.empty();
+    string newluid = luid;
+    string data = (const char *)item.getData();
     ref<ABPersonRef> person;
 
 #ifdef USE_ADDRESS_BOOK_VCARD
     if (uid) {
         // overwriting the UID of a new contact failed - resort to deleting the old contact and inserting a new one
-        deleteItemThrow(item);
+        deleteItem(uid);
     }
 
     ref<CFDataRef> vcard(CFDataCreate(NULL, (const UInt8 *)data.c_str(), data.size()), "vcard");
@@ -1388,9 +1309,9 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
         throwError(string("parsing vcard ") + data);
     }
 #else
-    if (uid) {
+    if (update) {
         // overwrite existing contact
-        ref<CFStringRef> cfuid(Std2CFString(uid));
+        ref<CFStringRef> cfuid(Std2CFString(luid));
         person.set((ABPersonRef)ABCopyRecordForUniqueId(m_addressbook, cfuid), "contact");
     } else {
         // new contact
@@ -1398,12 +1319,12 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
     }
     try {
         LOG.debug("storing vCard for %s:\n%s",
-                  uid ? uid : "new contact",
+                  update ? luid.c_str() : "new contact",
                   data.c_str());
         vCard2ABPerson converter(data, person);
         converter.toPerson();
     } catch (const std::exception &ex) {
-        throwError(string("storing vCard for ") + (uid ? uid : "new contact") + " failed: " + ex.what());
+        throwError(string("storing vCard for ") + (update ? luid : "new contact") + " failed: " + ex.what());
     }
 #endif
 
@@ -1421,45 +1342,33 @@ int AddressBookSource::insertItem(SyncItem &item, const char *uid)
     }
 
     // existing contacts do not have to (and cannot) be added (?)
-    if (uid || ABAddRecord(m_addressbook, person)) {
-#ifdef IPHONE
-        /* need to save to get UID? */
+    if (update || ABAddRecord(m_addressbook, person)) {
+        // need to save to get UID (iPhone) and final modification time (Mac OS X)?
         ABSave(m_addressbook);
-#endif
 
         ref<CFStringRef> cfuid(ABRecordCopyUniqueId(person), "uid");
-        string uidstr(CFString2Std(cfuid));
-        item.setKey(uidstr.c_str());
-
-        char buffer[80];
-        sprintf(buffer, "%.8f", getModTime(person));
-        LOG.debug("inserted contact %s with modification time %s",
-                  uidstr.c_str(), buffer);
-        m_modTimes->setPropertyValue(uidstr.c_str(), buffer);
+        newluid = CFString2Std(cfuid);
     } else {
         throwError("storing new contact");
     }
+    string modtime = getModTime(person);
 
-    return status;
+    return InsertItemResult(newluid, modtime, false);
 }
 
-int AddressBookSource::deleteItemThrow(SyncItem& item)
+void AddressBookSource::deleteItem(const string &uid)
 {
-    int status = STC_OK;
-    ref<CFStringRef> cfuid(Std2CFString(item.getKey()));
+    ref<CFStringRef> cfuid(Std2CFString(uid.c_str()));
     ref<ABPersonRef> person((ABPersonRef)ABCopyRecordForUniqueId(m_addressbook, cfuid));
 
     if (person) {
         if (!ABRemoveRecord(m_addressbook, person)) {
-            throwError(string("deleting contact ") + item.getKey());
+            throwError(string("deleting contact ") + uid);
         }
     } else {
         LOG.debug("%s: %s: request to delete non-existant contact ignored",
-                  getName(), item.getKey());
+                  getName(), uid.c_str());
     }
-    m_modTimes->removeProperty(item.getKey());
-
-    return status;
 }
 
 void AddressBookSource::logItem(const string &uid, const string &info, bool debug)

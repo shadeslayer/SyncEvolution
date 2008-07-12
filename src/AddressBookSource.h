@@ -21,13 +21,11 @@
 #define INCL_ADDRESSBOOKSOURCE
 
 #include <config.h>
-#include "EvolutionSyncSource.h"
-#include "EvolutionSmartPtr.h"
+#include "TrackingSyncSource.h"
 
 #ifdef ENABLE_ADDRESSBOOK
 
 #include <AddressBook/ABAddressBookC.h>
-#include "DeviceManagementNode.h"
 
 /**
  * a smart pointer for CoreFoundation object references
@@ -156,68 +154,42 @@ template<class T> typedef ref<T, true> iphoneref;
  * - label constants are not part of the framework:
  *   defined in AddressSourceConstants
  */
-class AddressBookSource : public EvolutionSyncSource
+class AddressBookSource : public TrackingSyncSource
 {
+ public:
     AddressBookSource(const EvolutionSyncSourceParams &params, bool asVCard30);
-    AddressBookSource(const AddressBookSource &other);
     virtual ~AddressBookSource() { close(); }
 
     void setVCard30(bool asVCard30) { m_asVCard30 = asVCard30; }
     bool getVCard30() { return m_asVCard30; }
 
-
-    //
-    // implementation of EvolutionSyncSource
-    //
     virtual Databases getDatabases();
     virtual void open();
-    virtual void close(); 
+    virtual void listAllItems(RevisionMap_t &revisions);
     virtual void exportData(ostream &out);
-    virtual string fileSuffix() { return "vcf"; }
-    virtual const char *getMimeType() { return m_asVCard30 ? "text/vcard" : "text/x-vcard"; }
-    virtual const char *getMimeVersion() { return m_asVCard30 ? "3.0" : "2.1"; }
-    virtual const char *getSupportedTypes() { return m_asVCard30 ? "text/vcard:3.0" : "text/x-vcard:2.1"; }
-   
+    virtual InsertItemResult insertItem(const string &uid, const SyncItem &item);
     virtual SyncItem *createItem(const string &uid) { return createItem(uid, m_asVCard30); }
     virtual SyncItem *createItem(const string &uid, bool asVCard30);
-    
-  protected:
-    //
-    // implementation of EvolutionSyncSource callbacks
-    //
-    virtual void beginSyncThrow(bool needAll,
-                                bool needPartial,
-                                bool deleteLocal);
-    virtual void endSyncThrow();
-    virtual int addItemThrow(SyncItem& item);
-    virtual int updateItemThrow(SyncItem& item);
-    virtual int deleteItemThrow(SyncItem& item);
+    virtual void deleteItem(const string &uid);
+    virtual void flush() {}
+    virtual void close();
+
+    virtual string fileSuffix() const { return "vcf"; }
+    virtual const char *getMimeType() const { return m_asVCard30 ? "text/vcard" : "text/x-vcard"; }
+    virtual const char *getMimeVersion() const { return m_asVCard30 ? "3.0" : "2.1"; }
+    virtual const char *getSupportedTypes() const { return m_asVCard30 ? "text/vcard:3.0" : "text/x-vcard:2.1"; }
+
+ protected:
     virtual void logItem(const string &uid, const string &info, bool debug = false);
     virtual void logItem(const SyncItem &item, const string &info, bool debug = false);
 
-    /** insert item, optionally replacing the one with the specified uid */
-    virtual int insertItem(SyncItem &item, const char *uid);
 
   private:
     /** valid after open(): the address book that this source references */
     ABAddressBookRef m_addressbook;
 
-    /**
-     * Stores the modification time of all items sent to or received from the server.
-     * Items listed here and not in the current address book have been deleted.
-     * More recent items were modified, new items are not listed here.
-     *
-     * The DeviceManagementNode must have the readProperties() and removeProperty()
-     * functions. Currently that's only the case for the DeviceManagementNode included
-     * with SyncEvolution, but not with the ones included in the C++ client library.
-     */
-    eptr<spdm::DeviceManagementNode> m_modTimes;
-
-    /** the config path for the modification time node */
-    string m_modNodeName;
-
     /** returns absolute modification time or (if that doesn't exist) the creation time */
-    double getModTime(ABRecordRef record);
+    string getModTime(ABRecordRef record);
 
     /** unless selected otherwise send items as vCard 2.1 */
     bool m_asVCard30;

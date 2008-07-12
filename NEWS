@@ -60,6 +60,16 @@ C++ client library: the frozen 7.0 code, but before the release
   affects the enabled ones, as intended. To enable disabled sync sources,
   list them after the server name.
 
+*** WARNING ***: this version uses a different change tracking for
+for Mac OS X AddressBook. After switching from a previous release to the current
+one or vice versa, do a "syncevolution --sync --refresh-from-server"
+once to reset the change tracking. Not doing so can result in applying
+the same changes to the server multiple times and thus duplicates.
+
+A similar change was necessary in 0.8 alpha 1 for Evolution calendar,
+tasks, and memos. When switching from a version >= 0.8 alpha 1 to an
+older version or vice versa also refresh the local databases.
+
 
 SyncEvolution 0.7 -> 0.8 alpha 1, 19.04.2008
 --------------------------------------------
@@ -70,7 +80,7 @@ configuration layout. Old configurations still work. They can be
 converted to the new format via a new "--migrate" command line option.
 
 *** WARNING ***: this version uses a different change tracking for
-calendars, task lists and memos. After switching from a previous
+Evolution calendars, task lists and memos. After switching from a previous
 release to the current one or vice versa, do a "syncevolution --sync
 --refresh-from-server" once to reset the change tracking. Not doing so
 can result in applying the same changes to the server multiple times

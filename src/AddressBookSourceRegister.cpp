@@ -30,11 +30,22 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     bool maybeMe = sourceType.first == "addressbook";
     
     if (isMe || maybeMe) {
-        if (sourceType.second == "" || sourceType.second == "text/x-vcard") {
-            return new AddressBookSource(params, false);
-        } else if (sourceType.second == "text/vcard") {
-            return new AddressBookSource(params, true);
+        // Hack: choose default based on server URI.  "card3"
+        // indicates ScheduleWorld, which works better with (requires?)
+        // sending vCard 3.0.
+        bool vCard3 = false;
+        PersistentEvolutionSyncSourceConfig config(params.m_name, params.m_nodes);
+        if (config.getURI() && !strcmp(config.getURI(), "card3")) {
+            vCard3 = true;
         }
+
+        if (sourceType.second == "text/x-vcard") {
+            vCard3 = false;
+        } else if (sourceType.second == "text/vcard") {
+            vCard3 = true;
+        }
+
+        return new AddressBookSource(params, vCard3);
     }
     return NULL;
 #endif
