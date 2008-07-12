@@ -1,3 +1,130 @@
+2008-07-12 20:02  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionConfig.cpp: added comment regarding myFUNAMBOL
+	  sc-pim- prefix to deviceId
+
+2008-07-12 19:45  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionCmdline.cpp, src/SyncEvolutionConfig.cpp: fixed
+	  creating and testing of default configs
+	  
+	  ScheduleWorld must explicitly select text/vcard for uri3, the
+	  others do not (and should not) specify it explicitly and thus use
+	  text/x-vcard by default.
+	  
+	  The renaming of uuid- to sc-pim- broke regression testing; fixed.
+
+2008-07-12 19:31  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* NEWS, src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/AddressBookSourceRegister.cpp: Mac OS X client now uses the
+	  new TrackingSyncSource
+
+2008-07-12 18:44  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: simplified compiling for ppc/386 on Mac OS X
+
+2008-07-12 18:43  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING: simplified compiling for ppc/386 on Mac OS X
+
+2008-07-12 18:36  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.h, src/EvolutionContactSource.h,
+	  src/EvolutionSyncSource.h, src/SQLiteContactSource.h,
+	  src/TrackingSyncSource.h: turned fileSuffix() into a const
+	  function
+
+2008-07-11 20:28  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionConfig.cpp: use sc-pim- prefix for device ID
+	  
+	  The prefix is important: without it, myFUNAMBOL 6.x and 7.0 map
+	  all SyncEvolution instances to the single phone that they
+	  support, which leads to unwanted slow syncs when switching
+	  between multiple instances.
+
+2008-07-11 20:25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp,
+	  src/EvolutionSyncClient.cpp, src/EvolutionSyncSource.cpp,
+	  src/FileConfigNode.cpp, src/FileConfigTree.cpp,
+	  src/FilterConfigNode.cpp, src/FilterConfigNode.h,
+	  src/PrefixConfigNode.cpp, src/SafeConfigNode.cpp,
+	  src/SyncEvolutionCmdline.cpp, src/SyncEvolutionConfig.cpp,
+	  src/SyncEvolutionConfig.h, src/SyncEvolutionUtil.cpp,
+	  src/SyncEvolutionUtil.h, src/TrackingSyncSource.cpp: reduced
+	  explicit usage of iterators (mostly with BOOST_FOREACH)
+
+2008-07-10 19:17  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/AddressBookSource.cpp, src/AddressBookSource.h,
+	  src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionSyncSource.cpp, src/EvolutionSyncSource.h,
+	  src/SQLiteContactSource.cpp, src/SQLiteContactSource.h,
+	  src/SyncEvolutionCmdline.cpp, src/TrackingSyncSource.h: cleaned
+	  up EvolutionSyncSource interface+implementation
+
+2008-07-10 18:12  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/evo.supp, test/sys.supp: added plenty of suppressions for
+	  problems only found when running code linked against 2.22.x
+
+2008-07-10 18:09  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/runtests.py: added the possibility to run a setup script as
+	  part of each test
+
+2008-07-08 08:46  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionUtil.cpp: added missing header file
+
+2008-07-07 18:01  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionUtil.cpp: better random seed (avoids identical
+	  clientId when configs are created rapidly one after the other)
+
+2008-07-06 20:49  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionSyncSource.cpp, src/FilterConfigNode.h,
+	  src/SyncEvolutionCmdline.cpp, src/SyncEvolutionUtil.h: code
+	  cleanup (boost::join, list sort)
+
+2008-07-06 20:36  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/PrefixConfigNode.cpp,
+	  src/SafeConfigNode.cpp: code cleanup (map access)
+
+2008-07-06 20:31  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/SyncEvolutionConfig.h: code cleanup
+
+2008-07-06 20:26  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/FilterConfigNode.cpp, src/FilterConfigNode.h,
+	  src/SyncEvolutionCmdline.cpp, src/SyncEvolutionUtil.h: simplified
+	  ConfigFilter: now uses keys as they are, but with
+	  case-insensitive compare
+
+2008-07-06 20:25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/TrackingSyncSource.h: LUID may not change during update
+
+2008-07-03 19:59  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/EvolutionCalendarSource.cpp, src/EvolutionContactSource.cpp:
+	  fixed mem leak when listing databases
+
+2008-07-03 19:56  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/shlibs.local: reverted to 0.7 packaging
+
+2008-07-02 21:08  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, NEWS, configure.in: updated version, changelog, NEWS
+	  for 0.8 beta 1
+
 2008-07-02 20:00  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/shlibs.local: SF #1993109: for Evolution 2.6 use .deb
@@ -317,6 +444,10 @@
 	* src/EvolutionContactSource.cpp: SF #1947050: added sanity checks
 	  around string access of X-OSSO-CONTACT-STATE
 
+2008-04-20 12:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* debian/changelog: # updated
+
 2008-04-19 13:26  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/EvolutionCalendarSource.cpp, src/Makefile.am,
@@ -327,6 +458,14 @@
 	  
 	  - renamed files to comply with Evolution naming conventions -
 	  implemented time zone lookup for file backend
+
+2008-04-19 10:23  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* NEWS: # updated
+
+2008-04-19 10:22  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog: # updated
 
 2008-04-19 10:22  Patrick Ohly <patrick.ohly@gmx.de>
 

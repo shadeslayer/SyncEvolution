@@ -1,4 +1,4 @@
-SyncEvolution 0.8 alpha 1 -> 0.8 beta 1, 02.07.2008
+SyncEvolution 0.8 alpha 1 -> 0.8 beta 1, 12.07.2008
 ---------------------------------------------------
 C++ client library: the frozen 7.0 code, but before the release
 
@@ -10,9 +10,6 @@ C++ client library: the frozen 7.0 code, but before the release
   API change in the client library's logging calls which the older
   SyncEvolution code hadn't been adapted to. Did not normally occur,
   but might have been the reason for SF #1830149 (unconfirmed).
-
-* for Evolution 2.6 use .deb dependencies which work with Ubuntu 6.06 LTS
-  (SF #1993109)
 
 * when creating a config for the first time, only enable sync sources
   which can be synchronized (SF #1991286)
@@ -26,7 +23,12 @@ C++ client library: the frozen 7.0 code, but before the release
   wants the default setup, then the source is silently disabled.
 
 * Fixed incorrect properties in some of the new server templates
-  (ScheduleWorld syncURL + calender URI, Funambol syncURL).
+  (ScheduleWorld syncURL + calender URI, Funambol syncURL, ScheduleWorld
+   addressbook type)
+
+* Device IDs must start with the "sc-pim-" prefix, otherwise myFUNAMBOL
+  may treat different devices as the single phone that myFUNAMBOL
+  supports, leading to unwanted slow syncs.
 
 * Maemo package is build again so that backends are loaded dynamically:
   installing Dates application is as it was with the 0.7 release
@@ -69,6 +71,17 @@ the same changes to the server multiple times and thus duplicates.
 A similar change was necessary in 0.8 alpha 1 for Evolution calendar,
 tasks, and memos. When switching from a version >= 0.8 alpha 1 to an
 older version or vice versa also refresh the local databases.
+
+0.8 alpha 1 did not create correct configurations. When you want to continue
+using such a configuration, make sure that in addition to the obviously
+wrong syncURLs also the less obvious ScheduleWorld config mistakes are fixed:
+* calendar: uri=cal2
+* addressbook: type=addressbook:text/vcard
+* deviceId must start with "sc-pim-" if you synchronize with myFUNAMBOL,
+  otherwise there may be unwanted slow syncs when multiple devices with
+  a different deviceId connect. Note that changing the deviceId causes
+  a slow sync, so you should get client and server in sync before changing
+  the value, change it, then do a "--sync refresh-from-server".
 
 
 SyncEvolution 0.7 -> 0.8 alpha 1, 19.04.2008
