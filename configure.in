@@ -144,7 +144,16 @@ if test ! "$SYNC4J"; then
         SYNC4J_LIBS="-L$SYNC4J_SUBDIR/src -lsync4j"
 
         AC_MSG_NOTICE( [configuring the client library] )
-        if (set -x; mkdir -p $SYNC4J_SUBDIR && cd $SYNC4J_SUBDIR && $CLIENT_CONFIGURE --build=$build_alias --host=$host_alias --target=$target_alias --disable-shared); then true; else
+        # Passing some specific configure arguments to the client library's
+        # configure makes sense (e.g., --enable-unit-tests) or is
+        # required (--disable-dependency-tracking when compiling for
+        # multiple architectures on Mac OS X).
+        cxx_lib_args=`for i in --disable-dependency-tracking --enable-unit-tests; do
+           if echo $ac_configure_args | grep -e $i >/dev/null; then
+              echo $i;
+           fi;
+          done`
+        if (set -x; mkdir -p $SYNC4J_SUBDIR && cd $SYNC4J_SUBDIR && $CLIENT_CONFIGURE --build=$build_alias --host=$host_alias --target=$target_alias --disable-shared $cxx_lib_args); then true; else
             AC_MSG_ERROR( [configuring client library failed] )
         fi
     else
