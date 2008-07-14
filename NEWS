@@ -64,7 +64,7 @@ C++ client library: the frozen 7.0 code, but before the release
 
 *** WARNING ***: this version uses a different change tracking for
 for Mac OS X AddressBook. After switching from a previous release to the current
-one or vice versa, do a "syncevolution --sync --refresh-from-server"
+one or vice versa, do a "syncevolution --sync refresh-from-server"
 once to reset the change tracking. Not doing so can result in applying
 the same changes to the server multiple times and thus duplicates.
 
@@ -95,7 +95,7 @@ converted to the new format via a new "--migrate" command line option.
 *** WARNING ***: this version uses a different change tracking for
 Evolution calendars, task lists and memos. After switching from a previous
 release to the current one or vice versa, do a "syncevolution --sync
---refresh-from-server" once to reset the change tracking. Not doing so
+refresh-from-server" once to reset the change tracking. Not doing so
 can result in applying the same changes to the server multiple times
 and thus duplicates.
 
