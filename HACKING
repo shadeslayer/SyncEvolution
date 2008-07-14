@@ -222,6 +222,7 @@ Compiling for Mac OS X
               CXXFLAGS="-O -g -arch i386 -arch ppc" \
               CFLAGS="-O -g -arch i386 -arch ppc" \
               LDFLAGS="-arch i386 -arch ppc" --disable-dependency-tracking
+  make BINSUFFIX=mac-os-x distbin
 
   Fine-grained memory checking:
     MallocStackLogging=1 MallocStackLoggingNoCompact=1 \
