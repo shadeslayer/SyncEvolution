@@ -2,7 +2,7 @@
 
 SUBDIRS = src test
 
-EXTRA_DIST = HACKING
+EXTRA_DIST = HACKING description
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs
 DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@SYNC4J@
 
@@ -47,7 +47,7 @@ PKGNAME=syncevolution$(patsubst %,-%,$(BINSUFFIX))
 
 # This is a list of packages (potentially) provided on estamos.de.
 # The current package conflicts with any of them, but not itself.
-PKGS = $(addprefix syncevolution-evolution-, 2.0 2.2 2.4 2.6 2.8 2.10 2.12 2.14 2.16)
+PKGS = $(addprefix syncevolution-evolution-, 2.0 2.2 2.4 2.6 2.8 2.10 2.12 2.14 2.16 2.20 2.22 2.24 2.26 2.28)
 
 # When calling checkinstall we cannot install into /tmp
 # because any file created there will be excluded: that makes
