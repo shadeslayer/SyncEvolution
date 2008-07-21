@@ -217,7 +217,12 @@ a list of valid values.
 --source-property|-z ?
 --source-property|-z <property>=?
   Same as --sync-option, but applies to the configuration of all active
-  sources. "--sync <mode>" is a shortcut for "--source-option sync=<mode>".
+  sources. "--sync <mode>" is a shortcut for "--source-property sync=<mode>".
+
+  When combined with "--configure", the configuration of all sources is
+  modified. Properties cannot be specified differently for different
+  sources, so if you want to change a source property of just one specific
+  sync source, then use "--configure --source-property ... <server> <source>".
 
 --template|-l <server name>|default|?
   Can be used to select from one of the built-in default configurations
