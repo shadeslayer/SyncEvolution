@@ -1,4 +1,4 @@
-INCLUDES = @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @SYNC4J_CFLAGS@ @SQLITE_CFLAGS@ @ADDRESSBOOK_CFLAGS@
+INCLUDES = @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @FUNAMBOL_CFLAGS@ @SQLITE_CFLAGS@ @ADDRESSBOOK_CFLAGS@
 
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library
@@ -28,8 +28,8 @@ CLEANFILES = libstdc++.a
 #
 # If there is a copy of synccompare.pl in the SyncEvolution test directory,
 # then it is used instead of the one from the client library.
-vpath %.pl $(srcdir)/../test $(SYNC4J_SUBDIR)/test/test
-vpath %.pm $(srcdir)/../test $(SYNC4J_SUBDIR)/test/test/Algorithm
+vpath %.pl $(srcdir)/../test $(FUNAMBOL_SUBDIR)/test/test
+vpath %.pm $(srcdir)/../test $(FUNAMBOL_SUBDIR)/test/test/Algorithm
 synccompare : Diff.pm synccompare.pl
 	perl -e '$$diff = shift; open(DIFF, "<$$diff"); ($$_) = split(/__END__/, join("", <DIFF>)); s/\*import.*//m; s/require +Exporter;//; s/^#.*\n//mg; s/ +#.*\n//mg; $$diff = $$_;' -e 'while(<>) {' @MODIFY_SYNCCOMPARE@ -e 's/use +Algorithm::Diff;/"# embedded version of Algorithm::Diff follows, copyright by the original authors\n" . $$diff . "# end of embedded Algorithm::Diff\n"/e; print;}' $+ >$@
 	chmod u+x $@
@@ -131,8 +131,8 @@ else
 CORE_SOURCES += AddressBookSourceRegister.cpp
 endif
 
-CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @SYNC4J_LIBS@ @ADDRESSBOOK_LIBS@ @LIBS@
-CORE_DEP = @SYNC4J_DEP@
+CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @FUNAMBOL_LIBS@ @ADDRESSBOOK_LIBS@ @LIBS@
+CORE_DEP = @FUNAMBOL_DEP@
 
 # put link to static c++ library into current directory, needed if compiling with --enable-static-c++
 libstdc++.a :
@@ -185,35 +185,35 @@ vcardconverter_SOURCES = \
 vcardconverter_LDADD = $(CORE_LDADD)
 
 
-# SYNC4J_SUBDIR specifies the directory where we compile
+# FUNAMBOL_SUBDIR specifies the directory where we compile
 # the client library by invoking make there.
 # Installing its source is done explicitly.
 #
 # The path may be empty!
-SYNC4JSRC = @SYNC4JSRC@
-SYNC4J_SUBDIR = @SYNC4J_SUBDIR@
-BUILT_SOURCES = $(SYNC4J_SUBDIR)/all
+FUNAMBOLSRC = @FUNAMBOLSRC@
+FUNAMBOL_SUBDIR = @FUNAMBOL_SUBDIR@
+BUILT_SOURCES = $(FUNAMBOL_SUBDIR)/all
 
-@SYNC4J_LIB@ : $(SYNC4J_SUBDIR)/all
+@FUNAMBOL_LIB@ : $(FUNAMBOL_SUBDIR)/all
 
 # include client library and boost in distribution
 dist-hook:
 	cp -r $(srcdir)/boost $(distdir)
-	[ ! "$(SYNC4J_SUBDIR)" ] || cp -r client-api $(distdir)
+	[ ! "$(FUNAMBOL_SUBDIR)" ] || cp -r client-api $(distdir)
 	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
 
 clean-local: testclean
-	[ ! -d "$(SYNC4J_SUBDIR)" ] || (cd $(SYNC4J_SUBDIR) && $(MAKE) clean)
+	[ ! -d "$(FUNAMBOL_SUBDIR)" ] || (cd $(FUNAMBOL_SUBDIR) && $(MAKE) clean)
 
 # files created during testing
 testclean:
 	rm -f *.test.vcf *.log *.tests *.diff *.dat
 
 distclean-local:
-	rm -rf $(SYNC4J_SUBDIR)
+	rm -rf $(FUNAMBOL_SUBDIR)
 	rm -rf @CLEAN_CLIENT_SRC@ # "client-api", only set when it was created by configure
 
-# With --disable-shared autotools links against libsync4j.a which does not
+# With --disable-shared autotools links against libfunambol.a which does not
 # pull any of the test suites into the test binary, so they would not be
 # executed. The workaround is to explicitly set them as undefined on the
 # link line.
@@ -222,8 +222,8 @@ CLIENT_LIB_TEST_FILES = ClientTest.h ClientTest.cpp client-test-main.cpp
 nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
-client_test_LDFLAGS = `cppunit-config --libs` `nm $(SYNC4J_SUBDIR)/src/.libs/libsync4j.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
-client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(SYNC4J_SUBDIR)/src/libsync4j.la $(CORE_LDADD)
+client_test_LDFLAGS = `cppunit-config --libs` `nm $(FUNAMBOL_SUBDIR)/src/.libs/libfunambol.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
+client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD)
 client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 
 # copy test files for several reasons:
@@ -239,10 +239,10 @@ $(filter $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES)) : % : $(srcdir)/../test/
 	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
 
 # sources from compiled client library
-$(filter-out $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES)) : % : $(SYNC4J_SUBDIR)/test/test/%
+$(filter-out $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES)) : % : $(FUNAMBOL_SUBDIR)/test/test/%
 	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
 
-$(CLIENT_LIB_TEST_FILES:%=$(SYNC4J_SUBDIR)/test/test/%): @SYNC4J_DEP@
+$(CLIENT_LIB_TEST_FILES:%=$(FUNAMBOL_SUBDIR)/test/test/%): @FUNAMBOL_DEP@
 
 # extra dependency - don't remember why
 ClientTest.cpp : ClientTest.h
@@ -254,7 +254,7 @@ $(filter $(LOCAL_TEST_FILES), testcases) : % : $(srcdir)/../test/%
 
 # verbatim files from client library:
 # - SQLiteContactSource does not support all fields: filter those out
-$(filter-out $(LOCAL_TEST_FILES), testcases) : % : $(SYNC4J_SUBDIR)/test/test/%
+$(filter-out $(LOCAL_TEST_FILES), testcases) : % : $(FUNAMBOL_SUBDIR)/test/test/%
 	rm -rf $@
 	cp -r $< $@
 	perl -e '$$_ = join("", <>); s/^(ADR|TEL|EMAIL|PHOTO).*?(?=^\S)//msg; print;' testcases/vcard21.vcf >testcases/vcard21_sqlite.vcf
@@ -263,17 +263,17 @@ test : client-test testcases synccompare
 .PHONY : test
 
 # rule to satisfy automatic dependencies on header files
-$(SYNC4J_SUBDIR)/%.h :
-	[ ! "$(SYNC4J_SUBDIR)" ] || ( cd $(SYNC4J_SUBDIR)/include && $(MAKE) all )
+$(FUNAMBOL_SUBDIR)/%.h :
+	[ ! "$(FUNAMBOL_SUBDIR)" ] || ( cd $(FUNAMBOL_SUBDIR)/include && $(MAKE) all )
 
-# default rule for building in $(SYNC4J_SUBDIR)
-$(SYNC4J_SUBDIR)/% :
-	[ ! "$(SYNC4J_SUBDIR)" ] || ( cd ${@D} && $(MAKE) ${@F} )
+# default rule for building in $(FUNAMBOL_SUBDIR)
+$(FUNAMBOL_SUBDIR)/% :
+	[ ! "$(FUNAMBOL_SUBDIR)" ] || ( cd ${@D} && $(MAKE) ${@F} )
 
 # compare the local copy of the C++ client library against
 # the files where it was copied from
 client-api-diff :
-	diff -r -c -x CVS -x config.guess -x config.sub -x depcomp -x install-sh -x ltmain.sh -x missing -x aclocal.m4 -x configure -x '.#*' -x '*~' -x '*.in' -x autom4te.cache $(SYNC4JSRC) client-api
+	diff -r -c -x CVS -x config.guess -x config.sub -x depcomp -x install-sh -x ltmain.sh -x missing -x aclocal.m4 -x configure -x '.#*' -x '*~' -x '*.in' -x autom4te.cache $(FUNAMBOLSRC) client-api
 
 # special target for testing with valgrind
 valgrind : test
