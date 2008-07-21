@@ -204,7 +204,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
     if (deleteLocal) {
         deleteItemsQuery.set( e_book_query_any_field_contains(""), "query" );
     }
-#ifdef ENABLE_MAEMO
+#ifdef ENABLE_MAEMO_OSSO_CONTACT_STATE
     else {
         deleteItemsQuery.set( e_book_query_vcard_field_exists("X-OSSO-CONTACT-STATE"), "query" );
     }
@@ -220,7 +220,7 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
         for (;nextItem; nextItem = nextItem->next) {
             const char *uid = (const char *)e_contact_get_const(E_CONTACT(nextItem->data),
                                                                 E_CONTACT_UID);
-#ifdef ENABLE_MAEMO
+#ifdef ENABLE_MAEMO_OSSO_CONTACT_STATE
             if (!deleteLocal) {
                 GList *nextState = (GList *)e_contact_get(E_CONTACT(nextItem->data),
                                                           E_CONTACT_OSSO_CONTACT_STATE);

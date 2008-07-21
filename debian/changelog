@@ -1,3 +1,11 @@
+syncevolution (1:0.7+0.8-beta1a) unstable; urgency=low
+
+  * Disabled support for X-OSSO-CONTACT-STATE on Maemo:
+    it caused crashes because garbage strings were returned
+    by the Evolution libraries (SF #1947050)
+
+ -- Patrick Ohly <patrick.ohly@gmx.de>  Tue, 15 Jul 2008 22:15:00 +0200
+
 syncevolution (1:0.7+0.8-beta1) unstable; urgency=low
 
   * first beta of SyncEvolution 0.8
