@@ -4,7 +4,7 @@ SUBDIRS = src test
 
 EXTRA_DIST = HACKING description
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs
-DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@SYNC4J@
+DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@FUNAMBOL@
 
 # binary distribution
 distbin : README all
