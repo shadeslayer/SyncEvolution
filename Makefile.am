@@ -2,7 +2,7 @@
 
 SUBDIRS = src test
 
-EXTRA_DIST = HACKING description
+EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs
 DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@FUNAMBOL@
 
@@ -79,3 +79,18 @@ doc-pak : README NEWS COPYING
 
 description-pak : description
 	cp $< $@
+
+# TODO: make configurable
+$(srcdir)/configure.in: configure-pre.in configure-post.in src/backends/addressbook/configure-sub.in src/backends/evolution/configure-sub.in src/backends/sqlite/configure-sub.in
+	rm -f $@
+	cat $(srcdir)/configure-pre.in >>$@
+	for sub in $(srcdir)/src/backends/*/configure-sub.in; do \
+	    echo "# vvvvvvvvvvvvvv $$sub vvvvvvvvvvvvvv" >>$@; \
+	    cat $$sub >>$@; \
+	    echo "AC_CONFIG_FILES(`echo $$sub | sed -e 's;^$(srcdir)/;;' -e s/configure-sub.in/Makefile/`)" >>$@; \
+	    echo "# ^^^^^^^^^^^^^^ $$sub ^^^^^^^^^^^^^^" >>$@; \
+	    echo >>$@; \
+	done
+	echo BACKEND_REGISTRIES = `echo $(srcdir)/src/backends/*/*Register.cpp | sed -e 's;$(srcdir)/;;'` >>$@
+	echo "AC_SUBST(BACKEND_REGISTRIES)" >>$@
+	cat $(srcdir)/configure-post.in >>$@

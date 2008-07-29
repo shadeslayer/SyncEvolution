@@ -1,4 +1,7 @@
-INCLUDES = @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @FUNAMBOL_CFLAGS@ @SQLITE_CFLAGS@ @ADDRESSBOOK_CFLAGS@
+BACKENDS = @BACKENDS@
+SUBDIRS = core $(BACKENDS)
+
+AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) @BACKEND_CPPFLAGS@ @FUNAMBOL_CFLAGS@
 
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library
@@ -6,16 +9,18 @@ SYNCEVOLUTION_CXXFLAGS = @SYNCEVOLUTION_CXXFLAGS@
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
-SYNCSOURCES = syncecal.la syncebook.la syncsqlite.la syncaddressbook.la
-MOSTLYCLEANFILES = $(SYNCSOURCES)
+SYNCSOURCES = backends/evolution/syncecal.la backends/evolution/syncebook.la backends/sqlite/syncsqlite.la backends/addressbook/syncaddressbook.la # TODO
+# The Funambol libs should be inherited via libsyncevolution.la, but
+# somehow that didn't work when enabling shared objects (probably
+# because only a static libfunambol.a is built, which relies on
+# tricks like adding -fPIC manually).
+SYNCEVOLUTION_LDADD = @SYNCEVOLUTION_LDADD@ @FUNAMBOL_LIBS@ 
 if ENABLE_MODULES
-pkglib_LTLIBRARIES = $(SYNCSOURCES)
 else
-EXTRA_LTLIBRARIES = $(SYNCSOURCES)
+SYNCEVOLUTION_LDADD += $(SYNCSOURCES)
 endif
-SYNCEVOLUTION_LDADD = @SYNCEVOLUTION_LDADD@
 EXTRA_PROGRAMS = client-test
-EXTRA_DIST = shlibs.local
+EXTRA_DIST = shlibs.local Makefile.am.gen
 check_PROGRAMS = @CPPUNIT_TESTS@
 TESTS = @CPPUNIT_TESTS@
 
@@ -34,104 +39,25 @@ synccompare : Diff.pm synccompare.pl
 	perl -e '$$diff = shift; open(DIFF, "<$$diff"); ($$_) = split(/__END__/, join("", <DIFF>)); s/\*import.*//m; s/require +Exporter;//; s/^#.*\n//mg; s/ +#.*\n//mg; $$diff = $$_;' -e 'while(<>) {' @MODIFY_SYNCCOMPARE@ -e 's/use +Algorithm::Diff;/"# embedded version of Algorithm::Diff follows, copyright by the original authors\n" . $$diff . "# end of embedded Algorithm::Diff\n"/e; print;}' $+ >$@
 	chmod u+x $@
 
-VOCL_SOURCES = \
-	vocl/VObject.h \
-	vocl/VProperty.h \
-	vocl/VConverter.h \
-	vocl/posixadapter.h \
-	\
-	vocl/VObject.cpp \
-	vocl/VProperty.cpp \
-	vocl/VConverter.cpp
+CORE_SOURCES =
 
-CORE_SOURCES  = \
-	ConfigTree.h \
-	ConfigNode.h \
-	VolatileConfigNode.h \
-	VolatileConfigTree.h \
-        EvolutionSmartPtr.h \
-	\
-	SyncEvolutionUtil.cpp \
-	SyncEvolutionUtil.h \
-        \
-	SyncEvolutionCmdline.cpp \
-        SyncEvolutionCmdline.h \
-	\
-        EvolutionSyncSource.h \
-        EvolutionSyncSource.cpp \
-	\
-        EvolutionSyncClient.h \
-	EvolutionSyncClient.cpp \
-	\
-	SyncEvolutionConfig.h \
-	SyncEvolutionConfig.cpp \
-	\
-	FilterConfigNode.h \
-	FilterConfigNode.cpp \
-	\
-	SafeConfigNode.h \
-	SafeConfigNode.cpp \
-	\
-	PrefixConfigNode.h \
-	PrefixConfigNode.cpp \
-	\
-	FileConfigNode.h \
-	FileConfigNode.cpp \
-	\
-	FileConfigTree.h \
-	FileConfigTree.cpp \
-	\
-	TrackingSyncSource.h \
-	TrackingSyncSource.cpp \
-	\
-	$(VOCL_SOURCES)
-
-SYNCECAL_SOURCES = \
-        EvolutionCalendarSource.h \
-        EvolutionMemoSource.h \
-	EvolutionCalendarSource.cpp \
-	EvolutionMemoSource.cpp
+# The files which register backends have to be compiled into
+# "client-test" and "syncevolution" in order to pull in the
+# code from the libs which implement the backends.
+#
+# Unit testing also goes there.
+#
+# When using modules the registration is done inside the
+# module and the register file is unnecessary. However, they
+# still need to be included in "make dist".
+BACKEND_REGISTRIES = @BACKEND_REGISTRIES@
 if ENABLE_MODULES
+EXTRA_DIST += $(BACKEND_REGISTRIES)
 else
-CORE_SOURCES += EvolutionCalendarSourceRegister.cpp
+CORE_SOURCES += $(BACKEND_REGISTRIES)
 endif
 
-if ENABLE_ECAL
-SYNCECAL_SOURCES += \
-	libical/icalstrdup.c \
-	libical/icalstrdup.h \
-	e-cal-check-timezones.c \
-	e-cal-check-timezones.h
-endif
-
-SYNCEBOOK_SOURCES = \
-        EvolutionContactSource.h \
-	EvolutionContactSource.cpp
-if ENABLE_MODULES
-else
-CORE_SOURCES += EvolutionContactSourceRegister.cpp
-endif
-
-SYNCSQLITE_SOURCES = \
-	SQLiteUtil.h \
-	SQLiteUtil.cpp \
-	SQLiteContactSource.h \
-	SQLiteContactSource.cpp
-if ENABLE_MODULES
-else
-CORE_SOURCES += SQLiteContactSourceRegister.cpp
-endif
-
-SYNCADDRESSBOOK_SOURCES = \
-	AddressBookSource.h \
-	AddressBookConstants.cpp \
-	AddressBookSource.cpp
-if ENABLE_MODULES
-else
-CORE_SOURCES += AddressBookSourceRegister.cpp
-endif
-
-CORE_LDADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @FUNAMBOL_LIBS@ @ADDRESSBOOK_LIBS@ @LIBS@
+CORE_LDADD = core/libsyncevolution.la @GLIB_LIBS@ @LIBS@
 CORE_DEP = @FUNAMBOL_DEP@
 
 # put link to static c++ library into current directory, needed if compiling with --enable-static-c++
@@ -145,45 +71,9 @@ syncevolution_SOURCES = \
 # SYNCEVOLUTION_LDADD will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
 # if linking statically against them, empty otherwise;
 # either way this does not lead to a dependency on those libs - done explicitly
-#
-# LIBDBUS might be replaced with path to patched libdbus-1.a (required for
-# DBUS_DEFAULT_TIMEOUT hack on Maemo).
-syncevolution_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(CORE_LDADD)
+syncevolution_LDADD = $(SYNCEVOLUTION_LDADD) $(CORE_LDADD)
 syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
-
-syncecal_la_SOURCES = $(SYNCECAL_SOURCES)
-syncecal_la_LIBADD = @ECAL_LIBS@
-# _GNU_SOURCE and -ldl for libical.c + dlsym():
-syncecal_la_CPPFLAGS = -D_GNU_SOURCE \
-	-De_cal_check_timezones=syncevolution_check_timezones \
-	-De_cal_tzlookup_ecal=syncevolution_tzlookup_ecal \
-	-De_cal_tzlookup_icomp=syncevolution_tzlookup_icomp \
-	-De_cal_match_tzid=syncevolution_match_tzid
-syncecal_la_LDFLAGS = -module -rpath '$(pkglibdir)' -ldl
-syncecal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
-
-syncebook_la_SOURCES = $(SYNCEBOOK_SOURCES)
-syncebook_la_LIBADD = @EBOOK_LIBS@
-syncebook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
-syncebook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
-
-syncsqlite_la_SOURCES = $(SYNCSQLITE_SOURCES)
-syncsqlite_la_LIBADD = @SQLITE_LIBS@
-syncsqlite_la_LDFLAGS = -module -rpath '$(pkglibdir)'
-syncsqlite_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
-
-syncaddressbook_la_SOURCES = $(SYNCADDRESSBOOK_SOURCES)
-syncaddressbook_la_LIBADD = @ADDRESSBOOK_LIBS@
-syncaddressbook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
-syncaddressbook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
-
-EXTRA_PROGRAMS += vcardconverter
-vcardconverter_SOURCES = \
-        vocl/vcardconverter.cpp \
-	$(VOCL_SOURCES)
-vcardconverter_LDADD = $(CORE_LDADD)
-
 
 # FUNAMBOL_SUBDIR specifies the directory where we compile
 # the client library by invoking make there.
@@ -220,7 +110,7 @@ distclean-local:
 client_test_SOURCES = client-test-app.cpp $(CORE_SOURCES)
 CLIENT_LIB_TEST_FILES = ClientTest.h ClientTest.cpp client-test-main.cpp
 nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
-client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS
+client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(FUNAMBOL_SUBDIR)/src/.libs/libfunambol.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
 client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD)
@@ -278,3 +168,11 @@ client-api-diff :
 # special target for testing with valgrind
 valgrind : test
 	valgrind --leak-check=yes --suppressions=valgrind.supp ./test
+
+# Because backend-related variables need to be substituted in
+# Makefile.am.gen we need an explicit rule to redo that work
+# so that "make" rebuilds derived files correctly.
+$(srcdir)/Makefile.am: Makefile.am.gen
+	sed -e 's;[@]BACKEND_REGISTRIES[@];$(BACKEND_REGISTRIES);' \
+	    -e 's;[@]BACKENDS[@];$(BACKENDS);' \
+	    $< >$@

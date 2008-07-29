@@ -1,4 +1,4 @@
-dnl Process this file with autoconf to produce a configure script.
+dnl Invoke autogen.sh to produce a configure script.
 
 AC_INIT(src/syncevolution.cpp)
 AM_INIT_AUTOMAKE(syncevolution, 0.8-beta1)
@@ -108,9 +108,6 @@ FUNAMBOL_LIB=$PWD/src/client-api.build/src/libfunambol.la
 
 AC_SUBST(CLEAN_CLIENT_SRC)
 
-# list of backend names (--enable-<name>, $enable_<name>)
-BACKENDS=
-
 if test ! "$FUNAMBOL"; then
     if test "$FUNAMBOLSRC"; then
         # make a copy of the sources, remove it during maintainer-clean and distclean
@@ -166,7 +163,12 @@ if test ! "$FUNAMBOL"; then
               echo $i;
            fi;
           done`
-        if (set -x; mkdir -p $FUNAMBOL_SUBDIR && cd $FUNAMBOL_SUBDIR && $CLIENT_CONFIGURE --build=$build_alias --host=$host_alias --target=$target_alias --disable-shared $cxx_lib_args); then true; else
+        if test "$enable_shared" == "yes"; then
+            # Okay, this is a shortcut: strictly speaking we would have
+            # to check with autoconf for the right flags...
+            FUNAMBOL_LIB_SHARED_FLAGS="-DPIC -fPIC"
+        fi
+        if (set -x; mkdir -p $FUNAMBOL_SUBDIR && cd $FUNAMBOL_SUBDIR && $CLIENT_CONFIGURE --build=$build_alias --host=$host_alias --target=$target_alias --disable-shared CFLAGS="$CFLAGS $FUNAMBOL_LIB_SHARED_FLAGS" CXXFLAGS="$CXXFLAGS $FUNAMBOL_LIB_SHARED_FLAGS" $cxx_lib_args); then true; else
             AC_MSG_ERROR( [configuring client library failed] )
         fi
     else
@@ -189,78 +191,9 @@ AC_SUBST(FUNAMBOL_DEP)
 AC_SUBST(FUNAMBOL_LIB)
 AC_SUBST(FUNAMBOLSRC)
 
-pkg_emodules_10="libedataserver-1.0"
-pkg_emodules_11="libedataserver-1.1"
-pkg_emodules_12="libedataserver-1.2"
-pkg_ebook_10="libebook-1.0"
-pkg_ebook_11="libebook-1.1"
-pkg_ebook_12="libebook-1.2"
-pkg_ecal_10="libecal-1.0"
-pkg_ecal_11="libecal-1.1"
-pkg_ecal_12="libecal-1.2"
-
-export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:$prefix/lib/pkgconfig:/usr/local/lib/pkgconfig
-
-anymissing="
-Please install the development packages of Evolution and/or
-set the PKG_CONFIG_PATH variable so that it points towards
-the .pc files of libedataserver, libecal and libebook (the
-latter two are optional).
-
-You can check that these packages are available by running
-pkg-config --list-all."
-
-evomissing="No compatible evolution-data-server was found.
-$anymissing"
-
-dnl check for Evolution core packages
-PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_12], EDSFOUND=yes, [EDSFOUND=no])
-if test "x${EDSFOUND}" = "xno"; then
-      PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_11], EDSFOUND=yes, [EDSFOUND=no])
-      if test "x${EDSFOUND}" = "xno"; then
-              PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_10], EDSFOUND=yes, [EDSFOUND=no])
-      fi
-fi
-AC_SUBST(EPACKAGE_CFLAGS)
-AC_SUBST(EPACKAGE_LIBS)
-
-dnl check for Evolution calendar packages
-PKG_CHECK_MODULES(ECAL, [$pkg_ecal_12], ECALFOUND=yes, [ECALFOUND=no])
-if test "x${ECALFOUND}" = "xno"; then
-	PKG_CHECK_MODULES(ECAL, [$pkg_ecal_11], ECALFOUND=yes, [ECALFOUND=no])
-	if test "x${ECALFOUND}" = "xno"; then
-		PKG_CHECK_MODULES(ECAL, [$pkg_ecal_10], ECALFOUND=yes, [ECALFOUND=no])
-	fi
-fi
-AC_SUBST(ECAL_CFLAGS)
-AC_SUBST(ECAL_LIBS)
-
-dnl check for Evolution contact packages
-PKG_CHECK_MODULES(EBOOK, [$pkg_ebook_12], EBOOKFOUND=yes, [EBOOKFOUND=no])
-if test "x${EBOOKFOUND}" = "xno"; then
-	PKG_CHECK_MODULES(EBOOK, [$pkg_ebook_11], EBOOKFOUND=yes, [EBOOKFOUND=no])
-	if test "x${EBOOKFOUND}" = "xno"; then
-		PKG_CHECK_MODULES(EBOOK, [$pkg_ebook_10], EBOOKFOUND=yes, [EBOOKFOUND=no])
-	fi
-fi
-AC_SUBST(EBOOK_CFLAGS)
-AC_SUBST(EBOOK_LIBS)
-
-
-dnl check for sqlite
-PKG_CHECK_MODULES(SQLITE, sqlite3, SQLITEFOUND=yes, [SQLITEFOUND=no])
-AC_SUBST(SQLITE_CFLAGS)
-AC_SUBST(SQLITE_LIBS)
-
-dnl hard-coded settings for Mac OS X AddressBook
-ADDRESSBOOK_CFLAGS=
-
-ADDRESSBOOK_LIBS="-framework AddressBook -framework CoreFoundation"
-AC_SUBST(ADDRESSBOOK_CFLAGS)
-AC_SUBST(ADDRESSBOOK_LIBS)
-
 dnl select backends
 BACKENDS=""
+
 # AC_ARG_ENABLE_BACKEND(BACKEND, HELP-STRING, [ACTION-IF-GIVEN],
 #                       [ACTION-IF-NOT-GIVEN])
 #
@@ -272,132 +205,4 @@ AC_DEFUN([AC_ARG_ENABLE_BACKEND],
         BACKENDS="$BACKENDS $1"
 ])
 
-AC_ARG_ENABLE_BACKEND(ebook, AS_HELP_STRING([--disable-ebook], [disable access to Evolution addressbooks (default on if available)]),
-                      [enable_ebook="$enableval"], [enable_ebook=$EBOOKFOUND])
-AC_ARG_ENABLE_BACKEND(ecal, AS_HELP_STRING([--disable-ecal], [disable access to Evolution calendars and tasks (default on if available)]),
-                      [enable_ecal="$enableval"], [enable_ecal=$ECALFOUND])
-AC_ARG_ENABLE_BACKEND(sqlite, AS_HELP_STRING([--enable-sqlite], [enable access to PIM data stored in SQLite files (experimental, default off)]),
-		      [enable_sqlite="$enableval"], [enable_sqlite="no"])
-AC_ARG_ENABLE_BACKEND(addressbook, AS_HELP_STRING([--enable-addressbook], [enable access to Mac OS X address book (default off)]),
-		      [enable_addressbook="$enableval"], [enable_addressbook="no"])
-
-enable_evo="no"
-enable_any="no"
-if test "$enable_ebook" = "yes"; then
-        test "x${EBOOKFOUND}" == "xyes" || AC_MSG_ERROR([--enable-ebook requires pkg-config information for libebook, which was not found])
-        AC_DEFINE(ENABLE_EBOOK, 1, [libebook available])
-        enable_evo="yes"
-        enable_any="yes"
-fi
-
-AM_CONDITIONAL([ENABLE_ECAL], [test "$enable_ecal" == "yes"])
-if test "$enable_ecal" = "yes"; then
-        test "x${ECALFOUND}" == "xyes" || AC_MSG_ERROR([--enable-ecal requires pkg-config information for libecal, which was not found"])
-        AC_DEFINE(ENABLE_ECAL, 1, [libecal available])
-        enable_evo="yes"
-        enable_any="yes"
-fi
-
-if test "$enable_sqlite" = "yes"; then
-        test "x${SQLITEFOUND}" == "xyes" || AC_MSG_ERROR([--enable-sqlite requires pkg-config information for sqlite3, which was not found])
-        AC_DEFINE(ENABLE_SQLITE, 1, [sqlite available])
-        enable_any="yes"
-fi
-
-if test "$enable_addressbook" = "yes"; then
-        AC_DEFINE(ENABLE_ADDRESSBOOK, 1, [addressbook available])
-        DEVICE_TYPE=MacOS_X
-        enable_any="yes"
-else
-        ADDRESSBOOK_LIBS=
-fi
-
-if test "$enable_any" = "no"; then
-        AC_MSG_ERROR([no backend enabled - refusing to continue: $anymissing])
-fi
-
-if test "$enable_evo" = "yes"; then
-        if test "$EDSFOUND" = "yes"; then
-                AC_DEFINE(HAVE_EDS, 1, [evolution-dataserver available])
-        else
-                AC_MSG_ERROR($evomissing)
-        fi
-else
-        EPACKAGE_CFLAGS=
-        EPACKAGE_LIBS=
-fi
-
-dnl check for glib - calling g_type_init() is expected on Maemo
-PKG_CHECK_MODULES(GLIB, "glib-2.0", GLIBFOUND=yes, GLIBFOUND=no)
-if test "x${GLIBFOUND}" = "xno"; then
-	PKG_CHECK_MODULES(GLIB, "glib", GLIBFOUND=yes, GLIBFOUND=no)
-fi
-AC_SUBST(GLIB_CFLAGS)
-AC_SUBST(GLIB_LIBS)
-
-dnl check for programs.
-AC_PROG_CXX
-AC_PROG_LIBTOOL
-AC_PROG_MAKE_SET
-
-if test "$enable_sqlite" == "yes"; then
-        SYNCEVOLUTION_MODULES="$SYNCEVOLUTION_MODULES syncsqlite.la"
-fi
-if test "$enable_addressbook" == "yes"; then
-        SYNCEVOLUTION_MODULES="$SYNCEVOLUTION_MODULES syncaddressbook.la"
-fi
-
-dnl glib initialization is done only for libebook and libecal, not needed
-dnl otherwise even if found
-if test "$enable_ebook" != "yes" && test "$enable_ecal" != "yes"; then
-        GLIB_CFLAGS=
-        GLIB_LIBS=
-else
-        if  test "x${GLIBFOUND}" = "xyes"; then
-            AC_DEFINE(HAVE_GLIB, 1, [glib found])
-        fi
-fi
-
-dnl figure out whether we link all code statically or as modules
-AM_CONDITIONAL([ENABLE_MODULES], [test "$enable_shared" == "yes"])
-if test "$enable_shared" == "yes"; then
-        SYNCEVOLUTION_LDADD="-Wl,-export-dynamic -rpath '\$(pkglibdir)'"
-        AC_DEFINE(ENABLE_MODULES, 1, [enable dynamically opening sync source backends])
-else
-        SYNCEVOLUTION_LDADD="\$(EXTRA_LTLIBRARIES)"
-fi
-AC_SUBST(SYNCEVOLUTION_LDADD)
-
-dnl CXXFLAGS gets applied to SyncEvolution and the client library.
-dnl For e.g. "-Wall -Werror" this might not be such a good idea;
-dnl SYNCEVOLUTION_CXXFLAGS can be used instead. It applies only
-dnl to the sources in the SyncEvolution repository.
-AC_SUBST(SYNCEVOLUTION_CXXFLAGS)
-
-dnl a quick-and-dirty way to detect compilation for the iPhone
-if test "$host" == "arm-apple-darwin"; then
-   AC_DEFINE(IPHONE, 1, [compiling for iPhone])
-   DEVICE_TYPE=iPhone
-fi
-
-dnl This string is sent as part of the SyncML DevInf (device
-dnl information) structure to the server. All SyncEvolution platforms
-dnl use "SyncEvolution" as HTTP user agent and "Mod" (model), so the
-dnl device type is the only way how different kinds of clients can be
-dnl distinguished.
-AC_DEFINE_UNQUOTED(DEVICE_TYPE, "$DEVICE_TYPE", "SyncML DevInf DevType")
-
-AC_CHECK_HEADERS(stdarg.h valgrind/valgrind.h execinfo.h)
-
-echo
-echo CONFIGURATION SUMMARY
-for backend in $BACKENDS; do
-    eval echo $backend: \${enable_${backend}}
-done
-echo
-
-AC_OUTPUT([
-Makefile
-src/Makefile
-test/Makefile
-])
+dnl src/backends/*/configure-sub.in and configure-post.in follow
