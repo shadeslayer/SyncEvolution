@@ -41,7 +41,9 @@ typedef struct {
 } ConnectionData;
 
 typedef struct {
+	gint refcount;
 	char *path;
+	GStaticMutex mutex;
 	GSList *interfaces;
 	char *introspect;
 } ObjectData;
@@ -696,6 +698,10 @@ static gboolean g_dbus_register_object(DBusConnection *connection,
 
 	object = g_new0(ObjectData, 1);
 
+	object->refcount = 1;
+
+	g_static_mutex_init(&object->mutex);
+
 	object->path = g_strdup(path);
 	object->interfaces = NULL;
 	object->introspect = generate_introspect(connection, path, object);
@@ -935,10 +941,14 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
 	interface->user_data = user_data;
 	interface->destroy = destroy;
 
+	g_static_mutex_lock(&object->mutex);
+
 	object->interfaces = g_slist_append(object->interfaces, interface);
 
 	g_free(object->introspect);
 	object->introspect = generate_introspect(connection, path, object);
+
+	g_static_mutex_unlock(&object->mutex);
 
 	return TRUE;
 }
@@ -972,13 +982,17 @@ gboolean g_dbus_unregister_interface(DBusConnection *connection,
 	if (interface == NULL)
 		return FALSE;
 
-	object->interfaces = g_slist_remove(object->interfaces, interface);
+	g_static_mutex_lock(&object->mutex);
 
-	g_free(interface->name);
-	g_free(interface);
+	object->interfaces = g_slist_remove(object->interfaces, interface);
 
 	g_free(object->introspect);
 	object->introspect = generate_introspect(connection, path, object);
+
+	g_static_mutex_unlock(&object->mutex);
+
+	g_free(interface->name);
+	g_free(interface);
 
 	g_dbus_unregister_object(connection, path);
 
