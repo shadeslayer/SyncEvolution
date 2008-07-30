@@ -1,0 +1,83 @@
+dnl -*- mode: Autoconf; -*-
+dnl Invoke autogen.sh to produce a configure script.
+dnl configure-pre.in and src/backends/*/configure-sub.in and configure-post.in come before this part
+
+AC_SUBST(BACKEND_CPPFLAGS)
+
+enable_any="no"
+backend_is_enabled () {
+    eval echo \${enable_${1}}
+}
+for backend in $BACKENDS; do
+    if test `backend_is_enabled $backend` == "yes"; then
+       enable_any="yes"
+       SYNCEVOLUTION_MODULES="$SYNCEVOLUTION_MODULES src/backends/sync${backend}.la"
+    fi
+done
+
+if test "$enable_any" = "no"; then
+        AC_MSG_ERROR([no backend enabled - refusing to continue: $anymissing])
+fi
+
+dnl check for glib - calling g_type_init() is expected on Maemo
+PKG_CHECK_MODULES(GLIB, "glib-2.0", GLIBFOUND=yes, GLIBFOUND=no)
+if test "x${GLIBFOUND}" = "xno"; then
+	PKG_CHECK_MODULES(GLIB, "glib", GLIBFOUND=yes, GLIBFOUND=no)
+fi
+AC_SUBST(GLIB_CFLAGS)
+AC_SUBST(GLIB_LIBS)
+
+dnl check for programs.
+AC_PROG_CXX
+AC_PROG_LIBTOOL
+AC_PROG_MAKE_SET
+
+dnl glib initialization is done only if requested by some configure-sub.in,
+dnl for not needed otherwise even if found
+if test "$need_glib" != "yes"; then
+        GLIB_CFLAGS=
+        GLIB_LIBS=
+else
+        if  test "x${GLIBFOUND}" = "xyes"; then
+            AC_DEFINE(HAVE_GLIB, 1, [glib found])
+        fi
+fi
+
+dnl figure out whether we link all code statically or as modules
+AM_CONDITIONAL([ENABLE_MODULES], [test "$enable_shared" == "yes"])
+if test "$enable_shared" == "yes"; then
+        AC_DEFINE(ENABLE_MODULES, 1, [enable dynamically opening sync source backends])
+fi
+AC_SUBST(SYNCEVOLUTION_LDADD)
+
+dnl CXXFLAGS gets applied to SyncEvolution and the client library.
+dnl For e.g. "-Wall -Werror" this might not be such a good idea;
+dnl SYNCEVOLUTION_CXXFLAGS can be used instead. It applies only
+dnl to the sources in the SyncEvolution repository.
+AC_SUBST(SYNCEVOLUTION_CXXFLAGS)
+
+dnl a quick-and-dirty way to detect compilation for the iPhone
+if test "$host" == "arm-apple-darwin"; then
+   AC_DEFINE(IPHONE, 1, [compiling for iPhone])
+   DEVICE_TYPE=iPhone
+fi
+
+dnl This string is sent as part of the SyncML DevInf (device
+dnl information) structure to the server. All SyncEvolution platforms
+dnl use "SyncEvolution" as HTTP user agent and "Mod" (model), so the
+dnl device type is the only way how different kinds of clients can be
+dnl distinguished.
+AC_DEFINE_UNQUOTED(DEVICE_TYPE, "$DEVICE_TYPE", "SyncML DevInf DevType")
+
+AC_CHECK_HEADERS(stdarg.h valgrind/valgrind.h execinfo.h)
+
+echo
+echo CONFIGURATION SUMMARY
+for backend in $BACKENDS; do
+    eval echo $backend: \${enable_${backend}}
+done
+echo
+
+AC_CONFIG_FILES(Makefile src/Makefile src/core/Makefile test/Makefile)
+AC_OUTPUT
+

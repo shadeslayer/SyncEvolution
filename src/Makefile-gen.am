@@ -9,7 +9,7 @@ SYNCEVOLUTION_CXXFLAGS = @SYNCEVOLUTION_CXXFLAGS@
 
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
-SYNCSOURCES = backends/evolution/syncecal.la backends/evolution/syncebook.la backends/sqlite/syncsqlite.la backends/addressbook/syncaddressbook.la # TODO
+SYNCSOURCES = @SYNCSOURCES@
 # The Funambol libs should be inherited via libsyncevolution.la, but
 # somehow that didn't work when enabling shared objects (probably
 # because only a static libfunambol.a is built, which relies on
@@ -20,7 +20,7 @@ else
 SYNCEVOLUTION_LDADD += $(SYNCSOURCES)
 endif
 EXTRA_PROGRAMS = client-test
-EXTRA_DIST = shlibs.local Makefile.am.gen
+EXTRA_DIST = shlibs.local Makefile-gen.am
 check_PROGRAMS = @CPPUNIT_TESTS@
 TESTS = @CPPUNIT_TESTS@
 
@@ -170,9 +170,9 @@ valgrind : test
 	valgrind --leak-check=yes --suppressions=valgrind.supp ./test
 
 # Because backend-related variables need to be substituted in
-# Makefile.am.gen we need an explicit rule to redo that work
+# Makefile-gen.am we need an explicit rule to redo that work
 # so that "make" rebuilds derived files correctly.
-$(srcdir)/Makefile.am: Makefile.am.gen
+$(srcdir)/Makefile.am: Makefile-gen.am
 	sed -e 's;[@]BACKEND_REGISTRIES[@];$(BACKEND_REGISTRIES);' \
 	    -e 's;[@]BACKENDS[@];$(BACKENDS);' \
 	    $< >$@

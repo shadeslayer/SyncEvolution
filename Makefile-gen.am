@@ -2,7 +2,7 @@
 
 SUBDIRS = src test
 
-EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh
+EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh Makefile-gen.am
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs
 DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@FUNAMBOL@
 
@@ -80,8 +80,11 @@ doc-pak : README NEWS COPYING
 description-pak : description
 	cp $< $@
 
-# TODO: make configurable
-$(srcdir)/configure.in: configure-pre.in configure-post.in src/backends/addressbook/configure-sub.in src/backends/evolution/configure-sub.in src/backends/sqlite/configure-sub.in
+# Because backend-related variables need to be substituted in
+# Makefile-gen.am and configure.in we need an explicit rule to redo that work
+# so that "make" rebuilds derived files correctly.
+CONFIG_SUBS = @CONFIG_SUBS@
+$(srcdir)/configure.in: configure-pre.in configure-post.in $(CONFIG_SUBS)
 	rm -f $@
 	cat $(srcdir)/configure-pre.in >>$@
 	for sub in $(srcdir)/src/backends/*/configure-sub.in; do \
@@ -94,3 +97,7 @@ $(srcdir)/configure.in: configure-pre.in configure-post.in src/backends/addressb
 	echo BACKEND_REGISTRIES = `echo $(srcdir)/src/backends/*/*Register.cpp | sed -e 's;$(srcdir)/;;'` >>$@
 	echo "AC_SUBST(BACKEND_REGISTRIES)" >>$@
 	cat $(srcdir)/configure-post.in >>$@
+
+$(srcdir)/Makefile.am: Makefile-gen.am
+	sed -e 's;[@]CONFIG_SUBS[@];$(CONFIG_SUBS);' \
+	    $< >$@

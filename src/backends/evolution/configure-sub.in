@@ -1,0 +1,94 @@
+dnl -*- mode: Autoconf; -*-
+dnl Invoke autogen.sh to produce a configure script.
+
+pkg_emodules_10="libedataserver-1.0"
+pkg_emodules_11="libedataserver-1.1"
+pkg_emodules_12="libedataserver-1.2"
+pkg_ebook_10="libebook-1.0"
+pkg_ebook_11="libebook-1.1"
+pkg_ebook_12="libebook-1.2"
+pkg_ecal_10="libecal-1.0"
+pkg_ecal_11="libecal-1.1"
+pkg_ecal_12="libecal-1.2"
+
+anymissing="
+Please install the development packages of Evolution and/or
+set the PKG_CONFIG_PATH variable so that it points towards
+the .pc files of libedataserver, libecal and libebook (the
+latter two are optional).
+
+You can check that these packages are available by running
+pkg-config --list-all."
+
+evomissing="No compatible evolution-data-server was found.
+$anymissing"
+
+dnl check for Evolution core packages
+PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_12], EDSFOUND=yes, [EDSFOUND=no])
+if test "x${EDSFOUND}" = "xno"; then
+      PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_11], EDSFOUND=yes, [EDSFOUND=no])
+      if test "x${EDSFOUND}" = "xno"; then
+              PKG_CHECK_MODULES(EPACKAGE, [$pkg_emodules_10], EDSFOUND=yes, [EDSFOUND=no])
+      fi
+fi
+AC_SUBST(EPACKAGE_CFLAGS)
+AC_SUBST(EPACKAGE_LIBS)
+BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $EPACKAGE_CFLAGS"
+
+dnl check for Evolution calendar packages
+PKG_CHECK_MODULES(ECAL, [$pkg_ecal_12], ECALFOUND=yes, [ECALFOUND=no])
+if test "x${ECALFOUND}" = "xno"; then
+	PKG_CHECK_MODULES(ECAL, [$pkg_ecal_11], ECALFOUND=yes, [ECALFOUND=no])
+	if test "x${ECALFOUND}" = "xno"; then
+		PKG_CHECK_MODULES(ECAL, [$pkg_ecal_10], ECALFOUND=yes, [ECALFOUND=no])
+	fi
+fi
+AC_SUBST(ECAL_CFLAGS)
+AC_SUBST(ECAL_LIBS)
+BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $ECAL_CFLAGS"
+
+dnl check for Evolution contact packages
+PKG_CHECK_MODULES(EBOOK, [$pkg_ebook_12], EBOOKFOUND=yes, [EBOOKFOUND=no])
+if test "x${EBOOKFOUND}" = "xno"; then
+	PKG_CHECK_MODULES(EBOOK, [$pkg_ebook_11], EBOOKFOUND=yes, [EBOOKFOUND=no])
+	if test "x${EBOOKFOUND}" = "xno"; then
+		PKG_CHECK_MODULES(EBOOK, [$pkg_ebook_10], EBOOKFOUND=yes, [EBOOKFOUND=no])
+	fi
+fi
+AC_SUBST(EBOOK_CFLAGS)
+AC_SUBST(EBOOK_LIBS)
+BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $EBOOK_CFLAGS"
+
+AC_ARG_ENABLE_BACKEND(ebook, evolution,
+                      AS_HELP_STRING([--disable-ebook], [disable access to Evolution addressbooks (default on if available)]),
+                      [enable_ebook="$enableval"], [enable_ebook=$EBOOKFOUND])
+AC_ARG_ENABLE_BACKEND(ecal, evolution,
+                      AS_HELP_STRING([--disable-ecal], [disable access to Evolution calendars and tasks (default on if available)]),
+                      [enable_ecal="$enableval"], [enable_ecal=$ECALFOUND])
+
+enable_evo="no"
+if test "$enable_ebook" = "yes"; then
+        test "x${EBOOKFOUND}" == "xyes" || AC_MSG_ERROR([--enable-ebook requires pkg-config information for libebook, which was not found])
+        AC_DEFINE(ENABLE_EBOOK, 1, [libebook available])
+        enable_evo="yes"
+fi
+
+AM_CONDITIONAL([ENABLE_ECAL], [test "$enable_ecal" == "yes"])
+if test "$enable_ecal" = "yes"; then
+        test "x${ECALFOUND}" == "xyes" || AC_MSG_ERROR([--enable-ecal requires pkg-config information for libecal, which was not found"])
+        AC_DEFINE(ENABLE_ECAL, 1, [libecal available])
+        enable_evo="yes"
+fi
+
+need_glib="yes"
+
+if test "$enable_evo" = "yes"; then
+        if test "$EDSFOUND" = "yes"; then
+                AC_DEFINE(HAVE_EDS, 1, [evolution-dataserver available])
+        else
+                AC_MSG_ERROR($evomissing)
+        fi
+else
+        EPACKAGE_CFLAGS=
+        EPACKAGE_LIBS=
+fi
