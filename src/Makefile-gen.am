@@ -110,7 +110,7 @@ distclean-local:
 client_test_SOURCES = client-test-app.cpp $(CORE_SOURCES)
 CLIENT_LIB_TEST_FILES = ClientTest.h ClientTest.cpp client-test-main.cpp
 nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
-client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS $(AM_CPPFLAGS)
+client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(FUNAMBOL_SUBDIR)/src/.libs/libfunambol.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
 client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD)
