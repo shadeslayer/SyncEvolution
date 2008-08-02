@@ -113,7 +113,7 @@ client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(FUNAMBOL_SUBDIR)/src/.libs/libfunambol.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
 client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD)
-client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
+client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) all
 
 # copy test files for several reasons:
 # - automake expects them here
