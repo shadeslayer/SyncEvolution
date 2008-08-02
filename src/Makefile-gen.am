@@ -86,9 +86,8 @@ BUILT_SOURCES = $(FUNAMBOL_SUBDIR)/all
 
 @FUNAMBOL_LIB@ : $(FUNAMBOL_SUBDIR)/all
 
-# include client library and boost in distribution
+# include client library in distribution
 dist-hook:
-	cp -r $(srcdir)/boost $(distdir)
 	[ ! "$(FUNAMBOL_SUBDIR)" ] || cp -r client-api $(distdir)
 	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
 
