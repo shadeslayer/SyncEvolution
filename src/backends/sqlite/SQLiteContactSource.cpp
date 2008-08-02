@@ -410,6 +410,11 @@ void SQLiteContactSource::logItem(const string &uid, const string &info, bool de
 
 void SQLiteContactSource::logItem(const SyncItem &item, const string &info, bool debug)
 {
+    if (!item.getData()) {
+        logItem(string(item.getKey()), info, debug);
+        return;
+    }
+
     if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
         string data = (const char *)item.getData();
 

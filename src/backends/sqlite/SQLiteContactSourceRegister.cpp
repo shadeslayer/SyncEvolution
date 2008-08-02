@@ -73,4 +73,18 @@ protected:
 SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionSQLiteContactsTest);
 
 #endif // ENABLE_UNIT_TESTS
+
+#ifdef ENABLE_INTEGRATION_TESTS
+static class SQLiteVCard21Test : public RegisterSyncSourceTest {
+public:
+    SQLiteVCard21Test() : RegisterSyncSourceTest("sqlite_vcard21", "vcard21") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.type = "sqlite-contacts:text/x-vcard";
+        config.testcases = "testcases/sqlite_vcard21.vcf";
+    }
+} SQLiteVCard21Test;
+#endif // ENABLE_INTEGRATION_TESTS
+
 #endif // ENABLE_SQLITE

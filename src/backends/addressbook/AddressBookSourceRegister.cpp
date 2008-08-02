@@ -86,4 +86,27 @@ protected:
 SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionAddressbookTest);
 
 #endif // ENABLE_UNIT_TESTS
+
+#ifdef ENABLE_INTEGRATION_TESTS
+static class VCard21Test : public RegisterSyncSourceTest {
+public:
+    VCard21Test() : RegisterSyncSourceTest("addressbook_vcard21", "vcard21") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.type = "apple-contacts:text/x-vcard";
+    }
+} vCard21Test;
+
+static class VCard30Test : public RegisterSyncSourceTest {
+public:
+    VCard30Test() : RegisterSyncSourceTest("addressbook_vcard30", "vcard30") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.type = "apple-contacts:text/vcard";
+    }
+} vCard30Test;
+#endif // ENABLE_INTEGRATION_TESTS
+
 #endif // ENABLE_ADDRESSBOOK

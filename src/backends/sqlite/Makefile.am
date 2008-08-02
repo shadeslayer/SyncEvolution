@@ -26,3 +26,10 @@ syncsqlite_la_SOURCES = $(SYNCSQLITE_SOURCES)
 syncsqlite_la_LIBADD = @SQLITE_LIBS@
 syncsqlite_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 syncsqlite_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
+
+# SQLiteContactSource does not support all fields from Funambol vCard 2.1
+# test cases: filter them out before testing
+../../testcases/sqlite_vcard21.vcf: $(FUNAMBOL_SUBDIR)/test/test/testcases/vcard21.vcf
+	mkdir -p ${@D}
+	perl -e '$$_ = join("", <>); s/^(ADR|TEL|EMAIL|PHOTO).*?(?=^\S)//msg; s/;X-EVOLUTION-UI-SLOT=\d+//g; print;' $< >$@
+all: ../../testcases/sqlite_vcard21.vcf

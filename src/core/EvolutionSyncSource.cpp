@@ -133,6 +133,19 @@ static ostream & operator << (ostream &out, const RegisterSyncSource &rhs)
 
 EvolutionSyncSource *const RegisterSyncSource::InactiveSource = (EvolutionSyncSource *)1;
 
+TestRegistry &EvolutionSyncSource::getTestRegistry()
+{
+    static TestRegistry testRegistry;
+    return testRegistry;
+}
+
+RegisterSyncSourceTest::RegisterSyncSourceTest(const string &configName, const string &testCaseName) :
+    m_configName(configName),
+    m_testCaseName(testCaseName)
+{
+    EvolutionSyncSource::getTestRegistry().push_back(this);
+}
+
 static class ScannedModules {
 public:
     ScannedModules() {

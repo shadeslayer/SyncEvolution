@@ -133,6 +133,41 @@ private:
 };
 
 SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionContactTest);
-
 #endif // ENABLE_UNIT_TESTS
+
+#ifdef ENABLE_INTEGRATION_TESTS
+
+/**
+ * We are using the vcard30 tests because they are 
+ * a bit more complete than the vcard21 ones.
+ * This also tests the vCard 3.0 <-> vCard 2.1
+ * conversion.
+ *
+ * The local tests become identical with the
+ * vCard 3.0 ones because they import/export the
+ * same data. 
+ */
+static class VCard21Test : public RegisterSyncSourceTest {
+public:
+    VCard21Test() : RegisterSyncSourceTest("vcard21", "vcard30") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.uri = "card"; // Funambol
+        config.type = "evolution-contacts:text/x-vcard";
+        config.dump = dump;
+    }
+} vCard21Test;
+
+static class VCard30Test : public RegisterSyncSourceTest {
+public:
+    VCard30Test() : RegisterSyncSourceTest("vcard30", "vcard30") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.type = "evolution-contacts:text/vcard";
+    }
+} vCard30Test;
+#endif // ENABLE_INTEGRATION_TESTS
+
 #endif // ENABLE_EBOOK

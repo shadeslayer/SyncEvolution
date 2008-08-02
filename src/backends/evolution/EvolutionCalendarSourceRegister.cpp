@@ -294,4 +294,78 @@ protected:
 SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionCalendarTest);
 
 #endif // ENABLE_UNIT_TESTS
+
+#ifdef ENABLE_INTEGRATION_TESTS
+
+static class iCal20Test : public RegisterSyncSourceTest {
+public:
+    iCal20Test() : RegisterSyncSourceTest("ical20", "ical20") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.type = "evolution-calendar";
+    }
+} iCal20Test;
+
+static class iTodo20Test : public RegisterSyncSourceTest {
+public:
+    iTodo20Test() : RegisterSyncSourceTest("itodo20", "itodo20") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.type = "evolution-tasks";
+    }
+} iTodo20Test;
+
+static class MemoTest : public RegisterSyncSourceTest {
+public:
+    MemoTest() : RegisterSyncSourceTest("text", "") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.uri = "note"; // ScheduleWorld
+        config.type = "Evolution Memos"; // use an alias here to test that
+        config.insertItem =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "SUMMARY:Summary\n"
+            "DESCRIPTION:Summary\\nBody text\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n";
+        config.updateItem =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "SUMMARY:Summary Modified\n"
+            "DESCRIPTION:Summary Modified\\nBody text\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n";
+        /* change summary, as in updateItem, and the body in the other merge item */
+        config.mergeItem1 = config.updateItem;
+        config.mergeItem2 =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "SUMMARY:Summary\n"
+            "DESCRIPTION:Summary\\nBody modified\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n";                
+        config.templateItem = config.insertItem;
+        config.uniqueProperties = "SUMMARY:DESCRIPTION";
+        config.sizeProperty = "DESCRIPTION";
+        config.import = ClientTest::import;
+        config.dump = dump;
+        config.testcases = "testcases/imemo20.ics";
+        config.type = "evolution-memos";
+    }
+} memoTest;
+#endif // ENABLE_INTEGRATION_TESTS
+
 #endif // ENABLE_ECAL

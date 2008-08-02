@@ -51,47 +51,67 @@ CPPUNIT_REGISTRY_ADD_TO_DEFAULT("SyncEvolution");
  * a wrapper class which automatically does an open() in the constructor and a close() in the destructor
  * and ensures that the sync mode is "none" = testing mode
  */
-class TestEvolutionSyncSource : public SyncSource {
+class TestEvolutionSyncSource : public EvolutionSyncSource {
 public:
-    TestEvolutionSyncSource(const string &type, const EvolutionSyncSourceParams &params) :
-        SyncSource(params.m_name.c_str(), NULL)
+    TestEvolutionSyncSource(const string &type,
+                            const EvolutionSyncSourceParams &params) :
+        EvolutionSyncSource(params)
     {
         PersistentEvolutionSyncSourceConfig config(params.m_name, params.m_nodes);
         config.setSourceType(type);
         m_source.reset(EvolutionSyncSource::createSource(params));
+        CPPUNIT_ASSERT(m_source.get());
         m_source->setSyncMode(SYNC_NONE);
     }
 
-    virtual int beginSync() {
+    virtual int beginSync() throw () {
         CPPUNIT_ASSERT_NO_THROW(m_source->open());
         CPPUNIT_ASSERT(!m_source->hasFailed());
         return m_source->beginSync();
     }
 
-    virtual int endSync() {
+    virtual int endSync() throw () {
         int res = m_source->endSync();
         CPPUNIT_ASSERT_NO_THROW(m_source->close());
         CPPUNIT_ASSERT(!m_source->hasFailed());
         return res;
     }
 
-    virtual SyncItem* getFirstItem() { return m_source->getFirstItem(); }
-    virtual SyncItem* getNextItem() { return m_source->getNextItem(); }
-    virtual SyncItem* getFirstNewItem() { return m_source->getFirstNewItem(); }
-    virtual SyncItem* getNextNewItem() { return m_source->getNextNewItem(); }
-    virtual SyncItem* getFirstUpdatedItem() { return m_source->getFirstUpdatedItem(); }
-    virtual SyncItem* getNextUpdatedItem() { return m_source->getNextUpdatedItem(); }
-    virtual SyncItem* getFirstDeletedItem() { return m_source->getFirstDeletedItem(); }
-    virtual SyncItem* getNextDeletedItem() { return m_source->getNextDeletedItem(); }
-    virtual SyncItem* getFirstItemKey() { return m_source->getFirstItemKey(); }
-    virtual SyncItem* getNextItemKey() { return m_source->getNextItemKey(); }
-    virtual void setItemStatus(const char *key, int status) { m_source->setItemStatus(key, status); }
-    virtual int addItem(SyncItem& item) { return m_source->addItem(item); }
-    virtual int updateItem(SyncItem& item) { return m_source->updateItem(item); }
-    virtual int deleteItem(SyncItem& item) { return m_source->deleteItem(item); }
-    virtual int removeAllItems() { return m_source->removeAllItems(); }
-    const char *getName() { return m_source->getName(); }
-    virtual ArrayElement* clone() { return NULL; }
+    virtual SyncItem* getFirstItem() throw () { return m_source->getFirstItem(); }
+    virtual SyncItem* getNextItem() throw () { return m_source->getNextItem(); }
+    virtual SyncItem* getFirstNewItem() throw () { return m_source->getFirstNewItem(); }
+    virtual SyncItem* getNextNewItem() throw () { return m_source->getNextNewItem(); }
+    virtual SyncItem* getFirstUpdatedItem() throw () { return m_source->getFirstUpdatedItem(); }
+    virtual SyncItem* getNextUpdatedItem() throw () { return m_source->getNextUpdatedItem(); }
+    virtual SyncItem* getFirstDeletedItem() throw () { return m_source->getFirstDeletedItem(); }
+    virtual SyncItem* getNextDeletedItem() throw () { return m_source->getNextDeletedItem(); }
+    virtual SyncItem* getFirstItemKey() throw () { return m_source->getFirstItemKey(); }
+    virtual SyncItem* getNextItemKey() throw () { return m_source->getNextItemKey(); }
+    virtual void setItemStatus(const char *key, int status) throw () { m_source->setItemStatus(key, status); }
+    virtual int addItem(SyncItem& item) throw () { return m_source->addItem(item); }
+    virtual int updateItem(SyncItem& item) throw () { return m_source->updateItem(item); }
+    virtual int deleteItem(SyncItem& item) throw () { return m_source->deleteItem(item); }
+    virtual int removeAllItems() throw () { return m_source->removeAllItems(); }
+    const char *getName() throw () { return m_source->getName(); }
+
+    virtual Databases getDatabases() { return m_source->getDatabases(); }
+    virtual void open() { m_source->open(); }
+    virtual SyncItem *createItem(const string &uid) { return m_source->createItem(uid); }
+    virtual void close() { m_source->close(); }
+    virtual void exportData(ostream &out) { m_source->exportData(out); }
+    virtual string fileSuffix() const { return m_source->fileSuffix(); }
+    virtual const char *getMimeType() const { return m_source->getMimeType(); }
+    virtual const char *getMimeVersion() const { return m_source->getMimeVersion(); }
+    virtual const char* getSupportedTypes() const { return m_source->getSupportedTypes(); }
+    virtual void beginSyncThrow(bool needAll,
+                                bool needPartial,
+                                bool deleteLocal) { m_source->beginSyncThrow(needAll, needPartial, deleteLocal); }
+    virtual void endSyncThrow() { m_source->endSyncThrow(); }
+    virtual int addItemThrow(SyncItem& item) { return m_source->addItemThrow(item); }
+    virtual int updateItemThrow(SyncItem& item) { return m_source->updateItemThrow(item); }
+    virtual int deleteItemThrow(SyncItem& item) { return m_source->deleteItemThrow(item); }
+    virtual void logItem(const string &uid, const string &info, bool debug = false) { m_source->logItem(uid, info, debug); }
+    virtual void logItem(const SyncItem &item, const string &info, bool debug = false) { m_source->logItem(item, info, debug); }
 
     auto_ptr<EvolutionSyncSource> m_source;
 };
@@ -154,11 +174,13 @@ public:
     TestEvolution(const string &id) :
         ClientTest(getenv("CLIENT_TEST_DELAY") ? atoi(getenv("CLIENT_TEST_DELAY")) : 0,
                    getenv("CLIENT_TEST_LOG") ? getenv("CLIENT_TEST_LOG") : ""),
-        clientID(id) {
+        m_clientID(id),
+        m_configs(EvolutionSyncSource::getTestRegistry())
+    {
         const char *server = getenv("CLIENT_TEST_SERVER");
 
         if (id == "1") {
-            clientB.reset(new TestEvolution("2"));
+            m_clientB.reset(new TestEvolution("2"));
         }
 
         /* check server */
@@ -169,41 +191,22 @@ public:
 
         /* override Evolution database names? */
         const char *evoprefix = getenv("CLIENT_TEST_EVOLUTION_PREFIX");
-        evoPrefix = evoprefix ? evoprefix :  "SyncEvolution_Test_";
+        m_evoPrefix = evoprefix ? evoprefix :  "SyncEvolution_Test_";
 
         /* check sources */
         const char *sourcelist = getenv("CLIENT_TEST_SOURCES");
-        if (!sourcelist) {
-            sourcelist = "vcard21,vcard30,ical20,text,itodo20,sqlite,addressbook";
+        set<string> sources;
+        if (sourcelist) {
+            boost::split(sources, sourcelist, boost::is_any_of(","));
+        } else {
+            BOOST_FOREACH(const RegisterSyncSourceTest *test, m_configs) {
+                sources.insert(test->m_configName);
+            }
         }
-        numSources = 0;
-        for (SourceType sourceType = (SourceType)0; sourceType < TEST_MAX_SOURCE; sourceType = (SourceType)((int)sourceType + 1) ) {
-            string name = getSourceName(sourceType);
 
-#ifndef ENABLE_EBOOK
-            if (sourceType == TEST_CONTACT21_SOURCE || sourceType == TEST_CONTACT30_SOURCE) {
-                continue;
-            }
-#endif
-#ifndef ENABLE_ECAL
-            if (sourceType == TEST_CALENDAR_SOURCE ||
-                sourceType == TEST_TASK_SOURCE ||
-                sourceType == TEST_MEMO_SOURCE) {
-                continue;
-            }
-#endif
-#ifndef ENABLE_SQLITE
-            if (sourceType == TEST_SQLITE_CONTACT_SOURCE) {
-                continue;
-            }
-#endif
-#ifndef ENABLE_ADDRESSBOOK
-            if (sourceType == TEST_ADDRESS_BOOK_SOURCE) {
-                continue;
-            }
-#endif
-            if (strstr(sourcelist, name.c_str())) {
-                enabledSources[numSources++] = sourceType;
+        BOOST_FOREACH(const RegisterSyncSourceTest *test, m_configs) {
+            if (sources.find(test->m_configName) != sources.end()) {
+                m_source2Config.push_back(test->m_configName);
             }
         }
 
@@ -216,9 +219,9 @@ public:
             config.setDefaults();
             config.setDevID(id == "1" ? "sc-api-nat" : "sc-pim-ppc");
         }
-        for (SourceType sourceType = (SourceType)0; sourceType < TEST_MAX_SOURCE; sourceType = (SourceType)((int)sourceType + 1) ) {
+        BOOST_FOREACH(const RegisterSyncSourceTest *test, m_configs) {
             ClientTest::Config testconfig;
-            getSourceConfig(sourceType, testconfig);
+            getSourceConfig(test, testconfig);
             CPPUNIT_ASSERT(testconfig.type);
 
             boost::shared_ptr<EvolutionSyncSourceConfig> sc = config.getSyncSourceConfig(testconfig.sourceName);
@@ -232,7 +235,7 @@ public:
             }
 
             // always set this property: the name might have changes since last test run
-            string database = getDatabaseName(sourceType);
+            string database = getDatabaseName(test->m_configName);
             sc->setDatabaseID(database);
         }
         config.flush();
@@ -242,116 +245,27 @@ public:
         return new EvolutionLocalTests(name, *this, sourceParam, co);
     }
 
-    enum SourceType {
-        TEST_CONTACT21_SOURCE,
-        TEST_CONTACT30_SOURCE,
-        TEST_CALENDAR_SOURCE,
-        TEST_TASK_SOURCE,
-        TEST_MEMO_SOURCE,
-        TEST_SQLITE_CONTACT_SOURCE,
-        TEST_ADDRESS_BOOK_SOURCE,
-        TEST_MAX_SOURCE
-    };
-
     virtual int getNumSources() {
-        return numSources;
-    }
-
-    virtual void getSourceConfig(SourceType sourceType, Config &config) {
-        memset(&config, 0, sizeof(config));
-        
-        switch (sourceType) {
-         case TEST_CONTACT21_SOURCE:
-            // we cannot use the C++ client libraries' vcard21 test
-            // data because Evolution only imports vCard 3.0 items,
-            // but we can use the vcard30 test data and synchronize
-            // it as vCard 2.1
-            getTestData("vcard30", config);
-            config.sourceName = "vcard21";
-            config.uri = "card"; // Funambol
-            config.type = "evolution-contacts:text/x-vcard";
-            break;
-         case TEST_CONTACT30_SOURCE:
-            getTestData("vcard30", config);
-            config.type = "Evolution Address Book:text/vcard";
-            break;
-         case TEST_CALENDAR_SOURCE:
-            getTestData("ical20", config);
-            config.type = "evolution-calendar";
-            break;
-         case TEST_TASK_SOURCE:
-            getTestData("itodo20", config);
-            config.type = "evolution-tasks";
-            break;
-         case TEST_MEMO_SOURCE:
-            config.sourceName = "text";
-            config.uri = "note"; // ScheduleWorld
-            config.type = "Evolution Memos"; // use an alias here to test that
-            config.insertItem =
-                "BEGIN:VCALENDAR\n"
-                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
-                "VERSION:2.0\n"
-                "METHOD:PUBLISH\n"
-                "BEGIN:VJOURNAL\n"
-                "SUMMARY:Summary\n"
-                "DESCRIPTION:Summary\\nBody text\n"
-                "END:VJOURNAL\n"
-                "END:VCALENDAR\n";
-            config.updateItem =
-                "BEGIN:VCALENDAR\n"
-                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
-                "VERSION:2.0\n"
-                "METHOD:PUBLISH\n"
-                "BEGIN:VJOURNAL\n"
-                "SUMMARY:Summary Modified\n"
-                "DESCRIPTION:Summary Modified\\nBody text\n"
-                "END:VJOURNAL\n"
-                "END:VCALENDAR\n";
-            /* change summary, as in updateItem, and the body in the other merge item */
-            config.mergeItem1 = config.updateItem;
-            config.mergeItem2 =
-                "BEGIN:VCALENDAR\n"
-                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
-                "VERSION:2.0\n"
-                "METHOD:PUBLISH\n"
-                "BEGIN:VJOURNAL\n"
-                "SUMMARY:Summary\n"
-                "DESCRIPTION:Summary\\nBody modified\n"
-                "END:VJOURNAL\n"
-                "END:VCALENDAR\n";                
-            config.templateItem = config.insertItem;
-            config.uniqueProperties = "SUMMARY:DESCRIPTION";
-            config.sizeProperty = "DESCRIPTION";
-            config.import = ClientTest::import;
-            config.dump = dumpMemoSource;
-            config.testcases = "testcases/imemo20.ics";
-            break;
-         case TEST_SQLITE_CONTACT_SOURCE:
-            getTestData("vcard21", config);
-            config.sourceName = "sqlite";
-            config.type = "sqlite-contacts";
-            config.testcases = "testcases/vcard21_sqlite.vcf";
-            break;
-         case TEST_ADDRESS_BOOK_SOURCE:
-            getTestData("vcard30", config);
-            config.sourceName = "addressbook";
-            config.type = "apple-contacts";
-            break;
-         default:
-            CPPUNIT_ASSERT(sourceType < TEST_MAX_SOURCE);
-            break;
-        }
-        config.createSourceA = createSource;
-        config.createSourceB = createSource;
-        config.compare = compare;
+        return m_source2Config.size();
     }
 
     virtual void getSourceConfig(int source, Config &config) {
-        getSourceConfig(enabledSources[source], config);
+        getSourceConfig(m_configs[m_source2Config[source]], config);
+    }
+
+    static void getSourceConfig(const RegisterSyncSourceTest *test, Config &config) {
+        memset(&config, 0, sizeof(config));
+        ClientTest::getTestData(test->m_testCaseName.c_str(), config);
+        config.createSourceA = createSource;
+        config.createSourceB = createSource;
+        config.compare = compare;
+        config.sourceName = test->m_configName.c_str();
+
+        test->updateConfig(config);
     }
 
     virtual ClientTest *getClientB() {
-        return clientB.get();
+        return m_clientB.get();
     }
 
     virtual bool isB64Enabled() {
@@ -368,12 +282,12 @@ public:
         const char *encoding = NULL) {
         set<string> activeSources;
         for(int i = 0; sources[i] >= 0; i++) {
-            activeSources.insert(getSourceName(enabledSources[sources[i]]));
+            activeSources.insert(m_source2Config[sources[i]]);
         }
 
         string server = getenv("CLIENT_TEST_SERVER") ? getenv("CLIENT_TEST_SERVER") : "funambol";
         server += "_";
-        server += clientID;
+        server += m_clientID;
         
         class ClientTest : public EvolutionSyncClient {
         public:
@@ -426,65 +340,35 @@ public:
     }
     
 private:
-    string clientID;
-    std::auto_ptr<TestEvolution> clientB;
-    string addressBookConfigPath;
+    string m_clientID;
+    std::auto_ptr<TestEvolution> m_clientB;
+    const TestRegistry &m_configs;
 
     /** prefix to be used for Evolution databases */
-    string evoPrefix;
+    string m_evoPrefix;
 
-    /** all sources that are active in the current test run */
-    SourceType enabledSources[TEST_MAX_SOURCE];
-    /** number of active sources */
-    int numSources;
-
-    /** returns the name corresponding to the type, using the same strings as the C++ client testing system */
-    static string getSourceName(SourceType type) {
-        switch (type) {
-         case TEST_CONTACT21_SOURCE:
-            return "vcard21";
-            break;
-         case TEST_CONTACT30_SOURCE:
-            return "vcard30";
-            break;
-         case TEST_CALENDAR_SOURCE:
-            return "ical20";
-            break;
-         case TEST_TASK_SOURCE:
-            return "itodo20";
-            break;
-         case TEST_MEMO_SOURCE:
-            return "text";
-            break;
-         case TEST_SQLITE_CONTACT_SOURCE:
-            return "sqlite";
-            break;
-        case TEST_ADDRESS_BOOK_SOURCE:
-            return "addressbook";
-            break;
-         default:
-            CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
-            return "";
-            break;
-        }
-    }
+    /**
+     * The ClientTest framework identifies active configs with an integer.
+     * This is the mapping to the corresponding config name, created when
+     * constructing this instance.
+     */
+    vector<string> m_source2Config;
 
     /** returns the name of the Evolution database */
-    string getDatabaseName(SourceType type) {
-        return evoPrefix + getSourceName(type) + "_" + clientID;
+    string getDatabaseName(const string &configName) {
+        return m_evoPrefix + configName + "_" + m_clientID;
     }
     
     static SyncSource *createSource(ClientTest &client, int source, bool isSourceA) {
+        TestEvolution &evClient((TestEvolution &)client);
         string changeID = "SyncEvolution Change ID #";
-        SourceType type = ((TestEvolution &)client).enabledSources[source];
+        string name = evClient.m_source2Config[source];
         changeID += isSourceA ? "1" : "2";
-        string database = ((TestEvolution &)client).getDatabaseName(type);
-        SyncSource *ss = NULL;
+        string database = evClient.getDatabaseName(name);
 
         EvolutionSyncConfig config("client-test-changes");
-        string name = ((TestEvolution &)client).getSourceName(type);
         SyncSourceNodes nodes = config.getSyncSourceNodes(name,
-                                                          string("_") + ((TestEvolution &)client).clientID +
+                                                          string("_") + ((TestEvolution &)client).m_clientID +
                                                           "_" + (isSourceA ? "A" : "B"));
 
         // always set this property: the name might have changes since last test run
@@ -494,46 +378,13 @@ private:
                                          nodes,
                                          changeID);
 
-        switch (type) {
-         case TEST_CONTACT21_SOURCE:
-         case TEST_CONTACT30_SOURCE:
-            ss = new TestEvolutionSyncSource("evolution-contacts:text/vcard", params);
-            break;
-         case TEST_CALENDAR_SOURCE:
-            ss = new TestEvolutionSyncSource("evolution-calendar", params);
-            break;
-         case TEST_TASK_SOURCE:
-            ss = new TestEvolutionSyncSource("evolution-tasks", params);
-            break;
-         case TEST_MEMO_SOURCE:
-            ss = new TestEvolutionSyncSource("evolution-memos", params);
-            break;
-         case TEST_SQLITE_CONTACT_SOURCE:
-            ss = new TestEvolutionSyncSource("SQLite Address Book", params);
-            break;
-         case TEST_ADDRESS_BOOK_SOURCE:
-            ss = new TestEvolutionSyncSource("apple-contacts", params);
-            break;
-         default:
-            CPPUNIT_ASSERT(type >= 0 && type < TEST_MAX_SOURCE);
-        }
+        const RegisterSyncSourceTest *test = evClient.m_configs[name];
+        ClientTestConfig testConfig;
+        getSourceConfig(test, testConfig);
 
+        SyncSource *ss = new TestEvolutionSyncSource(testConfig.type, params);
         return ss;
     }
-
-    /**
-     * dump memos in iCalendar 2.0 format for synccompare: ClientTest::dump() would
-     * dump the plain text
-     */
-    static int dumpMemoSource(ClientTest &client, SyncSource &source, const char *file) {
-        std::ofstream out(file);
-
-        ((TestEvolutionSyncSource &)source).m_source->exportData(out);
-
-        out.close();
-        return out.bad();
-    }
-
 };
 
 static void handler(int sig)
@@ -582,3 +433,13 @@ private:
     TestEvolution testClient;
     
 } testEvolution;
+
+int RegisterSyncSourceTest::dump(ClientTest &client, SyncSource &source, const char *file)
+{
+    std::ofstream out(file);
+    
+    ((EvolutionSyncSource &)source).exportData(out);
+
+    out.close();
+    return out.bad();
+}

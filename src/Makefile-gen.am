@@ -26,7 +26,7 @@ TESTS = @CPPUNIT_TESTS@
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
-CLEANFILES = libstdc++.a
+CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES)
 
 # synccompare is created by replacing its 'import Algorithm::Diff;'
 # with a simplified copy of Diff.pm.
@@ -92,6 +92,7 @@ dist-hook:
 	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
 
 clean-local: testclean
+	rm -rf testcases
 	[ ! -d "$(FUNAMBOL_SUBDIR)" ] || (cd $(FUNAMBOL_SUBDIR) && $(MAKE) clean)
 
 # files created during testing
@@ -107,28 +108,35 @@ distclean-local:
 # executed. The workaround is to explicitly set them as undefined on the
 # link line.
 client_test_SOURCES = client-test-app.cpp $(CORE_SOURCES)
-CLIENT_LIB_TEST_FILES = ClientTest.h ClientTest.cpp client-test-main.cpp
+CLIENT_LIB_TEST_FILES = ClientTest.h ClientTest.cpp client-test-main.cpp \
+	testcases/vcard21.vcf \
+	testcases/vcard30.vcf \
+	testcases/ical20.ics \
+	testcases/itodo20.ics
 nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(FUNAMBOL_SUBDIR)/src/.libs/libfunambol.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
 client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD)
-client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) all
+# These dependencies are intentionally a bit too broad:
+# they ensure that all files are in place to *run* client-test,
+# but in particular the "all" dependency causes a rebuild
+# even if the actual input files haven't changed.
+client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) all $(CLIENT_LIB_TEST_FILES) synccompare
 
 # copy test files for several reasons:
 # - automake expects them here
 # - wchar needs to be removed from distribution to avoid need for defines
-# - a locally modified file with suffix ".modified" can take precedence over
-#   the upstream version
+# - a file in SyncEvolution's test directory is preferred if it exists
 
-LOCAL_TEST_FILES=$(notdir $(wildcard $(srcdir)/../test/*))
+LOCAL_TEST_FILES=$(subst $(srcdir)/../test/,,$(wildcard $(srcdir)/../test/* $(srcdir)/../test/testcases/*))
 
 # sources from SyncEvolution
-$(filter $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES)) : % : $(srcdir)/../test/%
+$(filter-out testcases/%, $(filter $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES))) : % : $(srcdir)/../test/%
 	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
 
 # sources from compiled client library
-$(filter-out $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES)) : % : $(FUNAMBOL_SUBDIR)/test/test/%
+$(filter-out $(LOCAL_TEST_FILES) testcases/%, $(CLIENT_LIB_TEST_FILES)) : % : $(FUNAMBOL_SUBDIR)/test/test/%
 	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
 
 $(CLIENT_LIB_TEST_FILES:%=$(FUNAMBOL_SUBDIR)/test/test/%): @FUNAMBOL_DEP@
@@ -137,19 +145,14 @@ $(CLIENT_LIB_TEST_FILES:%=$(FUNAMBOL_SUBDIR)/test/test/%): @FUNAMBOL_DEP@
 ClientTest.cpp : ClientTest.h
 
 # verbatim files from SyncEvolution
-$(filter $(LOCAL_TEST_FILES), testcases) : % : $(srcdir)/../test/%
-	rm -rf $@
-	cp -r $< $@
+$(filter testcases/%, $(filter $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES))) : % : $(srcdir)/../test/%
+	mkdir -p testcases
+	cp $< $@
 
-# verbatim files from client library:
-# - SQLiteContactSource does not support all fields: filter those out
-$(filter-out $(LOCAL_TEST_FILES), testcases) : % : $(FUNAMBOL_SUBDIR)/test/test/%
-	rm -rf $@
-	cp -r $< $@
-	perl -e '$$_ = join("", <>); s/^(ADR|TEL|EMAIL|PHOTO).*?(?=^\S)//msg; print;' testcases/vcard21.vcf >testcases/vcard21_sqlite.vcf
 
-test : client-test testcases synccompare
-.PHONY : test
+$(filter testcases/%, $(filter-out $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES))) : % : $(FUNAMBOL_SUBDIR)/test/test/%
+	mkdir -p testcases
+	cp $< $@
 
 # rule to satisfy automatic dependencies on header files
 $(FUNAMBOL_SUBDIR)/%.h :

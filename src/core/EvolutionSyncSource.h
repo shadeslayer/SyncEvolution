@@ -29,6 +29,7 @@
 #include <vector>
 #include <set>
 #include <ostream>
+#include <stdexcept>
 using namespace std;
 
 #ifdef HAVE_EDS
@@ -156,13 +157,114 @@ class RegisterSyncSource
                        const Values &typeValues);
  public:
     const string m_shortDescr;
-    bool m_enabled;
-    Create_t m_create;
+    const bool m_enabled;
+    const Create_t m_create;
     const string m_typeDescr;
     const Values m_typeValues;
 };
     
 typedef list<const RegisterSyncSource *> SourceRegistry;
+
+
+#ifdef ENABLE_INTEGRATION_TESTS
+#include <test/ClientTest.h>
+typedef ClientTest::Config ClientTestConfig;
+#else
+/**
+ * this class doesn't exist and cannot be referenced in code which is 
+ * compiled without ENABLE_INTEGRATION_TEST, but we only need to
+ * declare a reference to it, so that's okay
+ */
+class ClientTestConfig;
+class ClientTest;
+#endif
+
+/**
+ * In addition to registering the sync source itself by creating an
+ * instance of RegisterSyncSource, configurations for testing it can
+ * also be registered. A sync source which supports more than one data
+ * exchange format can register one configuration for each format, but
+ * not registering any configuration is also okay.
+ *
+ * This code depends on the C++ client library test framework and
+ * therefore CPPUnit. To avoid a hard dependency on that in the normal
+ * "syncevolution" binary, the actual usage of the test Config class
+ * is limited to the *Register.cpp files when compiling them for
+ * inclusion in the "client-test" binary, i.e., they are protected by
+ * #ifdef ENABLE_UNIT_TESTS.
+ *
+ * Sync sources have to work stand-alone without a full SyncClient
+ * configuration for all local tests. The minimal configuration prepared
+ * for the source includes:
+ * - a tracking node (as used f.i. by TrackingSyncSource) which
+ *   points towards "~/.config/syncevolution/client-test-changes"
+ * - a unique change ID (as used f.i. by EvolutionContactSource)
+ * - a valid "evolutionsource" property in the config node, starting
+ *   with the CLIENT_TEST_EVOLUTION_PREFIX env variable or (if that
+ *   wasn't set) the "SyncEvolution_Test_" prefix
+ *
+ * No other properties are set, which implies that currently sync sources
+ * which require further parameters cannot be tested.
+ */
+class RegisterSyncSourceTest
+{
+ public:
+    /**
+     * This call is invoked after setting up the config with default
+     * values for the test cases selected via the constructor's
+     * testCaseName parameter (one of vcard21, vcard30, ical20, itodo20;
+     * see ClientTest in the Funambol client library for the current
+     * list).
+     *
+     * This call can then override any of the values or (if there
+     * are no predefined test cases) add them.
+     *
+     * The "type" property must select your sync source and the
+     * data format for the test.
+     *
+     * @retval config        change any field whose default is not suitable
+     */
+    virtual void updateConfig(ClientTestConfig &config) const = 0;
+
+    /**
+     * @param configName     a unique string: the predefined names known by
+     *                       ClientTest::getTestData() are already used for the initial
+     *                       set of Evolution sync sources, for new sync sources
+     *                       build a string by combining them with the sync source name
+     *                       (e.g., "sqlite_vcard30")
+     * @param testCaseName   a string recognized by ClientTest::getTestData() or an
+     *                       empty string if there are no predefined test cases
+     */
+    RegisterSyncSourceTest(const string &configName,
+                           const string &testCaseName);
+    virtual ~RegisterSyncSourceTest() {}
+
+    /**
+     * Dump items in the native format, not the one currently selected
+     * for exchange with the SyncML server. Useful for testing sync
+     * sources which normally use one format internally, but also
+     * support another one (EvolutionContactSource).
+     */
+    static int dump(ClientTest &client, SyncSource &source, const char *file);
+
+    const string m_configName;
+    const string m_testCaseName;
+};
+
+class TestRegistry : public vector<const RegisterSyncSourceTest *>
+{
+ public:
+    // TODO: using const RegisterSyncSourceTest * operator [] (int);
+    const RegisterSyncSourceTest * operator [] (const string &configName) const {
+        BOOST_FOREACH(const RegisterSyncSourceTest *test, *this) {
+            if (test->m_configName == configName) {
+                return test;
+            }
+        }
+        throw out_of_range(string("test config registry: ") + configName);
+        return NULL;
+    }
+};
 
 
 /**
@@ -212,6 +314,12 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      * RegisterSyncSource
      */
     static SourceRegistry &getSourceRegistry();
+
+    /**
+     * SyncSource tests are registered here by the constructor of
+     * RegisterSyncSourceTest
+     */
+    static TestRegistry &getTestRegistry();
 
     struct Database {
     Database(const string &name, const string &uri, bool isDefault = false) :
@@ -405,6 +513,10 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     virtual int updateItemThrow(SyncItem& item) = 0;
     virtual int deleteItemThrow(SyncItem& item) = 0;
 
+    /** log a one-line info about an item */
+    virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;
+    virtual void logItem(const SyncItem &item, const string &info, bool debug = false) = 0;
+
   protected:
 #ifdef HAVE_EDS
     /**
@@ -430,10 +542,6 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
                      , GError *gerror = NULL
 #endif
                      );
-
-    /** log a one-line info about an item */
-    virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;
-    virtual void logItem(const SyncItem &item, const string &info, bool debug = false) = 0;
 
     const string m_changeId;
 

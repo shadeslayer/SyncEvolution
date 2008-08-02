@@ -69,7 +69,7 @@ libsyncevolution_la_SOURCES = $(CORE_SOURCES)
 libsyncevolution_la_LIBADD = @FUNAMBOL_LIBS@ @EPACKAGE_LIBS@ @GLIB_LIBS@ @LIBS@ 
 libsyncevolution_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
-# include client library and boost in distribution
+# include boost in distribution
 dist-hook:
 	cp -r $(srcdir)/boost $(distdir)
 	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
