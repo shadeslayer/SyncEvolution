@@ -271,13 +271,13 @@ class TestRegistry : public vector<const RegisterSyncSourceTest *>
  * SyncEvolution accesses all sources through this interface.  This
  * class also implements common functionality for all SyncSources:
  * - handling of change IDs and URI
- * - finding the calender/contact backend
+ * - finding the calender/contact backend (only for Evolution)
  * - default implementation of SyncSource interface
  *
  * The default interface assumes that the backend's
- * open() already finds all items as well as new/modified/deleted
+ * beginSyncThrow() finds all items as well as new/modified/deleted
  * ones and stores their UIDs in the respective lists.
- * Then the SyncItem iterators just walk through these lists,
+ * Then the Items iterators just walk through these lists,
  * creating new items via createItem().
  *
  * Error reporting is done via the Log class and this instance

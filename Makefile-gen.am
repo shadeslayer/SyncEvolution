@@ -80,12 +80,17 @@ doc-pak : README NEWS COPYING
 description-pak : description
 	cp $< $@
 
+# Build "html" inside the build dir, using source files
+# from the SyncEvolution source directory and (if built)
+# the installed client-api.build directory.
 .PHONY: doc clean-html
 doc:
 	rm -rf html
-	export VERSION=$(VERSION); \
+	export VERSION="SyncEvolution $(VERSION)"; \
 	export OUTPUT_DIRECTORY="`pwd`"; \
-	export PREDEFINED="@BACKEND_DEFINES@"; \
+	export PREDEFINED="@BACKEND_DEFINES@ ENABLE_UNIT_TESTS ENABLE_INTEGRATION_TESTS"; \
+	export CLIENT_LIBRARY="@FUNAMBOL_SUBDIR@/test @FUNAMBOL_SUBDIR@/include "; \
+	export STRIP_FROM_PATH="$(srcdir) `dirname @FUNAMBOL_SUBDIR@`"; \
 	cd $(srcdir); doxygen
 clean-local: clean-html
 clean-html:

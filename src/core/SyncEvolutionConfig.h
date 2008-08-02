@@ -32,6 +32,11 @@
 #include <set>
 using namespace std;
 
+/**
+ * @defgroup ConfigHandling Configuration Handling
+ * @{
+ */
+
 class EvolutionSyncSourceConfig;
 class PersistentEvolutionSyncSourceConfig;
 class ConfigTree;
@@ -608,14 +613,13 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
               const set<string> *sourceFilter);
 
     /**
-     * @defgroup SyncEvolutionSettings
+     * @name Settings specific to SyncEvolution
      *
-     * See etc/syncml-config.txt and the property definitions in
-     * SyncEvolutionConfig.cpp for the user-visible explanations of
+     * See the property definitions in SyncEvolutionConfig.cpp
+     * for the user-visible explanations of
      * these settings.
-     *
-     * @{
      */
+    /**@{*/
 
     virtual const char *getLogDir() const;
     virtual void setLogDir(const string &value, bool temporarily = false);
@@ -629,29 +633,17 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
     /**@}*/
 
     /**
-     * @defgroup AbstractSyncConfig
+     * @name Settings inherited from Funambol
      *
      * These settings are required by the Funambol C++ client library.
      * Some of them are hard-coded in this class. A derived class could
      * make them configurable again, should that be desired.
-     *
-     * @{
      */
+    /**@{*/
 
-    /**
-     * @defgroup ActiveSyncSources
-     *
-     * This group of calls grants access to all active sources. In
-     * SyncEvolution the EvolutionSyncClient class decides which
-     * sources are active and thus fully configured and reimplements
-     * these calls.
-     *
-     * @{
-     */
     virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(const char* name) const { return NULL; }
     virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(unsigned int i) const { return NULL; }
     virtual unsigned int getAbstractSyncSourceConfigsCount() const { return 0; }
-    /**@}*/
 
     virtual const char*  getUsername() const;
     virtual void setUsername(const string &value, bool temporarily = false);
@@ -824,10 +816,10 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
     bool exists() const { return m_nodes.m_configNode->exists(); }
 
     /**
-     * @defgroup EvolutionSyncSourceConfigExtensions
-     *
-     * @{
+     * @name Settings specific to SyncEvolution SyncSources
      */
+    /**@{*/
+
     virtual const char *getUser() const;
     virtual void setUser(const string &value, bool temporarily = false);
 
@@ -839,7 +831,6 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
 
     virtual const char *getDatabaseID() const;
     virtual void setDatabaseID(const string &value, bool temporarily = false);
-    /**@}*/
 
     /**
      * Returns the data source type configured as part of the given
@@ -863,15 +854,9 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
     /**@}*/
 
     /**
-     * @defgroup AbstractSyncSourceConfigAPI_not_yet_implemented
-     *
-     * These calls have to be implemented by EvolutionSyncSource
-     * instances. Some sources support more than one type. The
-     * configuration then selects the preferred format in
-     * the getSourceType() string.
-     * 
-     * @{
+     * @name Calls which have to be implemented by each EvolutionSyncSource.
      */
+    /**@{*/
 
     /**
      * Returns the preferred mime type of the items handled by the sync source.
@@ -897,13 +882,9 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
     /**@}*/
 
     /**
-     * @defgroup AbstractSyncSourceConfigAPI_implemented
-     * @{
+     * @name Calls which usually do not have to be implemented by each EvolutionSyncSource.
      */
-    virtual const char *getType() const { return getMimeType(); }
-    virtual const char *getVersion() const { return getMimeVersion(); }
-    virtual const char*  getName() const { return m_name.c_str(); }
-    /**@}*/
+    /**@{*/
 
     /**
      * Returns the SyncSource URI: used in SyncML to address the data
@@ -983,6 +964,15 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
 
     /**@}*/
 
+    /**
+     * @name Calls implemented by SyncEvolution.
+     */
+    /**@{*/
+    virtual const char *getType() const { return getMimeType(); }
+    virtual const char *getVersion() const { return getMimeVersion(); }
+    virtual const char*  getName() const { return m_name.c_str(); }
+    /**@}*/
+
  private:
     string m_name;
     SyncSourceNodes m_nodes;
@@ -1003,5 +993,7 @@ class PersistentEvolutionSyncSourceConfig : public EvolutionSyncSourceConfig {
     virtual const char* getMimeVersion() const { return ""; }
     virtual const char* getSupportedTypes() const { return ""; }
 };
+
+/**@}*/
 
 #endif
