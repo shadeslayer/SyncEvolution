@@ -105,6 +105,9 @@ bool SyncEvolutionCmdline::parse()
         } else if(boost::iequals(m_argv[opt], "--configure") ||
                   boost::iequals(m_argv[opt], "-c")) {
             m_configure = true;
+        } else if(boost::iequals(m_argv[opt], "--run") ||
+                  boost::iequals(m_argv[opt], "-r")) {
+            m_run = true;
         } else if(boost::iequals(m_argv[opt], "--migrate")) {
             m_migrate = true;
         } else if(boost::iequals(m_argv[opt], "--status") ||
@@ -188,7 +191,8 @@ bool SyncEvolutionCmdline::run() {
             }
         }
 
-        if (m_sources.empty()) {
+        if (m_sources.empty() ||
+            m_sources.find("main") != m_sources.end()) {
             boost::shared_ptr<FilterConfigNode> syncProps(config->getProperties());
             syncProps->setFilter(m_syncProps);
             dumpProperties(*syncProps, config->getRegistry());
@@ -342,6 +346,14 @@ bool SyncEvolutionCmdline::run() {
         if (m_status) {
             client.status();
         } else {
+            // safety catch: if props are given, then --run
+            // is required
+            if (!m_run &&
+                (m_syncProps.size() || m_sourceProps.size())) {
+                usage(false, "Properties specified, but neither '--configure' nor '--run' - what did you want?");
+                return false;
+            }
+
             return client.sync() == 0;
         }
     }
@@ -532,10 +544,20 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
 {
     ostream &out(error.empty() ? m_out : m_err);
 
-    out << m_argv[0] << endl;
-    out << m_argv[0] << " [<options>] <server> [<source> ...]" << endl;
-    out << m_argv[0] << " --help|-h" << endl;
-    out << m_argv[0] << " --version" << endl;
+    out << "Show available sources:" << endl;
+    out << "  " << m_argv[0] << endl;
+    out << "Show information about configuration(s):" << endl;
+    out << "  " << m_argv[0] << " --print-servers" << endl;
+    out << "  " << m_argv[0] << " --print-config [--quiet] <server> [sync|<source ...]" << endl;
+    out << "Show information about SyncEvolution:" << endl;
+    out << "  " << m_argv[0] << " --help|-h" << endl;
+    out << "  " << m_argv[0] << " --version" << endl;
+    out << "Run a synchronization:" << endl;
+    out << "  " << m_argv[0] << " <server> [<source> ...]" << endl;
+    out << "  " << m_argv[0] << " --run <options for run> <server> [<source> ...]" << endl;
+    out << "Modify configuration:" << endl;
+    out << "  " << m_argv[0] << " --configure <options for configuration> <server> [<source> ...]" << endl;
+    out << "  " << m_argv[0] << " --migrate <server>" << endl;
     if (full) {
         out << endl <<
             "Options:" << endl <<

@@ -100,7 +100,8 @@ Usage
 -----
 
 Currently SyncEvolution comes as a simple command line tool which is
-configured via files. The synopsis of the command line parameters is:
+configured via files. The general synopsis of the command line
+parameters is:
 
    syncevolution [<options>] [<server>] [<source> ...]
 
@@ -108,7 +109,10 @@ The <server> and the <source> strings are used to find the
 configuration files which determine how synchronization is going to
 proceed. Each source corresponds to one local address book, calendar,
 task list or set of memos and the corresponding database on the
-server.
+server. Depending on which parameters are given, different operations
+are executed.
+
+   syncevolution
 
 If no arguments are given, then SyncEvolution will list all available
 data sources regardless whether there is a configuration file for them
@@ -116,13 +120,18 @@ or not. The output includes the identifiers which can then be used to
 select those sources in a configuration file. For each source one can
 set a different synchronization mode in its configuration file.
 
+   syncevolution <server>
+
 Without the optional list of sources all sources which are enabled in
-their configuration file are synchronized. Otherwise only the ones
-mentioned on the command line are active. It is possible to configure
-sources without activating their synchronization: if the
-synchronization mode of a source is set to "none", the source will be
-ignore. Explicitely listing such a source will synchronize it in
-"two-way" mode once.
+their configuration file are synchronized.
+
+   syncevolution <server> <source> ...
+
+Otherwise only the ones mentioned on the command line are active. It
+is possible to configure sources without activating their
+synchronization: if the synchronization mode of a source is set to
+"none", the source will be ignore. Explicitely listing such a source
+will synchronize it in "two-way" mode once.
 
 Progress and error messages are written into a log file that is
 preserved for each synchronization run. Details about that is found
@@ -153,6 +162,31 @@ associated with this is that the server might not recognize items that
 it already has stored previously which then would lead to duplication
 of items.
 
+   syncevolution --configure <options for configuration> <server> [<source> ...]
+
+Options in the configuration can be modified via the command
+line. Source properties are changed for all sources unless sources are
+listed explicitly.  Some source properties have to be different for
+each source, in which case syncevolution must be called multiple times
+with one source listed in each invocation.
+
+   syncevolution --run <options for run> <server> [<source> ...]
+
+Options can also be overridden for just the current run, without
+changing the configuration. In order to prevent accidentally running a
+sync session when a configuration change was intented, either
+--configure or --run must be given explicitly if options are specified
+on the command line.
+
+   syncevolution --print-servers
+   syncevolution --print-config [--quiet] <server> [sync|<source> ...]
+
+These commands print information about existing configurations. When
+printing a configuration a short version without commands can be
+selected with --quiet. When sources are listed, only their
+configuration is show. "Sync" instead or in combination with sources
+lists only the main server configuration.
+
 Here is a full description of all <options> that can be put in front
 of the server name. Whenever an option accepts multiple values, a
 question mark can be used to get the corresponding help text and/or
@@ -175,7 +209,8 @@ a list of valid values.
   with --sync-property and --source-property to modify the configuration
   on-the-fly. When one or more sources are listed after the <server>
   name on the command line, then only the configs of those sources are
-  printed. Using --quiet suppresses the comments for each property.
+  printed. "Sync" selects the main configuration instead of source
+  configurations. Using --quiet suppresses the comments for each property.
   When setting a --template, then the reference configuration for
   that server is printed instead of an existing configuration.
 
@@ -189,6 +224,13 @@ a list of valid values.
   address book. The other sources are created in a disabled state.
   When modifying an existing configuration and sources are specified,
   then the source properties of only those sources are modified.
+
+--run|-r
+  To prevent accidental sync runs when a configuration change was
+  intented, but the "--configure" option was used, "--run" must be
+  specified explicitly when sync or source properties are selected
+  on the command line and they are meant to be used during a sync
+  session triggered by the invocation.
 
 --migrate
   In SyncEvolution <= 0.7 a different layout of configuration files
