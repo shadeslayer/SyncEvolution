@@ -1,3 +1,272 @@
+2008-08-03 20:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/core/SyncEvolutionCmdline.cpp: --sync implies --run, to be
+	  compatible with old command lines
+
+2008-08-03 20:26  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/README.h: better explanation what the classes do
+
+2008-08-03 20:26  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/client-test-app.cpp: added documentation for client-test env
+	  variables and usage
+
+2008-08-03 20:23  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING: corrected outdated config path
+
+2008-08-03 20:06  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/backends/addressbook/AddressBookSourceRegister.cpp,
+	  src/backends/evolution/EvolutionCalendarSourceRegister.cpp,
+	  src/backends/evolution/EvolutionContactSourceRegister.cpp,
+	  src/backends/file/FileSyncSourceRegister.cpp,
+	  src/backends/sqlite/SQLiteContactSourceRegister.cpp: only include
+	  integration tests in anonymous namespace because CPPUnit unit
+	  tests become ugly otherwise
+
+2008-08-03 19:51  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/backends/file, src/backends/file/FileSyncSource.cpp,
+	  src/backends/file/FileSyncSource.h,
+	  src/backends/file/FileSyncSourceRegister.cpp,
+	  src/backends/file/Makefile.am,
+	  src/backends/file/configure-sub.in: added file backend
+
+2008-08-03 19:50  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/core/EvolutionSyncSource.cpp, src/core/EvolutionSyncSource.h:
+	  added EvolutionSyncSource::logItemUtil(): extracts key properties
+	  from raw data and logs them
+
+2008-08-03 19:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile-gen.am: more dependency fixes
+
+2008-08-03 13:21  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: added synopsis for --status
+
+2008-08-03 13:20  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/backends/addressbook/AddressBookSourceRegister.cpp,
+	  src/backends/evolution/EvolutionCalendarSourceRegister.cpp,
+	  src/backends/evolution/EvolutionContactSourceRegister.cpp,
+	  src/backends/sqlite/SQLiteContactSourceRegister.cpp: use
+	  anonymous namespaces to avoid name conflicts between classes
+
+2008-08-03 13:00  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README, src/core/SyncEvolutionCmdline.cpp,
+	  src/core/SyncEvolutionCmdline.h: improved command line and its
+	  documented
+	  
+	  More explicit description of the different operations. Added
+	  --run|-r switch: if properties are on the command line, then an
+	  operation must be specified explicitly, with --run standing for a
+	  sync run. Otherwise a sync might accidentally be done when a
+	  configuration change was intented, but the --configure switch was
+	  forgotten.
+
+2008-08-03 12:58  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile-gen.am: minor fixes for recent introduction of
+	  libsyncevolution
+	  
+	  syncevolution and client-test were not rebuilt when lib changed.
+	  Unit tests in lib were not pulled into client-test.
+
+2008-08-03 12:35  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile-gen.am: re-added 'test' target (alias for
+	  client-test now)
+
+2008-08-02 17:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Doxyfile, Makefile-gen.am, src/README.h,
+	  src/core/EvolutionSyncSource.h, src/core/SyncEvolutionConfig.h:
+	  cleaned up Doxygen documentation + included Funambol API
+
+2008-08-02 15:46  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile-gen.am,
+	  src/backends/addressbook/AddressBookSourceRegister.cpp,
+	  src/backends/evolution/EvolutionCalendarSourceRegister.cpp,
+	  src/backends/evolution/EvolutionContactSourceRegister.cpp,
+	  src/backends/sqlite/Makefile.am,
+	  src/backends/sqlite/SQLiteContactSource.cpp,
+	  src/backends/sqlite/SQLiteContactSourceRegister.cpp,
+	  src/client-test-app.cpp, src/core/EvolutionSyncSource.cpp,
+	  src/core/EvolutionSyncSource.h, src/core/Makefile.am: added
+	  automatic registration of test
+
+2008-08-02 12:51  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile-gen.am: client-test now depends on
+	  libsyncevolution.la and backends, i.e. 'all'
+
+2008-08-02 07:55  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile-gen.am, src/core/Makefile.am: fixed inclusion of
+	  moved boost in distribution
+
+2008-07-31 19:57  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Doxyfile, src/Test.h, src/boost, src/core/boost: moved boost
+	  headers to src/core because that has to be in the include path
+	  anyway
+
+2008-07-30 20:31  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/Makefile-gen.am, src/client-test-app.cpp: unit tests in
+	  Register.cpp files not active without --enable-unit-tests
+
+2008-07-30 20:11  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Doxyfile, Makefile-gen.am, configure-pre.in: added building of
+	  html source code documentation with Doxygen
+
+2008-07-30 20:10  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Doxyfile: unmodified Doxyfile template as created by doxygen
+	  1.5.3
+
+2008-07-30 17:30  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile-gen.am, Makefile.am, autogen.sh, configure-post.in,
+	  configure-pre.in, src, src/Makefile-gen.am, src/Makefile.am.gen,
+	  src/backends/addressbook, src/backends/addressbook/Makefile.am,
+	  src/backends/addressbook/configure-sub.in,
+	  src/backends/evolution, src/backends/evolution/Makefile.am,
+	  src/backends/evolution/configure-sub.in, src/backends/sqlite,
+	  src/backends/sqlite/Makefile.am,
+	  src/backends/sqlite/configure-sub.in, src/core,
+	  src/core/Makefile.am, test: file layout restructuring, take II
+	  
+	  Added missing files, finished automatic registration of backends,
+	  Emacs mode for renamed files.
+
+2008-07-29 21:06  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile.am, autogen.sh, configure-pre.in, configure.in,
+	  src/AddressBookConstants.cpp, src/AddressBookSource.cpp,
+	  src/AddressBookSource.h, src/AddressBookSourceRegister.cpp,
+	  src/ConfigNode.h, src/ConfigTree.h,
+	  src/EvolutionCalendarSource.cpp, src/EvolutionCalendarSource.h,
+	  src/EvolutionCalendarSourceRegister.cpp,
+	  src/EvolutionContactSource.cpp, src/EvolutionContactSource.h,
+	  src/EvolutionContactSourceRegister.cpp,
+	  src/EvolutionMemoSource.cpp, src/EvolutionMemoSource.h,
+	  src/EvolutionSmartPtr.h, src/EvolutionSyncClient.cpp,
+	  src/EvolutionSyncClient.h, src/EvolutionSyncSource.cpp,
+	  src/EvolutionSyncSource.h, src/FileConfigNode.cpp,
+	  src/FileConfigNode.h, src/FileConfigTree.cpp,
+	  src/FileConfigTree.h, src/FilterConfigNode.cpp,
+	  src/FilterConfigNode.h, src/Makefile.am, src/Makefile.am.gen,
+	  src/PrefixConfigNode.cpp, src/PrefixConfigNode.h,
+	  src/SQLiteContactSource.cpp, src/SQLiteContactSource.h,
+	  src/SQLiteContactSourceRegister.cpp, src/SQLiteUtil.cpp,
+	  src/SQLiteUtil.h, src/SafeConfigNode.cpp, src/SafeConfigNode.h,
+	  src/SyncEvolutionCmdline.cpp, src/SyncEvolutionCmdline.h,
+	  src/SyncEvolutionConfig.cpp, src/SyncEvolutionConfig.h,
+	  src/SyncEvolutionUtil.cpp, src/SyncEvolutionUtil.h,
+	  src/TrackingSyncSource.cpp, src/TrackingSyncSource.h,
+	  src/VolatileConfigNode.h, src/VolatileConfigTree.h, src/backends,
+	  src/backends/addressbook,
+	  src/backends/addressbook/AddressBookConstants.cpp,
+	  src/backends/addressbook/AddressBookSource.cpp,
+	  src/backends/addressbook/AddressBookSource.h,
+	  src/backends/addressbook/AddressBookSourceRegister.cpp,
+	  src/backends/evolution,
+	  src/backends/evolution/EvolutionCalendarSource.cpp,
+	  src/backends/evolution/EvolutionCalendarSource.h,
+	  src/backends/evolution/EvolutionCalendarSourceRegister.cpp,
+	  src/backends/evolution/EvolutionContactSource.cpp,
+	  src/backends/evolution/EvolutionContactSource.h,
+	  src/backends/evolution/EvolutionContactSourceRegister.cpp,
+	  src/backends/evolution/EvolutionMemoSource.cpp,
+	  src/backends/evolution/EvolutionMemoSource.h,
+	  src/backends/evolution/e-cal-check-timezones.c,
+	  src/backends/evolution/e-cal-check-timezones.h,
+	  src/backends/evolution/libical, src/backends/sqlite,
+	  src/backends/sqlite/SQLiteContactSource.cpp,
+	  src/backends/sqlite/SQLiteContactSource.h,
+	  src/backends/sqlite/SQLiteContactSourceRegister.cpp,
+	  src/backends/sqlite/SQLiteUtil.cpp,
+	  src/backends/sqlite/SQLiteUtil.h, src/core,
+	  src/core/ConfigNode.h, src/core/ConfigTree.h,
+	  src/core/EvolutionSmartPtr.h, src/core/EvolutionSyncClient.cpp,
+	  src/core/EvolutionSyncClient.h, src/core/EvolutionSyncSource.cpp,
+	  src/core/EvolutionSyncSource.h, src/core/FileConfigNode.cpp,
+	  src/core/FileConfigNode.h, src/core/FileConfigTree.cpp,
+	  src/core/FileConfigTree.h, src/core/FilterConfigNode.cpp,
+	  src/core/FilterConfigNode.h, src/core/PrefixConfigNode.cpp,
+	  src/core/PrefixConfigNode.h, src/core/SafeConfigNode.cpp,
+	  src/core/SafeConfigNode.h, src/core/SyncEvolutionCmdline.cpp,
+	  src/core/SyncEvolutionCmdline.h,
+	  src/core/SyncEvolutionConfig.cpp, src/core/SyncEvolutionConfig.h,
+	  src/core/SyncEvolutionUtil.cpp, src/core/SyncEvolutionUtil.h,
+	  src/core/TrackingSyncSource.cpp, src/core/TrackingSyncSource.h,
+	  src/core/VolatileConfigNode.h, src/core/VolatileConfigTree.h,
+	  src/core/vocl, src/e-cal-check-timezones.c,
+	  src/e-cal-check-timezones.h, src/libical, src/vocl: major
+	  restructuring of the file layout and autotools build
+	  
+	  This change makes it possible to add a new backend without
+	  changing any of the core files. It also gets rid of some hacks
+	  (like -export-dynamic for the binary) by putting all core
+	  SyncEvolution code into a library.
+	  
+	  The transition is not quite complete: there are still some lists
+	  of existing backends, which will be removed soon.
+	  EvolutionSmartPtr.h and EvolutionSyncSource depend on
+	  Evolution/GNOME libs, which forces all backends to use the right
+	  -I flags.
+
+2008-07-28 20:48  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in: print summary of enabled backends
+
+2008-07-23 20:59  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile.am: another rename sync4j->funambol
+
+2008-07-21 19:12  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure.in, src/Makefile.am: adapted to renaming of libsync4j
+	  -> libfunambol; also renamed variables and configure options, but
+	  old options kept as aliases
+
+2008-07-21 16:55  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: added further explanations to --source-property
+
+2008-07-21 16:53  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* tags/syncevolution-0-8beta1a/debian/changelog,
+	  tags/syncevolution-0-8beta1a/src/EvolutionContactSource.cpp,
+	  debian/changelog, src/EvolutionContactSource.cpp: disabled
+	  special support for X-OSSO-CONTACT-STATE because the property no
+	  longer is returned properly by libebook (SF #1947050)
+
+2008-07-14 18:41  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* NEWS: fixed --refresh-from-server typo
+
+2008-07-14 18:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING: added BINSUFFIX for Mac OS X
+
+2008-07-14 18:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile.am, src/Makefile.am: added files required for 'make deb'
+	  to distribution
+
+2008-07-12 20:03  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, NEWS, debian/changelog: # updated
+
 2008-07-12 20:02  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/SyncEvolutionConfig.cpp: added comment regarding myFUNAMBOL

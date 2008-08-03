@@ -1,3 +1,44 @@
+SyncEvolution 0.8 beta 1 -> 0,8 beta 2, 03.08.2008
+--------------------------------------------------
+C++ client library: 7.0 plus compatibility patch for Synthesis
+
+* To prevent accidental sync runs when a configuration change
+  was intented, a new --run switch must be used when configuration
+  properties are given on the command line. When neither --run
+  nor --configure are specified, SyncEvolution prints an
+  error and refuses to do anything.
+
+* Improved documentation for command line, in particular the synopsis.
+
+* Added a new file backend: stores each SyncML item as a separate file
+  in a directory.  The directory has to be specified via the database
+  name, using [file://]<path> as format. The file:// prefix is
+  optional, but the directory is only created if it is used.
+
+  Change tracking is done via the file systems modification time
+  stamp: editing a file treats it as modified and then sends it to the
+  server in the next sync. Removing and adding files also works.
+
+  The local unique identifier for each item is its name in the
+  directory. New files are created using a running count which
+  initialized based on the initial content of the directory to
+  "highest existing number + 1" and incremented to avoid collisions.
+ 
+  Although this sync source itself does not care about the content of
+  each item/file, the server needs to know what each item sent to it
+  contains and what items the source is able to receive. Therefore
+  the "type" property for this source must contain a data format
+  specified, including a version for it. Here are some examples:
+  - type=file:text/vcard:3.0
+  - type=file:text/plain:1.0
+
+* Code restructuring: it is now possible to add new backends and thus
+  write SyncML clients for other kinds of data without touching any
+  line of code in SyncEvolution itself. All the required interfaces
+  are documented inside SyncEvolution itself. A HTML documentation can
+  be built via the new "make doc" target (requires Doxygen and dot).
+
+
 SyncEvolution 0.8 alpha 1 -> 0.8 beta 1, 12.07.2008
 ---------------------------------------------------
 C++ client library: the frozen 7.0 code, but before the release
