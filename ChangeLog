@@ -1,3 +1,13 @@
+2008-08-03 20:56  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/core/EvolutionSyncSource.cpp, src/core/EvolutionSyncSource.h:
+	  avoid redundant ': failure' in error situations where the error
+	  description is already included
+
+2008-08-03 20:49  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, NEWS, configure-pre.in: release 0.8 beta 2
+
 2008-08-03 20:48  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* src/core/SyncEvolutionCmdline.cpp: --sync implies --run, to be
