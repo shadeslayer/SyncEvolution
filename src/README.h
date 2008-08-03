@@ -9,11 +9,14 @@
  * way. If you are a developer who wants to write a SyncML client based
  * on the SyncEvolution framework, then you should have a look at
  * the following classes:
- * - TrackingSyncSource
- * - EvolutionSyncSource
- * - RegisterSyncSource
+ * - TrackingSyncSource is the most convenient class to derive from.
+ * - EvolutionSyncSource is a bit more general.
+ * - RegisterSyncSource adds additional sources to the framework.
  *
  * The following classes help with testing your derived classes:
- * - RegisterSyncSourceTest
- * - ClientTest
+ * - RegisterSyncSourceTest is what you have to use.
+ * - TestEvolution uses that information.
+ * - ClientTest, LocalTests, SyncTests are used by TestEvolution.
+ *
+ * The FileSyncSource is a good example to get started.
  */
