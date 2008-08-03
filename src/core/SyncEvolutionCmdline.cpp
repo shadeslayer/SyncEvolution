@@ -63,6 +63,10 @@ bool SyncEvolutionCmdline::parse()
                            EvolutionSyncSourceConfig::m_sourcePropSync.getName().c_str())) {
                 return false;
             }
+
+            // disable requirement to add --run explicitly in order to
+            // be compatible with traditional command lines
+            m_run = true;
         } else if(boost::iequals(m_argv[opt], "--sync-property") ||
                   boost::iequals(m_argv[opt], "-y")) {
                 opt++;
