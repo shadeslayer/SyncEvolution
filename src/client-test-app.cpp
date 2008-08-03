@@ -166,6 +166,40 @@ private:
     }
 };
 
+/**
+ * This code uses the ClientTest and and information provided by
+ * the backends in their RegisterSyncSourceTest instances to test
+ * real synchronization with a server.
+ *
+ * Configuration is done by environment variables which indicate which
+ * part below the root node "client-test" of the the configuration tree to use;
+ * beyond that everything needed for synchronization is read from the
+ * configuration tree.
+ *
+ * - CLIENT_TEST_SERVER = maps to name of root node in configuration tree
+ * - CLIENT_TEST_EVOLUTION_PREFIX = a common "evolutionsource" prefix for *all*
+ *                                  sources; the source name followed by "_[12]"
+ *                                  is appended to get unique names
+ * - CLIENT_TEST_SOURCES = comma separated list of active sources,
+ *                         names as selected in their RegisterSyncSourceTest
+ *                         instances
+ * - CLIENT_TEST_DELAY = number of seconds to sleep between syncs, required
+ *                       by some servers
+ * - CLIENT_TEST_LOG = logfile name of a server, can be empty:
+ *                     if given, then the content of that file will be
+ *                     copied and stored together with the client log
+ *                     (only works on Unix)
+ * - CLIENT_TEST_NUM_ITEMS = numbers of contacts/events/... to use during
+ *                           local and sync tests which create artificial
+ *                           items
+ *
+ * The CLIENT_TEST_SERVER also has another meaning: it is used as hint
+ * by the synccompare.pl script and causes it to automatically ignore
+ * known, acceptable data modifications caused by sending an item to
+ * a server and back again. Currently the script recognizes "funambol",
+ * "scheduleworld", "synthesis" and "egroupware" as special server
+ * names.
+ */
 class TestEvolution : public ClientTest {
 public:
     /**
