@@ -15,9 +15,11 @@ SYNCSOURCES = @SYNCSOURCES@
 # because only a static libfunambol.a is built, which relies on
 # tricks like adding -fPIC manually).
 SYNCEVOLUTION_LDADD = @SYNCEVOLUTION_LDADD@ @FUNAMBOL_LIBS@ 
+SYNCEVOLUTION_DEP =
 if ENABLE_MODULES
 else
 SYNCEVOLUTION_LDADD += $(SYNCSOURCES)
+SYNCEVOLUTION_DEP += $(SYNCSOURCES)
 endif
 EXTRA_PROGRAMS = client-test
 EXTRA_DIST = shlibs.local Makefile-gen.am
@@ -57,8 +59,8 @@ else
 CORE_SOURCES += $(BACKEND_REGISTRIES)
 endif
 
-CORE_LDADD = core/libsyncevolution.la @GLIB_LIBS@ @LIBS@
-CORE_DEP = core/libsyncevolution.la @FUNAMBOL_DEP@
+CORE_LDADD = $(SYNCEVOLUTION_LDADD) core/libsyncevolution.la @GLIB_LIBS@ @LIBS@
+CORE_DEP = $(SYNCEVOLUTION_DEP) core/libsyncevolution.la @FUNAMBOL_DEP@
 
 # put link to static c++ library into current directory, needed if compiling with --enable-static-c++
 libstdc++.a :
@@ -71,7 +73,7 @@ syncevolution_SOURCES = \
 # SYNCEVOLUTION_LDADD will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
 # if linking statically against them, empty otherwise;
 # either way this does not lead to a dependency on those libs - done explicitly
-syncevolution_LDADD = $(SYNCEVOLUTION_LDADD) $(CORE_LDADD)
+syncevolution_LDADD = $(CORE_LDADD)
 syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 
@@ -117,7 +119,7 @@ nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(FUNAMBOL_SUBDIR)/src/.libs/libfunambol.a core/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
-client_test_LDADD = $(SYNCEVOLUTION_LDADD) @LIBDBUS@ $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD)
+client_test_LDADD = @LIBDBUS@ $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD)
 # These dependencies are intentionally a bit too broad:
 # they ensure that all files are in place to *run* client-test,
 # but in particular the "all" dependency causes a rebuild
