@@ -52,26 +52,27 @@ ESource *EvolutionSyncSource::findSource( ESourceList *list, const string &id )
 }
 #endif // HAVE_EDS
 
-void EvolutionSyncSource::throwError( const string &action
 #ifdef HAVE_EDS
-, GError *gerror
-#endif
-                                      )
+void EvolutionSyncSource::throwError(const string &action, GError *gerror)
 {
     string gerrorstr;
-#ifdef HAVE_EDS
     if (gerror) {
         gerrorstr += ": ";
         gerrorstr += gerror->message;
         g_clear_error(&gerror);
-    } else
-#endif
+    } else {
         gerrorstr = ": failure";
+    }
 
-    setFailed(true);
-    EvolutionSyncClient::throwError(string(getName()) + ": " + action + gerrorstr);
+    throwError(action + gerrorstr);
 }
+#endif
 
+void EvolutionSyncSource::throwError(const string &failure)
+{
+    setFailed(true);
+    EvolutionSyncClient::throwError(string(getName()) + ": " + failure);
+}
 
 void EvolutionSyncSource::resetItems()
 {

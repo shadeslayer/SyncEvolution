@@ -544,6 +544,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     ESource *findSource( ESourceList *list, const string &id );
 #endif
 
+#ifdef HAVE_EDS
     /**
      * throw an exception after an operation failed and
      * remember that this instance has failed
@@ -552,11 +553,17 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      * @param gerror     if not NULL: a more detailed description of the failure,
      *                                will be freed
      */
-    void throwError( const string &action
-#ifdef HAVE_EDS
-                     , GError *gerror = NULL
+    void throwError(const string &action,
+                    GError *gerror);
 #endif
-                     );
+
+    /**
+     * throw an exception after an operation failed and
+     * remember that this instance has failed
+     *
+     * @param action     a string describing what was attempted *and* how it failed
+     */
+    void throwError(const string &failure);
 
     const string m_changeId;
 
