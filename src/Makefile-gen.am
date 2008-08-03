@@ -178,3 +178,7 @@ $(srcdir)/Makefile.am: Makefile-gen.am
 	sed -e 's;[@]BACKEND_REGISTRIES[@];$(BACKEND_REGISTRIES);' \
 	    -e 's;[@]BACKENDS[@];$(BACKENDS);' \
 	    $< >$@
+
+# old-style name for test program(s)
+.PHONY: test
+test: client-test
