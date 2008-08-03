@@ -1,0 +1,37 @@
+dnl -*- mode: Autoconf; -*-
+dnl Invoke autogen.sh to produce a configure script.
+
+dnl Checks for required libraris can go here; none required for simple files.
+dnl
+dnl This is from the sqlite backend:
+dnl PKG_CHECK_MODULES(SQLITE, sqlite3, SQLITEFOUND=yes, [SQLITEFOUND=no])
+dnl AC_SUBST(SQLITE_CFLAGS)
+dnl AC_SUBST(SQLITE_LIBS)
+
+FILE_CFLAGS=
+FILE_LIBS=
+AC_SUBST(FILE_CFLAGS)
+AC_SUBST(FILE_LIBS)
+
+dnl If additional compile flags are necessary to include the header
+dnl files of the backend, then add them here.
+BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $FILE_CFLAGS"
+
+dnl name of backend library (there could be more than one per directory),
+dnl name of the directory,
+dnl help string,
+dnl --enable/disable chosen explicitly
+dnl default, may depend on availability of prerequisites in more complex backends
+AC_ARG_ENABLE_BACKEND(file,
+                      file,
+                      AS_HELP_STRING([--disable-file],
+                                     [disable file-based backend which stores items in separate files in a fixed directory (default on)]),
+		      [enable_file="$enableval"],
+                      [enable_file="yes"]
+                      )
+
+if test "$enable_file" = "yes"; then
+        dnl It's good to check the prerequisites here, in case --enable-file was used.
+        dnl test "x${SQLITEFOUND}" == "xyes" || AC_MSG_ERROR([--enable-sqlite requires pkg-config information for sqlite3, which was not found])
+        AC_DEFINE(ENABLE_FILE, 1, [file available])
+fi
