@@ -94,10 +94,10 @@ using ScheduleWorld as example:
 - CLIENT_TEST_SERVER=scheduleworld \
   CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/testing/ \
   ./client-test -h
-  => creates ~/.sync4j/evolution/scheduleworld_[12]/ configs
+  => creates ~/.config/syncevolution/scheduleworld_[12]/ configs
      which use data bases under /tmp/testing, then
      prints all available tests
-- edit ~/.sync4j/evolution/scheduleworld_[12]/spds/syncml/config.txt
+- edit ~/.config/syncevolution/scheduleworld_[12]/spds/syncml/config.txt
   and enter account data for ScheduleWorld in both configurations;
   check that the syncURL is correct
 - CLIENT_TEST_SERVER=scheduleworld \
