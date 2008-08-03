@@ -178,6 +178,12 @@ sync session when a configuration change was intented, either
 --configure or --run must be given explicitly if options are specified
 on the command line.
 
+   syncevolution --status <server> [<source> ...]
+
+Prints what changes were made locally since the last synchronization.
+Depends on access to database dumps from the last run, so using the
+"logdir" option is recommended.
+
    syncevolution --print-servers
    syncevolution --print-config [--quiet] <server> [sync|<source> ...]
 
