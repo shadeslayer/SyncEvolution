@@ -513,9 +513,24 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     virtual int updateItemThrow(SyncItem& item) = 0;
     virtual int deleteItemThrow(SyncItem& item) = 0;
 
-    /** log a one-line info about an item */
+    /**
+     * @name log a one-line info about an item
+     *
+     * The first two have to provided by derived classes because only
+     * they know how to present the item to the user. When being passed
+     * a SyncItem note that it may or may not contain data.
+     *
+     * The third version is an utility function which is provided
+     * for derived classes. It does the right thing for vCard, vCalendar
+     * and plain text (in a crude way, without really parsing them),
+     * but needs access to the item data.
+     */
+    /**@{*/
     virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;
     virtual void logItem(const SyncItem &item, const string &info, bool debug = false) = 0;
+    virtual void logItemUtil(const string data, const string &mimeType, const string &mimeVersion,
+                             const string &uid, const string &info, bool debug = false);
+    /**@}*/
 
   protected:
 #ifdef HAVE_EDS

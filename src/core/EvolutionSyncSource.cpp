@@ -406,6 +406,77 @@ void EvolutionSyncSource::setItemStatusThrow(const char *key, int status)
     }
 }
 
+void EvolutionSyncSource::logItemUtil(const string data, const string &mimeType, const string &mimeVersion,
+                                      const string &uid, const string &info, bool debug)
+{
+    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+        string name;
+
+        if (mimeType == "text/plain") {
+            size_t eol = data.find('\n');
+            if (eol != data.npos) {
+                name.assign(data, 0, eol);
+            } else {
+                name = data;
+            }
+        } else {
+            // Avoid pulling in a full vCard/iCalendar parser by just
+            // searching for a specific property. This is rather crude
+            // and does not handle encoding correctly at the moment, too.
+            string prop;
+            
+            if (mimeType == "text/vcard" ||
+                mimeType == "text/x-vcard") {
+                prop = "FN";
+            } else if (mimeType == "text/calendar" ||
+                       mimeType == "text/x-calendar") {
+                prop = "SUMMARY";
+            }
+
+            if (prop.size()) {
+                size_t start = 0;
+
+                while (start < data.size()) {
+                    start = data.find(prop, start);
+                    if (start == data.npos) {
+                        break;
+                    }
+                    // must follow line break and continue with
+                    // : or ;
+                    if (start > 0 && data[start - 1] == '\n' &&
+                    start + prop.size() < data.size() &&
+                        (data[start + prop.size()] == ';' ||
+                         data[start + prop.size()] == ':')) {
+                        start = data.find(':', start);
+                        if (start != data.npos) {
+                            start++;
+                            size_t end = data.find_first_of("\n\r", start);
+                            name.assign(data,
+                                        start,
+                                        end == data.npos ? data.npos : (end - start));
+                        }
+                        break;
+                    } else {
+                        start += prop.size();
+                    }
+                }
+            }
+        }
+
+        if (name.size()) {
+            (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s %s",
+                                                      getName(),
+                                                      name.c_str(),
+                                                      info.c_str());
+        } else {
+            (LOG.*(debug ? &Log::debug : &Log::info))("%s: LUID %s %s",
+                                                      getName(),
+                                                      uid.c_str(),
+                                                      info.c_str());
+        }
+    }
+}
+
 SyncItem *EvolutionSyncSource::Items::start()
 {
     m_it = begin();
