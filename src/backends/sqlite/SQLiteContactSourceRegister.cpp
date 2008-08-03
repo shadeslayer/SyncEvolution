@@ -19,6 +19,11 @@
 #include "SQLiteContactSource.h"
 #include "SyncEvolutionUtil.h"
 
+namespace {
+#if 0
+}
+#endif
+
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
@@ -88,3 +93,5 @@ public:
 #endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_SQLITE
+
+}
