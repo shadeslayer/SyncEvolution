@@ -18,17 +18,6 @@
 
 #include "FileSyncSource.h"
 
-// The anonymous namespace ensures that we don't get
-// name clashes: although the classes and objects are
-// only defined in this file, the methods generated
-// for local classes will clash with other methods
-// of other classes with the same name if no namespace
-// is used.
-namespace {
-#if 0
-}
-#endif
-
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
@@ -104,9 +93,26 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(FileSyncSourceUnitTest);
 #endif // ENABLE_UNIT_TESTS
 
 #ifdef ENABLE_INTEGRATION_TESTS
-static class FileSyncSourceVCard21Test : public RegisterSyncSourceTest {
+
+// The anonymous namespace ensures that we don't get
+// name clashes: although the classes and objects are
+// only defined in this file, the methods generated
+// for local classes will clash with other methods
+// of other classes with the same name if no namespace
+// is used.
+//
+// The code above is not yet inside the anonymous
+// name space because it would show up inside
+// the CPPUnit unit test names. Use a unique class
+// name there.
+namespace {
+#if 0
+}
+#endif
+
+static class VCard21Test : public RegisterSyncSourceTest {
 public:
-    FileSyncSourceVCard21Test() : RegisterSyncSourceTest("file_vcard21", "vcard21") {}
+    VCard21Test() : RegisterSyncSourceTest("file_vcard21", "vcard21") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -114,40 +120,39 @@ public:
         // and leave everything else at its default
         config.type = "file:text/x-vcard:2.1";
     }
-} FileSyncSourceVCard21Test;
+} VCard21Test;
 
-static class FileSyncSourceVCard30Test : public RegisterSyncSourceTest {
+static class VCard30Test : public RegisterSyncSourceTest {
 public:
-    FileSyncSourceVCard30Test() : RegisterSyncSourceTest("file_vcard30", "vcard30") {}
+    VCard30Test() : RegisterSyncSourceTest("file_vcard30", "vcard30") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "file:text/vcard:3.0";
     }
-} FileSyncSourceVCard30Test;
+} VCard30Test;
 
-static class FileSyncSourceICal20Test : public RegisterSyncSourceTest {
+static class ICal20Test : public RegisterSyncSourceTest {
 public:
-    FileSyncSourceICal20Test() : RegisterSyncSourceTest("file_ical20", "ical20") {}
+    ICal20Test() : RegisterSyncSourceTest("file_ical20", "ical20") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "file:text/calendar:2.0";
     }
-} FileSyncSourceICal20Test;
+} ICal20Test;
 
-static class FileSyncSourceITodo20Test : public RegisterSyncSourceTest {
+static class ITodo20Test : public RegisterSyncSourceTest {
 public:
-    FileSyncSourceITodo20Test() : RegisterSyncSourceTest("file_itodo20", "itodo20") {}
+    ITodo20Test() : RegisterSyncSourceTest("file_itodo20", "itodo20") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "file:text/calendar:2.0";
     }
-} FileSyncSourceITodo20Test;
+} ITodo20Test;
 
+}
 #endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_FILE
-
-}

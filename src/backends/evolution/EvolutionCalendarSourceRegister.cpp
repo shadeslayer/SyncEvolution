@@ -22,11 +22,6 @@
 
 #include <boost/algorithm/string.hpp>
 
-namespace {
-#if 0
-}
-#endif
-
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
@@ -302,6 +297,11 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionCalendarTest);
 
 #ifdef ENABLE_INTEGRATION_TESTS
 
+namespace {
+#if 0
+}
+#endif
+
 static class iCal20Test : public RegisterSyncSourceTest {
 public:
     iCal20Test() : RegisterSyncSourceTest("ical20", "ical20") {}
@@ -371,8 +371,8 @@ public:
         config.type = "evolution-memos";
     }
 } memoTest;
+
+}
 #endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_ECAL
-
-}

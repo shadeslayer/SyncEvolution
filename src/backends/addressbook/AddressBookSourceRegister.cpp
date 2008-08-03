@@ -19,11 +19,6 @@
 #include "AddressBookSource.h"
 #include "SyncEvolutionUtil.h"
 
-namespace {
-#if 0
-}
-#endif
-
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
@@ -93,6 +88,11 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionAddressbookTest);
 #endif // ENABLE_UNIT_TESTS
 
 #ifdef ENABLE_INTEGRATION_TESTS
+namespace {
+#if 0
+}
+#endif
+
 static class VCard21Test : public RegisterSyncSourceTest {
 public:
     VCard21Test() : RegisterSyncSourceTest("addressbook_vcard21", "vcard21") {}
@@ -112,8 +112,8 @@ public:
         config.type = "apple-contacts:text/vcard";
     }
 } vCard30Test;
+
+}
 #endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_ADDRESSBOOK
-
-}

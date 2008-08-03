@@ -19,11 +19,6 @@
 #include "SQLiteContactSource.h"
 #include "SyncEvolutionUtil.h"
 
-namespace {
-#if 0
-}
-#endif
-
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
@@ -80,18 +75,23 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionSQLiteContactsTest);
 #endif // ENABLE_UNIT_TESTS
 
 #ifdef ENABLE_INTEGRATION_TESTS
-static class SQLiteVCard21Test : public RegisterSyncSourceTest {
+namespace {
+#if 0
+}
+#endif
+
+static class VCard21Test : public RegisterSyncSourceTest {
 public:
-    SQLiteVCard21Test() : RegisterSyncSourceTest("sqlite_vcard21", "vcard21") {}
+    VCard21Test() : RegisterSyncSourceTest("sqlite_vcard21", "vcard21") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "sqlite-contacts:text/x-vcard";
         config.testcases = "testcases/sqlite_vcard21.vcf";
     }
-} SQLiteVCard21Test;
+} VCard21Test;
+
+}
 #endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_SQLITE
-
-}

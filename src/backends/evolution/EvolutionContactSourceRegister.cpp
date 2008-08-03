@@ -19,11 +19,6 @@
 #include "EvolutionContactSource.h"
 #include "SyncEvolutionUtil.h"
 
-namespace {
-#if 0
-}
-#endif
-
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
@@ -142,6 +137,11 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionContactTest);
 
 #ifdef ENABLE_INTEGRATION_TESTS
 
+namespace {
+#if 0
+}
+#endif
+
 /**
  * We are using the vcard30 tests because they are 
  * a bit more complete than the vcard21 ones.
@@ -173,8 +173,9 @@ public:
         config.type = "evolution-contacts:text/vcard";
     }
 } vCard30Test;
+
+}
 #endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_EBOOK
 
-}
