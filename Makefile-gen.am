@@ -2,7 +2,7 @@
 
 SUBDIRS = src test
 
-EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh Makefile-gen.am
+EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh Makefile-gen.am Doxyfile
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs
 DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@FUNAMBOL@
 
