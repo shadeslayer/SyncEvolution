@@ -139,6 +139,19 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "file:text/calendar:2.0";
+
+        // A sync source which supports linked items (= recurring
+        // event with detached exception) is expected to handle
+        // inserting the parent or child twice by turning the
+        // second operation into an update. The file backend is
+        // to dumb for that and therefore fails these tests:
+        //
+        // Client::Source::file_ical20::testLinkedItemsInsertParentTwice
+        // Client::Source::file_ical20::testLinkedItemsInsertChildTwice
+        //
+        // Disable linked item testing to avoid this.
+        config.parentItem =
+            config.childItem = NULL;
     }
 } ICal20Test;
 
