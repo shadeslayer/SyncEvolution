@@ -114,6 +114,7 @@ CLIENT_LIB_TEST_FILES = ClientTest.h ClientTest.cpp client-test-main.cpp \
 	testcases/vcard21.vcf \
 	testcases/vcard30.vcf \
 	testcases/ical20.ics \
+	testcases/imemo20.ics \
 	testcases/itodo20.ics
 nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
