@@ -202,9 +202,19 @@ class ClientTest;
  * - a valid "evolutionsource" property in the config node, starting
  *   with the CLIENT_TEST_EVOLUTION_PREFIX env variable or (if that
  *   wasn't set) the "SyncEvolution_Test_" prefix
+ * - "evolutionuser/password" if CLIENT_TEST_EVOLUTION_USER/PASSWORD
+ *   are set
  *
  * No other properties are set, which implies that currently sync sources
  * which require further parameters cannot be tested.
+ *
+ * @warning There is a potential problem with the registration
+ * mechanism. Both the sync source tests as well as the CPPUnit tests
+ * derived from them are registrered when global class instances are
+ * initialized. If the RegisterTestEvolution instance in
+ * client-test-app.cpp is initialized *before* the sync source tests,
+ * then those won't show up in the test list. Currently the right
+ * order seems to be used, so everything works as expected.
  */
 class RegisterSyncSourceTest
 {
