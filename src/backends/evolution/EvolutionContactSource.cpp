@@ -364,13 +364,13 @@ SyncItem *EvolutionContactSource::createItem(const string &uid)
     eptr<char> vcardstr(e_vcard_to_string( &contactptr->parent,
                                            EVC_FORMAT_VCARD_30 ) );
     if (!vcardstr) {
-        throwError( string( "contact from Evolution " ) + uid, NULL );
+        throwError(string("failure extracting contact from Evolution " ) + uid);
     }
     LOG.debug("%s", vcardstr.get());
 
     std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
     if (vobj.get() == 0) {
-        throwError( string( "parsing contact " ) + uid, NULL );
+        throwError(string("failure parsing contact " ) + uid);
     }
 
     vobj->toNativeEncoding();
@@ -511,7 +511,7 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     LOG.debug("%s", data.c_str());
     std::auto_ptr<VObject> vobj(VConverter::parse((char *)data.c_str()));
     if (vobj.get() == 0) {
-        throwError( string( "parsing contact " ) + item.getKey(), NULL );
+        throwError(string("failure parsing contact " ) + item.getKey());
     }
     vobj->toNativeEncoding();
 
@@ -747,8 +747,7 @@ int EvolutionContactSource::addItemThrow(SyncItem& item)
             throwError( "storing new contact", gerror );
         }
     } else {
-        throwError( string( "parsing vcard " ) + data,
-                    NULL );
+        throwError(string("failure parsing vcard " ) + data);
     }
     return status;
 }
@@ -798,8 +797,7 @@ int EvolutionContactSource::updateItemThrow(SyncItem& item)
             throwError( string( "updating contact " ) + item.getKey(), gerror );
         }
     } else {
-        throwError( string( "parsing vcard " ) + data,
-                    NULL );
+        throwError(string("failure parsing vcard " ) + data);
     }
     return status;
 }

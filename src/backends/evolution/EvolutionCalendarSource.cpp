@@ -288,8 +288,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
     eptr<icalcomponent> icomp(icalcomponent_new_from_string((char *)data.c_str()));
 
     if( !icomp ) {
-        throwError( string( "parsing ical" ) + data,
-                    NULL );
+        throwError(string("failure parsing ical") + data);
     }
 
     GError *gerror = NULL;

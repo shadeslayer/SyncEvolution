@@ -68,6 +68,11 @@ void EvolutionSyncSource::throwError(const string &action, GError *gerror)
 }
 #endif
 
+void EvolutionSyncSource::throwError(const string &action, int error)
+{
+    throwError(action + ": " + strerror(error));
+}
+
 void EvolutionSyncSource::throwError(const string &failure)
 {
     setFailed(true);

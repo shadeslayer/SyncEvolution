@@ -172,7 +172,7 @@ public:
                 }
                 if (errno != EEXIST) {
                     LOG.debug("%s: %s", m_path.c_str(), strerror(errno));
-                    EvolutionSyncClient::throwError(m_path + ": " + strerror(errno));
+                    EvolutionSyncClient::throwError(m_path, errno);
                 }
                 seq++;
             }
@@ -181,7 +181,7 @@ public:
             // use the default temp directory
             if (mkdir(m_path.c_str(), S_IRWXU)) {
                 if (errno != EEXIST) {
-                    EvolutionSyncClient::throwError(m_path + ": " + strerror(errno));
+                    EvolutionSyncClient::throwError(m_path, errno);
                 }
             }
             m_logfile = m_path + "/client.log";
@@ -619,6 +619,11 @@ void EvolutionSyncClient::throwError(const string &error)
 #else
     throw runtime_error(error);
 #endif
+}
+
+void EvolutionSyncClient::throwError(const string &action, int error)
+{
+    throwError(action + ": " + strerror(error));
 }
 
 void EvolutionSyncClient::fatalError(void *object, const char *error)

@@ -105,7 +105,7 @@ void FileSyncSource::open()
         if (errno == ENOENT && createDir) {
             mkdir_p(basedir.c_str());
         } else {
-            throwError(basedir + ": " + strerror(errno));
+            throwError(basedir, errno);
         }
     }
 
@@ -155,7 +155,7 @@ SyncItem *FileSyncSource::createItem(const string &uid)
         out.write(buf, in.gcount());
     } while(in);
     if (!in.good() && !in.eof()) {
-        throwError(filename + ": reading failed");
+        throwError(filename + ": reading failed", errno);
     }
 
     string content = out.str();
@@ -202,7 +202,7 @@ TrackingSyncSource::InsertItemResult FileSyncSource::insertItem(const string &ui
                     newuid = buff.str();
                     break;
                 } else {
-                    throwError(filename + ": " + strerror(errno));
+                    throwError(filename, errno);
                 }
             }
 
@@ -215,7 +215,7 @@ TrackingSyncSource::InsertItemResult FileSyncSource::insertItem(const string &ui
     out.write((const char *)item.getData(), item.getDataSize());
     out.close();
     if (!out.good()) {
-        throwError(filename + ": writing failed");
+        throwError(filename + ": writing failed", errno);
     }
 
     return InsertItemResult(newuid,
@@ -229,7 +229,7 @@ void FileSyncSource::deleteItem(const string &uid)
     string filename = createFilename(uid);
 
     if (unlink(filename.c_str())) {
-        throwError(filename + ": " + strerror(errno));
+        throwError(filename, errno);
     }
 }
 
@@ -302,7 +302,7 @@ string FileSyncSource::getATimeString(const string &filename)
 {
     struct stat buf;
     if (stat(filename.c_str(), &buf)) {
-        throwError(filename + ": " + strerror(errno));
+        throwError(filename, errno);
     }
     time_t mtime = buf.st_mtime;
 

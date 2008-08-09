@@ -83,10 +83,10 @@ void FileConfigNode::flush()
         }
         if (failed ||
             rename(tmpFilename.c_str(), filename.c_str())) {
-            EvolutionSyncClient::throwError(tmpFilename + ": " + strerror(errno));
+            EvolutionSyncClient::throwError(tmpFilename, errno);
         }
     } else {
-        EvolutionSyncClient::throwError(tmpFilename + ": " + strerror(errno));
+        EvolutionSyncClient::throwError(tmpFilename, errno);
     }
 
     m_modified = false;

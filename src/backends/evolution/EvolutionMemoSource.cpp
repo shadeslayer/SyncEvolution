@@ -170,8 +170,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
                                     0));
 
     if( !subcomp ) {
-        throwError( string( "creating vjournal " ) + summary,
-                    NULL );
+        throwError(string("failure creating vjournal " ) + summary);
     }
 
     GError *gerror = NULL;

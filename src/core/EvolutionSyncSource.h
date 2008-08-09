@@ -559,7 +559,9 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      * throw an exception after an operation failed and
      * remember that this instance has failed
      *
-     * @param action     a string describing what was attempted
+     * output format: <source name>: <action>: <error string>
+     *
+     * @param action     a string describing the operation or object involved
      * @param gerror     if not NULL: a more detailed description of the failure,
      *                                will be freed
      */
@@ -570,6 +572,19 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     /**
      * throw an exception after an operation failed and
      * remember that this instance has failed
+     *
+     * output format: <source name>: <action>: <error string>
+     *
+     * @param action   a string describing the operation or object involved
+     * @param error    the errno error code for the failure
+     */
+    void throwError(const string &action, int error);
+
+    /**
+     * throw an exception after an operation failed and
+     * remember that this instance has failed
+     *
+     * output format: <source name>: <failure>
      *
      * @param action     a string describing what was attempted *and* how it failed
      */

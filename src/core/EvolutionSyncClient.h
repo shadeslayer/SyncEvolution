@@ -100,9 +100,22 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
      * supported by the toolchain) prints an error directly
      * and aborts
      *
+     * output format: <error>
+     *
      * @param error     a string describing the error
      */
     static void throwError(const string &error);
+
+    /**
+     * throw an exception after an operation failed and
+     * remember that this instance has failed
+     *
+     * output format: <action>: <error string>
+     *
+     * @Param action   a string describing the operation or object involved
+     * @param error    the errno error code for the failure
+     */
+    static void throwError(const string &action, int error);
 
     /**
      * An error handler which prints the error message and then

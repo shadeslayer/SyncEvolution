@@ -78,7 +78,7 @@ void mkdir_p(const string &path)
                        nextdir ? (R_OK|X_OK) : (R_OK|X_OK|W_OK)) &&
                 (errno != ENOENT ||
                  mkdir(dirs.get(), 0777))) {
-                EvolutionSyncClient::throwError(string(dirs.get()) + ": " + strerror(errno));
+                EvolutionSyncClient::throwError(string(dirs.get()), errno);
             }
         }
         if (nextdir) {
@@ -96,7 +96,7 @@ void rm_r(const string &path)
     }
 
     if (errno != EISDIR) {
-        EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+        EvolutionSyncClient::throwError(path, errno);
     }
 
     ReadDir dir(path);
@@ -104,7 +104,7 @@ void rm_r(const string &path)
         rm_r(path + "/" + entry);
     }
     if (rmdir(path.c_str())) {
-        EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+        EvolutionSyncClient::throwError(path, errno);
     }
 }
 
@@ -115,7 +115,7 @@ bool isDir(const string &path)
         closedir(dir);
         return true;
     } else if (errno != ENOTDIR && errno != ENOENT) {
-        EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+        EvolutionSyncClient::throwError(path, errno);
     }
 
     return false;
@@ -156,7 +156,7 @@ ReadDir::ReadDir(const string &path) : m_path(path)
     try {
         dir = opendir(path.c_str());
         if (!dir) {
-            EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+            EvolutionSyncClient::throwError(path, errno);
         }
         errno = 0;
         struct dirent *entry = readdir(dir);
@@ -168,7 +168,7 @@ ReadDir::ReadDir(const string &path) : m_path(path)
             entry = readdir(dir);
         }
         if (errno) {
-            EvolutionSyncClient::throwError(path + ": " + strerror(errno));
+            EvolutionSyncClient::throwError(path, errno);
         }
     } catch(...) {
         if (dir) {
