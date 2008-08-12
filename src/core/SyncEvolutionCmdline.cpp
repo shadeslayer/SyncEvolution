@@ -1623,10 +1623,6 @@ private:
                              "calendar/config.ini:sync = disabled");
 
         boost::replace_first(config,
-                             "memo/config.ini:sync = two-way",
-                             "memo/config.ini:sync = disabled");
-
-        boost::replace_first(config,
                              "todo/config.ini:uri = task2",
                              "todo/config.ini:uri = task");
         boost::replace_first(config,

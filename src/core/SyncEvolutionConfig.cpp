@@ -172,8 +172,6 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setSync("disabled");
         source = config->getSyncSourceConfig("todo");
         source->setSync("disabled");
-        source = config->getSyncSourceConfig("memo");
-        source->setSync("disabled");
     } else if (boost::iequals(server, "synthesis")) {
         config->setSyncURL("http://www.synthesis.ch/sync");
         source = config->getSyncSourceConfig("addressbook");
