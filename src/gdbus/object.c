@@ -31,8 +31,6 @@
 #include "gdbus.h"
 #include "debug.h"
 
-/** @defgroup object Functions for object and interface handling */
-
 static dbus_int32_t connection_slot = -1;
 
 typedef struct {
@@ -656,12 +654,13 @@ static DBusObjectPathVTable object_table = {
 };
 
 /**
- * Register path in object hierarchy
- * @param connection the connection
- * @param path object path
- * @return TRUE on success
+ * g_dbus_register_object:
+ * @connection: the connection
+ * @path: object path
  *
  * Registers a path in the object hierarchy.
+ *
+ * Returns: #TRUE on success
  */
 static gboolean g_dbus_register_object(DBusConnection *connection,
 							const char *path)
@@ -727,13 +726,14 @@ static gboolean g_dbus_register_object(DBusConnection *connection,
 }
 
 /**
- * Unregister object path
- * @param connection the connection
- * @param path object path
- * @return TRUE on success
+ * g_dbus_unregister_object:
+ * @connection: the connection
+ * @path: object path
  *
  * Unregister the given path in the object hierarchy and
  * free the assigned data structures.
+ *
+ * Returns: #TRUE on success
  */
 static gboolean g_dbus_unregister_object(DBusConnection *connection,
 							const char *path)
@@ -779,13 +779,14 @@ static gboolean g_dbus_unregister_object(DBusConnection *connection,
 
 #if 0
 /**
- * Unregister object hierarchy
- * @param connection the connection
- * @param path object path
- * @return TRUE on sccess
+ * g_dbus_unregister_object_hierarchy:
+ * @connection: the connection
+ * @path: object path
  *
  * Unregister the given path and all subpaths in the
  * object hierarchy and free all assigned data strcutures.
+ *
+ * Returns: #TRUE on success
  */
 static gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
 							const char *path)
@@ -846,8 +847,8 @@ static gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
 }
 
 /**
- * Unregister all paths
- * @param connection the connection
+ * g_dbus_unregister_all_objects:
+ * @connection: the connection
  *
  * Unregister the all paths in the object hierarchy.
  */
@@ -891,20 +892,21 @@ static void g_dbus_unregister_all_objects(DBusConnection *connection)
 #endif
 
 /**
- * Register interface
- * @param connection the connection
- * @param path object path
- * @param name interface name
- * @param methods method table
- * @param signals signal table
- * @param properties property table
- * @param user_data user data to assign to interface
- * @param destroy function called to destroy user_data
- * @return TRUE on success
+ * g_dbus_register_interface:
+ * @connection: the connection
+ * @path: object path
+ * @name: interface name
+ * @methods: method table
+ * @signals: signal table
+ * @properties: property table
+ * @user_data: user data to assign to interface
+ * @destroy: function called to destroy user_data
  *
  * Registers an interface for the given path in the
  * object hierarchy with the given methods, signals
  * and/or properties.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_register_interface(DBusConnection *connection,
 					const char *path, const char *name,
@@ -954,14 +956,15 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
 }
 
 /**
- * Unregister interface
- * @param connection the connection
- * @param path object path
- * @param name interface name
- * @return TRUE on success
+ * g_dbus_unregister_interface:
+ * @connection: the connection
+ * @path: object path
+ * @name: interface name
  *
  * Unregister the given interface for the given path
  * in the object hierarchy.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_unregister_interface(DBusConnection *connection,
 					const char *path, const char *name)
@@ -1000,14 +1003,15 @@ gboolean g_dbus_unregister_interface(DBusConnection *connection,
 }
 
 /**
- * Create error reply
- * @param message the originating message
- * @param name the error name
- * @param format the error description
- * @param args argument list
- * @return reply message on success
+ * g_dbus_create_error_valist:
+ * @message: the originating message
+ * @name: the error name
+ * @format: the error description
+ * @args: argument list
  *
  * Create error reply for the given message.
+ *
+ * Returns: reply message on success
  */
 DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
 						const char *format, va_list args)
@@ -1018,13 +1022,15 @@ DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
 }
 
 /**
- * Create error reply
- * @param message the originating message
- * @param name the error name
- * @param format the error description
- * @return reply message on success
+ * g_dbus_create_error:
+ * @message: the originating message
+ * @name: the error name
+ * @format: the error description
+ * @varargs: list of parameters
  *
  * Create error reply for the given message.
+ *
+ * Returns: reply message on success
  */
 DBusMessage *g_dbus_create_error(DBusMessage *message, const char *name,
 						const char *format, ...)
@@ -1044,13 +1050,14 @@ DBusMessage *g_dbus_create_error(DBusMessage *message, const char *name,
 }
 
 /**
- * Create reply message
- * @param message the originating message
- * @param type first argument type
- * @param args argument list
- * @return reply message on success
+ * g_dbus_create_reply_valist:
+ * @message: the originating message
+ * @type: first argument type
+ * @args: argument list
  *
  * Create reply for the given message.
+ *
+ * Returns: reply message on success
  */
 DBusMessage *g_dbus_create_reply_valist(DBusMessage *message,
 						int type, va_list args)
@@ -1072,12 +1079,14 @@ DBusMessage *g_dbus_create_reply_valist(DBusMessage *message,
 }
 
 /**
- * Create reply message
- * @param message the originating message
- * @param type first argument type
- * @return reply message on success
+ * g_dbus_create_reply:
+ * @message: the originating message
+ * @type: first argument type
+ * @varargs: list of parameters
  *
  * Create reply for the given message.
+ *
+ * Returns: reply message on success
  */
 DBusMessage *g_dbus_create_reply(DBusMessage *message, int type, ...)
 {
@@ -1096,15 +1105,16 @@ DBusMessage *g_dbus_create_reply(DBusMessage *message, int type, ...)
 }
 
 /**
- * Send message
- * @param connection the connection
- * @param message the message to send
- * @return TRUE on success
+ * g_dbus_send_message:
+ * @connection: the connection
+ * @message: the message to send
  *
  * Send message via the given D-Bus connection.
  *
  * The reference count for the message will be decremented by this
  * function.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_send_message(DBusConnection *connection, DBusMessage *message)
 {
@@ -1120,15 +1130,17 @@ gboolean g_dbus_send_message(DBusConnection *connection, DBusMessage *message)
 }
 
 /**
- * Send error reply
- * @param connection the connection
- * @param message the originating message
- * @param name the error name
- * @param format the error description
- * @return TRUE on success
+ * g_dbus_send_error:
+ * @connection: the connection
+ * @message: the originating message
+ * @name: the error name
+ * @format: the error description
+ * @varargs: list of parameters
  *
  * Send error reply for the given message and via the given D-Bus
  * connection.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_send_error(DBusConnection *connection, DBusMessage *message,
 				const char *name, const char *format, ...)
@@ -1151,15 +1163,16 @@ gboolean g_dbus_send_error(DBusConnection *connection, DBusMessage *message,
 }
 
 /**
- * Send reply message
- * @param connection the connection
- * @param message the originating message
- * @param type first argument type
- * @param args argument list
- * @return TRUE on success
+ * g_dbus_send_reply_valist:
+ * @connection: the connection
+ * @message: the originating message
+ * @type: first argument type
+ * @args: argument list
  *
  * Send reply for the given message and via the given D-Bus
  * connection.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_send_reply_valist(DBusConnection *connection,
 				DBusMessage *message, int type, va_list args)
@@ -1181,14 +1194,16 @@ gboolean g_dbus_send_reply_valist(DBusConnection *connection,
 }
 
 /**
- * Send reply message
- * @param connection the connection
- * @param message the originating message
- * @param type first argument type
- * @return TRUE on success
+ * g_dbus_send_reply:
+ * @connection: the connection
+ * @message: the originating message
+ * @type: first argument type
+ * @varargs: list of parameters
  *
  * Send reply for the given message and via the given D-Bus
  * connection.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_send_reply(DBusConnection *connection,
 				DBusMessage *message, int type, ...)
@@ -1226,20 +1241,21 @@ static GDBusSignalTable *find_signal(GSList *interfaces,
 }
 
 /**
- * Emit signal
- * @param connection the connection
- * @param path object path
- * @param interface interface name
- * @param name signal name
- * @param type first argument type
- * @param args argument list
- * @return TRUE on success
+ * g_dbus_emit_signal_valist:
+ * @connection: the connection
+ * @path: object path
+ * @interface: interface name
+ * @name: signal name
+ * @type: first argument type
+ * @args: argument list
  *
  * Emit a signal for the given path and interface with
  * the given signal name.
  *
  * The signal signature will be check against the registered
  * signal table.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_emit_signal_valist(DBusConnection *connection,
 				const char *path, const char *interface,
@@ -1290,19 +1306,21 @@ done:
 }
 
 /**
- * Emit signal
- * @param connection the connection
- * @param path object path
- * @param interface interface name
- * @param name signal name
- * @param type first argument type
- * @return TRUE on success
+ * g_dbus_emit_signal:
+ * @connection: the connection
+ * @path: object path
+ * @interface: interface name
+ * @name: signal name
+ * @type: first argument type
+ * @varargs: list of parameters
  *
  * Emit a signal for the given path and interface with
  * the given signal name.
  *
  * The signal signature will be check against the registered
  * signal table.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_emit_signal(DBusConnection *connection,
 				const char *path, const char *interface,

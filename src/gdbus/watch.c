@@ -28,8 +28,6 @@
 #include "gdbus.h"
 #include "debug.h"
 
-/** @defgroup watch Functions for client monitoring */
-
 static dbus_int32_t connection_slot = -1;
 
 typedef struct {
@@ -177,17 +175,18 @@ static void put_connection_data(DBusConnection *connection)
 }
 
 /**
- * Add new watch functions
- * @param connection the connection
- * @param name unique or well known name
- * @param connect function called on name connect
- * @param disconnect function called on name disconnect
- * @param user_data user data to pass to the function
- * @param destroy function called to destroy user_data
- * @return identifier of the watch
+ * g_dbus_add_service_watch:
+ * @connection: the connection
+ * @name: unique or well known name
+ * @connect: function called on name connect
+ * @disconnect: function called on name disconnect
+ * @user_data: user data to pass to the function
+ * @destroy: function called to destroy user_data
  *
  * Add new watch to listen for connects and/or disconnects
  * of a client for the given connection.
+ *
+ * Returns: identifier of the watch
  */
 guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
 				GDBusWatchFunction connect,
@@ -257,12 +256,13 @@ error:
 }
 
 /**
- * Remove watch
- * @param connection the connection
- * @param tag watch identifier
- * @return TRUE on success
+ * g_dbus_remove_watch:
+ * @connection: the connection
+ * @tag: watch identifier
  *
  * Removes the watch for the given identifier.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag)
 {
@@ -317,8 +317,8 @@ done:
 }
 
 /**
- * Remove all watches
- * @param connection the connection
+ * g_dbus_remove_all_watches:
+ * @connection: the connection
  *
  * Removes all registered watches.
  */
@@ -391,19 +391,20 @@ static void disconnect_release(void *user_data)
 }
 
 /**
- * Add disconect watch
- * @param connection the connection
- * @param name unique or well known name
- * @param function function called on name disconnect
- * @param user_data user data to pass to the function
- * @param destroy function called to destroy user_data
- * @return identifier of the watch
+ * g_dbus_add_disconnect_watch:
+ * @connection: the connection
+ * @name: unique or well known name
+ * @function: function called on name disconnect
+ * @user_data: user data to pass to the function
+ * @destroy: function called to destroy user_data
  *
  * Add new watch to listen for disconnect of a client
  * for the given connection.
  *
  * After the callback has been called, this watch will be
  * automatically removed.
+ *
+ * Returns: identifier of the watch
  */
 guint g_dbus_add_disconnect_watch(DBusConnection *connection,
 				const char *name, GDBusWatchFunction function,
@@ -433,19 +434,20 @@ guint g_dbus_add_disconnect_watch(DBusConnection *connection,
 }
 
 /**
- * Add disconect watch
- * @param connection the connection
- * @param rule matching rule for this signal
- * @param function function called when signal arrives
- * @param user_data user data to pass to the function
- * @param destroy function called to destroy user_data
- * @return identifier of the watch
+ * g_dbus_add_signal_watch:
+ * @connection: the connection
+ * @rule: matching rule for this signal
+ * @function: function called when signal arrives
+ * @user_data: user data to pass to the function
+ * @destroy: function called to destroy user_data
  *
  * Add new watch to listen for specific signals of
  * a client for the given connection.
  *
- * If the callback returns FALSE this watch will be
+ * If the callback returns #FALSE this watch will be
  * automatically removed.
+ *
+ * Returns: identifier of the watch
  */
 guint g_dbus_add_signal_watch(DBusConnection *connection,
 				const char *rule, GDBusSignalFunction function,

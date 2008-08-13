@@ -33,8 +33,6 @@
 #include "gdbus.h"
 #include "debug.h"
 
-/** @defgroup mainloop Functions for GLib main loop integration */
-
 static dbus_int32_t connection_slot = -1;
 
 typedef struct {
@@ -363,13 +361,15 @@ static void free_connection(void *memory)
 }
 
 /**
- * Setup connection with main context
- * @param connection the connection
- * @param context the GMainContext or NULL for default context
+ * g_dbus_setup_connection:
+ * @connection: a #DBusConnection
+ * @context: a #GMainContext or #NULL for default context
  *
- * Sets the watch and timeout functions of a DBusConnection
+ * Setup connection with main context
+ *
+ * Sets the watch and timeout functions of a #DBusConnection
  * to integrate the connection with the GLib main loop.
- * Pass in NULL for the GMainContext unless you're
+ * Pass in #NULL for the #GMainContext unless you're
  * doing something specialized.
  */
 void g_dbus_setup_connection(DBusConnection *connection,
@@ -414,8 +414,8 @@ void g_dbus_setup_connection(DBusConnection *connection,
 }
 
 /**
- * Cleanup a connection setup
- * @param connection the connection
+ * g_dbus_cleanup_connection:
+ * @connection: a #DBusConnection
  *
  * Cleanup the setup of DBusConnection and free the
  * allocated memory.
@@ -435,15 +435,18 @@ void g_dbus_cleanup_connection(DBusConnection *connection)
 }
 
 /**
+ * g_dbus_setup_bus:
+ * @type: a #DBusBusType
+ * @name: well known name
+ * @error: a #DBusError
+ *
  * Connect to bus and setup connection
- * @param type bus type
- * @param name well known name
- * @param error error that can be returned
- * @return a DBusConnection
  *
  * Returns a connection to the given bus and requests a
  * well known name for it. Sets the watch and timeout
  * functions for it.
+ *
+ * Returns: newly setup #DBusConnection
  */
 DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 							DBusError *error)
@@ -484,14 +487,17 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 }
 
 /**
+ * g_dbus_setup_address:
+ * @address: bus address
+ * @error: a #DBusError
+ *
  * Connect to bus and setup connection
- * @param address bus address
- * @param error error that can be returned
- * @return a DBusConnection
  *
  * Returns a connection to the bus specified via
  * the given address and sets the watch and timeout
  * functions for it.
+ *
+ * Returns: newly setup #DBusConnection
  */
 DBusConnection *g_dbus_setup_address(const char *address, DBusError *error)
 {
@@ -515,13 +521,14 @@ DBusConnection *g_dbus_setup_address(const char *address, DBusError *error)
 }
 
 /**
- * Request bus name
- * @param connection the connection
- * @param name well known name
- * @param error error that can be returned
- * @return TRUE on success
+ * g_dbus_request_name:
+ * @connection: a #DBusConnection
+ * @name: well known name
+ * @error: a #DBusError
  *
  * Requests a well known name for connection.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_request_name(DBusConnection *connection, const char *name,
 							DBusError *error)
@@ -557,19 +564,20 @@ static DBusHandlerResult disconnect_filter(DBusConnection *connection,
 }
 
 /**
- * Sets callback function for message bus disconnects
- * @param connection the connection
- * @param function function called on connection disconnect
- * @param user_data user data to pass to the function
- * @param destroy function called to destroy user_data
- * @return TRUE on success
+ * g_dbus_set_disconnect_function:
+ * @connection: a #DBusConnection
+ * @function: a #GDBusWatchFunction
+ * @user_data: user data to pass to the function
+ * @destroy: a #GDBusDestroyFunction
  *
  * Set a callback function that will be called when the
  * D-Bus message bus exits.
+ *
+ * Returns: #TRUE on success
  */
 gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
 				GDBusWatchFunction function,
-				void *user_data, DBusFreeFunction destroy)
+				void *user_data, GDBusDestroyFunction destroy)
 {
 	dbus_connection_set_exit_on_disconnect(connection, FALSE);
 

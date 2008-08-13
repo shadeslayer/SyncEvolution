@@ -32,92 +32,162 @@ extern "C" {
 #include <glib.h>
 
 /**
- * @mainpage
- *
- * This manual documents <em>libgdbus</em> API.
- *
+ * SECTION:gdbus
+ * @title: D-Bus helper library
+ * @short_description: Library for simple D-Bus integration with GLib
  */
 
-G_BEGIN_DECLS
-
-/** Destroy function */
+/**
+ * GDBusDestroyFunction:
+ * @user_data: user data to pass to the function
+ *
+ * Destroy function
+ */
 typedef void (* GDBusDestroyFunction) (void *user_data);
 
 /**
- * @addtogroup watch
- * @{
+ * GDBusWatchFunction:
+ * @user_data: user data to pass to the function
+ *
+ * Watch function
  */
-
-/** Watch function */
 typedef void (* GDBusWatchFunction) (void *user_data);
 
-/** Signal function */
+/**
+ * GDBusSignalFunction:
+ * @connection: a #DBusConnection
+ * @message: a #DBusMessage
+ * @user_data: user data to pass to the function
+ *
+ * Signal function
+ *
+ * Returns: #FALSE to remove this watch
+ */
 typedef gboolean (* GDBusSignalFunction) (DBusConnection *connection,
 					DBusMessage *message, void *user_data);
 
-/** @} */
-
 /**
- * @addtogroup object
- * @{
+ * GDBusMethodFunction:
+ * @connection: a #DBusConnection
+ * @message: a #DBusMessage
+ * @user_data: user data to pass to the function
+ *
+ * Method function
+ *
+ * Returns: #DBusMessage reply
  */
-
-/** Method function */
 typedef DBusMessage * (* GDBusMethodFunction) (DBusConnection *connection,
 					DBusMessage *message, void *user_data);
 
-/** Property get function */
+/**
+ * GDBusPropertyGetFunction:
+ * @connection: a #DBusConnection
+ * @iter: a #DBusMessageIter
+ * @user_data: user data to pass to the function
+ *
+ * Property get function
+ *
+ * Returns: #TRUE on success
+ */
 typedef dbus_bool_t (* GDBusPropertyGetFunction) (DBusConnection *connection,
 					DBusMessageIter *iter, void *user_data);
-/** Property set function */
+
+/**
+ * GDBusPropertySetFunction:
+ * @connection: a #DBusConnection
+ * @iter: a #DBusMessageIter
+ * @user_data: user data to pass to the function
+ *
+ * Property set function
+ *
+ * Returns: #TRUE on success
+ */
 typedef dbus_bool_t (* GDBusPropertySetFunction) (DBusConnection *connection,
 					DBusMessageIter *iter, void *user_data);
 
-/** Method flags */
+/**
+ * GDBusMethodFlags:
+ * @G_DBUS_METHOD_FLAG_DEPRECATED: annotate deprecated methods
+ * @G_DBUS_METHOD_FLAG_NOREPLY: annotate methods with no reply
+ * @G_DBUS_METHOD_FLAG_ASYNC: annotate asynchronous methods
+ *
+ * Method flags
+ */
 typedef enum {
 	G_DBUS_METHOD_FLAG_DEPRECATED = (1 << 0),
 	G_DBUS_METHOD_FLAG_NOREPLY    = (1 << 1),
 	G_DBUS_METHOD_FLAG_ASYNC      = (1 << 2),
 } GDBusMethodFlags;
 
-/** Signal flags */
+/**
+ * GDBusSignalFlags:
+ * @G_DBUS_SIGNAL_FLAG_DEPRECATED: annotate deprecated signals
+ *
+ * Signal flags
+ */
 typedef enum {
 	G_DBUS_SIGNAL_FLAG_DEPRECATED = (1 << 0),
 } GDBusSignalFlags;
 
-/** Property flags */
+/**
+ * GDBusPropertyFlags:
+ * @G_DBUS_PROPERTY_FLAG_DEPRECATED: annotate deprecated properties
+ *
+ * Property flags
+ */
 typedef enum {
 	G_DBUS_PROPERTY_FLAG_DEPRECATED = (1 << 0),
 } GDBusPropertyFlags;
 
+/**
+ * GDBusMethodTable:
+ * @name: method name
+ * @signature: method signature
+ * @reply: reply signature
+ * @function: method function
+ * @flags: method flags
+ *
+ * Method table
+ */
 typedef struct {
-	const char *name;		/**< Method name */
-	const char *signature;		/**< Method signature */
-	const char *reply;		/**< Reply signature */
-	GDBusMethodFunction function;	/**< Method function */
-	GDBusMethodFlags flags;		/**< Method flags */
+	const char *name;
+	const char *signature;
+	const char *reply;
+	GDBusMethodFunction function;
+	GDBusMethodFlags flags;
 } GDBusMethodTable;
 
+/**
+ * GDBusSignalTable:
+ * @name: signal name
+ * @signature: signal signature
+ * @flags: signal flags
+ *
+ * Signal table
+ */
 typedef struct {
-	const char *name;		/**<Signal name */
-	const char *signature;		/**<Signal signature */
-	GDBusSignalFlags flags;		/**<Signal flags */
+	const char *name;
+	const char *signature;
+	GDBusSignalFlags flags;
 } GDBusSignalTable;
 
-typedef struct {
-	const char *name;		/**<Property name */
-	const char *type;		/**<Property value type */
-	GDBusPropertyGetFunction get;	/**<Property get function */
-	GDBusPropertyGetFunction set;	/**<Property set function */
-	GDBusPropertyFlags flags;	/**<Property flags */
-} GDBusPropertyTable;
-
-/** @} */
-
 /**
- * @addtogroup mainloop
- * @{
+ * GDBusPropertyTable:
+ * @name: property name
+ * @type: property value type
+ * @get: property get function
+ * @set: property set function
+ * @flags: property flags
+ *
+ * Property table
  */
+typedef struct {
+	const char *name;
+	const char *type;
+	GDBusPropertyGetFunction get;
+	GDBusPropertyGetFunction set;
+	GDBusPropertyFlags flags;
+} GDBusPropertyTable;
 
 void g_dbus_setup_connection(DBusConnection *connection,
 						GMainContext *context);
@@ -134,13 +204,6 @@ gboolean g_dbus_request_name(DBusConnection *connection, const char *name,
 gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
 				GDBusWatchFunction function,
 				void *user_data, GDBusDestroyFunction destroy);
-
-/** @} */
-
-/**
- * @addtogroup object
- * @{
- */
 
 gboolean g_dbus_register_interface(DBusConnection *connection,
 					const char *path, const char *name,
@@ -176,13 +239,6 @@ gboolean g_dbus_emit_signal_valist(DBusConnection *connection,
 				const char *path, const char *interface,
 				const char *name, int type, va_list args);
 
-/** @} */
-
-/**
- * @addtogroup watch
- * @{
- */
-
 guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
 				GDBusWatchFunction connect,
 				GDBusWatchFunction disconnect,
@@ -195,10 +251,6 @@ guint g_dbus_add_signal_watch(DBusConnection *connection,
 				void *user_data, GDBusDestroyFunction destroy);
 gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag);
 void g_dbus_remove_all_watches(DBusConnection *connection);
-
-/** @} */
-
-G_END_DECLS
 
 #ifdef __cplusplus
 }
