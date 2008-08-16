@@ -418,32 +418,66 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
 
     if (update || merged || detached) {
         ItemID id(newluid);
+        bool isParent = id.m_rid.empty();
 
         // ensure that the component has the right UID
         if (update && !id.m_uid.empty()) {
             icalcomponent_set_uid(subcomp, id.m_uid.c_str());
         }
 
-        // CALOBJ_MOD_THIS for parent items (UID set, no RECURRENCE-ID)
-        // is not supported by all backends: the Exchange Connector
-        // fails with it. Use CALOBJ_MOD_ALL only if there are no detached
-        // recurrences with the same UID (they would get deleted).
-        CalObjModType modType = CALOBJ_MOD_ALL;
-        if (id.m_rid.size()) {
-            modType = CALOBJ_MOD_THIS;
-        } else {
+        if (isParent) {
+            // CALOBJ_MOD_THIS for parent items (UID set, no RECURRENCE-ID)
+            // is not supported by all backends: the Exchange Connector
+            // fails with it. It might be an incorrect usage of the API.
+            // Therefore we have to use CALOBJ_MOD_ALL, but that removes
+            // children.
+            bool hasChildren = false;
             BOOST_FOREACH(ItemID existingId, m_allLUIDs) {
                 if (existingId.m_uid == id.m_uid &&
                     existingId.m_rid.size()) {
-                    modType = CALOBJ_MOD_THIS;
+                    hasChildren = true;
+                    break;
                 }
             }
+
+            if (hasChildren) {
+                // Use CALOBJ_MOD_ALL and temporarily remove
+                // the children, then add them again. Otherwise they would
+                // get deleted.
+                ICalComps_t children = removeEvents(id.m_uid, true);
+
+                // Parent is gone, too, and needs to be recreated.
+                const char *uid = NULL;
+                if(!e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
+                    throwError(string("creating updated item ") + item.getKey(), gerror);
+                }
+
+                // Recreate any children removed earlier: when we get here,
+                // the parent exists and we must update it.
+                BOOST_FOREACH(boost::shared_ptr< eptr<icalcomponent> > &icalcomp, children) {
+                    if (!e_cal_modify_object(m_calendar, *icalcomp,
+                                             CALOBJ_MOD_THIS,
+                                             &gerror)) {
+                        throwError(string("recreating item ") + item.getKey(), gerror);
+                    }
+                }
+            } else {
+                // no children, updating is simple
+                if (!e_cal_modify_object(m_calendar, subcomp,
+                                         CALOBJ_MOD_ALL,
+                                         &gerror)) {
+                    throwError(string("updating item ") + item.getKey(), gerror);
+                }
+            }
+        } else {
+            // child event
+            if (!e_cal_modify_object(m_calendar, subcomp,
+                                     CALOBJ_MOD_THIS,
+                                     &gerror)) {
+                throwError(string("updating item ") + item.getKey(), gerror);
+            }
         }
-        if (!e_cal_modify_object(m_calendar, subcomp,
-                                 modType,
-                                 &gerror)) {
-            throwError(string("updating item ") + item.getKey(), gerror);
-        }
+
         ItemID newid = getItemID(subcomp);
         newluid = newid.getLUID();
         modTime = getItemModTime(newid);
