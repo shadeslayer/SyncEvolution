@@ -153,9 +153,14 @@ class TrackingSyncSource : public EvolutionSyncSource
     virtual void deleteItem(const string &uid) = 0;
 
     /**
-     * write all changes, throw error if that fails
+     * optional: write all changes, throw error if that fails
+     *
+     * This is called while the sync is still active whereas
+     * close() is called afterwards. Reporting problems
+     * as early as possible may be useful at some point,
+     * but currently doesn't make a relevant difference.
      */
-    virtual void flush() = 0;
+    virtual void flush() {}
     
     /**
      * closes the data source so that it can be reopened

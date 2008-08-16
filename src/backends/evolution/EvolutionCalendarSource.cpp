@@ -197,16 +197,12 @@ void EvolutionCalendarSource::listAllItems(RevisionMap_t &revisions)
 
 void EvolutionCalendarSource::close()
 {
-    if (m_calendar.get() && !hasFailed()) {
-        // This long delay is necessary in combination
-        // with Evolution Exchange Connector: when updating
-        // a child event, it seems to take a while until
-        // the change really is effective.
-        // @todo This delay
-        // should better go before the listAllItems()
-        // at the end of sync!
-        sleep(5);
-    }
+    // This long delay is necessary in combination
+    // with Evolution Exchange Connector: when updating
+    // a child event, it seems to take a while until
+    // the change really is effective.
+    sleepSinceModification(5);
+
     m_calendar = NULL;
 }
 
@@ -561,19 +557,6 @@ void EvolutionCalendarSource::deleteItem(const string &luid)
         }
     }
     m_allLUIDs.erase(luid);
-}
-
-void EvolutionCalendarSource::flush()
-{
-    // Flushing is not necessary, all changes are directly stored.
-    // However, our change tracking depends on the resolution with which
-    // Evolution stores modification times. Sleeping for a second here
-    // ensures that any future operations on the same date generate
-    // different modification time stamps.
-    time_t start = time(NULL);
-    do {
-        sleep(1);
-    } while (time(NULL) - start <= 0);
 }
 
 void EvolutionCalendarSource::logItem(const string &luid, const string &info, bool debug)

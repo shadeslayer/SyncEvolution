@@ -115,6 +115,13 @@ void FileSyncSource::open()
 
 void FileSyncSource::close()
 {
+    // Our change tracking is time based.
+    // Don't let caller proceed without waiting for
+    // one second to prevent being called again before
+    // the modification time stamp is larger than it
+    // is now.
+    sleepSinceModification(1);
+
     m_basedir.clear();
 }
 
@@ -231,16 +238,6 @@ void FileSyncSource::deleteItem(const string &uid)
     if (unlink(filename.c_str())) {
         throwError(filename, errno);
     }
-}
-
-void FileSyncSource::flush()
-{
-    // Our change tracking is time based.
-    // Don't let caller proceed without waiting for
-    // one second to prevent being called again before
-    // the modification time stamp is larger than it
-    // is now.
-    sleep(1);
 }
 
 void FileSyncSource::logItem(const string &uid, const string &info, bool debug)

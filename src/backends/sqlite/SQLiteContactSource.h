@@ -70,7 +70,6 @@ class SQLiteContactSource : public TrackingSyncSource
     virtual void listAllItems(RevisionMap_t &revisions);
     virtual InsertItemResult insertItem(const string &uid, const SyncItem &item);
     virtual void deleteItem(const string &uid);
-    virtual void flush();
 
  private:
     /** encapsulates access to database */

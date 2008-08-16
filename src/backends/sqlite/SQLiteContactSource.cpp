@@ -162,6 +162,13 @@ void SQLiteContactSource::open()
 
 void SQLiteContactSource::close()
 {
+    // Our change tracking is time based.
+    // Don't let caller proceed without waiting for
+    // one second to prevent being called again before
+    // the modification time stamp is larger than it
+    // is now.
+    sleepSinceModification(1);
+
     m_sqlite.close();
 }
 
@@ -382,16 +389,6 @@ void SQLiteContactSource::deleteItem(const string &uid)
                                 "ABPerson.ROWID = ?;"));
     m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_step(del));
-}
-
-void SQLiteContactSource::flush()
-{
-    // Our change tracking is time based.
-    // Don't let caller proceed without waiting for
-    // one second to prevent being called again before
-    // the modification time stamp is larger than it
-    // is now.
-    sleep(1);
 }
 
 void SQLiteContactSource::logItem(const string &uid, const string &info, bool debug)
