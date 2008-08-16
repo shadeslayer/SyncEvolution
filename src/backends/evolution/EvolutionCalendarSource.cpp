@@ -197,6 +197,16 @@ void EvolutionCalendarSource::listAllItems(RevisionMap_t &revisions)
 
 void EvolutionCalendarSource::close()
 {
+    if (m_calendar.get() && !hasFailed()) {
+        // This long delay is necessary in combination
+        // with Evolution Exchange Connector: when updating
+        // a child event, it seems to take a while until
+        // the change really is effective.
+        // @todo This delay
+        // should better go before the listAllItems()
+        // at the end of sync!
+        sleep(5);
+    }
     m_calendar = NULL;
 }
 
@@ -224,7 +234,7 @@ SyncItem *EvolutionCalendarSource::createItem(const string &luid)
 {
     logItem( luid, "extracting from EV", true );
 
-    ItemID id = ItemID::parseLUID(luid);
+    ItemID id(luid);
     string icalstr = retrieveItemAsString(id);
 
     auto_ptr<SyncItem> item(new SyncItem(luid.c_str()));
@@ -327,7 +337,15 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
     if (!subcomp) {
         throwError("extracting event");
     }
-    
+
+    // Remove LAST-MODIFIED: the Evolution Exchange Connector does not
+    // properly update this property if it is already present in the
+    // incoming data.
+    icalproperty *modprop;
+    while ((modprop = icalcomponent_get_first_property(subcomp, ICAL_LASTMODIFIED_PROPERTY)) != NULL) {
+        icalcomponent_remove_property(subcomp, modprop);
+    }
+
     if (!update) {
         ItemID id = getItemID(subcomp);
         const char *uid = NULL;
@@ -399,15 +417,30 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
     }
 
     if (update || merged || detached) {
-        ItemID id = ItemID::parseLUID(newluid);
+        ItemID id(newluid);
 
         // ensure that the component has the right UID
         if (update && !id.m_uid.empty()) {
             icalcomponent_set_uid(subcomp, id.m_uid.c_str());
         }
 
+        // CALOBJ_MOD_THIS for parent items (UID set, no RECURRENCE-ID)
+        // is not supported by all backends: the Exchange Connector
+        // fails with it. Use CALOBJ_MOD_ALL only if there are no detached
+        // recurrences with the same UID (they would get deleted).
+        CalObjModType modType = CALOBJ_MOD_ALL;
+        if (id.m_rid.size()) {
+            modType = CALOBJ_MOD_THIS;
+        } else {
+            BOOST_FOREACH(ItemID existingId, m_allLUIDs) {
+                if (existingId.m_uid == id.m_uid &&
+                    existingId.m_rid.size()) {
+                    modType = CALOBJ_MOD_THIS;
+                }
+            }
+        }
         if (!e_cal_modify_object(m_calendar, subcomp,
-                                 CALOBJ_MOD_THIS,
+                                 modType,
                                  &gerror)) {
             throwError(string("updating item ") + item.getKey(), gerror);
         }
@@ -424,7 +457,7 @@ EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const
     ICalComps_t events;
 
     BOOST_FOREACH(const string &luid, m_allLUIDs) {
-        ItemID id = ItemID::parseLUID(luid);
+        ItemID id(luid);
 
         if (id.m_uid == uid) {
             icalcomponent *icomp = retrieveItem(id);
@@ -459,7 +492,7 @@ EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const
 void EvolutionCalendarSource::deleteItem(const string &luid)
 {
     GError *gerror = NULL;
-    ItemID id = ItemID::parseLUID(luid);
+    ItemID id(luid);
 
     if (id.m_rid.empty()) {
         /*
@@ -631,14 +664,14 @@ string EvolutionCalendarSource::ItemID::getLUID(const string &uid, const string 
     return uid + "-rid" + rid;
 }
 
-EvolutionCalendarSource::ItemID EvolutionCalendarSource::ItemID::parseLUID(const string &luid)
+EvolutionCalendarSource::ItemID::ItemID(const string &luid)
 {
     size_t ridoff = luid.rfind("-rid");
     if (ridoff != luid.npos) {
-        return ItemID(luid.substr(0, ridoff),
-                      luid.substr(ridoff + strlen("-rid")));
+        const_cast<string &>(m_uid) = luid.substr(0, ridoff);
+        const_cast<string &>(m_rid) = luid.substr(ridoff + strlen("-rid"));
     } else {
-        return ItemID(luid, "");
+        const_cast<string &>(m_uid) = luid;
     }
 }
 

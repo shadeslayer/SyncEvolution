@@ -350,8 +350,11 @@ class ClientTest {
          *
          * One example for main and subordinate items are a recurring
          * iCalendar 2.0 event and a detached recurrence.
+         *
+         * The updated items are needed in same tests; they should differ
+         * from the normal ones in some relevant properties.
          */
-        const char *parentItem, *childItem;
+        const char *parentItem, *childItem, *parentItemUpdate, *childItemUpdate;
 
         /**
          * define to 0 to disable tests which slightly violate the

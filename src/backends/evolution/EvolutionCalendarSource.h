@@ -103,12 +103,12 @@ class EvolutionCalendarSource : public TrackingSyncSource
         m_uid(uid ? uid : ""),
             m_rid(rid ? rid : "")
                 {}
+    ItemID(const string &luid);
 
         const string m_uid, m_rid;
 
         string getLUID() const;
         static string getLUID(const string &uid, const string &rid);
-        static ItemID parseLUID(const string &luid);
     };
 
     /**

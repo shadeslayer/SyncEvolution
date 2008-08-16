@@ -59,6 +59,19 @@
 
 USE_NAMESPACE
 
+static bool ClientTestICal20RelaxedSemantic()
+{
+#if LINKED_ITEMS_RELAXED_SEMANTIC
+    if (getenv("CLIENT_TEST_ICAL20_NO_RELAXED_SEMANTIC")) {
+        return false;
+    } else {
+        return true;
+    }
+#else
+    return false;
+#endif
+}
+
 /** utility function to iterate over different kinds of items in a sync source */
 static std::list<std::string> listAnyItems(
     SyncSource *source,
@@ -208,10 +221,14 @@ void LocalTests::addTests() {
                 ADD_TEST(LocalTests, testLinkedItemsRemoveNormal);
                 ADD_TEST(LocalTests, testLinkedItemsInsertParentTwice);
                 ADD_TEST(LocalTests, testLinkedItemsInsertChildTwice);
-                ADD_TEST(LocalTests, testLinkedItemsParentUpdate);
-                ADD_TEST(LocalTests, testLinkedItemsUpdateChild);
-                ADD_TEST(LocalTests, testLinkedItemsInsertBothUpdateChild);
-                ADD_TEST(LocalTests, testLinkedItemsInsertBothUpdateParent);
+                if (config.parentItemUpdate) {
+                    ADD_TEST(LocalTests, testLinkedItemsParentUpdate);
+                    ADD_TEST(LocalTests, testLinkedItemsInsertBothUpdateParent);
+                }
+                if (config.childItemUpdate) {
+                    ADD_TEST(LocalTests, testLinkedItemsUpdateChild);
+                    ADD_TEST(LocalTests, testLinkedItemsInsertBothUpdateChild);
+                }
             }
         }
     }
@@ -856,7 +873,10 @@ void LocalTests::testLinkedItemsParent() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsChild() {
-#if LINKED_ITEMS_RELAXED_SEMANTIC
+    if (!ClientTestICal20RelaxedSemantic()) {
+        return;
+    }
+
     // check additional requirements
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
@@ -896,7 +916,6 @@ void LocalTests::testLinkedItemsChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
-#endif
 }
 
 // test inserting, removing and updating of parent + child item in
@@ -949,7 +968,10 @@ void LocalTests::testLinkedItemsParentChild() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsChildParent() {
-#if LINKED_ITEMS_RELAXED_SEMANTIC
+    if (!ClientTestICal20RelaxedSemantic()) {
+        return;
+    }
+
     // check additional requirements
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
@@ -992,13 +1014,15 @@ void LocalTests::testLinkedItemsChildParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
-#endif
 }
 
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsChildChangesParent() {
-#if LINKED_ITEMS_RELAXED_SEMANTIC
+    if (!ClientTestICal20RelaxedSemantic()) {
+        return;
+    }
+
     // check additional requirements
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
@@ -1055,13 +1079,15 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
-#endif
 }
 
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsRemoveParentFirst() {
-#if LINKED_ITEMS_RELAXED_SEMANTIC
+    if (!ClientTestICal20RelaxedSemantic()) {
+        return;
+    }
+
     // check additional requirements
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
@@ -1116,7 +1142,6 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
-#endif
 }
 
 // test inserting, removing and updating of parent + child item in
@@ -1158,7 +1183,8 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->beginSync());
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
-    SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
+    // deleting child may cause parent to be treated as updated
+    SOURCE_ASSERT(copy.get(), countUpdatedItems(copy.get()) <= 1);
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
@@ -1236,6 +1262,10 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsInsertChildTwice() {
+    if (!ClientTestICal20RelaxedSemantic()) {
+        return;
+    }
+
     // check additional requirements
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
@@ -1251,7 +1281,6 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-#if LINKED_ITEMS_RELAXED_SEMANTIC
     // add child twice (should be turned into update)
     child = insert(createSourceA, config.childItem);
 
@@ -1265,7 +1294,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    child = insert(createSourceA, config.childItem);
+    child = insert(createSourceA, config.childItemUpdate);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->beginSync());
@@ -1288,7 +1317,6 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
-#endif
 }
 
 // test inserting, removing and updating of parent + child item in
@@ -1322,7 +1350,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = updateItem(createSourceA, parent, config.parentItem);
+    parent = updateItem(createSourceA, parent, config.parentItemUpdate);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->beginSync());
@@ -1350,7 +1378,10 @@ void LocalTests::testLinkedItemsParentUpdate() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsUpdateChild() {
-#if LINKED_ITEMS_RELAXED_SEMANTIC
+    if (!ClientTestICal20RelaxedSemantic()) {
+        return;
+    }
+
     // check additional requirements
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
@@ -1379,7 +1410,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    child = updateItem(createSourceA, child, config.childItem);
+    child = updateItem(createSourceA, child, config.childItemUpdate);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->beginSync());
@@ -1402,7 +1433,6 @@ void LocalTests::testLinkedItemsUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
-#endif
 }
 
 // test inserting, removing and updating of parent + child item in
@@ -1438,7 +1468,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    child = updateItem(createSourceA, child, config.childItem);
+    child = updateItem(createSourceA, child, config.childItemUpdate);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->beginSync());
@@ -1498,7 +1528,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = updateItem(createSourceA, parent, config.parentItem);
+    parent = updateItem(createSourceA, parent, config.parentItemUpdate);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->beginSync());
@@ -2864,6 +2894,26 @@ void ClientTest::getTestData(const char *type, Config &config)
             "LAST-MODIFIED:20080407T193241\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
+        config.parentItemUpdate =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VEVENT\n"
+            "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+            "DTSTAMP:20080407T193125Z\n"
+            "DTSTART:20080406T090000Z\n"
+            "DTEND:20080406T093000Z\n"
+            "TRANSP:OPAQUE\n"
+            "SEQUENCE:2\n"
+            "SUMMARY:Recurring 2\n"
+            "DESCRIPTION:recurs each Monday\\, 10 times\n"
+            "CLASS:PUBLIC\n"
+            "RRULE:FREQ=WEEKLY;COUNT=10;INTERVAL=1;BYDAY=SU\n"
+            "CREATED:20080407T193241\n"
+            "LAST-MODIFIED:20080407T193241\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
         config.childItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -2877,6 +2927,26 @@ void ClientTest::getTestData(const char *type, Config &config)
             "TRANSP:OPAQUE\n"
             "SEQUENCE:7\n"
             "SUMMARY:Recurring: Modified\n"
+            "CLASS:PUBLIC\n"
+            "CREATED:20080407T193241\n"
+            "LAST-MODIFIED:20080407T193647\n"
+            "RECURRENCE-ID:20080413T090000Z\n"
+            "DESCRIPTION:second instance modified\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+        config.childItemUpdate =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VEVENT\n"
+            "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+            "DTSTAMP:20080407T193125Z\n"
+            "DTSTART:20080413T090000Z\n"
+            "DTEND:20080413T093000Z\n"
+            "TRANSP:OPAQUE\n"
+            "SEQUENCE:7\n"
+            "SUMMARY:Recurring: Modified Again\n"
             "CLASS:PUBLIC\n"
             "CREATED:20080407T193241\n"
             "LAST-MODIFIED:20080407T193647\n"
