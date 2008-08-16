@@ -196,7 +196,7 @@ class EvolutionCalendarSource : public TrackingSyncSource
      * Relies on m_allLUIDs, but does not update it. The caller must
      * ensure that the calendar remains in a consistent state.
      *
-     * @param returnOnlyChildren    remove whole series, but only return children in list
+     * @param returnOnlyChildren    only return children in list, even if parent is also removed
      */
     ICalComps_t removeEvents(const string &uid, bool returnOnlyChildren);
 };
