@@ -278,9 +278,11 @@ public:
                 sc->setSourceType(testconfig.type);
             }
 
-            // always set this property: the name might have changes since last test run
+            // always set these properties: they might have changed since the last run
             string database = getDatabaseName(test->m_configName);
             sc->setDatabaseID(database);
+            sc->setUser(m_evoUser);
+            sc->setPassword(m_evoPassword);
         }
         config.flush();
     }
