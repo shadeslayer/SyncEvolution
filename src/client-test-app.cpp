@@ -20,7 +20,7 @@
 #include <config.h>
 
 #include <base/test.h>
-#include <test/ClientTest.h>
+#include <ClientTest.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 #include <exception>

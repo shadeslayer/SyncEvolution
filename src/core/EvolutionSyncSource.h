@@ -169,7 +169,7 @@ typedef list<const RegisterSyncSource *> SourceRegistry;
 
 
 #ifdef ENABLE_INTEGRATION_TESTS
-#include <test/ClientTest.h>
+#include <ClientTest.h>
 typedef ClientTest::Config ClientTestConfig;
 #else
 /**

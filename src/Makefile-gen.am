@@ -144,8 +144,8 @@ $(filter-out $(LOCAL_TEST_FILES) testcases/%, $(CLIENT_LIB_TEST_FILES)) : % : $(
 
 $(CLIENT_LIB_TEST_FILES:%=$(FUNAMBOL_SUBDIR)/test/test/%): @FUNAMBOL_DEP@
 
-# extra dependency - don't remember why
-ClientTest.cpp : ClientTest.h
+# ensure that header file exists before entering sub directories or compiling
+all ClientTest.cpp: ClientTest.h
 
 # verbatim files from SyncEvolution
 $(filter testcases/%, $(filter $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES))) : % : $(srcdir)/../test/%
