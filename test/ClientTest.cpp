@@ -1534,7 +1534,9 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->beginSync());
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
-    SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
+    // parent is definitely updated now, child may or may not be considered updated
+    SOURCE_ASSERT(copy.get(), 1 <= countUpdatedItems(copy.get()));
+    SOURCE_ASSERT(copy.get(), 2 >= countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, copy->endSync());
