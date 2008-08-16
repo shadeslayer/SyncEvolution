@@ -84,7 +84,7 @@ syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 # The path may be empty!
 FUNAMBOLSRC = @FUNAMBOLSRC@
 FUNAMBOL_SUBDIR = @FUNAMBOL_SUBDIR@
-BUILT_SOURCES = $(FUNAMBOL_SUBDIR)/all
+BUILT_SOURCES = $(FUNAMBOL_SUBDIR)/all $(CLIENT_LIB_TEST_FILES)
 
 @FUNAMBOL_LIB@ : $(FUNAMBOL_SUBDIR)/all
 
@@ -125,7 +125,7 @@ client_test_LDADD = @LIBDBUS@ $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD
 # they ensure that all files are in place to *run* client-test,
 # but in particular the "all" dependency causes a rebuild
 # even if the actual input files haven't changed.
-client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) all $(CLIENT_LIB_TEST_FILES) synccompare
+client_test_DEPENDENCIES = all $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) synccompare
 
 # copy test files for several reasons:
 # - automake expects them here
@@ -143,9 +143,6 @@ $(filter-out $(LOCAL_TEST_FILES) testcases/%, $(CLIENT_LIB_TEST_FILES)) : % : $(
 	sed -e 's/WCHAR_T/char/g' -e 's/TEXT(/(/g' -e 's/wcslen/strlen/g' -e 's/wcscmp/strcmp/g' $< >$@
 
 $(CLIENT_LIB_TEST_FILES:%=$(FUNAMBOL_SUBDIR)/test/test/%): @FUNAMBOL_DEP@
-
-# ensure that header file exists before entering sub directories or compiling
-all ClientTest.cpp: ClientTest.h
 
 # verbatim files from SyncEvolution
 $(filter testcases/%, $(filter $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES))) : % : $(srcdir)/../test/%
