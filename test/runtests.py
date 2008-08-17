@@ -382,15 +382,7 @@ class SyncEvolutionTest(Action):
             basecmd = "%s CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
             context.runCommand("make testclean test")
             if self.tests:
-                ex = None
-                for test in self.tests:
-                    try:
-                        context.runCommand("%s %s" % (basecmd, test))
-                    except Exception, inst:
-                        if not ex:
-                            ex = inst
-                if ex:
-                    raise ex
+                context.runCommand("%s %s" % (basecmd, " ".join(self.tests)))
             else:
                 context.runCommand(basecmd)
         finally:
@@ -614,10 +606,14 @@ evolutiontest = SyncEvolutionTest("evolution", compile,
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
 
+# ScheduleWorld has a problem when new clients synchronize for the
+# first time: all other clients are forced into a slow sync. The
+# first test affected by this is Client::Sync::vcard30::testCopy.
+# Afterwards tests work as expected again.
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       [ "Client::Sync" ],
-                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5",
+                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES=Client::Sync::vcard30::testCopy CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5",
                                       testPrefix=options.testprefix)
 context.add(scheduleworldtest)
 
@@ -679,7 +675,7 @@ class FunambolTest(SyncEvolutionTest):
             serverlogs = ""
         SyncEvolutionTest.__init__(self, name, build, serverlogs,
                                    runner, [ ],
-                                   "CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol",
+                                   "CLIENT_TEST_SOURCES=vcard21,text CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol",
                                    lineFilter=lambda x: x.replace('dogfood.funambol.com','<host hidden>'),
                                    testPrefix=testPrefix)
         self.funamboldir = funamboldir
