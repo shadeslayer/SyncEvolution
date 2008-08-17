@@ -14,5 +14,8 @@ AC_ARG_ENABLE_BACKEND(sqlite, sqlite,
 if test "$enable_sqlite" = "yes"; then
         test "x${SQLITEFOUND}" == "xyes" || AC_MSG_ERROR([--enable-sqlite requires pkg-config information for sqlite3, which was not found])
         AC_DEFINE(ENABLE_SQLITE, 1, [sqlite available])
-fi      
-
+else
+        # avoid linking against it if not needed
+        SQLITE_CFLAGS=
+        SQLITE_LIBS=
+fi
