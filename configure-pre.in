@@ -100,6 +100,40 @@ FUNAMBOL_LIB=$PWD/src/client-api.build/src/libfunambol.la
 
 AC_SUBST(CLEAN_CLIENT_SRC)
 
+case $target in
+*apple-darwin*)  use_mac_ta="yes" ;;
+*) use_libcurl="yes" ;;
+esac
+
+# Check for libcurl now instead of during make.
+# Strictly speaking, building libfunambol takes
+# care of that, but because we build it in a
+# slightly unusual way (build libfunambol.a with
+# -fPIC, include just the required object files
+# in libsyncevolution) libtool doesn't pick up
+# that dependency and we have to add libcurl to
+# out link flags ourselves.
+AC_MSG_CHECKING([for libcurl])
+if TRANSPORT_LDFLAGS=`sh -c 'curl-config --libs' 2>&AS_MESSAGE_LOG_FD` && \
+    TRANSPORT_CFLAGS=`sh -c 'curl-config --cflags' 2>&AS_MESSAGE_LOG_FD`; then
+    AC_MSG_RESULT([found])
+else
+    AC_MSG_RESULT([missing])
+    # FIXME: hard-coded check for Mac (same as in libfunambol)
+    case $target in
+        *apple-darwin*) TRANSPORT_LDFLAGS="-framework CoreServices" ;;
+        *) AC_MSG_ERROR([libcurl is required, check that its development package is installed and curl-config is in your PATH]) ;;
+    esac
+fi
+AC_SUBST(TRANSPORT_LDFLAGS)
+AC_SUBST(TRANSPORT_CFLAGS)
+
+if test "x$use_mac_ta" = "xyes"; then
+    CURL_LDFLAGS="-framework CoreServices"
+    AC_SUBST(CURL_LDFLAGS)
+fi
+
+
 if test ! "$FUNAMBOL"; then
     if test "$FUNAMBOLSRC"; then
         # make a copy of the sources, remove it during maintainer-clean and distclean
