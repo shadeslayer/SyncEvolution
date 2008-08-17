@@ -120,7 +120,7 @@ nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm $(FUNAMBOL_SUBDIR)/src/.libs/libfunambol.a core/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'`
-client_test_LDADD = @LIBDBUS@ $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD)
+client_test_LDADD = $(FUNAMBOL_SUBDIR)/src/libfunambol.la $(CORE_LDADD)
 # These dependencies are intentionally a bit too broad:
 # they ensure that all files are in place to *run* client-test,
 # but in particular the "all" dependency causes a rebuild

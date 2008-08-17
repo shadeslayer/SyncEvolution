@@ -164,8 +164,7 @@ Building a Release
 
 Compiling for Maemo
 -------------------
-  build patched libdbus (apt-get source dbus; apply dbus-timeout.patch; fakeroot dpkg-buildpackage);
-  unpack source archive in Scratchbox (for maximum compatibility: use Mistral 2.0
+  unpack source archive in Scratchbox (for maximum compatibility: use Chinook 4.0
   rootstrap; for support of all backends: ensure that the EDS-DBus calendar dev packages
   are installed),
   DEB_BUILD_OPTIONS=maemo fakeroot dpkg-buildpackage
@@ -173,14 +172,7 @@ Compiling for Maemo
   during the client-src configure.
 
 Maemo EDS-DBus calendar dev packages /etc/apt/source.list:
-  deb http://maemo.o-hand.com/packages mistral/
-  deb-src http://maemo.o-hand.com/packages mistral/ 
-Installation _without_ updating more than strictly necessary (just to be sure
-that address book syncing uses the default libraries):
-  apt-get update
-  apt-cache showpkg libecal-dev libedata-cal-dev
-  ver=1.4.1-0zoh4; for i in libecal-dev libecal libedata-cal libedata-cal-dev; do  wget http://maemo.o-hand.com/packages/mistral/${i}_${ver}_armel.deb; done
-  dpkg --force-depends -i *.deb
+  deb http://maemo.o-hand.com/packages chinook/
 
 
 Compiling for iPhone
