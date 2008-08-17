@@ -110,8 +110,6 @@ $(srcdir)/configure.in: configure-pre.in configure-post.in $(CONFIG_SUBS)
 	    echo "# ^^^^^^^^^^^^^^ $$sub ^^^^^^^^^^^^^^" >>$@; \
 	    echo >>$@; \
 	done
-	echo BACKEND_REGISTRIES = `echo $(srcdir)/src/backends/*/*Register.cpp | sed -e 's;$(srcdir)/;;'` >>$@
-	echo "AC_SUBST(BACKEND_REGISTRIES)" >>$@
 	cat $(srcdir)/configure-post.in >>$@
 
 $(srcdir)/Makefile.am: Makefile-gen.am
