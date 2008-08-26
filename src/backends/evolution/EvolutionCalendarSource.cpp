@@ -201,7 +201,18 @@ void EvolutionCalendarSource::close()
     // with Evolution Exchange Connector: when updating
     // a child event, it seems to take a while until
     // the change really is effective.
-    sleepSinceModification(5);
+    static int secs = 5;
+    static bool checked = false;
+    if (!checked) {
+        // allow setting the delay (used during testing to shorten runtime)
+        const char *delay = getenv("SYNC_EVOLUTION_EVO_CALENDAR_DELAY");
+        if (delay) {
+            secs = atoi(delay);
+        }
+        checked = true;
+    }
+
+    sleepSinceModification(secs);
 
     m_calendar = NULL;
 }

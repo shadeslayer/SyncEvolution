@@ -379,7 +379,7 @@ class SyncEvolutionTest(Action):
         try:
             if context.setupcmd:
                 context.runCommand("%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name))
-            basecmd = "%s CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
+            basecmd = "%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
             context.runCommand("make testclean test")
             if self.tests:
                 context.runCommand("%s %s" % (basecmd, " ".join(self.tests)))
