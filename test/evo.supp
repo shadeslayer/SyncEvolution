@@ -1266,6 +1266,266 @@
    fun:e_cal_new
 }
 
+# ==23265== 1,456 bytes in 43 blocks are possibly lost in loss record 23 of 47
+# ==23265==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==23265==    by 0x42F7A1C: g_malloc (gmem.c:131)
+# ==23265==    by 0x483595D: ORBit_alloc_string (allocators.c:228)
+# ==23265==    by 0x4835618: CORBA_string_dup (corba-string.c:22)
+# ==23265==    by 0x480A512: Bonobo_ActivationPropertyValue_copy (bonobo-activation-server-info.c:106)
+# ==23265==    by 0x480A57D: Bonobo_ActivationProperty_copy (bonobo-activation-server-info.c:142)
+# ==23265==    by 0x480A601: CORBA_sequence_Bonobo_ActivationProperty_copy (bonobo-activation-server-info.c:157)
+# ==23265==    by 0x480A6A3: Bonobo_ServerInfo_copy (bonobo-activation-server-info.c:173)
+# ==23265==    by 0x480A73F: Bonobo_ServerInfoList_duplicate (bonobo-activation-server-info.c:212)
+# ==23265==    by 0x4808701: bonobo_activation_query (bonobo-activation-activate.c:238)
+# ==23265==    by 0x40D789C: get_factories (e-cal.c:1011)
+# ==23265==    by 0x40D885F: fetch_corba_cal (e-cal.c:1277)
+# ==23265==    by 0x40D8D13: e_cal_new (e-cal.c:1406)
+# ==23265==    by 0x40D8DEA: e_cal_new_from_uri (e-cal.c:1441)
+# ==23265==    by 0x81A5A2F: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:147)
+# ==23265==    by 0x805D2B6: TestEvolutionSyncSource::beginSync() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x808E52F: LocalTests::testIterateTwice() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x816B7F0: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x4050C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x40423ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x404C8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x404C613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4059390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4050637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4059009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x405B72F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_cal_new VIII
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:Bonobo_ActivationPropertyValue_copy
+   fun:Bonobo_ActivationProperty_copy
+   fun:CORBA_sequence_Bonobo_ActivationProperty_copy
+   fun:Bonobo_ServerInfo_copy
+   fun:Bonobo_ServerInfoList_duplicate
+   fun:bonobo_activation_query
+   fun:get_factories
+   fun:fetch_corba_cal
+   fun:e_cal_new
+}
+
+# ==20460== 16 bytes in 1 blocks are definitely lost in loss record 5 of 41
+# ==20460==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==20460==    by 0x411BC5C: icaltzutil_fetch_timezone (icaltz-util.c:266)
+# ==20460==    by 0x411EE74: icaltimezone_load_builtin_timezone (icaltimezone.c:1744)
+# ==20460==    by 0x411E0AD: icaltimezone_get_tzid (icaltimezone.c:1153)
+# ==20460==    by 0x81ABA29: syncevolution_match_tzid (e-cal-check-timezones.c:54)
+# ==20460==    by 0x81ABDA1: syncevolution_check_timezones (e-cal-check-timezones.c:279)
+# ==20460==    by 0x81A7EB8: EvolutionCalendarSource::insertItem(std::string const&, SyncItem const&) (EvolutionCalendarSource.cpp:298)
+# ==20460==    by 0x81AC2F5: TrackingSyncSource::addItemThrow(SyncItem&) (TrackingSyncSource.cpp:133)
+# ==20460==    by 0x80689A2: EvolutionCalendarTest::addItem(boost::shared_ptr<EvolutionSyncSource>, std::string&) (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==20460==    by 0x806960A: EvolutionCalendarTest::testTimezones() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==20460==    by 0x8063220: CppUnit::TestCaller<EvolutionCalendarTest>::runTest() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==20460==    by 0x4050C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x40423ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x404C8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x404C613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4059390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4050637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4059009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x405B72F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x405EF2A: CppUnit::TextTestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x405EFA1: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x816E218: main (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+{
+   icaltimezone_load_builtin_timezone()
+   Memcheck:Leak
+   fun:malloc
+   fun:icaltzutil_fetch_timezone
+   fun:icaltimezone_load_builtin_timezone
+   fun:icaltimezone_get_tzid
+   fun:syncevolution_match_tzid
+   fun:syncevolution_check_timezones
+}
+
+# ==20460== 122 bytes in 10 blocks are definitely lost in loss record 18 of 41
+# ==20460==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==20460==    by 0x44F617F: strdup (in /lib/tls/i686/cmov/libc-2.3.6.so)
+# ==20460==    by 0x411089D: icalmemory_strdup (icalmemory.c:236)
+# ==20460==    by 0x40FFC9B: icalparameter_new_from_value_string (icalderivedparameter.c:1475)
+# ==20460==    by 0x4113230: icalparser_add_line (icalparser.c:856)
+# ==20460==    by 0x4112AC2: icalparser_parse (icalparser.c:587)
+# ==20460==    by 0x41138B0: icalparser_parse_string (icalparser.c:1118)
+# ==20460==    by 0x410B8CA: icalcomponent_new_from_string (icalcomponent.c:173)
+# ==20460==    by 0x81A7E05: EvolutionCalendarSource::insertItem(std::string const&, SyncItem const&) (EvolutionCalendarSource.cpp:288)
+# ==20460==    by 0x81AC2F5: TrackingSyncSource::addItemThrow(SyncItem&) (TrackingSyncSource.cpp:133)
+# ==20460==    by 0x80689A2: EvolutionCalendarTest::addItem(boost::shared_ptr<EvolutionSyncSource>, std::string&) (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==20460==    by 0x806960A: EvolutionCalendarTest::testTimezones() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==20460==    by 0x8063220: CppUnit::TestCaller<EvolutionCalendarTest>::runTest() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==20460==    by 0x4050C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x40423ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x404C8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x404C613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4059390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4050637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x4059009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x405B72F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x405EF2A: CppUnit::TextTestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x405EFA1: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==20460==    by 0x816E218: main (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+{
+   icalcomponent_new_from_string()
+   Memcheck:Leak
+   fun:malloc
+   fun:strdup
+   fun:icalmemory_strdup
+   fun:icalparameter_new_from_value_string
+   fun:icalparser_add_line
+   fun:icalparser_parse
+   fun:icalparser_parse_string
+   fun:icalcomponent_new_from_string
+}
+
+# ==23265== 23,220 (16,512 direct, 6,708 indirect) bytes in 129 blocks are definitely lost in loss record 32 of 47
+# ==23265==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==23265==    by 0x4120638: icalvalue_new_impl (icalvalue.c:75)
+# ==23265==    by 0x41211F0: icalvalue_new_from_string_with_error (icalvalue.c:550)
+# ==23265==    by 0x4121628: icalvalue_new_from_string (icalvalue.c:665)
+# ==23265==    by 0x41133FF: icalparser_add_line (icalparser.c:945)
+# ==23265==    by 0x4112AC2: icalparser_parse (icalparser.c:587)
+# ==23265==    by 0x41138B0: icalparser_parse_string (icalparser.c:1118)
+# ==23265==    by 0x410B8CA: icalcomponent_new_from_string (icalcomponent.c:173)
+# ==23265==    by 0x81A794B: EvolutionCalendarSource::insertItem(std::string const&, SyncItem const&) (EvolutionCalendarSource.cpp:294)
+# ==23265==    by 0x81ABCC5: TrackingSyncSource::addItemThrow(SyncItem&) (TrackingSyncSource.cpp:133)
+# ==23265==    by 0x817878B: EvolutionSyncSource::processItem(char const*, int (EvolutionSyncSource::*)(SyncItem&), SyncItem&, bool) (EvolutionSyncSource.cpp:391)
+# ==23265==    by 0x8178A38: EvolutionSyncSource::addItem(SyncItem&) (EvolutionSyncSource.cpp:343)
+# ==23265==    by 0x8056F28: TestEvolutionSyncSource::addItem(SyncItem&) (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x807A57D: importItem(SyncSource*, std::string&) (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x8169BD0: LocalTests::insertManyItems(CreateSource, int, int, int) (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x80E39AF: LocalTests::testManyChanges() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x816B7F0: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x4050C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x40423ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x404C8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x404C613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4059390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4050637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4059009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x405B72F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x405EF2A: CppUnit::TextTestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   icalcomponent_new_from_string II
+   Memcheck:Leak
+   fun:malloc
+   fun:icalvalue_new_impl
+   fun:icalvalue_new_from_string_with_error
+   fun:icalvalue_new_from_string
+   fun:icalparser_add_line
+   fun:icalparser_parse
+   fun:icalparser_parse_string
+   fun:icalcomponent_new_from_string
+}
+
+# ==23265== 30,420 (5,408 direct, 25,012 indirect) bytes in 169 blocks are definitely lost in loss record 33 of 47
+# ==23265==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==23265==    by 0x411397F: icalproperty_new_impl (icalproperty.c:102)
+# ==23265==    by 0x4113A23: icalproperty_new (icalproperty.c:127)
+# ==23265==    by 0x4113061: icalparser_add_line (icalparser.c:782)
+# ==23265==    by 0x4112AC2: icalparser_parse (icalparser.c:587)
+# ==23265==    by 0x41138B0: icalparser_parse_string (icalparser.c:1118)
+# ==23265==    by 0x410B8CA: icalcomponent_new_from_string (icalcomponent.c:173)
+# ==23265==    by 0x81A794B: EvolutionCalendarSource::insertItem(std::string const&, SyncItem const&) (EvolutionCalendarSource.cpp:294)
+# ==23265==    by 0x81ABCC5: TrackingSyncSource::addItemThrow(SyncItem&) (TrackingSyncSource.cpp:133)
+# ==23265==    by 0x817878B: EvolutionSyncSource::processItem(char const*, int (EvolutionSyncSource::*)(SyncItem&), SyncItem&, bool) (EvolutionSyncSource.cpp:391)
+# ==23265==    by 0x8178A38: EvolutionSyncSource::addItem(SyncItem&) (EvolutionSyncSource.cpp:343)
+# ==23265==    by 0x8056F28: TestEvolutionSyncSource::addItem(SyncItem&) (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x807A57D: importItem(SyncSource*, std::string&) (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x8169BD0: LocalTests::insertManyItems(CreateSource, int, int, int) (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x80E39AF: LocalTests::testManyChanges() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x816B7F0: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head-evolution-2.12/build/src/client-test)
+# ==23265==    by 0x4050C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x40423ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x404C8D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x404C613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4059390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4050637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x40512FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4051229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x4059009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x405B72F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x405EF2A: CppUnit::TextTestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==23265==    by 0x405EFA1: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   icalcomponent_new_from_string III
+   Memcheck:Leak
+   fun:malloc
+   fun:icalproperty_new_impl
+   fun:icalproperty_new
+   fun:icalparser_add_line
+   fun:icalparser_parse
+   fun:icalparser_parse_string
+   fun:icalcomponent_new_from_string
+}
+
+# ==1142== 20 bytes in 1 blocks are possibly lost in loss record 5 of 43
+# ==1142==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==1142==    by 0x40CFF65: pvl_newlist (pvl.c:59)
+# ==1142==    by 0x40C0B70: icalproperty_new_impl (icalproperty.c:110)
+# ==1142==    by 0x40C0BDB: icalproperty_new (icalproperty.c:127)
+# ==1142==    by 0x40C01BB: icalparser_add_line (icalparser.c:787)
+# ==1142==    by 0x40BFC17: icalparser_parse (icalparser.c:591)
+# ==1142==    by 0x40C0A66: icalparser_parse_string (icalparser.c:1132)
+# ==1142==    by 0x40B89D2: icalcomponent_new_from_string (icalcomponent.c:173)
+# ==1142==    by 0x81DD4AB: EvolutionCalendarSource::insertItem(std::string const&, SyncItem const&) (EvolutionCalendarSource.cpp:309)
+# ==1142==    by 0x81E221F: TrackingSyncSource::updateItemThrow(SyncItem&) (TrackingSyncSource.cpp:142)
+# ==1142==    by 0x81B083B: EvolutionSyncSource::processItem(char const*, int (EvolutionSyncSource::*)(SyncItem&), SyncItem&, bool) (EvolutionSyncSource.cpp:391)
+# ==1142==    by 0x81B0AA8: EvolutionSyncSource::updateItem(SyncItem&) (EvolutionSyncSource.cpp:348)
+# ==1142==    by 0x80574FA: TestEvolutionSyncSource::updateItem(SyncItem&) (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==1142==    by 0x8112FF7: updateItem(CreateSource, std::string const&, char const*) (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==1142==    by 0x8139A39: LocalTests::testLinkedItemsParentUpdate() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==1142==    by 0x816BF04: CppUnit::TestCaller<LocalTests>::runTest() (in /tmp/runtests/head-evolution-svn-minimal/build/src/client-test)
+# ==1142==    by 0x4279C88: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x426B3ED: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x42758D2: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x4275613: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x4282390: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x4279637: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x427A2FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x427A229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x427A2FC: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x427A229: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x4282009: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x428472F: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x4287F2A: CppUnit::TextTestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==1142==    by 0x4287FA1: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   <insert a suppression name here>
+   Memcheck:Leak
+   fun:malloc
+   fun:pvl_newlist
+   fun:icalproperty_new_impl
+   fun:icalproperty_new
+   fun:icalparser_add_line
+   fun:icalparser_parse
+   fun:icalparser_parse_string
+   fun:icalcomponent_new_from_string
+}
+
 ##### evolution-data-server ####
 
 # ==32292== Syscall param pwrite64(buf) points to uninitialised byte(s)
@@ -2678,6 +2938,7 @@
 # ==10419==    by 0x420F23F: start_thread (in /lib/tls/i686/cmov/libpthread-2.3.6.so)
 # ==10419==    by 0x455549D: clone (in /lib/tls/i686/cmov/libc-2.3.6.so)
 {
+   call_add_timezone_cb
    Memcheck:Leak
    fun:malloc
    fun:g_malloc
@@ -2787,4 +3048,51 @@
    dlsym/dlopen II
    Memcheck:Addr4
    obj:*ld-2.3.6.so
+}
+
+# ==27142== 1,431,213 (1,332,637 direct, 98,576 indirect) bytes in 33,210 blocks are definitely lost in loss record 48 of 48
+# ==27142==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
+# ==27142==    by 0x42C6A1C: g_malloc (gmem.c:131)
+# ==27142==    by 0x42DBB92: g_slice_alloc (gslice.c:824)
+# ==27142==    by 0x42DC274: g_slice_alloc0 (gslice.c:833)
+# ==27142==    by 0x418069B: g_type_create_instance (gtype.c:1555)
+# ==27142==    by 0x4167571: g_object_constructor (gobject.c:1046)
+# ==27142==    by 0x41657C7: g_object_newv (gobject.c:937)
+# ==27142==    by 0x4166366: g_object_new_valist (gobject.c:986)
+# ==27142==    by 0x416651F: g_object_new (gobject.c:795)
+# ==27142==    by 0x4095808: e_contact_new_from_vcard (e-contact.c:1227)
+# ==27142==    by 0x4090665: e_book_handle_response (e-book.c:3094)
+# ==27142==    by 0x416CEDA: g_cclosure_marshal_VOID__POINTER (gmarshal.c:601)
+# ==27142==    by 0x41602FA: g_closure_invoke (gclosure.c:490)
+# ==27142==    by 0x41710DC: signal_emit_unlocked_R (gsignal.c:2440)
+# ==27142==    by 0x41725D8: g_signal_emit_valist (gsignal.c:2199)
+# ==27142==    by 0x4172788: g_signal_emit (gsignal.c:2243)
+# ==27142==    by 0x40849FA: impl_BookListener_respond_get_contact (e-book-listener.c:136)
+# ==27142==    by 0x407FBE0: _ORBIT_skel_small_GNOME_Evolution_Addressbook_BookListener_notifyContactRequested (Evolution-DataServer-Addressbook-common.c:144)
+# ==27142==    by 0x483E436: ORBit_POAObject_invoke (poa.c:1142)
+# ==27142==    by 0x4844664: ORBit_OAObject_invoke (orbit-adaptor.c:338)
+# ==27142==    by 0x48315D8: ORBit_small_invoke_adaptor (orbit-small.c:844)
+# ==27142==    by 0x48422B9: ORBit_POAObject_handle_request (poa.c:1351)
+# ==27142==    by 0x484295B: ORBit_POAObject_invoke_incoming_request (poa.c:1421)
+# ==27142==    by 0x48429E0: poa_invoke_at_idle (poa.c:1469)
+# ==27142==    by 0x42BCD90: g_idle_dispatch (gmain.c:4081)
+# ==27142==    by 0x42BE96A: g_main_context_dispatch (gmain.c:2003)
+# ==27142==    by 0x42C1E85: g_main_context_iterate (gmain.c:2636)
+# ==27142==    by 0x42C2246: g_main_loop_run (gmain.c:2844)
+# ==27142==    by 0x4092317: startup_mainloop (e-book.c:3767)
+# ==27142==    by 0x42E677E: g_thread_create_proxy (gthread.c:635)
+{
+   e_book_handle_response
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_slice_alloc
+   fun:g_slice_alloc0
+   fun:g_type_create_instance
+   fun:g_object_constructor
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:e_contact_new_from_vcard
+   fun:e_book_handle_response
 }
