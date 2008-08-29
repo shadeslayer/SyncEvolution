@@ -130,7 +130,7 @@ to add more for your system.
 Building a Release
 ------------------
 
-- increase version number in configure.in/AM_INIT_AUTOMAKE
+- increase version number in configure-pre.in/AM_INIT_AUTOMAKE
 - ensure files were updated:
   ./ChangeLog ./NEWS debian/changelog
 
