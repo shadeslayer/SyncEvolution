@@ -134,13 +134,14 @@ Building a Release
 - ensure files were updated:
   ./ChangeLog ./NEWS debian/changelog
 
+  To update the ChangeLog file use "./svn2cl.sh". It invokes
+  svn2cl with the right options.
+
   For prereleases use "old version"+"new prerelease"-1 as
   package version. That ensures that package versions are
   higher than the old release, but lower than the final
-  release.
-
-  To update the ChangeLog file use "./svn2cl.sh". It invokes
-  svn2cl with the right options.
+  release. Avoid hyphens as part of the release names, i.e.
+  use "0.7+0.8beta1" instead of "0.7+0.8-beta1".
 
 - make distcheck
 - compile binary .tar.gz packages for different Evolution versions;

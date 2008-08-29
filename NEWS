@@ -1,4 +1,169 @@
-SyncEvolution 0.8 beta 2 -> 0,8 beta 3, 17.08.2008
+SyncEvolution 0.7 -> 0.8, 29.08.2008
+------------------------------------
+C++ client library: 7.0 plus compatibility patch for Synthesis
+
+Updating user configuration: this version introduces a new, simplified
+configuration layout. Old configurations still work. They can be
+converted to the new format via a new "--migrate" command line option.
+
+*** WARNING ***: this version uses a different change tracking for Mac
+OS X address book, Evolution calendars, task lists and memos.  After
+switching from a previous release to the current one or vice versa, do
+a "syncevolution --sync refresh-from-server" once to reset the change
+tracking. Not doing so can result in applying the same changes to the
+server multiple times and thus duplicates.
+
+* New configuration file layout: following the freedesktop.org
+  recommendation, new configurations are stored in
+  $XDG_CONFIG_HOME/syncevolution or $HOME/.config/syncevolution if
+  XDG_CONFIG_HOME is not set. The old layout under
+  $HOME/.sync4j/evolution is still supported.
+
+* New command line options: new configurations can be created by
+  syncevolution itself (--configure), including setting of all
+  configuration properties (--sync-property, --source-property).
+  The configuration can dumped to stdout (--print-config), with or
+  without comments explaining each property (--quiet). See the
+  README for details.
+
+* The "evolutionsource" source property no longer has to be configured.
+  If left blank, the default client database will be synchronized.
+
+* Selecting which kind of data is to be synchronized under a specific
+  source name is a lot easier now and the same on all supported
+  platforms: the SyncEvolution backends can be selected via aliases
+  (e.g. "contacts") and the format is specified via an optional
+  MIME type (e.g. "contacts:text/x-vcard"). In the unlikely situation
+  that multiple backends are active which can synchronize the same
+  kind of data, then the right one can be selected by the unique
+  name of the backend (e.g. "Evolution Address Book").
+
+* New configurations automatically get a random client ID string.
+  Setting it manually is still possible, but no longer necessary.
+  Disabling unavailable data sources is also done automatically.
+
+  SyncEvolution checks that the backend is available and there is
+  at least one database (the first one will be synchronized unless
+  explicitly changed). If these checks fail and the sync source was
+  explicitly requested by the user by listing it after the server
+  name, then an error is printed and no configuration is written.
+  If the user wants the default setup, then the source is silently
+  disabled.
+
+* All passwords can be read from stdin at runtime or an environment
+  variable (see "--sync-property password=?" or README for details).
+  Both avoids the less secure storing of plain text passwords in the
+  configuration files (SF #1832458).
+
+* Detached recurrences: meeting series where some occurrences were
+  modified are now supported. Previously only the main event was
+  synchronized. All exceptions got lost when copying back from the
+  server. Requires a SyncML server which supports this. ScheduleWorld
+  was extended to do that.
+
+* Fixed segfaults caused by logging certain data. The reason was an 
+  API change in the client library's logging calls which the older
+  SyncEvolution code hadn't been adapted to. Did not normally occur,
+  but might have been the reason for SF #1830149 (unconfirmed).
+
+* Time zone support: the time zones of incoming events are mapped
+  to native time zone definitions whenever possible. Currently
+  this works if the TZID follows the Olson naming scheme with a
+  location at the end. Matching the time zone has the advantage of
+  being able to update the time zone definition without having to
+  recreate the event. If matching fails and the VTIMEZONE definition
+  differs from one already imported earlier, then SyncEvolution works
+  arounds limitation in Evolution by renaming the time zone.
+  Previously the new event used the old and most likely out-dated
+  time zone definition.
+
+  ***WARNING***: Evolution itself does not do either of these steps
+  itself yet, thus importing meeting invitations via Evolution still
+  fails in some cases. The code implementing the time zone handling
+  described above was written with inclusion into Evolution itself in
+  mind; a discussion with the Evolution developers about that is in
+  progress.
+
+* On Maemo/Nokia Internet Tablets, calendar synchronization now
+  works because the new calendar change tracking no longer depends
+  on some of the backend calls which used to fail (SF #1734977).
+
+* Added SSL configuration options: certificate checking can be
+  relaxed or disabled completely (SF #1852647).
+
+* Added a new file backend: stores each SyncML item as a separate file
+  in a directory.  The directory has to be specified via the database
+  name, using [file://]<path> as format. The file:// prefix is
+  optional, but the directory is only created if it is used.
+
+  Change tracking is done via the file systems modification time
+  stamp: editing a file treats it as modified and then sends it to the
+  server in the next sync. Removing and adding files also works.
+
+  The local unique identifier for each item is its name in the
+  directory. New files are created using a running count which
+  initialized based on the initial content of the directory to
+  "highest existing number + 1" and incremented to avoid collisions.
+ 
+  Although this sync source itself does not care about the content of
+  each item/file, the server needs to know what each item sent to it
+  contains and what items the source is able to receive. Therefore
+  the "type" property for this source must contain a data format
+  specified, including a version for it. Here are some examples:
+  - type=file:text/vcard:3.0
+  - type=file:text/plain:1.0
+
+* Code restructuring: it is now possible to add new backends and thus
+  write SyncML clients for other kinds of data without touching any
+  line of code in SyncEvolution itself. All the required interfaces
+  are documented inside SyncEvolution itself. A HTML documentation can
+  be built via the new "make doc" target (requires Doxygen and dot).
+
+  The SyncEvolution framework itself never depended on GNOME or
+  Evolution, only the Evolution data sources did. If you want
+  support for other ways of storing your data, consider writing
+  a new data source - it is really easy. See EvolutionSyncSource
+  or TrackingSyncSource for details.
+
+* Messages are printed to the screen immediately. More readable
+  log file format.
+
+* Maemo: the useless ''list: unable to access calendars:
+  failure' error message is avoided. It was triggered by not having
+  memo support in Evolution Data Server. Cleaned up the code so that
+  it properly distinguishes between 'calendar', 'memo list' and
+  'task list'.
+
+* added server template for MemoToo; note that the server has not been
+  tested
+
+* added synchronization of Evolution memo summary
+
+  Most devices only synchronize plain text and do not have a
+  separate summary field. Such an extra summary field was added to
+  Evolution after memo support was initially implemented in
+  SyncEvolution, therefore SyncEvolution did not transmit that
+  field.
+  
+  Added transmitting the summary by inserting it as first line of
+  the plain text blob *if* it is not already identical with the
+  first line. When receiving a memo, the summary is set from the
+  first line *without* removing the first line because the first
+  line might have been used as a normal part of the memo.
+
+* Various other minor changes, fixes and lots of code cleanups.
+
+* license cleanup: SyncEvolution is GPL v2 or later
+
+
+SyncEvolution 0.8 beta 2 -> 0.8 final, 29.08.2008
+-------------------------------------------------
+C++ client library: 7.0 plus compatibility patch for Synthesis
+
+* license cleanup: SyncEvolution is GPL v2 or later
+
+
+SyncEvolution 0.8 beta 2 -> 0.8 beta 3, 17.08.2008
 --------------------------------------------------
 C++ client library: 7.0 plus compatibility patch for Synthesis
 
