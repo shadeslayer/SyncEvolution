@@ -205,6 +205,7 @@ Compiling for Mac OS X
   <path>/configure --with-sync4j-src=<path> \
               --enable-addressbook \
               SYNCEVOLUTION_CXXFLAGS="-Wall -Werror -Wno-unknown-pragmas" \
+              LDFLAGS="-framework Addressbook -framework CoreServices" \
               CXXFLAGS=-g \
               CFLAGS=-g
 
@@ -214,7 +215,8 @@ Compiling for Mac OS X
   ./configure --enable-addressbook \
               CXXFLAGS="-O -g -arch i386 -arch ppc" \
               CFLAGS="-O -g -arch i386 -arch ppc" \
-              LDFLAGS="-arch i386 -arch ppc" --disable-dependency-tracking
+              LDFLAGS="-arch i386 -arch ppc -framework Addressbook -framework CoreServices" \
+              --disable-dependency-tracking
   make BINSUFFIX=mac-os-x distbin
 
   Fine-grained memory checking:
