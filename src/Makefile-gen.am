@@ -7,6 +7,12 @@ AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) @BACKEND_CPPFLAGS@ @FUNAMBOL_CFLAGS@
 # the Funambol C++ client library
 SYNCEVOLUTION_CXXFLAGS = @SYNCEVOLUTION_CXXFLAGS@
 
+# set to directory name if the client API sources need to be removed
+CLEAN_CLIENT_SRC=@CLEAN_CLIENT_SRC@
+
+# set to absolute path of client API sources which need to be compiled
+CLIENT_API_SRC=@CLIENT_API_SRC@
+
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
 SYNCSOURCES = @SYNCSOURCES@
@@ -90,8 +96,8 @@ BUILT_SOURCES = $(FUNAMBOL_SUBDIR)/all $(CLIENT_LIB_TEST_FILES)
 
 # include client library in distribution
 dist-hook:
-	[ ! "$(FUNAMBOL_SUBDIR)" ] || cp -r client-api $(distdir)
-	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
+	[ ! "$(FUNAMBOL_SUBDIR)" ] || mkdir -p $(distdir)/client-api && cp -r $(CLIENT_API_SRC)/* $(distdir)/client-api
+	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name .svn -o -name .git -o -name autom4te.cache | xargs rm -rf
 
 clean-local: testclean
 	rm -rf testcases
@@ -103,7 +109,7 @@ testclean:
 
 distclean-local:
 	rm -rf $(FUNAMBOL_SUBDIR)
-	rm -rf @CLEAN_CLIENT_SRC@ # "client-api", only set when it was created by configure
+	rm -rf $(CLEAN_CLIENT_SRC)
 
 # With --disable-shared autotools links against libfunambol.a which does not
 # pull any of the test suites into the test binary, so they would not be
@@ -161,11 +167,6 @@ $(FUNAMBOL_SUBDIR)/%.h :
 # default rule for building in $(FUNAMBOL_SUBDIR)
 $(FUNAMBOL_SUBDIR)/% :
 	[ ! "$(FUNAMBOL_SUBDIR)" ] || ( cd ${@D} && $(MAKE) ${@F} )
-
-# compare the local copy of the C++ client library against
-# the files where it was copied from
-client-api-diff :
-	diff -r -c -x CVS -x config.guess -x config.sub -x depcomp -x install-sh -x ltmain.sh -x missing -x aclocal.m4 -x configure -x '.#*' -x '*~' -x '*.in' -x autom4te.cache $(FUNAMBOLSRC) client-api
 
 # special target for testing with valgrind
 valgrind : test

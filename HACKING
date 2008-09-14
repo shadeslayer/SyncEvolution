@@ -1,45 +1,21 @@
 Checking out the Source
 -----------------------
 
-SyncEvolution is hosted at sf.net. If you want to work
-on the code, just let me know what your SF account is
-and I can provide access to the developers CVS. The
-anonymous CVS mirrors the sources automatically, but
-sometimes is lacking a bit behind. Before using sources
-checked out from CVS, invoke "sh autogen.sh" with
-appropriate autotools packages installed.
+SyncEvolution is hosted on estamos.de. Anonymous access is
+via
+  svn checkout http://www.estamos.de/svn/SyncEvolution/trunk
 
-The most recent version of the Sync4j C++ client library
-is available from CVS, checkout the "3x" module from the CVS at
-   http://forge.objectweb.org/projects/sync4j
-You'll need the files in 3x/client-api/native.
+Before using sources checked out from Subversion, invoke "sh
+autogen.sh" with appropriate autotools packages installed.
 
-Also note that some of the patches in the
-3x/client-api/native/.patches directory might be needed for
-SyncEvolution to compile and work correctly. See
-3x/client-api/native/README for more information about those patches
-and SyncEvolution's NEWS file for some information which client
-library is compatible.
-
-The recommended way to make that library available is by
-installing it into its own directory with shared libraries disabled:
-   configure --prefix=<dir> --disable-shared; make; make install
-and then pointing the configure of SyncEvolution towards it:
-   configure --with-sync4j=<dir> --disable-shared
-Shared versions of the libraries are not recommended at the moment
-because the client libraries API is not expected to be stable.
-
-Alternatively SyncEvolution can work with a source snapshot of
-the client library directly:
-   configure --with-sync4j-src=<dir>
-where <dir> points towards the contents of the 3x/client-api/native
-directory. This mode is required to generate source distributions
-because those are meant to contain a copy of the client library
-code.
+When running the configure script, it will check out the source of a
+suitable Funambol client library which will be compiled
+automatically. There are configure options for using a precompiled
+Funambol client library or non-default sources - see the "funambol"
+configure options for details.
 
 For doing development work the recommended configure line is:
-   configure --with-sync4j-src=<dir> \
-             SYNCEVOLUTION_CXXFLAGS="-Wall -Werror -Wno-unknown-pragmas" \
+   configure SYNCEVOLUTION_CXXFLAGS="-Wall -Werror -Wno-unknown-pragmas" \
              --enable-unit-tests
 
 In contrast to CXXFLAGS, SYNCEVOLUTION_CXXFLAGS adds these flags only
@@ -53,11 +29,11 @@ Working with the Code
 ---------------------
 
 The code follows the code formatting of the Funambol
-Sync4j C++ client library. Just emulate the existing
+C++ client library. Just emulate the existing
 code when possible.
 
 Exceptions derived from std::exception are used to report
-errors, but not in code which is called from inside the Sync4j
+errors, but not in code which is called from inside the client
 library because that library does not handle exceptions for compatibility
 reasons. In that case special case must be taken to not
 forget that an error occurred (EvolutionSyncSource::m_hasFailed).
@@ -121,7 +97,7 @@ using ScheduleWorld as example:
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is
 used to hide errors inside system libraries which
-are not caused by SyncEvolution or Sync4j C++
+are not caused by SyncEvolution or Funambol C++
 library code. Most likely the suppressions will only
 work on Debian GNU/Linux 3.1 ("Sarge") - feel free
 to add more for your system.
@@ -147,17 +123,10 @@ Building a Release
 - compile binary .tar.gz packages for different Evolution versions;
   done automatically by runtests.py on estamos.de (= Debian 3.0), using different Garnome
   installations, and with special configure options to ensure maximum
-  portability (LDFLAGS=-W,--as-needed --enable-static-cxx)
+  portability (LDFLAGS=-Wl,--as-needed --enable-static-cxx)
 - compile .deb for Maemo
-- add new .debs/.zip to www.estamos.de/download:
-  - distribution "stable"
-  - for ITOS2008 also "chinook"
-- upload new files to sf.net
-- remove files from www.estamos.de so that downloads access sf.net
 - update entries on the web about the release:
-  http://maemo.org/downloads/product/OS2006/syncevolution/
-  http://maemo.org/downloads/product/OS2007/syncevolution/
-  http://www.modmyiphone.com/ (?)
+  http://maemo.org/downloads/product/OS2008/syncevolution/
   http://www.estamos.de/blog/wp-admin
   http://www.estamos.de/projects/SyncEvolution/Roadmap.html
   http://freshmeat.net/projects/syncevolution/
@@ -192,7 +161,7 @@ Compiling for iPhone
     AddressBook framework must be added to iphone-dev/include/install-headers.sh.in
 
   Compile with curl-config in the PATH:
-    PATH=/usr/local/iphone/bin/:$PATH ~/projects/sync4jevolution/configure --host=arm-apple-darwin --with-sync4j-src=/home/patrick/projects/native CXXFLAGS=-O0 --disable-ecal --disable-ebook --enable-addressbook --prefix=/usr
+    PATH=/usr/local/iphone/bin/:$PATH ~/projects/SyncEvolution/trunk/configure --host=arm-apple-darwin --with-funambol-src=/home/patrick/projects/native CXXFLAGS=-O0 --disable-ecal --disable-ebook --enable-addressbook --prefix=/usr
     PATH=/usr/local/iphone/bin/:$PATH make all
 
   Build a package with:
@@ -202,7 +171,7 @@ Compiling for Mac OS X
 ----------------------
 
   Configuring for development:
-  <path>/configure --with-sync4j-src=<path> \
+  <path>/configure --with-funambol-src=<path> \
               --enable-addressbook \
               SYNCEVOLUTION_CXXFLAGS="-Wall -Werror -Wno-unknown-pragmas" \
               LDFLAGS="-framework Addressbook -framework CoreServices" \
