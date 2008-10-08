@@ -29,6 +29,8 @@ CORE_SOURCES  = \
 	VolatileConfigNode.h \
 	VolatileConfigTree.h \
         EvolutionSmartPtr.h \
+	eds_abi_wrapper.h \
+	eds_abi_wrapper.cpp \
 	\
 	SyncEvolutionUtil.cpp \
 	SyncEvolutionUtil.h \

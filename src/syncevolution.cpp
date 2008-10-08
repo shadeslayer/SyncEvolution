@@ -144,6 +144,8 @@ int main( int argc, char **argv )
     free(exe);
 
     try {
+        EDSAbiWrapperInit();
+
         SyncEvolutionCmdline cmdline(argc, argv, cout, cerr);
         if (cmdline.parse() &&
             cmdline.run()) {

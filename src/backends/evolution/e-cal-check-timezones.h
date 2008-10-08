@@ -21,7 +21,8 @@
 #ifndef E_CAL_CHECK_TIMEZONES_H
 #define E_CAL_CHECK_TIMEZONES_H
 
-#include <libical/ical.h>
+#include "eds_abi_wrapper.h"
+/* #include <libical/ical.h> */
 #include <glib.h>
 
 G_BEGIN_DECLS

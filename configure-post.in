@@ -62,6 +62,11 @@ if test "$host" == "arm-apple-darwin"; then
    DEVICE_TYPE=iPhone
 fi
 
+dnl --enable-evolution-compatibility
+if test "$enable_evolution_compatibility" == "yes"; then
+   AC_DEFINE(EVOLUTION_COMPATIBILITY, 1, [avoid hard dependency on Evolution shared objects])
+fi
+
 dnl This string is sent as part of the SyncML DevInf (device
 dnl information) structure to the server. All SyncEvolution platforms
 dnl use "SyncEvolution" as HTTP user agent and "Mod" (model), so the

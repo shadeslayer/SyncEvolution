@@ -25,8 +25,6 @@
 
 #ifdef ENABLE_ECAL
 
-#include <libecal/e-cal.h>
-
 /**
  * Implements access to Evolution calendars, either
  * using the to-do item or events. Change tracking

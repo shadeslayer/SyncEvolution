@@ -25,9 +25,6 @@
 
 #ifdef ENABLE_EBOOK
 
-#include <libebook/e-book.h>
-#include <libebook/e-vcard.h>
-
 #include <set>
 
 /**

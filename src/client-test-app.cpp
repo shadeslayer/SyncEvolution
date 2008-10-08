@@ -473,6 +473,7 @@ public:
         // desktop system with Evolution
         g_type_init();
 #endif
+        EDSAbiWrapperInit();
         testClient.registerTests();
     }
 

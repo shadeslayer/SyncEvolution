@@ -1,3 +1,4 @@
+dnl -*- mode: Autoconf; -*-
 dnl Invoke autogen.sh to produce a configure script.
 
 AC_INIT(src/syncevolution.cpp)
@@ -83,6 +84,11 @@ AC_ARG_ENABLE(static-cxx,
               AS_HELP_STRING([--enable-static-cxx],
                              [build executables which contain libstdc++ instead of requiring suitable libstdc++.so to run]),
               enable_static_cxx="$enableval", enable_static_cxx="no")
+
+AC_ARG_ENABLE(evolution-compatibility,
+              AS_HELP_STRING([--enable-evolution-compatibility],
+                             [build executables which only call Evolution via dlopen/dlsym: this avoids all hard dependencies on EDS shared objects, but might lead to crashes when their ABI changes]),
+              enable_evolution_compatibility="$enableval", enable_evolution_compatibility="no")
 
 # Maemo hacks:
 # - set the (non-standard!) DBUS_DEFAULT_TIMEOUT

@@ -33,14 +33,11 @@ using namespace std;
 
 #include <time.h>
 
-#ifdef HAVE_EDS
-#include <libedataserver/e-source.h>
-#include <libedataserver/e-source-list.h>
-#endif
-
 #include <spds/SyncSource.h>
 #include <spdm/ManagementNode.h>
 #include <base/Log.h>
+
+#include "eds_abi_wrapper.h"
 
 class EvolutionSyncSource;
 
