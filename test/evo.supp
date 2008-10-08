@@ -3096,3 +3096,40 @@
    fun:e_contact_new_from_vcard
    fun:e_book_handle_response
 }
+
+# ==7097== 2,236 (116 direct, 2,120 indirect) bytes in 1 blocks are definitely lost in loss record 16 of 31
+# ==7097==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==7097==    by 0x4455994: g_malloc0 (gmem.c:151)
+# ==7097==    by 0x4398788: giop_send_buffer_use (giop-send-buffer.c:513)
+# ==7097==    by 0x4398AD7: giop_send_buffer_use_request (giop-send-buffer.c:75)
+# ==7097==    by 0x439D60C: orbit_small_marshal (orbit-small.c:324)
+# ==7097==    by 0x439EB37: ORBit_small_invoke_stub (orbit-small.c:646)
+# ==7097==    by 0x439ED7F: ORBit_small_invoke_stub_n (orbit-small.c:575)
+# ==7097==    by 0x43AB671: ORBit_c_stub_invoke (poa.c:2643)
+# ==7097==    by 0x4372C5B: ConfigServer_ping (in /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x435A0C1: gconf_activate_server (in /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x43665D1: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x436733A: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x436758D: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x43697EC: gconf_engine_get_fuller (in /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x4369ABD: gconf_engine_get_entry (in /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x436DD3A: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x436DFEE: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x436E99D: gconf_client_get_bool (in /usr/lib/libgconf-2.so.4.1.0)
+# ==7097==    by 0x4156933: gnome_program_postinit (in /usr/lib/libgnome-2.so.0.1600.0)
+# ==7097==    by 0x4156B64: (within /usr/lib/libgnome-2.so.0.1600.0)
+# ==7097==    by 0x4156E78: gnome_program_init (in /usr/lib/libgnome-2.so.0.1600.0)
+# ==7097==    by 0x804B58D: main (server.c:367)
+{
+   ConfigServer_ping()
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:giop_send_buffer_use
+   fun:giop_send_buffer_use_request
+   fun:orbit_small_marshal
+   fun:ORBit_small_invoke_stub
+   fun:ORBit_small_invoke_stub_n
+   fun:ORBit_c_stub_invoke
+   fun:ConfigServer_ping
+}

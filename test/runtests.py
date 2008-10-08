@@ -324,19 +324,22 @@ class ClientCheckout(CVSCheckout):
                              ":ext:pohly@cvs.forge.objectweb.org:/cvsroot/sync4j",
                              "3x/client-api/native",
                              revision)
+        if not revision:
+            # the directory specified by the base class will never be created
+            self.basedir = ""
 
     def execute(self):
-        # undo patches before upgrading
-        try:
-            os.chdir(self.basedir)
-            context.runCommand("patcher -B")
-        except:
-            pass
-        # checkout/upgrade
-        CVSCheckout.execute(self)
-        #patch again
-        context.runCommand("echo $PATH; which patcher; patcher -A")
-
+        if self.revision:
+            # undo patches before upgrading
+            try:
+                os.chdir(self.basedir)
+                context.runCommand("patcher -B")
+            except:
+                pass
+            # checkout/upgrade
+            CVSCheckout.execute(self)
+            #patch again
+            context.runCommand("echo $PATH; which patcher; patcher -A")
 
 class AutotoolsBuild(Action):
     def __init__(self, name, src, configargs, runner, dependencies):
@@ -380,7 +383,7 @@ class SyncEvolutionTest(Action):
             if context.setupcmd:
                 context.runCommand("%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name))
             basecmd = "%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
-            context.runCommand("make testclean test")
+            context.runCommand("make testclean")
             if self.tests:
                 context.runCommand("%s %s" % (basecmd, " ".join(self.tests)))
             else:
@@ -433,8 +436,8 @@ parser.add_option("", "--syncevo-tag",
                   type="string", dest="syncevotag", default="trunk",
                   help="the tag of SyncEvolution (e.g. tags/syncevolution-0.7, default trunk")
 parser.add_option("", "--client-tag",
-                  type="string", dest="clienttag", default="HEAD",
-                  help="the tag of the client library (default HEAD)")
+                  type="string", dest="clienttag", default="",
+                  help="the tag of the client library (default empty = not checkout out)")
 parser.add_option("", "--configure",
                   type="string", dest="configure", default="",
                   help="additional parameters for configure")
@@ -548,9 +551,13 @@ client = ClientCheckout("client-api", options.clienttag)
 context.add(client)
 sync = SyncEvolutionCheckout("syncevolution", options.syncevotag)
 context.add(sync)
+if options.clienttag:
+    client_source = "--with-funambol-src=%s" % client.basedir
+else:
+    client_source = ""
 compile = SyncEvolutionBuild("compile",
                              sync.basedir,
-                             "%s --with-sync4j-src=%s" % (options.configure, client.basedir),
+                             "%s %s" % (options.configure, client_source),
                              options.shell,
                              [ client.name, sync.name ])
 context.add(compile)
@@ -560,9 +567,13 @@ class SyncEvolutionCross(AutotoolsBuild):
         """cross-compile SyncEvolution using a certain OpenEmbedded build dir:
         host is the platform identifier (e.g. x86_64-linux),
         oedir must contain the 'tmp/cross' and 'tmp/staging/<host>' directories"""
+        if syncclientsrc:
+            client_source = "--with-funambol-src=%s" % syncclientsrc
+        else:
+            client_source = ""
         AutotoolsBuild.__init__(self, "cross-compile", syncevosrc, \
-                                "--host=%s --with-sync4j-src=%s CPPFLAGS=-I%s/tmp/staging/%s/include/ LDFLAGS='-Wl,-rpath-link=%s/tmp/staging/%s/lib/ -Wl,--allow-shlib-undefined'" % \
-                                ( host, syncclientsrc, oedir, host, oedir, host ), \
+                                "--host=%s %s CPPFLAGS=-I%s/tmp/staging/%s/include/ LDFLAGS='-Wl,-rpath-link=%s/tmp/staging/%s/lib/ -Wl,--allow-shlib-undefined'" % \
+                                ( host, client_source, oedir, host, oedir, host ), \
                                 "PKG_CONFIG_PATH=%s/tmp/staging/%s/share/pkgconfig PATH=%s/tmp/cross/bin:$PATH" % \
                                 ( oedir, host, oedir ),
                                 dependencies)
