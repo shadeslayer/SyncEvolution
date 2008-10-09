@@ -3,8 +3,8 @@ dnl Invoke autogen.sh to produce a configure script.
 
 AC_INIT(src/syncevolution.cpp)
 AM_INIT_AUTOMAKE(syncevolution, 0.8-trunk)
-define([FUNAMBOLSRC_REPO], [https://core.forge.funambol.org/svn/core/tags/r_tested/3x/client-api/native])
-define([FUNAMBOLSRC_REVISION], [28731])
+define([FUNAMBOLSRC_REPO], [git://github.com/pohly/funambol-cpp-client-api.git])
+define([FUNAMBOLSRC_REVISION], [r_v70ga_syncevolution])
 AM_CONFIG_HEADER(config.h)
 AC_LIBTOOL_DLOPEN
 
