@@ -4,7 +4,7 @@ dnl Invoke autogen.sh to produce a configure script.
 AC_INIT(src/syncevolution.cpp)
 AM_INIT_AUTOMAKE(syncevolution, 0.8-trunk)
 define([FUNAMBOLSRC_REPO], [git://github.com/pohly/funambol-cpp-client-api.git])
-define([FUNAMBOLSRC_REVISION], [r_v70ga_syncevolution])
+define([FUNAMBOLSRC_REVISION], [origin/r_v70ga_syncevolution])
 AM_CONFIG_HEADER(config.h)
 AC_LIBTOOL_DLOPEN
 
@@ -212,7 +212,7 @@ if test ! "$FUNAMBOL"; then
                 ;;
             *git*)
                 if test -d $CLIENT_API_SRC ; then
-                    ( set -x; cd $CLIENT_API_SRC && git pull ) || AC_ERROR([updating from $FUNAMBOLSRC failed])
+                    ( set -x; cd $CLIENT_API_SRC && git fetch "$FUNAMBOLSRC" ) || AC_ERROR([updating from $FUNAMBOLSRC failed])
                 else
                     ( set -x; git clone "$FUNAMBOLSRC" $CLIENT_API_SRC ) || AC_ERROR([checking out $FUNAMBOLSRC failed])
                 fi

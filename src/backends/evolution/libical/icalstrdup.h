@@ -30,17 +30,28 @@ extern "C" {
 #pragma }
 #endif /* __cplusplus */
 
-#ifndef LIBICAL_MEMFIXES
+#if !defined(LIBICAL_MEMFIXES) || defined(EVOLUTION_COMPATIBILITY)
 /**
  * The patch in http://bugzilla.gnome.org/show_bug.cgi?id=516408
  * changes the ownership of strings returned by some libical and libecal
  * functions: previously, the memory was owned by the library.
  * After the patch the caller owns the copied string and must free it.
  *
+ * The upstream SourceForge libical has incorporated the patch, but
+ * without changing the semantic of the existing calls. Instead they
+ * added _r variants which return memory that the caller must free.
+ * As soon as Evolution switches to upstream libical (planned for 2.25),
+ * it probably will have to bump the libecal version because the API
+ * is reverted so that binaries which free strings will crash.
+ * When EVOLUTION_COMPATIBILITY is defined, SyncEvolution deals with
+ * this by always checking at runtime what the memory handling is.
+ *
  * This utility function ensures that the caller *always* owns the
- * returned string. When compiled against a current Evolution Dataserver,
- * the function becomes a NOP macro. Otherwise the function duplicates
- * the string; it handles NULL by passing it through.
+ * returned string. When compiled against a current Evolution
+ * Dataserver, the function becomes a NOP macro, unless compatibility
+ * mode is on (in which case the current binary might later run with
+ * an older Evolution release!). If not a NOP macro, then the function
+ * duplicates the string; it handles NULL by passing it through.
  *
  * When compiled against an old Evolution Dataserver, then a runtime
  * check can be enabled to to determine whether the string needs to be

@@ -19,7 +19,7 @@
 
 #include "libical/icalstrdup.h"
 
-#ifndef LIBICAL_MEMFIXES
+#if !defined(LIBICAL_MEMFIXES) || defined(EVOLUTION_COMPATIBILITY)
 
 #if defined(HAVE_CONFIG_H)
 # include <config.h>
