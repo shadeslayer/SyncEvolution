@@ -92,6 +92,14 @@ class TrackingSyncSource : public EvolutionSyncSource
     /**
      * fills the complete mapping from UID to revision string of all
      * currently existing items
+     *
+     * Usually both UID and revision string must be non-empty. The
+     * only exception is a refresh-from-client: in that case the
+     * revision string may be empty. The implementor of this call
+     * cannot know whether empty strings are allowed, therefore it
+     * should not throw errors when it cannot create a non-empty
+     * string. The caller of this method will detect situations where
+     * a non-empty string is necessary and none was provided.
      */
     virtual void listAllItems(RevisionMap_t &revisions) = 0;
 
@@ -130,7 +138,9 @@ class TrackingSyncSource : public EvolutionSyncSource
      * This error should be reported instead of covering it up by
      * (re)creating the item.
      *
-     * Errors are signalled by throwing an exception. 
+     * Errors are signalled by throwing an exception. Returning empty
+     * strings in the result is an error which triggers an "item could
+     * not be stored" error.
      *
      * @param uid      identifies the item to be modified, empty for creating
      * @param item     contains the new content of the item and its MIME type

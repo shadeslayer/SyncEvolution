@@ -726,8 +726,12 @@ string EvolutionCalendarSource::getItemModTime(ECalComponent *ecomp)
 {
     struct icaltimetype *modTime;
     e_cal_component_get_last_modified(ecomp, &modTime);
-    eptr<struct icaltimetype, struct icaltimetype, EvolutionUnrefFree<struct icaltimetype> > modTimePtr(modTime, "item without modification time");
-    return icalTime2Str(*modTimePtr);
+    eptr<struct icaltimetype, struct icaltimetype, EvolutionUnrefFree<struct icaltimetype> > modTimePtr(modTime);
+    if (!modTimePtr) {
+        return "";
+    } else {
+        return icalTime2Str(*modTimePtr);
+    }
 }
 
 string EvolutionCalendarSource::getItemModTime(const ItemID &id)
@@ -735,11 +739,11 @@ string EvolutionCalendarSource::getItemModTime(const ItemID &id)
     eptr<icalcomponent> icomp(retrieveItem(id));
     icalproperty *lastModified = icalcomponent_get_first_property(icomp, ICAL_LASTMODIFIED_PROPERTY);
     if (!lastModified) {
-        throwError("getItemModTime(): item without modification time");
+        return "";
+    } else {
+        struct icaltimetype modTime = icalproperty_get_lastmodified(lastModified);
+        return icalTime2Str(modTime);
     }
-    struct icaltimetype modTime = icalproperty_get_lastmodified(lastModified);
-    return icalTime2Str(modTime);
-
 }
 
 string EvolutionCalendarSource::icalTime2Str(const icaltimetype &tt)

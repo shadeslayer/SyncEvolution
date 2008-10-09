@@ -53,6 +53,18 @@ void TrackingSyncSource::beginSyncThrow(bool needAll,
         const string &uid = mapping.first;
         const string &revision = mapping.second;
 
+        // uid must always be non-empty whereas
+        // revision may be empty when doing refresh-from-client
+        // syncs; refresh-from-client cannot be distinguished
+        // from slow syncs, so allow slow syncs, too
+        if (uid.empty()) {
+            throwError("could not read UID for an item");
+        }
+        bool fromClient = needAll && !needPartial && !deleteLocal;
+        if (!fromClient && revision.empty()) {
+            throwError(string("could not read revision identifier for item ") + uid + ": only refresh-from-client synchronization is supported");
+        }
+
         if (deleteLocal) {
             deleteItem(uid);
         } else {
@@ -132,6 +144,9 @@ int TrackingSyncSource::addItemThrow(SyncItem& item)
 {
     InsertItemResult res = insertItem("", item);
     item.setKey(res.m_uid.c_str());
+    if (res.m_uid.empty() || res.m_revision.empty()) {
+        throwError("could not add item");
+    }
     m_trackingNode->setProperty(res.m_uid, res.m_revision);
     return res.m_merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
 }
@@ -144,6 +159,9 @@ int TrackingSyncSource::updateItemThrow(SyncItem& item)
         m_trackingNode->removeProperty(uid);
     }
     item.setKey(res.m_uid.c_str());
+    if (res.m_uid.empty() || res.m_revision.empty()) {
+        throwError("could not update item");
+    }
     m_trackingNode->setProperty(res.m_uid, res.m_revision);
     return res.m_merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
 }
