@@ -323,7 +323,7 @@ Change the password for a configuration:
 
 Set up another configuration for scheduleworld under a different name:
   $ syncevolution --configure \
-                  --sync-property user=joe \
+                  --sync-property username=joe \
                   --sync-property password=foo \
                   --template scheduleworld \
                   scheduleworld_joe
