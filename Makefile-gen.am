@@ -47,12 +47,15 @@ PKGNAME=syncevolution$(patsubst %,-%,$(BINSUFFIX))
 
 # This is a list of packages (potentially) provided on estamos.de.
 # The current package conflicts with any of them, but not itself.
-PKGS = $(addprefix syncevolution-evolution-, 2.0 2.2 2.4 2.6 2.8 2.10 2.12 2.14 2.16 2.20 2.22 2.24 2.26 2.28)
+PKGS = $(addprefix syncevolution-evolution-, 2.6 2.8 2.12)
 
 # When calling checkinstall we cannot install into /tmp
 # because any file created there will be excluded: that makes
 # sense, because "make install" might create temporary files
 # there. The current directory might be in /tmp, so use $HOME.
+#
+# --replaces is necessary for migrating from syncevolution-evolution-<evover>
+# to syncevolution-evolution (as per http://wiki.debian.org/Renaming_a_Package)
 deb rpm : all doc-pak description-pak
 	tmpdir=`mktemp -d $$HOME/syncevolution.XXXXXXXXXX` && \
 	trap "rm -rf $$tmpdir" EXIT && \
@@ -66,7 +69,8 @@ deb rpm : all doc-pak description-pak
 		--pkgrelease=$(RELEASE) \
 		--pkgname=$(PKGNAME) \
 		--provides=syncevolution \
-		--conflicts="`echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */, /g'`" \
+	        --replaces="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'`'" \
+		--conflicts="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'`'" \
 		--maintainer='Patrick Ohly <patrick.ohly@gmx.de>' \
 		--pkgsource='http://sourceforge.net/project/showfiles.php?group_id=146288' \
 		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
