@@ -793,6 +793,8 @@ int EvolutionSyncClient::sync()
         LOG.LOG_DEVELOPER("SyncML server account: %s", getUsername());
         LOG.LOG_DEVELOPER("client: SyncEvolution %s for %s",
                           getSwv(), getDevType());
+        LOG.LOG_DEVELOPER("device ID: %s", getDevID());
+        LOG.LOG_DEVELOPER("%s", EDSAbiWrapperDebug());
 
         // instantiate backends, but do not open them yet
         initSources(sourceList);

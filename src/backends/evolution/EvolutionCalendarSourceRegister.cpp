@@ -26,34 +26,30 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
     bool isMe;
+    bool enabled;
+
+#ifdef ENABLE_ECAL
+    enabled = e_cal_new && e_source_group_peek_sources;
+#else
+    enabled = false;
+#endif
 
     isMe = sourceType.first == "Evolution Task List";
     if (isMe || sourceType.first == "todo") {
         if (sourceType.second == "" || sourceType.second == "text/calendar") {
-#ifdef ENABLE_ECAL
-            return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, params);
-#else
-            return isMe ? RegisterSyncSource::InactiveSource : NULL;
-#endif
-        } else {
-            return NULL;
+            return enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, params) :
+                isMe ? RegisterSyncSource::InactiveSource : NULL;
         }
     }
 
     isMe = sourceType.first == "Evolution Memos";
     if (isMe || sourceType.first == "memo") {
         if (sourceType.second == "" || sourceType.second == "text/plain") {
-#ifdef ENABLE_ECAL
-            return new EvolutionMemoSource(params);
-#else
-            return isMe ? RegisterSyncSource::InactiveSource : NULL;
-#endif
+            return enabled ? new EvolutionMemoSource(params) :
+                isMe ? RegisterSyncSource::InactiveSource : NULL;
         } else if (sourceType.second == "text/calendar") {
-#ifdef ENABLE_ECAL
-            return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, params);
-#else
-            return isMe ? RegisterSyncSource::InactiveSource : NULL;
-#endif
+            return enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, params) :
+                isMe ? RegisterSyncSource::InactiveSource : NULL;
         } else {
             return NULL;
         }
@@ -63,11 +59,8 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     if (isMe || sourceType.first == "calendar") {
         if (sourceType.second == "" || sourceType.second == "text/calendar" ||
             sourceType.second == "text/x-vcalendar" /* this is for backwards compatibility with broken configs */ ) {
-#ifdef ENABLE_ECAL
-            return new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, params);
-#else
-            return isMe ? RegisterSyncSource::InactiveSource : NULL;
-#endif
+            return enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, params) :
+                isMe ? RegisterSyncSource::InactiveSource : NULL;
         } else {
             return NULL;
         }

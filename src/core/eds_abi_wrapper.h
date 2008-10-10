@@ -54,7 +54,9 @@
 #endif
 #endif
 
-G_BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef EVOLUTION_COMPATIBILITY
 
@@ -263,6 +265,11 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 
 void EDSAbiWrapperInit();
 
-G_END_DECLS
+const char *EDSAbiWrapperInfo();
+const char *EDSAbiWrapperDebug();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INCL_EDS_ABI_WRAPPER */

@@ -23,21 +23,25 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
 {
     pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
     bool isMe = sourceType.first == "Evolution Address Book";
-
-#ifndef ENABLE_EBOOK
-    return isMe ? RegisterSyncSource::InactiveSource : NULL;
-#else
     bool maybeMe = sourceType.first == "addressbook";
+    bool enabled;
+
+#ifdef ENABLE_EBOOK
+    enabled = e_book_new && e_source_group_peek_sources;
+#else
+    enabled = false;
+#endif
     
     if (isMe || maybeMe) {
         if (sourceType.second == "" || sourceType.second == "text/x-vcard") {
-            return new EvolutionContactSource(params, EVC_FORMAT_VCARD_21);
+            return enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_21) :
+                isMe ? RegisterSyncSource::InactiveSource : NULL;
         } else if (sourceType.second == "text/vcard") {
-            return new EvolutionContactSource(params, EVC_FORMAT_VCARD_30);
+            return enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_30) :
+                isMe ? RegisterSyncSource::InactiveSource : NULL;
         }
     }
     return NULL;
-#endif
 }
 
 static RegisterSyncSource registerMe("Evolution Address Book",

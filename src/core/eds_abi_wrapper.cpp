@@ -31,6 +31,8 @@ struct EDSAbiWrapper EDSAbiWrapperSingleton;
 
 namespace {
 
+std::string lookupDebug, lookupInfo;
+
 /**
  * Opens a <basename>.<num> shared object with <num> coming from a
  * range of known compatible versions, falling back to even more
@@ -38,6 +40,9 @@ namespace {
  * function pointers.
  *
  * Either all or none of the function pointers are set.
+ *
+ * End user information and debug information are added to
+ * lookupDebug and lookupInfo.
  *
  * @param libname   full name including .so suffix; .<num> gets appended
  * @param minver    first known compatible version
@@ -47,6 +52,7 @@ namespace {
 void *findSymbols(const char *libname, int minver, int maxver, ... /* function pointer address, name, ..., (void *)0 */)
 {
     void *dlhandle = NULL;
+    std::ostringstream debug, info;
 
     if (!dlhandle) {
         for (int ver = maxver;
@@ -54,62 +60,68 @@ void *findSymbols(const char *libname, int minver, int maxver, ... /* function p
              --ver) {
             std::ostringstream soname;
             soname << libname << "." << ver;
-            LOG.debug("%s", soname.str().c_str());
             dlhandle = dlopen(soname.str().c_str(), RTLD_GLOBAL|RTLD_LAZY);
             if (dlhandle) {
-                LOG.debug("using %s", soname.str().c_str());
+                info << "using " << soname.str() << std::endl;
                 break;
             }
         }
+    }
 
-        if (!dlhandle) {
-            for (int ver = maxver + 1;
-                 ver < maxver + 50;
-                 ++ver) {
-                std::ostringstream soname;
-                soname << libname << "." << ver;
-                dlhandle = dlopen(soname.str().c_str(), RTLD_GLOBAL|RTLD_LAZY);
-                if (dlhandle) {
-                    LOG.debug("using %s - might not be compatible!", soname.str().c_str());
-                    break;
-                }
+    if (!dlhandle) {
+        for (int ver = maxver + 1;
+             ver < maxver + 50;
+             ++ver) {
+            std::ostringstream soname;
+            soname << libname << "." << ver;
+            dlhandle = dlopen(soname.str().c_str(), RTLD_GLOBAL|RTLD_LAZY);
+            if (dlhandle) {
+                info << "using " << soname.str() << " - might not be compatible!" << std::endl;
+                break;
             }
         }
-
-        if (!dlhandle) {
-            EvolutionSyncClient::throwError(std::string(libname) + " not found");
-        }
     }
+    
+    if (!dlhandle) {
+        debug << libname << " not found (tried major versions " << minver << " to " << maxver + 49 << ")" << std::endl;
+    } else {
+        bool allfound = true;
 
-    bool allfound = true;
-
-    va_list ap;
-    va_start(ap, maxver);
-    void **funcptr = va_arg(ap, void **);
-    const char *symname = NULL;
-    while (funcptr && allfound) {
-        symname = va_arg(ap, const char *);
-        *funcptr = dlsym(dlhandle, symname);
-        if (!*funcptr) {
-            allfound = false;
-        }
-        funcptr = va_arg(ap, void **);
-    }
-    va_end(ap);
-
-    if (!allfound) {
+        va_list ap;
         va_start(ap, maxver);
-        funcptr = va_arg(ap, void **);
-        while (funcptr) {
-            va_arg(ap, const char *);
-            *funcptr = NULL;
+        void **funcptr = va_arg(ap, void **);
+        const char *symname = NULL;
+        while (funcptr && allfound) {
+            symname = va_arg(ap, const char *);
+            *funcptr = dlsym(dlhandle, symname);
+            if (!*funcptr) {
+                debug << symname << " not found" << std::endl;
+                allfound = false;
+            }
             funcptr = va_arg(ap, void **);
         }
         va_end(ap);
 
-        EvolutionSyncClient::throwError(std::string(symname) + " not found in " + libname);
+        if (!allfound) {
+            /* unusable, clear symbols and free handle */
+            va_start(ap, maxver);
+            funcptr = va_arg(ap, void **);
+            while (funcptr) {
+                va_arg(ap, const char *);
+                *funcptr = NULL;
+                funcptr = va_arg(ap, void **);
+            }
+            va_end(ap);
+
+            info << libname << " unusable, required function no longer available" << std::endl;
+            dlclose(dlhandle);
+            dlhandle = NULL;
+        }
     }
 
+    lookupInfo += info.str();
+    lookupDebug += info.str();
+    lookupDebug += debug.str();
     return dlhandle;
 }
 
@@ -233,3 +245,6 @@ extern "C" void EDSAbiWrapperInit()
 # endif // ENABLE_ECAL
 #endif // EVOLUTION_COMPATIBILITY
 }
+
+extern "C" const char *EDSAbiWrapperInfo() { return lookupInfo.c_str(); }
+extern "C" const char *EDSAbiWrapperDebug() { return lookupDebug.c_str(); }
