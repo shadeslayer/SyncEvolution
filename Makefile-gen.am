@@ -69,8 +69,8 @@ deb rpm : all doc-pak description-pak
 		--pkgrelease=$(RELEASE) \
 		--pkgname=$(PKGNAME) \
 		--provides=syncevolution \
-	        --replaces="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'`'" \
-		--conflicts="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'`'" \
+	        --replaces="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'` (<< 1:0.8.1-2)'" \
+		--conflicts="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'` (<< 1:0.8.1-2)'" \
 		--maintainer='Patrick Ohly <patrick.ohly@gmx.de>' \
 		--pkgsource='http://sourceforge.net/project/showfiles.php?group_id=146288' \
 		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
