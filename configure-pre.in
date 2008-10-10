@@ -214,10 +214,10 @@ if test ! "$FUNAMBOL"; then
                 if test -d $CLIENT_API_SRC ; then
                     ( set -x; cd $CLIENT_API_SRC && git fetch "$FUNAMBOLSRC" ) || AC_ERROR([updating from $FUNAMBOLSRC failed])
                 else
-                    ( set -x; git clone "$FUNAMBOLSRC" $CLIENT_API_SRC ) || AC_ERROR([checking out $FUNAMBOLSRC failed])
+                    ( set -x; git clone "$FUNAMBOLSRC" $CLIENT_API_SRC ) || AC_ERROR([cloning $FUNAMBOLSRC failed])
                 fi
                 if test "$REVISION"; then
-                    ( set -x; cd $CLIENT_API_SRC && git checkout "$REVISION" )
+                    ( set -x; cd $CLIENT_API_SRC && git checkout "$REVISION" ) || AC_ERROR([checking out $FUNAMBOLSRC failed])
                 fi
                 ;;
         esac
