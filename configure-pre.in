@@ -2,7 +2,7 @@ dnl -*- mode: Autoconf; -*-
 dnl Invoke autogen.sh to produce a configure script.
 
 AC_INIT(src/syncevolution.cpp)
-AM_INIT_AUTOMAKE(syncevolution, 0.8-trunk)
+AM_INIT_AUTOMAKE(syncevolution, 0.8+0.8.1)
 define([FUNAMBOLSRC_REPO], [git://github.com/pohly/funambol-cpp-client-api.git])
 define([FUNAMBOLSRC_REVISION], [origin/r_v70ga_syncevolution])
 AM_CONFIG_HEADER(config.h)
