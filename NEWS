@@ -1,3 +1,35 @@
+SyncEvolution 0.8 -> 0.8.1, 11.10.2008
+--------------------------------------
+C++ client library: 7.0 plus some patches, see github
+repository referenced in configure script.
+
+A minor bug fix release, updating not really necessary.
+The binary packages for Evolution are built now so that
+one package works for all compatible Evolution releases,
+including the new Evolution 2.24.
+
+* Evolution calendar: regression in 0.8: one-way sync of virtual
+  birthday calendar (#2095433). "refresh-from-client" works again
+  for the birthday calendar. Other modes are not supported.
+  In contrast to previous releases SyncEvolution now does some
+  sanity checks that the sync mode is right.
+* Mac OS X: removing old logdirs failed (#2087389). Fixed.
+* SyncML client library: "Expect: 100-continue" header
+  resulted in 417 error with certain proxies (#2101015).
+  Now this header is always disabled; it doesn't make
+  much sense with SyncML anyway.
+* The development of the Funambol C++ client library is now
+  tracked in a git repository on github.com. Modifications
+  and tags for SyncEvolution are checked in there. The
+  configure script checks out the right sources from there
+  automatically; can be controlled via --with-funambol-src
+  parameter.
+* Evolution desktop: the version of the used Evolution libraries
+  is included in the "--version" output and log files.
+* Cleaned up README. Kudos to Martin Wetterstedt for pointing
+  out mistakes in the README and the web site.
+
+
 SyncEvolution 0.7 -> 0.8, 29.08.2008
 ------------------------------------
 C++ client library: 7.0 plus compatibility patch for Synthesis

@@ -1,3 +1,163 @@
+2008-10-11 09:50  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure-pre.in: bumped version to 0.8.1 (SyncEvolution and API)
+
+2008-10-11 09:44  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/backends/addressbook/AddressBookSource.cpp,
+	  src/backends/evolution/EvolutionCalendarSourceRegister.cpp,
+	  src/backends/evolution/EvolutionContactSourceRegister.cpp,
+	  src/core/eds_abi_wrapper.cpp, src/syncevolution.cpp: fixed
+	  compile errors/warnings on Maemo/Mac OS X
+
+2008-10-11 09:40  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/core/SyncEvolutionUtil.cpp: #2087389: fixed: Mac OS X:
+	  removing old logdirs fails
+	  
+	  Use lstat() to check for directory instead of relying on EISDIR.
+
+2008-10-11 09:28  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: cleaned up README
+
+2008-10-11 08:25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure-pre.in: fixed git checkout with old git: it doesn't add
+	  'origin' prefix
+
+2008-10-10 21:57  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/backends/evolution/EvolutionCalendarSourceRegister.cpp,
+	  src/backends/evolution/EvolutionContactSourceRegister.cpp,
+	  src/core/EvolutionSyncClient.cpp,
+	  src/core/SyncEvolutionCmdline.cpp, src/core/eds_abi_wrapper.cpp,
+	  src/core/eds_abi_wrapper.h: --enable-evolution-compatibility: run
+	  with reduced functionality when functions are missing
+	  
+	  Availability is logged in the "syncevolution --version" output
+	  and at the start of the log.
+	  
+	  Also log device ID.
+
+2008-10-10 20:45  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile-gen.am: fixed unversioned replaces/conflicts in package
+
+2008-10-10 20:44  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure-pre.in: avoid hyphen in version number
+
+2008-10-10 18:51  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure-pre.in: fixed missing git checkout in configure
+
+2008-10-09 20:51  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* src/backends/evolution/EvolutionCalendarSource.cpp,
+	  src/backends/evolution/EvolutionCalendarSource.h,
+	  src/core/TrackingSyncSource.cpp, src/core/TrackingSyncSource.h:
+	  SF #2095433: regression in 0.8: one-way sync of virtual birthday
+	  calendar
+	  
+	  "refresh-from-client" works again for the birthday calendar.
+	  
+	  In contrast to previous releases SyncEvolution now does some
+	  sanity checks that the sync mode is right. For all modes other
+	  than "refresh-from-server" and "slow" the following error is
+	  reported:
+	  
+	  22:39:34 [INFO] ical20: sync mode is 'refresh from server'
+	  22:39:34 [ERROR] ical20: could not read revision identifier for
+	  item pas-id-43C0ED3900000001-anniversary-rid: only
+	  refresh-from-client synchronization is supported
+	  
+	  "slow" syncs may or may not work, depending on whether the server
+	  sends back updates. Better don't use it. If the server sends back
+	  items during a slow sync, then the error message is a bit
+	  cryptic:
+	  
+	  22:47:02 [INFO] ical20: eg2fVHx6bZ6VF2MR5TgdHQ==: add 22:47:02
+	  [INFO] ical20: eg2fVHx6bZ6VF2MR5TgdHQ==: exists already, updating
+	  instead 22:47:02 [ERROR] ical20: updating item
+	  eg2fVHx6bZ6VF2MR5TgdHQ==: Unknown error
+
+2008-10-09 19:32  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* Makefile-gen.am: build one deb which replaces the zoo of
+	  evolution-<evover> packages
+
+2008-10-09 19:31  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* README: fixed typo (user instead of username)
+
+2008-10-09 15:55  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure-pre.in, src/backends/evolution/libical/icalstrdup.c,
+	  src/backends/evolution/libical/icalstrdup.h: fixed checking out
+	  origin branch and updating from git
+
+2008-10-09 08:46  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure-pre.in: use Funambol C++ client library from github
+
+2008-10-08 21:30  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure-post.in, configure-pre.in,
+	  src/backends/evolution/EvolutionCalendarSource.h,
+	  src/backends/evolution/EvolutionContactSource.h,
+	  src/backends/evolution/e-cal-check-timezones.h,
+	  src/client-test-app.cpp, src/core/EvolutionSmartPtr.h,
+	  src/core/EvolutionSyncSource.h, src/core/Makefile.am,
+	  src/core/eds_abi_wrapper.cpp, src/core/eds_abi_wrapper.h,
+	  src/syncevolution.cpp: hard dependencies on specific Evolution
+	  libs can be avoided with --enable-evolution-compatibility
+	  
+	  This works by mapping all EDS symbols to pointers initialized via
+	  dlopen/dlsym. Avoids version checks as intented, but might lead
+	  to runtime crashes if the ABI of the required symbols really
+	  changes...
+	  
+	  Currently the binaries refuses to start when any of the EDS libs
+	  is not found. Need to make it work again so that libecal and
+	  libebook are optional (Maemo!).
+
+2008-10-08 20:53  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* test/evo.supp, test/runtests.py: checking out client library is
+	  optional now (done automatically by newer SyncEvolution configure
+	  script)
+
+2008-09-20 08:25  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* configure-pre.in: fixed checking out from SVN
+	  
+	  - checking out deleted tag failed (must use @rev suffix?!) -
+	  default revision should only apply when using default source
+
+2008-09-14 17:52  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING, configure-pre.in, src/Makefile-gen.am: improved handling
+	  of Funambol client library source
+	  
+	  configure checks out the right source automatically. Subversion
+	  and git are supported. When given an existing directory with
+	  sources, out-of-tree compilation is used instead of making a copy
+	  first.
+
+2008-08-29 21:27  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING, configure-pre.in: use libcurl on all platforms
+
+2008-08-29 19:23  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* HACKING, configure-pre.in: version number must go into
+	  configure-pre.in
+
+2008-08-29 19:12  Patrick Ohly <patrick.ohly@gmx.de>
+
+	* ChangeLog, HACKING, NEWS, debian/changelog: version 0.8
+
 2008-08-26 17:45  Patrick Ohly <patrick.ohly@gmx.de>
 
 	* COPYING, src/TestMain.cpp,
