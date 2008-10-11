@@ -91,13 +91,21 @@ void mkdir_p(const string &path)
 
 void rm_r(const string &path)
 {
-    if (!unlink(path.c_str()) ||
-        errno == ENOENT) {
-        return;
+    struct stat buffer;
+    if (lstat(path.c_str(), &buffer)) {
+        if (errno == ENOENT) {
+            return;
+        } else {
+            EvolutionSyncClient::throwError(path, errno);
+        }
     }
 
-    if (errno != EISDIR) {
-        EvolutionSyncClient::throwError(path, errno);
+    if (!S_ISDIR(buffer.st_mode)) {
+        if (!unlink(path.c_str())) {
+            return;
+        } else {
+            EvolutionSyncClient::throwError(path, errno);
+        }
     }
 
     ReadDir dir(path);
