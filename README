@@ -7,7 +7,8 @@ synchronization standard. It supports all of these for GNOME's
 Evolution and contacts for the system address book of the Nokia
 Internet Tablets, Mac OS X and the iPhone. The command-line tool
 'syncevolution' (compiled separately for each of these platforms)
-executes the synchronization.
+executes the synchronization. The project 'Genesis' (available
+separately) provides a graphical user interface.
 
 The items are exchanged in the vCard 2.1/3.0, iCalender 2.0 and
 textual format via the open source Funambol C++ client API library,
@@ -75,10 +76,10 @@ Installation
 
 To install SyncEvolution, just unpack an archive with a precompiled
 binary for your platform in a directory of your choice or install one
-of the packages. Then create a configuration in $HOME/.sync4j/evolution
-as described below under "Configuration". No special environment variables
-are needed, although one might want to add the directory with contains
-the "syncevolution" binary to the shell's PATH variable.
+of the packages. Then create a configuration as described below under
+"Configuration". No special environment variables are needed, although
+one might want to add the directory with contains the "syncevolution"
+binary to the shell's PATH variable.
 
 When a binary packages is not available for the target system
 and/or is not up-to-date, compiling from source can also be used
@@ -134,16 +135,17 @@ synchronization: if the synchronization mode of a source is set to
 will synchronize it in "two-way" mode once.
 
 Progress and error messages are written into a log file that is
-preserved for each synchronization run. Details about that is found
-in the "Automatic Backups and Logging" section below. Immediately
-before quitting SyncEvolution will show all errors or warnings
-encountered and print a summary of how the local data was modified.
-This is done with the "synccompare" utility script described
-in the "Exchanging Data" section.
+preserved for each synchronization run. Details about that is found in
+the "Automatic Backups and Logging" section below. All errors and
+warnings are printed directly to the console in addition to writing
+them into the log file. Before quitting SyncEvolution will print a
+summary of how the local data was modified.  This is done with the
+"synccompare" utility script described in the "Exchanging Data"
+section.
 
-When the "logdir" option is enabled (not the default because a
-persistent directory must be chosen, but highly recommended if one
-has the space!), then the same comparison is also done before the
+When the "logdir" option is enabled (highly recommended if one
+has the space, but not the default because a persistent directory
+must be chosen), then the same comparison is also done before the
 synchronization starts.
 
 In case of a severe error the synchronization run is aborted
@@ -174,7 +176,7 @@ with one source listed in each invocation.
 
 Options can also be overridden for just the current run, without
 changing the configuration. In order to prevent accidentally running a
-sync session when a configuration change was intented, either
+sync session when a configuration change was intended, either
 --configure or --run must be given explicitly if options are specified
 on the command line.
 
@@ -397,9 +399,13 @@ the "evolutionsource".
 
 If an Evolution data source requires authentication, the
 "evolutionuser" and "evolutionpassword" are used as credentials.
-In this case the directory that contains the source's config.txt should
+In this case the directory that contains the source's config.ini should
 only be accessible by the user. Usually these fields can be left
-empty.
+empty. Specifying a single hyphen ("-") as value for a password
+instructs SyncEvolution to ask for the password at runtime. The
+value "${<name of environment variable>}" takes the password from
+the named environment variable. Entering the password manually
+is the most secure method.
 
 ***
 *** Warning: setting evolutionuser/password in cases where it is not
@@ -483,7 +489,7 @@ much Evolution data as possible. The "note" URI and "text/x-journal" type
 can be used to synchronize memos.
 
 SyncEvolution is primarily tested against ScheduleWorld. The
-"scheduleworld" example configuration is ready to be used with these
+"scheduleworld" configuration template is ready to be used with these
 URIs, one only has to fill in the real username and password.
 
 
@@ -498,9 +504,11 @@ for contacts and
   uri = cal
 for calendars. Tasks (aka todos) are not supported directly.
 
-WARNING: up to and including Funambol 6.0 there are known data
+WARNING: up to and including Funambol 7.0 there are known data
 conversion issues for calendars because Evolution uses iCalendar 2.0
-and Funambol vCalendar 1.0.
+and Funambol vCalendar 1.0. See the following blog post for
+details:
+http://www.estamos.de/blog/2008/08/12/a-look-at-funambol-70-the-state-of-the-onion/
 
 
 Exchanging Data
@@ -568,7 +576,7 @@ into the server.
 
 The SyncML server now has to decide how to proceed. If the server
 decides to continue with its own copy and asks to overwrite the
-locally modified copy (the default with Sync4j), SyncEvolution will
+locally modified copy (the default with Funambol), SyncEvolution will
 make a local copy first. This leads to duplicates which have to be
 merged manually on the client side where the conflict
 occurred. Currently there is no support for that inside SyncEvolution:
