@@ -34,10 +34,16 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     
     if (isMe || maybeMe) {
         if (sourceType.second == "" || sourceType.second == "text/x-vcard") {
-            return enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_21) :
+            return
+#ifdef ENABLE_EBOOK
+                enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_21) :
+#endif
                 isMe ? RegisterSyncSource::InactiveSource : NULL;
         } else if (sourceType.second == "text/vcard") {
-            return enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_30) :
+            return
+#ifdef ENABLE_EBOOK
+                enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_30) :
+#endif
                 isMe ? RegisterSyncSource::InactiveSource : NULL;
         }
     }

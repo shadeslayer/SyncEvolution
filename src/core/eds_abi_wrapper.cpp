@@ -25,13 +25,17 @@
 #include <dlfcn.h>
 #include <stdarg.h>
 
+namespace {
+
+std::string lookupDebug, lookupInfo;
+
+}
+
 #ifdef EVOLUTION_COMPATIBILITY
 
 struct EDSAbiWrapper EDSAbiWrapperSingleton;
 
 namespace {
-
-std::string lookupDebug, lookupInfo;
 
 /**
  * Opens a <basename>.<num> shared object with <num> coming from a

@@ -135,6 +135,7 @@ static string CFString2Std(CFStringRef cfstring)
         len *= 2;
     }
     EvolutionSyncClient::throwError("converting CF string failed");
+    return "";
 }
 
 /** converts a string in UTF-8 into a CFString - throws an exception if no valid reference can be generated */
@@ -295,8 +296,7 @@ public:
     /** convert person into vCard 2.1 or 3.0 and store it in string */
     void fromPerson(bool asVCard30) {
         string tmp;
-        const unsigned char *text;
-        
+                
         // VObject is so broken that it neither as a reset nor
         // an assignment operator - no, I didn't write it :-/
         //
@@ -569,7 +569,7 @@ private:
         ref<CFTimeZoneRef> tz(CFTimeZoneCopyDefault());
         CFGregorianDate date = CFAbsoluteTimeGetGregorianDate(CFDateGetAbsoluteTime((CFDateRef)cftype), tz);
         char buffer[40];
-        sprintf(buffer, "%04d-%02d-%02d", date.year, date.month, date.day);
+        sprintf(buffer, "%04d-%02d-%02d", (int)date.year, date.month, date.day);
         m_vobj.addProperty(map.m_vCardProp, buffer);
     }
 
@@ -639,7 +639,6 @@ private:
             return;
         }
         arrayptr<char> buffer(wstrdup(value));
-        char *saveptr, *endptr;
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
         CFStringRef label;
@@ -692,7 +691,6 @@ private:
             return;
         }
         arrayptr<char> buffer(wstrdup(value));
-        char *saveptr, *endptr;
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
         CFStringRef label;
@@ -784,8 +782,8 @@ private:
         ref<CFMutableDictionaryRef> dict(CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
 
         // cannot store PO box and extended address
-        char *pobox = my_strtok_r(buffer, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
-        char *extadr = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
+        /* char *pobox = */ my_strtok_r(buffer, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
+        /* char *extadr = */ my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
 
         char *street = my_strtok_r(NULL, VObject::SEMICOLON_REPLACEMENT, &saveptr, &endptr);
         if (street && *street) {
@@ -875,7 +873,6 @@ private:
             return;
         }
         arrayptr<char> buffer(wstrdup(value));
-        char *saveptr, *endptr;
 
         ref<CFStringRef> cfvalue(Std2CFString(value));
         CFStringRef label;
@@ -1192,8 +1189,8 @@ string AddressBookSource::getModTime(ABRecordRef record)
 
 AddressBookSource::AddressBookSource(const EvolutionSyncSourceParams &params, bool asVCard30) :
     TrackingSyncSource(params),
-    m_asVCard30(asVCard30),
-    m_addressbook(0)
+    m_addressbook(0),
+    m_asVCard30(asVCard30)
 {
 }
 
@@ -1251,7 +1248,7 @@ void AddressBookSource::exportData(ostream &out)
 
     for (CFIndex i = 0; i < CFArrayGetCount(allPersons); i++) {
         ABRecordRef person = (ABRecordRef)CFArrayGetValueAtIndex(allPersons, i);
-        CFStringRef descr = CFCopyDescription(person);
+        // CFStringRef descr = CFCopyDescription(person);
         ref<CFStringRef> cfuid(ABRecordCopyUniqueId(person), "reading UID");
         string uid(CFString2Std(cfuid));
         cxxptr<SyncItem> item(createItem(uid, true), "sync item");

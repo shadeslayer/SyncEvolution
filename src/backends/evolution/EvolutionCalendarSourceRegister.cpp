@@ -37,7 +37,10 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     isMe = sourceType.first == "Evolution Task List";
     if (isMe || sourceType.first == "todo") {
         if (sourceType.second == "" || sourceType.second == "text/calendar") {
-            return enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, params) :
+            return
+#ifdef ENABLE_ECAL
+                enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, params) :
+#endif
                 isMe ? RegisterSyncSource::InactiveSource : NULL;
         }
     }
@@ -45,10 +48,16 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     isMe = sourceType.first == "Evolution Memos";
     if (isMe || sourceType.first == "memo") {
         if (sourceType.second == "" || sourceType.second == "text/plain") {
-            return enabled ? new EvolutionMemoSource(params) :
+            return
+#ifdef ENABLE_ECAL
+                enabled ? new EvolutionMemoSource(params) :
+#endif
                 isMe ? RegisterSyncSource::InactiveSource : NULL;
         } else if (sourceType.second == "text/calendar") {
-            return enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, params) :
+            return
+#ifdef ENABLE_ECAL
+                enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, params) :
+#endif
                 isMe ? RegisterSyncSource::InactiveSource : NULL;
         } else {
             return NULL;
@@ -59,7 +68,10 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     if (isMe || sourceType.first == "calendar") {
         if (sourceType.second == "" || sourceType.second == "text/calendar" ||
             sourceType.second == "text/x-vcalendar" /* this is for backwards compatibility with broken configs */ ) {
-            return enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, params) :
+            return
+#ifdef ENABLE_ECAL
+                enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, params) :
+#endif
                 isMe ? RegisterSyncSource::InactiveSource : NULL;
         } else {
             return NULL;

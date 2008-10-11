@@ -40,6 +40,8 @@ using namespace std;
 
 #include <dlfcn.h>
 
+// really override the symbol, even if redefined by EDSAbiWrapper
+#undef e_contact_new_from_vcard
 extern "C" EContact *e_contact_new_from_vcard(const char *vcard)
 {
     static typeof(e_contact_new_from_vcard) *impl;
