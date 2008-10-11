@@ -4,7 +4,9 @@ dnl Invoke autogen.sh to produce a configure script.
 AC_INIT(src/syncevolution.cpp)
 AM_INIT_AUTOMAKE(syncevolution, 0.8+0.8.1)
 define([FUNAMBOLSRC_REPO], [git://github.com/pohly/funambol-cpp-client-api.git])
-define([FUNAMBOLSRC_REVISION], [origin/r_v70ga_syncevolution])
+dnl Specify git revisions/branches without prefix, i.e., without 'origin'.
+dnl We'll sort that out below.
+define([FUNAMBOLSRC_REVISION], [r_v70ga_syncevolution])
 AM_CONFIG_HEADER(config.h)
 AC_LIBTOOL_DLOPEN
 
@@ -217,7 +219,8 @@ if test ! "$FUNAMBOL"; then
                     ( set -x; git clone "$FUNAMBOLSRC" $CLIENT_API_SRC ) || AC_ERROR([cloning $FUNAMBOLSRC failed])
                 fi
                 if test "$REVISION"; then
-                    ( set -x; cd $CLIENT_API_SRC && git checkout "$REVISION" ) || AC_ERROR([checking out $FUNAMBOLSRC failed])
+                    # git 1.6 adds "origin", 1.4.4.4 doesn't
+                    ( set -x; cd $CLIENT_API_SRC && (git checkout "$REVISION" || git checkout "origin/$REVISION") ) || AC_ERROR([checking out $FUNAMBOLSRC failed])
                 fi
                 ;;
         esac
