@@ -219,8 +219,11 @@ if test ! "$FUNAMBOL"; then
                     ( set -x; git clone "$FUNAMBOLSRC" $CLIENT_API_SRC ) || AC_ERROR([cloning $FUNAMBOLSRC failed])
                 fi
                 if test "$REVISION"; then
-                    # git 1.6 adds "origin", 1.4.4.4 doesn't
-                    ( set -x; cd $CLIENT_API_SRC && (git checkout "$REVISION" || git checkout "origin/$REVISION") ) || AC_ERROR([checking out $FUNAMBOLSRC failed])
+                    # git 1.6 finds tags and branches without explicit prefix, 1.4.4.4 doesn't
+                    ( set -x; cd $CLIENT_API_SRC &&
+                      (git checkout "$REVISION" ||
+                       git checkout "tags/$REVISION" ||
+                       git checkout "origin/$REVISION") ) || AC_ERROR([checking out $FUNAMBOLSRC failed])
                 fi
                 ;;
         esac
