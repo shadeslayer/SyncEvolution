@@ -47,11 +47,13 @@ typedef void (* GDBusDestroyFunction) (void *user_data);
 
 /**
  * GDBusWatchFunction:
+ * @connection: a #DBusConnection
  * @user_data: user data to pass to the function
  *
  * Watch function
  */
-typedef void (* GDBusWatchFunction) (void *user_data);
+typedef void (* GDBusWatchFunction) (DBusConnection *connection,
+							void *user_data);
 
 /**
  * GDBusSignalFunction:

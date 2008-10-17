@@ -46,7 +46,6 @@ typedef struct {
 } WatchData;
 
 typedef struct {
-	DBusConnection *connection;
 	guint id;
 	void *user_data;
 	GDBusWatchFunction function;
@@ -111,10 +110,10 @@ static DBusHandlerResult owner_function(DBusConnection *connection,
 			continue;
 
 		if (watch->connect != NULL && *old == '\0' && *new != '\0')
-			watch->connect(watch->user_data);
+			watch->connect(connection, watch->user_data);
 
 		if (watch->disconn != NULL && *old != '\0' && *new == '\0')
-			watch->disconn(watch->user_data);
+			watch->disconn(connection, watch->user_data);
 	}
 
 	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
@@ -376,13 +375,13 @@ void g_dbus_remove_all_watches(DBusConnection *connection)
 	g_free(data);
 }
 
-static void disconnect_function(void *user_data)
+static void disconnect_function(DBusConnection *connection, void *user_data)
 {
 	DisconnectData *data = user_data;
 
-	data->function(data->user_data);
+	data->function(connection, data->user_data);
 
-	g_dbus_remove_watch(data->connection, data->id);
+	g_dbus_remove_watch(connection, data->id);
 }
 
 static void disconnect_release(void *user_data)
@@ -415,8 +414,6 @@ guint g_dbus_add_disconnect_watch(DBusConnection *connection,
 	data = g_try_new0(DisconnectData, 1);
 	if (data == NULL)
 		return 0;
-
-	data->connection = connection;
 
 	data->user_data = user_data;
 	data->function = function;
