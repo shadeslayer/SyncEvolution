@@ -36,7 +36,7 @@ $(IPHONE_FILENAME) : all
 
 TYPE_deb = -D
 TYPE_rpm = -R
-REQUIRES_deb = --requires="`dpkg-shlibdeps -L$(srcdir)/src/shlibs.local -O src/syncevolution | sed -e 's/[^=]*=//'`"
+REQUIRES_deb = --requires="'$(shell dpkg-shlibdeps -L$(srcdir)/src/shlibs.local -O src/syncevolution | sed -e 's/[^=]*=//')'"
 VERSION_deb = `echo 1:$(VERSION) | perl -p -e 's/(\d+\.\d+)([-a-z0-9]+)/sprintf("%0.1f+$$1$$2", ($$1 - 0.1))/e'`
 VERSION_rpm = `echo $(VERSION) | sed -e s/-/_/g`
 RELEASE = 2
@@ -71,7 +71,7 @@ deb rpm : all doc-pak description-pak
 		--provides=syncevolution \
 	        --replaces="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'` (<< 1:0.8.1-2)'" \
 		--conflicts="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'` (<< 1:0.8.1-2)'" \
-		--maintainer='Patrick Ohly <patrick.ohly@gmx.de>' \
+		--maintainer="'Patrick Ohly <patrick.ohly@gmx.de>'" \
 		--pkgsource='http://sourceforge.net/project/showfiles.php?group_id=146288' \
 		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
 		--pkggroup='gnome' \
