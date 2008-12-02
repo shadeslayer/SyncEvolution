@@ -41,6 +41,7 @@ else
         if  test "x${GLIBFOUND}" = "xyes"; then
             AC_DEFINE(HAVE_GLIB, 1, [glib found])
         fi
+        BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $GLIB_CFLAGS"
 fi
 
 dnl figure out whether we link all code statically or as modules
