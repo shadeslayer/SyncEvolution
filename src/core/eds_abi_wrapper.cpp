@@ -31,6 +31,8 @@ std::string lookupDebug, lookupInfo;
 
 }
 
+int EDSAbiHaveEbook, EDSAbiHaveEcal, EDSAbiHaveEdataserver;
+
 #ifdef EVOLUTION_COMPATIBILITY
 
 struct EDSAbiWrapper EDSAbiWrapperSingleton;
@@ -143,8 +145,18 @@ void *findSymbols(const char *libname, int minver, int maxver, ... /* function p
 
 #endif // EVOLUTION_COMPATIBILITY
 
+extern "C" int EDSAbiHaveEbook, EDSAbiHaveEcal, EDSAbiHaveEdataserver;
+
 extern "C" void EDSAbiWrapperInit()
 {
+    static bool initialized;
+
+    if (initialized) {
+        return;
+    } else {
+        initialized = true;
+    }
+
 #ifdef EVOLUTION_COMPATIBILITY
 # ifdef HAVE_EDS
     edshandle =
@@ -156,6 +168,7 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.e_source_list_peek_groups, "e_source_list_peek_groups",
                 &EDSAbiWrapperSingleton.e_source_peek_name, "e_source_peek_name",
                 (void *)0);
+    EDSAbiHaveEdataserver = EDSAbiWrapperSingleton.e_source_group_peek_sources != 0;
 # endif // HAVE_EDS
 
 # ifdef ENABLE_EBOOK
@@ -186,6 +199,7 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.e_book_remove_contact, "e_book_remove_contact",
                 &EDSAbiWrapperSingleton.e_vcard_to_string, "e_vcard_to_string",
                 (void *)0);
+    EDSAbiHaveEbook = EDSAbiWrapperSingleton.e_book_new != 0;
 # endif // ENABLE_EBOOK
 
 # ifdef ENABLE_ECAL
@@ -246,7 +260,18 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.icaltimezone_new, "icaltimezone_new",
                 &EDSAbiWrapperSingleton.icaltimezone_set_component, "icaltimezone_set_component",
                 (void *)0);
+    EDSAbiHaveEcal = EDSAbiWrapperSingleton.e_cal_new != 0;
 # endif // ENABLE_ECAL
+#else // EVOLUTION_COMPATIBILITY
+# ifdef HAVE_EDS
+    EDSAbiHaveEdataserver = true;
+# endif
+# ifdef ENABLE_EBOOK
+    EDSAbiHaveEbook = true;
+# endif
+# ifdef ENABLE_ECAL
+    EDSAbiHaveEcal = true;
+# endif
 #endif // EVOLUTION_COMPATIBILITY
 }
 

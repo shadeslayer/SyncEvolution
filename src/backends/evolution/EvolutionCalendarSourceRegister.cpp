@@ -28,11 +28,8 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     bool isMe;
     bool enabled;
 
-#ifdef ENABLE_ECAL
-    enabled = e_cal_new && e_source_group_peek_sources;
-#else
-    enabled = false;
-#endif
+    EDSAbiWrapperInit();
+    enabled = EDSAbiHaveEcal && EDSAbiHaveEdataserver;
 
     isMe = sourceType.first == "Evolution Task List";
     if (isMe || sourceType.first == "todo") {

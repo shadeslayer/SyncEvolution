@@ -58,6 +58,9 @@
 extern "C" {
 #endif
 
+/** libebook, libecal, libedataserver available (currently checks for e_book_new/e_cal_new/e_source_group_peek_sources) */
+extern int EDSAbiHaveEbook, EDSAbiHaveEcal, EDSAbiHaveEdataserver;
+
 #ifdef EVOLUTION_COMPATIBILITY
 
 /**
@@ -263,6 +266,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 
 #endif /* EVOLUTION_COMPATIBILITY */
 
+/** initialize pointers to EDS functions, if necessary; can be called multiple times */
 void EDSAbiWrapperInit();
 
 const char *EDSAbiWrapperInfo();

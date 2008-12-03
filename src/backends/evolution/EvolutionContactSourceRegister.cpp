@@ -26,11 +26,8 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     bool maybeMe = sourceType.first == "addressbook";
     bool enabled;
 
-#ifdef ENABLE_EBOOK
-    enabled = e_book_new && e_source_group_peek_sources;
-#else
-    enabled = false;
-#endif
+    EDSAbiWrapperInit();
+    enabled = EDSAbiHaveEbook && EDSAbiHaveEdataserver;
     
     if (isMe || maybeMe) {
         if (sourceType.second == "" || sourceType.second == "text/x-vcard") {
