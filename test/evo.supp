@@ -3133,3 +3133,39 @@
    fun:ORBit_c_stub_invoke
    fun:ConfigServer_ping
 }
+
+# ==24366== 2,236 (116 direct, 2,120 indirect) bytes in 1 blocks are definitely lost in loss record 13 of 26
+# ==24366==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
+# ==24366==    by 0x45CC994: g_malloc0 (gmem.c:151)
+# ==24366==    by 0x4510788: giop_send_buffer_use (giop-send-buffer.c:513)
+# ==24366==    by 0x4510AD7: giop_send_buffer_use_request (giop-send-buffer.c:75)
+# ==24366==    by 0x451560C: orbit_small_marshal (orbit-small.c:324)
+# ==24366==    by 0x4516B37: ORBit_small_invoke_stub (orbit-small.c:646)
+# ==24366==    by 0x4516D7F: ORBit_small_invoke_stub_n (orbit-small.c:575)
+# ==24366==    by 0x4523671: ORBit_c_stub_invoke (poa.c:2643)
+# ==24366==    by 0x44EAD61: ConfigServer_add_client (in /usr/lib/libgconf-2.so.4.1.0)
+# ==24366==    by 0x44DE618: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==24366==    by 0x44DF33A: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==24366==    by 0x44DF58D: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==24366==    by 0x44E17EC: gconf_engine_get_fuller (in /usr/lib/libgconf-2.so.4.1.0)
+# ==24366==    by 0x44E1ABD: gconf_engine_get_entry (in /usr/lib/libgconf-2.so.4.1.0)
+# ==24366==    by 0x44E5D3A: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==24366==    by 0x44E5FEE: (within /usr/lib/libgconf-2.so.4.1.0)
+# ==24366==    by 0x44E699D: gconf_client_get_bool (in /usr/lib/libgconf-2.so.4.1.0)
+# ==24366==    by 0x422D933: gnome_program_postinit (in /usr/lib/libgnome-2.so.0.1600.0)
+# ==24366==    by 0x422DB64: (within /usr/lib/libgnome-2.so.0.1600.0)
+# ==24366==    by 0x422DE78: gnome_program_init (in /usr/lib/libgnome-2.so.0.1600.0)
+# ==24366==    by 0x804B56D: main (server.c:366)
+{
+   ConfigServer_add_client
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:giop_send_buffer_use
+   fun:giop_send_buffer_use_request
+   fun:orbit_small_marshal
+   fun:ORBit_small_invoke_stub
+   fun:ORBit_small_invoke_stub_n
+   fun:ORBit_c_stub_invoke
+   fun:ConfigServer_add_client
+}
