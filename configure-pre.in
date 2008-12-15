@@ -6,7 +6,7 @@ AM_INIT_AUTOMAKE(syncevolution, 0.8.1)
 define([FUNAMBOLSRC_REPO], [git://github.com/pohly/funambol-cpp-client-api.git])
 dnl Specify git revisions/branches without prefix, i.e., without 'origin'.
 dnl We'll sort that out below.
-define([FUNAMBOLSRC_REVISION], [syncevolution-0.8.1])
+define([FUNAMBOLSRC_REVISION], [syncevolution-0.8.1a])
 AM_CONFIG_HEADER(config.h)
 AC_LIBTOOL_DLOPEN
 
