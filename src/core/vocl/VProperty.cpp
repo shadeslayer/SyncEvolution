@@ -25,7 +25,7 @@
 
 namespace vocl {
 
-VProperty::VProperty(wchar_t* propname, wchar_t* propvalue) {
+VProperty::VProperty(const wchar_t* propname, const wchar_t* propvalue) {
     
     name = (propname) ? wstrdup(propname) : NULL;
     value = (propvalue) ? wstrdup(propvalue) : NULL;	
@@ -97,7 +97,7 @@ void VProperty::addParameter (const wchar_t* paramName, const wchar_t* paramValu
     }
 }
 
-void VProperty::removeParameter(wchar_t* paramName) {
+void VProperty::removeParameter(const wchar_t* paramName) {
     
     if (parameters != NULL) {
         for (int i=0; i<parameters->size(); i++){
@@ -115,7 +115,7 @@ void VProperty::removeParameter(int index) {
     parameters->removeElementAt(index);
 }
    
-bool VProperty::containsParameter(wchar_t* paramName) {
+bool VProperty::containsParameter(const wchar_t* paramName) {
     
     if (parameters != NULL) {
         for (int i=0; i<parameters->size(); i++){
@@ -129,7 +129,7 @@ bool VProperty::containsParameter(wchar_t* paramName) {
 
     return false;
 }
-wchar_t* VProperty::getParameterValue(wchar_t* paramName) {
+wchar_t* VProperty::getParameterValue(const wchar_t* paramName) {
     
     if (parameters != NULL) {
 	    for (int i=0; i<parameters->size(); i++) {
@@ -222,7 +222,7 @@ wchar_t* VProperty::getParameter(int index){
     return (wchar_t *)parameter->getKey();
 }
 
-bool VProperty::equalsEncoding(wchar_t* encoding) {
+bool VProperty::equalsEncoding(const wchar_t* encoding) {
 
     if ((encoding != NULL) && ((containsParameter(TEXT("ENCODING")) && 
 		!wcscmp(getParameterValue(TEXT("ENCODING")),encoding)) || 
@@ -266,7 +266,7 @@ wchar_t* VProperty::getPropComponent(int i) {
         return NULL;
 }
 
-bool VProperty::isType(wchar_t* type) {
+bool VProperty::isType(const wchar_t* type) {
     if(containsParameter(type))
         return true;
 

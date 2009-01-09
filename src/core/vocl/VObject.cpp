@@ -85,7 +85,7 @@ bool VObject::removeProperty(int index) {
     return true;
 }
 
-void VObject::removeProperty(wchar_t* propName) {
+void VObject::removeProperty(const wchar_t* propName) {
     for (int i=0; i<properties->size(); i++) {
         VProperty *property; 
         property = (VProperty* )properties->get(i);
@@ -96,7 +96,7 @@ void VObject::removeProperty(wchar_t* propName) {
     }
 }
 
-bool VObject::containsProperty(wchar_t* propName) {
+bool VObject::containsProperty(const wchar_t* propName) {
     for (int i=0; i<properties->size(); i++) {
         VProperty *property; 
         property = (VProperty* )properties->get(i);
@@ -210,7 +210,7 @@ void VObject::addFirstProperty(VProperty* property) {
     properties->add(0,(ArrayElement&)*property);
 }
 
-void VObject::removeAllProperies(wchar_t* propName) {
+void VObject::removeAllProperies(const wchar_t* propName) {
     for(int i = 0, m = propertiesCount(); i < m ; i++)
         if(!wcscmp(getProperty(i)->getName(), propName)) {
             removeProperty(i);

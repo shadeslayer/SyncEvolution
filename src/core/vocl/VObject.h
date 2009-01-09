@@ -23,14 +23,14 @@ public:
     char* getVersion();
     char* getProdID();
     void addProperty(VProperty* property);
-    void addProperty(const char *name, const char *value) { VProperty vprop((char *)name, (char *)value); addProperty(&vprop); }
+    void addProperty(const char *name, const char *value) { VProperty vprop(name, value); addProperty(&vprop); }
     void addFirstProperty(VProperty* property);
     void insertProperty(VProperty* property);
     bool removeProperty(int index);
-    void removeProperty(char* propName);
-    void removeAllProperies(char* propName);
+    void removeProperty(const char* propName);
+    void removeAllProperies(const char* propName);
     //removes all properties having name - propName;
-    bool containsProperty(char* propName);
+    bool containsProperty(const char* propName);
     int propertiesCount();
     VProperty* getProperty(int index);
     VProperty* getProperty(const char* propName);

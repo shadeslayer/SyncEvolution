@@ -39,7 +39,7 @@ private:
 
  public:       
 	
-    VProperty(char* propName , char* propValue  = NULL);
+    VProperty(const char* propName , const char* propValue  = NULL);
     ~VProperty();
     ArrayElement* clone();
     void setName (const char* name);
@@ -47,20 +47,20 @@ private:
     char* getName(char* buf = NULL, int size = -1);
     char* getValue(char* buf = NULL, int size = -1);
     void addParameter(const char* paramName, const char* paramValue);
-    void removeParameter(char* paramName);
+    void removeParameter(const char* paramName);
     void removeParameter(int index);
-    bool containsParameter(char* paramName);
+    bool containsParameter(const char* paramName);
     // Warning: the name does not always uniquely identify
     // the parameter, some of them may occur multiple times.
     // Use getParameterValue(int index) to get the value which
     // corresponds to a specific parameter.
-    char* getParameterValue(char* paramName);
+    char* getParameterValue(const char* paramName);
     char* getParameterValue(int index);
     char* getParameter(int index);
     int parameterCount();
-    bool equalsEncoding(char* encoding);
+    bool equalsEncoding(const char* encoding);
     char* getPropComponent(int i);
-    bool isType(char* type);
+    bool isType(const char* type);
     char* toString();
 
  };
