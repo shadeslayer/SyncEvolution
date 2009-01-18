@@ -574,6 +574,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     ESource *findSource( ESourceList *list, const string &id );
 #endif
 
+ public:
 #ifdef HAVE_EDS
     /**
      * throw an exception after an operation failed and
@@ -610,6 +611,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      */
     void throwError(const string &failure);
 
+ protected:
     const string m_changeId;
 
     class Items : public set<string> {

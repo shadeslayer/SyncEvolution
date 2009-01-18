@@ -1,7 +1,7 @@
 BACKENDS = @BACKENDS@
 SUBDIRS = core $(BACKENDS)
 
-AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) @BACKEND_CPPFLAGS@ @FUNAMBOL_CFLAGS@
+AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) @BACKEND_CPPFLAGS@ @FUNAMBOL_CFLAGS@ $(GLIB_CFLAGS)
 
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library

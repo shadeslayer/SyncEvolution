@@ -7,6 +7,7 @@
 #include "SyncEvolutionUtil.h"
 
 #include <posix/base/posixlog.h>
+#include <posix/http/CurlTransportAgent.h>
 
 #include <list>
 #include <memory>
@@ -27,6 +28,8 @@ using namespace std;
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+
+#include "synthesis/enginemodulebridge.h"
 
 SourceList *EvolutionSyncClient::m_sourceListPtr;
 
@@ -340,6 +343,11 @@ public:
             // at least increase log level
             LOG.setLevel(LOG_LEVEL_DEBUG);
         }
+    }
+
+    /** return log directory, empty if not enabled */
+    const string &getLogdir() {
+        return m_logdir.getLogdir();
     }
 
     /** return previous log dir found in setLogdir() */
@@ -813,23 +821,288 @@ int EvolutionSyncClient::sync()
         // give derived class also a chance to update the configs
         prepare(sourceList.getSourceArray());
 
-        // ready to go: dump initial databases and prepare for final report
-        sourceList.syncPrepare();
+	// ready to go: dump initial databases and prepare for final report
+	sourceList.syncPrepare();
 
-        // do it
-        res = SyncClient::sync(*this, sourceList.getSourceArray());
+	if (false) {
+	  // do it
+	  res = SyncClient::sync(*this, sourceList.getSourceArray());
 
-        // store modified properties: must be done even after failed
-        // sync because the source's anchor might have been reset
-        flush();
+	  // store modified properties: must be done even after failed
+	  // sync because the source's anchor might have been reset
+	  flush();
 
-        if (res) {
+	  if (res) {
             if (getLastErrorCode() && getLastErrorMsg() && getLastErrorMsg()[0]) {
-                throwError(getLastErrorMsg());
+	      throwError(getLastErrorMsg());
             }
             // no error code/description?!
             throwError("sync failed without an error description, check log");
-        }
+	  }
+	} else {
+            // Synthesis SDK
+            sysync::TEngineModuleBridge engine;
+            sysync::TSyError err;
+
+            // Use libsynthesis that we were linked against.  The name
+            // of a .so could be given here, too, to use that instead.
+            err = engine.Connect("[]", 0, 0);
+            if (err) {
+                throwError("Connect");
+            }
+
+            sysync::appPointer keyH;
+            sysync::appPointer subkeyH;
+            string s;
+
+            err = engine.OpenKeyByPath(keyH, NULL, "/configvars", 0);
+            if (err) {
+                throwError("open config vars");
+            }
+            engine.SetStrValue(keyH, "defout_path", sourceList.getLogdir());
+            engine.SetStrValue(keyH, "device_uri", getDevID());
+            engine.SetStrValue(keyH, "device_name", getDevType());
+            // TODO: redirect to log file?
+            engine.SetStrValue(keyH, "conferrpath", "console");
+            engine.CloseKey(keyH);
+
+            string xmlConfig("syncevolution.xml");
+            err = engine.InitEngineFile(xmlConfig.c_str());
+            if (err) {
+                throwError(xmlConfig);
+            }
+
+            err = engine.OpenKeyByPath(keyH, NULL, "/profiles", 0);
+            if (err) {
+                throwError("open profiles");
+            }
+  
+            // check the settings status (MUST BE DONE TO MAKE SETTINGS READY)
+            err = engine.GetStrValue(keyH, "settingsstatus", s);
+            // allow creating new settings when existing settings are not up/downgradeable
+            err = engine.SetStrValue(keyH, "overwrite",  "1" );
+            // check status again
+            err = engine.GetStrValue(keyH, "settingsstatus", s);
+    
+            // open first profile
+            err = engine.OpenSubkey(subkeyH, keyH, KEYVAL_ID_FIRST, 0);
+            if (err == 204) { // DB_NoContent
+                // no profile already exists, create default profile
+                err = engine.OpenSubkey(subkeyH, keyH, KEYVAL_ID_NEW_DEFAULT, 0);
+            }
+            if (err) {
+                throwError("open first profile");
+            }
+         
+            engine.SetStrValue(subkeyH, "serverURI", getSyncURL());
+            engine.SetStrValue(subkeyH, "serverUser", getUsername());
+            engine.SetStrValue(subkeyH, "serverPassword", getPassword());
+
+            // TODO: remove hard-coded XML encoding as soon as out transport
+            // can post WBXML and XML (currently limited to XML)
+            engine.SetInt32Value(subkeyH, "encoding", 2);
+
+            // Iterate over all data stores in the XML config
+            // and match them with sync sources.
+            // TODO: let sync sources provide their own
+            // XML snippets (inside <client> and inside <datatypes>).
+            sysync::appPointer targetsH, targetH;
+            err = engine.OpenKeyByPath(targetsH, subkeyH, "targets", 0);
+            if (err) {
+                throwError("targets");
+            }
+            err = engine.OpenSubkey(targetH, targetsH, KEYVAL_ID_FIRST, 0);
+            while (err != 204) {
+                if (err) {
+                    throwError("reading target");
+                }
+                err = engine.GetStrValue(targetH, "dbname", s);
+                if (err) {
+                    throwError("reading target name");
+                }
+                EvolutionSyncSource *source = sourceList[s];
+                if (source) {
+                    engine.SetInt32Value(targetH, "enabled", 1);
+                    int slow = 0;
+                    int direction = 0;
+                    string mode = source->getSync();
+                    if (!strcasecmp(mode.c_str(), "slow")) {
+                        slow = 1;
+                        direction = 0;
+                    } else if (!strcasecmp(mode.c_str(), "two-way")) {
+                        slow = 0;
+                        direction = 0;
+                    } else if (!strcasecmp(mode.c_str(), "refresh-from-server")) {
+                        slow = 1;
+                        direction = 1;
+                    } else if (!strcasecmp(mode.c_str(), "refresh-from-client")) {
+                        slow = 1;
+                        direction = 2;
+                    } else if (!strcasecmp(mode.c_str(), "one-way-from-server")) {
+                        slow = 0;
+                        direction = 1;
+                    } else if (!strcasecmp(mode.c_str(), "one-way-from-client")) {
+                        slow = 0;
+                        direction = 2;
+                    } else {
+                        source->throwError(string("invalid sync mode: ") + mode);
+                    }
+                    engine.SetInt32Value(targetH, "forceslow", slow);
+                    engine.SetInt32Value(targetH, "syncmode", direction);
+
+                    engine.SetStrValue(targetH, "remotepath", source->getURI());
+                } else {
+                    engine.SetInt32Value(targetH, "enabled", 0);
+                }
+                engine.CloseKey(targetH);
+                err = engine.OpenSubkey(targetH, targetsH, KEYVAL_ID_NEXT, 0);
+            }
+            engine.CloseKey(targetsH);
+            engine.CloseKey(subkeyH);
+            engine.CloseKey(keyH);
+                        
+            // run an HTTP client sync session
+            Proxy proxy;
+            if (getUseProxy()) {
+                proxy.setProxy(getProxyHost(), 
+                               getProxyPort(),
+                               getProxyUsername(),
+                               getProxyPassword());
+            }
+            URL url;
+            CurlTransportAgent agent(url, proxy,
+                                     getResponseTimeout());
+            agent.setUserAgent(getUserAgent());
+            // TODO: SSL settings
+
+            sysync::appPointer sessionH;
+            sysync::TEngineProgressInfo progressInfo;
+            sysync::uInt16 stepCmd = STEPCMD_CLIENTSTART; // first step
+            err = engine.OpenSession(sessionH, 0, "syncevolution_session");
+            if (err) {
+                throwError("OpenSession");
+            }
+
+            // sync main loop
+            char *received = NULL;
+            do {
+                // take next step
+                err = engine.SessionStep(sessionH, stepCmd, &progressInfo);
+                if (err != LOCERR_OK) {
+                    // error, terminate with error
+                    stepCmd = STEPCMD_ERROR;
+                } else {
+                    // step ran ok, evaluate step command
+                    switch (stepCmd) {
+                    case STEPCMD_OK:
+                        // no progress info, call step again
+                        stepCmd = STEPCMD_STEP;
+                        break;
+                    case STEPCMD_PROGRESS:
+                        // new progress info to show
+                        // Check special case of interactive display alert
+                        if (progressInfo.eventtype==PEV_DISPLAY100) {
+                            // alert 100 received from remote, message text is in
+                            // SessionKey's "displayalert" field
+                            sysync::appPointer sessionKeyH;
+                            err = engine.OpenSessionKey(sessionH, sessionKeyH, 0);
+                            if (err != LOCERR_OK) {
+                                throwError("session key");
+                            }
+                            // get message from server to display
+                            engine.GetStrValue(sessionKeyH,
+                                               "displayalert",
+                                               s);
+                            LOG.info("message from server: %s",
+                                     s.c_str());
+                            engine.CloseKey(sessionKeyH);
+                        } else {
+                            // normal progress info
+                            // tbd: show progress in the UI
+                        }
+                        stepCmd = STEPCMD_STEP;
+                        break;
+                    case STEPCMD_ERROR:
+                        // error, terminate (should not happen, as status is
+                        // already checked above)
+                        break;
+                    case STEPCMD_RESTART:
+                        // make sure connection is closed and will be re-opened for next request
+                        // tbd: close communication channel if still open to make sure it is
+                        //       re-opened for the next request
+                        stepCmd = STEPCMD_STEP;
+                        break;
+                    case STEPCMD_SENDDATA: {
+                        // send data to remote
+
+                        // use OpenSessionKey() and GetValue() to retrieve "connectURI"
+                        // and "contenttype" to be used to send data to the server
+                        sysync::appPointer sessionKeyH;
+                        err = engine.OpenSessionKey(sessionH, sessionKeyH, 0);
+                        if (err != LOCERR_OK) {
+                            throwError("session key");
+                        }
+                        engine.GetStrValue(sessionKeyH,
+                                           "connectURI",
+                                           s);
+                        URL newurl(s.c_str());
+                        agent.setURL(newurl);
+                        string contenttype;
+                        engine.GetStrValue(sessionKeyH,
+                                           "contenttype",
+                                           contenttype);
+                        engine.CloseKey(sessionKeyH);
+                        
+                        // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
+                        // sent or have it copied into caller's buffer using
+                        // ReadSyncMLBuffer(), then send it to the server
+                        sysync::appPointer buffer;
+                        sysync::memSize length;
+                        err = engine.GetSyncMLBuffer(sessionH, true, buffer, length);
+                        if (err) {
+                            throwError("buffer");
+                        }
+                        // need temporary null-terminated string for agent
+                        string tmp;
+                        tmp.append((const char *)buffer, 0, length);
+                        received = agent.sendMessage(tmp.c_str());
+                        engine.RetSyncMLBuffer(sessionH, true, length);
+
+                        // status for next step
+                        if (received) {
+                            stepCmd = STEPCMD_SENTDATA; // we have sent the data and received response
+                        } else {
+                            stepCmd = STEPCMD_TRANSPFAIL; // communication with server failed
+                        }
+                        break;
+                    }
+                    case STEPCMD_NEEDDATA:
+                        // put answer received earlier into SyncML engine's buffer
+                        if (received) {
+                            err = engine.WriteSyncMLBuffer(sessionH, received, strlen(received));
+                            if (err) {
+                                throwError("write buffer");
+                            }
+                            delete [] received;
+                            received = NULL;
+                            stepCmd = STEPCMD_GOTDATA; // we have received response data
+                        } else {
+                            stepCmd = STEPCMD_TRANSPFAIL; // communication with server failed
+                        }
+                        break;
+                    } // switch stepcmd
+                }
+                // check for suspend or abort, if so, modify step command for next step
+                if (false /* tdb: check if user requests suspending the session */) {
+                    stepCmd = STEPCMD_SUSPEND;
+                }
+                if (false /* tdb: check if user requests aborting the session */) {
+                    stepCmd = STEPCMD_ABORT;
+                }
+                // loop until session done or aborted with error
+            } while (stepCmd!=STEPCMD_DONE && stepCmd!=STEPCMD_ERROR);
+            engine.CloseSession(sessionH);
+	}
 
         // all went well: print final report before cleaning up
         sourceList.syncDone(true);

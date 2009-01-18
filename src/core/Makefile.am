@@ -68,8 +68,8 @@ CORE_SOURCES  = \
 	$(VOCL_SOURCES)
 
 libsyncevolution_la_SOURCES = $(CORE_SOURCES)
-libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @FUNAMBOL_LIBS@ @TRANSPORT_LDFLAGS@ @LIBS@ 
-libsyncevolution_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
+libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @FUNAMBOL_LIBS@ @TRANSPORT_LDFLAGS@ @LIBS@ $(SYNTHESIS_LIBS)
+libsyncevolution_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
 
 # include boost in distribution
 dist-hook:

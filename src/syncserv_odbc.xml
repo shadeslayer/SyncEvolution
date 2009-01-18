@@ -1,0 +1,2558 @@
+<?xml version="1.0"?>
+<!-- SYNTHESIS SYNC SERVER Version 3.0 Configuration file -->
+<!-- (works for V2.9.9.0 and later) -->
+<!-- RELEASE: SDK sample config for a PRO Server using plugins: xpt, Standard types, textdb-plugin -->
+
+<sysync_config version="1.0">
+
+  <!-- enter your license details here. Not all versions need a
+       license (for example the demo runs without one).
+       You should have received license code information
+       along with the purchase or evaluation package.
+       If not, please contact sales@synthesis.ch -->
+  <licensename>licensee name</licensename>
+  <licensecode>XXXX-XXXX-XXXX-XXXX</licensecode>
+
+  <!-- this string is output to every session debug logfile to identify the config in use -->
+  <configidstring>RELEASE: SDK sample config for a PRO Server using plugins: xpt, Standard types, textdb-plugin, generated 2008-Nov-20 20:39:17</configidstring>
+
+  <debug>
+    <!-- path where logfiles are stored -->
+    <!-- <logpath platform="win32">D:\your\log\directory</logpath> -->
+    <!-- <logpath platform="linux">/your/log/directory</logpath> -->
+    <!-- <logpath platform="macosx">/your/log/directory</logpath> -->
+    <logflushmode>buffered</logflushmode> <!-- buffered is fastest mode, but may loose data on process abort. Other options: "flush" (after every line) or "openclose" (safest, slowest, like in 2.x server) -->
+    <!-- per session log -->
+    <sessionlogs>yes</sessionlogs> <!-- by default, create a session log file for every sync session (might be disabled for special users/devices in scripts) -->
+    <!-- debug format options -->
+    <logformat>html</logformat> <!-- html is nicely colored and easily viewable with a web browser. Other options: "xml", "text" -->
+    <folding>auto</folding> <!-- dynamic folding of blocks enabled, automatically expanded or collapsed default. Other options: "none", "expanded", "collapsed" -->
+    <timestamp>yes</timestamp> <!-- show timestamps for structure elements in log -->
+    <timestampall>no</timestampall> <!-- don't show timestamp for every log line -->
+    <timedsessionlognames>yes</timedsessionlognames> <!-- session logs also have the session start timestamp in the filename - makes them more easily sortable -->
+    <!-- thread logging mode -->
+    <subthreadmode>separate</subthreadmode> <!-- write log info from subthreads into separate log files. Other options: "suppress" -->
+    <!-- basic debug level selection -->
+    <enable option="extended"/> <!-- "extended" is a good choice for start testing. For production, use "normal" or "minimal" -->
+    <!-- <enable option="normal"/> --> <!-- "normal" provides rich debug info, but still in reasonable size  -->
+    <!-- <enable option="minimal"/> --> <!-- "minimal" just shows basic flow and error. Not suitable for debugging -->
+    <!-- <enable option="maximal"/> --> <!-- "maximal" can create VERY LARGE logs and cause HEAVY SLOWDOWN. Only for detail debugging  -->
+    <!-- <enable option="all"/> --> <!-- "all" shows EVERYTHING possible, and way too much for any normal situation. For hardcore debugging ONLY! -->
+    <!-- additional debug info switches -->
+    <enable option="userdata"/> <!-- Make this <disable ...> if you don't want user data in the logs -->
+    <disable option="scripts"/> <!-- Make this <enable ...> to show script execution in logs  -->
+    <disable option="match"/> <!-- Make this <enable ...> to show slow sync matching. CAN PRODUCE ENORMOUS LOGS and HEAVILY IMPACT PERFORMANCE for large slow syncs - use with care!  -->
+    <disable option="exotic"/> <!-- Make this <enable ...> to include very in-detail info. CAN PRODUCE ENORMOUS LOGS and HEAVILY IMPACT PERFORMANCE for large slow syncs - use with care!  -->
+    <!-- see manual for more debug info switches -->
+    <!-- global log options -->
+    <globallogs>no</globallogs> <!-- by default, do not log global session dispatching, creation etc. (not useful in multi-user operation) -->
+    <singlegloballog>no</singlegloballog> <!-- a new global log will be started for every start of the server/application -->
+    <!-- SyncML message dumping options -->
+    <msgdump>no</msgdump> <!-- do not dump syncml traffic 1:1 to files -->
+    <xmltranslate>no</xmltranslate> <!-- do not try to translate syncml traffic into XML (DO NOT SET THIS OPTION IN PRODUCTIVE SERVERS!) -->
+  </debug>
+
+  <!-- Note: since Server 1.0.8.50, we can have multiple <transport> sections
+       to allow using the same config file for both ISAPI and standalone
+       server versions -->
+  <transport type="xpt">
+    <!-- settings for standalone operation -->
+    <!-- Note: protocol can be "HTTP", "OBEX/TCP" or "OBEX/IR" -->
+    <protocol>HTTP</protocol>
+    <!-- Note: If protocol is OBEX/TCP, <httpport> specifies the OBEX server port -->
+    <httpport>80</httpport>
+    <!-- allow HTTP 1.1 kepp-alive (multiple request-answer-exchanges in single TCP connection) -->
+    <keepconnection>true</keepconnection>
+    <!-- you can set the server IP address, 0.0.0.0=all
+    <ipaddress>0.0.0.0</ipaddress>
+    -->
+    <!-- For OBEX/IR, you can specify another service (analogous to TCP port number)
+         than the default of "SYNCML-SYNC"
+    <obexservice>SYNCML-SYNC</obexservice>
+    -->
+  </transport>
+
+  <transport type="isapi">
+    <!-- settings for ISAPI (IIS) operation -->
+    <!-- controls HTTP 1.1 connection behaviour -->
+    <keepconnection>true</keepconnection>
+    <!-- if set, clients can repeat a failed message and server is
+         able to repeat the most recent answer. Switch this off
+         if you are extremely tight on memory on the server -->
+    <bufferretryanswer>true</bufferretryanswer>
+  </transport>
+
+  <transport type="pipe">
+    <!-- settings for Apache based server (using pipes for communication with server process) -->
+    <!-- if set, clients can repeat a failed message and server is
+         able to repeat the most recent answer. Switch this off
+         if you are extremely tight on memory on the server -->
+    <bufferretryanswer>true</bufferretryanswer>
+    <!-- The following controls how many sessions are run per server process:
+         0  : single-threaded server, one process per sync session (default, and only
+              mode available in servers before 3.0.0.19).
+         1  : only one session at a time per process, but after session finishes,
+              server process keeps running and can process another session.
+         >1 : multi-threaded server, can run the specified number of sessions
+              in parallel threads. This is the recommended mode when starting a new
+              server process is expensive in terms of memory or cpu, such as with
+              Java based plugins (with a multithreaded server, the Java VM will
+              be loaded only once for all sessions, in a single-threaded server,
+              each session will instantiate a new Java VM). -->
+    <maxthreads>0</maxthreads>
+    <!-- if set to >0, this is the max number of sessions a server process should
+         run before exiting. This can be useful to make sure the server environment
+         is restarted once in a while to avoid eventual memory leaks in plugins etc.
+         to accumulate too much -->
+    <maxsessionruns>0</maxsessionruns>
+  </transport>
+
+
+  <scripting>
+    <!-- Global script function definitions -->
+
+    <!-- as an example, we define a function to clear email addresses
+         that do not conform to minimal standards. It is used
+         in the contacts datastores's <beforewritescript> below. -->
+    <function><![CDATA[
+      // clear invalid email addresses
+      checkEmail(multiline &EMAIL)
+      {
+        INTEGER A,D,S;
+
+        // check Email address
+        A=FIND(EMAIL,"@",0);
+        D=RFIND(EMAIL,".",LENGTH(EMAIL));
+        S=FIND(EMAIL," ",0);
+        // clear email if not in xxx@yyy.zz form or has spaces in it
+        IF (S!=EMPTY || A==EMPTY || D==EMPTY || A==0 || D<A+2) EMAIL=EMPTY;
+      }
+    ]]></function>
+
+    <!-- The following email handling scripts are defined as script MACROS because they
+         are used in multiple <datatype> definitions below. This avoids duplicating these
+         script's source code in the config file -->
+
+    <macro name="EMAIL_INIT_SCRIPT"><![CDATA[
+      INTEGER ITEMLIMIT;
+      // default limit is limit of session
+      ITEMLIMIT = SIZELIMIT();
+    ]]></macro>
+
+
+    <macro name="EMAIL_PROCESSITEM_SCRIPT"><![CDATA[
+      // pre-process item
+      if (UPPERCASE(FOLDER)=="INBOX") {
+        // In any case, prevent adding to inbox (delete remote items instead)
+        PREVENTADD();
+        // server always wins for inbox
+        CONFLICTSTRATEGY("server-wins");
+        if (SLOWSYNC()) {
+          // also prevent modifications in server
+          IGNOREUPDATE();
+        }
+        else {
+          // normal sync items going to inbox from client need special treatment
+          if (SYNCOP()=="add" || SYNCOP()=="replace") {
+            // make sure that existing server item will conflict with this item
+            if (LIMIT!=EMPTY && (LIMIT<0 || LIMIT>SIZELIMIT())) {
+              // force conflict only if this is a reload
+              FORCECONFLICT();
+            }
+            // make sure we never overwrite a body in the inbox
+            BODY = UNASSIGNED;
+            // delete always wins over replace in inbox (to avoid adds to inbox)
+            DELETEWINS();
+          }
+        }
+      }
+      else if (UPPERCASE(FOLDER)=="OUTBOX") {
+        // never try to change something in outbox
+        IGNOREUPDATE();
+        if (SYNCOP()!="delete") {
+          // - date of mail is NOW, set it such that a correct date is written to the DB
+          MAILDATE = DBNOW();
+          // MAILDATE = (INTEGER)DBNOW() - TIMEUNITS(120); // %%% backdate it 2 mins to make sure it does not get retransmitted
+          // - echo item as replace (to force-move it to the sent folder)
+          ECHOITEM("replace");
+        }
+        CONFLICTSTRATEGY("client-wins");
+      }
+      else if (UPPERCASE(FOLDER)=="SENT") {
+        // never try to change something in sent folder
+        IGNOREUPDATE();
+        // Server has precedence in case of conflicts
+        CONFLICTSTRATEGY("server-wins");
+        // Implement reload capability for sent items as well
+        if (SLOWSYNC()) {
+          // do not add new sent items to the server in slowsync
+          PREVENTADD(); // causes extra sent items on the client to be deleted
+        }
+        else {
+          // make sure that existing server item will conflict with this item
+          if (SYNCOP()=="replace") {
+            if (LIMIT!=EMPTY && (LIMIT<0 || LIMIT>SIZELIMIT())) {
+              // force conflict only if this is a reload
+              FORCECONFLICT();
+              REJECTITEM(200); // but do not process the item further
+            }
+            else {
+              // silently ignore other types of changes
+              REJECTITEM(200);
+            }
+            // make sure we never overwrite a body in the sent folder
+            BODY = UNASSIGNED;
+          }
+        }
+      }
+      else {
+        // Other folder
+        // - silently discard incoming item for other folder than the above
+        //   except if it is a delete
+        if (SYNCOP()!="delete")
+          REJECTITEM(0);
+      }
+    ]]></macro>
+
+
+    <macro name="EMAIL_MERGE_SCRIPT"><![CDATA[
+      // pre-process item
+      if (UPPERCASE(LOOSING.FOLDER)!="OUTBOX") {
+        // non-outbox (especially inbox) needs special merge to accomplish reload feature
+        // - loosing item is client's, winning is server's
+        if (LOOSING.LIMIT!=EMPTY) {
+          // loosing (remote) item specifies a new limit, override winning's default
+          WINNING.LIMIT=LOOSING.LIMIT;
+          SETWINNINGCHANGED(TRUE);
+        }
+        // make sure winning has right folder
+        WINNING.FOLDER=LOOSING.FOLDER;
+        // make sure a set read-flag gets propagated to server
+        if (LOOSING.ISREAD=="true") WINNING.ISREAD="true";
+        // merge other fields normally
+        MERGEFIELDS();
+        // make sure body does not get re-written to local DB even if merge would cause local update
+        LOOSING.BODY=UNASSIGNED;
+      }
+      else {
+        // normal merging in other folders
+        MERGEFIELDS();
+      }
+    ]]></macro>
+
+    <macro name="EMAIL_OUTGOING_SCRIPT"><![CDATA[
+      // pre-process item
+      if (UPPERCASE(FOLDER)=="OUTBOX") {
+        // writing to outbox is always the ECHOITEM
+        // - cause item to move into "sent" folder
+        FOLDER = "sent";
+        if (!SESSIONVAR("retransfer_body")) {
+          // - prevent body retransfer, but not for dumb P800/P900/M600/P990 clients
+          BODY = UNASSIGNED; // prevent body transfer
+          ATT_COUNT = 0; // prevent attachment transfer
+          ATT_CONTENTS = UNASSIGNED;
+          // basically, this item is not limited (already complete on the client)
+          // even if contents are not sent
+          LIMIT = -1;
+          SETSIZELIMIT(-1);
+        }
+      }
+      else {
+        // outgoing item to any folder of of remote (inbox, sent...)
+        // - limit body to what is set in the LIMIT field
+        // %%% probably obsolete, as textitem will handle limit field automatically for >=V1.0.8.21
+        IF (LIMIT==EMPTY)
+          LIMIT = SIZELIMIT(); // if none set already, use default for this item (=default of datastore, if not SETSIZELIMIT() called before for this item generation)
+      }
+      // set limit for item generator
+      if (LIMIT!=EMPTY)
+        SETSIZELIMIT(LIMIT);
+    ]]></macro>
+
+
+    <macro name="EMAIL_FILTERINIT_SCRIPT"><![CDATA[
+      // check if we need to filter
+      INTEGER NEEDFILTER;
+
+      NEEDFILTER =
+        !DBHANDLESOPTS() && // only if DB cannot handle it
+        (STARTDATE()!=EMPTY); // and only if a start date is set (end date not needed as there are never future emails today)
+      SETFILTERALL(NEEDFILTER);
+      RETURN NEEDFILTER;
+    ]]></macro>
+
+
+    <macro name="EMAIL_FILTER_SCRIPT"><![CDATA[
+      INTEGER PASSES;
+
+      // check if item passes filter
+      PASSES=FALSE;
+      // Emails pass if they have a MAILDATE on or later than start date
+      PASSES = MAILDATE>=STARTDATE();
+      RETURN PASSES;
+    ]]></macro>
+
+  </scripting>
+
+
+  <datatypes>
+
+
+
+    <!-- list of internal fields representing vCard data -->
+    <fieldlist name="contacts">
+      <field name="REV" type="timestamp" compare="never" age="yes"/>
+      <field name="SYNCLVL" type="integer" compare="never"/>
+      <!-- Name elements -->
+      <field name="N_LAST" type="string" compare="always"/>
+      <field name="N_FIRST" type="string" compare="always"/>
+      <field name="N_PREFIX" type="string" compare="conflict"/>
+      <field name="TITLE" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- categories and classification -->
+      <field name="CATEGORIES" type="string" compare="conflict" merge="fillempty"/>
+      <field name="CLASS" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- organisation -->
+      <field name="ORG_NAME" type="string" compare="slowsync" merge="fillempty"/>
+      <field name="ORG_DIVISION" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- birthday -->
+      <field name="BDAY" type="date" compare="conflict" merge="fillempty"/>
+
+      <!-- telephone numbers -->
+      <field name="TEL_HOME" type="telephone" compare="conflict"/>
+      <field name="TEL_WORK" type="telephone" compare="conflict"/>
+      <field name="TEL_MOBILE" type="telephone" compare="conflict"/>
+      <field name="TEL_FAX" type="telephone" compare="conflict"/>
+      <field name="TEL_OTHER_1" type="telephone" compare="conflict"/>
+      <field name="TEL_OTHER_2" type="telephone" compare="conflict"/>
+      <field name="TEL_OTHER_3" type="telephone" compare="conflict"/>
+      <field name="TEL_OTHER_4" type="telephone" compare="conflict"/>
+
+      <!-- home address -->
+      <field name="ADR_H_POBOX" type="multiline" compare="conflict"/>
+      <field name="ADR_H_ADDTL" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ADR_H_STREET" type="multiline" compare="conflict"/>
+      <field name="ADR_H_CITY" type="multiline" compare="conflict"/>
+      <field name="ADR_H_REG" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ADR_H_ZIP" type="multiline" compare="conflict"/>
+      <field name="ADR_H_COUNTRY" type="multiline" compare="conflict"/>
+
+      <!-- work address -->
+      <field name="ADR_W_POBOX" type="multiline" compare="conflict"/>
+      <field name="ADR_W_ADDTL" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ADR_W_STREET" type="multiline" compare="conflict"/>
+      <field name="ADR_W_CITY" type="multiline" compare="conflict"/>
+      <field name="ADR_W_REG" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ADR_W_ZIP" type="multiline" compare="conflict"/>
+      <field name="ADR_W_COUNTRY" type="multiline" compare="conflict"/>
+
+      <!-- other address -->
+      <field name="ADR_O_POBOX" type="multiline" compare="conflict"/>
+      <field name="ADR_O_ADDTL" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ADR_O_STREET" type="multiline" compare="conflict"/>
+      <field name="ADR_O_CITY" type="multiline" compare="conflict"/>
+      <field name="ADR_O_REG" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ADR_O_ZIP" type="multiline" compare="conflict"/>
+      <field name="ADR_O_COUNTRY" type="multiline" compare="conflict"/>
+
+      <!-- emails -->
+      <field name="EMAIL_1" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="EMAIL_2" type="multiline" compare="conflict" merge="fillempty"/>
+
+      <!-- web addresses -->
+      <field name="WEB_1" type="url" compare="conflict" merge="fillempty"/>
+      <field name="WEB_2" type="url" compare="conflict" merge="fillempty"/>
+
+      <!-- Note -->
+      <field name="NOTE" type="multiline" compare="conflict" merge="lines"/>
+
+      <!-- Photo -->
+      <field name="PHOTO" type="blob" compare="never" merge="fillempty"/>
+      <field name="PHOTO_TYPE" type="string" compare="never" merge="fillempty"/>
+
+    </fieldlist>
+
+    <!-- vCard profile -->
+    <mimeprofile name="vcard" fieldlist="contacts">
+
+      <profile name="VCARD" nummandatory="0"> <!-- we relax vCard here and allow vCards w/o name, like from K750i. Strict handling would be nummandatory="1" -->
+        <property name="VERSION">
+          <value conversion="version"/>
+        </property>
+
+        <property name="REV">
+          <value field="REV"/>
+        </property>
+
+        <property name="N" values="5" mandatory="no"> <!-- we relax vCard here and allow vCards w/o name, like from K750i. Strict handling would be mandatory="yes" -->
+          <value index="0" field="N_LAST"/>
+          <value index="1" field="N_FIRST"/>
+          <value index="3" field="N_PREFIX"/>
+        </property>
+
+        <property name="TITLE">
+          <value field="TITLE"/>
+        </property>
+
+        <!-- vCard 2.1 does not really have a CATEGORIES property, but we let it inherit that of vCard 3.0 (NOT that of vCalendar 1.0 with ; separators!!) -->
+        <property name="CATEGORIES" values="list" valueseparator="," altvalueseparator=";">
+          <value field="CATEGORIES" combine=","/>
+        </property>
+
+        <property name="CLASS" suppressempty="yes">
+          <value field="CLASS"/>
+        </property>
+
+        <property name="ORG" values="2">
+          <value index="0" field="ORG_NAME"/>
+          <value index="1" field="ORG_DIVISION"/>
+        </property>
+
+        <property name="EMAIL">
+          <value field="EMAIL_1"/>
+          <position field="EMAIL_1" repeat="2" increment="1" minshow="1"/>
+        </property>
+
+        <property name="URL">
+          <value field="WEB_1"/>
+          <position field="WEB_1" repeat="2" increment="1" minshow="1"/>
+        </property>
+
+        <property name="TEL">
+          <value field="TEL_HOME"/>
+          <parameter name="TYPE" default="yes" positional="yes" show="yes">
+            <value>
+              <enum name="CELL"/>
+              <enum name="HOME"/>
+              <enum name="WORK"/>
+              <enum name="FAX"/>
+              <enum name="MODEM"/>
+              <enum name="VOICE"/>
+            </value>
+            <position has="HOME" hasnot="FAX,CELL" shows="VOICE" field="TEL_HOME" overwriteempty="yes"/>
+            <position has="WORK" hasnot="FAX,CELL" shows="VOICE" field="TEL_WORK" overwriteempty="yes"/>
+            <position has="CELL" shows="VOICE" field="TEL_MOBILE" overwriteempty="yes"/>
+            <position has="FAX" field="TEL_FAX" overwriteempty="yes"/>
+            <position field="TEL_OTHER_1" repeat="4" increment="1" minshow="0" overwriteempty="yes"/>
+          </parameter>
+        </property>
+
+        <property name="ADR" values="7">
+          <value index="0" field="ADR_H_POBOX"/>
+          <value index="1" field="ADR_H_ADDTL"/>
+          <value index="2" field="ADR_H_STREET"/>
+          <value index="3" field="ADR_H_CITY"/>
+          <value index="4" field="ADR_H_REG"/>
+          <value index="5" field="ADR_H_ZIP"/>
+          <value index="6" field="ADR_H_COUNTRY"/>
+          <parameter name="TYPE" default="yes" positional="yes" show="yes">
+            <value>
+              <enum name="HOME"/>
+              <enum name="WORK"/>
+            </value>
+            <position has="WORK" field="ADR_W_POBOX"/>
+            <position has="HOME" field="ADR_H_POBOX"/>
+            <position field="ADR_O_POBOX"/>
+          </parameter>
+        </property>
+
+        <property name="BDAY">
+          <value field="BDAY"/>
+        </property>
+
+        <property name="NOTE" filter="no">
+          <value field="NOTE"/>
+        </property>
+
+        <property name="PHOTO" filter="no">
+          <value field="PHOTO" conversion="BLOB_B64"/>
+          <parameter name="TYPE" default="no" show="no"> <!-- note: do not show the param, because e.g. Nokia E-Series would not send PHOTO then -->
+            <value field="PHOTO_TYPE"/>
+          </parameter>
+        </property>
+
+      </profile>
+    </mimeprofile>
+
+    <!-- vCard 2.1 datatype, using vCard profile defined above -->
+    <datatype name="vcard21" basetype="vcard">
+      <version>2.1</version>
+      <use mimeprofile="vcard"/>
+    </datatype>
+
+    <!-- vCard 3.0 datatype, using vCard profile defined above -->
+    <datatype name="vcard30" basetype="vcard">
+      <version>3.0</version>
+      <use mimeprofile="vcard"/>
+    </datatype>
+
+
+    <!-- list of internal fields representing vCalendar data
+         (for both events (vEVENT) and tasks (vTODO)) -->
+    <fieldlist name="calendar">
+      <field name="SYNCLVL" type="integer" compare="never"/>
+
+      <!-- this field defines if the data item is an EVENT or a TODO (task) -->
+      <field name="KIND" type="string" compare="always"/>
+
+      <field name="TIMEZONE" type="integer" compare="never"/>
+
+      <field name="DMODIFIED" type="timestamp" compare="never" age="yes"/>
+      <field name="DCREATED" type="timestamp" compare="never"/>
+
+      <field name="CATEGORIES" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="CLASS" type="string" compare="conflict" merge="fillempty"/>
+
+      <field name="SUMMARY" type="multiline" compare="always"/>
+      <field name="DESCRIPTION" type="multiline" compare="slowsync" merge="lines"/>
+
+      <field name="ATTENDEE_1" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ATTENDEE_2" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ATTENDEE_3" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ATTENDEE_4" type="multiline" compare="conflict" merge="fillempty"/>
+      <field name="ATTENDEE_5" type="multiline" compare="conflict" merge="fillempty"/>
+
+      <field name="LOCATION" type="multiline" compare="conflict" merge="fillempty"/>
+
+      <!-- alarm -->
+      <field name="ALARM_TIME" type="timestamp" compare="conflict"/>
+      <field name="ALARM_SNOOZE" type="string" compare="conflict"/>
+      <field name="ALARM_REPEAT" type="string" compare="conflict"/>
+      <field name="ALARM_MSG" type="string" compare="conflict"/>
+
+      <!-- recurrence rule block, fields must be in that order, including
+           DTSTART as last field !! -->
+      <field name="RR_FREQ" type="string" compare="conflict"/>
+      <field name="RR_INTERVAL" type="integer" compare="conflict"/>
+      <field name="RR_FMASK" type="integer" compare="conflict"/>
+      <field name="RR_LMASK" type="integer" compare="conflict"/>
+      <field name="RR_END" type="timestamp" compare="conflict"/>
+
+      <!-- Note: DTSTART/DTEND are compared in the <comparescript>,
+                 therefore compare is set no "never" here -->
+      <field name="DTSTART" type="timestamp" compare="never"/> <!-- also used as DUE in vTODO -->
+
+      <field name="DTEND" type="timestamp" compare="never"/>
+
+      <!-- exception dates to the recurrence rule -->
+      <field name="EXDATE_1" type="timestamp" compare="conflict"/>
+      <field name="EXDATE_2" type="timestamp" compare="conflict"/>
+      <field name="EXDATE_3" type="timestamp" compare="conflict"/>
+      <field name="EXDATE_4" type="timestamp" compare="conflict"/>
+      <field name="EXDATE_5" type="timestamp" compare="conflict"/>
+
+      <!-- for tasks only -->
+      <field name="PRIORITY" type="integer" compare="conflict"/>
+      <field name="STATUS" type="string" compare="conflict" merge="fillempty"/>
+
+    </fieldlist>
+
+    <!-- vCalendar profile, including subprofiles for
+         both events (vEVENT) and tasks (vTODO) -->
+    <mimeprofile name="vcalendar" fieldlist="calendar">
+
+      <profile name="VCALENDAR" nummandatory="1">
+
+        <property name="VERSION" mandatory="yes">
+          <value conversion="version"/>
+        </property>
+
+        <property name="TZ">
+          <value field="TIMEZONE" conversion="TZ"/>
+        </property>
+
+        <!-- sub-profile for events -->
+        <subprofile name="VEVENT" nummandatory="1" field="KIND" value="EVENT" showifselectedonly="true">
+
+          <property name="LAST-MODIFIED">
+            <value field="DMODIFIED"/>
+          </property>
+
+          <property name="DCREATED" suppressempty="yes">
+            <value field="DCREATED"/>
+          </property>
+
+          <!-- vCalendar 1.0 needs ";" as separator between categories -->
+          <property name="CATEGORIES" values="list" valueseparator=";" altvalueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" combine=","/>
+          </property>
+
+          <property name="CLASS" suppressempty="yes">
+            <value field="CLASS"/>
+          </property>
+
+          <property name="SUMMARY" mandatory="yes">
+            <value field="SUMMARY"/>
+          </property>
+
+          <property name="DESCRIPTION" mandatory="yes">
+            <value field="DESCRIPTION"/>
+          </property>
+
+          <property name="LOCATION" suppressempty="yes">
+            <value field="LOCATION"/>
+          </property>
+
+          <property name="DTSTART" suppressempty="yes">
+            <value field="DTSTART"/>
+          </property>
+
+          <property name="DTEND" suppressempty="yes">
+            <value field="DTEND"/>
+          </property>
+
+          <property name="ATTENDEE" suppressempty="yes">
+            <value field="ATTENDEE_1"/>
+            <position field="ATTENDEE_1" repeat="5" increment="1" minshow="0"/>
+          </property>
+
+          <!-- recurrence rule (with delayed parsing, as it is dependent on DTSTART) -->
+          <property name="RRULE" suppressempty="yes" delayedparsing="1">
+            <!-- Note: RR_FREQ is the beginning of a block of fields
+                 suitable for the "rrule" conversion mode -->
+            <value field="RR_FREQ" conversion="rrule"/>
+          </property>
+
+          <!-- up to five exceptions for recurrence rule -->
+          <property name="EXDATE" values="list" suppressempty="yes">
+            <value field="EXDATE_1"/>
+            <position field="EXDATE_1" repeat="5" increment="1" minshow="0"/>
+          </property>
+
+          <!-- AALARM and DALARM both use the same fields -->
+          <property name="AALARM" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+          <property name="DALARM" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+
+        </subprofile>
+
+        <!-- sub-profile for tasks (todo's) -->
+        <subprofile name="VTODO" nummandatory="1" field="KIND" value="TODO" showifselectedonly="true">
+
+          <property name="LAST-MODIFIED">
+            <value field="DMODIFIED"/>
+          </property>
+
+          <property name="DCREATED" suppressempty="yes">
+            <value field="DCREATED"/>
+          </property>
+
+          <!-- vCalendar 1.0 needs ";" as separator between categories -->
+          <property name="CATEGORIES" values="list" valueseparator=";" altvalueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" combine=","/>
+          </property>
+
+          <property name="CLASS" suppressempty="yes">
+            <value field="CLASS"/>
+          </property>
+
+          <property name="SUMMARY" mandatory="yes">
+            <value field="SUMMARY"/>
+          </property>
+
+          <property name="DESCRIPTION" mandatory="yes">
+            <value field="DESCRIPTION"/>
+          </property>
+
+          <property name="LOCATION" suppressempty="yes">
+            <value field="LOCATION"/>
+          </property>
+
+
+          <property name="DUE" suppressempty="yes">
+            <value field="DTSTART"/> <!-- we use DTSTART field for DUE property in tasks -->
+          </property>
+
+          <property name="ATTENDEE" suppressempty="yes">
+            <value field="ATTENDEE_1"/>
+            <position field="ATTENDEE_1" repeat="5" increment="1" minshow="0"/>
+          </property>
+
+          <property name="PRIORITY" suppressempty="yes">
+            <value field="PRIORITY"/>
+          </property>
+
+          <property name="STATUS" suppressempty="yes">
+            <value field="STATUS" conversion="emptyonly"/>
+          </property>
+
+          <!-- AALARM and DALARM both use the same fields -->
+          <property name="AALARM" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+          <property name="DALARM" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+
+        </subprofile>
+
+      </profile>
+    </mimeprofile>
+
+
+    <!-- vCalendar 1.0 datatype, using vCalendar profile defined
+         above -->
+    <datatype name="vcalendar10" basetype="vcalendar">
+      <version>1.0</version>
+      <use mimeprofile="vcalendar"/>
+
+      <!-- Scripting allows sophisticated data adjustment:
+           make sure we have always have a SUMMARY, but avoid
+           SUMMARY and DESCRIPTION being identical,
+           as well as always having a DTSTART
+           and an alarm message -->
+      <incomingscript><![CDATA[
+        // make sure we have all trailing and leading spaces eliminated
+        DESCRIPTION=NORMALIZED(DESCRIPTION);
+        SUMMARY=NORMALIZED(SUMMARY);
+        // make sure we have at least a summary
+        if (SUMMARY==EMPTY) SUMMARY=DESCRIPTION; // use description if we don't have a summary
+        if (SUMMARY==EMPTY) SUMMARY="unnamed"; // set dummy summary if we still don't have one
+        if (DESCRIPTION==SUMMARY) DESCRIPTION=EMPTY; // do not save twice
+        // make sure we have DTSTART
+        if (DTSTART==EMPTY) DTSTART=DTEND;
+      ]]></incomingscript>
+
+      <outgoingscript><![CDATA[
+        // make sure we have all trailing and leading spaces eliminated
+        DESCRIPTION=NORMALIZED(DESCRIPTION);
+        SUMMARY=NORMALIZED(SUMMARY);
+        // make sure we have both description AND summary
+        if (DESCRIPTION==EMPTY) DESCRIPTION=SUMMARY; // use summary text to send
+        if (SUMMARY==EMPTY) SUMMARY="unnamed";
+        if (DESCRIPTION==EMPTY) DESCRIPTION=SUMMARY; // use summary text to send
+        // make sure we have an alarm message
+        if (ALARM_TIME!=EMPTY && ALARM_MSG==EMPTY) ALARM_MSG="alarm";
+        // make sure we have DTSTART
+        if (DTSTART==EMPTY) DTSTART=DTEND;
+      ]]></outgoingscript>
+
+      <filterinitscript><![CDATA[
+        // check if we need to filter
+        INTEGER NEEDFILTER;
+
+        // we need to filter if STARTDATE() and/or ENDDATE() are set...
+        NEEDFILTER =
+          !DBHANDLESOPTS() && // ...but only if DB itself does not handle it directly
+          (STARTDATE()!=EMPTY || ENDDATE()!=EMPTY); // start or end date set
+        SETFILTERALL(NEEDFILTER); // as the filter conditions change dynamically with time, we need to filter ALL records
+        RETURN NEEDFILTER; // we need to filter
+      ]]></filterinitscript>
+
+      <filterscript><![CDATA[
+        INTEGER PASSES;
+
+        // check if item passes filter
+        PASSES=FALSE;
+        // as vCalendar handles events and tasks, we need to differentiate here
+        IF (KIND=="EVENT") {
+          // Events pass if they start within the range or
+          // have a recurrence that has started, but not yet ended
+          PASSES =
+            (DTSTART<=ENDDATE()) &&
+            (
+              (DTSTART>=STARTDATE()) ||
+              ((RR_FREQ!=EMPTY) && ((RR_END==EMPTY) || (RR_END>STARTDATE())))
+            );
+        }
+        ELSE {
+          // Todo pass if they have no DUE or one within the range
+          PASSES =
+            (DTSTART==EMPTY) ||
+            (DTSTART>=STARTDATE() && DTSTART<=ENDDATE());
+        }
+        RETURN PASSES;
+      ]]></filterscript>
+
+      <comparescript><![CDATA[
+        INTEGER RES;
+
+        // do standard compare (WHICH MUST NOT INCLUDE DTSTART/DTEND!)
+        RES = COMPAREFIELDS();
+        // do specially relaxed date checking
+        if (RES==0) {
+          // only check for same local date (not time) of DTSTART(=DUE for vTODO)
+          // to increase probability that time zone problems get masked out
+          RES = COMPARE(DATEONLY(TARGET.DTSTART),DATEONLY(REFERENCE.DTSTART));
+        }
+        RETURN RES;
+      ]]></comparescript>
+    </datatype>
+
+
+
+    <!-- list of internal fields representing plain text note data -->
+    <fieldlist name="Note">
+      <field name="SYNCLVL" type="integer" compare="never"/>
+      <field name="SUBJECT" type="multiline" compare="always"/>
+      <field name="TEXT" type="multiline" compare="conflict" merge="lines"/>
+    </fieldlist>
+
+    <textprofile name="Note" fieldlist="Note">
+      <linemap field="SUBJECT">
+        <numlines>1</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+        <filterkeyword>SUBJECT</filterkeyword>
+      </linemap>
+      <linemap field="TEXT">
+        <numlines>0</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+      </linemap>
+    </textprofile>
+
+    <datatype name="note" basetype="text">
+      <use profile="Note"/>
+      <typestring>text/plain</typestring>
+      <versionstring>1.0</versionstring>
+    </datatype>
+
+    <datatype name="note11" basetype="text">
+      <use profile="Note"/>
+      <typestring>text/plain</typestring>
+      <versionstring>1.1</versionstring>
+    </datatype>
+
+
+    <!-- list of internal fields representing vBookmark data -->
+    <fieldlist name="bookmarks">
+      <field name="REV" type="timestamp" compare="never" age="yes"/>
+      <field name="SYNCLVL" type="integer" compare="never"/>
+
+      <!-- Name -->
+      <field name="TITLE" type="string" compare="always"/>
+
+      <!-- categories and classification -->
+      <field name="CATEGORIES" type="string" compare="conflict" merge="fillempty"/>
+      <field name="CLASS" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- web addresses -->
+      <field name="URL" type="url" compare="slowsync" merge="fillempty"/>
+
+      <!-- Note -->
+      <field name="NOTE" type="multiline" compare="conflict" merge="lines"/>
+
+    </fieldlist>
+
+    <!-- vBookmark profile -->
+    <mimeprofile name="vbookmark" fieldlist="bookmarks">
+
+      <profile name="VBKM" nummandatory="0">
+        <property name="VERSION">
+          <value conversion="version"/>
+        </property>
+
+        <property name="X-LAST-MODIFIED">
+          <value field="REV"/>
+        </property>
+
+        <property name="TITLE">
+          <value field="TITLE"/>
+        </property>
+
+        <property name="URL">
+          <value field="URL"/>
+        </property>
+
+        <!-- non-standard properties -->
+
+        <!-- inherit CATEGORIES from vCard 3.0, i.e. comma separated -->
+        <property name="CATEGORIES" values="list" valueseparator="," altvalueseparator=";">
+          <value field="CATEGORIES" combine=","/>
+        </property>
+
+        <property name="CLASS" suppressempty="yes">
+          <value field="CLASS"/>
+        </property>
+
+        <property name="NOTE" filter="no">
+          <value field="NOTE"/>
+        </property>
+
+      </profile>
+    </mimeprofile>
+
+    <!-- vBookmark datatype, using vBookmark profile defined above -->
+    <datatype name="vbookmark" basetype="mimedir">
+      <typestring>text/x-vbookmark</typestring>
+      <versionstring>1.0</versionstring>
+      <use profile="vbookmark"/>
+    </datatype>
+
+
+
+    <!-- list of internal fields representing email data -->
+    <fieldlist name="email">
+      <field name="SYNCLVL" type="integer" compare="never"/>
+      <field name="MODIFIED" type="timestamp" compare="never" age="yes"/>
+      <field name="SENDER" type="multiline" compare="always"/>
+      <field name="RECEIVER" type="multiline" compare="always"/>
+      <field name="CARBONCOPY" type="multiline" compare="always"/>
+      <field name="BLINDCARBONCOPY" type="multiline" compare="always"/>
+      <field name="REPLY_TO" type="multiline" compare="never"/>
+      <field name="SUBJECT" type="multiline" compare="always"/>
+      <field name="PRIORITY" type="integer" compare="never"/>
+      <field name="MAILDATE" type="timestamp" compare="never"/>
+      <field name="STATUS" type="string" compare="never"/>
+      <field name="FOLDER" type="string" compare="conflict"/>
+      <field name="ISREAD" type="string" compare="never"/>
+      <field name="LIMIT" type="integer" compare="never"/>
+      <field name="BODY" type="multiline" compare="never"/>
+      <field name="ATT_COUNT" type="integer" compare="never"/>
+      <field name="ATT_NAMES" array="yes" type="string" compare="never"/>
+      <field name="ATT_MIMETYPES" array="yes" type="string" compare="never"/>
+      <field name="ATT_SIZES" array="yes" type="integer" compare="never"/>
+      <field name="ATT_CONTENTS" array="yes" type="blob" compare="never"/>
+    </fieldlist>
+
+
+    <!-- this is the text profile used to generate and decode RFC2822/MIME-Multipart
+         email messages. -->
+    <textprofile name="rfc2822_email" fieldlist="email">
+
+      <mimemail>true</mimemail>
+      <!-- attachment configuration -->
+      <maxattachments>100</maxattachments>
+      <attachmentcountfield>ATT_COUNT</attachmentcountfield>
+      <attachmentmimetypesfield>ATT_MIMETYPES</attachmentmimetypesfield>
+      <attachmentsfield>ATT_CONTENTS</attachmentsfield>
+      <attachmentsizesfield>ATT_SIZES</attachmentsizesfield>
+      <attachmentnamesfield>ATT_NAMES</attachmentnamesfield>
+      <sizelimitfield>LIMIT</sizelimitfield>
+
+
+      <linemap field="SENDER">
+        <headertag>From:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>FROM</filterkeyword>
+      </linemap>
+
+      <linemap field="RECEIVER">
+        <headertag>To:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>TO</filterkeyword>
+      </linemap>
+
+      <linemap field="CARBONCOPY">
+        <headertag>Cc:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>CC</filterkeyword>
+      </linemap>
+
+      <linemap field="BLINDCARBONCOPY">
+        <headertag>Bcc:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>BCC</filterkeyword>
+      </linemap>
+
+      <linemap field="REPLY_TO">
+        <headertag>Reply-To:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="SUBJECT">
+        <headertag>Subject:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>SUBJECT</filterkeyword>
+      </linemap>
+
+      <linemap field="PRIORITY">
+        <headertag>X-Priority:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="MAILDATE">
+        <valuetype>date</valuetype>
+        <headertag>Date:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="STATUS">
+        <headertag>Status:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="FOLDER">
+        <headertag>X-Sync-Parent-Folder:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="ISREAD">
+        <headertag>X-Sync-Message-Read:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="MODIFIED">
+        <!-- note that this is a ISO8601 date -->
+        <headertag>X-Sync-Lastmodified:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="BODY">
+        <valuetype>body</valuetype>
+        <numlines>0</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+      </linemap>
+    </textprofile>
+
+
+    <datatype name="email" basetype="text">
+      <use profile="rfc2822_email"/>
+      <typestring>text/message</typestring> <!-- this is P800-like -->
+      <versionstring>1.0</versionstring>
+
+      <initscript><![CDATA[
+        $EMAIL_INIT_SCRIPT
+      ]]></initscript>
+
+      <processitemscript><![CDATA[
+        $EMAIL_PROCESSITEM_SCRIPT
+      ]]></processitemscript>
+
+
+      <mergescript><![CDATA[
+        $EMAIL_MERGE_SCRIPT
+      ]]></mergescript>
+
+
+      <outgoingscript><![CDATA[
+        $EMAIL_OUTGOING_SCRIPT
+      ]]></outgoingscript>
+
+      <filterinitscript><![CDATA[
+        $EMAIL_FILTERINIT_SCRIPT
+      ]]></filterinitscript>
+
+
+      <filterscript><![CDATA[
+        $EMAIL_FILTER_SCRIPT
+      ]]></filterscript>
+
+    </datatype>
+
+
+    <!-- Note: This is a proprietary extension datatype for Synthesis AG Windows Mobile SyncML clients.
+         This format is a compressed form of the standard RFC2822 format. For one, the entire data
+         is compressed using the zip algorithm (<zippedbindata>), and secondly attachments are included
+         in binary form in the RFC2822 data stream rather than bandwidth wasting B64, adding a
+         "Content-Length:" header for each MIME part (<binaryparts>). -->
+
+    <datatype name="email_zipbin" basetype="text">
+      <use profile="rfc2822_email"/>
+      <typestring>application/x-zip-message</typestring> <!-- our own private zipped binary optimized format -->
+      <versionstring>1.1</versionstring>
+      <binaryparts>yes</binaryparts>
+      <zippedbindata>yes</zippedbindata>
+      <zipcompressionlevel>9</zipcompressionlevel> <!-- -1=default, 0=no compression, 1=fast & least effective ... 9=slow and most effective -->
+
+      <initscript><![CDATA[
+        $EMAIL_INIT_SCRIPT
+      ]]></initscript>
+
+      <processitemscript><![CDATA[
+        $EMAIL_PROCESSITEM_SCRIPT
+      ]]></processitemscript>
+
+
+      <mergescript><![CDATA[
+        $EMAIL_MERGE_SCRIPT
+      ]]></mergescript>
+
+
+      <outgoingscript><![CDATA[
+        $EMAIL_OUTGOING_SCRIPT
+      ]]></outgoingscript>
+
+      <filterinitscript><![CDATA[
+        $EMAIL_FILTERINIT_SCRIPT
+      ]]></filterinitscript>
+
+
+      <filterscript><![CDATA[
+        $EMAIL_FILTER_SCRIPT
+      ]]></filterscript>
+
+    </datatype>
+
+
+
+    <datatype name="email_sonyericsson" basetype="text">
+      <use profile="rfc2822_email"/>
+      <typestring>message/rfc822</typestring> <!-- this is M600i/P990-like -->
+      <versionstring>1.0</versionstring>
+
+      <initscript><![CDATA[
+        $EMAIL_INIT_SCRIPT
+      ]]></initscript>
+
+      <processitemscript><![CDATA[
+        $EMAIL_PROCESSITEM_SCRIPT
+      ]]></processitemscript>
+
+
+      <mergescript><![CDATA[
+        $EMAIL_MERGE_SCRIPT
+      ]]></mergescript>
+
+
+      <outgoingscript><![CDATA[
+        $EMAIL_OUTGOING_SCRIPT
+      ]]></outgoingscript>
+
+      <filterinitscript><![CDATA[
+        $EMAIL_FILTERINIT_SCRIPT
+      ]]></filterinitscript>
+
+
+      <filterscript><![CDATA[
+        $EMAIL_FILTER_SCRIPT
+      ]]></filterscript>
+
+    </datatype>
+
+
+    <datatype name="email_nokia9500" basetype="text">
+      <use profile="rfc2822_email"/>
+      <typestring>message/x-rfc822</typestring> <!-- this is Nokia 9500/9300-like -->
+      <versionstring>1.0</versionstring>
+
+      <initscript><![CDATA[
+        INTEGER ITEMLIMIT;
+        // default limit is limit of session
+        ITEMLIMIT = SIZELIMIT();
+      ]]></initscript>
+
+      <processitemscript><![CDATA[
+        INTEGER n;
+
+        // For Nokia Email, we must derive folder ID from source LocURI
+        // which has form "./somestrangenumber/folder/itemid"
+        // where folder can be "Inbox" or "Outbox"
+        if (FIND(REMOTEID(),"Inbox",0)!=UNASSIGNED) {
+          FOLDER="INBOX";
+        }
+        else if (FIND(REMOTEID(),"Outbox",0)!=UNASSIGNED) {
+          FOLDER="OUTBOX";
+        }
+        // pre-process item
+        if (UPPERCASE(FOLDER)=="INBOX") {
+          // In any case, prevent adding to inbox (delete remote items instead)
+          PREVENTADD();
+          // server always wins for inbox
+          CONFLICTSTRATEGY("server-wins");
+          if (SLOWSYNC()) {
+            // also prevent modifications in server
+            IGNOREUPDATE();
+          }
+          else {
+            // normal sync items going to inbox from client need special treatment
+            if (SYNCOP()=="add" || SYNCOP()=="replace") {
+              // make sure that existing server item will conflict with this item
+              if (LIMIT!=EMPTY && (LIMIT<0 || LIMIT>SIZELIMIT())) {
+                // force conflict only if this is a reload
+                FORCECONFLICT();
+              }
+              // make sure we never overwrite a body in the inbox
+              BODY = UNASSIGNED;
+              // delete always wins over replace in inbox (to avoid adds to inbox)
+              DELETEWINS();
+            }
+          }
+        }
+        else if (UPPERCASE(FOLDER)=="OUTBOX") {
+          // never try to change something in outbox
+          IGNOREUPDATE();
+          if (SYNCOP()!="delete") {
+            // - date of mail is NOW, set it such that a correct date is written to the DB
+            MAILDATE = DBNOW();
+            // MAILDATE = (INTEGER)DBNOW() - TIMEUNITS(120); // %%% backdate it 2 mins to make sure it does not get retransmitted
+            // - echo item as delete (this causes that it is moved to the "sent" folder in the 9500)
+            ECHOITEM("delete");
+          }
+          CONFLICTSTRATEGY("client-wins");
+        }
+        else {
+          // Other folder
+          // - silently discard incoming item for other folder than the above
+          //   except if it is a delete
+          if (SYNCOP()!="delete")
+            REJECTITEM(0);
+        }
+      ]]></processitemscript>
+
+
+      <mergescript><![CDATA[
+        // pre-process item
+        if (UPPERCASE(LOOSING.FOLDER)!="OUTBOX") {
+          // non-outbox (especially inbox) needs special merge to accomplish reload feature
+          // - loosing item is client's, winning is server's
+          if (LOOSING.LIMIT!=EMPTY) {
+            // loosing (remote) item specifies a new limit, override winning's default
+            WINNING.LIMIT=LOOSING.LIMIT;
+            SETWINNINGCHANGED(TRUE);
+          }
+          // make sure winning has right folder
+          WINNING.FOLDER=LOOSING.FOLDER;
+          // make sure a set read-flag gets propagated to server
+          if (LOOSING.ISREAD=="true") WINNING.ISREAD="true";
+          // merge other fields normally
+          MERGEFIELDS();
+          // make sure body does not get re-written to local DB even if merge would cause local update
+          LOOSING.BODY=UNASSIGNED;
+        }
+        else {
+          // normal merging in other folders
+          MERGEFIELDS();
+        }
+      ]]></mergescript>
+
+
+      <outgoingscript><![CDATA[
+        // we can only send to inbox or outbox
+        // - If we have no remote ID (=add command) prepare special Target item ID
+        //   containing target folder.
+        if (REMOTEID()==EMPTY) {
+        if (UPPERCASE(FOLDER)=="INBOX") {
+            SETREMOTEID(REMOTEDBNAME()+"/Inbox/");
+        }
+        else if (UPPERCASE(FOLDER)=="OUTBOX") {
+            SETREMOTEID(REMOTEDBNAME()+"/Outbox/");
+          }
+        }
+      ]]></outgoingscript>
+
+      <filterinitscript><![CDATA[
+        // check if we need to filter
+        INTEGER NEEDFILTER;
+
+        NEEDFILTER =
+          !DBHANDLESOPTS() && // only if DB cannot handle it
+          (STARTDATE()!=EMPTY); // and only if a start date is set (end date not needed as there are never future emails today)
+        SETFILTERALL(NEEDFILTER);
+        RETURN NEEDFILTER;
+      ]]></filterinitscript>
+
+
+      <filterscript><![CDATA[
+        INTEGER PASSES;
+
+        // check if item passes filter
+        PASSES=FALSE;
+        // Filter out anything not for Inbox or Outbox
+        if (UPPERCASE(FOLDER)!="INBOX" && UPPERCASE(FOLDER)!="OUTBOX") RETURN FALSE;
+        // Emails pass if they have a MAILDATE on or later than start date
+        PASSES = MAILDATE>=STARTDATE();
+        RETURN PASSES;
+      ]]></filterscript>
+
+    </datatype>
+
+  </datatypes>
+
+
+  <server type="plugin">
+
+    <!-- Uncomment the following for Linux if you are sure properly working pthread implementation is available
+         For Windows and Mac OS X, multithreading is enabled by default -->
+    <!--<multithread>yes</multithread>-->
+
+
+    <!-- plugin module which handles the session level, i.e. login and device tracking -->
+    <plugin_module>SDK_textdb</plugin_module>
+    <plugin_sessionauth>yes</plugin_sessionauth>
+    <plugin_deviceadmin>yes</plugin_deviceadmin>
+
+    <plugin_params>
+      <!-- plugin params can contain any number of plugin-specific parameters
+           that will be passed to the plugin implementation for processing -->
+
+      <!-- For TextDB: text file locations: -->
+      <!-- Uncomment the following tags if you want
+           to specifiy locations for the text files generated by the
+           server. If you leave it commented, all text files will be in the
+           application directory -->
+      <!--
+      <mapfilepath>C:\sync\auxfiles</mapfilepath>
+      <datafilepath>C:\sync\datafiles</datafilepath>
+      -->
+
+      <ultimate_answer>42</ultimate_answer> <!-- just as an example -->
+    </plugin_params>
+
+    <!-- un-comment or change the following directive if you want the server only accept
+         SyncML 1.1 or 1.0 connections - not recommended normally, but
+         eventually useful for testing. By default, the server accepts
+         all 1.2, 1.1 and 1.0 connections -->
+    <!-- <maxsyncmlversion>1.1</maxsyncmlversion> -->
+
+    <!-- IMPORTANT: Note that the following charset, lineend and quoting settings are relevant for session-level data access only.
+         Most data access takes place in individual <datastores>, which each has the same three settings
+         again locally (see below in the <datastore> sections). -->
+
+    <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+    <datacharset>UTF-8</datacharset>
+    <!-- use C-language (unix style) linefeeds (\n, 0x0A) -->
+    <datalineends>unix</datalineends>
+
+
+    <!-- If you want a text logfile, specify its full path here: -->
+    <!-- <logfile platform="win32">D:\your\log\directory\yourlogfile.txt</logfile> -->
+    <!-- <logfile platform="linux">/your/log/directory/yourlogfile.txt</logfile> -->
+    <!-- <logfile platform="macosx">/your/log/directory/yourlogfile.txt</logfile> -->
+
+    <logenabled>yes</logenabled> <!-- log enabled by default (session login scripts might disable it for special users/devices) -->
+
+    <!-- the logfile format can be customized with <loglabels> and <logformat>
+         but if these are not specified, a default format will be used
+    -->
+    <!-- This sample produces a simplified logfile:
+    <loglabels>SyncEndTime\tUser\tStatus\tSynctype\tRemoteName\tDatabase\tLocAdded\tLocUpdated\tLocDeleted\n\n</loglabels>
+    <logformat>%seT\t%U\t%sS\t%tS\t%nR\t%lD\t%laI\t%luI\t%ldI\n</logformat>
+    -->
+
+
+    <sessioninitscript><![CDATA[
+      // these variables are possibly modified by rule scripts
+      TIMESTAMP mindate; // earliest date remote party can handle
+      INTEGER retransfer_body; // if set to true, body is re-sent to client when message is moved from outbox to sent
+      mindate=EMPTY; // no limit by default
+      retransfer_body=FALSE; // normally, do not retransfer email body (and attachments) when moving items to sent box
+    ]]></sessioninitscript>
+
+    <!-- timeout for unfinished sessions in seconds -->
+    <sessiontimeout>300</sessiontimeout>
+
+    <!-- defines how clients must authenticate with the server
+         To allow simple authentication (unencrypted passwords will
+         be transferred over the net, so be careful)
+         set <requiredauth> to "basic" instead of "md5"
+    -->
+    <requestedauth>md5</requestedauth>
+    <requiredauth>md5</requiredauth>
+    <autononce>yes</autononce>
+
+    <!-- you can comment out <simpleauthuser> and <simpleauthpw>
+         to have the server use the userauth.txt file for user
+         authentification check -->
+    <simpleauthuser>test</simpleauthuser>
+    <simpleauthpw>test</simpleauthpw>
+
+    <!-- text file locations. -->
+    <!-- Uncomment the following tags if you want
+         to specifiy locations for the text files generated by the
+         server. If you leave it commented, all text files will be in the
+         application directory -->
+    <!--
+    <mapfilepath>C:\sync\auxfiles</mapfilepath>
+    <datafilepath>C:\sync\datafiles</datafilepath>
+    -->
+
+
+    <datastore name="contacts" type="plugin">
+
+      <plugin_module>SDK_textdb</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+      <plugin_params>
+        <!-- specify plugin-specific parameters here, they will be
+             passed to the plugin implementation for processing -->
+        <ultimate_answer>42</ultimate_answer> <!-- just as an example -->
+      </plugin_params>
+
+
+      <!-- General datastore settings for all DB types -->
+
+      <!-- if this is set to "yes", SyncML clients can only read
+           from the server database, but make no modifications -->
+      <readonly>no</readonly>
+
+      <!-- conflict strategy: Newer item wins
+           You can set "server-wins" or "client-wins" as well
+           if you want to give one side precedence
+      -->
+      <conflictstrategy>newer-wins</conflictstrategy>
+
+      <!-- on slowsync: duplicate items that are not fully equal
+           You can set this to "newer-wins" as well to avoid
+           duplicates as much as possible
+      -->
+      <slowsyncstrategy>duplicate</slowsyncstrategy>
+
+      <!-- Visibility control: Server items that have the SYNCLVL
+           field set to 0 will be invisible to SyncML clients.
+           Using CGI-filtering in database names (such as
+           ./contacts?SYNCLVL:>=5) smaller clients can
+           sync a reduced set of server items -->
+      <makepassfilter>F.SYNCLVL:=10</makepassfilter>
+      <invisiblefilter>F.SYNCLVL:=0|F.SYNCLVL*=E</invisiblefilter>
+      <makevisiblefilter>F.SYNCLVL:=10</makevisiblefilter>
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- use C-language (unix style) linefeeds (\n, 0x0A) -->
+      <datalineends>unix</datalineends>
+
+      <!-- set this to "UTC" if time values should be stored in UTC into the database
+           rather than local time. "SYSTEM" denotes local server time zone. -->
+      <datatimezone>SYSTEM</datatimezone>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport>
+
+
+
+      <!-- Mapping of the fields to the fieldlist "contacts" -->
+      <fieldmap fieldlist="contacts">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <!-- datatypes supported by this datastore -->
+      <typesupport>
+        <use datatype="vcard21" mode="rw" preferred="yes"/>
+        <use datatype="vcard30" mode="rw"/>
+      </typesupport>
+
+    </datastore>
+
+
+    <datastore name="events" type="plugin">
+
+      <plugin_module>SDK_textdb</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+      <plugin_params>
+        <!-- specify plugin-specific parameters here, they will be
+             passed to the plugin implementation for processing -->
+        <ultimate_answer>42</ultimate_answer> <!-- just as an example -->
+      </plugin_params>
+
+
+      <!-- General datastore settings for all DB types -->
+
+      <!-- if this is set to "yes", SyncML clients can only read
+           from the server database, but make no modifications -->
+      <readonly>no</readonly>
+
+      <!-- conflict strategy: Newer item wins
+           You can set "server-wins" or "client-wins" as well
+           if you want to give one side precedence
+      -->
+      <conflictstrategy>newer-wins</conflictstrategy>
+
+      <!-- on slowsync: duplicate items that are not fully equal
+           You can set this to "newer-wins" as well to avoid
+           duplicates as much as possible
+      -->
+      <slowsyncstrategy>duplicate</slowsyncstrategy>
+
+      <!-- Visibility control: Server items that have the SYNCLVL
+           field set to 0 will be invisible to SyncML clients.
+           Using CGI-filtering in database names (such as
+           ./contacts?SYNCLVL:>=5) smaller clients can
+           sync a reduced set of server items -->
+      <makepassfilter>F.SYNCLVL:=10</makepassfilter>
+      <invisiblefilter>F.SYNCLVL:=0|F.SYNCLVL*=E</invisiblefilter>
+      <makevisiblefilter>F.SYNCLVL:=10</makevisiblefilter>
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- use C-language (unix style) linefeeds (\n, 0x0A) -->
+      <datalineends>unix</datalineends>
+
+      <!-- set this to "UTC" if time values should be stored in UTC into the database
+           rather than local time. "SYSTEM" denotes local server time zone. -->
+      <datatimezone>SYSTEM</datatimezone>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport>
+
+
+
+      <!-- Mapping of the fields to the fieldlist "calendar" -->
+      <fieldmap fieldlist="calendar">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <!-- datatypes supported by this datastore -->
+      <typesupport>
+        <use datatype="vcalendar10" mode="rw" preferred="yes" variant="VEVENT"/>
+      </typesupport>
+
+    </datastore>
+
+
+    <datastore name="tasks" type="plugin">
+
+      <plugin_module>SDK_textdb</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+      <plugin_params>
+        <!-- specify plugin-specific parameters here, they will be
+             passed to the plugin implementation for processing -->
+        <ultimate_answer>42</ultimate_answer> <!-- just as an example -->
+      </plugin_params>
+
+
+      <!-- General datastore settings for all DB types -->
+
+      <!-- if this is set to "yes", SyncML clients can only read
+           from the server database, but make no modifications -->
+      <readonly>no</readonly>
+
+      <!-- conflict strategy: Newer item wins
+           You can set "server-wins" or "client-wins" as well
+           if you want to give one side precedence
+      -->
+      <conflictstrategy>newer-wins</conflictstrategy>
+
+      <!-- on slowsync: duplicate items that are not fully equal
+           You can set this to "newer-wins" as well to avoid
+           duplicates as much as possible
+      -->
+      <slowsyncstrategy>duplicate</slowsyncstrategy>
+
+      <!-- Visibility control: Server items that have the SYNCLVL
+           field set to 0 will be invisible to SyncML clients.
+           Using CGI-filtering in database names (such as
+           ./contacts?SYNCLVL:>=5) smaller clients can
+           sync a reduced set of server items -->
+      <makepassfilter>F.SYNCLVL:=10</makepassfilter>
+      <invisiblefilter>F.SYNCLVL:=0|F.SYNCLVL*=E</invisiblefilter>
+      <makevisiblefilter>F.SYNCLVL:=10</makevisiblefilter>
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- use C-language (unix style) linefeeds (\n, 0x0A) -->
+      <datalineends>unix</datalineends>
+
+      <!-- set this to "UTC" if time values should be stored in UTC into the database
+           rather than local time. "SYSTEM" denotes local server time zone. -->
+      <datatimezone>SYSTEM</datatimezone>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport>
+
+
+
+      <!-- Mapping of the fields to the fieldlist "calendar" -->
+      <fieldmap fieldlist="calendar">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <!-- datatypes supported by this datastore -->
+      <typesupport>
+        <use datatype="vcalendar10" mode="rw" preferred="yes" variant="VTODO"/>
+      </typesupport>
+
+    </datastore>
+
+    <!-- this "superdatastore" makes the two individual
+         "events" and "tasks" datastores accessible as one
+         datastore. This is required for example for
+         SyncML clients like Nokia 9210 RemoteSync -->
+    <superdatastore name="calendar">
+
+      <!-- sub-datastores contained in this superdatastore -->
+
+      <!-- if set, SyncML DS 1.2 filtering is possible and will be indicated in server devInf -->
+      <ds12filters>yes</ds12filters>
+
+      <!-- if set, datastore supports filtering by a date range specification (SINCE,BEFORE or /dr())
+           Note: if this is set to yes, actual range filtering must be implemented in the datatype
+           and/or the subdatastores contained in this superdatastore -->
+      <daterangesupport>yes</daterangesupport>
+
+      <contains datastore="events">
+        <dispatchfilter>F.KIND:=EVENT</dispatchfilter>
+        <guidprefix>e</guidprefix>
+      </contains>
+
+      <contains datastore="tasks">
+        <dispatchfilter>F.KIND:=TODO</dispatchfilter>
+        <guidprefix>t</guidprefix>
+      </contains>
+
+      <!-- datatypes supported by this datastore -->
+      <typesupport>
+        <use datatype="vcalendar10" mode="rw" preferred="yes"/>
+      </typesupport>
+
+    </superdatastore>
+
+
+    <datastore name="notes" type="plugin">
+
+      <plugin_module>SDK_textdb</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+      <plugin_params>
+        <!-- specify plugin-specific parameters here, they will be
+             passed to the plugin implementation for processing -->
+        <ultimate_answer>42</ultimate_answer> <!-- just as an example -->
+      </plugin_params>
+
+
+      <!-- General datastore settings for all DB types -->
+
+      <!-- if this is set to "yes", SyncML clients can only read
+           from the server database, but make no modifications -->
+      <readonly>no</readonly>
+
+      <!-- conflict strategy: Newer item wins
+           You can set "server-wins" or "client-wins" as well
+           if you want to give one side precedence
+      -->
+      <conflictstrategy>newer-wins</conflictstrategy>
+
+      <!-- on slowsync: duplicate items that are not fully equal
+           You can set this to "newer-wins" as well to avoid
+           duplicates as much as possible
+      -->
+      <slowsyncstrategy>duplicate</slowsyncstrategy>
+
+      <!-- Visibility control: Server items that have the SYNCLVL
+           field set to 0 will be invisible to SyncML clients.
+           Using CGI-filtering in database names (such as
+           ./contacts?SYNCLVL:>=5) smaller clients can
+           sync a reduced set of server items -->
+      <makepassfilter>F.SYNCLVL:=10</makepassfilter>
+      <invisiblefilter>F.SYNCLVL:=0|F.SYNCLVL*=E</invisiblefilter>
+      <makevisiblefilter>F.SYNCLVL:=10</makevisiblefilter>
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- use C-language (unix style) linefeeds (\n, 0x0A) -->
+      <datalineends>unix</datalineends>
+
+      <!-- set this to "UTC" if time values should be stored in UTC into the database
+           rather than local time. "SYSTEM" denotes local server time zone. -->
+      <datatimezone>SYSTEM</datatimezone>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport>
+
+
+
+      <!-- Mapping of the fields to the fieldlist "notes" -->
+      <fieldmap fieldlist="Note">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <typesupport>
+        <use datatype="note" mode="rw" preferred="yes"/>
+        <use datatype="note11" mode="rw"/>
+      </typesupport>
+
+    </datastore>
+
+
+    <datastore name="bookmarks" type="plugin">
+
+      <plugin_module>SDK_textdb</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+      <plugin_params>
+        <!-- specify plugin-specific parameters here, they will be
+             passed to the plugin implementation for processing -->
+        <ultimate_answer>42</ultimate_answer> <!-- just as an example -->
+      </plugin_params>
+
+
+      <!-- General datastore settings for all DB types -->
+
+      <!-- if this is set to "yes", SyncML clients can only read
+           from the server database, but make no modifications -->
+      <readonly>no</readonly>
+
+      <!-- conflict strategy: Newer item wins
+           You can set "server-wins" or "client-wins" as well
+           if you want to give one side precedence
+      -->
+      <conflictstrategy>newer-wins</conflictstrategy>
+
+      <!-- on slowsync: duplicate items that are not fully equal
+           You can set this to "newer-wins" as well to avoid
+           duplicates as much as possible
+      -->
+      <slowsyncstrategy>duplicate</slowsyncstrategy>
+
+      <!-- Visibility control: Server items that have the SYNCLVL
+           field set to 0 will be invisible to SyncML clients.
+           Using CGI-filtering in database names (such as
+           ./contacts?SYNCLVL:>=5) smaller clients can
+           sync a reduced set of server items -->
+      <makepassfilter>F.SYNCLVL:=10</makepassfilter>
+      <invisiblefilter>F.SYNCLVL:=0|F.SYNCLVL*=E</invisiblefilter>
+      <makevisiblefilter>F.SYNCLVL:=10</makevisiblefilter>
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- use C-language (unix style) linefeeds (\n, 0x0A) -->
+      <datalineends>unix</datalineends>
+
+      <!-- set this to "UTC" if time values should be stored in UTC into the database
+           rather than local time. "SYSTEM" denotes local server time zone. -->
+      <datatimezone>SYSTEM</datatimezone>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport>
+
+
+
+      <!-- Mapping of the fields to the fieldlist "bookmarks" -->
+      <fieldmap fieldlist="bookmarks">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <!-- datatypes supported by this datastore -->
+      <typesupport>
+        <use datatype="vbookmark" mode="rw" preferred="yes"/>
+      </typesupport>
+
+    </datastore>
+
+
+    <datastore name="emails" type="plugin">
+
+      <plugin_module>SDK_textdb</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+      <plugin_params>
+        <!-- specify plugin-specific parameters here, they will be
+             passed to the plugin implementation for processing -->
+        <ultimate_answer>42</ultimate_answer> <!-- just as an example -->
+      </plugin_params>
+
+
+      <!-- General datastore settings for all DB types -->
+
+      <!-- if this is set to "yes", SyncML clients can only read
+           from the server database, but make no modifications -->
+      <readonly>no</readonly>
+
+      <!-- conflict strategy: Newer item wins
+           You can set "server-wins" or "client-wins" as well
+           if you want to give one side precedence
+      -->
+      <conflictstrategy>newer-wins</conflictstrategy>
+
+      <!-- on slowsync: duplicate items that are not fully equal
+           You can set this to "newer-wins" as well to avoid
+           duplicates as much as possible
+      -->
+      <slowsyncstrategy>duplicate</slowsyncstrategy>
+
+      <!-- Visibility control: Server items that have the SYNCLVL
+           field set to 0 will be invisible to SyncML clients.
+           Using CGI-filtering in database names (such as
+           ./contacts?SYNCLVL:>=5) smaller clients can
+           sync a reduced set of server items -->
+      <makepassfilter>F.SYNCLVL:=10</makepassfilter>
+      <invisiblefilter>F.SYNCLVL:=0|F.SYNCLVL*=E</invisiblefilter>
+      <makevisiblefilter>F.SYNCLVL:=10</makevisiblefilter>
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- use C-language (unix style) linefeeds (\n, 0x0A) -->
+      <datalineends>unix</datalineends>
+
+      <!-- set this to "UTC" if time values should be stored in UTC into the database
+           rather than local time. "SYSTEM" denotes local server time zone. -->
+      <datatimezone>SYSTEM</datatimezone>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport>
+
+
+
+      <!-- Mapping of the fields to the fieldlist "notes" -->
+      <fieldmap fieldlist="email">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <typesupport>
+        <!-- Note: the compressed Synthesis specific "email_zipbin" format is made the preferred format
+             here to make sure clients supporting that format will actually use it. -->
+        <use datatype="email_zipbin" mode="rw" preferred="yes"/>
+        <use datatype="email" mode="rw" preferred="no"/>
+        <use datatype="email_nokia9500" mode="rw" preferred="no"/>
+        <use datatype="email_sonyericsson" mode="rw" preferred="no"/>
+      </typesupport>
+
+    </datastore>
+
+
+    <!-- Remote Rules list
+         =================
+         Note: the <remoterule> tags specify options and exceptions needed for correct handling of
+               certain devices. Synthesis AG provides this list including all currently know
+               exceptions in this config file and also publishes regular updates for the list
+               of remote rules on its web site at http://www.synthesis.ch
+    -->
+
+
+    <remoterule name="t39m">
+      <!-- Rule for Ericsson T39m client -->
+      <manufacturer>Ericsson</manufacturer>
+      <software>R1A</software>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>Ericsson T39m</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="t68">
+      <!-- Rule for Ericsson T68 client -->
+      <manufacturer>Ericsson</manufacturer>
+      <software>R1B</software>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>Ericsson T68</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="V3">
+      <!-- Rule for Motorola V3 -->
+      <manufacturer>Motorola*</manufacturer>
+      <model>V3</model>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <quote8bitcontent>yes</quote8bitcontent>
+      <nocontentfolding>yes</nocontentfolding>
+      <outputcharset>ANSI</outputcharset>
+      <descriptivename>Motorola V3</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="V3i">
+      <!-- Rule for Motorola V3i -->
+      <manufacturer>Motorola*</manufacturer>
+      <model>V3i</model>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <quote8bitcontent>yes</quote8bitcontent>
+      <nocontentfolding>yes</nocontentfolding>
+      <outputcharset>ANSI</outputcharset>
+      <descriptivename>Motorola V3i</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="6230">
+      <manufacturer>NOKIA</manufacturer>
+      <model>6230</model>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 6230</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="9210">
+      <manufacturer>NOKIA</manufacturer>
+      <model>9210</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 9210</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="9210i">
+      <manufacturer>NOKIA</manufacturer>
+      <model>9210i</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 9210</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="3220">
+      <manufacturer>NOKIA</manufacturer>
+      <model>3220</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 3220</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="3230">
+      <manufacturer>NOKIA</manufacturer>
+      <model>3230</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 3230</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="3600">
+      <manufacturer>NOKIA</manufacturer>
+      <model>3600</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 3600</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="3620">
+      <manufacturer>NOKIA</manufacturer>
+      <model>3620</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 3620</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="3650">
+      <manufacturer>NOKIA</manufacturer>
+      <model>3650</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 3650</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="3660">
+      <manufacturer>NOKIA</manufacturer>
+      <model>3660</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 3660</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="6260">
+      <manufacturer>NOKIA</manufacturer>
+      <model>6260</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 6260</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="6600">
+      <manufacturer>NOKIA</manufacturer>
+      <model>6600</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 6600</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="6620">
+      <manufacturer>NOKIA</manufacturer>
+      <model>6620</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 6620</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="6630">
+      <manufacturer>NOKIA</manufacturer>
+      <model>6630</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 6630</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="6670">
+      <manufacturer>NOKIA</manufacturer>
+      <model>6670</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 6670</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="7250">
+      <manufacturer>NOKIA</manufacturer>
+      <model>7250</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 7250</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="7250i">
+      <manufacturer>NOKIA</manufacturer>
+      <model>7250i</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 7250i</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="7260">
+      <manufacturer>NOKIA</manufacturer>
+      <model>7260</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 7260</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="7610">
+      <manufacturer>NOKIA</manufacturer>
+      <model>7610</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 7610</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="7650">
+      <manufacturer>NOKIA</manufacturer>
+      <model>7650</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 7650</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="N-Gage">
+      <manufacturer>NOKIA</manufacturer>
+      <model>N-Gage</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia N-Gage</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="N-Gage QD">
+      <manufacturer>NOKIA</manufacturer>
+      <model>N-Gage QD</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia N-Gage QD</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="9300">
+      <manufacturer>NOKIA</manufacturer>
+      <model>9300</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <treatasutc>yes</treatasutc> <!-- needs 2.1.1 or later server -->
+      <descriptivename>Nokia 9300</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="9500">
+      <manufacturer>NOKIA</manufacturer>
+      <model>9500</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <treatasutc>yes</treatasutc> <!-- needs 2.1.1 or later server -->
+      <descriptivename>Nokia 9500</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="E90">
+      <manufacturer>NOKIA</manufacturer>
+      <model>E90</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <ignoredevinfmaxsize>yes</ignoredevinfmaxsize>
+      <descriptivename>Nokia E90</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="X">
+      <manufacturer>Sendo</manufacturer>
+      <model>X</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Sendo X</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="SX1">
+      <manufacturer>SIEMENS</manufacturer>
+      <model>SX1</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>      
+      
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <!-- Note: SX1 crashes on contacts with empty properties -->
+      <noemptyproperties>yes</noemptyproperties>
+      <descriptivename>Siemens SX1</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="M55">
+      <manufacturer>SIEMENS</manufacturer>
+      <model>M55</model>
+
+      <forcelocaltime>yes</forcelocaltime>
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>Siemens M55</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="SL55">
+      <manufacturer>SIEMENS</manufacturer>
+      <model>SL55</model>
+
+      <forcelocaltime>yes</forcelocaltime>
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>Siemens SL55</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="S55">
+      <manufacturer>SIEMENS</manufacturer>
+      <model>S55</model>
+
+      <forcelocaltime>yes</forcelocaltime>
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>Siemens S55</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="S65">
+      <manufacturer>SIEMENS</manufacturer>
+      <model>S65</model>
+
+      <forcelocaltime>yes</forcelocaltime>
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>Siemens S65</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="SL65">
+      <manufacturer>SIEMENS</manufacturer>
+      <model>SL65</model>
+
+      <forcelocaltime>yes</forcelocaltime>
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>Siemens SL65</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="K700">
+      <!-- Rule for SonyEricsson K700 (aka SEMC Phone) client -->
+      <manufacturer>SonyEricsson</manufacturer>
+      <model>SEMC Phone</model>
+      <software>R3B</software>
+
+      <!-- is a 1.1 client and claims UTC support, but it seems not to work ok
+      <forcelocaltime>yes</forcelocaltime>
+      -->
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>SonyEricsson K700</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="T610/T630">
+      <!-- Rule for SonyEricsson T610/T630 client -->
+      <manufacturer>SonyEricsson</manufacturer>
+      <software>R2B</software>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>SonyEricsson T610/T630</descriptivename>
+    </remoterule>
+
+
+    <!-- Due to a problem in M600i vCalendar implementation,
+         the device does not calculate time zones correctly
+         in all cases.
+         If your M600i is brand new, you need to specify
+         "calendar?/o(Z)" as database path instead of just
+         "calendar". If your M600i has already been synced
+         at least once via the cradle and the software
+         delivered with the device, you must omit the
+         "?/o(Z)" appendix and specify just "calendar" instead.
+         Please also note that the o(Z) option for never-synced
+         M600i devices only works if your server's config is
+         derived from a recent version of our sample config.
+         Otherwise, just make sure the M600i is synced once
+         in the cradle before using SyncML. 
+    -->
+    <remoterule name="M600i">
+      <manufacturer>Sony Ericsson</manufacturer>
+      <model>M600i</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+        // retransfer body when items are moved to sent box
+        retransfer_body=TRUE;
+      ]]></rulescript>      
+      
+      <treataslocaltime>no</treataslocaltime> <!-- can be set to yes to have /o(Z) mode (see comment above) as default, otherwise /o(z) is default -->
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>SonyEricsson M600i</descriptivename>
+    </remoterule>
+
+
+    <!-- Due to a problem in P800 vCalendar implementation,
+         the device does not calculate time zones correctly
+         in all cases.
+         If your P800 is brand new, you need to specify
+         "calendar?/o(Z)" as database path instead of just
+         "calendar". If your P800 has already been synced
+         at least once via the cradle and the software
+         delivered with the device, you must omit the
+         "?/o(Z)" appendix and specify just "calendar" instead.
+         Please also note that the o(Z) option for never-synced
+         P800 devices only works if your server's config is
+         derived from a recent version of our sample config.
+         Otherwise, just make sure the P800 is synced once
+         in the cradle before using SyncML. 
+    -->
+    <remoterule name="P800">
+      <manufacturer>Sony Ericsson</manufacturer>
+      <model>P800</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+        // retransfer body when items are moved to sent box
+        retransfer_body=TRUE;
+      ]]></rulescript>      
+      
+      <treataslocaltime>no</treataslocaltime> <!-- can be set to yes to have /o(Z) mode (see comment above) as default, otherwise /o(z) is default -->
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>SonyEricsson P800</descriptivename>
+    </remoterule>
+
+
+    <!-- Due to a problem in P900 vCalendar implementation,
+         the device does not calculate time zones correctly
+         in all cases.
+         If your P900 is brand new, you need to specify
+         "calendar?/o(Z)" as database path instead of just
+         "calendar". If your P900 has already been synced
+         at least once via the cradle and the software
+         delivered with the device, you must omit the
+         "?/o(Z)" appendix and specify just "calendar" instead.
+         Please also note that the o(Z) option for never-synced
+         P900 devices only works if your server's config is
+         derived from a recent version of our sample config.
+         Otherwise, just make sure the P900 is synced once
+         in the cradle before using SyncML. 
+    -->
+    <remoterule name="P900">
+      <manufacturer>Sony Ericsson</manufacturer>
+      <model>P900</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+        // retransfer body when items are moved to sent box
+        retransfer_body=TRUE;
+      ]]></rulescript>      
+      
+      <treataslocaltime>no</treataslocaltime> <!-- can be set to yes to have /o(Z) mode (see comment above) as default, otherwise /o(z) is default -->
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>SonyEricsson P900</descriptivename>
+    </remoterule>
+
+
+    <!-- Due to a problem in P910 vCalendar implementation,
+         the device does not calculate time zones correctly
+         in all cases.
+         If your P910 is brand new, you need to specify
+         "calendar?/o(Z)" as database path instead of just
+         "calendar". If your P910 has already been synced
+         at least once via the cradle and the software
+         delivered with the device, you must omit the
+         "?/o(Z)" appendix and specify just "calendar" instead.
+         Please also note that the o(Z) option for never-synced
+         P910 devices only works if your server's config is
+         derived from a recent version of our sample config.
+         Otherwise, just make sure the P910 is synced once
+         in the cradle before using SyncML. 
+    -->
+    <remoterule name="P910">
+      <manufacturer>Sony Ericsson</manufacturer>
+      <model>P910</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+        // retransfer body when items are moved to sent box
+        retransfer_body=TRUE;
+      ]]></rulescript>      
+      
+      <treataslocaltime>no</treataslocaltime> <!-- can be set to yes to have /o(Z) mode (see comment above) as default, otherwise /o(z) is default -->
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>SonyEricsson P910</descriptivename>
+    </remoterule>
+
+
+    <!-- Due to a problem in P910i vCalendar implementation,
+         the device does not calculate time zones correctly
+         in all cases.
+         If your P910i is brand new, you need to specify
+         "calendar?/o(Z)" as database path instead of just
+         "calendar". If your P910i has already been synced
+         at least once via the cradle and the software
+         delivered with the device, you must omit the
+         "?/o(Z)" appendix and specify just "calendar" instead.
+         Please also note that the o(Z) option for never-synced
+         P910i devices only works if your server's config is
+         derived from a recent version of our sample config.
+         Otherwise, just make sure the P910i is synced once
+         in the cradle before using SyncML. 
+    -->
+    <remoterule name="P910i">
+      <manufacturer>Sony Ericsson</manufacturer>
+      <model>P910i</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+        // retransfer body when items are moved to sent box
+        retransfer_body=TRUE;
+      ]]></rulescript>      
+      
+      <treataslocaltime>no</treataslocaltime> <!-- can be set to yes to have /o(Z) mode (see comment above) as default, otherwise /o(z) is default -->
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>SonyEricsson P910i</descriptivename>
+    </remoterule>
+
+
+    <!-- Due to a problem in P990i vCalendar implementation,
+         the device does not calculate time zones correctly
+         in all cases.
+         If your P990i is brand new, you need to specify
+         "calendar?/o(Z)" as database path instead of just
+         "calendar". If your P990i has already been synced
+         at least once via the cradle and the software
+         delivered with the device, you must omit the
+         "?/o(Z)" appendix and specify just "calendar" instead.
+         Please also note that the o(Z) option for never-synced
+         P990i devices only works if your server's config is
+         derived from a recent version of our sample config.
+         Otherwise, just make sure the P990i is synced once
+         in the cradle before using SyncML. 
+    -->
+    <remoterule name="P990i">
+      <manufacturer>Sony Ericsson</manufacturer>
+      <model>P990i</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980        
+        mindate=(TIMESTAMP)"19800101T000000Z";
+        // retransfer body when items are moved to sent box
+        retransfer_body=TRUE;
+      ]]></rulescript>      
+      
+      <treataslocaltime>no</treataslocaltime> <!-- can be set to yes to have /o(Z) mode (see comment above) as default, otherwise /o(z) is default -->
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>SonyEricsson P990i</descriptivename>
+    </remoterule>
+
+
+    <remoterule name="t68i">
+      <!-- Rule for SonyEricsson T68i client -->
+      <manufacturer>SonyEricsson</manufacturer>
+      <software>R2A</software>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>SonyEricsson T68i</descriptivename>
+    </remoterule>
+
+    <!-- End of remote rule list. -->
+
+  </server>
+
+</sysync_config>
