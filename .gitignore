@@ -1,0 +1,16 @@
+*~
+/.dotest
+/Makefile.am
+aclocal.m4
+autom4te.cache
+config.guess
+config.h.in
+config.sub
+configure
+configure.in
+depcomp
+install-sh
+ltmain.sh
+missing
+Makefile.in
+src/Makefile.am
