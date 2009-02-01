@@ -300,6 +300,7 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
         m_hasFailed( false )
         {
             setConfig(this);
+            memset(m_stat, 0, sizeof(m_stat));
         }
     virtual ~EvolutionSyncSource() {}
 
@@ -611,6 +612,51 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
      */
     void throwError(const string &failure);
 
+    enum ItemLocation {
+        ITEM_LOCAL,
+        ITEM_REMOTE,
+        ITEM_LOCATION_MAX
+    };
+    enum ItemState {
+        // TODO: remove _STATE_ once we got rid of Funambol header files;
+        // currently those have conflicting defines
+        ITEM_STATE_ADDED,
+        ITEM_STATE_UPDATED,
+        ITEM_STATE_REMOVED,
+        ITEM_STATE_ANY,
+        ITEM_STATE_MAX
+    };
+    enum ItemResult {
+        ITEM_TOTAL,               /**< total number ADDED/UPDATED/REMOVED */
+        ITEM_REJECT,              /**< number of rejected items, ANY state */
+        ITEM_MATCH,               /**< number of matched items, ANY state, REMOTE */
+        ITEM_CONFLICT_SERVER_WON, /**< conflicts resolved by using server item, ANY state, REMOTE */
+        ITEM_CONFLICT_CLIENT_WON, /**< conflicts resolved by using client item, ANY state, REMOTE */
+        ITEM_CONFLICT_DUPLICATED, /**< conflicts resolved by duplicating item, ANY state, REMOTE */
+        ITEM_SENT_BYTES,          /**< number of sent bytes, ANY, LOCAL */
+        ITEM_RECEIVED_BYTES,      /**< number of received bytes, ANY, LOCAL */
+        ITEM_RESULT_MAX
+    };
+
+    /**
+     * get item statistics
+     *
+     * @param location   either local or remote
+     * @param state      added, updated or removed
+     * @param success    either okay or failed
+     */
+    int getItemStat(ItemLocation location,
+                    ItemState state,
+                    ItemResult success) {
+        return m_stat[location][state][success];
+    }
+    void setItemStat(ItemLocation location,
+                     ItemState state,
+                     ItemResult success,
+                     int count) {
+        m_stat[location][state][success] = count;
+    }
+
  protected:
     const string m_changeId;
 
@@ -677,6 +723,9 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
 
     /** keeps track of failure state */
     bool m_hasFailed;
+
+    /** storage for getItemStat() */
+    int m_stat[ITEM_LOCATION_MAX][ITEM_STATE_MAX][ITEM_RESULT_MAX];
 };
 
 #endif // INCL_EVOLUTIONSYNCSOURCE

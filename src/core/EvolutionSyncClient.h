@@ -14,14 +14,25 @@
 
 #include <string>
 #include <set>
+#include <stdint.h>
 using namespace std;
 
 class SourceList;
+class EvolutionSyncSource;
+namespace sysync {
+    class TEngineModuleBridge;
+    enum TEngineProgressEventType {
+    };
+};
 
-/*
- * This is the main class inside sync4jevolution which
+/**
+ * This is the main class inside SyncEvolution which
  * looks at the configuration, activates all enabled
  * sources and executes the synchronization.
+ *
+ * All interaction with the user (reporting progress, asking for
+ * passwords, ...) is done via virtual methods. The default
+ * implementation of those uses stdin/out.
  *
  */
 class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, public ConfigUserInterface {
@@ -37,6 +48,13 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
      */
     static SourceList *m_sourceListPtr;
 
+    /**
+     * Connection to the Synthesis engine. Always valid in a
+     * constructed EvolutionSyncClient. Use getEngine() to reference
+     * it.
+     */
+    sysync::TEngineModuleBridge *m_engine;
+
   public:
     /**
      * @param server     identifies the server config to be used
@@ -47,20 +65,6 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
                         bool doLogging = false,
                         const set<string> &sources = set<string>());
     ~EvolutionSyncClient();
-
-    /**
-     * A helper function which interactively asks the user for
-     * a certain password. May throw errors.
-     *
-     * The default implementation uses stdin/stdout to communicate
-     * with the user.
-     *
-     * @param descr     A simple string explaining what the password is needed for,
-     *                  e.g. "SyncML server". Has to be unique and understandable
-     *                  by the user.
-     * @return entered password
-     */
-    virtual string askPassword(const string &descr);
 
     bool getQuiet() { return m_quiet; }
     void setQuiet(bool quiet) { m_quiet = quiet; }
@@ -140,6 +144,24 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
     virtual void setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter);
 
   protected:
+
+    sysync::TEngineModuleBridge &getEngine() { return *m_engine; }
+    const sysync::TEngineModuleBridge &getEngine() const { return *m_engine; }
+
+    /**
+     * A helper function which interactively asks the user for
+     * a certain password. May throw errors.
+     *
+     * The default implementation uses stdin/stdout to communicate
+     * with the user.
+     *
+     * @param descr     A simple string explaining what the password is needed for,
+     *                  e.g. "SyncML server". Has to be unique and understandable
+     *                  by the user.
+     * @return entered password
+     */
+    virtual string askPassword(const string &descr);
+
     /**
      * Callback for derived classes: called after setting up the client's
      * and sources' configuration. Can be used to reconfigure before
@@ -149,6 +171,40 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
      */
     virtual void prepare(SyncSource **sources);
 
+    /**
+     * display a text message from the server
+     *
+     * Not really used by SyncML servers. Could be displayed in a
+     * modal dialog.
+     *
+     * @param message     string with local encoding, possibly with line breaks
+     */
+    virtual void displayServerMessage(const string &message);
+
+    /**
+     * display general sync session progress
+     *
+     * @param type    PEV_*, see "synthesis/engine_defs.h"
+     * @param extra1  extra information depending on type
+     * @param extra2  extra information depending on type
+     * @param extra3  extra information depending on type
+     */
+    virtual void displaySyncProgress(sysync::TEngineProgressEventType type,
+                                     int32_t extra1, int32_t extra2, int32_t extra3);
+
+    /**
+     * display sync source specific progress
+     *
+     * @param type    PEV_*, see "synthesis/engine_defs.h"
+     * @param source  source which is the target of the event
+     * @param extra1  extra information depending on type
+     * @param extra2  extra information depending on type
+     * @param extra3  extra information depending on type
+     */
+    virtual void displaySourceProgress(sysync::TEngineProgressEventType type,
+                                       EvolutionSyncSource &source,
+                                       int32_t extra1, int32_t extra2, int32_t extra3);
+
  private:
     /**
      * the code common to init() and status():
@@ -156,6 +212,11 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
      * them for reading without changing their state yet
      */
     void initSources(SourceList &sourceList);
+
+    /**
+     * sets up Synthesis session and executes it
+     */
+    void doSync();
 
     /**
      * override sync mode of all active sync sources if set
