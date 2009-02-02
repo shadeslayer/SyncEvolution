@@ -1226,7 +1226,7 @@ void EvolutionSyncClient::doSync()
         try {
             // take next step
             err = getEngine().SessionStep(sessionH, stepCmd, &progressInfo);
-            if (err != LOCERR_OK) {
+            if (err != sysync::LOCERR_OK) {
                 // error, terminate with error
                 stepCmd = STEPCMD_ERROR;
             } else {
@@ -1244,7 +1244,7 @@ void EvolutionSyncClient::doSync()
                         // SessionKey's "displayalert" field
                         sysync::appPointer sessionKeyH;
                         err = getEngine().OpenSessionKey(sessionH, sessionKeyH, 0);
-                        if (err != LOCERR_OK) {
+                        if (err != sysync::LOCERR_OK) {
                             throwError("session key");
                         }
                         // get message from server to display
@@ -1305,7 +1305,7 @@ void EvolutionSyncClient::doSync()
                     // and "contenttype" to be used to send data to the server
                     sysync::appPointer sessionKeyH;
                     err = getEngine().OpenSessionKey(sessionH, sessionKeyH, 0);
-                    if (err != LOCERR_OK) {
+                    if (err != sysync::LOCERR_OK) {
                         throwError("session key");
                     }
                     getEngine().GetStrValue(sessionKeyH,
