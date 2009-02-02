@@ -474,72 +474,97 @@ public:
                 if (!m_quiet) {
                     cout << "\nChanges applied during synchronization:\n";
                 }
-                SyncReport *report = m_client.getSyncReport();
-                if (!m_quiet && report) {
-
-                    cout << "+-------------------|-------ON CLIENT-------|-------ON SERVER-------|\n";
-#ifndef SYNTHESIS 
-                    cout << "|                   |   successful / total  |   successful / total  |\n";
-#else
-                    cout << "|                   |    rejected / total   |    rejected / total   |\n";
-#endif
-                    cout << "|            Source |  NEW  |  MOD  |  DEL  |  NEW  |  MOD  |  DEL  |\n";
+#ifdef SYNTHESIS
+                if (!m_quiet) {
+                    cout << "+-------------------|-------ON CLIENT-------|-------ON SERVER-------|-CON-+\n";
+                    cout << "|                   |    rejected / total   |    rejected / total   | FLI |\n";
+                    cout << "|            Source |  NEW  |  MOD  |  DEL  |  NEW  |  MOD  |  DEL  | CTS |\n";
                     const char *sep = 
-                        "+-------------------+-------+-------+-------+-------+-------+-------+\n";
+                        "+-------------------+-------+-------+-------+-------+-------+-------+-----+\n";
                     cout << sep;
 
-#ifndef SYNTHESIS
-                    for (unsigned int i = 0; report->getSyncSourceReport(i); i++) {
-                        SyncSourceReport* ssr = report->getSyncSourceReport(i);
-
-                        if (ssr->getState() == SOURCE_INACTIVE) {
-                            continue;
-                        }
-                        
-                        cout << "|" << right << setw(18) << ssr->getSourceName() << " |";
-                        static const char * const targets[] =
-                            { CLIENT, SERVER, NULL };
-                        for (int target = 0;
-                             targets[target];
-                             target++) {
-                            static const char * const commands[] =
-                                { COMMAND_ADD, COMMAND_REPLACE, COMMAND_DELETE, NULL };
-                            for (int command = 0;
-                                 commands[command];
-                                 command++) {
-                                cout << right << setw(3) <<
-                                    ssr->getItemReportSuccessfulCount(targets[target], commands[command]);
-                                cout << "/";
-                                cout << left << setw(3) <<
-                                    ssr->getItemReportCount(targets[target], commands[command]);
-                                cout << "|";
-                            }
-                        }
-                        cout << "\n";
-                    }
-#else
                     BOOST_FOREACH(EvolutionSyncSource *source, *this) {
-                        cout << "|" << right << setw(18) << source->getName() << " |";
+                        const int name_width = 18;
+                        const int number_width = 3;
+                        const int single_side_width = (number_width * 2 + 1) * 3 + 2;
+                        const int text_width = single_side_width * 2 + 3 + number_width + 1;
+                        cout << "|" << right << setw(name_width) << source->getName() << " |";
                         for (EvolutionSyncSource::ItemLocation location = EvolutionSyncSource::ITEM_LOCAL;
                              location <= EvolutionSyncSource::ITEM_REMOTE;
                              location = EvolutionSyncSource::ItemLocation(int(location) + 1)) {
                             for (EvolutionSyncSource::ItemState state = EvolutionSyncSource::ITEM_STATE_ADDED;
                                  state <= EvolutionSyncSource::ITEM_STATE_REMOVED;
                                  state = EvolutionSyncSource::ItemState(int(state) + 1)) {
-                                cout << right << setw(3) <<
+                                cout << right << setw(number_width) <<
                                     source->getItemStat(location, state, EvolutionSyncSource::ITEM_REJECT);
                                 cout << "/";
-                                cout << left << setw(3) <<
+                                cout << left << setw(number_width) <<
                                     source->getItemStat(location, state, EvolutionSyncSource::ITEM_TOTAL);
                                 cout << "|";
-                                // TODO: print MATCH, CONFLICT, SENT/RECEIVED
                             }
                         }
-                        cout << "\n";
+                        int total_conflicts =
+                            source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
+                                                EvolutionSyncSource::ITEM_STATE_ANY,
+                                                EvolutionSyncSource::ITEM_CONFLICT_SERVER_WON) +
+                            source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
+                                                EvolutionSyncSource::ITEM_STATE_ANY,
+                                                EvolutionSyncSource::ITEM_CONFLICT_CLIENT_WON) +
+                            source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
+                                                EvolutionSyncSource::ITEM_STATE_ANY,
+                                                EvolutionSyncSource::ITEM_CONFLICT_DUPLICATED);
+                        cout << right << setw(number_width + 1) << total_conflicts;
+                        cout << " |\n";
+
+                        stringstream sent, received;
+                        sent << source->getItemStat(EvolutionSyncSource::ITEM_LOCAL,
+                                                    EvolutionSyncSource::ITEM_STATE_ANY,
+                                                    EvolutionSyncSource::ITEM_SENT_BYTES) / 1024 <<
+                            " KB sent by client";
+                        received << source->getItemStat(EvolutionSyncSource::ITEM_LOCAL,
+                                                        EvolutionSyncSource::ITEM_STATE_ANY,
+                                                        EvolutionSyncSource::ITEM_RECEIVED_BYTES) / 1024 <<
+                            " KB received";
+                        cout << "|" << left << setw(name_width) << "" << " |" <<
+                            right << setw(single_side_width) << sent.str() <<
+                            ", " <<
+                            left << setw(single_side_width - 1) << received.str() << "|" <<
+                            right << setw(number_width + 1) << "" <<
+                            " |\n";
+
+                        for (EvolutionSyncSource::ItemResult result = EvolutionSyncSource::ITEM_CONFLICT_SERVER_WON;
+                             result <= EvolutionSyncSource::ITEM_CONFLICT_DUPLICATED;
+                             result = EvolutionSyncSource::ItemResult(int(result) + 1)) {
+                            int count;
+                            if ((count = source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
+                                                             EvolutionSyncSource::ITEM_STATE_ANY,
+                                                             result)) != 0 || true) {
+                                stringstream line;
+                                line << count << " " <<
+                                    (result == EvolutionSyncSource::ITEM_CONFLICT_SERVER_WON ? "client item(s) discarded" :
+                                     result == EvolutionSyncSource::ITEM_CONFLICT_CLIENT_WON ? "server item(s) discarded" :
+                                     "item(s) duplicated");
+
+                                cout << "|" << left << setw(name_width) << "" << " |" <<
+                                    right << setw(text_width - 1) << line.str() <<
+                                    " |\n";
+                            }
+                        }
+
+                        int total_matched = source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
+                                                                EvolutionSyncSource::ITEM_STATE_ANY,
+                                                                EvolutionSyncSource::ITEM_MATCH);
+                        if (total_matched) {
+                            cout << "|" << left << setw(name_width) << "" << "| " << left <<
+                                setw(number_width) << total_matched <<
+                                setw(text_width - 1 - number_width) <<
+                                " item(s) matched" <<
+                                "|\n";
+                        }
                     }
-#endif
                     cout << sep;
                 }
+#endif
 
                 // compare databases?
                 if (!m_quiet && m_prepared) {
@@ -767,12 +792,10 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                            extra2);
         break;
     case PEV_DSSTATS_S:
-        /* datastore statistics for server conflicts (extra1=# server won,
-           extra2=# client won,
-           extra3=# duplicated) */
+        /* datastore statistics for server slowsync  (extra1=# slowsync matches) */
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
                            EvolutionSyncSource::ITEM_STATE_ANY,
-                           EvolutionSyncSource::ITEM_REJECT,
+                           EvolutionSyncSource::ITEM_MATCH,
                            extra1);
         break;
     case PEV_DSSTATS_C:
