@@ -677,13 +677,24 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
     switch(type) {
     case PEV_PREPARING:
         /* preparing (e.g. preflight in some clients), extra1=progress, extra2=total */
-        LOG.info("%s: preparing %d/%d",
-                 source.getName(), extra1, extra2);
+        /* extra2 might be zero */
+        if (extra2) {
+            LOG.info("%s: preparing %d/%d",
+                     source.getName(), extra1, extra2);
+        } else {
+            LOG.info("%s: preparing %d",
+                     source.getName(), extra1);
+        }
         break;
     case PEV_DELETING:
         /* deleting (zapping datastore), extra1=progress, extra2=total */
-        LOG.info("%s: deleting %d/%d",
-                 source.getName(), extra1, extra2);
+        if (extra2) {
+            LOG.info("%s: deleting %d/%d",
+                     source.getName(), extra1, extra2);
+        } else {
+            LOG.info("%s: deleting %d",
+                     source.getName(), extra1);
+        }
         break;
     case PEV_ALERTED:
         // TODO: direction?
