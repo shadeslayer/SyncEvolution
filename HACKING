@@ -4,7 +4,13 @@ Synthesis Branch
 Compile and install Synthesis SDK in directory "foo".
 
 Configure SyncEvolution with
-   SYNTHESIS_CFLAGS=-Ifoo/include SYNTHESIS_LIBS=-Lfoo/lib -lsynthesissdk
+   SYNTHESIS_CFLAGS=-Ifoo/include SYNTHESIS_LIBS="-Lfoo/lib -lsynthesissdk -lsynthesis"
+
+TODO: create .pc file for Synthesis
+TODO: libsynthesissdk.la declares its dependency on libsynthesis.la, but libtool
+      does not pick that up when linking libsynthesissdk.a into a .so
+      => -lsynthesis above is a temporary workaround for that, only necessary
+         when compiling SyncEvolution with --enable-shared
 
 Create a syncevolution.xml config file in the current
 directory, see src/syncevolution.xml.
