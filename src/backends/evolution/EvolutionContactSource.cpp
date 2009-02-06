@@ -146,7 +146,7 @@ void EvolutionContactSource::open()
     // by setting user or password
     const char *user = getUser(),
         *passwd = getPassword();
-    if (user && user[0] || passwd && passwd[0]) {
+    if ((user && user[0]) || (passwd && passwd[0])) {
         GList *authmethod;
         if (!e_book_get_supported_auth_methods(m_addressbook, &authmethod, &gerror)) {
             throwError("getting authentication methods", gerror );

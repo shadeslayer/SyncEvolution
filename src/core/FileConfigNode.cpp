@@ -241,7 +241,7 @@ void FileConfigNode::setProperty(const string &property,
 
         if (getValue(line, property, oldvalue, isComment, true)) {
             if (newvalue != oldvalue ||
-                isComment && !isDefault) {
+                (isComment && !isDefault)) {
                 line = newstr;
                 m_modified = true;
             }
