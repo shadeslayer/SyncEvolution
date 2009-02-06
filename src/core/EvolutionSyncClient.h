@@ -19,6 +19,7 @@ using namespace std;
 
 class SourceList;
 class EvolutionSyncSource;
+#include <synthesis/sync_declarations.h>
 namespace sysync {
     class TEngineModuleBridge;
     enum TEngineProgressEventType {
@@ -127,6 +128,17 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
      */
     static void startLoopThread();
 
+    /**
+     * Finds activated sync source by name. May return  NULL
+     * if no such sync source was defined or is not currently
+     * instantiated. Pointer remains valid throughout the sync
+     * session. Called by Synthesis DB plugin to find active
+     * sources.
+     *
+     * @TODO: roll SourceList into EvolutionSyncClient and
+     * make this non-static
+     */
+    static EvolutionSyncSource *findSource(const char *name);
 
     /* AbstractSyncConfig API */
     virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(const char* name) const;
@@ -147,6 +159,35 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
 
     sysync::TEngineModuleBridge &getEngine() { return *m_engine; }
     const sysync::TEngineModuleBridge &getEngine() const { return *m_engine; }
+
+    /**
+     * Return skeleton Synthesis client XML configuration.
+     *
+     * If it contains a <datastore/> element, then that element will
+     * be replaced by the configurations of all active sync
+     * sources. Otherwise the configuration is used as-is.
+     *
+     * The default implementation of this function takes the configuration from
+     * (in this order):
+     * - ./syncevolution.xml
+     * - <server config dir>/syncevolution.xml
+     * - built-in default
+     *
+     * @retval xml         is filled with Synthesis client config which may hav <datastore/>
+     * @retval configname  a string describing where the config came from
+     */
+    virtual void getConfigTemplateXML(string &xml, string &configname);
+
+    /**
+     * Return complete Synthesis XML configuration.
+     *
+     * Calls getConfigTemplateXML(), then fills in
+     * sync source XML fragments if necessary.
+     *
+     * @retval xml         is filled with complete Synthesis client config
+     * @retval configname  a string describing where the config came from
+     */
+    virtual void getConfigXML(string &xml, string &configname);
 
     /**
      * A helper function which interactively asks the user for

@@ -26,6 +26,7 @@ using namespace std;
 #include "eds_abi_wrapper.h"
 
 class EvolutionSyncSource;
+#include <synthesis/sync_declarations.h>
 
 /**
  * This set of parameters always has to be passed when constructing
@@ -405,6 +406,14 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     void setFailed(bool failed) { m_hasFailed = failed; }
 
     /**
+     * return Synthesis API pointer, if one currently is available
+     * (between SyncEvolution_Module_CreateContext() and
+     * SyncEvolution_Module_DeleteContext())
+     */
+    sysync::SDK_InterfaceType *getSynthesisAPI() { return m_synthesisAPI; }
+    void setSynthesisAPI(sysync::SDK_InterfaceType *synthesisAPI) { m_synthesisAPI = synthesisAPI; }
+
+    /**
      * Convenience function, to be called inside a catch() block of
      * the sync source.
      * Rethrows the exception to determine what it is, then logs it
@@ -469,6 +478,25 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
                                                     const char *prefix = getenv("CLIENT_TEST_EVOLUTION_PREFIX"));
 
     /**
+     * Return Synthesis <datastore> XML fragment for this sync source.
+     * Must *not* include the <datastore> element; it is created by
+     * the caller.
+     *
+     * The default implementation returns a configuration for the
+     * SynthesisDBPlugin. Items are exchanged with the
+     * EvolutionSyncsSource in the format defined by getMimeType() and
+     * with the SyncML side negotiated via the peer's capabilities,
+     * with the type defined in the configuration being the preferred
+     * one of the data store.
+     *
+     * See EvolutionSyncClient::getConfigXML() for details about
+     * predefined <datatype> entries that can be referenced here.
+     *
+     * @retval xml    put content of <datastore>...</datastore> here
+     */
+    virtual void getDatastoreXML(string &xml);
+
+    /**
      * @name default implementation of SyncSource iterators
      *
      * @todo getFirstItemKey() and getNextItemKey() are marked for removal
@@ -488,6 +516,27 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     virtual SyncItem* getFirstItemKey() throw() { return m_allItems.start(); }
     virtual SyncItem* getNextItemKey() throw() { return m_allItems.iterate(); }
     /**@}*/
+
+    enum NextItemState {
+        ITEM_UNCHANGED,       /**< item is unchanged since last sync */
+        ITEM_NEW,             /**< new item */
+        ITEM_UPDATED,         /**< item was updated since last sync */
+        ITEM_EOF,             /**< no more items */
+        ITEM_ERROR            /**< item couldn't be extracted */
+    };
+    /**
+     * get information about next item
+     *
+     * @retval data       optional: item data in default format
+     * @retval luid       local ID of item
+     * @return status of item or error
+     */
+    virtual NextItemState nextItem(string *data, string &luid) throw();
+
+    /**
+     * restart reading all items, automatically called at end of beginSync()
+     */
+    virtual void rewindItems() throw();
 
     /**
      * @name SyncSource methods that are provided by EvolutionSyncSource
@@ -674,6 +723,11 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
         {}
 
         /**
+         * start at with beginning, without returning first item yet
+         */
+        void rewind() { m_it = begin(); }
+
+        /**
          * start iterating, return first item if available
          *
          * Lists items in increasing lexical order. This is not required by
@@ -723,6 +777,15 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
 
     /** keeps track of failure state */
     bool m_hasFailed;
+
+    /**
+     * Interface pointer for this sync source, allocated for us by the
+     * Synthesis engine and registered here by
+     * SyncEvolution_Module_CreateContext(). Only valid until
+     * SyncEvolution_Module_DeleteContext(), in other words, while
+     * the engine is running.
+     */
+    sysync::SDK_InterfaceType *m_synthesisAPI;
 
     /** storage for getItemStat() */
     int m_stat[ITEM_LOCATION_MAX][ITEM_STATE_MAX][ITEM_RESULT_MAX];

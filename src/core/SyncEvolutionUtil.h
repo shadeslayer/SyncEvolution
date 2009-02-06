@@ -47,6 +47,20 @@ void rm_r(const string &path);
 bool isDir(const string &path);
 
 /**
+ * try to read a file into the given string, throw exception if fails
+ *
+ * @param filename     absolute or relative file name
+ * @retval content     filled with file content
+ * @return true if file could be read
+ */
+bool ReadFile(const string &filename, string &content);
+
+/**
+ * Simple string hash function, derived from Dan Bernstein's algorithm.
+ */
+unsigned long Hash(const char *str);
+
+/**
  * This is a simplified implementation of a class representing and calculating
  * UUIDs v4 inspired from RFC 4122. We do not use cryptographic pseudo-random
  * numbers, instead we rely on rand/srand.

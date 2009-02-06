@@ -922,6 +922,11 @@ void EvolutionSyncClient::startLoopThread()
 #endif
 }
 
+EvolutionSyncSource *EvolutionSyncClient::findSource(const char *name)
+{
+    return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
+}
+
 AbstractSyncSourceConfig* EvolutionSyncClient::getAbstractSyncSourceConfig(const char* name) const
 {
     return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
@@ -1003,6 +1008,59 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
     // check whether there were any sources specified which do not exist
     if (unmatchedSources.size()) {
         throwError(string("no such source(s): ") + boost::join(unmatchedSources, " "));
+    }
+}
+
+// syncevolution.xml converted to C string constant
+extern "C" {
+    extern const char *SyncEvolutionXML;
+}
+
+void EvolutionSyncClient::getConfigTemplateXML(string &xml, string &configname)
+{
+    try {
+        configname = "syncevolution.xml";
+        if (ReadFile(configname, xml)) {
+            return;
+        }
+    } catch (...) {
+    }
+
+    /**
+     * @TODO read from config directory
+     */
+
+    configname = "builtin XML configuration";
+    xml = SyncEvolutionXML;
+}
+
+
+
+void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
+{
+    getConfigTemplateXML(xml, configname);
+    const string tag("<datastore/>");
+    size_t index = xml.find("<datastore/>");
+    if (index != xml.npos) {
+        stringstream datastores;
+
+        BOOST_FOREACH(EvolutionSyncSource *source, *m_sourceListPtr) {
+            string fragment;
+            source->getDatastoreXML(fragment);
+            unsigned long hash = Hash(source->getName()) % INT_MAX;
+
+            /**
+             * @TODO handle hash collisions
+             */
+            if (!hash) {
+                hash = 1;
+            }
+            datastores << "    <datastore name='" << source->getName() << "' type='plugin'>\n" <<
+                "      <dbtypeid>" << hash << "</dbtypeid>\n" <<
+                fragment <<
+                "    </datastore>\n\n";
+        }
+        xml.replace(index, tag.size(), datastores.str());
     }
 }
 
@@ -1123,8 +1181,8 @@ void EvolutionSyncClient::doSync()
 {
     // Synthesis SDK
     sysync::TSyError err;
-    sysync::appPointer keyH;
-    sysync::appPointer subkeyH;
+    sysync::KeyH keyH;
+    sysync::KeyH subkeyH;
     string s;
 
     err = getEngine().OpenKeyByPath(keyH, NULL, "/configvars", 0);
@@ -1138,10 +1196,12 @@ void EvolutionSyncClient::doSync()
     getEngine().SetStrValue(keyH, "conferrpath", "console");
     getEngine().CloseKey(keyH);
 
-    string xmlConfig("syncevolution.xml");
-    err = getEngine().InitEngineFile(xmlConfig.c_str());
+    string xml, configname;
+    getConfigXML(xml, configname);
+    LOG.debug("%s", xml.c_str());
+    err = getEngine().InitEngineXML(xml.c_str());
     if (err) {
-        throwError(xmlConfig);
+        throwError(string("error parsing ") + configname);
     }
 
     err = getEngine().OpenKeyByPath(keyH, NULL, "/profiles", 0);
@@ -1178,7 +1238,7 @@ void EvolutionSyncClient::doSync()
     // and match them with sync sources.
     // TODO: let sync sources provide their own
     // XML snippets (inside <client> and inside <datatypes>).
-    sysync::appPointer targetsH, targetH;
+    sysync::KeyH targetsH, targetH;
     err = getEngine().OpenKeyByPath(targetsH, subkeyH, "targets", 0);
     if (err) {
         throwError("targets");
@@ -1244,7 +1304,7 @@ void EvolutionSyncClient::doSync()
     agent.setUserAgent(getUserAgent());
     // TODO: SSL settings
 
-    sysync::appPointer sessionH;
+    sysync::SessionH sessionH;
     sysync::TEngineProgressInfo progressInfo;
     sysync::uInt16 stepCmd = STEPCMD_CLIENTSTART; // first step
     err = getEngine().OpenSession(sessionH, 0, "syncevolution_session");
@@ -1276,7 +1336,7 @@ void EvolutionSyncClient::doSync()
                     if (progressInfo.eventtype==PEV_DISPLAY100) {
                         // alert 100 received from remote, message text is in
                         // SessionKey's "displayalert" field
-                        sysync::appPointer sessionKeyH;
+                        sysync::KeyH sessionKeyH;
                         err = getEngine().OpenSessionKey(sessionH, sessionKeyH, 0);
                         if (err != sysync::LOCERR_OK) {
                             throwError("session key");
@@ -1290,6 +1350,7 @@ void EvolutionSyncClient::doSync()
                     } else {
                         switch (progressInfo.targetID) {
                         case KEYVAL_ID_UNKNOWN:
+                        case 0 /* used with PEV_SESSIONSTART?! */:
                             displaySyncProgress(sysync::TEngineProgressEventType(progressInfo.eventtype),
                                                 progressInfo.extra1,
                                                 progressInfo.extra2,
@@ -1337,7 +1398,7 @@ void EvolutionSyncClient::doSync()
 
                     // use OpenSessionKey() and GetValue() to retrieve "connectURI"
                     // and "contenttype" to be used to send data to the server
-                    sysync::appPointer sessionKeyH;
+                    sysync::KeyH sessionKeyH;
                     err = getEngine().OpenSessionKey(sessionH, sessionKeyH, 0);
                     if (err != sysync::LOCERR_OK) {
                         throwError("session key");

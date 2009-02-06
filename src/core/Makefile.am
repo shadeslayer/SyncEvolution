@@ -41,6 +41,9 @@ CORE_SOURCES  = \
         EvolutionSyncSource.h \
         EvolutionSyncSource.cpp \
 	\
+	SynthesisDBPlugin.cpp \
+	\
+	SyncEvolutionXML.c \
         EvolutionSyncClient.h \
 	EvolutionSyncClient.cpp \
 	\
@@ -70,6 +73,11 @@ CORE_SOURCES  = \
 libsyncevolution_la_SOURCES = $(CORE_SOURCES)
 libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @FUNAMBOL_LIBS@ @TRANSPORT_LDFLAGS@ @LIBS@ $(SYNTHESIS_LIBS)
 libsyncevolution_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
+
+SyncEvolutionXML.c: $(srcdir)/../syncevolution.xml
+	echo "const char *SyncEvolutionXML =" > $@
+	sed -e 's/"/\\"/g' -e 's/\(.*\)/"\1\\n"/' $< >>$@
+	echo ";" >>$@
 
 # include boost in distribution
 dist-hook:

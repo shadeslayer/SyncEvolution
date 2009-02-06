@@ -219,6 +219,129 @@ EvolutionSyncSource *EvolutionSyncSource::createTestingSource(const string &name
     return createSource(params, error);
 }
 
+void EvolutionSyncSource::getDatastoreXML(string &xml)
+{
+    stringstream xmlstream;
+    string type = getMimeType();
+    string profile;
+    string datatypes;
+
+    /**
+     * @TODO: distinguish between VEVENT and VTODO
+     */
+
+    if (type == "text/x-vcard") {
+        profile = "\"vcard\", 1";
+        datatypes =
+            "        <use datatype='vcard21' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='vcard30' mode='rw'/>\n";
+    } else if (type == "text/vcard") {
+        profile = "\"vcard\", 2";
+        datatypes =
+            "        <use datatype='vcard21' mode='rw'/>\n"
+            "        <use datatype='vcard30' mode='rw' preferred='yes'/>\n";
+    } else if (type == "text/x-calendar") {
+        profile = "\"vcalendar\", 1";
+        datatypes =
+            "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='icalendar20' mode='rw'/>\n";
+    } else if (type == "text/calendar") {
+        profile = "\"vcalendar\", 2";
+        datatypes =
+            "        <use datatype='vcalendar10' mode='rw'/>\n"
+            "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
+    } else if (type == "text/plain") {
+        profile = "\"Note\", 2";
+    } else {
+        throwError(string("default MIME type not supported: ") + type);
+    }
+
+    pair <string, string> sourceType = getSourceType();
+    if (!sourceType.second.empty()) {
+        type = sourceType.second;
+    }
+
+    if (type == "text/x-vcard:2.1" || type == "text/x-vcard") {
+        datatypes =
+            "        <use datatype='vcard21' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='vcard30' mode='rw'/>\n";
+    } else if (type == "text/vcard:3.0" || type == "text/vcard") {
+        datatypes =
+            "        <use datatype='vcard21' mode='rw'/>\n"
+            "        <use datatype='vcard30' mode='rw' preferred='yes'/>\n";
+    } else if (type == "text/x-calendar:2.0" || type == "text/x-calendar") {
+        datatypes =
+            "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='icalendar20' mode='rw'/>\n";
+    } else if (type == "text/calendar:2.0" || type == "text/calendar") {
+        datatypes =
+            "        <use datatype='vcalendar10' mode='rw'/>\n"
+            "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
+    } else if (type == "text/plain:1.0" || type == "text/plain") {
+        datatypes =
+            "        <use datatype='note' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='note11' mode='rw'/>\n";
+    } else {
+        throwError(string("configured MIME type not supported: ") + type);
+    }
+
+    xmlstream <<
+        "      <plugin_module>SyncEvolution</plugin_module>\n"
+        "      <plugin_datastoreadmin>no</plugin_datastoreadmin>\n"
+        "\n"
+        "      <!-- General datastore settings for all DB types -->\n"
+        "\n"
+        "      <!-- if this is set to 'yes', SyncML clients can only read\n"
+        "           from the database, but make no modifications -->\n"
+        "      <readonly>no</readonly>\n"
+        "\n"
+        "      <!-- conflict strategy: Newer item wins\n"
+        "           You can set 'server-wins' or 'client-wins' as well\n"
+        "           if you want to give one side precedence\n"
+        "      -->\n"
+        "      <conflictstrategy>newer-wins</conflictstrategy>\n"
+        "\n"
+        "      <!-- on slowsync: duplicate items that are not fully equal\n"
+        "           You can set this to 'newer-wins' as well to avoid\n"
+        "           duplicates as much as possible\n"
+        "      -->\n"
+        "      <slowsyncstrategy>duplicate</slowsyncstrategy>\n"
+        "\n"
+        "      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->\n"
+        "      <datacharset>UTF-8</datacharset>\n"
+        "      <!-- use C-language (unix style) linefeeds (\n, 0x0A) -->\n"
+        "      <datalineends>unix</datalineends>\n"
+        "\n"
+        "      <!-- set this to 'UTC' if time values should be stored in UTC into the database\n"
+        "           rather than local time. 'SYSTEM' denotes local server time zone. -->\n"
+        "      <datatimezone>SYSTEM</datatimezone>\n"
+        "\n"
+        "      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so\n"
+        "           we must make sure this identifier is stored (and not only the sync time) -->\n"
+        "      <storesyncidentifiers>yes</storesyncidentifiers>\n"
+        "\n"
+        "      <!-- Mapping of the fields to the fieldlist 'contacts' -->\n"
+        "      <fieldmap fieldlist='contacts'>\n"
+        "        <initscript><![CDATA[\n"
+        "           string itemdata;\n"
+        "        ]]></initscript>\n"
+        "        <beforewritescript><![CDATA[\n"
+        "           itemdata = MAKETEXTWITHPROFILE(" << profile << ");\n"
+        "        ]]></beforewritescript>\n"
+        "        <afterreadscript><![CDATA[\n"
+        "           PARSETEXTWITHPROFILE(itemdata, " << profile << ");\n"
+        "        ]]></afterreadscript>\n"
+        "        <map name='data' references='itemdata' type='string'/>\n"
+        "      </fieldmap>\n"
+        "\n"
+        "      <!-- datatypes supported by this datastore -->\n"
+        "      <typesupport>\n" <<
+        datatypes <<
+        "      </typesupport>\n";
+
+    xml = xmlstream.str();
+}
+
 int EvolutionSyncSource::beginSync() throw()
 {
     string buffer;
@@ -292,11 +415,42 @@ int EvolutionSyncSource::beginSync() throw()
         }
 
         beginSyncThrow(needAll, needPartial, deleteLocal);
+
+        // This code here puts iterators in a state
+        // where iterating with nextItem() is possible.
+        rewindItems();
     } catch( ... ) {
         handleException();
         return 1;
     }
     return 0;
+}
+
+void EvolutionSyncSource::rewindItems() throw()
+{
+    m_allItems.rewind();
+}
+
+EvolutionSyncSource::NextItemState EvolutionSyncSource::nextItem(string *data, string &luid) throw()
+{
+    /** @TODO: avoid reading data if not necessary */
+    SyncItem *item = m_allItems.iterate();
+    NextItemState state = ITEM_EOF;
+
+    if (item) {
+        if (m_newItems.find(item->getKey()) != m_newItems.end()) {
+            state = ITEM_NEW;
+        } else if (m_updatedItems.find(item->getKey()) != m_updatedItems.end()) {
+            state = ITEM_UPDATED;
+        } else {
+            state = ITEM_UNCHANGED;
+        }
+        if (data) {
+            data->assign((const char *)item->getData(), item->getDataSize());
+        }
+        luid = item->getKey();
+    }
+    return state;
 }
 
 int EvolutionSyncSource::endSync() throw()

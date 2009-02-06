@@ -173,3 +173,30 @@ ReadDir::ReadDir(const string &path) : m_path(path)
 
     closedir(dir);
 }
+
+bool ReadFile(const string &filename, string &content)
+{
+    ifstream in;
+    in.open(filename.c_str());
+    ostringstream out;
+    char buf[8192];
+    do {
+        in.read(buf, sizeof(buf));
+        out.write(buf, in.gcount());
+    } while(in);
+
+    content = out.str();
+    return in.eof();
+}
+
+unsigned long Hash(const char *str)
+{
+    unsigned long hashval = 5381;
+    int c;
+
+    while ((c = *str++) != 0) {
+        hashval = ((hashval << 5) + hashval) + c;
+    }
+
+    return hashval;
+}
