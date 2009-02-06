@@ -148,6 +148,7 @@ public:
             "syncebook.so.0",
             "syncecal.so.0",
             "syncsqlite.so.0",
+            "syncfile.so.0",
             "addressbook.so.0",
             NULL
         };
