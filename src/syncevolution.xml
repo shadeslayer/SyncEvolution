@@ -658,8 +658,7 @@
 
 
   <client type="plugin">
-    <!-- TODO: configure this in SyncEvolution -->
-    <binfilespath>/home/pohly/.syncevolution</binfilespath>
+    <binfilespath>$(binfilepath)</binfilespath>
     <defaultauth>none</defaultauth>
 
     <datastore/>

@@ -1194,6 +1194,7 @@ void EvolutionSyncClient::doSync()
     getEngine().SetStrValue(keyH, "device_name", getDevType());
     // TODO: redirect to log file?
     getEngine().SetStrValue(keyH, "conferrpath", "console");
+    getEngine().SetStrValue(keyH, "binfilepath", getRootPath() + "/.synthesis");
     getEngine().CloseKey(keyH);
 
     string xml, configname;
