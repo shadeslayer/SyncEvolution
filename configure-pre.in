@@ -140,38 +140,81 @@ FUNAMBOL_LIB=$PWD/src/build-client-api/src/libfunambol.la
 
 AC_SUBST(CLEAN_CLIENT_SRC)
 
-case $target in
-*apple-darwin*)  use_mac_ta="yes" ;;
-*) use_libcurl="yes" ;;
-esac
+# Check for transport layer.
+# Both curl and libsoup can be enabled and disabled explicitly.
+# The default is to use libsoup if available, otherwise curl.
 
-# Check for libcurl now instead of during make.
-# Strictly speaking, building libfunambol takes
-# care of that, but because we build it in a
-# slightly unusual way (build libfunambol.a with
-# -fPIC, include just the required object files
-# in libsyncevolution) libtool doesn't pick up
-# that dependency and we have to add libcurl to
-# out link flags ourselves.
 AC_MSG_CHECKING([for libcurl])
-if TRANSPORT_LDFLAGS=`sh -c 'curl-config --libs' 2>&AS_MESSAGE_LOG_FD` && \
-    TRANSPORT_CFLAGS=`sh -c 'curl-config --cflags' 2>&AS_MESSAGE_LOG_FD`; then
-    AC_MSG_RESULT([found])
+if LIBCURL_LIBS=`sh -c 'curl-config --libs' 2>&AS_MESSAGE_LOG_FD` && \
+    LIBCURL_CFLAGS=`sh -c 'curl-config --cflags' 2>&AS_MESSAGE_LOG_FD`; then
+    AC_MSG_RESULT([yes])
+    have_libcurl="yes"
 else
-    AC_MSG_RESULT([missing])
-    # FIXME: hard-coded check for Mac (same as in libfunambol)
-    case $target in
-        *apple-darwin*) TRANSPORT_LDFLAGS="-framework CoreServices" ;;
-        *) AC_MSG_ERROR([libcurl is required, check that its development package is installed and curl-config is in your PATH]) ;;
-    esac
+    AC_MSG_RESULT([no])
+    have_libcurl="no"
 fi
-AC_SUBST(TRANSPORT_LDFLAGS)
+PKG_CHECK_MODULES(LIBSOUP, libsoup-2.4,
+                  have_libsoup="yes",
+                  have_libsoup="no")
+
+TRANSPORT=
+TRANSPORT_LIBS=
+TRANSPORT_CFLAGS=
+
+# choose default transport (mirrors code in EvolutionSyncClient::createTransportAgent())
+if test "$have_libsoup" = "yes"; then
+   default_transport="libsoup"
+elif test "$have_libcurl" = "yes"; then
+   default_transport="libcurl"
+fi
+
+AC_ARG_ENABLE(libcurl,
+              AC_HELP_STRING([--enable-libcurl],
+                             [enable libcurl as transport layer]),
+              [ if test "$enableval" = "yes"; then
+                   test "$have_libcurl" = "yes" || AC_MSG_ERROR([libcurl not found])
+                   TRANSPORT="$TRANSPORT libcurl"
+                   TRANSPORT_LIBS="$TRANSPORT_LIBS $LIBCURL_LIBS"
+                   TRANSPORT_CFLAGS="$TRANSPORT_CFLAGS $LIBCURL_CFLAGS"
+                   AC_DEFINE(ENABLE_LIBCURL, 1, [enable libcurl transport])
+                else
+                   libcurl_disabled="yes"
+                fi ],
+              [ if test "$have_libcurl" = "yes" && test "$default_transport" = "libcurl" ; then
+                   TRANSPORT="$TRANSPORT libcurl"
+                   TRANSPORT_LIBS="$TRANSPORT_LIBS $LIBCURL_LIBS"
+                   TRANSPORT_CFLAGS="$TRANSPORT_CFLAGS $LIBCURL_CFLAGS"
+                   AC_DEFINE(ENABLE_LIBCURL, 1, [enable libcurl transport])
+                fi ])
+
+AC_ARG_ENABLE(libsoup,
+              AC_HELP_STRING([--enable-libsoup],
+                             [enable libsoup as transport layer]),
+              [ if test "$enableval" = "yes"; then
+                   test "$have_libsoup" = "yes" || AC_MSG_ERROR([libsoup not found])
+                   TRANSPORT="$TRANSPORT libsoup"
+                   TRANSPORT_LIBS="$TRANSPORT_LIBS $LIBSOUP_LIBS"
+                   TRANSPORT_CFLAGS="$TRANSPORT_CFLAGS $LIBSOUP_CFLAGS"
+                   AC_DEFINE(ENABLE_LIBSOUP, 1, [enable libsoup transport])
+                else
+                   libsoup_disabled="yes"
+                fi ],
+              [ if test "$have_libsoup" = "yes" && test "$default_transport" = "libsoup"; then
+                   TRANSPORT="$TRANSPORT libsoup"
+                   TRANSPORT_LIBS="$TRANSPORT_LIBS $LIBSOUP_LIBS"
+                   TRANSPORT_CFLAGS="$TRANSPORT_CFLAGS $LIBSOUP_CFLAGS"
+                   AC_DEFINE(ENABLE_LIBSOUP, 1, [enable libsoup transport])
+                fi ])
+
+if test ! "$TRANSPORT" &&
+   test "$libsoup_disabled" != "yes" &&
+   test "$libcurl_disabled" != "yes"; then
+   AC_ERROR([no transport library found, configure with --disable-libcurl --disable-libsoup to continue anyway (only useful if users of libsyncevolution provide transport implementation)])
+fi
+
+AC_SUBST(TRANSPORT_LIBS)
 AC_SUBST(TRANSPORT_CFLAGS)
 
-if test "x$use_mac_ta" = "xyes"; then
-    CURL_LDFLAGS="-framework CoreServices"
-    AC_SUBST(CURL_LDFLAGS)
-fi
 
 # absolute patch to source of Funambol client library
 CLIENT_API_SRC=no-client-api-source

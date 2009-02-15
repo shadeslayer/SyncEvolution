@@ -1,0 +1,216 @@
+/*
+ * Copyright (C) 2009 Patrick Ohly
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+#include "CurlTransportAgent.h"
+
+#ifdef ENABLE_LIBCURL
+
+#include <algorithm>
+
+namespace SyncEvolution {
+
+CurlTransportAgent::CurlTransportAgent() :
+    m_easyHandle(easyInit()),
+    m_status(INACTIVE),
+    m_reply(NULL),
+    m_replyLen(0),
+    m_replySize(0)
+{
+    /*
+     * set up for post where message is pushed into curl via
+     * its read callback and reply is stored in write callback
+     */
+    CURLcode code;
+    if ((code = curl_easy_setopt(m_easyHandle, CURLOPT_NOPROGRESS, true)) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_WRITEFUNCTION, writeDataCallback)) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_WRITEDATA, (void *)this)) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_READFUNCTION, readDataCallback)) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_READDATA, (void *)this)) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_ERRORBUFFER, this->m_curlErrorText )) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_AUTOREFERER, true)) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_POST, true)) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_FOLLOWLOCATION, true))) {
+        /* error encountered, throw exception */
+        curl_easy_cleanup(m_easyHandle);
+        checkCurl(code);
+    }
+}
+
+CURL *CurlTransportAgent::easyInit()
+{
+    static bool initialized = false;
+    static CURLcode initres;
+
+    if (!initialized) {
+        initres = curl_global_init(CURL_GLOBAL_ALL);
+        initialized = true;
+    }
+
+    if (initres) {
+        throw std::string("global curl initialization failed");
+    }
+    CURL *handle = curl_easy_init();
+    if (!handle) {
+        throw "no curl handle";
+    }
+    return handle;
+}
+
+CurlTransportAgent::~CurlTransportAgent()
+{
+    if (m_reply) {
+        free(m_reply);
+    }
+    curl_easy_cleanup(m_easyHandle);
+    curl_slist_free_all(m_slist);
+}
+
+void CurlTransportAgent::setURL(const std::string &url)
+{
+    CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_URL, url.c_str());
+    checkCurl(code);
+}
+
+void CurlTransportAgent::setProxy(const std::string &proxy)
+{
+    CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_PROXY, proxy.c_str());
+    checkCurl(code);
+}
+
+void CurlTransportAgent::setProxyAuth(const std::string &user, const std::string &password)
+{
+    CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_PROXYUSERPWD,
+                                     (user + ":" + password).c_str());
+    checkCurl(code);
+}
+
+void CurlTransportAgent::setContentType(const std::string &type)
+{
+    m_contentType = type;
+}
+
+/**
+ * @TODO: curl_easy_setopt(m_easyHandle, CURLOPT_CAINFO, certificates
+ * (code = curl_easy_setopt(m_easyHandle, CURLOPT_SSL_VERIFYPEER, (long)SSLVerifyServer)) ||
+ * (code = curl_easy_setopt(m_easyHandle, CURLOPT_SSL_VERIFYHOST, (long)(SSLVerifyHost ? 2 : 0))) ||
+ */
+
+void CurlTransportAgent::send(const char *data, size_t len)
+{
+    CURLcode code;
+
+    m_replyLen = 0;
+    m_message = data;
+    m_messageSent = 0;
+    m_messageLen = len;
+
+    curl_slist_free_all(m_slist);
+    m_slist = NULL;
+    
+    // Setting Expect explicitly prevents problems with certain
+    // proxies: if curl is allowed to depend on Expect, then it will
+    // send the POST header and wait for the servers reply that it is
+    // allowed to continue. This will always be the case with a correctly
+    // configured SyncML and because some proxies reject unknown Expect
+    // requests, it is better not used.
+    m_slist = curl_slist_append(m_slist, "Expect:");
+
+    std::string contentHeader("Content-Type: ");
+    contentHeader += m_contentType;
+    m_slist = curl_slist_append(m_slist, contentHeader.c_str());
+
+    m_status = ACTIVE;
+    if ((code = curl_easy_setopt(m_easyHandle, CURLOPT_HTTPHEADER, m_slist)) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_POSTFIELDSIZE, len)) ||
+        (code = curl_easy_perform(m_easyHandle))) {
+        m_status = CANCELED;
+        checkCurl(code);
+    }
+    m_status = GOT_REPLY;
+}
+
+void CurlTransportAgent::cancel()
+{
+    /* nothing to do */
+}
+
+TransportAgent::Status CurlTransportAgent::wait()
+{
+    return m_status;
+}
+
+void CurlTransportAgent::getReply(const char *&data, size_t &len)
+{
+    data = m_reply;
+    len = m_replyLen;
+}
+
+size_t CurlTransportAgent::writeDataCallback(void *buffer, size_t size, size_t nmemb, void *stream) throw()
+{
+    return static_cast<CurlTransportAgent *>(stream)->writeData(buffer, size * nmemb);
+}
+
+size_t CurlTransportAgent::writeData(void *buffer, size_t size) throw()
+{
+    bool increase = false;
+    while (m_replyLen + size > m_replySize) {
+        m_replySize = m_replySize ? m_replySize * 2 : 64 * 1024;
+        increase = true;
+    }
+
+    if (increase) {
+        m_reply = (char *)realloc(m_reply, m_replySize);
+        if (!m_reply) {
+            m_replySize = 0;
+            m_replyLen = 0;
+            return 0;
+        }
+    }
+
+    memcpy(m_reply + m_replyLen,
+           buffer,
+           size);
+    m_replyLen += size;
+    return size;
+}
+
+size_t CurlTransportAgent::readDataCallback(void *buffer, size_t size, size_t nmemb, void *stream) throw()
+{
+    return static_cast<CurlTransportAgent *>(stream)->readData(buffer, size * nmemb);
+}
+
+size_t CurlTransportAgent::readData(void *buffer, size_t size) throw()
+{
+    size_t curr = std::min(size, m_messageLen - m_messageSent);
+
+    memcpy(buffer, m_message + m_messageSent, curr);
+    m_messageSent += curr;
+    return curr;
+}
+
+void CurlTransportAgent::checkCurl(CURLcode code)
+{
+    if (code) {
+        /** @TODO: logging */
+        throw std::string(m_curlErrorText);
+    }
+}
+
+} // namespace SyncEvolution
+
+#endif // ENABLE_LIBCURL

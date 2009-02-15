@@ -17,6 +17,12 @@
 #include <stdint.h>
 using namespace std;
 
+#include <boost/smart_ptr.hpp>
+
+namespace SyncEvolution {
+    class TransportAgent;
+}
+using namespace SyncEvolution;
 class SourceList;
 class EvolutionSyncSource;
 #include <synthesis/sync_declarations.h>
@@ -211,6 +217,25 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
      * @param sources   a NULL terminated array of all active sources
      */
     virtual void prepare(SyncSource **sources);
+
+    /**
+     * instantiate transport agent
+     *
+     * Called by engine when it needs to do HTTP POST requests.  The
+     * transport agent will be used throughout the sync session and
+     * unref'ed when no longer needed. At most one agent will be
+     * requested at a time. The transport agent is intentionally
+     * returned as a Boost shared pointer so that a pointer to a
+     * class with a different life cycle is possible, either by
+     * keeping a reference or by returning a shared_ptr where the
+     * destructor doesn't do anything.
+     *
+     * The default implementation instantiates one of the builtin
+     * transport agents, depending on how it was compiled.
+     *
+     * @return transport agent
+     */
+    virtual boost::shared_ptr<TransportAgent> createTransportAgent();
 
     /**
      * display a text message from the server

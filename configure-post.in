@@ -88,4 +88,3 @@ AC_DEFINE(SYNTHESIS, 1, "using Synthesis engine")
 
 AC_CONFIG_FILES(Makefile src/Makefile src/core/Makefile test/Makefile)
 AC_OUTPUT
-

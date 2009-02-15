@@ -32,6 +32,13 @@ CORE_SOURCES  = \
 	eds_abi_wrapper.h \
 	eds_abi_wrapper.cpp \
 	\
+	TransportAgent.h \
+	CurlTransportAgent.h \
+	CurlTransportAgent.cpp \
+	\
+	SoupTransportAgent.h \
+	SoupTransportAgent.cpp \
+	\
 	SyncEvolutionUtil.cpp \
 	SyncEvolutionUtil.h \
         \
@@ -71,8 +78,8 @@ CORE_SOURCES  = \
 	$(VOCL_SOURCES)
 
 libsyncevolution_la_SOURCES = $(CORE_SOURCES)
-libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @FUNAMBOL_LIBS@ @TRANSPORT_LDFLAGS@ @LIBS@ $(SYNTHESIS_LIBS)
-libsyncevolution_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
+libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @FUNAMBOL_LIBS@ $(TRANSPORT_LIBS) @LIBS@ $(SYNTHESIS_LIBS)
+libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
 
 SyncEvolutionXML.c: $(srcdir)/../syncevolution.xml
 	echo "const char *SyncEvolutionXML =" > $@

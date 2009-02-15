@@ -34,7 +34,7 @@ class EvolutionUnref {
      */
     static void unref(char *pointer) { free(pointer); }
 
-#ifdef HAVE_EDS
+#ifdef HAVE_GLIB
     static void unref(GObject *pointer) { g_object_unref(pointer); }
     /** free a list of GObject and the objects */
     static void unref(GList *pointer) {

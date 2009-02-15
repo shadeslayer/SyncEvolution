@@ -7,7 +7,9 @@
 #include "SyncEvolutionUtil.h"
 
 #include <posix/base/posixlog.h>
-#include <posix/http/CurlTransportAgent.h>
+#include "TransportAgent.h"
+#include "CurlTransportAgent.h"
+#include "SoupTransportAgent.h"
 
 #include <list>
 #include <memory>
@@ -658,6 +660,19 @@ string EvolutionSyncClient::askPassword(const string &descr)
     }
 }
 
+boost::shared_ptr<TransportAgent> EvolutionSyncClient::createTransportAgent()
+{
+#ifdef ENABLE_LIBSOUP
+    boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent());
+#elif defined(ENABLE_LIBCURL)
+    boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
+#else
+    boost::shared_ptr<TransportAgent> agent;
+    throw std::string("libsyncevolution was compiled without default transport, client must implement EvolutionSyncClient::createTransportAgent()");
+#endif
+    return agent;
+}
+
 void EvolutionSyncClient::displayServerMessage(const string &message)
 {
     LOG.info("message from server: %s",
@@ -1292,17 +1307,13 @@ void EvolutionSyncClient::doSync()
     }
                         
     // run an HTTP client sync session
-    Proxy proxy;
+    boost::shared_ptr<TransportAgent> agent(createTransportAgent());
     if (getUseProxy()) {
-        proxy.setProxy(getProxyHost(), 
-                       getProxyPort(),
-                       getProxyUsername(),
-                       getProxyPassword());
+        agent->setProxy(getProxyHost());
+        agent->setProxyAuth(getProxyUsername(),
+                            getProxyPassword());
     }
-    URL url;
-    CurlTransportAgent agent(url, proxy,
-                             getResponseTimeout());
-    agent.setUserAgent(getUserAgent());
+    // TODO: agent->setUserAgent(getUserAgent());
     // TODO: SSL settings
 
     sysync::SessionH sessionH;
@@ -1316,7 +1327,7 @@ void EvolutionSyncClient::doSync()
     // Sync main loop: runs until SessionStep() signals end or error.
     // Exceptions are caught and lead to a call of SessionStep() with
     // parameter STEPCMD_ABORT -> abort session as soon as possible.
-    char *received = NULL;
+    sysync::memSize length = 0;
     do {
         try {
             // take next step
@@ -1407,52 +1418,51 @@ void EvolutionSyncClient::doSync()
                     getEngine().GetStrValue(sessionKeyH,
                                             "connectURI",
                                             s);
-                    URL newurl(s.c_str());
-                    agent.setURL(newurl);
+                    agent->setURL(s);
                     string contenttype;
                     getEngine().GetStrValue(sessionKeyH,
                                             "contenttype",
                                             contenttype);
                     getEngine().CloseKey(sessionKeyH);
+                    agent->setContentType(contenttype);
                         
                     // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
                     // sent or have it copied into caller's buffer using
                     // ReadSyncMLBuffer(), then send it to the server
                     sysync::appPointer buffer;
-                    sysync::memSize length;
                     err = getEngine().GetSyncMLBuffer(sessionH, true, buffer, length);
                     if (err) {
                         throwError("buffer");
                     }
-                    // need temporary null-terminated string for agent
-                    string tmp;
-                    tmp.append((const char *)buffer, 0, length);
-                    received = agent.sendMessage(tmp.c_str());
-                    getEngine().RetSyncMLBuffer(sessionH, true, length);
-
-                    // status for next step
-                    if (received) {
-                        stepCmd = STEPCMD_SENTDATA; // we have sent the data and received response
-                    } else {
-                        stepCmd = STEPCMD_TRANSPFAIL; // communication with server failed
-                    }
+                    agent->send(static_cast<const char *>(buffer), length);
+                    stepCmd = STEPCMD_SENTDATA; // we have sent the data
                     break;
                 }
                 case STEPCMD_NEEDDATA:
-                    // put answer received earlier into SyncML engine's buffer
-                    if (received) {
-                        err = getEngine().WriteSyncMLBuffer(sessionH, received, strlen(received));
+                    switch (agent->wait()) {
+                    case TransportAgent::ACTIVE:
+                        stepCmd = STEPCMD_SENTDATA; // still sending the data?!
+                        break;
+                    case TransportAgent::GOT_REPLY:
+                        getEngine().RetSyncMLBuffer(sessionH, true, length);
+                        const char *reply;
+                        size_t replylen;
+                        agent->getReply(reply, replylen);
+
+                        // put answer received earlier into SyncML engine's buffer
+                        err = getEngine().WriteSyncMLBuffer(sessionH,
+                                                            const_cast<void *>(static_cast<const void *>(reply)),
+                                                            replylen);
                         if (err) {
                             throwError("write buffer");
                         }
-                        delete [] received;
-                        received = NULL;
                         stepCmd = STEPCMD_GOTDATA; // we have received response data
-                    } else {
+                        break;
+                    default:
                         stepCmd = STEPCMD_TRANSPFAIL; // communication with server failed
+                        break;
                     }
-                    break;
-                } // switch stepcmd
+                }
             }
             // check for suspend or abort, if so, modify step command for next step
             if (false /* tdb: check if user requests suspending the session */) {

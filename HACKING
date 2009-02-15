@@ -59,7 +59,11 @@ configure options for details.
 
 For doing development work the recommended configure line is:
    configure SYNCEVOLUTION_CXXFLAGS="-Wall -Werror -Wno-unknown-pragmas" \
-             --enable-unit-tests
+             --enable-unit-tests \
+             --enable-libcurl
+
+Enabling libcurl explicitly ensures that it gets built even when not
+the default.
 
 In contrast to CXXFLAGS, SYNCEVOLUTION_CXXFLAGS adds these flags only
 to the compilation of source files from the SyncEvolution source code
