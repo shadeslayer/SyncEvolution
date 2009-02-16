@@ -6,10 +6,12 @@
 #include "EvolutionSyncSource.h"
 #include "SyncEvolutionUtil.h"
 
-#include <posix/base/posixlog.h>
+#include "Logging.h"
+#include "LogStdout.h"
 #include "TransportAgent.h"
 #include "CurlTransportAgent.h"
 #include "SoupTransportAgent.h"
+using namespace SyncEvolution;
 
 #include <list>
 #include <memory>
@@ -32,6 +34,7 @@ using namespace std;
 #include <errno.h>
 
 #include "synthesis/enginemodulebridge.h"
+#include "synthesis/SDK_util.h"
 
 SourceList *EvolutionSyncClient::m_sourceListPtr;
 
@@ -48,7 +51,12 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server,
 {
     // Use libsynthesis that we were linked against.  The name
     // of a .so could be given here, too, to use that instead.
-    sysync::TSyError err = m_engine->Connect("[]", 0, 0);
+    sysync::TSyError err = m_engine->Connect("[]", 0,
+                                             sysync::DBG_PLUGIN_NONE|
+                                             sysync::DBG_PLUGIN_INT|
+                                             sysync::DBG_PLUGIN_DB|
+                                             sysync::DBG_PLUGIN_EXOT|
+                                             sysync::DBG_PLUGIN_ALL);
     if (err) {
         throwError("Connect");
     }
@@ -63,19 +71,17 @@ EvolutionSyncClient::~EvolutionSyncClient()
 // this class owns the logging directory and is responsible
 // for redirecting output at the start and end of sync (even
 // in case of exceptions thrown!)
-class LogDir {
+class LogDir : public LoggerStdout {
     string m_logdir;         /**< configured backup root dir, empty if none */
     int m_maxlogdirs;        /**< number of backup dirs to preserve, 0 if unlimited */
     string m_prefix;         /**< common prefix of backup dirs */
     string m_path;           /**< path to current logging and backup dir */
-    string m_logfile;        /**< path to log file there, empty if not writing one */
     const string &m_server;  /**< name of the server for this synchronization */
-    LogLevel m_oldLogLevel;  /**< logging level to restore */
-    bool m_restoreLog;       /**< false if nothing needs to be restored because setLogdir() was never called */
+    string m_logfile;        /**< path to log file there, empty if not writing one */
+    FILE *m_file;            /**< file handle for log file, NULL if not writing one */
 
 public:
-    LogDir(const string &server) : m_server(server),
-                                   m_restoreLog(false)
+    LogDir(const string &server) : m_server(server), m_file(NULL)
     {
         // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
         m_prefix = "SyncEvolution-";
@@ -117,7 +123,7 @@ public:
             try {
                 getLogdirs(path, entries);
             } catch(const std::exception &ex) {
-                LOG.error("%s", ex.what());
+                SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
                 return "";
             }
 
@@ -140,6 +146,7 @@ public:
     void setLogdir(const char *path, int maxlogdirs, int logLevel = 0) {
         m_maxlogdirs = maxlogdirs;
         if (path && !strcasecmp(path, "none")) {
+            m_path = "";
             m_logfile = "";
         } else if (path && path[0]) {
             m_logdir = path;
@@ -169,7 +176,7 @@ public:
                     break;
                 }
                 if (errno != EEXIST) {
-                    LOG.debug("%s: %s", m_path.c_str(), strerror(errno));
+                    SE_LOG_DEBUG(NULL, NULL, "%s: %s", m_path.c_str(), strerror(errno));
                     EvolutionSyncClient::throwError(m_path, errno);
                 }
                 seq++;
@@ -188,22 +195,32 @@ public:
         if (m_logfile.size()) {
             // redirect logging into that directory, including stderr,
             // after truncating it
-            FILE *file = fopen(m_logfile.c_str(), "w");
-            if (file) {
-                fclose(file);
-#ifdef POSIX_LOG
-                POSIX_LOG.
-#endif
-                    setLogFile(NULL, m_logfile.c_str(), true);
-            } else {
-                LOG.error("creating log file %s failed", m_logfile.c_str());
+            m_file = fopen(m_logfile.c_str(), "w");
+            if (!m_file) {
+                SE_LOG_ERROR(NULL, NULL, "creating log file %s failed", m_logfile.c_str());
             }
         }
-        m_oldLogLevel = LOG.getLevel();
-        LOG.setLevel(logLevel > 0 ? (LogLevel)(logLevel - 1) /* fixed level */ :
-                     m_logfile.size() ? LOG_LEVEL_DEBUG /* default for log file */ :
-                     LOG_LEVEL_INFO /* default for console output */ );
-        m_restoreLog = true;
+
+        // update log level of default logger and our own replacement
+        Level level;
+        switch (logLevel) {
+        case 0:
+            // default for console output
+            level = INFO;
+            break;
+        case 1:
+            level = ERROR;
+            break;
+        case 2:
+            level = INFO;
+            break;
+        default:
+            level = DEBUG;
+            break;
+        }
+        instance().setLevel(level);
+        setLevel(level);
+        setLogger(this);
     }
 
     /** sets a fixed directory for database files without redirecting logging */
@@ -243,38 +260,48 @@ public:
                  ++it, ++deleted) {
                 string path = m_logdir + "/" + *it;
                 string msg = "removing " + path;
-                LOG.info(msg.c_str());
+                SE_LOG_INFO(NULL, NULL, msg.c_str());
                 rm_r(path);
             }
         }
     }
 
-    // remove redirection of stderr and (optionally) also of logging
-    void restore(bool all) {
-        if (!m_restoreLog) {
-            return;
+    // remove redirection of logging
+    void restore() {
+        if (&instance() == this) {
+            setLogger(NULL);
         }
-          
-        if (all) {
-            if (m_logfile.size()) {
-#ifdef POSIX_LOG
-                POSIX_LOG.
-#endif
-                    setLogFile(NULL, "-", false);
-            }
-            LOG.setLevel(m_oldLogLevel);
-        } else {
-            if (m_logfile.size()) {
-#ifdef POSIX_LOG
-                POSIX_LOG.
-#endif
-                    setLogFile(NULL, m_logfile.c_str(), false);
-            }
+        if (m_file) {
+            fclose(m_file);
+            m_file = NULL;
         }
     }
 
     ~LogDir() {
-        restore(true);
+        restore();
+    }
+
+
+    virtual void messagev(Level level,
+                          const char *prefix,
+                          const char *file,
+                          int line,
+                          const char *function,
+                          const char *format,
+                          va_list args)
+    {
+        if (m_file) {
+            va_list argscopy;
+            va_copy(argscopy, args);
+            // once to file, with full debugging
+            // TODO: configurable level of detail for file
+            LoggerStdout::messagev(m_file, level, DEBUG,
+                                   prefix, file, line, function,
+                                   format, argscopy);
+            va_end(argscopy);
+        }
+        // to stdout
+        LoggerStdout::messagev(level, prefix, file, line, function, format, args);
     }
 };
 
@@ -316,11 +343,11 @@ public:
 
         BOOST_FOREACH(EvolutionSyncSource *source, *this) {
             string file = databaseName(*source, suffix);
-            LOG.debug("creating %s", file.c_str());
+            SE_LOG_DEBUG(NULL, NULL, "creating %s", file.c_str());
             out.open(file.c_str());
             source->exportData(out);
             out.close();
-            LOG.debug("%s created", file.c_str());
+            SE_LOG_DEBUG(NULL, NULL, "%s created", file.c_str());
         }
     }
 
@@ -351,7 +378,7 @@ public:
             m_logdir.setLogdir(logDirPath, maxlogdirs, logLevel);
         } else {
             // at least increase log level
-            LOG.setLevel(LOG_LEVEL_DEBUG);
+            LoggerBase::instance().setLevel(Logger::DEBUG);
         }
     }
 
@@ -422,7 +449,7 @@ public:
     void syncDone(bool success) {
         if (m_doLogging) {
             // ensure that stderr is seen again
-            m_logdir.restore(false);
+            m_logdir.restore();
 
             if (m_reportTodo) {
                 // haven't looked at result of sync yet;
@@ -434,31 +461,12 @@ public:
                     try {
                         dumpDatabases("after");
                     } catch (const std::exception &ex) {
-                        LOG.error( "%s", ex.what() );
+                        SE_LOG_ERROR(NULL, NULL,  "%s", ex.what() );
                         m_prepared = false;
                     }
                 }
 
                 string logfile = m_logdir.getLogfile();
-#ifndef LOG_HAVE_SET_LOGGER
-                // scan for error messages
-                if (!m_quiet && logfile.size()) {
-                    ifstream in;
-                    in.open(m_logdir.getLogfile().c_str());
-                    while (in.good()) {
-                        string line;
-                        getline(in, line);
-                        if (line.find("[ERROR]") != line.npos) {
-                            success = false;
-                           cout << line << "\n";
-                        } else if (line.find("[INFO]") != line.npos) {
-                            cout << line << "\n";
-                        }
-                    }
-                    in.close();
-                }
-#endif
-
                 cout << flush;
                 cerr << flush;
                 cout << "\n";
@@ -675,8 +683,7 @@ boost::shared_ptr<TransportAgent> EvolutionSyncClient::createTransportAgent()
 
 void EvolutionSyncClient::displayServerMessage(const string &message)
 {
-    LOG.info("message from server: %s",
-             message.c_str());
+    SE_LOG_INFO(NULL, NULL, "message from server: %s", message.c_str());
 }
 
 void EvolutionSyncClient::displaySyncProgress(sysync::TEngineProgressEventType type,
@@ -694,21 +701,21 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
         /* preparing (e.g. preflight in some clients), extra1=progress, extra2=total */
         /* extra2 might be zero */
         if (extra2) {
-            LOG.info("%s: preparing %d/%d",
-                     source.getName(), extra1, extra2);
+            SE_LOG_INFO(NULL, NULL, "%s: preparing %d/%d",
+                        source.getName(), extra1, extra2);
         } else {
-            LOG.info("%s: preparing %d",
-                     source.getName(), extra1);
+            SE_LOG_INFO(NULL, NULL, "%s: preparing %d",
+                        source.getName(), extra1);
         }
         break;
     case PEV_DELETING:
         /* deleting (zapping datastore), extra1=progress, extra2=total */
         if (extra2) {
-            LOG.info("%s: deleting %d/%d",
-                     source.getName(), extra1, extra2);
+            SE_LOG_INFO(NULL, NULL, "%s: deleting %d/%d",
+                        source.getName(), extra1, extra2);
         } else {
-            LOG.info("%s: deleting %d",
-                     source.getName(), extra1);
+            SE_LOG_INFO(NULL, NULL, "%s: deleting %d",
+                        source.getName(), extra1);
         }
         break;
     case PEV_ALERTED:
@@ -716,27 +723,27 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
 
         /* datastore alerted (extra1=0 for normal, 1 for slow, 2 for first time slow, 
            extra2=1 for resumed session) */
-        LOG.info("%s: %s %s sync",
-                 source.getName(),
-                 extra2 ? "resuming" : "starting",
-                 extra1 == 0 ? "normal" :
-                 extra1 == 1 ? "slow" :
-                 extra1 == 2 ? "first time" :
-                 "unknown");
+        SE_LOG_INFO(NULL, NULL, "%s: %s %s sync",
+                    source.getName(),
+                    extra2 ? "resuming" : "starting",
+                    extra1 == 0 ? "normal" :
+                    extra1 == 1 ? "slow" :
+                    extra1 == 2 ? "first time" :
+                    "unknown");
         break;
     case PEV_SYNCSTART:
         /* sync started */
-        LOG.info("%s: started",
-                 source.getName());
+        SE_LOG_INFO(NULL, NULL, "%s: started",
+                    source.getName());
         break;
     case PEV_ITEMRECEIVED:
         /* item received, extra1=current item count,
            extra2=number of expected changes (if >= 0) */
         if (extra2 > 0) {
-            LOG.info("%s: received %d/%d",
-                     source.getName(), extra1, extra2);
+            SE_LOG_INFO(NULL, NULL, "%s: received %d/%d",
+                        source.getName(), extra1, extra2);
         } else {
-            LOG.info("%s: received %d",
+            SE_LOG_INFO(NULL, NULL, "%s: received %d",
                      source.getName(), extra1);
         }
         break;
@@ -744,10 +751,10 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
         /* item sent,     extra1=current item count,
            extra2=number of expected items to be sent (if >=0) */
         if (extra2 > 0) {
-            LOG.info("%s: sent %d/%d",
+            SE_LOG_INFO(NULL, NULL, "%s: sent %d/%d",
                      source.getName(), extra1, extra2);
         } else {
-            LOG.info("%s: sent %d",
+            SE_LOG_INFO(NULL, NULL, "%s: sent %d",
                      source.getName(), extra1);
         }
         break;
@@ -755,14 +762,14 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
         /* item locally processed,               extra1=# added, 
            extra2=# updated,
            extra3=# deleted */
-        LOG.info("%s: added %d, updated %d, removed %d",
+        SE_LOG_INFO(NULL, NULL, "%s: added %d, updated %d, removed %d",
                  source.getName(), extra1, extra2, extra3);
         break;
     case PEV_SYNCEND:
         /* sync finished, probably with error in extra1 (0=ok),
            syncmode in extra2 (0=normal, 1=slow, 2=first time), 
            extra3=1 for resumed session) */
-        LOG.info("%s: %s%s sync done %s",
+        SE_LOG_INFO(NULL, NULL, "%s: %s%s sync done %s",
                  source.getName(),
                  extra3 ? "resumed " : "",
                  extra2 == 0 ? "normal" :
@@ -854,7 +861,7 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                            extra2);
         break;
     default:
-        LOG.debug("%s: progress event %d, extra %d/%d/%d",
+        SE_LOG_DEBUG(NULL, NULL, "%s: progress event %d, extra %d/%d/%d",
                   source.getName(),
                   type, extra1, extra2, extra3);
     }
@@ -882,7 +889,7 @@ void EvolutionSyncClient::throwError(const string &action, int error)
 
 void EvolutionSyncClient::fatalError(void *object, const char *error)
 {
-    LOG.error("%s", error);
+    SE_LOG_ERROR(NULL, NULL, "%s", error);
     if (m_sourceListPtr) {
         m_sourceListPtr->syncDone(false);
     }
@@ -1054,8 +1061,58 @@ void EvolutionSyncClient::getConfigTemplateXML(string &xml, string &configname)
 void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
 {
     getConfigTemplateXML(xml, configname);
-    const string tag("<datastore/>");
-    size_t index = xml.find("<datastore/>");
+
+    string tag;
+    size_t index;
+
+    tag = "<debug/>";
+    index = xml.find(tag);
+    if (index != xml.npos) {
+        stringstream debug;
+        bool logging = !m_sourceListPtr->getLogdir().empty();
+
+        // @TODO be more selective about which Synthesis logging
+        // options we enable. Currently it logs everything when logging
+        // at all.
+
+        debug <<
+            "  <debug>\n"
+            // logpath is a config variable set by EvolutionSyncClient::doSync()
+            "    <logpath>$(logpath)</logpath>\n"
+            "    <logflushmode>flush</logflushmode>\n"
+            "    <logformat>html</logformat>\n"
+            "    <folding>auto</folding>\n"
+            "    <timestamp>yes</timestamp>\n"
+            "    <timestampall>no</timestampall>\n"
+            "    <timedsessionlognames>no</timedsessionlognames>\n"
+            "    <subthreadmode>separate</subthreadmode>\n"
+            "    <singlegloballog>yes</singlegloballog>\n";
+        if (logging) {
+            debug <<
+                "    <sessionlogs>yes</sessionlogs>\n"
+                "    <globallogs>yes</globallogs>\n"
+                "    <msgdump>yes</msgdump>\n"
+                "    <xmltranslate>yes</xmltranslate>\n"
+                "    <enable option=\"all\"/>\n"
+                "    <enable option=\"userdata\"/>\n"
+                "    <enable option=\"scripts\"/>\n"
+                "    <enable option=\"exotic\"/>\n";
+        } else {
+            debug <<
+                "    <sessionlogs>no</sessionlogs>\n"
+                "    <globallogs>no</globallogs>\n"
+                "    <msgdump>no</msgdump>\n"
+                "    <xmltranslate>no</xmltranslate>\n"
+                "    <disable option=\"all\"/>";
+        }
+        debug <<
+            "  </debug>\n";
+
+        xml.replace(index, tag.size(), debug.str());
+    }
+
+    tag = "<datastore/>";
+    index = xml.find(tag);
     if (index != xml.npos) {
         stringstream datastores;
 
@@ -1084,7 +1141,7 @@ int EvolutionSyncClient::sync()
     int res = 1;
     
     if (!exists()) {
-        LOG.error("No configuration for server \"%s\" found.", m_server.c_str());
+        SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
         throwError("cannot proceed without configuration");
     }
 
@@ -1098,16 +1155,10 @@ int EvolutionSyncClient::sync()
                              getLogLevel());
 
         // dump some summary information at the beginning of the log
-#ifdef LOG_HAVE_DEVELOPER
-# define LOG_DEVELOPER developer
-#else
-# define LOG_DEVELOPER debug
-#endif
-        LOG.LOG_DEVELOPER("SyncML server account: %s", getUsername());
-        LOG.LOG_DEVELOPER("client: SyncEvolution %s for %s",
-                          getSwv(), getDevType());
-        LOG.LOG_DEVELOPER("device ID: %s", getDevID());
-        LOG.LOG_DEVELOPER("%s", EDSAbiWrapperDebug());
+        SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername());
+        SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv(), getDevType());
+        SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
+        SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
 
         // instantiate backends, but do not open them yet
         initSources(sourceList);
@@ -1167,13 +1218,13 @@ int EvolutionSyncClient::sync()
 
         res = 0;
     } catch (const std::exception &ex) {
-        LOG.error( "%s", ex.what() );
+        SE_LOG_ERROR(NULL, NULL,  "%s", ex.what() );
 
         // something went wrong, but try to write .after state anyway
         m_sourceListPtr = NULL;
         sourceList.syncDone(false);
     } catch (...) {
-        LOG.error( "unknown error" );
+        SE_LOG_ERROR(NULL, NULL,  "unknown error" );
         m_sourceListPtr = NULL;
         sourceList.syncDone(false);
     }
@@ -1204,7 +1255,12 @@ void EvolutionSyncClient::doSync()
     if (err) {
         throwError("open config vars");
     }
-    getEngine().SetStrValue(keyH, "defout_path", m_sourceListPtr->getLogdir());
+    string logdir = m_sourceListPtr->getLogdir();
+    if (logdir.size()) {
+        getEngine().SetStrValue(keyH, "defout_path", logdir);
+    } else {
+        getEngine().SetStrValue(keyH, "defout_path", "/dev/null");
+    }
     getEngine().SetStrValue(keyH, "device_uri", getDevID());
     getEngine().SetStrValue(keyH, "device_name", getDevType());
     // TODO: redirect to log file?
@@ -1214,7 +1270,7 @@ void EvolutionSyncClient::doSync()
 
     string xml, configname;
     getConfigXML(xml, configname);
-    LOG.debug("%s", xml.c_str());
+    SE_LOG_DEBUG(NULL, NULL, "%s", xml.c_str());
     err = getEngine().InitEngineXML(xml.c_str());
     if (err) {
         throwError(string("error parsing ") + configname);
@@ -1305,7 +1361,7 @@ void EvolutionSyncClient::doSync()
         getEngine().CloseKey(targetH);
         err = getEngine().OpenSubkey(targetH, targetsH, KEYVAL_ID_NEXT, 0);
     }
-                        
+
     // run an HTTP client sync session
     boost::shared_ptr<TransportAgent> agent(createTransportAgent());
     if (getUseProxy()) {
@@ -1473,10 +1529,10 @@ void EvolutionSyncClient::doSync()
             }
             // loop until session done or aborted with error
         } catch (const std::exception &ex) {
-            LOG.error("%s", ex.what());
+            SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
             stepCmd = STEPCMD_ABORT;
         } catch (...) {
-            LOG.error("unknown error");
+            SE_LOG_ERROR(NULL, NULL, "unknown error");
             stepCmd = STEPCMD_ABORT;
         }
     } while (stepCmd != STEPCMD_DONE && stepCmd != STEPCMD_ERROR);
@@ -1491,7 +1547,7 @@ void EvolutionSyncClient::status()
 {
     EvolutionSyncConfig config(m_server);
     if (!exists()) {
-        LOG.error("No configuration for server \"%s\" found.", m_server.c_str());
+        SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
         throwError("cannot proceed without configuration");
     }
 
@@ -1505,7 +1561,7 @@ void EvolutionSyncClient::status()
     }
 
     sourceList.setLogdir(getLogDir(), 0, LOG_LEVEL_NONE);
-    LOG.setLevel(LOG_LEVEL_INFO);
+    LoggerBase::instance().setLevel(Logger::INFO);
     string prevLogdir = sourceList.getPrevLogdir();
     bool found = access(prevLogdir.c_str(), R_OK|X_OK) == 0;
 
@@ -1515,7 +1571,7 @@ void EvolutionSyncClient::status()
             sourceList.dumpDatabases("current");
             sourceList.dumpLocalChanges("after", "current");
         } catch(const std::exception &ex) {
-            LOG.error("%s", ex.what());
+            SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
         }
     } else {
         cerr << "Previous log directory not found.\n";

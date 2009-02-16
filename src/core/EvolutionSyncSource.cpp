@@ -5,7 +5,7 @@
 #include "EvolutionSyncSource.h"
 #include "EvolutionSyncClient.h"
 #include "SyncEvolutionUtil.h"
-#include <common/base/Log.h>
+#include "Logging.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
@@ -79,7 +79,7 @@ void EvolutionSyncSource::handleException()
     } catch (std::exception &ex) {
         setErrorF(getLastErrorCode() == ERR_NONE ? ERR_UNSPECIFIED : getLastErrorCode(),
                   "%s", ex.what());
-        LOG.error("%s", getLastErrorMsg());
+        SE_LOG_ERROR(this, NULL, "%s", getLastErrorMsg());
         setFailed(true);
     }
 }
@@ -344,19 +344,7 @@ void EvolutionSyncSource::getDatastoreXML(string &xml)
 
 int EvolutionSyncSource::beginSync() throw()
 {
-    string buffer;
-    buffer += getName();
-    buffer += ": sync mode is ";
     SyncMode mode = getSyncMode();
-    buffer += mode == SYNC_SLOW ? "'slow'" :
-        mode == SYNC_TWO_WAY ? "'two-way'" :
-        mode == SYNC_REFRESH_FROM_SERVER ? "'refresh from server'" :
-        mode == SYNC_REFRESH_FROM_CLIENT ? "'refresh from client'" :
-        mode == SYNC_ONE_WAY_FROM_SERVER ? "'one-way from server'" :
-        mode == SYNC_ONE_WAY_FROM_CLIENT ? "'one-way from client'" :
-        mode == SYNC_NONE ? "'none' (for debugging)" :
-        "???";
-    LOG.info( buffer.c_str() );
 
     // start background thread if not running yet:
     // necessary to catch problems with Evolution backend
@@ -546,8 +534,8 @@ void EvolutionSyncSource::setItemStatusThrow(const char *key, int status)
         break;
      default:
         if (status < 200 || status > 300) {
-            LOG.error("%s: unexpected SyncML status response %d for item %.80s\n",
-                      getName(), status, key);
+            SE_LOG_ERROR(this, NULL, "unexpected SyncML status response %d for item %.80s\n",
+                         status, key);
             setFailed(true);
         }
     }
@@ -570,7 +558,7 @@ void EvolutionSyncSource::databaseModified()
 void EvolutionSyncSource::logItemUtil(const string data, const string &mimeType, const string &mimeVersion,
                                       const string &uid, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
         string name;
 
         if (mimeType == "text/plain") {
@@ -625,23 +613,51 @@ void EvolutionSyncSource::logItemUtil(const string data, const string &mimeType,
         }
 
         if (name.size()) {
-            (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s %s",
-                                                      getName(),
-                                                      name.c_str(),
-                                                      info.c_str());
+            SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL,
+                   "%s %s",
+                   name.c_str(),
+                   info.c_str());
         } else {
-            (LOG.*(debug ? &Log::debug : &Log::info))("%s: LUID %s %s",
-                                                      getName(),
-                                                      uid.c_str(),
-                                                      info.c_str());
+            SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL,
+                   "LUID %s %s",
+                   uid.c_str(),
+                   info.c_str());
         }
     }
+}
+
+void EvolutionSyncSource::setLevel(Level level)
+{
+    LoggerBase::instance().setLevel(level);
+}
+
+Logger::Level EvolutionSyncSource::getLevel()
+{
+    return LoggerBase::instance().getLevel();
+}
+
+void EvolutionSyncSource::messagev(Level level,
+                                   const char *prefix,
+                                   const char *file,
+                                   int line,
+                                   const char *function,
+                                   const char *format,
+                                   va_list args)
+{
+    string newprefix = getName();
+    if (prefix) {
+        newprefix += ": ";
+        newprefix += prefix;
+    }
+    LoggerBase::instance().messagev(level, newprefix.c_str(),
+                                    file, line, function,
+                                    format, args);
 }
 
 SyncItem *EvolutionSyncSource::Items::start()
 {
     m_it = begin();
-    LOG.debug("start scanning %s items", m_type.c_str());
+    SE_LOG_DEBUG(&m_source, NULL, "start scanning %s items", m_type.c_str());
     return iterate();
 }
 
@@ -649,7 +665,7 @@ SyncItem *EvolutionSyncSource::Items::iterate()
 {
     if (m_it != end()) {
         const string &uid( *m_it );
-        LOG.debug("next %s item: %s", m_type.c_str(), uid.c_str());
+        SE_LOG_DEBUG(&m_source, NULL, "next %s item: %s", m_type.c_str(), uid.c_str());
         ++m_it;
         if (&m_source.m_deletedItems == this) {
             // just tell caller the uid of the deleted item

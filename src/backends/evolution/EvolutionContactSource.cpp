@@ -17,7 +17,7 @@ using namespace std;
 #include "EvolutionContactSource.h"
 #include "SyncEvolutionUtil.h"
 
-#include <common/base/Log.h>
+#include "Logging.h"
 #include "vocl/VConverter.h"
 using namespace vocl;
 
@@ -153,7 +153,7 @@ void EvolutionContactSource::open()
         }
         while (authmethod) {
             const char *method = (const char *)authmethod->data;
-            LOG.debug("%s: trying authentication method \"%s\", user %s, password %s",
+            SE_LOG_DEBUG(this, NULL, "%s: trying authentication method \"%s\", user %s, password %s",
                       getName(), method,
                       user && user[0] ? "configured" : "not configured",
                       passwd && passwd[0] ? "configured" : "not configured");
@@ -162,11 +162,10 @@ void EvolutionContactSource::open()
                                          passwd ? passwd : "",
                                          method,
                                          &gerror)) {
-                LOG.debug("%s: authentication succeeded", getName());
+                SE_LOG_DEBUG(this, NULL, "authentication succeeded");
                 break;
             } else {
-                LOG.error("%s: authentication failed: %s",
-                          getName(), gerror->message);
+                SE_LOG_ERROR(this, NULL, "authentication failed: %s", gerror->message);
                 g_clear_error(&gerror);
             }
             authmethod = authmethod->next;
@@ -211,14 +210,14 @@ void EvolutionContactSource::beginSyncThrow(bool needAll,
                                                           E_CONTACT_OSSO_CONTACT_STATE);
                 bool deleted = false;
                 while (nextState) {
-                    LOG.debug("checking X-OSSO-CONTACT-STATE %p of uid %s",
+                    SE_LOG_DEBUG(this, NULL, "checking X-OSSO-CONTACT-STATE %p of uid %s",
                               nextState->data, uid);
                     if ((char *)nextState->data < (char *)1024) {
-                        LOG.info("broken X-OSSO-CONTACT-STATE %p, please report this to the SyncEvolution developer",
-                                 nextState->data);
+                        SE_LOG_INFO(this, NULL, "broken X-OSSO-CONTACT-STATE %p, please report this to the SyncEvolution developer",
+                                    nextState->data);
                     } else {
-                        LOG.debug("X-OSSO-CONTACT-STATE %p = %s",
-                                  nextState->data, (char *)nextState->data);
+                        SE_LOG_DEBUG(this, NULL, "X-OSSO-CONTACT-STATE %p = %s",
+                                     nextState->data, (char *)nextState->data);
                         if (nextState->data && !strcmp((char *)nextState->data, "DELETED")) {
                             deleted = true;
                         }
@@ -351,7 +350,7 @@ SyncItem *EvolutionContactSource::createItem(const string &uid)
     if (!vcardstr) {
         throwError(string("failure extracting contact from Evolution " ) + uid);
     }
-    LOG.debug("%s", vcardstr.get());
+    SE_LOG_DEBUG(this, NULL, "%s", vcardstr.get());
 
     std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
     if (vobj.get() == 0) {
@@ -391,7 +390,7 @@ SyncItem *EvolutionContactSource::createItem(const string &uid)
 
     // convert from 3.0 to 2.1?
     if (m_vcardFormat == EVC_FORMAT_VCARD_21) {
-        LOG.debug("convert to 2.1");
+        SE_LOG_DEBUG(this, NULL, "convert to 2.1");
 
         // escape extended properties so that they are preserved
         // as custom values by the server
@@ -476,8 +475,8 @@ SyncItem *EvolutionContactSource::createItem(const string &uid)
     vobj->fromNativeEncoding();
 
     arrayptr<char> finalstr(vobj->toString(), "VOCL string");
-    LOG.debug("after conversion:");
-    LOG.debug("%s", (char *)finalstr);
+    SE_LOG_DEBUG(this, NULL, "after conversion:");
+    SE_LOG_DEBUG(this, NULL, "%s", (char *)finalstr);
 
     auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
     item->setData( (char *)finalstr, strlen(finalstr) );
@@ -493,7 +492,7 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     // convert to 3.0 to get rid of quoted-printable encoded
     // non-ASCII chars, because Evolution does not support
     // decoding them
-    LOG.debug("%s", data.c_str());
+    SE_LOG_DEBUG(this, NULL, "%s", data.c_str());
     std::auto_ptr<VObject> vobj(VConverter::parse((char *)data.c_str()));
     if (vobj.get() == 0) {
         throwError(string("failure parsing contact " ) + item.getKey());
@@ -670,19 +669,18 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     vobj->fromNativeEncoding();
     arrayptr<char> voclstr(vobj->toString(), "VOCL string");
     data = (char *)voclstr;
-    LOG.debug("after conversion to 3.0:");
-    LOG.debug("%s", data.c_str());
+    SE_LOG_DEBUG(this, NULL, "after conversion to 3.0:");
+    SE_LOG_DEBUG(this, NULL, "%s", data.c_str());
     return data;
 }
 
 void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
 {
     switch (status) {
-     case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA: {
+    case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA: {
         // make a copy before allowing the server to overwrite it
 
-        LOG.error("%s: contact %s: conflict, will be replaced by server contact - create copy",
-                  getName(), key);
+        SE_LOG_ERROR(this, NULL, "contact %s: conflict, will be replaced by server contact - create copy", key);
         
         EContact *contact;
         GError *gerror = NULL;
@@ -690,8 +688,7 @@ void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
                                   key,
                                   &contact,
                                   &gerror ) ) {
-            LOG.error("%s: item %.80s: reading original for copy failed",
-                      getName(), key);
+            SE_LOG_ERROR(this, NULL, "item %.80s: reading original for copy failed", key);
             break;
         }
         eptr<EContact, GObject> contactptr( contact, "contact" );
@@ -701,8 +698,7 @@ void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
            ! e_book_add_contact(m_addressbook,
                                 copy,
                                 &gerror)) {
-            LOG.error("%s: item %.80s: making copy failed",
-                      getName(), key);
+            SE_LOG_ERROR(this, NULL, "item %.80s: making copy failed", key);
             break;
         }
         break;
@@ -794,7 +790,7 @@ int EvolutionContactSource::deleteItemThrow(SyncItem& item)
     if (!e_book_remove_contact( m_addressbook, item.getKey(), &gerror ) ) {
         if (gerror->domain == E_BOOK_ERROR &&
             gerror->code == E_BOOK_ERROR_CONTACT_NOT_FOUND) {
-            LOG.debug("%s: %s: request to delete non-existant contact ignored",
+            SE_LOG_DEBUG(this, NULL, "%s: %s: request to delete non-existant contact ignored",
                       getName(), item.getKey());
             g_clear_error(&gerror);
         } else {
@@ -833,7 +829,7 @@ const char *EvolutionContactSource::getMimeVersion() const
 
 void EvolutionContactSource::logItem(const string &uid, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
         string line;
         EContact *contact;
         GError *gerror = NULL;
@@ -864,13 +860,13 @@ void EvolutionContactSource::logItem(const string &uid, const string &info, bool
         line += "): ";
         line += info;
         
-        (LOG.*(debug ? &Log::debug : &Log::info))( "%s: %s", getName(), line.c_str() );
+        SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL, "%s", line.c_str() );
     }
 }
 
 void EvolutionContactSource::logItem(const SyncItem &item, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
         string line;
         const char *data = (const char *)item.getData();
         int datasize = item.getDataSize();
@@ -925,7 +921,7 @@ void EvolutionContactSource::logItem(const SyncItem &item, const string &info, b
         line += ": ";
         line += info;
         
-        (LOG.*(debug ? &Log::debug : &Log::info))( "%s: %s", getName(), line.c_str() );
+        SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL, "%s", line.c_str() );
     }
 }
 

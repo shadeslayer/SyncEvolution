@@ -5,8 +5,6 @@
 #include <config.h>
 #include <stddef.h>
 
-#include <base/Log.h>
-#include <posix/base/posixlog.h>
 #include <spds/spdsutils.h>
 
 #include <iostream>
@@ -49,37 +47,6 @@ extern "C" EContact *e_contact_new_from_vcard(const char *vcard)
 }
 #endif
 
-#ifdef LOG_HAVE_SET_LOGGER
-class CmdLineLogger : public POSIXLog {
-protected:
-    virtual void printLine(bool firstLine,
-                           time_t time,
-                           const char *fullTime,
-                           const char *shortTime,
-                           const char *utcTime,
-                           LogLevel level,
-                           const char *levelPrefix,
-                           const char *line) {
-        POSIXLog::printLine(firstLine,
-                            time,
-                            fullTime,
-                            shortTime,
-                            utcTime,
-                            level,
-                            levelPrefix,
-                            line);
-        if (level <= LOG_LEVEL_INFO &&
-            getLogFile()) {
-            /* POSIXLog is printing to file, therefore print important lines to stdout */
-            fprintf(stdout, "%s [%s] %s\n",
-                    shortTime,
-                    levelPrefix,
-                    line);
-        }
-    }
-};
-#endif
-
 int main( int argc, char **argv )
 {
 #ifdef ENABLE_MAEMO
@@ -100,17 +67,6 @@ int main( int argc, char **argv )
     g_type_init();
 #endif
 
-#ifdef LOG_HAVE_SET_LOGGER
-    static CmdLineLogger logger;
-    Log::setLogger(&logger);
-#endif
-
-#ifdef POSIX_LOG
-    POSIX_LOG.
-#endif
-        setLogFile(NULL, "-");
-    LOG.reset();
-    LOG.setLevel(LOG_LEVEL_INFO);
     resetError();
     setvbuf(stderr, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -142,9 +98,9 @@ int main( int argc, char **argv )
             return 1;
         }
     } catch ( const std::exception &ex ) {
-        LOG.error( "%s", ex.what() );
+        SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
     } catch (...) {
-        LOG.error( "unknown error" );
+        SE_LOG_ERROR(NULL, NULL, "unknown error");
     }
 
     return 1;

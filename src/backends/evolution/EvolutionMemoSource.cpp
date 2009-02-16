@@ -12,7 +12,7 @@ using namespace std;
 #include "EvolutionMemoSource.h"
 #include "EvolutionSmartPtr.h"
 
-#include <common/base/Log.h>
+#include "Logging.h"
 
 SyncItem *EvolutionMemoSource::createItem(const string &luid)
 {

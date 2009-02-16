@@ -9,7 +9,7 @@
 
 #include "SQLiteContactSource.h"
 
-#include <common/base/Log.h>
+#include "Logging.h"
 #include "vocl/VConverter.h"
 
 #include <algorithm>
@@ -219,7 +219,7 @@ SyncItem *SQLiteContactSource::createItem(const string &uid)
     vobj.fromNativeEncoding();
 
     arrayptr<char> finalstr(vobj.toString(), "VOCL string");
-    LOG.debug("%s", (char *)finalstr);
+    SE_LOG_DEBUG(this, NULL, "%s", (char *)finalstr);
 
     cxxptr<SyncItem> item( new SyncItem( uid.c_str() ) );
     item->setData( (char *)finalstr, strlen(finalstr) );
@@ -378,15 +378,15 @@ void SQLiteContactSource::deleteItem(const string &uid)
 
 void SQLiteContactSource::logItem(const string &uid, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
-        (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s %s",
-                                                  getName(),
-                                                  m_sqlite.findColumn("ABPerson",
-                                                                      "ROWID",
-                                                                      uid.c_str(),
-                                                                      "FirstSort",
-                                                                      uid.c_str()).c_str(),
-                                                  info.c_str());
+    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
+        SE_LOG(this, NULL, debug ? Logger::DEBUG : Logger::INFO,
+               "%s %s",
+               m_sqlite.findColumn("ABPerson",
+                                   "ROWID",
+                                   uid.c_str(),
+                                   "FirstSort",
+                                   uid.c_str()).c_str(),
+               info.c_str());
     }
 }
 
@@ -397,7 +397,7 @@ void SQLiteContactSource::logItem(const SyncItem &item, const string &info, bool
         return;
     }
 
-    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
         string data = (const char *)item.getData();
 
         // avoid pulling in a full vcard parser by just searching for a specific property,
@@ -412,11 +412,10 @@ void SQLiteContactSource::logItem(const SyncItem &item, const string &info, bool
                 name = data.substr(start, end - start);
             }
         }
-
-        (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s %s",
-                                                  getName(),
-                                                  name.c_str(),
-                                                  info.c_str());
+        SE_LOG(this, NULL, debug ? Logger::DEBUG : Logger::INFO,
+               "%s %s",
+               name.c_str(),
+               info.c_str());
     }
 }
 

@@ -32,6 +32,11 @@ CORE_SOURCES  = \
 	eds_abi_wrapper.h \
 	eds_abi_wrapper.cpp \
 	\
+	Logging.h \
+	Logging.cpp \
+	LogStdout.h \
+	LogStdout.cpp \
+	\
 	TransportAgent.h \
 	CurlTransportAgent.h \
 	CurlTransportAgent.cpp \

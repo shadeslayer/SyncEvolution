@@ -227,13 +227,11 @@ void FileSyncSource::deleteItem(const string &uid)
 
 void FileSyncSource::logItem(const string &uid, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
         // If there was a good way to extract a short string identifying
         // the item with uid, we would use it here and log it like this:
-        // (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s %s",
-        //                                           getName() /* out sync source name */,
-        //                                           itemName,
-        //                                           info.c_str());
+        // SE_LOG(this, NULL, debug ? Logger::DEBUG : Logger::INFO, "%s %s",
+        //        itemName, info.c_str());
         //
         // Alternatively we could just log the uid. EvolutionSyncSource::logItem()
         // is an utility function which extracts a short string from certain
@@ -263,7 +261,7 @@ void FileSyncSource::logItem(const string &uid, const string &info, bool debug)
 
 void FileSyncSource::logItem(const SyncItem &item, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
         if (!item.getData()) {
             // operation on item without data, fall back to logging via uid
             logItem(string(item.getKey()), info, debug);

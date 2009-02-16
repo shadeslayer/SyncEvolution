@@ -18,7 +18,7 @@ using namespace std;
 #include "EvolutionSmartPtr.h"
 #include "e-cal-check-timezones.h"
 
-#include <common/base/Log.h>
+#include "Logging.h"
 
 #include <boost/foreach.hpp>
 
@@ -105,7 +105,7 @@ char *EvolutionCalendarSource::authenticate(const char *prompt,
 {
     const char *passwd = getPassword();
 
-    LOG.debug("%s: authentication requested, prompt \"%s\", key \"%s\" => %s",
+    SE_LOG_DEBUG(this, NULL, "%s: authentication requested, prompt \"%s\", key \"%s\" => %s",
               getName(), prompt, key,
               passwd && passwd[0] ? "returning configured password" : "no password configured");
     return passwd && passwd[0] ? strdup(passwd) : NULL;
@@ -241,8 +241,7 @@ void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
 {
     switch (status) {
     case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA:
-         LOG.error("%s: item %.80s: conflict, will be replaced by server\n",
-                   getName(), key);
+        SE_LOG_ERROR(this, NULL, "item %.80s: conflict, will be replaced by server\n", key);
         break;
     }
     TrackingSyncSource::setItemStatusThrow(key, status);
@@ -284,7 +283,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         propstart = data.find("\nCATEGORIES", propstart + 1);
     }
     if (modified) {
-        LOG.debug("after replacing , with \\, in CATEGORIES:\n%s", data.c_str());
+        SE_LOG_DEBUG(this, NULL, "after replacing , with \\, in CATEGORIES:\n%s", data.c_str());
     }
 
     eptr<icalcomponent> icomp(icalcomponent_new_from_string((char *)data.c_str()));
@@ -504,7 +503,7 @@ EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const
                             &gerror)) {
         if (gerror->domain == E_CALENDAR_ERROR &&
             gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
-            LOG.debug("%s: %s: request to delete non-existant item ignored",
+            SE_LOG_DEBUG(this, NULL, "%s: %s: request to delete non-existant item ignored",
                       getName(), uid.c_str());
             g_clear_error(&gerror);
         } else {
@@ -545,7 +544,7 @@ void EvolutionCalendarSource::deleteItem(const string &luid)
                                             &gerror)) {
         if (gerror->domain == E_CALENDAR_ERROR &&
             gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
-            LOG.debug("%s: %s: request to delete non-existant item ignored",
+            SE_LOG_DEBUG(this, NULL, "%s: %s: request to delete non-existant item ignored",
                       getName(), luid.c_str());
             g_clear_error(&gerror);
         } else {
@@ -557,8 +556,8 @@ void EvolutionCalendarSource::deleteItem(const string &luid)
 
 void EvolutionCalendarSource::logItem(const string &luid, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
-        (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s: %s", getName(), luid.c_str(), info.c_str());
+    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
+        SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL, "%s: %s", luid.c_str(), info.c_str());
     }
 }
 
@@ -584,7 +583,7 @@ static string extractProp(const char *data, const char *keyword)
 
 void EvolutionCalendarSource::logItem(const SyncItem &item, const string &info, bool debug)
 {
-    if (LOG.getLevel() >= (debug ? LOG_LEVEL_DEBUG : LOG_LEVEL_INFO)) {
+    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
         const char *keyptr = item.getKey();
         string key;
         if (!keyptr || !keyptr[0]) {
@@ -600,7 +599,7 @@ void EvolutionCalendarSource::logItem(const SyncItem &item, const string &info, 
         } else {
             key = keyptr;
         }
-        (LOG.*(debug ? &Log::debug : &Log::info))("%s: %s: %s", getName(), key.c_str(), info.c_str());
+        SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL, "%s: %s", key.c_str(), info.c_str());
     }
 }
 
@@ -661,7 +660,7 @@ string EvolutionCalendarSource::retrieveItemAsString(const ItemID &id)
         propstart = data.find("\nCATEGORIES", propstart + 1);
     }
     if (modified) {
-        LOG.debug("after replacing \\, with , in CATEGORIES:\n%s", data.c_str());
+        SE_LOG_DEBUG(this, NULL, "after replacing \\, with , in CATEGORIES:\n%s", data.c_str());
     }
     
     return data;

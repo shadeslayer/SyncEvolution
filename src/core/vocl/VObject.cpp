@@ -364,7 +364,7 @@ void VObject::toNativeEncoding()
             // value
             if (_wcsicmp(charset, TEXT("UTF-8")) &&
                 _wcsicmp(charset, TEXT("\"UTF-8\""))) {
-                LOG.error("ignoring unsupported charset");
+                // log error("ignoring unsupported charset");
             }
             vprop->removeParameter(TEXT("CHARSET"));
         }

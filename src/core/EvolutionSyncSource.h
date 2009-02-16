@@ -8,6 +8,8 @@
 #include "config.h"
 #include "SyncEvolutionConfig.h"
 #include "EvolutionSmartPtr.h"
+#include "Logging.h"
+using namespace SyncEvolution;
 
 #include <boost/shared_ptr.hpp>
 #include <string>
@@ -21,7 +23,7 @@ using namespace std;
 
 #include <spds/SyncSource.h>
 #include <spdm/ManagementNode.h>
-#include <base/Log.h>
+#include "Logging.h"
 
 #include "eds_abi_wrapper.h"
 
@@ -282,7 +284,7 @@ class TestRegistry : public vector<const RegisterSyncSourceTest *>
  *
  * It also adds Evolution specific interfaces and utility functions.
  */
-class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
+class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig, public LoggerBase
 {
  public:
     /**
@@ -610,6 +612,27 @@ class EvolutionSyncSource : public SyncSource, public EvolutionSyncSourceConfig
     virtual void logItem(const SyncItem &item, const string &info, bool debug = false) = 0;
     virtual void logItemUtil(const string data, const string &mimeType, const string &mimeVersion,
                              const string &uid, const string &info, bool debug = false);
+    /**@}*/
+
+
+    /**
+     * Logging utility code.
+     *
+     * Every sync source adds "<name>" as prefix to its output.
+     * All calls are redirected into EvolutionSyncClient logger.
+     *
+     * @TODO call EvolutionSyncClient instead of logger singleton
+     */
+    /**@{*/
+    virtual void setLevel(Level level);
+    virtual Level getLevel();
+    virtual void messagev(Level level,
+                          const char *prefix,
+                          const char *file,
+                          int line,
+                          const char *function,
+                          const char *format,
+                          va_list args);
     /**@}*/
 
   protected:
