@@ -45,7 +45,6 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     const string m_server;
     const set<string> m_sources;
     const bool m_doLogging;
-    SyncMode m_syncMode;
     bool m_quiet;
 
     /**
@@ -74,8 +73,6 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
 
     bool getQuiet() { return m_quiet; }
     void setQuiet(bool quiet) { m_quiet = quiet; }
-    SyncMode getSyncMode() { return m_syncMode; }
-    void setSyncMode(SyncMode syncMode) { m_syncMode = syncMode; }
 
     /**
      * Executes the sync, throws an exception in case of failure.
@@ -216,7 +213,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      *
      * @param sources   a NULL terminated array of all active sources
      */
-    virtual void prepare(const std::vector<EvolutionSyncSource *> &sources);
+    virtual void prepare(const std::vector<EvolutionSyncSource *> &sources) {}
 
     /**
      * instantiate transport agent

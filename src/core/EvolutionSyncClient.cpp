@@ -45,7 +45,6 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server,
     m_server(server),
     m_sources(sources),
     m_doLogging(doLogging),
-    m_syncMode(SYNC_NONE),
     m_quiet(false),
     m_engine(new sysync::TEngineModuleBridge())
 {
@@ -1189,14 +1188,6 @@ int EvolutionSyncClient::sync()
 
     m_sourceListPtr = NULL;
     return res;
-}
-
-void EvolutionSyncClient::prepare(const std::vector<EvolutionSyncSource *> &sources) {
-    if (m_syncMode != SYNC_NONE) {
-        // BOOST_FOREACH(EvolutionSyncSource *source, sources) {
-            // @TODO source->setPreferredSyncMode(m_syncMode);
-        // }
-    }
 }
 
 void EvolutionSyncClient::doSync()
