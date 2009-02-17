@@ -2,10 +2,8 @@
  * Copyright (C) 2008 Patrick Ohly
  */
 
-#include <config.h>
 #include "SyncEvolutionUtil.h"
 #include "EvolutionSyncClient.h"
-#include <base/test.h>
 
 #include <boost/scoped_array.hpp>
 #include <boost/foreach.hpp>

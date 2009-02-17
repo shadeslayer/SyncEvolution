@@ -151,12 +151,9 @@ SyncItem *FileSyncSource::createItem(const string &uid)
     }
 
     string content = out.str();
-    auto_ptr<SyncItem> item(new SyncItem(uid.c_str()));
+    cxxptr<SyncItem> item(new SyncItem(), "SyncItem");
+    item->setKey(uid);
     item->setData(content.c_str(), content.size());
-    item->setDataType(getMimeType());
-    // probably not even used by Funambol client library...
-    item->setModificationTime(0);
-
     return item.release();
 }
 

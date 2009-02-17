@@ -1,4 +1,0 @@
-The code in this directory is a copy of the Funambol 3.x C++ 
-client api code, revision sdkcpp_3_0_17. It was forked because
-the upstream development broke the vCard 2.1 <-> 3.0 conversion
-that SyncEvolution needs.

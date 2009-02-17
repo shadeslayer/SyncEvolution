@@ -20,9 +20,8 @@ SyncItem *EvolutionMemoSource::createItem(const string &luid)
 
     ItemID id(luid);
     eptr<icalcomponent> comp(retrieveItem(id));
-    auto_ptr<SyncItem> item(new SyncItem(luid.c_str()));
-
-    item->setData("", 0);
+    cxxptr<SyncItem> item(new SyncItem(), "SyncItem");
+    item->setKey(luid);
     icalcomponent *cal = icalcomponent_get_first_component(comp, ICAL_VCALENDAR_COMPONENT);
     if (!cal) {
         cal = comp;
@@ -90,23 +89,20 @@ SyncItem *EvolutionMemoSource::createItem(const string &luid)
             item->setData(dostext, strlen(dostext));
         }
     }
-    item->setDataType("text/plain");
-    item->setModificationTime(0);
 
     return item.release();
 }
 
 EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const string &luid, const SyncItem &item)
 {
-    const char *type = item.getDataType();
+    string type = item.getDataType();
 
     // fall back to inserting iCalendar 2.0 if
     // real SyncML server has sent vCalendar 1.0 or iCalendar 2.0
     // or the test system inserts such an item
-    if (!type[0] ||
-        !strcasecmp(type, "raw") ||
-        !strcasecmp(type, "text/x-vcalendar") ||
-        !strcasecmp(type, "text/calendar")) {
+    if (!strcasecmp(type.c_str(), "raw") ||
+        !strcasecmp(type.c_str(), "text/x-vcalendar") ||
+        !strcasecmp(type.c_str(), "text/calendar")) {
         return EvolutionCalendarSource::insertItem(luid, item);
     }
     

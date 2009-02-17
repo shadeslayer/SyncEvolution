@@ -6,8 +6,6 @@
 
 #include "FilterConfigNode.h"
 
-#include "spds/AbstractSyncConfig.h"
-#include "spds/AbstractSyncSourceConfig.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -446,7 +444,7 @@ class ConfigStringCache {
  * uses a FileConfigTree instance. Other implementations would be
  * possible.
  */
-class EvolutionSyncConfig : public AbstractSyncConfig {
+class EvolutionSyncConfig {
  public:
     /**
      * Opens the configuration for a specific server,
@@ -627,10 +625,6 @@ class EvolutionSyncConfig : public AbstractSyncConfig {
      */
     /**@{*/
 
-    virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(const char* name) const { return NULL; }
-    virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(unsigned int i) const { return NULL; }
-    virtual unsigned int getAbstractSyncSourceConfigsCount() const { return 0; }
-
     virtual const char*  getUsername() const;
     virtual void setUsername(const string &value, bool temporarily = false);
     virtual const char*  getPassword() const;
@@ -790,7 +784,7 @@ struct ConstSyncSourceNodes {
  * Some properties are not configurable and have to be provided
  * by derived classes.
  */
-class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
+class EvolutionSyncSourceConfig {
  public:
     EvolutionSyncSourceConfig(const string &name, const SyncSourceNodes &nodes);
 
@@ -944,9 +938,9 @@ class EvolutionSyncSourceConfig : public AbstractSyncSourceConfig {
      * returning an empty array implies that it supports all aspects.
      * This is the default implementation of this call.
      *
-     * @return an ArrayList of CTCap
+     * @TODO: per-source capabilities
      */
-    virtual const ArrayList& getCtCaps() const { static const ArrayList dummy; return dummy; }
+    // virtual const ArrayList& getCtCaps() const { static const ArrayList dummy; return dummy; }
 
     /**@}*/
 

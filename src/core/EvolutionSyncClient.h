@@ -9,8 +9,7 @@
 
 #include "EvolutionSmartPtr.h"
 #include "SyncEvolutionConfig.h"
-#include <client/SyncClient.h>
-#include <spds/SyncManagerConfig.h>
+#include "SyncML.h"
 
 #include <string>
 #include <set>
@@ -42,7 +41,7 @@ namespace sysync {
  * implementation of those uses stdin/out.
  *
  */
-class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, public ConfigUserInterface {
+class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterface {
     const string m_server;
     const set<string> m_sources;
     const bool m_doLogging;
@@ -146,11 +145,6 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
      */
     static EvolutionSyncSource *findSource(const char *name);
 
-    /* AbstractSyncConfig API */
-    virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(const char* name) const;
-    virtual AbstractSyncSourceConfig* getAbstractSyncSourceConfig(unsigned int i) const;
-    virtual unsigned int getAbstractSyncSourceConfigsCount() const;
-
     /**
      * intercept config filters
      *
@@ -165,6 +159,12 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
 
     sysync::TEngineModuleBridge &getEngine() { return *m_engine; }
     const sysync::TEngineModuleBridge &getEngine() const { return *m_engine; }
+
+    sysync::TEngineModuleBridge *swapEngine(sysync::TEngineModuleBridge *newengine) {
+        sysync::TEngineModuleBridge *oldengine = m_engine;
+        m_engine = newengine;
+        return oldengine;
+    }
 
     /**
      * Return skeleton Synthesis client XML configuration.
@@ -216,7 +216,7 @@ class EvolutionSyncClient : public SyncClient, public EvolutionSyncConfig, publi
      *
      * @param sources   a NULL terminated array of all active sources
      */
-    virtual void prepare(SyncSource **sources);
+    virtual void prepare(const std::vector<EvolutionSyncSource *> &sources);
 
     /**
      * instantiate transport agent

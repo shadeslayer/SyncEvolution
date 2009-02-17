@@ -126,7 +126,7 @@ void TrackingSyncSource::exportData(ostream &out)
     }
 }
 
-int TrackingSyncSource::addItemThrow(SyncItem& item)
+SyncMLStatus TrackingSyncSource::addItemThrow(SyncItem& item)
 {
     InsertItemResult res = insertItem("", item);
     item.setKey(res.m_uid.c_str());
@@ -134,10 +134,10 @@ int TrackingSyncSource::addItemThrow(SyncItem& item)
         throwError("could not add item");
     }
     m_trackingNode->setProperty(res.m_uid, res.m_revision);
-    return res.m_merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
+    return res.m_merged ? STATUS_DATA_MERGED : STATUS_OK;
 }
 
-int TrackingSyncSource::updateItemThrow(SyncItem& item)
+SyncMLStatus TrackingSyncSource::updateItemThrow(SyncItem& item)
 {
     const string uid = item.getKey();
     InsertItemResult res = insertItem(uid, item);
@@ -149,17 +149,13 @@ int TrackingSyncSource::updateItemThrow(SyncItem& item)
         throwError("could not update item");
     }
     m_trackingNode->setProperty(res.m_uid, res.m_revision);
-    return res.m_merged ? STC_CONFLICT_RESOLVED_WITH_MERGE : STC_OK;
+    return res.m_merged ? STATUS_DATA_MERGED : STATUS_OK;
 }
 
-int TrackingSyncSource::deleteItemThrow(SyncItem& item)
+SyncMLStatus TrackingSyncSource::deleteItemThrow(SyncItem& item)
 {
     const string uid = item.getKey();
     deleteItem(uid);
     m_trackingNode->removeProperty(uid);
-    return STC_OK;
-}
-
-void TrackingSyncSource::setItemStatusThrow(const char *uid, int status)
-{
+    return STATUS_OK;
 }

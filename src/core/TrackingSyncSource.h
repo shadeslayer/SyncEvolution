@@ -198,17 +198,15 @@ class TrackingSyncSource : public EvolutionSyncSource
     virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;
     virtual void logItem(const SyncItem &item, const string &info, bool debug = false) = 0;
 
-    virtual void setItemStatusThrow(const char *key, int status);
-
   private:
     /* implementations of EvolutionSyncSource callbacks */
     virtual void beginSyncThrow(bool needAll,
                                 bool needPartial,
                                 bool deleteLocal);
     virtual void endSyncThrow();
-    virtual int addItemThrow(SyncItem& item);
-    virtual int updateItemThrow(SyncItem& item);
-    virtual int deleteItemThrow(SyncItem& item);
+    virtual SyncMLStatus addItemThrow(SyncItem& item);
+    virtual SyncMLStatus updateItemThrow(SyncItem& item);
+    virtual SyncMLStatus deleteItemThrow(SyncItem& item);
 
     boost::shared_ptr<ConfigNode> m_trackingNode;
 };

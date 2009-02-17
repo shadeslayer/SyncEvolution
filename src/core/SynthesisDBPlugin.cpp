@@ -58,7 +58,7 @@ TSyError SyncEvolution_Module_CreateContext( CContext *mContext, cAppCharP   mod
     TSyError err = LOCERR_WRONGUSAGE;
     EvolutionSyncSource *source = EvolutionSyncClient::findSource(mContextName);
     if (source) {
-        source->setSynthesisAPI(mCB);
+        source->pushSynthesisAPI(mCB);
         *mContext = (CContext)source;
         err = LOCERR_OK;
     }
@@ -138,7 +138,7 @@ TSyError SyncEvolution_Module_DeleteContext( CContext mContext )
 {
     EvolutionSyncSource  *source = MoC(mContext);
     DEBUG_DB(source->getSynthesisAPI(), MyDB, Mo_DC, "'%s'", source->getName());
-    source->setSynthesisAPI(NULL);
+    source->popSynthesisAPI();
     return LOCERR_OK;
 }
 
@@ -404,7 +404,7 @@ TSyError SyncEvolution_CreateContext( CContext *aContext, cAppCharP aContextName
     TSyError err = LOCERR_WRONGUSAGE;
     EvolutionSyncSource *source = EvolutionSyncClient::findSource(aContextName);
     if (source) {
-        source->setSynthesisAPI(aCB);
+        source->pushSynthesisAPI(aCB);
         *aContext = (CContext)source;
         err = LOCERR_OK;
     }
@@ -587,12 +587,7 @@ TSyError SyncEvolution_StartDataRead( CContext aContext, cAppCharP   lastToken,
 
     TSyError res;
     // tell EvolutionSyncSource to be prepared for anything
-    source->setSyncMode(SYNC_NONE);
-    if (source->beginSync()) {
-        res = DB_Fatal;
-    } else {
-        res = LOCERR_OK;
-    }
+    res = source->beginSync(SYNC_NONE);
     return res;
 }
 
@@ -607,14 +602,14 @@ TSyError SyncEvolution_ReadNextItemAsKey( CContext aContext, ItemID aID, KeyH aI
     TSyError res = LOCERR_OK;
     string luid;
     switch (source->nextItem(NULL, luid)) {
-    case EvolutionSyncSource::ITEM_UNCHANGED:
+    case SyncItem::UNCHANGED:
         *aStatus = ReadNextItem_Unchanged;
         break;
-    case EvolutionSyncSource::ITEM_NEW:
-    case EvolutionSyncSource::ITEM_UPDATED:
+    case SyncItem::NEW:
+    case SyncItem::UPDATED:
         *aStatus = ReadNextItem_Changed;
         break;
-    case EvolutionSyncSource::ITEM_EOF:
+    case SyncItem::NO_MORE_ITEMS:
         *aStatus = ReadNextItem_EOF;
         break;
     default:
@@ -731,15 +726,9 @@ TSyError SyncEvolution_InsertItemAsKey( CContext aContext, KeyH aItemKey, ItemID
     if (!res) {
         SyncItem item;
         item.setData(data, len);
-        switch (source->addItem(item)) {
-        case STC_CONFLICT_RESOLVED_WITH_MERGE:
-        case STC_OK:
-            newID->item = StrAlloc(item.getKey());
-            newID->parent = StrAlloc("");
-            break;
-        default:
-            res = DB_Fatal;
-        }
+        res = source->addItem(item);
+        newID->item = StrAlloc(item.getKey().c_str());
+        newID->parent = StrAlloc("");
     }
 
     delete [] data;
@@ -778,16 +767,10 @@ TSyError SyncEvolution_UpdateItemAsKey( CContext aContext, KeyH aItemKey, cItemI
         SyncItem item;
         item.setData(data, len);
         item.setKey(aID->item);
-        switch (source->updateItem(item)) {
-        case STC_CONFLICT_RESOLVED_WITH_MERGE:
-        case STC_OK:
-            if (strcmp(item.getKey(), aID->item)) {
-                updID->item = StrAlloc(item.getKey());
-                updID->parent = StrAlloc("");
-            }
-            break;
-        default:
-            res = DB_Fatal;
+        res = source->updateItem(item);
+        if (item.getKey() == aID->item) {
+            updID->item = StrAlloc(item.getKey().c_str());
+            updID->parent = StrAlloc("");
         }
     }
 
@@ -818,13 +801,7 @@ TSyError SyncEvolution_DeleteItem( CContext aContext, cItemID aID )
     TSyError res = LOCERR_OK;
     SyncItem item;
     item.setKey(aID->item);
-    switch (source->deleteItem(item)) {
-    case STC_OK:
-        break;
-    default:
-        res = DB_Fatal;
-        break;
-    }
+    res = source->deleteItem(item);
     return res;
 }
 
@@ -904,6 +881,6 @@ TSyError SyncEvolution_DeleteContext( CContext aContext )
   /**** CAN BE ADAPTED BY USER ****/ 
   EvolutionSyncSource *source = DBC( aContext );
   DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_DC, "%s", source->getName() );
-
+  source->popSynthesisAPI();
   return LOCERR_OK;
 }

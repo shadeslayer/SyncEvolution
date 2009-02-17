@@ -4,9 +4,6 @@
 
 #include <config.h>
 #include <stddef.h>
-
-#include <spds/spdsutils.h>
-
 #include <iostream>
 #include <memory>
 using namespace std;
@@ -67,7 +64,6 @@ int main( int argc, char **argv )
     g_type_init();
 #endif
 
-    resetError();
     setvbuf(stderr, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
 

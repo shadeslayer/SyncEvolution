@@ -77,9 +77,7 @@ void EvolutionSyncSource::handleException()
     try {
         throw;
     } catch (std::exception &ex) {
-        setErrorF(getLastErrorCode() == ERR_NONE ? ERR_UNSPECIFIED : getLastErrorCode(),
-                  "%s", ex.what());
-        SE_LOG_ERROR(this, NULL, "%s", getLastErrorMsg());
+        SE_LOG_ERROR(this, NULL, "%s", ex.what());
         setFailed(true);
     }
 }
@@ -342,20 +340,19 @@ void EvolutionSyncSource::getDatastoreXML(string &xml)
     xml = xmlstream.str();
 }
 
-int EvolutionSyncSource::beginSync() throw()
+SyncMLStatus EvolutionSyncSource::beginSync(SyncMode mode) throw()
 {
-    SyncMode mode = getSyncMode();
-
     // start background thread if not running yet:
     // necessary to catch problems with Evolution backend
     EvolutionSyncClient::startLoopThread();
 
     try {
+        // @TODO: force slow sync if something goes wrong
+        //
         // reset anchors now, once we proceed there is no going back
         // (because the change marker is about to be moved)
         // and the sync must either complete or result in a slow sync
         // the next time
-        getConfig().setLast(0);
         
         const char *error = getenv("SYNCEVOLUTION_BEGIN_SYNC_ERROR");
         if (error && strstr(error, getName())) {
@@ -409,9 +406,9 @@ int EvolutionSyncSource::beginSync() throw()
         rewindItems();
     } catch( ... ) {
         handleException();
-        return 1;
+        return STATUS_FATAL;
     }
-    return 0;
+    return STATUS_OK;
 }
 
 void EvolutionSyncSource::rewindItems() throw()
@@ -419,19 +416,19 @@ void EvolutionSyncSource::rewindItems() throw()
     m_allItems.rewind();
 }
 
-EvolutionSyncSource::NextItemState EvolutionSyncSource::nextItem(string *data, string &luid) throw()
+SyncItem::State EvolutionSyncSource::nextItem(string *data, string &luid) throw()
 {
     /** @TODO: avoid reading data if not necessary */
     SyncItem *item = m_allItems.iterate();
-    NextItemState state = ITEM_EOF;
+    SyncItem::State state = SyncItem::NO_MORE_ITEMS;
 
     if (item) {
         if (m_newItems.find(item->getKey()) != m_newItems.end()) {
-            state = ITEM_NEW;
+            state = SyncItem::NEW;
         } else if (m_updatedItems.find(item->getKey()) != m_updatedItems.end()) {
-            state = ITEM_UPDATED;
+            state = SyncItem::UPDATED;
         } else {
-            state = ITEM_UNCHANGED;
+            state = SyncItem::UNCHANGED;
         }
         if (data) {
             data->assign((const char *)item->getData(), item->getDataSize());
@@ -441,7 +438,7 @@ EvolutionSyncSource::NextItemState EvolutionSyncSource::nextItem(string *data, s
     return state;
 }
 
-int EvolutionSyncSource::endSync() throw()
+SyncMLStatus EvolutionSyncSource::endSync() throw()
 {
     try {
         endSyncThrow();
@@ -449,41 +446,31 @@ int EvolutionSyncSource::endSync() throw()
         handleException();
     }
 
-    // Do _not_ tell the caller (SyncManager) if an error occurred
+    // @TODO: Do _not_ tell the caller (SyncManager) if an error occurred
     // because that causes Sync4jClient to abort processing for all
     // sync sources. Instead deal with failed sync sources in
     // EvolutionSyncClient::sync().
-    return 0;
+    return STATUS_OK;
 }
 
-void EvolutionSyncSource::setItemStatus(const char *key, int status) throw()
-{
-    try {
-        // TODO: logging
-        setItemStatusThrow(key, status);
-    } catch (...) {
-        handleException();
-    }
-}
-
-int EvolutionSyncSource::addItem(SyncItem& item) throw()
+SyncMLStatus EvolutionSyncSource::addItem(SyncItem& item) throw()
 {
     return processItem("add", &EvolutionSyncSource::addItemThrow, item, true);
 }
 
-int EvolutionSyncSource::updateItem(SyncItem& item) throw()
+SyncMLStatus EvolutionSyncSource::updateItem(SyncItem& item) throw()
 {
     return processItem("update", &EvolutionSyncSource::updateItemThrow, item, true);
 }
 
-int EvolutionSyncSource::deleteItem(SyncItem& item) throw()
+SyncMLStatus EvolutionSyncSource::deleteItem(SyncItem& item) throw()
 {
     return processItem("delete", &EvolutionSyncSource::deleteItemThrow, item, false);
 }
 
-int EvolutionSyncSource::removeAllItems() throw()
+SyncMLStatus EvolutionSyncSource::removeAllItems() throw()
 {
-    int status = 0;
+    SyncMLStatus status = STATUS_OK;
     
     try {
         BOOST_FOREACH(const string &key, m_allItems) {
@@ -495,17 +482,17 @@ int EvolutionSyncSource::removeAllItems() throw()
         }
     } catch (...) {
         handleException();
-        status = 1;
+        status = STATUS_FATAL;
     }
     return status;
 }
 
-int EvolutionSyncSource::processItem(const char *action,
-                                     int (EvolutionSyncSource::*func)(SyncItem& item),
-                                     SyncItem& item,
-                                     bool needData) throw()
+SyncMLStatus EvolutionSyncSource::processItem(const char *action,
+                                              SyncMLStatus (EvolutionSyncSource::*func)(SyncItem& item),
+                                              SyncItem& item,
+                                              bool needData) throw()
 {
-    int status = STC_COMMAND_FAILED;
+    SyncMLStatus status = STATUS_FATAL;
     
     try {
         logItem(item, action);
@@ -514,7 +501,7 @@ int EvolutionSyncSource::processItem(const char *action,
             // Shouldn't happen, but it did with one server and thus this
             // security check was added to prevent segfaults.
             logItem(item, "ignored due to missing data");
-            status = STC_OK;
+            status = STATUS_OK;
         } else {
             status = (this->*func)(item);
         }
@@ -524,21 +511,6 @@ int EvolutionSyncSource::processItem(const char *action,
     }
     databaseModified();
     return status;
-}
-
-void EvolutionSyncSource::setItemStatusThrow(const char *key, int status)
-{
-    switch (status) {
-     case STC_ALREADY_EXISTS:
-        // found pair during slow sync, that's okay
-        break;
-     default:
-        if (status < 200 || status > 300) {
-            SE_LOG_ERROR(this, NULL, "unexpected SyncML status response %d for item %.80s\n",
-                         status, key);
-            setFailed(true);
-        }
-    }
 }
 
 void EvolutionSyncSource::sleepSinceModification(int seconds)
@@ -670,16 +642,13 @@ SyncItem *EvolutionSyncSource::Items::iterate()
         if (&m_source.m_deletedItems == this) {
             // just tell caller the uid of the deleted item
             // and the type that it probably had
-            SyncItem *item = new SyncItem( uid.c_str() );
-            item->setDataType(m_source.getMimeType());
-            return item;
+            cxxptr<SyncItem> item(new SyncItem());
+            item->setKey(uid);
+            return item.release();
         } else {
             // retrieve item with all its data
             try {
                 cxxptr<SyncItem> item(m_source.createItem(uid));
-                if (item) {
-                    item->setState(m_state);
-                }
                 return item.release();
             } catch(...) {
                 m_source.handleException();

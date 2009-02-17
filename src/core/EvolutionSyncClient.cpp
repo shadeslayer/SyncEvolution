@@ -49,8 +49,13 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server,
     m_quiet(false),
     m_engine(new sysync::TEngineModuleBridge())
 {
-    // Use libsynthesis that we were linked against.  The name
-    // of a .so could be given here, too, to use that instead.
+    // Use libsynthesis that we were linked against.  The name of a
+    // .so could be given here, too, to use that instead.  This
+    // instance of the engine is used outside of the sync session
+    // itself. doSync() then creates another engine for the sync
+    // itself. That is necessary because the engine shutdown depends
+    // on the context of the sync (in particular instantiated sync
+    // sources).
     sysync::TSyError err = m_engine->Connect("[]", 0,
                                              sysync::DBG_PLUGIN_NONE|
                                              sysync::DBG_PLUGIN_INT|
@@ -312,9 +317,7 @@ class SourceList : public vector<EvolutionSyncSource *> {
     LogDir m_logdir;     /**< our logging directory */
     bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
     bool m_doLogging;    /**< true iff additional files are to be written during sync */
-    SyncClient &m_client; /**< client which holds the sync report after a sync */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
-    boost::scoped_array<SyncSource *> m_sourceArray;  /** owns the array that is expected by SyncClient::sync() */
     const bool m_quiet;  /**< avoid redundant printing to screen */
     string m_previousLogdir; /**< remember previous log dir before creating the new one */
 
@@ -361,11 +364,10 @@ public:
         }
     }
         
-    SourceList(const string &server, bool doLogging, SyncClient &client, bool quiet) :
+    SourceList(const string &server, bool doLogging, bool quiet) :
         m_logdir(server),
         m_prepared(false),
         m_doLogging(doLogging),
-        m_client(client),
         m_reportTodo(true),
         m_quiet(quiet)
     {
@@ -502,8 +504,8 @@ public:
                         for (EvolutionSyncSource::ItemLocation location = EvolutionSyncSource::ITEM_LOCAL;
                              location <= EvolutionSyncSource::ITEM_REMOTE;
                              location = EvolutionSyncSource::ItemLocation(int(location) + 1)) {
-                            for (EvolutionSyncSource::ItemState state = EvolutionSyncSource::ITEM_STATE_ADDED;
-                                 state <= EvolutionSyncSource::ITEM_STATE_REMOVED;
+                            for (EvolutionSyncSource::ItemState state = EvolutionSyncSource::ITEM_ADDED;
+                                 state <= EvolutionSyncSource::ITEM_REMOVED;
                                  state = EvolutionSyncSource::ItemState(int(state) + 1)) {
                                 cout << right << setw(number_width) <<
                                     source->getItemStat(location, state, EvolutionSyncSource::ITEM_REJECT);
@@ -515,24 +517,24 @@ public:
                         }
                         int total_conflicts =
                             source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                EvolutionSyncSource::ITEM_STATE_ANY,
+                                                EvolutionSyncSource::ITEM_ANY,
                                                 EvolutionSyncSource::ITEM_CONFLICT_SERVER_WON) +
                             source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                EvolutionSyncSource::ITEM_STATE_ANY,
+                                                EvolutionSyncSource::ITEM_ANY,
                                                 EvolutionSyncSource::ITEM_CONFLICT_CLIENT_WON) +
                             source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                EvolutionSyncSource::ITEM_STATE_ANY,
+                                                EvolutionSyncSource::ITEM_ANY,
                                                 EvolutionSyncSource::ITEM_CONFLICT_DUPLICATED);
                         cout << right << setw(number_width + 1) << total_conflicts;
                         cout << " |\n";
 
                         stringstream sent, received;
                         sent << source->getItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                                                    EvolutionSyncSource::ITEM_STATE_ANY,
+                                                    EvolutionSyncSource::ITEM_ANY,
                                                     EvolutionSyncSource::ITEM_SENT_BYTES) / 1024 <<
                             " KB sent by client";
                         received << source->getItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                                                        EvolutionSyncSource::ITEM_STATE_ANY,
+                                                        EvolutionSyncSource::ITEM_ANY,
                                                         EvolutionSyncSource::ITEM_RECEIVED_BYTES) / 1024 <<
                             " KB received";
                         cout << "|" << left << setw(name_width) << "" << " |" <<
@@ -547,7 +549,7 @@ public:
                              result = EvolutionSyncSource::ItemResult(int(result) + 1)) {
                             int count;
                             if ((count = source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                             EvolutionSyncSource::ITEM_STATE_ANY,
+                                                             EvolutionSyncSource::ITEM_ANY,
                                                              result)) != 0 || true) {
                                 stringstream line;
                                 line << count << " " <<
@@ -562,7 +564,7 @@ public:
                         }
 
                         int total_matched = source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                                EvolutionSyncSource::ITEM_STATE_ANY,
+                                                                EvolutionSyncSource::ITEM_ANY,
                                                                 EvolutionSyncSource::ITEM_MATCH);
                         if (total_matched) {
                             cout << "|" << left << setw(name_width) << "" << "| " << left <<
@@ -597,19 +599,6 @@ public:
                 }
             }
         }
-    }
-
-    /** returns current sources as array as expected by SyncClient::sync(), memory owned by this class */
-    SyncSource **getSourceArray() {
-        m_sourceArray.reset(new SyncSource *[size() + 1]);
-
-        int index = 0;
-        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
-            m_sourceArray[index] = source;
-            index++;
-        }
-        m_sourceArray[index] = 0;
-        return &m_sourceArray[0];
     }
 
     /** returns names of active sources */
@@ -783,15 +772,15 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
            extra2=# updated,
            extra3=# deleted) */
         source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_STATE_ADDED,
+                           EvolutionSyncSource::ITEM_ADDED,
                            EvolutionSyncSource::ITEM_TOTAL,
                            extra1);
         source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_STATE_UPDATED,
+                           EvolutionSyncSource::ITEM_UPDATED,
                            EvolutionSyncSource::ITEM_TOTAL,
                            extra2);
         source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_STATE_REMOVED,
+                           EvolutionSyncSource::ITEM_REMOVED,
                            EvolutionSyncSource::ITEM_TOTAL,
                            extra3);
         break;
@@ -800,15 +789,15 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
            extra2=# updated,
            extra3=# deleted) */
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_STATE_ADDED,
+                           EvolutionSyncSource::ITEM_ADDED,
                            EvolutionSyncSource::ITEM_TOTAL,
                            extra1);
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_STATE_UPDATED,
+                           EvolutionSyncSource::ITEM_UPDATED,
                            EvolutionSyncSource::ITEM_TOTAL,
                            extra2);
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_STATE_REMOVED,
+                           EvolutionSyncSource::ITEM_REMOVED,
                            EvolutionSyncSource::ITEM_TOTAL,
                            extra3);
         break;
@@ -816,18 +805,18 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
         /* datastore statistics for local/remote rejects (extra1=# locally rejected, 
            extra2=# remotely rejected) */
         source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_STATE_ANY,
+                           EvolutionSyncSource::ITEM_ANY,
                            EvolutionSyncSource::ITEM_REJECT,
                            extra1);
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_STATE_ANY,
+                           EvolutionSyncSource::ITEM_ANY,
                            EvolutionSyncSource::ITEM_REJECT,
                            extra2);
         break;
     case PEV_DSSTATS_S:
         /* datastore statistics for server slowsync  (extra1=# slowsync matches) */
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_STATE_ANY,
+                           EvolutionSyncSource::ITEM_ANY,
                            EvolutionSyncSource::ITEM_MATCH,
                            extra1);
         break;
@@ -836,15 +825,15 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
            extra2=# client won,
            extra3=# duplicated) */
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_STATE_ANY,
+                           EvolutionSyncSource::ITEM_ANY,
                            EvolutionSyncSource::ITEM_CONFLICT_SERVER_WON,
                            extra1);
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_STATE_ANY,
+                           EvolutionSyncSource::ITEM_ANY,
                            EvolutionSyncSource::ITEM_CONFLICT_CLIENT_WON,
                            extra2);
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_STATE_ANY,
+                           EvolutionSyncSource::ITEM_ANY,
                            EvolutionSyncSource::ITEM_CONFLICT_DUPLICATED,
                            extra3);
         break;
@@ -852,11 +841,11 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
         /* datastore statistics for data   volume    (extra1=outgoing bytes,
            extra2=incoming bytes) */
         source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_STATE_ANY,
+                           EvolutionSyncSource::ITEM_ANY,
                            EvolutionSyncSource::ITEM_SENT_BYTES,
                            extra1);
         source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_STATE_ANY,
+                           EvolutionSyncSource::ITEM_ANY,
                            EvolutionSyncSource::ITEM_RECEIVED_BYTES,
                            extra2);
         break;
@@ -947,21 +936,6 @@ void EvolutionSyncClient::startLoopThread()
 EvolutionSyncSource *EvolutionSyncClient::findSource(const char *name)
 {
     return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
-}
-
-AbstractSyncSourceConfig* EvolutionSyncClient::getAbstractSyncSourceConfig(const char* name) const
-{
-    return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
-}
-
-AbstractSyncSourceConfig* EvolutionSyncClient::getAbstractSyncSourceConfig(unsigned int i) const
-{
-    return m_sourceListPtr ? (*m_sourceListPtr)[i] : NULL;
-}
-
-unsigned int EvolutionSyncClient::getAbstractSyncSourceConfigsCount() const
-{
-    return m_sourceListPtr ? m_sourceListPtr->size() : 0;
 }
 
 void EvolutionSyncClient::setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter)
@@ -1146,7 +1120,7 @@ int EvolutionSyncClient::sync()
     }
 
     // redirect logging as soon as possible
-    SourceList sourceList(m_server, m_doLogging, *this, m_quiet);
+    SourceList sourceList(m_server, m_doLogging, m_quiet);
     m_sourceListPtr = &sourceList;
 
     try {
@@ -1189,29 +1163,13 @@ int EvolutionSyncClient::sync()
         }
 
         // give derived class also a chance to update the configs
-        prepare(sourceList.getSourceArray());
+        prepare(sourceList);
 
 	// ready to go: dump initial databases and prepare for final report
 	sourceList.syncPrepare();
 
-#ifndef SYNTHESIS
-        // do it
-        res = SyncClient::sync(*this, sourceList.getSourceArray());
-
-        // store modified properties: must be done even after failed
-        // sync because the source's anchor might have been reset
-        flush();
-
-        if (res) {
-            if (getLastErrorCode() && getLastErrorMsg() && getLastErrorMsg()[0]) {
-                throwError(getLastErrorMsg());
-            }
-            // no error code/description?!
-            throwError("sync failed without an error description, check log");
-        }
-#else
+        // run sync session
         doSync();
-#endif
 
         // all went well: print final report before cleaning up
         sourceList.syncDone(true);
@@ -1233,13 +1191,11 @@ int EvolutionSyncClient::sync()
     return res;
 }
 
-void EvolutionSyncClient::prepare(SyncSource **sources) {
+void EvolutionSyncClient::prepare(const std::vector<EvolutionSyncSource *> &sources) {
     if (m_syncMode != SYNC_NONE) {
-        for (SyncSource **source = sources;
-             *source;
-             source++) {
-            (*source)->setPreferredSyncMode(m_syncMode);
-        }
+        // BOOST_FOREACH(EvolutionSyncSource *source, sources) {
+            // @TODO source->setPreferredSyncMode(m_syncMode);
+        // }
     }
 }
 
@@ -1250,6 +1206,35 @@ void EvolutionSyncClient::doSync()
     sysync::KeyH keyH;
     sysync::KeyH subkeyH;
     string s;
+
+    // create new sync engine for the duration of this function
+    class SwapEngine {
+        EvolutionSyncClient &m_client;
+        sysync::TEngineModuleBridge *m_oldengine;
+
+    public:
+        SwapEngine(EvolutionSyncClient &client) :
+            m_client(client) {
+            sysync::TEngineModuleBridge *syncengine = new sysync::TEngineModuleBridge();
+            sysync::TSyError err;
+            if (!syncengine ||
+                (err = syncengine->Connect("[]", 0,
+                                           sysync::DBG_PLUGIN_NONE|
+                                           sysync::DBG_PLUGIN_INT|
+                                           sysync::DBG_PLUGIN_DB|
+                                           sysync::DBG_PLUGIN_EXOT|
+                                           sysync::DBG_PLUGIN_ALL))) {
+                m_client.throwError("create Syntesis engine for sync session");
+            }
+            m_oldengine = m_client.swapEngine(syncengine);
+        }
+
+        ~SwapEngine() {
+            sysync::TEngineModuleBridge *syncengine =
+                m_client.swapEngine(m_oldengine);
+            delete syncengine;
+        }
+    } swapengine(*this);
 
     err = getEngine().OpenKeyByPath(keyH, NULL, "/configvars", 0);
     if (err) {
@@ -1551,7 +1536,7 @@ void EvolutionSyncClient::status()
         throwError("cannot proceed without configuration");
     }
 
-    SourceList sourceList(m_server, false, *this, false);
+    SourceList sourceList(m_server, false, false);
     initSources(sourceList);
     BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
         source->checkPassword(*this);
@@ -1560,7 +1545,7 @@ void EvolutionSyncClient::status()
         source->open();
     }
 
-    sourceList.setLogdir(getLogDir(), 0, LOG_LEVEL_NONE);
+    sourceList.setLogdir(getLogDir(), 0, 0);
     LoggerBase::instance().setLevel(Logger::INFO);
     string prevLogdir = sourceList.getPrevLogdir();
     bool found = access(prevLogdir.c_str(), R_OK|X_OK) == 0;

@@ -49,10 +49,9 @@ class EvolutionContactSource : public EvolutionSyncSource
                                 bool needPartial,
                                 bool deleteLocal);
     virtual void endSyncThrow();
-    virtual void setItemStatusThrow(const char *key, int status);
-    virtual int addItemThrow(SyncItem& item);
-    virtual int updateItemThrow(SyncItem& item);
-    virtual int deleteItemThrow(SyncItem& item);
+    virtual SyncMLStatus addItemThrow(SyncItem& item);
+    virtual SyncMLStatus updateItemThrow(SyncItem& item);
+    virtual SyncMLStatus deleteItemThrow(SyncItem& item);
     virtual void logItem(const string &uid, const string &info, bool debug = false);
     virtual void logItem(const SyncItem &item, const string &info, bool debug = false);
 

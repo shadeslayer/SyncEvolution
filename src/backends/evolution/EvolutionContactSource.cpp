@@ -18,8 +18,6 @@ using namespace std;
 #include "SyncEvolutionUtil.h"
 
 #include "Logging.h"
-#include "vocl/VConverter.h"
-using namespace vocl;
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
@@ -331,27 +329,29 @@ void EvolutionContactSource::exportData(ostream &out)
     }
 }
 
-SyncItem *EvolutionContactSource::createItem(const string &uid)
+SyncItem *EvolutionContactSource::createItem(const string &luid)
 {
-    logItem( uid, "extracting from EV", true );
+    logItem(luid, "extracting from EV", true);
 
     EContact *contact;
     GError *gerror = NULL;
-    if (! e_book_get_contact( m_addressbook,
-                              uid.c_str(),
-                              &contact,
-                              &gerror ) ) {
-        throwError( string( "reading contact " ) + uid,
-                    gerror );
+    if (!e_book_get_contact(m_addressbook,
+                            luid.c_str(),
+                            &contact,
+                            &gerror)) {
+        throwError(string("reading contact ") + luid,
+                   gerror);
     }
-    eptr<EContact, GObject> contactptr( contact, "contact" );
-    eptr<char> vcardstr(e_vcard_to_string( &contactptr->parent,
-                                           EVC_FORMAT_VCARD_30 ) );
+    eptr<EContact, GObject> contactptr(contact, "contact");
+    eptr<char> vcardstr(e_vcard_to_string(&contactptr->parent,
+                                          EVC_FORMAT_VCARD_30));
     if (!vcardstr) {
-        throwError(string("failure extracting contact from Evolution " ) + uid);
+        throwError(string("failure extracting contact from Evolution " ) + luid);
     }
     SE_LOG_DEBUG(this, NULL, "%s", vcardstr.get());
 
+#if 0
+    // @TODO reimplement Evolution hacks via Synthesis datatype conversions
     std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
     if (vobj.get() == 0) {
         throwError(string("failure parsing contact " ) + uid);
@@ -477,17 +477,20 @@ SyncItem *EvolutionContactSource::createItem(const string &uid)
     arrayptr<char> finalstr(vobj->toString(), "VOCL string");
     SE_LOG_DEBUG(this, NULL, "after conversion:");
     SE_LOG_DEBUG(this, NULL, "%s", (char *)finalstr);
+#endif
 
-    auto_ptr<SyncItem> item( new SyncItem( uid.c_str() ) );
-    item->setData( (char *)finalstr, strlen(finalstr) );
-    item->setDataType( getMimeType() );
-    item->setModificationTime( 0 );
-
+    cxxptr<SyncItem> item(new SyncItem(), "SyncItem");
+    item->setKey(luid);
+    item->setData(vcardstr.get(), strlen(vcardstr.get()));
     return item.release();
 }
 
 string EvolutionContactSource::preparseVCard(SyncItem& item)
 {
+    return item.getData();
+
+#if 0
+    // @TODO Synthesis data conversion
     string data = (const char *)item.getData();
     // convert to 3.0 to get rid of quoted-printable encoded
     // non-ASCII chars, because Evolution does not support
@@ -672,52 +675,13 @@ string EvolutionContactSource::preparseVCard(SyncItem& item)
     SE_LOG_DEBUG(this, NULL, "after conversion to 3.0:");
     SE_LOG_DEBUG(this, NULL, "%s", data.c_str());
     return data;
+#endif
 }
 
-void EvolutionContactSource::setItemStatusThrow(const char *key, int status)
+SyncMLStatus EvolutionContactSource::addItemThrow(SyncItem& item)
 {
-    switch (status) {
-    case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA: {
-        // make a copy before allowing the server to overwrite it
-
-        SE_LOG_ERROR(this, NULL, "contact %s: conflict, will be replaced by server contact - create copy", key);
-        
-        EContact *contact;
-        GError *gerror = NULL;
-        if (! e_book_get_contact( m_addressbook,
-                                  key,
-                                  &contact,
-                                  &gerror ) ) {
-            SE_LOG_ERROR(this, NULL, "item %.80s: reading original for copy failed", key);
-            break;
-        }
-        eptr<EContact, GObject> contactptr( contact, "contact" );
-        EContact *copy = e_contact_duplicate(contact);
-        eptr<EContact, GObject> contactcopyptr(copy);
-        if(!copy ||
-           ! e_book_add_contact(m_addressbook,
-                                copy,
-                                &gerror)) {
-            SE_LOG_ERROR(this, NULL, "item %.80s: making copy failed", key);
-            break;
-        }
-        break;
-     }
-     default:
-        EvolutionSyncSource::setItemStatusThrow(key, status);
-        break;
-    }
-}
-
-int EvolutionContactSource::addItemThrow(SyncItem& item)
-{
-    int status = STC_OK;
-    string data;
-    if( strcmp(item.getDataType(), "raw" ) ) {
-        data = preparseVCard(item);
-    } else {
-        data = (const char *)item.getData();
-    }
+    SyncMLStatus status = STATUS_OK;
+    string data = item.getData();
     eptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
     if( contact ) {
         GError *gerror = NULL;
@@ -733,9 +697,9 @@ int EvolutionContactSource::addItemThrow(SyncItem& item)
     return status;
 }
 
-int EvolutionContactSource::updateItemThrow(SyncItem& item)
+SyncMLStatus EvolutionContactSource::updateItemThrow(SyncItem& item)
 {
-    int status = STC_OK;
+    SyncMLStatus status = STATUS_OK;
     string data = preparseVCard(item);
     eptr<EContact, GObject> contact(e_contact_new_from_vcard(data.c_str()));
     if( contact ) {
@@ -750,7 +714,7 @@ int EvolutionContactSource::updateItemThrow(SyncItem& item)
         // and committing once more, but that did not solve the problem.
         //
         // TODO: test with current Evolution
-        e_contact_set( contact, E_CONTACT_UID, (void *)item.getKey() );
+        e_contact_set(contact, E_CONTACT_UID, (void *)item.getKey().c_str());
         if ( e_book_commit_contact(m_addressbook, contact, &gerror) ) {
             const char *uid = (const char *)e_contact_get_const(contact, E_CONTACT_UID);
             if (uid) {
@@ -783,15 +747,15 @@ int EvolutionContactSource::updateItemThrow(SyncItem& item)
     return status;
 }
 
-int EvolutionContactSource::deleteItemThrow(SyncItem& item)
+SyncMLStatus EvolutionContactSource::deleteItemThrow(SyncItem& item)
 {
-    int status = STC_OK;
+    SyncMLStatus status = STATUS_OK;
     GError *gerror = NULL;
-    if (!e_book_remove_contact( m_addressbook, item.getKey(), &gerror ) ) {
+    if (!e_book_remove_contact(m_addressbook, item.getKey().c_str(), &gerror)) {
         if (gerror->domain == E_BOOK_ERROR &&
             gerror->code == E_BOOK_ERROR_CONTACT_NOT_FOUND) {
             SE_LOG_DEBUG(this, NULL, "%s: %s: request to delete non-existant contact ignored",
-                      getName(), item.getKey());
+                         getName(), item.getKey().c_str());
             g_clear_error(&gerror);
         } else {
             throwError( string( "deleting contact " ) + item.getKey(),
@@ -886,9 +850,7 @@ void EvolutionContactSource::logItem(const SyncItem &item, const string &info, b
             line += "<unnamed contact>";
         }
 
-        if (!item.getKey() ) {
-            line += ", NULL UID (?!)";
-        } else if (!strlen( item.getKey() )) {
+        if (item.getKey().empty()) {
             line += ", empty UID";
         } else {
             line += ", ";
@@ -896,10 +858,10 @@ void EvolutionContactSource::logItem(const SyncItem &item, const string &info, b
         
             EContact *contact;
             GError *gerror = NULL;
-            if (e_book_get_contact( m_addressbook,
-                                    item.getKey(),
-                                    &contact,
-                                    &gerror )) {
+            if (e_book_get_contact(m_addressbook,
+                                   item.getKey().c_str(),
+                                   &contact,
+                                   &gerror)) {
                 eptr<EContact, GObject> contactptr( contact, "contact" );
 
                 line += ", EV ";

@@ -13,16 +13,6 @@ else
 noinst_LTLIBRARIES = libsyncevolution.la
 endif
 
-VOCL_SOURCES = \
-	vocl/VObject.h \
-	vocl/VProperty.h \
-	vocl/VConverter.h \
-	vocl/posixadapter.h \
-	\
-	vocl/VObject.cpp \
-	vocl/VProperty.cpp \
-	vocl/VConverter.cpp
-
 CORE_SOURCES  = \
 	ConfigTree.h \
 	ConfigNode.h \
@@ -78,9 +68,8 @@ CORE_SOURCES  = \
 	FileConfigTree.cpp \
 	\
 	TrackingSyncSource.h \
-	TrackingSyncSource.cpp \
-	\
-	$(VOCL_SOURCES)
+	TrackingSyncSource.cpp
+
 
 libsyncevolution_la_SOURCES = $(CORE_SOURCES)
 libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @FUNAMBOL_LIBS@ $(TRANSPORT_LIBS) @LIBS@ $(SYNTHESIS_LIBS)

@@ -53,7 +53,6 @@ class EvolutionCalendarSource : public TrackingSyncSource
     //
     virtual void listAllItems(RevisionMap_t &revisions);
     virtual InsertItemResult insertItem(const string &luid, const SyncItem &item);
-    virtual void setItemStatusThrow(const char *key, int status);
     virtual void deleteItem(const string &luid);
     virtual void logItem(const string &luid, const string &info, bool debug = false);
     virtual void logItem(const SyncItem &item, const string &info, bool debug = false);

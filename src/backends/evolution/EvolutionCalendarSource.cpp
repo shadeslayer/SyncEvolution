@@ -229,22 +229,10 @@ SyncItem *EvolutionCalendarSource::createItem(const string &luid)
     ItemID id(luid);
     string icalstr = retrieveItemAsString(id);
 
-    auto_ptr<SyncItem> item(new SyncItem(luid.c_str()));
+    cxxptr<SyncItem> item(new SyncItem(), "SyncItem");
+    item->setKey(luid);
     item->setData(icalstr.c_str(), icalstr.size());
-    item->setDataType("text/calendar");
-    item->setModificationTime(0);
-
     return item.release();
-}
-
-void EvolutionCalendarSource::setItemStatusThrow(const char *key, int status)
-{
-    switch (status) {
-    case STC_CONFLICT_RESOLVED_WITH_SERVER_DATA:
-        SE_LOG_ERROR(this, NULL, "item %.80s: conflict, will be replaced by server\n", key);
-        break;
-    }
-    TrackingSyncSource::setItemStatusThrow(key, status);
 }
 
 EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(const string &luid, const SyncItem &item)
@@ -584,9 +572,8 @@ static string extractProp(const char *data, const char *keyword)
 void EvolutionCalendarSource::logItem(const SyncItem &item, const string &info, bool debug)
 {
     if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
-        const char *keyptr = item.getKey();
-        string key;
-        if (!keyptr || !keyptr[0]) {
+        string key = item.getKey();
+        if (key.empty()) {
             // get UID from data via simple string search; doesn't have to be perfect
             const char *data = (const char *)item.getData();
             string uid = extractProp(data, "\nUID:");
@@ -596,8 +583,6 @@ void EvolutionCalendarSource::logItem(const SyncItem &item, const string &info, 
             } else {
                 key = ItemID::getLUID(uid, rid);
             }
-        } else {
-            key = keyptr;
         }
         SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL, "%s: %s", key.c_str(), info.c_str());
     }
