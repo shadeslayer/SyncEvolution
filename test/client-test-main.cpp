@@ -52,6 +52,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <Logging.h>
+#include <LogStdout.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -97,7 +98,8 @@ public:
 class ClientListener : public CppUnit::TestListener {
 public:
     ClientListener() :
-        m_failed(false) {
+        m_failed(false)
+    {
 #ifdef HAVE_SIGNAL_H
         // install signal handler which turns an alarm signal into a runtime exception
         // to abort tests which run too long
@@ -110,6 +112,10 @@ public:
         action.sa_flags = SA_NOMASK;
         sigaction(SIGALRM, &action, NULL);
 #endif
+    }
+
+    ~ClientListener() {
+        SyncEvolution::LoggerBase::setLogger(NULL);
     }
 
     void addAllowedFailures(string allowedFailures) {
@@ -128,12 +134,13 @@ public:
 
     void startTest (CppUnit::Test *test) {
         m_currentTest = test->getName();
-        // TODO LOG.setLogName("test.log");
         cerr << m_currentTest;
         string logfile = m_currentTest + ".log";
         simplifyFilename(logfile);
-        remove(logfile.c_str());
-        // TODO LOG.setLogName(logfile.c_str());
+        m_logger.reset(new SyncEvolution::LoggerStdout(logfile));
+        m_logger->setLevel(SyncEvolution::Logger::DEBUG);
+        SyncEvolution::LoggerBase::setLogger(m_logger.get());
+        SE_LOG_DEBUG(NULL, NULL, "*** starting %s ***", m_currentTest.c_str());
         m_testFailed = false;
 
 #ifdef HAVE_SIGNAL_H
@@ -154,16 +161,23 @@ public:
         }
 #endif
 
-        // TODO LOG.setLogName("test.log");
+        std::string result;
         if (m_testFailed) {
             if (m_allowedFailures.find(m_currentTest) == m_allowedFailures.end()) {
-                cerr << " *** failed ***";
+                result = "*** failed ***";
                 m_failed = true;
             } else {
-                cerr << " *** failure ignored ***";
+                result = "*** failure ignored ***";
             }
+        } else {
+            result = "okay";
         }
-        cerr << "\n";
+
+        SE_LOG_DEBUG(NULL, NULL, "*** ending %s: %s ***", m_currentTest.c_str(), result.c_str());
+        SyncEvolution::LoggerBase::setLogger(NULL);
+        m_logger.reset();
+
+        cerr << " " << result << "\n";
     }
 
     bool hasFailed() { return m_failed; }
@@ -174,6 +188,7 @@ private:
     bool m_failed, m_testFailed;
     string m_currentTest;
     int m_alarmSeconds;
+    auto_ptr<SyncEvolution::LoggerStdout> m_logger;
 
     static void alarmTriggered(int signal) {
         CPPUNIT_ASSERT_MESSAGE("test timed out", false);

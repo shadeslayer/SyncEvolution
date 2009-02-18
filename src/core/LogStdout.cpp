@@ -17,8 +17,30 @@
  */
 
 #include "LogStdout.h"
+#include <errno.h>
 
 namespace SyncEvolution {
+
+LoggerStdout::LoggerStdout(FILE *file) :
+    m_file(file),
+    m_closeFile(false)
+{}
+
+LoggerStdout::LoggerStdout(const std::string &filename) :
+    m_file(fopen(filename.c_str(), "w")),
+    m_closeFile(true)
+{
+    if (!m_file) {
+        throw std::string(filename + ": " + strerror(errno));
+    }
+}
+
+LoggerStdout::~LoggerStdout()
+{
+    if (m_closeFile) {
+        fclose(m_file);
+    }
+}
 
 void LoggerStdout::messagev(FILE *file,
                             Level msglevel,
@@ -30,7 +52,8 @@ void LoggerStdout::messagev(FILE *file,
                             const char *format,
                             va_list args)
 {
-    if (msglevel <= filelevel) {
+    if (file &&
+        msglevel <= filelevel) {
         // TODO: print time
         fprintf(file, "[%s] ", levelToStr(msglevel));
         if (prefix) {
@@ -52,7 +75,7 @@ void LoggerStdout::messagev(Level level,
                             const char *format,
                             va_list args)
 {
-    messagev(stdout, level, getLevel(),
+    messagev(m_file, level, getLevel(),
              prefix, file, line, function,
              format, args);
 }

@@ -21,6 +21,7 @@
 
 #include "Logging.h"
 #include <stdio.h>
+#include <string>
 
 namespace SyncEvolution {
 
@@ -29,7 +30,26 @@ namespace SyncEvolution {
  */
 class LoggerStdout : public LoggerBase
 {
+    FILE *m_file;
+    bool m_closeFile;
+
  public:
+    /**
+     * write to stdout by default
+     *
+     * @param file    override default file; NULL disables printing
+     */
+    LoggerStdout(FILE *file = stdout);
+
+    /**
+     * open and own the given log file
+     *
+     * @param filename     will be opened relative to current directory
+     */
+    LoggerStdout(const std::string &filename);
+
+    ~LoggerStdout();
+
     virtual void messagev(FILE *file,
                           Level msglevel,
                           Level filelevel,
