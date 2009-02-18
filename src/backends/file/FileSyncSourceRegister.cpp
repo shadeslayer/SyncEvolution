@@ -3,6 +3,7 @@
  */
 
 #include "FileSyncSource.h"
+#include "test.h"
 
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {

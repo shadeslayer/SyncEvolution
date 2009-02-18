@@ -39,8 +39,14 @@
 #include <string>
 #include <vector>
 #include <list>
-#include "spds/SyncSource.h"
-#include "spds/SyncReport.h"
+
+class EvolutionSyncSource;
+typedef EvolutionSyncSource SyncSource;
+
+class EvolutionSyncReport;
+typedef EvolutionSyncReport SyncReport;
+
+#include <SyncML.h>
 
 #ifdef ENABLE_INTEGRATION_TESTS
 
@@ -362,6 +368,13 @@ class ClientTest {
 #ifndef LINKED_ITEMS_RELAXED_SEMANTIC
 # define LINKED_ITEMS_RELAXED_SEMANTIC 1
 #endif
+
+        /**
+         * setting this to false disables tests which depend
+         * on the source's support for linked item semantic
+         * (testLinkedItemsInsertParentTwice, testLinkedItemsInsertChildTwice)
+         */
+        bool sourceKnowsItemSemantic;
 
         /**
          * called to dump all items into a file, required by tests which need
@@ -890,28 +903,28 @@ protected:
 #define SOURCE_ASSERT_NO_FAILURE(_source, _x) \
 { \
     CPPUNIT_ASSERT_NO_THROW(_x); \
-    CPPUNIT_ASSERT((_source) && (!(_source)->getReport() || (_source)->getReport()->getState() != SOURCE_ERROR)); \
+    CPPUNIT_ASSERT((_source) && !(_source)->hasFailed()); \
 }
 
 /** check _x for true and then the status of the _source pointer */
 #define SOURCE_ASSERT(_source, _x) \
 { \
     CPPUNIT_ASSERT(_x); \
-    CPPUNIT_ASSERT((_source) && (!(_source)->getReport() || (_source)->getReport()->getState() != SOURCE_ERROR)); \
+    CPPUNIT_ASSERT((_source) && !(_source)->hasFailed()); \
 }
 
 /** check that _x evaluates to a specific value and then the status of the _source pointer */
 #define SOURCE_ASSERT_EQUAL(_source, _value, _x) \
 { \
     CPPUNIT_ASSERT_EQUAL(_value, _x); \
-    CPPUNIT_ASSERT((_source) && (!(_source)->getReport() || (_source)->getReport()->getState() != SOURCE_ERROR)); \
+    CPPUNIT_ASSERT((_source) && !(_source)->hasFailed()); \
 }
 
 /** same as SOURCE_ASSERT() with a specific failure message */
 #define SOURCE_ASSERT_MESSAGE(_message, _source, _x)     \
 { \
     CPPUNIT_ASSERT_MESSAGE((_message), (_x)); \
-    CPPUNIT_ASSERT((_source) && (!(_source)->getReport() || (_source)->getReport()->getState() != SOURCE_ERROR)); \
+    CPPUNIT_ASSERT((_source) && !(_source)->hasFailed()); \
 }
 
 

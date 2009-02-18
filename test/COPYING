@@ -2,6 +2,7 @@ The following files were written exclusively by Patrick Ohly:
   ClientTest.cpp
   ClientTest.h
   client-test.cpp
+  test.h
   synccompare.pl
 
 They were contributed to the Funambol C++ client library under the

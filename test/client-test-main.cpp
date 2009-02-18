@@ -41,7 +41,7 @@
 # include <config.h>
 #endif
 
-#include "base/test.h"
+#include "test.h"
 
 #include <cppunit/CompilerOutputter.h>
 #include <cppunit/ui/text/TestRunner.h>
@@ -51,7 +51,7 @@
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <base/Log.h>
+#include <Logging.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -88,8 +88,8 @@ public:
     ClientOutputter(CppUnit::TestResultCollector *result, std::ostream &stream) :
         CompilerOutputter(result, stream) {}
     void write() {
-        // ensure that output goes to console again
-        LOG.setLogName("test.log");
+        // TODO: ensure that output goes to console again
+        // LOG.setLogName("test.log");
         CompilerOutputter::write();
     }
 };
@@ -128,12 +128,12 @@ public:
 
     void startTest (CppUnit::Test *test) {
         m_currentTest = test->getName();
-        LOG.setLogName("test.log");
+        // TODO LOG.setLogName("test.log");
         cerr << m_currentTest;
         string logfile = m_currentTest + ".log";
         simplifyFilename(logfile);
         remove(logfile.c_str());
-        LOG.setLogName(logfile.c_str());
+        // TODO LOG.setLogName(logfile.c_str());
         m_testFailed = false;
 
 #ifdef HAVE_SIGNAL_H
@@ -154,7 +154,7 @@ public:
         }
 #endif
 
-        LOG.setLogName("test.log");
+        // TODO LOG.setLogName("test.log");
         if (m_testFailed) {
             if (m_allowedFailures.find(m_currentTest) == m_allowedFailures.end()) {
                 cerr << " *** failed ***";
