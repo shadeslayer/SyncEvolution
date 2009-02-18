@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(srcdir)/../../core @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @SQLITE_CFLAGS@ @FUNAMBOL_CFLAGS@
+AM_CPPFLAGS = -I$(srcdir)/../../core @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @SQLITE_CFLAGS@ @FUNAMBOL_CFLAGS@
 
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library

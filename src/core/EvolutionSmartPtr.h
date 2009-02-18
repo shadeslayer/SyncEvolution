@@ -5,7 +5,12 @@
 #ifndef INCL_EVOLUTION_SMART_POINTER
 # define INCL_EVOLUTION_SMART_POINTER
 
+#include <config.h>
 #include "eds_abi_wrapper.h"
+
+#ifdef HAVE_GLIB
+# include <glib-object.h>
+#endif
 
 #include <stdlib.h>
 #include <stdexcept>

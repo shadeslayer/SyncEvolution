@@ -1,7 +1,7 @@
 # Some of the core header files still have a dependency on Evolution,
 # which is why its flags have to be listed. They are empty if Evolution
 # access is disabled.
-AM_CPPFLAGS = -I$(srcdir)/../../core @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @FILE_CFLAGS@ @FUNAMBOL_CFLAGS@
+AM_CPPFLAGS = -I$(srcdir)/../../core @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @FILE_CFLAGS@ @FUNAMBOL_CFLAGS@
 
 # Applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library. Used to add -Wall -Werror
