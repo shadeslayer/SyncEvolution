@@ -1154,11 +1154,17 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
         // run sync session
         doSync();
 
-        // all went well: print final report before cleaning up
+        // Print final report before cleaning up.
+        // Status was okay only if all sources succeeded.
         createSyncReport(*report, sourceList);
-        sourceList.syncDone(true, report);
-
         status = STATUS_OK;
+        BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+            if (source->getStatus() != STATUS_OK) {
+                status = source->getStatus();
+                break;
+            }
+        }
+        sourceList.syncDone(status == STATUS_OK, report);
     } catch (const std::exception &ex) {
         SE_LOG_ERROR(NULL, NULL,  "%s", ex.what() );
 
