@@ -43,9 +43,6 @@
 class EvolutionSyncSource;
 typedef EvolutionSyncSource SyncSource;
 
-class EvolutionSyncReport;
-typedef EvolutionSyncReport SyncReport;
-
 #include <SyncML.h>
 
 #ifdef ENABLE_INTEGRATION_TESTS
@@ -90,7 +87,7 @@ class CheckSyncReport {
      * @param res     return code from SyncClient::sync()
      * @param report  the sync report stored in the SyncClient
      */
-    virtual void check(int res, SyncReport &report) const;
+    virtual void check(SyncMLStatus status, SyncReport &report) const;
 };
 
 class LocalTests;
@@ -483,7 +480,7 @@ class ClientTest {
      *
      * @return return code of SyncClient::sync()
      */
-    virtual int sync(
+    virtual SyncMLStatus sync(
         const int *activeSources,
         SyncMode syncMode,
         const std::string &logbase,

@@ -8,6 +8,8 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <stdarg.h>
+
 #include <vector>
 #include <sstream>
 #include <string>
@@ -105,5 +107,12 @@ class ReadDir {
     CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ATestFixtureType, "SyncEvolution" ); \
     extern "C" { int funambolAutoRegisterRegistry ## ATestFixtureType = 12345; }
 
+
+std::string StringPrintf(const char *format, ...)
+#ifdef __GNUC__
+        __attribute__((format(printf, 1, 2)))
+#endif
+;
+std::string StringPrintfV(const char *format, va_list ap);
 
 #endif // INCL_SYNCEVOLUTION_UTIL

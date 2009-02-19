@@ -463,7 +463,7 @@ public:
 
     // call at the end of a sync with success == true
     // if all went well to print report
-    void syncDone(bool success) {
+    void syncDone(bool success, const SyncReport *report) {
         if (m_doLogging) {
             // ensure that stderr is seen again
             m_logdir.restore();
@@ -501,97 +501,9 @@ public:
                 if (!m_quiet) {
                     cout << "\nChanges applied during synchronization:\n";
                 }
-#ifdef SYNTHESIS
-                if (!m_quiet) {
-                    cout << "+-------------------|-------ON CLIENT-------|-------ON SERVER-------|-CON-+\n";
-                    cout << "|                   |    rejected / total   |    rejected / total   | FLI |\n";
-                    cout << "|            Source |  NEW  |  MOD  |  DEL  |  NEW  |  MOD  |  DEL  | CTS |\n";
-                    const char *sep = 
-                        "+-------------------+-------+-------+-------+-------+-------+-------+-----+\n";
-                    cout << sep;
-
-                    BOOST_FOREACH(EvolutionSyncSource *source, *this) {
-                        const int name_width = 18;
-                        const int number_width = 3;
-                        const int single_side_width = (number_width * 2 + 1) * 3 + 2;
-                        const int text_width = single_side_width * 2 + 3 + number_width + 1;
-                        cout << "|" << right << setw(name_width) << source->getName() << " |";
-                        for (EvolutionSyncSource::ItemLocation location = EvolutionSyncSource::ITEM_LOCAL;
-                             location <= EvolutionSyncSource::ITEM_REMOTE;
-                             location = EvolutionSyncSource::ItemLocation(int(location) + 1)) {
-                            for (EvolutionSyncSource::ItemState state = EvolutionSyncSource::ITEM_ADDED;
-                                 state <= EvolutionSyncSource::ITEM_REMOVED;
-                                 state = EvolutionSyncSource::ItemState(int(state) + 1)) {
-                                cout << right << setw(number_width) <<
-                                    source->getItemStat(location, state, EvolutionSyncSource::ITEM_REJECT);
-                                cout << "/";
-                                cout << left << setw(number_width) <<
-                                    source->getItemStat(location, state, EvolutionSyncSource::ITEM_TOTAL);
-                                cout << "|";
-                            }
-                        }
-                        int total_conflicts =
-                            source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                EvolutionSyncSource::ITEM_ANY,
-                                                EvolutionSyncSource::ITEM_CONFLICT_SERVER_WON) +
-                            source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                EvolutionSyncSource::ITEM_ANY,
-                                                EvolutionSyncSource::ITEM_CONFLICT_CLIENT_WON) +
-                            source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                EvolutionSyncSource::ITEM_ANY,
-                                                EvolutionSyncSource::ITEM_CONFLICT_DUPLICATED);
-                        cout << right << setw(number_width + 1) << total_conflicts;
-                        cout << " |\n";
-
-                        stringstream sent, received;
-                        sent << source->getItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                                                    EvolutionSyncSource::ITEM_ANY,
-                                                    EvolutionSyncSource::ITEM_SENT_BYTES) / 1024 <<
-                            " KB sent by client";
-                        received << source->getItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                                                        EvolutionSyncSource::ITEM_ANY,
-                                                        EvolutionSyncSource::ITEM_RECEIVED_BYTES) / 1024 <<
-                            " KB received";
-                        cout << "|" << left << setw(name_width) << "" << " |" <<
-                            right << setw(single_side_width) << sent.str() <<
-                            ", " <<
-                            left << setw(single_side_width - 1) << received.str() << "|" <<
-                            right << setw(number_width + 1) << "" <<
-                            " |\n";
-
-                        for (EvolutionSyncSource::ItemResult result = EvolutionSyncSource::ITEM_CONFLICT_SERVER_WON;
-                             result <= EvolutionSyncSource::ITEM_CONFLICT_DUPLICATED;
-                             result = EvolutionSyncSource::ItemResult(int(result) + 1)) {
-                            int count;
-                            if ((count = source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                             EvolutionSyncSource::ITEM_ANY,
-                                                             result)) != 0 || true) {
-                                stringstream line;
-                                line << count << " " <<
-                                    (result == EvolutionSyncSource::ITEM_CONFLICT_SERVER_WON ? "client item(s) discarded" :
-                                     result == EvolutionSyncSource::ITEM_CONFLICT_CLIENT_WON ? "server item(s) discarded" :
-                                     "item(s) duplicated");
-
-                                cout << "|" << left << setw(name_width) << "" << " |" <<
-                                    right << setw(text_width - 1) << line.str() <<
-                                    " |\n";
-                            }
-                        }
-
-                        int total_matched = source->getItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                                                                EvolutionSyncSource::ITEM_ANY,
-                                                                EvolutionSyncSource::ITEM_MATCH);
-                        if (total_matched) {
-                            cout << "|" << left << setw(name_width) << "" << "| " << left <<
-                                setw(number_width) << total_matched <<
-                                setw(text_width - 1 - number_width) <<
-                                " item(s) matched" <<
-                                "|\n";
-                        }
-                    }
-                    cout << sep;
+                if (!m_quiet && report) {
+                    cout << *report;
                 }
-#endif
 
                 // compare databases?
                 if (!m_quiet && m_prepared) {
@@ -895,7 +807,7 @@ void EvolutionSyncClient::fatalError(void *object, const char *error)
 {
     SE_LOG_ERROR(NULL, NULL, "%s", error);
     if (m_sourceListPtr) {
-        m_sourceListPtr->syncDone(false);
+        m_sourceListPtr->syncDone(false, NULL);
     }
     exit(1);
 }
@@ -952,6 +864,15 @@ EvolutionSyncSource *EvolutionSyncClient::findSource(const char *name)
 {
     return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
 }
+
+void EvolutionSyncClient::createSyncReport(SyncReport &report, SourceList &sourceList) const
+{
+    report.clear();
+    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+        report.addSyncSourceReport(source->getName(), *source);
+    }
+}
+
 
 void EvolutionSyncClient::setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter)
 {
@@ -1125,9 +1046,9 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
     }
 }
 
-int EvolutionSyncClient::sync()
+SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
 {
-    int res = 1;
+    SyncMLStatus status = STATUS_FATAL;
     
     if (!exists()) {
         SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
@@ -1137,6 +1058,11 @@ int EvolutionSyncClient::sync()
     // redirect logging as soon as possible
     SourceList sourceList(m_server, m_doLogging, m_quiet);
     m_sourceListPtr = &sourceList;
+
+    SyncReport buffer;
+    if (!report) {
+        report = &buffer;
+    }
 
     try {
         // let derived classes override settings, like the log dir
@@ -1190,23 +1116,26 @@ int EvolutionSyncClient::sync()
         doSync();
 
         // all went well: print final report before cleaning up
-        sourceList.syncDone(true);
+        createSyncReport(*report, sourceList);
+        sourceList.syncDone(true, report);
 
-        res = 0;
+        status = STATUS_OK;
     } catch (const std::exception &ex) {
         SE_LOG_ERROR(NULL, NULL,  "%s", ex.what() );
 
         // something went wrong, but try to write .after state anyway
+        createSyncReport(*report, sourceList);
         m_sourceListPtr = NULL;
-        sourceList.syncDone(false);
+        sourceList.syncDone(false, report);
     } catch (...) {
         SE_LOG_ERROR(NULL, NULL,  "unknown error" );
+        createSyncReport(*report, sourceList);
         m_sourceListPtr = NULL;
-        sourceList.syncDone(false);
+        sourceList.syncDone(false, report);
     }
 
     m_sourceListPtr = NULL;
-    return res;
+    return status;
 }
 
 void EvolutionSyncClient::doSync()

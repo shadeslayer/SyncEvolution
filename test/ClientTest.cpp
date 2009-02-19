@@ -48,6 +48,7 @@
 #include <EvolutionSyncSource.h>
 #include <TransportAgent.h>
 #include <Logging.h>
+#include <SyncEvolutionUtil.h>
 
 #include <memory>
 #include <vector>
@@ -3416,61 +3417,74 @@ void ClientTest::getTestData(const char *type, Config &config)
     }
 }
 
-void CheckSyncReport::check(int res, SyncReport &report) const
+void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
 {
-#if 0
-    // TODO: implement SyncReport
-    // first dump the report
-    StringBuffer str, tmp;
+    stringstream str;
 
-    report.toString(str, 1);
-    str += "----------|--------CLIENT---------|--------SERVER---------|\n";
-    str += "          |  NEW  |  MOD  |  DEL  |  NEW  |  MOD  |  DEL  |\n";
-    str += "----------|-----------------------------------------------|\n";
-    str += tmp.sprintf("Expected  |  %3d  |  %3d  |  %3d  |  %3d  |  %3d  |  %3d  |\n",
-                       clientAdded, clientUpdated, clientDeleted,
-                       serverAdded, serverUpdated, serverDeleted);
-    LOG.info("%s", str.c_str());
-
-    CPPUNIT_ASSERT_MESSAGE("synchronization failed", !mustSucceed || !res);
+    str << report;
+    str << "----------|--------CLIENT---------|--------SERVER---------|\n";
+    str << "          |  NEW  |  MOD  |  DEL  |  NEW  |  MOD  |  DEL  |\n";
+    str << "----------|-----------------------------------------------|\n";
+    str << StringPrintf("Expected  |  %3d  |  %3d  |  %3d  |  %3d  |  %3d  |  %3d  |\n",
+                        clientAdded, clientUpdated, clientDeleted,
+                        serverAdded, serverUpdated, serverDeleted);
+    SE_LOG_INFO(NULL, NULL, "%s", str.str().c_str());
 
     // this code is intentionally duplicated to produce nicer CPPUNIT asserts
-    for (unsigned int i=0; report.getSyncSourceReport(i); i++) {
-        SyncSourceReport* ssr = report.getSyncSourceReport(i);
-        if (ssr->getState() == SOURCE_INACTIVE) {
-            continue;
-        }
+    BOOST_FOREACH(SyncReport::value_type &entry, report) {
+        const std::string &name = entry.first;
+        const SyncSourceReport &source = entry.second;
 
-        const char *name = ssr->getSourceName();
-        LOG.debug("Checking sync source %s...", name);
-        CLIENT_TEST_EQUAL(name, 0, ssr->getItemReportFailedCount(CLIENT, COMMAND_ADD));
+        SE_LOG_DEBUG(NULL, NULL, "Checking sync source %s...", name.c_str());
+        CLIENT_TEST_EQUAL(name, 0, source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                                      SyncSourceReport::ITEM_ANY,
+                                                      SyncSourceReport::ITEM_REJECT));
+        CLIENT_TEST_EQUAL(name, 0, source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                                      SyncSourceReport::ITEM_ANY,
+                                                      SyncSourceReport::ITEM_REJECT));
+
+        // TODO: check sync mode
+        // TODO: check result of sync
+
         if (clientAdded != -1) {
-            CLIENT_TEST_EQUAL(name, clientAdded, ssr->getItemReportSuccessfulCount(CLIENT, COMMAND_ADD));
+            CLIENT_TEST_EQUAL(name, clientAdded,
+                              source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                                 SyncSourceReport::ITEM_ADDED,
+                                                 SyncSourceReport::ITEM_TOTAL));
         }
-        CLIENT_TEST_EQUAL(name, 0, ssr->getItemReportFailedCount(CLIENT, COMMAND_REPLACE));
         if (clientUpdated != -1) {
-            CLIENT_TEST_EQUAL(name, clientUpdated, ssr->getItemReportSuccessfulCount(CLIENT, COMMAND_REPLACE));
+            CLIENT_TEST_EQUAL(name, clientUpdated,
+                              source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                                 SyncSourceReport::ITEM_UPDATED,
+                                                 SyncSourceReport::ITEM_TOTAL));
         }
-        CLIENT_TEST_EQUAL(name, 0, ssr->getItemReportFailedCount(CLIENT, COMMAND_DELETE));
         if (clientDeleted != -1) {
-            CLIENT_TEST_EQUAL(name, clientDeleted, ssr->getItemReportSuccessfulCount(CLIENT, COMMAND_DELETE));
+            CLIENT_TEST_EQUAL(name, clientDeleted,
+                              source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                                 SyncSourceReport::ITEM_REMOVED,
+                                                 SyncSourceReport::ITEM_TOTAL));
         }
 
-        CLIENT_TEST_EQUAL(name, 0, ssr->getItemReportFailedCount(SERVER, COMMAND_ADD));
         if (serverAdded != -1) {
-            CLIENT_TEST_EQUAL(name, serverAdded, ssr->getItemReportSuccessfulCount(SERVER, COMMAND_ADD));
+            CLIENT_TEST_EQUAL(name, serverAdded,
+                              source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                                 SyncSourceReport::ITEM_ADDED,
+                                                 SyncSourceReport::ITEM_TOTAL));
         }
-        CLIENT_TEST_EQUAL(name, 0, ssr->getItemReportFailedCount(SERVER, COMMAND_REPLACE));
         if (serverUpdated != -1) {
-            CLIENT_TEST_EQUAL(name, serverUpdated, ssr->getItemReportSuccessfulCount(SERVER, COMMAND_REPLACE));
+            CLIENT_TEST_EQUAL(name, serverUpdated,
+                              source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                                 SyncSourceReport::ITEM_UPDATED,
+                                                 SyncSourceReport::ITEM_TOTAL));
         }
-        CLIENT_TEST_EQUAL(name, 0, ssr->getItemReportFailedCount(SERVER, COMMAND_DELETE));
         if (serverDeleted != -1) {
-            CLIENT_TEST_EQUAL(name, serverDeleted, ssr->getItemReportSuccessfulCount(SERVER, COMMAND_DELETE));
+            CLIENT_TEST_EQUAL(name, serverDeleted,
+                              source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                                 SyncSourceReport::ITEM_REMOVED,
+                                                 SyncSourceReport::ITEM_TOTAL));
         }
     }
-    LOG.debug("Done with checking sync report.");
-#endif
+    SE_LOG_DEBUG(NULL, NULL, "Done with checking sync report.");
 }
 
 /** @} */

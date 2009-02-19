@@ -198,3 +198,47 @@ unsigned long Hash(const char *str)
 
     return hashval;
 }
+
+std::string StringPrintf(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    std::string res = StringPrintfV(format, ap);
+    va_end(ap);
+    return res;
+}
+
+std::string StringPrintfV(const char *format, va_list ap)
+{
+    va_list aq;
+
+    char *buffer = NULL;
+    ssize_t size = 0;
+    ssize_t realsize = 255;
+    do {
+        // vsnprintf() destroys ap, so make a copy first
+        va_copy(aq, ap);
+
+        if (size < realsize) {
+            buffer = (char *)realloc(buffer, realsize + 1);
+            if (!buffer) {
+                if (buffer) {
+                    free(buffer);
+                }
+                return "";
+            }
+            size = realsize;
+        }
+
+        realsize = vsnprintf(buffer, size + 1, format, aq);
+        if (realsize == -1) {
+            // old-style vnsprintf: exact len unknown, try again with doubled size
+            realsize = size * 2;
+        }
+        va_end(aq);
+    } while(realsize > size);
+
+    std::string res = buffer;
+    free(buffer);
+    return res;
+}

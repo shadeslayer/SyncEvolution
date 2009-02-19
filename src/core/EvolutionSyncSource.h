@@ -280,7 +280,7 @@ class TestRegistry : public vector<const RegisterSyncSourceTest *>
  *
  * It also adds Evolution specific interfaces and utility functions.
  */
-class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase
+class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase, public SyncSourceReport
 {
  public:
     /**
@@ -297,7 +297,6 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase
         m_modTimeStamp(0),
         m_hasFailed( false )
         {
-            memset(m_stat, 0, sizeof(m_stat));
         }
     virtual ~EvolutionSyncSource() {}
 
@@ -680,49 +679,6 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase
      */
     void throwError(const string &failure);
 
-    enum ItemLocation {
-        ITEM_LOCAL,
-        ITEM_REMOTE,
-        ITEM_LOCATION_MAX
-    };
-    enum ItemState {
-        ITEM_ADDED,
-        ITEM_UPDATED,
-        ITEM_REMOVED,
-        ITEM_ANY,
-        ITEM_STATE_MAX
-    };
-    enum ItemResult {
-        ITEM_TOTAL,               /**< total number ADDED/UPDATED/REMOVED */
-        ITEM_REJECT,              /**< number of rejected items, ANY state */
-        ITEM_MATCH,               /**< number of matched items, ANY state, REMOTE */
-        ITEM_CONFLICT_SERVER_WON, /**< conflicts resolved by using server item, ANY state, REMOTE */
-        ITEM_CONFLICT_CLIENT_WON, /**< conflicts resolved by using client item, ANY state, REMOTE */
-        ITEM_CONFLICT_DUPLICATED, /**< conflicts resolved by duplicating item, ANY state, REMOTE */
-        ITEM_SENT_BYTES,          /**< number of sent bytes, ANY, LOCAL */
-        ITEM_RECEIVED_BYTES,      /**< number of received bytes, ANY, LOCAL */
-        ITEM_RESULT_MAX
-    };
-
-    /**
-     * get item statistics
-     *
-     * @param location   either local or remote
-     * @param state      added, updated or removed
-     * @param success    either okay or failed
-     */
-    int getItemStat(ItemLocation location,
-                    ItemState state,
-                    ItemResult success) {
-        return m_stat[location][state][success];
-    }
-    void setItemStat(ItemLocation location,
-                     ItemState state,
-                     ItemResult success,
-                     int count) {
-        m_stat[location][state][success] = count;
-    }
-
  protected:
     const string m_changeId;
 
@@ -803,9 +759,6 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase
      * the engine is running.
      */
     std::vector<sysync::SDK_InterfaceType *> m_synthesisAPI;
-
-    /** storage for getItemStat() */
-    int m_stat[ITEM_LOCATION_MAX][ITEM_STATE_MAX][ITEM_RESULT_MAX];
 };
 
 #endif // INCL_EVOLUTIONSYNCSOURCE

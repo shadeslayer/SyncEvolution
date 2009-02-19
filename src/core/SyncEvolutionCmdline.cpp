@@ -345,7 +345,7 @@ bool SyncEvolutionCmdline::run() {
                 return false;
             }
 
-            return client.sync() == 0;
+            return client.sync() == STATUS_OK;
         }
     }
 

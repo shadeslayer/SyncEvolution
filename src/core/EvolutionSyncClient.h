@@ -77,8 +77,11 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     /**
      * Executes the sync, throws an exception in case of failure.
      * Handles automatic backups and report generation.
+     *
+     * @retval complete sync report, skipped if NULL
+     * @return overall sync status, for individual sources see report
      */
-    int sync();
+    SyncMLStatus sync(SyncReport *report = NULL);
 
     /**
      * Determines the log directory of the previous sync (either in
@@ -282,6 +285,12 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * them for reading without changing their state yet
      */
     void initSources(SourceList &sourceList);
+
+    /**
+     * Fills the report with information about all sources and
+     * the client itself.
+     */
+    void createSyncReport(SyncReport &report, SourceList &sourceList) const;
 
     /**
      * sets up Synthesis session and executes it

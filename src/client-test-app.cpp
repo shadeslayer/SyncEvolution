@@ -301,7 +301,7 @@ public:
         return false;
     }
 
-    virtual int sync(
+    virtual SyncMLStatus sync(
         const int *sources,
         SyncMode syncMode,
         const string &logbase,
@@ -364,10 +364,10 @@ public:
             const char *m_encoding;
         } client(server, activeSources, syncMode, logbase, maxMsgSize, maxObjSize, loSupport, encoding);
 
-        int res = client.sync();
-        // TODO CPPUNIT_ASSERT(client.getSyncReport());
-        // TODO checkReport.check(res, *client.getSyncReport());
-        return res;
+        SyncReport report;
+        SyncMLStatus status = client.sync(&report);
+        checkReport.check(status, report);
+        return status;
     }
 
     static bool compare(ClientTest &client, const char *fileA, const char *fileB) {

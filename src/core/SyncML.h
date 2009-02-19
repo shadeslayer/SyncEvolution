@@ -21,6 +21,8 @@
 #define INCL_SYNCML
 
 #include <string>
+#include <map>
+#include <ostream>
 
 enum SyncMode {
     SYNC_NONE,
@@ -119,5 +121,83 @@ enum SyncMLStatus {
 
     STATUS_MAX = 0x7FFFFFF
 };
+
+class SyncSourceReport {
+ public:
+    SyncSourceReport() {
+        memset(m_stat, 0, sizeof(m_stat));
+    }
+    SyncSourceReport(const SyncSourceReport &other) {
+        memcpy(m_stat, other.m_stat, sizeof(m_stat));
+    }
+    SyncSourceReport &operator = (const SyncSourceReport &other) {
+        if (this != &other) {
+            memcpy(m_stat, other.m_stat, sizeof(m_stat));
+        }
+        return *this;
+    }
+
+    enum ItemLocation {
+        ITEM_LOCAL,
+        ITEM_REMOTE,
+        ITEM_LOCATION_MAX
+    };
+    enum ItemState {
+        ITEM_ADDED,
+        ITEM_UPDATED,
+        ITEM_REMOVED,
+        ITEM_ANY,
+        ITEM_STATE_MAX
+    };
+    enum ItemResult {
+        ITEM_TOTAL,               /**< total number ADDED/UPDATED/REMOVED */
+        ITEM_REJECT,              /**< number of rejected items, ANY state */
+        ITEM_MATCH,               /**< number of matched items, ANY state, REMOTE */
+        ITEM_CONFLICT_SERVER_WON, /**< conflicts resolved by using server item, ANY state, REMOTE */
+        ITEM_CONFLICT_CLIENT_WON, /**< conflicts resolved by using client item, ANY state, REMOTE */
+        ITEM_CONFLICT_DUPLICATED, /**< conflicts resolved by duplicating item, ANY state, REMOTE */
+        ITEM_SENT_BYTES,          /**< number of sent bytes, ANY, LOCAL */
+        ITEM_RECEIVED_BYTES,      /**< number of received bytes, ANY, LOCAL */
+        ITEM_RESULT_MAX
+    };
+
+    /**
+     * get item statistics
+     *
+     * @param location   either local or remote
+     * @param state      added, updated or removed
+     * @param success    either okay or failed
+     */
+    int getItemStat(ItemLocation location,
+                    ItemState state,
+                    ItemResult success) const {
+        return m_stat[location][state][success];
+    }
+    void setItemStat(ItemLocation location,
+                     ItemState state,
+                     ItemResult success,
+                     int count) {
+        m_stat[location][state][success] = count;
+    }
+
+ private:
+    /** storage for getItemStat() */
+    int m_stat[ITEM_LOCATION_MAX][ITEM_STATE_MAX][ITEM_RESULT_MAX];
+};
+
+class SyncReport : public std::map<std::string, SyncSourceReport> {
+ public:
+    void addSyncSourceReport(const std::string &name,
+                             const SyncSourceReport &report) {
+        (*this)[name] = report;
+    }
+    const SyncSourceReport &getSyncSourceReport(const std::string &name) {
+        return (*this)[name];
+    }
+};
+
+/** pretty-print the report as an ASCII table */
+std::ostream &operator << (std::ostream &out, const SyncReport &report);
+
 
 #endif // INCL_SYNCML
