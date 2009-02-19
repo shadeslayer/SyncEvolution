@@ -147,7 +147,8 @@ public:
     // @param path        path to configured backup directy, NULL if defaulting to /tmp, "none" if not creating log file
     // @param maxlogdirs  number of backup dirs to preserve in path, 0 if unlimited
     // @param logLevel    0 = default, 1 = ERROR, 2 = INFO, 3 = DEBUG
-    void setLogdir(const char *path, int maxlogdirs, int logLevel = 0) {
+    // @param usePath     write directly into path, don't create and manage subdirectories
+    void setLogdir(const char *path, int maxlogdirs, int logLevel = 0, bool usePath = false) {
         m_maxlogdirs = maxlogdirs;
         if (path && !strcasecmp(path, "none")) {
             m_path = "";
@@ -155,35 +156,44 @@ public:
         } else if (path && path[0]) {
             m_logdir = path;
 
-            // create unique directory name in the given directory
-            time_t ts = time(NULL);
-            struct tm *tm = localtime(&ts);
-            stringstream base;
-            base << path << "/"
-                 << m_prefix
-                 << "-"
-                 << setfill('0')
-                 << setw(4) << tm->tm_year + 1900 << "-"
-                 << setw(2) << tm->tm_mon + 1 << "-"
-                 << setw(2) << tm->tm_mday << "-"
-                 << setw(2) << tm->tm_hour << "-"
-                 << setw(2) << tm->tm_min;
-            int seq = 0;
-            while (true) {
-                stringstream path;
-                path << base.str();
-                if (seq) {
-                    path << "-" << seq;
+            if (!usePath) {
+                // create unique directory name in the given directory
+                time_t ts = time(NULL);
+                struct tm *tm = localtime(&ts);
+                stringstream base;
+                base << path << "/"
+                     << m_prefix
+                     << "-"
+                     << setfill('0')
+                     << setw(4) << tm->tm_year + 1900 << "-"
+                     << setw(2) << tm->tm_mon + 1 << "-"
+                     << setw(2) << tm->tm_mday << "-"
+                     << setw(2) << tm->tm_hour << "-"
+                     << setw(2) << tm->tm_min;
+                int seq = 0;
+                while (true) {
+                    stringstream path;
+                    path << base.str();
+                    if (seq) {
+                        path << "-" << seq;
+                    }
+                    m_path = path.str();
+                    if (!mkdir(m_path.c_str(), S_IRWXU)) {
+                        break;
+                    }
+                    if (errno != EEXIST) {
+                        SE_LOG_DEBUG(NULL, NULL, "%s: %s", m_path.c_str(), strerror(errno));
+                        EvolutionSyncClient::throwError(m_path, errno);
+                    }
+                    seq++;
                 }
-                m_path = path.str();
-                if (!mkdir(m_path.c_str(), S_IRWXU)) {
-                    break;
-                }
-                if (errno != EEXIST) {
+            } else {
+                m_path = path;
+                if (mkdir(m_path.c_str(), S_IRWXU) &&
+                    errno != EEXIST) {
                     SE_LOG_DEBUG(NULL, NULL, "%s: %s", m_path.c_str(), strerror(errno));
                     EvolutionSyncClient::throwError(m_path, errno);
                 }
-                seq++;
             }
             m_logfile = m_path + "/client.log";
         } else {
@@ -222,9 +232,11 @@ public:
             level = DEBUG;
             break;
         }
-        instance().setLevel(level);
+        if (!usePath) {
+            instance().setLevel(level);
+        }
         setLevel(level);
-        setLogger(this);
+        pushLogger(this);
     }
 
     /** sets a fixed directory for database files without redirecting logging */
@@ -273,7 +285,7 @@ public:
     // remove redirection of logging
     void restore() {
         if (&instance() == this) {
-            setLogger(NULL);
+            popLogger();
         }
         if (m_file) {
             fclose(m_file);
@@ -315,7 +327,8 @@ public:
 class SourceList : public vector<EvolutionSyncSource *> {
     LogDir m_logdir;     /**< our logging directory */
     bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
-    bool m_doLogging;    /**< true iff additional files are to be written during sync */
+    bool m_doLogging;    /**< true iff the normal logdir handling is enabled
+                            (creating and expiring directoties, before/after comparison) */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
     const bool m_quiet;  /**< avoid redundant printing to screen */
     string m_previousLogdir; /**< remember previous log dir before creating the new one */
@@ -378,8 +391,11 @@ public:
         if (m_doLogging) {
             m_logdir.setLogdir(logDirPath, maxlogdirs, logLevel);
         } else {
-            // at least increase log level
-            LoggerBase::instance().setLevel(Logger::DEBUG);
+            // Run debug session without paying attention to
+            // the normal logdir handling. The log level here
+            // refers to stdout. The log file will be as complete
+            // as possible.
+            m_logdir.setLogdir(logDirPath, 0, 1, true);
         }
     }
 
@@ -1123,6 +1139,9 @@ int EvolutionSyncClient::sync()
     m_sourceListPtr = &sourceList;
 
     try {
+        // let derived classes override settings, like the log dir
+        prepare();
+
         sourceList.setLogdir(getLogDir(),
                              getMaxLogDirs(),
                              getLogLevel());
@@ -1481,7 +1500,7 @@ void EvolutionSyncClient::doSync()
                         size_t replylen;
                         agent->getReply(reply, replylen);
 
-                        // put answer received earlier into SyncML engine's buffer
+                        // put answer r eceived earlier into SyncML engine's buffer
                         err = getEngine().WriteSyncMLBuffer(sessionH,
                                                             const_cast<void *>(static_cast<const void *>(reply)),
                                                             replylen);

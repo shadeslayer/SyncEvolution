@@ -2775,25 +2775,21 @@ void SyncTests::sync(SyncMode syncMode,
         lastTest = getCurrentTest();
     }
 
-    logstream << std::setw(4) << std::setfill('0') << syncCounter << "_" << getCurrentTest();
+    logstream /* << std::setw(4) << std::setfill('0') << syncCounter << "_" */ << getCurrentTest();
     for (std::list<std::string>::iterator it = logPrefixes.begin();
          it != logPrefixes.end();
          ++it) {
         logstream << "." << *it;
     }
+    logstream << ".client." << (accessClientB ? "A" : "B");
     std::string logname = logstream.str();
     simplifyFilename(logname);
     syncCounter++;
 
-    std::string logfile = logname + ".client." + (accessClientB ? "A" : "B") + ".log";
-    remove(logfile.c_str());
-    // TODO: redirect logging during test
-    // LOG.setLogName(logfile.c_str());
-    // LOG.reset();
-
     try {
         res = client.sync(sourceArray,
                           syncMode,
+                          logname,
                           checkReport,
                           maxMsgSize,
                           maxObjSize,

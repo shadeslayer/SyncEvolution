@@ -145,17 +145,20 @@ class LoggerBase : public Logger
      * Overrides the default Logger implementation. The Logger class
      * itself will never delete the active logger.
      *
-     * @param logger    will be used for all future logging activities;
-     *                  NULL is allowed and implies that the default
-     *                  Logger implementation will be created if needed
+     * @param logger    will be used for all future logging activities
      */
-    static void setLogger(LoggerBase *logger) { m_logger = logger; }
+
+    static void pushLogger(LoggerBase *logger);
+    /**
+     * Remove the current logger and restore previous one.
+     * Must match a pushLogger() call.
+     */
+    static void popLogger();
 
     virtual void setLevel(Level level) { m_level = level; }
     virtual Level getLevel() { return m_level; }
 
  private:
-    static LoggerBase *m_logger;
     Level m_level;
 };
 

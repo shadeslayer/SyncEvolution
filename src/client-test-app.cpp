@@ -304,6 +304,7 @@ public:
     virtual int sync(
         const int *sources,
         SyncMode syncMode,
+        const string &logbase,
         const CheckSyncReport &checkReport,
         long maxMsgSize = 0,
         long maxObjSize = 0,
@@ -321,14 +322,16 @@ public:
         class ClientTest : public EvolutionSyncClient {
         public:
             ClientTest(const string &server,
-                           const set<string> &activeSources,
-                           SyncMode syncMode,
-                           long maxMsgSize,
-                           long maxObjSize,
-                           bool loSupport,
-                           const char *encoding) :
+                       const set<string> &activeSources,
+                       SyncMode syncMode,
+                       const string &logbase,
+                       long maxMsgSize,
+                       long maxObjSize,
+                       bool loSupport,
+                       const char *encoding) :
                 EvolutionSyncClient(server, false, activeSources),
                 m_syncMode(syncMode),
+                m_logbase(logbase),
                 m_maxMsgSize(maxMsgSize),
                 m_maxObjSize(maxObjSize),
                 m_loSupport(loSupport),
@@ -336,28 +339,30 @@ public:
                 {}
 
         protected:
-#if 0
-            virtual void prepare(SyncSource **sources) {
-                for (SyncSource **source = sources;
-                     *source;
-                     source++) {
-                    ((EvolutionSyncSource *)*source)->setEncoding(m_encoding ? m_encoding : "", true);
-                    // TODO (*source)->setPreferredSyncMode(m_syncMode);
-                }
+            virtual void prepare() {
+                setLogDir(m_logbase, true);
+                setMaxLogDirs(0, true);
                 setLoSupport(m_loSupport, true);
                 setMaxObjSize(m_maxObjSize, true);
                 setMaxMsgSize(m_maxMsgSize, true);
+                EvolutionSyncClient::prepare();
+            }
+            virtual void prepare(const std::vector<EvolutionSyncSource *> &sources) {
+                string modeString(PrettyPrintSyncMode(m_syncMode));
+                BOOST_FOREACH(EvolutionSyncSource *source, sources) {
+                    source->setSync(modeString, true);
+                }
                 EvolutionSyncClient::prepare(sources);
             }
-#endif
 
         private:
             const SyncMode m_syncMode;
+            const string m_logbase;
             const long m_maxMsgSize;
             const long m_maxObjSize;
             const bool m_loSupport;
             const char *m_encoding;
-        } client(server, activeSources, syncMode, maxMsgSize, maxObjSize, loSupport, encoding);
+        } client(server, activeSources, syncMode, logbase, maxMsgSize, maxObjSize, loSupport, encoding);
 
         int res = client.sync();
         // TODO CPPUNIT_ASSERT(client.getSyncReport());

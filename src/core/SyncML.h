@@ -34,6 +34,13 @@ enum SyncMode {
 };
 
 /**
+ * Return string for sync mode. User-visible strings are the ones used
+ * in a sync source config ("two-way", "refresh-from-server", etc.).
+ * Otherwise the constants above are returned ("SYNC_NONE").
+ */
+std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible = true);
+
+/**
  * simple container for SyncML items
  */
 class SyncItem {

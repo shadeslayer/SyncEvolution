@@ -19,17 +19,33 @@
 #include "Logging.h"
 #include "LogStdout.h"
 
+#include <vector>
+
 namespace SyncEvolution {
 
 static LoggerStdout DefaultLogger;
 
-LoggerBase *LoggerBase::m_logger;
+static std::vector<LoggerBase *> loggers;
 LoggerBase &LoggerBase::instance()
 {
-    if (m_logger) {
-        return *m_logger;
+    if (!loggers.empty()) {
+        return *loggers[loggers.size() - 1];
     } else {
         return DefaultLogger;
+    }
+}
+
+void LoggerBase::pushLogger(LoggerBase *logger)
+{
+    loggers.push_back(logger);
+}
+
+void LoggerBase::popLogger()
+{
+    if (loggers.empty()) {
+        throw "too many popLogger() calls";
+    } else {
+        loggers.pop_back();
     }
 }
 

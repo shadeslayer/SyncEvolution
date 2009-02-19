@@ -89,8 +89,6 @@ public:
     ClientOutputter(CppUnit::TestResultCollector *result, std::ostream &stream) :
         CompilerOutputter(result, stream) {}
     void write() {
-        // TODO: ensure that output goes to console again
-        // LOG.setLogName("test.log");
         CompilerOutputter::write();
     }
 };
@@ -115,7 +113,9 @@ public:
     }
 
     ~ClientListener() {
-        SyncEvolution::LoggerBase::setLogger(NULL);
+        if (&SyncEvolution::LoggerBase::instance() == m_logger.get()) {
+            SyncEvolution::LoggerBase::popLogger();
+        }
     }
 
     void addAllowedFailures(string allowedFailures) {
@@ -139,7 +139,7 @@ public:
         simplifyFilename(logfile);
         m_logger.reset(new SyncEvolution::LoggerStdout(logfile));
         m_logger->setLevel(SyncEvolution::Logger::DEBUG);
-        SyncEvolution::LoggerBase::setLogger(m_logger.get());
+        SyncEvolution::LoggerBase::pushLogger(m_logger.get());
         SE_LOG_DEBUG(NULL, NULL, "*** starting %s ***", m_currentTest.c_str());
         m_testFailed = false;
 
@@ -174,7 +174,7 @@ public:
         }
 
         SE_LOG_DEBUG(NULL, NULL, "*** ending %s: %s ***", m_currentTest.c_str(), result.c_str());
-        SyncEvolution::LoggerBase::setLogger(NULL);
+        SyncEvolution::LoggerBase::popLogger();
         m_logger.reset();
 
         cerr << " " << result << "\n";

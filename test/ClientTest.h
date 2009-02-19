@@ -471,6 +471,7 @@ class ClientTest {
      *
      * @param activeSources a -1 terminated array of sync source indices
      * @param syncMode     the synchronization mode to be used
+     * @param logbase      basename for logging: can be used for directory or as file (by adding .log suffix)
      * @param checkReport  has to be called after a successful or unsuccessful sync,
      *                     will dump the report and (optionally) check the result;
      *                     beware, the later may throw exceptions inside CPPUNIT macros
@@ -485,6 +486,7 @@ class ClientTest {
     virtual int sync(
         const int *activeSources,
         SyncMode syncMode,
+        const std::string &logbase,
         const CheckSyncReport &checkReport,
         long maxMsgSize = 0,
         long maxObjSize = 0,

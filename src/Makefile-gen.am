@@ -107,7 +107,7 @@ clean-local: testclean
 
 # files created during testing
 testclean:
-	rm -f *.test.vcf *.log *.tests *.diff *.dat
+	rm -rf *.test.vcf *.log *.tests *.diff *.dat *Client_Sync_*client.*
 
 distclean-local:
 	rm -rf $(FUNAMBOL_SUBDIR)

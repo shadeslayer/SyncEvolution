@@ -207,8 +207,15 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     virtual string askPassword(const string &descr);
 
     /**
+     * Callback for derived classes: called after initializing the
+     * client, but before doing anything with its configuration.
+     * Can be used to override the client configuration.
+     */
+    virtual void prepare() {}
+
+    /**
      * Callback for derived classes: called after setting up the client's
-     * and sources' configuration. Can be used to reconfigure before
+     * and sources' configuration. Can be used to reconfigure sources before
      * actually starting the synchronization.
      *
      * @param sources   a NULL terminated array of all active sources

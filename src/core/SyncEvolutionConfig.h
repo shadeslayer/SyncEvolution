@@ -878,25 +878,16 @@ class EvolutionSyncSourceConfig {
     virtual void setURI(const string &value, bool temporarily = false);
 
     /**
-     * Returns a comma separated list of the possible syncModes for the
-     * SyncSource. Sync modes can be one of
+     * Gets the default syncMode.
+     *
+     * Sync modes can be one of:
+     * - disabled
      * - slow
      * - two-way
      * - one-way-from-server
      * - one-way-from-client
      * - refresh-from-server
      * - refresh-from-client
-     * - one-way-from-server
-     * - one-way-from-client
-     * - addrchange (Funambol extension)
-     *
-     * This is hard-coded in SyncEvolution because changing it
-     * wouldn't have any effect (IMHO).
-     */
-    virtual const char*  getSyncModes() const { return "slow,two-way,one-way-from-server,one-way-from-client,refresh-from-server,refresh-from-client"; }
-
-    /**
-     * Gets the default syncMode as one of the strings listed in setSyncModes.
      */
     virtual const char*  getSync() const;
     virtual void setSync(const string &value, bool temporarily = false);
