@@ -1347,10 +1347,21 @@ void EvolutionSyncClient::doSync()
     // Exceptions are caught and lead to a call of SessionStep() with
     // parameter STEPCMD_ABORT -> abort session as soon as possible.
     sysync::memSize length = 0;
+    bool aborting = false;
+    sysync::uInt16 previousStepCmd = stepCmd;
     do {
         try {
-            // take next step
+            // take next step, but don't abort twice: instead
+            // let engine contine with its shutdown
+            if (stepCmd == STEPCMD_ABORT) {
+                if (aborting) {
+                    stepCmd = previousStepCmd;
+                } else {
+                    aborting = true;
+                }
+            }
             err = getEngine().SessionStep(sessionH, stepCmd, &progressInfo);
+            previousStepCmd = stepCmd;
             if (err != sysync::LOCERR_OK) {
                 // error, terminate with error
                 stepCmd = STEPCMD_ERROR;
