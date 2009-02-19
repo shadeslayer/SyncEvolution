@@ -126,13 +126,21 @@ class SyncSourceReport {
  public:
     SyncSourceReport() {
         memset(m_stat, 0, sizeof(m_stat));
+        m_first =
+            m_resume = false;
+        m_mode = SYNC_NONE;
+        m_status = STATUS_OK;
     }
     SyncSourceReport(const SyncSourceReport &other) {
-        memcpy(m_stat, other.m_stat, sizeof(m_stat));
+        *this = other;
     }
     SyncSourceReport &operator = (const SyncSourceReport &other) {
         if (this != &other) {
             memcpy(m_stat, other.m_stat, sizeof(m_stat));
+            m_first = other.m_first;
+            m_resume = other.m_resume;
+            m_mode = other.m_mode;
+            m_status = other.m_status;
         }
         return *this;
     }
@@ -180,9 +188,26 @@ class SyncSourceReport {
         m_stat[location][state][success] = count;
     }
 
+    void recordFinalSyncMode(SyncMode mode) { m_mode = mode; }
+    SyncMode getFinalSyncMode() const { return m_mode; }
+
+    void recordFirstSync(bool isFirstSync) { m_first = isFirstSync; }
+    bool isFirstSync() const { return m_first; }
+
+    void recordResumeSync(bool isResumeSync) { m_resume = isResumeSync; }
+    bool isResumeSync() const { return m_resume; }
+
+    void recordStatus(SyncMLStatus status ) { m_status = status; }
+    SyncMLStatus getStatus() const { return m_status; }
+
  private:
     /** storage for getItemStat() */
     int m_stat[ITEM_LOCATION_MAX][ITEM_STATE_MAX][ITEM_RESULT_MAX];
+
+    SyncMode m_mode;
+    bool m_first;
+    bool m_resume;
+    SyncMLStatus m_status;
 };
 
 class SyncReport : public std::map<std::string, SyncSourceReport> {

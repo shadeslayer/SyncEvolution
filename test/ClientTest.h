@@ -64,14 +64,15 @@ class CheckSyncReport {
   public:
     CheckSyncReport(int clAdded = -1, int clUpdated = -1, int clDeleted = -1,
                     int srAdded = -1, int srUpdated = -1, int srDeleted = -1,
-                    bool mstSucceed = true) :
+                    bool mstSucceed = true, SyncMode mode = SYNC_NONE) :
         clientAdded(clAdded),
         clientUpdated(clUpdated),
         clientDeleted(clDeleted),
         serverAdded(srAdded),
         serverUpdated(srUpdated),
         serverDeleted(srDeleted),
-        mustSucceed(mstSucceed)
+        mustSucceed(mstSucceed),
+        syncMode(mode)
         {}
 
     virtual ~CheckSyncReport() {}
@@ -79,6 +80,7 @@ class CheckSyncReport {
     const int clientAdded, clientUpdated, clientDeleted,
         serverAdded, serverUpdated, serverDeleted;
     bool mustSucceed;
+    SyncMode syncMode;
 
     /**
      * checks that the sync completed as expected and throws
@@ -778,23 +780,27 @@ protected:
 
     /* for more information on the different tests see their implementation */
 
-    // do a two-way sync without additional checks
+    // do a two-way sync without additional checks,
+    // may or may not actually be done in two-way mode
     virtual void testTwoWaySync() {
         sync(SYNC_TWO_WAY);
     }
 
     // do a slow sync without additional checks
     virtual void testSlowSync() {
-        sync(SYNC_SLOW);
+        sync(SYNC_SLOW,
+             CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW));
     }
     // do a refresh from server sync without additional checks
     virtual void testRefreshFromServerSync() {
-        sync(SYNC_REFRESH_FROM_SERVER);
+        sync(SYNC_REFRESH_FROM_SERVER,
+             CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_SERVER));
     }
 
     // do a refresh from client sync without additional checks
     virtual void testRefreshFromClientSync() {
-        sync(SYNC_REFRESH_FROM_CLIENT);
+        sync(SYNC_REFRESH_FROM_CLIENT,
+             CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_CLIENT));
     }
 
     // delete all items, locally and on server using two-way sync

@@ -634,19 +634,57 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                         source.getName(), extra1);
         }
         break;
-    case PEV_ALERTED:
-        // TODO: direction?
-
+    case PEV_ALERTED: {
         /* datastore alerted (extra1=0 for normal, 1 for slow, 2 for first time slow, 
-           extra2=1 for resumed session) */
-        SE_LOG_INFO(NULL, NULL, "%s: %s %s sync",
+           extra2=1 for resumed session,
+           extra3 0=twoway, 1=fromserver, 2=fromclient */
+        SE_LOG_INFO(NULL, NULL, "%s: %s %s sync%s",
                     source.getName(),
                     extra2 ? "resuming" : "starting",
                     extra1 == 0 ? "normal" :
                     extra1 == 1 ? "slow" :
                     extra1 == 2 ? "first time" :
-                    "unknown");
+                    "unknown",
+                    extra3 == 0 ? ", two-way" :
+                    extra3 == 1 ? " from server" :
+                    extra3 == 2 ? " from client" :
+                    ", unknown direction");
+
+        SyncMode mode = SYNC_NONE;
+        switch (extra1) {
+        case 0:
+            switch (extra3) {
+            case 0:
+                mode = SYNC_TWO_WAY;
+                break;
+            case 1:
+                mode = SYNC_ONE_WAY_FROM_SERVER;
+                break;
+            case 2:
+                mode = SYNC_ONE_WAY_FROM_CLIENT;
+                break;
+            }
+            break;
+        case 1:
+        case 2:
+            switch (extra3) {
+            case 0:
+                mode = SYNC_SLOW;
+                break;
+            case 1:
+                mode = SYNC_REFRESH_FROM_SERVER;
+                break;
+            case 2:
+                mode = SYNC_REFRESH_FROM_CLIENT;
+                break;
+            }
+            break;
+        }
+        source.recordFinalSyncMode(mode);
+        source.recordFirstSync(extra1 == 2);
+        source.recordResumeSync(extra2 == 1);
         break;
+    }
     case PEV_SYNCSTART:
         /* sync started */
         SE_LOG_INFO(NULL, NULL, "%s: started",
@@ -693,6 +731,7 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                  extra2 == 2 ? "first time" :
                  "unknown",
                  extra1 ? "unsuccessfully" : "successfully");
+        source.recordStatus(SyncMLStatus(extra1));
         break;
     case PEV_DSSTATS_L:
         /* datastore statistics for local       (extra1=# added, 
