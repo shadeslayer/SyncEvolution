@@ -3,7 +3,7 @@
  */
 
 #include "EvolutionContactSource.h"
-#include "SyncEvolutionUtil.h"
+#include "test.h"
 
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {

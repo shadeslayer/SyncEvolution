@@ -4,7 +4,7 @@
 
 #include "EvolutionCalendarSource.h"
 #include "EvolutionMemoSource.h"
-#include "SyncEvolutionUtil.h"
+#include "test.h"
 
 #include <boost/algorithm/string.hpp>
 
@@ -104,7 +104,7 @@ protected:
 
         item.setData(data.c_str(), data.size());
         source->addItemThrow(item);
-        CPPUNIT_ASSERT(item.getKey());
+        CPPUNIT_ASSERT(!item.getKey().empty());
         return item.getKey();
     }
 
