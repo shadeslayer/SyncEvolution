@@ -21,11 +21,13 @@
 #ifdef ENABLE_LIBCURL
 
 #include <algorithm>
+#include "SyncEvolutionUtil.h"
 
 namespace SyncEvolution {
 
 CurlTransportAgent::CurlTransportAgent() :
     m_easyHandle(easyInit()),
+    m_slist(NULL),
     m_status(INACTIVE),
     m_reply(NULL),
     m_replyLen(0),
