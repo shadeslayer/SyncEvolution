@@ -1271,9 +1271,8 @@ void EvolutionSyncClient::doSync()
     getEngine().SetStrValue(subkeyH, "serverUser", getUsername());
     getEngine().SetStrValue(subkeyH, "serverPassword", getPassword());
 
-    // TODO: remove hard-coded XML encoding as soon as out transport
-    // can post WBXML and XML (currently limited to XML)
-    getEngine().SetInt32Value(subkeyH, "encoding", 2);
+    // TODO(?): make XML vs WBXML configurable
+    // getEngine().SetInt32Value(subkeyH, "encoding", 2);
 
     // Iterate over all data stores in the XML config
     // and match them with sync sources.
