@@ -295,7 +295,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     /**
      * sets up Synthesis session and executes it
      */
-    void doSync();
+    SyncMLStatus doSync();
 
     /**
      * override sync mode of all active sync sources if set

@@ -64,11 +64,11 @@ CURL *CurlTransportAgent::easyInit()
     }
 
     if (initres) {
-        throw std::string("global curl initialization failed");
+        SE_THROW_EXCEPTION(TransportException, "global curl initialization failed");
     }
     CURL *handle = curl_easy_init();
     if (!handle) {
-        throw "no curl handle";
+        SE_THROW_EXCEPTION(TransportException, "no curl handle");
     }
     return handle;
 }
@@ -208,8 +208,7 @@ size_t CurlTransportAgent::readData(void *buffer, size_t size) throw()
 void CurlTransportAgent::checkCurl(CURLcode code)
 {
     if (code) {
-        /** @TODO: logging */
-        throw std::string(m_curlErrorText);
+        SE_THROW_EXCEPTION(TransportException, m_curlErrorText);
     }
 }
 

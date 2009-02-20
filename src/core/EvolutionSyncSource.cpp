@@ -74,12 +74,8 @@ void EvolutionSyncSource::resetItems()
 
 void EvolutionSyncSource::handleException()
 {
-    try {
-        throw;
-    } catch (std::exception &ex) {
-        SE_LOG_ERROR(this, NULL, "%s", ex.what());
-        setFailed(true);
-    }
+    SyncEvolutionException::handle();
+    setFailed(true);
 }
 
 SourceRegistry &EvolutionSyncSource::getSourceRegistry()

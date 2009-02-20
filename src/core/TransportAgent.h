@@ -20,6 +20,7 @@
 #define INCL_TRANSPORTAGENT
 
 #include <string>
+#include "SyncEvolutionUtil.h"
 
 namespace SyncEvolution {
 
@@ -33,7 +34,8 @@ namespace SyncEvolution {
  * - wait for completion and reply
  *
  * Data to be sent is owned by caller. Data received as reply is
- * allocated and owned by agent. Errors are reported via exceptions.
+ * allocated and owned by agent. Errors are reported via
+ * TransportAgentException.
  */
 class TransportAgent
 {
@@ -128,6 +130,16 @@ class TransportAgent
 
     /** normal HTTP URL encoded */
     static const char * const m_contentTypeURLEncoded;
+};
+
+class TransportException : public SyncEvolutionException
+{
+ public:
+    TransportException(const std::string &file,
+                       int line,
+                       const std::string &what) :
+    SyncEvolutionException(file, line, what) {}
+    ~TransportException() throw() {}
 };
 
 } // namespace SyncEvolution

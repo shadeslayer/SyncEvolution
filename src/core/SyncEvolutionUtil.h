@@ -5,6 +5,8 @@
 #ifndef INCL_SYNCEVOLUTION_UTIL
 # define INCL_SYNCEVOLUTION_UTIL
 
+#include "SyncML.h"
+
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -14,6 +16,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <exception>
 using namespace std;
 
 /** case-insensitive less than for assoziative containers */
@@ -114,5 +117,44 @@ std::string StringPrintf(const char *format, ...)
 #endif
 ;
 std::string StringPrintfV(const char *format, va_list ap);
+
+/**
+ * an exception which records the source file and line
+ * where it was thrown
+ *
+ * @TODO add function name
+ */
+class SyncEvolutionException : public std::runtime_error
+{
+ public:
+    SyncEvolutionException(const std::string &file,
+                           int line,
+                           const std::string &what) :
+    std::runtime_error(what),
+        m_file(file),
+        m_line(line)
+        {}
+    ~SyncEvolutionException() throw() {}
+    const std::string m_file;
+    const int m_line;
+
+    /**
+     * Convenience function, to be called inside a catch(..) block.
+     *
+     * Rethrows the exception to determine what it is, then logs it as
+     * an error. Turns certain known exceptions into the corresponding
+     * status code if status still was STATUS_OK when called.
+     * Returns updated status code.
+     */
+    static SyncMLStatus handle(SyncMLStatus *status = NULL);
+};
+
+/** throw a SyncEvolutionException */
+#define SE_THROW(_what) \
+    SE_THROW_EXCEPTION(SyncEvolutionException, _what)
+
+/** throw a class which accepts file, line, what parameters */
+#define SE_THROW_EXCEPTION(_class,  _what) \
+    throw _class(__FILE__, __LINE__, _what)
 
 #endif // INCL_SYNCEVOLUTION_UTIL

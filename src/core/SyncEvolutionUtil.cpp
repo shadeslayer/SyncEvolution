@@ -4,6 +4,10 @@
 
 #include "SyncEvolutionUtil.h"
 #include "EvolutionSyncClient.h"
+#include "TransportAgent.h"
+#include "Logging.h"
+
+#include <synthesis/syerror.h>
 
 #include <boost/scoped_array.hpp>
 #include <boost/foreach.hpp>
@@ -241,4 +245,31 @@ std::string StringPrintfV(const char *format, va_list ap)
     std::string res = buffer;
     free(buffer);
     return res;
+}
+
+SyncMLStatus SyncEvolutionException::handle(SyncMLStatus *status)
+{
+    SyncMLStatus new_status = STATUS_FATAL;
+
+    try {
+        throw;
+    } catch (const TransportException &ex) {
+        SE_LOG_DEBUG(NULL, NULL, "TransportException thrown at %s:%d",
+                     ex.m_file.c_str(), ex.m_line);
+        SE_LOG_ERROR(NULL, NULL, ex.what());
+        new_status = SyncMLStatus(sysync::LOCERR_TRANSPFAIL);
+    } catch (const SyncEvolutionException &ex) {
+        SE_LOG_DEBUG(NULL, NULL, "exception thrown at %s:%d",
+                     ex.m_file.c_str(), ex.m_line);
+        SE_LOG_ERROR(NULL, NULL, ex.what());
+    } catch (const std::exception &ex) {
+        SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
+    } catch (...) {
+        SE_LOG_ERROR(NULL, NULL, "unknown error");
+    }
+
+    if (status && *status == STATUS_OK) {
+        *status = new_status;
+    }
+    return status ? *status : new_status;
 }

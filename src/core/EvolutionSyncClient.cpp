@@ -126,8 +126,8 @@ public:
             vector<string> entries;
             try {
                 getLogdirs(path, entries);
-            } catch(const std::exception &ex) {
-                SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
+            } catch(...) {
+                SyncEvolutionException::handle();
                 return "";
             }
 
@@ -477,8 +477,8 @@ public:
                 if (m_prepared) {
                     try {
                         dumpDatabases("after");
-                    } catch (const std::exception &ex) {
-                        SE_LOG_ERROR(NULL, NULL,  "%s", ex.what() );
+                    } catch (...) {
+                        SyncEvolutionException::handle();
                         m_prepared = false;
                     }
                 }
@@ -995,6 +995,7 @@ void EvolutionSyncClient::getConfigTemplateXML(string &xml, string &configname)
             return;
         }
     } catch (...) {
+        SyncEvolutionException::handle();
     }
 
     /**
@@ -1087,7 +1088,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
 
 SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
 {
-    SyncMLStatus status = STATUS_FATAL;
+    SyncMLStatus status = STATUS_OK;
     
     if (!exists()) {
         SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
@@ -1152,39 +1153,35 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
 	sourceList.syncPrepare();
 
         // run sync session
-        doSync();
+        status = doSync();
+    } catch (...) {
+        SyncEvolutionException::handle(&status);
+    }
 
+    try {
         // Print final report before cleaning up.
         // Status was okay only if all sources succeeded.
         createSyncReport(*report, sourceList);
-        status = STATUS_OK;
         BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
-            if (source->getStatus() != STATUS_OK) {
+            if (source->getStatus() != STATUS_OK &&
+                status == STATUS_OK) {
                 status = source->getStatus();
                 break;
             }
         }
         sourceList.syncDone(status == STATUS_OK, report);
-    } catch (const std::exception &ex) {
-        SE_LOG_ERROR(NULL, NULL,  "%s", ex.what() );
-
-        // something went wrong, but try to write .after state anyway
-        createSyncReport(*report, sourceList);
-        m_sourceListPtr = NULL;
-        sourceList.syncDone(false, report);
-    } catch (...) {
-        SE_LOG_ERROR(NULL, NULL,  "unknown error" );
-        createSyncReport(*report, sourceList);
-        m_sourceListPtr = NULL;
-        sourceList.syncDone(false, report);
+    } catch(...) {
+        SyncEvolutionException::handle(&status);
     }
 
     m_sourceListPtr = NULL;
     return status;
 }
 
-void EvolutionSyncClient::doSync()
+SyncMLStatus EvolutionSyncClient::doSync()
 {
+    SyncMLStatus status = STATUS_OK;
+
     // Synthesis SDK
     sysync::TSyError err;
     sysync::KeyH keyH;
@@ -1532,11 +1529,8 @@ void EvolutionSyncClient::doSync()
                 stepCmd = STEPCMD_ABORT;
             }
             // loop until session done or aborted with error
-        } catch (const std::exception &ex) {
-            SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
-            stepCmd = STEPCMD_ABORT;
         } catch (...) {
-            SE_LOG_ERROR(NULL, NULL, "unknown error");
+            SyncEvolutionException::handle(&status);
             stepCmd = STEPCMD_ABORT;
         }
     } while (stepCmd != STEPCMD_DONE && stepCmd != STEPCMD_ERROR);
@@ -1544,6 +1538,8 @@ void EvolutionSyncClient::doSync()
     getEngine().CloseKey(subkeyH);
     getEngine().CloseKey(keyH);
     getEngine().CloseSession(sessionH);
+
+    return status;
 }
 
 
@@ -1574,8 +1570,8 @@ void EvolutionSyncClient::status()
             sourceList.setPath(prevLogdir);
             sourceList.dumpDatabases("current");
             sourceList.dumpLocalChanges("after", "current");
-        } catch(const std::exception &ex) {
-            SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
+        } catch(...) {
+            SyncEvolutionException::handle();
         }
     } else {
         cerr << "Previous log directory not found.\n";
