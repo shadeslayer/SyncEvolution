@@ -224,30 +224,26 @@ void EvolutionSyncSource::getDatastoreXML(string &xml)
     string profile;
     string datatypes;
 
-    /**
-     * @TODO: distinguish between VEVENT and VTODO
-     */
-
     if (type == "text/x-vcard") {
-        profile = "\"vcard\", 1";
+        profile = "\"vCard\", 1";
         datatypes =
-            "        <use datatype='vcard21' mode='rw' preferred='yes'/>\n"
-            "        <use datatype='vcard30' mode='rw'/>\n";
+            "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='vCard30' mode='rw'/>\n";
     } else if (type == "text/vcard") {
-        profile = "\"vcard\", 2";
+        profile = "\"vCard\", 2";
         datatypes =
-            "        <use datatype='vcard21' mode='rw'/>\n"
-            "        <use datatype='vcard30' mode='rw' preferred='yes'/>\n";
+            "        <use datatype='vCard21' mode='rw'/>\n"
+            "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
     } else if (type == "text/x-calendar") {
-        profile = "\"vcalendar\", 1";
+        profile = "\"vCalendar\", 1";
         datatypes =
-            "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n"
-            "        <use datatype='icalendar20' mode='rw'/>\n";
+            "        <use datatype='vCalendar10' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='iCalendar20' mode='rw'/>\n";
     } else if (type == "text/calendar") {
-        profile = "\"vcalendar\", 2";
+        profile = "\"vCalendar\", 2";
         datatypes =
-            "        <use datatype='vcalendar10' mode='rw'/>\n"
-            "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
+            "        <use datatype='vCalendar10' mode='rw'/>\n"
+            "        <use datatype='iCalendar20' mode='rw' preferred='yes'/>\n";
     } else if (type == "text/plain") {
         profile = "\"Note\", 2";
     } else {
@@ -261,12 +257,12 @@ void EvolutionSyncSource::getDatastoreXML(string &xml)
 
     if (type == "text/x-vcard:2.1" || type == "text/x-vcard") {
         datatypes =
-            "        <use datatype='vcard21' mode='rw' preferred='yes'/>\n"
-            "        <use datatype='vcard30' mode='rw'/>\n";
+            "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='vCard30' mode='rw'/>\n";
     } else if (type == "text/vcard:3.0" || type == "text/vcard") {
         datatypes =
-            "        <use datatype='vcard21' mode='rw'/>\n"
-            "        <use datatype='vcard30' mode='rw' preferred='yes'/>\n";
+            "        <use datatype='vCard21' mode='rw'/>\n"
+            "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
     } else if (type == "text/x-calendar:2.0" || type == "text/x-calendar") {
         datatypes =
             "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n"
