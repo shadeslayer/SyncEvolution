@@ -1034,7 +1034,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
             "    <timestamp>yes</timestamp>\n"
             "    <timestampall>no</timestampall>\n"
             "    <timedsessionlognames>no</timedsessionlognames>\n"
-            "    <subthreadmode>separate</subthreadmode>\n"
+            "    <subthreadmode>suppress</subthreadmode>\n"
             "    <singlegloballog>yes</singlegloballog>\n";
         if (logging) {
             debug <<
@@ -1341,6 +1341,31 @@ void EvolutionSyncClient::doSync()
     // TODO: agent->setUserAgent(getUserAgent());
     // TODO: SSL settings
 
+    // Close all keys so that engine can flush the modified config.
+    // Otherwise the session reads the unmodified values from the
+    // created files while the updated values are still in memory.
+    getEngine().CloseKey(targetsH);
+    getEngine().CloseKey(subkeyH);
+    getEngine().CloseKey(keyH);
+
+    // reopen profile keys
+    err = getEngine().OpenKeyByPath(keyH, NULL, "/profiles", 0);
+    if (err) {
+        throwError("open config vars");
+    }
+    err = getEngine().GetStrValue(keyH, "settingsstatus", s);
+    if (err) {
+        throwError("settings not ready");
+    }
+    err = getEngine().OpenSubkey(subkeyH, keyH, KEYVAL_ID_FIRST, 0);
+    if (err) {
+        throwError("open first profile");
+    }
+    err = getEngine().OpenKeyByPath(targetsH, subkeyH, "targets", 0);
+    if (err) {
+        throwError("targets");
+    }
+
     sysync::SessionH sessionH;
     sysync::TEngineProgressInfo progressInfo;
     sysync::uInt16 stepCmd = STEPCMD_CLIENTSTART; // first step
@@ -1516,10 +1541,10 @@ void EvolutionSyncClient::doSync()
             stepCmd = STEPCMD_ABORT;
         }
     } while (stepCmd != STEPCMD_DONE && stepCmd != STEPCMD_ERROR);
-    getEngine().CloseSession(sessionH);
     getEngine().CloseKey(targetsH);
     getEngine().CloseKey(subkeyH);
     getEngine().CloseKey(keyH);
+    getEngine().CloseSession(sessionH);
 }
 
 
