@@ -324,7 +324,7 @@ public:
             "VERSION:2.0\n"
             "METHOD:PUBLISH\n"
             "BEGIN:VJOURNAL\n"
-            "SUMMARY:Summary\n"
+            "SUMMARY:Summary<<REVISION>>\n"
             "DESCRIPTION:Summary\\nBody text\n"
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";
