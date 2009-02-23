@@ -67,6 +67,7 @@ class SoupTransportAgent : public TransportAgent
     eptr<SoupSession, GObject> m_session;
     eptr<GMainLoop, GMainLoop, GLibUnref> m_loop;
     Status m_status;
+    std::string m_failure;
 
     /** response, copied from SoupMessage */
     eptr<SoupBuffer, SoupBuffer, GLibUnref> m_response;

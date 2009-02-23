@@ -20,6 +20,8 @@
 
 #ifdef ENABLE_LIBSOUP
 
+#include <algorithm>
+
 namespace SyncEvolution {
 
 SoupTransportAgent::SoupTransportAgent() :
@@ -73,7 +75,7 @@ void SoupTransportAgent::send(const char *data, size_t len)
     // ownership is transferred to libsoup in soup_session_queue_message()
     SoupMessage *message = soup_message_new("POST", m_URL.c_str());
     if (!message) {
-        throw std::string("could not allocate SoupMessage");
+        SE_THROW_EXCEPTION(TransportException, "could not allocate SoupMessage");
     }
     soup_message_set_request(message, m_contentType.c_str(),
                              SOUP_MEMORY_TEMPORARY, data, len);
@@ -89,6 +91,12 @@ void SoupTransportAgent::cancel()
 
 TransportAgent::Status SoupTransportAgent::wait()
 {
+    if (!m_failure.empty()) {
+        std::string failure;
+        std::swap(failure, m_failure);
+        SE_THROW_EXCEPTION(TransportException, failure);
+    }
+
     switch (m_status) {
     case ACTIVE:
         // block in main loop until our HandleSessionCallback() stops the loop
@@ -97,6 +105,13 @@ TransportAgent::Status SoupTransportAgent::wait()
     default:
         break;
     }
+
+    if (!m_failure.empty()) {
+        std::string failure;
+        std::swap(failure, m_failure);
+        SE_THROW_EXCEPTION(TransportException, failure);
+    }
+
     return m_status;
 }
 
@@ -128,7 +143,7 @@ void SoupTransportAgent::HandleSessionCallback(SoupSession *session,
         m_response = NULL;
     }
     if (msg->status_code != 200) {
-        // TODO: logging of msg->reason_phrase
+        m_failure = msg->reason_phrase ? msg->reason_phrase : "";
         m_status = FAILED;
     } else {
         m_status = GOT_REPLY;
