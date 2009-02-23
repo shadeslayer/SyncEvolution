@@ -1242,8 +1242,12 @@ SyncMLStatus EvolutionSyncClient::doSync()
     } else {
         getEngine().SetStrValue(keyH, "defout_path", "/dev/null");
     }
+    // TODO: setting device_uri and device_name has no effect.
+    // Remove envvar hack.
+    string devID = getDevID();
     getEngine().SetStrValue(keyH, "device_uri", getDevID());
     getEngine().SetStrValue(keyH, "device_name", getDevType());
+    setenv("SYSYNC_DEVICE_ID", getDevID(), true);
     // TODO: redirect to log file?
     getEngine().SetStrValue(keyH, "conferrpath", "console");
     getEngine().SetStrValue(keyH, "binfilepath", getRootPath() + "/.synthesis");
