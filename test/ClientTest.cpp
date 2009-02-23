@@ -1482,11 +1482,13 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
 
     child = updateItem(createSourceA, child, config.childItem);
 
+    // child has to be listed as modified, parent may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
-    SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
+    SOURCE_ASSERT(copy.get(), 1 <= countUpdatedItems(copy.get()));
+    SOURCE_ASSERT(copy.get(), 2 >= countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->endSync());
@@ -1542,11 +1544,13 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
 
     parent = updateItem(createSourceA, parent, config.parentItem);
 
+    // parent has to be listed as modified, child may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
-    SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
+    SOURCE_ASSERT(copy.get(), 1 <= countUpdatedItems(copy.get()));
+    SOURCE_ASSERT(copy.get(), 2 >= countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->endSync());

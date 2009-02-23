@@ -259,7 +259,7 @@ void EvolutionSyncSource::getDatastoreXML(string &xml)
         datatypes =
             "        <use datatype='vCard21' mode='rw'/>\n"
             "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
-    } else if (type == "text/x-calendar:2.0" || type == "text/x-calendar") {
+    } else if (type == "text/x-vcalendar:2.0" || type == "text/x-vcalendar") {
         datatypes =
             "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n"
             "        <use datatype='icalendar20' mode='rw'/>\n";
