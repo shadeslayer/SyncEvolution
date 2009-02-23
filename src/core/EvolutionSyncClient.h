@@ -25,10 +25,9 @@ using namespace SyncEvolution;
 class SourceList;
 class EvolutionSyncSource;
 #include <synthesis/sync_declarations.h>
+#include <synthesis/engine_defs.h>
 namespace sysync {
     class TEngineModuleBridge;
-    enum TEngineProgressEventType {
-    };
 };
 
 /**
@@ -262,7 +261,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * @param extra2  extra information depending on type
      * @param extra3  extra information depending on type
      */
-    virtual void displaySyncProgress(sysync::TEngineProgressEventType type,
+    virtual void displaySyncProgress(sysync::TProgressEventEnum type,
                                      int32_t extra1, int32_t extra2, int32_t extra3);
 
     /**
@@ -274,7 +273,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * @param extra2  extra information depending on type
      * @param extra3  extra information depending on type
      */
-    virtual void displaySourceProgress(sysync::TEngineProgressEventType type,
+    virtual void displaySourceProgress(sysync::TProgressEventEnum type,
                                        EvolutionSyncSource &source,
                                        int32_t extra1, int32_t extra2, int32_t extra3);
 

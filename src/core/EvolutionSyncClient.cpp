@@ -602,18 +602,18 @@ void EvolutionSyncClient::displayServerMessage(const string &message)
     SE_LOG_INFO(NULL, NULL, "message from server: %s", message.c_str());
 }
 
-void EvolutionSyncClient::displaySyncProgress(sysync::TEngineProgressEventType type,
+void EvolutionSyncClient::displaySyncProgress(sysync::TProgressEventEnum type,
                                               int32_t extra1, int32_t extra2, int32_t extra3)
 {
     
 }
 
-void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType type,
+void EvolutionSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
                                                 EvolutionSyncSource &source,
                                                 int32_t extra1, int32_t extra2, int32_t extra3)
 {
     switch(type) {
-    case PEV_PREPARING:
+    case sysync::PEV_PREPARING:
         /* preparing (e.g. preflight in some clients), extra1=progress, extra2=total */
         /* extra2 might be zero */
         if (extra2) {
@@ -624,7 +624,7 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                         source.getName(), extra1);
         }
         break;
-    case PEV_DELETING:
+    case sysync::PEV_DELETING:
         /* deleting (zapping datastore), extra1=progress, extra2=total */
         if (extra2) {
             SE_LOG_INFO(NULL, NULL, "%s: deleting %d/%d",
@@ -634,7 +634,7 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                         source.getName(), extra1);
         }
         break;
-    case PEV_ALERTED: {
+    case sysync::PEV_ALERTED: {
         /* datastore alerted (extra1=0 for normal, 1 for slow, 2 for first time slow, 
            extra2=1 for resumed session,
            extra3 0=twoway, 1=fromserver, 2=fromclient */
@@ -685,12 +685,12 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
         source.recordResumeSync(extra2 == 1);
         break;
     }
-    case PEV_SYNCSTART:
+    case sysync::PEV_SYNCSTART:
         /* sync started */
         SE_LOG_INFO(NULL, NULL, "%s: started",
                     source.getName());
         break;
-    case PEV_ITEMRECEIVED:
+    case sysync::PEV_ITEMRECEIVED:
         /* item received, extra1=current item count,
            extra2=number of expected changes (if >= 0) */
         if (extra2 > 0) {
@@ -701,7 +701,7 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                      source.getName(), extra1);
         }
         break;
-    case PEV_ITEMSENT:
+    case sysync::PEV_ITEMSENT:
         /* item sent,     extra1=current item count,
            extra2=number of expected items to be sent (if >=0) */
         if (extra2 > 0) {
@@ -712,14 +712,14 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                      source.getName(), extra1);
         }
         break;
-    case PEV_ITEMPROCESSED:
+    case sysync::PEV_ITEMPROCESSED:
         /* item locally processed,               extra1=# added, 
            extra2=# updated,
            extra3=# deleted */
         SE_LOG_INFO(NULL, NULL, "%s: added %d, updated %d, removed %d",
                  source.getName(), extra1, extra2, extra3);
         break;
-    case PEV_SYNCEND:
+    case sysync::PEV_SYNCEND:
         /* sync finished, probably with error in extra1 (0=ok),
            syncmode in extra2 (0=normal, 1=slow, 2=first time), 
            extra3=1 for resumed session) */
@@ -731,9 +731,24 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                  extra2 == 2 ? "first time" :
                  "unknown",
                  extra1 ? "unsuccessfully" : "successfully");
+        switch (extra1) {
+        case 401:
+            // TODO: reset cached password
+            SE_LOG_INFO(NULL, NULL, "authorization failed, check username '%s' and password", getUsername());
+            break;
+        case 403:
+            SE_LOG_INFO(&source, NULL, "log in succeeded, but server refuses access - contact server operator");
+            break;
+        case 407:
+            SE_LOG_INFO(NULL, NULL, "proxy authorization failed, check proxy username and password");
+            break;
+        case 404:
+            SE_LOG_INFO(&source, NULL, "server database not found, check URI '%s'", source.getURI());
+            break;
+        }
         source.recordStatus(SyncMLStatus(extra1));
         break;
-    case PEV_DSSTATS_L:
+    case sysync::PEV_DSSTATS_L:
         /* datastore statistics for local       (extra1=# added, 
            extra2=# updated,
            extra3=# deleted) */
@@ -750,7 +765,7 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                            EvolutionSyncSource::ITEM_TOTAL,
                            extra3);
         break;
-    case PEV_DSSTATS_R:
+    case sysync::PEV_DSSTATS_R:
         /* datastore statistics for remote      (extra1=# added, 
            extra2=# updated,
            extra3=# deleted) */
@@ -767,7 +782,7 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                            EvolutionSyncSource::ITEM_TOTAL,
                            extra3);
         break;
-    case PEV_DSSTATS_E:
+    case sysync::PEV_DSSTATS_E:
         /* datastore statistics for local/remote rejects (extra1=# locally rejected, 
            extra2=# remotely rejected) */
         source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
@@ -779,14 +794,14 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                            EvolutionSyncSource::ITEM_REJECT,
                            extra2);
         break;
-    case PEV_DSSTATS_S:
+    case sysync::PEV_DSSTATS_S:
         /* datastore statistics for server slowsync  (extra1=# slowsync matches) */
         source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
                            EvolutionSyncSource::ITEM_ANY,
                            EvolutionSyncSource::ITEM_MATCH,
                            extra1);
         break;
-    case PEV_DSSTATS_C:
+    case sysync::PEV_DSSTATS_C:
         /* datastore statistics for server conflicts (extra1=# server won,
            extra2=# client won,
            extra3=# duplicated) */
@@ -803,7 +818,7 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TEngineProgressEventType
                            EvolutionSyncSource::ITEM_CONFLICT_DUPLICATED,
                            extra3);
         break;
-    case PEV_DSSTATS_D:
+    case sysync::PEV_DSSTATS_D:
         /* datastore statistics for data   volume    (extra1=outgoing bytes,
            extra2=incoming bytes) */
         source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
@@ -1255,10 +1270,10 @@ SyncMLStatus EvolutionSyncClient::doSync()
     err = getEngine().GetStrValue(keyH, "settingsstatus", s);
     
     // open first profile
-    err = getEngine().OpenSubkey(subkeyH, keyH, KEYVAL_ID_FIRST, 0);
+    err = getEngine().OpenSubkey(subkeyH, keyH, sysync::KEYVAL_ID_FIRST, 0);
     if (err == 204) { // DB_NoContent
         // no profile already exists, create default profile
-        err = getEngine().OpenSubkey(subkeyH, keyH, KEYVAL_ID_NEW_DEFAULT, 0);
+        err = getEngine().OpenSubkey(subkeyH, keyH, sysync::KEYVAL_ID_NEW_DEFAULT, 0);
     }
     if (err) {
         throwError("open first profile");
@@ -1280,7 +1295,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
     if (err) {
         throwError("targets");
     }
-    err = getEngine().OpenSubkey(targetH, targetsH, KEYVAL_ID_FIRST, 0);
+    err = getEngine().OpenSubkey(targetH, targetsH, sysync::KEYVAL_ID_FIRST, 0);
     while (err != 204) {
         if (err) {
             throwError("reading target");
@@ -1324,7 +1339,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
             getEngine().SetInt32Value(targetH, "enabled", 0);
         }
         getEngine().CloseKey(targetH);
-        err = getEngine().OpenSubkey(targetH, targetsH, KEYVAL_ID_NEXT, 0);
+        err = getEngine().OpenSubkey(targetH, targetsH, sysync::KEYVAL_ID_NEXT, 0);
     }
 
     // run an HTTP client sync session
@@ -1353,7 +1368,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
     if (err) {
         throwError("settings not ready");
     }
-    err = getEngine().OpenSubkey(subkeyH, keyH, KEYVAL_ID_FIRST, 0);
+    err = getEngine().OpenSubkey(subkeyH, keyH, sysync::KEYVAL_ID_FIRST, 0);
     if (err) {
         throwError("open first profile");
     }
@@ -1364,7 +1379,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
 
     sysync::SessionH sessionH;
     sysync::TEngineProgressInfo progressInfo;
-    sysync::uInt16 stepCmd = STEPCMD_CLIENTSTART; // first step
+    sysync::uInt16 stepCmd = sysync::STEPCMD_CLIENTSTART; // first step
     err = getEngine().OpenSession(sessionH, 0, "syncevolution_session");
     if (err) {
         throwError("OpenSession");
@@ -1380,7 +1395,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
         try {
             // take next step, but don't abort twice: instead
             // let engine contine with its shutdown
-            if (stepCmd == STEPCMD_ABORT) {
+            if (stepCmd == sysync::STEPCMD_ABORT) {
                 if (aborting) {
                     stepCmd = previousStepCmd;
                 } else {
@@ -1391,18 +1406,18 @@ SyncMLStatus EvolutionSyncClient::doSync()
             previousStepCmd = stepCmd;
             if (err != sysync::LOCERR_OK) {
                 // error, terminate with error
-                stepCmd = STEPCMD_ERROR;
+                stepCmd = sysync::STEPCMD_ERROR;
             } else {
                 // step ran ok, evaluate step command
                 switch (stepCmd) {
-                case STEPCMD_OK:
+                case sysync::STEPCMD_OK:
                     // no progress info, call step again
-                    stepCmd = STEPCMD_STEP;
+                    stepCmd = sysync::STEPCMD_STEP;
                     break;
-                case STEPCMD_PROGRESS:
+                case sysync::STEPCMD_PROGRESS:
                     // new progress info to show
                     // Check special case of interactive display alert
-                    if (progressInfo.eventtype==PEV_DISPLAY100) {
+                    if (progressInfo.eventtype == sysync::PEV_DISPLAY100) {
                         // alert 100 received from remote, message text is in
                         // SessionKey's "displayalert" field
                         sysync::KeyH sessionKeyH;
@@ -1418,9 +1433,9 @@ SyncMLStatus EvolutionSyncClient::doSync()
                         getEngine().CloseKey(sessionKeyH);
                     } else {
                         switch (progressInfo.targetID) {
-                        case KEYVAL_ID_UNKNOWN:
+                        case sysync::KEYVAL_ID_UNKNOWN:
                         case 0 /* used with PEV_SESSIONSTART?! */:
-                            displaySyncProgress(sysync::TEngineProgressEventType(progressInfo.eventtype),
+                            displaySyncProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
                                                 progressInfo.extra1,
                                                 progressInfo.extra2,
                                                 progressInfo.extra3);
@@ -1438,7 +1453,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                             }
                             EvolutionSyncSource *source = (*m_sourceListPtr)[s];
                             if (source) {
-                                displaySourceProgress(sysync::TEngineProgressEventType(progressInfo.eventtype),
+                                displaySourceProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
                                                       *source,
                                                       progressInfo.extra1,
                                                       progressInfo.extra2,
@@ -1450,19 +1465,19 @@ SyncMLStatus EvolutionSyncClient::doSync()
                             break;
                         }
                     }
-                    stepCmd = STEPCMD_STEP;
+                    stepCmd = sysync::STEPCMD_STEP;
                     break;
-                case STEPCMD_ERROR:
+                case sysync::STEPCMD_ERROR:
                     // error, terminate (should not happen, as status is
                     // already checked above)
                     break;
-                case STEPCMD_RESTART:
+                case sysync::STEPCMD_RESTART:
                     // make sure connection is closed and will be re-opened for next request
                     // tbd: close communication channel if still open to make sure it is
                     //       re-opened for the next request
-                    stepCmd = STEPCMD_STEP;
+                    stepCmd = sysync::STEPCMD_STEP;
                     break;
-                case STEPCMD_SENDDATA: {
+                case sysync::STEPCMD_SENDDATA: {
                     // send data to remote
 
                     // use OpenSessionKey() and GetValue() to retrieve "connectURI"
@@ -1492,13 +1507,13 @@ SyncMLStatus EvolutionSyncClient::doSync()
                         throwError("buffer");
                     }
                     agent->send(static_cast<const char *>(buffer), length);
-                    stepCmd = STEPCMD_SENTDATA; // we have sent the data
+                    stepCmd = sysync::STEPCMD_SENTDATA; // we have sent the data
                     break;
                 }
-                case STEPCMD_NEEDDATA:
+                case sysync::STEPCMD_NEEDDATA:
                     switch (agent->wait()) {
                     case TransportAgent::ACTIVE:
-                        stepCmd = STEPCMD_SENTDATA; // still sending the data?!
+                        stepCmd = sysync::STEPCMD_SENTDATA; // still sending the data?!
                         break;
                     case TransportAgent::GOT_REPLY:
                         getEngine().RetSyncMLBuffer(sessionH, true, length);
@@ -1513,27 +1528,27 @@ SyncMLStatus EvolutionSyncClient::doSync()
                         if (err) {
                             throwError("write buffer");
                         }
-                        stepCmd = STEPCMD_GOTDATA; // we have received response data
+                        stepCmd = sysync::STEPCMD_GOTDATA; // we have received response data
                         break;
                     default:
-                        stepCmd = STEPCMD_TRANSPFAIL; // communication with server failed
+                        stepCmd = sysync::STEPCMD_TRANSPFAIL; // communication with server failed
                         break;
                     }
                 }
             }
             // check for suspend or abort, if so, modify step command for next step
             if (false /* tdb: check if user requests suspending the session */) {
-                stepCmd = STEPCMD_SUSPEND;
+                stepCmd = sysync::STEPCMD_SUSPEND;
             }
             if (false /* tdb: check if user requests aborting the session */) {
-                stepCmd = STEPCMD_ABORT;
+                stepCmd = sysync::STEPCMD_ABORT;
             }
             // loop until session done or aborted with error
         } catch (...) {
             SyncEvolutionException::handle(&status);
-            stepCmd = STEPCMD_ABORT;
+            stepCmd = sysync::STEPCMD_ABORT;
         }
-    } while (stepCmd != STEPCMD_DONE && stepCmd != STEPCMD_ERROR);
+    } while (stepCmd != sysync::STEPCMD_DONE && stepCmd != sysync::STEPCMD_ERROR);
     getEngine().CloseKey(targetsH);
     getEngine().CloseKey(subkeyH);
     getEngine().CloseKey(keyH);
