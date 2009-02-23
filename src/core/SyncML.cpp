@@ -92,38 +92,44 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
         out << std::right << std::setw(number_width + 1) << total_conflicts;
         out << " |\n";
 
-        std::stringstream sent, received;
-        sent << source.getItemStat(SyncSourceReport::ITEM_LOCAL,
-                                   SyncSourceReport::ITEM_ANY,
-                                   SyncSourceReport::ITEM_SENT_BYTES) / 1024 <<
-            " KB sent by client";
-        received << source.getItemStat(SyncSourceReport::ITEM_LOCAL,
-                                       SyncSourceReport::ITEM_ANY,
-                                       SyncSourceReport::ITEM_RECEIVED_BYTES) / 1024 <<
-            " KB received";
-        out << "|" << std::left << std::setw(name_width) << "" << " |" <<
-            std::right << std::setw(single_side_width) << sent.str() <<
-            ", " <<
-            std::left << std::setw(single_side_width - 1) << received.str() << "|" <<
-            std::right << std::setw(number_width + 1) << "" <<
-            " |\n";
+        std::stringstream line;
 
-        for (SyncSourceReport::ItemResult result = SyncSourceReport::ITEM_CONFLICT_SERVER_WON;
-             result <= SyncSourceReport::ITEM_CONFLICT_DUPLICATED;
-             result = SyncSourceReport::ItemResult(int(result) + 1)) {
-            int count;
-            if ((count = source.getItemStat(SyncSourceReport::ITEM_REMOTE,
-                                             SyncSourceReport::ITEM_ANY,
-                                             result)) != 0 || true) {
-                std::stringstream line;
-                line << count << " " <<
-                    (result == SyncSourceReport::ITEM_CONFLICT_SERVER_WON ? "client item(s) discarded" :
-                     result == SyncSourceReport::ITEM_CONFLICT_CLIENT_WON ? "server item(s) discarded" :
+        line <<
+            PrettyPrintSyncMode(source.getFinalSyncMode()) << ", " <<
+            source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                               SyncSourceReport::ITEM_ANY,
+                               SyncSourceReport::ITEM_SENT_BYTES) / 1024 <<
+            " KB sent by client, " <<
+            source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                               SyncSourceReport::ITEM_ANY,
+                               SyncSourceReport::ITEM_RECEIVED_BYTES) / 1024 <<
+            " KB received";
+        int spaces = name_width + 1 + text_width - line.str().size();
+        if (spaces < 0) {
+            spaces = 0;
+        }
+        out << "|" << std::left << std::setw(spaces) << "" <<
+            line.str() <<
+            std::setw(0) << "" << " |\n";
+
+        if (total_conflicts > 0) {
+            for (SyncSourceReport::ItemResult result = SyncSourceReport::ITEM_CONFLICT_SERVER_WON;
+                 result <= SyncSourceReport::ITEM_CONFLICT_DUPLICATED;
+                 result = SyncSourceReport::ItemResult(int(result) + 1)) {
+                int count;
+                if ((count = source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                                SyncSourceReport::ITEM_ANY,
+                                                result)) != 0 || true) {
+                    std::stringstream line;
+                    line << count << " " <<
+                        (result == SyncSourceReport::ITEM_CONFLICT_SERVER_WON ? "client item(s) discarded" :
+                         result == SyncSourceReport::ITEM_CONFLICT_CLIENT_WON ? "server item(s) discarded" :
                      "item(s) duplicated");
 
-                out << "|" << std::left << std::setw(name_width) << "" << " |" <<
-                    std::right << std::setw(text_width - 1) << line.str() <<
-                    " |\n";
+                    out << "|" << std::left << std::setw(name_width) << "" << " |" <<
+                        std::right << std::setw(text_width - 1) << line.str() <<
+                        " |\n";
+                }
             }
         }
 
