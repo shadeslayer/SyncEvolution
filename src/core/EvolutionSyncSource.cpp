@@ -269,7 +269,7 @@ void EvolutionSyncSource::getDatastoreXML(string &xml)
             "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
     } else if (type == "text/plain:1.0" || type == "text/plain") {
         datatypes =
-            "        <use datatype='note' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='note10' mode='rw' preferred='yes'/>\n"
             "        <use datatype='note11' mode='rw'/>\n";
     } else {
         throwError(string("configured MIME type not supported: ") + type);
