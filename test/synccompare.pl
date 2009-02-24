@@ -75,6 +75,11 @@ my $server = $ENV{CLIENT_TEST_SERVER} || "funambol";
 my $client = $ENV{CLIENT_TEST_CLIENT} || "evolution";
 my $scheduleworld = $server =~ /scheduleworld/;
 my $synthesis = $server =~ /synthesis/;
+
+# TODO: this hack ensures that any synchronization is limited to
+# properties supported by Synthesis. Remove this again.
+$synthesis = 1;
+
 my $egroupware = $server =~ /egroupware/;
 my $funambol = $server =~ /funambol/;
 my $evolution = $client =~ /evolution/;
