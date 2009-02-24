@@ -1,46 +1,3 @@
-Synthesis Branch
-----------------
-
-Compile and install Synthesis SDK in directory "foo".
-
-Configure SyncEvolution with
-   SYNTHESIS_CFLAGS=-Ifoo/include SYNTHESIS_LIBS="-Lfoo/lib -lsynthesissdk -lsynthesis"
-
-TODO: create .pc file for Synthesis
-TODO: libsynthesissdk.la declares its dependency on libsynthesis.la, but libtool
-      does not pick that up when linking libsynthesissdk.a into a .so
-      => -lsynthesis above is a temporary workaround for that, only necessary
-         when compiling SyncEvolution with --enable-shared
-
-Create a syncevolution.xml config file in the current
-directory, see src/syncevolution.xml.
-
-Run syncevolution with LD_LIBRARY_PATH=foo/lib:SDK_PATH/SDK/bin/Linux
-where SDK_PATH is the installation directory of the official Synthesis
-SDK (only necessary if .xml config refers to some of those modules).
-
-Currently none of the SyncEvolution backends are connected to Synthesis,
-so one has to configure a dummy file backend and use the SDK_textdb.so
-to handle the data.
-
-Example config: $ ./syncevolution --print-config --quiet funambol_1
-
-syncURL = http://my.funambol.com/sync
-username = xxxx
-password = yyyy
-logdir = /tmp
-useProxy = 1
-proxyHost = http://proxy.isw.intel.com:911
-deviceId = sc-pim-3e43622c-2e38-477a-9a9d-29ce45aba78c
-
-[addressbook]
-sync = two-way
-type = file:text/x-calendar:1.0
-evolutionsource = file:///home/pohly/funambol/addressbook
-uri = card
-
-
-
 Checking out the Source
 -----------------------
 
@@ -51,11 +8,12 @@ via
 Before using sources checked out from Subversion, invoke "sh
 autogen.sh" with appropriate autotools packages installed.
 
-When running the configure script, it will check out the source of a
-suitable Funambol client library which will be compiled
-automatically. There are configure options for using a precompiled
-Funambol client library or non-default sources - see the "funambol"
-configure options for details.
+When running the configure script, it can be told to compile a
+Synthesis library automatically via the --with-synthesis-src configure
+option. This has advantages when modifying the Synthesis source
+together with SyncEvolution (no need to install Synthesis and thus
+faster compilation) and will bundle the Synthesis sources in source
+.tar.gz archives.
 
 For doing development work the recommended configure line is:
    configure CXXFLAGS="-Wall -Werror -Wno-unknown-pragmas" \

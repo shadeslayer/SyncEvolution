@@ -1,12 +1,12 @@
 dnl -*- mode: Autoconf; -*-
 dnl Invoke autogen.sh to produce a configure script.
 
-AC_INIT(src/syncevolution.cpp)
-AM_INIT_AUTOMAKE(syncevolution, 0.8.1)
-define([FUNAMBOLSRC_REPO], [git://github.com/pohly/funambol-cpp-client-api.git])
+AC_INIT([syncevolution], [0.8.1])
+AM_INIT_AUTOMAKE([tar-ustar])
+define([SYNTHESISSRC_REPO], [])
 dnl Specify git revisions/branches without prefix, i.e., without 'origin'.
 dnl We'll sort that out below.
-define([FUNAMBOLSRC_REVISION], [syncevolution-0.8.1a])
+define([SYNTHESISSRC_REVISION], [syncevolution-0.9])
 AM_CONFIG_HEADER(config.h)
 AC_LIBTOOL_DLOPEN
 
@@ -16,52 +16,31 @@ DEVICE_TYPE=desktop
 # options to be used when configuring client library
 CLIENT_CONFIGURE_OPTIONS=
 
-AC_ARG_WITH(funambol,
-            AS_HELP_STRING([--with-funambol=<base directory>],
-                           [specifies location of Funambol client library]),
-            [FUNAMBOL="$withval"])
+AC_ARG_WITH(synthesis-src,
+            AS_HELP_STRING([--with-synthesis-src=<base directory|svn URL|git URL>],
+                           [Specifies location of the Synthesis root directory.
+                           Use this when the Synthesis library is to
+                           be compiled as part of the SyncEvolution compilation. In release
+                           versions of SyncEvolution, a copy of the Synthesis code is bundled
+                           under 'src/synthesis' and compiled unless something else is
+                           specified. --with-synthesis-src can be given a path to sources
+                           checked out already, a Subversion repository URL or a git repository
+                           URL. When given a repository URL, then the configure script
+                           will checkout the sources into 'src/synthesis-workdir' or
+                           update that working copy if the directory already exists.
+                           Default: bundled source in src/synthesis (in released SyncEvolution sources),
+                           SYNTHESISSRC_REPO otherwise.]),
+            [SYNTHESISSRC="$withval"], [SYNTHESISSRC="$SYNTHESISSRC_DEF"; REVISION="SYNTHESISSRC_REVISION"])
 
-AC_ARG_WITH(sync4j,
-            AS_HELP_STRING([--with-funambol=<base directory>],
-                           [alias for --with-funambol]),
-            [FUNAMBOL="$withval"])
+AC_ARG_WITH(synthesis-username,
+            AS_HELP_STRING([--with-synthesis-username=<svn username>],
+                           [username to use when checking out --with-synthesis-src sources from Subversion, default 'guest']),
+            [USERNAME="$withval"], [USERNAME="guest"])
 
-if test -e "$srcdir/src/client-api"; then
-   FUNAMBOLSRC_DEF="$srcdir/src/client-api"
-else
-   FUNAMBOLSRC_DEF="FUNAMBOLSRC_REPO"
-fi
-
-dnl AC_ARG_WITH(funambol-src,
-dnl             AS_HELP_STRING([--with-funambol-src=<base directory|svn URL|git URL>],
-dnl                            [Specifies location of the Funambol 'client-api/native' source code.
-dnl                            Use this instead of --with-funambol when the client library is to
-dnl                            be compiled as part of the SyncEvolution compilation. In release
-dnl                            versions of SyncEvolution, a copy of the client library is bundled
-dnl                            under 'src/client-api' and compiled unless something else is
-dnl                            specified. --with-funambol-src can be given a path to sources
-dnl                            checked out already, a Subversion repository URL or a git repository
-dnl                            URL. When given a repository URL, then the configure script
-dnl                            will checkout the sources into 'src/client-api-copy' or
-dnl                            update that working copy if the directory already exists.
-dnl                            Default: bundled source in src/client-api (in released SyncEvolution sources),
-dnl                            FUNAMBOLSRC_REPO otherwise.]),
-dnl             [FUNAMBOLSRC="$withval"], [FUNAMBOLSRC="$FUNAMBOLSRC_DEF"; REVISION="FUNAMBOLSRC_REVISION"])
-
-dnl AC_ARG_WITH(sync4j-src,
-dnl             AS_HELP_STRING([--with-sync4j-src=<base directory>],
-dnl                            [alias for --with-funambol-src]),
-dnl             [FUNAMBOLSRC="$withval"])
-
-dnl AC_ARG_WITH(funambol-username,
-dnl             AS_HELP_STRING([--with-funambol-username=<svn username>],
-dnl                            [username to use when checking out --with-funambol-src sources from Subversion, default 'guest']),
-dnl             [USERNAME="$withval"], [USERNAME="guest"])
-
-dnl AC_ARG_WITH(funambol-revision,
-dnl             AS_HELP_STRING([--with-funambol-revision=<git tag/branch/hash or Subversion revision>],
-dnl                            [Identifies which source revision to use from --with-funambol-src repository, empty string stands for latest. Default for default --funambol-src: FUNAMBOLSRC_REVISION]),
-dnl             [REVISION="$withval"])
+AC_ARG_WITH(synthesis-revision,
+            AS_HELP_STRING([--with-synthesis-revision=<git tag/branch/hash or Subversion revision>],
+                           [Identifies which source revision to use from --with-synthesis-src repository, empty string stands for latest. Default for default --synthesis-src: SYNTHESISSRC_REVISION]),
+            [REVISION="$withval"])
 
 AC_ARG_ENABLE(shared,
               AS_HELP_STRING([--enable-shared],
@@ -133,10 +112,10 @@ if test $enable_static_cxx == "yes"; then
 fi
 AC_SUBST(CORE_LDADD_DEP)
 
-# preserve src/client-api by default,
+# preserve src/synthesis by default,
 # always
-CLEAN_CLIENT_SRC=
-dnl FUNAMBOL_LIB=$PWD/src/build-client-api/src/libfunambol.la
+CLEAN_SYNTHESIS_SRC=
+SYNTHESIS_LIB=$PWD/src/build-synthesis/src/libsynthesissdk.la
 
 AC_SUBST(CLEAN_CLIENT_SRC)
 
@@ -215,127 +194,113 @@ fi
 AC_SUBST(TRANSPORT_LIBS)
 AC_SUBST(TRANSPORT_CFLAGS)
 
+# absolute patch to source of Synthesis client library
+SYNTHESIS_SRC=no-synthesis-source
+AC_SUBST(SYNTHESIS_SRC)
+if test "$SYNTHESISSRC" && test "$SYNTHESISSRC" != "none"; then
+    # default: checkout a copy of the sources, remove it during maintainer-clean and distclean
+    CLEAN_CLIENT_SRC=synthesis-workdir
+    SYNTHESIS_SRC=$PWD/src/synthesis-workdir
 
-dnl # absolute patch to source of Funambol client library
-dnl CLIENT_API_SRC=no-client-api-source
-dnl AC_SUBST(CLIENT_API_SRC)
-dnl if test ! "$FUNAMBOL"; then
-dnl     if test "$FUNAMBOLSRC"; then
-dnl         # default: checkout a copy of the sources, remove it during maintainer-clean and distclean
-dnl         CLEAN_CLIENT_SRC=client-api-copy
-dnl         CLIENT_API_SRC=$PWD/src/client-api-copy
+    AC_MSG_NOTICE( [updating the content of $SYNTHESIS_SRC from $SYNTHESISSRC] )
+    case "$SYNTHESISSRC" in
+        *://*) protocol="`echo $SYNTHESISSRC | sed -e 's;://.*;;'`";;
+        *) protocol="file";;
+    esac
 
-dnl         AC_MSG_NOTICE( [updating the content of $CLIENT_API_SRC from $FUNAMBOLSRC] )
-dnl         case "$FUNAMBOLSRC" in
-dnl             *://*) protocol="`echo $FUNAMBOLSRC | sed -e 's;://.*;;'`";;
-dnl             *) protocol="file";;
-dnl         esac
+    mkdir -p src
+    case $protocol in
+        file)
+            # use existing copy of the sources
+            CLEAN_CLIENT_SRC=
+            case "$SYNTHESISSRC" in
+                 /*) SYNTHESIS_SRC="$SYNTHESISSRC";;
+                 *) SYNTHESIS_SRC="$PWD/$SYNTHESISSRC";;
+            esac
+            ;;
+        *svn*|*http*)
+            SYNTHESISSRCREV="$SYNTHESISSRC"
+            if test "$REVISION"; then
+                revarg="-r $REVISION "
+                if `echo $SYNTHESISSRC | grep '@[0123456789]*'` >/dev/null; then
+                    :
+                else
+                    SYNTHESISSRCREV="$SYNTHESISSRC@$REVISION"
+                fi
+            fi
+            if test -d $SYNTHESIS_SRC ; then
+                ( set -x; cd $SYNTHESIS_SRC && svn --username=$USERNAME switch $revarg "$SYNTHESISSRC" ) || AC_ERROR([updating from $SYNTHESISSRC failed])
+            else
+                (set -x; svn --username=$USERNAME checkout $revarg "$SYNTHESISSRCREV" $SYNTHESIS_SRC ) || AC_ERROR([checking out $SYNTHESISSRC failed])
+            fi
+            ;;
+        *git*)
+            if test -d $SYNTHESIS_SRC ; then
+                ( set -x; cd $SYNTHESIS_SRC && git fetch "$SYNTHESISSRC" ) || AC_ERROR([updating from $SYNTHESISSRC failed])
+            else
+                ( set -x; git clone "$SYNTHESISSRC" $SYNTHESIS_SRC ) || AC_ERROR([cloning $SYNTHESISSRC failed])
+            fi
+            if test "$REVISION"; then
+                # git 1.6 finds tags and branches without explicit prefix, 1.4.4.4 doesn't
+                ( set -x; cd $SYNTHESIS_SRC &&
+                  (git checkout "$REVISION" ||
+                   git checkout "tags/$REVISION" ||
+                   git checkout "origin/$REVISION") ) || AC_ERROR([checking out $SYNTHESISSRC failed])
+            fi
+            ;;
+    esac
+elif test "$SYNTHESISSRC" != "none" && test -d $srcdir/src/synthesis; then
+    # use existing copy of the sources; beware of
+    # out-of-tree compilation
+    case $srcdir in
+         /*) SYNTHESIS_SRC="$srcdir/src/synthesis";;
+         *) SYNTHESIS_SRC="$PWD/$srcdir/src/synthesis";;
+    esac
+else
+    PKG_CHECK_MODULES(SYNTHESIS, "synthesis")
+fi
 
-dnl         mkdir -p src
-dnl         case $protocol in
-dnl             file)
-dnl                 # use existing copy of the sources
-dnl                 CLEAN_CLIENT_SRC=
-dnl                 case "$FUNAMBOLSRC" in
-dnl                      /*) CLIENT_API_SRC="$FUNAMBOLSRC";;
-dnl                      *) CLIENT_API_SRC="$PWD/$FUNAMBOLSRC";;
-dnl                 esac
-dnl                 ;;
-dnl             *svn*|*http*)
-dnl                 FUNAMBOLSRCREV="$FUNAMBOLSRC"
-dnl                 if test "$REVISION"; then
-dnl                     revarg="-r $REVISION "
-dnl                     if `echo $FUNAMBOLSRC | grep '@[0123456789]*'` >/dev/null; then
-dnl                         :
-dnl                     else
-dnl                         FUNAMBOLSRCREV="$FUNAMBOLSRC@$REVISION"
-dnl                     fi
-dnl                 fi
-dnl                 if test -d $CLIENT_API_SRC ; then
-dnl                     ( set -x; cd $CLIENT_API_SRC && svn --username=$USERNAME switch $revarg "$FUNAMBOLSRC" ) || AC_ERROR([updating from $FUNAMBOLSRC failed])
-dnl                 else
-dnl                     (set -x; svn --username=$USERNAME checkout $revarg "$FUNAMBOLSRCREV" $CLIENT_API_SRC ) || AC_ERROR([checking out $FUNAMBOLSRC failed])
-dnl                 fi
-dnl                 ;;
-dnl             *git*)
-dnl                 if test -d $CLIENT_API_SRC ; then
-dnl                     ( set -x; cd $CLIENT_API_SRC && git fetch "$FUNAMBOLSRC" ) || AC_ERROR([updating from $FUNAMBOLSRC failed])
-dnl                 else
-dnl                     ( set -x; git clone "$FUNAMBOLSRC" $CLIENT_API_SRC ) || AC_ERROR([cloning $FUNAMBOLSRC failed])
-dnl                 fi
-dnl                 if test "$REVISION"; then
-dnl                     # git 1.6 finds tags and branches without explicit prefix, 1.4.4.4 doesn't
-dnl                     ( set -x; cd $CLIENT_API_SRC &&
-dnl                       (git checkout "$REVISION" ||
-dnl                        git checkout "tags/$REVISION" ||
-dnl                        git checkout "origin/$REVISION") ) || AC_ERROR([checking out $FUNAMBOLSRC failed])
-dnl                 fi
-dnl                 ;;
-dnl         esac
-dnl     else
-dnl         # use existing copy of the sources; beware of
-dnl         # out-of-tree compilation
-dnl         case $srcdir in
-dnl              /*) CLIENT_API_SRC="$srcdir/src/client-api";;
-dnl              *) CLIENT_API_SRC="$PWD/$srcdir/src/client-api";;
-dnl         esac
-dnl     fi
+if test $SYNTHESIS_SRC != "no-synthesis-source"; then
+    ( cd $SYNTHESIS_SRC && ( test -f configure || sh autogen.sh ) ) || AC_MSG_ERROR([no configure script in $SYNTHESIS_SRC])
 
-dnl     ( cd $CLIENT_API_SRC/build/autotools && ( test -f configure || sh autogen.sh ) )
+    SYNTHESIS_CONFIGURE="$SYNTHESIS_SRC/configure"
+    chmod u+x $SYNTHESIS_SRC/configure $SYNTHESIS_SRC/config.sub $SYNTHESIS_SRC/config.guess
 
-dnl     if test -f $CLIENT_API_SRC/build/autotools/configure; then
-dnl         CLIENT_CONFIGURE="$CLIENT_API_SRC/build/autotools/configure"
-dnl         chmod u+x $CLIENT_API_SRC/build/autotools/configure $CLIENT_API_SRC/build/autotools/config.sub $CLIENT_API_SRC/build/autotools/config.guess
+    # use local copy of the sources, with dependencies
+    # to trigger building the synthesis library
+    SYNTHESIS_SUBDIR=$PWD/src/build-synthesis
+    SYNTHESIS_DEP=$PWD/src/build-synthesis/src/libsynthesissdk.la
 
-dnl         # use local copy of the sources, with dependencies
-dnl         # to trigger building the client library
-dnl         FUNAMBOL_SUBDIR=$PWD/src/build-client-api
-dnl         FUNAMBOL_DEP=$PWD/src/build-client-api/src/libfunambol.la
+    SYNTHESIS_CFLAGS="-I$SYNTHESIS_SUBDIR/src"
+    SYNTHESIS_LIBS="-L$SYNTHESIS_SUBDIR/src -lsynthesissdk -lsynthesis"
 
-dnl         FUNAMBOL_CFLAGS="-I$FUNAMBOL_SUBDIR/include/posix -I$FUNAMBOL_SUBDIR/include/common -I$FUNAMBOL_SUBDIR/include -I$FUNAMBOL_SUBDIR/test"
-dnl         FUNAMBOL_LIBS="-L$FUNAMBOL_SUBDIR/src -lfunambol"
+    AC_MSG_NOTICE( [configuring the Synthesis library] )
+    # Passing some specific configure arguments to the synthesis library's
+    # configure makes sense (e.g., --enable-unit-tests) or is
+    # required (--disable-dependency-tracking when compiling for
+    # multiple architectures on Mac OS X).
+    cxx_lib_args=`for i in --disable-dependency-tracking --enable-unit-tests; do
+       if echo $ac_configure_args | grep -e $i >/dev/null; then
+          echo $i;
+       fi;
+      done`
+    if test "$enable_shared" == "yes"; then
+        # Okay, this is a shortcut: strictly speaking we would have
+        # to check with autoconf for the right flags...
+        SYNTHESIS_LIB_SHARED_FLAGS="-DPIC -fPIC"
+    fi
+    if (set -x; mkdir -p $SYNTHESIS_SUBDIR && cd $SYNTHESIS_SUBDIR && $SYNTHESIS_CONFIGURE $SYNTHESIS_CONFIGURE_OPTIONS --build=$build_alias --host=$host_alias --target=$target_alias --with-transport-agent=curl CFLAGS="$CFLAGS $SYNTHESIS_LIB_SHARED_FLAGS" CXXFLAGS="$CXXFLAGS $SYNTHESIS_LIB_SHARED_FLAGS" $cxx_lib_args); then true; else
+        AC_MSG_ERROR( [configuring Synthesis library failed] )
+    fi
+fi
 
-dnl         AC_MSG_NOTICE( [configuring the client library] )
-dnl         # Passing some specific configure arguments to the client library's
-dnl         # configure makes sense (e.g., --enable-unit-tests) or is
-dnl         # required (--disable-dependency-tracking when compiling for
-dnl         # multiple architectures on Mac OS X).
-dnl         cxx_lib_args=`for i in --disable-dependency-tracking --enable-unit-tests; do
-dnl            if echo $ac_configure_args | grep -e $i >/dev/null; then
-dnl               echo $i;
-dnl            fi;
-dnl           done`
-dnl         if test "$enable_shared" == "yes"; then
-dnl             # Okay, this is a shortcut: strictly speaking we would have
-dnl             # to check with autoconf for the right flags...
-dnl             FUNAMBOL_LIB_SHARED_FLAGS="-DPIC -fPIC"
-dnl         fi
-dnl         if (set -x; mkdir -p $FUNAMBOL_SUBDIR && cd $FUNAMBOL_SUBDIR && $CLIENT_CONFIGURE $CLIENT_CONFIGURE_OPTIONS --build=$build_alias --host=$host_alias --target=$target_alias --disable-shared --with-transport-agent=curl CFLAGS="$CFLAGS $FUNAMBOL_LIB_SHARED_FLAGS" CXXFLAGS="$CXXFLAGS $FUNAMBOL_LIB_SHARED_FLAGS" $cxx_lib_args); then true; else
-dnl             AC_MSG_ERROR( [configuring client library failed] )
-dnl         fi
-dnl     else
-dnl         AC_MSG_ERROR( [either --with-funambol or --with-funambol-src have to be used] )
-dnl     fi
-dnl else
-dnl     if test -f $FUNAMBOL/include/funambol/common/spds/SyncItem.h; then
-dnl         FUNAMBOL_CFLAGS="-I$FUNAMBOL/include/funambol/posix -I$FUNAMBOL/include/funambol/common -I$FUNAMBOL/include/funambol"
-dnl         FUNAMBOL_LIBS="-L$FUNAMBOL/lib -lfunambol"
-dnl     else
-dnl         AC_MSG_ERROR( [$FUNAMBOL does seem to be valid (e.g. include/funambol/spds/common/SyncItem.h is missing)] )
-dnl     fi
-dnl fi
-
-dnl TODO: compile Synthesis library the same way Funambol was compiled/bundled before?
-dnl Makefiles are unchanged for that purpose.
-FUNAMBOL_CFLAGS="$FUNAMBOL_CFLAGS $SYNTHESIS_CFLAGS"
-
-AC_SUBST(FUNAMBOL_CFLAGS)
-AC_SUBST(FUNAMBOL_LIBS)
-AC_SUBST(FUNAMBOL)
-AC_SUBST(FUNAMBOL_SUBDIR)
-AC_SUBST(FUNAMBOL_DEP)
-AC_SUBST(FUNAMBOL_LIB)
-AC_SUBST(FUNAMBOLSRC)
+AC_SUBST(SYNTHESIS_CFLAGS)
+AC_SUBST(SYNTHESIS_LIBS)
+AC_SUBST(SYNTHESIS)
+AC_SUBST(SYNTHESIS_SUBDIR)
+AC_SUBST(SYNTHESIS_DEP)
+AC_SUBST(SYNTHESIS_LIB)
+AC_SUBST(SYNTHESISSRC)
 
 dnl select backends
 BACKENDS=""
@@ -360,5 +325,8 @@ AC_DEFUN([AC_ARG_ENABLE_BACKEND],
 ])
 AC_SUBST(SYNCSOURCES)
 AC_SUBST(BACKEND_DEFINES)
+
+BACKEND_CPPFLAGS="$SYNTHESIS_CFLAGS $EPACKAGE_CFLAGS $EBOOK_CFLAGS $ECAL_CFLAGS $GLIB_CFLAGS"
+AC_SUBST(BACKEND_CPPFLAGS)
 
 dnl src/backends/*/configure-sub.in and configure-post.in follow

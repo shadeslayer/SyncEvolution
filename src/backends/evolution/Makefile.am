@@ -1,8 +1,4 @@
-AM_CPPFLAGS = -I$(srcdir)/../../core @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @FUNAMBOL_CFLAGS@
-
-# applies to sources in SyncEvolution repository, but not
-# the Funambol C++ client library
-SYNCEVOLUTION_CXXFLAGS = @SYNCEVOLUTION_CXXFLAGS@
+AM_CPPFLAGS = -I$(srcdir)/../../core $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
@@ -47,6 +43,6 @@ syncecal_la_LDFLAGS = -module -rpath '$(pkglibdir)' -ldl
 syncecal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
 syncebook_la_SOURCES = $(SYNCEBOOK_SOURCES)
-syncebook_la_LIBADD = @EBOOK_LIBS@ ../../core/libsyncevolution.la
+syncebook_la_LIBADD = $(EBOOK_LIBS) ../../core/libsyncevolution.la
 syncebook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 syncebook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)

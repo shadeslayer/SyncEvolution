@@ -1,8 +1,4 @@
-AM_CPPFLAGS = -I$(srcdir)/../../core @EPACKAGE_CFLAGS@ @EBOOK_CFLAGS@ @ECAL_CFLAGS@ @GLIB_CFLAGS@ @SQLITE_CFLAGS@ @FUNAMBOL_CFLAGS@
-
-# applies to sources in SyncEvolution repository, but not
-# the Funambol C++ client library
-SYNCEVOLUTION_CXXFLAGS = @SYNCEVOLUTION_CXXFLAGS@
+AM_CPPFLAGS = -I$(srcdir)/../../core $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
@@ -23,7 +19,7 @@ SYNCSQLITE_SOURCES = \
 	SQLiteContactSource.cpp
 
 syncsqlite_la_SOURCES = $(SYNCSQLITE_SOURCES)
-syncsqlite_la_LIBADD = @SQLITE_LIBS@
+syncsqlite_la_LIBADD = $(SQLITE_LIBS)
 syncsqlite_la_LDFLAGS = -module -rpath '$(pkglibdir)'
 syncsqlite_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 

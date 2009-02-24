@@ -1,4 +1,4 @@
-AM_CPPFLAGS = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ @FUNAMBOL_CFLAGS@
+AM_CPPFLAGS = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@
 
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library
@@ -22,6 +22,7 @@ CORE_SOURCES  = \
 	eds_abi_wrapper.h \
 	eds_abi_wrapper.cpp \
 	\
+	SyncML.h \
 	SyncML.cpp \
 	\
 	Logging.h \
@@ -74,7 +75,7 @@ CORE_SOURCES  = \
 
 
 libsyncevolution_la_SOURCES = $(CORE_SOURCES)
-libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ @FUNAMBOL_LIBS@ $(TRANSPORT_LIBS) @LIBS@ $(SYNTHESIS_LIBS)
+libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ $(TRANSPORT_LIBS) @LIBS@ $(SYNTHESIS_LIBS)
 libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
 
 SyncEvolutionXML.c: $(srcdir)/../syncevolution.xml

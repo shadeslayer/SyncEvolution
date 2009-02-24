@@ -1,1 +1,17 @@
-EXTRA_DIST = 
+EXTRA_DIST = \
+        ClientTest.h \
+        ClientTest.cpp \
+	COPYING \
+        client-test-main.cpp \
+	test.h \
+        Algorithm/Artistic \
+        Algorithm/COPYING \
+        Algorithm/Diff.pm \
+        Algorithm/README \
+        testcases/ical20.ics \
+        testcases/itodo20.ics \
+        testcases/vcal10.ics \
+        testcases/vcard21.vcf \
+        testcases/vcard30.vcf \
+        testcases/imemo20.ics \
+        synccompare.pl
