@@ -106,6 +106,13 @@ void CurlTransportAgent::setContentType(const std::string &type)
     m_contentType = type;
 }
 
+void CurlTransportAgent::setUserAgent(const std::string &agent)
+{
+    CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_USERAGENT,
+                                     agent.c_str());
+    checkCurl(code);
+}
+
 /**
  * @TODO: curl_easy_setopt(m_easyHandle, CURLOPT_CAINFO, certificates
  * (code = curl_easy_setopt(m_easyHandle, CURLOPT_SSL_VERIFYPEER, (long)SSLVerifyServer)) ||

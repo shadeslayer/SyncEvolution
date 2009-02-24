@@ -2514,6 +2514,7 @@ public:
     virtual void setProxyAuth(const std::string &user,
                               const std::string &password) { m_wrappedAgent->setProxyAuth(user, password); }
     virtual void setContentType(const std::string &type) { m_wrappedAgent->setContentType(type); }
+    virtual void setUserAgent(const::string &agent) { m_wrappedAgent->setUserAgent(agent); }
     virtual void send(const char *data, size_t len)
     {
         if (m_interruptAtMessage == m_messageCount) {

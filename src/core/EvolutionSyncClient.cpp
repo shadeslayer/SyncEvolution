@@ -1359,7 +1359,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
         agent->setProxyAuth(getProxyUsername(),
                             getProxyPassword());
     }
-    // TODO: agent->setUserAgent(getUserAgent());
+    agent->setUserAgent(getUserAgent());
     // TODO: SSL settings
 
     // Close all keys so that engine can flush the modified config.

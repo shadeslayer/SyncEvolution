@@ -54,6 +54,7 @@ class SoupTransportAgent : public TransportAgent
     virtual void setProxy(const std::string &proxy);
     virtual void setProxyAuth(const std::string &user, const std::string &password);
     virtual void setContentType(const std::string &type);
+    virtual void setUserAgent(const std::string &agent);
     virtual void send(const char *data, size_t len);
     virtual void cancel();
     virtual Status wait();

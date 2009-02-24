@@ -63,6 +63,11 @@ class TransportAgent
     virtual void setContentType(const std::string &type) = 0;
 
     /**
+     * override default user agent string
+     */
+    virtual void setUserAgent(const std::string &agent) = 0;
+
+    /**
      * start sending message
      *
      * Memory must remain valid until reply is received or

@@ -70,6 +70,13 @@ void SoupTransportAgent::setContentType(const std::string &type)
     m_contentType = type;
 }
 
+void SoupTransportAgent::setUserAgent(const std::string &agent)
+{
+    g_object_set(m_session.get(),
+                 SOUP_SESSION_USER_AGENT, agent.c_str(),
+                 NULL);
+}
+
 void SoupTransportAgent::send(const char *data, size_t len)
 {
     // ownership is transferred to libsoup in soup_session_queue_message()
