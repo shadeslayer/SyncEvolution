@@ -84,6 +84,6 @@ SyncEvolutionXML.c: $(srcdir)/../syncevolution.xml
 	echo ";" >>$@
 
 # include boost in distribution
-dist-hook:
-	cp -r $(srcdir)/boost $(distdir)
-	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
+#dist-hook:
+#	cp -r $(srcdir)/boost $(distdir)
+#	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
