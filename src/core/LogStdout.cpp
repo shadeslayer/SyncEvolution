@@ -17,6 +17,7 @@
  */
 
 #include "LogStdout.h"
+#include <string.h>
 #include <errno.h>
 
 namespace SyncEvolution {

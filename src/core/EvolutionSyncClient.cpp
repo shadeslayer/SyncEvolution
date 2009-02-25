@@ -276,7 +276,7 @@ public:
                  ++it, ++deleted) {
                 string path = m_logdir + "/" + *it;
                 string msg = "removing " + path;
-                SE_LOG_INFO(NULL, NULL, msg.c_str());
+                SE_LOG_INFO(NULL, NULL, "%s", msg.c_str());
                 rm_r(path);
             }
         }

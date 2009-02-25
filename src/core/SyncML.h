@@ -23,6 +23,7 @@
 #include <string>
 #include <map>
 #include <ostream>
+#include <string.h>
 
 enum SyncMode {
     SYNC_NONE,

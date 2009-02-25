@@ -256,12 +256,12 @@ SyncMLStatus SyncEvolutionException::handle(SyncMLStatus *status)
     } catch (const TransportException &ex) {
         SE_LOG_DEBUG(NULL, NULL, "TransportException thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
-        SE_LOG_ERROR(NULL, NULL, ex.what());
+        SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
         new_status = SyncMLStatus(sysync::LOCERR_TRANSPFAIL);
     } catch (const SyncEvolutionException &ex) {
         SE_LOG_DEBUG(NULL, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
-        SE_LOG_ERROR(NULL, NULL, ex.what());
+        SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
     } catch (const std::exception &ex) {
         SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
     } catch (...) {
