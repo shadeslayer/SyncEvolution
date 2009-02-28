@@ -516,7 +516,9 @@ public:
                         string cmd = string("synccompare '" ) +
                             before + "' '" + after +
                             "' && echo 'no changes'";
-                        system(cmd.c_str());
+                        if (system(cmd.c_str())) {
+                            // ignore error
+                        }
                     }
                     cout << "\n";
                 }
