@@ -2997,7 +2997,7 @@ int ClientTest::import(ClientTest &client, SyncSource &source, const char *file)
             CPPUNIT_ASSERT(!input.bad());
             // empty lines directly after line which starts with END mark end of record;
             // check for END necessary becayse vCard 2.1 ENCODING=BASE64 may have empty lines in body of VCARD!
-            if (line != "\r" && line.size() > 0 || !wasend) {
+            if ((line != "\r" && line.size() > 0) || !wasend) {
                 data += line;
                 data += "\n";
             } else {
@@ -3040,8 +3040,12 @@ void ClientTest::postSync(int res, const std::string &logname)
 
         if (fd >= 0) {
             std::string cmd = std::string("cp ") + serverLogFileName + " " + logname + ".server.log";
-            system(cmd.c_str());
-            ftruncate(fd, 0);
+            if (system(cmd.c_str())) {
+                fprintf(stderr, "copying log file failed: %s\n", cmd.c_str());
+            }
+            if (ftruncate(fd, 0)) {
+                perror("truncating log file");
+            }
         } else {
             perror(serverLogFileName.c_str());
         }
