@@ -13,12 +13,12 @@
 
 #include "syncevo-dbus-server.h"
 #include "syncevo-marshal.h"
-static gboolean syncevo_start_sync (SyncevoDBusServer *obj, char *server, GPtrArray *sources, DBusGMethodInvocation *context);
-static gboolean syncevo_abort_sync (SyncevoDBusServer *obj, char *server, DBusGMethodInvocation *context);
-static gboolean syncevo_set_password (SyncevoDBusServer *obj, char *server, char *password, DBusGMethodInvocation *context);
-static gboolean syncevo_get_servers (SyncevoDBusServer *obj, char ***servers, DBusGMethodInvocation *context);
-static gboolean syncevo_get_server_config (SyncevoDBusServer *obj, char *server, GPtrArray **options, DBusGMethodInvocation *context);
-static gboolean syncevo_set_server_config (SyncevoDBusServer *obj, char *server, GPtrArray *options, DBusGMethodInvocation *context);
+static gboolean syncevo_start_sync (SyncevoDBusServer *obj, char *server, GPtrArray *sources, GError **error);
+static gboolean syncevo_abort_sync (SyncevoDBusServer *obj, char *server, GError **error);
+static gboolean syncevo_set_password (SyncevoDBusServer *obj, char *server, char *password, GError **error);
+static gboolean syncevo_get_servers (SyncevoDBusServer *obj, char ***servers, GError **error);
+static gboolean syncevo_get_server_config (SyncevoDBusServer *obj, char *server, GPtrArray **options, GError **error);
+static gboolean syncevo_set_server_config (SyncevoDBusServer *obj, char *server, GPtrArray *options, GError **error);
 #include "syncevo-dbus-glue.h"
 
 #define SYNCEVO_SOURCE_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INVALID))
@@ -110,7 +110,7 @@ static gboolean
 syncevo_start_sync (SyncevoDBusServer *obj, 
                     char *server,
                     GPtrArray *sources,
-                    DBusGMethodInvocation *context)
+                    GError **error)
 {
 	g_print ("Sync! Sending a fake progress signal...\n");
 	g_signal_emit (obj, signals[PROGRESS], 0, 
@@ -121,7 +121,7 @@ syncevo_start_sync (SyncevoDBusServer *obj,
 static gboolean 
 syncevo_abort_sync (SyncevoDBusServer *obj,
                             char *server,
-                            DBusGMethodInvocation *context)
+                            GError **error)
 {
 	return FALSE;
 	
@@ -130,7 +130,7 @@ static gboolean
 syncevo_set_password (SyncevoDBusServer *obj,
                               char *server,
                               char *password,
-                              DBusGMethodInvocation *context)
+                              GError **error)
 {
 	return FALSE;
 	
@@ -138,7 +138,7 @@ syncevo_set_password (SyncevoDBusServer *obj,
 static gboolean 
 syncevo_get_servers (SyncevoDBusServer *obj,
                              char ***servers,
-                             DBusGMethodInvocation *context)
+                             GError **error)
 {
 	return FALSE;
 	
@@ -147,7 +147,7 @@ static gboolean
 syncevo_get_server_config (SyncevoDBusServer *obj,
                                    char *server,
                                    GPtrArray **options,
-                                   DBusGMethodInvocation *context)
+                                   GError **error)
 {
 	SyncevoOption *option;
 
@@ -185,7 +185,7 @@ static gboolean
 syncevo_set_server_config (SyncevoDBusServer *obj,
                                    char *server,
                                    GPtrArray *options,
-                                   DBusGMethodInvocation *context)
+                                   GError **error)
 {
 	return FALSE;
 }
