@@ -1,7 +1,7 @@
 dnl -*- mode: Autoconf; -*-
 dnl Invoke autogen.sh to produce a configure script.
 
-AC_INIT([syncevolution], [0.9-alpha-2009-02-27])
+AC_INIT([syncevolution], [0.9-alpha-2009-03-02])
 AM_INIT_AUTOMAKE([tar-ustar])
 define([SYNTHESISSRC_REPO], [])
 dnl Specify git revisions/branches without prefix, i.e., without 'origin'.
