@@ -6,7 +6,7 @@
 #define INCL_EVOLUTIONCONTACTSOURCE
 
 #include <config.h>
-#include "EvolutionSyncSource.h"
+#include "TrackingSyncSource.h"
 #include "EvolutionSmartPtr.h"
 
 #ifdef ENABLE_EBOOK
@@ -16,7 +16,7 @@
 /**
  * Implements access to Evolution address books.
  */
-class EvolutionContactSource : public EvolutionSyncSource
+class EvolutionContactSource : public TrackingSyncSource
 {
   public:
     EvolutionContactSource(const EvolutionSyncSourceParams &params,
@@ -32,7 +32,7 @@ class EvolutionContactSource : public EvolutionSyncSource
     //
     virtual Databases getDatabases();
     virtual void open();
-    virtual void close(); 
+    virtual void close();
     virtual void exportData(ostream &out);
     virtual string fileSuffix() const { return "vcf"; }
     virtual const char *getMimeType() const;
@@ -43,19 +43,18 @@ class EvolutionContactSource : public EvolutionSyncSource
     
   protected:
     //
-    // implementation of EvolutionSyncSource callbacks
+    // implementation of TrackingSyncSource callbacks
     //
-    virtual void beginSyncThrow(bool needAll,
-                                bool needPartial,
-                                bool deleteLocal);
-    virtual void endSyncThrow();
-    virtual SyncMLStatus addItemThrow(SyncItem& item);
-    virtual SyncMLStatus updateItemThrow(SyncItem& item);
-    virtual SyncMLStatus deleteItemThrow(SyncItem& item);
+    virtual void listAllItems(RevisionMap_t &revisions);
+    virtual InsertItemResult insertItem(const string &uid, const SyncItem &item);
+    virtual void deleteItem(const string &uid);
     virtual void logItem(const string &uid, const string &info, bool debug = false);
     virtual void logItem(const SyncItem &item, const string &info, bool debug = false);
 
   private:
+    /** extract REV string for contact, throw error if not found */
+    std::string getRevision(const std::string &uid);
+
     /** valid after open(): the address book that this source references */
     eptr<EBook, GObject> m_addressbook;
 
