@@ -24,9 +24,12 @@
 
 namespace SyncEvolution {
 
-SoupTransportAgent::SoupTransportAgent() :
+SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
     m_session(soup_session_async_new()),
-    m_loop(g_main_loop_new(g_main_context_default(), TRUE), "Soup main loop"),
+    m_loop(loop ?
+           loop :
+           g_main_loop_new(NULL, TRUE),
+           "Soup main loop"),
     m_status(INACTIVE),
     m_response(NULL)
 {
