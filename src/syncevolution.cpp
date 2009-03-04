@@ -58,10 +58,10 @@ int main( int argc, char **argv )
     setenv("DBUS_DEFAULT_TIMEOUT", "600000", 0);
 #endif
     
-#if defined(HAVE_GLIB) && defined(HAVE_EDS)
-    // this is required on Maemo and does not harm either on a normal
-    // desktop system with Evolution
+#if defined(HAVE_GLIB)
+    // this is required when using glib directly or indirectly
     g_type_init();
+    g_thread_init(NULL);
 #endif
 
     setvbuf(stderr, NULL, _IONBF, 0);

@@ -459,10 +459,10 @@ public:
         sigaction(SIGSEGV, &act, NULL);
         sigaction(SIGILL, &act, NULL);
 
-#if defined(HAVE_GLIB) && defined(HAVE_EDS)
-        // this is required on Maemo and does not harm either on a normal
-        // desktop system with Evolution
+#if defined(HAVE_GLIB)
+        // this is required when using glib directly or indirectly
         g_type_init();
+        g_thread_init(NULL);
 #endif
         EDSAbiWrapperInit();
         testClient.registerTests();
