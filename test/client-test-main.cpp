@@ -48,6 +48,7 @@
 #include <cppunit/TestListener.h>
 #include <cppunit/TestResult.h>
 #include <cppunit/TestFailure.h>
+#include <cppunit/TestResultCollector.h>
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/extensions/HelperMacros.h>
 
@@ -142,6 +143,7 @@ public:
         m_logger->setLevel(SyncEvolution::Logger::DEBUG);
         SyncEvolution::LoggerBase::pushLogger(m_logger.get());
         SE_LOG_DEBUG(NULL, NULL, "*** starting %s ***", m_currentTest.c_str());
+        m_failures.reset();
         m_testFailed = false;
 
 #ifdef HAVE_SIGNAL_H
@@ -152,6 +154,7 @@ public:
     }
 
     void addFailure(const CppUnit::TestFailure &failure) {
+        m_failures.addFailure(failure);
         m_testFailed = true;
     }
 
@@ -163,7 +166,12 @@ public:
 #endif
 
         std::string result;
+        std::string failure;
         if (m_testFailed) {
+            stringstream output;
+            CppUnit::CompilerOutputter formatter(&m_failures, output);
+            formatter.printFailureReport();
+            failure = output.str();
             if (m_allowedFailures.find(m_currentTest) == m_allowedFailures.end()) {
                 result = "*** failed ***";
                 m_failed = true;
@@ -175,10 +183,16 @@ public:
         }
 
         SE_LOG_DEBUG(NULL, NULL, "*** ending %s: %s ***", m_currentTest.c_str(), result.c_str());
+        if (!failure.empty()) {
+            SE_LOG_DEBUG(NULL, NULL, "%s", failure.c_str());
+        }
         SyncEvolution::LoggerBase::popLogger();
         m_logger.reset();
 
         cerr << " " << result << "\n";
+        if (!failure.empty()) {
+            cerr << failure << "\n";
+        }
     }
 
     bool hasFailed() { return m_failed; }
@@ -190,6 +204,7 @@ private:
     string m_currentTest;
     int m_alarmSeconds;
     auto_ptr<SyncEvolution::LoggerStdout> m_logger;
+    CppUnit::TestResultCollector m_failures;
 
     static void alarmTriggered(int signal) {
         CPPUNIT_ASSERT_MESSAGE("test timed out", false);
