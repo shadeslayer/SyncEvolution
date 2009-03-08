@@ -55,20 +55,16 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server,
     // itself. That is necessary because the engine shutdown depends
     // on the context of the sync (in particular instantiated sync
     // sources).
-    sysync::TSyError err = m_engine->Connect("[]", 0,
-                                             sysync::DBG_PLUGIN_NONE|
-                                             sysync::DBG_PLUGIN_INT|
-                                             sysync::DBG_PLUGIN_DB|
-                                             sysync::DBG_PLUGIN_EXOT|
-                                             sysync::DBG_PLUGIN_ALL);
-    if (err) {
-        throwError("Connect");
-    }
+    m_engine.Connect("[]", 0,
+                     sysync::DBG_PLUGIN_NONE|
+                     sysync::DBG_PLUGIN_INT|
+                     sysync::DBG_PLUGIN_DB|
+                     sysync::DBG_PLUGIN_EXOT|
+                     sysync::DBG_PLUGIN_ALL);
 }
 
 EvolutionSyncClient::~EvolutionSyncClient()
 {
-    delete m_engine;
 }
 
 
@@ -1210,148 +1206,119 @@ SyncMLStatus EvolutionSyncClient::doSync()
     SyncMLStatus status = STATUS_OK;
 
     // Synthesis SDK
-    sysync::TSyError err;
-    sysync::KeyH keyH;
-    sysync::KeyH subkeyH;
     string s;
 
     // create new sync engine for the duration of this function
     class SwapEngine {
         EvolutionSyncClient &m_client;
-        sysync::TEngineModuleBridge *m_oldengine;
+        SharedEngine m_oldengine;
 
     public:
         SwapEngine(EvolutionSyncClient &client) :
             m_client(client) {
-            sysync::TEngineModuleBridge *syncengine = new sysync::TEngineModuleBridge();
-            sysync::TSyError err;
-            if (!syncengine ||
-                (err = syncengine->Connect("[]", 0,
-                                           sysync::DBG_PLUGIN_NONE|
-                                           sysync::DBG_PLUGIN_INT|
-                                           sysync::DBG_PLUGIN_DB|
-                                           sysync::DBG_PLUGIN_EXOT|
-                                           sysync::DBG_PLUGIN_ALL))) {
-                m_client.throwError("create Syntesis engine for sync session");
-            }
+            SharedEngine syncengine(new sysync::TEngineModuleBridge());
+            syncengine.Connect("[]", 0,
+                               sysync::DBG_PLUGIN_NONE|
+                               sysync::DBG_PLUGIN_INT|
+                               sysync::DBG_PLUGIN_DB|
+                               sysync::DBG_PLUGIN_EXOT|
+                               sysync::DBG_PLUGIN_ALL);
             m_oldengine = m_client.swapEngine(syncengine);
         }
 
         ~SwapEngine() {
-            sysync::TEngineModuleBridge *syncengine =
-                m_client.swapEngine(m_oldengine);
-            delete syncengine;
+            m_client.swapEngine(m_oldengine);
         }
     } swapengine(*this);
 
-    err = getEngine().OpenKeyByPath(keyH, NULL, "/configvars", 0);
-    if (err) {
-        throwError("open config vars");
-    }
+    SharedKey configvars = m_engine.OpenKeyByPath(SharedKey(), "/configvars");
     string logdir = m_sourceListPtr->getLogdir();
-    if (logdir.size()) {
-        getEngine().SetStrValue(keyH, "defout_path", logdir);
-    } else {
-        getEngine().SetStrValue(keyH, "defout_path", "/dev/null");
-    }
-    getEngine().SetStrValue(keyH, "device_uri", getDevID());
-    getEngine().SetStrValue(keyH, "device_name", getDevType());
+    m_engine.SetStrValue(configvars, "defout_path",
+                         logdir.size() ? logdir : "/dev/null");
+    m_engine.SetStrValue(configvars, "device_uri", getDevID());
+    m_engine.SetStrValue(configvars, "device_name", getDevType());
     // TODO: redirect to log file?
-    getEngine().SetStrValue(keyH, "conferrpath", "console");
-    getEngine().SetStrValue(keyH, "binfilepath", getRootPath() + "/.synthesis");
-    getEngine().CloseKey(keyH);
+    m_engine.SetStrValue(configvars, "conferrpath", "console");
+    m_engine.SetStrValue(configvars, "binfilepath", getRootPath() + "/.synthesis");
+    configvars.reset();
 
     string xml, configname;
     getConfigXML(xml, configname);
     SE_LOG_DEBUG(NULL, NULL, "%s", xml.c_str());
-    err = getEngine().InitEngineXML(xml.c_str());
-    if (err) {
-        throwError(string("error parsing ") + configname);
-    }
-
-    err = getEngine().OpenKeyByPath(keyH, NULL, "/profiles", 0);
-    if (err) {
-        throwError("open profiles");
-    }
+    m_engine.InitEngineXML(xml.c_str());
+    SharedKey profiles = m_engine.OpenKeyByPath(SharedKey(), "/profiles");
   
     // check the settings status (MUST BE DONE TO MAKE SETTINGS READY)
-    err = getEngine().GetStrValue(keyH, "settingsstatus", s);
+    m_engine.GetStrValue(profiles, "settingsstatus");
     // allow creating new settings when existing settings are not up/downgradeable
-    err = getEngine().SetStrValue(keyH, "overwrite",  "1" );
+    m_engine.SetStrValue(profiles, "overwrite",  "1");
     // check status again
-    err = getEngine().GetStrValue(keyH, "settingsstatus", s);
+    m_engine.GetStrValue(profiles, "settingsstatus");
     
     // open first profile
-    err = getEngine().OpenSubkey(subkeyH, keyH, sysync::KEYVAL_ID_FIRST, 0);
-    if (err == 204) { // DB_NoContent
-        // no profile already exists, create default profile
-        err = getEngine().OpenSubkey(subkeyH, keyH, sysync::KEYVAL_ID_NEW_DEFAULT, 0);
-    }
-    if (err) {
-        throwError("open first profile");
+    SharedKey profile;
+    try {
+        profile = m_engine.OpenSubkey(profiles, sysync::KEYVAL_ID_FIRST);
+    } catch (NoSuchKey error) {
+        // no profile exists  yet, create default profile
+        profile = m_engine.OpenSubkey(profiles, sysync::KEYVAL_ID_NEW_DEFAULT);
     }
          
-    getEngine().SetStrValue(subkeyH, "serverURI", getSyncURL());
-    getEngine().SetStrValue(subkeyH, "serverUser", getUsername());
-    getEngine().SetStrValue(subkeyH, "serverPassword", getPassword());
+    m_engine.SetStrValue(profile, "serverURI", getSyncURL());
+    m_engine.SetStrValue(profile, "serverUser", getUsername());
+    m_engine.SetStrValue(profile, "serverPassword", getPassword());
 
     // TODO(?): make XML vs WBXML configurable
-    // getEngine().SetInt32Value(subkeyH, "encoding", 2);
+    m_engine.SetInt32Value(profile, "encoding", 2);
 
     // Iterate over all data stores in the XML config
     // and match them with sync sources.
     // TODO: let sync sources provide their own
     // XML snippets (inside <client> and inside <datatypes>).
-    sysync::KeyH targetsH, targetH;
-    err = getEngine().OpenKeyByPath(targetsH, subkeyH, "targets", 0);
-    if (err) {
-        throwError("targets");
-    }
-    err = getEngine().OpenSubkey(targetH, targetsH, sysync::KEYVAL_ID_FIRST, 0);
-    while (err != 204) {
-        if (err) {
-            throwError("reading target");
-        }
-        err = getEngine().GetStrValue(targetH, "dbname", s);
-        if (err) {
-            throwError("reading target name");
-        }
-        EvolutionSyncSource *source = (*m_sourceListPtr)[s];
-        if (source) {
-            getEngine().SetInt32Value(targetH, "enabled", 1);
-            int slow = 0;
-            int direction = 0;
-            string mode = source->getSync();
-            if (!strcasecmp(mode.c_str(), "slow")) {
-                slow = 1;
-                direction = 0;
-            } else if (!strcasecmp(mode.c_str(), "two-way")) {
-                slow = 0;
-                direction = 0;
-            } else if (!strcasecmp(mode.c_str(), "refresh-from-server")) {
-                slow = 1;
-                direction = 1;
-            } else if (!strcasecmp(mode.c_str(), "refresh-from-client")) {
-                slow = 1;
-                direction = 2;
-            } else if (!strcasecmp(mode.c_str(), "one-way-from-server")) {
-                slow = 0;
-                direction = 1;
-            } else if (!strcasecmp(mode.c_str(), "one-way-from-client")) {
-                slow = 0;
-                direction = 2;
-            } else {
-                source->throwError(string("invalid sync mode: ") + mode);
-            }
-            getEngine().SetInt32Value(targetH, "forceslow", slow);
-            getEngine().SetInt32Value(targetH, "syncmode", direction);
+    SharedKey targets = m_engine.OpenKeyByPath(profile, "targets");
+    SharedKey target;
 
-            getEngine().SetStrValue(targetH, "remotepath", source->getURI());
-        } else {
-            getEngine().SetInt32Value(targetH, "enabled", 0);
+    try {
+        target = m_engine.OpenSubkey(targets, sysync::KEYVAL_ID_FIRST);
+        while (true) {
+            s = m_engine.GetStrValue(target, "dbname");
+            EvolutionSyncSource *source = (*m_sourceListPtr)[s];
+            if (source) {
+                m_engine.SetInt32Value(target, "enabled", 1);
+                int slow = 0;
+                int direction = 0;
+                string mode = source->getSync();
+                if (!strcasecmp(mode.c_str(), "slow")) {
+                    slow = 1;
+                    direction = 0;
+                } else if (!strcasecmp(mode.c_str(), "two-way")) {
+                    slow = 0;
+                    direction = 0;
+                } else if (!strcasecmp(mode.c_str(), "refresh-from-server")) {
+                    slow = 1;
+                    direction = 1;
+                } else if (!strcasecmp(mode.c_str(), "refresh-from-client")) {
+                    slow = 1;
+                    direction = 2;
+                } else if (!strcasecmp(mode.c_str(), "one-way-from-server")) {
+                    slow = 0;
+                    direction = 1;
+                } else if (!strcasecmp(mode.c_str(), "one-way-from-client")) {
+                    slow = 0;
+                    direction = 2;
+                } else {
+                    source->throwError(string("invalid sync mode: ") + mode);
+                }
+                m_engine.SetInt32Value(target, "forceslow", slow);
+                m_engine.SetInt32Value(target, "syncmode", direction);
+
+                m_engine.SetStrValue(target, "remotepath", source->getURI());
+            } else {
+                m_engine.SetInt32Value(target, "enabled", 0);
+            }
+            target = m_engine.OpenSubkey(targets, sysync::KEYVAL_ID_NEXT);
         }
-        getEngine().CloseKey(targetH);
-        err = getEngine().OpenSubkey(targetH, targetsH, sysync::KEYVAL_ID_NEXT, 0);
+    } catch (NoSuchKey error) {
     }
 
     // run an HTTP client sync session
@@ -1367,40 +1334,26 @@ SyncMLStatus EvolutionSyncClient::doSync()
     // Close all keys so that engine can flush the modified config.
     // Otherwise the session reads the unmodified values from the
     // created files while the updated values are still in memory.
-    getEngine().CloseKey(targetsH);
-    getEngine().CloseKey(subkeyH);
-    getEngine().CloseKey(keyH);
+    target.reset();
+    targets.reset();
+    profile.reset();
+    profiles.reset();
+    configvars.reset();
 
     // reopen profile keys
-    err = getEngine().OpenKeyByPath(keyH, NULL, "/profiles", 0);
-    if (err) {
-        throwError("open config vars");
-    }
-    err = getEngine().GetStrValue(keyH, "settingsstatus", s);
-    if (err) {
-        throwError("settings not ready");
-    }
-    err = getEngine().OpenSubkey(subkeyH, keyH, sysync::KEYVAL_ID_FIRST, 0);
-    if (err) {
-        throwError("open first profile");
-    }
-    err = getEngine().OpenKeyByPath(targetsH, subkeyH, "targets", 0);
-    if (err) {
-        throwError("targets");
-    }
+    profiles = m_engine.OpenKeyByPath(SharedKey(), "/profiles");
+    m_engine.GetStrValue(profiles, "settingsstatus");
+    profile = m_engine.OpenSubkey(profiles, sysync::KEYVAL_ID_FIRST);
+    targets = m_engine.OpenKeyByPath(profile, "targets");
 
-    sysync::SessionH sessionH;
     sysync::TEngineProgressInfo progressInfo;
     sysync::uInt16 stepCmd = sysync::STEPCMD_CLIENTSTART; // first step
-    err = getEngine().OpenSession(sessionH, 0, "syncevolution_session");
-    if (err) {
-        throwError("OpenSession");
-    }
+    SharedSession session = m_engine.OpenSession();
+    SharedBuffer sendBuffer;
 
     // Sync main loop: runs until SessionStep() signals end or error.
     // Exceptions are caught and lead to a call of SessionStep() with
     // parameter STEPCMD_ABORT -> abort session as soon as possible.
-    sysync::memSize length = 0;
     bool aborting = false;
     sysync::uInt16 previousStepCmd = stepCmd;
     do {
@@ -1414,138 +1367,106 @@ SyncMLStatus EvolutionSyncClient::doSync()
                     aborting = true;
                 }
             }
-            err = getEngine().SessionStep(sessionH, stepCmd, &progressInfo);
+            m_engine.SessionStep(session, stepCmd, &progressInfo);
             previousStepCmd = stepCmd;
-            if (err != sysync::LOCERR_OK) {
-                // error, terminate with error
-                stepCmd = sysync::STEPCMD_ERROR;
-            } else {
-                // step ran ok, evaluate step command
-                switch (stepCmd) {
-                case sysync::STEPCMD_OK:
-                    // no progress info, call step again
-                    stepCmd = sysync::STEPCMD_STEP;
-                    break;
-                case sysync::STEPCMD_PROGRESS:
-                    // new progress info to show
-                    // Check special case of interactive display alert
-                    if (progressInfo.eventtype == sysync::PEV_DISPLAY100) {
-                        // alert 100 received from remote, message text is in
-                        // SessionKey's "displayalert" field
-                        sysync::KeyH sessionKeyH;
-                        err = getEngine().OpenSessionKey(sessionH, sessionKeyH, 0);
-                        if (err != sysync::LOCERR_OK) {
-                            throwError("session key");
-                        }
-                        // get message from server to display
-                        getEngine().GetStrValue(sessionKeyH,
-                                                "displayalert",
-                                                s);
-                        displayServerMessage(s);
-                        getEngine().CloseKey(sessionKeyH);
-                    } else {
-                        switch (progressInfo.targetID) {
-                        case sysync::KEYVAL_ID_UNKNOWN:
-                        case 0 /* used with PEV_SESSIONSTART?! */:
-                            displaySyncProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
-                                                progressInfo.extra1,
-                                                progressInfo.extra2,
-                                                progressInfo.extra3);
-                            break;
-                        default:
-                            // specific for a certain sync source:
-                            // find it...
-                            err = getEngine().OpenSubkey(targetH, targetsH, progressInfo.targetID, 0);
-                            if (err) {
-                                throwError("reading target");
-                            }
-                            err = getEngine().GetStrValue(targetH, "dbname", s);
-                            if (err) {
-                                throwError("reading target name");
-                            }
-                            EvolutionSyncSource *source = (*m_sourceListPtr)[s];
-                            if (source) {
-                                displaySourceProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
-                                                      *source,
-                                                      progressInfo.extra1,
-                                                      progressInfo.extra2,
-                                                      progressInfo.extra3);
-                            } else {
-                                throwError(std::string("unknown target ") + s);
-                            }
-                            getEngine().CloseKey(targetH);
-                            break;
-                        }
-                    }
-                    stepCmd = sysync::STEPCMD_STEP;
-                    break;
-                case sysync::STEPCMD_ERROR:
-                    // error, terminate (should not happen, as status is
-                    // already checked above)
-                    break;
-                case sysync::STEPCMD_RESTART:
-                    // make sure connection is closed and will be re-opened for next request
-                    // tbd: close communication channel if still open to make sure it is
-                    //       re-opened for the next request
-                    stepCmd = sysync::STEPCMD_STEP;
-                    break;
-                case sysync::STEPCMD_SENDDATA: {
-                    // send data to remote
-
-                    // use OpenSessionKey() and GetValue() to retrieve "connectURI"
-                    // and "contenttype" to be used to send data to the server
-                    sysync::KeyH sessionKeyH;
-                    err = getEngine().OpenSessionKey(sessionH, sessionKeyH, 0);
-                    if (err != sysync::LOCERR_OK) {
-                        throwError("session key");
-                    }
-                    getEngine().GetStrValue(sessionKeyH,
-                                            "connectURI",
-                                            s);
-                    agent->setURL(s);
-                    string contenttype;
-                    getEngine().GetStrValue(sessionKeyH,
-                                            "contenttype",
-                                            contenttype);
-                    getEngine().CloseKey(sessionKeyH);
-                    agent->setContentType(contenttype);
-                        
-                    // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
-                    // sent or have it copied into caller's buffer using
-                    // ReadSyncMLBuffer(), then send it to the server
-                    sysync::appPointer buffer;
-                    err = getEngine().GetSyncMLBuffer(sessionH, true, buffer, length);
-                    if (err) {
-                        throwError("buffer");
-                    }
-                    agent->send(static_cast<const char *>(buffer), length);
-                    stepCmd = sysync::STEPCMD_SENTDATA; // we have sent the data
-                    break;
-                }
-                case sysync::STEPCMD_NEEDDATA:
-                    switch (agent->wait()) {
-                    case TransportAgent::ACTIVE:
-                        stepCmd = sysync::STEPCMD_SENTDATA; // still sending the data?!
-                        break;
-                    case TransportAgent::GOT_REPLY:
-                        getEngine().RetSyncMLBuffer(sessionH, true, length);
-                        const char *reply;
-                        size_t replylen;
-                        agent->getReply(reply, replylen);
-
-                        // put answer r eceived earlier into SyncML engine's buffer
-                        err = getEngine().WriteSyncMLBuffer(sessionH,
-                                                            const_cast<void *>(static_cast<const void *>(reply)),
-                                                            replylen);
-                        if (err) {
-                            throwError("write buffer");
-                        }
-                        stepCmd = sysync::STEPCMD_GOTDATA; // we have received response data
+            switch (stepCmd) {
+            case sysync::STEPCMD_OK:
+                // no progress info, call step again
+                stepCmd = sysync::STEPCMD_STEP;
+                break;
+            case sysync::STEPCMD_PROGRESS:
+                // new progress info to show
+                // Check special case of interactive display alert
+                if (progressInfo.eventtype == sysync::PEV_DISPLAY100) {
+                    // alert 100 received from remote, message text is in
+                    // SessionKey's "displayalert" field
+                    SharedKey sessionKey = m_engine.OpenSessionKey(session);
+                    // get message from server to display
+                    s = m_engine.GetStrValue(sessionKey,
+                                             "displayalert");
+                    displayServerMessage(s);
+                } else {
+                    switch (progressInfo.targetID) {
+                    case sysync::KEYVAL_ID_UNKNOWN:
+                    case 0 /* used with PEV_SESSIONSTART?! */:
+                        displaySyncProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
+                                            progressInfo.extra1,
+                                            progressInfo.extra2,
+                                            progressInfo.extra3);
                         break;
                     default:
-                        stepCmd = sysync::STEPCMD_TRANSPFAIL; // communication with server failed
+                        // specific for a certain sync source:
+                        // find it...
+                        target = m_engine.OpenSubkey(targets, progressInfo.targetID);
+                        s = m_engine.GetStrValue(target, "dbname");
+                        EvolutionSyncSource *source = (*m_sourceListPtr)[s];
+                        if (source) {
+                            displaySourceProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
+                                                  *source,
+                                                  progressInfo.extra1,
+                                                  progressInfo.extra2,
+                                                  progressInfo.extra3);
+                        } else {
+                            throwError(std::string("unknown target ") + s);
+                        }
+                        target.reset();
                         break;
                     }
+                }
+                stepCmd = sysync::STEPCMD_STEP;
+                break;
+            case sysync::STEPCMD_ERROR:
+                // error, terminate (should not happen, as status is
+                // already checked above)
+                break;
+            case sysync::STEPCMD_RESTART:
+                // make sure connection is closed and will be re-opened for next request
+                // tbd: close communication channel if still open to make sure it is
+                //       re-opened for the next request
+                stepCmd = sysync::STEPCMD_STEP;
+                break;
+            case sysync::STEPCMD_SENDDATA: {
+                // send data to remote
+
+                // use OpenSessionKey() and GetValue() to retrieve "connectURI"
+                // and "contenttype" to be used to send data to the server
+                SharedKey sessionKey = m_engine.OpenSessionKey(session);
+                s = m_engine.GetStrValue(sessionKey,
+                                         "connectURI");
+                agent->setURL(s);
+                s = m_engine.GetStrValue(sessionKey,
+                                         "contenttype");
+                agent->setContentType(s);
+                sessionKey.reset();
+                    
+                // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
+                // sent or have it copied into caller's buffer using
+                // ReadSyncMLBuffer(), then send it to the server
+                sendBuffer = m_engine.GetSyncMLBuffer(session, true);
+                agent->send(sendBuffer.get(), sendBuffer.size());
+                stepCmd = sysync::STEPCMD_SENTDATA; // we have sent the data
+                break;
+            }
+            case sysync::STEPCMD_NEEDDATA:
+                switch (agent->wait()) {
+                case TransportAgent::ACTIVE:
+                    stepCmd = sysync::STEPCMD_SENTDATA; // still sending the data?!
+                    break;
+                case TransportAgent::GOT_REPLY:
+                    sendBuffer.reset();
+                    const char *reply;
+                    size_t replylen;
+                    agent->getReply(reply, replylen);
+
+                    // put answer received earlier into SyncML engine's buffer
+                    m_engine.WriteSyncMLBuffer(session,
+                                               reply,
+                                               replylen);
+                    stepCmd = sysync::STEPCMD_GOTDATA; // we have received response data
+                    break;
+                default:
+                    stepCmd = sysync::STEPCMD_TRANSPFAIL; // communication with server failed
+                    break;
                 }
             }
             // check for suspend or abort, if so, modify step command for next step
@@ -1561,10 +1482,6 @@ SyncMLStatus EvolutionSyncClient::doSync()
             stepCmd = sysync::STEPCMD_ABORT;
         }
     } while (stepCmd != sysync::STEPCMD_DONE && stepCmd != sysync::STEPCMD_ERROR);
-    getEngine().CloseKey(targetsH);
-    getEngine().CloseKey(subkeyH);
-    getEngine().CloseKey(keyH);
-    getEngine().CloseSession(sessionH);
 
     return status;
 }

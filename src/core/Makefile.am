@@ -25,6 +25,9 @@ CORE_SOURCES  = \
 	SyncML.h \
 	SyncML.cpp \
 	\
+	SynthesisEngine.h \
+	SynthesisEngine.cpp \
+	\
 	Logging.h \
 	Logging.cpp \
 	LogStdout.h \

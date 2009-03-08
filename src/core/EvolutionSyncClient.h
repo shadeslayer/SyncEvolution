@@ -10,6 +10,7 @@
 #include "EvolutionSmartPtr.h"
 #include "SyncEvolutionConfig.h"
 #include "SyncML.h"
+#include "SynthesisEngine.h"
 
 #include <string>
 #include <set>
@@ -24,11 +25,6 @@ namespace SyncEvolution {
 using namespace SyncEvolution;
 class SourceList;
 class EvolutionSyncSource;
-#include <synthesis/sync_declarations.h>
-#include <synthesis/engine_defs.h>
-namespace sysync {
-    class TEngineModuleBridge;
-};
 
 /**
  * This is the main class inside SyncEvolution which
@@ -57,7 +53,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * constructed EvolutionSyncClient. Use getEngine() to reference
      * it.
      */
-    sysync::TEngineModuleBridge *m_engine;
+    SharedEngine m_engine;
 
   public:
     /**
@@ -155,12 +151,10 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     virtual void setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter);
 
   protected:
-
-    sysync::TEngineModuleBridge &getEngine() { return *m_engine; }
-    const sysync::TEngineModuleBridge &getEngine() const { return *m_engine; }
-
-    sysync::TEngineModuleBridge *swapEngine(sysync::TEngineModuleBridge *newengine) {
-        sysync::TEngineModuleBridge *oldengine = m_engine;
+    SharedEngine getEngine() { return m_engine; }
+    const SharedEngine getEngine() const { return m_engine; }
+    SharedEngine swapEngine(SharedEngine newengine) {
+        SharedEngine oldengine = m_engine;
         m_engine = newengine;
         return oldengine;
     }

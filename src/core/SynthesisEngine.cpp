@@ -1,0 +1,205 @@
+/*
+ * Copyright (C) 2005-2008 Patrick Ohly
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+#include "SynthesisEngine.h"
+#include "SyncEvolutionUtil.h"
+
+void SharedEngine::Connect(const string &aEngineName,
+                           sysync::CVersion aPrgVersion,
+                           sysync::uInt16 aDebugFlags)
+{
+    sysync::TSyError err = m_engine->Connect(aEngineName, aPrgVersion, aDebugFlags);
+    if (err) {
+        throw std::runtime_error(std::string("cannot connect to engine '") + aEngineName + "'");
+    }
+}
+
+void SharedEngine::Disconnect()
+{
+    sysync::TSyError err = m_engine->Disconnect();
+    if (err) {
+        throw std::runtime_error("cannot disconnect engine");
+    }
+}
+
+void SharedEngine::InitEngineXML(const string &aConfigXML)
+{
+    sysync::TSyError err = m_engine->InitEngineXML(aConfigXML.c_str());
+    if (err) {
+        throw std::runtime_error("Synthesis XML config parser error");
+    }
+}
+
+class FreeEngineItem {
+    SharedEngine m_engine;
+public:
+    FreeEngineItem(const SharedEngine &engine) :
+        m_engine(engine)
+    {}
+    void operator () (sysync::KeyH key) {
+        m_engine.get()->CloseKey(key);
+    }
+    void operator () (sysync::SessionH session) {
+        m_engine.get()->CloseSession(session);
+    }
+};
+
+
+SharedSession SharedEngine::OpenSession()
+{
+    sysync::SessionH sessionH = NULL;
+    sysync::TSyError err = m_engine->OpenSession(sessionH);
+    if (err) {
+        throw std::runtime_error("opening session failed");
+    }
+    return SharedSession(sessionH, FreeEngineItem(*this));
+}
+
+SharedKey SharedEngine::OpenSessionKey(SharedSession &aSessionH)
+{
+    sysync::KeyH key;
+    sysync::TSyError err = m_engine->OpenSessionKey(aSessionH.get(), key, 0);
+    if (err) {
+        throw std::runtime_error("opening session key failed");
+    }
+    return SharedKey(key, FreeEngineItem(*this));
+}
+
+void SharedEngine::SessionStep(const SharedSession &aSessionH,
+                               sysync::uInt16 &aStepCmd,
+                               sysync::TEngineProgressInfo *aInfoP)
+{
+    sysync::TSyError err = m_engine->SessionStep(aSessionH.get(),
+                                                 aStepCmd,
+                                                 aInfoP);
+    if (err) {
+        throw std::runtime_error("proceeding with session failed");
+    }
+}
+
+class FreeSyncMLBuffer {
+    SharedEngine m_engine;
+    SharedSession m_session;
+    bool m_forSend;
+    size_t m_size;
+public:
+    FreeSyncMLBuffer(const SharedEngine &engine,
+                     const SharedSession &session,
+                     bool forSend,
+                     size_t size) :
+        m_engine(engine),
+        m_session(session),
+        m_forSend(forSend),
+        m_size(size)
+    {}
+    void operator () (char *buffer) {
+        m_engine.get()->RetSyncMLBuffer(m_session.get(), m_forSend, m_size);
+    }
+};
+
+SharedBuffer SharedEngine::GetSyncMLBuffer(const SharedSession &aSessionH, bool aForSend)
+{
+    sysync::appPointer buffer;
+    sysync::memSize bufSize;
+    sysync::TSyError err = m_engine->GetSyncMLBuffer(aSessionH.get(),
+                                                     aForSend,
+                                                     buffer, bufSize);
+    if (err) {
+        throw std::runtime_error("acquiring SyncML buffer failed");
+    }
+
+    return SharedBuffer((char *)buffer, (size_t)bufSize,
+                        FreeSyncMLBuffer(*this, aSessionH, aForSend, bufSize));
+}
+
+void SharedEngine::WriteSyncMLBuffer(const SharedSession &aSessionH, const char *data, size_t len)
+{
+    sysync::TSyError err = m_engine->WriteSyncMLBuffer(aSessionH.get(), const_cast<char *>(data), len);
+    if (err) {
+        throw std::runtime_error("writing SyncML buffer failed");
+    }
+}
+
+SharedKey SharedEngine::OpenKeyByPath(const SharedKey &aParentKeyH,
+                                      const string &aPath)
+{
+    sysync::KeyH key = NULL;
+    sysync::TSyError err = m_engine->OpenKeyByPath(key, aParentKeyH.get(), aPath.c_str(), 0);
+    if (err) {
+        string what = "opening key ";
+        what += aPath;
+        if (err == sysync::DB_NoContent) {
+            throw NoSuchKey(what);
+        } else {
+            throw std::runtime_error(what);
+        }
+    }
+    return SharedKey(key, FreeEngineItem(*this));
+}
+
+SharedKey SharedEngine::OpenSubkey(const SharedKey &aParentKeyH,
+                                   sysync::sInt32 aID)
+{
+    sysync::KeyH key = NULL;
+    sysync::TSyError err = m_engine->OpenSubkey(key, aParentKeyH.get(), aID, 0);
+    if (err) {
+        string what = "opening sub key";
+        if (err == sysync::DB_NoContent) {
+            throw NoSuchKey(what);
+        } else {
+            throw std::runtime_error(what);
+        }
+    }
+    return SharedKey(key, FreeEngineItem(*this));
+}
+
+string SharedEngine::GetStrValue(const SharedKey &aKeyH, const string &aValName)
+{
+    std::string s;
+    sysync::TSyError err = m_engine->GetStrValue(aKeyH.get(), aValName.c_str(), s);
+    if (err) {
+        throw std::runtime_error(string("error reading value ") + aValName);
+    }
+    return s;
+}
+
+void SharedEngine::SetStrValue(const SharedKey &aKeyH, const string &aValName, const string &aValue)
+{
+    sysync::TSyError err = m_engine->SetStrValue(aKeyH.get(), aValName.c_str(), aValue);
+    if (err) {
+        throw std::runtime_error(string("error writing value ") + aValName);
+    }
+}
+
+sysync::sInt32 SharedEngine::GetInt32Value(const SharedKey &aKeyH, const string &aValName)
+{
+    sysync::sInt32 v;
+    sysync::TSyError err = m_engine->GetInt32Value(aKeyH.get(), aValName.c_str(), v);
+    if (err) {
+        throw std::runtime_error(string("error reading value ") + aValName);
+    }
+    return v;
+}
+
+void SharedEngine::SetInt32Value(const SharedKey &aKeyH, const string &aValName, sysync::sInt32 aValue)
+{
+    sysync::TSyError err = m_engine->SetInt32Value(aKeyH.get(), aValName.c_str(), aValue);
+    if (err) {
+        throw std::runtime_error(string("error writing value ") + aValName);
+    }
+}
