@@ -59,8 +59,7 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server,
                      sysync::DBG_PLUGIN_NONE|
                      sysync::DBG_PLUGIN_INT|
                      sysync::DBG_PLUGIN_DB|
-                     sysync::DBG_PLUGIN_EXOT|
-                     sysync::DBG_PLUGIN_ALL);
+                     sysync::DBG_PLUGIN_EXOT);
 }
 
 EvolutionSyncClient::~EvolutionSyncClient()
@@ -1221,8 +1220,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                                sysync::DBG_PLUGIN_NONE|
                                sysync::DBG_PLUGIN_INT|
                                sysync::DBG_PLUGIN_DB|
-                               sysync::DBG_PLUGIN_EXOT|
-                               sysync::DBG_PLUGIN_ALL);
+                               sysync::DBG_PLUGIN_EXOT);
             m_oldengine = m_client.swapEngine(syncengine);
         }
 
