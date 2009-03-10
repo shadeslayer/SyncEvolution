@@ -619,7 +619,6 @@ TSyError SyncEvolution_ReadNextItemAsKey( CContext aContext, ItemID aID, KeyH aI
 
     if (!res) {
         aID->item = StrAlloc(luid.c_str());
-        aID->parent = StrAlloc("");
     }
 
     DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_RNK, "%s aStatus=%d aItemKey=%08X aID=(%s,%s)",
@@ -728,7 +727,6 @@ TSyError SyncEvolution_InsertItemAsKey( CContext aContext, KeyH aItemKey, ItemID
         item.setData(data, len);
         res = source->addItem(item);
         newID->item = StrAlloc(item.getKey().c_str());
-        newID->parent = StrAlloc("");
     }
 
     delete [] data;
@@ -770,7 +768,6 @@ TSyError SyncEvolution_UpdateItemAsKey( CContext aContext, KeyH aItemKey, cItemI
         res = source->updateItem(item);
         if (item.getKey() == aID->item) {
             updID->item = StrAlloc(item.getKey().c_str());
-            updID->parent = StrAlloc("");
         }
     }
 
