@@ -1732,21 +1732,23 @@ void SyncTests::deleteAll(DeleteAllMode mode) {
         for (it = sources.begin(); it != sources.end(); ++it) {
             it->second->deleteAll(it->second->createSourceA);
         }
-        sync(SYNC_SLOW, "init");
+        doSync("init", SyncOptions(SYNC_SLOW));
         // now that client and server are in sync, delete locally and sync again
         for (it = sources.begin(); it != sources.end(); ++it) {
             it->second->deleteAll(it->second->createSourceA);
         }
-        sync(SYNC_TWO_WAY, "twoway",
-             CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_TWO_WAY));
+        doSync("twoway",
+               SyncOptions(SYNC_TWO_WAY,
+                           CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_TWO_WAY)));
         break;
      case DELETE_ALL_REFRESH:
         // delete locally and then tell the server to "copy" the empty databases
         for (it = sources.begin(); it != sources.end(); ++it) {
             it->second->deleteAll(it->second->createSourceA);
         }
-        sync(SYNC_REFRESH_FROM_CLIENT, "refreshserver",
-             CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_REFRESH_FROM_CLIENT));
+        doSync("refreshserver",
+               SyncOptions(SYNC_REFRESH_FROM_CLIENT,
+                           CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_REFRESH_FROM_CLIENT)));
         break;
     }
 }
@@ -1766,12 +1768,14 @@ void SyncTests::doCopy() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->testSimpleInsert();
     }
-    sync(SYNC_TWO_WAY, "send",
-         CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY));
+    doSync("send",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
 
     // copy into second database
-    accessClientB->sync(SYNC_TWO_WAY, "recv",
-                        CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY));
+    accessClientB->doSync("recv",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     compareDatabases();
 }
@@ -1786,8 +1790,9 @@ void SyncTests::refreshClient() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->deleteAll(it->second->createSourceA);
     }
-    sync(SYNC_SLOW, "refresh",
-         CheckSyncReport(-1,0,0, 0,0,0, true, SYNC_SLOW));
+    doSync("refresh",
+           SyncOptions(SYNC_SLOW,
+                       CheckSyncReport(-1,0,0, 0,0,0, true, SYNC_SLOW)));
 }
 
 
@@ -1800,7 +1805,7 @@ void SyncTests::testDeleteAllRefresh() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->testSimpleInsert();
     }
-    sync(SYNC_SLOW, "insert");
+    doSync("insert", SyncOptions(SYNC_SLOW));
 
     // now ensure we can delete it
     deleteAll(DELETE_ALL_SYNC);
@@ -1816,8 +1821,9 @@ void SyncTests::testDeleteAllRefresh() {
     }
 
     // make sure server really deleted everything
-    sync(SYNC_SLOW, "check",
-         CheckSyncReport(0,0,0, 0,0,0, true, SYNC_SLOW));
+    doSync("check",
+           SyncOptions(SYNC_SLOW,
+                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_SLOW)));
     for (it = sources.begin(); it != sources.end(); ++it) {
         std::auto_ptr<SyncSource> source;
         SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceA()));
@@ -1840,8 +1846,8 @@ void SyncTests::testRefreshSemantic() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->testSimpleInsert();
     }
-    sync(SYNC_REFRESH_FROM_SERVER,
-         CheckSyncReport(0,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER));
+    doSync(SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                       CheckSyncReport(0,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
 
     // check
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -1852,8 +1858,9 @@ void SyncTests::testRefreshSemantic() {
         SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->endSync());
         CPPUNIT_ASSERT_NO_THROW(source.reset());
     }
-    sync(SYNC_TWO_WAY, "two-way",
-         CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY));
+    doSync("two-way",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 }
 
 // tests the following sequence of events:
@@ -1874,11 +1881,13 @@ void SyncTests::testRefreshStatus() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->testSimpleInsert();
     }
-    sync(SYNC_REFRESH_FROM_CLIENT, "refresh-from-client",
-         CheckSyncReport(0,0,0, -1,-1,-1, /* strictly speaking 1,0,0, but not sure exactly what the server will be told */
-                         true, SYNC_REFRESH_FROM_CLIENT));
-    sync(SYNC_TWO_WAY, "two-way",
-         CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY));
+    doSync("refresh-from-client",
+           SyncOptions(SYNC_REFRESH_FROM_CLIENT,
+                       CheckSyncReport(0,0,0, -1,-1,-1, /* strictly speaking 1,0,0, but not sure exactly what the server will be told */
+                                       true, SYNC_REFRESH_FROM_CLIENT)));
+    doSync("two-way",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 }
 
 // test that a two-way sync copies updates from database to the other client,
@@ -1895,10 +1904,12 @@ void SyncTests::testUpdate() {
         it->second->update(it->second->createSourceA, it->second->config.updateItem);
     }
 
-    sync(SYNC_TWO_WAY, "update",
-         CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY));
-    accessClientB->sync(SYNC_TWO_WAY, "update",
-                        CheckSyncReport(0,1,0, 0,0,0, true, SYNC_TWO_WAY));
+    doSync("update",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY)));
+    accessClientB->doSync("update",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(0,1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     compareDatabases();
 }
@@ -1922,10 +1933,12 @@ void SyncTests::testComplexUpdate() {
                            );
     }
 
-    sync(SYNC_TWO_WAY, "update",
-         CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY));
-    accessClientB->sync(SYNC_TWO_WAY, "update",
-                        CheckSyncReport(0,1,0, 0,0,0, true, SYNC_TWO_WAY));
+    doSync("update",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY)));
+    accessClientB->doSync("update",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(0,1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     compareDatabases();
 }
@@ -1943,10 +1956,12 @@ void SyncTests::testDelete() {
     }
 
     // transfer change from A to server to B
-    sync(SYNC_TWO_WAY, "delete",
-         CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY));
-    accessClientB->sync(SYNC_TWO_WAY, "delete",
-                        CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY));
+    doSync("delete",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
+    accessClientB->doSync("delete",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY)));
 
     // check client B: shouldn't have any items now
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -1977,10 +1992,12 @@ void SyncTests::testMerge() {
     }
 
     // send change to server from client A (no conflict), then from B (conflict)
-    sync(SYNC_TWO_WAY, "send",
-         CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY));
-    sync(SYNC_TWO_WAY, "recv",
-         CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_TWO_WAY));
+    doSync("send",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY)));
+    doSync("recv",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_TWO_WAY)));
 
     // figure out how the conflict during ".recv" was handled
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
@@ -2012,7 +2029,7 @@ void SyncTests::testTwinning() {
     }
 
     // send to server
-    sync(SYNC_TWO_WAY, "send");
+    doSync("send", SyncOptions(SYNC_TWO_WAY));
 
     // ensure that client has the same data, thus ignoring data conversion
     // issues (those are covered by testItems())
@@ -2022,7 +2039,7 @@ void SyncTests::testTwinning() {
     accessClientB->refreshClient();
 
     // slow sync should not change anything
-    sync(SYNC_TWO_WAY, "twinning");
+    doSync("twinning", SyncOptions(SYNC_TWO_WAY));
 
     // check
     compareDatabases();
@@ -2070,8 +2087,9 @@ void SyncTests::testOneWayFromServer() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->insertManyItems(it->second->createSourceA, 1, 1);
     }
-    sync(SYNC_TWO_WAY, "send",
-         CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY));
+    doSync("send",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2103,8 +2121,9 @@ void SyncTests::testOneWayFromServer() {
             CPPUNIT_ASSERT_NO_THROW(source.reset());
         }
     }
-    accessClientB->sync(SYNC_ONE_WAY_FROM_SERVER, "recv",
-                        CheckSyncReport(1,0,0, 0,0,0, true, SYNC_ONE_WAY_FROM_SERVER));
+    accessClientB->doSync("recv",
+                          SyncOptions(SYNC_ONE_WAY_FROM_SERVER,
+                                      CheckSyncReport(1,0,0, 0,0,0, true, SYNC_ONE_WAY_FROM_SERVER)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2121,8 +2140,9 @@ void SyncTests::testOneWayFromServer() {
 
     // two-way sync with first client for verification
     // => no changes
-    sync(SYNC_TWO_WAY, "check",
-         CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY));
+    doSync("check",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2153,8 +2173,9 @@ void SyncTests::testOneWayFromServer() {
             CPPUNIT_ASSERT_NO_THROW(source.reset());
         }
     }
-    sync(SYNC_TWO_WAY, "delete",
-         CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY));
+    doSync("delete",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2171,8 +2192,9 @@ void SyncTests::testOneWayFromServer() {
 
     // sync the same change to second client
     // => one item left (the one inserted locally)
-    accessClientB->sync(SYNC_ONE_WAY_FROM_SERVER, "delete",
-                        CheckSyncReport(0,0,1, 0,0,0, true, SYNC_ONE_WAY_FROM_SERVER));
+    accessClientB->doSync("delete",
+                          SyncOptions(SYNC_ONE_WAY_FROM_SERVER,
+                                      CheckSyncReport(0,0,1, 0,0,0, true, SYNC_ONE_WAY_FROM_SERVER)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2230,8 +2252,9 @@ void SyncTests::testOneWayFromClient() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->insertManyItems(it->second->createSourceA, 1, 1);
     }
-    sync(SYNC_TWO_WAY, "send",
-         CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY));
+    doSync("send",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2263,8 +2286,9 @@ void SyncTests::testOneWayFromClient() {
             CPPUNIT_ASSERT_NO_THROW(source.reset());
         }
     }
-    accessClientB->sync(SYNC_ONE_WAY_FROM_CLIENT, "send",
-                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_ONE_WAY_FROM_CLIENT));
+    accessClientB->doSync("send",
+                          SyncOptions(SYNC_ONE_WAY_FROM_CLIENT,
+                                      CheckSyncReport(0,0,0, 1,0,0, true, SYNC_ONE_WAY_FROM_CLIENT)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2281,8 +2305,9 @@ void SyncTests::testOneWayFromClient() {
 
     // two-way sync with client A for verification
     // => receive one item
-    sync(SYNC_TWO_WAY, "check",
-         CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY));
+    doSync("check",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2313,8 +2338,9 @@ void SyncTests::testOneWayFromClient() {
             CPPUNIT_ASSERT_NO_THROW(source.reset());
         }
     }
-    accessClientB->sync(SYNC_ONE_WAY_FROM_CLIENT, "delete",
-                        CheckSyncReport(0,0,0, 0,0,1, true, SYNC_ONE_WAY_FROM_CLIENT));
+    accessClientB->doSync("delete",
+                          SyncOptions(SYNC_ONE_WAY_FROM_CLIENT,
+                                      CheckSyncReport(0,0,0, 0,0,1, true, SYNC_ONE_WAY_FROM_CLIENT)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2331,8 +2357,9 @@ void SyncTests::testOneWayFromClient() {
 
     // sync the same change to client A
     // => one item left (the one inserted locally)
-    sync(SYNC_TWO_WAY, "delete",
-         CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY));
+    doSync("delete",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             std::auto_ptr<SyncSource> source;
@@ -2361,7 +2388,7 @@ void SyncTests::testItems() {
     }
 
     // transfer from client A to server to client B
-    sync(SYNC_TWO_WAY, "send");
+    doSync("send", SyncOptions(SYNC_TWO_WAY));
     accessClientB->refreshClient();
 
     compareDatabases();
@@ -2387,19 +2414,22 @@ void SyncTests::testAddUpdate() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->insert(it->second->createSourceA, it->second->config.insertItem);
     }
-    sync(SYNC_TWO_WAY, "add",
-         CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY));
+    doSync("add",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
 
     // update it
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->update(it->second->createSourceB, it->second->config.updateItem);
     }
-    sync(SYNC_TWO_WAY, "update",
-         CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY));
+    doSync("update",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY)));
 
     // now download the updated item into the second client
-    accessClientB->sync(SYNC_TWO_WAY, "recv",
-                        CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY));
+    accessClientB->doSync("recv",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // compare the two databases
     compareDatabases();
@@ -2425,9 +2455,10 @@ void SyncTests::testManyItems() {
     }
 
     // send data to server
-    sync(SYNC_TWO_WAY, "send",
-         CheckSyncReport(0,0,0, -1,0,0, true, SYNC_TWO_WAY),
-         64 * 1024, 64 * 1024, true);
+    doSync("send",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, -1,0,0, true, SYNC_TWO_WAY),
+                       64 * 1024, 64 * 1024, true));
 
     // ensure that client has the same data, ignoring data conversion
     // issues (those are covered by testItems())
@@ -2437,9 +2468,10 @@ void SyncTests::testManyItems() {
     accessClientB->refreshClient();
 
     // slow sync now should not change anything
-    sync(SYNC_SLOW, "twinning",
-         CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW),
-         64 * 1024, 64 * 1024, true);
+    doSync("twinning",
+           SyncOptions(SYNC_SLOW,
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW),
+                       64 * 1024, 64 * 1024, true));
 
     // compare
     compareDatabases();
@@ -2452,7 +2484,7 @@ void SyncTests::testManyItems() {
  */
 void SyncTests::doVarSizes(bool withMaxMsgSize,
                            bool withLargeObject,
-                           const char *encoding) {
+                           const std::string &encoding) {
     static const int maxMsgSize = 8 * 1024;
 
     // clean server and client A
@@ -2473,20 +2505,22 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     }
 
     // transfer to server
-    sync(SYNC_TWO_WAY, "send",
-         CheckSyncReport(0,0,0, -1,0,0, true, SYNC_TWO_WAY), // number of items sent to server depends on source
-         withMaxMsgSize ? maxMsgSize : 0,
-         withMaxMsgSize ? maxMsgSize * 100 : 0,
-         withLargeObject,
-         encoding);
+    doSync("send",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, -1,0,0, true, SYNC_TWO_WAY), // number of items sent to server depends on source
+                       withMaxMsgSize ? maxMsgSize : 0,
+                       withMaxMsgSize ? maxMsgSize * 100 : 0,
+                       withLargeObject,
+                       encoding));
 
     // copy to second client
-    accessClientB->sync(SYNC_REFRESH_FROM_SERVER, "recv",
-                        CheckSyncReport(-1,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER), // number of items received from server depends on source
-                        withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
-                        withMaxMsgSize ? maxMsgSize * 100 : 0,
-                        withLargeObject,
-                        encoding);
+    accessClientB->doSync("recv",
+                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                                      CheckSyncReport(-1,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER), // number of items received from server depends on source
+                                      withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
+                                      withMaxMsgSize ? maxMsgSize * 100 : 0,
+                                      withLargeObject,
+                                      encoding));
 
     // compare
     compareDatabases();
@@ -2630,18 +2664,18 @@ void SyncTests::doInterruptResume(int changes)
                 sources[i].second->insertManyItems(sources[i].second->createSourceA,
                                                    1, 3, 0);
         }
-        sync(SYNC_REFRESH_FROM_CLIENT, "fromA");
+        doSync("fromA", SyncOptions(SYNC_REFRESH_FROM_CLIENT));
 
         // init client B and add its items to server and client A
-        accessClientB->sync(SYNC_REFRESH_FROM_SERVER, "initB");
+        accessClientB->doSync("initB", SyncOptions(SYNC_REFRESH_FROM_SERVER));
         clientBluids.resize(sources.size());
         for (i = 0; i < sources.size(); i++) {
             clientBluids[i] =
                 accessClientB->sources[i].second->insertManyItems(accessClientB->sources[i].second->createSourceA,
                                                                   11, 3, 0);
         }
-        accessClientB->sync(SYNC_TWO_WAY, "fromB");
-        sync(SYNC_TWO_WAY, "updateA");
+        accessClientB->doSync("fromB", SyncOptions(SYNC_TWO_WAY));
+        doSync("updateA", SyncOptions(SYNC_TWO_WAY));
 
         // => client A, B and server in sync with a total of six items
 
@@ -2665,7 +2699,7 @@ void SyncTests::doInterruptResume(int changes)
             }
         }
         if (changes & (SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE)) {
-            sync(SYNC_TWO_WAY, "changesFromA");
+            doSync("changesFromA", SyncOptions(SYNC_TWO_WAY));
         }
 
         // make changes as requested on client B
@@ -2695,8 +2729,9 @@ void SyncTests::doInterruptResume(int changes)
         int wasInterrupted;
         {
             TransportFaultInjector faultInjector(interruptAtMessage);
-            accessClientB->sync(SYNC_TWO_WAY, "changesFromB",
-                                CheckSyncReport(-1, -1, -1, -1, -1, -1, false));
+            accessClientB->doSync("changesFromB",
+                                  SyncOptions(SYNC_TWO_WAY,
+                                              CheckSyncReport(-1, -1, -1, -1, -1, -1, false)));
             wasInterrupted = interruptAtMessage != -1 &&
                 faultInjector.getMessageCount() <= interruptAtMessage;
         }
@@ -2708,11 +2743,11 @@ void SyncTests::doInterruptResume(int changes)
             }
 
             // continue
-            accessClientB->sync(SYNC_TWO_WAY, "retryB");
+            accessClientB->doSync("retryB", SyncOptions(SYNC_TWO_WAY));
         }
 
         // copy changes to client A
-        sync(SYNC_TWO_WAY, "toA");
+        doSync("toA", SyncOptions(SYNC_TWO_WAY));
 
         // compare client A and B
         if (interruptAtMessage != -1 &&
@@ -2800,12 +2835,8 @@ void SyncTests::testInterruptResumeFull()
                       SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE);
 }
 
-void SyncTests::sync(SyncMode syncMode,
-                     CheckSyncReport checkReport,
-                     long maxMsgSize,
-                     long maxObjSize,
-                     bool loSupport,
-                     const char *encoding) {
+void SyncTests::doSync(const SyncOptions &options)
+{
     int res = 0;
     static int syncCounter = 0;
     static std::string lastTest;
@@ -2829,17 +2860,12 @@ void SyncTests::sync(SyncMode syncMode,
     syncCounter++;
 
     SE_LOG_DEBUG(NULL, NULL, "%d. starting %s with sync mode %s",
-                 syncCounter, logname.c_str(), PrettyPrintSyncMode(syncMode).c_str());
+                 syncCounter, logname.c_str(), PrettyPrintSyncMode(options.m_syncMode).c_str());
 
     try {
-        res = client.sync(sourceArray,
-                          syncMode,
-                          logname,
-                          checkReport,
-                          maxMsgSize,
-                          maxObjSize,
-                          loSupport,
-                          encoding);
+        res = client.doSync(sourceArray,
+                            logname,
+                            options);
 
         client.postSync(res, logname);
     } catch (CppUnit::Exception &ex) {
@@ -2852,8 +2878,9 @@ void SyncTests::sync(SyncMode syncMode,
         res = 1;
         client.postSync(res, logname);
 
-        // this logs the original exception using CPPUnit mechanisms
-        CPPUNIT_ASSERT_NO_THROW( throw );
+        // this logs the original exception using CPPUnit mechanisms,
+        // with current line as source
+        CPPUNIT_ASSERT_NO_THROW(throw);
     }
 }
 
@@ -2988,8 +3015,10 @@ int ClientTest::dump(ClientTest &client, SyncSource &source, const char *file)
     return out.bad();
 }
 
-int ClientTest::import(ClientTest &client, SyncSource &source, const char *file)
+void ClientTest::getItems(const char *file, list<string> &items)
 {
+    items.clear();
+
     // import the file
     std::ifstream input;
     input.open(file);
@@ -3007,14 +3036,22 @@ int ClientTest::import(ClientTest &client, SyncSource &source, const char *file)
                 data += line;
                 data += "\n";
             } else {
-                importItem(&source, data);
+                items.push_back(data);
                 data = "";
             }
             wasend = !line.compare(0, 4, "END:");
         } while(!input.eof());
     }
-    importItem(&source, data);
+    items.push_back(data);
+}
 
+int ClientTest::import(ClientTest &client, SyncSource &source, const char *file)
+{
+    list<string> items;
+    getItems(file, items);
+    BOOST_FOREACH(string &data, items) {
+        importItem(&source, data);
+    }
     return 0;
 }
 

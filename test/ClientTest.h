@@ -40,6 +40,12 @@
 #include <vector>
 #include <list>
 
+#include <boost/function.hpp>
+
+namespace sysync {
+    class TEngineModuleBase;
+}
+class EvolutionSyncClient;
 class EvolutionSyncSource;
 typedef EvolutionSyncSource SyncSource;
 
@@ -77,7 +83,7 @@ class CheckSyncReport {
 
     virtual ~CheckSyncReport() {}
 
-    const int clientAdded, clientUpdated, clientDeleted,
+    int clientAdded, clientUpdated, clientDeleted,
         serverAdded, serverUpdated, serverDeleted;
     bool mustSucceed;
     SyncMode syncMode;
@@ -90,6 +96,49 @@ class CheckSyncReport {
      * @param report  the sync report stored in the SyncClient
      */
     virtual void check(SyncMLStatus status, SyncReport &report) const;
+};
+
+/**
+ * parameters for running a sync
+ */
+struct SyncOptions {
+    /** sync mode chosen by client */
+    SyncMode m_syncMode;
+    /**
+     * has to be called after a successful or unsuccessful sync,
+     * will dump the report and (optionally) check the result;
+     * beware, the later may throw exceptions inside CPPUNIT macros
+     */
+    CheckSyncReport m_checkReport;
+    /** maximum message size supported by client */
+    long m_maxMsgSize;
+    /** maximum object size supported by client */
+    long m_maxObjSize;
+    /** enabled large object support */
+    bool m_loSupport;
+    /** preferred item encoding */
+    std::string m_encoding;
+ 
+    SyncOptions(SyncMode syncMode = SYNC_NONE,
+                const CheckSyncReport &checkReport = CheckSyncReport(),
+                long maxMsgSize = 0,
+                long maxObjSize = 0,
+                bool loSupport = false,
+                const std::string &encoding = std::string()) :
+        m_syncMode(syncMode),
+        m_checkReport(checkReport),
+        m_maxMsgSize(maxMsgSize),
+        m_maxObjSize(maxObjSize),
+        m_loSupport(loSupport),
+        m_encoding(encoding)
+    {}
+
+    SyncOptions &setSyncMode(SyncMode syncMode) { m_syncMode = syncMode; return *this; }
+    SyncOptions &setCheckReport(const CheckSyncReport &checkReport) { m_checkReport = checkReport; return *this; }
+    SyncOptions &setMaxMsgSize(long maxMsgSize) { m_maxMsgSize = maxMsgSize; return *this; }
+    SyncOptions &setMaxObjSize(long maxObjSize) { m_maxObjSize = maxObjSize; return *this; }
+    SyncOptions &setLOSupport(bool loSupport) { m_loSupport = loSupport; return *this; }
+    SyncOptions &setEncoding(const std::string &encoding) { m_encoding = encoding; return *this; }
 };
 
 class LocalTests;
@@ -181,6 +230,11 @@ class ClientTest {
      * utility function for dumping items which are C strings with blank lines as separator
      */
     static int dump(ClientTest &client, SyncSource &source, const char *file);
+
+    /**
+     * utility function for splitting file into items with blank lines as separator
+     */
+    static void getItems(const char *file, std::list<std::string> &items);
 
     /**
      * utility function for importing items with blank lines as separator
@@ -469,28 +523,15 @@ class ClientTest {
      * and should not be changed by the client.
      *
      * @param activeSources a -1 terminated array of sync source indices
-     * @param syncMode     the synchronization mode to be used
      * @param logbase      basename for logging: can be used for directory or as file (by adding .log suffix)
-     * @param checkReport  has to be called after a successful or unsuccessful sync,
-     *                     will dump the report and (optionally) check the result;
-     *                     beware, the later may throw exceptions inside CPPUNIT macros
-     * @param maxMsgSize   >0: enable the maximum message size, else disable it
-     * @param maxObjSize   same as maxMsgSize for maximum object size
-     * @param loSupport    if TRUE, then the sync is expected to enable Large Object support
-     * @param encoding     if non-empty, then let client library transform all items
-     *                     into this format (guaranteed to be not NULL)
-     *
+     * @param options      sync options to be used
      * @return return code of SyncClient::sync()
      */
-    virtual SyncMLStatus sync(
+    virtual SyncMLStatus doSync(
         const int *activeSources,
-        SyncMode syncMode,
         const std::string &logbase,
-        const CheckSyncReport &checkReport,
-        long maxMsgSize = 0,
-        long maxObjSize = 0,
-        bool loSupport = false,
-        const char *encoding = "") = 0;
+        const SyncOptions &options) = 0;
+
 
     /**
      * This is called after successful sync() calls (res == 0) as well
@@ -783,24 +824,24 @@ protected:
     // do a two-way sync without additional checks,
     // may or may not actually be done in two-way mode
     virtual void testTwoWaySync() {
-        sync(SYNC_TWO_WAY);
+        doSync(SyncOptions(SYNC_TWO_WAY));
     }
 
     // do a slow sync without additional checks
     virtual void testSlowSync() {
-        sync(SYNC_SLOW,
-             CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW));
+        doSync(SyncOptions(SYNC_SLOW,
+                           CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW)));
     }
     // do a refresh from server sync without additional checks
     virtual void testRefreshFromServerSync() {
-        sync(SYNC_REFRESH_FROM_SERVER,
-             CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_SERVER));
+        doSync(SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                           CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_SERVER)));
     }
 
     // do a refresh from client sync without additional checks
     virtual void testRefreshFromClientSync() {
-        sync(SYNC_REFRESH_FROM_CLIENT,
-             CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_CLIENT));
+        doSync(SyncOptions(SYNC_REFRESH_FROM_CLIENT,
+                           CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_CLIENT)));
     }
 
     // delete all items, locally and on server using two-way sync
@@ -830,11 +871,11 @@ protected:
 
     // test copying with maxMsg and no large object support
     void testMaxMsg() {
-        doVarSizes(true, false, NULL);
+        doVarSizes(true, false, "");
     }
     // test copying with maxMsg and large object support
     void testLargeObject() {
-        doVarSizes(true, true, NULL);
+        doVarSizes(true, true, "");
     }
     // test copying with maxMsg and large object support using explicit "bin" encoding
     void testLargeObjectBin() {
@@ -870,28 +911,17 @@ protected:
      */
     virtual void doVarSizes(bool withMaxMsgSize,
                             bool withLargeObject,
-                            const char *encoding);
+                            const std::string &encoding);
 
     /**
      * executes a sync with the given options,
      * checks the result and (optionally) the sync report
      */
-    virtual void sync(SyncMode syncMode,
-                      CheckSyncReport checkReport = CheckSyncReport(),
-                      long maxMsgSize = 0,
-                      long maxObjSize = 0,
-                      bool loSupport = false,
-                      const char *encoding = "");
-
-    virtual void sync(SyncMode syncMode,
-                      const char *logPrefix,
-                      CheckSyncReport checkReport = CheckSyncReport(),
-                      long maxMsgSize = 0,
-                      long maxObjSize = 0,
-                      bool loSupport = false,
-                      const char *encoding = "") {
+    virtual void doSync(const SyncOptions &options);
+    virtual void doSync(const char *logPrefix,
+                        const SyncOptions &options) {
         SyncPrefix prefix(logPrefix, *this);
-        sync(syncMode, checkReport, maxMsgSize, maxObjSize, loSupport, encoding);
+        doSync(options);
     }
 };
 

@@ -301,15 +301,10 @@ public:
         return false;
     }
 
-    virtual SyncMLStatus sync(
-        const int *sources,
-        SyncMode syncMode,
-        const string &logbase,
-        const CheckSyncReport &checkReport,
-        long maxMsgSize = 0,
-        long maxObjSize = 0,
-        bool loSupport = false,
-        const char *encoding = NULL) {
+    virtual SyncMLStatus doSync(const int *sources,
+                                const std::string &logbase,
+                                const SyncOptions &options)
+    {
         set<string> activeSources;
         for(int i = 0; sources[i] >= 0; i++) {
             activeSources.insert(m_source2Config[sources[i]]);
@@ -323,32 +318,24 @@ public:
         public:
             ClientTest(const string &server,
                        const set<string> &activeSources,
-                       SyncMode syncMode,
                        const string &logbase,
-                       long maxMsgSize,
-                       long maxObjSize,
-                       bool loSupport,
-                       const char *encoding) :
+                       const SyncOptions &options) :
                 EvolutionSyncClient(server, false, activeSources),
-                m_syncMode(syncMode),
                 m_logbase(logbase),
-                m_maxMsgSize(maxMsgSize),
-                m_maxObjSize(maxObjSize),
-                m_loSupport(loSupport),
-                m_encoding(encoding)
+                m_options(options)
                 {}
 
         protected:
             virtual void prepare() {
                 setLogDir(m_logbase, true);
                 setMaxLogDirs(0, true);
-                setLoSupport(m_loSupport, true);
-                setMaxObjSize(m_maxObjSize, true);
-                setMaxMsgSize(m_maxMsgSize, true);
+                setLoSupport(m_options.m_loSupport, true);
+                setMaxObjSize(m_options.m_maxObjSize, true);
+                setMaxMsgSize(m_options.m_maxMsgSize, true);
                 EvolutionSyncClient::prepare();
             }
             virtual void prepare(const std::vector<EvolutionSyncSource *> &sources) {
-                string modeString(PrettyPrintSyncMode(m_syncMode));
+                string modeString(PrettyPrintSyncMode(m_options.m_syncMode));
                 BOOST_FOREACH(EvolutionSyncSource *source, sources) {
                     source->setSync(modeString, true);
                 }
@@ -356,17 +343,13 @@ public:
             }
 
         private:
-            const SyncMode m_syncMode;
             const string m_logbase;
-            const long m_maxMsgSize;
-            const long m_maxObjSize;
-            const bool m_loSupport;
-            const char *m_encoding;
-        } client(server, activeSources, syncMode, logbase, maxMsgSize, maxObjSize, loSupport, encoding);
+            SyncOptions m_options;
+        } client(server, activeSources, logbase, options);
 
         SyncReport report;
         SyncMLStatus status = client.sync(&report);
-        checkReport.check(status, report);
+        options.m_checkReport.check(status, report);
         return status;
     }
 
