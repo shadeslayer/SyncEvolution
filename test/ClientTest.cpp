@@ -2842,6 +2842,12 @@ void SyncTests::sync(SyncMode syncMode,
                           encoding);
 
         client.postSync(res, logname);
+    } catch (CppUnit::Exception &ex) {
+        res = 1;
+        client.postSync(res, logname);
+
+        // report the original exception without altering the source line
+        throw;
     } catch (...) {
         res = 1;
         client.postSync(res, logname);
