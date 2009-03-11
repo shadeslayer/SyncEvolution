@@ -153,7 +153,9 @@ void SoupTransportAgent::HandleSessionCallback(SoupSession *session,
         m_response = NULL;
     }
     if (msg->status_code != 200) {
-        m_failure = msg->reason_phrase ? msg->reason_phrase : "";
+        m_failure = m_URL;
+        m_failure += " via libsoup: ";
+        m_failure += msg->reason_phrase ? msg->reason_phrase : "failed";
         m_status = FAILED;
     } else {
         m_status = GOT_REPLY;
