@@ -1348,6 +1348,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
     sysync::uInt16 stepCmd = sysync::STEPCMD_CLIENTSTART; // first step
     SharedSession session = m_engine.OpenSession();
     SharedBuffer sendBuffer;
+    SessionSentinel sessionSentinel(*this, session);
 
     // Sync main loop: runs until SessionStep() signals end or error.
     // Exceptions are caught and lead to a call of SessionStep() with

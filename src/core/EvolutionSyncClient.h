@@ -55,6 +55,27 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      */
     SharedEngine m_engine;
 
+    /**
+     * Synthesis session handle. Only valid while sync is running.
+     */
+    SharedSession m_session;
+
+    /**
+     * installs session in EvolutionSyncClient and removes it again
+     * when going out of scope
+     */
+    class SessionSentinel {
+        EvolutionSyncClient &m_client;
+    public:
+        SessionSentinel(EvolutionSyncClient &client, SharedSession &session) :
+        m_client(client) {
+            m_client.m_session = session;
+        }
+        ~SessionSentinel() {
+            m_client.m_session.reset();
+        }
+    };
+
   public:
     /**
      * @param server     identifies the server config to be used
@@ -150,9 +171,15 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      */
     virtual void setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter);
 
-  protected:
     SharedEngine getEngine() { return m_engine; }
     const SharedEngine getEngine() const { return m_engine; }
+
+    /**
+     * Handle for active session, may be NULL.
+     */
+    SharedSession getSession() { return m_session; }
+
+  protected:
     SharedEngine swapEngine(SharedEngine newengine) {
         SharedEngine oldengine = m_engine;
         m_engine = newengine;

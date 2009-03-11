@@ -322,7 +322,9 @@ public:
                        const SyncOptions &options) :
                 EvolutionSyncClient(server, false, activeSources),
                 m_logbase(logbase),
-                m_options(options)
+                m_options(options),
+                m_started(false),
+                m_aborted(false)
                 {}
 
         protected:
@@ -342,9 +344,24 @@ public:
                 EvolutionSyncClient::prepare(sources);
             }
 
+            virtual void displaySyncProgress(sysync::TProgressEventEnum type,
+                                             int32_t extra1, int32_t extra2, int32_t extra3)
+            {
+                if (!m_started) {
+                    m_started = true;
+                    if (m_options.m_startCallback(*this, m_options)) {
+                        m_aborted = true;
+                    }
+                }
+            }
+
+            virtual bool checkForAbort() { return m_aborted; }
+
         private:
             const string m_logbase;
             SyncOptions m_options;
+            bool m_started;
+            bool m_aborted;
         } client(server, activeSources, logbase, options);
 
         SyncReport report;

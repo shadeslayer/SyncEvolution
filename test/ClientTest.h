@@ -42,9 +42,6 @@
 
 #include <boost/function.hpp>
 
-namespace sysync {
-    class TEngineModuleBase;
-}
 class EvolutionSyncClient;
 class EvolutionSyncSource;
 typedef EvolutionSyncSource SyncSource;
@@ -118,19 +115,30 @@ struct SyncOptions {
     bool m_loSupport;
     /** preferred item encoding */
     std::string m_encoding;
+
+    typedef boost::function<bool (EvolutionSyncClient &,
+                                  SyncOptions &)> Callback_t;
+    /**
+     * Callback to be invoked after setting up local sources, but
+     * before running the engine. May throw exception to indicate
+     * error and return true to stop sync without error.
+     */
+    Callback_t m_startCallback;
  
     SyncOptions(SyncMode syncMode = SYNC_NONE,
                 const CheckSyncReport &checkReport = CheckSyncReport(),
                 long maxMsgSize = 0,
                 long maxObjSize = 0,
                 bool loSupport = false,
-                const std::string &encoding = std::string()) :
+                const std::string &encoding = std::string(),
+                Callback_t startCallback = EmptyCallback) :
         m_syncMode(syncMode),
         m_checkReport(checkReport),
         m_maxMsgSize(maxMsgSize),
         m_maxObjSize(maxObjSize),
         m_loSupport(loSupport),
-        m_encoding(encoding)
+        m_encoding(encoding),
+        m_startCallback(startCallback)
     {}
 
     SyncOptions &setSyncMode(SyncMode syncMode) { m_syncMode = syncMode; return *this; }
@@ -139,6 +147,10 @@ struct SyncOptions {
     SyncOptions &setMaxObjSize(long maxObjSize) { m_maxObjSize = maxObjSize; return *this; }
     SyncOptions &setLOSupport(bool loSupport) { m_loSupport = loSupport; return *this; }
     SyncOptions &setEncoding(const std::string &encoding) { m_encoding = encoding; return *this; }
+    SyncOptions &setStartCallback(const Callback_t &callback) { m_startCallback = callback; return *this; }
+
+    static bool EmptyCallback(EvolutionSyncClient &,
+                              SyncOptions &) { return false; }
 };
 
 class LocalTests;
@@ -866,6 +878,10 @@ protected:
     virtual void testTwinning();
     virtual void testOneWayFromServer();
     virtual void testOneWayFromClient();
+    bool doConversionCallback(bool *success,
+                              EvolutionSyncClient &client,
+                              SyncOptions &options);
+    virtual void testConversion();
     virtual void testItems();
     virtual void testAddUpdate();
 

@@ -49,6 +49,9 @@
 #include <TransportAgent.h>
 #include <Logging.h>
 #include <SyncEvolutionUtil.h>
+#include <EvolutionSyncClient.h>
+
+#include <synthesis/dataconversion.h>
 
 #include <memory>
 #include <vector>
@@ -58,6 +61,8 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+
+#include <boost/bind.hpp>
 
 /** utility function to iterate over different kinds of items in a sync source */
 static std::list<std::string> listAnyItems(
@@ -1629,6 +1634,11 @@ void SyncTests::addTests() {
         ADD_TEST(SyncTests, testRefreshFromServerSync);
         ADD_TEST(SyncTests, testRefreshFromClientSync);
 
+        if (config.compare &&
+            config.testcases) {
+            ADD_TEST(SyncTests, testConversion);
+        }
+
         if (config.createSourceA) {
             if (config.insertItem) {
                 ADD_TEST(SyncTests, testRefreshSemantic);
@@ -2375,6 +2385,62 @@ void SyncTests::testOneWayFromClient() {
     }
 }
 
+// get engine ready, then use it to convert our test items
+// to and from the internal field list
+void SyncTests::testConversion() {
+    bool success = false;
+    SyncOptions::Callback_t callback = boost::bind(&SyncTests::doConversionCallback, this, &success, _1, _2);
+
+    doSync(SyncOptions(SYNC_TWO_WAY, CheckSyncReport(-1,-1,-1, -1,-1,-1, false))
+           .setStartCallback(callback));
+    CPPUNIT_ASSERT(success);
+}
+
+bool SyncTests::doConversionCallback(bool *success,
+                                     EvolutionSyncClient &syncClient,
+                                     SyncOptions &options) {
+    *success = false;
+
+    for (source_it it = sources.begin(); it != sources.end(); ++it) {
+        const ClientTest::Config *config = &it->second->config;
+        EvolutionSyncSource *source = syncClient.findSource(config->sourceName);
+        CPPUNIT_ASSERT(source);
+
+        std::string type = source->getNativeDatatypeName();
+        if (type.empty()) {
+            continue;
+        }
+
+        std::list<std::string> items;
+        ClientTest::getItems(config->testcases, items);
+        std::string converted = getCurrentTest();
+        converted += ".converted";
+        converted += config->sourceName;
+        converted += ".dat";
+        simplifyFilename(converted);
+        std::ofstream out(converted.c_str());
+        BOOST_FOREACH(const string &item, items) {
+            string convertedItem = item;
+            if(!sysync::DataConversion(syncClient.getSession().get(),
+                                       type.c_str(),
+                                       type.c_str(),
+                                       convertedItem)) {
+                SE_LOG_ERROR(NULL, NULL, "failed parsing as %s:\n%s",
+                             type.c_str(),
+                             item.c_str());
+            } else {
+                out << convertedItem << "\n";
+            }
+        }
+        out.close();
+        CPPUNIT_ASSERT(config->compare(client, config->testcases, converted.c_str()));
+    }
+
+    // abort sync after completing the test successfully (no exception so far!)
+    *success = true;
+    return true;
+}
+
 // creates several items, transmits them back and forth and
 // then compares which of them have been preserved
 void SyncTests::testItems() {
@@ -3036,13 +3102,17 @@ void ClientTest::getItems(const char *file, list<string> &items)
                 data += line;
                 data += "\n";
             } else {
-                items.push_back(data);
+                if (!data.empty()) {
+                    items.push_back(data);
+                }
                 data = "";
             }
             wasend = !line.compare(0, 4, "END:");
         } while(!input.eof());
     }
-    items.push_back(data);
+    if (!data.empty()) {
+        items.push_back(data);
+    }
 }
 
 int ClientTest::import(ClientTest &client, SyncSource &source, const char *file)
@@ -3522,7 +3592,9 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
     str << "Expected sync mode: " << PrettyPrintSyncMode(syncMode) << "\n";
     SE_LOG_INFO(NULL, NULL, "sync report:\n%s\n", str.str().c_str());
 
-    CPPUNIT_ASSERT_EQUAL(STATUS_OK, status);
+    if (mustSucceed) {
+        CPPUNIT_ASSERT_EQUAL(STATUS_OK, status);
+    }
 
     // this code is intentionally duplicated to produce nicer CPPUNIT asserts
     BOOST_FOREACH(SyncReport::value_type &entry, report) {
@@ -3530,7 +3602,9 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
         const SyncSourceReport &source = entry.second;
 
         SE_LOG_DEBUG(NULL, NULL, "Checking sync source %s...", name.c_str());
-        CLIENT_TEST_EQUAL(name, STATUS_OK, source.getStatus());
+        if (mustSucceed) {
+            CLIENT_TEST_EQUAL(name, STATUS_OK, source.getStatus());
+        }
         CLIENT_TEST_EQUAL(name, 0, source.getItemStat(SyncSourceReport::ITEM_LOCAL,
                                                       SyncSourceReport::ITEM_ANY,
                                                       SyncSourceReport::ITEM_REJECT));

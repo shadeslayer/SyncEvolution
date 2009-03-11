@@ -213,29 +213,32 @@ EvolutionSyncSource *EvolutionSyncSource::createTestingSource(const string &name
     return createSource(params, error);
 }
 
-void EvolutionSyncSource::getDatastoreXML(string &xml)
+void EvolutionSyncSource::getSynthesisInfo(string &profile,
+                                           string &datatypes,
+                                           string &native)
 {
-    stringstream xmlstream;
     string type = getMimeType();
-    string profile;
-    string datatypes;
 
     if (type == "text/x-vcard") {
+        native = "vCard21";
         profile = "\"vCard\", 1";
         datatypes =
             "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n"
             "        <use datatype='vCard30' mode='rw'/>\n";
     } else if (type == "text/vcard") {
+        native = "vCard30";
         profile = "\"vCard\", 2";
         datatypes =
             "        <use datatype='vCard21' mode='rw'/>\n"
             "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
     } else if (type == "text/x-calendar") {
+        native = "vCalendar10";
         profile = "\"vCalendar\", 1";
         datatypes =
             "        <use datatype='vCalendar10' mode='rw' preferred='yes'/>\n"
             "        <use datatype='iCalendar20' mode='rw'/>\n";
     } else if (type == "text/calendar") {
+        native = "iCalendar20";
         profile = "\"vCalendar\", 2";
         datatypes =
             "        <use datatype='vCalendar10' mode='rw'/>\n"
@@ -274,6 +277,16 @@ void EvolutionSyncSource::getDatastoreXML(string &xml)
     } else {
         throwError(string("configured MIME type not supported: ") + type);
     }
+}
+
+void EvolutionSyncSource::getDatastoreXML(string &xml)
+{
+    stringstream xmlstream;
+    string profile;
+    string datatypes;
+    string native;
+
+    getSynthesisInfo(profile, datatypes, native);
 
     xmlstream <<
         "      <plugin_module>SyncEvolution</plugin_module>\n"

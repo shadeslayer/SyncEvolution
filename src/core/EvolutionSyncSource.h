@@ -509,6 +509,20 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
     virtual void getDatastoreXML(string &xml);
 
     /**
+     * Synthesis <datatype> name which matches the format used
+     * for importing and exporting items (exportData()).
+     * This is not necessarily the same format that is given
+     * to the Synthesis engine. If this internal format doesn't
+     * have a <datatype> in the engine, then an empty string is
+     * returned.
+     */
+    virtual string getNativeDatatypeName() {
+        string profile, datatypes, native;
+        getSynthesisInfo(profile, datatypes, native);
+        return native;
+    }
+
+    /**
      * @name default implementation of SyncSource iterators
      *
      * @todo getFirstItemKey() and getNextItemKey() are marked for removal
@@ -641,6 +655,17 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
      */
     ESource *findSource( ESourceList *list, const string &id );
 #endif
+
+    /**
+     * helper function: checks getMimeType() and getSourceType() to determine XML config elements
+     *
+     * @retval profile     profile name to use for MAKE/PARSETEXTWITHPROFILE
+     * @retval datatypes   list of supported datatypes in "<use .../>" format
+     * @retval native      native datatype (see getNativeDatatypeName())
+     */
+    virtual void getSynthesisInfo(string &profile,
+                                  string &datatypes,
+                                  string &native);
 
  public:
 #ifdef HAVE_EDS
