@@ -287,7 +287,6 @@ public:
         ClientTest::getTestData(test->m_testCaseName.c_str(), config);
         config.createSourceA = createSource;
         config.createSourceB = createSource;
-        config.compare = compare;
         config.sourceName = test->m_configName.c_str();
 
         test->updateConfig(config);
@@ -369,12 +368,7 @@ public:
         options.m_checkReport.check(status, report);
         return status;
     }
-
-    static bool compare(ClientTest &client, const char *fileA, const char *fileB) {
-        std::string cmdstr = std::string("./synccompare ") + fileA + " " + fileB;
-        return system(cmdstr.c_str()) == 0;
-    }
-    
+  
 private:
     string m_clientID;
     std::auto_ptr<TestEvolution> m_clientB;

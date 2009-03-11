@@ -3127,12 +3127,19 @@ int ClientTest::import(ClientTest &client, SyncSource &source, const char *file)
 
 bool ClientTest::compare(ClientTest &client, const char *fileA, const char *fileB)
 {
-    std::string cmdstr = std::string("perl synccompare.pl ") + fileA + " " + fileB;
+    std::string cmdstr = std::string("env PATH=.:$PATH synccompare ") + fileA + " " + fileB;
+    setenv("CLIENT_TEST_HEADER", "\n\n", 1);
     setenv("CLIENT_TEST_LEFT_NAME", fileA, 1);
     setenv("CLIENT_TEST_RIGHT_NAME", fileB, 1);
     setenv("CLIENT_TEST_REMOVED", "only in left file", 1);
     setenv("CLIENT_TEST_ADDED", "only in right file", 1);
-    return system(cmdstr.c_str()) == 0;
+    bool success = system(cmdstr.c_str()) == 0;
+    if (!success) {
+        printf("failed: env CLIENT_TEST_SERVER=%s PATH=.:$PATH synccompare %s %s\n",
+               getenv("CLIENT_TEST_SERVER") ? getenv("CLIENT_TEST_SERVER") : "",
+               fileA, fileB);
+    }
+    return success;
 }
 
 

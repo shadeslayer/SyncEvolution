@@ -71,7 +71,7 @@ use encoding 'utf8';
 use Algorithm::Diff;
 
 # ignore differences caused by specific servers or local backends?
-my $server = $ENV{CLIENT_TEST_SERVER} || "funambol";
+my $server = $ENV{CLIENT_TEST_SERVER};
 my $client = $ENV{CLIENT_TEST_CLIENT} || "evolution";
 my $scheduleworld = $server =~ /scheduleworld/;
 my $synthesis = $server =~ /synthesis/;
@@ -407,6 +407,7 @@ if($#ARGV > 1) {
   }
 
   if ($res) {
+    print $ENV{CLIENT_TEST_HEADER};
     printf "%*s | %s\n", $singlewidth,
            ($ENV{CLIENT_TEST_LEFT_NAME} || "before sync"),
            ($ENV{CLIENT_TEST_RIGHT_NAME} || "after sync");
