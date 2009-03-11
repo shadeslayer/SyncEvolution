@@ -1353,9 +1353,18 @@ SyncMLStatus EvolutionSyncClient::doSync()
     // Exceptions are caught and lead to a call of SessionStep() with
     // parameter STEPCMD_ABORT -> abort session as soon as possible.
     bool aborting = false;
+    bool suspending = false;
     sysync::uInt16 previousStepCmd = stepCmd;
     do {
         try {
+            // check for suspend or abort, if so, modify step command for next step
+            if (checkForSuspend()) {
+                stepCmd = sysync::STEPCMD_SUSPEND;
+            }
+            if (checkForAbort()) {
+                stepCmd = sysync::STEPCMD_ABORT;
+            }
+
             // take next step, but don't abort twice: instead
             // let engine contine with its shutdown
             if (stepCmd == sysync::STEPCMD_ABORT) {
@@ -1363,6 +1372,14 @@ SyncMLStatus EvolutionSyncClient::doSync()
                     stepCmd = previousStepCmd;
                 } else {
                     aborting = true;
+                }
+            }
+            // same for suspending
+            if (stepCmd == sysync::STEPCMD_SUSPEND) {
+                if (suspending) {
+                    stepCmd = previousStepCmd;
+                } else {
+                    suspending = true;
                 }
             }
             m_engine.SessionStep(session, stepCmd, &progressInfo);
@@ -1467,13 +1484,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                     break;
                 }
             }
-            // check for suspend or abort, if so, modify step command for next step
-            if (false /* tdb: check if user requests suspending the session */) {
-                stepCmd = sysync::STEPCMD_SUSPEND;
-            }
-            if (false /* tdb: check if user requests aborting the session */) {
-                stepCmd = sysync::STEPCMD_ABORT;
-            }
+            previousStepCmd = stepCmd;
             // loop until session done or aborted with error
         } catch (...) {
             SyncEvolutionException::handle(&status);

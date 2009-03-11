@@ -271,6 +271,27 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
                                        EvolutionSyncSource &source,
                                        int32_t extra1, int32_t extra2, int32_t extra3);
 
+    /**
+     * Called to find out whether user wants to abort sync.
+     *
+     * Will be called regularly. Once it has flagged an abort, all
+     * following calls should return the same value. When the engine
+     * aborts, the sync is shut down as soon as possible.  The next
+     * sync most likely has to be done in slow mode, so don't do this
+     * unless absolutely necessary.
+     *
+     * @return true if user wants to abort
+     */
+    virtual bool checkForAbort() { return false; }
+
+    /**
+     * Called to find out whether user wants to suspend sync.
+     *
+     * Same as checkForAbort(), but the session is finished
+     * gracefully so that it can be resumed.
+     */
+    virtual bool checkForSuspend() { return false; }
+
  private:
     /**
      * the code common to init() and status():
