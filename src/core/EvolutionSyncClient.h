@@ -14,6 +14,7 @@
 
 #include <string>
 #include <set>
+#include <map>
 #include <stdint.h>
 using namespace std;
 
@@ -79,7 +80,6 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
   public:
     /**
      * @param server     identifies the server config to be used
-     * @param syncMode   setting this overrides the sync mode from the config
      * @param doLogging  write additional log and datatbase files about the sync
      */
     EvolutionSyncClient(const string &server,
@@ -185,6 +185,47 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
         m_engine = newengine;
         return oldengine;
     }
+
+    /**
+     * Maps from source name to sync mode with one default
+     * for all sources which don't have a specific entry
+     * in the hash.
+     */
+    class SyncModes : public std::map<string, SyncMode> {
+        SyncMode m_syncMode;
+
+    public:
+        SyncModes(SyncMode syncMode = SYNC_NONE) :
+        m_syncMode(syncMode)
+        {}
+
+        SyncMode getDefaultSyncMode() { return m_syncMode; }
+        void setDefaultMode(SyncMode syncMode) { m_syncMode = syncMode; }
+
+        SyncMode getSyncMode(const string &sourceName) const {
+            const_iterator it = find(sourceName);
+            if (it == end()) {
+                return m_syncMode;
+            } else {
+                return it->second;
+            }
+        }
+
+        void setSyncMode(const string &sourceName, SyncMode syncMode) {
+            (*this)[sourceName] = syncMode;
+        }
+    };
+
+    /**
+     * An utility function which can be used as part of
+     * prepare() below to reconfigure the sync mode that
+     * is going to be used for the active sync session.
+     * SYNC_NONE as mode means that the sync mode of the
+     * source is not modified and the default from the
+     * configuration is used.
+     */
+    void setSyncModes(const std::vector<EvolutionSyncSource *> &sources,
+                      const SyncModes &modes);
 
     /**
      * Return skeleton Synthesis client XML configuration.

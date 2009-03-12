@@ -336,10 +336,8 @@ public:
                 EvolutionSyncClient::prepare();
             }
             virtual void prepare(const std::vector<EvolutionSyncSource *> &sources) {
-                string modeString(PrettyPrintSyncMode(m_options.m_syncMode));
-                BOOST_FOREACH(EvolutionSyncSource *source, sources) {
-                    source->setSync(modeString, true);
-                }
+                SyncModes modes(m_options.m_syncMode);
+                setSyncModes(sources, modes);
                 EvolutionSyncClient::prepare(sources);
             }
 

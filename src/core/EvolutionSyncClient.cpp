@@ -999,6 +999,18 @@ extern "C" {
     extern const char *SyncEvolutionXML;
 }
 
+void EvolutionSyncClient::setSyncModes(const std::vector<EvolutionSyncSource *> &sources,
+                                       const SyncModes &modes)
+{
+    BOOST_FOREACH(EvolutionSyncSource *source, sources) {
+        SyncMode mode = modes.getSyncMode(source->getName());
+        if (mode != SYNC_NONE) {
+            string modeString(PrettyPrintSyncMode(mode));
+            source->setSync(modeString, true);
+        }
+    }
+}
+
 void EvolutionSyncClient::getConfigTemplateXML(string &xml, string &configname)
 {
     try {
