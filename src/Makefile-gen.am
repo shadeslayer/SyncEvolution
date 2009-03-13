@@ -4,6 +4,8 @@ DIST_SUBDIRS = core $(BACKENDS)
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test $(BACKEND_CPPFLAGS) $(GLIB_CFLAGS)
 
+EXTRA_PROGRAMS =
+TESTS =
 bin_PROGRAMS = syncevolution
 bin_SCRIPTS = synccompare
 SYNCEVOLUTION_DEP =
@@ -12,10 +14,7 @@ else
 SYNCEVOLUTION_LDADD += $(SYNCSOURCES)
 SYNCEVOLUTION_DEP += $(SYNCSOURCES)
 endif
-EXTRA_PROGRAMS = client-test
 EXTRA_DIST = shlibs.local Makefile-gen.am syncevolution.xml
-check_PROGRAMS = @CPPUNIT_TESTS@
-TESTS = @CPPUNIT_TESTS@
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
@@ -48,7 +47,7 @@ endif
 CORE_CXXFLAGS = $(SYNTHESIS_CFLAGS)
 CORE_LDADD = $(SYNCEVOLUTION_LDADD) core/libsyncevolution.la $(GLIB_LIBS) $(LIBS)
 CORE_DEP = $(SYNCEVOLUTION_DEP) core/libsyncevolution.la $(SYNTHESIS_DEP)
-CORE_LDFLAGS = -uSyncEvolution_Module_Version -Wl,--export-dynamic
+CORE_LD_FLAGS = -uSyncEvolution_Module_Version -Wl,--export-dynamic
 
 # put link to static c++ library into current directory, needed if compiling with --enable-static-c++
 libstdc++.a :
@@ -62,7 +61,7 @@ syncevolution_SOURCES = \
 # if linking statically against them, empty otherwise;
 # either way this does not lead to a dependency on those libs - done explicitly
 syncevolution_LDADD = $(CORE_LDADD)
-syncevolution_LDFLAGS = $(CORE_LDFLAGS)
+syncevolution_LDFLAGS = $(CORE_LD_FLAGS)
 syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
 syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) # $(SYNTHESIS_DEP)
 
@@ -123,17 +122,13 @@ CLIENT_LIB_TEST_FILES = \
 	testcases/ical20.ics \
 	testcases/imemo20.ics \
 	testcases/itodo20.ics
-nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
-client_test_LDFLAGS = `cppunit-config --libs` `nm core/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'` $(CORE_LDFLAGS)
+client_test_LDFLAGS = `cppunit-config --libs` `nm core/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'` $(CORE_LD_FLAGS)
 client_test_LDADD = $(CORE_LDADD)
-client_test_DEPENDENCIES = # $(SYNTHESIS_DEP)
 # These dependencies are intentionally a bit too broad:
-# they ensure that all files are in place to *run* client-test,
-# but in particular the "all" dependency causes a rebuild
-# even if the actual input files haven't changed.
-client_test_DEPENDENCIES = all $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) synccompare
+# they ensure that all files are in place to *run* client-test.
+client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) synccompare
 
 # copy test files because client-test expects them here
 
@@ -141,6 +136,22 @@ LOCAL_TEST_FILES=$(subst $(srcdir)/../test/,,$(wildcard $(srcdir)/../test/* $(sr
 $(filter testcases/%, $(filter $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES))) : % : $(srcdir)/../test/%
 	mkdir -p testcases
 	cp $< $@
+
+# distribute test system?
+if ENABLE_TESTING
+# yes: install client-test in bindir, test files in datadir
+TESTS += client-test
+bin_PROGRAMS += client-test
+nobase_dist_doc_DATA = $(CLIENT_LIB_TEST_FILES)
+else
+# The "all" dependency causes a rebuild even if the actual input files
+# haven't changed. If client-test is part of the regular targets built
+# by "all", then it must not depend on all!
+EXTRA_PROGRAMS += client-test
+nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
+client_test_DEPENDENCIES += all
+endif
+
 
 # special target for testing with valgrind
 valgrind : test

@@ -2,6 +2,7 @@
  * Copyright (C) 2008 Patrick Ohly
  */
 
+#include "config.h"
 #include "SyncEvolutionUtil.h"
 #include "EvolutionSyncClient.h"
 #include "TransportAgent.h"
@@ -20,6 +21,7 @@
 #include <dirent.h>
 
 #ifdef ENABLE_UNIT_TESTS
+#include <cppunit/extensions/HelperMacros.h>
 CPPUNIT_REGISTRY_ADD_TO_DEFAULT("SyncEvolution");
 #endif
 

@@ -650,6 +650,7 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
 }
 
 #ifdef ENABLE_UNIT_TESTS
+#include <cppunit/extensions/HelperMacros.h>
 
 /** simple line-by-line diff */
 static string diffStrings(const string &lhs, const string &rhs)

@@ -29,5 +29,5 @@ sed -e "s;@CONFIG_SUBS@;$SUBS;" \
 libtoolize -c
 aclocal
 autoheader
-automake -a -c
+automake -a -c -Wno-portability
 autoconf

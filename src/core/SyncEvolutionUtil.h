@@ -105,11 +105,27 @@ class ReadDir {
  * object files which are not normally linked into the test
  * binary, are included in the test suite under the group
  * "SyncEvolution".
+ *
+ * Use it like this:
+ * @verbatim
+   #include <config.h>
+   #ifdef ENABLE_UNIT_TESTS
+   # include <cppunit/extensions/HelperMacros.h>
+   class Foo : public CppUnit::TestFixture {
+       CPPUNIT_TEST_SUITE(foo);
+       CPPUNIT_TEST(testBar);
+       CPPUNIT_TEST_SUITE_END();
+
+     public:
+       void testBar();
+   };
+   # SYNCEVOLUTION_TEST_SUITE_REGISTRATION(classname)
+   #endif
+   @endverbatim
  */
 #define SYNCEVOLUTION_TEST_SUITE_REGISTRATION( ATestFixtureType ) \
     CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ATestFixtureType, "SyncEvolution" ); \
     extern "C" { int funambolAutoRegisterRegistry ## ATestFixtureType = 12345; }
-
 
 std::string StringPrintf(const char *format, ...)
 #ifdef __GNUC__
