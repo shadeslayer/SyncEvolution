@@ -9,6 +9,13 @@
   <!-- this string is output to every session debug logfile to identify the config in use -->
   <configidstring>SyncEvolution client config</configidstring>
 
+  <!-- information for DevInf -->
+  <model/>
+  <manufacturer/>
+  <hardwareversion/>
+  <firmwareversion/>
+  <devicetype/>
+
   <debug/>
 
   <!-- Note: since 2.1.1.5, clients have a <transport> section to specify <keepconnection> behaviour -->

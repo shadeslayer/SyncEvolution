@@ -1030,7 +1030,30 @@ void EvolutionSyncClient::getConfigTemplateXML(string &xml, string &configname)
     xml = SyncEvolutionXML;
 }
 
+static void substTag(string &xml, const string &tagname, const string &replacement)
+{
+    string tag;
+    size_t index;
 
+    tag.reserve(tagname.size() + 3);
+    tag += "<";
+    tag += tagname;
+    tag += "/>";
+
+    index = xml.find(tag);
+    if (index != xml.npos) {
+        string tmp;
+        tmp.reserve(tagname.size() * 2 + 2 + 3 + replacement.size());
+        tmp += "<";
+        tmp += tagname;
+        tmp += ">";
+        tmp += replacement;
+        tmp += "</";
+        tmp += tagname;
+        tmp += ">";
+        xml.replace(index, tag.size(), tmp);
+    }
+}
 
 void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
 {
@@ -1109,15 +1132,13 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
         xml.replace(index, tag.size(), datastores.str());
     }
 
-    tag = "<fakedeviceid/>";
-    index = xml.find(tag);
-    if (index != xml.npos) {
-        string fakeid;
-        fakeid += "<fakedeviceid>";
-        fakeid += getDevID();
-        fakeid += "</fakedeviceid>";
-        xml.replace(index, tag.size(), fakeid);
-    }
+    substTag(xml, "fakedeviceid", getDevID());
+    substTag(xml, "model", getMod());
+    substTag(xml, "manufacturer", getMan());
+    substTag(xml, "hardwareversion", getHwv());
+    // abuse (?) the firmware version to store the SyncEvolution version number
+    substTag(xml, "firmwareversion", getSwv());
+    substTag(xml, "devicetype", getDevType());
 }
 
 SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
@@ -1245,8 +1266,6 @@ SyncMLStatus EvolutionSyncClient::doSync()
     string logdir = m_sourceListPtr->getLogdir();
     m_engine.SetStrValue(configvars, "defout_path",
                          logdir.size() ? logdir : "/dev/null");
-    m_engine.SetStrValue(configvars, "device_uri", getDevID());
-    m_engine.SetStrValue(configvars, "device_name", getDevType());
     // TODO: redirect to log file?
     m_engine.SetStrValue(configvars, "conferrpath", "console");
     m_engine.SetStrValue(configvars, "binfilepath", getRootPath() + "/.synthesis");

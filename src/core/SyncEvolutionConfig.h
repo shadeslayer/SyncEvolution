@@ -682,9 +682,7 @@ class EvolutionSyncConfig {
     virtual const char*  getMan() const { return "Patrick Ohly"; }
     virtual const char*  getMod() const { return "SyncEvolution"; }
     virtual const char*  getOem() const { return "Open Source"; }
-    virtual const char*  getFwv() const { return ""; }
-    virtual const char*  getHwv() const { return ""; }
-    virtual const char*  getDsV() const { return ""; }
+    virtual const char*  getHwv() const { return "unknown"; }
     virtual const char*  getSwv() const;
     virtual const char*  getDevType() const;
 
