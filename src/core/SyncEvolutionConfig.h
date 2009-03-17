@@ -671,13 +671,14 @@ class EvolutionSyncConfig {
     virtual const char*  getDevID() const;
     virtual void setDevID(const string &value, bool temporarily = false);
 
-    virtual bool getServerAuthRequired() const { return false; }
-    virtual const char*  getServerAuthType() const { return ""; }
-    virtual const char*  getServerPWD() const { return ""; }
-    virtual const char*  getServerID() const { return ""; }
+    /**
+     * Specifies whether WBXML is to be used (default).
+     * Otherwise XML is used.
+     */
+    virtual bool getWBXML() const;
+    virtual void setWBXML(bool isWBXML, bool temporarily = false);
 
     virtual const char*  getUserAgent() const { return "SyncEvolution"; }
-    virtual const char*  getVerDTD() const { return "1.1"; }
     virtual const char*  getMan() const { return "Patrick Ohly"; }
     virtual const char*  getMod() const { return "SyncEvolution"; }
     virtual const char*  getOem() const { return "Open Source"; }
@@ -686,16 +687,6 @@ class EvolutionSyncConfig {
     virtual const char*  getDsV() const { return ""; }
     virtual const char*  getSwv() const;
     virtual const char*  getDevType() const;
-
-    virtual bool getUtc() const { return true; }
-    virtual bool getNocSupport() const { return false; }
-
-    virtual const char*  getServerNonce() const;
-    virtual void setServerNonce(const char *value);
-    virtual const char*  getClientNonce() const;
-    virtual void setClientNonce(const char *value);
-    virtual const char*  getDevInfHash() const;
-    virtual void setDevInfHash(const char *value);
 
     /**@}*/
 
@@ -892,15 +883,6 @@ class EvolutionSyncSourceConfig {
     virtual const char*  getSync() const;
     virtual void setSync(const string &value, bool temporarily = false);
     
-    /**
-     * Specifies how the content of an outgoing item should be
-     * encoded by the client library if the sync source does not
-     * set an encoding on the item that it created. Valid values
-     * are listed in SyncItem::encodings.
-     */
-    virtual const char*  getEncoding() const;
-    virtual void setEncoding(const string &value, bool temporarily = false);
-
     /**
      * Sets the last sync timestamp. Called by the sync engine at
      * the end of a sync. The client must save that modified

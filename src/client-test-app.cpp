@@ -333,6 +333,7 @@ public:
                 setLoSupport(m_options.m_loSupport, true);
                 setMaxObjSize(m_options.m_maxObjSize, true);
                 setMaxMsgSize(m_options.m_maxMsgSize, true);
+                setWBXML(m_options.m_isWBXML, true);
                 EvolutionSyncClient::prepare();
             }
             virtual void prepare(const std::vector<EvolutionSyncSource *> &sources) {

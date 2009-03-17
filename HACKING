@@ -61,11 +61,16 @@ libraries "client-test", among them:
   before aborting it
 - CLIENT_TEST_SOURCES = comma separated list of enabled sources, identified
   by their name (ical20, vcard21, vcard30, itodo20, text (= memos))
+- CLIENT_TEST_XML=1 use XML format as default instead of the normal WBXML
 
 In addition it supports:
 - CLIENT_TEST_EVOLUTION_PREFIX=[name|file://<path>] overrides
   the evolutionsource setting in the configuration; if file:// is used
   then these database will be created automatically
+
+Most Client::Sync tests use the default encoding, usually WBXML unless
+changed via CLIENT_TEST_XML=1. Client::Sync::*::testItemsXML always
+uses XML and Client::Sync::*::testItems always WBXML.
 
 Here are step-by-step instructions to get started with testing,
 using ScheduleWorld as example:

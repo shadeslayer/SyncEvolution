@@ -292,10 +292,9 @@ static BoolConfigProperty syncPropLoSupport("loSupport", "", "T");
 static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "500000");
 
 static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)");
-static ConfigProperty syncPropServerNonce("serverNonce",
-                                          "used by the SyncML library internally; do not modify");
-static ConfigProperty syncPropClientNonce("clientNonce", "");
-static ConfigProperty syncPropDevInfHash("devInfoHash", "");
+static BoolConfigProperty syncPropWBXML("enableWBXML",
+                                        "use the more compact binary XML (WBXML) for messages between client and server",
+                                        "TRUE");
 static ConfigProperty syncPropLogDir("logdir",
                                      "full path to directory where automatic backups and logs\n"
                                      "are stored for all synchronizations; if empty, the temporary\n"
@@ -355,6 +354,7 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropClientAuthType);
         registry.push_back(&syncPropDevID);
         syncPropDevID.setObligatory(true);
+        registry.push_back(&syncPropWBXML);
         registry.push_back(&syncPropMaxMsgSize);
         registry.push_back(&syncPropMaxObjSize);
         registry.push_back(&syncPropLoSupport);
@@ -362,13 +362,6 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropSSLServerCertificates);
         registry.push_back(&syncPropSSLVerifyServer);
         registry.push_back(&syncPropSSLVerifyHost);
-
-        registry.push_back(&syncPropServerNonce);
-        syncPropServerNonce.setHidden(true);
-        registry.push_back(&syncPropClientNonce);
-        syncPropClientNonce.setHidden(true);
-        registry.push_back(&syncPropDevInfHash);
-        syncPropDevInfHash.setHidden(true);
         initialized = true;
     }
 
@@ -453,12 +446,8 @@ bool EvolutionSyncConfig::getCompression() const { return syncPropCompression.ge
 void EvolutionSyncConfig::setCompression(bool value, bool temporarily) { syncPropCompression.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getDevID() const { return m_stringCache.getProperty(*m_configNode, syncPropDevID); }
 void EvolutionSyncConfig::setDevID(const string &value, bool temporarily) { syncPropDevID.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getServerNonce() const { return m_stringCache.getProperty(*m_hiddenNode, syncPropServerNonce); }
-void EvolutionSyncConfig::setServerNonce(const char *value) { syncPropServerNonce.setProperty(*m_hiddenNode, value); }
-const char *EvolutionSyncConfig::getClientNonce() const { return m_stringCache.getProperty(*m_hiddenNode, syncPropClientNonce); }
-void EvolutionSyncConfig::setClientNonce(const char *value) { syncPropClientNonce.setProperty(*m_hiddenNode, value); }
-const char *EvolutionSyncConfig::getDevInfHash() const { return m_stringCache.getProperty(*m_hiddenNode, syncPropDevInfHash); }
-void EvolutionSyncConfig::setDevInfHash(const char *value) { syncPropDevInfHash.setProperty(*m_hiddenNode, value); }
+bool EvolutionSyncConfig::getWBXML() const { return syncPropWBXML.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setWBXML(bool value, bool temporarily) { syncPropWBXML.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getLogDir() const { return m_stringCache.getProperty(*m_configNode, syncPropLogDir); }
 void EvolutionSyncConfig::setLogDir(const string &value, bool temporarily) { syncPropLogDir.setProperty(*m_configNode, value, temporarily); }
 int EvolutionSyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getProperty(*m_configNode); }
@@ -695,10 +684,6 @@ static ConfigProperty sourcePropUser("evolutionuser",
                                      "can cause the Evolution backend to hang.");
 static PasswordConfigProperty sourcePropPassword("evolutionpassword", "");
 
-static StringConfigProperty sourcePropEncoding("encoding",
-                                               "\"b64\" enables base64 encoding of outgoing items (not recommended)",
-                                               "",
-                                               Values() + (Aliases("b64") + "bin") + Aliases(""));
 static ULongConfigProperty sourcePropLast("last",
                                           "used by the SyncML library internally; do not modify");
 
@@ -716,7 +701,6 @@ ConfigPropertyRegistry &EvolutionSyncSourceConfig::getRegistry()
         registry.push_back(&sourcePropURI);
         registry.push_back(&sourcePropUser);
         registry.push_back(&sourcePropPassword);
-        registry.push_back(&sourcePropEncoding);
         registry.push_back(&sourcePropLast);
         sourcePropLast.setHidden(true);
         initialized = true;
@@ -741,8 +725,6 @@ const char *EvolutionSyncSourceConfig::getURI() const { return m_stringCache.get
 void EvolutionSyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *EvolutionSyncSourceConfig::getSync() const { return m_stringCache.getProperty(*m_nodes.m_configNode, m_sourcePropSync); }
 void EvolutionSyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *EvolutionSyncSourceConfig::getEncoding() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropEncoding); }
-void EvolutionSyncSourceConfig::setEncoding(const string &value, bool temporarily) { sourcePropEncoding.setProperty(*m_nodes.m_configNode, value, temporarily); }
 unsigned long EvolutionSyncSourceConfig::getLast() const { return sourcePropLast.getProperty(*m_nodes.m_hiddenNode); }
 void EvolutionSyncSourceConfig::setLast(unsigned long timestamp) { sourcePropLast.setProperty(*m_nodes.m_hiddenNode, timestamp); }
 string EvolutionSyncSourceConfig::getSourceTypeString(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.m_configNode); }

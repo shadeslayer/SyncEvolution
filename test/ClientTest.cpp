@@ -64,6 +64,17 @@
 
 #include <boost/bind.hpp>
 
+bool SyncOptions::defaultWBXML()
+{
+    const char *t = getenv("CLIENT_TEST_XML");
+    if (t && (!strcmp(t, "1") || !strcasecmp(t, "t"))) {
+        // use XML
+        return false;
+    } else {
+        return true;
+    }
+}
+
 /** utility function to iterate over different kinds of items in a sync source */
 static std::list<std::string> listAnyItems(
     SyncSource *source,
@@ -1664,14 +1675,11 @@ void SyncTests::addTests() {
                     if (config.import) {
                         ADD_TEST(SyncTests, testTwinning);
                         ADD_TEST(SyncTests, testItems);
+                        ADD_TEST(SyncTests, testItemsXML);
                     }
                     if (config.templateItem) {
                         ADD_TEST(SyncTests, testMaxMsg);
                         ADD_TEST(SyncTests, testLargeObject);
-                        ADD_TEST(SyncTests, testLargeObjectBin);
-                        if (client.isB64Enabled()) {
-                            ADD_TEST(SyncTests, testLargeObjectEncoded);
-                        }
                         ADD_TEST(SyncTests, testOneWayFromServer);
                         ADD_TEST(SyncTests, testOneWayFromClient);
                     }
@@ -1795,14 +1803,16 @@ void SyncTests::doCopy() {
  * but done with explicit local delete and then a SYNC_SLOW because some
  * servers do no support SYNC_REFRESH_FROM_SERVER
  */
-void SyncTests::refreshClient() {
+void SyncTests::refreshClient(SyncOptions options) {
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->deleteAll(it->second->createSourceA);
     }
+
     doSync("refresh",
-           SyncOptions(SYNC_SLOW,
-                       CheckSyncReport(-1,0,0, 0,0,0, true, SYNC_SLOW)));
+           options
+           .setSyncMode(SYNC_SLOW)
+           .setCheckReport(CheckSyncReport(-1,0,0, 0,0,0, true, SYNC_SLOW)));
 }
 
 
@@ -2454,8 +2464,27 @@ void SyncTests::testItems() {
     }
 
     // transfer from client A to server to client B
-    doSync("send", SyncOptions(SYNC_TWO_WAY));
-    accessClientB->refreshClient();
+    doSync("send", SyncOptions(SYNC_TWO_WAY).setWBXML(true));
+    accessClientB->refreshClient(SyncOptions().setWBXML(true));
+
+    compareDatabases();
+}
+
+// creates several items, transmits them back and forth and
+// then compares which of them have been preserved
+void SyncTests::testItemsXML() {
+    // clean server and first test database
+    deleteAll();
+
+    // import data
+    source_it it;
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        it->second->testImport();
+    }
+
+    // transfer from client A to server to client B using the non-default XML format
+    doSync("send", SyncOptions(SYNC_TWO_WAY).setWBXML(false));
+    accessClientB->refreshClient(SyncOptions().setWBXML(false));
 
     compareDatabases();
 }
@@ -2549,8 +2578,7 @@ void SyncTests::testManyItems() {
  * using a sequence of items with varying sizes
  */
 void SyncTests::doVarSizes(bool withMaxMsgSize,
-                           bool withLargeObject,
-                           const std::string &encoding) {
+                           bool withLargeObject) {
     static const int maxMsgSize = 8 * 1024;
 
     // clean server and client A
@@ -2576,8 +2604,7 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
                        CheckSyncReport(0,0,0, -1,0,0, true, SYNC_TWO_WAY), // number of items sent to server depends on source
                        withMaxMsgSize ? maxMsgSize : 0,
                        withMaxMsgSize ? maxMsgSize * 100 : 0,
-                       withLargeObject,
-                       encoding));
+                       withLargeObject));
 
     // copy to second client
     accessClientB->doSync("recv",
@@ -2585,8 +2612,7 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
                                       CheckSyncReport(-1,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER), // number of items received from server depends on source
                                       withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
                                       withMaxMsgSize ? maxMsgSize * 100 : 0,
-                                      withLargeObject,
-                                      encoding));
+                                      withLargeObject));
 
     // compare
     compareDatabases();

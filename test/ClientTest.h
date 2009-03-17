@@ -113,8 +113,8 @@ struct SyncOptions {
     long m_maxObjSize;
     /** enabled large object support */
     bool m_loSupport;
-    /** preferred item encoding */
-    std::string m_encoding;
+    /** enabled WBXML (default) */
+    bool m_isWBXML;
 
     typedef boost::function<bool (EvolutionSyncClient &,
                                   SyncOptions &)> Callback_t;
@@ -130,14 +130,14 @@ struct SyncOptions {
                 long maxMsgSize = 0,
                 long maxObjSize = 0,
                 bool loSupport = false,
-                const std::string &encoding = std::string(),
+                bool isWBXML = defaultWBXML(),
                 Callback_t startCallback = EmptyCallback) :
         m_syncMode(syncMode),
         m_checkReport(checkReport),
         m_maxMsgSize(maxMsgSize),
         m_maxObjSize(maxObjSize),
         m_loSupport(loSupport),
-        m_encoding(encoding),
+        m_isWBXML(isWBXML),
         m_startCallback(startCallback)
     {}
 
@@ -146,11 +146,14 @@ struct SyncOptions {
     SyncOptions &setMaxMsgSize(long maxMsgSize) { m_maxMsgSize = maxMsgSize; return *this; }
     SyncOptions &setMaxObjSize(long maxObjSize) { m_maxObjSize = maxObjSize; return *this; }
     SyncOptions &setLOSupport(bool loSupport) { m_loSupport = loSupport; return *this; }
-    SyncOptions &setEncoding(const std::string &encoding) { m_encoding = encoding; return *this; }
+    SyncOptions &setWBXML(bool isWBXML) { m_isWBXML = isWBXML; return *this; }
     SyncOptions &setStartCallback(const Callback_t &callback) { m_startCallback = callback; return *this; }
 
     static bool EmptyCallback(EvolutionSyncClient &,
                               SyncOptions &) { return false; }
+
+    /** if CLIENT_TEST_XML=1, then XML, otherwise WBXML */
+    static bool defaultWBXML();
 };
 
 class LocalTests;
@@ -522,13 +525,6 @@ class ClientTest {
     virtual ClientTest *getClientB() = 0;
 
     /**
-     * Returning true enables tests which only work if the server is
-     * a Funambol server which supports the "b64" encoding of items
-     * on the transport level.
-     */
-    virtual bool isB64Enabled() = 0;
-
-    /**
      * Execute a synchronization with the selected sync sources
      * and the selected synchronization options. The log file
      * in LOG has been set up already for the synchronization run
@@ -829,7 +825,7 @@ protected:
      * but done with explicit local delete and then a SYNC_SLOW because some
      * servers do no support SYNC_REFRESH_FROM_SERVER
      */
-    virtual void refreshClient();
+    virtual void refreshClient(SyncOptions options = SyncOptions());
 
     /* for more information on the different tests see their implementation */
 
@@ -883,23 +879,16 @@ protected:
                               SyncOptions &options);
     virtual void testConversion();
     virtual void testItems();
+    virtual void testItemsXML();
     virtual void testAddUpdate();
 
     // test copying with maxMsg and no large object support
     void testMaxMsg() {
-        doVarSizes(true, false, "");
+        doVarSizes(true, false);
     }
     // test copying with maxMsg and large object support
     void testLargeObject() {
-        doVarSizes(true, true, "");
-    }
-    // test copying with maxMsg and large object support using explicit "bin" encoding
-    void testLargeObjectBin() {
-        doVarSizes(true, true, "bin");
-    }
-    // test copying with maxMsg and large object support using B64 encoding
-    void testLargeObjectEncoded() {
-        doVarSizes(true, true, "b64");
+        doVarSizes(true, true);
     }
 
     virtual void testManyItems();
@@ -926,8 +915,7 @@ protected:
      * using a sequence of items with varying sizes
      */
     virtual void doVarSizes(bool withMaxMsgSize,
-                            bool withLargeObject,
-                            const std::string &encoding);
+                            bool withLargeObject);
 
     /**
      * executes a sync with the given options,

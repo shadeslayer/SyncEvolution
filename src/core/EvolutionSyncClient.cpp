@@ -1277,9 +1277,8 @@ SyncMLStatus EvolutionSyncClient::doSync()
     m_engine.SetStrValue(profile, "serverURI", getSyncURL());
     m_engine.SetStrValue(profile, "serverUser", getUsername());
     m_engine.SetStrValue(profile, "serverPassword", getPassword());
-
-    // TODO(?): make XML vs WBXML configurable
-    m_engine.SetInt32Value(profile, "encoding", 2);
+    m_engine.SetInt32Value(profile, "encoding",
+                           getWBXML() ? 1 /* WBXML */ : 2 /* XML */);
 
     // Iterate over all data stores in the XML config
     // and match them with sync sources.

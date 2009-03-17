@@ -858,10 +858,7 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
 public:
     SyncEvolutionCmdlineTest() :
         m_testDir("SyncEvolutionCmdlineTest"),
-        m_scheduleWorldConfig(".internal.ini:# serverNonce = \n"
-                              ".internal.ini:# clientNonce = \n"
-                              ".internal.ini:# devInfoHash = \n"
-                              "config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
+        m_scheduleWorldConfig("config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
                               "config.ini:username = your SyncML server account name\n"
                               "config.ini:password = your SyncML server password\n"
                               "config.ini:# logdir = \n"
@@ -873,6 +870,7 @@ public:
                               "config.ini:# proxyPassword = \n"
                               "config.ini:# clientAuthType = syncml:auth-md5\n"
                               "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
+                              "config.ini:# enableWBXML = 1\n"
                               "config.ini:# maxMsgSize = 8192\n"
                               "config.ini:# maxObjSize = 500000\n"
                               "config.ini:# loSupport = 1\n"
@@ -887,7 +885,6 @@ public:
                               "sources/addressbook/config.ini:uri = card3\n"
                               "sources/addressbook/config.ini:# evolutionuser = \n"
                               "sources/addressbook/config.ini:# evolutionpassword = \n"
-                              "sources/addressbook/config.ini:# encoding = \n"
                               "sources/calendar/.internal.ini:# last = 0\n"
                               "sources/calendar/config.ini:sync = two-way\n"
                               "sources/calendar/config.ini:type = calendar\n"
@@ -895,7 +892,6 @@ public:
                               "sources/calendar/config.ini:uri = cal2\n"
                               "sources/calendar/config.ini:# evolutionuser = \n"
                               "sources/calendar/config.ini:# evolutionpassword = \n"
-                              "sources/calendar/config.ini:# encoding = \n"
                               "sources/memo/.internal.ini:# last = 0\n"
                               "sources/memo/config.ini:sync = two-way\n"
                               "sources/memo/config.ini:type = memo\n"
@@ -903,15 +899,13 @@ public:
                               "sources/memo/config.ini:uri = note\n"
                               "sources/memo/config.ini:# evolutionuser = \n"
                               "sources/memo/config.ini:# evolutionpassword = \n"
-                              "sources/memo/config.ini:# encoding = \n"
                               "sources/todo/.internal.ini:# last = 0\n"
                               "sources/todo/config.ini:sync = two-way\n"
                               "sources/todo/config.ini:type = todo\n"
                               "sources/todo/config.ini:# evolutionsource = \n"
                               "sources/todo/config.ini:uri = task2\n"
                               "sources/todo/config.ini:# evolutionuser = \n"
-                              "sources/todo/config.ini:# evolutionpassword = \n"
-                              "sources/todo/config.ini:# encoding = \n")
+                              "sources/todo/config.ini:# evolutionpassword = \n")
     {}
 
 protected:
@@ -1276,6 +1270,8 @@ protected:
                               "\n"
                               "deviceId:\n"
                               "\n"
+                              "enableWBXML:\n"
+                              "\n"
                               "maxMsgSize:\n"
                               "maxObjSize:\n"
                               "loSupport:\n"
@@ -1296,9 +1292,7 @@ protected:
                                 "uri:\n"
                                 "\n"
                                 "evolutionuser:\n"
-                                "evolutionpassword:\n"
-                                "\n"
-                                "encoding:\n");
+                                "evolutionpassword:\n");
 
         {
             TestCmdline cmdline("--sync-property", "?",
