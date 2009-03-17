@@ -81,6 +81,10 @@ protected:
         boost::shared_ptr<EvolutionContactSource> source30(dynamic_cast<EvolutionContactSource *>(EvolutionSyncSource::createTestingSource("evolutioncontactsource30", "Evolution Address Book:text/vcard", true)));
         string parsed;
 
+#if 0
+        // TODO: enable testing of incoming items again. Right now preparse() doesn't
+        // do anything and needs to be replaced with Synthesis mechanisms.
+
         // SF bug 1796086: sync with EGW: lost or messed up telephones
         parsed = "BEGIN:VCARD\r\nVERSION:3.0\r\nTEL;CELL:cell\r\nEND:VCARD\r\n";
         CPPUNIT_ASSERT_EQUAL(parsed,
@@ -112,6 +116,7 @@ protected:
                              preparse(*source21,
                                       "BEGIN:VCARD\nVERSION:2.1\nTEL;TYPE=HOME,VOICE:cell\nEND:VCARD\n",
                                       "text/x-vcard"));
+#endif
     }
 
 private:
