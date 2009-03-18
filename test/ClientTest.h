@@ -486,6 +486,12 @@ class ClientTest {
         const char *testcases;
 
         /**
+         * A file with test cases in the format preferred for talking to
+         * the SyncML server. Used for Client::Sync::*::testConversion.
+         */
+        const char *testcases_server;
+
+        /**
          * the item type normally used by the source (not used by the tests
          * themselves; client-test.cpp uses it to initialize source configs)
          */

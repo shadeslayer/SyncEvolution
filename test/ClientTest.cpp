@@ -1646,7 +1646,7 @@ void SyncTests::addTests() {
         ADD_TEST(SyncTests, testRefreshFromClientSync);
 
         if (config.compare &&
-            config.testcases) {
+            config.testcases_server) {
             ADD_TEST(SyncTests, testConversion);
         }
 
@@ -2422,7 +2422,7 @@ bool SyncTests::doConversionCallback(bool *success,
         }
 
         std::list<std::string> items;
-        ClientTest::getItems(config->testcases, items);
+        ClientTest::getItems(config->testcases_server, items);
         std::string converted = getCurrentTest();
         converted += ".converted";
         converted += config->sourceName;
@@ -2443,7 +2443,7 @@ bool SyncTests::doConversionCallback(bool *success,
             }
         }
         out.close();
-        CPPUNIT_ASSERT(config->compare(client, config->testcases, converted.c_str()));
+        CPPUNIT_ASSERT(config->compare(client, config->testcases_server, converted.c_str()));
     }
 
     // abort sync after completing the test successfully (no exception so far!)
@@ -3275,7 +3275,8 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.import = import;
         config.dump = dump;
         config.compare = compare;
-        config.testcases = "testcases/vcard30.vcf";
+        config.testcases_server =
+            config.testcases = "testcases/vcard30.vcf";
     } else if (!strcmp(type, "vcard21")) {
         config.sourceName = "vcard21";
         config.uri = "card"; // Funambol
@@ -3339,7 +3340,8 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.import = import;
         config.dump = dump;
         config.compare = compare;
-        config.testcases = "testcases/vcard21.vcf";
+        config.testcases_server =
+            config.testcases = "testcases/vcard21.vcf";
     } else if(!strcmp(type, "ical20")) {
         config.sourceName = "ical20";
         config.uri = "cal2"; // ScheduleWorld
@@ -3471,7 +3473,8 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.import = import;
         config.dump = dump;
         config.compare = compare;
-        config.testcases = "testcases/ical20.ics";
+        config.testcases_server =
+            config.testcases = "testcases/ical20.ics";
     } if(!strcmp(type, "vcal10")) {
         config.sourceName = "vcal10";
         config.uri = "cal"; // Funambol 3.0
@@ -3531,7 +3534,8 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.import = import;
         config.dump = dump;
         config.compare = compare;
-        config.testcases = "testcases/vcal10.ics";
+        config.testcases_server =
+            config.testcases = "testcases/vcal10.ics";
     } else if(!strcmp(type, "itodo20")) {
         config.sourceName = "itodo20";
         config.uri = "task2"; // ScheduleWorld
@@ -3607,7 +3611,8 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.import = import;
         config.dump = dump;
         config.compare = compare;
-        config.testcases = "testcases/itodo20.ics";
+        config.testcases_server =
+            config.testcases = "testcases/itodo20.ics";
     }
 }
 
