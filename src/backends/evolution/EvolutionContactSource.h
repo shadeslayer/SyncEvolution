@@ -51,6 +51,16 @@ class EvolutionContactSource : public TrackingSyncSource
     virtual void logItem(const string &uid, const string &info, bool debug = false);
     virtual void logItem(const SyncItem &item, const string &info, bool debug = false);
 
+    // need to override native format: it is always vCard 3.0
+    void getSynthesisInfo(string &profile,
+                          string &datatypes,
+                          string &native)
+    {
+        TrackingSyncSource::getSynthesisInfo(profile, datatypes, native);
+        profile = "\"vCard\", 2";
+        native = "vCard30";
+    }
+
   private:
     /** extract REV string for contact, throw error if not found */
     std::string getRevision(const std::string &uid);
