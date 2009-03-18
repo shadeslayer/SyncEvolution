@@ -286,6 +286,7 @@
               <enum name="FAX"      value="B5"/>
               <enum name="PAGER"    value="B6"/>
               <enum name="PREF"     value="B7"/>
+              <enum name="CAR"      value="B8"/>
 
               <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
