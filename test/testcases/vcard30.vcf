@@ -182,8 +182,7 @@ ADR;TYPE=HOME:Test Box #1;;Test Drive 1;Test Village;Lower Test County;1234
  5;Testovia
 LABEL;TYPE=HOME:Test Drive 1\nTest Village\, Lower Test County\n12345\nTest
   Box #1\nTestovia
-ADR;TYPE=OTHER:Test Box #3;;Test Drive 3;Test Megacity;Test County;12347;Ne
- w Testonia
+ADR:Test Box #3;;Test Drive 3;Test Megacity;Test County;12347;New Testonia
 LABEL;TYPE=OTHER:Test Drive 3\nTest Megacity\, Test County\n12347\nTest Box
   #3\nNew Testonia
 UID:pas-id-43C0ED3900000001
