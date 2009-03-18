@@ -88,7 +88,7 @@ libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(S
 
 SyncEvolutionXML.c: $(srcdir)/../syncevolution.xml
 	echo "const char *SyncEvolutionXML =" > $@
-	sed -e 's/"/\\"/g' -e 's/\(.*\)/"\1\\n"/' $< >>$@
+	sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\(.*\)/"\1\\n"/' $< >>$@
 	echo ";" >>$@
 
 # include boost in distribution
