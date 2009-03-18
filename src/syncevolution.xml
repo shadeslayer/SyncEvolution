@@ -179,6 +179,9 @@
       <!-- organisation -->
       <field name="ORG_NAME" type="string" compare="slowsync" merge="fillempty"/>
       <field name="ORG_DIVISION" type="string" compare="conflict" merge="fillempty"/>
+      <field name="ORG_OFFICE" type="string" compare="conflict" merge="fillempty"/>
+      <field name="ORG_TEAM" type="string" compare="conflict" merge="fillempty"/>
+      <field name="ROLE" type="string" compare="conflict" merge="fillempty"/>
 
       <!-- birthday and anniversary (not necessarily the same) -->
       <field name="BDAY" type="date" compare="conflict" merge="fillempty"/>
@@ -268,9 +271,15 @@
           <position field="CATEGORIES" repeat="array" increment="1" minshow="0"/>
         </property>
 
-        <property name="ORG" values="2">
+        <property name="ORG" values="4">
           <value index="0" field="ORG_NAME"/>
           <value index="1" field="ORG_DIVISION"/>
+          <value index="2" field="ORG_OFFICE"/>
+          <value index="3" field="ORG_TEAM"/>
+        </property>
+
+        <property name="ROLE">
+          <value field="ROLE"/>
         </property>
 
         <property name="TEL">
