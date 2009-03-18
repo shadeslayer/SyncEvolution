@@ -171,6 +171,7 @@
       <field name="TITLE" type="string" compare="conflict" merge="fillempty"/>
 
       <field name="FN" type="string" compare="conflict" merge="fillempty"/>
+      <field name="FILE-AS" type="string" compare="conflict" merge="fillempty"/>
 
       <!-- categories and classification -->
       <field name="CATEGORIES" array="yes" type="string" compare="conflict"/>
@@ -179,8 +180,9 @@
       <field name="ORG_NAME" type="string" compare="slowsync" merge="fillempty"/>
       <field name="ORG_DIVISION" type="string" compare="conflict" merge="fillempty"/>
 
-      <!-- birthday -->
+      <!-- birthday and anniversary (not necessarily the same) -->
       <field name="BDAY" type="date" compare="conflict" merge="fillempty"/>
+      <field name="ANNIVERSARY" type="date" compare="conflict" merge="fillempty"/>
 
       <!-- telephone numbers -->
       <field name="TEL"         array="yes" type="telephone" compare="conflict"/>
@@ -247,6 +249,10 @@
 
         <property name="FN">
           <value field="FN"/>
+        </property>
+
+        <property name="X-EVOLUTION-FILE-AS">
+          <value field="FILE-AS"/>
         </property>
 
         <property name="NICKNAME" onlyformode="standard">
@@ -342,6 +348,10 @@
 
         <property name="BDAY">
           <value field="BDAY"/>
+        </property>
+
+        <property name="X-EVOLUTION-ANNIVERSARY">
+          <value field="ANNIVERSARY"/>
         </property>
 
         <property name="NOTE" filter="no">
