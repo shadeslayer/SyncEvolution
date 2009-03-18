@@ -78,7 +78,7 @@ my $synthesis = $server =~ /synthesis/;
 
 # TODO: this hack ensures that any synchronization is limited to
 # properties supported by Synthesis. Remove this again.
-$synthesis = 1;
+# $synthesis = 1;
 
 my $egroupware = $server =~ /egroupware/;
 my $funambol = $server =~ /funambol/;
@@ -181,6 +181,9 @@ sub Normalize {
     s/^RRULE:(.*)BYDAY=\+?1(\D)/RRULE:$1BYDAY=$2/mg;
     # remove default VALUE=DATE-TIME
     s/^(DTSTART|DTEND)([^:\n]*);VALUE=DATE-TIME/$1$2/mg;
+
+    # normalize values which look like a date to YYYYMMDD because the hyphen is optional
+    s/:(\d{4})-(\d{2})-(\d{2})/:$1$2$3/g;
 
     # remove fields which may differ
     s/^(PRODID|CREATED|DTSTAMP|LAST-MODIFIED|REV):.*\r?\n?//gm;
