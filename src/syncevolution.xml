@@ -1076,6 +1076,12 @@
   <client type="plugin">
     <binfilespath>$(binfilepath)</binfilespath>
     <defaultauth>none</defaultauth>
+
+    <!-- SyncEvolution has traditionally not folded long lines in
+         vCard.  Testing showed that servers still have problems with
+         it, so avoid it by default -->
+    <donotfoldcontent>yes</donotfoldcontent>
+
     <fakedeviceid/>
 
     <datastore/>
