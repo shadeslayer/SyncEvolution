@@ -456,6 +456,10 @@
       <field name="ATTENDEES" array="yes" type="string" compare="never"/>
       <field name="ATTENDEE_CNS" array="yes" type="string" compare="never"/>
       <field name="ATTENDEE_PARTSTATS" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_ROLE" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_RSVP" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_LANG" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_CUTYPE" array="yes" type="integer" compare="never"/>
       <field name="ORGANIZER" array="no" type="string" compare="never"/>
       <field name="ORGANIZER_CN" array="no" type="string" compare="never"/>
 
@@ -851,6 +855,32 @@
                 <enum name="DECLINED"       value="7"/>
                 <enum name="TENTATIVE"      value="5"/>
                 <enum name="DELEGATED"      value="6"/>
+              </value>
+            </parameter>
+            <parameter name="ROLE" default="no" show="yes">
+              <value field="ATTENDEE_ROLE">
+                <enum name="CHAIR"            value="1"/>
+                <enum name="REQ-PARTICIPANT"  value="2"/>
+                <enum name="OPT-PARTICIPANT"  value="3"/>
+                <enum name="NON-PARTICIPANT"  value="4"/>
+              </value>
+            </parameter>
+            <parameter name="RSVP" default="no" show="yes">
+              <value field="ATTENDEE_RSVP">
+                <enum name="TRUE"             value="1"/>
+                <enum name="FALSE"            value="0"/>
+              </value>
+            </parameter>
+            <parameter name="LANGUAGE" show="yes">
+              <value field="ATTENDEE_LANG"/>
+            </parameter>
+            <parameter name="CUTYPE" default="no" show="yes">
+              <value field="ATTENDEE_CUTYPE">
+                <enum name="INDIVIDUAL"  value="1"/>
+                <enum name="GROUP"       value="2"/>
+                <enum name="RESOURCE"    value="3"/>
+                <enum name="ROOM"        value="4"/>
+                <enum name="UNKNOWN"     value="5"/>
               </value>
             </parameter>
           </property>
