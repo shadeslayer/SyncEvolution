@@ -2940,13 +2940,20 @@ void SyncTests::doSync(const SyncOptions &options)
         lastTest = getCurrentTest();
     }
 
-    logstream /* << std::setw(4) << std::setfill('0') << syncCounter << "_" */ << getCurrentTest();
+    std::string prefix;
+    prefix.reserve(80);
     for (std::list<std::string>::iterator it = logPrefixes.begin();
          it != logPrefixes.end();
          ++it) {
-        logstream << "." << *it;
+        prefix += ".";
+        prefix += *it;
     }
-    logstream << ".client." << (accessClientB ? "A" : "B");
+    printf(" %s", prefix.c_str() + 1);
+    fflush(stdout);
+
+    logstream /* << std::setw(4) << std::setfill('0') << syncCounter << "_" */ << getCurrentTest()
+                 << prefix
+                 << ".client." << (accessClientB ? "A" : "B");
     std::string logname = logstream.str();
     simplifyFilename(logname);
     syncCounter++;
