@@ -183,6 +183,9 @@ sub Normalize {
     # normalize values which look like a date to YYYYMMDD because the hyphen is optional
     s/:(\d{4})-(\d{2})-(\d{2})/:$1$2$3/g;
 
+    # mailto is case insensitive
+    s/^((ATTENDEE|ORGANIZER).*):[Mm][Aa][Ii][Ll][Tt][Oo]:/$1:mailto:/mg;
+
     # remove fields which may differ
     s/^(PRODID|CREATED|DTSTAMP|LAST-MODIFIED|REV):.*\r?\n?//gm;
     # remove optional fields
