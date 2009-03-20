@@ -424,6 +424,7 @@
       <field name="ALARM_MSG" type="string" compare="conflict"/>
       <field name="ALARM_ACTION" type="string" compare="conflict"/>
       <field name="ALARM_REL" type="integer" compare="never"/>
+      <field name="ALARM_UID" type="string" compare="conflict"/>
 
       <!-- non-standard -->
       <field name="PARENT_UID" type="string" compare="never"/>
@@ -642,6 +643,9 @@
             </property>
             <property name="REPEAT" suppressempty="yes">
               <value field="ALARM_REPEAT"/>
+            </property>
+            <property name="X-EVOLUTION-ALARM-UID" suppressempty="yes">
+              <value field="ALARM_UID"/>
             </property>
           </subprofile>
 
@@ -910,6 +914,9 @@
             </property>
             <property name="REPEAT" suppressempty="yes">
               <value field="ALARM_REPEAT"/>
+            </property>
+            <property name="X-EVOLUTION-ALARM-UID" suppressempty="yes">
+              <value field="ALARM_UID"/>
             </property>
           </subprofile>
 
