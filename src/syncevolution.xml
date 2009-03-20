@@ -62,9 +62,9 @@
           DTSTART = CONVERTTOUSERZONE(DTSTART);
           MAKEALLDAY(DTSTART,DTEND,i);
         }
-        // - shape attendees
+        // - shape attendees  (and make sure ATTENDEES[] is assigned even for empty email addresses)
         i=0;
-        while(i<SIZE(ATTENDEES)) {
+        while(i<SIZE(ATTENDEES) || i<SIZE(ATTENDEE_CNS)) {
           PARSEEMAILSPEC(ATTENDEES[i], CN, EM);
           ATTENDEES[i] = EM; // pure email address
           // in case we have no specific common name, use the one extracted from the email
@@ -829,7 +829,7 @@
           <property name="ATTENDEE" suppressempty="yes" onlyformode="standard">
             <value field="ATTENDEES" conversion="mailto"/>
             <position field="ATTENDEES" repeat="array" increment="1" minshow="0"/>
-            <parameter name="CN" default="no" show="yes">
+            <parameter name="CN" default="no" show="yes" shownonempty="yes">
               <value field="ATTENDEE_CNS"/>
             </parameter>
             <parameter name="PARTSTAT" default="no" show="yes">
