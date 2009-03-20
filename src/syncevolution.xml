@@ -126,16 +126,6 @@
       if (ALARM_TIME!=EMPTY) {
         if (ITEMDATATYPE()=="iCalendar20") {
           if (ALARM_ACTION==EMPTY) ALARM_ACTION = "AUDIO";
-          // don't touch alarm times which are relative already
-          if (!ALARM_REL) {
-            ALARM_TIME = CONVERTTOZONE(ALARM_TIME,"UTC"); // must always be UTC by iCalendar 2.0 specs
-            // send as duration if we have non-empty non-date DTSTART
-            if (DTSTART!=EMPTY && !ISDATEONLY(DTSTART)) {
-              // make a duration
-              ALARM_TIME = ALARM_TIME-CONVERTTOZONE(DTSTART,"UTC");
-              ALARM_REL = 1; // relative to start
-            }
-          }
         }
         else {
           if (ALARM_MSG==EMPTY) ALARM_MSG="alarm";
