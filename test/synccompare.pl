@@ -145,6 +145,9 @@ sub Normalize {
     # replace parameters with a sorted parameter list
     s!^([^;:\n]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
 
+    # sort value lists of specific properties
+    s!^(RRULE.*):(.*)!$1 . ":" . join(';',sort(split(/;/, $2)))!meg;
+
     # Ignore remaining "other" email, address and telephone type - this is
     # an Evolution specific extension which might not be preserved.
     s/^(ADR|EMAIL|TEL)([^:\n]*);TYPE=OTHER/$1$2/mg;
