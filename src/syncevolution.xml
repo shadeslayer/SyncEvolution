@@ -173,18 +173,48 @@
       <field name="TEL_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="TEL_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="TEL_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+      <field name="TEL_SLOT"    array="yes" type="integer"   compare="never"/>    <!-- offset 3 -->
 
       <!-- emails -->
       <field name="EMAIL"       array="yes" type="multiline" compare="conflict"/>
       <field name="EMAIL_FLAGS" array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="EMAIL_LABEL" array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="EMAIL_ID"    array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+      <field name="EMAIL_SLOT"  array="yes" type="integer"   compare="never"/>    <!-- offset 3 -->
 
       <!-- web addresses -->
       <field name="WEB"         array="yes" type="string" compare="conflict"/>
       <field name="WEB_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="WEB_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="WEB_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+
+      <!-- would be nicer to have as part of WEB, but parser/encoder does not support mapping
+           with more than one property per field -->
+      <field name="CALURI"      array="yes" type="string" compare="conflict"/>
+      <field name="FBURL"       array="yes" type="string" compare="conflict"/>
+      <field name="BLOGURL"     array="yes" type="string" compare="conflict"/>
+      <field name="VIDEOURL"    array="yes" type="string" compare="conflict"/>
+
+      <!-- related persons: should be turned into array, like WEB and CALURI/FBURL -->
+      <field name="MANAGER"    type="string" compare="conflict"/>
+      <field name="ASSISTANT"  type="string" compare="conflict"/>
+      <field name="SPOUSE"     type="string" compare="conflict"/>
+
+      <!-- chat handles: should be turned into one array, like WEB and CALURI/FBURL -->
+      <field name="AIM_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="AIM_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="GADUGADU_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="GADUGADU_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="GROUPWISE_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="GROUPWISE_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="ICQ_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="ICQ_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="JABBER_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="JABBER_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="MSN_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="MSN_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="YAHOO_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="YAHOO_SLOT"          array="yes" type="string" compare="conflict"/>
 
       <!-- home address -->
       <field name="ADR_STREET"        array="yes" type="multiline" compare="conflict"/>
@@ -280,10 +310,17 @@
               <enum name="PAGER"    value="B6"/>
               <enum name="PREF"     value="B7"/>
               <enum name="CAR"      value="B8"/>
+              <enum name="X-EVOLUTION-CALLBACK" value="B9"/>
+              <enum name="X-EVOLUTION-RADIO" value="B10"/>
+              <enum name="X-EVOLUTION-TELEX" value="B11"/>
+              <enum name="X-EVOLUTION-TTYTDD" value="B12"/>
 
               <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
             </value>
+          </parameter>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="TEL_SLOT"/>
           </parameter>
         </property>
 
@@ -301,6 +338,9 @@
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
             </value>
           </parameter>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="EMAIL_SLOT"/>
+          </parameter>
         </property>
 
         <property name="URL">
@@ -316,6 +356,72 @@
               <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
             </value>
+          </parameter>
+        </property>
+
+        <property name="CALURI">
+          <value field="CALURI" show="yes"/>
+        </property>
+        <property name="FBURL">
+          <value field="FBURL" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-BLOG-URL">
+          <value field="BLOGURL" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-VIDEO-URL">
+          <value field="VIDEOURL" show="yes"/>
+        </property>
+
+        <property name="X-EVOLUTION-MANAGER">
+          <value field="MANAGER" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-ASSISTANT">
+          <value field="ASSISTANT" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-SPOUSE">
+          <value field="SPOUSE" show="yes"/>
+        </property>
+
+        <property name="X-AIM">
+          <value field="AIM_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="AIM_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-GADUGADU">
+          <value field="GADUGADU_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="GADUGADU_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-GROUPWISE">
+          <value field="GROUPWISE_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="GROUPWISE_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-ICQ">
+          <value field="ICQ_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="ICQ_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-JABBER">
+          <value field="JABBER_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="JABBER_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-MSN">
+          <value field="MSN_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="MSN_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-YAHOO">
+          <value field="YAHOO_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="YAHOO_SLOT"/>
           </parameter>
         </property>
 
