@@ -145,6 +145,12 @@ sub Normalize {
     # replace parameters with a sorted parameter list
     s!^([^;:\n]*);(.*?):!$1 . ";" . join(';',sort(split(/;/, $2))) . ":"!meg;
 
+    # EXDATE;VALUE=DATE is the default, no need to show it
+    s/^EXDATE;VALUE=DATE:/EXDATE:/mg;
+
+    # multiple EXDATEs may be joined into one, use that as normal form
+    while(s/^EXDATE:([^\r\n]*)(.*)^EXDATE:([^\r\n]*)\r?\n/EXDATE:$1;$3$2/ms) {}
+
     # sort value lists of specific properties
     s!^(RRULE.*):(.*)!$1 . ":" . join(';',sort(split(/;/, $2)))!meg;
 
