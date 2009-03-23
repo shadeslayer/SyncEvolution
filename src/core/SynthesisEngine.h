@@ -24,6 +24,7 @@
 #include <synthesis/generic_types.h>
 #include <synthesis/sync_declarations.h>
 #include <synthesis/engine_defs.h>
+#include <synthesis/syerror.h>
 
 // TODO: remove dependency on header file.
 // Currently required because shared_ptr
@@ -99,13 +100,29 @@ class SharedEngine {
 };
 
 /**
+ * thrown when a function returns a non-okay error code
+ */
+class BadSynthesisResult : public std::runtime_error
+{
+    sysync::TSyErrorEnum m_result;
+
+ public:
+    BadSynthesisResult(const string &what, sysync::TSyErrorEnum result) :
+    std::runtime_error(what),
+    m_result(result)
+        {}
+
+    sysync::TSyErrorEnum result() const { return m_result; }
+};
+
+/**
  * thrown when a key cannot be opened because it doesn't exist
  */
-class NoSuchKey : public std::runtime_error
+class NoSuchKey : public BadSynthesisResult
 {
  public:
     NoSuchKey(const string &what) :
-    std::runtime_error(what)
+    BadSynthesisResult(what, sysync::DB_NoContent)
         {}
 };
 

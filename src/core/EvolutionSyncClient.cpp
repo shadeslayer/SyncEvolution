@@ -1517,6 +1517,23 @@ SyncMLStatus EvolutionSyncClient::doSync()
             }
             previousStepCmd = stepCmd;
             // loop until session done or aborted with error
+        } catch (const BadSynthesisResult &result) {
+            if (result.result() == sysync::LOCERR_USERABORT && aborting) {
+                SE_LOG_INFO(NULL, NULL, "Aborted as requested.");
+                stepCmd = sysync::STEPCMD_DONE;
+            } else if (result.result() == sysync::LOCERR_USERSUSPEND && suspending) {
+                SE_LOG_INFO(NULL, NULL, "Suspended as requested.");
+                stepCmd = sysync::STEPCMD_DONE;
+            } else if (aborting) {
+                // aborting very early can lead to results different from LOCERR_USERABORT
+                // => don't treat this as error
+                SE_LOG_INFO(NULL, NULL, "Aborted with unexpected result (%d)",
+                            static_cast<int>(result.result()));
+                stepCmd = sysync::STEPCMD_DONE;
+            } else {
+                SyncEvolutionException::handle(&status);
+                stepCmd = sysync::STEPCMD_ABORT;
+            }
         } catch (...) {
             SyncEvolutionException::handle(&status);
             stepCmd = sysync::STEPCMD_ABORT;
