@@ -888,7 +888,9 @@
             </parameter>
           </property>
 
-          <property name="EXDATE" values="list" suppressempty="yes" delayedparsing="1">
+          <!-- ScheduleWorld has a problem with the EXDATE:value1;value2 format.
+               Use separate properties instead of values="list" -->
+          <property name="EXDATE" suppressempty="yes" delayedparsing="1">
             <value field="EXDATES"/>
             <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
             <parameter  onlyformode="standard" name="TZID" default="no" show="yes">
