@@ -33,6 +33,8 @@ using namespace sysync;
 #include "EvolutionSyncClient.h"
 #include "EvolutionSyncSource.h"
 
+#include <sstream>
+
 #define BuildNumber  0  /* User defined build number, can be 0..255 */
 #define MyDB   "SyncEvolution" /* example debug name */
 #define MY_ID       42  /* example datastore context */
@@ -92,20 +94,19 @@ CVersion SyncEvolution_Module_Version(CContext mContext)
 extern "C"
 TSyError SyncEvolution_Module_Capabilities( CContext mContext, appCharP *mCapabilities )
 {
-  char     s[ 512 ]; /* copy it into a local string */
-  sprintf( s,   "%s\n",        MyPlatform() );
-  sprintf( s, "%s%s\n",     s, DLL_Info     );
-  sprintf( s, "%s%s:%s\n",  s, CA_MinVersion,   "V1.0.6.0"            ); /* must not be changed */
-  sprintf( s, "%s%s:%s\n",  s, CA_Manufacturer, "SyncEvolution"        );
-  sprintf( s, "%s%s:%s\n",    s, CA_Description,  "SyncEvolution Synthesis DB Plugin" );
-  sprintf( s, "%s%s:%s\n",    s, Plugin_DS_Data_Str, "no" );
-  sprintf( s, "%s%s:%s\n",    s, Plugin_DS_Data_Key, "yes" );
-  sprintf( s, "%s%s:%s\n",    s, CA_ItemAsKey, "yes" );
-  sprintf( s, "%s%s:%s\n",    s, Plugin_DS_Blob, "no" );
-  *mCapabilities= StrAlloc( s );
-  
-  DEBUG_DB(MoC(mContext)->getSynthesisAPI(), MyDB, Mo_Ca, "'%s'", *mCapabilities);
-  return LOCERR_OK;
+    std::stringstream s;
+    s << MyPlatform() << "\n"
+      << DLL_Info << "\n"
+      << CA_MinVersion << ":V1.0.6.0\n" /* must not be changed */
+      << CA_Manufacturer << ":SyncEvolution\n"
+      << CA_Description << ":SyncEvolution Synthesis DB Plugin\n"
+      << Plugin_DS_Data_Str << ":no\n"
+      << Plugin_DS_Data_Key << ":yes\n"
+      << CA_ItemAsKey << ":yes\n"
+      << Plugin_DS_Blob << ":no\n";
+    *mCapabilities= StrAlloc(s.str().c_str());
+    DEBUG_DB(MoC(mContext)->getSynthesisAPI(), MyDB, Mo_Ca, "'%s'", *mCapabilities);
+    return LOCERR_OK;
 } /* Module_Capabilities */
 
 
