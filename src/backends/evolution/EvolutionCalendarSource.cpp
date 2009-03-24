@@ -42,12 +42,6 @@ EvolutionCalendarSource::EvolutionCalendarSource(ECalSourceType type,
     TrackingSyncSource(params),
     m_type(type)
 {
-}
-
-EvolutionCalendarSource::EvolutionCalendarSource( const EvolutionCalendarSource &other ) :
-    TrackingSyncSource(other),
-    m_type(other.m_type)
-{
     switch (m_type) {
      case E_CAL_SOURCE_TYPE_EVENT:
         m_typeName = "calendar";
@@ -70,6 +64,14 @@ EvolutionCalendarSource::EvolutionCalendarSource( const EvolutionCalendarSource 
     }
 }
 
+EvolutionCalendarSource::EvolutionCalendarSource( const EvolutionCalendarSource &other ) :
+    TrackingSyncSource(other),
+    m_type(other.m_type),
+    m_typeName(other.m_typeName),
+    m_newSystem(other.m_newSystem)
+{
+}
+
 EvolutionSyncSource::Databases EvolutionCalendarSource::getDatabases()
 {
     ESourceList *sources = NULL;
@@ -78,15 +80,18 @@ EvolutionSyncSource::Databases EvolutionCalendarSource::getDatabases()
 
     if (!e_cal_get_sources(&sources, m_type, &gerror)) {
         // ignore unspecific errors (like on Maemo with no support for memos)
-        // and simply return an empty list
+        // and continue with empty list (perhaps defaults work)
         if (!gerror) {
-            return result;
+            sources = NULL;
+        } else {
+            throwError("unable to access backend databases", gerror);
         }
-        throwError("unable to access backend databases", gerror);
     }
 
     bool first = true;
-    for (GSList *g = e_source_list_peek_groups (sources); g; g = g->next) {
+    for (GSList *g = sources ? e_source_list_peek_groups (sources) : NULL;
+         g;
+         g = g->next) {
         ESourceGroup *group = E_SOURCE_GROUP (g->data);
         for (GSList *s = e_source_group_peek_sources (group); s; s = s->next) {
             ESource *source = E_SOURCE (s->data);
@@ -97,6 +102,16 @@ EvolutionSyncSource::Databases EvolutionCalendarSource::getDatabases()
             first = false;
         }
     }
+
+    if (result.empty() && m_newSystem) {
+        eptr<ECal, GObject> calendar(m_newSystem());
+        if (calendar.get()) {
+            // okay, default system database exists
+            const char *uri = e_cal_get_uri(calendar.get());
+            result.push_back(Database("<<system>>", uri ? uri : "<<unknown uri>>"));
+        }
+    }
+
     return result;
 }
 
