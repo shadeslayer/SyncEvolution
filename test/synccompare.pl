@@ -104,6 +104,18 @@ sub sortlist {
   return join(",", sort(split(/,/, $list)));
 }
 
+sub splitvalue {
+  my $prop = shift;
+  my $values = shift;
+  my $eol = shift;
+
+  my @res = ();
+  foreach my $val (split (/;/, $values)) {
+      push(@res, $prop, ":", $val, $eol);
+  }
+  return join("", @res);
+}
+
 # parameters: file handle with input, width to use for reformatted lines
 # returns list of lines without line breaks
 sub Normalize {
@@ -148,8 +160,8 @@ sub Normalize {
     # EXDATE;VALUE=DATE is the default, no need to show it
     s/^EXDATE;VALUE=DATE:/EXDATE:/mg;
 
-    # multiple EXDATEs may be joined into one, use that as normal form
-    while(s/^EXDATE:([^\r\n]*)(.*)^EXDATE:([^\r\n]*)\r?\n/EXDATE:$1;$3$2/ms) {}
+    # multiple EXDATEs may be joined into one, use separate properties as normal form
+    s/^(EXDATE[^:]*):(.*)(\r?\n)/splitvalue($1, $2, $3)/mge;
 
     # sort value lists of specific properties
     s!^(RRULE.*):(.*)!$1 . ":" . join(';',sort(split(/;/, $2)))!meg;
