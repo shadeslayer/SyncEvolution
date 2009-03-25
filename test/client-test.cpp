@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2008 Funambol, Inc.
- * Copyright (C) 2008, 2009 Patrick Ohly <patrick.ohly.de>
+ * Copyright (C) 2008-2009 Patrick Ohly <patrick.ohly@gmx.de>
  */
 
 /** @cond API */

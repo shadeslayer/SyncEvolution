@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2007-2008 Patrick Ohly
+ * Copyright (C) 2007-2009 Patrick Ohly <patrick.ohly@gmx.de>
+ * Copyright (C) 2009 Intel Corporation
  */
 
 #include "config.h"

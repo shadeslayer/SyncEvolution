@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2008 Patrick Ohly
+ * Copyright (C) 2005-2009 Patrick Ohly <patrick.ohly@gmx.de>
  */
 
 /**

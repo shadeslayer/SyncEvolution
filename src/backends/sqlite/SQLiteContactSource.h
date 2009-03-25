@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2008 Patrick Ohly
+ * Copyright (C) 2007-2009 Patrick Ohly <patrick.ohly@gmx.de>
  */
 
 #ifndef INCL_SQLITECONTACTSOURCE

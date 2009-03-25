@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 Patrick Ohly
+ * Copyright (C) 2008-2009 Patrick Ohly <patrick.ohly@gmx.de>
  */
 
 #ifndef INCL_EVOLUTION_FILTER_CONFIG_NODE

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2008 Novell, Inc.
+ * Copyright (C) 2009 Patrick Ohly <patrick.ohly@gmx.de>
  *
  * Authors: Patrick Ohly <patrick.ohly@gmx.de>
  *

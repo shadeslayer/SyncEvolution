@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 Patrick Ohly
+ * Copyright (C) 2008-2009 Patrick Ohly <patrick.ohly@gmx.de>
  */
 
 #define EDS_ABI_WRAPPER_NO_REDEFINE 1

@@ -1,7 +1,8 @@
 #! /usr/bin/env perl
 #
 # Copyright (C) 2008 Funambol, Inc.
-# Copyright (C) 2008, 2009 Patrick Ohly <patrick.ohly.de>
+# Copyright (C) 2008-2009 Patrick Ohly <patrick.ohly@gmx.de>
+# Copyright (C) 2009 Intel Corporation
 #
 # Usage: <file>
 #        <left file> <right file>
