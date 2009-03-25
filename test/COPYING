@@ -2,14 +2,30 @@ The following files were written exclusively by Patrick Ohly:
   ClientTest.cpp
   ClientTest.h
   client-test.cpp
+  client-test-main.cpp
   test.h
   synccompare.pl
 
 They were contributed to the Funambol C++ client library under the
-"Sync4jContribution.pdf" agreement. They were maintained there by
+"docs/Sync4jContribution.pdf" agreement. They were maintained there by
 Patrick and on February 17th 2009 copied back to SyncEvolution,
 without any commits by other authors except for the license and
 copyright changes applied by Funambol.
 
-The files are distributed under the license chosen by Funambol,
-the GNU Affero General Public License v3.
+On March 25 2009 they were relicensed by Patrick Ohly, executing
+the rights granted by the contributor agreement.
+
+-------------------------------------------------------------------
+
+This program is free software; you can redistribute it and/or modify it
+under the terms and conditions of the GNU Lesser General Public License,
+version 2.1, as published by the Free Software Foundation.
+
+This program is distributed in the hope it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+more details.
+
+You should have received a copy of the GNU Lesser General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 
+51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
