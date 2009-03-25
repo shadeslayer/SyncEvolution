@@ -295,7 +295,7 @@ static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "500000");
 static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)");
 static BoolConfigProperty syncPropWBXML("enableWBXML",
                                         "use the more compact binary XML (WBXML) for messages between client and server",
-                                        "TRUE");
+                                        /* TODO: enable it again by default once ScheduleWorld handles it */ "FALSE");
 static ConfigProperty syncPropLogDir("logdir",
                                      "full path to directory where automatic backups and logs\n"
                                      "are stored for all synchronizations; if empty, the temporary\n"
