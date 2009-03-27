@@ -60,11 +60,15 @@ AC_SUBST(EBOOK_LIBS)
 BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $EBOOK_CFLAGS"
 
 AC_ARG_ENABLE_BACKEND(ebook, evolution,
-                      AS_HELP_STRING([--disable-ebook], [disable access to Evolution addressbooks (default on if available)]),
-                      [enable_ebook="$enableval"], [enable_ebook=$EBOOKFOUND])
+                      AS_HELP_STRING([--disable-ebook], [disable access to Evolution addressbooks (must be used to compile without it)]),
+                      [enable_ebook="$enableval"],
+                      [test "$EBOOKFOUND" = "yes" && enable_ebook="yes" ||
+                       AC_MSG_ERROR([libebook not found. Use --disable-ebook to compile without or install the necessary development files.])])
 AC_ARG_ENABLE_BACKEND(ecal, evolution,
-                      AS_HELP_STRING([--disable-ecal], [disable access to Evolution calendars and tasks (default on if available)]),
-                      [enable_ecal="$enableval"], [enable_ecal=$ECALFOUND])
+                      AS_HELP_STRING([--disable-ecal], [disable access to Evolution calendars and tasks (must be used to compile without it)]),
+                      [enable_ecal="$enableval"],
+                      [test "$ECALFOUND" = "yes" && enable_ecal="yes" ||
+                       AC_MSG_ERROR([libecal not found. Use --disable-ecal to compile without or install the necessary development files.])])
 
 enable_evo="no"
 if test "$enable_ebook" = "yes"; then

@@ -185,6 +185,9 @@ fi
 AC_SUBST(TRANSPORT_LIBS)
 AC_SUBST(TRANSPORT_CFLAGS)
 
+# need Boost headers
+AX_BOOST_BASE()
+
 # absolute patch to source of Synthesis client library
 SYNTHESIS_SRC=no-synthesis-source
 AC_SUBST(SYNTHESIS_SRC)

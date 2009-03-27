@@ -16,7 +16,8 @@ faster compilation) and will bundle the Synthesis sources in source
 .tar.gz archives.
 
 For doing development work the recommended configure line is:
-   configure CXXFLAGS="-Wall -Werror -Wno-unknown-pragmas" \
+   configure CFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
+             CXXFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
              --enable-unit-tests \
              --enable-libcurl
 
@@ -180,6 +181,7 @@ Compiling for Mac OS X
   Configuring for development:
   <path>/configure --with-funambol-src=<path> \
               --enable-addressbook \
+              --disable-ecal --disable-ebook \
               CXXFLAGS="-Wall -Werror -Wno-unknown-pragmas" \
               LDFLAGS="-framework Addressbook -framework CoreServices" \
               CXXFLAGS=-g \
@@ -189,6 +191,7 @@ Compiling for Mac OS X
 
   Compiling final release:
   ./configure --enable-addressbook \
+              --disable-ecal --disable-ebook \
               CXXFLAGS="-O -g -arch i386 -arch ppc" \
               CFLAGS="-O -g -arch i386 -arch ppc" \
               LDFLAGS="-arch i386 -arch ppc -framework Addressbook -framework CoreServices" \
