@@ -2919,8 +2919,10 @@ void SyncTests::doSync(const SyncOptions &options)
         prefix += ".";
         prefix += *it;
     }
-    printf(" %s", prefix.c_str() + 1);
-    fflush(stdout);
+    if (!prefix.empty()) {
+        printf(" %s", prefix.c_str() + 1);
+        fflush(stdout);
+    }
 
     logstream /* << std::setw(4) << std::setfill('0') << syncCounter << "_" */ << getCurrentTest()
                  << prefix
