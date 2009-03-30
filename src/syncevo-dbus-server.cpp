@@ -1,3 +1,4 @@
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -6,6 +7,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <limits.h>
 
 
@@ -13,6 +15,7 @@
 
 #include "syncevo-dbus-server.h"
 #include "syncevo-marshal.h"
+
 static gboolean syncevo_start_sync (SyncevoDBusServer *obj, char *server, GPtrArray *sources, GError **error);
 static gboolean syncevo_abort_sync (SyncevoDBusServer *obj, char *server, GError **error);
 static gboolean syncevo_set_password (SyncevoDBusServer *obj, char *server, char *password, GError **error);
@@ -48,6 +51,15 @@ syncevo_source_get (SyncevoSource *source, const char **name, int *mode)
 	if (mode) {
 		*mode = g_value_get_int (g_value_array_get_nth (source, 1));
 	}
+}
+
+static void
+syncevo_source_add_to_set (SyncevoSource *source, set<string> source_set)
+{
+	const char *str;
+	
+	syncevo_source_get (source, &str, NULL);
+	source_set.insert (g_strdup (str));
 }
 
 void
@@ -93,8 +105,6 @@ syncevo_option_free (SyncevoOption *option)
 }
 
 
-
-
 enum {
 	PROGRESS,
 	SOURCE_PROGRESS,
@@ -106,15 +116,119 @@ static guint signals[LAST_SIGNAL] = {0};
 
 G_DEFINE_TYPE (SyncevoDBusServer, syncevo_dbus_server, G_TYPE_OBJECT);
 
+void
+emit_progress (int type,
+               int extra1,
+               int extra2,
+               int extra3,
+               gpointer data)
+{
+	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
+
+	g_signal_emit (obj, signals[PROGRESS], 0,
+	               "servername",
+	               type,
+	               extra1,
+	               extra2);
+}
+
+void
+emit_source_progress (const char *source,
+                      int type,
+                      int extra1,
+                      int extra2,
+                      int extra3,
+                      gpointer data)
+{
+	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
+
+	g_signal_emit (obj, signals[SOURCE_PROGRESS], 0,
+	               "servername",
+	               source,
+	               type,
+	               extra1,
+	               extra2);
+}
+
+void
+emit_server_message (const char *message,
+                     gpointer data)
+{
+	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
+
+	g_signal_emit (obj, signals[SERVER_MESSAGE], 0,
+	               "servername",
+	               message);
+}
+
+char*
+need_password (const char *message,
+               gpointer data)
+{
+	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
+
+	g_signal_emit (obj, signals[NEED_PASSWORD], 0);
+
+	/* TODO */
+}
+
+
+
+static gboolean 
+do_sync (SyncevoDBusServer *obj)
+{
+	GError *error = NULL;
+	int ret;
+
+	SyncReport report;
+	g_debug ("syncing...");
+	ret = (*obj->client).sync(&report);
+	if (ret != 0) {
+		g_printerr ("SyncEvolution returned error %d\n", ret);
+	}
+
+	/* TODO need to add a signal for 'sync finished' with ret as payload */
+
+	g_free (obj->server);
+	obj->server = NULL;
+	obj->sources = NULL;
+
+	return FALSE;
+}
+
 static gboolean  
 syncevo_start_sync (SyncevoDBusServer *obj, 
                     char *server,
                     GPtrArray *sources,
                     GError **error)
 {
-	g_print ("Sync! Sending a fake progress signal...\n");
-	g_signal_emit (obj, signals[PROGRESS], 0, 
-	               server, 0, 1, 2, 3);
+	if (obj->server) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      1, "Sync already in progress. Concurrent syncs are currently not supported");
+		return FALSE;
+	}
+	if (!server) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      1, "Server variable must be set");
+		return FALSE;
+	}
+
+	obj->aborted = FALSE;
+	obj->server = g_strdup (server);
+
+	set<string> source_set = set<string>();
+	g_ptr_array_foreach (sources, (GFunc)syncevo_source_add_to_set, &source_set);
+
+	DBusSyncClient client (string (server), source_set, 
+	                       emit_progress, emit_source_progress, emit_server_message, need_password,
+	                       obj);
+	obj->client = &client;
+
+	/* FIXME should do 
+	g_idle_add ((GSourceFunc)do_sync, obj); 
+	   but there seems to be a problem with EvolutionSyncClient.sync() then ... */
+	do_sync (obj);
+
 	return TRUE;
 }
 
@@ -123,15 +237,33 @@ syncevo_abort_sync (SyncevoDBusServer *obj,
                             char *server,
                             GError **error)
 {
-	return FALSE;
-	
+	if (!server) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      1, "Server variable must be set");
+		return FALSE;
+	}
+
+	if (strcmp (server, obj->server) != 0) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      1, "Not syncing server '%s'", server);
+		return FALSE;
+	}
+
+	obj->aborted = TRUE;
+	/* TODO the progress callback should check for aborted */
+
+	return TRUE;
 }
+
 static gboolean 
 syncevo_set_password (SyncevoDBusServer *obj,
                               char *server,
                               char *password,
                               GError **error)
 {
+	*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+	                      1, "SetPassword not supported yet");
+
 	return FALSE;
 	
 }
@@ -140,6 +272,14 @@ syncevo_get_servers (SyncevoDBusServer *obj,
                              char ***servers,
                              GError **error)
 {
+	if (obj->server) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      1, "GetServers is currently not supported when a sync is in progress");
+		return FALSE;
+	}
+
+	/* TODO */
+
 	return FALSE;
 	
 }
@@ -151,10 +291,19 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 {
 	SyncevoOption *option;
 
-	if (!options) {
-		/* TODO set error*/
+	if (!server || !options) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      1, "Server and options parameters must be given");
 		return FALSE;
 	}
+
+	if (obj->server) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      1, "GetServerConfig is currently not supported when a sync is in progress");
+		return FALSE;
+	}
+
+	/* TODO really implement */
 
 	g_debug ("Returning fake server config");
 	*options = g_ptr_array_new ();
@@ -187,6 +336,20 @@ syncevo_set_server_config (SyncevoDBusServer *obj,
                                    GPtrArray *options,
                                    GError **error)
 {
+	if (!server || !options) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      1, "Server and options parameters must be given");
+		return FALSE;
+	}
+
+	if (obj->server) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      1, "GetServers is currently not supported when a sync is in progress");
+		return FALSE;
+	}
+
+	/* TODO */
+
 	return FALSE;
 }
 
