@@ -79,14 +79,15 @@ AC_DEFINE_UNQUOTED(DEVICE_TYPE, "$DEVICE_TYPE", "SyncML DevInf DevType")
 
 AC_CHECK_HEADERS(stdarg.h valgrind/valgrind.h execinfo.h)
 
+AC_DEFINE(SYNTHESIS, 1, "using Synthesis engine")
+
+AC_CONFIG_FILES(Makefile interfaces/Makefile syncevo-dbus/Makefile src/Makefile src/core/Makefile test/Makefile syncevo-dbus.pc)
+AC_OUTPUT
+
 echo
 echo CONFIGURATION SUMMARY
 for backend in $BACKENDS; do
     eval echo $backend: \${enable_${backend}}
 done
+echo "DBus service: $enable_dbus_service"
 echo
-
-AC_DEFINE(SYNTHESIS, 1, "using Synthesis engine")
-
-AC_CONFIG_FILES(Makefile src/Makefile src/core/Makefile test/Makefile)
-AC_OUTPUT

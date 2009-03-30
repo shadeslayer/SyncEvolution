@@ -1,12 +1,17 @@
 BACKENDS = @BACKENDS@
 SUBDIRS = $(SYNTHESIS_SUBDIR) core $(BACKENDS)
 DIST_SUBDIRS = core $(BACKENDS)
+BUILT_SOURCES =
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test $(BACKEND_CPPFLAGS) $(GLIB_CFLAGS)
 
 EXTRA_PROGRAMS =
 TESTS =
 bin_PROGRAMS = syncevolution
+if COND_DBUS
+libexec_PROGRAMS = syncevo-dbus-server
+endif
+
 bin_SCRIPTS = synccompare
 SYNCEVOLUTION_DEP =
 if ENABLE_MODULES
@@ -105,6 +110,28 @@ testclean:
 distclean-local:
 	rm -rf $(SYNTHESIS_SUBDIR)
 	rm -rf $(CLEAN_CLIENT_SRC)
+
+
+if COND_DBUS
+BUILT_SOURCES += syncevo-dbus-glue.h
+
+syncevo_dbus_server_SOURCES = syncevo-marshal.c syncevo-dbus-server.cpp
+syncevo_dbus_server_LDADD = $(DBUS_GLIB_LIBS)
+syncevo_dbus_server_CPPFLAGS = $(DBUS_GLIB_CFLAGS) $(AM_CPPFLAGS)
+
+%-glue.h: stamp-%-glue.h
+	@true
+stamp-%-glue.h: $(srcdir)/../interfaces/syncevo.xml
+	$(DBUS_BINDING_TOOL) --prefix=syncevo --mode=glib-server $< > xgen-$(@F) \
+	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
+	&& rm -f xgen-$(@F) \
+	&& echo timestamp > $(@F)
+syncevo-marshal.h: $(srcdir)/../interfaces/syncevo-marshal.list $(GLIB_GENMARSHAL)
+	$(GLIB_GENMARSHAL) $< --header --prefix=syncevo_marshal > $@
+syncevo-marshal.c: $(srcdir)/../interfaces/syncevo-marshal.list syncevo-marshal.h $(GLIB_GENMARSHAL)
+	echo "#include \"syncevo-marshal.h\"" > $@ \
+	&& $(GLIB_GENMARSHAL) --prefix=syncevo_marshal $(srcdir)/../interfaces/syncevo-marshal.list --body >> $@
+endif
 
 # With --disable-shared autotools links against libfunambol.a which does not
 # pull any of the test suites into the test binary, so they would not be
