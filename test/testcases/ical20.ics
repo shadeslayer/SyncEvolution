@@ -160,7 +160,7 @@ DTSTART:20060406T183000Z
 DTEND:20060406T190000Z
 TRANSP:OPAQUE
 SEQUENCE:2
-SUMMARY:recurrence\, weekly\, with exceptions
+SUMMARY:recurrence\, daily\, with exceptions
 DESCRIPTION:recurrs seven times\, excluding (but counting) Friday and 
  Saturday
 CLASS:PUBLIC
