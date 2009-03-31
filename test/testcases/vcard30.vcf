@@ -173,7 +173,7 @@ X-EVOLUTION-BLOG-URL:web log
 CALURI:calender
 FBURL:free/busy
 X-EVOLUTION-VIDEO-URL:chat
-X-MOZILLA-HTML:FALSE
+X-MOZILLA-HTML:TRUE
 ADR;TYPE=WORK:Test Box #2;;Test Drive 2;Test Town;Upper Test County;12346;O
  ld Testovia
 LABEL;TYPE=WORK:Test Drive 2\nTest Town\, Upper Test County\n12346\nTest Bo

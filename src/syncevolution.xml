@@ -202,6 +202,10 @@
       <field name="ASSISTANT"  type="string" compare="conflict"/>
       <field name="SPOUSE"     type="string" compare="conflict"/>
 
+      <!-- does this person want HTML mails? Valid values are TRUE/FALSE; a "boolean"
+           type would be useful, maybe add that later. -->
+      <field name="WANTS_HTML"  type="string" compare="conflict"/>
+
       <!-- chat handles: should be turned into one array, like WEB and CALURI/FBURL -->
       <field name="AIM_HANDLE"        array="yes" type="string" compare="conflict"/>
       <field name="AIM_SLOT"          array="yes" type="string" compare="conflict"/>
@@ -382,6 +386,10 @@
         </property>
         <property name="X-EVOLUTION-SPOUSE">
           <value field="SPOUSE" show="yes"/>
+        </property>
+
+        <property name="X-MOZILLA-HTML">
+          <value field="WANTS_HTML" show="yes"/>
         </property>
 
         <property name="X-AIM">
