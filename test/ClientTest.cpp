@@ -2642,12 +2642,12 @@ public:
 
     virtual void cancel() { m_wrappedAgent->cancel(); }
     virtual Status wait() { return m_status; }
-    virtual void getReply(const char *&data, size_t &len) {
+    virtual void getReply(const char *&data, size_t &len, std::string &contentType) {
         if (m_status == FAILED) {
             data = "";
             len = 0;
         } else {
-            m_wrappedAgent->getReply(data, len);
+            m_wrappedAgent->getReply(data, len, contentType);
         }
     }
 };

@@ -34,7 +34,7 @@ class CurlTransportAgent : public TransportAgent
     virtual void send(const char *data, size_t len);
     virtual void cancel();
     virtual Status wait();
-    virtual void getReply(const char *&data, size_t &len);
+    virtual void getReply(const char *&data, size_t &len, std::string &contentType);
 
  private:
     CURL *m_easyHandle;

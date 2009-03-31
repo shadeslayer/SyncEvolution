@@ -49,7 +49,7 @@ class SoupTransportAgent : public TransportAgent
     virtual void send(const char *data, size_t len);
     virtual void cancel();
     virtual Status wait();
-    virtual void getReply(const char *&data, size_t &len);
+    virtual void getReply(const char *&data, size_t &len, std::string &contentType);
 
  private:
     std::string m_proxyUser;
@@ -63,6 +63,7 @@ class SoupTransportAgent : public TransportAgent
 
     /** response, copied from SoupMessage */
     eptr<SoupBuffer, SoupBuffer, GLibUnref> m_response;
+    std::string m_responseContentType;
 
     /** SoupSessionCallback, redirected into user_data->HandleSessionCallback() */
     static void SessionCallback(SoupSession *session,

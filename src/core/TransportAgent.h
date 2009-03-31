@@ -111,7 +111,7 @@ class TransportAgent
      * transport agent is not deleted and no other
      * message is sent.
      */
-    virtual void getReply(const char *&data, size_t &len) = 0;
+    virtual void getReply(const char *&data, size_t &len, std::string &contentType) = 0;
 
     /** SyncML in XML format */
     static const char * const m_contentTypeSyncML;

@@ -1499,18 +1499,30 @@ SyncMLStatus EvolutionSyncClient::doSync()
                 case TransportAgent::ACTIVE:
                     stepCmd = sysync::STEPCMD_SENTDATA; // still sending the data?!
                     break;
-                case TransportAgent::GOT_REPLY:
+                case TransportAgent::GOT_REPLY: {
                     sendBuffer.reset();
                     const char *reply;
                     size_t replylen;
-                    agent->getReply(reply, replylen);
+                    string contentType;
+                    agent->getReply(reply, replylen, contentType);
 
-                    // put answer received earlier into SyncML engine's buffer
-                    m_engine.WriteSyncMLBuffer(session,
-                                               reply,
-                                               replylen);
-                    stepCmd = sysync::STEPCMD_GOTDATA; // we have received response data
+                    // sanity check for reply: if known at all, it must be either XML or WBXML
+                    if (contentType.empty() ||
+                        contentType.find("application/vnd.syncml+wbxml") != contentType.npos ||
+                        contentType.find("application/vnd.syncml+xml") != contentType.npos) {
+                        // put answer received earlier into SyncML engine's buffer
+                        m_engine.WriteSyncMLBuffer(session,
+                                                   reply,
+                                                   replylen);
+                        stepCmd = sysync::STEPCMD_GOTDATA; // we have received response data
+                    } else {
+                        SE_LOG_DEBUG(NULL, NULL, "unexpected content type '%s' in reply, %d bytes:\n%.*s",
+                                     contentType.c_str(), (int)replylen, (int)replylen, reply);
+                        SE_LOG_ERROR(NULL, NULL, "unexpected reply from server; might be a temporary problem, try again later");
+                        stepCmd = sysync::STEPCMD_TRANSPFAIL;
+                    }
                     break;
+                }
                 default:
                     stepCmd = sysync::STEPCMD_TRANSPFAIL; // communication with server failed
                     break;

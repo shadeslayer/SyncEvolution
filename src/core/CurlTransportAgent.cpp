@@ -149,10 +149,18 @@ TransportAgent::Status CurlTransportAgent::wait()
     return m_status;
 }
 
-void CurlTransportAgent::getReply(const char *&data, size_t &len)
+void CurlTransportAgent::getReply(const char *&data, size_t &len, std::string &contentType)
 {
     data = m_reply;
     len = m_replyLen;
+    const char *curlContentType;
+    if (!curl_easy_getinfo(m_easyHandle, CURLINFO_CONTENT_TYPE, &curlContentType) &&
+        curlContentType) {
+        contentType = curlContentType;
+    } else {
+        // unknown
+        contentType = "";
+    }
 }
 
 size_t CurlTransportAgent::writeDataCallback(void *buffer, size_t size, size_t nmemb, void *stream) throw()
