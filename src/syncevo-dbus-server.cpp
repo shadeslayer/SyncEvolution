@@ -178,6 +178,7 @@ do_sync (SyncevoDBusServer *obj)
 	}
 
 	/* TODO need to add a signal for 'sync finished' with ret as payload */
+
 	delete obj->client;
 	g_free (obj->server);
 	obj->server = NULL;
@@ -229,7 +230,7 @@ syncevo_abort_sync (SyncevoDBusServer *obj,
 		return FALSE;
 	}
 
-	if (strcmp (server, obj->server) != 0) {
+	if ((!obj->server) || strcmp (server, obj->server) != 0) {
 		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
 		                      1, "Not syncing server '%s'", server);
 		return FALSE;
