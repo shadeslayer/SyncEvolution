@@ -229,10 +229,7 @@ syncevo_start_sync (SyncevoDBusServer *obj,
 	                                  emit_progress, emit_source_progress, emit_server_message, need_password,
 	                                  obj);
 
-	/* FIXME should do 
 	g_idle_add ((GSourceFunc)do_sync, obj); 
-	   but there seems to be a problem with EvolutionSyncClient.sync() then ... */
-	do_sync (obj);
 
 	return TRUE;
 }
@@ -286,7 +283,6 @@ syncevo_get_servers (SyncevoDBusServer *obj,
 	*servers = (char**)g_malloc0 (sizeof(char*) * list.size() + 1);
 
 	BOOST_FOREACH(const EvolutionSyncConfig::ServerList::value_type &server,list) {
-		g_debug ("%s, %s", server.first.c_str(), server.second.c_str());
 		*servers[i++] = g_strdup (server.first.c_str());
 	}
 	
@@ -294,9 +290,9 @@ syncevo_get_servers (SyncevoDBusServer *obj,
 }
 static gboolean 
 syncevo_get_server_config (SyncevoDBusServer *obj,
-                                   char *server,
-                                   GPtrArray **options,
-                                   GError **error)
+                           char *server,
+                           GPtrArray **options,
+                           GError **error)
 {
 	SyncevoOption *option;
 
@@ -312,30 +308,27 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 		return FALSE;
 	}
 
-	/* TODO really implement */
-
-	g_debug ("Returning fake server config");
 	*options = g_ptr_array_new ();
+	const string srv (server);
 
-	option = syncevo_option_new (g_strdup("notes"), g_strdup("sync"), g_strdup("disabled"));
+	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig (string (server)));
+
+	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup(config->getSyncURL()));
 	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (g_strdup("addressbook"), g_strdup("sync"), g_strdup("disabled"));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (g_strdup("memo"), g_strdup("sync"), g_strdup("disabled"));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (g_strdup("calendar"), g_strdup("sync"), g_strdup("two-way"));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (g_strdup("calendar"), g_strdup("uri"), g_strdup("cal2"));
+	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup(config->getUsername()));
 	g_ptr_array_add (*options, option);
 
-	option = syncevo_option_new (NULL, g_strdup("syncURL"), g_strdup("http://sync.scheduleworld.com/funambol/ds"));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup("jku@goto.fi"));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (NULL, g_strdup("password"), g_strdup("XXXXXXXXX"));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (NULL, g_strdup("deviceId"), g_strdup("sc-pim-7eabdd2e-8712-455a-b9af-16fd2da242fe"));
-	g_ptr_array_add (*options, option);
+
+	list<string> sources = config->getSyncSources();
+	BOOST_FOREACH(const string &name, sources) {
+		boost::shared_ptr<EvolutionSyncSourceConfig> source_config = config->getSyncSourceConfig(name);
+
+		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getSync()));
+		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getURI()));
+
+	}
+
+	/* TODO which options do we need ? */
 
 	return TRUE;
 }
@@ -359,6 +352,9 @@ syncevo_set_server_config (SyncevoDBusServer *obj,
 	}
 
 	/* TODO */
+
+	*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+	                      1, "not implemented yet");
 
 	return FALSE;
 }
