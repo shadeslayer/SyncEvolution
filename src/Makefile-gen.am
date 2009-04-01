@@ -118,15 +118,9 @@ BUILT_SOURCES += syncevo-dbus-glue.h
 syncevo_dbus_server_SOURCES = syncevo-marshal.c syncevo-dbus-server.cpp DBusSyncClient.cpp $(CORE_SOURCES)
 syncevo_dbus_server_LDADD = $(DBUS_GLIB_LIBS) $(CORE_LDADD)
 syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H $(DBUS_GLIB_CFLAGS) $(AM_CPPFLAGS)
-syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
-syncevo_dbus_server_LDFLAGS = $(CORE_LDFLAGS)
-
-# These dependencies are intentionally a bit too broad:
-# they ensure that all files are in place to *run* client-test,
-# but in particular the "all" dependency causes a rebuild
-# even if the actual input files haven't changed.
-client_test_DEPENDENCIES = all $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) synccompare
-
+syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
+syncevo_dbus_server_LDFLAGS = $(CORE_LD_FLAGS)
+syncevo_dbus_server_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
 
 %-glue.h: stamp-%-glue.h
 	@true

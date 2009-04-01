@@ -45,10 +45,10 @@ protected:
 private:
 	gpointer m_userdata;
 
-	void (*progress) (int type,int extra1,int extra2,int extra3,gpointer data);
-	void (*source_progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data);
-	void (*server_message) (const char *message,gpointer data);
-	char* (*need_password) (const char *message,gpointer data);
+	void (*m_progress) (int type,int extra1,int extra2,int extra3,gpointer data);
+	void (*m_source_progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data);
+	void (*m_server_message) (const char *message,gpointer data);
+	char* (*m_need_password) (const char *message,gpointer data);
 
 };
 
