@@ -24,6 +24,7 @@ public:
 				   void (*progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data) = NULL,
 				   void (*server_message) (const char *message,gpointer data) = NULL,
 				   char* (*need_password) (const char *message,gpointer data) = NULL,
+				   gboolean (*check_for_suspend)(gpointer data) = NULL,
 				   gpointer userdata = NULL);
 
 	~DBusSyncClient();
@@ -41,12 +42,15 @@ protected:
 	                                   EvolutionSyncSource &source,
 	                                   int32_t extra1, int32_t extra2, int32_t extra3);
 
+	virtual bool checkForSuspend();
+
 private:
 	gpointer m_userdata;
 
 	void (*m_progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data);
 	void (*m_server_message) (const char *message,gpointer data);
 	char* (*m_need_password) (const char *message,gpointer data);
+	gboolean (*m_check_for_suspend) (gpointer data);
 
 };
 

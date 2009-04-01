@@ -55,4 +55,7 @@ char*
 need_password (const char *message, 
                gpointer data);
 
+gboolean 
+check_for_suspend (gpointer data);
+
 #endif // __SYNCEVO_DBUS_SERVER_H

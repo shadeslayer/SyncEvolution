@@ -132,8 +132,6 @@ emit_progress (const char *source,
 	               extra1,
 	               extra2,
 	               extra3);
-
-	/* TODO should check for aborted */
 }
 
 void
@@ -145,8 +143,6 @@ emit_server_message (const char *message,
 	g_signal_emit (obj, signals[SERVER_MESSAGE], 0,
 	               obj->server,
 	               message);
-
-	/* TODO  should check for aborted */
 }
 
 char*
@@ -160,7 +156,13 @@ need_password (const char *message,
 	/* TODO */
 }
 
+gboolean 
+check_for_suspend (gpointer data)
+{
+	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
 
+	return obj->aborted;
+}
 
 static gboolean 
 do_sync (SyncevoDBusServer *obj)
@@ -208,7 +210,7 @@ syncevo_start_sync (SyncevoDBusServer *obj,
 	g_ptr_array_foreach (sources, (GFunc)syncevo_source_add_to_set, &source_set);
 
 	obj->client = new DBusSyncClient (string (server), source_set, 
-	                                  emit_progress, emit_server_message, need_password,
+	                                  emit_progress, emit_server_message, need_password, check_for_suspend,
 	                                  obj);
 
 	g_idle_add ((GSourceFunc)do_sync, obj); 

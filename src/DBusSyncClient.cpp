@@ -7,12 +7,14 @@ DBusSyncClient::DBusSyncClient(const string &server,
                                void (*progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data),
                                void (*server_message) (const char *message,gpointer data),
                                char* (*need_password) (const char *message,gpointer data),
+                               gboolean (*check_for_suspend)(gpointer data),
                                gpointer userdata) : 
 	EvolutionSyncClient(server, true, sources),
 	m_userdata (userdata),
 	m_progress (progress),
 	m_server_message (server_message),
-	m_need_password (need_password)
+	m_need_password (need_password),
+	m_check_for_suspend (check_for_suspend)
 {
 }
 
@@ -44,4 +46,9 @@ void DBusSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
                                            int32_t extra1, int32_t extra2, int32_t extra3)
 {
 	m_progress (g_strdup (source.getName()), type, extra1, extra2, extra3, m_userdata);
+}
+
+bool DBusSyncClient::checkForSuspend()
+{
+	return m_check_for_suspend (m_userdata);
 }
