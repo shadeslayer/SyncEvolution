@@ -188,6 +188,10 @@ sub Normalize {
     # definitions which have the same TZID, but different rules.
     s/(^TZID:|;TZID=)([^;:]*?) \d+/$1$2/gm;
 
+    # Strip trailing -(Standard) from TZID. Evolution 2.24.5 adds
+    # that (not sure exactly where that comes from).
+    s/(^TZID:|;TZID=)([^;:]*?)-\(Standard\)/$1$2/gm;
+
     # VTIMEZONE and TZID do not have to be preserved verbatim as long
     # as the replacement is still representing the same timezone.
     # Reduce TZIDs which follow the Olson database pseudo-standard
