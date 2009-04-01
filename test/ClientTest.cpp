@@ -1658,7 +1658,9 @@ void SyncTests::addTests() {
             }
         }
 
-        if (config.retrySync &&
+        // TODO: enable interrupted sync tests again
+        if (false &&
+            config.retrySync &&
             config.insertItem &&
             config.updateItem &&
             accessClientB &&
