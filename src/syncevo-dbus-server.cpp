@@ -130,6 +130,8 @@ emit_progress (int type,
 	               type,
 	               extra1,
 	               extra2);
+
+	/* TODO should check for aborted */
 }
 
 void
@@ -148,6 +150,8 @@ emit_source_progress (const char *source,
 	               type,
 	               extra1,
 	               extra2);
+
+	/* TODO should check for aborted */
 }
 
 void
@@ -159,6 +163,8 @@ emit_server_message (const char *message,
 	g_signal_emit (obj, signals[SERVER_MESSAGE], 0,
 	               "servername",
 	               message);
+
+	/* TODO  should check for aborted */
 }
 
 char*
@@ -249,7 +255,6 @@ syncevo_abort_sync (SyncevoDBusServer *obj,
 	}
 
 	obj->aborted = TRUE;
-	/* TODO the progress callback should check for aborted */
 
 	return TRUE;
 }
@@ -268,19 +273,24 @@ syncevo_set_password (SyncevoDBusServer *obj,
 }
 static gboolean 
 syncevo_get_servers (SyncevoDBusServer *obj,
-                             char ***servers,
-                             GError **error)
+                     char ***servers,
+                     GError **error)
 {
-	if (obj->server) {
-		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
-		                      1, "GetServers is currently not supported when a sync is in progress");
+	int i = 0;
+
+	if (!servers) {
 		return FALSE;
 	}
 
-	/* TODO */
+	EvolutionSyncConfig::ServerList list = EvolutionSyncConfig::getServers();
+	*servers = (char**)g_malloc0 (sizeof(char*) * list.size() + 1);
 
-	return FALSE;
+	BOOST_FOREACH(const EvolutionSyncConfig::ServerList::value_type &server,list) {
+		g_debug ("%s, %s", server.first.c_str(), server.second.c_str());
+		*servers[i++] = g_strdup (server.first.c_str());
+	}
 	
+	return TRUE;
 }
 static gboolean 
 syncevo_get_server_config (SyncevoDBusServer *obj,
