@@ -13,7 +13,6 @@ typedef struct _SyncevoAsyncData {
 
 enum {
 	PROGRESS,
-	SOURCE_PROGRESS,
 	SERVER_MESSAGE,
 	NEED_PASSWORD,
 	LAST_SIGNAL
@@ -27,15 +26,10 @@ typedef struct _SyncevoServicePrivate {
 
 static void progress_cb (DBusGProxy *proxy,
                          char *server,
+                         char *source,
                          int type,
                          int extra1, int extra2, int extra3,
                          SyncevoService *service);
-static void source_progress_cb (DBusGProxy *proxy,
-                                char *server,
-                                char *source,
-                                int type,
-                                int extra1, int extra2, int extra3,
-                                SyncevoService *service);
 static void server_message_cb (DBusGProxy *proxy,
                                char *server,
                                char *message,
@@ -69,14 +63,11 @@ dispose (GObject *object)
 		dbus_g_proxy_disconnect_signal (priv->proxy, "Progress",
 						G_CALLBACK (progress_cb),
 						object);
-		dbus_g_proxy_disconnect_signal (priv->proxy, "SourceProgress",
-						G_CALLBACK (progress_cb),
-						object);
 		dbus_g_proxy_disconnect_signal (priv->proxy, "ServerMessage",
-						G_CALLBACK (progress_cb),
+						G_CALLBACK (server_message_cb),
 						object);
 		dbus_g_proxy_disconnect_signal (priv->proxy, "NeedPassword",
-						G_CALLBACK (progress_cb),
+						G_CALLBACK (need_password_cb),
 						object);
 
 		g_object_unref (priv->proxy);
@@ -88,22 +79,12 @@ dispose (GObject *object)
 
 static void progress_cb (DBusGProxy *proxy,
                          char *server,
+                         char *source,
                          int type,
                          int extra1, int extra2, int extra3,
                          SyncevoService *service)
 {
 	g_signal_emit (service, signals[PROGRESS], 0, 
-	               server, type, extra1, extra2, extra3);
-}
-
-static void source_progress_cb (DBusGProxy *proxy,
-                                char *server,
-                                char *source,
-                                int type,
-                                int extra1, int extra2, int extra3,
-                                SyncevoService *service)
-{
-	g_signal_emit (service, signals[SOURCE_PROGRESS], 0, 
 	               server, source, type, extra1, extra2, extra3);
 }
 
@@ -153,14 +134,6 @@ constructor (GType                  type,
 	                                         SYNCEVO_SERVICE_DBUS_SERVICE,
 	                                         SYNCEVO_SERVICE_DBUS_PATH,
 	                                         SYNCEVO_SERVICE_DBUS_INTERFACE);
-	dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_INT_INT_INT_INT,
-					   G_TYPE_NONE,
-					   G_TYPE_STRING,
-					   G_TYPE_INT,
-					   G_TYPE_INT,
-					   G_TYPE_INT,
-					   G_TYPE_INT,
-					   G_TYPE_INVALID);
 	dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_STRING_INT_INT_INT_INT,
 					   G_TYPE_NONE,
 					   G_TYPE_STRING,
@@ -177,13 +150,9 @@ constructor (GType                  type,
 					   G_TYPE_INVALID);
 
 	dbus_g_proxy_add_signal (priv->proxy, "Progress",
-	                         G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID);
+	                         G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID);
 	dbus_g_proxy_connect_signal (priv->proxy, "Progress",
 	                             G_CALLBACK (progress_cb), service, NULL);
-	dbus_g_proxy_add_signal (priv->proxy, "SourceProgress",
-	                         G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID);
-	dbus_g_proxy_connect_signal (priv->proxy, "SourceProgress",
-	                             G_CALLBACK (source_progress_cb), service, NULL);
 	dbus_g_proxy_add_signal (priv->proxy, "ServerMessage",
 	                         G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID);
 	dbus_g_proxy_connect_signal (priv->proxy, "ServerMessage",
@@ -211,14 +180,6 @@ syncevo_service_class_init (SyncevoServiceClass *klass)
 	                                  G_TYPE_FROM_CLASS (klass),
 	                                  G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
 	                                  G_STRUCT_OFFSET (SyncevoServiceClass, progress),
-	                                  NULL, NULL,
-	                                  syncevo_marshal_VOID__STRING_INT_INT_INT_INT,
-	                                  G_TYPE_NONE, 
-	                                  5, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT);
-	signals[SOURCE_PROGRESS] = g_signal_new ("source-progress",
-	                                  G_TYPE_FROM_CLASS (klass),
-	                                  G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
-	                                  G_STRUCT_OFFSET (SyncevoServiceClass, source_progress),
 	                                  NULL, NULL,
 	                                  syncevo_marshal_VOID__STRING_STRING_INT_INT_INT_INT,
 	                                  G_TYPE_NONE, 

@@ -27,13 +27,9 @@ typedef struct _SyncevoDBusServerClass {
 	/* DBus signals*/
 	void (*progress) (SyncevoDBusServer *service,
 	                  char *server,
+	                  char *source,
 	                  int type,
 	                  int extra1, int extra2, int extra3);
-	void (*source_progress) (SyncevoDBusServer *service,
-	                         char *server,
-	                         char *source,
-	                         int type,
-	                         int extra1, int extra2, int extra3);
 	void (*server_message) (SyncevoDBusServer *service,
 	                        char *server,
 	                        char *message);
@@ -44,19 +40,12 @@ typedef struct _SyncevoDBusServerClass {
 GType syncevo_dbus_server_get_type (void);
 
 void
-emit_progress (int type,
+emit_progress (const char *source,
+               int type,
                int extra1,
                int extra2,
                int extra3, 
                gpointer data);
-
-void
-emit_source_progress (const char *source,
-                      int type,
-                      int extra1,
-                      int extra2,
-                      int extra3, 
-                      gpointer data);
 
 void
 emit_server_message (const char *message, 

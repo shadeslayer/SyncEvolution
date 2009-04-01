@@ -24,13 +24,9 @@ typedef struct _SyncevoServiceClass {
 
 	void (*progress) (SyncevoService *service,
 	                  char *server,
+	                  char *source,
 	                  int type,
 	                  int extra1, int extra2, int extra3);
-	void (*source_progress) (SyncevoService *service,
-	                         char *server,
-	                         char *source,
-	                         int type,
-	                         int extra1, int extra2, int extra3);
 	void (*server_message) (SyncevoService *service,
 	                        char *server,
 	                        char *message);

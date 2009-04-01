@@ -107,7 +107,6 @@ syncevo_option_free (SyncevoOption *option)
 
 enum {
 	PROGRESS,
-	SOURCE_PROGRESS,
 	SERVER_MESSAGE,
 	NEED_PASSWORD,
 	LAST_SIGNAL
@@ -117,26 +116,7 @@ static guint signals[LAST_SIGNAL] = {0};
 G_DEFINE_TYPE (SyncevoDBusServer, syncevo_dbus_server, G_TYPE_OBJECT);
 
 void
-emit_progress (int type,
-               int extra1,
-               int extra2,
-               int extra3,
-               gpointer data)
-{
-	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
-
-	g_signal_emit (obj, signals[PROGRESS], 0,
-	               obj->server,
-	               type,
-	               extra1,
-	               extra2,
-	               extra3);
-
-	/* TODO should check for aborted */
-}
-
-void
-emit_source_progress (const char *source,
+emit_progress (const char *source,
                       int type,
                       int extra1,
                       int extra2,
@@ -145,7 +125,7 @@ emit_source_progress (const char *source,
 {
 	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
 
-	g_signal_emit (obj, signals[SOURCE_PROGRESS], 0,
+	g_signal_emit (obj, signals[PROGRESS], 0,
 	               obj->server,
 	               source,
 	               type,
@@ -228,7 +208,7 @@ syncevo_start_sync (SyncevoDBusServer *obj,
 	g_ptr_array_foreach (sources, (GFunc)syncevo_source_add_to_set, &source_set);
 
 	obj->client = new DBusSyncClient (string (server), source_set, 
-	                                  emit_progress, emit_source_progress, emit_server_message, need_password,
+	                                  emit_progress, emit_server_message, need_password,
 	                                  obj);
 
 	g_idle_add ((GSourceFunc)do_sync, obj); 
@@ -378,14 +358,6 @@ syncevo_dbus_server_class_init(SyncevoDBusServerClass *klass)
 	                                  G_TYPE_FROM_CLASS (klass),
 	                                  (GSignalFlags)(G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE),
 	                                  G_STRUCT_OFFSET (SyncevoDBusServerClass, progress),
-	                                  NULL, NULL,
-	                                  syncevo_marshal_VOID__STRING_INT_INT_INT_INT,
-	                                  G_TYPE_NONE, 
-	                                  5, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT);
-	signals[SOURCE_PROGRESS] = g_signal_new ("source-progress",
-	                                  G_TYPE_FROM_CLASS (klass),
-	                                  (GSignalFlags)(G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE),
-	                                  G_STRUCT_OFFSET (SyncevoDBusServerClass, source_progress),
 	                                  NULL, NULL,
 	                                  syncevo_marshal_VOID__STRING_STRING_INT_INT_INT_INT,
 	                                  G_TYPE_NONE, 

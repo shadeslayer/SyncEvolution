@@ -21,8 +21,7 @@ class DBusSyncClient : public EvolutionSyncClient {
 public:
 	DBusSyncClient(const string &server,
 				   const set<string> &sources = set<string>(),
-				   void (*progress) (int type,int extra1,int extra2,int extra3,gpointer data) = NULL,
-				   void (*source_progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data) = NULL,
+				   void (*progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data) = NULL,
 				   void (*server_message) (const char *message,gpointer data) = NULL,
 				   char* (*need_password) (const char *message,gpointer data) = NULL,
 				   gpointer userdata = NULL);
@@ -45,8 +44,7 @@ protected:
 private:
 	gpointer m_userdata;
 
-	void (*m_progress) (int type,int extra1,int extra2,int extra3,gpointer data);
-	void (*m_source_progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data);
+	void (*m_progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data);
 	void (*m_server_message) (const char *message,gpointer data);
 	char* (*m_need_password) (const char *message,gpointer data);
 

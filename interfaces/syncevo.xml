@@ -13,15 +13,8 @@
       <arg type="s" name="server" direction="in" />
     </method>
 
-    <!-- for now the progress signals are a direct copy from synthesis -->
+    <!-- for now the progress signal args are a direct copy from synthesis -->
     <signal name="Progress">
-      <arg type="s" name="server" />
-      <arg type="i" name="type" />
-      <arg type="i" name="extra1" />
-      <arg type="i" name="extra2" />
-      <arg type="i" name="extra3" />
-    </signal>
-    <signal name="SourceProgress">
       <arg type="s" name="server" />
       <arg type="s" name="source" />
       <arg type="i" name="type" />
