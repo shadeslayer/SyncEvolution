@@ -871,7 +871,7 @@ public:
                               "config.ini:# proxyPassword = \n"
                               "config.ini:# clientAuthType = syncml:auth-md5\n"
                               "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
-                              "config.ini:# enableWBXML = 1\n"
+                              "config.ini:# enableWBXML = 0\n"
                               "config.ini:# maxMsgSize = 8192\n"
                               "config.ini:# maxObjSize = 500000\n"
                               "config.ini:# loSupport = 1\n"
