@@ -2,94 +2,8 @@
 
 #include <syncevo-dbus/syncevo-dbus.h>
 
-enum TProgressEventEnum {
-  /** some fatal aborting error */
-  PEV_ERROR = 0,
-  /** extra messages */
-  PEV_MESSAGE = 1,
-  /** extra error code */
-  PEV_ERRCODE = 2,
-  /** no extra message, just called to allow aborting */
-  PEV_NOP = 3,
-  /** called to signal main program, that caller would want to
-      wait for extra1 milliseconds */
-  PEV_WAIT = 4,
-  /** called to allow debug interactions, extra1=code */
-  PEV_DEBUG = 5,
-
-  /* transport-related */
-  
-  PEV_SENDSTART = 6,
-  PEV_SENDEND = 7,
-  PEV_RECVSTART = 8,
-  PEV_RECVEND = 9,
-  /** expired */
-  PEV_SSL_EXPIRED = 10,
-  /** not completely trusted */
-  PEV_SSL_NOTRUST = 11,
-  /** sent periodically when waiting for network,
-      allows application to check connection */
-  PEV_CONNCHECK = 12,
-  /** sent when client could initiate a explicit suspend */
-  PEV_SUSPENDCHECK = 13,
-
-  /* general */
-
-  /** alert 100 received from remote, SessionKey's "displayalert" value contains message */
-  PEV_DISPLAY100 = 14,
-
-  /* session-related */
-  
-  PEV_SESSIONSTART = 15,
-  /** session ended, probably with error in extra */
-  PEV_SESSIONEND = 16,
-  /* datastore-related */
-  /** preparing (e.g. preflight in some clients), extra1=progress, extra2=total */
-  PEV_PREPARING = 17,
-  /** deleting (zapping datastore), extra1=progress, extra2=total */
-  PEV_DELETING = 18,
-  /** datastore alerted (extra1=0 for normal, 1 for slow, 2 for first time slow,
-      extra2=1 for resumed session, extra3=syncmode: 0=twoway, 1=fromserver, 2=fromclient) */
-  PEV_ALERTED = 19,
-  /** sync started */
-  PEV_SYNCSTART = 20,
-  /** item received, extra1=current item count,
-      extra2=number of expected changes (if >= 0) */
-  PEV_ITEMRECEIVED = 21,
-  /** item sent,     extra1=current item count,
-      extra2=number of expected items to be sent (if >=0) */
-  PEV_ITEMSENT = 22,
-  /** item locally processed,               extra1=# added,
-      extra2=# updated,
-      extra3=# deleted */
-  PEV_ITEMPROCESSED = 23,
-  /** sync finished, probably with error in extra1 (0=ok),
-      syncmode in extra2 (0=normal, 1=slow, 2=first time),
-      extra3=1 for resumed session) */
-  PEV_SYNCEND = 24,
-  /** datastore statistics for local       (extra1=# added,
-      extra2=# updated,
-      extra3=# deleted) */
-  PEV_DSSTATS_L = 25,
-  /** datastore statistics for remote      (extra1=# added,
-      extra2=# updated,
-      extra3=# deleted) */
-  PEV_DSSTATS_R = 26,
-  /** datastore statistics for local/remote rejects (extra1=# locally rejected,
-      extra2=# remotely rejected) */
-  PEV_DSSTATS_E = 27,
-  /** datastore statistics for server slowsync  (extra1=# slowsync matches) */
-  PEV_DSSTATS_S = 28,
-  /** datastore statistics for server conflicts (extra1=# server won,
-      extra2=# client won,
-      extra3=# duplicated) */
-  PEV_DSSTATS_C = 29,
-  /** datastore statistics for data   volume    (extra1=outgoing bytes,
-      extra2=incoming bytes) */
-  PEV_DSSTATS_D = 30,
-  /** engine is in process of suspending */
-  PEV_SUSPENDING = 31
-};
+#include <synthesis/syerror.h>
+#include <synthesis/engine_defs.h>
 
 static void
 print_option (SyncevoOption *option, gpointer userdata)
@@ -166,10 +80,19 @@ progress_cb (SyncevoService *service,
         g_debug ("  source progress: %s/%s: sync started", server, source);
         break;
     case PEV_SYNCEND:
-        if(extra1 == 0) 
+        switch (extra1) {
+        case 0:
             g_debug ("  source progress: %s/%s: sync finished", server, source);
-        else
+            break;
+        case LOCERR_USERABORT:
+            g_debug ("  source progress: %s/%s: sync aborted by user", server, source);
+            break;
+        case LOCERR_USERSUSPEND:
+            g_debug ("  source progress: %s/%s: sync suspended by user", server, source);
+            break;
+        default: 
             g_debug ("  source progress: %s/%s: sync finished with error %d", server, source, extra1);
+        }
         break;
 
     default:
