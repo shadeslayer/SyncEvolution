@@ -126,10 +126,11 @@ emit_progress (int type,
 	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
 
 	g_signal_emit (obj, signals[PROGRESS], 0,
-	               "servername",
+	               obj->server,
 	               type,
 	               extra1,
-	               extra2);
+	               extra2,
+	               extra3);
 
 	/* TODO should check for aborted */
 }
@@ -145,11 +146,12 @@ emit_source_progress (const char *source,
 	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
 
 	g_signal_emit (obj, signals[SOURCE_PROGRESS], 0,
-	               "servername",
+	               obj->server,
 	               source,
 	               type,
 	               extra1,
-	               extra2);
+	               extra2,
+	               extra3);
 
 	/* TODO should check for aborted */
 }
@@ -161,7 +163,7 @@ emit_server_message (const char *message,
 	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
 
 	g_signal_emit (obj, signals[SERVER_MESSAGE], 0,
-	               "servername",
+	               obj->server,
 	               message);
 
 	/* TODO  should check for aborted */

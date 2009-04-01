@@ -45,5 +45,5 @@ void DBusSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
                                            EvolutionSyncSource &source,
                                            int32_t extra1, int32_t extra2, int32_t extra3)
 {
-	m_source_progress (source.getName(), type, extra1, extra2, extra3, m_userdata);
+	m_source_progress (g_strdup (source.getName()), type, extra1, extra2, extra3, m_userdata);
 }
