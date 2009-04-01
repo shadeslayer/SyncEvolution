@@ -511,6 +511,7 @@
       <field name="SUMMARY" type="multiline" compare="always"/>
       <field name="DESCRIPTION" type="multiline" compare="slowsync" merge="lines"/>
       <field name="LOCATION" type="multiline" compare="slowsync" merge="lines"/>
+      <field name="URL" type="url" compare="conflict"/>
 
       <!-- recurrence rule block, fields must be in that order, including
            DTSTART as last field !! -->
@@ -533,6 +534,7 @@
 
       <field name="PRIORITY" type="integer" compare="conflict"/>
       <field name="STATUS" type="integer" compare="conflict" merge="fillempty"/>
+      <field name="PERCENT_COMPLETE" type="integer" compare="conflict"/>
 
       <field name="ALARM_TIME" type="timestamp" compare="conflict"/>
       <field name="ALARM_SNOOZE" type="string" compare="conflict"/>
@@ -653,6 +655,10 @@
             <value field="LOCATION"/>
           </property>
 
+          <property name="URL" suppressempty="yes" mandatory="no">
+            <value field="URL"/>
+          </property>
+
           <property name="DTSTART" suppressempty="yes" delayedparsing="1">
             <value field="DTSTART" conversion="autodate"/>
             <parameter onlyformode="standard" name="TZID" default="no" show="yes">
@@ -722,6 +728,9 @@
             </value>
           </property>
 
+          <property name="PERCENT-COMPLETE" suppressempty="yes">
+            <value field="PERCENT_COMPLETE"/>
+          </property>          
 
           <!-- AALARM and DALARM both use the same fields -->
           <property name="AALARM" onlyformode="old" values="4" suppressempty="yes">
