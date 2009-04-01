@@ -207,7 +207,7 @@ void LocalTests::addTests() {
     }
 }
 
-std::string LocalTests::insert(CreateSource createSource, const char *data, bool relaxed) {
+std::string LocalTests::insert(CreateSource createSource, const char *data, const char *dataType, bool relaxed) {
     std::string uid;
 
     // create source
@@ -220,6 +220,7 @@ std::string LocalTests::insert(CreateSource createSource, const char *data, bool
     CPPUNIT_ASSERT_NO_THROW(numItems = countItems(source.get()));
     SyncItem item;
     item.setData(data, (long)strlen(data));
+    item.setDataType(dataType);
     SyncMLStatus status = STATUS_OK;
     SOURCE_ASSERT_NO_FAILURE(source.get(), status = source->addItem(item));
     CPPUNIT_ASSERT(!item.getKey().empty());
@@ -305,7 +306,7 @@ static void removeItem(CreateSource createSource, const std::string &luid)
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 }
 
-void LocalTests::update(CreateSource createSource, const char *data, bool check) {
+void LocalTests::update(CreateSource createSource, const char *data, const char *dataType, bool check) {
     CPPUNIT_ASSERT(createSource.createSource);
     CPPUNIT_ASSERT(data);
 
@@ -320,7 +321,7 @@ void LocalTests::update(CreateSource createSource, const char *data, bool check)
     SOURCE_ASSERT_NO_FAILURE(source.get(), item.reset(source->getFirstItem()) );
     CPPUNIT_ASSERT(item.get());
     item->setData(data, (long)strlen(data) + 1);
-    item->setDataType((""));
+    item->setDataType(dataType);
     SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->updateItem(*item));
     SOURCE_ASSERT(source.get(), source->endSync() == 0);
     CPPUNIT_ASSERT_NO_THROW(source.reset());
@@ -342,7 +343,7 @@ void LocalTests::update(CreateSource createSource, const char *data, bool check)
     CPPUNIT_ASSERT_EQUAL(item->getKey(), modifiedItem->getKey());
 }
 
-void LocalTests::update(CreateSource createSource, const char *data, const std::string &luid) {
+void LocalTests::update(CreateSource createSource, const char *data, const char *dataType, const std::string &luid) {
     CPPUNIT_ASSERT(createSource.createSource);
     CPPUNIT_ASSERT(data);
 
@@ -355,7 +356,7 @@ void LocalTests::update(CreateSource createSource, const char *data, const std::
     SOURCE_ASSERT(source.get(), source->beginSync(SYNC_NONE) == 0 );
     SyncItem item;
     item.setData(data, (long)strlen(data) + 1);
-    item.setDataType((""));
+    item.setDataType(dataType);
     item.setKey(luid.c_str());
     SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->updateItem(item));
     SOURCE_ASSERT(source.get(), source->endSync() == 0);
@@ -603,7 +604,7 @@ void LocalTests::testSimpleInsert() {
     CPPUNIT_ASSERT(config.insertItem);
     CPPUNIT_ASSERT(config.createSourceA);
 
-    insert(createSourceA, config.insertItem);
+    insert(createSourceA, config.insertItem, config.itemType);
 }
 
 // delete all items
@@ -613,7 +614,7 @@ void LocalTests::testLocalDeleteAll() {
     CPPUNIT_ASSERT(config.createSourceA);
 
     // make sure there is something to delete, then delete again
-    insert(createSourceA, config.insertItem);
+    insert(createSourceA, config.insertItem, config.itemType);
     deleteAll(createSourceA);
 }
 
@@ -631,7 +632,7 @@ void LocalTests::testLocalUpdate() {
 
     testLocalDeleteAll();
     testSimpleInsert();
-    update(createSourceA, config.updateItem);
+    update(createSourceA, config.updateItem, config.itemType);
 }
 
 // complex sequence of changes
@@ -693,7 +694,7 @@ void LocalTests::testChanges() {
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // update item via sync source A
-    update(createSourceA, config.updateItem);
+    update(createSourceA, config.updateItem, config.itemType);
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->beginSync(SYNC_NONE));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -714,7 +715,7 @@ void LocalTests::testChanges() {
     SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->beginSync(SYNC_NONE));
     SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->endSync());
     testSimpleInsert();
-    update(createSourceA, config.updateItem);
+    update(createSourceA, config.updateItem, config.itemType);
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->beginSync(SYNC_NONE));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -854,7 +855,7 @@ void LocalTests::testLinkedItemsParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // now insert main item
-    parent = insert(createSourceA, config.parentItem);
+    parent = insert(createSourceA, config.parentItem, config.itemType);
 
     // check that exactly the parent is listed as new
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -902,7 +903,7 @@ void LocalTests::testLinkedItemsChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // same as above for child item
-    child = insert(createSourceA, config.childItem);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -947,8 +948,8 @@ void LocalTests::testLinkedItemsParentChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert parent first, then child
-    parent = insert(createSourceA, config.parentItem);
-    child = insert(createSourceA, config.childItem);
+    parent = insert(createSourceA, config.parentItem, config.itemType);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -995,8 +996,8 @@ void LocalTests::testLinkedItemsChildParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert child first, then parent
-    child = insert(createSourceA, config.childItem);
-    parent = insert(createSourceA, config.parentItem, true);
+    child = insert(createSourceA, config.childItem, config.itemType);
+    parent = insert(createSourceA, config.parentItem, config.itemType, true);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1044,7 +1045,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert child first, check changes, then insert the parent
-    child = insert(createSourceA, config.childItem);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1056,7 +1057,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = insert(createSourceA, config.parentItem, true);
+    parent = insert(createSourceA, config.parentItem, config.itemType, true);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1107,8 +1108,8 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert both items, remove parent, then child
-    parent = insert(createSourceA, config.parentItem);
-    child = insert(createSourceA, config.childItem);
+    parent = insert(createSourceA, config.parentItem, config.itemType);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1167,8 +1168,8 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert both items, remove child, then parent
-    parent = insert(createSourceA, config.parentItem);
-    child = insert(createSourceA, config.childItem);
+    parent = insert(createSourceA, config.parentItem, config.itemType);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1225,7 +1226,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent twice (should be turned into update)
-    parent = insert(createSourceA, config.parentItem);
+    parent = insert(createSourceA, config.parentItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1237,7 +1238,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = insert(createSourceA, config.parentItem);
+    parent = insert(createSourceA, config.parentItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1282,7 +1283,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
 
 #if LINKED_ITEMS_RELAXED_SEMANTIC
     // add child twice (should be turned into update)
-    child = insert(createSourceA, config.childItem);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1294,7 +1295,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->endSync());
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    child = insert(createSourceA, config.childItem);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1339,7 +1340,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent, then update it
-    parent = insert(createSourceA, config.parentItem);
+    parent = insert(createSourceA, config.parentItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1396,7 +1397,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add child, then update it
-    child = insert(createSourceA, config.childItem);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1453,8 +1454,8 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent and child, then update child
-    parent = insert(createSourceA, config.parentItem);
-    child = insert(createSourceA, config.childItem);
+    parent = insert(createSourceA, config.parentItem, config.itemType);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1515,8 +1516,8 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent and child, then update parent
-    parent = insert(createSourceA, config.parentItem);
-    child = insert(createSourceA, config.childItem);
+    parent = insert(createSourceA, config.parentItem, config.itemType);
+    child = insert(createSourceA, config.childItem, config.itemType);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->beginSync(SYNC_NONE));
@@ -1894,7 +1895,7 @@ void SyncTests::testUpdate() {
 
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->update(it->second->createSourceA, it->second->config.updateItem);
+        it->second->update(it->second->createSourceA, it->second->config.updateItem, it->second->config.itemType);
     }
 
     doSync("update",
@@ -1922,7 +1923,8 @@ void SyncTests::testComplexUpdate() {
                               for them or even just the same item */
                            it->second->config.complexUpdateItem ? it->second->config.complexUpdateItem :
                            it->second->config.updateItem ? it->second->config.updateItem :
-                           it->second->config.insertItem
+                           it->second->config.insertItem,
+                           it->second->config.itemType
                            );
     }
 
@@ -1976,12 +1978,12 @@ void SyncTests::testMerge() {
     // update in client A
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->update(it->second->createSourceA, it->second->config.mergeItem1);
+        it->second->update(it->second->createSourceA, it->second->config.mergeItem1, it->second->config.itemType);
     }
 
     // update in client B
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        it->second->update(it->second->createSourceA, it->second->config.mergeItem2);
+        it->second->update(it->second->createSourceA, it->second->config.mergeItem2, it->second->config.itemType);
     }
 
     // send change to server from client A (no conflict), then from B (conflict)
@@ -2480,7 +2482,7 @@ void SyncTests::testAddUpdate() {
     // add item
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->insert(it->second->createSourceA, it->second->config.insertItem);
+        it->second->insert(it->second->createSourceA, it->second->config.insertItem, it->second->config.itemType);
     }
     doSync("add",
            SyncOptions(SYNC_TWO_WAY,
@@ -2488,7 +2490,7 @@ void SyncTests::testAddUpdate() {
 
     // update it
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->update(it->second->createSourceB, it->second->config.updateItem);
+        it->second->update(it->second->createSourceB, it->second->config.updateItem, it->second->config.itemType);
     }
     doSync("update",
            SyncOptions(SYNC_TWO_WAY,
@@ -3188,6 +3190,7 @@ void ClientTest::getTestData(const char *type, Config &config)
     config.numItems = numitems ? atoi(numitems) : 100;
     config.retrySync = true;
     config.sourceKnowsItemSemantic = true;
+    config.itemType = "";
 
     if (!strcmp(type, "vcard30")) {
         config.sourceName = "vcard30";

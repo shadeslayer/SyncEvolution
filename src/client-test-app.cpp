@@ -128,7 +128,7 @@ private:
     void testOssoDelete() {
         // get into clean state with one template item added
         deleteAll(createSourceA);
-        insert(createSourceA, config.templateItem);
+        insert(createSourceA, config.templateItem, config.itemType);
 
         // add X-OSSO-CONTACT-STATE:DELETED
         string item = config.templateItem;

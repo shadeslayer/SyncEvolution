@@ -319,14 +319,15 @@ public:
     {
         config.uri = "note"; // ScheduleWorld
         config.type = "Evolution Memos"; // use an alias here to test that
+        config.itemType = "text/calendar";
         config.insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
             "METHOD:PUBLISH\n"
             "BEGIN:VJOURNAL\n"
-            "SUMMARY:Summary<<REVISION>>\n"
-            "DESCRIPTION:Summary\\nBody text\n"
+            "SUMMARY:Summary\n"
+            "DESCRIPTION:Summary\\nBody text<<REVISION>>\n"
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";
         config.updateItem =
@@ -355,8 +356,10 @@ public:
         config.uniqueProperties = "SUMMARY:DESCRIPTION";
         config.sizeProperty = "DESCRIPTION";
         config.import = ClientTest::import;
+        config.compare = ClientTest::compare;
         config.dump = dump;
-        config.testcases = "testcases/imemo20.ics";
+        config.testcases =
+            config.testcases_server = "testcases/imemo20.ics";
         config.type = "evolution-memos";
     }
 } memoTest;

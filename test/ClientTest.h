@@ -348,6 +348,13 @@ class ClientTest {
         const char *sizeProperty;
 
         /**
+         * Type to be set when importing any of the items into the
+         * corresponding sync sources. Use "" if sync source doesn't
+         * need this information.
+         */
+        const char *itemType;
+
+        /**
          * A very simple item that is inserted during basic tests. Ideally
          * it only contains properties supported by all servers.
          */
@@ -613,29 +620,24 @@ public:
      * opens source and inserts the given item; can be called
      * regardless whether the data source already contains items or not
      *
-     * The type of the item is unset; it is assumed that the source
-     * can handle that.
-     *
      * @param relaxed   if true, then disable some of the additional checks after adding the item
      * @return the LUID of the inserted item
      */
-    virtual std::string insert(CreateSource createSource, const char *data, bool relaxed = false);
+    virtual std::string insert(CreateSource createSource, const char *data, const char *dataType, bool relaxed = false);
 
     /**
      * assumes that exactly one element is currently inserted and updates it with the given item
      *
-     * The type of the item is unset, as in insert() above.
-     *
      * @param check     if true, then reopen the source and verify that the reported items are as expected
      */
-    virtual void update(CreateSource createSource, const char *data, bool check = true);
+    virtual void update(CreateSource createSource, const char *data, const char *dataType, bool check = true);
 
     /**
      * updates one item identified by its LUID with the given item
      *
      * The type of the item is cleared, as in insert() above.
      */
-    virtual void update(CreateSource createSource, const char *data, const std::string &luid);
+    virtual void update(CreateSource createSource, const char *data, const char *dataType, const std::string &luid);
 
     /** deletes all items locally via sync source */
     virtual void deleteAll(CreateSource createSource);
