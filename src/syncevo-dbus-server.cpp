@@ -309,11 +309,11 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 		boost::shared_ptr<EvolutionSyncSourceConfig> source_config = config->getSyncSourceConfig(name);
 
 		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getSync()));
-		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getURI()));
+		g_ptr_array_add (*options, option);
+		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("uri"), g_strdup (source_config->getURI()));
+		g_ptr_array_add (*options, option);
 
 	}
-
-	/* TODO which options do we need ? */
 
 	return TRUE;
 }

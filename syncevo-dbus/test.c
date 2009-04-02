@@ -31,7 +31,6 @@ progress_cb (SyncevoService *service,
         break;
     case PEV_SESSIONEND:
         g_debug ("  progress: %s: session end", server);
-        g_main_loop_quit(loop);
         break;
     case PEV_SENDSTART:
         g_debug ("  progress: %s: send start", server);
