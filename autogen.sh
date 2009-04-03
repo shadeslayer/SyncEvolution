@@ -27,7 +27,7 @@ sed -e "s;@CONFIG_SUBS@;$SUBS;" \
     Makefile-gen.am >Makefile.am
 
 libtoolize -c
-aclocal
+aclocal -Im4
 autoheader
 automake -a -c -Wno-portability
 autoconf
