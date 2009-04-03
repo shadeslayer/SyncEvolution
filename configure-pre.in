@@ -228,10 +228,11 @@ if test "$SYNTHESISSRC" && test "$SYNTHESISSRC" != "none"; then
                 (set -x; svn --username=$USERNAME checkout $revarg "$SYNTHESISSRCREV" $SYNTHESIS_SRC ) || AC_ERROR([checking out $SYNTHESISSRC failed])
             fi
             ;;
-        *git*)
+        *)
             if test -d $SYNTHESIS_SRC ; then
                 ( set -x; cd $SYNTHESIS_SRC && git fetch "$SYNTHESISSRC" ) || AC_ERROR([updating from $SYNTHESISSRC failed])
             else
+                mkdir -p $SYNTHESIS_SRC
                 ( set -x; git clone "$SYNTHESISSRC" $SYNTHESIS_SRC ) || AC_ERROR([cloning $SYNTHESISSRC failed])
             fi
             if test "$REVISION"; then
