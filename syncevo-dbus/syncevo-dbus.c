@@ -312,6 +312,51 @@ syncevo_service_get_servers_async (SyncevoService *service,
 			 data);
 }
 
+gboolean syncevo_service_get_templates (SyncevoService *service,
+                                        GPtrArray **templates,
+                                        GError **error)
+{
+	SyncevoServicePrivate *priv;
+
+	priv = GET_PRIVATE (service);
+	return org_Moblin_SyncEvolution_get_templates (priv->proxy, 
+	                                               templates, 
+	                                               error);
+}
+
+static void
+get_templates_async_callback (DBusGProxy *proxy, 
+                              GPtrArray *templates,
+                              GError *error,
+                              SyncevoAsyncData *data)
+{
+	(*(SyncevoGetTemplatesCb)data->callback) (data->service,
+	                                          templates,
+	                                          error,
+	                                          data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
+void syncevo_service_get_templates_async (SyncevoService *service,
+                                          SyncevoGetTemplatesCb callback,
+                                          gpointer userdata)
+{
+	SyncevoAsyncData *data;
+	SyncevoServicePrivate *priv;
+
+	priv = GET_PRIVATE (service);
+
+	data = g_slice_new0 (SyncevoAsyncData);
+	data->service = service;
+	data->callback = G_CALLBACK (callback);
+	data->userdata = userdata;
+	
+	org_Moblin_SyncEvolution_get_templates_async 
+			(priv->proxy,
+			 (org_Moblin_SyncEvolution_get_templates_reply) get_templates_async_callback,
+			 data);
+}
+
 gboolean syncevo_service_get_server_config (SyncevoService *service,
                                             char *server,
                                             GPtrArray **options,

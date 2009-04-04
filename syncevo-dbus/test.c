@@ -15,6 +15,15 @@ print_option (SyncevoOption *option, gpointer userdata)
 }
 
 static void
+print_template (SyncevoTemplate *temp, gpointer userdata)
+{
+	const char *name, *note;
+
+	syncevo_template_get (temp, &name, &note);
+	g_debug ("  Got template %s (%s)", name, note);
+}
+
+static void
 progress_cb (SyncevoService *service,
              char *server,
              char *source,
@@ -109,7 +118,7 @@ int main (int argc, char *argv[])
     GMainLoop *loop;
     GPtrArray *sources;
     GError *error = NULL;
-    GPtrArray *options;
+    GPtrArray *array;
     char **servers;
     char **ptr;
     char *server = NULL;
@@ -122,7 +131,7 @@ int main (int argc, char *argv[])
 
     service = syncevo_service_get_default ();
 
-    g_print ("Testing syncevo_service_get_servers() ");
+    g_print ("Testing syncevo_service_get_servers()\n");
     syncevo_service_get_servers (service, &servers, &error);
     if (error) {
         g_error ("  syncevo_service_get_servers() failed with %s", error->message);
@@ -132,18 +141,28 @@ int main (int argc, char *argv[])
         g_debug ("  Got server '%s'", *ptr);
     }
 
+    array = g_ptr_array_new();
+    g_print ("Testing syncevo_service_get_templates()\n");
+    syncevo_service_get_templates (service, &array, &error);
+    if (error) {
+        g_error ("  syncevo_service_get_templates() failed with %s", error->message);
+    }
+    g_ptr_array_foreach (array, (GFunc)print_template, NULL);
+    
+
     if (!server) {
         g_print ("No server given, stopping here\n");
         return 0;
     }
-    
-    options = g_ptr_array_new();
+
+
+    array = g_ptr_array_new();
     g_print ("Testing syncevo_service_get_config() with server %s\n", server);
-    syncevo_service_get_server_config (service, server, &options, &error);
+    syncevo_service_get_server_config (service, server, &array, &error);
     if (error) {
         g_error ("  syncevo_service_get_server_config() failed with %s", error->message);
     }
-    g_ptr_array_foreach (options, (GFunc)print_option, NULL);
+    g_ptr_array_foreach (array, (GFunc)print_option, NULL);
 
     loop = g_main_loop_new (NULL, TRUE);
     g_signal_connect (service, "progress", (GCallback)progress_cb, loop);

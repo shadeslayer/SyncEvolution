@@ -62,6 +62,17 @@ void syncevo_service_get_servers_async (SyncevoService *service,
                                         SyncevoGetServersCb callback,
                                         gpointer userdata);
 
+gboolean syncevo_service_get_templates (SyncevoService *service,
+                                        GPtrArray **templates,
+                                        GError **error);
+typedef void (*SyncevoGetTemplatesCb) (SyncevoService *service,
+                                       GPtrArray *templates,
+                                       GError *error,
+                                       gpointer userdata);
+void syncevo_service_get_templates_async (SyncevoService *service,
+                                          SyncevoGetTemplatesCb callback,
+                                          gpointer userdata);
+
 gboolean syncevo_service_get_server_config (SyncevoService *service,
                                             char *server,
                                             GPtrArray **options,

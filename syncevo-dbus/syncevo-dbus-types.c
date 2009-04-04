@@ -65,5 +65,30 @@ syncevo_option_free (SyncevoOption *option)
 	}
 }
 
+SyncevoTemplate* syncevo_template_new (char *name, char *note)
+{
+	GValue val = {0, };
 
+	g_value_init (&val, SYNCEVO_TEMPLATE_TYPE);
+	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_TEMPLATE_TYPE));
+	dbus_g_type_struct_set (&val, 0, name, 1, note, G_MAXUINT);
 
+	return (SyncevoTemplate*) g_value_get_boxed (&val);
+}
+
+void syncevo_template_get (SyncevoTemplate *template, const char **name, const char **note)
+{
+	if (name) {
+		*name = g_value_get_string (g_value_array_get_nth (template, 0));
+	}
+	if (note) {
+		*note = g_value_get_string (g_value_array_get_nth (template, 1));
+	}
+}
+
+void syncevo_template_free (SyncevoTemplate *template)
+{
+	if (template) {
+		g_boxed_free (SYNCEVO_TEMPLATE_TYPE, template);
+	}
+}

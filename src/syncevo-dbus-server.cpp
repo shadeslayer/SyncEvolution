@@ -20,6 +20,7 @@ static gboolean syncevo_start_sync (SyncevoDBusServer *obj, char *server, GPtrAr
 static gboolean syncevo_abort_sync (SyncevoDBusServer *obj, char *server, GError **error);
 static gboolean syncevo_set_password (SyncevoDBusServer *obj, char *server, char *password, GError **error);
 static gboolean syncevo_get_servers (SyncevoDBusServer *obj, char ***servers, GError **error);
+static gboolean syncevo_get_templates (SyncevoDBusServer *obj, GPtrArray **templates, GError **error);
 static gboolean syncevo_get_server_config (SyncevoDBusServer *obj, char *server, GPtrArray **options, GError **error);
 static gboolean syncevo_set_server_config (SyncevoDBusServer *obj, char *server, GPtrArray *options, GError **error);
 #include "syncevo-dbus-glue.h"
@@ -29,6 +30,9 @@ typedef GValueArray SyncevoSource;
 
 #define SYNCEVO_OPTION_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID))
 typedef GValueArray SyncevoOption;
+
+#define SYNCEVO_TEMPLATE_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID))
+typedef GValueArray SyncevoTemplate;
 
 SyncevoSource*
 syncevo_source_new (char *name, int mode)
@@ -104,6 +108,33 @@ syncevo_option_free (SyncevoOption *option)
 	}
 }
 
+SyncevoTemplate* syncevo_template_new (char *name, char *note)
+{
+	GValue val = {0, };
+
+	g_value_init (&val, SYNCEVO_TEMPLATE_TYPE);
+	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_TEMPLATE_TYPE));
+	dbus_g_type_struct_set (&val, 0, name, 1, note, G_MAXUINT);
+
+	return (SyncevoTemplate*) g_value_get_boxed (&val);
+}
+
+void syncevo_template_get (SyncevoTemplate *temp, const char **name, const char **note)
+{
+	if (name) {
+		*name = g_value_get_string (g_value_array_get_nth (temp, 0));
+	}
+	if (note) {
+		*note = g_value_get_string (g_value_array_get_nth (temp, 1));
+	}
+}
+
+void syncevo_template_free (SyncevoTemplate *temp)
+{
+	if (temp) {
+		g_boxed_free (SYNCEVO_TEMPLATE_TYPE, temp);
+	}
+}
 
 enum {
 	PROGRESS,
@@ -253,6 +284,7 @@ syncevo_set_password (SyncevoDBusServer *obj,
 	return FALSE;
 	
 }
+
 static gboolean 
 syncevo_get_servers (SyncevoDBusServer *obj,
                      char ***servers,
@@ -273,6 +305,35 @@ syncevo_get_servers (SyncevoDBusServer *obj,
 	
 	return TRUE;
 }
+
+static gboolean 
+syncevo_get_templates (SyncevoDBusServer *obj,
+                       GPtrArray **templates,
+                       GError **error)
+{
+	int i = 0;
+
+	if (!templates) {
+		return FALSE;
+	}
+
+	*templates = g_ptr_array_new ();
+
+	EvolutionSyncConfig::ServerList list = EvolutionSyncConfig::getServerTemplates();
+
+	BOOST_FOREACH(const EvolutionSyncConfig::ServerList::value_type &server,list) {
+		char *name, *note;
+		SyncevoTemplate *temp;
+
+		name = g_strdup (server.first.c_str());
+		note = g_strdup (server.second.c_str());
+		temp = syncevo_template_new (name, note);
+		g_ptr_array_add (*templates, temp);
+	}
+	
+	return TRUE;
+}
+
 static gboolean 
 syncevo_get_server_config (SyncevoDBusServer *obj,
                            char *server,

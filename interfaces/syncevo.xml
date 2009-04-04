@@ -38,6 +38,9 @@
       <arg type="s" name="password" direction="in"/>
     </method>
 
+    <method name="GetTemplates">
+      <arg type="a(ss)" name="templates" direction="out" />
+    </method>
 
     <method name="GetServers">
       <arg type="as" name="servers" direction="out" />
