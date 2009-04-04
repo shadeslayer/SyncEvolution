@@ -15,12 +15,12 @@ print_option (SyncevoOption *option, gpointer userdata)
 }
 
 static void
-print_template (SyncevoTemplate *temp, gpointer userdata)
+print_server (SyncevoServer *temp, gpointer userdata)
 {
 	const char *name, *note;
 
-	syncevo_template_get (temp, &name, &note);
-	g_debug ("  Got template %s (%s)", name, note);
+	syncevo_server_get (temp, &name, &note);
+	g_debug ("  Got server %s (%s)", name, note);
 }
 
 static void
@@ -131,15 +131,13 @@ int main (int argc, char *argv[])
 
     service = syncevo_service_get_default ();
 
+    array = g_ptr_array_new();
     g_print ("Testing syncevo_service_get_servers()\n");
-    syncevo_service_get_servers (service, &servers, &error);
+    syncevo_service_get_servers (service, &array, &error);
     if (error) {
         g_error ("  syncevo_service_get_servers() failed with %s", error->message);
     }
-    
-    for (ptr = servers; *ptr; ptr++) {
-        g_debug ("  Got server '%s'", *ptr);
-    }
+    g_ptr_array_foreach (array, (GFunc)print_server, NULL);
 
     array = g_ptr_array_new();
     g_print ("Testing syncevo_service_get_templates()\n");
@@ -147,7 +145,7 @@ int main (int argc, char *argv[])
     if (error) {
         g_error ("  syncevo_service_get_templates() failed with %s", error->message);
     }
-    g_ptr_array_foreach (array, (GFunc)print_template, NULL);
+    g_ptr_array_foreach (array, (GFunc)print_server, NULL);
     
 
     if (!server) {

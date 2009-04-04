@@ -19,7 +19,7 @@
 static gboolean syncevo_start_sync (SyncevoDBusServer *obj, char *server, GPtrArray *sources, GError **error);
 static gboolean syncevo_abort_sync (SyncevoDBusServer *obj, char *server, GError **error);
 static gboolean syncevo_set_password (SyncevoDBusServer *obj, char *server, char *password, GError **error);
-static gboolean syncevo_get_servers (SyncevoDBusServer *obj, char ***servers, GError **error);
+static gboolean syncevo_get_servers (SyncevoDBusServer *obj, GPtrArray **servers, GError **error);
 static gboolean syncevo_get_templates (SyncevoDBusServer *obj, GPtrArray **templates, GError **error);
 static gboolean syncevo_get_server_config (SyncevoDBusServer *obj, char *server, GPtrArray **options, GError **error);
 static gboolean syncevo_set_server_config (SyncevoDBusServer *obj, char *server, GPtrArray *options, GError **error);
@@ -31,8 +31,8 @@ typedef GValueArray SyncevoSource;
 #define SYNCEVO_OPTION_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID))
 typedef GValueArray SyncevoOption;
 
-#define SYNCEVO_TEMPLATE_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID))
-typedef GValueArray SyncevoTemplate;
+#define SYNCEVO_SERVER_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID))
+typedef GValueArray SyncevoServer;
 
 SyncevoSource*
 syncevo_source_new (char *name, int mode)
@@ -108,18 +108,18 @@ syncevo_option_free (SyncevoOption *option)
 	}
 }
 
-SyncevoTemplate* syncevo_template_new (char *name, char *note)
+SyncevoServer* syncevo_server_new (char *name, char *note)
 {
 	GValue val = {0, };
 
-	g_value_init (&val, SYNCEVO_TEMPLATE_TYPE);
-	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_TEMPLATE_TYPE));
+	g_value_init (&val, SYNCEVO_SERVER_TYPE);
+	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_SERVER_TYPE));
 	dbus_g_type_struct_set (&val, 0, name, 1, note, G_MAXUINT);
 
-	return (SyncevoTemplate*) g_value_get_boxed (&val);
+	return (SyncevoServer*) g_value_get_boxed (&val);
 }
 
-void syncevo_template_get (SyncevoTemplate *temp, const char **name, const char **note)
+void syncevo_server_get (SyncevoServer *temp, const char **name, const char **note)
 {
 	if (name) {
 		*name = g_value_get_string (g_value_array_get_nth (temp, 0));
@@ -129,10 +129,10 @@ void syncevo_template_get (SyncevoTemplate *temp, const char **name, const char 
 	}
 }
 
-void syncevo_template_free (SyncevoTemplate *temp)
+void syncevo_server_free (SyncevoServer *temp)
 {
 	if (temp) {
-		g_boxed_free (SYNCEVO_TEMPLATE_TYPE, temp);
+		g_boxed_free (SYNCEVO_SERVER_TYPE, temp);
 	}
 }
 
@@ -287,20 +287,25 @@ syncevo_set_password (SyncevoDBusServer *obj,
 
 static gboolean 
 syncevo_get_servers (SyncevoDBusServer *obj,
-                     char ***servers,
+                     GPtrArray **servers,
                      GError **error)
 {
-	int i = 0;
-
 	if (!servers) {
 		return FALSE;
 	}
 
+	*servers = g_ptr_array_new ();
+
 	EvolutionSyncConfig::ServerList list = EvolutionSyncConfig::getServers();
-	*servers = (char**)g_malloc0 (sizeof(char*) * list.size() + 1);
 
 	BOOST_FOREACH(const EvolutionSyncConfig::ServerList::value_type &server,list) {
-		*servers[i++] = g_strdup (server.first.c_str());
+		char *name, *note;
+		SyncevoServer *temp;
+
+		name = g_strdup (server.first.c_str());
+		note = g_strdup (server.second.c_str());
+		temp = syncevo_server_new (name, note);
+		g_ptr_array_add (*servers, temp);
 	}
 	
 	return TRUE;
@@ -311,8 +316,6 @@ syncevo_get_templates (SyncevoDBusServer *obj,
                        GPtrArray **templates,
                        GError **error)
 {
-	int i = 0;
-
 	if (!templates) {
 		return FALSE;
 	}
@@ -323,11 +326,11 @@ syncevo_get_templates (SyncevoDBusServer *obj,
 
 	BOOST_FOREACH(const EvolutionSyncConfig::ServerList::value_type &server,list) {
 		char *name, *note;
-		SyncevoTemplate *temp;
+		SyncevoServer *temp;
 
 		name = g_strdup (server.first.c_str());
 		note = g_strdup (server.second.c_str());
-		temp = syncevo_template_new (name, note);
+		temp = syncevo_server_new (name, note);
 		g_ptr_array_add (*templates, temp);
 	}
 	

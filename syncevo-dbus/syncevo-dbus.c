@@ -267,7 +267,7 @@ gboolean syncevo_service_set_password (SyncevoService *service,
 }
 
 gboolean syncevo_service_get_servers (SyncevoService *service,
-                                      char ***servers,
+                                      GPtrArray **servers,
                                       GError **error)
 {
 	SyncevoServicePrivate *priv;
@@ -280,7 +280,7 @@ gboolean syncevo_service_get_servers (SyncevoService *service,
 
 static void
 get_servers_async_callback (DBusGProxy *proxy, 
-                            char **servers,
+                            GPtrArray *servers,
                             GError *error,
                             SyncevoAsyncData *data)
 {

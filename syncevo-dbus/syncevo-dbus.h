@@ -52,10 +52,10 @@ gboolean syncevo_service_set_password (SyncevoService *service,
 
 
 gboolean syncevo_service_get_servers (SyncevoService *service,
-                                      char ***servers,
+                                      GPtrArray **servers,
                                       GError **error);
 typedef void (*SyncevoGetServersCb) (SyncevoService *service,
-                                     char **servers,
+                                     GPtrArray *servers,
                                      GError *error,
                                      gpointer userdata);
 void syncevo_service_get_servers_async (SyncevoService *service,

@@ -43,7 +43,7 @@
     </method>
 
     <method name="GetServers">
-      <arg type="as" name="servers" direction="out" />
+      <arg type="a(ss)" name="servers" direction="out" />
     </method>
     <method name="GetServerConfig">
       <arg type="s" name="server" direction="in" />
