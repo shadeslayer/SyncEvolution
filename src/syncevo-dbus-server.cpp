@@ -366,7 +366,8 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 	g_ptr_array_add (*options, option);
 	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup(config->getUsername()));
 	g_ptr_array_add (*options, option);
-
+	option = syncevo_option_new (NULL, g_strdup("password"), g_strdup(config->getPassword()));
+	g_ptr_array_add (*options, option);
 
 	list<string> sources = config->getSyncSources();
 	BOOST_FOREACH(const string &name, sources) {
