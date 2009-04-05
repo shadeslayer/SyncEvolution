@@ -12,7 +12,8 @@
         source specifically
       - where to show statistic
  * * service icons
- * * last-sync should be service specific
+ * * where to save last-sync -- it's not a sync ui thing really, it should be 
+ *   in server....
  * * backup/restore ? 
  * * leaking in dbus async-callbacks 
  * * GTK styling missing:
@@ -44,6 +45,12 @@
 #define SYNC_UI_SERVER_KEY "/apps/sync-ui/server"
 #define SYNC_UI_LAST_SYNC_KEY "/apps/sync-ui/last-sync"
 
+typedef struct source_config {
+	char *name;
+	gboolean enabled;
+	char *uri;
+} source_config;
+
 typedef struct server_config {
 	char *name;
 	char *base_url;
@@ -51,17 +58,7 @@ typedef struct server_config {
 	char *username;
 	char *password;
 
-	gboolean calendar_enabled;
-	char *calendar_uri;
-
-	gboolean contacts_enabled;
-	char *contacts_uri;
-
-	gboolean notes_enabled;
-	char *notes_uri;
-
-	gboolean tasks_enabled;
-	char *tasks_uri;
+	GList *source_configs;
 } server_config;
 
 typedef struct source_progress {
@@ -127,10 +124,7 @@ typedef struct app_data {
 	GtkWidget *edit_service_btn;
 
 	GtkWidget *server_label;
-	GtkWidget *calendar_check;
-	GtkWidget *contacts_check;
-	GtkWidget *tasks_check;
-	GtkWidget *notes_check;
+	GtkWidget *sources_box;
 
 	GtkWidget *services_table;
 	GtkWidget *loading_services_label;
@@ -138,11 +132,7 @@ typedef struct app_data {
 	GtkWidget *service_name_label;
 	GtkWidget *username_entry;
 	GtkWidget *password_entry;
-	GtkWidget *url_entry;
-	GtkWidget *calendar_uri_entry;
-	GtkWidget *contacts_uri_entry;
-	GtkWidget *notes_uri_entry;
-	GtkWidget *tasks_uri_entry;
+	GtkWidget *server_settings_table;
 
 	gboolean syncing;
 	glong last_sync;
@@ -353,19 +343,6 @@ set_app_state (app_data *data, app_state state)
 		gtk_widget_set_sensitive (data->change_service_btn, TRUE);
 		gtk_widget_set_sensitive (data->edit_service_btn, TRUE);
 
-		str = g_strdup_printf ("<b>%s</b>", data->current_service->name);
-		gtk_label_set_markup (GTK_LABEL (data->server_label), str);
-		g_free (str);
-
-		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (data->calendar_check), 
-												data->current_service->calendar_enabled);
-		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (data->contacts_check), 
-												data->current_service->contacts_enabled);
-		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (data->notes_check), 
-												data->current_service->notes_enabled);
-		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (data->tasks_check), 
-												data->current_service->tasks_enabled);
-
 		data->syncing = FALSE;
 		break;
 		
@@ -413,10 +390,7 @@ init_ui (app_data *data)
 	data->restore_btn = GTK_WIDGET (gtk_builder_get_object (builder, "restore_btn"));
 
 	data->server_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_service_label"));
-	data->calendar_check = GTK_WIDGET (gtk_builder_get_object (builder, "calendar_check"));
-	data->contacts_check = GTK_WIDGET (gtk_builder_get_object (builder, "contacts_check"));
-	data->tasks_check = GTK_WIDGET (gtk_builder_get_object (builder, "tasks_check"));
-	data->notes_check = GTK_WIDGET (gtk_builder_get_object (builder, "notes_check"));
+	data->sources_box = GTK_WIDGET (gtk_builder_get_object (builder, "sources_box"));
 
 	data->services_table = GTK_WIDGET (gtk_builder_get_object (builder, "services_table"));
 	data->loading_services_label = GTK_WIDGET (gtk_builder_get_object (builder, "loading_services_label"));
@@ -424,11 +398,7 @@ init_ui (app_data *data)
 	data->service_name_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_label"));
 	data->username_entry = GTK_WIDGET (gtk_builder_get_object (builder, "username_entry"));
 	data->password_entry = GTK_WIDGET (gtk_builder_get_object (builder, "password_entry"));
-	data->url_entry = GTK_WIDGET (gtk_builder_get_object (builder, "url_entry"));
-	data->calendar_uri_entry = GTK_WIDGET (gtk_builder_get_object (builder, "calendar_uri_entry"));
-	data->contacts_uri_entry = GTK_WIDGET (gtk_builder_get_object (builder, "contacts_uri_entry"));
-	data->notes_uri_entry = GTK_WIDGET (gtk_builder_get_object (builder, "notes_uri_entry"));
-	data->tasks_uri_entry = GTK_WIDGET (gtk_builder_get_object (builder, "tasks_uri_entry"));
+	data->server_settings_table = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_table"));
 
 	g_signal_connect (data->sync_win, "destroy",
 	                  G_CALLBACK (gtk_main_quit), NULL);
@@ -446,6 +416,26 @@ init_ui (app_data *data)
 	return TRUE;
 }
 
+static source_config*
+get_source_config (server_config *server, const char *name)
+{
+	GList *l;
+	source_config *source = NULL;
+	
+	/* return existing source config if found */
+	for (l = server->source_configs; l; l = l->next) {
+		source = (source_config*)l->data;
+		if (strcmp (source->name, name) == 0) {
+			return source; 
+		}
+	}
+	
+	/* create new source config */
+	source = g_slice_new0 (source_config);
+	source->name = g_strdup (name);
+	server->source_configs = g_list_append (server->source_configs, source);
+	return source;
+}
 
 static void
 add_server_option (SyncevoOption *option, server_config *server)
@@ -453,7 +443,6 @@ add_server_option (SyncevoOption *option, server_config *server)
 	const char *ns, *key, *value;
 
 	syncevo_option_get (option, &ns, &key, &value);
-	g_debug ("Got option %s: %s = %s", ns, key, value);
 
 	if (strlen (ns) == 0) {
 		if (strcmp (key, "syncURL") == 0) {
@@ -465,58 +454,55 @@ add_server_option (SyncevoOption *option, server_config *server)
 		if (strcmp (key, "password") == 0) {
 			server->password = g_strdup (value);
 		}
-	} else if (strcmp (ns, "addressbook") == 0) {
+	} else {
+		source_config *source;
+		
+		source = get_source_config (server, ns);
+		
 		if (strcmp (key, "uri") == 0) {
-			server->contacts_uri = g_strdup (value);
+			source->uri = g_strdup (value);
 		}
 		if (strcmp (key, "sync") == 0) {
 			if (strcmp (value, "disabled") == 0 ||
 				 strcmp (value, "none") == 0) {
 				/* consider this source not available at all */
-				server->contacts_enabled = FALSE;
+				source->enabled = FALSE;
 			} else {
-				server->contacts_enabled = TRUE;
-			}
-		}
-	} else if (strcmp (ns, "calendar") == 0) {
-		if (strcmp (key, "uri") == 0) {
-			server->calendar_uri = g_strdup (value);
-		}
-		if (strcmp (key, "sync") == 0) {
-			if (strcmp (value, "disabled") == 0 ||
-				 strcmp (value, "none") == 0) {
-				server->calendar_enabled = FALSE;
-			} else {
-				server->calendar_enabled = TRUE;
-			}
-		}
-	} else if (strcmp (ns, "memo") == 0) {
-		if (strcmp (key, "uri") == 0) {
-			server->notes_uri = g_strdup (value);
-		}
-		if (strcmp (key, "sync") == 0) {
-			if (strcmp (value, "disabled") == 0 ||
-				 strcmp (value, "none") == 0) {
-				/* consider this source not available at all */
-				server->notes_enabled = FALSE;
-			} else {
-				server->notes_enabled = TRUE;
-			}
-		}
-	} else if (strcmp (ns, "todo") == 0) {
-		if (strcmp (key, "uri") == 0) {
-			server->tasks_uri = g_strdup (value);
-		}
-		if (strcmp (key, "sync") == 0) {
-			if (strcmp (value, "disabled") == 0 ||
-				 strcmp (value, "none") == 0) {
-				/* consider this source not available at all */
-				server->tasks_enabled = FALSE;
-			} else {
-				server->tasks_enabled = TRUE;
+				source->enabled = TRUE;
 			}
 		}
 	}
+}
+
+static void
+update_service_ui (app_data *data)
+{
+	GList *l;
+	g_assert (data->current_service);
+
+	gtk_container_foreach (GTK_CONTAINER (data->sources_box),
+	                       (GtkCallback)remove_child,
+	                       data->sources_box);
+
+
+	if (data->current_service->name) {
+		char *str;
+		str = g_strdup_printf ("<b>%s</b>", data->current_service->name);
+		gtk_label_set_markup (GTK_LABEL (data->server_label), str);
+		g_free (str);
+	}
+	
+	for (l = data->current_service->source_configs; l; l = l->next) {
+		source_config *source = (source_config*)l->data;
+		GtkWidget *check;
+		
+		check = gtk_check_button_new_with_label (source->name);
+		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), source->enabled);
+		gtk_widget_set_sensitive (check, FALSE);
+		gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), check);
+	}
+	gtk_widget_show_all (data->sources_box);
+
 }
 
 static void
@@ -534,7 +520,8 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
 	}
 
 	g_ptr_array_foreach (options, (GFunc)add_server_option, data->current_service);
-
+	
+	update_service_ui (data);
 	set_app_state (data, SYNC_UI_STATE_SERVER_OK);
 }
 
@@ -554,7 +541,16 @@ show_link_button_url (GtkLinkButton *link)
 static void
 show_settings_dialog (app_data *data, server_config *config)
 {
+	GList *l;
+	GtkWidget *label, *entry;
+	int i = 0;
 	
+	gtk_container_foreach (GTK_CONTAINER (data->server_settings_table),
+	                       (GtkCallback)remove_child,
+	                       data->server_settings_table);
+	gtk_table_resize (GTK_TABLE (data->server_settings_table), 
+	                  2, g_list_length (config->source_configs) + 1);
+
 	if (config->name) {
 		char *markup;
 		markup = g_strdup_printf ("<big>%s</big>", config->name);
@@ -565,18 +561,67 @@ show_settings_dialog (app_data *data, server_config *config)
 	                    config->username ? config->username : "");
 	gtk_entry_set_text (GTK_ENTRY (data->password_entry),
 	                    config->password ? config->password : "");
-	gtk_entry_set_text (GTK_ENTRY (data->url_entry),
+	
+	label = gtk_label_new ("Server URL");
+	gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
+	gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
+	                  0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
+	entry = gtk_entry_new_with_max_length (100);
+	gtk_entry_set_text (GTK_ENTRY (entry), 
 	                    config->base_url ? config->base_url : "");
-	gtk_entry_set_text (GTK_ENTRY (data->calendar_uri_entry),
-	                    config->calendar_uri ? config->calendar_uri : "");
-	gtk_entry_set_text (GTK_ENTRY (data->contacts_uri_entry), 
-	                    config->contacts_uri ? config->contacts_uri : "");
-	gtk_entry_set_text (GTK_ENTRY (data->notes_uri_entry),
-	                    config->notes_uri ? config->notes_uri : "");
-	gtk_entry_set_text (GTK_ENTRY (data->tasks_uri_entry), 
-	                    config->tasks_uri ? config->tasks_uri : "");
+	gtk_table_attach_defaults (GTK_TABLE (data->server_settings_table), entry,
+	                           1, 2, i, i + 1);
+	
+	for (l = config->source_configs; l; l = l->next) {
+		source_config *source = (source_config*)l->data;
+		char *str;
+		i++;
+		
+		str = g_strdup_printf ("%s URI", source->name);
+		label = gtk_label_new (str);
+		g_free (str);
+		gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
+		gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
+		                  0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
+		entry = gtk_entry_new_with_max_length (100);
+		gtk_entry_set_text (GTK_ENTRY (entry), 
+		                    source->uri ? source->uri : "");
+		gtk_table_attach_defaults (GTK_TABLE (data->server_settings_table), entry,
+		                           1, 2, i, i + 1);
+	}
+	gtk_widget_show_all (data->server_settings_table);
 	
 	gtk_window_present (GTK_WINDOW (data->service_settings_dlg));
+}
+
+static void
+ensure_default_sources_exist(server_config *server)
+{
+	int i;
+	GList *l;
+	source_config *source;
+	char *defaults[] = {"addressbook", "calendar", "memo", "notes"};
+	gboolean default_found[] = {FALSE, FALSE, FALSE, FALSE};
+
+	for (l = server->source_configs; l; l = l->next) {
+		source = (source_config*)l->data;
+		
+		for (i = 0; i < 4; i++){
+			if (strcmp (source->name, defaults[i]) == 0) {
+				default_found[i] = TRUE;
+			}
+		}
+	}
+	
+	for (i = 0; i < 4; i++){
+		if (!default_found[i]) {
+			/* create new source config */
+			source = g_slice_new0 (source_config);
+			source->name = g_strdup (defaults[i]);
+			server->source_configs = g_list_append (server->source_configs, source);
+		}
+	}
+	
 }
 
 typedef struct server_data {
@@ -601,6 +646,8 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
 	config = g_slice_new0 (server_config);
 	config->name = g_strdup (data->server_name);
 	g_ptr_array_foreach (options, (GFunc)add_server_option, config);
+	ensure_default_sources_exist (config);
+	
 	show_settings_dialog (data->data, config);
 	
 	g_slice_free (server_data ,data);
