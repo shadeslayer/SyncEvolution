@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Mon Apr  6 17:25:16 2009 -->
+<!--Generated with glade3 3.4.5 on Mon Apr  6 17:39:06 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="sync_win">
     <property name="border_width">10</property>
@@ -105,6 +105,7 @@
                             <child>
                               <widget class="GtkRadioButton" id="two_way_radio">
                                 <property name="visible">True</property>
+                                <property name="sensitive">False</property>
                                 <property name="can_focus">True</property>
                                 <property name="label" translatable="yes">Merge local and remote data (recommended)</property>
                                 <property name="response_id">0</property>
@@ -118,6 +119,7 @@
                             <child>
                               <widget class="GtkRadioButton" id="one_way_from_remote_radio">
                                 <property name="visible">True</property>
+                                <property name="sensitive">False</property>
                                 <property name="can_focus">True</property>
                                 <property name="label" translatable="yes">Delete all local data and replace it with remote data</property>
                                 <property name="response_id">0</property>
@@ -133,6 +135,7 @@
                             <child>
                               <widget class="GtkRadioButton" id="one_way_from_local_radio">
                                 <property name="visible">True</property>
+                                <property name="sensitive">False</property>
                                 <property name="can_focus">True</property>
                                 <property name="label" translatable="yes">Delete all remote data and replace it with local data</property>
                                 <property name="response_id">0</property>
