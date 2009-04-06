@@ -1,3 +1,90 @@
+SyncEvolution 0.8.1 -> 0.9 beta 1, 04.04.2008
+---------------------------------------------
+Synthesis SyncML Engine version: see src/synthesis/ChangeLog
+
+A major new release and the first step towards further improvements:
+from this release onwards, the Synthesis SyncML engine is used as the
+underlying SyncML and data conversion engine. The focus of this first
+beta was to reach the same level of functionality and stability as in
+0.8.1. Therefore this beta does not yet bring much new features; this
+will be the focus of further beta releases until finally 0.9 will be a
+full replacement for 0.8.1.
+
+This release also switches from an "all items are sent verbatim to the
+SyncML server" to a "parse and convert" data handling model. The
+argument for the former approach was that the SyncML server should be
+the only entity in the system which does data conversion. The previous
+releases already had to deviate from this approach to accommodate for
+minor client/server incompatibilities and for vCard 2.1 support.
+
+The main reason for going to full semantic conversion is vCalendar 1.0
+support. Support by servers for iCalendar 2.0, the only format
+supported by 0.8.1, is often still incomplete or even non-existant. By
+doing the conversion on the client side, SyncEvolution is now able to
+synchronize events and tasks with a wider variety of servers.
+
+It is still true that properties not supported by a server cannot
+be synchronized to other devices, so using a server with full
+iCalendar 2.0 support is recommended. But in contrast to 0.8.1,
+information that can only be stored locally is no longer lost when
+receiving an incomplete update from the SyncML server thanks to
+intelligent merging provided by the Synthesis engine. This depends on
+an accurate description of the server's capabilities, which might not
+be provided by all of them - still needs to be tested in more detail.
+
+*** WARNING ***: after switching from a previous release to the
+current one or vice versa, do a "syncevolution --sync
+refresh-from-server" or "--sync refresh-from-client" (depending on
+which side has the authoritative copy of the data) once to get client
+and server into a consistent state. Not doing so can result in
+applying the same changes to the server multiple times and thus
+duplicates.
+
+Changes in detail:
+
+* vCalendar 1.0 is now supported. Because this hasn't been tested that
+  much yet, events and tasks are still disabled in the Funambol default
+  configuration (SF #2635973).
+
+* Both libcurl and libsoup can be selected at compile time as HTTP(S)
+  transport mechanism.
+
+* SF #2101015: Expect: 100-continue header results in 417 Error with proxy
+  Should no longer occur with the HTTP transports in this release.
+
+* SF #1874805: Syncing with Funambol results in loosing all-day property
+  This now works thanks to the Synthesis data conversion rules.
+
+* SF #2586600: Synchronisation with mobical.net fails
+  Should work now because of the different SyncML implementation (untested).
+
+* SF #2542968: separator for categories should not be escaped
+  Done correctly by the Synthesis vcard conversion.
+
+Known shortcomings in this release which will be fixed before the
+final 0.9:
+
+* Verbatim file backups of items on the SyncML server are currently
+  not possible: the SyncEvolution "file" backend still exists, but
+  all items are converted by the Synthesis engine and therefore must
+  be in a format supported by the engine.
+
+* HTTPS can be used with libsoup, but certificate checking is always
+  disabled. Need to find a portable way to determine where the
+  certificate file is on various systems.
+
+* Log file handling is not yet unified: the traditional client.log
+  contains only high-level SyncEvolution log entries. Low-level
+  SyncML and engine log entries are in sysync_*.html files.
+
+* stdout and stderr messages from system libraries are visible on the
+  console. 0.8.1 used to redirect those into the client.log to hide
+  this noise; this will be added again. In the meantime, ignore
+  messages like "Deadlock potential - avoiding evil bug!". This is
+  liborbit telling us that it is (hopefully successfully) handling
+  something nasty.
+
+
 SyncEvolution 0.8.1 -> 0.8.1a, 15.12.2008
 -----------------------------------------
 C++ client library: 7.0 plus some patches, see github
