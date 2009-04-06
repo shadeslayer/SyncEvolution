@@ -240,7 +240,6 @@ syncevo_start_sync (SyncevoDBusServer *obj,
 
 	set<string> source_set = set<string>();
 	g_ptr_array_foreach (sources, (GFunc)syncevo_source_add_to_set, &source_set);
-
 	obj->client = new DBusSyncClient (string (server), source_set, 
 	                                  emit_progress, emit_server_message, need_password, check_for_suspend,
 	                                  obj);

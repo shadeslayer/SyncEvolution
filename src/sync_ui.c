@@ -95,6 +95,12 @@ typedef enum app_state {
 	SYNC_UI_STATE_SYNCING,
 } app_state;
 
+typedef enum sync_type {
+	SYNC_TYPE_TWO_WAY,
+	SYNC_TYPE_ONE_WAY_FROM_REMOTE,
+	SYNC_TYPE_ONE_WAY_FROM_LOCAL,
+} sync_type;
+
 /* absolute progress amounts 0-100 */
 const float sync_progress_clicked = 0.02;
 const float sync_progress_session_start = 0.04;
@@ -144,7 +150,7 @@ typedef struct app_data {
 	guint last_sync_src_id;
 	GList *source_progresses;
 
-
+	sync_type mode;
 	SyncevoService *service;
 
 	server_config *current_service;
@@ -353,6 +359,26 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 	}
 }
 
+static GPtrArray*
+get_source_array (app_data *data)
+{
+	GList *l;
+	GPtrArray *sources;
+	sources = g_ptr_array_new ();
+
+	for (l = data->current_service->source_configs; l; l = l->next) {
+		SyncevoSource *src;
+		source_config* config = (source_config*)l->data;
+		
+		if (config->enabled) {
+			src = syncevo_source_new (g_strdup (config->name), data->mode);
+			g_ptr_array_add (sources, src);
+		}
+	}
+
+	return sources;
+}
+
 static void 
 sync_clicked_cb (GtkButton *btn, app_data *data)
 {
@@ -384,7 +410,8 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
 		g_list_free (data->source_progresses);
 		data->source_progresses = NULL;
 
-		sources = g_ptr_array_new ();
+		sources = get_source_array (data);
+
 		syncevo_service_start_sync (data->service, 
 									data->current_service->name,
 									sources,
@@ -540,11 +567,20 @@ set_app_state (app_data *data, app_state state)
 	}
 }
 
+static void
+sync_type_toggled_cb (GObject *radio, app_data *data)
+{
+	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (radio))) {
+		data->mode = GPOINTER_TO_INT (g_object_get_data (radio, "mode"));
+	}
+}
+
 static gboolean
 init_ui (app_data *data)
 {
 	GtkBuilder *builder;
 	GError *error = NULL;
+	GObject *radio;
 
 	builder = gtk_builder_new ();
 	gtk_builder_add_from_file (builder, GLADEDIR "ui.xml", &error);
@@ -580,6 +616,19 @@ init_ui (app_data *data)
 	data->username_entry = GTK_WIDGET (gtk_builder_get_object (builder, "username_entry"));
 	data->password_entry = GTK_WIDGET (gtk_builder_get_object (builder, "password_entry"));
 	data->server_settings_table = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_table"));
+
+	radio = gtk_builder_get_object (builder, "two_way_radio");
+	g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_TYPE_TWO_WAY));
+	g_signal_connect (radio, "toggled",
+	                  G_CALLBACK (sync_type_toggled_cb), data);
+	radio = gtk_builder_get_object (builder, "one_way_from_remote_radio");
+	g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_TYPE_ONE_WAY_FROM_REMOTE));
+	g_signal_connect (radio, "toggled",
+	                  G_CALLBACK (sync_type_toggled_cb), data);
+	radio = gtk_builder_get_object (builder, "one_way_from_local_radio");
+	g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_TYPE_ONE_WAY_FROM_LOCAL));
+	g_signal_connect (radio, "toggled",
+	                  G_CALLBACK (sync_type_toggled_cb), data);
 
 	g_signal_connect (data->sync_win, "destroy",
 	                  G_CALLBACK (gtk_main_quit), NULL);
