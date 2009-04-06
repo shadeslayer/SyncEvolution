@@ -23,10 +23,11 @@
  *    - a gtkbin with rounded corners
  *    - fade-effect for sync duration
  * * could set progress bar to pulse mode when e.g. send_current goes over send_total
- * 
+ *   (which otherwise looks like no progress at all)
  * * notes on dbus API:
- *    - should have a signals SyncFinished and possibly SyncStarted
- *      SyncFinished should have syncevolution return code as return param
+ *    - a more cleaner solution would be to have StartSync return a 
+ *      dbus path that could be used to connect to signals related to that specific
+ *      sync
  *      
  * */
 
@@ -520,7 +521,7 @@ set_app_state (app_data *data, app_state state)
 		gtk_widget_set_sensitive (data->sync_btn, FALSE);
 		gtk_widget_set_sensitive (data->restore_btn, FALSE);
 		gtk_widget_set_sensitive (data->change_service_btn, TRUE);
-		gtk_widget_set_sensitive (data->edit_service_btn, FALSE);
+		gtk_widget_set_sensitive (data->server_box, FALSE);
 		break;
 	case SYNC_UI_STATE_SERVER_FAILURE:
 		gtk_widget_hide (data->server_box);
@@ -535,7 +536,7 @@ set_app_state (app_data *data, app_state state)
 		gtk_widget_set_sensitive (data->sync_btn, FALSE);
 		gtk_widget_set_sensitive (data->restore_btn, FALSE);
 		gtk_widget_set_sensitive (data->change_service_btn, FALSE);
-		gtk_widget_set_sensitive (data->edit_service_btn, FALSE);
+		gtk_widget_set_sensitive (data->server_box, FALSE);
 		break;
 	case SYNC_UI_STATE_SERVER_OK:
 		gtk_widget_show (data->server_box);
@@ -548,7 +549,7 @@ set_app_state (app_data *data, app_state state)
 		gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Sync now");
 		gtk_widget_set_sensitive (data->restore_btn, FALSE);
 		gtk_widget_set_sensitive (data->change_service_btn, TRUE);
-		gtk_widget_set_sensitive (data->edit_service_btn, TRUE);
+		gtk_widget_set_sensitive (data->server_box, TRUE);
 
 		data->syncing = FALSE;
 		break;
@@ -558,8 +559,7 @@ set_app_state (app_data *data, app_state state)
 		gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Cancel sync");
 		gtk_widget_set_sensitive (data->restore_btn, FALSE);
 		gtk_widget_set_sensitive (data->change_service_btn, FALSE);
-		gtk_widget_set_sensitive (data->edit_service_btn, FALSE);
-		
+		gtk_widget_set_sensitive (data->server_box, FALSE);
 		data->syncing = TRUE;
 		break;
 	default:
@@ -1141,15 +1141,11 @@ sync_progress_cb (SyncevoService *service,
 	GError *error = NULL;
 
 	switch(type) {
-	case PEV_SESSIONSTART:
-		/* double check we're in correct state*/
-		set_app_state (data, SYNC_UI_STATE_SYNCING);
-		set_sync_progress (data, sync_progress_session_start, NULL);
-		break;
-	case PEV_SESSIONEND:
-
-		/* TODO should check for sync success before doing this 
-		 * -- should have a new signal with syncevolution return code in it */
+	case -1:
+		/* syncevolution finished sync */
+		if (extra1 != 0) {
+			g_warning ("Syncevolution returned error: %d", extra1);
+		}
 
 		set_app_state (data, SYNC_UI_STATE_SERVER_OK);
 		g_get_current_time (&val);
@@ -1166,8 +1162,15 @@ sync_progress_cb (SyncevoService *service,
 			g_error_free (error);
 		}
 
-		refresh_last_synced_label (data);
 		refresh_statistics (data);
+		break;
+	case PEV_SESSIONSTART:
+		/* double check we're in correct state*/
+		set_app_state (data, SYNC_UI_STATE_SYNCING);
+		set_sync_progress (data, sync_progress_session_start, NULL);
+		break;
+	case PEV_SESSIONEND:
+		set_sync_progress (data, 1.0, NULL);
 		break;
 
 	case PEV_ALERTED:
