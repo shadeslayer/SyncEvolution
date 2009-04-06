@@ -202,7 +202,7 @@ do_sync (SyncevoDBusServer *obj)
 	int ret;
 
 	SyncReport report;
-	g_debug ("syncing...");
+
 	ret = (*obj->client).sync(&report);
 	if (ret != 0) {
 		g_printerr ("SyncEvolution returned error %d\n", ret);
@@ -383,12 +383,15 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 	return TRUE;
 }
 
+
 static gboolean 
 syncevo_set_server_config (SyncevoDBusServer *obj,
                                    char *server,
                                    GPtrArray *options,
                                    GError **error)
 {
+	int i;
+	
 	if (!server || !options) {
 		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
 		                      1, "Server and options parameters must be given");
@@ -401,12 +404,35 @@ syncevo_set_server_config (SyncevoDBusServer *obj,
 		return FALSE;
 	}
 
-	/* TODO */
+	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig (string (server)));
+	
+	
+	for (i = 0; i < options->len; i++) {
+		const char *ns, *key, *value;
+		SyncevoOption *option = (SyncevoOption*)g_ptr_array_index (options, i);
 
-	*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
-	                      1, "not implemented yet");
+		syncevo_option_get (option, &ns, &key, &value);
 
-	return FALSE;
+		if ((!ns || strlen (ns) == 0) && key) {
+			if (strcmp (key, "syncURL") == 0) {
+				config->setSyncURL (string (value));
+			} else if (strcmp (key, "username") == 0) {
+				config->setUsername (string (value));
+			} else if (strcmp (key, "password") == 0) {
+				config->setPassword (string (value));
+			}
+		} else if (ns && key) {
+			boost::shared_ptr<EvolutionSyncSourceConfig> source_config = config->getSyncSourceConfig(ns);
+			if (strcmp (key, "sync") == 0) {
+				source_config->setSync (string (value));
+			} else if (strcmp (key, "uri") == 0) {
+				source_config->setURI (string (value));
+			}
+		}
+	}
+	config->flush();
+
+	return TRUE;
 }
 
 static void
