@@ -22,7 +22,8 @@
  *    - titlebar
  *    - a gtkbin with rounded corners
  *    - fade-effect for sync duration
- *  
+ * * could set progress bar to pulse mode when e.g. send_current goes over send_total
+ * 
  * * notes on dbus API:
  *    - should have a signals SyncFinished and possibly SyncStarted
  *      SyncFinished should have syncevolution return code as return param
@@ -117,6 +118,7 @@ typedef struct app_data {
 	GtkWidget *service_settings_dlg;
 
 	GtkWidget *server_box;
+	GtkWidget *server_failure_box;
 	GtkWidget *no_server_box;
 	GtkWidget *info_box;
 
@@ -473,7 +475,8 @@ set_app_state (app_data *data, app_state state)
 	
 	switch (state) {
 	case SYNC_UI_STATE_GETTING_SERVER:
-		gtk_widget_hide (data->server_box);
+		gtk_widget_show (data->server_box);
+		gtk_widget_hide (data->server_failure_box);
 		gtk_widget_hide (data->no_server_box);
 		gtk_container_foreach (GTK_CONTAINER (data->info_box), 
 									  (GtkCallback)remove_child,
@@ -484,6 +487,7 @@ set_app_state (app_data *data, app_state state)
 		break;
 	case SYNC_UI_STATE_NO_SERVER:
 		gtk_widget_hide (data->server_box);
+		gtk_widget_hide (data->server_failure_box);
 		gtk_widget_show (data->no_server_box);
 		gtk_container_foreach (GTK_CONTAINER (data->info_box), 
 									  (GtkCallback)remove_child,
@@ -496,6 +500,7 @@ set_app_state (app_data *data, app_state state)
 	case SYNC_UI_STATE_SERVER_FAILURE:
 		gtk_widget_hide (data->server_box);
 		gtk_widget_hide (data->no_server_box);
+		gtk_widget_show (data->server_failure_box);
 		gtk_container_foreach (GTK_CONTAINER (data->info_box), 
 									  (GtkCallback)remove_child,
 									  data->info_box);
@@ -509,6 +514,7 @@ set_app_state (app_data *data, app_state state)
 		break;
 	case SYNC_UI_STATE_SERVER_OK:
 		gtk_widget_show (data->server_box);
+		gtk_widget_hide (data->server_failure_box);
 		gtk_widget_hide (data->no_server_box);
 		gtk_container_foreach (GTK_CONTAINER (data->info_box), 
 									  (GtkCallback)remove_child,
@@ -557,6 +563,7 @@ init_ui (app_data *data)
 
 	data->server_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_box"));
 	data->no_server_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_server_box"));
+	data->server_failure_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_failure_box"));
 	data->info_box = GTK_WIDGET (gtk_builder_get_object (builder, "info_box"));
 
 	data->progress = GTK_WIDGET (gtk_builder_get_object (builder, "progressbar"));
@@ -1117,8 +1124,8 @@ sync_progress_cb (SyncevoService *service,
 				return;
 			}
 		}
-		source_prog->prepare_current = CLAMP (extra1, 0, extra2);
-		source_prog->prepare_total = extra2;
+		source_prog->send_current = CLAMP (extra1, 0, extra2);
+		source_prog->send_total = extra2;
 
 		msg = g_strdup_printf ("Sending '%s'", source);
 		calc_and_update_progress (data, msg);
@@ -1134,8 +1141,8 @@ sync_progress_cb (SyncevoService *service,
 				return;
 			}
 		}
-		source_prog->prepare_current = CLAMP (extra1, 0, extra2);
-		source_prog->prepare_total = extra2;
+		source_prog->receive_current = CLAMP (extra1, 0, extra2);
+		source_prog->receive_total = extra2;
 
 		msg = g_strdup_printf ("Receiving '%s'", source);
 		  calc_and_update_progress (data, msg);
