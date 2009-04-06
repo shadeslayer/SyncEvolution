@@ -56,7 +56,7 @@
         }
         // - detect alldays in vCalendar 1.0 (0:00-0:00 or 23:59 localtime)
         i = ALLDAYCOUNT(DTSTART,DTEND,TRUE);
-        if (ITEMDATATYPE()=="vtodoz10" && i>0) {
+        if (ITEMDATATYPE()=="vCalendar10" && i>0) {
           // DTSTART and DTEND represent allday event, make them date-only values
           // - convert start to user zone (or floating) so it represents midnight
           DTSTART = CONVERTTOUSERZONE(DTSTART);
@@ -593,6 +593,8 @@
           <value index="1" field="GEO_LONG"/>
         </property>
 
+        <subprofile onlyformode="standard" name="VTIMEZONE" mode="vtimezones"/>
+
         <!-- sub-profile for todoz -->
         <subprofile name="VTODO" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="0">
 
@@ -1048,9 +1050,6 @@
           </subprofile>
 
         </subprofile>
-        
-        <subprofile onlyformode="standard" name="VTIMEZONE" mode="vtimezones"/>
-
       </profile>
     </mimeprofile>
 
