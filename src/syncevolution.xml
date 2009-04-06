@@ -593,6 +593,8 @@
           <value index="1" field="GEO_LONG"/>
         </property>
 
+        <subprofile onlyformode="standard" name="VTIMEZONE" mode="vtimezones"/>
+
         <!-- sub-profile for todoz -->
         <subprofile name="VTODO" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="0">
 
@@ -1048,9 +1050,6 @@
           </subprofile>
 
         </subprofile>
-        
-        <subprofile onlyformode="standard" name="VTIMEZONE" mode="vtimezones"/>
-
       </profile>
     </mimeprofile>
 
