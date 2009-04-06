@@ -360,7 +360,18 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 	*options = g_ptr_array_new ();
 	const string srv (server);
 
-	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig (string (server)));
+	boost::shared_ptr<EvolutionSyncConfig> from(new EvolutionSyncConfig (string (server)));
+	/* if config does not exist, create from template */
+	if (!from->exists()) {
+		from = EvolutionSyncConfig::createServerTemplate( string (server));
+		if (!from.get()) {
+			*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+			                      1, "No server or template '%s' found", server);
+			return FALSE;
+		}
+	}
+	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(string (server)));
+	config->copy(*from, NULL);
 
 	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup(config->getSyncURL()));
 	g_ptr_array_add (*options, option);
@@ -404,8 +415,18 @@ syncevo_set_server_config (SyncevoDBusServer *obj,
 		return FALSE;
 	}
 
-	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig (string (server)));
-	
+	boost::shared_ptr<EvolutionSyncConfig> from(new EvolutionSyncConfig (string (server)));
+	/* if config does not exist, create from template */
+	if (!from->exists()) {
+		from = EvolutionSyncConfig::createServerTemplate( string (server));
+		if (!from.get()) {
+			*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+			                      1, "No server or template '%s' found", server);
+			return FALSE;
+		}
+	}
+	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(string (server)));
+	config->copy(*from, NULL);
 	
 	for (i = 0; i < options->len; i++) {
 		const char *ns, *key, *value;
