@@ -1,21 +1,23 @@
 /*
  * TODO
  * 
- * * dbus api should have sync-finished signal (with syncevolutions return code as payload)
- * * configuration setting not done at all
- *    - current design doesn't actualy say how you choose thew current service
+ * * configuration needs a bit of thought
+ *    - current design doesn't actually say how you choose thew current service
  *    - how to save additional info for a service, e.g. icon
+ *    - "reset service settings" is probably a good idea... 
+ *      how to implement: the brute force method is deleting the config dir...
+ *    - should I use GetDefaults when creating a new one server?
  * * redesign main window? (talk with nick/patrick). Issues:
       - unnecessary options included in main window
       - last-sync needs to be source specific if it's easy to turn them on/off
       - should we force the sync type? Either yes or we start treating sync type
         source specifically
       - where to show statistic
- * * service icons
+ * * service icons everywhere
  * * where to save last-sync -- it's not a sync ui thing really, it should be 
- *   in server....
+ *   in server.... (see "how to save additional info for a service")
  * * backup/restore ? 
- * * leaking in dbus async-callbacks 
+ * * leaking dbus params in dbus async-callbacks 
  * * GTK styling missing:
  *    - titlebar
  *    - a gtkbin with rounded corners
@@ -24,8 +26,6 @@
  * * notes on dbus API:
  *    - should have a signals SyncFinished and possibly SyncStarted
  *      SyncFinished should have syncevolution return code as return param
- *      SyncStarted could have a DBus path that can be used to connect to the 
- *      detailed progress signals
  *      
  * */
 
@@ -59,6 +59,8 @@ typedef struct server_config {
 	char *password;
 
 	GList *source_configs;
+	
+	gboolean changed;
 } server_config;
 
 typedef struct source_progress {
@@ -153,6 +155,26 @@ static void init_services_window (app_data *data);
 static void show_settings_dialog (app_data *data, server_config *config);
 
 static void
+source_config_free (source_config *source)
+{
+	g_free (source->name);
+	g_free (source->uri);
+	g_slice_free (source_config, source);
+}
+
+static void
+server_config_free (server_config *server)
+{
+	g_free (server->name);
+	g_free (server->base_url);
+	g_free (server->username);
+	g_free (server->password);
+	g_list_foreach (server->source_configs, (GFunc)source_config_free, NULL);
+	g_list_free (server->source_configs);
+	g_slice_free (server_config, server);
+}
+
+static void
 remove_child (GtkWidget *widget, GtkContainer *container)
 {
 	gtk_container_remove (container, widget);
@@ -172,10 +194,121 @@ edit_services_clicked_cb (GtkButton *btn, app_data *data)
 }
 
 static void
+update_config_from_entry (GtkWidget *widget, server_config *server)
+{
+	char **str;
+	gboolean *enabled;
+	const char *new_str;
+
+	if (!GTK_IS_ENTRY (widget))
+		return;
+
+	/* all entries have a pointer to the correct string in server_config */
+	str = g_object_get_data (G_OBJECT (widget), "value");
+	g_assert (str);
+
+	new_str = gtk_entry_get_text (GTK_ENTRY (widget));
+
+	if ((*str == NULL || strlen (*str) == 0) &&
+	    (new_str == NULL || strlen (new_str) == 0))
+	return;
+
+	/* source entries have a pointer to enabled flag in server_config */
+	enabled = g_object_get_data (G_OBJECT (widget), "enabled");
+
+	if (*str == NULL || strcmp (*str, new_str) != 0) {
+		g_free (*str);
+		*str = g_strdup (new_str);
+		/* set source enabled if uri is set */
+		if (enabled != NULL && *str != NULL && strlen (*str) > 0) {
+			*enabled = TRUE;
+		}
+		server->changed = TRUE;
+	}
+}
+
+static GPtrArray*
+get_option_array (server_config *server)
+{
+	GPtrArray *options;
+	GList *l;
+	SyncevoOption *option;
+	
+	g_assert (server);
+	options = g_ptr_array_new ();
+	
+	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup (server->base_url));
+	g_ptr_array_add (options, option);
+
+	option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
+	g_ptr_array_add (options, option);
+
+	option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
+	g_ptr_array_add (options, option);
+
+	for (l = server->source_configs; l; l = l->next) {
+		source_config *source = (source_config*)l->data;
+
+		option = syncevo_option_new (source->name, g_strdup ("uri"), g_strdup (source->uri));
+		g_ptr_array_add (options, option);
+
+		option = syncevo_option_new (source->name, g_strdup ("sync"), 
+		                             source->enabled ? g_strdup ("two-way") : g_strdup ("none"));
+		g_ptr_array_add (options, option);
+	}
+
+	return options;
+}
+
+static void
+set_server_config_cb (SyncevoService *service, GError *error, app_data *data)
+{
+	g_debug ("server config set. TODO: handle error");
+}
+
+static void
 service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 {
-	/* TODO: save settings on apply */
+	GPtrArray *options;
+	server_config *server;
+
+	if (response == 1) {
+		/* reset */
+		g_debug ("TODO: reset settings for service");
+		/* wipe the ~/.config/syncevolution/server dir? */
+		return;
+	}
+
 	gtk_widget_hide (GTK_WIDGET (data->service_settings_dlg));
+
+	if (response != GTK_RESPONSE_APPLY) {
+		/* cancelled or closed */
+		return;
+	}
+
+	server = g_object_get_data (G_OBJECT (data->service_settings_dlg), "server");
+
+	update_config_from_entry (data->username_entry, server);
+	update_config_from_entry (data->password_entry, server);
+
+	gtk_container_foreach (GTK_CONTAINER (data->server_settings_table), 
+						   (GtkCallback)update_config_from_entry, server);
+
+	if (!server->changed)
+		return;
+
+	options = get_option_array (server);
+	syncevo_service_set_server_config_async (data->service, 
+	                                         server->name,
+	                                         options,
+	                                         (SyncevoSetServerConfigCb)set_server_config_cb, 
+	                                         data);
+
+	/* TODO free options */
+	g_ptr_array_free (options, TRUE);
+	
+
+	/* TODO set as current server */
 }
 
 static void 
@@ -544,7 +677,7 @@ show_settings_dialog (app_data *data, server_config *config)
 	GList *l;
 	GtkWidget *label, *entry;
 	int i = 0;
-	
+
 	gtk_container_foreach (GTK_CONTAINER (data->server_settings_table),
 	                       (GtkCallback)remove_child,
 	                       data->server_settings_table);
@@ -559,19 +692,24 @@ show_settings_dialog (app_data *data, server_config *config)
 	}
 	gtk_entry_set_text (GTK_ENTRY (data->username_entry), 
 	                    config->username ? config->username : "");
+	g_object_set_data (G_OBJECT (data->username_entry), "value", &config->username);
+
 	gtk_entry_set_text (GTK_ENTRY (data->password_entry),
 	                    config->password ? config->password : "");
-	
+	g_object_set_data (G_OBJECT (data->password_entry), "value", &config->password);
+
 	label = gtk_label_new ("Server URL");
 	gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
 	gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
 	                  0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
+
 	entry = gtk_entry_new_with_max_length (100);
 	gtk_entry_set_text (GTK_ENTRY (entry), 
 	                    config->base_url ? config->base_url : "");
+	g_object_set_data (G_OBJECT (entry), "value", &config->base_url);
 	gtk_table_attach_defaults (GTK_TABLE (data->server_settings_table), entry,
 	                           1, 2, i, i + 1);
-	
+
 	for (l = config->source_configs; l; l = l->next) {
 		source_config *source = (source_config*)l->data;
 		char *str;
@@ -583,14 +721,22 @@ show_settings_dialog (app_data *data, server_config *config)
 		gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
 		gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
 		                  0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
+
 		entry = gtk_entry_new_with_max_length (100);
 		gtk_entry_set_text (GTK_ENTRY (entry), 
 		                    source->uri ? source->uri : "");
+		g_object_set_data (G_OBJECT (entry), "value", &source->uri);
+		g_object_set_data (G_OBJECT (entry), "enabled", &source->enabled);
 		gtk_table_attach_defaults (GTK_TABLE (data->server_settings_table), entry,
 		                           1, 2, i, i + 1);
 	}
 	gtk_widget_show_all (data->server_settings_table);
-	
+
+	/* make sure server_config gets freed when it's not needed */
+	g_object_set_data_full (G_OBJECT (data->service_settings_dlg), "server", 
+	                        config, (GDestroyNotify)server_config_free);
+	config->changed = FALSE;
+
 	gtk_window_present (GTK_WINDOW (data->service_settings_dlg));
 }
 
