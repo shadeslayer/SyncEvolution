@@ -185,6 +185,7 @@ need_password (const char *message,
 	g_signal_emit (obj, signals[NEED_PASSWORD], 0);
 
 	/* TODO */
+	return NULL;
 }
 
 gboolean 
@@ -198,7 +199,6 @@ check_for_suspend (gpointer data)
 static gboolean 
 do_sync (SyncevoDBusServer *obj)
 {
-	GError *error = NULL;
 	int ret;
 
 	SyncReport report;
@@ -428,7 +428,7 @@ syncevo_set_server_config (SyncevoDBusServer *obj,
 	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(string (server)));
 	config->copy(*from, NULL);
 	
-	for (i = 0; i < options->len; i++) {
+	for (i = 0; i < (int)options->len; i++) {
 		const char *ns, *key, *value;
 		SyncevoOption *option = (SyncevoOption*)g_ptr_array_index (options, i);
 

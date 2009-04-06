@@ -119,8 +119,6 @@ int main (int argc, char *argv[])
     GPtrArray *sources;
     GError *error = NULL;
     GPtrArray *array;
-    char **servers;
-    char **ptr;
     char *server = NULL;
 
     g_type_init();

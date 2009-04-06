@@ -429,19 +429,19 @@ refresh_last_synced_label (app_data *data)
 		msg = g_strdup ("Last synced a minute ago");
 		delay = 60;
 	} else if (diff < 60 * 60) {
-		msg = g_strdup_printf ("Last synced %d minutes ago", (diff + 30) / 60);
+		msg = g_strdup_printf ("Last synced %ld minutes ago", (diff + 30) / 60);
 		delay = 60;
 	} else if (diff < 60 * 90) {
 		msg = g_strdup ("Last synced an hour ago");
 		delay = 60 * 60;
 	} else if (diff < 60 * 60 * 24) {
-		msg = g_strdup_printf ("Last synced %d hours ago", (diff + 60 * 30) / (60 * 60));
+		msg = g_strdup_printf ("Last synced %ld hours ago", (diff + 60 * 30) / (60 * 60));
 		delay = 60 * 60;
 	} else if (diff < 60 * 60 * 24 - (60 * 30)) {
 		msg = g_strdup ("Last synced a day ago");
 		delay = 60 * 60 * 24;
 	} else {
-		msg = g_strdup_printf ("Last synced %d days ago", (diff + 24 * 60 * 30) / (60 * 60 * 24));
+		msg = g_strdup_printf ("Last synced %ld days ago", (diff + 24 * 60 * 30) / (60 * 60 * 24));
 		delay = 60 * 60 * 24;
 	}
 
@@ -471,7 +471,6 @@ static void
 set_app_state (app_data *data, app_state state)
 {
 	GtkWidget *info;
-	char *str;
 	
 	switch (state) {
 	case SYNC_UI_STATE_GETTING_SERVER:
@@ -909,9 +908,9 @@ get_templates_cb (SyncevoService *service, GPtrArray *temps, GError *error, app_
 	int i;
 
 	if (error) {
-		g_warning ("Failed to get templates: %s", 
-					  data->current_service->name,
-					  error->message);
+		g_warning ("%s: Failed to get templates: %s", 
+                           data->current_service->name,
+                           error->message);
 		g_error_free (error);
 		/* TODO ? */
 		return;
