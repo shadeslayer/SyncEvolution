@@ -208,7 +208,14 @@ do_sync (SyncevoDBusServer *obj)
 		g_printerr ("SyncEvolution returned error %d\n", ret);
 	}
 
-	/* TODO need to add a signal for 'sync finished' with ret as payload */
+	/* adding a progress signal on top of synthesis ones */
+	g_signal_emit (obj, signals[PROGRESS], 0,
+	               obj->server,
+	               NULL,
+	               -1,
+	               ret,
+	               0,
+	               0);
 
 	delete obj->client;
 	g_free (obj->server);
