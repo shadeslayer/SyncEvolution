@@ -1,7 +1,7 @@
 dnl -*- mode: Autoconf; -*-
 dnl Invoke autogen.sh to produce a configure script.
 
-AC_INIT([syncevolution], [0.9alpha20090325])
+AC_INIT([syncevolution], [0.8.1+0.9beta1])
 AM_INIT_AUTOMAKE([tar-ustar])
 AC_CONFIG_MACRO_DIR([m4])
 define([SYNTHESISSRC_REPO], [])
@@ -232,7 +232,6 @@ if test "$SYNTHESISSRC" && test "$SYNTHESISSRC" != "none"; then
             if test -d $SYNTHESIS_SRC ; then
                 ( set -x; cd $SYNTHESIS_SRC && git fetch "$SYNTHESISSRC" ) || AC_ERROR([updating from $SYNTHESISSRC failed])
             else
-                mkdir -p $SYNTHESIS_SRC
                 ( set -x; git clone "$SYNTHESISSRC" $SYNTHESIS_SRC ) || AC_ERROR([cloning $SYNTHESISSRC failed])
             fi
             if test "$REVISION"; then

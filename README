@@ -5,13 +5,13 @@ SyncEvolution synchronizes personal information management (PIM) data
 like contacts, calenders, tasks and memos via the SyncML information
 synchronization standard. It supports all of these for GNOME's
 Evolution and contacts for the system address book of the Nokia
-Internet Tablets, Mac OS X and the iPhone. The command-line tool
-'syncevolution' (compiled separately for each of these platforms)
-executes the synchronization. The project 'Genesis' (available
-separately) provides a graphical user interface.
+Internet Tablets, Mac OS X and (at one point, but not anymore) the
+iPhone. The command-line tool 'syncevolution' (compiled separately for
+each of these platforms) executes the synchronization. The project
+'Genesis' (available separately) provides a graphical user interface.
 
-The items are exchanged in the vCard 2.1/3.0, iCalender 2.0 and
-textual format via the open source Funambol C++ client API library,
+The items are exchanged in the vCard 2.1/3.0, iCalender 2.0/vCalendar 1.0
+and textual format via the open source Synthesis SyncML engine,
 which makes SyncEvolution compatible with the majority of SyncML
 servers. Full, one-way and incremental synchronization of items are
 supported.
@@ -517,8 +517,10 @@ Exchanging Data
 SyncEvolution transmits address book entries as vCard 2.1 or 3.0
 depending on the type chosen in the configuration. Evolution uses
 3.0 internally, so SyncEvolution converts between the two formats
-as needed. Calendar items and tasks have to be sent and received
-in iCalendar 2.0 format. Only the UTF-8 character set is supported.
+as needed. Calendar items and tasks can be sent and received
+in iCalendar 2.0 as well as vCalendar 1.0, but vCalendar 1.0 should
+be avoided if possible because it cannot represent all data that
+Evolution stores.
 
 How the server stores the items depends on its implementation and
 configuration. In the default Funambol server installation, contacts
@@ -574,57 +576,18 @@ synchronize will copy its changes to the server. The second one
 then runs into a conflict when it tries to push its own changes
 into the server.
 
-The SyncML server now has to decide how to proceed. If the server
-decides to continue with its own copy and asks to overwrite the
-locally modified copy (the default with Funambol), SyncEvolution will
-make a local copy first. This leads to duplicates which have to be
-merged manually on the client side where the conflict
-occurred. Currently there is no support for that inside SyncEvolution:
-there is only an ERROR entry in the log and the summary will show
-the duplicated items.
+The SyncML server now has to decide how to proceed. Some decide
+to preserve both conflicting items, leading to duplicates which
+have to be merged manually later. Other servers merge automatically
+and throw away conflicting data based on heuristics; this may
+remove valid data. The client has no control over the method
+chosen by the server.
 
 Merging items on the server is difficult because the SyncML protocol
 does not specify which parts of a conflicting item were updated.
 In general a server can only make more or less educated guesses
 which might lead to data loss. It is better to avoid this situation
 in the first place by synchronizing before making changes.
-
-
-Tracking Changes inside Evolution and Nokia Internet Tablets
-------------------------------------------------------------
-
-The SyncML protocol requires that a client knows which items have been
-added, modified and deleted since the last sync. This is supported by
-the Evolution data server, albeit in a limited way and some backends
-might not implement it:
-
-the same function lists changes and also moves the so called "change
-marker" forward. Therefore asking for changes twice in a row will only
-list changes the first time and not report the same changes a second
-time. SyncEvolution delays asking for changes as long as possible
-and only does it when synchronization has really started. Then
-if synchronization completed and items where added, modified or
-deleted on behalf of the server, the change marker is moved forward.
-
-If synchronization fails for some or all items, then SyncEvolution
-cannot mark individual items for retransmission during the next
-sync and forces the next sync to execute in slow mode.
-
-The change marker that SyncEvolution uses is a string which is
-composed as "SyncEvolution:<syncURL>/<name>" where <syncURL> comes
-from the server config file and <name> from the source config
-file. This implies that changes are tracked separately for each server
-and source configuration that Evolution might be synchronized with.
-
-
-Tracking Changes inside Mac OS X and iPhone
--------------------------------------------
-
-Changes are tracked by remembering the modification time stamp
-of items and comparing that list against the current list when
-the next synchronization starts. Removed entries are in the first
-but not the second list, added items are only in the second and
-modified items have a more recent time stamp.
 
 
 Known Problems + Support
@@ -638,11 +601,11 @@ help can be found.
 Compiling from Source
 ---------------------
 
-To compile the code the 3.x version of the Funambol C++ client library
-is needed. A compatible snapshot of it is included in SyncEvolution
-source packages and will be used automatically. Instructions for
-working with CVS sources directly are contained in the HACKING
-document.
+To compile the code the source or an installation of the Synthesis
+SyncML engine is needed. A compatible snapshot of it is included in
+SyncEvolution source packages and will be used
+automatically. Instructions for working with upstream Synthesis
+sources directly are contained in the HACKING document.
 
 Also needed are the Evolution and Boost development files. For HTTP,
 either Curl or libsoup can be used. Debian based systems the required
@@ -682,12 +645,8 @@ its development did not cost much effort - quite the opposite, a lot
 of time went into it.
 
 - Send a postcard to the author (see main page).
-- Leave comments on the author's blog (coming soon).
-- If you really want to, you can donate an arbitrary amount of money
-  via PayPal to patrick.ohly@gmx.de. This is by no means required:
-  the author does not depend on this income and promises to spend it
-  on SyncEvolution related expenses instead of wasting it on booze and
-  women...
+- Leave comments on the author's blog (http://www.estamos.de/blog).
+- Donations are not necessary and cannot be accepted either.
 
 
 Author

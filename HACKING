@@ -1,9 +1,8 @@
 Checking out the Source
 -----------------------
 
-SyncEvolution is hosted on estamos.de. Anonymous access is
-via
-  svn checkout http://www.estamos.de/svn/SyncEvolution/trunk
+SyncEvolution is hosted on moblin.org. Anonymous access is via
+  git clone git://git.moblin.org/syncevolution.git
 
 Before using sources checked out from Subversion, invoke "sh
 autogen.sh" with appropriate autotools packages installed.
@@ -14,6 +13,17 @@ option. This has advantages when modifying the Synthesis source
 together with SyncEvolution (no need to install Synthesis and thus
 faster compilation) and will bundle the Synthesis sources in source
 .tar.gz archives.
+
+The upstream Synthesis source code is here:
+  git://www.synthesis.ch/libsynthesis.git
+The staging area for patches developed as part of Moblin are
+in the following repository:
+  git://git.moblin.org/libsynthesis.git
+
+The intention is to include all these patches upstream to
+prevent forking the code. If you want to get patches included
+in the Synthesis code base, then please work directly with
+the upstream branch.
 
 For doing development work the recommended configure line is:
    configure CFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
@@ -35,39 +45,30 @@ The code follows the code formatting of the Funambol
 C++ client library. Just emulate the existing
 code when possible.
 
-Exceptions derived from std::exception are used to report
-errors, but not in code which is called from inside the client
-library because that library does not handle exceptions for compatibility
-reasons. In that case special case must be taken to not
-forget that an error occurred (EvolutionSyncSource::m_hasFailed).
-This is done in in EvolutionSyncSource wrapper functions
-which call the real functions which then may throw exceptions.
-The EvolutionSyncSource::handleException() function deals with
-logging the exception.
+Exceptions derived from std::exception are used to report errors. The
+EvolutionSyncSource::handleException() function deals with logging the
+exception.
 
-SyncEvolution uses the Funambol C++ testing framework (which is
-based on the previous SyncEvolution testing). Configure with
---enable-integration-tests and (optionally) --enable-unit-tests,
-then run "src/client-test" as described in the C++ client libraries
-test/README.txt.
+SyncEvolution uses the a CPPUnit based testing framework. Configure
+with --enable-integration-tests and (optionally) --enable-unit-tests,
+then run "src/client-test" as described in src/client-test-app.cpp.
 
-It understands the same environment variables as the C++ client
-libraries "client-test", among them:
+It understands several environment variables, among them:
 - CLIENT_TEST_SERVER = chooses config
-- CLIENT_TEST_LOG = name of server log file, will be copied and reset
-  after each sync
-- CLIENT_TEST_FAILURES = comma separated list of tests which are allowed
-  to fail without affecting the return code of the test runner
-- CLIENT_TEST_ALARM = number of seconds a single test is allowed to run
-  before aborting it
 - CLIENT_TEST_SOURCES = comma separated list of enabled sources, identified
   by their name (ical20, vcard21, vcard30, itodo20, text (= memos))
-- CLIENT_TEST_XML=1 use XML format as default instead of the normal WBXML
-
-In addition it supports:
 - CLIENT_TEST_EVOLUTION_PREFIX=[name|file://<path>] overrides
   the evolutionsource setting in the configuration; if file:// is used
   then these database will be created automatically
+- CLIENT_TEST_XML=1 use XML format as default instead of the normal WBXML
+
+For unattended testing:
+- CLIENT_TEST_FAILURES = comma separated list of tests which are allowed
+  to fail without affecting the return code of the test runner
+- CLIENT_TEST_LOG = name of server log file, will be copied and reset
+  after each sync
+- CLIENT_TEST_ALARM = number of seconds a single test is allowed to run
+  before aborting it
 
 Most Client::Sync tests use the default encoding, usually WBXML unless
 changed via CLIENT_TEST_XML=1. Client::Sync::*::testItemsXML always
@@ -105,28 +106,25 @@ using ScheduleWorld as example:
 "make valgrind" runs the same tests inside valgrind
 [http://www.valgrind.org]. A suppression file is
 used to hide errors inside system libraries which
-are not caused by SyncEvolution or Funambol C++
-library code. Most likely the suppressions will only
-work on Debian GNU/Linux 3.1 ("Sarge") - feel free
-to add more for your system.
+are not caused by SyncEvolution or Synthesis
+library code. Most likely the suppressions are system
+dependent and might have to be updated from time to time.
 
 
 Building a Release
 ------------------
 
 - increase version number in configure-pre.in/AM_INIT_AUTOMAKE
-- ensure files were updated:
-  ./ChangeLog ./NEWS debian/changelog
-
-  To update the ChangeLog file use "./svn2cl.sh". It invokes
-  svn2cl with the right options.
-
   For prereleases use "old version"+"new prerelease"-1 as
   package version. That ensures that package versions are
   higher than the old release, but lower than the final
   release. Avoid hyphens as part of the release names, i.e.
   use "0.7+0.8beta1" instead of "0.7+0.8-beta1".
-
+- ensure files were updated:
+  ./NEWS debian/changelog
+- ensure that Synthesis source code is tagged:
+  use <base version>+<syncevo version> if local changes exist
+- commit and tag SyncEvolution source code
 - make distcheck
 - compile binary .tar.gz packages for different Evolution versions;
   done automatically by runtests.py on estamos.de (= Debian 3.0), using different Garnome
