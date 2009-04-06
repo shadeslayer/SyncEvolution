@@ -156,6 +156,7 @@ static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
 static void show_services_window (app_data *data);
 static void show_settings_dialog (app_data *data, server_config *config);
+static void ensure_default_sources_exist(server_config *server);
 
 static void
 source_config_free (source_config *source)
@@ -221,16 +222,9 @@ update_config_from_entry (GtkWidget *widget, server_config *server)
 	    (new_str == NULL || strlen (new_str) == 0))
 	return;
 
-	/* source entries have a pointer to enabled flag in server_config */
-	enabled = g_object_get_data (G_OBJECT (widget), "enabled");
-
 	if (*str == NULL || strcmp (*str, new_str) != 0) {
 		g_free (*str);
 		*str = g_strdup (new_str);
-		/* set source enabled if uri is set */
-		if (enabled != NULL && *str != NULL && strlen (*str) > 0) {
-			*enabled = TRUE;
-		}
 		server->changed = TRUE;
 	}
 }
@@ -256,6 +250,10 @@ get_option_array (server_config *server)
 
 	for (l = server->source_configs; l; l = l->next) {
 		source_config *source = (source_config*)l->data;
+
+		/* sources may have been added as place holders */
+		if (!source->uri)
+			continue;
 
 		option = syncevo_option_new (source->name, g_strdup ("uri"), g_strdup (source->uri));
 		g_ptr_array_add (options, option);
@@ -658,6 +656,25 @@ add_server_option (SyncevoOption *option, server_config *server)
 }
 
 static void
+source_check_toggled_cb (GtkCheckButton *check, app_data *data)
+{
+	GPtrArray *options;
+	gboolean *enabled;
+	
+	enabled = g_object_get_data (G_OBJECT (check), "enabled");
+	*enabled = !*enabled;
+	
+	options = get_option_array (data->current_service);
+	syncevo_service_set_server_config_async (data->service, 
+											 data->current_service->name,
+											 options,
+											 (SyncevoSetServerConfigCb)set_server_config_cb, 
+											 data);
+	/* TODO free options */
+	g_ptr_array_free (options, TRUE);
+}
+
+static void
 update_service_ui (app_data *data)
 {
 	GList *l;
@@ -679,9 +696,20 @@ update_service_ui (app_data *data)
 		source_config *source = (source_config*)l->data;
 		GtkWidget *check;
 		
-		check = gtk_check_button_new_with_label (source->name);
-		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), source->enabled);
-		gtk_widget_set_sensitive (check, FALSE);
+		if (source->uri) {
+			check = gtk_check_button_new_with_label (source->name);
+			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), source->enabled);
+			gtk_widget_set_sensitive (check, TRUE);
+		} else {
+			char *name;
+			name = g_strdup_printf ("%s (not supported by this service)", source->name);
+			check = gtk_check_button_new_with_label (name);
+			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), FALSE);
+			gtk_widget_set_sensitive (check, FALSE);
+		}
+		g_object_set_data (G_OBJECT (check), "enabled", &source->enabled);
+		g_signal_connect (check, "toggled",
+		                  G_CALLBACK (source_check_toggled_cb), data);
 		gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), check);
 	}
 	gtk_widget_show_all (data->sources_box);
@@ -703,6 +731,7 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
 	}
 
 	g_ptr_array_foreach (options, (GFunc)add_server_option, data->current_service);
+	ensure_default_sources_exist (data->current_service);
 	
 	update_service_ui (data);
 	set_app_state (data, SYNC_UI_STATE_SERVER_OK);
