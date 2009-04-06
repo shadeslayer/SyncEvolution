@@ -128,9 +128,6 @@ if test $enable_gui == "yes"; then
     AC_PATH_PROG([GTK_BUILDER_CONV], gtk-builder-convert)
 fi
 
-
-PKG_CHECK_MODULES(SYNTHESIS, "synthesis")
-
 AC_CHECK_HEADERS(signal.h dlfcn.h)
 
 # cppunit needed?
@@ -282,7 +279,6 @@ if test "$SYNTHESISSRC" && test "$SYNTHESISSRC" != "none"; then
             if test -d $SYNTHESIS_SRC ; then
                 ( set -x; cd $SYNTHESIS_SRC && git fetch "$SYNTHESISSRC" ) || AC_ERROR([updating from $SYNTHESISSRC failed])
             else
-                mkdir -p $SYNTHESIS_SRC
                 ( set -x; git clone "$SYNTHESISSRC" $SYNTHESIS_SRC ) || AC_ERROR([cloning $SYNTHESISSRC failed])
             fi
             if test "$REVISION"; then
