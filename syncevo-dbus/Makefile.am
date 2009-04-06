@@ -1,5 +1,7 @@
 lib_LTLIBRARIES = libsyncevo-dbus.la
 
+AM_CPPFLAGS = -I$(top_srcdir) $(SYNTHESIS_CFLAGS)
+
 noinst_PROGRAMS = \
 	test-syncevo-dbus
 
