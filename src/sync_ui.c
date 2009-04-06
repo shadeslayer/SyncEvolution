@@ -3,10 +3,10 @@
  * 
  * * configuration needs a bit of thought
  *    - current design doesn't actually say how you choose thew current service
- *    - how to save additional info for a service, e.g. icon
+ *    - how to save additional info for a service, e.g. icon, last-synced time
  *    - "reset service settings" is probably a good idea... 
  *      how to implement: the brute force method is deleting the config dir...
- *    - should I use GetDefaults when creating a new one server?
+ *    - should I use GetDefaults when creating a new server configuration?
  * * redesign main window? (talk with nick/patrick). Issues:
       - unnecessary options included in main window
       - last-sync needs to be source specific if it's easy to turn them on/off
@@ -42,8 +42,9 @@
 #include <synthesis/syerror.h>
 #include <synthesis/engine_defs.h>
 
-#define SYNC_UI_SERVER_KEY "/apps/sync-ui/server"
-#define SYNC_UI_LAST_SYNC_KEY "/apps/sync-ui/last-sync"
+#define SYNC_UI_GCONF_DIR "/apps/sync-ui"
+#define SYNC_UI_SERVER_KEY SYNC_UI_GCONF_DIR"/server"
+#define SYNC_UI_LAST_SYNC_KEY SYNC_UI_GCONF_DIR"/last-sync"
 
 typedef struct source_config {
 	char *name;
@@ -151,12 +152,15 @@ typedef struct app_data {
 
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
-static void init_services_window (app_data *data);
+static void show_services_window (app_data *data);
 static void show_settings_dialog (app_data *data, server_config *config);
 
 static void
 source_config_free (source_config *source)
 {
+	if (!source)
+		return;
+
 	g_free (source->name);
 	g_free (source->uri);
 	g_slice_free (source_config, source);
@@ -165,6 +169,9 @@ source_config_free (source_config *source)
 static void
 server_config_free (server_config *server)
 {
+	if (!server)
+		return;
+
 	g_free (server->name);
 	g_free (server->base_url);
 	g_free (server->username);
@@ -183,8 +190,7 @@ remove_child (GtkWidget *widget, GtkContainer *container)
 static void 
 change_service_clicked_cb (GtkButton *btn, app_data *data)
 {
-	init_services_window (data);
-	gtk_window_present (GTK_WINDOW (data->services_win));
+	show_services_window (data);
 }
 
 static void 
@@ -263,7 +269,25 @@ get_option_array (server_config *server)
 static void
 set_server_config_cb (SyncevoService *service, GError *error, app_data *data)
 {
-	g_debug ("server config set. TODO: handle error");
+	GConfClient* client;
+	GConfChangeSet *set;
+	GError *err = NULL;
+	
+	if (error) {
+		g_warning ("Failed to set server config: %s", error->message);
+		g_error_free (error);
+		return;
+	}
+
+	client = gconf_client_get_default ();
+	set = gconf_change_set_new ();
+	gconf_change_set_set_string (set, SYNC_UI_SERVER_KEY, data->current_service->name);
+	gconf_change_set_set_string (set, SYNC_UI_LAST_SYNC_KEY, "-1");
+	if (!gconf_client_commit_change_set (client, set, FALSE, &err)) {
+		g_warning ("Failed to commit gconf changes: %s", err->message);
+		g_error_free (err);
+	}
+	gconf_change_set_unref (set);
 }
 
 static void
@@ -271,6 +295,8 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 {
 	GPtrArray *options;
 	server_config *server;
+
+	server = g_object_get_data (G_OBJECT (data->service_settings_dlg), "server");
 
 	if (response == 1) {
 		/* reset */
@@ -282,11 +308,14 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 	gtk_widget_hide (GTK_WIDGET (data->service_settings_dlg));
 
 	if (response != GTK_RESPONSE_APPLY) {
+		if (server != data->current_service)
+			server_config_free (server);
 		/* cancelled or closed */
 		return;
 	}
 
-	server = g_object_get_data (G_OBJECT (data->service_settings_dlg), "server");
+	/* response == GTK_RESPONSE_APPLY */
+	gtk_widget_hide (GTK_WIDGET (data->services_win));
 
 	update_config_from_entry (data->username_entry, server);
 	update_config_from_entry (data->password_entry, server);
@@ -294,21 +323,34 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 	gtk_container_foreach (GTK_CONTAINER (data->server_settings_table), 
 						   (GtkCallback)update_config_from_entry, server);
 
-	if (!server->changed)
-		return;
+	data->current_service = server;
 
-	options = get_option_array (server);
-	syncevo_service_set_server_config_async (data->service, 
-	                                         server->name,
-	                                         options,
-	                                         (SyncevoSetServerConfigCb)set_server_config_cb, 
-	                                         data);
+	if (!server->changed) {
+		GConfClient* client;
+		GConfChangeSet *set;
+		GError *err = NULL;
 
-	/* TODO free options */
-	g_ptr_array_free (options, TRUE);
-	
-
-	/* TODO set as current server */
+		/* no need to save first, set the gconf key right away */
+		client = gconf_client_get_default ();
+		set = gconf_change_set_new ();
+		gconf_change_set_set_string (set, SYNC_UI_SERVER_KEY, data->current_service->name);
+		gconf_change_set_set_string (set, SYNC_UI_LAST_SYNC_KEY, "-1");
+		if (!gconf_client_commit_change_set (client, set, FALSE, &err)) {
+			g_warning ("Failed to commit gconf changes: %s", err->message);
+			g_error_free (err);
+		}
+		gconf_change_set_unref (set);
+	} else {
+		/* save the server, let callback change current server gconf key */
+		options = get_option_array (server);
+		syncevo_service_set_server_config_async (data->service, 
+												 server->name,
+												 options,
+												 (SyncevoSetServerConfigCb)set_server_config_cb, 
+												 data);
+		/* TODO free options */
+		g_ptr_array_free (options, TRUE);
+	}
 }
 
 static void 
@@ -316,7 +358,7 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
 {
 	GPtrArray *sources;
 	GList *list;
-	GError *error;
+	GError *error = NULL;
 	GtkWidget *info;
 	if (data->syncing) {
 		syncevo_service_abort_sync (data->service, data->current_service->name, &error);
@@ -326,6 +368,7 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
 										  data->info_box);
 			info = gtk_label_new ("Error: Failed to cancel");
 			gtk_container_add (GTK_CONTAINER (data->info_box), info);
+			gtk_widget_show_all (data->info_box);
 			return;
 		}
 		gtk_widget_set_sensitive (data->sync_btn, FALSE);
@@ -352,13 +395,13 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
 										  data->info_box);
 			info = gtk_label_new ("Error: Failed to start sync");
 			gtk_container_add (GTK_CONTAINER (data->info_box), info);
+			gtk_widget_show_all (data->info_box);
 		} else {
 			/* stop updates of "last synced" */
 			if (data->last_sync_src_id > 0)
 				g_source_remove (data->last_sync_src_id);
 			set_sync_progress (data, sync_progress_clicked, "Starting sync");
 			set_app_state (data, SYNC_UI_STATE_SYNCING);
-
 		}
 	}
 }
@@ -375,7 +418,7 @@ refresh_last_synced_label (app_data *data)
 	diff = val.tv_sec - data->last_sync;
 
 	if (data->last_sync <= 0) {
-		msg = g_strdup ("Never synchronized");
+		msg = g_strdup (""); /* we don't know */
 		delay = -1;
 	} else if (diff < 30) {
 		msg = g_strdup ("Last synced seconds ago");
@@ -732,9 +775,7 @@ show_settings_dialog (app_data *data, server_config *config)
 	}
 	gtk_widget_show_all (data->server_settings_table);
 
-	/* make sure server_config gets freed when it's not needed */
-	g_object_set_data_full (G_OBJECT (data->service_settings_dlg), "server", 
-	                        config, (GDestroyNotify)server_config_free);
+	g_object_set_data (G_OBJECT (data->service_settings_dlg), "server", config);
 	config->changed = FALSE;
 
 	gtk_window_present (GTK_WINDOW (data->service_settings_dlg));
@@ -746,7 +787,7 @@ ensure_default_sources_exist(server_config *server)
 	int i;
 	GList *l;
 	source_config *source;
-	char *defaults[] = {"addressbook", "calendar", "memo", "notes"};
+	char *defaults[] = {"addressbook", "calendar", "memo", "todo"};
 	gboolean default_found[] = {FALSE, FALSE, FALSE, FALSE};
 
 	for (l = server->source_configs; l; l = l->next) {
@@ -885,26 +926,23 @@ get_templates_cb (SyncevoService *service, GPtrArray *temps, GError *error, app_
 }
 
 
-static void init_services_window (app_data *data)
+static void show_services_window (app_data *data)
 {
 	gtk_widget_hide (data->services_table);
 	gtk_widget_show (data->loading_services_label);
 	
-	
 	syncevo_service_get_templates_async (data->service,
 	                                     (SyncevoGetServerConfigCb)get_templates_cb,
 	                                     data);
+	gtk_window_present (GTK_WINDOW (data->services_win));
 }
 
 static void
-init_configuration (app_data *data)
+gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *data)
 {
-	GConfClient* client;
-	GError *error = NULL;
 	char *server = NULL;
 	char *last_sync = NULL;
-
-	client = gconf_client_get_default ();
+	GError *error = NULL;
 
 	last_sync = gconf_client_get_string (client, SYNC_UI_LAST_SYNC_KEY, &error);
 	if (error) {
@@ -914,9 +952,9 @@ init_configuration (app_data *data)
 	}
 	if (last_sync) {
 		data->last_sync = strtol (last_sync, NULL, 0);
-		refresh_last_synced_label (data);
 		g_free (last_sync);
 	}
+	refresh_last_synced_label (data);
 
 	server = gconf_client_get_string (client, SYNC_UI_SERVER_KEY, &error);
 	if (error) {
@@ -924,20 +962,34 @@ init_configuration (app_data *data)
 		g_error_free (error);
 		error = NULL;
 	}
+	
+	server_config_free (data->current_service);
 	if (!server) {
+		data->current_service = NULL; 
 		set_app_state (data, SYNC_UI_STATE_NO_SERVER);
-		return;
+	} else {
+		data->current_service = g_slice_new0 (server_config);
+		data->current_service->name = server;
+		set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
+		syncevo_service_get_server_config_async (data->service, 
+		                                         server,
+		                                         (SyncevoGetServerConfigCb)get_server_config_cb, 
+		                                         data);
 	}
+}
 
-	data->current_service = g_slice_new0 (server_config);
-	data->current_service->name = server;
+static void
+init_configuration (app_data *data)
+{
+	GConfClient* client;
 
-	set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
+	client = gconf_client_get_default ();
+	gconf_client_add_dir (client, SYNC_UI_GCONF_DIR, GCONF_CLIENT_PRELOAD_RECURSIVE, NULL);
+	gconf_client_notify_add (client, SYNC_UI_GCONF_DIR, (GConfClientNotifyFunc)gconf_change_cb,
+	                         data, NULL, NULL);
 
-	syncevo_service_get_server_config_async (data->service, 
-	                                         server,
-	                                         (SyncevoGetServerConfigCb)get_server_config_cb, 
-	                                         data);
+	/* fake gconf change to init values */
+	gconf_change_cb (client, 0, NULL, data);
 }
 
 static void
