@@ -879,6 +879,8 @@ public:
                               "config.ini:# SSLServerCertificates = \n"
                               "config.ini:# SSLVerifyServer = 1\n"
                               "config.ini:# SSLVerifyHost = 1\n"
+                              "config.ini:WebURL = http://sync.scheduleworld.com\n"
+                              "config.ini:# IconURI = \n"
                               "sources/addressbook/.internal.ini:# last = 0\n"
                               "sources/addressbook/config.ini:sync = two-way\n"
                               "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
@@ -964,7 +966,7 @@ protected:
             cmdline.doit();
             string res = scanFiles(root);
             removeRandomUUID(res);
-            string expected = m_scheduleWorldConfig;
+            string expected = ScheduleWorldConfig();
             boost::replace_first(expected,
                                  "# proxyHost = ",
                                  "proxyHost = proxy");
@@ -985,7 +987,7 @@ protected:
                                 NULL);
             cmdline.doit();
             string res = scanFiles(root);
-            CPPUNIT_ASSERT_EQUAL_DIFF(string(m_scheduleWorldConfig), res);
+            CPPUNIT_ASSERT_EQUAL_DIFF(ScheduleWorldConfig(), res);
         }
     }
 
@@ -1004,7 +1006,7 @@ protected:
                             NULL);
         cmdline.doit();
         string res = scanFiles(root);
-        CPPUNIT_ASSERT_EQUAL_DIFF(string(m_scheduleWorldConfig), res);
+        CPPUNIT_ASSERT_EQUAL_DIFF(ScheduleWorldConfig(), res);
     }
     void testSetupRenamed() {
         string root;
@@ -1021,7 +1023,7 @@ protected:
                             NULL);
         cmdline.doit();
         string res = scanFiles(root);
-        CPPUNIT_ASSERT_EQUAL_DIFF(string(m_scheduleWorldConfig), res);
+        CPPUNIT_ASSERT_EQUAL_DIFF(ScheduleWorldConfig(), res);
     }
     void testSetupFunambol() {
         string root;
@@ -1067,9 +1069,9 @@ protected:
         help.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                                   "   funambol = http://my.funambol.com\n"
+                                  "   memotoo = http://www.memotoo.com\n"
                                   "   scheduleworld = http://sync.scheduleworld.com\n"
-                                  "   synthesis = http://www.synthesis.ch\n"
-                                  "   memotoo = http://www.memotoo.com\n",
+                                  "   synthesis = http://www.synthesis.ch\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
     }
@@ -1134,7 +1136,7 @@ protected:
             string actual = cmdline.m_out.str();
             removeRandomUUID(actual);
             string filtered = filterConfig(actual);
-            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(m_scheduleWorldConfig)),
+            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(ScheduleWorldConfig())),
                                       filtered);
             // there should have been comments
             CPPUNIT_ASSERT(actual.size() > filtered.size());
@@ -1146,7 +1148,7 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string actual = filterConfig(cmdline.m_out.str());
             removeRandomUUID(actual);
-            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(m_scheduleWorldConfig)),
+            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(ScheduleWorldConfig())),
                                       actual);
         }
 
@@ -1165,7 +1167,7 @@ protected:
                                 NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
-            string expected = filterConfig(internalToIni(m_scheduleWorldConfig));
+            string expected = filterConfig(internalToIni(ScheduleWorldConfig()));
             boost::replace_first(expected,
                                  "syncURL = http://sync.scheduleworld.com/funambol/ds",
                                  "syncURL = foo");
@@ -1187,7 +1189,7 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string actual = cmdline.m_out.str();
             removeRandomUUID(actual);
-            CPPUNIT_ASSERT_EQUAL_DIFF(internalToIni(m_scheduleWorldConfig),
+            CPPUNIT_ASSERT_EQUAL_DIFF(internalToIni(ScheduleWorldConfig()),
                                       actual);
         }
         
@@ -1283,7 +1285,11 @@ protected:
                               "\n"
                               "SSLVerifyServer:\n"
                               "\n"
-                              "SSLVerifyHost:\n");
+                              "SSLVerifyHost:\n"
+                              "\n"
+                              "WebURL:\n"
+                              "\n"
+                              "IconURI:\n");
         string sourceProperties("sync:\n"
                                 "\n"
                                 "type:\n"
@@ -1561,7 +1567,14 @@ private:
     };
 
     string ScheduleWorldConfig() {
-        return m_scheduleWorldConfig;
+        string config = m_scheduleWorldConfig;
+
+        if (isDir(string(TEMPLATE_DIR) + "/scheduleworld")) {
+            boost::replace_all(config,
+                               "# IconURI = ",
+                               "IconURI = " TEMPLATE_DIR "/scheduleworld/icon.png");
+        }
+        return config;
     }
 
     string OldScheduleWorldConfig() {
@@ -1592,6 +1605,10 @@ private:
                              "syncURL = http://my.funambol.com/sync");
 
         boost::replace_first(config,
+                             "WebURL = http://sync.scheduleworld.com",
+                             "WebURL = http://my.funambol.com");
+
+        boost::replace_first(config,
                              "addressbook/config.ini:uri = card3",
                              "addressbook/config.ini:uri = card");
         boost::replace_first(config,
@@ -1620,6 +1637,10 @@ private:
         boost::replace_first(config,
                              "syncURL = http://sync.scheduleworld.com/funambol/ds",
                              "syncURL = http://www.synthesis.ch/sync");
+
+        boost::replace_first(config,
+                             "WebURL = http://sync.scheduleworld.com",
+                             "WebURL = http://www.synthesis.ch");        
 
         boost::replace_first(config,
                              "addressbook/config.ini:uri = card3",

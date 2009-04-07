@@ -16,10 +16,11 @@
 
 /** @TODO: replace stdio.h with streams */
 
-FileConfigNode::FileConfigNode(const string &path, const string &fileName) :
+FileConfigNode::FileConfigNode(const string &path, const string &fileName, bool readonly) :
     m_path(path),
     m_fileName(fileName),
     m_modified(false),
+    m_readonly(readonly),
     m_exists(false)
 {
     read();
@@ -51,6 +52,10 @@ void FileConfigNode::flush()
 {
     if (!m_modified) {
         return;
+    }
+
+    if (m_readonly) {
+        throw std::runtime_error(m_path + ": internal error: flushing read-only file config node not allowed");
     }
 
     mkdir_p(m_path);

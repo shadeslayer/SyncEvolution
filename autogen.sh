@@ -21,6 +21,7 @@ cat configure-post.in >>configure.in
 
 sed -e "s;@BACKEND_REGISTRIES@;`echo src/backends/*/*Register.cpp | sed -e s%src/%%g`;" \
     -e "s;@BACKENDS@;$BACKENDS;" \
+    -e "s;@TEMPLATE_FILES@;`cd src && find default/syncevolution -type f \( -name '*.png' -o -name '*.svg' -o -name '*.ini' \) -printf '%p '`;" \
      src/Makefile-gen.am >src/Makefile.am
 
 sed -e "s;@CONFIG_SUBS@;$SUBS;" \

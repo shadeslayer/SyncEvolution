@@ -96,6 +96,17 @@ directories before running SyncEvolution for the first time with
 Evolution. In older Evolution versions the same data is found in
 $HOME/evolution.
 
+Configuration templates for SyncML servers are searched in the following
+order:
+- "default/syncevolution" inside --sysconfdir DIR, usually
+  /etc/default/syncevolution (when packaged for a distribution) or
+  /usr/local/etc/default/syncevolution (when compiling from source)
+- built-in templates
+
+The properties defined in a template override the default properties,
+so usually only those properties which specifically need to be set for
+a certain server should be listed in its template config.
+
 
 Usage
 -----

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<node name="/" xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
+<node name="/">
 
   <interface name="org.Moblin.SyncEvolution">
 

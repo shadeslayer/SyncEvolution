@@ -18,6 +18,9 @@
 #include <unistd.h>
 #include "config.h"
 
+static bool SourcePropSourceTypeIsSet(boost::shared_ptr<EvolutionSyncSourceConfig> source);
+static bool SourcePropURIIsSet(boost::shared_ptr<EvolutionSyncSourceConfig> source);
+
 void ConfigProperty::splitComment(const string &comment, list<string> &commentLines)
 {
     size_t start = 0;
@@ -107,43 +110,123 @@ static const InitList< pair<string, string> > serverTemplates =
 
 EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
 {
-    return serverTemplates;
+    class TmpList : public ServerList {
+    public:
+        void addDefaultTemplate(const string &server, const string &url) {
+            BOOST_FOREACH(const value_type &entry, static_cast<ServerList &>(*this)) {
+                if (entry.first == server) {
+                    // already present
+                    return;
+                }
+            }
+            push_back(value_type(server, url));
+        }
+    } result;
+
+    // scan TEMPLATE_DIR for templates
+    string templateDir(TEMPLATE_DIR);
+    if (isDir(templateDir)) {
+        ReadDir dir(templateDir);
+        BOOST_FOREACH(const string &entry, dir) {
+            if (isDir(templateDir + "/" + entry)) {
+                boost::shared_ptr<EvolutionSyncConfig> config = EvolutionSyncConfig::createServerTemplate(entry);
+                string comment = config->getWebURL();
+                if (comment.empty()) {
+                    comment = templateDir + "/" + entry;
+                }
+                result.push_back(ServerList::value_type(entry, comment));
+            }
+        }
+    }
+
+    // builtin templates if not present
+    result.addDefaultTemplate("funambol", "http://my.funambol.com");
+    result.addDefaultTemplate("scheduleworld", "http://sync.scheduleworld.com");
+    result.addDefaultTemplate("synthesis", "http://www.synthesis.ch");
+    result.addDefaultTemplate("memotoo", "http://www.memotoo.com");
+
+    result.sort();
+    return result;
 }
 
 boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate(const string &server)
 {
-    boost::shared_ptr<ConfigTree> tree(new FileConfigTree("/dev/null", false));
+    string templateConfig(string(TEMPLATE_DIR) + "/");
+    if (server == "default") {
+        templateConfig += "scheduleworld";
+    } else {
+        templateConfig += server;
+    }
+    boost::shared_ptr<FileConfigTree> tree(new FileConfigTree(templateConfig, false));
+    tree->setReadOnly(true);
     boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(server, tree));
     boost::shared_ptr<PersistentEvolutionSyncSourceConfig> source;
 
-    config->setDefaults();
+    config->setDefaults(false);
     // The prefix is important: without it, myFUNAMBOL 6.x and 7.0 map
     // all SyncEvolution instances to the single phone that they support,
     // which leads to unwanted slow syncs when switching between multiple
     // instances.
     config->setDevID(string("sc-pim-") + UUID());
-    config->setSourceDefaults("addressbook");
-    config->setSourceDefaults("calendar");
-    config->setSourceDefaults("todo");
-    config->setSourceDefaults("memo");
 
-    // set non-default values; this also creates the sync source configs
+    // create sync source configs and set non-default values
+    config->setSourceDefaults("addressbook", false);
+    config->setSourceDefaults("calendar", false);
+    config->setSourceDefaults("todo", false);
+    config->setSourceDefaults("memo", false);
+
     source = config->getSyncSourceConfig("addressbook");
-    source->setSourceType("addressbook");
-    source->setURI("card");
+    if (!SourcePropSourceTypeIsSet(source)) {
+        source->setSourceType("addressbook");
+    }
+    if (!SourcePropURIIsSet(source)) {
+        source->setURI("card");
+    }
     source = config->getSyncSourceConfig("calendar");
-    source->setSourceType("calendar");
-    source->setURI("event");
+    if (!SourcePropSourceTypeIsSet(source)) {
+        source->setSourceType("calendar");
+    }
+    if (!SourcePropURIIsSet(source)) {
+        source->setURI("event");
+    }
     source = config->getSyncSourceConfig("todo");
-    source->setSourceType("todo");
-    source->setURI("task");
+    if (!SourcePropSourceTypeIsSet(source)) {
+        source->setSourceType("todo");
+    }
+    if (!SourcePropURIIsSet(source)) {
+        source->setURI("task");
+    }
     source = config->getSyncSourceConfig("memo");
-    source->setSourceType("memo");
-    source->setURI("note");
+    if (!SourcePropSourceTypeIsSet(source)) {
+        source->setSourceType("memo");
+    }
+    if (!SourcePropURIIsSet(source)) {
+        source->setURI("note");
+    }
+
+    if (isDir(templateConfig)) {
+        // directory exists, check for icon?
+        if (config->getIconURI().empty()) {
+            ReadDir dir(templateConfig);
+            BOOST_FOREACH(const string &entry, dir) {
+                if (boost::istarts_with(entry, "icon")) {
+                    config->setIconURI(templateConfig + "/" + entry);
+                    break;
+                }
+            }
+        }
+
+        // leave the source configs alone and return the config as it is:
+        // in order to have sources configured as part of the template,
+        // the template directory must have directories for all
+        // sources under "sources"
+        return config;
+    }
 
     if (boost::iequals(server, "scheduleworld") ||
         boost::iequals(server, "default")) {
         config->setSyncURL("http://sync.scheduleworld.com/funambol/ds");
+        config->setWebURL("http://sync.scheduleworld.com");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
         source->setSourceType("addressbook:text/vcard");
@@ -155,12 +238,14 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setURI("note");
     } else if (boost::iequals(server, "funambol")) {
         config->setSyncURL("http://my.funambol.com/sync");
+        config->setWebURL("http://my.funambol.com");
         source = config->getSyncSourceConfig("calendar");
         source->setSync("disabled");
         source = config->getSyncSourceConfig("todo");
         source->setSync("disabled");
     } else if (boost::iequals(server, "synthesis")) {
         config->setSyncURL("http://www.synthesis.ch/sync");
+        config->setWebURL("http://www.synthesis.ch");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("contacts");
         source = config->getSyncSourceConfig("calendar");
@@ -173,6 +258,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setURI("notes");
     } else if (boost::iequals(server, "memotoo")) {
         config->setSyncURL("http://sync.memotoo.com/syncML");
+        config->setWebURL("http://www.memotoo.com");
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("con");
         source = config->getSyncSourceConfig("calendar");
@@ -333,6 +419,16 @@ static BoolConfigProperty syncPropSSLVerifyHost("SSLVerifyHost",
                                                 "to disable this option and allow such connections.\n",
                                                 "1");
 
+static ConfigProperty syncPropWebURL("WebURL",
+                                     "The URL of a web page with further information about the server.\n"
+                                     "Used only by the GUI."
+                                     "");
+
+static ConfigProperty syncPropIconURI("IconURI",
+                                      "The URI of an icon representing the server graphically.\n"
+                                      "Should be a 48x48 pixmap or a SVG (preferred).\n"
+                                      "Used only by the GUI.");
+
 ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
@@ -363,6 +459,8 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropSSLServerCertificates);
         registry.push_back(&syncPropSSLVerifyServer);
         registry.push_back(&syncPropSSLVerifyHost);
+        registry.push_back(&syncPropWebURL);
+        registry.push_back(&syncPropIconURI);
         initialized = true;
     }
 
@@ -455,6 +553,10 @@ int EvolutionSyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getPr
 void EvolutionSyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*m_configNode, value, temporarily); }
 int EvolutionSyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
+std::string EvolutionSyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*m_configNode, url, temporarily); }
+std::string EvolutionSyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setIconURI(const std::string &uri, bool temporarily) { syncPropIconURI.setProperty(*m_configNode, uri, temporarily); }
 const char* EvolutionSyncConfig::getSSLServerCertificates() const { return m_stringCache.getProperty(*m_configNode, syncPropSSLServerCertificates); }
 void EvolutionSyncConfig::setSSLServerCertificates(const string &value, bool temporarily) { syncPropSSLServerCertificates.setProperty(*m_configNode, value, temporarily); }
 bool EvolutionSyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.getProperty(*m_configNode); }
@@ -463,25 +565,30 @@ bool EvolutionSyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHos
 void EvolutionSyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncPropSSLVerifyHost.setProperty(*m_configNode, value, temporarily); }
 
 static void setDefaultProps(const ConfigPropertyRegistry &registry,
-                            boost::shared_ptr<FilterConfigNode> node)
+                            boost::shared_ptr<FilterConfigNode> node,
+                            bool force)
 {
     BOOST_FOREACH(const ConfigProperty *prop, registry) {
-        if (!prop->isHidden()) {
+        bool isDefault;
+        prop->getProperty(*node, &isDefault);
+        
+        if (!prop->isHidden() &&
+            (force || isDefault)) {
             prop->setDefaultProperty(*node, prop->isObligatory());
         }
     }    
 }
 
-void EvolutionSyncConfig::setDefaults()
+void EvolutionSyncConfig::setDefaults(bool force)
 {
-    setDefaultProps(getRegistry(), m_configNode);
+    setDefaultProps(getRegistry(), m_configNode, force);
 }
 
-void EvolutionSyncConfig::setSourceDefaults(const string &name)
+void EvolutionSyncConfig::setSourceDefaults(const string &name, bool force)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
     setDefaultProps(EvolutionSyncSourceConfig::getRegistry(),
-                    nodes.m_configNode);
+                    nodes.m_configNode, force);
 }
 
 static void copyProperties(const ConfigNode &fromProps,
@@ -657,6 +764,10 @@ public:
         }
     }
 } sourcePropSourceType;
+static bool SourcePropSourceTypeIsSet(boost::shared_ptr<EvolutionSyncSourceConfig> source)
+{
+    return source->isSet(sourcePropSourceType);
+}
 
 static ConfigProperty sourcePropDatabaseID("evolutionsource",
                                            "Picks one of backend data sources:\n"
@@ -676,6 +787,11 @@ static ConfigProperty sourcePropDatabaseID("evolutionsource",
 static ConfigProperty sourcePropURI("uri",
                                     "this is appended to the server's URL to identify the\n"
                                     "server's database");
+static bool SourcePropURIIsSet(boost::shared_ptr<EvolutionSyncSourceConfig> source)
+{
+    return source->isSet(sourcePropURI);
+}
+
 static ConfigProperty sourcePropUser("evolutionuser",
                                      "authentication for backend data source; password can be specified\n"
                                      "in multiple ways, see SyncML server password for details\n"
@@ -697,7 +813,6 @@ ConfigPropertyRegistry &EvolutionSyncSourceConfig::getRegistry()
         registry.push_back(&EvolutionSyncSourceConfig::m_sourcePropSync);
         EvolutionSyncSourceConfig::m_sourcePropSync.setObligatory(true);
         registry.push_back(&sourcePropSourceType);
-        sourcePropSourceType.setObligatory(true);
         registry.push_back(&sourcePropDatabaseID);
         registry.push_back(&sourcePropURI);
         registry.push_back(&sourcePropUser);

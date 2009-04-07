@@ -16,7 +16,7 @@
 class VolatileConfigNode : public FilterConfigNode {
  public:
  VolatileConfigNode() :
-    FilterConfigNode(boost::shared_ptr<ConfigNode>(new FileConfigNode("/dev/null", "dummy.ini")))
+    FilterConfigNode(boost::shared_ptr<ConfigNode>(new FileConfigNode("/dev/null", "dummy.ini", true)))
         {}
 
     virtual string getName() const { return "intermediate configuration"; }

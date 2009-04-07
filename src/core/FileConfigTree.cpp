@@ -20,7 +20,8 @@
 FileConfigTree::FileConfigTree(const string &root,
                                bool oldLayout) :
     m_root(root),
-    m_oldLayout(oldLayout)
+    m_oldLayout(oldLayout),
+    m_readonly(false)
 {
 }
 
@@ -76,7 +77,7 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
     if (found != m_nodes.end()) {
         return found->second;
     } else {
-        boost::shared_ptr<ConfigNode> node(new FileConfigNode(fullpath, filename));
+        boost::shared_ptr<ConfigNode> node(new FileConfigNode(fullpath, filename, m_readonly));
         return m_nodes[fullname] = node;
     }
 }
