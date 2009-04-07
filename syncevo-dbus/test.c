@@ -35,6 +35,10 @@ progress_cb (SyncevoService *service,
     int percent;
 
     switch(type) {
+    case -1:
+        g_print ("Finished syncing %s with return value %d\n", server, extra1);
+        g_main_loop_quit (loop);
+        break;
     case PEV_SESSIONSTART:
         g_debug ("  progress: %s: session start", server);
         break;
