@@ -33,7 +33,6 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <gconf/gconf-client.h>
-#include <libgnomevfs/gnome-vfs-utils.h>
 #include <syncevo-dbus/syncevo-dbus.h>
 
 /* for return value definitions */
@@ -359,8 +358,6 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 		g_ptr_array_add (serv_data->options_override, option);
 		option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
 		g_ptr_array_add (serv_data->options_override, option);
-
-		g_debug ("try overriding %d", serv_data->options_override->len);
 
 		syncevo_service_get_template_config_async (data->service, 
 		                                           server->name, 
@@ -848,12 +845,12 @@ static void
 show_link_button_url (GtkLinkButton *link)
 {
 	const char *url;
-	int res;
+	GError *error = NULL;
 	
 	url = gtk_link_button_get_uri (GTK_LINK_BUTTON (link));
-	res = gnome_vfs_url_show (url);
-	if (res != GNOME_VFS_OK) {
-		g_warning ("gnome_vfs_url_show('%s') failed: error %d", url, res);
+	if (!g_app_info_launch_default_for_uri (url, NULL, &error)) {
+		g_warning ("gnome_vfs_url_show('%s') failed: %s", url, error->message);
+		g_error_free (error);
 	}
 }
 
@@ -992,7 +989,8 @@ add_template_to_table (app_data *data, int row, SyncevoServer *temp)
 	gtk_table_attach (table, box, 2, 3, row, row+1,
 	                  GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
 
-	if (g_str_has_prefix (note, "http://")) {
+	if (g_str_has_prefix (note, "http://") ||
+	    g_str_has_prefix (note, "https://")) {
 		link = gtk_link_button_new_with_label (note, "Launch website");
 		g_signal_connect (link, "clicked", 
 		                  G_CALLBACK (show_link_button_url), NULL);
