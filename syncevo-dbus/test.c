@@ -17,10 +17,10 @@ print_option (SyncevoOption *option, gpointer userdata)
 static void
 print_server (SyncevoServer *temp, gpointer userdata)
 {
-	const char *name, *note;
+	const char *name, *url, *icon;
 
-	syncevo_server_get (temp, &name, &note);
-	g_debug ("  Got server %s (%s)", name, note);
+	syncevo_server_get (temp, &name, &url, &icon);
+	g_debug ("  Got server %s (%s, %s)", name, url, icon);
 }
 
 static void

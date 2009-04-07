@@ -81,9 +81,11 @@
     </method>
 
     <method name="GetTemplates">
-      <arg type="a(ss)" name="templates" direction="out">
+      <arg type="a(sss)" name="templates" direction="out">
         <doc:doc>
-          <doc:summary>Template array, where array consists of name and note.</doc:summary>
+          <doc:summary>Template array, where an item consists of template name, 
+            web URL and icon URI.
+          </doc:summary>
         </doc:doc>
       </arg>
     </method>
@@ -99,9 +101,12 @@
     </method>
 
     <method name="GetServers">
-      <arg type="a(ss)" name="servers" direction="out">
+      <arg type="a(sss)" name="servers" direction="out">
         <doc:doc>
-          <doc:summary>Server array, where array consists of name and note.</doc:summary>
+          <doc:summary>Server array, where an item consists of server name, 
+            web URL and icon URI (the latter two from the corresponding 
+            template if it exists).
+          </doc:summary>
         </doc:doc>
       </arg>
     </method>
