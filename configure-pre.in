@@ -81,6 +81,8 @@ AC_ARG_ENABLE(maemo,
                MODIFY_SYNCCOMPARE='-e "s/use encoding/#use encoding/;" -e "s/:utf8//;"'])
 AC_SUBST(MODIFY_SYNCCOMPARE)
 
+# for dbus interface file mangling
+AC_PATH_PROG(XSLT, xsltproc)
 
 AC_ARG_ENABLE(dbus-service,
               AS_HELP_STRING([--enable-dbus-service],
