@@ -135,11 +135,14 @@ typedef struct app_data {
 	GtkWidget *sources_box;
 
 	GtkWidget *services_table;
-	GtkWidget *loading_services_label;
+	GtkWidget *manual_services_table;
 
+	GtkWidget *service_title_label;
 	GtkWidget *service_name_label;
+	GtkWidget *service_name_entry;
 	GtkWidget *username_entry;
 	GtkWidget *password_entry;
+	GtkWidget *server_settings_expander;
 	GtkWidget *server_settings_table;
 
 	gboolean syncing;
@@ -151,8 +154,6 @@ typedef struct app_data {
 	SyncevoService *service;
 
 	server_config *current_service;
-
-	GPtrArray *templates;
 } app_data;
 
 static void set_sync_progress (app_data *data, float progress, char *status);
@@ -340,6 +341,7 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 {
 	GPtrArray *options;
 	server_config *server;
+	char *service_name;
 
 	server = g_object_get_data (G_OBJECT (data->service_settings_dlg), "server");
 
@@ -376,11 +378,15 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 	/* response == GTK_RESPONSE_APPLY */
 	gtk_widget_hide (GTK_WIDGET (data->services_win));
 
+	update_config_from_entry (data->service_name_entry, server);
 	update_config_from_entry (data->username_entry, server);
 	update_config_from_entry (data->password_entry, server);
 
 	gtk_container_foreach (GTK_CONTAINER (data->server_settings_table), 
 						   (GtkCallback)update_config_from_entry, server);
+
+	if (data->current_service)
+		server_config_free (data->current_service);
 
 	data->current_service = server;
 
@@ -661,9 +667,12 @@ init_ui (app_data *data)
 	data->sources_box = GTK_WIDGET (gtk_builder_get_object (builder, "sources_box"));
 
 	data->services_table = GTK_WIDGET (gtk_builder_get_object (builder, "services_table"));
-	data->loading_services_label = GTK_WIDGET (gtk_builder_get_object (builder, "loading_services_label"));
+	data->manual_services_table = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_table"));
 
+	data->service_title_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_title_label"));
 	data->service_name_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_label"));
+	data->service_name_entry = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_entry"));
+	data->server_settings_expander = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_expander"));
 	data->username_entry = GTK_WIDGET (gtk_builder_get_object (builder, "username_entry"));
 	data->password_entry = GTK_WIDGET (gtk_builder_get_object (builder, "password_entry"));
 	data->server_settings_table = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_table"));
@@ -879,11 +888,27 @@ show_settings_dialog (app_data *data, server_config *config)
 	gtk_table_resize (GTK_TABLE (data->server_settings_table), 
 	                  2, g_list_length (config->source_configs) + 1);
 
+	gtk_entry_set_text (GTK_ENTRY (data->service_name_entry), 
+	                    config->name ? config->name : "");
+	g_object_set_data (G_OBJECT (data->service_name_entry), "value", &config->name);
 	if (config->name) {
 		char *markup;
 		markup = g_strdup_printf ("<big>%s</big>", config->name);
-		gtk_label_set_markup (GTK_LABEL (data->service_name_label), markup);
+		gtk_label_set_markup (GTK_LABEL (data->service_title_label), markup);
 		g_free (markup);
+		
+		gtk_widget_hide (data->service_name_label);
+		gtk_widget_hide (data->service_name_entry);
+		gtk_expander_set_expanded (GTK_EXPANDER (data->server_settings_expander), 
+		                           FALSE);
+	} else {
+		gtk_label_set_markup (GTK_LABEL (data->service_title_label), 
+		                      "<big>New service</big>");
+		
+		gtk_widget_show (data->service_name_label);
+		gtk_widget_show (data->service_name_entry);
+		gtk_expander_set_expanded (GTK_EXPANDER (data->server_settings_expander),
+		                           TRUE);
 	}
 	gtk_entry_set_text (GTK_ENTRY (data->username_entry), 
 	                    config->username ? config->username : "");
@@ -982,79 +1007,207 @@ setup_service_clicked (GtkButton *btn, app_data *data)
 }
 
 static void
-add_template_to_table (app_data *data, int row, SyncevoServer *temp)
+setup_new_service_clicked (GtkButton *btn, app_data *data)
 {
-	GtkTable *table;
+	server_data *serv_data;
+	SyncevoOption *option;
+	const char *name;
+	
+	serv_data = g_slice_new0 (server_data);
+	serv_data->data = data;
+
+	/* override server settings to empty */
+	serv_data->options_override = g_ptr_array_new ();
+	option = syncevo_option_new (NULL, "syncURL", NULL);
+	g_ptr_array_add (serv_data->options_override, option);
+	option = syncevo_option_new ("memo", "uri", NULL);
+	g_ptr_array_add (serv_data->options_override, option);
+	option = syncevo_option_new ("todo", "uri", NULL);
+	g_ptr_array_add (serv_data->options_override, option);
+	option = syncevo_option_new ("addressbook", "uri", NULL);
+	g_ptr_array_add (serv_data->options_override, option);
+	option = syncevo_option_new ("calendar", "uri", NULL);
+	g_ptr_array_add (serv_data->options_override, option);
+
+	syncevo_service_get_server_config_async (data->service, 
+	                                         "default",
+	                                         (SyncevoGetServerConfigCb)get_server_config_for_template_cb, 
+	                                         serv_data);
+}
+
+static void
+add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *data)
+{
 	GtkWidget *label, *box, *link, *btn;
 	const char *name, *note;
 	
-	
-	table = GTK_TABLE (data->services_table);
-	syncevo_server_get (temp, &name, &note);
+	syncevo_server_get (server, &name, &note);
 	
 	label = gtk_label_new (name);
+	gtk_widget_set_size_request (label, 150, -1);
+	gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
 	gtk_table_attach (table, label, 1, 2, row, row+1,
 	                  GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
+
+
+	if (g_str_has_prefix (note, "http://") ||
+	    g_str_has_prefix (note, "https://")) {
+		box = gtk_hbox_new (FALSE, 0);
+		gtk_table_attach (table, box, 2, 3, row, row+1,
+		                  GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
+		link = gtk_link_button_new_with_label (note, "Launch website");
+		g_signal_connect (link, "clicked", 
+		                  G_CALLBACK (show_link_button_url), NULL);
+		gtk_box_pack_start (GTK_BOX (box), link, FALSE, FALSE, 0);
+	}
+
+	btn = gtk_button_new_with_label ("Setup now");
+	gtk_widget_set_size_request (btn, 150, -1);
+	g_signal_connect (btn, "clicked",
+	                  G_CALLBACK (setup_service_clicked), data);
+	gtk_table_attach (table, btn, 3, 4, row, row+1,
+	                  GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
+	g_object_set_data_full (G_OBJECT (btn), "server", server, (GDestroyNotify)syncevo_server_free);
+}
+
+static void
+add_new_server_to_table (GtkTable *table, int row, app_data *data)
+{
+	GtkWidget *sep, *label, *box, *link, *btn;
+	const char *name, *note;
+	
+	sep = gtk_hseparator_new ();
+	gtk_table_attach (table, sep, 1, 4, row, row+1,
+	                  GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
+	row++;
+	
+	label = gtk_label_new ("New Service");
+	gtk_widget_set_size_request (label, 150, -1);
 	gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+	gtk_table_attach (table, label, 1, 2, row, row+1,
+	                  GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
 
 	box = gtk_hbox_new (FALSE, 0);
 	gtk_table_attach (table, box, 2, 3, row, row+1,
 	                  GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
 
-	if (g_str_has_prefix (note, "http://") ||
-	    g_str_has_prefix (note, "https://")) {
-		link = gtk_link_button_new_with_label (note, "Launch website");
-		g_signal_connect (link, "clicked", 
-		                  G_CALLBACK (show_link_button_url), NULL);
-	} else {
-		link = gtk_label_new (note);
-	}
+	link = gtk_label_new ("Contact your provider for details");
 	gtk_box_pack_start (GTK_BOX (box), link, FALSE, FALSE, 0);
 
-	btn = gtk_button_new_with_label ("Setup now");
+	btn = gtk_button_new_with_label ("Add new service");
+	gtk_widget_set_size_request (btn, 150, -1);
 	g_signal_connect (btn, "clicked",
-	                  G_CALLBACK (setup_service_clicked), data);
+	                  G_CALLBACK (setup_new_service_clicked), data);
 	gtk_table_attach (table, btn, 3, 4, row, row+1,
 	                  GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
-	g_object_set_data_full (G_OBJECT (btn), "template", temp, (GDestroyNotify)syncevo_server_free);
 }
 
+typedef struct templates_data {
+	app_data *data;
+	GPtrArray *templates;
+}templates_data;
 
-static void
-get_templates_cb (SyncevoService *service, GPtrArray *temps, GError *error, app_data *data)
+static gboolean
+server_array_contains (GPtrArray *array, SyncevoServer *server)
 {
 	int i;
+	const char *name;
+
+	syncevo_server_get (server, &name, NULL);
+
+	for (i = 0; i < array->len; i++) {
+		const char *n;
+		SyncevoServer *s = (SyncevoServer*)g_ptr_array_index (array, i);
+		
+		syncevo_server_get (s, &n, NULL);
+		if (strcmp (name, n) == 0)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static void
+get_servers_cb (SyncevoService *service, 
+                GPtrArray *servers, 
+                GError *error, 
+                templates_data *templ_data)
+{
+	int i, k = 0;
+	GtkWidget *label;
+	app_data *data = templ_data->data;
 
 	if (error) {
-		g_warning ("%s: Failed to get templates: %s", 
-                           data->current_service->name,
-                           error->message);
+		g_warning ("Failed to get servers: %s", error->message);
 		g_error_free (error);
 		/* TODO ? */
 		return;
 	}
 
-	gtk_container_foreach (GTK_CONTAINER (data->services_table),
-	                       (GtkCallback)remove_child,
-	                       data->services_table);
+	gtk_table_resize (GTK_TABLE (data->manual_services_table), 2, 4);
 
-	gtk_table_resize (GTK_TABLE (data->services_table), temps->len, 4);
-
-	for (i = 0; i < temps->len; i++) {
-		add_template_to_table (data, i, (SyncevoServer*)g_ptr_array_index (temps, i));
+	for (i = 0; i < servers->len; i++) {
+		SyncevoServer *server = (SyncevoServer*)g_ptr_array_index (servers, i);
+		
+		/* make sure server is not added as template already */
+		if (!server_array_contains (templ_data->templates, server)) {
+			add_server_to_table (GTK_TABLE (data->manual_services_table), k++,
+			                     server, data);
+		}
 	}
-	g_ptr_array_free (temps, TRUE);
+	/* the SyncevoServers in arrays are freed when the table gets freed */
+	g_ptr_array_free (templ_data->templates, TRUE);
+	g_ptr_array_free (servers, TRUE);
+	g_slice_free (templates_data, templ_data);
 
+	add_new_server_to_table (GTK_TABLE (data->manual_services_table), k++, data);
+
+	gtk_widget_show_all (data->manual_services_table);
+}
+
+static void
+get_templates_cb (SyncevoService *service, 
+                  GPtrArray *templates, 
+                  GError *error, 
+                  app_data *data)
+{
+	int i;
+	templates_data *temps_data;
+
+	if (error) {
+		g_warning ("Failed to get templates: %s", error->message);
+		g_error_free (error);
+		/* TODO ? */
+		return;
+	}
+
+	gtk_table_resize (GTK_TABLE (data->services_table), 
+	                  templates->len, 4);
+
+	for (i = 0; i < templates->len; i++) {
+		add_server_to_table (GTK_TABLE (data->services_table), i, 
+		                     (SyncevoServer*)g_ptr_array_index (templates, i),
+		                     data);
+	}
 	gtk_widget_show_all (data->services_table);
-	gtk_widget_hide (data->loading_services_label);
+
+	temps_data = g_slice_new0 (templates_data);
+	temps_data->data = data;
+	temps_data->templates = templates;
+	syncevo_service_get_servers_async (data->service,
+	                                   (SyncevoGetServerConfigCb)get_servers_cb,
+	                                   temps_data);
 }
 
 
 static void show_services_window (app_data *data)
 {
-	gtk_widget_hide (data->services_table);
-	gtk_widget_show (data->loading_services_label);
-	
+	gtk_container_foreach (GTK_CONTAINER (data->services_table),
+	                       (GtkCallback)remove_child,
+	                       data->services_table);
+	gtk_container_foreach (GTK_CONTAINER (data->manual_services_table),
+	                       (GtkCallback)remove_child,
+	                       data->manual_services_table);
+
 	syncevo_service_get_templates_async (data->service,
 	                                     (SyncevoGetServerConfigCb)get_templates_cb,
 	                                     data);
