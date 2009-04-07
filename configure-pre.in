@@ -89,19 +89,14 @@ AC_ARG_ENABLE(dbus-service,
 
 AM_CONDITIONAL([COND_DBUS], [test "$enable_dbus_service" = "yes"])
 
-PKG_CHECK_MODULES(DBUS_GLIB, dbus-glib-1 glib-2.0,
-                  have_dbus_glib="yes",
-                  have_dbus_glib="no")
-AC_SUBST(DBUS_GLIB_CFLAGS) 
-AC_SUBST(DBUS_GLIB_LIBS) 
-
 if test $enable_dbus_service == "yes"; then
-    if test $have_dbus_glib == "no"; then
-        AC_ERROR(Missing dbus-glib-1 or glib-2.0 while trying to build dbus service)
-    fi
+    PKG_CHECK_MODULES(DBUS_GLIB, dbus-glib-1 glib-2.0)
     AC_PATH_PROG(DBUS_BINDING_TOOL, dbus-binding-tool)
     AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
 fi
+AC_SUBST(DBUS_GLIB_CFLAGS) 
+AC_SUBST(DBUS_GLIB_LIBS) 
+
 DBUS_SERVICES_DIR="${datadir}/dbus-1/services"
 AC_SUBST(DBUS_SERVICES_DIR)
 AC_DEFINE_UNQUOTED(DBUS_SERVICES_DIR, "$DBUS_SERVICES_DIR", [Location of D-Bus services directory])
@@ -115,18 +110,12 @@ AC_ARG_ENABLE(gui,
 AM_CONDITIONAL([COND_GUI], [test "$enable_gui" = "yes"])
 
 # for sync ui
-PKG_CHECK_MODULES(GUI, glib-2.0 dbus-glib-1 >= 0.60 gtk+-2.0 libglade-2.0 gconf-2.0 gnome-vfs-2.0,
-                  have_gui_deps="yes",
-                  have_gui_deps="no")
-AC_SUBST(GUI_CFLAGS)
-AC_SUBST(GUI_LIBS)
-
 if test $enable_gui == "yes"; then
-    if test $have_gui_deps == "no"; then
-        AC_ERROR(Missing gui dependencies)
-    fi
+    PKG_CHECK_MODULES(GUI, glib-2.0 dbus-glib-1 >= 0.60 gtk+-2.0 libglade-2.0 gconf-2.0 gnome-vfs-2.0)
     AC_PATH_PROG([GTK_BUILDER_CONV], gtk-builder-convert)
 fi
+AC_SUBST(GUI_CFLAGS)
+AC_SUBST(GUI_LIBS)
 
 AC_CHECK_HEADERS(signal.h dlfcn.h)
 

@@ -618,6 +618,11 @@ packages can be installed with
 The test framework also requires CPPUnit:
    apt-get install libcppunit-dev
 
+For the GUI and its D-Bus based service backend:
+   apt-get install libdbus-glib-1-dev \
+                   libgtk2.0-dev libglade2-dev \
+                   libgconf2-dev libgnomevfs2-dev
+
 The build system is the normal autotools system.  See INSTALL for
 general instructions how to use that and "./configure --help" for
 SyncEvolution specific options.
