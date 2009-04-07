@@ -21,6 +21,9 @@ SYNCEVOLUTION_DEP += $(SYNCSOURCES)
 endif
 EXTRA_DIST = shlibs.local Makefile-gen.am syncevolution.xml
 
+TEMPLATE_FILES = @TEMPLATE_FILES@
+nobase_dist_sysconf_DATA = $(TEMPLATE_FILES)
+
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
 CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES)
@@ -225,6 +228,7 @@ valgrind : test
 $(srcdir)/Makefile.am: Makefile-gen.am
 	sed -e 's;[@]BACKEND_REGISTRIES[@];$(BACKEND_REGISTRIES);' \
 	    -e 's;[@]BACKENDS[@];$(BACKENDS);' \
+            -e 's;[@]TEMPLATE_FILES[@];$(TEMPLATE_FILES);' \
 	    $< >$@
 
 # old-style name for test program(s)

@@ -32,20 +32,22 @@ class FileConfigNode : public ConfigNode {
 
     list<string> m_lines;
     bool m_modified;
+    const bool m_readonly;
     bool m_exists;
 
     void read();
 
  public:
     /**
-     * Open or create a new file. The file will be physically created
-     * right away whereas changes to its content will not be written
-     * immediately.
+     * Open or create a new file. The file will be read (if it exists)
+     * but not create or written to unless flush() is called explicitly
      *
      * @param path      node name, maps to directory
      * @param fileName  name of file inside that directory
+     * @param readonly  do not create or write file, it must exist;
+     *                  flush() will throw an exception when changes would have to be written
      */
-    FileConfigNode(const string &path, const string &fileName);
+    FileConfigNode(const string &path, const string &fileName, bool readonly);
 
     virtual string getName() const { return m_path + "/" + m_fileName; }
 

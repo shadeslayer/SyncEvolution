@@ -26,6 +26,9 @@ class FileConfigTree : public ConfigTree {
     FileConfigTree(const string &root,
                    bool oldLayout);
 
+    void setReadOnly(bool readonly) { m_readonly = readonly; }
+    bool getReadOnly() const { return m_readonly; }
+
     /* ConfigTree API */
     virtual string getRootPath() const;
     virtual void flush();
@@ -38,6 +41,7 @@ class FileConfigTree : public ConfigTree {
  private:
     const string m_root;
     const bool m_oldLayout;
+    bool m_readonly;
 
     typedef map< string, boost::shared_ptr<ConfigNode> > NodeCache_t;
     /** cache of all nodes ever accessed */
