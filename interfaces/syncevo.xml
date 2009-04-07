@@ -41,12 +41,19 @@
     <method name="GetTemplates">
       <arg type="a(ss)" name="templates" direction="out" />
     </method>
+    <method name="GetTemplateConfig">
+      <arg type="s" name="server" direction="in" />
+      <arg type="a(sss)" name="properties" direction="out"/>
+      <!-- properties array:
+             namespace,   property_name,  value
+             "calendar",  "sync",         "disabled" -->
+    </method>
 
     <method name="GetServers">
       <arg type="a(ss)" name="servers" direction="out" />
     </method>
     <method name="GetServerConfig">
-      <arg type="s" name="server" direction="in" />
+      <arg type="s" name="template" direction="in" />
       <arg type="a(sss)" name="properties" direction="out"/>
       <!-- properties array:
              namespace,   property_name,  value
