@@ -4,6 +4,12 @@
 #include <glib.h>
 #include <dbus/dbus-glib.h>
 
+enum SyncevoDBusError{
+	SYNCEVO_DBUS_ERROR_GENERIC_ERROR = 1,
+	SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER = 2,
+	SYNCEVO_DBUS_ERROR_MISSING_ARGS = 3,
+};
+
 #define SYNCEVO_SOURCE_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INVALID))
 typedef GValueArray SyncevoSource;
 
