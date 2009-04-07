@@ -223,8 +223,7 @@ update_config_from_entry (GtkWidget *widget, server_config *server)
 
 	new_str = gtk_entry_get_text (GTK_ENTRY (widget));
 
-	if ((*str == NULL || strlen (*str) == 0) &&
-	    (new_str == NULL || strlen (new_str) == 0))
+	if ((*str == NULL || strlen (*str) == 0) && strlen (new_str) == 0)
 	return;
 
 	if (*str == NULL || strcmp (*str, new_str) != 0) {
@@ -321,7 +320,7 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
 	}
 
 	config = g_slice_new0 (server_config);
-	config->name = g_strdup (data->server_name);
+	config->name = data->server_name;
 	g_ptr_array_foreach (options, (GFunc)add_server_option, config);
 	if (data->options_override) {
 		g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, config);
@@ -333,7 +332,6 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
 	config->changed = TRUE;
 	show_settings_dialog (data->data, config);
 	
-	g_free (data->server_name);
 	g_slice_free (server_data ,data);
 }
 
@@ -685,8 +683,12 @@ init_ui (app_data *data)
 
 	g_signal_connect (data->sync_win, "destroy",
 	                  G_CALLBACK (gtk_main_quit), NULL);
+	g_signal_connect (data->service_settings_dlg, "delete-event",
+	                  G_CALLBACK (gtk_widget_hide_on_delete), NULL);
 	g_signal_connect (data->service_settings_dlg, "response",
 	                  G_CALLBACK (service_settings_response_cb), data);
+	g_signal_connect (data->services_win, "delete-event",
+	                  G_CALLBACK (gtk_widget_hide_on_delete), NULL);
 	g_signal_connect (data->change_service_btn, "clicked",
 	                  G_CALLBACK (change_service_clicked_cb), data);
 	g_signal_connect (data->edit_service_btn, "clicked",
@@ -731,12 +733,18 @@ add_server_option (SyncevoOption *option, server_config *server)
 
 	if (!ns || strlen (ns) == 0) {
 		if (strcmp (key, "syncURL") == 0) {
+			if (server->base_url)
+				g_free (server->base_url);
 			server->base_url = g_strdup (value);
 		}
 		if (strcmp (key, "username") == 0) {
+			if (server->username)
+				g_free (server->username);
 			server->username = g_strdup (value);
 		}
 		if (strcmp (key, "password") == 0) {
+			if (server->password)
+				g_free (server->password);
 			server->password = g_strdup (value);
 		}
 	} else {
@@ -745,6 +753,8 @@ add_server_option (SyncevoOption *option, server_config *server)
 		source = get_source_config (server, ns);
 		
 		if (strcmp (key, "uri") == 0) {
+			if (source->uri)
+				g_free (source->uri);
 			source->uri = g_strdup (value);
 		}
 		if (strcmp (key, "sync") == 0) {
@@ -824,12 +834,14 @@ static void
 get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error, app_data *data)
 {
 	if (error) {
-		g_warning ("Failed to get server '%s' configuration: %s", 
-					  data->current_service->name,
-					  error->message);
+		/* don't warn if server has disappeared -- probably just command line use */
+		if (error->code != SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER) {
+			g_warning ("Failed to get server '%s' configuration: %s", 
+						  data->current_service->name,
+						  error->message);
+		}
 		g_error_free (error);
-		
-		set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
+		set_app_state (data, SYNC_UI_STATE_NO_SERVER);
 		
 		return;
 	}
@@ -953,15 +965,15 @@ ensure_default_sources_exist(server_config *server)
 static void
 setup_service_clicked (GtkButton *btn, app_data *data)
 {
-	SyncevoServer *templ;
+	SyncevoServer *server;
 	server_data *serv_data;
 	const char *name;
 
-	templ = g_object_get_data (G_OBJECT (btn), "template");
+	server = g_object_get_data (G_OBJECT (btn), "template");
+	syncevo_server_get (server, &name, NULL);
 
 	serv_data = g_slice_new0 (server_data);
 	serv_data->data = data;
-	syncevo_server_get (templ, &name, NULL);
 	serv_data->server_name = g_strdup (name);
 	syncevo_service_get_server_config_async (data->service, 
 	                                         (char*)serv_data->server_name,
