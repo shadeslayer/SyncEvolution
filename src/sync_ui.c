@@ -4,9 +4,6 @@
  * * configuration needs a bit of thought
  *    - current design doesn't actually say how you choose thew current service
  *    - how to save additional info for a service, e.g. icon, last-synced time
- *    - "reset service settings" is probably a good idea... 
- *      how to implement: the brute force method is deleting the config dir...
- *    - should I use GetDefaults when creating a new server configuration?
  * * redesign main window? (talk with nick/patrick). Issues:
       - unnecessary options included in main window
       - last-sync needs to be source specific if it's easy to turn them on/off
@@ -164,6 +161,7 @@ static void set_app_state (app_data *data, app_state state);
 static void show_services_window (app_data *data);
 static void show_settings_dialog (app_data *data, server_config *config);
 static void ensure_default_sources_exist(server_config *server);
+static void add_server_option (SyncevoOption *option, server_config *server);
 
 static void
 source_config_free (source_config *source)
@@ -206,6 +204,7 @@ change_service_clicked_cb (GtkButton *btn, app_data *data)
 static void 
 edit_services_clicked_cb (GtkButton *btn, app_data *data)
 {
+	data->current_service->changed = FALSE;
 	show_settings_dialog (data, data->current_service);
 }
 
@@ -297,6 +296,48 @@ set_server_config_cb (SyncevoService *service, GError *error, app_data *data)
 	gconf_change_set_unref (set);
 }
 
+
+/* temporary data structure for syncevo_service_get_template_config_async and
+ * syncevo_service_get_server_config_async. server is the server that 
+ * the method was called for. options_override are options that should 
+ * be overridden on the config we get. */
+typedef struct server_data {
+	char *server_name;
+	GPtrArray *options_override;
+	app_data *data;
+} server_data;
+
+static void
+get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, server_data *data)
+{
+	server_config *config;
+
+	if (error) {
+		g_warning ("Failed to get server '%s' configuration: %s", 
+					  "",
+					  error->message);
+		g_error_free (error);
+		
+		return;
+	}
+
+	config = g_slice_new0 (server_config);
+	config->name = g_strdup (data->server_name);
+	g_ptr_array_foreach (options, (GFunc)add_server_option, config);
+	if (data->options_override) {
+		g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, config);
+		g_ptr_array_foreach (data->options_override, (GFunc)syncevo_option_free, NULL);
+		g_ptr_array_free (data->options_override, TRUE);
+	}
+	ensure_default_sources_exist (config);
+	
+	config->changed = TRUE;
+	show_settings_dialog (data->data, config);
+	
+	g_free (data->server_name);
+	g_slice_free (server_data ,data);
+}
+
 static void
 service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 {
@@ -307,8 +348,24 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 
 	if (response == 1) {
 		/* reset */
-		g_debug ("TODO: reset settings for service");
-		/* wipe the ~/.config/syncevolution/server dir? */
+		server_data* serv_data;
+		SyncevoOption *option;
+		serv_data = g_slice_new0 (server_data);
+		serv_data->data = data;
+		serv_data->server_name = g_strdup (server->name);
+
+		serv_data->options_override = g_ptr_array_new ();
+		option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
+		g_ptr_array_add (serv_data->options_override, option);
+		option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
+		g_ptr_array_add (serv_data->options_override, option);
+
+		g_debug ("try overriding %d", serv_data->options_override->len);
+
+		syncevo_service_get_template_config_async (data->service, 
+		                                           server->name, 
+		                                           (SyncevoGetTemplateConfigCb)get_server_config_for_template_cb,
+		                                           serv_data);
 		return;
 	}
 
@@ -651,6 +708,8 @@ get_source_config (server_config *server, const char *name)
 	GList *l;
 	source_config *source = NULL;
 	
+	g_assert (name);
+	
 	/* return existing source config if found */
 	for (l = server->source_configs; l; l = l->next) {
 		source = (source_config*)l->data;
@@ -673,7 +732,7 @@ add_server_option (SyncevoOption *option, server_config *server)
 
 	syncevo_option_get (option, &ns, &key, &value);
 
-	if (strlen (ns) == 0) {
+	if (!ns || strlen (ns) == 0) {
 		if (strcmp (key, "syncURL") == 0) {
 			server->base_url = g_strdup (value);
 		}
@@ -860,7 +919,6 @@ show_settings_dialog (app_data *data, server_config *config)
 	gtk_widget_show_all (data->server_settings_table);
 
 	g_object_set_data (G_OBJECT (data->service_settings_dlg), "server", config);
-	config->changed = FALSE;
 
 	gtk_window_present (GTK_WINDOW (data->service_settings_dlg));
 }
@@ -895,47 +953,19 @@ ensure_default_sources_exist(server_config *server)
 	
 }
 
-typedef struct server_data {
-	const char *server_name;
-	app_data *data;
-} server_data;
-
-static void
-get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, server_data *data)
-{
-	server_config *config;
-
-	if (error) {
-		g_warning ("Failed to get server '%s' configuration: %s", 
-					  "",
-					  error->message);
-		g_error_free (error);
-		
-		return;
-	}
-
-	config = g_slice_new0 (server_config);
-	config->name = g_strdup (data->server_name);
-	g_ptr_array_foreach (options, (GFunc)add_server_option, config);
-	ensure_default_sources_exist (config);
-	
-	show_settings_dialog (data->data, config);
-	
-	g_slice_free (server_data ,data);
-}
-
 static void
 setup_service_clicked (GtkButton *btn, app_data *data)
 {
 	SyncevoServer *templ;
 	server_data *serv_data;
+	const char *name;
 
 	templ = g_object_get_data (G_OBJECT (btn), "template");
 
 	serv_data = g_slice_new0 (server_data);
 	serv_data->data = data;
-	syncevo_server_get (templ, &serv_data->server_name, NULL);
-	
+	syncevo_server_get (templ, &name, NULL);
+	serv_data->server_name = g_strdup (name);
 	syncevo_service_get_server_config_async (data->service, 
 	                                         (char*)serv_data->server_name,
 	                                         (SyncevoGetServerConfigCb)get_server_config_for_template_cb, 
@@ -1178,6 +1208,13 @@ sync_progress_cb (SyncevoService *service,
 		data->source_progresses = g_list_append (data->source_progresses, source_prog);
 		break;
 
+	case PEV_SENDSTART:
+	case PEV_SENDEND:
+	case PEV_RECVSTART:
+	case PEV_RECVEND:
+		/* these would be useful but they have no source so I can't tell how far we are... */
+		break;
+ 
 	case PEV_PREPARING:
 		/* find the right source (try last used one first) */
 		if (strcmp (source_prog->name, source) != 0) {
