@@ -1573,7 +1573,7 @@ private:
         if (isDir(string(TEMPLATE_DIR) + "/ScheduleWorld")) {
             boost::replace_all(config,
                                "# IconURI = ",
-                               "IconURI = " TEMPLATE_DIR "/ScheduleWorld/icon.png");
+                               "IconURI = file://" TEMPLATE_DIR "/ScheduleWorld/icon.png");
         }
         return config;
     }
