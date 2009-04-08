@@ -210,7 +210,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
             ReadDir dir(templateConfig);
             BOOST_FOREACH(const string &entry, dir) {
                 if (boost::istarts_with(entry, "icon")) {
-                    config->setIconURI(templateConfig + "/" + entry);
+                    config->setIconURI("file://" + templateConfig + "/" + entry);
                     break;
                 }
             }

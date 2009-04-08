@@ -357,6 +357,56 @@ void syncevo_service_get_templates_async (SyncevoService *service,
 			 data);
 }
 
+gboolean syncevo_service_get_template_config (SyncevoService *service,
+                                              char *template,
+                                              GPtrArray **options,
+                                              GError **error)
+{
+	SyncevoServicePrivate *priv;
+
+	priv = GET_PRIVATE (service);
+	return org_Moblin_SyncEvolution_get_template_config (priv->proxy, 
+	                                                     template,
+	                                                     options, 
+	                                                     error);
+}
+
+static void
+get_template_config_async_callback (DBusGProxy *proxy, 
+                                    GPtrArray *options,
+                                    GError *error,
+                                    SyncevoAsyncData *data)
+{
+	(*(SyncevoGetTemplateConfigCb)data->callback) (data->service,
+	                                               options,
+	                                               error,
+	                                               data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
+void 
+syncevo_service_get_template_config_async (SyncevoService *service,
+                                           char *template,
+                                           SyncevoGetServerConfigCb callback,
+                                           gpointer userdata)
+{
+	SyncevoAsyncData *data;
+	SyncevoServicePrivate *priv;
+
+	priv = GET_PRIVATE (service);
+
+	data = g_slice_new0 (SyncevoAsyncData);
+	data->service = service;
+	data->callback = G_CALLBACK (callback);
+	data->userdata = userdata;
+	
+	org_Moblin_SyncEvolution_get_template_config_async 
+			(priv->proxy,
+			 template,
+			 (org_Moblin_SyncEvolution_get_server_config_reply) get_template_config_async_callback,
+			 data);
+}
+
 gboolean syncevo_service_get_server_config (SyncevoService *service,
                                             char *server,
                                             GPtrArray **options,

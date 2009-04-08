@@ -17,10 +17,10 @@ print_option (SyncevoOption *option, gpointer userdata)
 static void
 print_server (SyncevoServer *temp, gpointer userdata)
 {
-	const char *name, *note;
+	const char *name, *url, *icon;
 
-	syncevo_server_get (temp, &name, &note);
-	g_debug ("  Got server %s (%s)", name, note);
+	syncevo_server_get (temp, &name, &url, &icon);
+	g_debug ("  Got server %s (%s, %s)", name, url, icon);
 }
 
 static void
@@ -35,6 +35,10 @@ progress_cb (SyncevoService *service,
     int percent;
 
     switch(type) {
+    case -1:
+        g_print ("Finished syncing %s with return value %d\n", server, extra1);
+        g_main_loop_quit (loop);
+        break;
     case PEV_SESSIONSTART:
         g_debug ("  progress: %s: session start", server);
         break;
