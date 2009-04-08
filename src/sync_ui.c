@@ -37,6 +37,8 @@
 #include <synthesis/syerror.h>
 #include <synthesis/engine_defs.h>
 
+#include "sync-ui-config.h"
+
 #define SYNC_UI_GCONF_DIR "/apps/sync-ui"
 #define SYNC_UI_SERVER_KEY SYNC_UI_GCONF_DIR"/server"
 #define SYNC_UI_LAST_SYNC_KEY SYNC_UI_GCONF_DIR"/last-sync"
@@ -44,27 +46,6 @@
 #define SYNC_UI_ICON_SIZE 48
 #define SYNC_UI_LIST_ICON_SIZE 32
 #define SYNC_UI_LIST_BTN_WIDTH 150
-
-typedef struct source_config {
-	char *name;
-	gboolean enabled;
-	char *uri;
-} source_config;
-
-typedef struct server_config {
-	char *name;
-	char *base_url;
-	char *web_url;
-	char *icon_uri;
-
-	char *username;
-	char *password;
-
-	GList *source_configs;
-	
-	gboolean changed;
-	gboolean from_template;
-} server_config;
 
 typedef struct source_progress {
 	char* name;
@@ -95,12 +76,6 @@ typedef enum app_state {
 	SYNC_UI_STATE_SERVER_FAILURE,
 	SYNC_UI_STATE_SYNCING,
 } app_state;
-
-typedef enum sync_type {
-	SYNC_TYPE_TWO_WAY,
-	SYNC_TYPE_ONE_WAY_FROM_REMOTE,
-	SYNC_TYPE_ONE_WAY_FROM_LOCAL,
-} sync_type;
 
 /* absolute progress amounts 0-100 */
 const float sync_progress_clicked = 0.02;
@@ -157,7 +132,7 @@ typedef struct app_data {
 	guint last_sync_src_id;
 	GList *source_progresses;
 
-	sync_type mode;
+	SyncType mode;
 	SyncevoService *service;
 
 	server_config *current_service;
@@ -170,32 +145,6 @@ static void show_settings_dialog (app_data *data, server_config *config);
 static void ensure_default_sources_exist(server_config *server);
 static void add_server_option (SyncevoOption *option, server_config *server);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
-
-static void
-source_config_free (source_config *source)
-{
-	if (!source)
-		return;
-
-	g_free (source->name);
-	g_free (source->uri);
-	g_slice_free (source_config, source);
-}
-
-static void
-server_config_free (server_config *server)
-{
-	if (!server)
-		return;
-
-	g_free (server->name);
-	g_free (server->base_url);
-	g_free (server->username);
-	g_free (server->password);
-	g_list_foreach (server->source_configs, (GFunc)source_config_free, NULL);
-	g_list_free (server->source_configs);
-	g_slice_free (server_config, server);
-}
 
 static void
 remove_child (GtkWidget *widget, GtkContainer *container)
@@ -216,68 +165,13 @@ edit_services_clicked_cb (GtkButton *btn, app_data *data)
 	show_settings_dialog (data, data->current_service);
 }
 
+
+
 static void
-update_config_from_entry (GtkWidget *widget, server_config *server)
+update_server_config (GtkWidget *widget, server_config *config)
 {
-	char **str;
-	const char *new_str;
-
-	if (!GTK_IS_ENTRY (widget))
-		return;
-
-	/* all entries have a pointer to the correct string in server_config */
-	str = g_object_get_data (G_OBJECT (widget), "value");
-	g_assert (str);
-
-	new_str = gtk_entry_get_text (GTK_ENTRY (widget));
-
-	if ((*str == NULL || strlen (*str) == 0) && strlen (new_str) == 0)
-	return;
-
-	if (*str == NULL || strcmp (*str, new_str) != 0) {
-		g_free (*str);
-		*str = g_strdup (new_str);
-		server->changed = TRUE;
-	}
-}
-
-static GPtrArray*
-get_option_array (server_config *server)
-{
-	GPtrArray *options;
-	GList *l;
-	SyncevoOption *option;
-	
-	g_assert (server);
-	options = g_ptr_array_new ();
-	
-	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup (server->base_url));
-	g_ptr_array_add (options, option);
-	option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
-	g_ptr_array_add (options, option);
-	option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
-	g_ptr_array_add (options, option);
-	option = syncevo_option_new (NULL, g_strdup ("webURL"), g_strdup (server->web_url));
-	g_ptr_array_add (options, option);
-	option = syncevo_option_new (NULL, g_strdup ("iconURI"), g_strdup (server->icon_uri));
-	g_ptr_array_add (options, option);
-
-	for (l = server->source_configs; l; l = l->next) {
-		source_config *source = (source_config*)l->data;
-
-		/* sources may have been added as place holders */
-		if (!source->uri)
-			continue;
-
-		option = syncevo_option_new (source->name, g_strdup ("uri"), g_strdup (source->uri));
-		g_ptr_array_add (options, option);
-
-		option = syncevo_option_new (source->name, g_strdup ("sync"), 
-		                             source->enabled ? g_strdup ("two-way") : g_strdup ("none"));
-		g_ptr_array_add (options, option);
-	}
-
-	return options;
+	if (GTK_IS_ENTRY (widget))
+		server_config_update_from_entry (config, GTK_ENTRY (widget));
 }
 
 static void
@@ -386,12 +280,12 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 	/* response == GTK_RESPONSE_APPLY */
 	gtk_widget_hide (GTK_WIDGET (data->services_win));
 
-	update_config_from_entry (data->service_name_entry, server);
-	update_config_from_entry (data->username_entry, server);
-	update_config_from_entry (data->password_entry, server);
+	server_config_update_from_entry (server, GTK_ENTRY (data->service_name_entry));
+	server_config_update_from_entry (server, GTK_ENTRY (data->username_entry));
+	server_config_update_from_entry (server, GTK_ENTRY (data->password_entry));
 
 	gtk_container_foreach (GTK_CONTAINER (data->server_settings_table), 
-						   (GtkCallback)update_config_from_entry, server);
+						   (GtkCallback)update_server_config, server);
 
 	if (data->current_service)
 		server_config_free (data->current_service);
@@ -415,7 +309,7 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 		gconf_change_set_unref (set);
 	} else {
 		/* save the server, let callback change current server gconf key */
-		options = get_option_array (server);
+		options = server_config_get_option_array (server);
 		syncevo_service_set_server_config_async (data->service, 
 												 server->name,
 												 options,
@@ -424,26 +318,6 @@ service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
 		/* TODO free options */
 		g_ptr_array_free (options, TRUE);
 	}
-}
-
-static GPtrArray*
-get_source_array (app_data *data)
-{
-	GList *l;
-	GPtrArray *sources;
-	sources = g_ptr_array_new ();
-
-	for (l = data->current_service->source_configs; l; l = l->next) {
-		SyncevoSource *src;
-		source_config* config = (source_config*)l->data;
-		
-		if (config->enabled) {
-			src = syncevo_source_new (g_strdup (config->name), data->mode);
-			g_ptr_array_add (sources, src);
-		}
-	}
-
-	return sources;
 }
 
 static void 
@@ -477,7 +351,7 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
 		g_list_free (data->source_progresses);
 		data->source_progresses = NULL;
 
-		sources = get_source_array (data);
+		sources = server_config_get_source_array (data->current_service, data->mode);
 
 		syncevo_service_start_sync (data->service, 
 									data->current_service->name,
@@ -724,74 +598,10 @@ init_ui (app_data *data)
 	return TRUE;
 }
 
-static source_config*
-get_source_config (server_config *server, const char *name)
-{
-	GList *l;
-	source_config *source = NULL;
-	
-	g_assert (name);
-	
-	/* return existing source config if found */
-	for (l = server->source_configs; l; l = l->next) {
-		source = (source_config*)l->data;
-		if (strcmp (source->name, name) == 0) {
-			return source; 
-		}
-	}
-	
-	/* create new source config */
-	source = g_slice_new0 (source_config);
-	source->name = g_strdup (name);
-	server->source_configs = g_list_append (server->source_configs, source);
-	return source;
-}
-
 static void
 add_server_option (SyncevoOption *option, server_config *server)
 {
-	const char *ns, *key, *value;
-
-	syncevo_option_get (option, &ns, &key, &value);
-
-	if (!ns || strlen (ns) == 0) {
-		if (strcmp (key, "syncURL") == 0) {
-			g_free (server->base_url);
-			server->base_url = g_strdup (value);
-		} else if (strcmp (key, "username") == 0) {
-			g_free (server->username);
-			server->username = g_strdup (value);
-		} else if (strcmp (key, "password") == 0) {
-			g_free (server->password);
-			server->password = g_strdup (value);
-		} else if (strcmp (key, "webURL") == 0) {
-			if (server->web_url)
-			g_free (server->web_url);
-			server->web_url = g_strdup (value);
-		} else if (strcmp (key, "iconURI") == 0) {
-			g_free (server->icon_uri);
-			server->icon_uri = g_strdup (value);
-		} else if (strcmp (key, "fromTemplate") == 0) {
-			server->from_template = (strcmp (value, "yes") == 0);
-		}
-	} else {
-		source_config *source;
-		
-		source = get_source_config (server, ns);
-		
-		if (strcmp (key, "uri") == 0) {
-			g_free (source->uri);
-			source->uri = g_strdup (value);
-		} else if (strcmp (key, "sync") == 0) {
-			if (strcmp (value, "disabled") == 0 ||
-				 strcmp (value, "none") == 0) {
-				/* consider this source not available at all */
-				source->enabled = FALSE;
-			} else {
-				source->enabled = TRUE;
-			}
-		}
-	}
+	server_config_update_from_option (server, option);
 }
 
 static void
@@ -803,7 +613,7 @@ source_check_toggled_cb (GtkCheckButton *check, app_data *data)
 	enabled = g_object_get_data (G_OBJECT (check), "enabled");
 	*enabled = !*enabled;
 	
-	options = get_option_array (data->current_service);
+	options = server_config_get_option_array (data->current_service);
 	syncevo_service_set_server_config_async (data->service, 
 											 data->current_service->name,
 											 options,
@@ -1049,31 +859,10 @@ show_settings_dialog (app_data *data, server_config *config)
 static void
 ensure_default_sources_exist(server_config *server)
 {
-	int i;
-	GList *l;
-	source_config *source;
-	char *defaults[] = {"addressbook", "calendar", "memo", "todo"};
-	gboolean default_found[] = {FALSE, FALSE, FALSE, FALSE};
-
-	for (l = server->source_configs; l; l = l->next) {
-		source = (source_config*)l->data;
-		
-		for (i = 0; i < 4; i++){
-			if (strcmp (source->name, defaults[i]) == 0) {
-				default_found[i] = TRUE;
-			}
-		}
-	}
-	
-	for (i = 0; i < 4; i++){
-		if (!default_found[i]) {
-			/* create new source config */
-			source = g_slice_new0 (source_config);
-			source->name = g_strdup (defaults[i]);
-			server->source_configs = g_list_append (server->source_configs, source);
-		}
-	}
-	
+	server_config_get_source_config (server, "addressbook");
+	server_config_get_source_config (server, "calendar");
+	server_config_get_source_config (server, "memo");
+	server_config_get_source_config (server, "todo");
 }
 
 static void
