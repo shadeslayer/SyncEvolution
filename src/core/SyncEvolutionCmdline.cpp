@@ -1035,7 +1035,8 @@ protected:
         rm_r(root);
         TestCmdline cmdline("--configure",
                             "--sync-property", "deviceID = fixed-devid",
-                            "funambol",
+                            // templates are case-insensitive
+                            "FunamBOL",
                             NULL);
         cmdline.doit();
         string res = scanFiles(root);
@@ -1068,10 +1069,10 @@ protected:
         TestCmdline help("--template", "? ", NULL);
         help.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
-                                  "   funambol = http://my.funambol.com\n"
-                                  "   memotoo = http://www.memotoo.com\n"
-                                  "   scheduleworld = http://sync.scheduleworld.com\n"
-                                  "   synthesis = http://www.synthesis.ch\n",
+                                  "   Funambol = http://my.funambol.com\n"
+                                  "   Memotoo = http://www.memotoo.com\n"
+                                  "   ScheduleWorld = http://sync.scheduleworld.com\n"
+                                  "   Synthesis = http://www.synthesis.ch\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
     }
@@ -1143,7 +1144,7 @@ protected:
         }
 
         {
-            TestCmdline cmdline("--print-config", "--template", "default", NULL);
+            TestCmdline cmdline("--print-config", "--template", "Default", NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string actual = filterConfig(cmdline.m_out.str());
@@ -1569,10 +1570,10 @@ private:
     string ScheduleWorldConfig() {
         string config = m_scheduleWorldConfig;
 
-        if (isDir(string(TEMPLATE_DIR) + "/scheduleworld")) {
+        if (isDir(string(TEMPLATE_DIR) + "/ScheduleWorld")) {
             boost::replace_all(config,
                                "# IconURI = ",
-                               "IconURI = " TEMPLATE_DIR "/scheduleworld/icon.png");
+                               "IconURI = " TEMPLATE_DIR "/ScheduleWorld/icon.png");
         }
         return config;
     }
