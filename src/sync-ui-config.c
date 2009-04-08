@@ -4,176 +4,176 @@
 void
 source_config_free (source_config *source)
 {
-	if (!source)
-		return;
+    if (!source)
+        return;
 
-	g_free (source->name);
-	g_free (source->uri);
-	g_slice_free (source_config, source);
+    g_free (source->name);
+    g_free (source->uri);
+    g_slice_free (source_config, source);
 }
 
 void
 server_config_free (server_config *server)
 {
-	if (!server)
-		return;
+    if (!server)
+        return;
 
-	g_free (server->name);
-	g_free (server->base_url);
-	g_free (server->username);
-	g_free (server->password);
-	g_list_foreach (server->source_configs, (GFunc)source_config_free, NULL);
-	g_list_free (server->source_configs);
-	g_slice_free (server_config, server);
+    g_free (server->name);
+    g_free (server->base_url);
+    g_free (server->username);
+    g_free (server->password);
+    g_list_foreach (server->source_configs, (GFunc)source_config_free, NULL);
+    g_list_free (server->source_configs);
+    g_slice_free (server_config, server);
 }
 
 void
 server_config_update_from_entry (server_config *server, GtkEntry *entry)
 {
-	char **str;
-	const char *new_str;
+    char **str;
+    const char *new_str;
 
-	/* all entries have a pointer to the correct string in server_config */
-	str = g_object_get_data (G_OBJECT (entry), "value");
-	g_assert (str);
+    /* all entries have a pointer to the correct string in server_config */
+    str = g_object_get_data (G_OBJECT (entry), "value");
+    g_assert (str);
 
-	new_str = gtk_entry_get_text (entry);
+    new_str = gtk_entry_get_text (entry);
 
-	if ((*str == NULL || strlen (*str) == 0) && strlen (new_str) == 0)
-	return;
+    if ((*str == NULL || strlen (*str) == 0) && strlen (new_str) == 0)
+    return;
 
-	if (*str == NULL || strcmp (*str, new_str) != 0) {
-		g_free (*str);
-		*str = g_strdup (new_str);
-		server->changed = TRUE;
-	}
+    if (*str == NULL || strcmp (*str, new_str) != 0) {
+        g_free (*str);
+        *str = g_strdup (new_str);
+        server->changed = TRUE;
+    }
 }
 
 void
 server_config_update_from_option (server_config *server, SyncevoOption *option)
 {
-	const char *ns, *key, *value;
+    const char *ns, *key, *value;
 
-	syncevo_option_get (option, &ns, &key, &value);
+    syncevo_option_get (option, &ns, &key, &value);
 
-	if (!ns || strlen (ns) == 0) {
-		if (strcmp (key, "syncURL") == 0) {
-			g_free (server->base_url);
-			server->base_url = g_strdup (value);
-		} else if (strcmp (key, "username") == 0) {
-			g_free (server->username);
-			server->username = g_strdup (value);
-		} else if (strcmp (key, "password") == 0) {
-			g_free (server->password);
-			server->password = g_strdup (value);
-		} else if (strcmp (key, "webURL") == 0) {
-			if (server->web_url)
-			g_free (server->web_url);
-			server->web_url = g_strdup (value);
-		} else if (strcmp (key, "iconURI") == 0) {
-			g_free (server->icon_uri);
-			server->icon_uri = g_strdup (value);
-		} else if (strcmp (key, "fromTemplate") == 0) {
-			server->from_template = (strcmp (value, "yes") == 0);
-		}
-	} else {
-		source_config *source;
-		
-		source = server_config_get_source_config (server, ns);
-		
-		if (strcmp (key, "uri") == 0) {
-			g_free (source->uri);
-			source->uri = g_strdup (value);
-		} else if (strcmp (key, "sync") == 0) {
-			if (strcmp (value, "disabled") == 0 ||
-				 strcmp (value, "none") == 0) {
-				/* consider this source not available at all */
-				source->enabled = FALSE;
-			} else {
-				source->enabled = TRUE;
-			}
-		}
-	}
+    if (!ns || strlen (ns) == 0) {
+        if (strcmp (key, "syncURL") == 0) {
+            g_free (server->base_url);
+            server->base_url = g_strdup (value);
+        } else if (strcmp (key, "username") == 0) {
+            g_free (server->username);
+            server->username = g_strdup (value);
+        } else if (strcmp (key, "password") == 0) {
+            g_free (server->password);
+            server->password = g_strdup (value);
+        } else if (strcmp (key, "webURL") == 0) {
+            if (server->web_url)
+            g_free (server->web_url);
+            server->web_url = g_strdup (value);
+        } else if (strcmp (key, "iconURI") == 0) {
+            g_free (server->icon_uri);
+            server->icon_uri = g_strdup (value);
+        } else if (strcmp (key, "fromTemplate") == 0) {
+            server->from_template = (strcmp (value, "yes") == 0);
+        }
+    } else {
+        source_config *source;
+        
+        source = server_config_get_source_config (server, ns);
+        
+        if (strcmp (key, "uri") == 0) {
+            g_free (source->uri);
+            source->uri = g_strdup (value);
+        } else if (strcmp (key, "sync") == 0) {
+            if (strcmp (value, "disabled") == 0 ||
+                 strcmp (value, "none") == 0) {
+                /* consider this source not available at all */
+                source->enabled = FALSE;
+            } else {
+                source->enabled = TRUE;
+            }
+        }
+    }
 }
 
 GPtrArray*
 server_config_get_option_array (server_config *server)
 {
-	GPtrArray *options;
-	GList *l;
-	SyncevoOption *option;
-	
-	g_assert (server);
-	options = g_ptr_array_new ();
-	
-	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup (server->base_url));
-	g_ptr_array_add (options, option);
-	option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
-	g_ptr_array_add (options, option);
-	option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
-	g_ptr_array_add (options, option);
-	option = syncevo_option_new (NULL, g_strdup ("webURL"), g_strdup (server->web_url));
-	g_ptr_array_add (options, option);
-	option = syncevo_option_new (NULL, g_strdup ("iconURI"), g_strdup (server->icon_uri));
-	g_ptr_array_add (options, option);
+    GPtrArray *options;
+    GList *l;
+    SyncevoOption *option;
+    
+    g_assert (server);
+    options = g_ptr_array_new ();
+    
+    option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup (server->base_url));
+    g_ptr_array_add (options, option);
+    option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
+    g_ptr_array_add (options, option);
+    option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
+    g_ptr_array_add (options, option);
+    option = syncevo_option_new (NULL, g_strdup ("webURL"), g_strdup (server->web_url));
+    g_ptr_array_add (options, option);
+    option = syncevo_option_new (NULL, g_strdup ("iconURI"), g_strdup (server->icon_uri));
+    g_ptr_array_add (options, option);
 
-	for (l = server->source_configs; l; l = l->next) {
-		source_config *source = (source_config*)l->data;
+    for (l = server->source_configs; l; l = l->next) {
+        source_config *source = (source_config*)l->data;
 
-		/* sources may have been added as place holders */
-		if (!source->uri)
-			continue;
+        /* sources may have been added as place holders */
+        if (!source->uri)
+            continue;
 
-		option = syncevo_option_new (source->name, g_strdup ("uri"), g_strdup (source->uri));
-		g_ptr_array_add (options, option);
+        option = syncevo_option_new (source->name, g_strdup ("uri"), g_strdup (source->uri));
+        g_ptr_array_add (options, option);
 
-		option = syncevo_option_new (source->name, g_strdup ("sync"), 
-		                             source->enabled ? g_strdup ("two-way") : g_strdup ("none"));
-		g_ptr_array_add (options, option);
-	}
+        option = syncevo_option_new (source->name, g_strdup ("sync"), 
+                                     source->enabled ? g_strdup ("two-way") : g_strdup ("none"));
+        g_ptr_array_add (options, option);
+    }
 
-	return options;
+    return options;
 }
 
 GPtrArray*
 server_config_get_source_array (server_config *server, SyncType mode)
 {
-	GList *l;
-	GPtrArray *sources;
-	sources = g_ptr_array_new ();
+    GList *l;
+    GPtrArray *sources;
+    sources = g_ptr_array_new ();
 
-	for (l = server->source_configs; l; l = l->next) {
-		SyncevoSource *src;
-		source_config* config = (source_config*)l->data;
-		
-		if (config->enabled) {
-			src = syncevo_source_new (g_strdup (config->name), mode);
-			g_ptr_array_add (sources, src);
-		}
-	}
+    for (l = server->source_configs; l; l = l->next) {
+        SyncevoSource *src;
+        source_config* config = (source_config*)l->data;
+        
+        if (config->enabled) {
+            src = syncevo_source_new (g_strdup (config->name), mode);
+            g_ptr_array_add (sources, src);
+        }
+    }
 
-	return sources;
+    return sources;
 }
 
 source_config*
 server_config_get_source_config (server_config *server, const char *name)
 {
-	GList *l;
-	source_config *source = NULL;
-	
-	g_assert (name);
-	
-	/* return existing source config if found */
-	for (l = server->source_configs; l; l = l->next) {
-		source = (source_config*)l->data;
-		if (strcmp (source->name, name) == 0) {
-			return source; 
-		}
-	}
-	
-	/* create new source config */
-	source = g_slice_new0 (source_config);
-	source->name = g_strdup (name);
-	server->source_configs = g_list_append (server->source_configs, source);
-	return source;
+    GList *l;
+    source_config *source = NULL;
+    
+    g_assert (name);
+    
+    /* return existing source config if found */
+    for (l = server->source_configs; l; l = l->next) {
+        source = (source_config*)l->data;
+        if (strcmp (source->name, name) == 0) {
+            return source; 
+        }
+    }
+    
+    /* create new source config */
+    source = g_slice_new0 (source_config);
+    source->name = g_strdup (name);
+    server->source_configs = g_list_append (server->source_configs, source);
+    return source;
 }

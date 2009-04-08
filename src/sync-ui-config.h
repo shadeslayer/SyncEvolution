@@ -6,30 +6,30 @@
 
 
 typedef enum {
-	SYNC_TYPE_TWO_WAY,
-	SYNC_TYPE_ONE_WAY_FROM_REMOTE,
-	SYNC_TYPE_ONE_WAY_FROM_LOCAL,
+    SYNC_TYPE_TWO_WAY,
+    SYNC_TYPE_ONE_WAY_FROM_REMOTE,
+    SYNC_TYPE_ONE_WAY_FROM_LOCAL,
 }SyncType;
 
 typedef struct source_config {
-	char *name;
-	gboolean enabled;
-	char *uri;
+    char *name;
+    gboolean enabled;
+    char *uri;
 } source_config;
 
 typedef struct server_config {
-	char *name;
-	char *base_url;
-	char *web_url;
-	char *icon_uri;
+    char *name;
+    char *base_url;
+    char *web_url;
+    char *icon_uri;
 
-	char *username;
-	char *password;
+    char *username;
+    char *password;
 
-	GList *source_configs;
-	
-	gboolean changed;
-	gboolean from_template;
+    GList *source_configs;
+    
+    gboolean changed;
+    gboolean from_template;
 } server_config;
 
 void source_config_free (source_config *source);
