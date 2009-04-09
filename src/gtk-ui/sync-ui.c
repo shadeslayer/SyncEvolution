@@ -27,6 +27,7 @@
 
 
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 #include <gtk/gtk.h>
 #include <gconf/gconf-client.h>
@@ -38,6 +39,7 @@
 #include <synthesis/engine_defs.h>
 
 #include "sync-ui-config.h"
+#include "mux-bin.h"
 
 #define SYNC_UI_GCONF_DIR "/apps/sync-ui"
 #define SYNC_UI_SERVER_KEY SYNC_UI_GCONF_DIR"/server"
@@ -512,12 +514,37 @@ sync_type_toggled_cb (GObject *radio, app_data *data)
     }
 }
 
+
+static GtkWidget*
+switch_dummy_to_mux_bin (GtkWidget *dummy)
+{
+    GtkWidget *bin, *child, *parent;
+    g_assert (GTK_IS_BIN (dummy));
+
+    parent = gtk_widget_get_parent (dummy);
+    g_assert (GTK_IS_BOX (parent));
+    
+    child = gtk_bin_get_child (GTK_BIN (dummy));
+
+    gtk_container_remove (GTK_CONTAINER (dummy), child);
+    gtk_container_remove (GTK_CONTAINER (parent), dummy);
+    /* truly stupid, but glade doesn't allow GtkBins -- 
+       just making sure there are no other children in box */
+    g_assert (gtk_container_get_children (GTK_CONTAINER (parent)) == NULL);
+
+    bin = mux_bin_new ();
+    gtk_box_pack_start (GTK_BOX (parent), bin, TRUE, TRUE, 0);
+    gtk_container_add (GTK_CONTAINER (bin), child);
+    gtk_widget_show (bin);
+    return bin;
+}
 static gboolean
 init_ui (app_data *data)
 {
     GtkBuilder *builder;
     GError *error = NULL;
     GObject *radio;
+    GtkWidget *bin;
 
     builder = gtk_builder_new ();
     gtk_builder_add_from_file (builder, GLADEDIR "ui.xml", &error);
@@ -593,6 +620,18 @@ init_ui (app_data *data)
     g_signal_connect (data->sync_btn, "clicked", 
                       G_CALLBACK (sync_clicked_cb), data);
 
+    /* No (documented) way to add own widgets to gtkbuilder it seems...
+       swap the all dummy frames with MuxBins */
+
+    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
+    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
+    mux_bin_set_title (MUX_BIN (bin), "Log");
+    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_frame")));
+    mux_bin_set_title (MUX_BIN (bin), "Service");
+    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "backup_frame")));
+    mux_bin_set_title (MUX_BIN (bin), "Backup");
+
+    g_object_unref (builder);
     return TRUE;
 }
 

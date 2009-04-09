@@ -1,6 +1,11 @@
 BACKENDS = @BACKENDS@
-SUBDIRS = $(SYNTHESIS_SUBDIR) core $(BACKENDS)
-DIST_SUBDIRS = core $(BACKENDS)
+
+if COND_GUI
+GUI_DIR = gtk-ui
+endif
+
+SUBDIRS = $(SYNTHESIS_SUBDIR) core $(BACKENDS) $(GUI_DIR)
+DIST_SUBDIRS = core $(BACKENDS) gtk-ui
 BUILT_SOURCES =
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS) $(GLIB_CFLAGS)
@@ -137,38 +142,6 @@ syncevo-marshal.h: $(srcdir)/../interfaces/syncevo-marshal.list $(GLIB_GENMARSHA
 syncevo-marshal.c: $(srcdir)/../interfaces/syncevo-marshal.list syncevo-marshal.h $(GLIB_GENMARSHAL)
 	echo "#include \"syncevo-marshal.h\"" > $@ \
 	&& $(GLIB_GENMARSHAL) --prefix=syncevo_marshal $(srcdir)/../interfaces/syncevo-marshal.list --body >> $@
-endif
-
-if COND_GUI
-
-gladedir = $(datadir)/syncevolution/
-glade_DATA = \
-	ui.xml
-EXTRA_DIST += \
-	$(glade_DATA)
-
-ui.xml: ui.glade
-	$(GTK_BUILDER_CONV) $< $(@F)
-
-bin_PROGRAMS += \
-	sync-ui
-
-sync_ui_SOURCES = sync_ui.c sync-ui-config.c sync-ui-config.h
-sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) -L$(top_builddir)/syncevo-dbus -lsyncevo-dbus
-sync_ui_CFLAGS = $(GUI_CFLAGS) $(DBUS_GLIB_CFLAGS) -DGLADEDIR=\""$(gladedir)"\" 
-
-sync_ui_INCLUDES = 
-BUILT_SOURCES += \
-	syncevo-bindings.h
-
-%-bindings.h: stamp-%-bindings.h
-	@true
-stamp-%-bindings.h: $(srcdir)/../interfaces/%.xml
-	$(DBUS_BINDING_TOOL) --mode=glib-client --prefix=syncevo $< > xgen-$(@F) \
-	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
-	&& rm -f xgen-$(@F) \
-	&& echo timestamp > $(@F)
-
 endif
 
 # With --disable-shared autotools links against libfunambol.a which does not

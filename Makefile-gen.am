@@ -12,10 +12,15 @@ service_DATA = $(service_in_files:.service.in=.service)
 $(service_DATA): $(service_in_files) Makefile
 	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
 
-DBUS_DIRS = interfaces syncevo-dbus
+DBUS_DIR = syncevo-dbus
+DBUS_IFACE_DIR = interfaces
 endif
 
-SUBDIRS = src $(DBUS_DIRS) test
+if COND_GUI
+DBUS_IFACE_DIR = interfaces
+endif
+
+SUBDIRS = src $(DBUS_IFACE_DIR) $(DBUS_DIR) test
 
 EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh Makefile-gen.am Doxyfile $(service_in_files) syncevo-dbus.pc.in
 DISTCLEANFILES = $(service_DATA) syncevo-dbus.pc
