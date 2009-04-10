@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Fri Apr 10 21:42:04 2009 -->
+<!--Generated with glade3 3.4.5 on Sat Apr 11 01:32:03 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="sync_win">
     <property name="border_width">5</property>
@@ -670,7 +670,7 @@ We support the following services: </property>
                         </child>
                         <child>
                           <widget class="GtkScrolledWindow" id="scrolledwindow1">
-                            <property name="height_request">145</property>
+                            <property name="height_request">150</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
@@ -727,6 +727,7 @@ We support the following services: </property>
                                       </widget>
                                       <packing>
                                         <property name="expand">False</property>
+                                        <property name="padding">4</property>
                                       </packing>
                                     </child>
                                     <child>
@@ -853,6 +854,7 @@ you can setup a service manually.</property>
                                       </widget>
                                       <packing>
                                         <property name="expand">False</property>
+                                        <property name="padding">4</property>
                                       </packing>
                                     </child>
                                     <child>
@@ -950,27 +952,35 @@ you can setup a service manually.</property>
                             <property name="column_spacing">5</property>
                             <property name="row_spacing">4</property>
                             <child>
-                              <widget class="GtkLabel" id="label10">
+                              <widget class="GtkEntry" id="service_name_entry">
                                 <property name="visible">True</property>
-                                <property name="xalign">1</property>
-                                <property name="label" translatable="yes">Password</property>
+                                <property name="can_focus">True</property>
                               </widget>
                               <packing>
-                                <property name="top_attach">2</property>
-                                <property name="bottom_attach">3</property>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="service_name_label">
+                                <property name="visible">True</property>
+                                <property name="xalign">1</property>
+                                <property name="label" translatable="yes">Service name</property>
+                              </widget>
+                              <packing>
                                 <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkLabel" id="label9">
+                              <widget class="GtkEntry" id="username_entry">
                                 <property name="visible">True</property>
-                                <property name="xalign">1</property>
-                                <property name="label" translatable="yes">Username</property>
+                                <property name="can_focus">True</property>
                               </widget>
                               <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
                                 <property name="top_attach">1</property>
                                 <property name="bottom_attach">2</property>
-                                <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                               </packing>
                             </child>
                             <child>
@@ -987,35 +997,27 @@ you can setup a service manually.</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkEntry" id="username_entry">
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                              </widget>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="right_attach">2</property>
-                                <property name="top_attach">1</property>
-                                <property name="bottom_attach">2</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="service_name_label">
+                              <widget class="GtkLabel" id="label9">
                                 <property name="visible">True</property>
                                 <property name="xalign">1</property>
-                                <property name="label" translatable="yes">Service name</property>
+                                <property name="label" translatable="yes">Username</property>
                               </widget>
                               <packing>
+                                <property name="top_attach">1</property>
+                                <property name="bottom_attach">2</property>
                                 <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkEntry" id="service_name_entry">
+                              <widget class="GtkLabel" id="label10">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
+                                <property name="xalign">1</property>
+                                <property name="label" translatable="yes">Password</property>
                               </widget>
                               <packing>
-                                <property name="left_attach">1</property>
-                                <property name="right_attach">2</property>
+                                <property name="top_attach">2</property>
+                                <property name="bottom_attach">3</property>
+                                <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                               </packing>
                             </child>
                           </widget>
