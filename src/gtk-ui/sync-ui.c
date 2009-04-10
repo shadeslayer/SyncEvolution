@@ -1,9 +1,6 @@
 /*
  * TODO
  * 
- * * configuration needs a bit of thought
- *    - current design doesn't actually say how you choose thew current service
- *    - deleting manual configurations?
  * * redesign main window? (talk with nick/patrick). Issues:
       - unnecessary options included in main window
       - last-sync needs to be source specific if it's easy to turn them on/off
@@ -16,8 +13,8 @@
  * * leaking dbus params in dbus async-callbacks 
  * * GTK styling missing:
  *    - titlebar
- *    - a gtkbin with rounded corners
- *    - fade-effect for sync duration
+ *    - current implementation of MuxBin results in a slight flicker on window open
+ *    - fade-effect for sync duration -- is this needed?
  * * notes on dbus API:
  *    - a more cleaner solution would be to have StartSync return a 
  *      dbus path that could be used to connect to signals related to that specific
@@ -1019,8 +1016,14 @@ add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *
     icondata->icon_box = GTK_BOX (box);
     icondata->icon_size = SYNC_UI_LIST_ICON_SIZE;
     load_icon (icon, icondata);
-    
+
     label = gtk_label_new (name);
+    if (strcmp (name, data->current_service->name) == 0) {
+        char *str = g_strdup_printf ("<b>%s</b>", name);
+        gtk_label_set_markup (GTK_LABEL (label), str);
+        g_free (str);
+    }
+
     gtk_widget_set_size_request (label, SYNC_UI_LIST_BTN_WIDTH, -1);
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     gtk_table_attach (table, label, COL_NAME, COL_NAME + 1, row, row+1,
