@@ -99,7 +99,7 @@ const float sync_weight_receive = 0.25;
 typedef struct app_data {
     GtkWidget *sync_win;
     GtkWidget *services_win;
-    GtkWidget *service_settings_dlg;
+    GtkWidget *service_settings_win;
 
     GtkWidget *server_box;
     GtkWidget *server_failure_box;
@@ -119,8 +119,10 @@ typedef struct app_data {
     GtkWidget *new_service_btn;
     GtkWidget *services_table;
     GtkWidget *manual_services_table;
+    GtkWidget *manual_services_scrolled;
 
-    GtkWidget *service_title_label;
+    GtkWidget *service_settings_bin;
+    GtkWidget *service_link;
     GtkWidget *service_name_label;
     GtkWidget *service_name_entry;
     GtkWidget *username_entry;
@@ -128,6 +130,7 @@ typedef struct app_data {
     GtkWidget *server_settings_expander;
     GtkWidget *server_settings_table;
     GtkWidget *reset_server_btn;
+    GtkWidget *delete_service_btn;
 
     gboolean syncing;
     glong last_sync;
@@ -143,7 +146,7 @@ typedef struct app_data {
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
 static void show_services_window (app_data *data);
-static void show_settings_dialog (app_data *data, server_config *config);
+static void show_settings_window (app_data *data, server_config *config);
 static void ensure_default_sources_exist(server_config *server);
 static void add_server_option (SyncevoOption *option, server_config *server);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
@@ -164,7 +167,7 @@ static void
 edit_services_clicked_cb (GtkButton *btn, app_data *data)
 {
     data->current_service->changed = FALSE;
-    show_settings_dialog (data, data->current_service);
+    show_settings_window (data, data->current_service);
 }
 
 static void
@@ -234,50 +237,50 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
     ensure_default_sources_exist (config);
     
     config->changed = TRUE;
-    show_settings_dialog (data->data, config);
+    show_settings_window (data->data, config);
     
     g_slice_free (server_data ,data);
 }
 
 static void
-service_settings_response_cb (GtkDialog *dialog, gint response, app_data *data)
+delete_service_clicked_cb (GtkButton *btn, app_data *data)
+{
+    g_debug ("TODO: delete service");
+}
+
+static void
+reset_service_clicked_cb (GtkButton *btn, app_data *data)
+{
+    server_config *server;
+    server_data* serv_data;
+    SyncevoOption *option;
+
+    server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
+
+    serv_data = g_slice_new0 (server_data);
+    serv_data->data = data;
+    serv_data->server_name = g_strdup (server->name);
+    serv_data->options_override = g_ptr_array_new ();
+    option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
+    g_ptr_array_add (serv_data->options_override, option);
+    option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
+    g_ptr_array_add (serv_data->options_override, option);
+
+    syncevo_service_get_template_config_async (data->service, 
+                                               server->name, 
+                                               (SyncevoGetTemplateConfigCb)get_server_config_for_template_cb,
+                                               serv_data);
+}
+
+static void
+service_save_clicked_cb (GtkButton *btn, app_data *data)
 {
     GPtrArray *options;
     server_config *server;
 
-    server = g_object_get_data (G_OBJECT (data->service_settings_dlg), "server");
+    server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
 
-    if (response == 1) {
-        /* reset */
-        server_data* serv_data;
-        SyncevoOption *option;
-        serv_data = g_slice_new0 (server_data);
-        serv_data->data = data;
-        serv_data->server_name = g_strdup (server->name);
-
-        serv_data->options_override = g_ptr_array_new ();
-        option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
-        g_ptr_array_add (serv_data->options_override, option);
-        option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
-        g_ptr_array_add (serv_data->options_override, option);
-
-        syncevo_service_get_template_config_async (data->service, 
-                                                   server->name, 
-                                                   (SyncevoGetTemplateConfigCb)get_server_config_for_template_cb,
-                                                   serv_data);
-        return;
-    }
-
-    gtk_widget_hide (GTK_WIDGET (data->service_settings_dlg));
-
-    if (response != GTK_RESPONSE_APPLY) {
-        if (server != data->current_service)
-            server_config_free (server);
-        /* cancelled or closed */
-        return;
-    }
-
-    /* response == GTK_RESPONSE_APPLY */
+    gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
     gtk_widget_hide (GTK_WIDGET (data->services_win));
 
     server_config_update_from_entry (server, GTK_ENTRY (data->service_name_entry));
@@ -538,13 +541,29 @@ switch_dummy_to_mux_bin (GtkWidget *dummy)
     gtk_widget_show (bin);
     return bin;
 }
+
+static void
+show_link_button_url (GtkLinkButton *link)
+{
+    const char *url;
+    GError *error = NULL;
+    
+    url = gtk_link_button_get_uri (GTK_LINK_BUTTON (link));
+    if (!g_app_info_launch_default_for_uri (url, NULL, &error)) {
+        g_warning ("Failed to show url '%s': %s", url, error->message);
+        g_error_free (error);
+    }
+}
+
 static gboolean
 init_ui (app_data *data)
 {
     GtkBuilder *builder;
     GError *error = NULL;
     GObject *radio;
-    GtkWidget *bin;
+    GtkWidget *bin, *service_save_btn;
+
+    gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
     builder = gtk_builder_new ();
     gtk_builder_add_from_file (builder, GLADEDIR "ui.xml", &error);
@@ -557,7 +576,7 @@ init_ui (app_data *data)
 
     data->sync_win = GTK_WIDGET (gtk_builder_get_object (builder, "sync_win"));
     data->services_win = GTK_WIDGET (gtk_builder_get_object (builder, "services_win"));
-    data->service_settings_dlg = GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_dlg"));
+    data->service_settings_win = GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_win"));
 
     data->server_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_box"));
     data->no_server_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_server_box"));
@@ -582,8 +601,9 @@ init_ui (app_data *data)
 
     data->services_table = GTK_WIDGET (gtk_builder_get_object (builder, "services_table"));
     data->manual_services_table = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_table"));
+    data->manual_services_scrolled = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_scrolled"));
 
-    data->service_title_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_title_label"));
+    data->service_link = GTK_WIDGET (gtk_builder_get_object (builder, "service_link"));
     data->service_name_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_label"));
     data->service_name_entry = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_entry"));
     data->server_settings_expander = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_expander"));
@@ -591,6 +611,8 @@ init_ui (app_data *data)
     data->password_entry = GTK_WIDGET (gtk_builder_get_object (builder, "password_entry"));
     data->server_settings_table = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_table"));
     data->reset_server_btn = GTK_WIDGET (gtk_builder_get_object (builder, "reset_server_btn"));
+    data->delete_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "delete_service_btn"));
+    service_save_btn = GTK_WIDGET (gtk_builder_get_object (builder, "service_save_btn"));
 
     radio = gtk_builder_get_object (builder, "two_way_radio");
     g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_TYPE_TWO_WAY));
@@ -607,10 +629,16 @@ init_ui (app_data *data)
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
-    g_signal_connect (data->service_settings_dlg, "delete-event",
+    g_signal_connect (data->service_settings_win, "delete-event",
                       G_CALLBACK (gtk_widget_hide_on_delete), NULL);
-    g_signal_connect (data->service_settings_dlg, "response",
-                      G_CALLBACK (service_settings_response_cb), data);
+    g_signal_connect (data->service_link, "clicked",
+                      G_CALLBACK (show_link_button_url), NULL);
+    g_signal_connect (data->delete_service_btn, "clicked",
+                      G_CALLBACK (delete_service_clicked_cb), data);
+    g_signal_connect (data->reset_server_btn, "clicked",
+                      G_CALLBACK (reset_service_clicked_cb), data);
+    g_signal_connect (service_save_btn, "clicked",
+                      G_CALLBACK (service_save_clicked_cb), data);
     g_signal_connect (data->services_win, "delete-event",
                       G_CALLBACK (gtk_widget_hide_on_delete), NULL);
     g_signal_connect (data->change_service_btn, "clicked",
@@ -624,12 +652,18 @@ init_ui (app_data *data)
        swap the all dummy frames with MuxBins */
 
     bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
+    gtk_widget_set_name (bin, "main_bin");
     bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
     mux_bin_set_title (MUX_BIN (bin), "Log");
     bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_frame")));
     mux_bin_set_title (MUX_BIN (bin), "Service");
     bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "backup_frame")));
     mux_bin_set_title (MUX_BIN (bin), "Backup");
+    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
+    mux_bin_set_title (MUX_BIN (bin), "Sync services");
+    gtk_widget_set_name (bin, "services_list_bin");
+    data->service_settings_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_frame")));
+    mux_bin_set_title (MUX_BIN (bin), "Sync service settings");
 
     g_object_unref (builder);
     return TRUE;
@@ -794,20 +828,7 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
 }
 
 static void
-show_link_button_url (GtkLinkButton *link)
-{
-    const char *url;
-    GError *error = NULL;
-    
-    url = gtk_link_button_get_uri (GTK_LINK_BUTTON (link));
-    if (!g_app_info_launch_default_for_uri (url, NULL, &error)) {
-        g_warning ("Failed to show url '%s': %s", url, error->message);
-        g_error_free (error);
-    }
-}
-
-static void
-show_settings_dialog (app_data *data, server_config *config)
+show_settings_window (app_data *data, server_config *config)
 {
     GList *l;
     GtkWidget *label, *entry;
@@ -823,27 +844,33 @@ show_settings_dialog (app_data *data, server_config *config)
                         config->name ? config->name : "");
     g_object_set_data (G_OBJECT (data->service_name_entry), "value", &config->name);
     if (config->name) {
-        char *markup;
-        markup = g_strdup_printf ("<big>%s</big>", config->name);
-        gtk_label_set_markup (GTK_LABEL (data->service_title_label), markup);
-        g_free (markup);
+        mux_bin_set_title (MUX_BIN (data->service_settings_bin), config->name);
         
         gtk_widget_hide (data->service_name_label);
         gtk_widget_hide (data->service_name_entry);
     } else {
-        gtk_label_set_markup (GTK_LABEL (data->service_title_label), 
-                              "<big>New service</big>");
+        mux_bin_set_title (MUX_BIN (data->service_settings_bin), "New service");
         
         gtk_widget_show (data->service_name_label);
         gtk_widget_show (data->service_name_entry);
+    }
+
+    if (config->web_url) {
+        gtk_link_button_set_uri (GTK_LINK_BUTTON (data->service_link), 
+                                 config->web_url);
+        gtk_widget_show (data->service_link);
+    } else {
+        gtk_widget_show (data->service_link);
     }
 
     gtk_expander_set_expanded (GTK_EXPANDER (data->server_settings_expander), 
                                !config->from_template);
     if (config->from_template) {
         gtk_widget_hide (GTK_WIDGET (data->reset_server_btn));
+        gtk_widget_hide (GTK_WIDGET (data->delete_service_btn));
     } else {
         gtk_widget_show (GTK_WIDGET (data->reset_server_btn));
+        gtk_widget_hide (GTK_WIDGET (data->delete_service_btn));
     }
 
     gtk_entry_set_text (GTK_ENTRY (data->username_entry), 
@@ -888,9 +915,9 @@ show_settings_dialog (app_data *data, server_config *config)
     }
     gtk_widget_show_all (data->server_settings_table);
 
-    g_object_set_data (G_OBJECT (data->service_settings_dlg), "server", config);
+    g_object_set_data (G_OBJECT (data->service_settings_win), "server", config);
 
-    gtk_window_present (GTK_WINDOW (data->service_settings_dlg));
+    gtk_window_present (GTK_WINDOW (data->service_settings_win));
 }
 
 static void
@@ -1044,7 +1071,6 @@ get_servers_cb (SyncevoService *service,
     }
 
     gtk_table_resize (GTK_TABLE (data->manual_services_table), 2, 4);
-
     for (i = 0; i < servers->len; i++) {
         SyncevoServer *server = (SyncevoServer*)g_ptr_array_index (servers, i);
         
@@ -1054,13 +1080,17 @@ get_servers_cb (SyncevoService *service,
                                  server, data);
         }
     }
+    
+    if (k > 0) {
+        gtk_widget_show_all (data->manual_services_scrolled);
+    } else {
+        gtk_widget_hide (data->manual_services_scrolled);
+    }
+
     /* the SyncevoServers in arrays are freed when the table gets freed */
     g_ptr_array_free (templ_data->templates, TRUE);
     g_ptr_array_free (servers, TRUE);
     g_slice_free (templates_data, templ_data);
-
-
-    gtk_widget_show_all (data->manual_services_table);
 }
 
 static void
