@@ -219,26 +219,27 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
 
     if (error) {
         g_warning ("Failed to get server '%s' configuration: %s", 
-                      "",
+                      data->server_name,
                       error->message);
         g_error_free (error);
+    } else {
+        config = g_slice_new0 (server_config);
+        config->name = g_strdup (data->server_name);
+        g_ptr_array_foreach (options, (GFunc)add_server_option, config);
+        if (data->options_override)
+            g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, config);
+
+        ensure_default_sources_exist (config);
         
-        return;
+        config->changed = TRUE;
+        show_settings_window (data->data, config);
     }
 
-    config = g_slice_new0 (server_config);
-    config->name = data->server_name;
-    g_ptr_array_foreach (options, (GFunc)add_server_option, config);
+    g_free (data->server_name);
     if (data->options_override) {
-        g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, config);
         g_ptr_array_foreach (data->options_override, (GFunc)syncevo_option_free, NULL);
         g_ptr_array_free (data->options_override, TRUE);
     }
-    ensure_default_sources_exist (config);
-    
-    config->changed = TRUE;
-    show_settings_window (data->data, config);
-    
     g_slice_free (server_data ,data);
 }
 
