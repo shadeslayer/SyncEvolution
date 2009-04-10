@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <gconf/gconf-client.h>
 #include <syncevo-dbus/syncevo-dbus.h>
@@ -555,6 +556,16 @@ show_link_button_url (GtkLinkButton *link)
     }
 }
 
+static void
+key_press_cb (GtkWidget *widget,
+              GdkEventKey *event,
+              gpointer user_data)
+{
+    if (event->keyval == GDK_Escape) {
+        gtk_widget_hide (widget);
+    }
+}
+
 static gboolean
 init_ui (app_data *data)
 {
@@ -629,8 +640,14 @@ init_ui (app_data *data)
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
+    g_signal_connect (data->services_win, "delete-event",
+                      G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+    g_signal_connect (data->services_win, "key-press-event",
+                      G_CALLBACK (key_press_cb), NULL);
     g_signal_connect (data->service_settings_win, "delete-event",
                       G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+    g_signal_connect (data->service_settings_win, "key-press-event",
+                      G_CALLBACK (key_press_cb), NULL);
     g_signal_connect (data->service_link, "clicked",
                       G_CALLBACK (show_link_button_url), NULL);
     g_signal_connect (data->delete_service_btn, "clicked",
@@ -639,8 +656,6 @@ init_ui (app_data *data)
                       G_CALLBACK (reset_service_clicked_cb), data);
     g_signal_connect (service_save_btn, "clicked",
                       G_CALLBACK (service_save_clicked_cb), data);
-    g_signal_connect (data->services_win, "delete-event",
-                      G_CALLBACK (gtk_widget_hide_on_delete), NULL);
     g_signal_connect (data->change_service_btn, "clicked",
                       G_CALLBACK (change_service_clicked_cb), data);
     g_signal_connect (data->edit_service_btn, "clicked",
