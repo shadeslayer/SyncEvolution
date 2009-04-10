@@ -165,6 +165,8 @@ static void
 edit_services_clicked_cb (GtkButton *btn, app_data *data)
 {
     data->current_service->changed = FALSE;
+    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
+                                  GTK_WINDOW (data->sync_win));
     show_settings_window (data, data->current_service);
 }
 
@@ -263,6 +265,9 @@ reset_service_clicked_cb (GtkButton *btn, app_data *data)
     g_ptr_array_add (serv_data->options_override, option);
     option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
     g_ptr_array_add (serv_data->options_override, option);
+
+    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
+                                  GTK_WINDOW (data->services_win));
 
     syncevo_service_get_template_config_async (data->service, 
                                                server->name, 
@@ -954,6 +959,10 @@ setup_service_clicked (GtkButton *btn, app_data *data)
     serv_data = g_slice_new0 (server_data);
     serv_data->data = data;
     serv_data->server_name = g_strdup (name);
+
+    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
+                                  GTK_WINDOW (data->services_win));
+
     syncevo_service_get_server_config_async (data->service, 
                                              (char*)serv_data->server_name,
                                              (SyncevoGetServerConfigCb)get_server_config_for_template_cb, 
@@ -983,6 +992,9 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
     g_ptr_array_add (serv_data->options_override, option);
     option = syncevo_option_new ("calendar", "uri", NULL);
     g_ptr_array_add (serv_data->options_override, option);
+
+    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
+                                  GTK_WINDOW (data->services_win));
 
     syncevo_service_get_server_config_async (data->service, 
                                              "default",
