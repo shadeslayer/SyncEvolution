@@ -14,4 +14,5 @@ Server configurations must be kept in sync in three different places:
 - in SyncEvolutionCmdline.cpp's test server configs
 
 Note that server icons must come with a suitable license that allows
-redistribution. TODO: verify the license of the ScheduleWorld icon.
+redistribution. TODO: verify the license of ScheduleWorld and 
+Funambol icons.
