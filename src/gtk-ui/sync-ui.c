@@ -102,12 +102,14 @@ typedef struct app_data {
     GtkWidget *server_failure_box;
     GtkWidget *no_server_box;
     GtkWidget *info_box;
+    GtkWidget *main_bin;
+    GtkWidget *log_bin;
+    GtkWidget *backup_bin;
+    GtkWidget *services_bin;
     GtkWidget *server_icon_box;
 
     GtkWidget *progress;
     GtkWidget *sync_btn;
-    GtkWidget *restore_btn;
-    GtkWidget *change_service_btn;
     GtkWidget *edit_service_btn;
 
     GtkWidget *server_label;
@@ -344,7 +346,6 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
             gtk_widget_show_all (data->info_box);
             return;
         }
-        gtk_widget_set_sensitive (data->sync_btn, FALSE);
         set_sync_progress (data, -1.0, "Canceling sync");
     } else {
 
@@ -453,8 +454,10 @@ set_app_state (app_data *data, app_state state)
                                       (GtkCallback)remove_child,
                                       data->info_box);
         
-        gtk_widget_set_sensitive (data->sync_btn, FALSE);
-        gtk_widget_set_sensitive (data->restore_btn, FALSE);
+        gtk_widget_set_sensitive (data->main_bin, FALSE);
+        gtk_widget_set_sensitive (data->log_bin, FALSE);
+        gtk_widget_set_sensitive (data->backup_bin, FALSE);
+        gtk_widget_set_sensitive (data->services_bin, TRUE);
         break;
     case SYNC_UI_STATE_NO_SERVER:
         gtk_widget_hide (data->server_box);
@@ -463,10 +466,10 @@ set_app_state (app_data *data, app_state state)
         gtk_container_foreach (GTK_CONTAINER (data->info_box), 
                                       (GtkCallback)remove_child,
                                       data->info_box);
-        gtk_widget_set_sensitive (data->sync_btn, FALSE);
-        gtk_widget_set_sensitive (data->restore_btn, FALSE);
-        gtk_widget_set_sensitive (data->change_service_btn, TRUE);
-        gtk_widget_set_sensitive (data->server_box, FALSE);
+        gtk_widget_set_sensitive (data->main_bin, TRUE);
+        gtk_widget_set_sensitive (data->log_bin, FALSE);
+        gtk_widget_set_sensitive (data->backup_bin, FALSE);
+        gtk_widget_set_sensitive (data->services_bin, TRUE);
         break;
     case SYNC_UI_STATE_SERVER_FAILURE:
         gtk_widget_hide (data->server_box);
@@ -478,10 +481,10 @@ set_app_state (app_data *data, app_state state)
         info = gtk_label_new ("Error: Failed to contact synchronization DBus service");
         gtk_container_add (GTK_CONTAINER (data->info_box), info);
         
-        gtk_widget_set_sensitive (data->sync_btn, FALSE);
-        gtk_widget_set_sensitive (data->restore_btn, FALSE);
-        gtk_widget_set_sensitive (data->change_service_btn, FALSE);
-        gtk_widget_set_sensitive (data->server_box, FALSE);
+        gtk_widget_set_sensitive (data->main_bin, FALSE);
+        gtk_widget_set_sensitive (data->log_bin, FALSE);
+        gtk_widget_set_sensitive (data->backup_bin, FALSE);
+        gtk_widget_set_sensitive (data->services_bin, FALSE);
         break;
     case SYNC_UI_STATE_SERVER_OK:
         gtk_widget_show (data->server_box);
@@ -490,21 +493,21 @@ set_app_state (app_data *data, app_state state)
         gtk_container_foreach (GTK_CONTAINER (data->info_box), 
                                       (GtkCallback)remove_child,
                                       data->info_box);
-        gtk_widget_set_sensitive (data->sync_btn, TRUE);
         gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Sync now");
-        gtk_widget_set_sensitive (data->restore_btn, FALSE);
-        gtk_widget_set_sensitive (data->change_service_btn, TRUE);
-        gtk_widget_set_sensitive (data->server_box, TRUE);
+        gtk_widget_set_sensitive (data->main_bin, TRUE);
+        gtk_widget_set_sensitive (data->log_bin, TRUE);
+        gtk_widget_set_sensitive (data->backup_bin, FALSE);
+        gtk_widget_set_sensitive (data->services_bin, TRUE);
 
         data->syncing = FALSE;
         break;
         
     case SYNC_UI_STATE_SYNCING:
-        gtk_widget_set_sensitive (data->sync_btn, TRUE);
         gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Cancel sync");
-        gtk_widget_set_sensitive (data->restore_btn, FALSE);
-        gtk_widget_set_sensitive (data->change_service_btn, FALSE);
-        gtk_widget_set_sensitive (data->server_box, FALSE);
+        gtk_widget_set_sensitive (data->main_bin, FALSE);
+        gtk_widget_set_sensitive (data->log_bin, TRUE);
+        gtk_widget_set_sensitive (data->backup_bin, FALSE);
+        gtk_widget_set_sensitive (data->services_bin, FALSE);
         data->syncing = TRUE;
         break;
     default:
@@ -598,10 +601,8 @@ init_ui (app_data *data)
     data->server_icon_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_icon_box"));
 
     data->progress = GTK_WIDGET (gtk_builder_get_object (builder, "progressbar"));
-    data->change_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "change_service_btn"));
     data->edit_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "edit_service_btn"));
     data->sync_btn = GTK_WIDGET (gtk_builder_get_object (builder, "sync_btn"));
-    data->restore_btn = GTK_WIDGET (gtk_builder_get_object (builder, "restore_btn"));
 
     data->server_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_service_label"));
     data->sources_box = GTK_WIDGET (gtk_builder_get_object (builder, "sources_box"));
@@ -658,8 +659,10 @@ init_ui (app_data *data)
                       G_CALLBACK (reset_service_clicked_cb), data);
     g_signal_connect (service_save_btn, "clicked",
                       G_CALLBACK (service_save_clicked_cb), data);
-    g_signal_connect (data->change_service_btn, "clicked",
-                      G_CALLBACK (change_service_clicked_cb), data);
+    g_signal_connect (GTK_WIDGET (gtk_builder_get_object (builder, "change_service_btn")), 
+                      "clicked",
+                      G_CALLBACK (change_service_clicked_cb), 
+                      data);
     g_signal_connect (data->edit_service_btn, "clicked",
                       G_CALLBACK (edit_services_clicked_cb), data);
     g_signal_connect (data->sync_btn, "clicked", 
@@ -668,14 +671,14 @@ init_ui (app_data *data)
     /* No (documented) way to add own widgets to gtkbuilder it seems...
        swap the all dummy frames with MuxBins */
 
-    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
-    gtk_widget_set_name (bin, "main_bin");
-    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
-    mux_bin_set_title (MUX_BIN (bin), "Log");
-    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_frame")));
-    mux_bin_set_title (MUX_BIN (bin), "Service");
-    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "backup_frame")));
-    mux_bin_set_title (MUX_BIN (bin), "Backup");
+    data->main_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
+    gtk_widget_set_name (data->main_bin, "main_bin");
+    data->log_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
+    mux_bin_set_title (MUX_BIN (data->log_bin), "Log");
+    data->services_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_frame")));
+    mux_bin_set_title (MUX_BIN (data->services_bin), "Service");
+    data->backup_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "backup_frame")));
+    mux_bin_set_title (MUX_BIN (data->backup_bin), "Backup");
     bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
     mux_bin_set_title (MUX_BIN (bin), "Sync services");
     gtk_widget_set_name (bin, "services_list_bin");
