@@ -10,7 +10,6 @@
  * * where to save last-sync -- it's not a sync ui thing really, it should be 
  *   in server....
  * * backup/restore ? 
- * * leaking dbus params in dbus async-callbacks 
  * * GTK styling missing:
  *    - titlebar
  *    - current implementation of MuxBin results in a slight flicker on window open
