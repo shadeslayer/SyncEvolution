@@ -83,9 +83,13 @@ class LogDir : public LoggerStdout {
 public:
     LogDir(const string &server) : m_server(server), m_file(NULL)
     {
+        // ignore case in server name by making it lower case
+        string lower = m_server;
+        boost::to_lower(lower);
+
         // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
         m_prefix = "SyncEvolution-";
-        m_prefix += m_server;
+        m_prefix += lower;
 
         // default: $TMPDIR/SyncEvolution-<username>-<server>
         stringstream path;
@@ -102,7 +106,8 @@ public:
         } else {
             path << getuid();
         }
-        path << "-" << m_server;
+        path << "-";
+        path << lower;
 
         m_path = path.str();
     }
@@ -1559,7 +1564,6 @@ SyncMLStatus EvolutionSyncClient::doSync()
 
 void EvolutionSyncClient::status()
 {
-    EvolutionSyncConfig config(m_server);
     if (!exists()) {
         SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
         throwError("cannot proceed without configuration");

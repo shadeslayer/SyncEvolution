@@ -96,6 +96,12 @@ class ReadDir {
     const_iterator begin() const { return m_entries.begin(); }
     const_iterator end() const { return m_entries.end(); }
 
+    /**
+     * check whether directory contains entry, returns full path
+     * @param caseInsensitive    ignore case, pick first entry which matches randomly
+     */
+    string find(const string &entry, bool caseSensitive);
+
  private:
     string m_path;
     vector<string> m_entries;

@@ -61,13 +61,15 @@ EvolutionSyncConfig::EvolutionSyncConfig(const string &server,
         m_tree = tree;
     } else {
         // search for configuration in various places...
+        string lower = server;
+        boost::to_lower(lower);
         string confname;
-        root = getOldRoot() + "/" + server;
+        root = getOldRoot() + "/" + lower;
         confname = root + "/spds/syncml/config.txt";
         if (!access(confname.c_str(), F_OK)) {
             m_oldLayout = true;
         } else {
-            root = getNewRoot() + "/" + server;
+            root = getNewRoot() + "/" + lower;
         }
         m_tree.reset(new FileConfigTree(root, m_oldLayout));
     }
@@ -102,19 +104,13 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServers()
     return res;
 }
 
-static const InitList< pair<string, string> > serverTemplates =
-    InitList< pair<string, string> >(pair<string, string>("funambol", "http://my.funambol.com")) +
-    pair<string, string>("scheduleworld", "http://sync.scheduleworld.com") +
-    pair<string, string>("synthesis", "http://www.synthesis.ch") +
-    pair<string, string>("memotoo", "http://www.memotoo.com");
-
 EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
 {
     class TmpList : public ServerList {
     public:
         void addDefaultTemplate(const string &server, const string &url) {
             BOOST_FOREACH(const value_type &entry, static_cast<ServerList &>(*this)) {
-                if (entry.first == server) {
+                if (boost::iequals(entry.first, server)) {
                     // already present
                     return;
                 }
@@ -140,10 +136,10 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
     }
 
     // builtin templates if not present
-    result.addDefaultTemplate("funambol", "http://my.funambol.com");
-    result.addDefaultTemplate("scheduleworld", "http://sync.scheduleworld.com");
-    result.addDefaultTemplate("synthesis", "http://www.synthesis.ch");
-    result.addDefaultTemplate("memotoo", "http://www.memotoo.com");
+    result.addDefaultTemplate("Funambol", "http://my.funambol.com");
+    result.addDefaultTemplate("ScheduleWorld", "http://sync.scheduleworld.com");
+    result.addDefaultTemplate("Synthesis", "http://www.synthesis.ch");
+    result.addDefaultTemplate("Memotoo", "http://www.memotoo.com");
 
     result.sort();
     return result;
@@ -151,11 +147,15 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
 
 boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate(const string &server)
 {
-    string templateConfig(string(TEMPLATE_DIR) + "/");
-    if (server == "default") {
-        templateConfig += "scheduleworld";
-    } else {
-        templateConfig += server;
+    // case insensitive search for read-only file template config
+    string templateConfig(TEMPLATE_DIR);
+    ReadDir dir(templateConfig);
+    templateConfig = dir.find(boost::iequals(server, "default") ?
+                              string("ScheduleWorld") : server,
+                              false);
+    if (templateConfig.empty()) {
+        // not found, avoid reading current directory by using one which doesn't exist
+        templateConfig = "/dev/null";
     }
     boost::shared_ptr<FileConfigTree> tree(new FileConfigTree(templateConfig, false));
     tree->setReadOnly(true);
@@ -303,7 +303,11 @@ SyncSourceNodes EvolutionSyncConfig::getSyncSourceNodes(const string &name,
         trackingNode;
 
     boost::shared_ptr<ConfigNode> node;
-    string path = string(m_oldLayout ? "spds/sources/" : "sources/") + name;
+    string path = string(m_oldLayout ? "spds/sources/" : "sources/");
+    // store configs lower case even if the UI uses mixed case
+    string lower = name;
+    boost::to_lower(lower);
+    path += lower;
 
     node = m_tree->open(path, ConfigTree::visible);
     configNode.reset(new FilterConfigNode(node, m_sourceFilter));

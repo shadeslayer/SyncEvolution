@@ -179,6 +179,16 @@ ReadDir::ReadDir(const string &path) : m_path(path)
     closedir(dir);
 }
 
+std::string ReadDir::find(const string &entry, bool caseSensitive)
+{
+    BOOST_FOREACH(const string &e, *this) {
+        if (caseSensitive ? e == entry : boost::iequals(e, entry)) {
+            return m_path + "/" + e;
+        }
+    }
+    return "";
+}
+
 bool ReadFile(const string &filename, string &content)
 {
     ifstream in;
