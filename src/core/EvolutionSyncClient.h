@@ -107,6 +107,12 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     void status();
 
     /**
+     * fills vector with absolute path to information about previous
+     * sync sessions, oldest one first
+     */
+    void getSessions(vector<string> &dirs);
+
+    /**
      * throws a runtime_error with the given string
      * or (on the iPhone, where exception handling is not
      * supported by the toolchain) prints an error directly

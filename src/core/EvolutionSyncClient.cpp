@@ -113,33 +113,37 @@ public:
     }
 
     /**
-     * Finds previous log directory. Must be called before setLogdir().
+     * Finds previous log directories. Reports errors via exceptions.
+     *
+     * @param path        path to configured backup directy, NULL if defaulting to /tmp, "none" if not creating log file
+     * @retval dirs       vector of full path names, oldest first
+     */
+    void previousLogdirs(const char *path, vector<string> &dirs) {
+        string logdir;
+
+        dirs.clear();
+        if (path && !strcasecmp(path, "none")) {
+            return;
+        } else if (path && path[0]) {
+            getLogdirs(path, dirs);
+        } else if (access(m_path.c_str(), R_OK|X_OK) == 0) {
+            dirs.push_back(m_path);
+        }
+    }
+
+    /**
+     * Finds previous log directory. Returns empty string if anything went wrong.
      *
      * @param path        path to configured backup directy, NULL if defaulting to /tmp, "none" if not creating log file
      * @return full path of previous log directory, empty string if not found
      */
-    string previousLogdir(const char *path) {
-        string logdir;
-
-        if (path && !strcasecmp(path, "none")) {
-            return "";
-        } else if (path && path[0]) {
-            vector<string> entries;
-            try {
-                getLogdirs(path, entries);
-            } catch(...) {
-                SyncEvolutionException::handle();
-                return "";
-            }
-
-            logdir = entries.size() ? string(path) + "/" + entries[entries.size()-1] : "";
-        } else {
-            logdir = m_path;
-        }
-
-        if (access(logdir.c_str(), R_OK|X_OK) == 0) {
-            return logdir;
-        } else {
+    string previousLogdir(const char *path) throw() {
+        try {
+            vector<string> dirs;
+            previousLogdirs(path, dirs);
+            return dirs.empty() ? "" : dirs.back();
+        } catch (...) {
+            SyncEvolutionException::handle();
             return "";
         }
     }
@@ -253,29 +257,17 @@ public:
         return m_logfile;
     }
 
-    /** find all entries in a given directory, return as sorted array */
-    void getLogdirs(const string &logdir, vector<string> &entries) {
-        ReadDir dir(logdir);
-        BOOST_FOREACH(const string &entry, dir) {
-            if (boost::starts_with(entry, m_prefix)) {
-                entries.push_back(entry);
-            }
-        }
-        sort(entries.begin(), entries.end());
-    }
-
-
     // remove oldest backup dirs if exceeding limit
     void expire() {
         if (m_logdir.size() && m_maxlogdirs > 0 ) {
-            vector<string> entries;
-            getLogdirs(m_logdir, entries);
+            vector<string> dirs;
+            getLogdirs(m_logdir, dirs);
 
             int deleted = 0;
-            for (vector<string>::iterator it = entries.begin();
-                 it != entries.end() && (int)entries.size() - deleted > m_maxlogdirs;
+            for (vector<string>::iterator it = dirs.begin();
+                 it != dirs.end() && (int)dirs.size() - deleted > m_maxlogdirs;
                  ++it, ++deleted) {
-                string path = m_logdir + "/" + *it;
+                string &path = *it;
                 string msg = "removing " + path;
                 SE_LOG_INFO(NULL, NULL, "%s", msg.c_str());
                 rm_r(path);
@@ -319,6 +311,18 @@ public:
         }
         // to stdout
         LoggerStdout::messagev(level, prefix, file, line, function, format, args);
+    }
+
+private:
+    /** find all entries in a given directory, return as sorted array of full paths */
+    void getLogdirs(const string &logdir, vector<string> &dirs) {
+        ReadDir dir(logdir);
+        BOOST_FOREACH(const string &entry, dir) {
+            if (boost::starts_with(entry, m_prefix)) {
+                dirs.push_back(logdir + "/" + entry);
+            }
+        }
+        sort(dirs.begin(), dirs.end());
     }
 };
 
@@ -1597,4 +1601,10 @@ void EvolutionSyncClient::status()
             cerr << "Enable the 'logdir' option and synchronize to use this feature.\n";
         }
     }
+}
+
+void EvolutionSyncClient::getSessions(vector<string> &dirs)
+{
+    LogDir logging(m_server);
+    logging.previousLogdirs(getLogDir(), dirs);
 }

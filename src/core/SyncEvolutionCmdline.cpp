@@ -93,6 +93,8 @@ bool SyncEvolutionCmdline::parse()
         } else if(boost::iequals(m_argv[opt], "--print-config") ||
                   boost::iequals(m_argv[opt], "-p")) {
             m_printConfig = true;
+        } else if(boost::iequals(m_argv[opt], "--print-sessions")) {
+            m_printSessions = true;
         } else if(boost::iequals(m_argv[opt], "--configure") ||
                   boost::iequals(m_argv[opt], "-c")) {
             m_configure = true;
@@ -352,6 +354,12 @@ bool SyncEvolutionCmdline::run() {
         client.setConfigFilter(false, m_sourceProps);
         if (m_status) {
             client.status();
+        } else if (m_printSessions) {
+            vector<string> dirs;
+            client.getSessions(dirs);
+            BOOST_FOREACH(const string &dir, dirs) {
+                cout << dir << endl;
+            }
         } else {
             // safety catch: if props are given, then --run
             // is required
@@ -553,9 +561,10 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
 
     out << "Show available sources:" << endl;
     out << "  " << m_argv[0] << endl;
-    out << "Show information about configuration(s):" << endl;
+    out << "Show information about configuration(s) and sync sessions:" << endl;
     out << "  " << m_argv[0] << " --print-servers" << endl;
     out << "  " << m_argv[0] << " --print-config [--quiet] <server> [sync|<source ...]" << endl;
+    out << "  " << m_argv[0] << " --print-sessions <server>" << endl;
     out << "Show information about SyncEvolution:" << endl;
     out << "  " << m_argv[0] << " --help|-h" << endl;
     out << "  " << m_argv[0] << " --version" << endl;
@@ -590,6 +599,9 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "  printed. Using --quiet suppresses the comments for each property." << endl <<
             "  When setting a --template, then the reference configuration for" << endl <<
             "  that server is printed instead of an existing configuration." << endl <<
+            "" << endl <<
+            "--print-sessions" << endl <<
+            "  Prints a list of all previous log directories." << endl <<
             "" << endl <<
             "-–configure|-c" << endl <<
             "  Modify the configuration files for the selected server. If no such" << endl <<

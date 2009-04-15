@@ -57,6 +57,7 @@ private:
     Bool m_migrate;
     Bool m_printServers;
     Bool m_printConfig;
+    Bool m_printSessions;
     Bool m_dontrun;
     FilterConfigNode::ConfigFilter m_syncProps, m_sourceProps;
     const ConfigPropertyRegistry &m_validSyncProps;
