@@ -96,6 +96,8 @@ bool SyncEvolutionCmdline::parse()
         } else if(boost::iequals(m_argv[opt], "--configure") ||
                   boost::iequals(m_argv[opt], "-c")) {
             m_configure = true;
+        } else if(boost::iequals(m_argv[opt], "--remove")) {
+            m_remove = true;
         } else if(boost::iequals(m_argv[opt], "--run") ||
                   boost::iequals(m_argv[opt], "-r")) {
             m_run = true;
@@ -330,6 +332,19 @@ bool SyncEvolutionCmdline::run() {
 
         // done, now write it
         to->flush();
+    } else if (m_remove) {
+        // extra sanity check
+        if (!m_sources.empty() ||
+            !m_syncProps.empty() ||
+            !m_sourceProps.empty()) {
+            usage(true, "too many parameters for --remove");
+            return false;
+        } else {
+            boost::shared_ptr<EvolutionSyncConfig> config;
+            config.reset(new EvolutionSyncConfig(m_server));
+            config->remove();
+            return true;
+        }
     } else {
         EvolutionSyncClient client(m_server, true, m_sources);
         client.setQuiet(m_quiet);
@@ -547,6 +562,8 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
     out << "Run a synchronization:" << endl;
     out << "  " << m_argv[0] << " <server> [<source> ...]" << endl;
     out << "  " << m_argv[0] << " --run <options for run> <server> [<source> ...]" << endl;
+    out << "Remove a configuration:" << endl;
+    out << "  " << m_argv[0] << " --remove <server>" << endl;
     out << "Modify configuration:" << endl;
     out << "  " << m_argv[0] << " --configure <options for configuration> <server> [<source> ...]" << endl;
     out << "  " << m_argv[0] << " --migrate <server>" << endl;

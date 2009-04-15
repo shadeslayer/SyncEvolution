@@ -10,6 +10,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/function.hpp>
 
 #include <stdarg.h>
 
@@ -44,8 +45,17 @@ string normalizePath(const string &path);
 /** ensure that m_path is writable, otherwise throw error */
 void mkdir_p(const string &path);
 
-/** remove a complete directory hierarchy; invoking on non-existant directory is okay */
-void rm_r(const string &path);
+inline bool rm_r_all(const string &path, bool isDir) { return true; }
+
+/**
+ * remove a complete directory hierarchy; invoking on non-existant directory is okay
+ * @param path     relative or absolute path to be removed
+ * @param filter   an optional callback which determines whether an entry really is
+ *                 to be deleted (return true in that case); called with full path
+ *                 to entry and true if known to be a directory
+ */
+void rm_r(const string &path, boost::function<bool (const string &,
+                                                    bool)> filter = rm_r_all);
 
 /** true if the path refers to a directory */
 bool isDir(const string &path);

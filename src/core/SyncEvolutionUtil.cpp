@@ -79,7 +79,8 @@ void mkdir_p(const string &path)
     } while (curr);
 }
 
-void rm_r(const string &path)
+void rm_r(const string &path, boost::function<bool (const string &,
+                                                    bool)> filter)
 {
     struct stat buffer;
     if (lstat(path.c_str(), &buffer)) {
@@ -91,7 +92,8 @@ void rm_r(const string &path)
     }
 
     if (!S_ISDIR(buffer.st_mode)) {
-        if (!unlink(path.c_str())) {
+        if (!filter(path, false) ||
+            !unlink(path.c_str())) {
             return;
         } else {
             EvolutionSyncClient::throwError(path, errno);
@@ -100,9 +102,10 @@ void rm_r(const string &path)
 
     ReadDir dir(path);
     BOOST_FOREACH(const string &entry, dir) {
-        rm_r(path + "/" + entry);
+        rm_r(path + "/" + entry, filter);
     }
-    if (rmdir(path.c_str())) {
+    if (filter(path, true) &&
+        rmdir(path.c_str())) {
         EvolutionSyncClient::throwError(path, errno);
     }
 }

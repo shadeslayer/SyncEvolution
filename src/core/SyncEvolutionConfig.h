@@ -507,6 +507,18 @@ class EvolutionSyncConfig {
     void flush();
 
     /**
+     * Remove the configuration. The config object itself is still
+     * valid afterwards, but empty and cannot be flushed.
+     *
+     * Does *not* remove logs associated with the configuration.
+     * For that use the logdir handling in EvolutionSyncClient
+     * before removing the configuration.
+     *
+     * The config directory is removed if it is empty.
+     */
+    void remove();
+
+    /**
      * A list of all properties. Can be extended by derived clients.
      */
     static ConfigPropertyRegistry &getRegistry();

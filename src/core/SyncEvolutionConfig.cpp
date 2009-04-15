@@ -284,6 +284,12 @@ void EvolutionSyncConfig::flush()
     m_tree->flush();
 }
 
+void EvolutionSyncConfig::remove()
+{
+    m_tree->remove();
+    m_tree.reset(new VolatileConfigTree());
+}
+
 boost::shared_ptr<PersistentEvolutionSyncSourceConfig> EvolutionSyncConfig::getSyncSourceConfig(const string &name)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);

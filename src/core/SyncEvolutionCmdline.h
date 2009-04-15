@@ -52,6 +52,7 @@ private:
     Bool m_version;
     Bool m_usage;
     Bool m_configure;
+    Bool m_remove;
     Bool m_run;
     Bool m_migrate;
     Bool m_printServers;

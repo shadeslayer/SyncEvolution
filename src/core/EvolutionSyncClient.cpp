@@ -1094,8 +1094,8 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
             debug <<
                 "    <sessionlogs>yes</sessionlogs>\n"
                 "    <globallogs>yes</globallogs>\n"
-                "    <msgdump>yes</msgdump>\n"
-                "    <xmltranslate>yes</xmltranslate>\n"
+                "    <msgdump>no</msgdump>\n"
+                "    <xmltranslate>no</xmltranslate>\n"
                 "    <enable option=\"all\"/>\n"
                 "    <enable option=\"userdata\"/>\n"
                 "    <enable option=\"scripts\"/>\n"

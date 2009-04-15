@@ -52,6 +52,10 @@ class ConfigTree {
     /** ensure that all changes are saved persistently */
     virtual void flush() = 0;
 
+    /** remove all configuration nodes and (if based on files)
+        directories created for them, if empty after file removal */
+    virtual void remove() = 0;
+
     /** a string identifying the root of the configuration - exact meaning varies */
     virtual string getRootPath() const = 0;
 
