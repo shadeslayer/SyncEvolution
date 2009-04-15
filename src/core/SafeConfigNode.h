@@ -31,6 +31,14 @@ class SafeConfigNode : public ConfigNode {
     /** read-only access to underlying node */
     SafeConfigNode(const boost::shared_ptr<const ConfigNode> &node);
 
+    /**
+     * chooses which characters are accepted by underlying node:
+     * in strict mode, only alphanumeric and -_ are supported;
+     * in non-strict mode, only line breaks, = and spaces at start and end are escaped
+     */
+    void setMode(bool strict) { m_strictMode = strict; }
+    bool getMode() { return m_strictMode; }
+
     virtual string getName() const { return m_readOnlyNode->getName(); }
 
     /* ConfigNode API */
@@ -47,14 +55,15 @@ class SafeConfigNode : public ConfigNode {
  private:
     boost::shared_ptr<ConfigNode> m_node;
     boost::shared_ptr<const ConfigNode> m_readOnlyNode;
+    bool m_strictMode;
 
     /**
      * turn str into something which can be used as key or value in ConfigNode
      */
-    static string escape(const string &str);
+    string escape(const string &str) const;
 
     /** inverse operation for escape() */
-    static string unescape(const string &str);
+    string unescape(const string &str) const;
 };
 
 #endif

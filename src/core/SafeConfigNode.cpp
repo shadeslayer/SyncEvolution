@@ -9,12 +9,14 @@
 
 SafeConfigNode::SafeConfigNode(const boost::shared_ptr<ConfigNode> &node) :
     m_node(node),
-    m_readOnlyNode(node)
+    m_readOnlyNode(node),
+    m_strictMode(true)
 {
 }
 
 SafeConfigNode::SafeConfigNode(const boost::shared_ptr<const ConfigNode> &node) :
-    m_readOnlyNode(node)
+    m_readOnlyNode(node),
+    m_strictMode(true)
 {
 }
 
@@ -60,18 +62,42 @@ void SafeConfigNode::flush()
     m_node->flush();
 }
 
-string SafeConfigNode::escape(const string &str)
+string SafeConfigNode::escape(const string &str) const
 {
     string res;
     char buffer[4];
+    bool isLeadingSpace = true;
     res.reserve(str.size() * 3);
 
     BOOST_FOREACH(char c, str) {
-        if(isalnum(c) ||
-           c == '-' ||
-           c == '_') {
+        if(m_strictMode ?
+           (isalnum(c) ||
+            c == '-' ||
+            c == '_') :
+           !((isLeadingSpace && isspace(c)) ||
+             c == '=' &&
+             c == '\n')) {
             res += c;
+            if (!isspace(c)) {
+                isLeadingSpace = false;
+            }
         } else {
+            sprintf(buffer, "!%02x",
+                    (unsigned int)(unsigned char)c);
+            res += buffer;
+        }
+    }
+
+    // also encode trailing space?
+    if (!m_strictMode) {
+        size_t numspaces = 0;
+        ssize_t off = res.size() - 1;
+        while (off >= 0 && isspace(res[off])) {
+            off--;
+            numspaces++;
+        }
+        res.resize(res.size() - numspaces);
+        BOOST_FOREACH(char c, str.substr(str.size() - numspaces)) {
             sprintf(buffer, "!%02x",
                     (unsigned int)(unsigned char)c);
             res += buffer;
@@ -81,7 +107,7 @@ string SafeConfigNode::escape(const string &str)
     return res;
 }
 
-string SafeConfigNode::unescape(const string &str)
+string SafeConfigNode::unescape(const string &str) const
 {
     string res;
     size_t curr;
