@@ -14,6 +14,7 @@
 #include <errno.h>
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <memory>
 #include <set>
@@ -359,6 +360,25 @@ bool SyncEvolutionCmdline::run() {
             client.getSessions(dirs);
             BOOST_FOREACH(const string &dir, dirs) {
                 cout << dir << endl;
+                SyncReport report;
+                client.readSessionInfo(dir, report);
+                time_t start = report.getStart();
+                time_t end = report.getEnd();
+                time_t duration = end - start;
+                cout << "   start ";
+                if (!start) {
+                    cout << "unknown";
+                } else {
+                    char buffer[160];
+                    strftime(buffer, sizeof(buffer), "%c", localtime(&start));
+                    cout << buffer;
+                    if (!end) {
+                        cout << ", unknown duration (crashed?!)";
+                    } else {
+                        cout << ", duration " << duration / 60 << ":" << setw(2) << setfill('0') << duration % 60 << setfill(' ') << "min";
+                    }
+                }
+                cout << endl;
             }
         } else {
             // safety catch: if props are given, then --run

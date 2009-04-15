@@ -198,13 +198,32 @@ class SyncSourceReport {
 };
 
 class SyncReport : public std::map<std::string, SyncSourceReport> {
+    time_t m_start, m_end;
+
  public:
+    SyncReport() :
+        m_start(0),
+        m_end(0)
+        {}
+
     void addSyncSourceReport(const std::string &name,
                              const SyncSourceReport &report) {
         (*this)[name] = report;
     }
     const SyncSourceReport &getSyncSourceReport(const std::string &name) {
         return (*this)[name];
+    }
+
+    /** start time of sync, 0 if unknown */
+    time_t getStart() const { return m_start; }
+    void setStart(time_t start) { m_start = start; }
+    /** end time of sync, 0 if unknown (indicates a crash) */
+    time_t getEnd() const { return m_end; }
+    void setEnd(time_t end) { m_end = end; }
+
+    void clear() {
+        std::map<std::string, SyncSourceReport>::clear();
+        m_start = m_end = 0;
     }
 };
 

@@ -7,6 +7,9 @@
 #include "EvolutionSyncSource.h"
 #include "SyncEvolutionUtil.h"
 
+#include "SafeConfigNode.h"
+#include "FileConfigNode.h"
+
 #include "Logging.h"
 #include "LogStdout.h"
 #include "TransportAgent.h"
@@ -79,9 +82,11 @@ class LogDir : public LoggerStdout {
     const string &m_server;  /**< name of the server for this synchronization */
     string m_logfile;        /**< path to log file there, empty if not writing one */
     FILE *m_file;            /**< file handle for log file, NULL if not writing one */
+    SafeConfigNode *m_info;  /**< key/value representation of sync information */
+    bool m_readonly;         /**< m_info is not to be written to */
 
 public:
-    LogDir(const string &server) : m_server(server), m_file(NULL)
+    LogDir(const string &server) : m_server(server), m_file(NULL), m_info(NULL), m_readonly(false)
     {
         // ignore case in server name by making it lower case
         string lower = m_server;
@@ -146,6 +151,25 @@ public:
             SyncEvolutionException::handle();
             return "";
         }
+    }
+
+    /**
+     * access existing log directory to extract status information
+     */
+    void openLogdir(const string &dir) {
+        boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(dir, "status.ini", true));
+        m_info = new SafeConfigNode(filenode);
+        m_info->setMode(false);
+        m_readonly = true;
+    }
+
+    /**
+     * read sync report for session selected with openLogdir()
+     */
+    void readReport(SyncReport &report) {
+        report.clear();
+        report.setStart(readTimestamp("start"));
+        report.setEnd(readTimestamp("end"));
     }
 
     // setup log directory and redirect logging into it
@@ -242,6 +266,13 @@ public:
         }
         setLevel(level);
         pushLogger(this);
+
+        if (!m_path.empty()) {
+            boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(m_path, "status.ini", false));
+            m_info = new SafeConfigNode(filenode);
+            m_info->setMode(false);
+            writeTimestamp("start", time(NULL));
+        }
     }
 
     /** sets a fixed directory for database files without redirecting logging */
@@ -279,6 +310,14 @@ public:
     void restore() {
         if (&instance() == this) {
             popLogger();
+        }
+        if (m_info) {
+            if (!m_readonly) {
+                writeTimestamp("end", time(NULL));
+                m_info->flush();
+            }
+            delete m_info;
+            m_info = NULL;
         }
         if (m_file) {
             fclose(m_file);
@@ -323,6 +362,28 @@ private:
             }
         }
         sort(dirs.begin(), dirs.end());
+    }
+
+    // store time stamp in session info
+    void writeTimestamp(const string &key, time_t val) {
+        if (m_info) {
+            char buffer[160];
+            struct tm tm;
+            // be nice and store a human-readable date in addition the seconds since the epoch
+            strftime(buffer, sizeof(buffer), "%s, %Y-%m-%d %H:%m:%S %z", localtime_r(&val, &tm));
+            m_info->setProperty(key, buffer);
+            m_info->flush();
+        }
+    }
+
+    // retrieve time stamp from session info
+    time_t readTimestamp(const string &key) {
+        time_t val = 0;
+        if (m_info) {
+            string strval = m_info->readProperty(key);
+            val = strtol(strval.c_str(), NULL, 0);
+        }
+        return val;
     }
 };
 
@@ -1607,4 +1668,11 @@ void EvolutionSyncClient::getSessions(vector<string> &dirs)
 {
     LogDir logging(m_server);
     logging.previousLogdirs(getLogDir(), dirs);
+}
+
+void EvolutionSyncClient::readSessionInfo(const string &dir, SyncReport &report)
+{
+    LogDir logging(m_server);
+    logging.openLogdir(dir);
+    logging.readReport(report);
 }

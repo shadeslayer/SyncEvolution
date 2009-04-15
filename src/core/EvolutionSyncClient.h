@@ -113,6 +113,11 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     void getSessions(vector<string> &dirs);
 
     /**
+     * fills report with information about previous session
+     */
+    void readSessionInfo(const string &dir, SyncReport &report);
+
+    /**
      * throws a runtime_error with the given string
      * or (on the iPhone, where exception handling is not
      * supported by the toolchain) prints an error directly
