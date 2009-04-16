@@ -584,14 +584,16 @@ show_link_button_url (GtkLinkButton *link)
     }
 }
 
-static void
+static gboolean
 key_press_cb (GtkWidget *widget,
               GdkEventKey *event,
               gpointer user_data)
 {
     if (event->keyval == GDK_Escape) {
         gtk_widget_hide (widget);
+        return TRUE;
     }
+    return FALSE;
 }
 
 static void settings_clicked (MuxWindow *win, app_data *data)
