@@ -130,9 +130,9 @@ syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
 syncevo_dbus_server_LDFLAGS = $(CORE_LD_FLAGS)
 syncevo_dbus_server_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
 
-%-glue.h: stamp-%-glue.h
+syncevo-dbus-glue.h: stamp-syncevo-dbus-glue.h
 	@true
-stamp-%-glue.h: $(srcdir)/../interfaces/syncevo.xml
+stamp-syncevo-dbus-glue.h: $(srcdir)/../interfaces/syncevo.xml
 	$(DBUS_BINDING_TOOL) --prefix=syncevo --mode=glib-server $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F) \
