@@ -673,10 +673,13 @@ init_ui (app_data *data)
     data->main_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
     gtk_widget_set_name (data->main_bin, "main_bin");
     data->log_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
+    gtk_widget_set_name (data->log_bin, "log_bin");
     mux_bin_set_title (MUX_BIN (data->log_bin), "Log");
     data->services_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_frame")));
+    gtk_widget_set_name (data->services_bin, "services_bin");
     mux_bin_set_title (MUX_BIN (data->services_bin), "Service");
     data->backup_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "backup_frame")));
+    gtk_widget_set_name (data->backup_bin, "backup_bin");
     mux_bin_set_title (MUX_BIN (data->backup_bin), "Backup");
     bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
     mux_bin_set_title (MUX_BIN (bin), "Sync services");
