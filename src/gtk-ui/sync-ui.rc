@@ -1,28 +1,37 @@
-style "sync-bg" {
-    bg[NORMAL] = "#4a535a"
-}
-class "GtkWindow" style "sync-bg"
+# generic rules for MuxWidgets
 
-style "sync-bin" {
+style "mux-win" {
+    bg[NORMAL] = "#4a535a"
+    MuxWindow::title-bar-bg = "#333333"
+    MuxWindow::title-bar-fg = "#c2c2c2"
+}
+class "MuxWindow" style "mux-win"
+
+style "mux-bin" {
     bg[NORMAL] = "#ffffff"
+    bg[INSENSITIVE] = "#d2d6d9"
     MuxBin::border-color = "#dee2e5"
     MuxBin::bullet-color = "#aaaaaa"
+    MuxBin::title-font = "12"
 }
-class "MuxBin" style "sync-bin"
-
-style "normal-mux-label" {
-    font_name = "12"
-}
-widget "sync_win.*.mux_bin_title" style "normal-mux-label"
-
-style "big-mux-label" {
-    font_name = "14"
-}
-widget "services_win.*.mux_bin_title" style "big-mux-label"
-widget "service_settings_win.*.mux_bin_title" style "big-mux-label"
+class "MuxBin" style "mux-bin"
 
 # tooltips seem to take their color from the window bg? working around that 
-style "gtk-tooltips-style" { 
+style "mux-tooltip-fix" { 
     bg[NORMAL] = "#ffffff" 
 } 
-widget "gtk-tooltip*" style "gtk-tooltips-style" 
+widget "gtk-tooltip*" style "mux-tooltip-fix" 
+
+
+# sync-ui specific rules
+
+style "data-box" {
+    bg[NORMAL] = "#ececec"
+    bg[INSENSITIVE] = "#ececec"
+}
+widget "*.sync_data_and_type_box" style "data-box"
+
+style "no-insensitive-bin" {
+    bg[INSENSITIVE] = "#ffffff"
+}
+widget "*.main_bin" style "no-insensitive-bin"
