@@ -507,3 +507,50 @@ syncevo_service_set_server_config_async (SyncevoService *service,
 			 (org_Moblin_SyncEvolution_set_server_config_reply) set_server_config_async_callback,
 			 data);
 }
+
+gboolean 
+syncevo_service_remove_server_config (SyncevoService *service,
+                                      char *server,
+                                      GError **error)
+{
+	SyncevoServicePrivate *priv;
+
+	priv = GET_PRIVATE (service);
+	return org_Moblin_SyncEvolution_remove_server_config (priv->proxy, 
+	                                                      server,
+	                                                      error);
+}
+
+static void
+remove_server_config_async_callback (DBusGProxy *proxy, 
+                                     GError *error,
+                                     SyncevoAsyncData *data)
+{
+	(*(SyncevoRemoveServerConfigCb)data->callback) (data->service,
+	                                             error,
+	                                             data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
+void 
+syncevo_service_remove_server_config_async (SyncevoService *service,
+                                            char *server,
+                                            SyncevoRemoveServerConfigCb callback,
+                                            gpointer userdata)
+{
+	SyncevoAsyncData *data;
+	SyncevoServicePrivate *priv;
+
+	priv = GET_PRIVATE (service);
+
+	data = g_slice_new0 (SyncevoAsyncData);
+	data->service = service;
+	data->callback = G_CALLBACK (callback);
+	data->userdata = userdata;
+	
+	org_Moblin_SyncEvolution_remove_server_config_async 
+			(priv->proxy,
+			 server,
+			 (org_Moblin_SyncEvolution_remove_server_config_reply) remove_server_config_async_callback,
+			 data);
+}
