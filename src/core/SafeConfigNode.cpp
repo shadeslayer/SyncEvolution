@@ -75,7 +75,7 @@ string SafeConfigNode::escape(const string &str) const
             c == '-' ||
             c == '_') :
            !((isLeadingSpace && isspace(c)) ||
-             c == '=' &&
+             c == '=' ||
              c == '\n')) {
             res += c;
             if (!isspace(c)) {
