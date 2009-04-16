@@ -68,7 +68,7 @@ void mkdir_p(const string &path)
             if (access(dirs.get(),
                        nextdir ? (R_OK|X_OK) : (R_OK|X_OK|W_OK)) &&
                 (errno != ENOENT ||
-                 mkdir(dirs.get(), 0777))) {
+                 mkdir(dirs.get(), 0700))) {
                 EvolutionSyncClient::throwError(string(dirs.get()), errno);
             }
         }
