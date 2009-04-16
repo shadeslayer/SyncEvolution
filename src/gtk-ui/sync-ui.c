@@ -112,6 +112,7 @@ typedef struct app_data {
     GtkWidget *progress;
     GtkWidget *sync_btn;
     GtkWidget *edit_service_btn;
+    GtkWidget *change_service_btn;
 
     GtkWidget *server_label;
     GtkWidget *sources_box;
@@ -471,6 +472,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->log_bin, FALSE);
         gtk_widget_set_sensitive (data->backup_bin, FALSE);
         gtk_widget_set_sensitive (data->services_bin, TRUE);
+        gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->change_service_btn);
         break;
     case SYNC_UI_STATE_SERVER_FAILURE:
         gtk_widget_hide (data->server_box);
@@ -494,21 +496,23 @@ set_app_state (app_data *data, app_state state)
         gtk_container_foreach (GTK_CONTAINER (data->info_box), 
                                       (GtkCallback)remove_child,
                                       data->info_box);
-        gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Sync now");
         gtk_widget_set_sensitive (data->main_bin, TRUE);
         gtk_widget_set_sensitive (data->log_bin, TRUE);
         gtk_widget_set_sensitive (data->backup_bin, FALSE);
         gtk_widget_set_sensitive (data->services_bin, TRUE);
+        gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Sync now");
+        gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->sync_btn);
 
         data->syncing = FALSE;
         break;
         
     case SYNC_UI_STATE_SYNCING:
-        gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Cancel sync");
         gtk_widget_set_sensitive (data->main_bin, FALSE);
         gtk_widget_set_sensitive (data->log_bin, TRUE);
         gtk_widget_set_sensitive (data->backup_bin, FALSE);
         gtk_widget_set_sensitive (data->services_bin, FALSE);
+        gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Cancel sync");
+
         data->syncing = TRUE;
         break;
     default:
@@ -623,6 +627,7 @@ init_ui (app_data *data)
 
     data->progress = GTK_WIDGET (gtk_builder_get_object (builder, "progressbar"));
     data->edit_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "edit_service_btn"));
+    data->change_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "change_service_btn"));
     data->sync_btn = GTK_WIDGET (gtk_builder_get_object (builder, "sync_btn"));
 
     data->server_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_service_label"));
@@ -707,8 +712,7 @@ init_ui (app_data *data)
                       G_CALLBACK (reset_service_clicked_cb), data);
     g_signal_connect (service_save_btn, "clicked",
                       G_CALLBACK (service_save_clicked_cb), data);
-    g_signal_connect (GTK_WIDGET (gtk_builder_get_object (builder, "change_service_btn")), 
-                      "clicked",
+    g_signal_connect (data->change_service_btn, "clicked",
                       G_CALLBACK (change_service_clicked_cb), 
                       data);
     g_signal_connect (data->edit_service_btn, "clicked",
