@@ -42,14 +42,14 @@ CLEANFILES = $(BUILT_SOURCES)
 
 %-bindings.h: stamp-%-bindings.h
 	@true
-stamp-%-bindings.h: ../interfaces/%.xml
+stamp-%-bindings.h: $(builddir)/../interfaces/%.xml
 	$(DBUS_BINDING_TOOL) --mode=glib-client --prefix=syncevo $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F) \
 	&& echo timestamp > $(@F)
 
-syncevo-marshal.h: ../interfaces/syncevo-marshal.list $(GLIB_GENMARSHAL)
+syncevo-marshal.h: $(srcdir)/../interfaces/syncevo-marshal.list $(GLIB_GENMARSHAL)
 	$(GLIB_GENMARSHAL) $< --header --prefix=syncevo_marshal > $@
-syncevo-marshal.c: ../interfaces/syncevo-marshal.list syncevo-marshal.h $(GLIB_GENMARSHAL)
+syncevo-marshal.c: $(srcdir)/../interfaces/syncevo-marshal.list syncevo-marshal.h $(GLIB_GENMARSHAL)
 	echo "#include \"syncevo-marshal.h\"" > $@ \
 	&& $(GLIB_GENMARSHAL) --prefix=syncevo_marshal $(srcdir)/../interfaces/syncevo-marshal.list --body >> $@
