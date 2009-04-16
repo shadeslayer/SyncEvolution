@@ -9,10 +9,10 @@ class "MuxWindow" style "mux-win"
 
 style "mux-bin" {
     bg[NORMAL] = "#ffffff"
-    bg[INSENSITIVE] = "#d2d6d9"
+    bg[INSENSITIVE] = "#ffffff"
     MuxBin::border-color = "#dee2e5"
     MuxBin::bullet-color = "#aaaaaa"
-    MuxBin::title-font = "12"
+    MuxBin::title-font = "Bold 12"
 }
 class "MuxBin" style "mux-bin"
 
@@ -31,7 +31,9 @@ style "data-box" {
 }
 widget "*.sync_data_and_type_box" style "data-box"
 
-style "no-insensitive-bin" {
-    bg[INSENSITIVE] = "#ffffff"
+style "insensitive-bin" {
+    bg[INSENSITIVE] = "#d2d6d9"
 }
-widget "*.main_bin" style "no-insensitive-bin"
+widget "*.log_bin*" style "insensitive-bin"
+widget "*.backup_bin*" style "insensitive-bin"
+widget "*.services_bin*" style "insensitive-bin"
