@@ -731,11 +731,6 @@ private:
 
     mutable ConfigStringCache m_stringCache;
 
-    static string getHome() {
-        const char *homestr = getenv("HOME");
-        return homestr ? homestr : ".";
-    }
-    
     static string getOldRoot() {
         return getHome() + "/.sync4j/evolution";
     }

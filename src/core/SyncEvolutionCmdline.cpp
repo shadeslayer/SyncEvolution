@@ -912,7 +912,7 @@ public:
                               "config.ini:password = your SyncML server password\n"
                               "config.ini:# logdir = \n"
                               "config.ini:# loglevel = 0\n"
-                              "config.ini:# maxlogdirs = 0\n"
+                              "config.ini:# maxlogdirs = 10\n"
                               "config.ini:# useProxy = 0\n"
                               "config.ini:# proxyHost = \n"
                               "config.ini:# proxyUsername = \n"
@@ -1453,7 +1453,7 @@ protected:
             TestCmdline cmdline("--configure",
                                 "--sync", "two-way",
                                 "-z", "evolutionsource=source",
-                                "--sync-property", "maxlogdirs=10",
+                                "--sync-property", "maxlogdirs=20",
                                 "-y", "LOGDIR=logdir",
                                 "scheduleworld",
                                 NULL);
@@ -1470,8 +1470,8 @@ protected:
                                "# evolutionsource = ",
                                "evolutionsource = source");
             boost::replace_all(expected,
-                               "# maxlogdirs = 0",
-                               "maxlogdirs = 10");
+                               "# maxlogdirs = 10",
+                               "maxlogdirs = 20");
             boost::replace_all(expected,
                                "# logdir = ",
                                "logdir = logdir");

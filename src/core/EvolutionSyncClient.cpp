@@ -75,7 +75,7 @@ EvolutionSyncClient::~EvolutionSyncClient()
 // for redirecting output at the start and end of sync (even
 // in case of exceptions thrown!)
 class LogDir : public LoggerStdout {
-    string m_logdir;         /**< configured backup root dir, empty if none */
+    string m_logdir;         /**< configured backup root dir */
     int m_maxlogdirs;        /**< number of backup dirs to preserve, 0 if unlimited */
     string m_prefix;         /**< common prefix of backup dirs */
     string m_path;           /**< path to current logging and backup dir */
@@ -86,36 +86,32 @@ class LogDir : public LoggerStdout {
     bool m_readonly;         /**< m_info is not to be written to */
     SyncReport *m_report;    /**< record start/end times here */
 
-public:
-    LogDir(const string &server) : m_server(server), m_file(NULL), m_info(NULL), m_readonly(false), m_report(NULL)
-    {
-        // ignore case in server name by making it lower case
+    /** set m_logdir and adapt m_prefix accordingly */
+    void setLogdir(const string &logdir) {
+        // strip trailing slashes, but not the initial one
+        size_t off = logdir.size();
+        while (off > 0 && logdir[off - 1] == '/') {
+            off--;
+        }
+        m_logdir = logdir.substr(0, off);
+
         string lower = m_server;
         boost::to_lower(lower);
 
-        // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
-        m_prefix = "SyncEvolution-";
-        m_prefix += lower;
-
-        // default: $TMPDIR/SyncEvolution-<username>-<server>
-        stringstream path;
-        char *tmp = getenv("TMPDIR");
-        if (tmp) {
-            path << tmp;
+        if (boost::iends_with(m_logdir, "syncevolution")) {
+            // use just the server name as prefix
+            m_prefix = lower;
         } else {
-            path << "/tmp";
+            // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
+            m_prefix = "SyncEvolution-";
+            m_prefix += lower;
         }
-        path << "/SyncEvolution-";
-        struct passwd *user = getpwuid(getuid());
-        if (user && user->pw_name) {
-            path << user->pw_name;
-        } else {
-            path << getuid();
-        }
-        path << "-";
-        path << lower;
+    }
 
-        m_path = path.str();
+public:
+    LogDir(const string &server) : m_server(server), m_file(NULL), m_info(NULL), m_readonly(false), m_report(NULL)
+    {
+        setLogdir(SubstEnvironment("${XDG_DATA_HOME}/applications/syncevolution"));
     }
 
     /**
@@ -130,10 +126,11 @@ public:
         dirs.clear();
         if (path && !strcasecmp(path, "none")) {
             return;
-        } else if (path && path[0]) {
-            getLogdirs(path, dirs);
-        } else if (access(m_path.c_str(), R_OK|X_OK) == 0) {
-            dirs.push_back(m_path);
+        } else {
+            if (path && path[0]) {
+                setLogdir(SubstEnvironment(path));
+            }
+            getLogdirs(dirs);
         }
     }
 
@@ -273,7 +270,7 @@ public:
     }
 
     // setup log directory and redirect logging into it
-    // @param path        path to configured backup directy, NULL if defaulting to /tmp, "none" if not creating log file
+    // @param path        path to configured backup directy, empty for using default, "none" if not creating log file
     // @param maxlogdirs  number of backup dirs to preserve in path, 0 if unlimited
     // @param logLevel    0 = default, 1 = ERROR, 2 = INFO, 3 = DEBUG
     // @param usePath     write directly into path, don't create and manage subdirectories
@@ -284,15 +281,17 @@ public:
         if (path && !strcasecmp(path, "none")) {
             m_path = "";
             m_logfile = "";
-        } else if (path && path[0]) {
-            m_logdir = path;
+        } else {
+            if (path && path[0]) {
+                setLogdir(SubstEnvironment(path));
+            }
 
             if (!usePath) {
                 // create unique directory name in the given directory
                 time_t ts = time(NULL);
                 struct tm *tm = localtime(&ts);
                 stringstream base;
-                base << path << "/"
+                base << m_logdir << "/"
                      << m_prefix
                      << "-"
                      << setfill('0')
@@ -309,28 +308,18 @@ public:
                         path << "-" << seq;
                     }
                     m_path = path.str();
-                    if (!mkdir(m_path.c_str(), S_IRWXU)) {
+                    if (!isDir(m_path)) {
+                        mkdir_p(m_path);
                         break;
+                    } else {
+                        seq++;
                     }
-                    if (errno != EEXIST) {
-                        SE_LOG_DEBUG(NULL, NULL, "%s: %s", m_path.c_str(), strerror(errno));
-                        EvolutionSyncClient::throwError(m_path, errno);
-                    }
-                    seq++;
                 }
             } else {
                 m_path = path;
                 if (mkdir(m_path.c_str(), S_IRWXU) &&
                     errno != EEXIST) {
                     SE_LOG_DEBUG(NULL, NULL, "%s: %s", m_path.c_str(), strerror(errno));
-                    EvolutionSyncClient::throwError(m_path, errno);
-                }
-            }
-            m_logfile = m_path + "/client.log";
-        } else {
-            // use the default temp directory
-            if (mkdir(m_path.c_str(), S_IRWXU)) {
-                if (errno != EEXIST) {
                     EvolutionSyncClient::throwError(m_path, errno);
                 }
             }
@@ -398,7 +387,7 @@ public:
     void expire() {
         if (m_logdir.size() && m_maxlogdirs > 0 ) {
             vector<string> dirs;
-            getLogdirs(m_logdir, dirs);
+            getLogdirs(dirs);
 
             int deleted = 0;
             for (vector<string>::iterator it = dirs.begin();
@@ -467,11 +456,14 @@ public:
 
 private:
     /** find all entries in a given directory, return as sorted array of full paths */
-    void getLogdirs(const string &logdir, vector<string> &dirs) {
-        ReadDir dir(logdir);
+    void getLogdirs(vector<string> &dirs) {
+        if (!isDir(m_logdir)) {
+            return;
+        }
+        ReadDir dir(m_logdir);
         BOOST_FOREACH(const string &entry, dir) {
             if (boost::starts_with(entry, m_prefix)) {
-                dirs.push_back(logdir + "/" + entry);
+                dirs.push_back(m_logdir + "/" + entry);
             }
         }
         sort(dirs.begin(), dirs.end());

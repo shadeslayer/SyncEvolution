@@ -394,17 +394,18 @@ static BoolConfigProperty syncPropWBXML("enableWBXML",
                                         /* TODO: enable it again by default once ScheduleWorld handles it */ "FALSE");
 static ConfigProperty syncPropLogDir("logdir",
                                      "full path to directory where automatic backups and logs\n"
-                                     "are stored for all synchronizations; if empty, the temporary\n"
-                                     "directory \"$TMPDIR/SyncEvolution-<username>-<server>\" will\n"
-                                     "be used to keep the data of just the latest synchronization run;\n"
+                                     "are stored for all synchronizations; if unset, then\n"
+                                     "\"${XDG_DATA_HOME}/applications/syncevolution/<server>\" (which\n"
+                                     "usually expands to ${HOME}/.local/share/...) will be used;\n"
                                      "if \"none\", then no backups of the databases are made and any\n"
-                                     "output is printed directly to the screen\n");
+                                     "output is printed directly to the screen");
 static IntConfigProperty syncPropMaxLogDirs("maxlogdirs",
                                             "Unless this option is set, SyncEvolution will never delete\n"
                                             "anything in the \"logdir\". If set, the oldest directories and\n"
                                             "all their content will be removed after a successful sync\n"
                                             "to prevent the number of log directories from growing beyond\n"
-                                            "the given limit.");
+                                            "the given limit.",
+                                            "10");
 static IntConfigProperty syncPropLogLevel("loglevel",
                                           "level of detail for log messages:\n"
                                           "- 0 (or unset) = INFO messages without log file, DEBUG with log file\n"

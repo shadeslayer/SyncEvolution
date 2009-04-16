@@ -289,3 +289,39 @@ SyncMLStatus SyncEvolutionException::handle(SyncMLStatus *status)
     }
     return status ? *status : new_status;
 }
+
+std::string SubstEnvironment(const std::string &str)
+{
+    std::stringstream res;
+    size_t envstart = std::string::npos;
+    size_t off;
+
+    for(off = 0; off < str.size(); off++) {
+        if (envstart != std::string::npos) {
+            if (str[off] == '}') {
+                std::string envname = str.substr(envstart, off - envstart);
+                envstart = std::string::npos;
+
+                const char *val = getenv(envname.c_str());
+                if (val) {
+                    res << val;
+                } else if (envname == "XDG_CONFIG_HOME") {
+                    res << getHome() << "/.config";
+                } else if (envname == "XDG_DATA_HOME") {
+                    res << getHome() << "/.local/share";
+                }
+            }
+        } else {
+            if (str[off] == '$' &&
+                off + 1 < str.size() &&
+                str[off + 1] == '{') {
+                envstart = off + 2;
+                off++;
+            } else {
+                res << str[off];
+            }
+        }
+    }
+
+    return res.str();
+}

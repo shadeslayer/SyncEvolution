@@ -182,6 +182,18 @@ class SyncEvolutionException : public std::runtime_error
     static SyncMLStatus handle(SyncMLStatus *status = NULL);
 };
 
+/**
+ * replace ${} with environment variables, with
+ * XDG_DATA_HOME and XDG_CONFIG_HOME having their normal
+ * defaults
+ */
+std::string SubstEnvironment(const std::string &str);
+
+inline string getHome() {
+    const char *homestr = getenv("HOME");
+    return homestr ? homestr : ".";
+}
+
 /** throw a SyncEvolutionException */
 #define SE_THROW(_what) \
     SE_THROW_EXCEPTION(SyncEvolutionException, _what)
