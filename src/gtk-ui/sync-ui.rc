@@ -20,3 +20,11 @@ style "mux-tooltip-fix" {
     bg[NORMAL] = "#ffffff" 
 } 
 widget "gtk-tooltip*" style "mux-tooltip-fix" 
+
+
+# sync-ui specific rules
+
+style "data-box" {
+    bg[NORMAL] = "#ececec"
+}
+widget "*.sync_data_and_type_box" style "data-box"
