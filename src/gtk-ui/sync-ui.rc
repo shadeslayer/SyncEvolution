@@ -37,3 +37,8 @@ style "insensitive-bin" {
 widget "*.log_bin*" style "insensitive-bin"
 widget "*.backup_bin*" style "insensitive-bin"
 widget "*.services_bin*" style "insensitive-bin"
+
+style "service-title" {
+    font_name = "Bold 14"
+}
+widget "*.sync_service_label" style "service-title"

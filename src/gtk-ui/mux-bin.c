@@ -272,29 +272,27 @@ mux_bin_size_allocate (GtkWidget *widget,
         gtk_widget_get_child_requisition (mux_bin->title, &title_req);
 
         /* the bullet is bigger than the text */
-        title_height = title_req.height * mux_bin_bullet_size_factor;
+        title_height = title_req.height * mux_bin_bullet_size_factor + 
+                       2 * MUX_BIN_BULLET_PADDING;
 
         /* x allocation starts after bullet */
-        title_allocation.x = allocation->x + xmargin +
-                             title_height + 2 * MUX_BIN_BULLET_PADDING;
+        title_allocation.x = allocation->x + xmargin + title_height;
         title_allocation.y = allocation->y + ymargin + MUX_BIN_BULLET_PADDING;
         title_allocation.width = MIN (title_req.width,
-                                      allocation->width - 
-                                       (2 * xmargin + title_height + 2 * MUX_BIN_BULLET_PADDING));
-        title_allocation.height = title_height;
+                                      allocation->width - 2 * xmargin - title_height);
+        title_allocation.height = title_height - 2 * MUX_BIN_BULLET_PADDING;
         gtk_widget_size_allocate (mux_bin->title, &title_allocation);
 
         mux_bin->bullet_allocation.x = allocation->x + xmargin + MUX_BIN_BULLET_PADDING;
         mux_bin->bullet_allocation.y = allocation->y + ymargin + MUX_BIN_BULLET_PADDING;
-        mux_bin->bullet_allocation.width = title_height;
-        mux_bin->bullet_allocation.height = title_height;
+        mux_bin->bullet_allocation.width = title_allocation.height;
+        mux_bin->bullet_allocation.height = title_allocation.height;
     }
 
     child_allocation.x = allocation->x + xmargin;
-    child_allocation.y = allocation->y + ymargin + title_height + 2 * MUX_BIN_BULLET_PADDING;
+    child_allocation.y = allocation->y + ymargin + title_height;
     child_allocation.width = allocation->width - 2 * xmargin;
-    child_allocation.height = allocation->height - 
-                              (2 * ymargin + title_height + 2 * MUX_BIN_BULLET_PADDING);
+    child_allocation.height = allocation->height - 2 * ymargin - title_height;
 
     if (GTK_WIDGET_MAPPED (widget) &&
         (child_allocation.x != mux_bin->child_allocation.x ||
