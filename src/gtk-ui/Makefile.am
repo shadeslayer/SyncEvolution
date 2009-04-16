@@ -19,7 +19,9 @@ ui.xml: ui.glade
 bin_PROGRAMS = \
 	sync-ui
 
-sync_ui_SOURCES = sync-ui.c sync-ui-config.c sync-ui-config.h mux-bin.c mux-bin.h mux-window.c mux-window.h
+sync_ui_SOURCES = \
+	sync-ui.c sync-ui-config.c sync-ui-config.h \
+	mux-bin.c mux-bin.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h
 sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) -L$(top_builddir)/syncevo-dbus -lsyncevo-dbus
 sync_ui_CFLAGS = $(GUI_CFLAGS) $(DBUS_GLIB_CFLAGS) -DGLADEDIR=\""$(gladedir)"\" -DTHEMEDIR=\""$(themercdir)"\" 
 
