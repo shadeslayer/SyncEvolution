@@ -358,11 +358,19 @@ bool SyncEvolutionCmdline::run() {
         } else if (m_printSessions) {
             vector<string> dirs;
             client.getSessions(dirs);
+            bool first = true;
             BOOST_FOREACH(const string &dir, dirs) {
+                if (first) {
+                    first = false;
+                } else if(!m_quiet) {
+                    cout << endl;
+                }
                 cout << dir << endl;
-                SyncReport report;
-                client.readSessionInfo(dir, report);
-                cout << "   " << report.formatSyncTimes() << endl;
+                if (!m_quiet) {
+                    SyncReport report;
+                    client.readSessionInfo(dir, report);
+                    cout << report;
+                }
             }
         } else {
             // safety catch: if props are given, then --run
@@ -605,7 +613,8 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "  that server is printed instead of an existing configuration." << endl <<
             "" << endl <<
             "--print-sessions" << endl <<
-            "  Prints a list of all previous log directories." << endl <<
+            "  Prints a list of all previous log directories. Unless --quiet is used, each" << endl <<
+            "  file name is followed by the original sync report." << endl <<
             "" << endl <<
             "-–configure|-c" << endl <<
             "  Modify the configuration files for the selected server. If no such" << endl <<

@@ -30,6 +30,11 @@ enum SyncMode {
 std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible = true);
 
 /**
+ * Parse user-visible mode names.
+ */
+SyncMode StringToSyncMode(const std::string &str);
+
+/**
  * simple container for SyncML items
  */
 class SyncItem {
@@ -137,6 +142,8 @@ class SyncSourceReport {
         ITEM_REMOTE,
         ITEM_LOCATION_MAX
     };
+    static std::string LocationToString(ItemLocation location);
+    static ItemLocation StringToLocation(const std::string &location);
     enum ItemState {
         ITEM_ADDED,
         ITEM_UPDATED,
@@ -144,6 +151,8 @@ class SyncSourceReport {
         ITEM_ANY,
         ITEM_STATE_MAX
     };
+    static std::string StateToString(ItemState state);
+    static ItemState StringToState(const std::string &state);
     enum ItemResult {
         ITEM_TOTAL,               /**< total number ADDED/UPDATED/REMOVED */
         ITEM_REJECT,              /**< number of rejected items, ANY state */
@@ -155,6 +164,11 @@ class SyncSourceReport {
         ITEM_RECEIVED_BYTES,      /**< number of received bytes, ANY, LOCAL */
         ITEM_RESULT_MAX
     };
+    static std::string ResultToString(ItemResult result);
+    static ItemResult StringToResult(const std::string &result);
+
+    static std::string StatTupleToString(ItemLocation location, ItemState state, ItemResult result);
+    static void StringToStatTuple(const std::string &str, ItemLocation &location, ItemState &state, ItemResult &result);
 
     /**
      * get item statistics
@@ -188,8 +202,8 @@ class SyncSourceReport {
     SyncMLStatus getStatus() const { return m_status; }
 
  private:
-    /** storage for getItemStat() */
-    int m_stat[ITEM_LOCATION_MAX][ITEM_STATE_MAX][ITEM_RESULT_MAX];
+    /** storage for getItemStat(): allow access with _MAX as index */
+    int m_stat[ITEM_LOCATION_MAX + 1][ITEM_STATE_MAX + 1][ITEM_RESULT_MAX + 1];
 
     SyncMode m_mode;
     bool m_first;
@@ -210,7 +224,7 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
                              const SyncSourceReport &report) {
         (*this)[name] = report;
     }
-    const SyncSourceReport &getSyncSourceReport(const std::string &name) {
+    SyncSourceReport &getSyncSourceReport(const std::string &name) {
         return (*this)[name];
     }
 

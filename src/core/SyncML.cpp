@@ -6,8 +6,13 @@
 #include "SyncML.h"
 #include <sstream>
 #include <iomanip>
+#include <vector>
 
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+
 
 std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)
 {
@@ -32,6 +37,84 @@ std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)
         res << (userVisible ? "sync-mode-" : "SYNC_") << int(mode);
         return res.str();
     }
+}
+
+SyncMode StringToSyncMode(const std::string &mode)
+{
+    if (boost::iequals(mode, "slow") || boost::iequals(mode, "SYNC_SLOW")) {
+        return SYNC_SLOW;
+    } else if (boost::iequals(mode, "two-way") || boost::iequals(mode, "SYNC_TWO_WAY")) {
+        return SYNC_TWO_WAY;
+    } else if (boost::iequals(mode, "refresh-from-server") || boost::iequals(mode, "SYNC_REFRESH_FROM_SERVER")) {
+        return SYNC_REFRESH_FROM_SERVER;
+    } else if (boost::iequals(mode, "refresh-from-client") || boost::iequals(mode, "SYNC_REFRESH_FROM_CLIENT")) {
+        return SYNC_REFRESH_FROM_CLIENT;
+    } else if (boost::iequals(mode, "one-way-from-server") || boost::iequals(mode, "SYNC_ONE_WAY_FROM_SERVER")) {
+        return SYNC_REFRESH_FROM_SERVER;
+    } else if (boost::iequals(mode, "one-way-from-client") || boost::iequals(mode, "SYNC_ONE_WAY_FROM_CLIENT")) {
+        return SYNC_REFRESH_FROM_CLIENT;
+    } else if (boost::iequals(mode, "disabled") || boost::iequals(mode, "SYNC_NONE")) {
+        return SYNC_NONE;
+    } else {
+        return SYNC_MODE_MAX;
+    }
+}
+
+
+namespace {
+    const char * const locNames[] = { "local", "remote", NULL };
+    const char * const stateNames[] = { "added", "updated", "removed", "any", NULL };
+    const char * const resultNames[] = { "total", "reject", "match",
+                                         "conflict_server_won",
+                                         "conflict_client_won",
+                                         "conflict_duplicated",
+                                         "sent",
+                                         "received",
+                                         NULL };
+
+    int toIndex(const char * const names[],
+                const std::string &name) {
+        int i;
+        for (i = 0;
+             names[i] && name != names[i];
+             i++)
+            {}
+        return i;
+    }
+    std::string toString(const char * const names[],
+                    int index) {
+        for (int i = 0;
+             names[i];
+             i++) {
+            if (i == index) {
+                return names[i];
+            }
+        }
+        return "unknown";
+    }
+}
+
+std::string SyncSourceReport::LocationToString(ItemLocation location) { return toString(locNames, location); }
+SyncSourceReport::ItemLocation SyncSourceReport::StringToLocation(const std::string &location) { return static_cast<ItemLocation>(toIndex(locNames, location)); }
+std::string SyncSourceReport::StateToString(ItemState state) { return toString(stateNames, state); }
+SyncSourceReport::ItemState SyncSourceReport::StringToState(const std::string &state) { return static_cast<ItemState>(toIndex(stateNames, state)); }
+std::string SyncSourceReport::ResultToString(ItemResult result) { return toString(resultNames, result); }
+SyncSourceReport::ItemResult SyncSourceReport::StringToResult(const std::string &result) { return static_cast<ItemResult>(toIndex(resultNames, result)); }
+
+std::string SyncSourceReport::StatTupleToString(ItemLocation location, ItemState state, ItemResult result)
+{
+    return std::string("") +
+        LocationToString(location) + "-" +
+        StateToString(state) + "-" +
+        ResultToString(result);
+}
+void SyncSourceReport::StringToStatTuple(const std::string &str, ItemLocation &location, ItemState &state, ItemResult &result)
+{
+    std::vector< std::string > tokens;
+    boost::split(tokens, str, boost::is_any_of("-"));
+    location = tokens.size() > 0 ? StringToLocation(tokens[0]) : ITEM_LOCATION_MAX;
+    state = tokens.size() > 1 ? StringToState(tokens[1]) : ITEM_STATE_MAX;
+    result = tokens.size() > 2 ? StringToResult(tokens[2]) : ITEM_RESULT_MAX;
 }
 
 namespace {

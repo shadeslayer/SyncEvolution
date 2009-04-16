@@ -169,8 +169,107 @@ public:
      */
     void readReport(SyncReport &report) {
         report.clear();
+        if (!m_info) {
+            return;
+        }
         report.setStart(readTimestamp("start"));
         report.setEnd(readTimestamp("end"));
+
+        ConfigNode::PropsType props;
+        m_info->readProperties(props);
+        BOOST_FOREACH(const ConfigNode::PropsType::value_type &prop, props) {
+            string key = prop.first;
+            if (boost::starts_with(key, "source-")) {
+                key.erase(0, strlen("source-"));
+                size_t off = key.find('-');
+                if (off != key.npos) {
+                    string sourcename = key.substr(0, off);
+                    boost::replace_all(sourcename, "_+", "-");
+                    boost::replace_all(sourcename, "__", "_");
+                    SyncSourceReport &source = report.getSyncSourceReport(sourcename);
+                    key.erase(0, off + 1);
+                    if (boost::starts_with(key, "stat-")) {
+                        key.erase(0, strlen("stat-"));
+                        SyncSourceReport::ItemLocation location;
+                        SyncSourceReport::ItemState state;
+                        SyncSourceReport::ItemResult result;
+                        SyncSourceReport::StringToStatTuple(key, location, state, result);
+                        stringstream in(prop.second);
+                        int intval;
+                        in >> intval;
+                        source.setItemStat(location, state, result, intval);
+                    } else if (key == "mode") {
+                        source.recordFinalSyncMode(StringToSyncMode(prop.second));
+                    } else if (key == "first") {
+                        source.recordFirstSync(prop.second == "true");
+                    } else if (key == "resume") {
+                        source.recordResumeSync(prop.second == "true");
+                    } else if (key == "status") {
+                        stringstream in(prop.second);
+                        long status;
+                        in >> status;
+                        source.recordStatus(static_cast<SyncMLStatus>(status));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * write sync report for current session
+     */
+    void writeReport(SyncReport &report) {
+        if (m_info) {
+            writeTimestamp("start", report.getStart());
+            writeTimestamp("end", report.getEnd());
+
+            BOOST_FOREACH(const SyncReport::value_type &entry, report) {
+                const std::string &name = entry.first;
+                const SyncSourceReport &source = entry.second;
+
+                string prefix = name;
+                boost::replace_all(prefix, "_", "__");
+                boost::replace_all(prefix, "-", "_+");
+                prefix = "source-" + prefix;
+
+                stringstream strval;
+                string key;
+                key = prefix + "-mode";
+                m_info->setProperty(key, PrettyPrintSyncMode(source.getFinalSyncMode()));
+                key = prefix + "-first";
+                m_info->setProperty(key, source.isFirstSync() ? "true" : "false");
+                key = prefix + "-resume";
+                m_info->setProperty(key, source.isResumeSync() ? "true" : "false");
+                key = prefix + "-status";
+                strval << static_cast<long>(source.getStatus());
+                m_info->setProperty(key, strval.str());
+
+                for (int location = 0;
+                     location < SyncSourceReport::ITEM_LOCATION_MAX;
+                     location++) {
+                    for (int state = 0;
+                         state < SyncSourceReport::ITEM_STATE_MAX;
+                         state++) {
+                        for (int result = 0;
+                             result < SyncSourceReport::ITEM_RESULT_MAX;
+                             result++) {
+                            int intval = source.getItemStat(SyncSourceReport::ItemLocation(location),
+                                                            SyncSourceReport::ItemState(state),
+                                                            SyncSourceReport::ItemResult(result));
+                            if (intval) {
+                                key = prefix + "-stat-" +
+                                    SyncSourceReport::StatTupleToString(SyncSourceReport::ItemLocation(location),
+                                                                        SyncSourceReport::ItemState(state),
+                                                                        SyncSourceReport::ItemResult(result));
+                                strval.clear();
+                                strval << intval;
+                                m_info->setProperty(key, strval.str());
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // setup log directory and redirect logging into it
@@ -325,6 +424,9 @@ public:
         if (m_info) {
             if (!m_readonly) {
                 writeTimestamp("end", end);
+                if (m_report) {
+                    writeReport(*m_report);
+                }
                 m_info->flush();
             }
             delete m_info;

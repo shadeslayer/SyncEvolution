@@ -64,6 +64,7 @@ class ConfigNode {
      *                  to be empty before the call
      */
     virtual void readProperties(map<string, string> &props) const = 0;
+    typedef map<string, string> PropsType;
 
     /**
      * Remove a certain property.
