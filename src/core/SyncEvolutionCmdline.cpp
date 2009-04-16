@@ -649,6 +649,12 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "  --migrate implies --configure and can be combined with modifying" << endl <<
             "  properties." << endl <<
             "" << endl <<
+            "--remove" << endl <<
+            "  This removes only the configuration files and related meta information." << endl <<
+            "  If other files were added to the config directory of the server, then" << endl <<
+            "  those and the directory will not be removed. Log directories will also" << endl <<
+            "  not be removed." << endl <<
+            "" << endl <<
             "--sync-property|-y <property>=<value>" << endl <<
             "--sync-property|-y ?" << endl <<
             "--sync-property|-y <property>=?" << endl <<
