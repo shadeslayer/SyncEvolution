@@ -112,6 +112,17 @@ void syncevo_service_set_server_config_async (SyncevoService *service,
                                               SyncevoSetServerConfigCb callback,
                                               gpointer userdata);
 
+gboolean syncevo_service_remove_server_config (SyncevoService *service,
+                                               char *server,
+                                               GError **error);
+typedef void (*SyncevoRemoveServerConfigCb) (SyncevoService *service,
+                                             GError *error,
+                                             gpointer userdata);
+void syncevo_service_remove_server_config_async (SyncevoService *service,
+                                                 char *server,
+                                                 SyncevoRemoveServerConfigCb callback,
+                                                 gpointer userdata);
+
 G_END_DECLS
 
 #endif

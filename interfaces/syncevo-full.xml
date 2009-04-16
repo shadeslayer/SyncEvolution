@@ -135,6 +135,9 @@
             the property is not specific to a source (e.g. username)</doc:summary>
         </doc:doc>
     </method>
+    <method name="RemoveServerConfig">
+      <arg type="s" name="server" direction="in" />
+    </method>
 
   </interface>
 </node>

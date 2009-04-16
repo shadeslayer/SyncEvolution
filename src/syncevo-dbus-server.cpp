@@ -24,6 +24,7 @@ static gboolean syncevo_get_template_config (SyncevoDBusServer *obj, char *templ
 static gboolean syncevo_get_servers (SyncevoDBusServer *obj, GPtrArray **servers, GError **error);
 static gboolean syncevo_get_server_config (SyncevoDBusServer *obj, char *server, GPtrArray **options, GError **error);
 static gboolean syncevo_set_server_config (SyncevoDBusServer *obj, char *server, GPtrArray *options, GError **error);
+static gboolean syncevo_remove_server_config (SyncevoDBusServer *obj, char *server, GError **error);
 #include "syncevo-dbus-glue.h"
 
 /* TODO move errors and the helper structs to a somewhere shared with client library  */
@@ -561,6 +562,37 @@ syncevo_set_server_config (SyncevoDBusServer *obj,
 		}
 	}
 	config->flush();
+
+	return TRUE;
+}
+
+static gboolean 
+syncevo_remove_server_config (SyncevoDBusServer *obj,
+                              char *server,
+                              GError **error)
+{
+	if (!server) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
+		                      "Server argument must be given");
+		return FALSE;
+	}
+
+	if (obj->server) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      SYNCEVO_DBUS_ERROR_GENERIC_ERROR, 
+		                      "RemoveServerConfig is not supported when a sync is in progress");
+		return FALSE;
+	}
+
+	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig (string (server)));
+	if (!config->exists()) {
+		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
+		                      SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER,
+		                      "No server '%s' found", server);
+		return FALSE;
+	}
+	config->remove();
 
 	return TRUE;
 }

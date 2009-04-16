@@ -11,9 +11,6 @@ SyncEvolution Graphical User Interface for Moblin
  
    - There is an initial flicker when windows are shown.
      This is probably a MuxBin initialization problem.
-   - Missing Moblin titlebar
-   - Deleting custom services is not implemented.
-     This is missing from syncevolution?
    - Sync progress notification and logs are not implemented fully
    - Restoring a backup is not implemented
    - Not possible to toggle Moblin / normal GTK+ style in configure
