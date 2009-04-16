@@ -608,8 +608,7 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
 
     window = mux_window_new ();
     gtk_window_set_title (GTK_WINDOW (window), "Sync");
-    mux_window_set_decorations (MUX_WINDOW (window), 
-                                MUX_DECOR_CLOSE|MUX_DECOR_SETTINGS);
+    mux_window_set_decorations (MUX_WINDOW (window), MUX_DECOR_CLOSE);
     gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (dummy)), window);
 
     return window;
