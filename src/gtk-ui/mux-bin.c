@@ -27,6 +27,43 @@ mux_bin_finalize (GObject *object)
       G_OBJECT_CLASS (mux_bin_parent_class)->finalize (object);
 }
 
+
+static void
+mux_bin_update_style (MuxBin *bin)
+{
+    GdkColor *border_color, *bullet_color;
+    char *font = NULL;
+
+    gtk_widget_style_get (GTK_WIDGET (bin),
+                          "border-color", &border_color, 
+                          "bullet-color", &bullet_color,
+                          "title-font", &font,
+                          NULL);
+
+    if (border_color) {
+        bin->border_color = *border_color;
+        gdk_color_free (border_color);
+    } else {
+        bin->border_color = mux_bin_default_border_color;
+    }
+    if (bullet_color) {
+        bin->bullet_color = *bullet_color;
+        gdk_color_free (bullet_color);
+    } else {
+        bin->bullet_color = mux_bin_default_bullet_color;
+    }
+
+    if (font) {
+        if (bin->title) {
+            PangoFontDescription *desc;
+            desc = pango_font_description_from_string (font);
+            gtk_widget_modify_font (bin->title, desc);
+            pango_font_description_free (desc);
+        }
+        g_free (font);
+    }
+}
+
 static void
 mux_bin_set_title_widget (MuxBin *bin, GtkWidget *title)
 {
@@ -46,6 +83,8 @@ mux_bin_set_title_widget (MuxBin *bin, GtkWidget *title)
         gtk_widget_show (title);
         gtk_widget_set_parent (title, GTK_WIDGET (bin));
     }
+
+    mux_bin_update_style (bin);
   
     if (GTK_WIDGET_VISIBLE (bin))
         gtk_widget_queue_resize (GTK_WIDGET (bin));
@@ -276,25 +315,8 @@ static void mux_bin_style_set (GtkWidget *widget,
                                GtkStyle *previous)
 {
     MuxBin *bin = MUX_BIN (widget);
-    GdkColor *border_color, *bullet_color;
-    
-    gtk_widget_style_get (widget,
-                          "border-color", &border_color, 
-                          "bullet-color", &bullet_color,
-                          NULL);
 
-    if (border_color) {
-        bin->border_color = *border_color;
-        gdk_color_free (border_color);
-    } else {
-        bin->border_color = mux_bin_default_border_color;
-    }
-    if (bullet_color) {
-        bin->bullet_color = *bullet_color;
-        gdk_color_free (bullet_color);
-    } else {
-        bin->bullet_color = mux_bin_default_bullet_color;
-    }
+    mux_bin_update_style (bin);
 
     GTK_WIDGET_CLASS (mux_bin_parent_class)->style_set (widget, previous);
 }
@@ -329,6 +351,12 @@ mux_bin_class_init (MuxBinClass *klass)
                                 "Color of the rounded rectangle before a title",
                                 GDK_TYPE_COLOR,
                                 G_PARAM_READABLE);
+    gtk_widget_class_install_style_property(widget_class, pspec);
+    pspec = g_param_spec_string ("title-font",
+                                 "Title font",
+                                 "Pango font description string for title text",
+                                 "12",
+                                 G_PARAM_READWRITE);
     gtk_widget_class_install_style_property(widget_class, pspec);
 }
 
