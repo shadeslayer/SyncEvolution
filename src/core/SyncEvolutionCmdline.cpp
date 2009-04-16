@@ -362,23 +362,7 @@ bool SyncEvolutionCmdline::run() {
                 cout << dir << endl;
                 SyncReport report;
                 client.readSessionInfo(dir, report);
-                time_t start = report.getStart();
-                time_t end = report.getEnd();
-                time_t duration = end - start;
-                cout << "   start ";
-                if (!start) {
-                    cout << "unknown";
-                } else {
-                    char buffer[160];
-                    strftime(buffer, sizeof(buffer), "%c", localtime(&start));
-                    cout << buffer;
-                    if (!end) {
-                        cout << ", unknown duration (crashed?!)";
-                    } else {
-                        cout << ", duration " << duration / 60 << ":" << setw(2) << setfill('0') << duration % 60 << setfill(' ') << "min";
-                    }
-                }
-                cout << endl;
+                cout << "   " << report.formatSyncTimes() << endl;
             }
         } else {
             // safety catch: if props are given, then --run

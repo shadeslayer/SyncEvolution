@@ -225,6 +225,9 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
         std::map<std::string, SyncSourceReport>::clear();
         m_start = m_end = 0;
     }
+
+    /** generate short string representing start and duration of sync */
+    std::string formatSyncTimes() const;
 };
 
 /** pretty-print the report as an ASCII table */

@@ -34,6 +34,26 @@ std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)
     }
 }
 
+namespace {
+    const int name_width = 18;
+    const int number_width = 3;
+    const int single_side_width = (number_width * 2 + 1) * 3 + 2;
+    const int text_width = single_side_width * 2 + 3 + number_width + 1;
+
+    std::ostream &flushRight(std::ostream &out, const std::string &line) {
+        int spaces = name_width + 1 + text_width - line.size();
+        if (spaces < 0) {
+            spaces = 0;
+        }
+        out << "|" << std::left << std::setw(spaces) << "" <<
+            line <<
+            std::setw(0) << "" << " |\n";
+        return out;
+    }
+}
+
+
+
 std::ostream &operator << (std::ostream &out, const SyncReport &report)
 {
 
@@ -47,10 +67,6 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
     BOOST_FOREACH(const SyncReport::value_type &entry, report) {
         const std::string &name = entry.first;
         const SyncSourceReport &source = entry.second;
-        const int name_width = 18;
-        const int number_width = 3;
-        const int single_side_width = (number_width * 2 + 1) * 3 + 2;
-        const int text_width = single_side_width * 2 + 3 + number_width + 1;
         out << "|" << std::right << std::setw(name_width) << name << " |";
         for (SyncSourceReport::ItemLocation location = SyncSourceReport::ITEM_LOCAL;
              location <= SyncSourceReport::ITEM_REMOTE;
@@ -91,13 +107,7 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
                                SyncSourceReport::ITEM_ANY,
                                SyncSourceReport::ITEM_RECEIVED_BYTES) / 1024 <<
             " KB received";
-        int spaces = name_width + 1 + text_width - line.str().size();
-        if (spaces < 0) {
-            spaces = 0;
-        }
-        out << "|" << std::left << std::setw(spaces) << "" <<
-            line.str() <<
-            std::setw(0) << "" << " |\n";
+        flushRight(out, line.str());
 
         if (total_conflicts > 0) {
             for (SyncSourceReport::ItemResult result = SyncSourceReport::ITEM_CONFLICT_SERVER_WON;
@@ -133,5 +143,33 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
     }
     out << sep;
 
+    if (report.getStart()) {
+        flushRight(out, report.formatSyncTimes());
+        out << sep;
+    }
+
     return out;
+}
+
+std::string SyncReport::formatSyncTimes() const
+{
+    std::stringstream out;
+    time_t duration = m_end - m_start;
+
+    out << "start ";
+    if (!m_start) {
+        out << "unknown";
+    } else {
+        char buffer[160];
+        strftime(buffer, sizeof(buffer), "%c", localtime(&m_start));
+        out << buffer;
+        if (!m_end) {
+            out << ", unknown duration (crashed?!)";
+        } else {
+            out << ", duration " << duration / 60 << ":"
+                << std::setw(2) << std::setfill('0') << duration % 60
+                << "min";
+        }
+    }
+    return out.str();
 }

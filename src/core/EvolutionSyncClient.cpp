@@ -84,9 +84,10 @@ class LogDir : public LoggerStdout {
     FILE *m_file;            /**< file handle for log file, NULL if not writing one */
     SafeConfigNode *m_info;  /**< key/value representation of sync information */
     bool m_readonly;         /**< m_info is not to be written to */
+    SyncReport *m_report;    /**< record start/end times here */
 
 public:
-    LogDir(const string &server) : m_server(server), m_file(NULL), m_info(NULL), m_readonly(false)
+    LogDir(const string &server) : m_server(server), m_file(NULL), m_info(NULL), m_readonly(false), m_report(NULL)
     {
         // ignore case in server name by making it lower case
         string lower = m_server;
@@ -177,8 +178,10 @@ public:
     // @param maxlogdirs  number of backup dirs to preserve in path, 0 if unlimited
     // @param logLevel    0 = default, 1 = ERROR, 2 = INFO, 3 = DEBUG
     // @param usePath     write directly into path, don't create and manage subdirectories
-    void setLogdir(const char *path, int maxlogdirs, int logLevel = 0, bool usePath = false) {
+    // @param report      record information about session here (may be NULL)
+    void startSession(const char *path, int maxlogdirs, int logLevel, bool usePath, SyncReport *report) {
         m_maxlogdirs = maxlogdirs;
+        m_report = report;
         if (path && !strcasecmp(path, "none")) {
             m_path = "";
             m_logfile = "";
@@ -267,11 +270,15 @@ public:
         setLevel(level);
         pushLogger(this);
 
+        time_t start = time(NULL);
+        if (m_report) {
+            m_report->setStart(start);
+        }
         if (!m_path.empty()) {
             boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(m_path, "status.ini", false));
             m_info = new SafeConfigNode(filenode);
             m_info->setMode(false);
-            writeTimestamp("start", time(NULL));
+            writeTimestamp("start", start);
         }
     }
 
@@ -311,9 +318,13 @@ public:
         if (&instance() == this) {
             popLogger();
         }
+        time_t end = time(NULL);
+        if (m_report) {
+            m_report->setEnd(end);
+        }
         if (m_info) {
             if (!m_readonly) {
-                writeTimestamp("end", time(NULL));
+                writeTimestamp("end", end);
                 m_info->flush();
             }
             delete m_info;
@@ -452,16 +463,16 @@ public:
     }
     
     // call as soon as logdir settings are known
-    void setLogdir(const char *logDirPath, int maxlogdirs, int logLevel) {
+    void startSession(const char *logDirPath, int maxlogdirs, int logLevel, SyncReport *report) {
         m_previousLogdir = m_logdir.previousLogdir(logDirPath);
         if (m_doLogging) {
-            m_logdir.setLogdir(logDirPath, maxlogdirs, logLevel);
+            m_logdir.startSession(logDirPath, maxlogdirs, logLevel, false, report);
         } else {
             // Run debug session without paying attention to
             // the normal logdir handling. The log level here
             // refers to stdout. The log file will be as complete
             // as possible.
-            m_logdir.setLogdir(logDirPath, 0, 1, true);
+            m_logdir.startSession(logDirPath, 0, 1, true, report);
         }
     }
 
@@ -470,7 +481,7 @@ public:
         return m_logdir.getLogdir();
     }
 
-    /** return previous log dir found in setLogdir() */
+    /** return previous log dir found in startSession() */
     const string &getPrevLogdir() const { return m_previousLogdir; }
 
     /** set directory for database files without actually redirecting the logging */
@@ -989,7 +1000,6 @@ EvolutionSyncSource *EvolutionSyncClient::findSource(const char *name)
 
 void EvolutionSyncClient::createSyncReport(SyncReport &report, SourceList &sourceList) const
 {
-    report.clear();
     BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
         report.addSyncSourceReport(source->getName(), *source);
     }
@@ -1215,7 +1225,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
 SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
-    
+
     if (!exists()) {
         SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
         throwError("cannot proceed without configuration");
@@ -1225,18 +1235,20 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
     SourceList sourceList(m_server, m_doLogging, m_quiet);
     m_sourceListPtr = &sourceList;
 
-    SyncReport buffer;
-    if (!report) {
-        report = &buffer;
-    }
-
     try {
+        SyncReport buffer;
+        if (!report) {
+            report = &buffer;
+        }
+        report->clear();
+
         // let derived classes override settings, like the log dir
         prepare();
 
-        sourceList.setLogdir(getLogDir(),
-                             getMaxLogDirs(),
-                             getLogLevel());
+        sourceList.startSession(getLogDir(),
+                                getMaxLogDirs(),
+                                getLogLevel(),
+                                report);
 
         // dump some summary information at the beginning of the log
         SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername());
@@ -1643,7 +1655,7 @@ void EvolutionSyncClient::status()
         source->open();
     }
 
-    sourceList.setLogdir(getLogDir(), 0, 0);
+    sourceList.startSession(getLogDir(), 0, 0, NULL);
     LoggerBase::instance().setLevel(Logger::INFO);
     string prevLogdir = sourceList.getPrevLogdir();
     bool found = access(prevLogdir.c_str(), R_OK|X_OK) == 0;
