@@ -142,7 +142,7 @@ mux_bin_paint (GtkWidget *widget, GdkRectangle *area)
     }
 
     /* draw background */
-    gdk_cairo_set_source_color (cairo, &style->bg[GTK_STATE_NORMAL]);
+    gdk_cairo_set_source_color (cairo, &style->bg[GTK_WIDGET_STATE(widget)]);
     rounded_rectangle (cairo,
                      widget->allocation.x + width,
                      widget->allocation.y + width,

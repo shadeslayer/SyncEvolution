@@ -9,6 +9,7 @@ class "MuxWindow" style "mux-win"
 
 style "mux-bin" {
     bg[NORMAL] = "#ffffff"
+    bg[INSENSITIVE] = "#d2d6d9"
     MuxBin::border-color = "#dee2e5"
     MuxBin::bullet-color = "#aaaaaa"
     MuxBin::title-font = "12"
@@ -26,5 +27,11 @@ widget "gtk-tooltip*" style "mux-tooltip-fix"
 
 style "data-box" {
     bg[NORMAL] = "#ececec"
+    bg[INSENSITIVE] = "#ececec"
 }
 widget "*.sync_data_and_type_box" style "data-box"
+
+style "no-insensitive-bin" {
+    bg[INSENSITIVE] = "#ffffff"
+}
+widget "*.main_bin" style "no-insensitive-bin"

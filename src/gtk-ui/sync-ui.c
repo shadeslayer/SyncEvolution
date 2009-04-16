@@ -455,8 +455,8 @@ set_app_state (app_data *data, app_state state)
                                       (GtkCallback)remove_child,
                                       data->info_box);
         
-        gtk_widget_set_sensitive (data->main_bin, FALSE);
-        gtk_widget_set_sensitive (data->log_bin, FALSE);
+        gtk_widget_set_sensitive (data->main_bin, TRUE);
+        gtk_widget_set_sensitive (data->log_bin, TRUE);
         gtk_widget_set_sensitive (data->backup_bin, FALSE);
         gtk_widget_set_sensitive (data->services_bin, TRUE);
         break;
