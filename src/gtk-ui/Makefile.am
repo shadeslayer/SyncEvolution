@@ -24,13 +24,14 @@ sync_ui_SOURCES = \
 	mux-bin.c mux-bin.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h
 sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) -L$(top_builddir)/syncevo-dbus -lsyncevo-dbus
 sync_ui_CFLAGS = $(GUI_CFLAGS) $(DBUS_GLIB_CFLAGS) -DGLADEDIR=\""$(gladedir)"\" -DTHEMEDIR=\""$(themercdir)"\" 
+sync_ui_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) $(SYNTHESIS_CFLAGS)
 
 BUILT_SOURCES = \
 	syncevo-bindings.h
 
 %-bindings.h: stamp-%-bindings.h
 	@true
-stamp-%-bindings.h: $(top_srcdir)/interfaces/%.xml
+stamp-%-bindings.h: $(top_builddir)/interfaces/%.xml
 	$(DBUS_BINDING_TOOL) --mode=glib-client --prefix=syncevo $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F) \
