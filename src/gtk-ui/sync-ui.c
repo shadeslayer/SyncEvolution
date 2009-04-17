@@ -138,7 +138,7 @@ typedef struct app_data {
     guint last_sync_src_id;
     GList *source_progresses;
 
-    SyncType mode;
+    SyncMode mode;
     SyncevoService *service;
 
     server_config *current_service;
@@ -405,7 +405,11 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
         data->source_progresses = NULL;
 
         sources = server_config_get_source_array (data->current_service, data->mode);
-
+        if (sources->len == 0) {
+            g_ptr_array_free (sources, TRUE);
+            /* TODO: tried to sync zero sources ? */
+            return;
+        }
         syncevo_service_start_sync (data->service, 
                                     data->current_service->name,
                                     sources,
@@ -700,15 +704,15 @@ init_ui (app_data *data)
     service_save_btn = GTK_WIDGET (gtk_builder_get_object (builder, "service_save_btn"));
 
     radio = gtk_builder_get_object (builder, "two_way_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_TYPE_TWO_WAY));
+    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_TWO_WAY));
     g_signal_connect (radio, "toggled",
                       G_CALLBACK (sync_type_toggled_cb), data);
     radio = gtk_builder_get_object (builder, "one_way_from_remote_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_TYPE_ONE_WAY_FROM_REMOTE));
+    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_REFRESH_FROM_SERVER));
     g_signal_connect (radio, "toggled",
                       G_CALLBACK (sync_type_toggled_cb), data);
     radio = gtk_builder_get_object (builder, "one_way_from_local_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_TYPE_ONE_WAY_FROM_LOCAL));
+    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_REFRESH_FROM_CLIENT));
     g_signal_connect (radio, "toggled",
                       G_CALLBACK (sync_type_toggled_cb), data);
 
@@ -1338,7 +1342,6 @@ calc_and_update_progress (app_data *data, char *msg)
             progress += SYNC_PROGRESS_RECEIVE * p->receive_current / p->receive_total;
         count++;
     }
-    
     set_sync_progress (data, sync_progress_sync_start + (progress / count), msg);
 }
 
@@ -1379,33 +1382,36 @@ sync_progress_cb (SyncevoService *service,
 {
     static source_progress *source_prog;
     char *msg;
-    GTimeVal val;
-    GConfClient* client;
-    GError *error = NULL;
 
     switch(type) {
     case -1:
         /* syncevolution finished sync */
+        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+
         if (extra1 != 0) {
             g_warning ("Syncevolution returned error: %d", extra1);
+            /* TODO: how to show this? */
+        } else {
+            GTimeVal val;
+            GConfClient* client;
+            GError *error = NULL;
+            
+            g_get_current_time (&val);
+            data->last_sync = val.tv_sec;
+
+            /* save last sync time in gconf (using string since there's no 'longint' in gconf)*/
+            client = gconf_client_get_default ();
+            msg = g_strdup_printf("%ld", data->last_sync);
+
+            gconf_client_set_string (client, SYNC_UI_LAST_SYNC_KEY, msg, &error);
+            g_free (msg);
+            if (error) {
+                g_warning ("Could not save last sync time to gconf: %s", error->message);
+                g_error_free (error);
+            }
         }
-
-        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
-        g_get_current_time (&val);
-        data->last_sync = val.tv_sec;
-
-        /* save last sync time in gconf (using string since there's no 'longint' in gconf)*/
-        client = gconf_client_get_default ();
-        msg = g_strdup_printf("%ld", data->last_sync);
-
-        gconf_client_set_string (client, SYNC_UI_LAST_SYNC_KEY, msg, &error);
-        g_free (msg);
-        if (error) {
-            g_warning ("Could not save last sync time to gconf: %s", error->message);
-            g_error_free (error);
-        }
-
         refresh_statistics (data);
+
         break;
     case PEV_SESSIONSTART:
         /* double check we're in correct state*/
@@ -1413,7 +1419,7 @@ sync_progress_cb (SyncevoService *service,
         set_sync_progress (data, sync_progress_session_start, NULL);
         break;
     case PEV_SESSIONEND:
-        set_sync_progress (data, 1.0, NULL);
+        set_sync_progress (data, sync_progress_sync_end, "Ending sync");
         break;
 
     case PEV_ALERTED:
@@ -1476,23 +1482,50 @@ sync_progress_cb (SyncevoService *service,
         source_prog->receive_total = extra2;
 
         msg = g_strdup_printf ("Receiving '%s'", source);
-          calc_and_update_progress (data, msg);
-          g_free (msg);
-          break;
+        calc_and_update_progress (data, msg);
+        g_free (msg);
+        break;
 
     case PEV_SYNCEND:
         switch (extra1) {
         case 0:
-                /* source sync ok */
-                break;
+            /* source sync ok */
+            break;
         case LOCERR_USERABORT:
-                g_debug ("user abort");
-                break;
+            g_debug ("user abort");
+            break;
         case LOCERR_USERSUSPEND:
-                g_debug ("user suspend");
-                break;
+            g_debug ("user suspend");
+            break;
+        case LOCERR_PROCESSMSG:
+            g_debug ("Error processing a SyncML message");
+            break;
+        case LOCERR_BADHANDLE:
+            g_debug ("Non-existing datastore?");
+            break;
+        case LOCERR_AUTHFAIL:
+            g_debug ("Authorization failed");
+            break;
+        case LOCERR_BADCONTENT:
+            g_debug ("Got bad content from server");
+            break;
+        case LOCERR_TIMEOUT:
+            g_debug ("Connection timed out");
+            break;
+        case LOCERR_CERT_EXPIRED:
+            g_debug ("Connection SSL certificate has expired");
+            break;
+        case LOCERR_CERT_INVALID:
+            g_debug ("Connection SSL certificate is invalid");
+            break;
+        case LOCERR_BADURL:
+            g_debug ("Bad URL");
+            break;
+        case LOCERR_SRVNOTFOUND:
+            g_debug ("Server not found");
+            break;
         default:
-                ;
+            g_debug ("syncend, error %d", extra1);
         }
         break;
     case PEV_DSSTATS_L:
@@ -1521,8 +1554,10 @@ sync_progress_cb (SyncevoService *service,
             g_warning ("No alert received for source '%s'", source);
             return;
         }
-        if (extra1 > 0 || extra2 >0) {
-            g_warning ("%d locally rejected item, %d remotely rejected item", extra1, extra2);
+        if (extra1 > 0 || extra2 > 0) {
+            g_debug ("Rejected for '%s':", source);
+            g_debug ("      %d locally rejected", extra1);
+            g_debug ("      %d remotely rejected", extra2);
         }
         break;
     case PEV_DSSTATS_D:
