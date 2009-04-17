@@ -1,0 +1,1399 @@
+<?xml version="1.0"?>
+<!-- SYNTHESIS SYNCML CLIENT Version 3.2 Configuration file -->
+
+<sysync_config version="1.0">
+
+  <!-- this string is output to every session debug logfile to identify the config in use -->
+  <configidstring>Synthesis SyncML Client Engine 3.2 sample config</configidstring>
+
+  <debug>
+    <!-- path where logfiles are stored -->
+    <!-- <logpath platform="linux">/your/log/directory</logpath> -->
+    <logflushmode>buffered</logflushmode> <!-- buffered is fastest mode, but may loose data on process abort. Other options: "flush" (after every line) or "openclose" (safest, slowest, like in 2.x server) -->
+    <!-- per session log -->
+    <sessionlogs>yes</sessionlogs> <!-- by default, create a session log file for every sync session (might be disabled for special users/devices in scripts) -->
+    <!-- debug format options -->
+    <logformat>html</logformat> <!-- html is nicely colored and easily viewable with a web browser. Other options: "xml", "text" -->
+    <timestamp>yes</timestamp> <!-- show timestamps for structure elements in log -->
+    <timestampall>no</timestampall> <!-- don't show timestamp for every log line -->
+    <timedsessionlognames>yes</timedsessionlognames> <!-- session logs also have the session start timestamp in the filename - makes them more easily sortable -->
+    <!-- thread logging mode -->
+    <subthreadmode>separate</subthreadmode> <!-- write log info from subthreads into separate log files. Other options: "suppress" -->
+    <!-- basic debug level selection -->
+    <enable option="extended"/> <!-- "extended" is a good choice for start testing. For production, use "normal" or "minimal" -->
+    <!-- <enable option="normal"/> --> <!-- "normal" provides rich debug info, but still in reasonable size  -->
+    <!-- <enable option="minimal"/> --> <!-- "minimal" just shows basic flow and error. Not suitable for debugging -->
+    <!-- <enable option="maximal"/> --> <!-- "maximal" can create VERY LARGE logs and cause HEAVY SLOWDOWN. Only for detail debugging  -->
+    <!-- <enable option="all"/> --> <!-- "all" shows EVERYTHING possible, and way too much for any normal situation. For hardcore debugging ONLY! -->
+    <!-- additional debug info switches -->
+    <enable option="userdata"/> <!-- Make this <disable ...> if you don't want user data in the logs -->
+    <disable option="scripts"/> <!-- Make this <enable ...> to show script execution in logs  -->
+    <disable option="exotic"/> <!-- Make this <enable ...> to include very in-detail info. CAN PRODUCE ENORMOUS LOGS and HEAVILY IMPACT PERFORMANCE for large slow syncs - use with care!  -->
+    <!-- see manual for more debug info switches -->
+    <!-- global log options -->
+    <globallogs>no</globallogs> <!-- by default, do not log global session dispatching, creation etc. (not useful in multi-user operation) -->
+    <singlegloballog>no</singlegloballog> <!-- a new global log will be started for every start of the server/application -->
+    <!-- SyncML message dumping options -->
+    <msgdump>no</msgdump> <!-- do not dump syncml traffic 1:1 to files -->
+    <xmltranslate>no</xmltranslate> <!-- do not try to translate syncml traffic into XML (DO NOT SET THIS OPTION IN PRODUCTIVE SERVERS!) -->
+  </debug>
+
+  <transport type="xpt">
+    <!-- allow HTTP 1.1 kepp-alive (multiple request-answer-exchanges in single TCP connection) -->
+    <keepconnection>true</keepconnection>
+  </transport>
+
+
+  <scripting>
+    <looptimeout>5</looptimeout>
+
+    <function><![CDATA[
+      // create a UID
+      string newuid() {
+        return "syuid" + NUMFORMAT(RANDOM(1000000),6,"0") + "." + (string)MILLISECONDS(NOW());
+      }
+    ]]></function>
+
+
+		<!-- define script macros for scripts that are used by both vCalendar 1.0 and iCalendar 2.0 -->
+    
+    <macro name="VCALENDAR_INCOMING_SCRIPT"><![CDATA[
+      STRING MATCHES[];
+      STRING CAT,CN,EM;
+      INTEGER i;
+      // make sure we have all trailing and leading spaces eliminated
+      DESCRIPTION=NORMALIZED(DESCRIPTION);
+      SUMMARY=NORMALIZED(SUMMARY);
+      // eliminate description that is the same as summary
+      if (DESCRIPTION==SUMMARY) DESCRIPTION=EMPTY;
+      // calendar or todo
+      if (ISEVENT) {
+        // VEVENT
+        // - handle duration cases 
+        if (ISDURATION(DURATION)) {
+          if (DTEND==EMPTY) DTEND = DTSTART + DURATION;
+          if (DTSTART==EMPTY) DTSTART = DTEND - DURATION;
+        }
+        // - detect alldays in vCalendar 1.0 (0:00-0:00 or 23:59 localtime)
+        i = ALLDAYCOUNT(DTSTART,DTEND,TRUE);
+        if (ITEMDATATYPE()=="vtodoz10" && i>0) {
+          // DTSTART and DTEND represent allday event, make them date-only values
+          // - convert start to user zone (or floating) so it represents midnight
+          DTSTART = CONVERTTOUSERZONE(DTSTART);
+          MAKEALLDAY(DTSTART,DTEND,i);
+        }
+        // - shape attendees (and make sure ATTENDEES[] is assigned even for empty email addresses)
+        i=0;
+        while(i<SIZE(ATTENDEES) || i<SIZE(ATTENDEE_CNS)) {
+          PARSEEMAILSPEC(ATTENDEES[i], CN, EM);
+          ATTENDEES[i] = EM; // pure email address
+          // in case we have no specific common name, use the one extracted from the email
+          // This catches the vCalendar 1.0 case and eventually ill-formed iCalendar 2.0 as well
+          if (ATTENDEE_CNS[i]==EMPTY)
+            ATTENDEE_CNS[i]=CN;
+          // default participation status to needs-action
+          if (ATTENDEE_PARTSTATS[i]==EMPTY)
+            ATTENDEE_PARTSTATS[i]=1; // 1=needs action
+          i=i+1;
+        }
+        // - shape organizer
+        PARSEEMAILSPEC(ORGANIZER, CN, EM);
+        ORGANIZER = EM; // pure email address
+        if (ORGANIZER_CN==EMPTY)
+          ORGANIZER_CN=CN;
+      }
+      else {
+        // VTODO
+        // - make sure we have at least a summary
+        if (SUMMARY==EMPTY) SUMMARY=DESCRIPTION; // use description if we don't have a summary
+        if (SUMMARY==EMPTY) SUMMARY="unnamed"; // set dummy summary if we still don't have one
+        // due shaping for non-iCalendar 2.0
+        if (ITEMDATATYPE()=="vCalendar10" && ALLDAYCOUNT(DUE,DUE,TRUE,TRUE)>0) {
+        	DUE = DATEONLY(DUE);
+        }
+      }
+      // Common alarm handling
+      // - handle relative alarm time (as possible with VALARM TRIGGER)
+      if (ISDURATION(ALARM_TIME)) {
+        if (ALARM_REL==2)
+          ALARM_TIME = DTEND+ALARM_TIME; // relative to end
+        else {
+          if (ISEVENT)
+            ALARM_TIME = DTSTART+ALARM_TIME; // relative to start for events
+          else
+            ALARM_TIME = DUE+ALARM_TIME; // relative to due for todos
+        }
+      }
+    ]]></macro>
+
+
+    <macro name="VCALENDAR_OUTGOING_SCRIPT"><![CDATA[
+      // set UTC time of generation for iCalendar 2.0 DTSTAMP
+      DGENERATED = NOW();
+      // make sure we have all trailing and leading spaces eliminated
+      DESCRIPTION=NORMALIZED(DESCRIPTION);
+      SUMMARY=NORMALIZED(SUMMARY);
+      if (ISEVENT) {
+        // VEVENT
+        // - combine attendee email address and common name into single string for vCalendar 1.0
+        if (ITEMDATATYPE()=="vCalendar10") {
+          i=0;
+          while(i<SIZE(ATTENDEES)) {
+            ATTENDEES[i] = MAKEEMAILSPEC(ATTENDEE_CNS[i], ATTENDEES[i]);
+            i=i+1;
+          }
+          ORGANIZER = MAKEEMAILSPEC(ORGANIZER_CN, ORGANIZER);
+        }
+      }
+      else {
+        // VTODO
+        // - Nothing special so far
+      }
+      // make sure we have at least a summary
+      if (SUMMARY==EMPTY) SUMMARY=SUBSTR(DESCRIPTION,0,32); // derive from description
+      if (SUMMARY==EMPTY) SUMMARY="unnamed"; // in case description is empty as well
+      // do NOT send duration (some servers crash when doing so)
+      DURATION = UNASSIGNED;
+      // shape alarm
+      if (ALARM_TIME!=EMPTY) {
+        if (ITEMDATATYPE()=="iCalendar20") {
+          if (ALARM_ACTION==EMPTY) ALARM_ACTION = "AUDIO";
+          ALARM_TIME = CONVERTTOUSERZONE(ALARM_TIME,TRUE); // unfloat into user (system) zone, in case it is floating
+          ALARM_TIME = CONVERTTOZONE(ALARM_TIME,"UTC"); // must always be UTC by iCalendar 2.0 specs
+          // send as duration if we have non-empty non-date DTSTART
+          if (DTSTART!=EMPTY && !ISDATEONLY(DTSTART)) {
+            // make a duration (unfloat DTSTART into system zone in case it is floating first!)
+            ALARM_TIME = ALARM_TIME-CONVERTTOZONE(CONVERTTOUSERZONE(DTSTART,TRUE),"UTC");
+            ALARM_REL = 1; // relative to start
+          }
+        }
+        else {
+          if (ALARM_MSG==EMPTY) ALARM_MSG="alarm";
+        }
+      }
+    ]]></macro>
+
+  </scripting>
+
+
+  <datatypes>
+
+    <!-- list of internal fields representing vCard data -->
+    <fieldlist name="contacts">
+      <field name="REV" type="timestamp" compare="never" age="yes"/>
+
+      <!-- Name elements -->
+      <field name="N_LAST" type="string" compare="always"/>
+      <field name="N_FIRST" type="string" compare="always"/>
+      <field name="N_MIDDLE" type="string" compare="always"/>
+      <field name="N_PREFIX" type="string" compare="conflict"/>
+      <field name="N_SUFFIX" type="string" compare="conflict"/>
+      <field name="NICKNAME" type="string" compare="conflict"/>
+      <field name="TITLE" type="string" compare="conflict" merge="fillempty"/>
+
+      <field name="FN" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- categories and classification -->
+      <field name="CATEGORIES" array="yes" type="string" compare="conflict"/>
+
+      <!-- organisation -->
+      <field name="ORG_NAME" type="string" compare="slowsync" merge="fillempty"/>
+      <field name="ORG_DIVISION" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- birthday -->
+      <field name="BDAY" type="date" compare="conflict" merge="fillempty"/>
+
+      <!-- telephone numbers -->
+      <field name="TEL"         array="yes" type="telephone" compare="conflict"/>
+      <field name="TEL_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
+      <field name="TEL_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
+      <field name="TEL_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+
+      <!-- emails -->
+      <field name="EMAIL"       array="yes" type="multiline" compare="conflict"/>
+      <field name="EMAIL_FLAGS" array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
+      <field name="EMAIL_LABEL" array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
+      <field name="EMAIL_ID"    array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+
+      <!-- web addresses -->
+      <field name="WEB"         array="yes" type="url" compare="conflict"/>
+      <field name="WEB_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
+      <field name="WEB_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
+      <field name="WEB_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+
+      <!-- home address -->
+      <field name="ADR_STREET"        array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_ADDTL"         array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_STREET_FLAGS"  array="yes" type="integer"   compare="conflict"/> <!-- offset 0 (from ADR_STREET_FLAGS) -->
+      <field name="ADR_STREET_LABEL"  array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
+      <field name="ADR_STREET_ID"     array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+      <field name="ADR_POBOX"         array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_CITY"          array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_REG"           array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_ZIP"           array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_COUNTRY"       array="yes" type="multiline" compare="conflict"/>
+
+      <!-- Note -->
+      <field name="NOTE" type="multiline" compare="conflict" merge="lines"/>
+
+      <!-- Photo -->
+      <field name="PHOTO" type="blob" compare="never" merge="fillempty"/>
+      <field name="PHOTO_TYPE" type="integer" compare="never" merge="fillempty"/>
+
+    </fieldlist>
+
+    <!-- vCard profile -->
+    <mimeprofile name="vCard" fieldlist="contacts">
+
+      <profile name="VCARD" nummandatory="0"> <!-- we allow records without "N" as Address book can store them -->
+        <property name="VERSION">
+          <value conversion="version"/>
+        </property>
+
+        <property onlyformode="standard" name="PRODID" mandatory="no">
+          <value conversion="prodid"/>
+        </property>
+
+        <property name="REV">
+          <value field="REV"/>
+        </property>
+
+        <property name="N" values="5" mandatory="yes"> <!-- Note: makes N parse and generate even if not in remote's CTCap -->
+          <value index="0" field="N_LAST"/>
+          <value index="1" field="N_FIRST"/>
+          <value index="2" field="N_MIDDLE"/>
+          <value index="3" field="N_PREFIX"/>
+          <value index="4" field="N_SUFFIX"/>
+        </property>
+
+        <property name="FN">
+          <value field="FN"/>
+        </property>
+
+        <property name="NICKNAME" onlyformode="standard">
+          <value field="NICKNAME"/>
+        </property>
+
+        <property name="TITLE">
+          <value field="TITLE"/>
+        </property>
+
+        <property name="CATEGORIES" values="list" valueseparator="," altvalueseparator=";" > <!-- non-standard, but 1:1 as in vCard 3.0 (NOT like in vCalendar 1.0, where separator is ";") -->
+          <value field="CATEGORIES"/>
+          <position field="CATEGORIES" repeat="array" increment="1" minshow="0"/>
+        </property>
+
+        <property name="ORG" values="2">
+          <value index="0" field="ORG_NAME"/>
+          <value index="1" field="ORG_DIVISION"/>
+        </property>
+
+        <property name="TEL">
+          <value field="TEL"/>
+          <position field="TEL" repeat="array" increment="1" minshow="1"/>
+          <parameter name="TYPE" default="yes" positional="no" show="yes">
+            <value field="TEL_FLAGS" conversion="multimix" combine=",">
+              <enum name="HOME"     value="B0"/>
+              <enum name="WORK"     value="B1"/>
+              <enum mode="ignore"   value="B2"/> <!-- OTHER -->
+              <enum name="VOICE"    value="B3"/>
+              <enum name="CELL"     value="B4"/>
+              <enum name="FAX"      value="B5"/>
+              <enum name="PAGER"    value="B6"/>
+              <enum name="PREF"     value="B7"/>
+
+              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
+              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+            </value>
+          </parameter>
+        </property>
+
+        <property name="EMAIL">
+          <value field="EMAIL"/>
+          <position field="EMAIL" repeat="array" increment="1" minshow="1"/>
+          <parameter name="TYPE" default="yes" positional="no" show="yes">
+            <value field="EMAIL_FLAGS" conversion="multimix" combine=",">
+              <enum name="HOME"     value="B0"/>
+              <enum name="WORK"     value="B1"/>
+              <enum mode="ignore"   value="B2"/> <!-- OTHER -->
+              <enum name="INTERNET" value="B3"/>
+
+              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
+              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+            </value>
+          </parameter>
+        </property>
+
+        <property name="URL">
+          <value field="WEB"/>
+          <position field="WEB" repeat="array" increment="1" minshow="1"/>
+          <parameter name="TYPE" default="yes" positional="no" show="yes">
+            <value field="WEB_FLAGS" conversion="multimix" combine=",">
+              <enum name="HOME"     value="B0"/>
+              <enum name="WORK"     value="B1"/>
+              <enum mode="ignore"   value="B2"/> <!-- OTHER -->
+              <enum name="PREF"     value="B3"/>
+
+              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
+              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+            </value>
+          </parameter>
+        </property>
+
+        <property name="ADR" values="7">
+          <value index="0" field="ADR_POBOX"/>
+          <value index="1" field="ADR_ADDTL"/>
+          <value index="2" field="ADR_STREET"/>
+          <value index="3" field="ADR_CITY"/>
+          <value index="4" field="ADR_REG"/>
+          <value index="5" field="ADR_ZIP"/>
+          <value index="6" field="ADR_COUNTRY"/>
+          <position field="ADR_POBOX" repeat="array" increment="1" minshow="1"/>
+          <parameter name="TYPE" default="yes" positional="no" show="yes">
+            <value field="ADR_STREET_FLAGS" conversion="multimix" combine=",">
+              <enum name="HOME"     value="B0"/>
+              <enum name="WORK"     value="B1"/>
+              <enum mode="ignore"   value="B2"/> <!-- OTHER -->
+
+              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
+              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+            </value>
+          </parameter>
+        </property>
+
+        <property name="BDAY">
+          <value field="BDAY"/>
+        </property>
+
+        <property name="NOTE" filter="no">
+          <value field="NOTE"/>
+        </property>
+
+        <property name="PHOTO" filter="no">
+          <value field="PHOTO" conversion="BLOB_B64"/>
+          <parameter name="TYPE" default="no" show="yes">
+            <value field="PHOTO_TYPE">
+              <enum name="JPEG" value="0"/>
+            </value>
+          </parameter>
+        </property>
+
+      </profile>
+    </mimeprofile>
+
+    <!-- vCard 2.1 datatype, using vCard profile defined above -->
+    <datatype name="vCard21" basetype="vcard">
+      <version>2.1</version>
+      <use mimeprofile="vCard"/>
+    </datatype>
+
+    <!-- vCard 3.0 datatype, using vCard profile defined above -->
+    <datatype name="vCard30" basetype="vcard">
+      <version>3.0</version>
+      <use mimeprofile="vCard"/>
+    </datatype>
+
+
+    <!-- common field list for events and todos (both represented by vCalendar/iCalendar) -->
+    <fieldlist name="calendar">
+      <field name="ISEVENT" type="integer" compare="always"/>
+
+      <field name="DMODIFIED" type="timestamp" compare="never" age="yes"/>
+      <field name="DCREATED" type="timestamp" compare="never"/>
+
+      <field name="DGENERATED" type="timestamp" compare="never"/>
+
+      <field name="UID" type="string" compare="never"/>
+
+      <field name="CATEGORIES" array="yes" type="string" compare="conflict" merge="fillempty"/>
+      <field name="CLASS" type="integer" compare="conflict" merge="fillempty"/>
+      <field name="TRANSP" type="integer" compare="conflict" merge="fillempty"/>
+
+      <field name="SUMMARY" type="multiline" compare="always"/>
+      <field name="DESCRIPTION" type="multiline" compare="slowsync" merge="lines"/>
+      <field name="LOCATION" type="multiline" compare="slowsync" merge="lines"/>
+
+      <!-- recurrence rule block, fields must be in that order, including
+           DTSTART as last field !! -->
+      <field name="RR_FREQ" type="string" compare="conflict"/>
+      <field name="RR_INTERVAL" type="integer" compare="conflict"/>
+      <field name="RR_FMASK" type="integer" compare="conflict"/>
+      <field name="RR_LMASK" type="integer" compare="conflict"/>
+      <field name="RR_END" type="timestamp" compare="conflict"/>
+
+      <!-- Note: DTSTART/DTEND are compared in the <comparescript>,
+                 therefore compare is set no "never" here -->
+      <field name="DTSTART" type="timestamp" compare="never"/>
+      <field name="DTEND" type="timestamp" compare="never"/>
+      <field name="DURATION" type="timestamp" compare="never"/>
+      <field name="COMPLETED" type="timestamp" compare="never"/>
+      <field name="DUE" type="timestamp" compare="never"/>
+
+      <field name="GEO_LAT" type="string" compare="never"/>
+      <field name="GEO_LONG" type="string" compare="never"/>
+
+      <field name="PRIORITY" type="integer" compare="conflict"/>
+      <field name="STATUS" type="integer" compare="conflict" merge="fillempty"/>
+
+      <field name="ALARM_TIME" type="timestamp" compare="conflict"/>
+      <field name="ALARM_SNOOZE" type="string" compare="conflict"/>
+      <field name="ALARM_REPEAT" type="string" compare="conflict"/>
+      <field name="ALARM_MSG" type="string" compare="conflict"/>
+      <field name="ALARM_ACTION" type="string" compare="conflict"/>
+      <field name="ALARM_REL" type="integer" compare="never"/>
+
+      <!-- non-standard -->
+      <field name="PARENT_UID" type="string" compare="never"/>
+
+      <!-- for events -->
+      <field name="EXDATES" array="yes" type="timestamp" compare="never"/>
+
+      <field name="ORIGSTART" array="no" type="timestamp" compare="never"/>
+      <field name="SEQNO" array="no" type="integer" compare="never"/>
+
+      <field name="ATTENDEES" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_CNS" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_PARTSTATS" array="yes" type="integer" compare="never"/>
+      <field name="ORGANIZER" array="no" type="string" compare="never"/>
+      <field name="ORGANIZER_CN" array="no" type="string" compare="never"/>
+
+    </fieldlist>
+
+
+    <!-- vCalendar with VTODO and VEVENT variants -->
+    <mimeprofile name="vCalendar" fieldlist="calendar">
+
+      <vtimezonegenmode>current</vtimezonegenmode>
+      <tzidgenmode>olson</tzidgenmode>
+
+      <profile name="VCALENDAR" nummandatory="1">
+
+        <property name="VERSION" mandatory="yes">
+          <value conversion="version"/>
+        </property>
+
+        <property onlyformode="standard" name="PRODID" mandatory="no">
+          <value conversion="prodid"/>
+        </property>
+
+        <property onlyformode="old" name="TZ" filter="false" suppressempty="yes">
+          <value field="DTSTART" conversion="tz"/>
+        </property>
+
+        <property onlyformode="old" name="DAYLIGHT" mode="daylight" filter="false" suppressempty="yes">
+          <value field="DTSTART" conversion="daylight"/>
+        </property>
+
+        <property name="GEO" values="2" suppressempty="yes" onlyformode="old" valueseparator=",">
+          <!-- LON,LAT in vCalendar 1.0 -->
+          <value index="0" field="GEO_LAT"/>
+          <value index="1" field="GEO_LONG"/>
+        </property>
+
+        <subprofile onlyformode="standard" name="VTIMEZONE" mode="vtimezones"/>
+
+        <!-- sub-profile for todoz -->
+        <subprofile name="VTODO" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="0">
+
+          <property name="LAST-MODIFIED">
+            <value field="DMODIFIED"/>
+          </property>
+
+          <property name="DTSTAMP" suppressempty="yes" onlyformode="standard">
+            <value field="DGENERATED"/>
+          </property>
+
+          <property name="DCREATED" suppressempty="yes" onlyformode="old">
+            <value field="DCREATED"/>
+          </property>
+          <property name="CREATED" suppressempty="yes" onlyformode="standard">
+            <value field="DCREATED"/>
+          </property>
+
+          <property name="UID" suppressempty="yes">
+            <value field="UID"/>
+          </property>
+
+          <property name="SEQUENCE" suppressempty="yes">
+            <value field="SEQNO"/>
+          </property>
+
+          <property name="GEO" values="2" suppressempty="yes" onlyformode="standard" valueseparator=";">
+            <!-- LAT;LON in iCalendar 2.0 -->
+            <value index="0" field="GEO_LONG"/>
+            <value index="1" field="GEO_LAT"/>
+          </property>
+
+          <property onlyformode="standard" name="CATEGORIES" values="list" valueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property onlyformode="old" name="CATEGORIES" values="list" valueseparator=";" altvalueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property name="CLASS" suppressempty="yes">
+            <value field="CLASS">
+              <enum name="PUBLIC"       value="0"/>
+              <enum name="PRIVATE"      value="1"/>
+              <enum name="CONFIDENTIAL" value="2"/>
+            </value>
+          </property>
+
+          <property name="SUMMARY" mandatory="yes">
+            <value field="SUMMARY"/>
+          </property>
+
+          <property name="DESCRIPTION" mandatory="yes">
+            <value field="DESCRIPTION"/>
+          </property>
+
+          <property name="LOCATION" mandatory="no">
+            <value field="LOCATION"/>
+          </property>
+
+          <property name="DTSTART" suppressempty="yes" delayedparsing="1">
+            <value field="DTSTART" conversion="autodate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="DTSTART" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="DTSTART" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="COMPLETED" suppressempty="yes" delayedparsing="1">
+            <value field="COMPLETED" conversion="autoenddate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="COMPLETED" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="COMPLETED" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="DUE" suppressempty="yes" delayedparsing="1">
+            <value field="DUE" conversion="autodate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="DUE" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="DUE" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="PRIORITY" suppressempty="yes">
+            <value field="PRIORITY"/>
+          </property>
+
+          <property name="STATUS" onlyformode="standard" suppressempty="yes">
+            <value field="STATUS" conversion="emptyonly">
+              <enum name="COMPLETED"      value="0"/>
+              <enum name="NEEDS-ACTION"   value="1"/>
+              <enum name="IN-PROCESS"     value="2"/>
+              <enum name="CANCELLED"      value="3"/>
+              <enum name="ACCEPTED"       value="4"/>
+              <enum name="TENTATIVE"      value="5"/>
+              <enum name="DELEGATED"      value="6"/>
+              <enum name="DECLINED"       value="7"/>
+              <enum name="SENT"           value="8"/>
+              <enum name="CONFIRMED"      value="9"/>
+              <enum name="DRAFT"          value="10"/>
+              <enum name="FINAL"          value="11"/>
+            </value>
+          </property>
+
+          <property name="STATUS" onlyformode="old" suppressempty="yes">
+            <value field="STATUS" conversion="emptyonly">
+              <enum name="COMPLETED"      value="0"/>
+              <enum name="NEEDS ACTION"   value="1"/>
+              <enum mode="defaultvalue"   value="1"/> <!-- catch unknown, but also non-conformant NEEDS_ACTION -->
+              <enum name="IN PROCESS"     value="2"/>
+              <enum name="CANCELLED"      value="3"/>
+              <enum name="ACCEPTED"       value="4"/>
+              <enum name="TENTATIVE"      value="5"/>
+              <enum name="DELEGATED"      value="6"/>
+              <enum name="DECLINED"       value="7"/>
+              <enum name="SENT"           value="8"/>
+              <enum name="CONFIRMED"      value="9"/>
+              <enum name="DRAFT"          value="10"/>
+              <enum name="FINAL"          value="11"/>
+            </value>
+          </property>
+
+
+          <!-- AALARM and DALARM both use the same fields -->
+          <property name="AALARM" onlyformode="old" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+          <property name="DALARM" onlyformode="old" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+
+          <subprofile onlyformode="standard" name="VALARM" nummandatory="1" field="ALARM_TIME">
+            <property name="TRIGGER" suppressempty="no" mandatory="yes">
+              <value field="ALARM_TIME"/>
+              <parameter name="VALUE" default="no" show="yes">
+                <value field="ALARM_TIME" conversion="FULLVALUETYPE"/>
+              </parameter>
+              <parameter name="RELATED" default="no" show="yes">
+                <value field="ALARM_REL">
+                  <enum mode="ignore" value="0"/>
+                  <enum name="START" value="1"/>
+                  <enum name="END"   value="2"/>
+                </value>
+              </parameter>
+            </property>
+            <property name="ACTION" suppressempty="yes" mandatory="yes">
+              <value field="ALARM_ACTION"/>
+            </property>
+            <property name="DESCRIPTION" suppressempty="yes">
+              <value field="ALARM_MSG"/>
+            </property>
+            <property name="REPEAT" suppressempty="yes">
+              <value field="ALARM_REPEAT"/>
+            </property>
+          </subprofile>
+
+          <property onlyformode="old" name="RELATED-TO" suppressempty="yes">
+            <value field="PARENT_UID"/>
+          </property>
+
+          <property onlyformode="standard" name="RELATED-TO" suppressempty="yes">
+            <value field="PARENT_UID"/>
+            <parameter onlyformode="standard" name="RELTYPE" default="no" positional="yes" show="yes">
+              <value>
+                <enum name="PARENT"/>
+                <enum mode="defaultvalue" name="other"/>
+              </value>
+              <position hasnot="other" shows="PARENT" field="PARENT_UID"/>
+            </parameter>
+          </property>
+
+        </subprofile>
+
+        <!-- sub-profile for event -->
+        <subprofile name="VEVENT" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="1">
+
+          <property name="LAST-MODIFIED">
+            <value field="DMODIFIED"/>
+          </property>
+
+          <property name="DTSTAMP" suppressempty="yes" onlyformode="standard">
+            <value field="DGENERATED"/>
+          </property>
+
+          <property name="DCREATED" suppressempty="yes" onlyformode="old">
+            <value field="DCREATED"/>
+          </property>
+          <property name="CREATED" suppressempty="yes" onlyformode="standard">
+            <value field="DCREATED"/>
+          </property>
+
+
+          <property name="UID" suppressempty="yes">
+            <value field="UID"/>
+          </property>
+
+          <property name="SEQUENCE" suppressempty="yes">
+            <value field="SEQNO"/>
+          </property>
+
+          <property name="GEO" values="2" suppressempty="yes" onlyformode="standard" valueseparator=";">
+            <!-- LAT;LON in iCalendar 2.0 -->
+            <value index="0" field="GEO_LONG"/>
+            <value index="1" field="GEO_LAT"/>
+          </property>
+
+          <property onlyformode="standard" name="CATEGORIES" values="list" valueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property onlyformode="old" name="CATEGORIES" values="list" valueseparator=";" altvalueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property name="CLASS" suppressempty="yes">
+            <value field="CLASS">
+              <enum name="PUBLIC"       value="0"/>
+              <enum name="PRIVATE"      value="1"/>
+              <enum name="CONFIDENTIAL" value="2"/>
+            </value>
+          </property>
+
+
+          <property name="TRANSP" suppressempty="yes" onlyformode="standard">
+            <value field="TRANSP">
+              <enum name="OPAQUE"       value="0"/>
+              <enum name="TRANSPARENT"  value="1"/>
+              <enum name="TENTATIVE"     value="2"/> <!-- according to Oracle de facto usage in vCalendar 1.0 -->
+              <enum name="OUT_OF_OFFICE" value="3"/> <!-- according to Oracle de facto usage in vCalendar 1.0 -->
+              <enum mode="defaultvalue" value="0"/>
+            </value>
+          </property>
+          <property name="TRANSP" suppressempty="yes" onlyformode="old">
+            <value field="TRANSP"/> <!-- directly numeric in vCalendar 1.0 -->
+          </property>
+
+
+          <property name="PRIORITY" suppressempty="yes">
+            <value field="PRIORITY"/>
+          </property>
+
+          <property name="SUMMARY" mandatory="yes">
+            <value field="SUMMARY"/>
+          </property>
+
+          <property name="DESCRIPTION" mandatory="yes">
+            <value field="DESCRIPTION"/>
+          </property>
+
+          <property name="LOCATION" mandatory="no">
+            <value field="LOCATION"/>
+          </property>
+
+          <property name="DTSTART" suppressempty="yes" delayedparsing="1">
+            <value field="DTSTART" conversion="autodate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="DTSTART" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="DTSTART" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <!-- recurrence rule (with delayed parsing, as it is dependent on DTSTART) -->
+          <property name="RRULE" suppressempty="yes" delayedparsing="2">
+            <!-- Note: RR_FREQ is the beginning of a block of fields
+                 suitable for the "rrule" conversion mode -->
+            <value field="RR_FREQ" conversion="rrule"/>
+          </property>
+
+          <!-- Symbian uses this, so it might make the client work with symbian-prepared servers better -->
+          <property name="X-RECURRENCE-ID" suppressempty="yes" onlyformode="old">
+            <value field="ORIGSTART" conversion="autodate"/>
+          </property>
+
+          <property name="RECURRENCE-ID" suppressempty="yes" onlyformode="standard" delayedparsing="1">
+            <value field="ORIGSTART" conversion="autodate"/>
+            <parameter name="TZID" default="no" show="yes">
+              <value field="ORIGSTART" conversion="TZID"/>
+            </parameter>
+            <parameter name="VALUE" default="no" show="yes">
+              <value field="ORIGSTART" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="EXDATE" values="list" suppressempty="yes" delayedparsing="1">
+            <value field="EXDATES"/>
+            <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
+            <parameter  onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="EXDATES" conversion="TZID"/>
+            </parameter>
+          </property>
+
+          <property name="DTEND" suppressempty="yes" delayedparsing="1">
+            <value field="DTEND" conversion="autoenddate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="DTEND" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="DTEND" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="DURATION" suppressempty="yes" delayedparsing="1" onlyformode="standard">
+            <value field="DURATION"/>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="no">
+              <value field="DURATION" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="ATTENDEE" suppressempty="yes" onlyformode="old">
+            <value field="ATTENDEES"/>
+            <parameter name="ROLE" default="no" positional="yes" show="yes">
+              <value>
+                <enum name="ORGANIZER"/>
+              </value>
+              <position has="ORGANIZER" field="ORGANIZER" overwriteempty="yes"/>
+              <position hasnot="ORGANIZER" field="ATTENDEES" repeat="array" increment="1" overwriteempty="yes"/>
+            </parameter>
+            <parameter name="STATUS" default="no" show="yes">
+              <value field="ATTENDEE_PARTSTATS">
+                <enum name="NEEDS ACTION"   value="1"/>
+                <enum mode="defaultvalue"   value="1"/> <!-- catch unknown, but also non-conformant NEEDS_ACTION -->
+                <enum name="ACCEPTED"       value="4"/>
+                <enum name="DECLINED"       value="7"/>
+                <enum name="TENTATIVE"      value="5"/>
+                <enum name="DELEGATED"      value="6"/>
+              </value>
+            </parameter>
+          </property>
+
+          <property name="ATTENDEE" suppressempty="yes" onlyformode="standard">
+            <value field="ATTENDEES" conversion="mailto"/>
+            <position field="ATTENDEES" repeat="array" increment="1" minshow="0"/>
+            <parameter name="CN" default="no" show="yes" shownonempty="yes">
+              <value field="ATTENDEE_CNS"/>
+            </parameter>
+            <parameter name="PARTSTAT" default="no" show="yes">
+              <value field="ATTENDEE_PARTSTATS">
+                <enum name="NEEDS-ACTION"   value="1"/>
+                <enum mode="defaultvalue"   value="1"/> <!-- catch unknown, but also non-conformant NEEDS_ACTION -->
+                <enum name="ACCEPTED"       value="4"/>
+                <enum name="DECLINED"       value="7"/>
+                <enum name="TENTATIVE"      value="5"/>
+                <enum name="DELEGATED"      value="6"/>
+              </value>
+            </parameter>
+          </property>
+
+          <property name="ORGANIZER" suppressempty="yes" onlyformode="standard">
+            <value field="ORGANIZER" conversion="mailto"/>
+            <parameter name="CN" default="no" show="yes">
+              <value field="ORGANIZER_CN"/>
+            </parameter>
+          </property>
+
+
+          <!-- AALARM and DALARM both use the same fields -->
+          <property name="AALARM" onlyformode="old" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+          <property name="DALARM" onlyformode="old" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+
+          <subprofile onlyformode="standard" name="VALARM" nummandatory="1" field="ALARM_TIME">
+            <property name="TRIGGER" suppressempty="no" mandatory="yes">
+              <value field="ALARM_TIME"/>
+              <parameter name="VALUE" default="no" show="yes">
+                <value field="ALARM_TIME" conversion="FULLVALUETYPE"/>
+              </parameter>
+              <parameter name="RELATED" default="no" show="yes">
+                <value field="ALARM_REL">
+                  <enum mode="ignore" value="0"/>
+                  <enum name="START" value="1"/>
+                  <enum name="END"   value="2"/>
+                </value>
+              </parameter>
+            </property>
+            <property name="ACTION" suppressempty="yes" mandatory="yes">
+              <value field="ALARM_ACTION"/>
+            </property>
+            <property name="DESCRIPTION" suppressempty="yes">
+              <value field="ALARM_MSG"/>
+            </property>
+            <property name="REPEAT" suppressempty="yes">
+              <value field="ALARM_REPEAT"/>
+            </property>
+          </subprofile>
+
+        </subprofile>
+        
+      </profile>
+    </mimeprofile>
+
+
+    <!-- vCalendar 1.0 datatype, using vCalendar profile defined above -->
+    <datatype name="vCalendar10" basetype="vcalendar">
+      <version>1.0</version>
+      <use mimeprofile="vCalendar"/>
+
+      <incomingscript><![CDATA[
+        $VCALENDAR_INCOMING_SCRIPT
+      ]]></incomingscript>
+
+      <outgoingscript><![CDATA[
+        $VCALENDAR_OUTGOING_SCRIPT
+      ]]></outgoingscript>
+
+    </datatype>
+
+
+    <!-- iCalendar 2.0 datatype, using vCalendar profile defined above -->
+    <datatype name="iCalendar20" basetype="vcalendar">
+      <version>2.0</version>
+      <use mimeprofile="vCalendar"/>
+
+      <incomingscript><![CDATA[
+        $VCALENDAR_INCOMING_SCRIPT
+      ]]></incomingscript>
+
+      <outgoingscript><![CDATA[
+        $VCALENDAR_OUTGOING_SCRIPT
+      ]]></outgoingscript>
+
+    </datatype>
+
+
+    <!-- list of internal fields representing plain text note data -->
+    <fieldlist name="Note">
+      <field name="SYNCLVL" type="integer" compare="never"/>
+      <field name="SUBJECT" type="multiline" compare="always"/>
+      <field name="TEXT" type="multiline" compare="conflict" merge="lines"/>
+    </fieldlist>
+
+    <textprofile name="Note" fieldlist="Note">
+      <linemap field="SUBJECT">
+        <numlines>1</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+        <filterkeyword>SUBJECT</filterkeyword>
+      </linemap>
+      <linemap field="TEXT">
+        <numlines>0</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+      </linemap>
+    </textprofile>
+
+    <datatype name="note10" basetype="text">
+      <use profile="Note"/>
+      <typestring>text/plain</typestring>
+      <versionstring>1.0</versionstring>
+    </datatype>
+
+    <datatype name="note11" basetype="text">
+      <use profile="Note"/>
+      <typestring>text/plain</typestring>
+      <versionstring>1.1</versionstring>
+    </datatype>
+
+
+    <!-- list of internal fields representing vBookmark data -->
+    <fieldlist name="bookmarks">
+      <field name="REV" type="timestamp" compare="never" age="yes"/>
+      <field name="SYNCLVL" type="integer" compare="never"/>
+
+      <!-- Name -->
+      <field name="TITLE" type="string" compare="always"/>
+
+      <!-- categories and classification -->
+      <field name="CATEGORIES" type="string" compare="conflict" merge="fillempty"/>
+      <field name="CLASS" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- web addresses -->
+      <field name="URL" type="url" compare="slowsync" merge="fillempty"/>
+
+      <!-- Note -->
+      <field name="NOTE" type="multiline" compare="conflict" merge="lines"/>
+
+    </fieldlist>
+
+    <!-- vBookmark profile -->
+    <mimeprofile name="vBookmark" fieldlist="bookmarks">
+
+      <profile name="VBKM" nummandatory="0">
+        <property name="VERSION">
+          <value conversion="version"/>
+        </property>
+
+        <property name="X-LAST-MODIFIED">
+          <value field="REV"/>
+        </property>
+
+        <property name="TITLE">
+          <value field="TITLE"/>
+        </property>
+
+        <property name="URL">
+          <value field="URL"/>
+        </property>
+
+        <!-- non-standard properties -->
+
+        <property name="CATEGORIES">
+          <value field="CATEGORIES"/>
+        </property>
+
+        <property name="CLASS" suppressempty="yes">
+          <value field="CLASS"/>
+        </property>
+
+        <property name="NOTE" filter="no">
+          <value field="NOTE"/>
+        </property>
+
+      </profile>
+    </mimeprofile>
+
+    <!-- vBookmark datatype, using vBookmark profile defined above -->
+    <datatype name="vBookmark10" basetype="mimedir">
+      <typestring>text/x-vbookmark</typestring>
+      <versionstring>1.0</versionstring>
+      <use profile="vBookmark"/>
+    </datatype>
+
+
+  </datatypes>
+
+
+  <client type="plugin">
+    <plugin_module>[SDK_textdb]</plugin_module>
+    <plugin_sessionauth>yes</plugin_sessionauth>
+    <plugin_deviceadmin>yes</plugin_deviceadmin>
+
+    <!-- this is how the client identifies itself to the LOCAL database. SDK_textdb
+         sample has a hard-coded user test/test so the following works out of the box -->
+    <localdbuser>test</localdbuser>
+    <localdbpassword>test</localdbpassword>
+    <!-- we need the local DB login for SDK_textdb to work properly, so we don't disable it here -->
+    <nolocaldblogin>false</nolocaldblogin>
+
+
+    <!-- IMPORTANT: Note that the following charset, lineend and quoting settings are relevant for session-level data access only.
+         Most data access takes place in individual <datastores>, which each has the same three settings
+         again locally (see below in the <datastore> sections). -->
+
+    <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+    <datacharset>UTF-8</datacharset>
+    <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
+    <datalineends>unix</datalineends>
+
+    <!-- If you want a text logfile, specify its full path here: -->
+    <!-- <logfile platform="win32">D:\your\log\directory\yourlogfile.txt</logfile> -->
+    <!-- <logfile platform="linux">/your/log/directory/yourlogfile.txt</logfile> -->
+    <!-- <logfile platform="macosx">/your/log/directory/yourlogfile.txt</logfile> -->
+
+    <logenabled>yes</logenabled> <!-- log enabled by default (session login scripts might disable it for special users/devices) -->
+
+    <!-- the logfile format can be customized with <loglabels> and <logformat>
+         but if these are not specified, a default format will be used
+    -->
+    <!-- This sample produces a simplified logfile:
+    <loglabels>SyncEndTime\tUser\tStatus\tSynctype\tRemoteName\tDatabase\tLocAdded\tLocUpdated\tLocDeleted\n\n</loglabels>
+    <logformat>%seT\t%U\t%sS\t%tS\t%nR\t%lD\t%laI\t%luI\t%ldI\n</logformat>
+    -->
+
+
+    <!-- timeout for unfinished sessions in seconds -->
+    <sessiontimeout>20</sessiontimeout>
+
+
+    <datastore name="contacts" type="plugin">
+      <plugin_module>[SDK_textdb]</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
+      <datalineends>unix</datalineends>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport> 
+
+
+      <!-- Mapping of the fields to the fieldlist "contacts" -->
+      <fieldmap fieldlist="contacts">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <!-- datatypes supported by this datastore -->
+      <typesupport>
+        <use datatype="vCard30" mode="rw" preferred="yes"/>
+        <use datatype="vCard21" mode="rw" preferred="legacy"/>
+      </typesupport>
+
+    </datastore>
+
+
+    <datastore name="events" type="plugin">
+      <plugin_module>[SDK_textdb]</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
+      <datalineends>unix</datalineends>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport> 
+
+
+      <!-- Mapping of the fields to the fieldlist "calendar" -->
+      <fieldmap fieldlist="calendar">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <!-- datatypes supported by this datastore -->
+      <typesupport>
+        <use datatype="iCalendar20" mode="rw" variant="VEVENT" preferred="yes"/>
+        <use datatype="vCalendar10" mode="rw" variant="VEVENT" preferred="legacy"/>
+      </typesupport>
+
+    </datastore>
+
+
+    <datastore name="tasks" type="plugin">
+      <plugin_module>[SDK_textdb]</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
+      <datalineends>unix</datalineends>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport> 
+
+
+      <!-- Mapping of the fields to the fieldlist "calendar" -->
+      <fieldmap fieldlist="calendar">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <!-- datatypes supported by this datastore -->
+      <typesupport>
+        <use datatype="iCalendar20" mode="rw" variant="VTODO" preferred="yes"/>
+        <use datatype="vCalendar10" mode="rw" variant="VTODO" preferred="legacy"/>
+      </typesupport>
+
+    </datastore>
+
+
+    <datastore name="notes" type="plugin">
+      <plugin_module>[SDK_textdb]</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
+      <datalineends>unix</datalineends>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport> 
+
+
+      <!-- Mapping of the fields to the fieldlist "notes" -->
+      <fieldmap fieldlist="Note">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <typesupport>
+        <use datatype="note10" mode="rw" preferred="yes"/>
+        <use datatype="note11" mode="rw"/>
+      </typesupport>
+
+    </datastore>
+
+
+    <datastore name="bookmarks" type="plugin">
+      <plugin_module>[SDK_textdb]</plugin_module>
+      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
+
+
+
+      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
+      <datacharset>UTF-8</datacharset>
+      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
+      <datalineends>unix</datalineends>
+
+      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
+           we must make sure this identifier is stored (and not only the sync time) -->
+      <storesyncidentifiers>yes</storesyncidentifiers>
+
+      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
+      <resumesupport>yes</resumesupport>
+      <resumeitemsupport>yes</resumeitemsupport> 
+
+
+
+      <!-- Mapping of the fields to the fieldlist "bookmarks" -->
+      <fieldmap fieldlist="bookmarks">
+        <automap indexasname="true"/>
+      </fieldmap>
+
+      <!-- datatypes supported by this datastore -->
+      <typesupport>
+        <use datatype="vBookmark10" mode="rw" preferred="yes"/>
+      </typesupport>
+
+    </datastore>
+
+    <!-- Configuration of Sync Requests -->
+    <!-- ============================== -->
+
+
+
+    <!-- choose default SyncML version : 1.2, 1.1 or 1.0
+         Note: client will try with this default version first,
+         if server does not accept this version, the client
+         re-tries with the next lower version -->
+    <defaultsyncmlversion>1.2</defaultsyncmlversion>
+
+    <!-- choose encoding for SyncML messages: xml or wbxml -->
+    <syncmlencoding>wbxml</syncmlencoding>
+
+    <!-- Preconfigured sync requests. The following configuration specifies
+         what SyncML server is connected and which datatypes are synced
+         when the client application is started -->
+
+
+    <!-- Enter the full server URL
+         - if your server is http, specify something like "http://yourserver.com/path"
+         - if your server is OBEX over infrared (win200 only), specify "obex:irda"
+         - if your server is OBEX over TCP, specify "obex:yourserver" -->
+    <serverurl>http://www.synthesis.ch/synciot</serverurl>
+    <serveruser>test</serveruser>
+    <serverpassword>4test2</serverpassword>
+
+    <!-- Enable the following if your SyncML server can be reached via a HTTP proxy server only:
+    <proxyhost>proxy.in.my.lan:3128</proxyhost>
+    -->
+    <!-- If the proxy needs an authorization as well, specify it here:
+    <proxyuser>my_proxy_user</proxyuser>
+    <proxypassword>my_proxy_pw</proxypassword>
+    -->
+
+    <!-- Enable the following if you need to go via a SOCKS proxy:
+    <sockshost>socks.in.my.lan</sockshost>
+    -->
+
+
+    <!-- For each datastore you want to sync, there must be a <syncrequest> tag
+         Just uncomment those that you need. Enter the server's datastore
+         path in the <dbpath>. Note that <dbpath> is preconfigured
+         for use with a Synthesis SyncML server 1.0.8 or newer. -->
+
+
+
+    <syncrequest datastore="contacts">
+      <localpathextension></localpathextension>
+
+      <dbpath>contacts</dbpath>
+      <dbuser></dbuser>
+      <dbpassword></dbpassword>
+
+      <!--
+        <recordfilter><![CDATA[
+          N[1]&iCON;]]
+        ]]></recordfilter>
+        <filterinclusive>yes</filterinclusive>
+      -->
+
+      <syncmode>twoway</syncmode>
+      <slowsync>false</slowsync>
+    </syncrequest>
+
+
+    <syncrequest datastore="events">
+      <localpathextension></localpathextension>
+
+      <dbpath>events</dbpath>
+      <dbuser></dbuser>
+      <dbpassword></dbpassword>
+
+      <syncmode>twoway</syncmode>
+      <slowsync>false</slowsync>
+    </syncrequest>
+    <!-- For DS 1.2 servers with Filter support (e.g. Synthesis SyncML Server 3.0)
+         you might want to use filters. If so, insert the following lines
+         into the SyncRequest above
+         and adapt filter expressions as needed. See config reference or SyncML DS 1.2
+         standard for filter syntax.
+         The sample expression below shows a filter that only syncs events for the year 2006 -->
+    <!--
+      <recordfilter><![CDATA[
+        SINCE&EQ;20060101&AND;BEFORE&EQ;20061231
+      ]]></recordfilter>
+      <filterinclusive>no</filterinclusive>
+    -->
+
+
+    <syncrequest datastore="tasks">
+      <localpathextension></localpathextension>
+
+      <dbpath>tasks</dbpath>
+      <dbuser></dbuser>
+      <dbpassword></dbpassword>
+
+      <syncmode>twoway</syncmode>
+      <slowsync>false</slowsync>
+    </syncrequest>
+    <!-- For DS 1.2 servers with Filter support (e.g. Synthesis SyncML Server 3.0)
+         you might want to use filters. If so, insert the following lines
+         into the SyncRequest above
+         and adapt filter expressions as needed. See config reference or SyncML DS 1.2
+         standard for filter syntax.
+         The sample expression below shows a filter that only syncs tasks for the year 2006 -->
+    <!--
+      <recordfilter><![CDATA[
+        SINCE&EQ;20060101&AND;BEFORE&EQ;20061231
+      ]]></recordfilter>
+      <filterinclusive>no</filterinclusive>
+    -->
+
+
+		<!--
+    <syncrequest datastore="notes">
+      <localpathextension></localpathextension>
+
+      <dbpath>notes</dbpath>
+      <dbuser></dbuser>
+      <dbpassword></dbpassword>
+
+      <syncmode>twoway</syncmode>
+      <slowsync>false</slowsync>
+    </syncrequest>
+		-->
+    
+    
+		<!--
+    <syncrequest datastore="bookmarks">
+      <localpathextension></localpathextension>
+
+      <dbpath>bookmarks</dbpath>
+      <dbuser></dbuser>
+      <dbpassword></dbpassword>
+
+      <syncmode>twoway</syncmode>
+      <slowsync>false</slowsync>
+    </syncrequest>
+		-->
+
+  </client>
+
+</sysync_config>
