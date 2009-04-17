@@ -149,10 +149,15 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
 {
     // case insensitive search for read-only file template config
     string templateConfig(TEMPLATE_DIR);
-    ReadDir dir(templateConfig);
-    templateConfig = dir.find(boost::iequals(server, "default") ?
-                              string("ScheduleWorld") : server,
-                              false);
+    if (isDir(templateConfig)) {
+        ReadDir dir(templateConfig);
+        templateConfig = dir.find(boost::iequals(server, "default") ?
+                                  string("ScheduleWorld") : server,
+                                  false);
+    } else {
+        templateConfig = "";
+    }
+
     if (templateConfig.empty()) {
         // not found, avoid reading current directory by using one which doesn't exist
         templateConfig = "/dev/null";
