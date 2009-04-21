@@ -5,6 +5,9 @@
       - sync types (other than two-way) should maybe be available somewhere 
         else than main window?
       - showing usable statistic
+      - sync errors can flood the ui... need to dicuss with nick.
+        Possible solution: show only a few errors, but have a linkbutton to open a
+        separate error window
  * * get history data from syncevolution
  * * backup/restore ? 
  * * GTK styling missing:
@@ -179,7 +182,7 @@ static void
 show_error_dialog (GtkWindow *parent, const char* message)
 {
     GtkWidget *w;
-    w = gtk_message_dialog_new (parent, 
+    w = gtk_message_dialog_new (parent,
                                 GTK_DIALOG_MODAL,
                                 GTK_MESSAGE_ERROR,
                                 GTK_BUTTONS_OK,
@@ -191,7 +194,7 @@ show_error_dialog (GtkWindow *parent, const char* message)
 static void
 clear_error_info (app_data *data)
 {
-    gtk_container_foreach (GTK_CONTAINER(data->error_box), 
+    gtk_container_foreach (GTK_CONTAINER(data->error_box),
                            (GtkCallback)remove_child,
                            data->error_box);
 
@@ -250,7 +253,7 @@ set_server_config_cb (SyncevoService *service, GError *error, app_data *data)
     if (error) {
         show_error_dialog (GTK_WINDOW (data->sync_win),
                            "Failed to save service configuration to SyncEvolution");
-        g_warning ("Failed to save service configuration to SyncEvolution: %s", 
+        g_warning ("Failed to save service configuration to SyncEvolution: %s",
                    error->message);
         g_error_free (error);
         return;
@@ -277,7 +280,7 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
     if (error) {
         show_error_dialog (GTK_WINDOW (data->data->sync_win),
                            "Failed to get service configuration from SyncEvolution");
-        g_warning ("Failed to get service configuration from SyncEvolution: %s", 
+        g_warning ("Failed to get service configuration from SyncEvolution: %s",
                    error->message);
         g_error_free (error);
     } else {
@@ -1524,51 +1527,69 @@ sync_progress_cb (SyncevoService *service,
         break;
 
     case PEV_SYNCEND:
-        /* TODO show errors to user. */
+        msg = NULL;
         switch (extra1) {
         case 0:
-            /* source sync ok */
+        case LOCERR_USERABORT:
+        case LOCERR_USERSUSPEND:
+            break;
+        case DB_Unauthorized:
+            msg = g_strdup_printf ("%s: Not authorized", source);
+            break;
+        case DB_Forbidden:
+            msg = g_strdup_printf ("%s: Forbidden", source);
             break;
         case DB_NotFound:
-            msg = g_strdup_printf ("%s not found on server", source);
-            add_error_info (data, msg, "DB_NotFound");
-            g_free (msg);
-            break;
-        case LOCERR_USERABORT:
-            g_debug ("user abort");
-            break;
-        case LOCERR_USERSUSPEND:
-            g_debug ("user suspend");
+            msg = g_strdup_printf ("%s: Not found", source);
             break;
         case LOCERR_PROCESSMSG:
-            g_debug ("Error processing a SyncML message");
-            break;
-        case LOCERR_BADHANDLE:
-            g_debug ("Non-existing datastore?");
+            /* TODO identify item somehow */
+            msg = g_strdup_printf ("%s: Failed to process SyncML", source);
             break;
         case LOCERR_AUTHFAIL:
-            g_debug ("Authorization failed");
+            msg = g_strdup_printf ("%s: Server authorization failed", source);
+            break;
+        case LOCERR_CFGPARSE:
+            msg = g_strdup_printf ("%s: Failed to parse config file", source);
+            break;
+        case LOCERR_CFGREAD:
+            msg = g_strdup_printf ("%s: Failed to read config file", source);
+            break;
+        case LOCERR_NOCFG:
+            msg = g_strdup_printf ("%s: No configuration found", source);
+            break;
+        case LOCERR_NOCFGFILE:
+            msg = g_strdup_printf ("%s: No config file found", source);
             break;
         case LOCERR_BADCONTENT:
-            g_debug ("Got bad content from server");
+            msg = g_strdup_printf ("%s: Server sent bad content", source);
             break;
         case LOCERR_TIMEOUT:
-            g_debug ("Connection timed out");
+            msg = g_strdup_printf ("%s: Connection timed out", source);
             break;
         case LOCERR_CERT_EXPIRED:
-            g_debug ("Connection SSL certificate has expired");
+            msg = g_strdup_printf ("%s: Connection certificate has expired", source);
             break;
         case LOCERR_CERT_INVALID:
-            g_debug ("Connection SSL certificate is invalid");
+            msg = g_strdup_printf ("%s: Connection certificate is invalid", source);
+            break;
+        case LOCERR_CONN:
+        case LOCERR_NOCONN:
+            msg = g_strdup_printf ("%s: Connection failed", source);
             break;
         case LOCERR_BADURL:
-            g_debug ("Bad URL");
+            msg = g_strdup_printf ("%s: URL is bad", source);
             break;
         case LOCERR_SRVNOTFOUND:
-            g_debug ("Server not found");
+            msg = g_strdup_printf ("%s: Server not found", source);
             break;
         default:
-            g_debug ("syncend %s, unhandled error %d", source, extra1);
+            msg = g_strdup_printf ("%s: Error %d", source, extra1);
+            break;
+        }
+        if (msg) {
+            add_error_info (data, msg, NULL);
+            g_free (msg);
         }
         break;
     case PEV_DSSTATS_L:
