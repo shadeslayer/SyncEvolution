@@ -496,12 +496,20 @@ private:
 // a logdir) handles writing of per-sync files as well
 // as the final report (
 class SourceList : public vector<EvolutionSyncSource *> {
+public:
+    enum LogLevel {
+        LOGGING_QUIET,    /**< avoid all extra output */
+        LOGGING_SUMMARY,  /**< sync report, but no database comparison */
+        LOGGING_FULL      /**< everything */
+    };
+
+private:
     LogDir m_logdir;     /**< our logging directory */
     bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
     bool m_doLogging;    /**< true iff the normal logdir handling is enabled
                             (creating and expiring directoties, before/after comparison) */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
-    const bool m_quiet;  /**< avoid redundant printing to screen */
+    LogLevel m_logLevel; /**< chooses how much information is printed */
     string m_previousLogdir; /**< remember previous log dir before creating the new one */
 
     /** create name in current (if set) or previous logdir */
@@ -515,6 +523,9 @@ class SourceList : public vector<EvolutionSyncSource *> {
     }
 
 public:
+    LogLevel getLogLevel() const { return m_logLevel; }
+    void setLogLevel(LogLevel logLevel) { m_logLevel = logLevel; }
+
     /**
      * dump into files with a certain suffix
      */
@@ -547,12 +558,12 @@ public:
         }
     }
         
-    SourceList(const string &server, bool doLogging, bool quiet) :
+    SourceList(const string &server, bool doLogging) :
         m_logdir(server),
         m_prepared(false),
         m_doLogging(doLogging),
         m_reportTodo(true),
-        m_quiet(quiet)
+        m_logLevel(LOGGING_FULL)
     {
     }
     
@@ -582,7 +593,7 @@ public:
     void setPath(const string &path) { m_logdir.setPath(path); }
 
     /**
-     * If possible (m_previousLogdir found) and enabled (!m_quiet),
+     * If possible (m_previousLogdir found) and enabled,
      * then dump changes applied locally.
      *
      * @param oldSuffix      suffix of old database dump: usually "after"
@@ -590,7 +601,7 @@ public:
      *                       when not doing a sync, otherwise "before"
      */
     bool dumpLocalChanges(const string &oldSuffix, const string &newSuffix) {
-        if (m_quiet || !m_previousLogdir.size()) {
+        if (m_logLevel <= LOGGING_SUMMARY || !m_previousLogdir.size()) {
             return false;
         }
 
@@ -669,15 +680,15 @@ public:
                 }
 
                 // pretty-print report
-                if (!m_quiet) {
+                if (m_logLevel > LOGGING_QUIET) {
                     cout << "\nChanges applied during synchronization:\n";
                 }
-                if (!m_quiet && report) {
+                if (m_logLevel > LOGGING_QUIET && report) {
                     cout << *report;
                 }
 
                 // compare databases?
-                if (!m_quiet && m_prepared) {
+                if (m_logLevel > LOGGING_SUMMARY && m_prepared) {
                     cout << "\nChanges applied to client during synchronization:\n";
                     BOOST_FOREACH(EvolutionSyncSource *source, *this) {
                         cout << "*** " << source->getName() << " ***\n" << flush;
@@ -1326,7 +1337,10 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
     }
 
     // redirect logging as soon as possible
-    SourceList sourceList(m_server, m_doLogging, m_quiet);
+    SourceList sourceList(m_server, m_doLogging);
+    sourceList.setLogLevel(m_quiet ? SourceList::LOGGING_QUIET :
+                           getPrintChanges() ? SourceList::LOGGING_FULL :
+                           SourceList::LOGGING_SUMMARY);
     m_sourceListPtr = &sourceList;
 
     try {
@@ -1740,7 +1754,7 @@ void EvolutionSyncClient::status()
         throwError("cannot proceed without configuration");
     }
 
-    SourceList sourceList(m_server, false, false);
+    SourceList sourceList(m_server, false);
     initSources(sourceList);
     BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
         source->checkPassword(*this);

@@ -417,6 +417,10 @@ static IntConfigProperty syncPropLogLevel("loglevel",
                                           "- 1 = only ERROR messages\n"
                                           "- 2 = also INFO messages\n"
                                           "- 3 = also DEBUG messages");
+static BoolConfigProperty syncPropPrintChanges("printChanges",
+                                               "enables or disables the detailed (and sometimes slow) comparison\n"
+                                               "of database content before and after a sync session",
+                                               "1");
 static ConfigProperty syncPropSSLServerCertificates("SSLServerCertificates",
                                                     "A string specifying the location of the certificates\n"
                                                     "used to authenticate the server. When empty, the\n"
@@ -459,6 +463,7 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         syncPropPassword.setObligatory(true);
         registry.push_back(&syncPropLogDir);
         registry.push_back(&syncPropLogLevel);
+        registry.push_back(&syncPropPrintChanges);
         registry.push_back(&syncPropMaxLogDirs);
         registry.push_back(&syncPropUseProxy);
         registry.push_back(&syncPropProxyHost);
@@ -569,6 +574,8 @@ int EvolutionSyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getPr
 void EvolutionSyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*m_configNode, value, temporarily); }
 int EvolutionSyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
+bool EvolutionSyncConfig::getPrintChanges() const { return syncPropPrintChanges.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*m_configNode, value, temporarily); }
 std::string EvolutionSyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*m_configNode, url, temporarily); }
 std::string EvolutionSyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*m_configNode); }

@@ -633,6 +633,9 @@ class EvolutionSyncConfig {
     virtual int getLogLevel() const;
     virtual void setLogLevel(int value, bool temporarily = false);
 
+    virtual bool getPrintChanges() const;
+    virtual void setPrintChanges(bool value, bool temporarily = false);
+
     virtual std::string getWebURL() const;
     virtual void setWebURL(const std::string &url, bool temporarily = false);
 
