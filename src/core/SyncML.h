@@ -114,6 +114,30 @@ enum SyncMLStatus {
     STATUS_MAX = 0x7FFFFFF
 };
 
+/**
+ * Information about a database dump.
+ * Currently only records the number of items.
+ * A negative number of items means no backup
+ * available.
+ */
+class BackupReport {
+ public:
+    BackupReport() {
+        clear();
+    }
+
+    bool isAvailable() const { return m_numItems >= 0; }
+    long getNumItems() const { return m_numItems; }
+    void setNumItems(long numItems) { m_numItems = numItems; }
+
+    void clear() {
+        m_numItems = -1;
+    }
+
+ private:
+    long m_numItems;
+};
+
 class SyncSourceReport {
  public:
     SyncSourceReport() {
@@ -122,19 +146,6 @@ class SyncSourceReport {
             m_resume = false;
         m_mode = SYNC_NONE;
         m_status = STATUS_OK;
-    }
-    SyncSourceReport(const SyncSourceReport &other) {
-        *this = other;
-    }
-    SyncSourceReport &operator = (const SyncSourceReport &other) {
-        if (this != &other) {
-            memcpy(m_stat, other.m_stat, sizeof(m_stat));
-            m_first = other.m_first;
-            m_resume = other.m_resume;
-            m_mode = other.m_mode;
-            m_status = other.m_status;
-        }
-        return *this;
     }
 
     enum ItemLocation {
@@ -200,6 +211,9 @@ class SyncSourceReport {
 
     void recordStatus(SyncMLStatus status ) { m_status = status; }
     SyncMLStatus getStatus() const { return m_status; }
+
+    /** information about database dump before and after session */
+    BackupReport m_backupBefore, m_backupAfter;
 
  private:
     /** storage for getItemStat(): allow access with _MAX as index */

@@ -8,6 +8,9 @@
 #include "PrefixConfigNode.h"
 
 #include <ctype.h>
+#include <errno.h>
+
+#include <fstream>
 
 TrackingSyncSource::TrackingSyncSource(const EvolutionSyncSourceParams &params) :
     EvolutionSyncSource(params),
@@ -114,18 +117,56 @@ void TrackingSyncSource::endSyncThrow()
     }
 }
 
-void TrackingSyncSource::exportData(ostream &out)
+void TrackingSyncSource::backupData(const string &dir, ConfigNode &node, BackupReport &report)
 {
     RevisionMap_t revisions;
     listAllItems(revisions);
 
+    unsigned long counter = 1;
+    errno = 0;
     BOOST_FOREACH(const StringPair &mapping, revisions) {
         const string &uid = mapping.first;
+        const string &rev = mapping.second;
         cxxptr<SyncItem> item(createItem(uid), "sync item");
 
-        out << (char *)item->getData() << "\n";
+        stringstream filename;
+        filename << dir << "/" << counter;
+
+        ofstream out(filename.str().c_str());
+        out.write(item->getData(), item->getDataSize());
+        out.close();
+        if (out.fail()) {
+            throwError(string("error writing ") + filename.str() + ": " + strerror(errno));
+        }
+
+        stringstream key;
+        key << counter << "-uid";
+        node.setProperty(key.str(), uid);
+        key.clear();
+        key << counter << "-rev";
+        node.setProperty(key.str(), rev);
+
+        counter++;
     }
+
+    stringstream value;
+    value << counter - 1;
+    node.setProperty("numitems", value.str());
+    node.flush();
+
+    report.setNumItems(counter - 1);
 }
+
+void TrackingSyncSource::restoreData(const string &dir, const ConfigNode &node)
+{
+    RevisionMap_t revisions;
+    listAllItems(revisions);
+
+    // int counter = 1;
+    // BOOST_FOREACH(const StringPair &mapping, revisions) {
+    // }
+}
+
 
 SyncMLStatus TrackingSyncSource::addItemThrow(SyncItem& item)
 {

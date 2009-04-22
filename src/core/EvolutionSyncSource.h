@@ -360,14 +360,18 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
     virtual void close() = 0;
 
     /**
-     * Dump all data from source unmodified into the given stream.
+     * Dump all data from source unmodified into the given directory.
+     * The ConfigNode can be used to store meta information needed for
+     * restoring that state. Both directory and node are empty.
+     * Information about the created backup is added to the
+     * report.
      */
-    virtual void exportData(ostream &out) = 0;
+    virtual void backupData(const string &dirname, ConfigNode &node, BackupReport &report) = 0;
 
     /**
-     * file suffix for database files
+     * Restore database from data stored in backupData().
      */
-    virtual string fileSuffix() const = 0;
+    virtual void restoreData(const string &dirname, const ConfigNode &node) = 0;
 
     /**
      * Returns the preferred mime type of the items handled by the sync source.

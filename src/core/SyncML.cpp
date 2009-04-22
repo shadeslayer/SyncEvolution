@@ -223,6 +223,23 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
                 " item(s) matched" <<
                 "|\n";
         }
+
+        if (source.m_backupBefore.isAvailable() ||
+            source.m_backupAfter.isAvailable()) {
+            std::stringstream backup;
+            backup << "item(s) in database backup: ";
+            if (source.m_backupBefore.isAvailable()) {
+                backup << source.m_backupBefore.getNumItems() << " before sync, ";
+            } else {
+                backup << "no backup before sync, ";
+            }
+            if (source.m_backupAfter.isAvailable()) {
+                backup << source.m_backupAfter.getNumItems() << " after it";
+            } else {
+                backup << "no backup after it";
+            }
+            flushRight(out, backup.str());
+        }
     }
     out << sep;
 

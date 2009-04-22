@@ -381,12 +381,6 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     void initSources(SourceList &sourceList);
 
     /**
-     * Fills the report with information about all sources and
-     * the client itself.
-     */
-    void createSyncReport(SyncReport &report, SourceList &sourceList) const;
-
-    /**
      * sets up Synthesis session and executes it
      */
     SyncMLStatus doSync();

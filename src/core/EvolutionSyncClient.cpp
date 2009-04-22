@@ -206,6 +206,16 @@ public:
                         long status;
                         in >> status;
                         source.recordStatus(static_cast<SyncMLStatus>(status));
+                    } else if (key == "backup-before") {
+                        stringstream in(prop.second);
+                        long count;
+                        in >> count;
+                        source.m_backupBefore.setNumItems(count);
+                    } else if (key == "backup-after") {
+                        stringstream in(prop.second);
+                        long count;
+                        in >> count;
+                        source.m_backupAfter.setNumItems(count);
                     }
                 }
             }
@@ -238,7 +248,16 @@ public:
                 key = prefix + "-resume";
                 m_info->setProperty(key, source.isResumeSync() ? "true" : "false");
                 key = prefix + "-status";
+                strval.clear();
                 strval << static_cast<long>(source.getStatus());
+                m_info->setProperty(key, strval.str());
+                key = prefix + "-backup-before";
+                strval.clear();
+                strval << source.m_backupBefore.getNumItems();
+                m_info->setProperty(key, strval.str());
+                key = prefix + "-backup-after";
+                strval.clear();
+                strval << source.m_backupAfter.getNumItems();
                 m_info->setProperty(key, strval.str());
 
                 for (int location = 0;
@@ -518,8 +537,7 @@ private:
             logdir = m_logdir.getLogdir();
         }
         return logdir + "/" +
-            source.getName() + "." + suffix + "." +
-            source.fileSuffix();
+            source.getName() + "." + suffix;
     }
 
 public:
@@ -527,9 +545,11 @@ public:
     void setLogLevel(LogLevel logLevel) { m_logLevel = logLevel; }
 
     /**
-     * dump into files with a certain suffix
+     * dump into files with a certain suffix,
+     * optionally store report in member of SyncSourceReport
      */
-    void dumpDatabases(const string &suffix) {
+    void dumpDatabases(const string &suffix,
+                       BackupReport SyncSourceReport::*report) {
         ofstream out;
 #ifndef IPHONE
         // output stream on iPhone raises exception even though it is in a good state;
@@ -539,25 +559,17 @@ public:
 #endif
 
         BOOST_FOREACH(EvolutionSyncSource *source, *this) {
-            string file = databaseName(*source, suffix);
-            SE_LOG_DEBUG(NULL, NULL, "creating %s", file.c_str());
-            out.open(file.c_str());
-            source->exportData(out);
-            out.close();
-            SE_LOG_DEBUG(NULL, NULL, "%s created", file.c_str());
+            string dir = databaseName(*source, suffix);
+            boost::shared_ptr<ConfigNode> node = ConfigNode::createFileNode(dir + ".ini");
+            SE_LOG_DEBUG(NULL, NULL, "creating %s", dir.c_str());
+            mkdir_p(dir);
+            BackupReport dummy;
+            source->backupData(dir, *node,
+                               report ? source->*report : dummy);
+            SE_LOG_DEBUG(NULL, NULL, "%s created", dir.c_str());
         }
     }
 
-    /** remove database dumps with a specific suffix */
-    void removeDatabases(const string &removeSuffix) {
-        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
-            string file;
-
-            file = databaseName(*source, removeSuffix);
-            unlink(file.c_str());
-        }
-    }
-        
     SourceList(const string &server, bool doLogging) :
         m_logdir(server),
         m_prepared(false),
@@ -634,18 +646,17 @@ public:
         if (m_logdir.getLogfile().size() &&
             m_doLogging) {
             // dump initial databases
-            dumpDatabases("before");
+            dumpDatabases("before", &SyncSourceReport::m_backupBefore);
             // compare against the old "after" database dump
             dumpLocalChanges("after", "before");
-            // now remove the old database dump
-            removeDatabases("after");
+
             m_prepared = true;
         }
     }
 
     // call at the end of a sync with success == true
     // if all went well to print report
-    void syncDone(bool success, const SyncReport *report) {
+    void syncDone(bool success, SyncReport *report) {
         if (m_doLogging) {
             // ensure that stderr is seen again
             m_logdir.restore();
@@ -658,10 +669,14 @@ public:
                 // dump datatbase after sync, but not if already dumping it at the beginning didn't complete
                 if (m_prepared) {
                     try {
-                        dumpDatabases("after");
+                        dumpDatabases("after", &SyncSourceReport::m_backupAfter);
                     } catch (...) {
                         SyncEvolutionException::handle();
                         m_prepared = false;
+                    }
+                    if (report) {
+                        // update report with more recent information about m_backupAfter
+                        updateSyncReport(*report);
                     }
                 }
 
@@ -709,6 +724,13 @@ public:
                     m_logdir.expire();
                 }
             }
+        }
+    }
+
+    /** copies information about sources into sync report */
+    void updateSyncReport(SyncReport &report) {
+        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+            report.addSyncSourceReport(source->getName(), *source);
         }
     }
 
@@ -1103,14 +1125,6 @@ EvolutionSyncSource *EvolutionSyncClient::findSource(const char *name)
     return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
 }
 
-void EvolutionSyncClient::createSyncReport(SyncReport &report, SourceList &sourceList) const
-{
-    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
-        report.addSyncSourceReport(source->getName(), *source);
-    }
-}
-
-
 void EvolutionSyncClient::setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter)
 {
     map<string, string>::const_iterator hasSync = filter.find(EvolutionSyncSourceConfig::m_sourcePropSync.getName());
@@ -1407,7 +1421,7 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
     try {
         // Print final report before cleaning up.
         // Status was okay only if all sources succeeded.
-        createSyncReport(*report, sourceList);
+        sourceList.updateSyncReport(*report);
         BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
             if (source->getStatus() != STATUS_OK &&
                 status == STATUS_OK) {
@@ -1771,7 +1785,7 @@ void EvolutionSyncClient::status()
     if (found) {
         try {
             sourceList.setPath(prevLogdir);
-            sourceList.dumpDatabases("current");
+            sourceList.dumpDatabases("current", NULL);
             sourceList.dumpLocalChanges("after", "current");
         } catch(...) {
             SyncEvolutionException::handle();
