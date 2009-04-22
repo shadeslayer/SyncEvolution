@@ -10,6 +10,8 @@
 #include <string>
 using namespace std;
 
+#include <boost/shared_ptr.hpp>
+
 /**
  * This class corresponds to the Funambol C++ client
  * DeviceManagementNode, but offers a slightly different API.  See
@@ -19,6 +21,9 @@ class ConfigNode {
  public:
     /** free resources without saving */
     virtual ~ConfigNode() {}
+
+    /** creates a file-backed config node which accepts arbitrary key/value pairs */
+    static boost::shared_ptr<ConfigNode> createFileNode(const string &filename);
 
     /** a name for the node that the user can understand */
     virtual string getName() const = 0;

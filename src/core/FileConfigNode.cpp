@@ -4,6 +4,7 @@
  */
 
 #include "FileConfigNode.h"
+#include "SafeConfigNode.h"
 #include "EvolutionSyncClient.h"
 #include "SyncEvolutionUtil.h"
 
@@ -15,6 +16,22 @@
 #include <fcntl.h>
 
 /** @TODO: replace stdio.h with streams */
+
+boost::shared_ptr<ConfigNode> ConfigNode::createFileNode(const string &filename)
+{
+    string::size_type off = filename.rfind('/');
+    boost::shared_ptr<ConfigNode> filenode;
+    if (off != filename.npos) {
+        filenode.reset(new FileConfigNode(filename.substr(0, off),
+                                          filename.substr(off + 1),
+                                          false));
+    } else {
+        filenode.reset(new FileConfigNode(".", filename, false));
+    }
+    boost::shared_ptr<SafeConfigNode> savenode(new SafeConfigNode(filenode));
+    savenode->setMode(false);
+    return savenode;
+}
 
 FileConfigNode::FileConfigNode(const string &path, const string &fileName, bool readonly) :
     m_path(path),
