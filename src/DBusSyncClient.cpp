@@ -29,10 +29,11 @@ void DBusSyncClient::prepare(const std::vector<EvolutionSyncSource *> &sources)
 
 	map<string,int>::const_iterator iter;
 	for (iter = m_source_map.begin (); iter != m_source_map.end (); iter++) {
-g_debug ("setting mode %d for %s", iter->second, iter->first.c_str());
 		modes.setSyncMode (iter->first, (SyncMode)iter->second);
-    }
+	}
 	setSyncModes (sources, modes);
+
+	setPrintChanges (false, true);
 }
 
 string DBusSyncClient::askPassword(const string &descr)
