@@ -205,6 +205,19 @@ static void
 add_error_info (app_data *data, const char *message, const char *external_reason)
 {
     GtkWidget *lbl;
+    GList *l, *children;
+
+    /* synthesis may emit same error several times, work around that: */
+    children = gtk_container_get_children (GTK_CONTAINER (data->error_box));
+    for (l = children; l; l = l->next) {
+        GtkLabel *old_lbl = GTK_LABEL (l->data);
+
+        if (strcmp (message, gtk_label_get_text (old_lbl)) == 0) {
+            g_list_free (children);
+            return;
+        }
+    }
+    g_list_free (children);
 
     gtk_widget_show (data->error_img);
 
