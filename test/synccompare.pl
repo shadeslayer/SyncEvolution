@@ -360,8 +360,16 @@ if($#ARGV > 1) {
 
   my ($file1, $file2) = ($ARGV[0], $ARGV[1]);
 
-  open(IN1, "<:utf8", $file1) || die "$file1: $!";
-  open(IN2, "<:utf8", $file2) || die "$file2: $!";
+  if (-d $file1) {
+      open(IN1, "-|:utf8", "find $file1 -type f -print0 | xargs -0 cat") || die "$file1: $!";
+  } else {
+      open(IN1, "<:utf8", $file1) || die "$file1: $!";
+  }
+  if (-d $file1) {
+      open(IN2, "-|:utf8", "find $file2 -type f -print0 | xargs -0 cat") || die "$file2: $!";
+  } else {
+      open(IN2, "<:utf8", $file2) || die "$file2: $!";
+  }
   my $singlewidth = int(($columns - 3) / 2);
   $columns = $singlewidth * 2 + 3;
   my @normal1 = Normalize(*IN1{IO}, $singlewidth);
