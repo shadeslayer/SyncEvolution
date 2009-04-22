@@ -69,12 +69,6 @@ bool SyncEvolutionCmdline::parse()
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                 return false;
             }
-        } else if(boost::iequals(m_argv[opt], "--properties") ||
-                  boost::iequals(m_argv[opt], "-r")) {
-            opt++;
-            /* TODO */
-            m_err << "ERROR: not implemented yet: " << m_argv[opt - 1] << endl;
-            return false;
         } else if(boost::iequals(m_argv[opt], "--template") ||
                   boost::iequals(m_argv[opt], "-l")) {
             opt++;

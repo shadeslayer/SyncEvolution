@@ -341,11 +341,6 @@ Set up another configuration for scheduleworld under a different name:
                   --template scheduleworld \
                   scheduleworld_joe
 
-Edit all configuration properties at once:
-  $ syncevolution --print-config scheduleworld >/tmp/config.ini
-  $ $EDITOR /tmp/config.ini
-  $ syncevolution --configure --properties config.ini scheduleworld
-
 
 Configuration
 -------------
