@@ -888,10 +888,10 @@ load_icon (const char *uri, icon_data *data)
     GFile *img_file;
 
     if (!uri || strlen (uri) == 0) {
-        /* TODO: load generic service icon */
-        return;
+        img_file = g_file_new_for_path (THEMEDIR "sync-generic.png");
+    } else {
+        img_file = g_file_new_for_uri (uri);
     }
-    img_file = g_file_new_for_uri (uri);
     g_file_read_async (img_file, G_PRIORITY_DEFAULT, NULL, 
                        (GAsyncReadyCallback)icon_read_cb,
                        data);
