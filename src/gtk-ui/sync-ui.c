@@ -1334,10 +1334,7 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
         error = NULL;
     }
 
-    if (server && data->current_service && 
-        strcmp (server, data->current_service->name) == 0) {
-        return;
-    }
+    /*TODO: avoid the rest if server did not actually change */
 
     server_config_free (data->current_service);
     if (!server) {
