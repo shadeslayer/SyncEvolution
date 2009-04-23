@@ -75,9 +75,10 @@ class TrackingSyncSource : public EvolutionSyncSource
     virtual void backupData(const string &dirname, ConfigNode &node, BackupReport &report);
 
     /**
-     * Restore database from data stored in backupData().
+     * Restore database from data stored in backupData(). Will be
+     * called inside open()/close() pair. beginSync() is *not* called.
      */
-    virtual void restoreData(const string &dirname, const ConfigNode &node);
+    virtual void restoreData(const string &dirname, const ConfigNode &node, bool dryrun, SyncSourceReport &report);
 
     typedef map<string, string> RevisionMap_t;
 

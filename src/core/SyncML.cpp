@@ -180,17 +180,25 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
 
         std::stringstream line;
 
-        line <<
-            PrettyPrintSyncMode(source.getFinalSyncMode()) << ", " <<
+        if (source.getFinalSyncMode() != SYNC_NONE ||
             source.getItemStat(SyncSourceReport::ITEM_LOCAL,
                                SyncSourceReport::ITEM_ANY,
-                               SyncSourceReport::ITEM_SENT_BYTES) / 1024 <<
-            " KB sent by client, " <<
+                               SyncSourceReport::ITEM_SENT_BYTES) ||
             source.getItemStat(SyncSourceReport::ITEM_LOCAL,
                                SyncSourceReport::ITEM_ANY,
-                               SyncSourceReport::ITEM_RECEIVED_BYTES) / 1024 <<
-            " KB received";
-        flushRight(out, line.str());
+                               SyncSourceReport::ITEM_RECEIVED_BYTES)) {
+            line <<
+                PrettyPrintSyncMode(source.getFinalSyncMode()) << ", " <<
+                source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                   SyncSourceReport::ITEM_ANY,
+                                   SyncSourceReport::ITEM_SENT_BYTES) / 1024 <<
+                " KB sent by client, " <<
+                source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                   SyncSourceReport::ITEM_ANY,
+                                   SyncSourceReport::ITEM_RECEIVED_BYTES) / 1024 <<
+                " KB received";
+            flushRight(out, line.str());
+        }
 
         if (total_conflicts > 0) {
             for (SyncSourceReport::ItemResult result = SyncSourceReport::ITEM_CONFLICT_SERVER_WON;

@@ -98,6 +98,27 @@ bool SyncEvolutionCmdline::parse()
         } else if(boost::iequals(m_argv[opt], "--run") ||
                   boost::iequals(m_argv[opt], "-r")) {
             m_run = true;
+        } else if(boost::iequals(m_argv[opt], "--restore")) {
+            opt++;
+            if (opt >= m_argc) {
+                usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
+                return false;
+            }
+            m_restore = m_argv[opt];
+            if (m_restore.empty()) {
+                usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
+                return false;
+            }
+            if (!isDir(m_restore)) {
+                usage(true, string("parameter '") + m_restore + "' for " + cmdOpt(m_argv[opt - 1]) + " must be log directory");
+                return false;
+            }
+        } else if(boost::iequals(m_argv[opt], "--before")) {
+            m_before = true;
+        } else if(boost::iequals(m_argv[opt], "--after")) {
+            m_after = true;
+        } else if(boost::iequals(m_argv[opt], "--dry-run")) {
+            m_dryrun = true;
         } else if(boost::iequals(m_argv[opt], "--migrate")) {
             m_migrate = true;
         } else if(boost::iequals(m_argv[opt], "--status") ||
@@ -129,6 +150,11 @@ bool SyncEvolutionCmdline::parse()
 }
 
 bool SyncEvolutionCmdline::run() {
+    // --dry-run is only supported by some operations.
+    // Be very strict about it and make sure it is off in all
+    // potentially harmful operations, otherwise users might
+    // expect it to have an effect when it doesn't.
+
     if (m_usage) {
         usage(true);
     } else if (m_version) {
@@ -140,6 +166,7 @@ bool SyncEvolutionCmdline::run() {
     } else if (m_dontrun) {
         // user asked for information
     } else if (m_argc == 1) {
+        // no parameters: list databases and short usage
         const SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
         boost::shared_ptr<FilterConfigNode> configNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> hiddenNode(new VolatileConfigNode());
@@ -206,6 +233,10 @@ bool SyncEvolutionCmdline::run() {
         usage(true, "server name missing");
         return false;
     } else if (m_configure || m_migrate) {
+        if (m_dryrun) {
+            EvolutionSyncClient::throwError("--dry-run not supported for configuration changes");
+        }
+
         bool fromScratch = false;
 
         // Both config changes and migration are implemented as copying from
@@ -330,6 +361,10 @@ bool SyncEvolutionCmdline::run() {
         // done, now write it
         to->flush();
     } else if (m_remove) {
+        if (m_dryrun) {
+            EvolutionSyncClient::throwError("--dry-run not supported for removing configurations");
+        }
+
         // extra sanity check
         if (!m_sources.empty() ||
             !m_syncProps.empty() ||
@@ -345,6 +380,7 @@ bool SyncEvolutionCmdline::run() {
     } else {
         EvolutionSyncClient client(m_server, true, m_sources);
         client.setQuiet(m_quiet);
+        client.setDryRun(m_dryrun);
         client.setConfigFilter(true, m_syncProps);
         client.setConfigFilter(false, m_sourceProps);
         if (m_status) {
@@ -366,7 +402,26 @@ bool SyncEvolutionCmdline::run() {
                     cout << report;
                 }
             }
+        } else if (!m_restore.empty()) {
+            // sanity checks: either --after or --before must be given, sources must be selected
+            if ((!m_after && !m_before) ||
+                (m_after && m_before)) {
+                usage(false, "--restore <log dir> must be used with either --after (restore database as it was after that sync) or --before (restore data from before sync)");
+                return false;
+            }
+            if (m_sources.empty()) {
+                usage(false, "Sources must be selected explicitly for --restore to prevent accidental restore.");
+                return false;
+            }
+            client.restore(m_restore,
+                           m_after ?
+                           EvolutionSyncClient::DATABASE_AFTER_SYNC :
+                           EvolutionSyncClient::DATABASE_BEFORE_SYNC);
         } else {
+            if (m_dryrun) {
+                EvolutionSyncClient::throwError("--dry-run not supported for running a synchronization");
+            }
+
             // safety catch: if props are given, then --run
             // is required
             if (!m_run &&
@@ -577,6 +632,8 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
     out << "Run a synchronization:" << endl;
     out << "  " << m_argv[0] << " <server> [<source> ...]" << endl;
     out << "  " << m_argv[0] << " --run <options for run> <server> [<source> ...]" << endl;
+    out << "Restore data from the automatic backups:" << endl;
+    out << "  " << m_argv[0] << " --restore <session directory> --before|--after [--dry-run] <server> <source> ..." << endl;
     out << "Remove a configuration:" << endl;
     out << "  " << m_argv[0] << " --remove <server>" << endl;
     out << "Modify configuration:" << endl;
@@ -635,6 +692,18 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "  configuration are not preserved." << endl <<
             "  --migrate implies --configure and can be combined with modifying" << endl <<
             "  properties." << endl <<
+            "" << endl <<
+            "--restore" << endl <<
+            "  Restores the data of the selected sources to the state from before or after the" << endl <<
+            "  selected synchronization. The synchronization is selected via its log directory" << endl <<
+            "  (see --print-sessions). Other directories can also be given as long as" << endl <<
+            "  they contain database dumps in the format created by SyncEvolution." << endl <<
+            "  The output includes information about the changes made during the" << endl <<
+            "  restore, both in terms of item changes and content changes (which is" << endl <<
+            "  not always the same, see manual for details). This output can be suppressed" << endl <<
+            "  with --quiet." << endl <<
+            "  In combination with --dry-run, the changes to local data are only simulated." << endl <<
+            "  This can be used to check that --restore will not remove valuable information." << endl <<
             "" << endl <<
             "--remove" << endl <<
             "  This removes only the configuration files and related meta information." << endl <<

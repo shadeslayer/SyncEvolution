@@ -43,6 +43,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     const set<string> m_sources;
     const bool m_doLogging;
     bool m_quiet;
+    bool m_dryrun;
 
     /**
      * a pointer to the active SourceList instance if one exists; 
@@ -91,6 +92,9 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     bool getQuiet() { return m_quiet; }
     void setQuiet(bool quiet) { m_quiet = quiet; }
 
+    bool getDryRun() { return m_dryrun; }
+    void setDryRun(bool dryrun) { m_dryrun = dryrun; }
+
     /**
      * Executes the sync, throws an exception in case of failure.
      * Handles automatic backups and report generation.
@@ -105,6 +109,17 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * temp or logdir) and shows changes since then.
      */
     void status();
+
+    enum RestoreDatabase {
+        DATABASE_BEFORE_SYNC,
+        DATABASE_AFTER_SYNC
+    };
+
+    /**
+     * Restore data of selected sources from before or after the given
+     * sync session, identified by absolute path to the log dir.
+     */
+    void restore(const string &dirname, RestoreDatabase database);
 
     /**
      * fills vector with absolute path to information about previous

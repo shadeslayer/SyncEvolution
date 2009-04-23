@@ -61,6 +61,7 @@ class SyncItem {
     const char *getData() const { return m_data.c_str(); }
     size_t getDataSize() const { return m_data.size(); }
     void setData(const char *data, size_t size) { m_data.assign(data, size); }
+    void setData(const std::string &data) { m_data = data; }
     void setDataType(const std::string &datatype) { m_datatype = datatype; }
     std::string getDataType() const { return m_datatype; }
 
@@ -198,6 +199,11 @@ class SyncSourceReport {
                      ItemResult success,
                      int count) {
         m_stat[location][state][success] = count;
+    }
+    void incrementItemStat(ItemLocation location,
+                           ItemState state,
+                           ItemResult success) {
+        m_stat[location][state][success]++;
     }
 
     void recordFinalSyncMode(SyncMode mode) { m_mode = mode; }

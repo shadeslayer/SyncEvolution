@@ -369,9 +369,10 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
     virtual void backupData(const string &dirname, ConfigNode &node, BackupReport &report) = 0;
 
     /**
-     * Restore database from data stored in backupData().
+     * Restore database from data stored in backupData().  Will be
+     * called inside open()/close() pair. beginSync() is *not* called.
      */
-    virtual void restoreData(const string &dirname, const ConfigNode &node) = 0;
+    virtual void restoreData(const string &dirname, const ConfigNode &node, bool dryrun, SyncSourceReport &report) = 0;
 
     /**
      * Returns the preferred mime type of the items handled by the sync source.

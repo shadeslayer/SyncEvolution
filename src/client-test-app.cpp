@@ -84,7 +84,7 @@ public:
     virtual SyncItem *createItem(const string &uid) { return m_source->createItem(uid); }
     virtual void close() { m_source->close(); }
     virtual void backupData(const string &dir, ConfigNode &node, BackupReport &report) { m_source->backupData(dir, node, report); }
-    virtual void restoreData(const string &dir, const ConfigNode &node) { m_source->restoreData(dir, node); }
+    virtual void restoreData(const string &dir, const ConfigNode &node, bool dryrun, SyncSourceReport &report) { m_source->restoreData(dir, node, dryrun, report); }
     virtual const char *getMimeType() const { return m_source->getMimeType(); }
     virtual const char *getMimeVersion() const { return m_source->getMimeVersion(); }
     virtual const char* getSupportedTypes() const { return m_source->getSupportedTypes(); }

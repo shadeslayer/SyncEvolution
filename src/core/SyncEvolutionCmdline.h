@@ -48,6 +48,7 @@ private:
     ostream &m_out, &m_err;
 
     Bool m_quiet;
+    Bool m_dryrun;
     Bool m_status;
     Bool m_version;
     Bool m_usage;
@@ -62,6 +63,9 @@ private:
     FilterConfigNode::ConfigFilter m_syncProps, m_sourceProps;
     const ConfigPropertyRegistry &m_validSyncProps;
     const ConfigPropertyRegistry &m_validSourceProps;
+
+    string m_restore;
+    Bool m_before, m_after;
 
     string m_server;
     string m_template;
