@@ -136,7 +136,7 @@ server_config_get_option_array (server_config *server)
 }
 
 GPtrArray*
-server_config_get_source_array (server_config *server, SyncType mode)
+server_config_get_source_array (server_config *server, SyncMode mode)
 {
     GList *l;
     GPtrArray *sources;

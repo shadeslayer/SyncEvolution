@@ -3,13 +3,14 @@
 
 
 DBusSyncClient::DBusSyncClient(const string &server,
-                               const set<string> &sources,
+                               const map<string, int> &source_map,
                                void (*progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data),
                                void (*server_message) (const char *message,gpointer data),
                                char* (*need_password) (const char *message,gpointer data),
                                gboolean (*check_for_suspend)(gpointer data),
                                gpointer userdata) : 
-	EvolutionSyncClient(server, true, sources),
+	EvolutionSyncClient(server, true, getSyncSources (source_map)),
+	m_source_map (source_map),
 	m_userdata (userdata),
 	m_progress (progress),
 	m_server_message (server_message),
@@ -20,6 +21,18 @@ DBusSyncClient::DBusSyncClient(const string &server,
 
 DBusSyncClient::~DBusSyncClient()
 {
+}
+
+void DBusSyncClient::prepare(const std::vector<EvolutionSyncSource *> &sources)
+{
+	SyncModes modes (SYNC_NONE);
+
+	map<string,int>::const_iterator iter;
+	for (iter = m_source_map.begin (); iter != m_source_map.end (); iter++) {
+g_debug ("setting mode %d for %s", iter->second, iter->first.c_str());
+		modes.setSyncMode (iter->first, (SyncMode)iter->second);
+    }
+	setSyncModes (sources, modes);
 }
 
 string DBusSyncClient::askPassword(const string &descr)

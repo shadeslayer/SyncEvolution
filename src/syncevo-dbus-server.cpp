@@ -67,12 +67,13 @@ syncevo_source_get (SyncevoSource *source, const char **name, int *mode)
 }
 
 static void
-syncevo_source_add_to_set (SyncevoSource *source, set<string> source_set)
+syncevo_source_add_to_map (SyncevoSource *source, map<string, int> source_map)
 {
 	const char *str;
+	int mode;
 	
-	syncevo_source_get (source, &str, NULL);
-	source_set.insert (g_strdup (str));
+	syncevo_source_get (source, &str, &mode);
+	source_map.insert (make_pair (str, mode));
 }
 
 void
@@ -259,9 +260,9 @@ syncevo_start_sync (SyncevoDBusServer *obj,
 	obj->aborted = FALSE;
 	obj->server = g_strdup (server);
 
-	set<string> source_set = set<string>();
-	g_ptr_array_foreach (sources, (GFunc)syncevo_source_add_to_set, &source_set);
-	obj->client = new DBusSyncClient (string (server), source_set, 
+	map<string,int> source_map;
+	g_ptr_array_foreach (sources, (GFunc)syncevo_source_add_to_map, &source_map);
+	obj->client = new DBusSyncClient (string (server), source_map, 
 	                                  emit_progress, emit_server_message, need_password, check_for_suspend,
 	                                  obj);
 
@@ -387,13 +388,6 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
 		return FALSE;
 	}
 
-	if (obj->server) {
-		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
-		                      SYNCEVO_DBUS_ERROR_GENERIC_ERROR, 
-		                      "GetTemplateConfig is not supported when a sync is in progress");
-		return FALSE;
-	}
-	
 	*options = g_ptr_array_new ();
 
 	boost::shared_ptr<EvolutionSyncConfig> config (EvolutionSyncConfig::createServerTemplate (string (templ)));
@@ -442,13 +436,6 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
 		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
 		                      "Server and options arguments must be given");
-		return FALSE;
-	}
-
-	if (obj->server) {
-		*error = g_error_new (g_quark_from_static_string ("syncevo-dbus-server"),
-		                      SYNCEVO_DBUS_ERROR_GENERIC_ERROR, 
-		                      "GetServerConfig is not supported when a sync is in progress");
 		return FALSE;
 	}
 
