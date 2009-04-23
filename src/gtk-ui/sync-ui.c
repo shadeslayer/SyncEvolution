@@ -16,7 +16,7 @@
  *    - a more cleaner solution would be to have StartSync return a 
  *      dbus path that could be used to connect to signals related to that specific
  *      sync
- * */
+ */
 
 
 #include <stdlib.h>
@@ -38,7 +38,6 @@
 
 #define SYNC_UI_GCONF_DIR "/apps/sync-ui"
 #define SYNC_UI_SERVER_KEY SYNC_UI_GCONF_DIR"/server"
-#define SYNC_UI_LAST_SYNC_KEY SYNC_UI_GCONF_DIR"/last-sync"
 
 #define SYNC_UI_ICON_SIZE 48
 #define SYNC_UI_LIST_ICON_SIZE 32
@@ -132,7 +131,7 @@ typedef struct app_data {
     GtkWidget *delete_service_btn;
 
     gboolean syncing;
-    glong last_sync;
+    int last_sync;
     guint last_sync_src_id;
     GList *source_progresses;
 
@@ -237,27 +236,20 @@ add_error_info (app_data *data, const char *message, const char *external_reason
 }
 
 static void
-save_gconf_settings (app_data *data, char *service_name, char *last_sync)
+save_gconf_settings (app_data *data, char *service_name)
 {
     GConfClient* client;
-    GConfChangeSet *set;
     GError *err = NULL;
 
     client = gconf_client_get_default ();
-    set = gconf_change_set_new ();
-    if (service_name) {
-        gconf_change_set_set_string (set, SYNC_UI_SERVER_KEY, service_name);
-    } else {
-        gconf_change_set_unset (set, SYNC_UI_SERVER_KEY);
-    }
-    gconf_change_set_set_string (set, SYNC_UI_LAST_SYNC_KEY, last_sync);
-    if (!gconf_client_commit_change_set (client, set, FALSE, &err)) {
+    if (!gconf_client_set_string (client, SYNC_UI_SERVER_KEY, 
+                                  service_name ? service_name : "", 
+                                  &err)) {
         show_error_dialog (GTK_WINDOW (data->sync_win),
-                           "Failed to commit changes to GConf configuration system");
-        g_warning ("Failed to commit changes to GConf configuration system: %s", err->message);
+                           "Failed to save current service in GConf configuration system");
+        g_warning ("Failed to save current service in GConf configuration system: %s", err->message);
         g_error_free (err);
     }
-    gconf_change_set_unref (set);
 }
 
 static void
@@ -271,7 +263,7 @@ set_server_config_cb (SyncevoService *service, GError *error, app_data *data)
         g_error_free (error);
         return;
     }
-    save_gconf_settings (data, data->current_service->name, "-1");
+    save_gconf_settings (data, data->current_service->name);
 }
 
 
@@ -337,7 +329,7 @@ remove_server_config_cb (SyncevoService *service,
 
         if (data->data->current_service && data->data->current_service->name &&
             strcmp (data->data->current_service->name, data->server_name) == 0)
-            save_gconf_settings (data->data, NULL, "-1");
+            save_gconf_settings (data->data, NULL);
     }
 
     g_free (data->server_name);
@@ -421,7 +413,7 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
 
     if (!server->changed) {
         /* no need to save first, set the gconf key right away */
-        save_gconf_settings (data, data->current_service->name, "-1");
+        save_gconf_settings (data, data->current_service->name);
     } else {
         /* save the server, let callback change current server gconf key */
         options = server_config_get_option_array (server);
@@ -922,7 +914,7 @@ update_service_ui (app_data *data)
         source_config *source = (source_config*)l->data;
         GtkWidget *check;
         
-        if (source->uri) {
+        if (source->uri && strlen (source->uri) > 0) {
             check = gtk_check_button_new_with_label (source->name);
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), source->enabled);
             gtk_widget_set_sensitive (check, TRUE);
@@ -940,6 +932,24 @@ update_service_ui (app_data *data)
     }
     gtk_widget_show_all (data->sources_box);
 
+}
+
+static void
+get_sync_reports_cb (SyncevoService *service, GPtrArray *reports, GError *error, app_data *data)
+{
+    if (error) {
+        g_warning ("Failed to get sync reports from SyncEvolution: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    if (reports->len < 1) {
+        data->last_sync = -1; 
+    } else {
+        SyncevoReportArray *session_report = (SyncevoReportArray*)g_ptr_array_index (reports, 0);
+        syncevo_report_array_get (session_report, &data->last_sync, NULL);
+    }
+    refresh_last_synced_label (data);
 }
 
 static void
@@ -962,6 +972,11 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
     
     update_service_ui (data);
     set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+
+    /* get last sync report (for last sync time) */
+    syncevo_service_get_sync_reports_async (service, data->current_service->name, 1,
+                                            (SyncevoGetSyncReportsCb)get_sync_reports_cb,
+                                            data);
 }
 
 static void
@@ -1312,20 +1327,7 @@ static void
 gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *data)
 {
     char *server = NULL;
-    char *last_sync = NULL;
     GError *error = NULL;
-
-    last_sync = gconf_client_get_string (client, SYNC_UI_LAST_SYNC_KEY, &error);
-    if (error) {
-        g_warning ("Could not read last sync time from gconf: %s", error->message);
-        g_error_free (error);
-        error = NULL;
-    }
-    if (last_sync) {
-        data->last_sync = strtol (last_sync, NULL, 0);
-        g_free (last_sync);
-    }
-    refresh_last_synced_label (data);
 
     server = gconf_client_get_string (client, SYNC_UI_SERVER_KEY, &error);
     if (error) {
@@ -1436,22 +1438,8 @@ sync_progress_cb (SyncevoService *service,
             g_warning ("Syncevolution sync returned error: %d", extra1);
         } else {
             GTimeVal val;
-            GConfClient* client;
-            GError *error = NULL;
-            
             g_get_current_time (&val);
             data->last_sync = val.tv_sec;
-
-            /* save last sync time in gconf (using string since there's no 'longint' in gconf)*/
-            client = gconf_client_get_default ();
-            msg = g_strdup_printf("%ld", data->last_sync);
-
-            gconf_client_set_string (client, SYNC_UI_LAST_SYNC_KEY, msg, &error);
-            g_free (msg);
-            if (error) {
-                g_warning ("Could not save last sync time to gconf: %s", error->message);
-                g_error_free (error);
-            }
         }
         refresh_statistics (data);
 

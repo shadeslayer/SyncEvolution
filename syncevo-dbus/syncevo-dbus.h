@@ -123,6 +123,23 @@ void syncevo_service_remove_server_config_async (SyncevoService *service,
                                                  SyncevoRemoveServerConfigCb callback,
                                                  gpointer userdata);
 
+
+gboolean syncevo_service_get_sync_reports (SyncevoService *service,
+                                           char *server,
+                                           int count,
+                                           GPtrArray **reports,
+                                           GError **error);
+typedef void (*SyncevoGetSyncReportsCb) (SyncevoService *service,
+                                         GPtrArray *reports,
+                                         GError *error,
+                                         gpointer userdata);
+void syncevo_service_get_sync_reports_async (SyncevoService *service,
+                                             char *server,
+                                             int count,
+                                             SyncevoGetSyncReportsCb callback,
+                                             gpointer userdata);
+
+
 G_END_DECLS
 
 #endif

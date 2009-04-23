@@ -128,16 +128,22 @@
         </doc:summary>
       </doc:doc>
       <arg type="s" name="server" direction="in" />
-      <arg type="a(sss)" name="properties" direction="in"/>
+      <arg type="a(sss)" name="properties" direction="in">
         <doc:doc>
           <doc:summary>Property array, where array consists of source name, property 
             name and property value. Source name can be NULL: when it's not defined the
             the property is not specific to a source (e.g. username)</doc:summary>
         </doc:doc>
+      </arg>
     </method>
     <method name="RemoveServerConfig">
       <arg type="s" name="server" direction="in" />
     </method>
 
+    <method name ="GetSyncReports">
+      <arg type="s" name="server" direction="in"/>
+      <arg type="i" name="count" direction="in"/>
+      <arg type="a(ia(siiiiiiiiiiiii))" name="reports" direction="out"/>
+    </method>
   </interface>
 </node>

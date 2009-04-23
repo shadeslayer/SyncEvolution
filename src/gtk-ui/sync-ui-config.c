@@ -36,11 +36,7 @@ server_config_update_from_entry (server_config *server, GtkEntry *entry)
     /* all entries have a pointer to the correct string in server_config */
     str = g_object_get_data (G_OBJECT (entry), "value");
     g_assert (str);
-
     new_str = gtk_entry_get_text (entry);
-
-    if ((*str == NULL || strlen (*str) == 0) && strlen (new_str) == 0)
-    return;
 
     if (*str == NULL || strcmp (*str, new_str) != 0) {
         g_free (*str);

@@ -554,3 +554,59 @@ syncevo_service_remove_server_config_async (SyncevoService *service,
 			 (org_Moblin_SyncEvolution_remove_server_config_reply) remove_server_config_async_callback,
 			 data);
 }
+
+gboolean 
+syncevo_service_get_sync_reports (SyncevoService *service,
+                                  char *server,
+                                  int count,
+                                  GPtrArray **reports,
+                                  GError **error)
+{
+	SyncevoServicePrivate *priv;
+
+	priv = GET_PRIVATE (service);
+	return org_Moblin_SyncEvolution_get_sync_reports ( 
+			priv->proxy,
+			server,
+			count,
+			reports,
+			error);
+}
+
+static void
+get_sync_reports_async_callback (DBusGProxy *proxy, 
+                                 GPtrArray *reports,
+                                 GError *error,
+                                 SyncevoAsyncData *data)
+{
+	(*(SyncevoGetSyncReportsCb)data->callback) (data->service,
+	                                            reports,
+	                                            error,
+	                                            data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
+void 
+syncevo_service_get_sync_reports_async (SyncevoService *service,
+                                       char *server,
+                                       int count,
+                                       SyncevoGetSyncReportsCb callback,
+                                       gpointer userdata)
+{
+	SyncevoAsyncData *data;
+	SyncevoServicePrivate *priv;
+
+	priv = GET_PRIVATE (service);
+
+	data = g_slice_new0 (SyncevoAsyncData);
+	data->service = service;
+	data->callback = G_CALLBACK (callback);
+	data->userdata = userdata;
+	
+	org_Moblin_SyncEvolution_get_sync_reports_async 
+			(priv->proxy,
+			 server,
+			 count,
+			 (org_Moblin_SyncEvolution_get_sync_reports_reply) get_sync_reports_async_callback,
+			 data);
+}
