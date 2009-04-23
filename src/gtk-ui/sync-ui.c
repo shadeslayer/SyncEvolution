@@ -307,6 +307,9 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
         g_ptr_array_free (data->options_override, TRUE);
     }
     g_slice_free (server_data ,data);
+
+    g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
+    g_ptr_array_free (options, TRUE);
 }
 
 static void
@@ -950,6 +953,10 @@ get_sync_reports_cb (SyncevoService *service, GPtrArray *reports, GError *error,
         syncevo_report_array_get (session_report, &data->last_sync, NULL);
     }
     refresh_last_synced_label (data);
+
+    g_ptr_array_foreach (reports, (GFunc)syncevo_report_array_free, NULL);
+    g_ptr_array_free (reports, TRUE);
+
 }
 
 static void
@@ -977,6 +984,9 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
     syncevo_service_get_sync_reports_async (service, data->current_service->name, 1,
                                             (SyncevoGetSyncReportsCb)get_sync_reports_cb,
                                             data);
+
+    g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
+    g_ptr_array_free (options, TRUE);
 }
 
 static void

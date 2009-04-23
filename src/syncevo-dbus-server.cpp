@@ -333,9 +333,6 @@ void syncevo_report_array_get (SyncevoReportArray *array, int *end_time, GPtrArr
 		*end_time = g_value_get_int (g_value_array_get_nth (array, 0));
 	}
 	if (reports) {
-		/*
-		 * how do I turn a gvalue into a gptrarray?
-		 * */
 		*reports = (GPtrArray*)g_value_get_boxed (g_value_array_get_nth (array, 1));
 	}
 }
