@@ -625,7 +625,7 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
     out << "Show information about configuration(s) and sync sessions:" << endl;
     out << "  " << m_argv[0] << " --print-servers" << endl;
     out << "  " << m_argv[0] << " --print-config [--quiet] <server> [sync|<source ...]" << endl;
-    out << "  " << m_argv[0] << " --print-sessions <server>" << endl;
+    out << "  " << m_argv[0] << " --print-sessions [--quiet] <server>" << endl;
     out << "Show information about SyncEvolution:" << endl;
     out << "  " << m_argv[0] << " --help|-h" << endl;
     out << "  " << m_argv[0] << " --version" << endl;
