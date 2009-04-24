@@ -47,6 +47,8 @@ typedef GValueArray SyncevoReport;
 #define SYNCEVO_REPORT_ARRAY_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_INT, dbus_g_type_get_collection ("GPtrArray", SYNCEVO_REPORT_TYPE)))
 typedef GValueArray SyncevoReportArray;
 
+GMainLoop *loop;
+
 
 SyncevoSource*
 syncevo_source_new (char *name, int mode)
@@ -356,6 +358,25 @@ static guint signals[LAST_SIGNAL] = {0};
 
 G_DEFINE_TYPE (SyncevoDBusServer, syncevo_dbus_server, G_TYPE_OBJECT);
 
+static gboolean
+shutdown ()
+{
+	g_main_loop_quit (loop);
+
+	return FALSE;
+}
+
+static void
+update_shutdown_timer (SyncevoDBusServer *obj)
+{
+	if (obj->shutdown_timeout_src > 0)
+		g_source_remove (obj->shutdown_timeout_src);
+
+	obj->shutdown_timeout_src = g_timeout_add_seconds (120,
+	                                                   (GSourceFunc)shutdown,
+	                                                   NULL);
+}
+
 void
 emit_progress (const char *source,
                       int type,
@@ -432,6 +453,9 @@ do_sync (SyncevoDBusServer *obj)
 	obj->server = NULL;
 	obj->sources = NULL;
 
+	/* shutdown after a moment of inactivity */
+	update_shutdown_timer (obj);
+
 	return FALSE;
 }
 
@@ -452,6 +476,12 @@ syncevo_start_sync (SyncevoDBusServer *obj,
 		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
 		                      "Server argument must be set");
 		return FALSE;
+	}
+
+	/* don't auto-shutdown while syncing */
+	if (obj->shutdown_timeout_src > 0) {
+		g_source_remove (obj->shutdown_timeout_src);
+		obj->shutdown_timeout_src = 0;
 	}
 
 	obj->aborted = FALSE;
@@ -502,8 +532,9 @@ syncevo_set_password (SyncevoDBusServer *obj,
 	                      SYNCEVO_DBUS_ERROR_GENERIC_ERROR, 
 	                      "SetPassword not supported yet");
 
+	update_shutdown_timer (obj);
+
 	return FALSE;
-	
 }
 
 static gboolean 
@@ -536,7 +567,9 @@ syncevo_get_servers (SyncevoDBusServer *obj,
 		srv = syncevo_server_new (name, url, icon);
 		g_ptr_array_add (*servers, srv);
 	}
-	
+
+	update_shutdown_timer (obj);
+
 	return TRUE;
 }
 
@@ -567,6 +600,9 @@ syncevo_get_templates (SyncevoDBusServer *obj,
 		temp = syncevo_server_new (name, url, icon);
 		g_ptr_array_add (*templates, temp);
 	}
+
+	update_shutdown_timer (obj);
+
 	return TRUE;
 }
 
@@ -617,6 +653,8 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
 		g_ptr_array_add (*options, option);
 
 	}
+
+	update_shutdown_timer (obj);
 
 	return TRUE;
 }
@@ -678,8 +716,9 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 		g_ptr_array_add (*options, option);
 		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("uri"), g_strdup (source_config->getURI()));
 		g_ptr_array_add (*options, option);
-
 	}
+
+	update_shutdown_timer (obj);
 
 	return TRUE;
 }
@@ -747,6 +786,8 @@ syncevo_set_server_config (SyncevoDBusServer *obj,
 	}
 	config->flush();
 
+	update_shutdown_timer (obj);
+
 	return TRUE;
 }
 
@@ -777,6 +818,8 @@ syncevo_remove_server_config (SyncevoDBusServer *obj,
 		return FALSE;
 	}
 	config->remove();
+
+	update_shutdown_timer (obj);
 
 	return TRUE;
 }
@@ -876,6 +919,9 @@ syncevo_get_sync_reports (SyncevoDBusServer *obj,
 			g_ptr_array_add (*reports, session_report);
 		}
 	}
+
+	update_shutdown_timer (obj);
+
 	return TRUE;
 }
 
@@ -947,9 +993,8 @@ syncevo_dbus_server_init(SyncevoDBusServer *obj)
 	}
 	g_object_unref (proxy);
 
+	update_shutdown_timer (obj);
 }
-
-GMainLoop *loop;
 
 void niam(int sig)
 {

@@ -18,6 +18,8 @@ typedef struct _SyncevoDBusServer {
 	GPtrArray *sources;
 	
 	gboolean aborted;
+
+	guint shutdown_timeout_src;
 } SyncevoDBusServer;
 
 typedef struct _SyncevoDBusServerClass {
