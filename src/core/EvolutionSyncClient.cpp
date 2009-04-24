@@ -1130,6 +1130,9 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
                 fragment <<
                 "    </datastore>\n\n";
         }
+        if (datastores.str().empty()) {
+            throwError("no sources active, check configuration");
+        }
         xml.replace(index, tag.size(), datastores.str());
     }
 
