@@ -7,14 +7,14 @@ style "mux-win" {
 }
 class "MuxWindow" style "mux-win"
 
-style "mux-bin" {
+style "mux-frame" {
     bg[NORMAL] = "#ffffff"
     bg[INSENSITIVE] = "#ffffff"
-    MuxBin::border-color = "#dee2e5"
-    MuxBin::bullet-color = "#aaaaaa"
-    MuxBin::title-font = "Bold 12"
+    MuxFrame::border-color = "#dee2e5"
+    MuxFrame::bullet-color = "#aaaaaa"
+    MuxFrame::title-font = "Bold 12"
 }
-class "MuxBin" style "mux-bin"
+class "MuxFrame" style "mux-frame"
 
 # tooltips seem to take their color from the window bg? working around that 
 style "mux-tooltip-fix" { 
@@ -31,12 +31,12 @@ style "data-box" {
 }
 widget "*.sync_data_and_type_box" style "data-box"
 
-style "insensitive-bin" {
+style "insensitive-frame" {
     bg[INSENSITIVE] = "#d2d6d9"
 }
-widget "*.log_bin*" style "insensitive-bin"
-widget "*.backup_bin*" style "insensitive-bin"
-widget "*.services_bin*" style "insensitive-bin"
+widget "*.log_frame*" style "insensitive-frame"
+widget "*.backup_frame*" style "insensitive-frame"
+widget "*.services_frame*" style "insensitive-frame"
 
 style "service-title" {
     font_name = "Bold 14"

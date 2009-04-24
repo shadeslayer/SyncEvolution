@@ -9,10 +9,14 @@ themerc_DATA = \
 	sync-generic.png \
 	sync-ui.rc
 
+desktopdir = $(datadir)/applications
+desktop_DATA = \
+	moblin-sync.desktop
 
 EXTRA_DIST = \
-	$(glade_DATA)
-	$(themerc_DATA)
+	$(glade_DATA) \
+	$(themerc_DATA) \
+	$(desktop_DATA)
 
 ui.xml: ui.glade
 	$(GTK_BUILDER_CONV) $< $(@F)
@@ -22,7 +26,7 @@ bin_PROGRAMS = \
 
 sync_ui_SOURCES = \
 	sync-ui.c sync-ui-config.c sync-ui-config.h \
-	mux-bin.c mux-bin.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h
+	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h
 sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) -L$(top_builddir)/syncevo-dbus -lsyncevo-dbus
 sync_ui_CFLAGS = $(GUI_CFLAGS) $(DBUS_GLIB_CFLAGS) -DGLADEDIR=\""$(gladedir)"\" -DTHEMEDIR=\""$(themercdir)"\" 
 sync_ui_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) $(SYNTHESIS_CFLAGS)

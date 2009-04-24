@@ -11,7 +11,7 @@
  * * get history data from syncevolution
  * * backup/restore ? 
  * * GTK styling missing:
- *    - current implementation of MuxBin results in a slight flicker on window open
+ *    - current implementation of MuxFrame results in a slight flicker on window open
  * * notes on dbus API:
  *    - a more cleaner solution would be to have StartSync return a 
  *      dbus path that could be used to connect to signals related to that specific
@@ -33,7 +33,7 @@
 #include <synthesis/engine_defs.h>
 
 #include "sync-ui-config.h"
-#include "mux-bin.h"
+#include "mux-frame.h"
 #include "mux-window.h"
 
 #define SYNC_UI_GCONF_DIR "/apps/sync-ui"
@@ -100,10 +100,10 @@ typedef struct app_data {
     GtkWidget *no_server_box;
     GtkWidget *error_box;
     GtkWidget *error_img;
-    GtkWidget *main_bin;
-    GtkWidget *log_bin;
-    GtkWidget *backup_bin;
-    GtkWidget *services_bin;
+    GtkWidget *main_frame;
+    GtkWidget *log_frame;
+    GtkWidget *backup_frame;
+    GtkWidget *services_frame;
     GtkWidget *server_icon_box;
 
     GtkWidget *progress;
@@ -119,7 +119,7 @@ typedef struct app_data {
     GtkWidget *manual_services_table;
     GtkWidget *manual_services_scrolled;
 
-    GtkWidget *service_settings_bin;
+    GtkWidget *service_settings_frame;
     GtkWidget *service_link;
     GtkWidget *service_name_label;
     GtkWidget *service_name_entry;
@@ -548,10 +548,10 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_hide (data->server_failure_box);
         gtk_widget_hide (data->no_server_box);
 
-        gtk_widget_set_sensitive (data->main_bin, TRUE);
-        gtk_widget_set_sensitive (data->log_bin, TRUE);
-        gtk_widget_set_sensitive (data->backup_bin, FALSE);
-        gtk_widget_set_sensitive (data->services_bin, TRUE);
+        gtk_widget_set_sensitive (data->main_frame, TRUE);
+        gtk_widget_set_sensitive (data->log_frame, TRUE);
+        gtk_widget_set_sensitive (data->backup_frame, FALSE);
+        gtk_widget_set_sensitive (data->services_frame, TRUE);
         break;
     case SYNC_UI_STATE_NO_SERVER:
         clear_error_info (data);
@@ -559,10 +559,10 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_hide (data->server_failure_box);
         gtk_widget_show (data->no_server_box);
 
-        gtk_widget_set_sensitive (data->main_bin, TRUE);
-        gtk_widget_set_sensitive (data->log_bin, FALSE);
-        gtk_widget_set_sensitive (data->backup_bin, FALSE);
-        gtk_widget_set_sensitive (data->services_bin, TRUE);
+        gtk_widget_set_sensitive (data->main_frame, TRUE);
+        gtk_widget_set_sensitive (data->log_frame, FALSE);
+        gtk_widget_set_sensitive (data->backup_frame, FALSE);
+        gtk_widget_set_sensitive (data->services_frame, TRUE);
         gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->change_service_btn);
         break;
     case SYNC_UI_STATE_SERVER_FAILURE:
@@ -571,20 +571,20 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_hide (data->no_server_box);
         gtk_widget_show (data->server_failure_box);
 
-        gtk_widget_set_sensitive (data->main_bin, FALSE);
-        gtk_widget_set_sensitive (data->log_bin, FALSE);
-        gtk_widget_set_sensitive (data->backup_bin, FALSE);
-        gtk_widget_set_sensitive (data->services_bin, FALSE);
+        gtk_widget_set_sensitive (data->main_frame, FALSE);
+        gtk_widget_set_sensitive (data->log_frame, FALSE);
+        gtk_widget_set_sensitive (data->backup_frame, FALSE);
+        gtk_widget_set_sensitive (data->services_frame, FALSE);
         break;
     case SYNC_UI_STATE_SERVER_OK:
         gtk_widget_show (data->server_box);
         gtk_widget_hide (data->server_failure_box);
         gtk_widget_hide (data->no_server_box);
 
-        gtk_widget_set_sensitive (data->main_bin, TRUE);
-        gtk_widget_set_sensitive (data->log_bin, TRUE);
-        gtk_widget_set_sensitive (data->backup_bin, FALSE);
-        gtk_widget_set_sensitive (data->services_bin, TRUE);
+        gtk_widget_set_sensitive (data->main_frame, TRUE);
+        gtk_widget_set_sensitive (data->log_frame, TRUE);
+        gtk_widget_set_sensitive (data->backup_frame, FALSE);
+        gtk_widget_set_sensitive (data->services_frame, TRUE);
         gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Sync now");
         gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->sync_btn);
 
@@ -593,10 +593,10 @@ set_app_state (app_data *data, app_state state)
         
     case SYNC_UI_STATE_SYNCING:
         clear_error_info (data);
-        gtk_widget_set_sensitive (data->main_bin, FALSE);
-        gtk_widget_set_sensitive (data->log_bin, TRUE);
-        gtk_widget_set_sensitive (data->backup_bin, FALSE);
-        gtk_widget_set_sensitive (data->services_bin, FALSE);
+        gtk_widget_set_sensitive (data->main_frame, FALSE);
+        gtk_widget_set_sensitive (data->log_frame, TRUE);
+        gtk_widget_set_sensitive (data->backup_frame, FALSE);
+        gtk_widget_set_sensitive (data->services_frame, FALSE);
         gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Cancel sync");
 
         data->syncing = TRUE;
@@ -615,12 +615,13 @@ sync_type_toggled_cb (GObject *radio, app_data *data)
 }
 
 
-/* truly stupid, but glade doesn't allow GtkBin or custom containers.
-   Now glade has dummy containers that will be replaced here */ 
+/* truly stupid, but glade doesn't allow custom containers.
+   Now glade file has dummy containers that will be replaced here.
+   The dummy should be a gtkbin and it's parent should be a box with just one child */ 
 static GtkWidget*
-switch_dummy_to_mux_bin (GtkWidget *dummy)
+switch_dummy_to_mux_frame (GtkWidget *dummy)
 {
-    GtkWidget *bin, *child, *parent;
+    GtkWidget *frame, *child, *parent;
     g_assert (GTK_IS_BIN (dummy));
 
     parent = gtk_widget_get_parent (dummy);
@@ -634,13 +635,16 @@ switch_dummy_to_mux_bin (GtkWidget *dummy)
     /* make sure there are no other children in box */
     g_assert (gtk_container_get_children (GTK_CONTAINER (parent)) == NULL);
 
-    bin = mux_bin_new ();
-    gtk_box_pack_start (GTK_BOX (parent), bin, TRUE, TRUE, 0);
-    gtk_container_add (GTK_CONTAINER (bin), child);
-    gtk_widget_show (bin);
-    return bin;
+    frame = mux_frame_new ();
+    gtk_box_pack_start (GTK_BOX (parent), frame, TRUE, TRUE, 0);
+    gtk_container_add (GTK_CONTAINER (frame), child);
+    gtk_widget_show (frame);
+    return frame;
 }
 
+/* truly stupid, but glade doesn't allow custom containers.
+   Now glade file has dummy containers that will be replaced here.
+   The dummy should be a gtkwindow */ 
 static GtkWidget*
 switch_dummy_to_mux_window (GtkWidget *dummy)
 {
@@ -688,7 +692,7 @@ init_ui (app_data *data)
     GtkBuilder *builder;
     GError *error = NULL;
     GObject *radio;
-    GtkWidget *bin, *service_save_btn;
+    GtkWidget *frame, *service_save_btn;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -751,7 +755,7 @@ init_ui (app_data *data)
                       G_CALLBACK (sync_type_toggled_cb), data);
 
     /* No (documented) way to add own widgets to gtkbuilder it seems...
-       swap the all dummy frames with MuxBins */
+       swap the all dummy widgets with Muxwidgets */
     data->sync_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "sync_win")));
     data->services_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "services_win")));
     gtk_widget_set_name (data->services_win, "services_win");
@@ -760,22 +764,22 @@ init_ui (app_data *data)
     data->service_settings_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_win")));
     gtk_widget_set_name (data->services_win, "service_settings_win");
 
-    data->main_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
-    gtk_widget_set_name (data->main_bin, "main_bin");
-    data->log_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
-    gtk_widget_set_name (data->log_bin, "log_bin");
-    mux_bin_set_title (MUX_BIN (data->log_bin), "Log");
-    data->services_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_frame")));
-    gtk_widget_set_name (data->services_bin, "services_bin");
-    mux_bin_set_title (MUX_BIN (data->services_bin), "Service");
-    data->backup_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "backup_frame")));
-    gtk_widget_set_name (data->backup_bin, "backup_bin");
-    mux_bin_set_title (MUX_BIN (data->backup_bin), "Backup");
-    bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
-    mux_bin_set_title (MUX_BIN (bin), "Sync services");
-    gtk_widget_set_name (bin, "services_list_bin");
-    data->service_settings_bin = switch_dummy_to_mux_bin (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_frame")));
-    mux_bin_set_title (MUX_BIN (bin), "Sync service settings");
+    data->main_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
+    gtk_widget_set_name (data->main_frame, "main_frame");
+    data->log_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
+    gtk_widget_set_name (data->log_frame, "log_frame");
+    mux_frame_set_title (MUX_FRAME (data->log_frame), "Log");
+    data->services_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_frame")));
+    gtk_widget_set_name (data->services_frame, "services_frame");
+    mux_frame_set_title (MUX_FRAME (data->services_frame), "Services");
+    data->backup_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "backup_frame")));
+    gtk_widget_set_name (data->backup_frame, "backup_frame");
+    mux_frame_set_title (MUX_FRAME (data->backup_frame), "Backup");
+    frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
+    mux_frame_set_title (MUX_FRAME (frame), "Sync services");
+    gtk_widget_set_name (frame, "services_list_frame");
+    data->service_settings_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_frame")));
+    mux_frame_set_title (MUX_FRAME (frame), "Sync service settings");
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
@@ -1006,12 +1010,12 @@ show_settings_window (app_data *data, server_config *config)
                         config->name ? config->name : "");
     g_object_set_data (G_OBJECT (data->service_name_entry), "value", &config->name);
     if (config->name) {
-        mux_bin_set_title (MUX_BIN (data->service_settings_bin), config->name);
+        mux_frame_set_title (MUX_FRAME (data->service_settings_frame), config->name);
         
         gtk_widget_hide (data->service_name_label);
         gtk_widget_hide (data->service_name_entry);
     } else {
-        mux_bin_set_title (MUX_BIN (data->service_settings_bin), "New service");
+        mux_frame_set_title (MUX_FRAME (data->service_settings_frame), "New service");
         
         gtk_widget_show (data->service_name_label);
         gtk_widget_show (data->service_name_entry);
