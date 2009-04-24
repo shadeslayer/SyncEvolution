@@ -1451,6 +1451,7 @@ sync_progress_cb (SyncevoService *service,
             g_get_current_time (&val);
             data->last_sync = val.tv_sec;
         }
+        refresh_last_synced_label (data);
         refresh_statistics (data);
 
         break;
