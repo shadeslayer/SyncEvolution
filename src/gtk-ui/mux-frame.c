@@ -12,7 +12,7 @@ static void mux_frame_buildable_add_child           (GtkBuildable *buildable,
                                                      GObject      *child,
                                                      const gchar  *type);
 
-G_DEFINE_TYPE_WITH_CODE (MuxFrame, mux_frame, GTK_TYPE_BIN,
+G_DEFINE_TYPE_WITH_CODE (MuxFrame, mux_frame, GTK_TYPE_FRAME,
                          G_IMPLEMENT_INTERFACE (GTK_TYPE_BUILDABLE, mux_frame_buildable_init))
 
 static void
@@ -26,7 +26,6 @@ mux_frame_finalize (GObject *object)
 {
       G_OBJECT_CLASS (mux_frame_parent_class)->finalize (object);
 }
-
 
 static void
 mux_frame_update_style (MuxFrame *frame)
@@ -54,10 +53,10 @@ mux_frame_update_style (MuxFrame *frame)
     }
 
     if (font) {
-        if (frame->title) {
+        if (GTK_FRAME (frame)->label_widget) {
             PangoFontDescription *desc;
             desc = pango_font_description_from_string (font);
-            gtk_widget_modify_font (frame->title, desc);
+            gtk_widget_modify_font (GTK_FRAME (frame)->label_widget, desc);
             pango_font_description_free (desc);
         }
         g_free (font);
@@ -65,31 +64,28 @@ mux_frame_update_style (MuxFrame *frame)
 }
 
 static void
-mux_frame_set_title_widget (MuxFrame *frame, GtkWidget *title)
+label_changed_cb (MuxFrame *frame)
 {
-    g_return_if_fail (MUX_IS_FRAME (frame));
-    g_return_if_fail (!title || GTK_IS_LABEL (title) || !title->parent);
+    char *font = NULL;
+    GtkFrame *gtk_frame = GTK_FRAME (frame);
 
-    if (frame->title == title)
+    if (!gtk_frame->label_widget)
         return;
 
-    if (frame->title) {
-        gtk_widget_unparent (frame->title);
+    /* ensure font is correct */
+    gtk_widget_style_get (GTK_WIDGET (frame),
+                          "title-font", &font,
+                          NULL);
+    if (font) {
+        PangoFontDescription *desc;
+        desc = pango_font_description_from_string (font);
+        gtk_widget_modify_font (gtk_frame->label_widget, desc);
+        pango_font_description_free (desc);
+        g_free (font);
     }
-
-    frame->title = title;
-
-    if (title) {
-        gtk_widget_show (title);
-        gtk_widget_set_parent (title, GTK_WIDGET (frame));
-    }
-
-    mux_frame_update_style (frame);
-  
-    if (GTK_WIDGET_VISIBLE (frame))
-        gtk_widget_queue_resize (GTK_WIDGET (frame));
+    
+    gtk_misc_set_alignment (GTK_MISC (gtk_frame->label_widget), 0.0, 1.0);
 }
-
 static void
 rounded_rectangle (cairo_t * cr,
                    double x, double y, double w, double h,
@@ -157,7 +153,7 @@ mux_frame_paint (GtkWidget *widget, GdkRectangle *area)
     cairo_paint (cairo);
 
     /* draw bullet before title */
-    if (frame->title) {
+    if (GTK_FRAME (frame)->label_widget) {
         gdk_cairo_set_source_color (cairo, &frame->bullet_color);
 
         rounded_rectangle (cairo,
@@ -180,48 +176,22 @@ mux_frame_paint (GtkWidget *widget, GdkRectangle *area)
 static gboolean
 mux_frame_expose(GtkWidget *widget,
                  GdkEventExpose *event)
-{   
+{
+    GtkWidgetClass *grand_parent;
     if (GTK_WIDGET_DRAWABLE (widget)) {
         mux_frame_paint (widget, &event->area);
-        (* GTK_WIDGET_CLASS (mux_frame_parent_class)->expose_event) (widget, event);
+
+        grand_parent = GTK_WIDGET_CLASS (g_type_class_peek_parent (mux_frame_parent_class));
+        grand_parent->expose_event (widget, event);
     }
     return FALSE;
-}
-
-static void
-mux_frame_forall (GtkContainer *container,
-                  gboolean include_internals,
-                  GtkCallback callback,
-                  gpointer callback_data)
-{
-    MuxFrame *mux_frame = MUX_FRAME (container);
-    GtkBin *bin = GTK_BIN (container);
-
-    if (bin->child)
-        (* callback) (bin->child, callback_data);
-
-    if (mux_frame->title)
-        (* callback) (mux_frame->title, callback_data);
-}
-
-static void
-mux_frame_remove (GtkContainer *container,
-                  GtkWidget *child)
-{
-    MuxFrame *frame = MUX_FRAME (container);
-
-    if (child == frame->title) {
-        mux_frame_set_title_widget (frame, NULL);
-    } else {
-        GTK_CONTAINER_CLASS (mux_frame_parent_class)->remove (container, child);
-    }
 }
 
 static void
 mux_frame_size_request (GtkWidget *widget,
                         GtkRequisition *requisition)
 {
-    MuxFrame *mux_frame = MUX_FRAME (widget);
+    GtkFrame *frame = GTK_FRAME (widget);
     GtkBin *bin = GTK_BIN (widget);
     GtkRequisition child_req;
     GtkRequisition title_req;
@@ -231,8 +201,8 @@ mux_frame_size_request (GtkWidget *widget,
         gtk_widget_size_request (bin->child, &child_req);
 
     title_req.width = title_req.height = 0;
-    if (mux_frame->title) {
-        gtk_widget_size_request (mux_frame->title, &title_req);
+    if (frame->label_widget) {
+        gtk_widget_size_request (frame->label_widget, &title_req);
         /* add room for bullet */
         title_req.height = title_req.height * mux_frame_bullet_size_factor +  
                            2 * MUX_FRAME_BULLET_PADDING;
@@ -256,6 +226,7 @@ mux_frame_size_allocate (GtkWidget *widget,
 {
     GtkBin *bin = GTK_BIN (widget);
     MuxFrame *mux_frame = MUX_FRAME (widget);
+    GtkFrame *frame = GTK_FRAME (widget);
     GtkAllocation child_allocation;
     int xmargin, ymargin, title_height;
 
@@ -266,10 +237,10 @@ mux_frame_size_allocate (GtkWidget *widget,
               widget->style->ythickness;
 
     title_height = 0;
-    if (mux_frame->title) {
+    if (frame->label_widget) {
         GtkAllocation title_allocation;
         GtkRequisition title_req;
-        gtk_widget_get_child_requisition (mux_frame->title, &title_req);
+        gtk_widget_get_child_requisition (frame->label_widget, &title_req);
 
         /* the bullet is bigger than the text */
         title_height = title_req.height * mux_frame_bullet_size_factor + 
@@ -281,7 +252,7 @@ mux_frame_size_allocate (GtkWidget *widget,
         title_allocation.width = MIN (title_req.width,
                                       allocation->width - 2 * xmargin - title_height);
         title_allocation.height = title_height - 2 * MUX_FRAME_BULLET_PADDING;
-        gtk_widget_size_allocate (mux_frame->title, &title_allocation);
+        gtk_widget_size_allocate (frame->label_widget, &title_allocation);
 
         mux_frame->bullet_allocation.x = allocation->x + xmargin + MUX_FRAME_BULLET_PADDING;
         mux_frame->bullet_allocation.y = allocation->y + ymargin + MUX_FRAME_BULLET_PADDING;
@@ -295,10 +266,10 @@ mux_frame_size_allocate (GtkWidget *widget,
     child_allocation.height = allocation->height - 2 * ymargin - title_height;
 
     if (GTK_WIDGET_MAPPED (widget) &&
-        (child_allocation.x != mux_frame->child_allocation.x ||
-         child_allocation.y != mux_frame->child_allocation.y ||
-         child_allocation.width != mux_frame->child_allocation.width ||
-         child_allocation.height != mux_frame->child_allocation.height)) {
+        (child_allocation.x != frame->child_allocation.x ||
+         child_allocation.y != frame->child_allocation.y ||
+         child_allocation.width != frame->child_allocation.width ||
+         child_allocation.height != frame->child_allocation.height)) {
         gdk_window_invalidate_rect (widget->window, &widget->allocation, FALSE);
     }
 
@@ -306,7 +277,7 @@ mux_frame_size_allocate (GtkWidget *widget,
         gtk_widget_size_allocate (bin->child, &child_allocation);
     }
 
-    mux_frame->child_allocation = child_allocation;
+    frame->child_allocation = child_allocation;
 }
 
 static void mux_frame_style_set (GtkWidget *widget,
@@ -324,7 +295,6 @@ mux_frame_class_init (MuxFrameClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
-    GtkContainerClass *container_class = GTK_CONTAINER_CLASS (klass);
     GParamSpec *pspec;
 
     object_class->dispose = mux_frame_dispose;
@@ -334,9 +304,6 @@ mux_frame_class_init (MuxFrameClass *klass)
     widget_class->size_request = mux_frame_size_request;
     widget_class->size_allocate = mux_frame_size_allocate;
     widget_class->style_set = mux_frame_style_set;
-
-    container_class->forall = mux_frame_forall;
-    container_class->remove = mux_frame_remove;
 
     pspec = g_param_spec_boxed ("border-color",
                                 "Border color",
@@ -379,7 +346,8 @@ mux_frame_buildable_init (GtkBuildableIface *iface)
 static void
 mux_frame_init (MuxFrame *self)
 {
-
+    g_signal_connect (self, "notify::label-widget",
+                      G_CALLBACK (label_changed_cb), NULL);
 }
 
 GtkWidget*
@@ -390,28 +358,3 @@ mux_frame_new (void)
                          NULL);
 }
 
-const char* 
-mux_frame_get_title (MuxFrame *frame)
-{
-    g_return_val_if_fail (MUX_IS_FRAME (frame), NULL);
-
-    if (frame->title) {
-        return gtk_label_get_text (GTK_LABEL (frame->title));
-    }
-    return NULL;
-}
-
-void 
-mux_frame_set_title (MuxFrame *frame, const char *title)
-{
-    GtkWidget *w = NULL;
-
-    g_return_if_fail (MUX_IS_FRAME (frame));
-
-    if (title) {
-      w = gtk_label_new (title);
-      gtk_widget_set_name (w, "mux_frame_title");
-      gtk_misc_set_alignment (GTK_MISC (w), 0.0, 1.0);
-    }
-    mux_frame_set_title_widget (frame, w);
-}

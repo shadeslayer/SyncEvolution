@@ -33,8 +33,11 @@
 #include <synthesis/engine_defs.h>
 
 #include "sync-ui-config.h"
+
+#ifdef USE_MOBLIN_UX
 #include "mux-frame.h"
 #include "mux-window.h"
+#endif
 
 #define SYNC_UI_GCONF_DIR "/apps/sync-ui"
 #define SYNC_UI_SERVER_KEY SYNC_UI_GCONF_DIR"/server"
@@ -615,29 +618,34 @@ sync_type_toggled_cb (GObject *radio, app_data *data)
 }
 
 
+#ifdef USE_MOBLIN_UX
 /* truly stupid, but glade doesn't allow custom containers.
    Now glade file has dummy containers that will be replaced here.
    The dummy should be a gtkbin and it's parent should be a box with just one child */ 
 static GtkWidget*
 switch_dummy_to_mux_frame (GtkWidget *dummy)
 {
-    GtkWidget *frame, *child, *parent;
+    GtkWidget *frame, *parent;
+    const char *title;
+
     g_assert (GTK_IS_BIN (dummy));
+
+    frame = mux_frame_new ();
+    gtk_widget_set_name (frame, gtk_widget_get_name (dummy));
+    title = gtk_frame_get_label (GTK_FRAME(dummy));
+    if (title && strlen (title) > 0)
+        gtk_frame_set_label (GTK_FRAME (frame), title);
 
     parent = gtk_widget_get_parent (dummy);
     g_assert (GTK_IS_BOX (parent));
-    
-    child = gtk_bin_get_child (GTK_BIN (dummy));
 
-    gtk_container_remove (GTK_CONTAINER (dummy), child);
+    gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (dummy)), frame);
     gtk_container_remove (GTK_CONTAINER (parent), dummy);
 
     /* make sure there are no other children in box */
     g_assert (gtk_container_get_children (GTK_CONTAINER (parent)) == NULL);
 
-    frame = mux_frame_new ();
     gtk_box_pack_start (GTK_BOX (parent), frame, TRUE, TRUE, 0);
-    gtk_container_add (GTK_CONTAINER (frame), child);
     gtk_widget_show (frame);
     return frame;
 }
@@ -653,12 +661,27 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
     g_assert (GTK_IS_BIN (dummy));
 
     window = mux_window_new ();
+    gtk_widget_set_name (window, gtk_widget_get_name (dummy));
     gtk_window_set_title (GTK_WINDOW (window), "Sync");
     mux_window_set_decorations (MUX_WINDOW (window), MUX_DECOR_CLOSE);
     gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (dummy)), window);
 
     return window;
 }
+#else
+
+/* return the placeholders themselves when not using Moblin UX */
+static GtkWidget*
+switch_dummy_to_mux_frame (GtkWidget *dummy) {
+    return dummy;
+}
+static GtkWidget*
+switch_dummy_to_mux_window (GtkWidget *dummy)
+{
+    return dummy;
+}
+#endif
+
 
 static void
 show_link_button_url (GtkLinkButton *link)
@@ -758,28 +781,16 @@ init_ui (app_data *data)
        swap the all dummy widgets with Muxwidgets */
     data->sync_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "sync_win")));
     data->services_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "services_win")));
-    gtk_widget_set_name (data->services_win, "services_win");
     gtk_window_set_transient_for (GTK_WINDOW (data->services_win), 
                                   GTK_WINDOW (data->sync_win));
     data->service_settings_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_win")));
-    gtk_widget_set_name (data->services_win, "service_settings_win");
 
     data->main_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
-    gtk_widget_set_name (data->main_frame, "main_frame");
     data->log_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
-    gtk_widget_set_name (data->log_frame, "log_frame");
-    mux_frame_set_title (MUX_FRAME (data->log_frame), "Log");
     data->services_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_frame")));
-    gtk_widget_set_name (data->services_frame, "services_frame");
-    mux_frame_set_title (MUX_FRAME (data->services_frame), "Services");
     data->backup_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "backup_frame")));
-    gtk_widget_set_name (data->backup_frame, "backup_frame");
-    mux_frame_set_title (MUX_FRAME (data->backup_frame), "Backup");
     frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
-    mux_frame_set_title (MUX_FRAME (frame), "Sync services");
-    gtk_widget_set_name (frame, "services_list_frame");
     data->service_settings_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_frame")));
-    mux_frame_set_title (MUX_FRAME (frame), "Sync service settings");
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
@@ -1010,13 +1021,11 @@ show_settings_window (app_data *data, server_config *config)
                         config->name ? config->name : "");
     g_object_set_data (G_OBJECT (data->service_name_entry), "value", &config->name);
     if (config->name) {
-        mux_frame_set_title (MUX_FRAME (data->service_settings_frame), config->name);
-        
+        gtk_frame_set_label (GTK_FRAME (data->service_settings_frame), config->name);
         gtk_widget_hide (data->service_name_label);
         gtk_widget_hide (data->service_name_entry);
     } else {
-        mux_frame_set_title (MUX_FRAME (data->service_settings_frame), "New service");
-        
+        gtk_frame_set_label (GTK_FRAME (data->service_settings_frame), "New service");
         gtk_widget_show (data->service_name_label);
         gtk_widget_show (data->service_name_entry);
     }

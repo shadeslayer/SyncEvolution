@@ -24,11 +24,8 @@ G_BEGIN_DECLS
   (G_TYPE_INSTANCE_GET_CLASS ((obj), MUX_TYPE_FRAME, MuxFrameClass))
 
 typedef struct {
-    GtkBin parent;
+    GtkFrame parent;
 
-    GtkWidget *title;
-
-    GtkAllocation child_allocation;
     GtkAllocation bullet_allocation;
 
     GdkColor bullet_color;
@@ -36,15 +33,12 @@ typedef struct {
 } MuxFrame;
 
 typedef struct {
-    GtkBinClass parent_class;
+    GtkFrameClass parent_class;
 } MuxFrameClass;
 
 GType mux_frame_get_type (void);
 
 GtkWidget* mux_frame_new (void);
-
-const char* mux_frame_get_title (MuxFrame *frame);
-void mux_frame_set_title (MuxFrame *bin, const char *title);
 
 G_END_DECLS
 

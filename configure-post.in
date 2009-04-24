@@ -90,5 +90,5 @@ for backend in $BACKENDS; do
     eval echo $backend: \${enable_${backend}}
 done
 echo "DBus service: $enable_dbus_service"
-echo "GTK+ UI (DBus client): $enable_gui"
+echo "UI (DBus client): $enable_gui"
 echo
