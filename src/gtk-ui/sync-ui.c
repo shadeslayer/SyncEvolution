@@ -413,9 +413,10 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
     gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
     gtk_widget_hide (GTK_WIDGET (data->services_win));
 
-    if (data->current_service)
+    if (data->current_service && data->current_service != server) {
         server_config_free (data->current_service);
-    data->current_service = server;
+        data->current_service = server;
+    }
 
     if (!server->changed) {
         /* no need to save first, set the gconf key right away */
