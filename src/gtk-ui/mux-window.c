@@ -132,28 +132,6 @@ mux_window_style_set (GtkWidget *widget,
 }
 
 static void
-mux_window_dispose (GObject *object)
-{
-    G_OBJECT_CLASS (mux_window_parent_class)->dispose (object);
-}
-
-static void
-mux_window_finalize (GObject *object)
-{
-    G_OBJECT_CLASS (mux_window_parent_class)->finalize (object);
-}
-
-static gboolean
-mux_window_expose(GtkWidget *widget,
-                  GdkEventExpose *event)
-{   
-    if (GTK_WIDGET_DRAWABLE (widget)) {
-        (* GTK_WIDGET_CLASS (mux_window_parent_class)->expose_event) (widget, event);
-    }
-    return FALSE;
-}
-
-static void
 mux_window_forall (GtkContainer *container,
                    gboolean include_internals,
                    GtkCallback callback,
@@ -274,10 +252,7 @@ mux_window_class_init (MuxWindowClass *klass)
 
     object_class->get_property = mux_window_get_property;
     object_class->set_property = mux_window_set_property;
-    object_class->dispose = mux_window_dispose;
-    object_class->finalize = mux_window_finalize;
 
-    widget_class->expose_event = mux_window_expose;
     widget_class->size_request = mux_window_size_request;
     widget_class->size_allocate = mux_window_size_allocate;
     widget_class->style_set = mux_window_style_set;
