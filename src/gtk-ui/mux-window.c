@@ -355,6 +355,7 @@ static void
 mux_window_build_title_bar (MuxWindow *window)
 {
     GtkWidget *box, *btn, *sep;
+    GdkPixbuf *pixbuf, *pixbuf_hover;
     
     if (window->title_bar) {
         gtk_widget_unparent (window->title_bar);
@@ -376,7 +377,13 @@ mux_window_build_title_bar (MuxWindow *window)
 
     if (window->decorations & MUX_DECOR_CLOSE) {
         /* TODO load icons from theme when they are added to it */
-        btn = mux_icon_button_new (THEMEDIR "close.png", THEMEDIR "close_hover.png");
+        pixbuf = gdk_pixbuf_new_from_file (THEMEDIR "close.png", NULL);
+        pixbuf_hover = gdk_pixbuf_new_from_file (THEMEDIR "close_hover.png", NULL);
+        btn = g_object_new (MUX_TYPE_ICON_BUTTON,
+                            "normal-state-pixbuf", pixbuf,
+                            "prelight-state-pixbuf", pixbuf_hover,
+                            NULL);
+        gtk_widget_set_name (btn, "mux_icon_button_close");
         g_signal_connect_swapped (btn, "clicked", 
                                   G_CALLBACK (mux_window_close_clicked), window);
         gtk_box_pack_end (GTK_BOX (box), btn, FALSE, FALSE, 0);
@@ -391,7 +398,13 @@ mux_window_build_title_bar (MuxWindow *window)
 
     if (window->decorations & MUX_DECOR_SETTINGS) {
         /* TODO load icons from theme when they are added to it */
-        btn = mux_icon_button_new (THEMEDIR "settings.png", THEMEDIR "settings_hover.png");
+        pixbuf = gdk_pixbuf_new_from_file (THEMEDIR "settings.png", NULL);
+        pixbuf_hover = gdk_pixbuf_new_from_file (THEMEDIR "settings_hover.png", NULL);
+        btn = g_object_new (MUX_TYPE_ICON_BUTTON,
+                            "normal-state-pixbuf", pixbuf,
+                            "prelight-state-pixbuf", pixbuf_hover,
+                            NULL);
+        gtk_widget_set_name (btn, "mux_icon_button_settings");
         g_signal_connect_swapped (btn, "clicked", 
                                   G_CALLBACK (mux_window_settings_clicked), window);
         gtk_box_pack_end (GTK_BOX (box), btn, FALSE, FALSE, 0);

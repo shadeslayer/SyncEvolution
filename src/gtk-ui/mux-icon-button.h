@@ -24,11 +24,7 @@ G_BEGIN_DECLS
 
 typedef struct {
     GtkButton parent;
-
-    char *normal_filename;
-    GdkPixbuf *normal_pixbuf;
-    char *hover_filename;
-    GdkPixbuf *hover_pixbuf;
+    GdkPixbuf *pixbufs[5];
 } MuxIconButton;
 
 typedef struct {
@@ -37,13 +33,11 @@ typedef struct {
 
 GType mux_icon_button_get_type (void);
 
-GtkWidget* mux_icon_button_new (const char *normal_file, const char *hover_file);
+GtkWidget* mux_icon_button_new (GdkPixbuf *normal_pixbuf);
 
-const char* mux_icon_button_get_normal_filename (MuxIconButton *btn);
-void mux_icon_button_set_normal_filename (MuxIconButton *btn, const char *name);
+void mux_icon_button_set_pixbuf (MuxIconButton *button, GtkStateType state, GdkPixbuf *pixbuf);
 
-const char* mux_icon_button_get_hover_filename (MuxIconButton *btn);
-void mux_icon_button_set_hover_filename (MuxIconButton *btn, const char *name);
+GdkPixbuf* mux_icon_button_get_pixbuf (MuxIconButton *button, GtkStateType state);
 
 G_END_DECLS
 

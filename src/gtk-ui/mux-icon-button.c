@@ -4,8 +4,11 @@
 
 enum {
 	PROP_0,
-	PROP_NORMAL_FILENAME,
-	PROP_HOVER_FILENAME,
+	PROP_PIXBUF_NORMAL,
+	PROP_PIXBUF_ACTIVE,
+	PROP_PIXBUF_PRELIGHT,
+	PROP_PIXBUF_SELECTED,
+	PROP_PIXBUF_INSENSITIVE
 };
 
 G_DEFINE_TYPE (MuxIconButton, mux_icon_button, GTK_TYPE_BUTTON)
@@ -18,11 +21,20 @@ mux_icon_button_get_property (GObject *object, guint property_id,
     MuxIconButton *btn = MUX_ICON_BUTTON (object);
     
     switch (property_id) {
-    case PROP_NORMAL_FILENAME:
-        g_value_set_string (value, mux_icon_button_get_normal_filename (btn));
+    case PROP_PIXBUF_NORMAL:
+        g_value_set_object (value, mux_icon_button_get_pixbuf (btn, GTK_STATE_NORMAL));
         break;
-    case PROP_HOVER_FILENAME:
-        g_value_set_string (value, mux_icon_button_get_hover_filename (btn));
+    case PROP_PIXBUF_ACTIVE:
+        g_value_set_object (value, mux_icon_button_get_pixbuf (btn, GTK_STATE_ACTIVE));
+        break;
+    case PROP_PIXBUF_PRELIGHT:
+        g_value_set_object (value, mux_icon_button_get_pixbuf (btn, GTK_STATE_PRELIGHT));
+        break;
+    case PROP_PIXBUF_SELECTED:
+        g_value_set_object (value, mux_icon_button_get_pixbuf (btn, GTK_STATE_SELECTED));
+        break;
+    case PROP_PIXBUF_INSENSITIVE:
+        g_value_set_object (value, mux_icon_button_get_pixbuf (btn, GTK_STATE_INSENSITIVE));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -34,13 +46,28 @@ mux_icon_button_set_property (GObject *object, guint property_id,
                               const GValue *value, GParamSpec *pspec)
 {
     MuxIconButton *btn = MUX_ICON_BUTTON (object);
+    GdkPixbuf *pixbuf;
     
     switch (property_id) {
-    case PROP_NORMAL_FILENAME:
-        mux_icon_button_set_normal_filename (btn, g_value_get_string (value));
+    case PROP_PIXBUF_NORMAL:
+        pixbuf = GDK_PIXBUF (g_value_get_object (value));
+        mux_icon_button_set_pixbuf (btn, GTK_STATE_NORMAL, pixbuf);
         break;
-    case PROP_HOVER_FILENAME:
-        mux_icon_button_set_hover_filename (btn, g_value_get_string (value));
+    case PROP_PIXBUF_ACTIVE:
+        pixbuf = GDK_PIXBUF (g_value_get_object (value));
+        mux_icon_button_set_pixbuf (btn, GTK_STATE_ACTIVE, pixbuf);
+        break;
+    case PROP_PIXBUF_PRELIGHT:
+        pixbuf = GDK_PIXBUF (g_value_get_object (value));
+        mux_icon_button_set_pixbuf (btn, GTK_STATE_PRELIGHT, pixbuf);
+        break;
+    case PROP_PIXBUF_SELECTED:
+        pixbuf = GDK_PIXBUF (g_value_get_object (value));
+        mux_icon_button_set_pixbuf (btn, GTK_STATE_SELECTED, pixbuf);
+        break;
+    case PROP_PIXBUF_INSENSITIVE:
+        pixbuf = GDK_PIXBUF (g_value_get_object (value));
+        mux_icon_button_set_pixbuf (btn, GTK_STATE_INSENSITIVE, pixbuf);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -50,13 +77,16 @@ mux_icon_button_set_property (GObject *object, guint property_id,
 static void
 mux_icon_button_dispose (GObject *object)
 {
+    int i;
+    MuxIconButton *btn = MUX_ICON_BUTTON (object);
+    
+    for (i = 0; i < 5; i++) {
+        if (btn->pixbufs[i]) {
+            g_object_unref (btn->pixbufs[i]);
+            btn->pixbufs[i] = NULL;
+        }
+    }
     G_OBJECT_CLASS (mux_icon_button_parent_class)->dispose (object);
-}
-
-static void
-mux_icon_button_finalize (GObject *object)
-{
-    G_OBJECT_CLASS (mux_icon_button_parent_class)->finalize (object);
 }
 
 static void
@@ -65,28 +95,10 @@ mux_icon_button_size_request (GtkWidget      *widget,
 {
     MuxIconButton *btn = MUX_ICON_BUTTON (widget);
 
-    if (btn->normal_pixbuf) {
-        requisition->width  = gdk_pixbuf_get_width  (btn->normal_pixbuf);
-        requisition->height = gdk_pixbuf_get_height (btn->normal_pixbuf);
+    if (btn->pixbufs[GTK_STATE_NORMAL]) {
+        requisition->width  = gdk_pixbuf_get_width  (btn->pixbufs[GTK_STATE_NORMAL]);
+        requisition->height = gdk_pixbuf_get_height (btn->pixbufs[GTK_STATE_NORMAL]);
     }
-}
-
-static gboolean
-mux_icon_button_enter_notify (GtkWidget *widget, GdkEventCrossing *event)
-{
-    GTK_WIDGET_CLASS (mux_icon_button_parent_class)->enter_notify_event (widget, event);
-    gtk_widget_queue_draw (widget);
-
-    return FALSE;
-}
-
-static gboolean
-mux_icon_button_leave_notify (GtkWidget *widget, GdkEventCrossing *event)
-{
-    GTK_WIDGET_CLASS (mux_icon_button_parent_class)->leave_notify_event (widget, event);
-    gtk_widget_queue_draw (widget);
-
-    return FALSE;
 }
 
 static gboolean
@@ -94,14 +106,13 @@ mux_icon_button_expose (GtkWidget *widget,
                         GdkEventExpose *event)
 {
     GdkRectangle dirty_area, btn_area;
-
     MuxIconButton *btn = MUX_ICON_BUTTON (widget);
     GdkPixbuf *pixbuf;
 
-    if (btn->hover_pixbuf && GTK_BUTTON (btn)->in_button) {
-        pixbuf = btn->hover_pixbuf;
+    if (btn->pixbufs[GTK_WIDGET_STATE (widget)]) {
+        pixbuf = btn->pixbufs[GTK_WIDGET_STATE (widget)];
     } else {
-        pixbuf = btn->normal_pixbuf;
+        pixbuf = btn->pixbufs[GTK_STATE_NORMAL];
     }
 
     if (!pixbuf)
@@ -134,26 +145,40 @@ mux_icon_button_class_init (MuxIconButtonClass *klass)
     object_class->get_property = mux_icon_button_get_property;
     object_class->set_property = mux_icon_button_set_property;
     object_class->dispose = mux_icon_button_dispose;
-    object_class->finalize = mux_icon_button_finalize;
 
     widget_class->size_request = mux_icon_button_size_request;
     widget_class->expose_event = mux_icon_button_expose;
-    widget_class->enter_notify_event = mux_icon_button_enter_notify;
-    widget_class->leave_notify_event = mux_icon_button_leave_notify;
 
-    pspec = g_param_spec_string ("normal-filename",
-                                 "Normal filename",
-                                 "Icon filename for normal state",
-                                 NULL,
+    pspec = g_param_spec_object ("normal-state-pixbuf",
+                                 "Normal state pixbuf",
+                                 "GdkPixbuf for GTK_STATE_NORMAL",
+                                 GDK_TYPE_PIXBUF,
                                  G_PARAM_READWRITE);
-    g_object_class_install_property (object_class, PROP_NORMAL_FILENAME, pspec);
-
-    pspec = g_param_spec_string ("hover-filename",
-                                 "Hover filename",
-                                 "Icon filename for hover state",
-                                 NULL,
+    g_object_class_install_property (object_class, PROP_PIXBUF_NORMAL, pspec);
+    pspec = g_param_spec_object ("active-state-pixbuf",
+                                 "Active state pixbuf",
+                                 "GdkPixbuf for GTK_STATE_ACTIVE",
+                                 GDK_TYPE_PIXBUF,
                                  G_PARAM_READWRITE);
-    g_object_class_install_property (object_class, PROP_HOVER_FILENAME, pspec);
+    g_object_class_install_property (object_class, PROP_PIXBUF_ACTIVE, pspec);
+    pspec = g_param_spec_object ("prelight-state-pixbuf",
+                                 "Prelight state pixbuf",
+                                 "GdkPixbuf for GTK_STATE_PRELIGHT",
+                                 GDK_TYPE_PIXBUF,
+                                 G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_PIXBUF_PRELIGHT, pspec);
+    pspec = g_param_spec_object ("selected-state-pixbuf",
+                                 "Selected state pixbuf",
+                                 "GdkPixbuf for GTK_STATE_SELECTED",
+                                 GDK_TYPE_PIXBUF,
+                                 G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_PIXBUF_SELECTED, pspec);
+    pspec = g_param_spec_object ("insensitive-state-pixbuf",
+                                 "Insensitive state pixbuf",
+                                 "GdkPixbuf for GTK_STATE_INSENSITIVE",
+                                 GDK_TYPE_PIXBUF,
+                                 G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_PIXBUF_INSENSITIVE, pspec);
 }
 
 static void
@@ -162,46 +187,30 @@ mux_icon_button_init (MuxIconButton *self)
 }
 
 GtkWidget*
-mux_icon_button_new (const char *normal_file, const char *hover_file)
+mux_icon_button_new (GdkPixbuf *normal_pixbuf)
 {
     return g_object_new (MUX_TYPE_ICON_BUTTON, 
-                         "normal-filename", normal_file,
-                         "hover-filename", hover_file,
+                         "normal-state-pixbuf", normal_pixbuf,
                          NULL);
 }
 
-const char *
-mux_icon_button_get_normal_filename (MuxIconButton *btn)
-{
-    return (btn->normal_filename);
-}
-
 void
-mux_icon_button_set_normal_filename (MuxIconButton *btn, const char *name)
+mux_icon_button_set_pixbuf (MuxIconButton *button, GtkStateType state, GdkPixbuf *pixbuf)
 {
-    if (btn->normal_filename)
-        g_free (btn->normal_filename);
-    if (btn->normal_pixbuf)
-        g_object_unref (btn->normal_pixbuf);
+    if (button->pixbufs[state]) {
+        g_object_unref (button->pixbufs[state]);
+    }
+    button->pixbufs[state] = g_object_ref (pixbuf);
 
-    btn->normal_filename = g_strdup (name);
-    btn->normal_pixbuf = gdk_pixbuf_new_from_file (name, NULL);
+    if (state == GTK_STATE_NORMAL) {
+        gtk_widget_queue_resize (GTK_WIDGET (button));
+    } else if (state == GTK_WIDGET_STATE (GTK_WIDGET (button))) {
+        gtk_widget_queue_draw (GTK_WIDGET (button));
+    }
 }
 
-const char *
-mux_icon_button_get_hover_filename (MuxIconButton *btn)
+GdkPixbuf*
+mux_icon_button_get_pixbuf (MuxIconButton *button, GtkStateType state)
 {
-    return (btn->hover_filename);
-}
-
-void
-mux_icon_button_set_hover_filename (MuxIconButton *btn, const char *name)
-{
-    if (btn->hover_filename)
-        g_free (btn->hover_filename);
-    if (btn->hover_pixbuf)
-        g_object_unref (btn->hover_pixbuf);
-
-    btn->hover_filename = g_strdup (name);
-    btn->hover_pixbuf = gdk_pixbuf_new_from_file (name, NULL);
+    return button->pixbufs[state];
 }
