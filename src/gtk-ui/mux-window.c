@@ -326,12 +326,36 @@ mux_window_close_clicked (MuxWindow *window)
     gdk_event_free (event);
 }
 
+static GdkPixbuf*
+load_icon (MuxWindow *window, const char *icon_name)
+{
+    static GtkIconTheme *theme = NULL;
+    GdkScreen *screen;
+    GdkPixbuf *pixbuf;
+
+    if (!theme) {
+        screen = gtk_widget_get_screen (GTK_WIDGET (window));
+        theme = gtk_icon_theme_get_for_screen (screen);
+    }
+
+    pixbuf = gtk_icon_theme_load_icon (theme, icon_name,
+                                       48, 0, NULL);
+    if (!pixbuf) {
+        g_warning ("Icon '%s' not found in theme", icon_name);
+        pixbuf = gtk_widget_render_icon (GTK_WIDGET (window),
+                                         GTK_STOCK_MISSING_IMAGE,
+                                         GTK_ICON_SIZE_DIALOG,
+                                         NULL);
+    }
+    return pixbuf;
+}
+
 static void
 mux_window_build_title_bar (MuxWindow *window)
 {
     GtkWidget *box, *btn, *sep;
     GdkPixbuf *pixbuf, *pixbuf_hover;
-    
+
     if (window->title_bar) {
         gtk_widget_unparent (window->title_bar);
     }
@@ -351,9 +375,8 @@ mux_window_build_title_bar (MuxWindow *window)
     gtk_widget_show (window->title_label);
 
     if (window->decorations & MUX_DECOR_CLOSE) {
-        /* TODO load icons from theme when they are added to it */
-        pixbuf = gdk_pixbuf_new_from_file (THEMEDIR "close.png", NULL);
-        pixbuf_hover = gdk_pixbuf_new_from_file (THEMEDIR "close_hover.png", NULL);
+        pixbuf = load_icon (window, "mux-window-close-normal");
+        pixbuf_hover = load_icon (window, "mux-window-close-prelight");
         btn = g_object_new (MUX_TYPE_ICON_BUTTON,
                             "normal-state-pixbuf", pixbuf,
                             "prelight-state-pixbuf", pixbuf_hover,
@@ -372,9 +395,8 @@ mux_window_build_title_bar (MuxWindow *window)
     }
 
     if (window->decorations & MUX_DECOR_SETTINGS) {
-        /* TODO load icons from theme when they are added to it */
-        pixbuf = gdk_pixbuf_new_from_file (THEMEDIR "settings.png", NULL);
-        pixbuf_hover = gdk_pixbuf_new_from_file (THEMEDIR "settings_hover.png", NULL);
+        pixbuf = load_icon (window, "mux-window-settings-normal");
+        pixbuf_hover = load_icon (window, "mux-window-settings-prelight");
         btn = g_object_new (MUX_TYPE_ICON_BUTTON,
                             "normal-state-pixbuf", pixbuf,
                             "prelight-state-pixbuf", pixbuf_hover,

@@ -984,9 +984,11 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
             add_error_info (data, 
                             "Failed to get server configuration from SyncEvolution", 
                             error->message);
+            set_app_state (data, SYNC_UI_STATE_NO_SERVER);
+        } else {
+            set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
         }
         g_error_free (error);
-        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
         return;
     }
 
