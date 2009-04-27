@@ -33,7 +33,11 @@ void DBusSyncClient::prepare(const std::vector<EvolutionSyncSource *> &sources)
 	}
 	setSyncModes (sources, modes);
 
-	setPrintChanges (false, true);
+}
+
+bool DBusSyncClient::getPrintChanges() const
+{
+	return false;
 }
 
 string DBusSyncClient::askPassword(const string &descr)

@@ -33,6 +33,8 @@ public:
 protected:
 	virtual void prepare(const std::vector<EvolutionSyncSource *> &sources);
 
+	virtual bool getPrintChanges() const;
+
 	virtual string askPassword(const string &descr);
 
 	virtual void displayServerMessage(const string &message);
