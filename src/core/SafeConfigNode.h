@@ -41,6 +41,9 @@ class SafeConfigNode : public ConfigNode {
 
     virtual string getName() const { return m_readOnlyNode->getName(); }
 
+    /* keep underlying methods visible; our own setProperty() would hide them */
+    using ConfigNode::setProperty;
+
     /* ConfigNode API */
     virtual void flush();
     virtual string readProperty(const string &property) const;

@@ -49,6 +49,9 @@ class FileConfigNode : public ConfigNode {
      */
     FileConfigNode(const string &path, const string &fileName, bool readonly);
 
+    /* keep underlying methods visible; our own setProperty() would hide them */
+    using ConfigNode::setProperty;
+
     virtual string getName() const { return m_path + "/" + m_fileName; }
 
     virtual void flush();

@@ -199,24 +199,30 @@ public:
                     } else if (key == "mode") {
                         source.recordFinalSyncMode(StringToSyncMode(prop.second));
                     } else if (key == "first") {
-                        source.recordFirstSync(prop.second == "true");
+                        bool value;
+                        if (m_info->getProperty(prop.first, value)) {
+                            source.recordFirstSync(value);
+                        }
                     } else if (key == "resume") {
-                        source.recordResumeSync(prop.second == "true");
+                        bool value;
+                        if (m_info->getProperty(prop.first, value)) {
+                            source.recordResumeSync(value);
+                        }
                     } else if (key == "status") {
-                        stringstream in(prop.second);
-                        long status;
-                        in >> status;
-                        source.recordStatus(static_cast<SyncMLStatus>(status));
+                        long value;
+                        if (m_info->getProperty(prop.first, value)) {
+                            source.recordStatus(static_cast<SyncMLStatus>(value));
+                        }
                     } else if (key == "backup-before") {
-                        stringstream in(prop.second);
-                        long count;
-                        in >> count;
-                        source.m_backupBefore.setNumItems(count);
+                        long value;
+                        if (m_info->getProperty(prop.first, value)) {
+                            source.m_backupBefore.setNumItems(value);
+                        }
                     } else if (key == "backup-after") {
-                        stringstream in(prop.second);
-                        long count;
-                        in >> count;
-                        source.m_backupAfter.setNumItems(count);
+                        long value;
+                        if (m_info->getProperty(prop.first, value)) {
+                            source.m_backupAfter.setNumItems(value);
+                        }
                     }
                 }
             }
@@ -240,26 +246,19 @@ public:
                 boost::replace_all(prefix, "-", "_+");
                 prefix = "source-" + prefix;
 
-                stringstream strval;
                 string key;
                 key = prefix + "-mode";
                 m_info->setProperty(key, PrettyPrintSyncMode(source.getFinalSyncMode()));
                 key = prefix + "-first";
-                m_info->setProperty(key, source.isFirstSync() ? "true" : "false");
+                m_info->setProperty(key, source.isFirstSync());
                 key = prefix + "-resume";
-                m_info->setProperty(key, source.isResumeSync() ? "true" : "false");
+                m_info->setProperty(key, source.isResumeSync());
                 key = prefix + "-status";
-                strval.clear();
-                strval << static_cast<long>(source.getStatus());
-                m_info->setProperty(key, strval.str());
+                m_info->setProperty(key, static_cast<long>(source.getStatus()));
                 key = prefix + "-backup-before";
-                strval.clear();
-                strval << source.m_backupBefore.getNumItems();
-                m_info->setProperty(key, strval.str());
+                m_info->setProperty(key, source.m_backupBefore.getNumItems());
                 key = prefix + "-backup-after";
-                strval.clear();
-                strval << source.m_backupAfter.getNumItems();
-                m_info->setProperty(key, strval.str());
+                m_info->setProperty(key, source.m_backupAfter.getNumItems());
 
                 for (int location = 0;
                      location < SyncSourceReport::ITEM_LOCATION_MAX;
@@ -278,9 +277,7 @@ public:
                                     SyncSourceReport::StatTupleToString(SyncSourceReport::ItemLocation(location),
                                                                         SyncSourceReport::ItemState(state),
                                                                         SyncSourceReport::ItemResult(result));
-                                strval.clear();
-                                strval << intval;
-                                m_info->setProperty(key, strval.str());
+                                m_info->setProperty(key, intval);
                             }
                         }
                     }
