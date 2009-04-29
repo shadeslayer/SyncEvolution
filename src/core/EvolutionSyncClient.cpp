@@ -182,8 +182,6 @@ public:
             /* write in slightly different format and flush at the end */
             writeTimestamp("start", report.getStart(), false);
             writeTimestamp("end", report.getEnd(), true);
-
-            HashConfigNode node;
         }
     }
 
