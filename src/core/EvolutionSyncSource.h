@@ -530,11 +530,6 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
 
     /**
      * @name default implementation of SyncSource iterators
-     *
-     * @todo getFirstItemKey() and getNextItemKey() are marked for removal
-     * and will be replaced by removeAllItems(). Remove the calls when
-     * they are no longer needed. In the meantime implement them with
-     * m_allItems.
      */
     /**@{*/
     virtual SyncItem* getFirstItem() throw() { return m_allItems.start(); }
@@ -545,8 +540,6 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
     virtual SyncItem* getNextUpdatedItem() throw() { return m_updatedItems.iterate(); }
     virtual SyncItem* getFirstDeletedItem() throw() { return m_deletedItems.start(); }
     virtual SyncItem* getNextDeletedItem() throw() { return m_deletedItems.iterate(); }
-    virtual SyncItem* getFirstItemKey() throw() { return m_allItems.start(); }
-    virtual SyncItem* getNextItemKey() throw() { return m_allItems.iterate(); }
     /**@}*/
 
     /**

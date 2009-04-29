@@ -70,8 +70,6 @@ public:
     virtual SyncItem* getNextUpdatedItem() throw () { return m_source->getNextUpdatedItem(); }
     virtual SyncItem* getFirstDeletedItem() throw () { return m_source->getFirstDeletedItem(); }
     virtual SyncItem* getNextDeletedItem() throw () { return m_source->getNextDeletedItem(); }
-    virtual SyncItem* getFirstItemKey() throw () { return m_source->getFirstItemKey(); }
-    virtual SyncItem* getNextItemKey() throw () { return m_source->getNextItemKey(); }
 
     virtual SyncMLStatus addItem(SyncItem& item) throw () { return m_source->addItem(item); }
     virtual SyncMLStatus updateItem(SyncItem& item) throw () { return m_source->updateItem(item); }
