@@ -209,8 +209,10 @@ AC_DEFINE_UNQUOTED(DBUS_SERVICES_DIR, "$DBUS_SERVICES_DIR", [Location of D-Bus s
 
 AC_ARG_ENABLE(gui,
               AS_HELP_STRING([--enable-gui[=gui type]],
-                             [enables building the GTK+ UI that uses the SyncEvolution DBus API 
-                              Options: gtk, moblin]),
+                             [enables building the GTK+ UI that uses the SyncEvolution DBus API.
+                              Options: gtk, moblin.
+                              "gtk" is the default for --enable-gui without type. No GUI is
+                              built when --enable-gui is not used.]),
               [ if test "$enableval" = "gtk" ; then
                     enable_gui=gtk
                 elif test "$enableval" = "yes" ; then
@@ -222,7 +224,8 @@ AC_ARG_ENABLE(gui,
                 else
                     AC_ERROR([Unknown gui type: '$enableval'])
                 fi
-              ])
+              ],
+              [ enable_gui=no ])
 
 AM_CONDITIONAL([COND_GUI], [test "$enable_gui" != "no"])
 
