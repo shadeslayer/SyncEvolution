@@ -207,6 +207,7 @@ class TrackingSyncSource : public EvolutionSyncSource
 
   private:
     /* implementations of EvolutionSyncSource callbacks */
+    virtual bool checkStatus() { beginSyncThrow(true, true, false); return true; }
     virtual void beginSyncThrow(bool needAll,
                                 bool needPartial,
                                 bool deleteLocal);

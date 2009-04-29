@@ -118,66 +118,222 @@ void SyncSourceReport::StringToStatTuple(const std::string &str, ItemLocation &l
     result = tokens.size() > 2 ? StringToResult(tokens[2]) : ITEM_RESULT_MAX;
 }
 
-namespace {
-    const int name_width = 18;
-    const int number_width = 3;
-    const int single_side_width = (number_width * 2 + 1) * 3 + 2;
-    const int text_width = single_side_width * 2 + 3 + number_width + 1;
+std::ostream &operator << (std::ostream &out, const SyncReport &report)
+{
+    report.prettyPrint(out, 0);
+    return out;
+}
 
-    std::ostream &flushRight(std::ostream &out, const std::string &line) {
-        int spaces = name_width + 1 + text_width - line.size();
-        if (spaces < 0) {
-            spaces = 0;
+namespace {
+    string fill(char sep, size_t width) {
+        string res;
+        res.resize(width - 1, sep);
+        return res;
+    }
+    string center(char sep, const string &str, size_t width) {
+        if (str.size() + 1 >= width) {
+            return str;
+        } else {
+            string res;
+            res.resize(width - 1, sep);
+            res.replace((width - 1 - str.size()) / 2, str.size(), str);
+            return res;
         }
-        out << "|" << std::left << std::setw(spaces) << "" <<
-            line <<
-            std::setw(0) << "" << " |\n";
-        return out;
+    }
+    string right(char sep, const string &str, size_t width) {
+        if (str.size() + 1 >= width) {
+            return str;
+        } else {
+            string res;
+            res.resize(width - 1, sep);
+            res.replace(width - 2 - str.size(), str.size(), str);
+            return res;
+        }
+    }
+    string left(char sep, const string &str, size_t width) {
+        if (str.size() + 1 >= width) {
+            return str;
+        } else {
+            string res;
+            res.resize(width - 1, sep);
+            res.replace(1, str.size(), str);
+            return res;
+        }
+    }
+
+    // insert string at column if it fits, otherwise flush right
+    string align(char sep, const string &str, size_t width, size_t column) {
+        if (column + str.size() + 1 >= width) {
+            return right(sep, str, width);
+        } else {
+            string res;
+            res.resize(width - 1, sep);
+            res.replace(column, str.size(), str);
+            return res;
+        }
     }
 }
 
-
-
-std::ostream &operator << (std::ostream &out, const SyncReport &report)
+void SyncReport::prettyPrint(std::ostream &out, int flags) const
 {
+    // table looks like this:
+    // +-------------------|-------ON CLIENT---------------|-------ON SERVER-------|-CON-+
+    // |                   |       rejected / total        |    rejected / total   | FLI |
+    // |            Source |  NEW  |  MOD  |  DEL  | TOTAL |  NEW  |  MOD  |  DEL  | CTS |
+    // +-------------------+-------+-------+-------+-------+-------+-------+-------+-----+
+    //
+    // Most of the columns can be turned on or off dynamically.
+    // Their width is calculated once (including right separators and spaces):
+    // | name_width        |count_width|                   |                       |conflict_width|
+    //                     |client_width                   | server_width          |
+    // | text_width                                                                      |
 
-    out << "+-------------------|-------ON CLIENT-------|-------ON SERVER-------|-CON-+\n";
-    out << "|                   |    rejected / total   |    rejected / total   | FLI |\n";
-    out << "|            Source |  NEW  |  MOD  |  DEL  |  NEW  |  MOD  |  DEL  | CTS |\n";
-    const char *sep = 
-        "+-------------------+-------+-------+-------+-------+-------+-------+-----+\n";
+    // name column is sized dynamically based on column header and actual names
+    size_t name_width = strlen("Source");
+    BOOST_FOREACH(const SyncReport::value_type &entry, *this) {
+        const std::string &name = entry.first;
+        if (name_width < name.size()) {
+            name_width = name.size();
+        }
+    }
+    name_width += 1; // separator
+    if (name_width < 20) {
+        // enough room for spaces
+        name_width += 2;
+    }
+
+    int count_width = 8;
+    int client_width = (flags & WITHOUT_CLIENT) ? 0 :
+        (flags & WITH_TOTAL) ? 4 * count_width :
+        3 * count_width;
+    int server_width = (flags & WITHOUT_SERVER) ? 0 :
+        (flags & WITH_TOTAL) ? 4 * count_width :
+        3 * count_width;
+    int conflict_width = (flags & WITHOUT_CONFLICTS) ? 0 : 6;
+    int text_width = name_width + client_width + server_width + conflict_width;
+
+    if (text_width < 70) {
+        // enlarge name column to make room for long lines of text
+        name_width += 70 - text_width;
+        text_width = 70;
+    }
+
+    out << "+" << fill('-', name_width);
+    if (!(flags & WITHOUT_CLIENT)) {
+        out << '|' << center('-', "ON CLIENT", client_width);
+    }
+    if (!(flags & WITHOUT_SERVER)) {
+        out << '|' << center('-', "ON SERVER", server_width);
+    }
+    if (!(flags & WITHOUT_CONFLICTS)) {
+        out << '|' << center('-', "CON", conflict_width);
+    }
+    out << "+\n";
+
+    if (!(flags & WITHOUT_REJECTS) || !(flags & WITHOUT_CONFLICTS)) {
+        out << "|" << fill(' ', name_width);
+        string header = (flags & WITHOUT_REJECTS) ? "total" : "rejected / total";
+        if (!(flags & WITHOUT_CLIENT)) {
+            out << '|' << center(' ', header, client_width);
+        }
+        if (!(flags & WITHOUT_SERVER)) {
+            out << '|' << center(' ', header, server_width);
+        }
+        if (!(flags & WITHOUT_CONFLICTS)) {
+            out << '|' << center(' ', "FLI", conflict_width);
+        }
+        out << "|\n";
+    }
+
+    out << '|' << right(' ', "Source", name_width);
+    if (!(flags & WITHOUT_CLIENT)) {
+        out << '|' << center(' ', "NEW", count_width);
+        out << '|' << center(' ', "MOD", count_width);
+        out << '|' << center(' ', "DEL", count_width);
+        if (flags & WITH_TOTAL) {
+            out << '|' << center(' ', "TOTAL", count_width);
+        }
+    }
+    if (!(flags & WITHOUT_SERVER)) {
+        out << '|' << center(' ', "NEW", count_width);
+        out << '|' << center(' ', "MOD", count_width);
+        out << '|' << center(' ', "DEL", count_width);
+        if (flags & WITH_TOTAL) {
+            out << '|' << center(' ', "TOTAL", count_width);
+        }
+    }
+    if (!(flags & WITHOUT_CONFLICTS)) {
+        out << '|' << center(' ', "CTS", conflict_width);
+    }
+    out << "|\n";
+
+    stringstream sepstream;
+    sepstream << '+' << fill('-', name_width);
+    if (!(flags & WITHOUT_CLIENT)) {
+        sepstream << '+' << fill('-', count_width);
+        sepstream << '+' << fill('-', count_width);
+        sepstream << '+' << fill('-', count_width);
+        if (flags & WITH_TOTAL) {
+            sepstream << '+' << fill('-', count_width);
+        }
+    }
+    if (!(flags & WITHOUT_SERVER)) {
+        sepstream << '+' << fill('-', count_width);
+        sepstream << '+' << fill('-', count_width);
+        sepstream << '+' << fill('-', count_width);
+        if (flags & WITH_TOTAL) {
+            sepstream << '+' << fill('-', count_width);
+        }
+    }
+    if (!(flags & WITHOUT_CONFLICTS)) {
+        sepstream << '+' << fill('-', conflict_width);
+    }
+    sepstream << "+\n";
+    string sep = sepstream.str();
     out << sep;
 
-    BOOST_FOREACH(const SyncReport::value_type &entry, report) {
+    BOOST_FOREACH(const SyncReport::value_type &entry, *this) {
         const std::string &name = entry.first;
         const SyncSourceReport &source = entry.second;
-        out << "|" << std::right << std::setw(name_width) << name << " |";
-        for (SyncSourceReport::ItemLocation location = SyncSourceReport::ITEM_LOCAL;
-             location <= SyncSourceReport::ITEM_REMOTE;
+        out << '|' << right(' ', name, name_width);
+        ssize_t name_column = name_width - 2 - name.size();
+        if (name_column < 0) {
+            name_column = 0;
+        }
+        for (SyncSourceReport::ItemLocation location =
+                 ((flags & WITHOUT_CLIENT) ? SyncSourceReport::ITEM_REMOTE : SyncSourceReport::ITEM_LOCAL);
+             location <= ((flags & WITHOUT_SERVER) ? SyncSourceReport::ITEM_LOCAL : SyncSourceReport::ITEM_REMOTE);
              location = SyncSourceReport::ItemLocation(int(location) + 1)) {
             for (SyncSourceReport::ItemState state = SyncSourceReport::ITEM_ADDED;
-                 state <= SyncSourceReport::ITEM_REMOVED;
+                 state <= ((flags & WITH_TOTAL) ? SyncSourceReport::ITEM_ANY : SyncSourceReport::ITEM_REMOVED);
                  state = SyncSourceReport::ItemState(int(state) + 1)) {
-                out << std::right << std::setw(number_width) <<
-                    source.getItemStat(location, state, SyncSourceReport::ITEM_REJECT);
-                out << "/";
-                out << std::left << std::setw(number_width) <<
-                    source.getItemStat(location, state, SyncSourceReport::ITEM_TOTAL);
-                out << "|";
+                stringstream count;
+                if (!(flags & WITHOUT_REJECTS)) {
+                    count << source.getItemStat(location, state, SyncSourceReport::ITEM_REJECT)
+                          << '/';
+                }
+                count << source.getItemStat(location, state, SyncSourceReport::ITEM_TOTAL);
+                out << '|' << center(' ', count.str(), count_width);
             }
         }
-        int total_conflicts =
-            source.getItemStat(SyncSourceReport::ITEM_REMOTE,
-                               SyncSourceReport::ITEM_ANY,
-                               SyncSourceReport::ITEM_CONFLICT_SERVER_WON) +
-            source.getItemStat(SyncSourceReport::ITEM_REMOTE,
-                               SyncSourceReport::ITEM_ANY,
-                               SyncSourceReport::ITEM_CONFLICT_CLIENT_WON) +
-            source.getItemStat(SyncSourceReport::ITEM_REMOTE,
-                               SyncSourceReport::ITEM_ANY,
-                               SyncSourceReport::ITEM_CONFLICT_DUPLICATED);
-        out << std::right << std::setw(number_width + 1) << total_conflicts;
-        out << " |\n";
+
+        int total_conflicts = 0;
+        if (!(flags & WITHOUT_CONFLICTS)) {
+            total_conflicts =
+                source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                   SyncSourceReport::ITEM_ANY,
+                                   SyncSourceReport::ITEM_CONFLICT_SERVER_WON) +
+                source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                   SyncSourceReport::ITEM_ANY,
+                                   SyncSourceReport::ITEM_CONFLICT_CLIENT_WON) +
+                source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                   SyncSourceReport::ITEM_ANY,
+                                   SyncSourceReport::ITEM_CONFLICT_DUPLICATED);
+            stringstream conflicts;
+            conflicts << total_conflicts;
+            out << '|' << center(' ', conflicts.str(), conflict_width);
+        }
+        out << "|\n";
 
         std::stringstream line;
 
@@ -198,7 +354,7 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
                                    SyncSourceReport::ITEM_ANY,
                                    SyncSourceReport::ITEM_RECEIVED_BYTES) / 1024 <<
                 " KB received";
-            flushRight(out, line.str());
+            out << '|' << align(' ', line.str(), text_width, name_column) << "|\n";
         }
 
         if (total_conflicts > 0) {
@@ -215,9 +371,7 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
                          result == SyncSourceReport::ITEM_CONFLICT_CLIENT_WON ? "server item(s) discarded" :
                      "item(s) duplicated");
 
-                    out << "|" << std::left << std::setw(name_width) << "" << " |" <<
-                        std::right << std::setw(text_width - 1) << line.str() <<
-                        " |\n";
+                    out << '|' << align(' ', line.str(), text_width, name_column) << "|\n";
                 }
             }
         }
@@ -226,11 +380,10 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
                                                SyncSourceReport::ITEM_ANY,
                                                SyncSourceReport::ITEM_MATCH);
         if (total_matched) {
-            out << "|" << std::left << std::setw(name_width) << "" << "| " << std::left <<
-                std::setw(number_width) << total_matched <<
-                std::setw(text_width - 1 - number_width) <<
-                " item(s) matched" <<
-                "|\n";
+            stringstream line;
+            line << total_matched << " item(s) matched";
+            out << '|' << align(' ', line.str(), text_width, name_column)
+                << "|\n";
         }
 
         if (source.m_backupBefore.isAvailable() ||
@@ -247,17 +400,15 @@ std::ostream &operator << (std::ostream &out, const SyncReport &report)
             } else {
                 backup << "no backup after it";
             }
-            flushRight(out, backup.str());
+            out << '|' << align(' ', backup.str(), text_width, name_column) << "|\n";
         }
-    }
-    out << sep;
-
-    if (report.getStart()) {
-        flushRight(out, report.formatSyncTimes());
         out << sep;
     }
 
-    return out;
+    if (getStart()) {
+        out << '|' << center(' ', formatSyncTimes(), text_width) << "|\n";
+        out << sep;
+    }
 }
 
 std::string SyncReport::formatSyncTimes() const

@@ -262,6 +262,16 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
 
     /** generate short string representing start and duration of sync */
     std::string formatSyncTimes() const;
+
+    /** pretty-print with options */
+    void prettyPrint(std::ostream &out, int flags) const;
+    enum {
+        WITHOUT_CLIENT = 1 << 1,
+        WITHOUT_SERVER = 1 << 2,
+        WITHOUT_CONFLICTS = 1 << 3,
+        WITHOUT_REJECTS = 1 << 4,
+        WITH_TOTAL = 1 << 5
+    };
 };
 
 /** pretty-print the report as an ASCII table */

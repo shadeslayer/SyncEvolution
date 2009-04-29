@@ -176,6 +176,9 @@ void TrackingSyncSource::restoreData(const string &dir, const ConfigNode &node, 
         key << counter << "-rev";
         string rev = node.readProperty(key.str());
         RevisionMap_t::iterator it = revisions.find(uid);
+        report.incrementItemStat(report.ITEM_LOCAL,
+                                 report.ITEM_ANY,
+                                 report.ITEM_TOTAL);
         if (it != revisions.end() &&
             it->second == rev) {
             // item exists in backup and database with same revision:

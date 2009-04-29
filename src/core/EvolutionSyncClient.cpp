@@ -508,7 +508,7 @@ public:
      */
     bool dumpLocalChanges(const string &oldDir,
                           const string &oldSuffix, const string &newSuffix,
-                          const string &intro = "Local changes to be applied to server during synchronization:\n",
+                          const string &intro = "Local data changes to be applied to server during synchronization:\n",
                           const string &config = "CLIENT_TEST_LEFT_NAME='after last sync' CLIENT_TEST_RIGHT_NAME='current data' CLIENT_TEST_REMOVED='removed since last sync' CLIENT_TEST_ADDED='added since last sync'") {
         if (m_logLevel <= LOGGING_SUMMARY || oldDir.empty()) {
             return false;
@@ -1675,6 +1675,18 @@ void EvolutionSyncClient::status()
         source->open();
     }
 
+    SyncReport changes;
+    checkSourceChanges(sourceList, changes);
+
+    stringstream out;
+    changes.prettyPrint(out,
+                        SyncReport::WITHOUT_SERVER|
+                        SyncReport::WITHOUT_CONFLICTS|
+                        SyncReport::WITHOUT_REJECTS|
+                        SyncReport::WITH_TOTAL);
+    SE_LOG_INFO(NULL, NULL, "Local item changes:\n%s",
+                out.str().c_str());
+
     sourceList.startSession(getLogDir(), 0, 0, NULL, "status");
     LoggerBase::instance().setLevel(Logger::INFO);
     string prevLogdir = sourceList.getPrevLogdir();
@@ -1696,17 +1708,64 @@ void EvolutionSyncClient::status()
     }
 }
 
+void EvolutionSyncClient::checkStatus(SyncReport &report)
+{
+    if (!exists()) {
+        SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
+        throwError("cannot proceed without configuration");
+    }
+
+    SourceList sourceList(m_server, false);
+    initSources(sourceList);
+    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+        source->checkPassword(*this);
+    }
+    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+        source->open();
+    }
+
+    checkSourceChanges(sourceList, report);
+}
+
 static void logRestoreReport(const SyncReport &report, bool dryrun)
 {
     if (!report.empty()) {
         stringstream out;
-        out << report;
+        report.prettyPrint(out, SyncReport::WITHOUT_SERVER|SyncReport::WITHOUT_CONFLICTS|SyncReport::WITH_TOTAL);
         SE_LOG_INFO(NULL, NULL, "Item changes %s applied to client during restore:\n%s",
                     dryrun ? "to be" : "that were",
                     out.str().c_str());
         SE_LOG_INFO(NULL, NULL, "The same incremental changes will be applied to the server during the next sync.");
         SE_LOG_INFO(NULL, NULL, "Use -sync refresh-from-client to replace the complete data on the server.");
     }
+}
+
+void EvolutionSyncClient::checkSourceChanges(SourceList &sourceList, SyncReport &changes)
+{
+    changes.setStart(time(NULL));
+    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+        if (source->checkStatus()) {
+            SyncSourceReport local;
+            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
+                              SyncSourceReport::ITEM_ADDED,
+                              SyncSourceReport::ITEM_TOTAL,
+                              source->getNumNewItems());
+            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
+                              SyncSourceReport::ITEM_UPDATED,
+                              SyncSourceReport::ITEM_TOTAL,
+                              source->getNumUpdatedItems());
+            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
+                              SyncSourceReport::ITEM_REMOVED,
+                              SyncSourceReport::ITEM_TOTAL,
+                              source->getNumDeletedItems());
+            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
+                              SyncSourceReport::ITEM_ANY,
+                              SyncSourceReport::ITEM_TOTAL,
+                              source->getNumItems());
+            changes.addSyncSourceReport(source->getName(), local);
+        }
+    }
+    changes.setEnd(time(NULL));
 }
 
 void EvolutionSyncClient::restore(const string &dirname, RestoreDatabase database)

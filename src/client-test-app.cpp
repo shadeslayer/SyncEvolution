@@ -86,6 +86,7 @@ public:
     virtual const char *getMimeType() const { return m_source->getMimeType(); }
     virtual const char *getMimeVersion() const { return m_source->getMimeVersion(); }
     virtual const char* getSupportedTypes() const { return m_source->getSupportedTypes(); }
+    virtual bool checkStatus() { return m_source->checkStatus(); }
     virtual void beginSyncThrow(bool needAll,
                                 bool needPartial,
                                 bool deleteLocal) { m_source->beginSyncThrow(needAll, needPartial, deleteLocal); }

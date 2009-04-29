@@ -532,12 +532,16 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
      * @name default implementation of SyncSource iterators
      */
     /**@{*/
+    virtual long getNumItems() throw() { return m_allItems.size(); }
     virtual SyncItem* getFirstItem() throw() { return m_allItems.start(); }
     virtual SyncItem* getNextItem() throw() { return m_allItems.iterate(); }
+    virtual long getNumNewItems() throw() { return m_newItems.size(); }
     virtual SyncItem* getFirstNewItem() throw() { return m_newItems.start(); }
     virtual SyncItem* getNextNewItem() throw() { return m_newItems.iterate(); }
+    virtual long getNumUpdatedItems() throw() { return m_updatedItems.size(); }
     virtual SyncItem* getFirstUpdatedItem() throw() { return m_updatedItems.start(); }
     virtual SyncItem* getNextUpdatedItem() throw() { return m_updatedItems.iterate(); }
+    virtual long getNumDeletedItems() throw() { return m_deletedItems.size(); }
     virtual SyncItem* getFirstDeletedItem() throw() { return m_deletedItems.start(); }
     virtual SyncItem* getNextDeletedItem() throw() { return m_deletedItems.iterate(); }
     /**@}*/
@@ -581,6 +585,20 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
      */
     virtual SyncMLStatus removeAllItems() throw();
 
+    /**
+     * initialize information about local changes and items
+     * as in beginSync() with all parameters set to true,
+     * but without changing the state of the underlying database
+     *
+     * This method will be called to check for local changes without
+     * actually running a sync, so there is no matching end call.
+     * There might be sources which don't support non-destructive
+     * change tracking (in other words, checking changes permanently
+     * modifies the state of the source and cannot be repeated). Such
+     * a source can refuse to execute this call by returning false.
+     */
+    virtual bool checkStatus() = 0;
+     
     /**
      * source specific part of beginSync() - throws exceptions in case of error
      *

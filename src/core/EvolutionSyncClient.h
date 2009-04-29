@@ -133,6 +133,21 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     void readSessionInfo(const string &dir, SyncReport &report);
 
     /**
+     * fills report with information about local changes
+     *
+     * Only sync sources selected in the EvolutionSyncClient
+     * constructor are checked. The local item changes will be set in
+     * the SyncReport's ITEM_LOCAL ITEM_ADDED/UPDATED/REMOVED.
+     *
+     * Some sync sources might not be able to report this
+     * information outside of a regular sync, in which case
+     * these fields are set to -1. 
+     *
+     * Start and end times of the check are also reported.
+     */
+    void checkStatus(SyncReport &report);
+
+    /**
      * throws a runtime_error with the given string
      * or (on the iPhone, where exception handling is not
      * supported by the toolchain) prints an error directly
@@ -394,6 +409,12 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * them for reading without changing their state yet
      */
     void initSources(SourceList &sourceList);
+
+    /**
+     * utility function for status() and getChanges():
+     * iterate over sources, check for changes and copy result
+     */
+    void checkSourceChanges(SourceList &sourceList, SyncReport &changes);
 
     /**
      * sets up Synthesis session and executes it
