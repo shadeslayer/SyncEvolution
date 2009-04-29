@@ -28,7 +28,6 @@ using namespace SyncEvolution;
 using namespace std;
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/replace.hpp>
 #include <boost/foreach.hpp>
 
 #include <sys/stat.h>
@@ -170,63 +169,7 @@ public:
         if (!m_info) {
             return;
         }
-        report.setStart(readTimestamp("start"));
-        report.setEnd(readTimestamp("end"));
-
-        ConfigNode::PropsType props;
-        m_info->readProperties(props);
-        BOOST_FOREACH(const ConfigNode::PropsType::value_type &prop, props) {
-            string key = prop.first;
-            if (boost::starts_with(key, "source-")) {
-                key.erase(0, strlen("source-"));
-                size_t off = key.find('-');
-                if (off != key.npos) {
-                    string sourcename = key.substr(0, off);
-                    boost::replace_all(sourcename, "_+", "-");
-                    boost::replace_all(sourcename, "__", "_");
-                    SyncSourceReport &source = report.getSyncSourceReport(sourcename);
-                    key.erase(0, off + 1);
-                    if (boost::starts_with(key, "stat-")) {
-                        key.erase(0, strlen("stat-"));
-                        SyncSourceReport::ItemLocation location;
-                        SyncSourceReport::ItemState state;
-                        SyncSourceReport::ItemResult result;
-                        SyncSourceReport::StringToStatTuple(key, location, state, result);
-                        stringstream in(prop.second);
-                        int intval;
-                        in >> intval;
-                        source.setItemStat(location, state, result, intval);
-                    } else if (key == "mode") {
-                        source.recordFinalSyncMode(StringToSyncMode(prop.second));
-                    } else if (key == "first") {
-                        bool value;
-                        if (m_info->getProperty(prop.first, value)) {
-                            source.recordFirstSync(value);
-                        }
-                    } else if (key == "resume") {
-                        bool value;
-                        if (m_info->getProperty(prop.first, value)) {
-                            source.recordResumeSync(value);
-                        }
-                    } else if (key == "status") {
-                        long value;
-                        if (m_info->getProperty(prop.first, value)) {
-                            source.recordStatus(static_cast<SyncMLStatus>(value));
-                        }
-                    } else if (key == "backup-before") {
-                        long value;
-                        if (m_info->getProperty(prop.first, value)) {
-                            source.m_backupBefore.setNumItems(value);
-                        }
-                    } else if (key == "backup-after") {
-                        long value;
-                        if (m_info->getProperty(prop.first, value)) {
-                            source.m_backupAfter.setNumItems(value);
-                        }
-                    }
-                }
-            }
-        }
+        *m_info >> report;
     }
 
     /**
@@ -234,55 +177,13 @@ public:
      */
     void writeReport(SyncReport &report) {
         if (m_info) {
-            writeTimestamp("start", report.getStart());
-            writeTimestamp("end", report.getEnd());
+            *m_info << report;
 
-            BOOST_FOREACH(const SyncReport::value_type &entry, report) {
-                const std::string &name = entry.first;
-                const SyncSourceReport &source = entry.second;
+            /* write in slightly different format and flush at the end */
+            writeTimestamp("start", report.getStart(), false);
+            writeTimestamp("end", report.getEnd(), true);
 
-                string prefix = name;
-                boost::replace_all(prefix, "_", "__");
-                boost::replace_all(prefix, "-", "_+");
-                prefix = "source-" + prefix;
-
-                string key;
-                key = prefix + "-mode";
-                m_info->setProperty(key, PrettyPrintSyncMode(source.getFinalSyncMode()));
-                key = prefix + "-first";
-                m_info->setProperty(key, source.isFirstSync());
-                key = prefix + "-resume";
-                m_info->setProperty(key, source.isResumeSync());
-                key = prefix + "-status";
-                m_info->setProperty(key, static_cast<long>(source.getStatus()));
-                key = prefix + "-backup-before";
-                m_info->setProperty(key, source.m_backupBefore.getNumItems());
-                key = prefix + "-backup-after";
-                m_info->setProperty(key, source.m_backupAfter.getNumItems());
-
-                for (int location = 0;
-                     location < SyncSourceReport::ITEM_LOCATION_MAX;
-                     location++) {
-                    for (int state = 0;
-                         state < SyncSourceReport::ITEM_STATE_MAX;
-                         state++) {
-                        for (int result = 0;
-                             result < SyncSourceReport::ITEM_RESULT_MAX;
-                             result++) {
-                            int intval = source.getItemStat(SyncSourceReport::ItemLocation(location),
-                                                            SyncSourceReport::ItemState(state),
-                                                            SyncSourceReport::ItemResult(result));
-                            if (intval) {
-                                key = prefix + "-stat-" +
-                                    SyncSourceReport::StatTupleToString(SyncSourceReport::ItemLocation(location),
-                                                                        SyncSourceReport::ItemState(state),
-                                                                        SyncSourceReport::ItemResult(result));
-                                m_info->setProperty(key, intval);
-                            }
-                        }
-                    }
-                }
-            }
+            HashConfigNode node;
         }
     }
 
@@ -488,25 +389,17 @@ private:
     }
 
     // store time stamp in session info
-    void writeTimestamp(const string &key, time_t val) {
+    void writeTimestamp(const string &key, time_t val, bool flush = true) {
         if (m_info) {
             char buffer[160];
             struct tm tm;
             // be nice and store a human-readable date in addition the seconds since the epoch
             strftime(buffer, sizeof(buffer), "%s, %Y-%m-%d %H:%m:%S %z", localtime_r(&val, &tm));
             m_info->setProperty(key, buffer);
-            m_info->flush();
+            if (flush) {
+                m_info->flush();
+            }
         }
-    }
-
-    // retrieve time stamp from session info
-    time_t readTimestamp(const string &key) {
-        time_t val = 0;
-        if (m_info) {
-            string strval = m_info->readProperty(key);
-            val = strtol(strval.c_str(), NULL, 0);
-        }
-        return val;
     }
 };
 

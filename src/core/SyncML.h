@@ -267,5 +267,12 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
 /** pretty-print the report as an ASCII table */
 std::ostream &operator << (std::ostream &out, const SyncReport &report);
 
+class ConfigNode;
+
+/** write report into a ConfigNode */
+ConfigNode &operator << (ConfigNode &node, const SyncReport &report);
+
+/** read report from a ConfigNode */
+ConfigNode &operator >> (ConfigNode &node, SyncReport &report);
 
 #endif // INCL_SYNCML

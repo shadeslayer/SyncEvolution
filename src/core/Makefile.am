@@ -21,6 +21,7 @@ endif
 CORE_SOURCES  = \
 	ConfigTree.h \
 	ConfigNode.h \
+	HashConfigNode.h \
 	VolatileConfigNode.h \
 	VolatileConfigTree.h \
         EvolutionSmartPtr.h \

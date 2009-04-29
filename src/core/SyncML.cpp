@@ -4,6 +4,7 @@
  */
 
 #include "SyncML.h"
+#include "ConfigNode.h"
 #include <sstream>
 #include <iomanip>
 #include <vector>
@@ -12,7 +13,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
-
+#include <boost/algorithm/string/replace.hpp>
 
 std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)
 {
@@ -280,4 +281,127 @@ std::string SyncReport::formatSyncTimes() const
         }
     }
     return out.str();
+}
+
+ConfigNode &operator << (ConfigNode &node, const SyncReport &report)
+{
+    node.setProperty("start", static_cast<long>(report.getStart()));
+    node.setProperty("end", static_cast<long>(report.getEnd()));
+
+    BOOST_FOREACH(const SyncReport::value_type &entry, report) {
+        const std::string &name = entry.first;
+        const SyncSourceReport &source = entry.second;
+
+        string prefix = name;
+        boost::replace_all(prefix, "_", "__");
+        boost::replace_all(prefix, "-", "_+");
+        prefix = "source-" + prefix;
+
+        string key;
+        key = prefix + "-mode";
+        node.setProperty(key, PrettyPrintSyncMode(source.getFinalSyncMode()));
+        key = prefix + "-first";
+        node.setProperty(key, source.isFirstSync());
+        key = prefix + "-resume";
+        node.setProperty(key, source.isResumeSync());
+        key = prefix + "-status";
+        node.setProperty(key, static_cast<long>(source.getStatus()));
+        key = prefix + "-backup-before";
+        node.setProperty(key, source.m_backupBefore.getNumItems());
+        key = prefix + "-backup-after";
+        node.setProperty(key, source.m_backupAfter.getNumItems());
+
+        for (int location = 0;
+             location < SyncSourceReport::ITEM_LOCATION_MAX;
+             location++) {
+            for (int state = 0;
+                 state < SyncSourceReport::ITEM_STATE_MAX;
+                 state++) {
+                for (int result = 0;
+                     result < SyncSourceReport::ITEM_RESULT_MAX;
+                     result++) {
+                    int intval = source.getItemStat(SyncSourceReport::ItemLocation(location),
+                                                    SyncSourceReport::ItemState(state),
+                                                    SyncSourceReport::ItemResult(result));
+                    if (intval) {
+                        key = prefix + "-stat-" +
+                            SyncSourceReport::StatTupleToString(SyncSourceReport::ItemLocation(location),
+                                                                SyncSourceReport::ItemState(state),
+                                                                SyncSourceReport::ItemResult(result));
+                        node.setProperty(key, intval);
+                    }
+                }
+            }
+        }
+    }
+
+    return node;
+}
+
+ConfigNode &operator >> (ConfigNode &node, SyncReport &report)
+{
+    long ts;
+    if (node.getProperty("start", ts)) {
+        report.setStart(ts);
+    }
+    if (node.getProperty("end", ts)) {
+        report.setEnd(ts);
+    }
+
+    ConfigNode::PropsType props;
+    node.readProperties(props);
+    BOOST_FOREACH(const ConfigNode::PropsType::value_type &prop, props) {
+        string key = prop.first;
+        if (boost::starts_with(key, "source-")) {
+            key.erase(0, strlen("source-"));
+            size_t off = key.find('-');
+            if (off != key.npos) {
+                string sourcename = key.substr(0, off);
+                boost::replace_all(sourcename, "_+", "-");
+                boost::replace_all(sourcename, "__", "_");
+                SyncSourceReport &source = report.getSyncSourceReport(sourcename);
+                key.erase(0, off + 1);
+                if (boost::starts_with(key, "stat-")) {
+                    key.erase(0, strlen("stat-"));
+                    SyncSourceReport::ItemLocation location;
+                    SyncSourceReport::ItemState state;
+                    SyncSourceReport::ItemResult result;
+                    SyncSourceReport::StringToStatTuple(key, location, state, result);
+                    stringstream in(prop.second);
+                    int intval;
+                    in >> intval;
+                    source.setItemStat(location, state, result, intval);
+                } else if (key == "mode") {
+                    source.recordFinalSyncMode(StringToSyncMode(prop.second));
+                } else if (key == "first") {
+                    bool value;
+                    if (node.getProperty(prop.first, value)) {
+                        source.recordFirstSync(value);
+                    }
+                } else if (key == "resume") {
+                    bool value;
+                    if (node.getProperty(prop.first, value)) {
+                        source.recordResumeSync(value);
+                    }
+                } else if (key == "status") {
+                    long value;
+                    if (node.getProperty(prop.first, value)) {
+                        source.recordStatus(static_cast<SyncMLStatus>(value));
+                    }
+                } else if (key == "backup-before") {
+                    long value;
+                    if (node.getProperty(prop.first, value)) {
+                        source.m_backupBefore.setNumItems(value);
+                    }
+                } else if (key == "backup-after") {
+                    long value;
+                    if (node.getProperty(prop.first, value)) {
+                        source.m_backupAfter.setNumItems(value);
+                    }
+                }
+            }
+        }
+    }
+
+    return node;
 }
