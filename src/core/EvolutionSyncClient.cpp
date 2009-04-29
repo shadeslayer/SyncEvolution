@@ -664,27 +664,27 @@ public:
     // if all went well to print report
     void syncDone(bool success, SyncReport *report) {
         if (m_doLogging) {
-            // ensure that stderr is seen again
+            // dump database after sync, but not if already dumping it at the beginning didn't complete
+            if (m_reportTodo && m_prepared) {
+                try {
+                    dumpDatabases("after", &SyncSourceReport::m_backupAfter);
+                } catch (...) {
+                    SyncEvolutionException::handle();
+                    m_prepared = false;
+                }
+                if (report) {
+                    // update report with more recent information about m_backupAfter
+                    updateSyncReport(*report);
+                }
+            }
+
+            // ensure that stderr is seen again, also writes out session status
             m_logdir.restore();
 
             if (m_reportTodo) {
                 // haven't looked at result of sync yet;
                 // don't do it again
                 m_reportTodo = false;
-
-                // dump datatbase after sync, but not if already dumping it at the beginning didn't complete
-                if (m_prepared) {
-                    try {
-                        dumpDatabases("after", &SyncSourceReport::m_backupAfter);
-                    } catch (...) {
-                        SyncEvolutionException::handle();
-                        m_prepared = false;
-                    }
-                    if (report) {
-                        // update report with more recent information about m_backupAfter
-                        updateSyncReport(*report);
-                    }
-                }
 
                 string logfile = m_logdir.getLogfile();
                 cout << flush;
