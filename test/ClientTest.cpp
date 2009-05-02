@@ -1639,7 +1639,8 @@ void SyncTests::addTests() {
 
         if (config.createSourceA) {
             if (config.insertItem) {
-                ADD_TEST(SyncTests, testRefreshSemantic);
+                ADD_TEST(SyncTests, testRefreshFromServerSemantic);
+                ADD_TEST(SyncTests, testRefreshFromClientSemantic);
                 ADD_TEST(SyncTests, testRefreshStatus);
 
                 if (accessClientB &&
@@ -1843,9 +1844,9 @@ void SyncTests::testDeleteAllRefresh() {
     }
 }
 
-// test that a refresh sync of an empty server leads to an empty datatbase
+// test that a refresh sync from an empty server leads to an empty datatbase
 // and no changes are sent to server during next two-way sync
-void SyncTests::testRefreshSemantic() {
+void SyncTests::testRefreshFromServerSemantic() {
     source_it it;
 
     // clean client and server
@@ -1855,7 +1856,8 @@ void SyncTests::testRefreshSemantic() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->testSimpleInsert();
     }
-    doSync(SyncOptions(SYNC_REFRESH_FROM_SERVER,
+    doSync("refresh",
+           SyncOptions(SYNC_REFRESH_FROM_SERVER,
                        CheckSyncReport(0,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
 
     // check
@@ -1870,6 +1872,38 @@ void SyncTests::testRefreshSemantic() {
     doSync("two-way",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
+}
+
+// test that a refresh sync from an empty client leads to an empty datatbase
+// and no changes are sent to server during next two-way sync
+void SyncTests::testRefreshFromClientSemantic() {
+    source_it it;
+
+    // clean client and server
+    deleteAll();
+
+    // insert item, send to server
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        it->second->testSimpleInsert();
+    }
+    doSync("send",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
+
+    // delete locally
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        it->second->deleteAll(it->second->createSourceA);
+    }
+
+    // refresh from client
+    doSync("refresh",
+           SyncOptions(SYNC_REFRESH_FROM_CLIENT,
+                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_CLIENT)));
+
+    // check
+    doSync("check",
+           SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
 }
 
 // tests the following sequence of events:
