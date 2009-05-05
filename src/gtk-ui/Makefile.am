@@ -14,7 +14,7 @@ desktop_DATA = \
 	moblin-sync.desktop
 
 EXTRA_DIST = \
-	$(glade_DATA) \
+	ui.glade \
 	$(themerc_DATA) \
 	$(desktop_DATA)
 

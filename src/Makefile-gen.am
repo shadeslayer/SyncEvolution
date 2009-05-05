@@ -102,7 +102,7 @@ dist-hook:
 		  ( rm -f ChangeLog.tmp ; \
 		     echo Failed to generate ChangeLog >&2 ) \
                 ); \
-	else \
+	elsif test $SYNTHESIS_SRC != "no-synthesis-source"; \
 		cp -a $(SYNTHESIS_SRC)/* $(distdir)/synthesis  && \
 		for i in _build autom4te.cache; do [ ! -d "$(SYNTHESIS_SRC)/$$i" ] || chmod -R u+rwx "$(SYNTHESIS_SRC)/$$i"; done && \
 		find "$(distdir)" -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name .svn -o -name .git -o -name autom4te.cache -print0 | xargs -0 rm -rf; \
@@ -120,10 +120,16 @@ distclean-local:
 	rm -rf $(CLEAN_CLIENT_SRC)
 
 
-if COND_DBUS
-BUILT_SOURCES += syncevo-dbus-glue.h
 
-syncevo_dbus_server_SOURCES = syncevo-marshal.c syncevo-dbus-server.cpp DBusSyncClient.cpp $(CORE_SOURCES)
+if COND_DBUS
+BUILT_SOURCES += syncevo-dbus-glue.h syncevo-marshal.c syncevo-marshal.h
+
+syncevo_dbus_server_SOURCES = \
+	syncevo-dbus-server.cpp syncevo-dbus-server.h \
+	DBusSyncClient.cpp DBusSyncClient.h \
+	$(CORE_SOURCES)
+nodist_syncevo_dbus_server_SOURCES = syncevo-marshal.c
+
 syncevo_dbus_server_LDADD = $(DBUS_GLIB_LIBS) $(CORE_LDADD)
 syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H $(DBUS_GLIB_CFLAGS) $(AM_CPPFLAGS)
 syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
