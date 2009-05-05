@@ -332,10 +332,16 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         icaltimezone_set_component(zone, tcomp);
 
         GError *gerror = NULL;
-        gboolean success = e_cal_add_timezone(m_calendar, zone, &gerror);
-        if (!success) {
-            throwError(string("error adding VTIMEZONE ") + icaltimezone_get_tzid(zone),
-                       gerror);
+        const char *tzid = icaltimezone_get_tzid(zone);
+        if (!tzid || !tzid[0]) {
+            // cannot add a VTIMEZONE without TZID
+            SE_LOG_DEBUG(this, NULL, "skipping VTIMEZONE without TZID");
+        } else {
+            gboolean success = e_cal_add_timezone(m_calendar, zone, &gerror);
+            if (!success) {
+                throwError(string("error adding VTIMEZONE ") + tzid,
+                           gerror);
+            }
         }
     }
 
