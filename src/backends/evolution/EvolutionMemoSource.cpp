@@ -106,6 +106,11 @@ SyncItem *EvolutionMemoSource::createItem(const string &luid)
         }
     }
 
+    if (!item->getDataSize()) {
+        // no description, use summary
+        item->setData(summary.c_str(), summary.size());
+    }
+
     return item.release();
 }
 

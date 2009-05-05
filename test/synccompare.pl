@@ -198,6 +198,13 @@ sub Normalize {
     # removed or added by servers
     s/^DESCRIPTION:(.*?)(\\n)+$/DESCRIPTION:$1/gm;
 
+    # if there is no DESCRIPTION in a VJOURNAL, then use the
+    # summary: that's what is done when exchanging such a
+    # VJOURNAL as plain text
+    if (/^BEGIN:VJOURNAL$/m && !/^DESCRIPTION/m) {
+        s/^SUMMARY:(.*)$/SUMMARY:$1\nDESCRIPTION:$1/m;
+    }
+
     # Strip trailing digits from TZID. They are appended by
     # Evolution and SyncEvolution to distinguish VTIMEZONE
     # definitions which have the same TZID, but different rules.

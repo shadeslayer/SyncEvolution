@@ -61,6 +61,10 @@ Changes in detail:
 * SF #2542968: separator for categories should not be escaped
   Done correctly by the Synthesis vcard conversion.
 
+* bug fix: Evolution notes with only a summary and no description were
+  not sent correctly to the server: an empty text was sent instead of
+  sending the summary
+
 Known shortcomings in this release which will be fixed before the
 final 0.9:
 
