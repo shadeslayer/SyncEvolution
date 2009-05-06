@@ -851,70 +851,47 @@ source_check_toggled_cb (GtkCheckButton *check, app_data *data)
     g_ptr_array_free (options, TRUE);
 }
 
-typedef struct icon_data {
-    GtkBox *icon_box;
-    guint icon_size;
-}icon_data;
-
 static void
-icon_read_cb (GFile *img_file, GAsyncResult *res, icon_data *data)
+load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
 {
-    GFileInputStream *in;
     GError *error = NULL;
     GdkPixbuf *pixbuf;
     GtkWidget *image;
-
-    in = g_file_read_finish (img_file, res, &error);
-    g_object_unref (img_file);
-    if (!in) {
-        g_warning ("Failed to read from service icon uri: %s", error->message);
-        g_error_free (error);
-        g_slice_free (icon_data, data);
-        return;
+    const char *filename;
+    
+    if (uri) {
+        if (g_str_has_prefix (uri, "file://")) {
+            filename = uri+7;
+        } else {
+            g_warning ("only file:// icon uri is supported: %s", uri);
+            filename = THEMEDIR "sync-generic.png";
+        }
+    } else {
+        filename = THEMEDIR "sync-generic.png";
     }
+    pixbuf = gdk_pixbuf_new_from_file_at_scale (filename,
+                                                icon_size, icon_size,
+                                                TRUE, &error);
 
-    pixbuf = gdk_pixbuf_new_from_stream_at_scale (G_INPUT_STREAM (in), 
-                                                  data->icon_size, data->icon_size,
-                                                  TRUE, NULL, &error);
-    g_object_unref (in);
     if (!pixbuf) {
         g_warning ("Failed to load service icon: %s", error->message);
         g_error_free (error);
-        g_slice_free (icon_data, data);
         return;
     }
 
     image = gtk_image_new_from_pixbuf (pixbuf);
     g_object_unref (pixbuf);
-    gtk_container_foreach (GTK_CONTAINER (data->icon_box),
+    gtk_container_foreach (GTK_CONTAINER (icon_box),
                            (GtkCallback)remove_child,
-                           data->icon_box);
-    gtk_box_pack_start_defaults (data->icon_box, image);
+                           icon_box);
+    gtk_box_pack_start_defaults (icon_box, image);
     gtk_widget_show (image);
-
-    g_slice_free (icon_data, data);
-}
-
-static void
-load_icon (const char *uri, icon_data *data)
-{
-    GFile *img_file;
-
-    if (!uri || strlen (uri) == 0) {
-        img_file = g_file_new_for_path (THEMEDIR "sync-generic.png");
-    } else {
-        img_file = g_file_new_for_uri (uri);
-    }
-    g_file_read_async (img_file, G_PRIORITY_DEFAULT, NULL, 
-                       (GAsyncReadyCallback)icon_read_cb,
-                       data);
 }
 
 static void
 update_service_ui (app_data *data)
 {
     GList *l;
-    icon_data *icondata;
 
     g_assert (data->current_service);
 
@@ -926,10 +903,9 @@ update_service_ui (app_data *data)
     if (data->current_service->name)
         gtk_label_set_markup (GTK_LABEL (data->server_label), data->current_service->name);
 
-    icondata = g_slice_new (icon_data);
-    icondata->icon_box = GTK_BOX (data->server_icon_box);
-    icondata->icon_size = SYNC_UI_ICON_SIZE;
-    load_icon (data->current_service->icon_uri, icondata);
+    load_icon (data->current_service->icon_uri, 
+               GTK_BOX (data->server_icon_box), 
+               SYNC_UI_ICON_SIZE);
     
     for (l = data->current_service->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
@@ -1187,7 +1163,6 @@ add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *
 {
     GtkWidget *label, *box, *link, *btn;
     const char *name, *url, *icon;
-    icon_data *icondata;
     
     syncevo_server_get (server, &name, &url, &icon);
     
@@ -1195,10 +1170,7 @@ add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *
     gtk_widget_set_size_request (box, SYNC_UI_LIST_ICON_SIZE, SYNC_UI_LIST_ICON_SIZE);
     gtk_table_attach (table, box, COL_ICON, COL_ICON + 1, row, row+1,
                       GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
-    icondata = g_slice_new (icon_data);
-    icondata->icon_box = GTK_BOX (box);
-    icondata->icon_size = SYNC_UI_LIST_ICON_SIZE;
-    load_icon (icon, icondata);
+    load_icon (icon, GTK_BOX (box), SYNC_UI_LIST_ICON_SIZE);
 
     label = gtk_label_new (name);
     if (data->current_service && data->current_service->name &&
