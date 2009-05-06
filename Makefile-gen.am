@@ -2,29 +2,10 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-if COND_DBUS
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = syncevo-dbus.pc
+SUBDIRS = src po test
 
-servicedir = $(DBUS_SERVICES_DIR)
-service_in_files = org.Moblin.SyncEvolution.service.in
-service_DATA = $(service_in_files:.service.in=.service)
-$(service_DATA): $(service_in_files) Makefile
-	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
+EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh Makefile-gen.am Doxyfile
 
-DBUS_DIR = syncevo-dbus
-DBUS_IFACE_DIR = interfaces
-endif
-
-if COND_GUI
-DBUS_IFACE_DIR = interfaces
-endif
-
-SUBDIRS = $(DBUS_IFACE_DIR) $(DBUS_DIR) src po test
-
-EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh Makefile-gen.am Doxyfile $(service_in_files) syncevo-dbus.pc.in
-
-DISTCLEANFILES = $(service_DATA) syncevo-dbus.pc
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs 
 
 # binary distribution

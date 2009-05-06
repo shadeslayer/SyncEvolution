@@ -1,11 +1,26 @@
 BACKENDS = @BACKENDS@
 
+if COND_DBUS
+servicedir = $(DBUS_SERVICES_DIR)
+service_in_files = org.Moblin.SyncEvolution.service.in
+service_DATA = $(service_in_files:.service.in=.service)
+$(service_DATA): $(service_in_files) Makefile
+	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
+
+DBUS_DIR = dbus
+else
+if COND_GUI
+# jump into interface directory directly instead of going through dbus
+DBUS_DIR = dbus/interfaces
+endif
+endif
+
 if COND_GUI
 GUI_DIR = gtk-ui
 endif
 
-SUBDIRS = $(SYNTHESIS_SUBDIR) core $(BACKENDS) $(GUI_DIR)
-DIST_SUBDIRS = core $(BACKENDS) gtk-ui
+SUBDIRS = $(SYNTHESIS_SUBDIR) $(DBUS_DIR) core $(BACKENDS) $(GUI_DIR)
+DIST_SUBDIRS = dbus core $(BACKENDS) gtk-ui
 BUILT_SOURCES =
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS) $(GLIB_CFLAGS)
@@ -24,7 +39,7 @@ else
 SYNCEVOLUTION_LDADD += $(SYNCSOURCES)
 SYNCEVOLUTION_DEP += $(SYNCSOURCES)
 endif
-EXTRA_DIST = shlibs.local Makefile-gen.am syncevolution.xml
+EXTRA_DIST = shlibs.local Makefile-gen.am syncevolution.xml $(service_in_files)
 
 TEMPLATE_FILES = @TEMPLATE_FILES@
 nobase_dist_sysconf_DATA = $(TEMPLATE_FILES)
@@ -119,35 +134,18 @@ distclean-local:
 	rm -rf $(SYNTHESIS_SUBDIR)
 	rm -rf $(CLEAN_CLIENT_SRC)
 
-
-
 if COND_DBUS
-BUILT_SOURCES += syncevo-dbus-glue.h syncevo-marshal.c syncevo-marshal.h
-
 syncevo_dbus_server_SOURCES = \
 	syncevo-dbus-server.cpp syncevo-dbus-server.h \
 	DBusSyncClient.cpp DBusSyncClient.h \
 	$(CORE_SOURCES)
-nodist_syncevo_dbus_server_SOURCES = syncevo-marshal.c
+nodist_syncevo_dbus_server_SOURCES = dbus/interfaces/syncevo-marshal.c
 
 syncevo_dbus_server_LDADD = $(DBUS_GLIB_LIBS) $(CORE_LDADD)
-syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H $(DBUS_GLIB_CFLAGS) $(AM_CPPFLAGS)
+syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -Idbus/interfaces $(DBUS_GLIB_CFLAGS) $(AM_CPPFLAGS)
 syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
 syncevo_dbus_server_LDFLAGS = $(CORE_LD_FLAGS)
 syncevo_dbus_server_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
-
-syncevo-dbus-glue.h: stamp-syncevo-dbus-glue.h
-	@true
-stamp-syncevo-dbus-glue.h: $(builddir)/../interfaces/syncevo.xml
-	$(DBUS_BINDING_TOOL) --prefix=syncevo --mode=glib-server $< > xgen-$(@F) \
-	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
-	&& rm -f xgen-$(@F) \
-	&& echo timestamp > $(@F)
-syncevo-marshal.h: $(srcdir)/../interfaces/syncevo-marshal.list $(GLIB_GENMARSHAL)
-	$(GLIB_GENMARSHAL) $< --header --prefix=syncevo_marshal > $@
-syncevo-marshal.c: $(srcdir)/../interfaces/syncevo-marshal.list syncevo-marshal.h $(GLIB_GENMARSHAL)
-	echo "#include \"syncevo-marshal.h\"" > $@ \
-	&& $(GLIB_GENMARSHAL) --prefix=syncevo_marshal $(srcdir)/../interfaces/syncevo-marshal.list --body >> $@
 endif
 
 # With --disable-shared autotools links against libfunambol.a which does not

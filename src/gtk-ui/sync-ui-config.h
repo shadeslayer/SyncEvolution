@@ -2,7 +2,7 @@
 #define SYNC_UI_CONFIG_H
 
 #include <gtk/gtk.h>
-#include <syncevo-dbus/syncevo-dbus.h>
+#include "syncevo-dbus.h"
 
 typedef enum {
     SYNC_NONE,

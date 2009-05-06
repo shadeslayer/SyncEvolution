@@ -1,6 +1,6 @@
 /* test syncevo dbus */
 
-#include <syncevo-dbus/syncevo-dbus.h>
+#include "syncevo-dbus.h"
 
 #include <synthesis/syerror.h>
 #include <synthesis/engine_defs.h>

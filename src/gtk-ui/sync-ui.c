@@ -26,8 +26,9 @@
 #include <gtk/gtk.h>
 #include <gconf/gconf-client.h>
 #include <glib/gi18n.h>
+#include <gio/gio.h>
 
-#include <syncevo-dbus/syncevo-dbus.h>
+#include "syncevo-dbus.h"
 /* for return value definitions */
 /* TODO: would be nice to have a non-synthesis-dependent API but for now it's like this... */
 #include <synthesis/syerror.h>
