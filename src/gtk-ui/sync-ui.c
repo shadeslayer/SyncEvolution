@@ -250,7 +250,7 @@ save_gconf_settings (app_data *data, char *service_name)
                                   service_name ? service_name : "", 
                                   &err)) {
         show_error_dialog (GTK_WINDOW (data->sync_win),
-                           "Failed to save current service in GConf configuration system");
+                           _("Failed to save current service in GConf configuration system"));
         g_warning ("Failed to save current service in GConf configuration system: %s", err->message);
         g_error_free (err);
     }
@@ -261,7 +261,7 @@ set_server_config_cb (SyncevoService *service, GError *error, app_data *data)
 {
     if (error) {
         show_error_dialog (GTK_WINDOW (data->sync_win),
-                           "Failed to save service configuration to SyncEvolution");
+                           _("Failed to save service configuration to SyncEvolution"));
         g_warning ("Failed to save service configuration to SyncEvolution: %s",
                    error->message);
         g_error_free (error);
@@ -288,7 +288,7 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
 
     if (error) {
         show_error_dialog (GTK_WINDOW (data->data->sync_win),
-                           "Failed to get service configuration from SyncEvolution");
+                           _("Failed to get service configuration from SyncEvolution"));
         g_warning ("Failed to get service configuration from SyncEvolution: %s",
                    error->message);
         g_error_free (error);
@@ -325,7 +325,7 @@ remove_server_config_cb (SyncevoService *service,
 
     if (error) {
         show_error_dialog (GTK_WINDOW (data->data->sync_win),
-                           "Failed to remove service configuration from SyncEvolution");
+                           _("Failed to remove service configuration from SyncEvolution"));
         g_warning ("Failed to remove service configuration from SyncEvolution: %s", 
                    error->message);
         g_error_free (error);
@@ -407,7 +407,7 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
 
     if (!server->name || strlen (server->name) == 0) {
         show_error_dialog (GTK_WINDOW (data->service_settings_win), 
-                           "service must have a name");
+                           _("Service must have a name"));
         return;
     }
 
@@ -445,11 +445,11 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
     if (data->syncing) {
         syncevo_service_abort_sync (data->service, data->current_service->name, &error);
         if (error) {
-            add_error_info (data, "Failed to cancel sync", error->message);
+            add_error_info (data, _("Failed to cancel sync"), error->message);
             g_error_free (error);
             return;
         } else {
-            set_sync_progress (data, -1.0, "Canceling sync");
+            set_sync_progress (data, -1.0, _("Canceling sync"));
         }
     } else {
 
@@ -465,7 +465,7 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
         sources = server_config_get_source_array (data->current_service, data->mode);
         if (sources->len == 0) {
             g_ptr_array_free (sources, TRUE);
-            add_error_info (data, "No sources are enabled, not syncing", NULL);
+            add_error_info (data, _("No sources are enabled, not syncing"), NULL);
             return;
         }
         syncevo_service_start_sync (data->service, 
@@ -473,13 +473,13 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
                                     sources,
                                     &error);
         if (error) {
-            add_error_info (data, "Failed to start SyncEvolution sync", error->message);
+            add_error_info (data, _("Failed to start SyncEvolution sync"), error->message);
             g_error_free (error);
         } else {
             /* stop updates of "last synced" */
             if (data->last_sync_src_id > 0)
                 g_source_remove (data->last_sync_src_id);
-            set_sync_progress (data, sync_progress_clicked, "Starting sync");
+            set_sync_progress (data, sync_progress_clicked, _("Starting sync"));
             set_app_state (data, SYNC_UI_STATE_SYNCING);
         }
     }
@@ -500,25 +500,25 @@ refresh_last_synced_label (app_data *data)
         msg = g_strdup (""); /* we don't know */
         delay = -1;
     } else if (diff < 30) {
-        msg = g_strdup ("Sync finished");
+        msg = g_strdup (_("Sync finished"));
         delay = 30;
     } else if (diff < 90) {
-        msg = g_strdup ("Last synced a minute ago");
+        msg = g_strdup (_("Last synced a minute ago"));
         delay = 60;
     } else if (diff < 60 * 60) {
-        msg = g_strdup_printf ("Last synced %ld minutes ago", (diff + 30) / 60);
+        msg = g_strdup_printf (_("Last synced %ld minutes ago"), (diff + 30) / 60);
         delay = 60;
     } else if (diff < 60 * 90) {
-        msg = g_strdup ("Last synced an hour ago");
+        msg = g_strdup (_("Last synced an hour ago"));
         delay = 60 * 60;
     } else if (diff < 60 * 60 * 24) {
-        msg = g_strdup_printf ("Last synced %ld hours ago", (diff + 60 * 30) / (60 * 60));
+        msg = g_strdup_printf (_("Last synced %ld hours ago"), (diff + 60 * 30) / (60 * 60));
         delay = 60 * 60;
     } else if (diff < 60 * 60 * 24 - (60 * 30)) {
-        msg = g_strdup ("Last synced a day ago");
+        msg = g_strdup (_("Last synced a day ago"));
         delay = 60 * 60 * 24;
     } else {
-        msg = g_strdup_printf ("Last synced %ld days ago", (diff + 24 * 60 * 30) / (60 * 60 * 24));
+        msg = g_strdup_printf (_("Last synced %ld days ago"), (diff + 24 * 60 * 30) / (60 * 60 * 24));
         delay = 60 * 60 * 24;
     }
 
@@ -590,7 +590,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->log_frame, TRUE);
         gtk_widget_set_sensitive (data->backup_frame, FALSE);
         gtk_widget_set_sensitive (data->services_frame, TRUE);
-        gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Sync now");
+        gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync now"));
         gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->sync_btn);
 
         data->syncing = FALSE;
@@ -602,7 +602,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->log_frame, TRUE);
         gtk_widget_set_sensitive (data->backup_frame, FALSE);
         gtk_widget_set_sensitive (data->services_frame, FALSE);
-        gtk_button_set_label (GTK_BUTTON (data->sync_btn), "Cancel sync");
+        gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Cancel sync"));
 
         data->syncing = TRUE;
         break;
@@ -660,11 +660,11 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
 {
     GtkWidget *window;
 
-    g_assert (GTK_IS_BIN (dummy));
+    g_assert (GTK_IS_WINDOW (dummy));
 
     window = mux_window_new ();
     gtk_widget_set_name (window, gtk_widget_get_name (dummy));
-    gtk_window_set_title (GTK_WINDOW (window), "Sync");
+    gtk_window_set_title (GTK_WINDOW (window), gtk_window_get_title (GTK_WINDOW (dummy)));
     mux_window_set_decorations (MUX_WINDOW (window), MUX_DECOR_CLOSE);
     gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (dummy)), window);
 
@@ -940,7 +940,8 @@ update_service_ui (app_data *data)
             gtk_widget_set_sensitive (check, TRUE);
         } else {
             char *name;
-            name = g_strdup_printf ("%s (not supported by this service)", source->name);
+            /* TRANSLATORS: placeholder is a source name, shown with checkboxes in main window */
+            name = g_strdup_printf (_("%s (not supported by this service)"), source->name);
             check = gtk_check_button_new_with_label (name);
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), FALSE);
             gtk_widget_set_sensitive (check, FALSE);
@@ -983,7 +984,7 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
         /* don't warn if server has disappeared -- probably just command line use */
         if (error->code != SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER) {
             add_error_info (data, 
-                            "Failed to get server configuration from SyncEvolution", 
+                            _("Failed to get server configuration from SyncEvolution"), 
                             error->message);
             set_app_state (data, SYNC_UI_STATE_NO_SERVER);
         } else {
@@ -1029,7 +1030,7 @@ show_settings_window (app_data *data, server_config *config)
         gtk_widget_hide (data->service_name_label);
         gtk_widget_hide (data->service_name_entry);
     } else {
-        gtk_frame_set_label (GTK_FRAME (data->service_settings_frame), "New service");
+        gtk_frame_set_label (GTK_FRAME (data->service_settings_frame), _("New service"));
         gtk_widget_show (data->service_name_label);
         gtk_widget_show (data->service_name_entry);
     }
@@ -1064,7 +1065,7 @@ show_settings_window (app_data *data, server_config *config)
                         config->password ? config->password : "");
     g_object_set_data (G_OBJECT (data->password_entry), "value", &config->password);
 
-    label = gtk_label_new ("Server URL");
+    label = gtk_label_new (_("Server URL"));
     gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
     gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
                       0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
@@ -1080,8 +1081,9 @@ show_settings_window (app_data *data, server_config *config)
         source_config *source = (source_config*)l->data;
         char *str;
         i++;
-        
-        str = g_strdup_printf ("%s URI", source->name);
+
+        /* TRANSLATORS: placeholder is a source name in settings window */
+        str = g_strdup_printf (_("%s URI"), source->name);
         label = gtk_label_new (str);
         g_free (str);
         gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
@@ -1214,13 +1216,13 @@ add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *
     gtk_table_attach (table, box, COL_LINK, COL_LINK + 1, row, row+1,
                       GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
     if (url && strlen (url) > 0) {
-        link = gtk_link_button_new_with_label (url, "Launch website");
+        link = gtk_link_button_new_with_label (url, _("Launch website"));
         g_signal_connect (link, "clicked", 
                           G_CALLBACK (show_link_button_url), NULL);
         gtk_box_pack_start (GTK_BOX (box), link, FALSE, FALSE, 0);
     }
 
-    btn = gtk_button_new_with_label ("Setup and use");
+    btn = gtk_button_new_with_label (_("Setup and use"));
     gtk_widget_set_size_request (btn, SYNC_UI_LIST_BTN_WIDTH, -1);
     g_signal_connect (btn, "clicked",
                       G_CALLBACK (setup_service_clicked), data);
@@ -1267,7 +1269,7 @@ get_servers_cb (SyncevoService *service,
     if (error) {
         gtk_widget_hide (data->services_win);
         show_error_dialog (GTK_WINDOW (data->sync_win), 
-                           "Failed to get list of manually setup services from SyncEvolution");
+                           _("Failed to get list of manually setup services from SyncEvolution"));
         g_warning ("Failed to get list of manually setup services from SyncEvolution: %s", 
                    error->message);
         g_error_free (error);
@@ -1308,7 +1310,7 @@ get_templates_cb (SyncevoService *service,
 
     if (error) {
         show_error_dialog (GTK_WINDOW (data->sync_win), 
-                           "Failed to get list of supported services from SyncEvolution");
+                           _("Failed to get list of supported services from SyncEvolution"));
         g_warning ("Failed to get list of supported services from SyncEvolution: %s", 
                    error->message);
         g_error_free (error);
@@ -1456,7 +1458,7 @@ sync_progress_cb (SyncevoService *service,
     switch(type) {
     case -1:
         /* syncevolution finished sync */
-        set_sync_progress (data, 1.0 , "Sync finished");
+        set_sync_progress (data, 1.0 , _("Sync finished"));
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
 
         if (extra1 != 0) {
@@ -1479,7 +1481,7 @@ sync_progress_cb (SyncevoService *service,
         break;
     case PEV_SESSIONEND:
         /* NOTE extra1 can be error here */
-        set_sync_progress (data, sync_progress_sync_end, "Ending sync");
+        set_sync_progress (data, sync_progress_sync_end, _("Ending sync"));
         break;
 
     case PEV_ALERTED:
@@ -1507,7 +1509,8 @@ sync_progress_cb (SyncevoService *service,
         source_prog->prepare_current = CLAMP (extra1, 0, extra2);
         source_prog->prepare_total = extra2;
 
-        msg = g_strdup_printf ("Preparing '%s'", source);
+        /* TRANSLATORS: placeholder is a source name in a progress text */
+        msg = g_strdup_printf (_("Preparing '%s'"), source);
         calc_and_update_progress(data, msg);
         g_free (msg);
         break;
@@ -1527,7 +1530,8 @@ sync_progress_cb (SyncevoService *service,
         source_prog->send_current = CLAMP (extra1, 0, extra2);
         source_prog->send_total = extra2;
 
-        msg = g_strdup_printf ("Sending '%s'", source);
+        /* TRANSLATORS: placeholder is a source name in a progress text */
+        msg = g_strdup_printf (_("Sending '%s'"), source);
         calc_and_update_progress (data, msg);
         g_free (msg);
         break;
@@ -1547,7 +1551,8 @@ sync_progress_cb (SyncevoService *service,
         source_prog->receive_current = CLAMP (extra1, 0, extra2);
         source_prog->receive_total = extra2;
 
-        msg = g_strdup_printf ("Receiving '%s'", source);
+        /* TRANSLATORS: placeholder is a source name in a progress text */
+        msg = g_strdup_printf (_("Receiving '%s'"), source);
         calc_and_update_progress (data, msg);
         g_free (msg);
         break;
@@ -1560,57 +1565,58 @@ sync_progress_cb (SyncevoService *service,
         case LOCERR_USERSUSPEND:
             break;
         case DB_Unauthorized:
-            msg = g_strdup_printf ("%s: Not authorized", source);
+            /* TRANSLATORS: placeholder is a source name in a error message */
+            msg = g_strdup_printf (_("%s: Not authorized"), source);
             break;
         case DB_Forbidden:
-            msg = g_strdup_printf ("%s: Forbidden", source);
+            msg = g_strdup_printf (_("%s: Forbidden"), source);
             break;
         case DB_NotFound:
-            msg = g_strdup_printf ("%s: Not found", source);
+            msg = g_strdup_printf (_("%s: Not found"), source);
             break;
         case LOCERR_PROCESSMSG:
             /* TODO identify item somehow */
-            msg = g_strdup_printf ("%s: Failed to process SyncML", source);
+            msg = g_strdup_printf (_("%s: Failed to process SyncML"), source);
             break;
         case LOCERR_AUTHFAIL:
-            msg = g_strdup_printf ("%s: Server authorization failed", source);
+            msg = g_strdup_printf (_("%s: Server authorization failed"), source);
             break;
         case LOCERR_CFGPARSE:
-            msg = g_strdup_printf ("%s: Failed to parse config file", source);
+            msg = g_strdup_printf (_("%s: Failed to parse config file"), source);
             break;
         case LOCERR_CFGREAD:
-            msg = g_strdup_printf ("%s: Failed to read config file", source);
+            msg = g_strdup_printf (_("%s: Failed to read config file"), source);
             break;
         case LOCERR_NOCFG:
-            msg = g_strdup_printf ("%s: No configuration found", source);
+            msg = g_strdup_printf (_("%s: No configuration found"), source);
             break;
         case LOCERR_NOCFGFILE:
-            msg = g_strdup_printf ("%s: No config file found", source);
+            msg = g_strdup_printf (_("%s: No config file found"), source);
             break;
         case LOCERR_BADCONTENT:
-            msg = g_strdup_printf ("%s: Server sent bad content", source);
+            msg = g_strdup_printf (_("%s: Server sent bad content"), source);
             break;
         case LOCERR_TIMEOUT:
-            msg = g_strdup_printf ("%s: Connection timed out", source);
+            msg = g_strdup_printf (_("%s: Connection timed out"), source);
             break;
         case LOCERR_CERT_EXPIRED:
-            msg = g_strdup_printf ("%s: Connection certificate has expired", source);
+            msg = g_strdup_printf (_("%s: Connection certificate has expired"), source);
             break;
         case LOCERR_CERT_INVALID:
-            msg = g_strdup_printf ("%s: Connection certificate is invalid", source);
+            msg = g_strdup_printf (_("%s: Connection certificate is invalid"), source);
             break;
         case LOCERR_CONN:
         case LOCERR_NOCONN:
-            msg = g_strdup_printf ("%s: Connection failed", source);
+            msg = g_strdup_printf (_("%s: Connection failed"), source);
             break;
         case LOCERR_BADURL:
-            msg = g_strdup_printf ("%s: URL is bad", source);
+            msg = g_strdup_printf (_("%s: URL is bad"), source);
             break;
         case LOCERR_SRVNOTFOUND:
-            msg = g_strdup_printf ("%s: Server not found", source);
+            msg = g_strdup_printf (_("%s: Server not found"), source);
             break;
         default:
-            msg = g_strdup_printf ("%s: Error %d", source, extra1);
+            msg = g_strdup_printf (_("%s: Error %d"), source, extra1);
             break;
         }
         if (msg) {
