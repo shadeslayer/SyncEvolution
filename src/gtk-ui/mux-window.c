@@ -340,12 +340,23 @@ load_icon (MuxWindow *window, const char *icon_name)
 
     pixbuf = gtk_icon_theme_load_icon (theme, icon_name,
                                        48, 0, NULL);
+
+
+    /* FIXME: workaround until icons are in Moblin Netbook theme */
+    if (!pixbuf) {
+        char *str = g_strdup_printf ("%s/%s.png", THEMEDIR, icon_name);
+        pixbuf = gdk_pixbuf_new_from_file_at_size (str, 48, 48, NULL);
+
+        g_free (str);
+    }
+
     if (!pixbuf) {
         g_warning ("Icon '%s' not found in theme", icon_name);
         pixbuf = gtk_widget_render_icon (GTK_WIDGET (window),
                                          GTK_STOCK_MISSING_IMAGE,
                                          GTK_ICON_SIZE_DIALOG,
                                          NULL);
+
     }
     return pixbuf;
 }
@@ -375,8 +386,8 @@ mux_window_build_title_bar (MuxWindow *window)
     gtk_widget_show (window->title_label);
 
     if (window->decorations & MUX_DECOR_CLOSE) {
-        pixbuf = load_icon (window, "mux-window-close-normal");
-        pixbuf_hover = load_icon (window, "mux-window-close-prelight");
+        pixbuf = load_icon (window, "close");
+        pixbuf_hover = load_icon (window, "close_hover");
         btn = g_object_new (MUX_TYPE_ICON_BUTTON,
                             "normal-state-pixbuf", pixbuf,
                             "prelight-state-pixbuf", pixbuf_hover,
@@ -395,8 +406,8 @@ mux_window_build_title_bar (MuxWindow *window)
     }
 
     if (window->decorations & MUX_DECOR_SETTINGS) {
-        pixbuf = load_icon (window, "mux-window-settings-normal");
-        pixbuf_hover = load_icon (window, "mux-window-settings-prelight");
+        pixbuf = load_icon (window, "settings");
+        pixbuf_hover = load_icon (window, "settings_hover");
         btn = g_object_new (MUX_TYPE_ICON_BUTTON,
                             "normal-state-pixbuf", pixbuf,
                             "prelight-state-pixbuf", pixbuf_hover,
