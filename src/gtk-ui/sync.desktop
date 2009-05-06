@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Sync
+Comment=Bring your data with you
+Version=1.0
+Type=Application
+Exec=sync-ui
+Icon=sync
+Categories=Internet;GTK;
+Terminal=false

@@ -1,3 +1,9 @@
+applicationsdir = $(datadir)/applications
+applications_in_files = sync.desktop.in
+applications_DATA = $(applications_in_files:.desktop.in=.desktop)
+
+iconsdir = $(datadir)/icons/hicolor/48x48/apps
+icons_DATA = sync.png
 
 gladedir = $(datadir)/syncevolution/
 glade_DATA = \
@@ -11,7 +17,7 @@ themerc_DATA = \
 
 desktopdir = $(datadir)/applications
 desktop_DATA = \
-	moblin-sync.desktop
+	sync.desktop
 
 EXTRA_DIST = \
 	ui.glade \
@@ -28,8 +34,11 @@ sync_ui_SOURCES = \
 	sync-ui.c sync-ui-config.c sync-ui-config.h \
 	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h
 sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) -L$(top_builddir)/syncevo-dbus -lsyncevo-dbus
-sync_ui_CFLAGS = $(GUI_CFLAGS) $(DBUS_GLIB_CFLAGS) -DGLADEDIR=\""$(gladedir)"\" -DTHEMEDIR=\""$(themercdir)"\" 
-sync_ui_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) $(SYNTHESIS_CFLAGS)
+sync_ui_CFLAGS = $(GUI_CFLAGS) $(DBUS_GLIB_CFLAGS) \
+                 -DGLADEDIR=\""$(gladedir)"\" \
+                 -DTHEMEDIR=\""$(themercdir)"\" \
+                 -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
+sync_ui_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) $(SYNTHESIS_CFLAGS) 
 
 BUILT_SOURCES = \
 	syncevo-bindings.h
