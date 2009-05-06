@@ -26,6 +26,7 @@
 #include <gtk/gtk.h>
 #include <gconf/gconf-client.h>
 #include <glib/gi18n.h>
+#include <gio/gio.h>
 
 #include <syncevo-dbus/syncevo-dbus.h>
 /* for return value definitions */

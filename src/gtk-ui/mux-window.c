@@ -319,7 +319,7 @@ mux_window_close_clicked (MuxWindow *window)
     GdkEvent *event;
 
     event = gdk_event_new (GDK_DELETE);
-    event->any.window = g_object_ref (gtk_widget_get_window (GTK_WIDGET (window)));
+    event->any.window = g_object_ref (GTK_WIDGET (window)->window);
     event->any.send_event = TRUE;
 
     gtk_main_do_event (event);
