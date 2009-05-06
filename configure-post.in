@@ -81,7 +81,7 @@ AC_CHECK_HEADERS(stdarg.h valgrind/valgrind.h execinfo.h)
 
 AC_DEFINE(SYNTHESIS, 1, "using Synthesis engine")
 
-AC_CONFIG_FILES(Makefile interfaces/Makefile syncevo-dbus/Makefile src/Makefile src/core/Makefile src/gtk-ui/Makefile test/Makefile syncevo-dbus.pc)
+AC_CONFIG_FILES(Makefile interfaces/Makefile syncevo-dbus/Makefile src/Makefile src/core/Makefile src/gtk-ui/Makefile po/Makefile.in test/Makefile syncevo-dbus.pc)
 AC_OUTPUT
 
 echo

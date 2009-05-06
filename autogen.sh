@@ -28,6 +28,8 @@ sed -e "s;@CONFIG_SUBS@;$SUBS;" \
     Makefile-gen.am >Makefile.am
 
 libtoolize -c
+glib-gettextize --force --copy
+intltoolize --force --copy --automake
 aclocal -Im4
 autoheader
 automake -a -c -Wno-portability

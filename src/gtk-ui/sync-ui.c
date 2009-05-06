@@ -25,8 +25,9 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <gconf/gconf-client.h>
-#include <syncevo-dbus/syncevo-dbus.h>
+#include <glib/gi18n.h>
 
+#include <syncevo-dbus/syncevo-dbus.h>
 /* for return value definitions */
 /* TODO: would be nice to have a non-synthesis-dependent API but for now it's like this... */
 #include <synthesis/syerror.h>
@@ -1666,7 +1667,10 @@ int
 main (int argc, char *argv[]) {
     app_data *data;
 
-    gtk_init(&argc, &argv);
+    gtk_init (&argc, &argv);
+    bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
+    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+    textdomain (GETTEXT_PACKAGE);
 
     data = g_slice_new0 (app_data);
     if (!init_ui (data)) {

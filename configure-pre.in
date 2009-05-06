@@ -236,7 +236,14 @@ fi
 if test $enable_gui != "no"; then
     PKG_CHECK_MODULES(GUI, glib-2.0 dbus-glib-1 >= 0.60 gtk+-2.0 libglade-2.0 gconf-2.0 gnome-vfs-2.0)
     AC_PATH_PROG([GTK_BUILDER_CONV], gtk-builder-convert)
+    IT_PROG_INTLTOOL([0.40.0])
+    GETTEXT_PACKAGE=syncevolution
+    AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [The gettext package name])
+    AM_GLIB_GNU_GETTEXT
+    SYNCEVOLUTION_LOCALEDIR=[${datadir}/locale]
 fi
+AC_SUBST(SYNCEVOLUTION_LOCALEDIR)
+AC_SUBST(GETTEXT_PACKAGE)
 AC_SUBST(GUI_CFLAGS)
 AC_SUBST(GUI_LIBS)
 
