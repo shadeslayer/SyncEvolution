@@ -26,7 +26,6 @@ EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh M
 
 DISTCLEANFILES = $(service_DATA) syncevo-dbus.pc
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs 
-DISTCHECK_CONFIGURE_FLAGS = --with-sync4j=@FUNAMBOL@
 
 # binary distribution
 distbin : README all
