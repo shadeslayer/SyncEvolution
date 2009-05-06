@@ -241,6 +241,9 @@ if test $enable_gui != "no"; then
     AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [The gettext package name])
     AM_GLIB_GNU_GETTEXT
     SYNCEVOLUTION_LOCALEDIR=[${datadir}/locale]
+else
+    INTLTOOL_UPDATE="true"
+    USE_NLS="no"
 fi
 AC_SUBST(SYNCEVOLUTION_LOCALEDIR)
 AC_SUBST(GETTEXT_PACKAGE)
