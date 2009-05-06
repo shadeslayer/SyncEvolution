@@ -5,5 +5,5 @@ Version=1.0
 Type=Application
 Exec=sync-ui
 Icon=sync
-Categories=Internet;GTK;
+Categories=Network;GTK;
 Terminal=false

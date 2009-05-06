@@ -3,9 +3,6 @@ applications_in_files = sync.desktop.in
 applications_DATA = $(applications_in_files:.desktop.in=.desktop)
 @INTLTOOL_DESKTOP_RULE@
 
-iconsdir = $(datadir)/icons/hicolor/48x48/apps
-icons_DATA = sync.png
-
 gladedir = $(datadir)/syncevolution/
 glade_DATA = \
 	ui.xml
@@ -22,7 +19,6 @@ desktop_DATA = \
 
 EXTRA_DIST = \
 	ui.glade \
-	$(icons_DATA) \
 	$(themerc_DATA) \
 	$(desktop_DATA)
 
