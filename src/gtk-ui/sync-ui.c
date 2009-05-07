@@ -63,9 +63,11 @@ typedef struct source_progress {
     int added_local;
     int modified_local;
     int deleted_local;
+    int rejected_local;
     int added_remote;
     int modified_remote;
     int deleted_remote;
+    int rejected_remote;
     int bytes_uploaded;
     int bytes_downloaded;
 } source_progress;
@@ -107,22 +109,23 @@ typedef struct app_data {
     GtkWidget *error_img;
     GtkWidget *main_frame;
     GtkWidget *log_frame;
-    GtkWidget *backup_frame;
-    GtkWidget *services_frame;
     GtkWidget *server_icon_box;
 
     GtkWidget *progress;
+    GtkWidget *sync_status_label;
     GtkWidget *sync_btn;
     GtkWidget *edit_service_btn;
     GtkWidget *change_service_btn;
 
     GtkWidget *server_label;
+    GtkWidget *last_synced_label;
     GtkWidget *sources_box;
 
     GtkWidget *new_service_btn;
     GtkWidget *services_table;
     GtkWidget *manual_services_table;
     GtkWidget *manual_services_scrolled;
+    GtkWidget *back_btn;
 
     GtkWidget *service_settings_frame;
     GtkWidget *service_link;
@@ -133,12 +136,16 @@ typedef struct app_data {
     GtkWidget *server_settings_expander;
     GtkWidget *server_settings_table;
     GtkWidget *reset_server_btn;
+    GtkWidget *stop_using_service_btn;
     GtkWidget *delete_service_btn;
 
     gboolean syncing;
+    gboolean synced_this_session;
     int last_sync;
     guint last_sync_src_id;
     GList *source_progresses;
+
+    GHashTable *source_report_labels;
 
     SyncMode mode;
     SyncevoService *service;
@@ -345,6 +352,20 @@ remove_server_config_cb (SyncevoService *service,
 }
 
 static void
+stop_using_service_clicked_cb (GtkButton *btn, app_data *data)
+{
+    server_config *server;
+
+    server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
+    g_assert (server);
+
+    gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
+    gtk_widget_hide (GTK_WIDGET (data->services_win));
+
+    save_gconf_settings (data, NULL);
+}
+
+static void
 delete_service_clicked_cb (GtkButton *btn, app_data *data)
 {
     server_config *server;
@@ -417,8 +438,8 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
 
     if (data->current_service && data->current_service != server) {
         server_config_free (data->current_service);
-        data->current_service = server;
     }
+    data->current_service = server;
 
     if (!server->changed) {
         /* no need to save first, set the gconf key right away */
@@ -446,6 +467,8 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
     if (data->syncing) {
         syncevo_service_abort_sync (data->service, data->current_service->name, &error);
         if (error) {
+            /* FIXME: this can happen if the server has shutdown and the sync is no longer
+              in progress*/
             add_error_info (data, _("Failed to cancel sync"), error->message);
             g_error_free (error);
             return;
@@ -453,6 +476,42 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
             set_sync_progress (data, -1.0, _("Canceling sync"));
         }
     } else {
+        char *message = NULL;
+
+        /* confirmation dialog for destructive sync options */
+        switch (data->mode) {
+        case SYNC_REFRESH_FROM_SERVER:
+            message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
+                                         "data from %s? This is not usually advised."),
+                                       data->current_service->name);
+            break;
+        case SYNC_REFRESH_FROM_CLIENT:
+            message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
+                                         "your local data? This is not usually advised."),
+                                       data->current_service->name);
+            break;
+        default:
+            ;
+        }
+        if (message) {
+            GtkWidget *w;
+            int ret;
+            w = gtk_message_dialog_new (GTK_WINDOW (data->sync_win),
+                                        GTK_DIALOG_MODAL,
+                                        GTK_MESSAGE_QUESTION,
+                                        GTK_BUTTONS_NONE,
+                                        message);
+            gtk_dialog_add_buttons (GTK_DIALOG (w), 
+                                    _("No, cancel sync"), GTK_RESPONSE_NO,
+                                    _("Yes, delete and replace"), GTK_RESPONSE_YES,
+                                    NULL);
+            ret = gtk_dialog_run (GTK_DIALOG (w));
+            gtk_widget_destroy (w);
+            g_free (message);
+            if (ret != GTK_RESPONSE_YES) {
+                return;
+            }
+        }
 
         /* empty source progress list */
         list = data->source_progresses;
@@ -501,7 +560,7 @@ refresh_last_synced_label (app_data *data)
         msg = g_strdup (""); /* we don't know */
         delay = -1;
     } else if (diff < 30) {
-        msg = g_strdup (_("Sync finished"));
+        msg = g_strdup (_("Last synced just seconds ago"));
         delay = 30;
     } else if (diff < 90) {
         msg = g_strdup (_("Last synced a minute ago"));
@@ -523,7 +582,7 @@ refresh_last_synced_label (app_data *data)
         delay = 60 * 60 * 24;
     }
 
-    set_sync_progress (data, -1, msg);
+    gtk_label_set_text (GTK_LABEL (data->last_synced_label), msg);
     g_free (msg);
 
     if (data->last_sync_src_id > 0)
@@ -547,28 +606,34 @@ set_sync_progress (app_data *data, float progress, char *status)
 static void
 set_app_state (app_data *data, app_state state)
 {
+    static int old_state = -1;
+
+    if (old_state == state)
+        return;
+    old_state = state;
+        
     switch (state) {
     case SYNC_UI_STATE_GETTING_SERVER:
         clear_error_info (data);
         gtk_widget_show (data->server_box);
         gtk_widget_hide (data->server_failure_box);
         gtk_widget_hide (data->no_server_box);
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
-        gtk_widget_set_sensitive (data->log_frame, TRUE);
-        gtk_widget_set_sensitive (data->backup_frame, FALSE);
-        gtk_widget_set_sensitive (data->services_frame, TRUE);
+        gtk_widget_set_sensitive (data->sync_btn, FALSE);
+        gtk_widget_set_sensitive (data->change_service_btn, TRUE);
         break;
     case SYNC_UI_STATE_NO_SERVER:
         clear_error_info (data);
         gtk_widget_hide (data->server_box);
         gtk_widget_hide (data->server_failure_box);
         gtk_widget_show (data->no_server_box);
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
-        gtk_widget_set_sensitive (data->log_frame, FALSE);
-        gtk_widget_set_sensitive (data->backup_frame, FALSE);
-        gtk_widget_set_sensitive (data->services_frame, TRUE);
+        gtk_widget_set_sensitive (data->sync_btn, FALSE);
+        gtk_widget_set_sensitive (data->change_service_btn, TRUE);
         gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->change_service_btn);
         break;
     case SYNC_UI_STATE_SERVER_FAILURE:
@@ -576,11 +641,11 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_hide (data->server_box);
         gtk_widget_hide (data->no_server_box);
         gtk_widget_show (data->server_failure_box);
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
 
         gtk_widget_set_sensitive (data->main_frame, FALSE);
-        gtk_widget_set_sensitive (data->log_frame, FALSE);
-        gtk_widget_set_sensitive (data->backup_frame, FALSE);
-        gtk_widget_set_sensitive (data->services_frame, FALSE);
+        gtk_widget_set_sensitive (data->sync_btn, FALSE);
+        gtk_widget_set_sensitive (data->change_service_btn, FALSE);
         break;
     case SYNC_UI_STATE_SERVER_OK:
         gtk_widget_show (data->server_box);
@@ -588,10 +653,12 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_hide (data->no_server_box);
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
-        gtk_widget_set_sensitive (data->log_frame, TRUE);
-        gtk_widget_set_sensitive (data->backup_frame, FALSE);
-        gtk_widget_set_sensitive (data->services_frame, TRUE);
-        gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync now"));
+        gtk_widget_set_sensitive (data->sync_btn, TRUE);
+        gtk_widget_set_sensitive (data->change_service_btn, TRUE);
+        if (data->synced_this_session)
+            gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync again"));
+        else
+            gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync now"));
         gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->sync_btn);
 
         data->syncing = FALSE;
@@ -599,10 +666,11 @@ set_app_state (app_data *data, app_state state)
         
     case SYNC_UI_STATE_SYNCING:
         clear_error_info (data);
+        gtk_widget_show (data->progress);
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Syncing"));
         gtk_widget_set_sensitive (data->main_frame, FALSE);
-        gtk_widget_set_sensitive (data->log_frame, TRUE);
-        gtk_widget_set_sensitive (data->backup_frame, FALSE);
-        gtk_widget_set_sensitive (data->services_frame, FALSE);
+        gtk_widget_set_sensitive (data->sync_btn, TRUE);
+        gtk_widget_set_sensitive (data->change_service_btn, TRUE);
         gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Cancel sync"));
 
         data->syncing = TRUE;
@@ -660,12 +728,15 @@ static GtkWidget*
 switch_dummy_to_mux_window (GtkWidget *dummy)
 {
     GtkWidget *window;
+    const char *title;
 
     g_assert (GTK_IS_WINDOW (dummy));
 
     window = mux_window_new ();
     gtk_widget_set_name (window, gtk_widget_get_name (dummy));
-    gtk_window_set_title (GTK_WINDOW (window), gtk_window_get_title (GTK_WINDOW (dummy)));
+    title = gtk_window_get_title (GTK_WINDOW (dummy));
+    if (title && strlen (title) > 0)
+        gtk_window_set_title (GTK_WINDOW (window), title);
     mux_window_set_decorations (MUX_WINDOW (window), MUX_DECOR_CLOSE);
     gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (dummy)), window);
 
@@ -742,8 +813,10 @@ init_ui (app_data *data)
     data->edit_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "edit_service_btn"));
     data->change_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "change_service_btn"));
     data->sync_btn = GTK_WIDGET (gtk_builder_get_object (builder, "sync_btn"));
+    data->sync_status_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_status_label"));
 
     data->server_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_service_label"));
+    data->last_synced_label = GTK_WIDGET (gtk_builder_get_object (builder, "last_synced_label"));
     data->sources_box = GTK_WIDGET (gtk_builder_get_object (builder, "sources_box"));
 
     data->new_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "new_service_btn"));
@@ -755,6 +828,7 @@ init_ui (app_data *data)
     data->services_table = GTK_WIDGET (gtk_builder_get_object (builder, "services_table"));
     data->manual_services_table = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_table"));
     data->manual_services_scrolled = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_scrolled"));
+    data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
     data->service_link = GTK_WIDGET (gtk_builder_get_object (builder, "service_link"));
     data->service_name_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_label"));
@@ -765,6 +839,7 @@ init_ui (app_data *data)
     data->server_settings_table = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_table"));
     data->reset_server_btn = GTK_WIDGET (gtk_builder_get_object (builder, "reset_server_btn"));
     data->delete_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "delete_service_btn"));
+    data->stop_using_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "stop_using_service_btn"));
     service_save_btn = GTK_WIDGET (gtk_builder_get_object (builder, "service_save_btn"));
 
     radio = gtk_builder_get_object (builder, "two_way_radio");
@@ -790,8 +865,6 @@ init_ui (app_data *data)
 
     data->main_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
     data->log_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
-    data->services_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_frame")));
-    data->backup_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "backup_frame")));
     frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
     data->service_settings_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_frame")));
 
@@ -805,10 +878,14 @@ init_ui (app_data *data)
                       G_CALLBACK (gtk_widget_hide_on_delete), NULL);
     g_signal_connect (data->service_settings_win, "key-press-event",
                       G_CALLBACK (key_press_cb), NULL);
+    g_signal_connect_swapped (data->back_btn, "clicked",
+                      G_CALLBACK (gtk_widget_hide), data->services_win);
     g_signal_connect (data->service_link, "clicked",
                       G_CALLBACK (show_link_button_url), NULL);
     g_signal_connect (data->delete_service_btn, "clicked",
                       G_CALLBACK (delete_service_clicked_cb), data);
+    g_signal_connect (data->stop_using_service_btn, "clicked",
+                      G_CALLBACK (stop_using_service_clicked_cb), data);
     g_signal_connect (data->reset_server_btn, "clicked",
                       G_CALLBACK (reset_service_clicked_cb), data);
     g_signal_connect (service_save_btn, "clicked",
@@ -859,7 +936,7 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
     GtkWidget *image;
     const char *filename;
     
-    if (uri) {
+    if (uri && strlen (uri) > 0) {
         if (g_str_has_prefix (uri, "file://")) {
             filename = uri+7;
         } else {
@@ -898,7 +975,7 @@ update_service_ui (app_data *data)
     gtk_container_foreach (GTK_CONTAINER (data->sources_box),
                            (GtkCallback)remove_child,
                            data->sources_box);
-
+    g_hash_table_remove_all (data->source_report_labels);
 
     if (data->current_service->name)
         gtk_label_set_markup (GTK_LABEL (data->server_label), data->current_service->name);
@@ -909,7 +986,9 @@ update_service_ui (app_data *data)
     
     for (l = data->current_service->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
-        GtkWidget *check;
+        GtkWidget *check, *box, *lbl;
+        
+        box = gtk_vbox_new (FALSE, 0);
         
         if (source->uri && strlen (source->uri) > 0) {
             check = gtk_check_button_new_with_label (source->name);
@@ -926,10 +1005,62 @@ update_service_ui (app_data *data)
         g_object_set_data (G_OBJECT (check), "enabled", &source->enabled);
         g_signal_connect (check, "toggled",
                           G_CALLBACK (source_check_toggled_cb), data);
-        gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), check);
+        gtk_box_pack_start_defaults (GTK_BOX (box), check);
+
+        lbl = gtk_label_new (NULL);
+        gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
+        gtk_misc_set_padding (GTK_MISC (lbl), 23, 0);
+        gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
+        /* this is a bit hacky... maybe the link to the label should be in source_config ? */
+        g_hash_table_insert (data->source_report_labels,
+                             source->name,
+                             lbl);
+
+        gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), box);
     }
     gtk_widget_show_all (data->sources_box);
 
+}
+
+static void
+update_sync_report_data (SyncevoReport *report, app_data *data)
+{
+    const char *name;
+    GtkLabel *lbl;
+    
+    name = syncevo_report_get_name (report);
+    lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, name));
+    g_debug (name);
+    if (lbl) {
+        char *msg;
+        char *rejects;
+        int local_adds, local_updates, local_removes, local_rejects;
+        int remote_adds, remote_updates, remote_removes, remote_rejects;
+        
+        syncevo_report_get_local (report, &local_adds, &local_updates, &local_removes, &local_rejects);
+        syncevo_report_get_remote (report, &remote_adds, &remote_updates, &remote_removes, &remote_rejects);
+        
+        if (local_rejects + remote_rejects >0) {
+            rejects = g_strdup_printf ("\nThere were %d local rejections and %d remote rejections.",
+                                       local_rejects, remote_rejects);
+        } else {
+            rejects = g_strdup ("");
+        } 
+
+
+        if (local_adds + local_updates + local_removes + 
+            remote_adds + remote_updates + remote_removes == 0) {
+            msg = g_strdup_printf ("Last time: no modifications.%s", rejects);
+        } else {
+            msg = g_strdup_printf ("Last time: modified %d local items and %d remote items.%s",
+                                   local_adds + local_updates + local_removes,
+                                   remote_adds + remote_updates + remote_removes,
+                                   rejects);
+        }
+        gtk_label_set_text (lbl, msg);
+        g_free (msg);
+        g_free (rejects);
+    }
 }
 
 static void
@@ -944,8 +1075,10 @@ get_sync_reports_cb (SyncevoService *service, GPtrArray *reports, GError *error,
     if (reports->len < 1) {
         data->last_sync = -1; 
     } else {
+        GPtrArray *source_reports;
         SyncevoReportArray *session_report = (SyncevoReportArray*)g_ptr_array_index (reports, 0);
-        syncevo_report_array_get (session_report, &data->last_sync, NULL);
+        syncevo_report_array_get (session_report, &data->last_sync, &source_reports);
+        g_ptr_array_foreach (source_reports, (GFunc)update_sync_report_data, data);
     }
     refresh_last_synced_label (data);
 
@@ -1033,6 +1166,12 @@ show_settings_window (app_data *data, server_config *config)
             gtk_widget_hide (GTK_WIDGET (data->delete_service_btn));
         }
     }
+
+    if (data->current_service && data->current_service->name && config->name &&
+        strcmp (data->current_service->name, config->name) == 0)
+        gtk_widget_show (data->stop_using_service_btn);
+    else 
+        gtk_widget_hide (data->stop_using_service_btn);
 
     gtk_entry_set_text (GTK_ENTRY (data->username_entry), 
                         config->username ? config->username : "");
@@ -1341,10 +1480,11 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
     /*TODO: avoid the rest if server did not actually change */
 
     server_config_free (data->current_service);
-    if (!server) {
+    if (!server || strlen (server) == 0) {
         data->current_service = NULL; 
         set_app_state (data, SYNC_UI_STATE_NO_SERVER);
     } else {
+        data->synced_this_session = FALSE;
         data->current_service = g_slice_new0 (server_config);
         data->current_service->name = server;
         set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
@@ -1390,6 +1530,8 @@ calc_and_update_progress (app_data *data, char *msg)
     set_sync_progress (data, sync_progress_sync_start + (progress / count), msg);
 }
 
+
+/* TODO this is partly the same code as in update_sync_report_data */
 static void
 refresh_statistics (app_data *data)
 {
@@ -1397,10 +1539,34 @@ refresh_statistics (app_data *data)
 
     for (list = data->source_progresses; list; list = list->next) {
         source_progress *p = (source_progress*)list->data;
-        g_debug ("TODO: statistics for '%s':", p->name);
-        g_debug ("      data: TX: %d B, RX %d B", p->bytes_uploaded, p->bytes_downloaded);
-        g_debug ("      sent to server: %d new, %d updated, %d deleted", p->added_remote, p->modified_remote, p->deleted_remote);
-        g_debug ("      received from server: %d new, %d updated, %d deleted", p->added_local, p->modified_local, p->deleted_local);
+        GtkLabel *lbl;
+        
+        lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, p->name));
+        if (lbl) {
+            char *msg;
+            char *rejects;
+            
+            if (p->rejected_local + p->rejected_remote > 0) {
+                rejects = g_strdup_printf ("\nThere were %d local rejections and %d remote rejections.",
+                                           p->rejected_local, p->rejected_remote);
+            } else {
+                rejects = g_strdup ("");
+            } 
+
+
+            if (p->added_remote + p->modified_remote + p->deleted_remote + 
+                p->added_local + p->modified_local + p->deleted_local == 0) {
+                msg = g_strdup_printf ("Last time: no modifications.%s", rejects);
+            } else {
+                msg = g_strdup_printf ("Last time: modified %d local items and %d remote items.%s",
+                                       p->added_local + p->modified_local + p->deleted_local,
+                                       p->added_remote + p->modified_remote + p->deleted_remote,
+                                       rejects);
+            }
+            gtk_label_set_text (lbl, msg);
+            g_free (msg);
+            g_free (rejects);
+    }
     }
 }
 
@@ -1428,13 +1594,22 @@ sync_progress_cb (SyncevoService *service,
     static source_progress *source_prog;
     char *msg;
 
+    /* just in case UI was just started and there is another sync in progress */
+    set_app_state (data, SYNC_UI_STATE_SYNCING);
+
+
     switch(type) {
     case -1:
         /* syncevolution finished sync */
-        set_sync_progress (data, 1.0 , _("Sync finished"));
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Sync complete"));
+        set_sync_progress (data, 1.0 , "");
+        data->synced_this_session = TRUE;
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
 
         if (extra1 != 0) {
+            if (extra1 == LOCERR_TRANSPFAIL) {
+                add_error_info (data, _("Connection error"), NULL);
+            }
             /* any errors should have been shown in earlier progress messages...
                not alerting user */
             g_warning ("Syncevolution sync returned error: %d", extra1);
@@ -1444,6 +1619,7 @@ sync_progress_cb (SyncevoService *service,
             data->last_sync = val.tv_sec;
         }
         refresh_last_synced_label (data);
+        /* get sync report */
         refresh_statistics (data);
 
         break;
@@ -1620,14 +1796,8 @@ sync_progress_cb (SyncevoService *service,
         if (!source_prog)
             return;
 
-        if (extra1 > 0 || extra2 > 0) {
-
-            /* TODO show to user */
-
-            g_debug ("Rejected for '%s':", source);
-            g_debug ("      %d locally rejected", extra1);
-            g_debug ("      %d remotely rejected", extra2);
-        }
+        source_prog->rejected_local = extra1;
+        source_prog->rejected_remote = extra2;
         break;
     case PEV_DSSTATS_D:
         source_prog = find_source_progress (data->source_progresses, source);
@@ -1652,6 +1822,7 @@ main (int argc, char *argv[]) {
     textdomain (GETTEXT_PACKAGE);
 
     data = g_slice_new0 (app_data);
+    data->source_report_labels = g_hash_table_new (g_str_hash, g_str_equal);
     if (!init_ui (data)) {
         return (1);
     }
