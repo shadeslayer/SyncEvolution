@@ -1030,7 +1030,6 @@ update_sync_report_data (SyncevoReport *report, app_data *data)
     
     name = syncevo_report_get_name (report);
     lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, name));
-    g_debug (name);
     if (lbl) {
         char *msg;
         char *rejects;
@@ -1583,6 +1582,59 @@ find_source_progress (GList *source_progresses, char *name)
     return NULL;
 }
 
+static char*
+get_error_string_for_code (int error_code)
+{
+    switch (error_code) {
+    case 0:
+    case LOCERR_USERABORT:
+    case LOCERR_USERSUSPEND:
+        return NULL;
+    case DB_Unauthorized:
+        return g_strdup(_("Not authorized"));
+    case DB_Forbidden:
+        return g_strdup(_("Forbidden"));
+    case DB_NotFound:
+        return g_strdup(_("Not found"));
+    case DB_Fatal:
+        return g_strdup(_("Fatal database error"));
+    case DB_Error:
+        return g_strdup(_("Database error"));
+    case DB_Full:
+        return g_strdup(_("No space left"));
+    case LOCERR_PROCESSMSG:
+        /* TODO identify problem item somehow ? */
+        return g_strdup(_("Failed to process SyncML"));
+    case LOCERR_AUTHFAIL:
+        return g_strdup(_("Server authorization failed"));
+    case LOCERR_CFGPARSE:
+        return g_strdup(_("Failed to parse configuration file"));
+    case LOCERR_CFGREAD:
+        return g_strdup(_("Failed to read configuration file"));
+    case LOCERR_NOCFG:
+        return g_strdup(_("No configuration found"));
+    case LOCERR_NOCFGFILE:
+        return g_strdup(_("No configuration file found"));
+    case LOCERR_BADCONTENT:
+        return g_strdup(_("Server sent bad content"));
+    case LOCERR_TIMEOUT:
+        return g_strdup(_("Connection timed out"));
+    case LOCERR_CERT_EXPIRED:
+        return g_strdup(_("Connection certificate has expired"));
+    case LOCERR_CERT_INVALID:
+        return g_strdup(_("Connection certificate is invalid"));
+    case LOCERR_CONN:
+    case LOCERR_NOCONN:
+        return g_strdup(_("Connection failed"));
+    case LOCERR_BADURL:
+        return g_strdup(_("URL is bad"));
+    case LOCERR_SRVNOTFOUND:
+        return g_strdup(_("Server not found"));
+    default:
+        return g_strdup_printf (_("Error %d"), error_code);
+    }
+}
+
 static void
 sync_progress_cb (SyncevoService *service,
                   char *server,
@@ -1592,7 +1644,9 @@ sync_progress_cb (SyncevoService *service,
                   app_data *data)
 {
     static source_progress *source_prog;
-    char *msg;
+    char *msg = NULL;
+    char *error;
+    GTimeVal val;
 
     /* just in case UI was just started and there is another sync in progress */
     set_app_state (data, SYNC_UI_STATE_SYNCING);
@@ -1601,26 +1655,34 @@ sync_progress_cb (SyncevoService *service,
     switch(type) {
     case -1:
         /* syncevolution finished sync */
-        gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Sync complete"));
-        set_sync_progress (data, 1.0 , "");
-        data->synced_this_session = TRUE;
-        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+        error = get_error_string_for_code (extra1);
+        if (error) {
+            add_error_info (data, error, NULL);
+            g_free (error);
+        }
 
-        if (extra1 != 0) {
-            if (extra1 == LOCERR_TRANSPFAIL) {
-                add_error_info (data, _("Connection error"), NULL);
-            }
-            /* any errors should have been shown in earlier progress messages...
-               not alerting user */
-            g_warning ("Syncevolution sync returned error: %d", extra1);
-        } else {
-            GTimeVal val;
+        switch (extra1) {
+        case 0:
             g_get_current_time (&val);
             data->last_sync = val.tv_sec;
+            refresh_last_synced_label (data);
+            
+            data->synced_this_session = TRUE;
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
+                                _("Sync complete"));
+            break;
+        case LOCERR_USERABORT:
+        case LOCERR_USERSUSPEND:
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
+                                _("Sync canceled"));
+        default:
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
+                                _("Sync Failed"));
         }
-        refresh_last_synced_label (data);
         /* get sync report */
         refresh_statistics (data);
+        set_sync_progress (data, 1.0 , "");
+        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
 
         break;
     case PEV_SESSIONSTART:
@@ -1665,9 +1727,6 @@ sync_progress_cb (SyncevoService *service,
         break;
 
     case PEV_ITEMSENT:
-
-        /* TODO: update the stats table as well */
-
         /* find the right source (try last used one first) */
         if (strcmp (source_prog->name, source) != 0) {
             source_prog = find_source_progress (data->source_progresses, source);
@@ -1686,9 +1745,6 @@ sync_progress_cb (SyncevoService *service,
         break;
 
     case PEV_ITEMRECEIVED:
-
-        /* TODO: update the stats table as well */
-
         /* find the right source (try last used one first) */
         if (strcmp (source_prog->name, source) != 0) {
             source_prog = find_source_progress (data->source_progresses, source);
@@ -1707,69 +1763,11 @@ sync_progress_cb (SyncevoService *service,
         break;
 
     case PEV_SYNCEND:
-        msg = NULL;
-        switch (extra1) {
-        case 0:
-        case LOCERR_USERABORT:
-        case LOCERR_USERSUSPEND:
-            break;
-        case DB_Unauthorized:
-            /* TRANSLATORS: placeholder is a source name in a error message */
-            msg = g_strdup_printf (_("%s: Not authorized"), source);
-            break;
-        case DB_Forbidden:
-            msg = g_strdup_printf (_("%s: Forbidden"), source);
-            break;
-        case DB_NotFound:
-            msg = g_strdup_printf (_("%s: Not found"), source);
-            break;
-        case LOCERR_PROCESSMSG:
-            /* TODO identify item somehow */
-            msg = g_strdup_printf (_("%s: Failed to process SyncML"), source);
-            break;
-        case LOCERR_AUTHFAIL:
-            msg = g_strdup_printf (_("%s: Server authorization failed"), source);
-            break;
-        case LOCERR_CFGPARSE:
-            msg = g_strdup_printf (_("%s: Failed to parse config file"), source);
-            break;
-        case LOCERR_CFGREAD:
-            msg = g_strdup_printf (_("%s: Failed to read config file"), source);
-            break;
-        case LOCERR_NOCFG:
-            msg = g_strdup_printf (_("%s: No configuration found"), source);
-            break;
-        case LOCERR_NOCFGFILE:
-            msg = g_strdup_printf (_("%s: No config file found"), source);
-            break;
-        case LOCERR_BADCONTENT:
-            msg = g_strdup_printf (_("%s: Server sent bad content"), source);
-            break;
-        case LOCERR_TIMEOUT:
-            msg = g_strdup_printf (_("%s: Connection timed out"), source);
-            break;
-        case LOCERR_CERT_EXPIRED:
-            msg = g_strdup_printf (_("%s: Connection certificate has expired"), source);
-            break;
-        case LOCERR_CERT_INVALID:
-            msg = g_strdup_printf (_("%s: Connection certificate is invalid"), source);
-            break;
-        case LOCERR_CONN:
-        case LOCERR_NOCONN:
-            msg = g_strdup_printf (_("%s: Connection failed"), source);
-            break;
-        case LOCERR_BADURL:
-            msg = g_strdup_printf (_("%s: URL is bad"), source);
-            break;
-        case LOCERR_SRVNOTFOUND:
-            msg = g_strdup_printf (_("%s: Server not found"), source);
-            break;
-        default:
-            msg = g_strdup_printf (_("%s: Error %d"), source, extra1);
-            break;
-        }
-        if (msg) {
+        error = get_error_string_for_code (extra1);
+        if (error) {
+            msg = g_strdup_printf ("%s: %s", source, error);
             add_error_info (data, msg, NULL);
+            g_free (error);
             g_free (msg);
         }
         break;
