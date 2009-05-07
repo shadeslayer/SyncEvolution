@@ -63,9 +63,11 @@ typedef struct source_progress {
     int added_local;
     int modified_local;
     int deleted_local;
+    int rejected_local;
     int added_remote;
     int modified_remote;
     int deleted_remote;
+    int rejected_remote;
     int bytes_uploaded;
     int bytes_downloaded;
 } source_progress;
@@ -110,6 +112,7 @@ typedef struct app_data {
     GtkWidget *server_icon_box;
 
     GtkWidget *progress;
+    GtkWidget *sync_status_label;
     GtkWidget *sync_btn;
     GtkWidget *edit_service_btn;
     GtkWidget *change_service_btn;
@@ -615,6 +618,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_show (data->server_box);
         gtk_widget_hide (data->server_failure_box);
         gtk_widget_hide (data->no_server_box);
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
@@ -625,6 +629,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_hide (data->server_box);
         gtk_widget_hide (data->server_failure_box);
         gtk_widget_show (data->no_server_box);
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
@@ -636,6 +641,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_hide (data->server_box);
         gtk_widget_hide (data->no_server_box);
         gtk_widget_show (data->server_failure_box);
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
 
         gtk_widget_set_sensitive (data->main_frame, FALSE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
@@ -661,6 +667,7 @@ set_app_state (app_data *data, app_state state)
     case SYNC_UI_STATE_SYNCING:
         clear_error_info (data);
         gtk_widget_show (data->progress);
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Syncing"));
         gtk_widget_set_sensitive (data->main_frame, FALSE);
         gtk_widget_set_sensitive (data->sync_btn, TRUE);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
@@ -806,6 +813,7 @@ init_ui (app_data *data)
     data->edit_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "edit_service_btn"));
     data->change_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "change_service_btn"));
     data->sync_btn = GTK_WIDGET (gtk_builder_get_object (builder, "sync_btn"));
+    data->sync_status_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_status_label"));
 
     data->server_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_service_label"));
     data->last_synced_label = GTK_WIDGET (gtk_builder_get_object (builder, "last_synced_label"));
@@ -1000,7 +1008,8 @@ update_service_ui (app_data *data)
         gtk_box_pack_start_defaults (GTK_BOX (box), check);
 
         lbl = gtk_label_new (NULL);
-        gtk_misc_set_alignment (GTK_MISC (lbl), 0.15, 0.5);
+        gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
+        gtk_misc_set_padding (GTK_MISC (lbl), 23, 0);
         gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
         /* this is a bit hacky... maybe the link to the label should be in source_config ? */
         g_hash_table_insert (data->source_report_labels,
@@ -1521,6 +1530,8 @@ calc_and_update_progress (app_data *data, char *msg)
     set_sync_progress (data, sync_progress_sync_start + (progress / count), msg);
 }
 
+
+/* TODO this is partly the same code as in update_sync_report_data */
 static void
 refresh_statistics (app_data *data)
 {
@@ -1528,10 +1539,34 @@ refresh_statistics (app_data *data)
 
     for (list = data->source_progresses; list; list = list->next) {
         source_progress *p = (source_progress*)list->data;
-        g_debug ("TODO: statistics for '%s':", p->name);
-        g_debug ("      data: TX: %d B, RX %d B", p->bytes_uploaded, p->bytes_downloaded);
-        g_debug ("      sent to server: %d new, %d updated, %d deleted", p->added_remote, p->modified_remote, p->deleted_remote);
-        g_debug ("      received from server: %d new, %d updated, %d deleted", p->added_local, p->modified_local, p->deleted_local);
+        GtkLabel *lbl;
+        
+        lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, p->name));
+        if (lbl) {
+            char *msg;
+            char *rejects;
+            
+            if (p->rejected_local + p->rejected_remote > 0) {
+                rejects = g_strdup_printf ("\nThere were %d local rejections and %d remote rejections.",
+                                           p->rejected_local, p->rejected_remote);
+            } else {
+                rejects = g_strdup ("");
+            } 
+
+
+            if (p->added_remote + p->modified_remote + p->deleted_remote + 
+                p->added_local + p->modified_local + p->deleted_local == 0) {
+                msg = g_strdup_printf ("Last time: no modifications.%s", rejects);
+            } else {
+                msg = g_strdup_printf ("Last time: modified %d local items and %d remote items.%s",
+                                       p->added_local + p->modified_local + p->deleted_local,
+                                       p->added_remote + p->modified_remote + p->deleted_remote,
+                                       rejects);
+            }
+            gtk_label_set_text (lbl, msg);
+            g_free (msg);
+            g_free (rejects);
+    }
     }
 }
 
@@ -1566,7 +1601,8 @@ sync_progress_cb (SyncevoService *service,
     switch(type) {
     case -1:
         /* syncevolution finished sync */
-        set_sync_progress (data, 1.0 , _("Sync finished"));
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Sync complete"));
+        set_sync_progress (data, 1.0 , "");
         data->synced_this_session = TRUE;
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
 
@@ -1583,6 +1619,7 @@ sync_progress_cb (SyncevoService *service,
             data->last_sync = val.tv_sec;
         }
         refresh_last_synced_label (data);
+        /* get sync report */
         refresh_statistics (data);
 
         break;
@@ -1759,14 +1796,8 @@ sync_progress_cb (SyncevoService *service,
         if (!source_prog)
             return;
 
-        if (extra1 > 0 || extra2 > 0) {
-
-            /* TODO show to user */
-
-            g_debug ("Rejected for '%s':", source);
-            g_debug ("      %d locally rejected", extra1);
-            g_debug ("      %d remotely rejected", extra2);
-        }
+        source_prog->rejected_local = extra1;
+        source_prog->rejected_remote = extra2;
         break;
     case PEV_DSSTATS_D:
         source_prog = find_source_progress (data->source_progresses, source);

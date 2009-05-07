@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Thu May  7 15:50:30 2009 -->
+<!--Generated with glade3 3.4.5 on Thu May  7 16:32:27 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="sync_win">
     <property name="border_width">5</property>
@@ -404,7 +404,28 @@ synchronize your data between your netbook and a web service.</property>
                       <widget class="GtkVBox" id="vbox18">
                         <property name="visible">True</property>
                         <child>
-                          <placeholder/>
+                          <widget class="GtkVBox" id="vbox10">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkHBox" id="hbox7">
+                                <property name="visible">True</property>
+                                <child>
+                                  <widget class="GtkLabel" id="sync_status_label">
+                                    <property name="visible">True</property>
+                                    <property name="xalign">0</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="padding">6</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="padding">10</property>
+                          </packing>
                         </child>
                         <child>
                           <widget class="GtkVBox" id="info_box">
@@ -516,14 +537,7 @@ synchronize your data between your netbook and a web service.</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkHBox" id="hbox8">
-                            <property name="visible">True</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="padding">5</property>
-                            <property name="position">4</property>
-                          </packing>
+                          <placeholder/>
                         </child>
                       </widget>
                     </child>
