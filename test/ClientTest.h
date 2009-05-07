@@ -852,7 +852,8 @@ protected:
     }
 
     virtual void testDeleteAllRefresh();
-    virtual void testRefreshSemantic();
+    virtual void testRefreshFromClientSemantic();
+    virtual void testRefreshFromServerSemantic();
     virtual void testRefreshStatus();
 
     // test that a two-way sync copies an item from one address book into the other
