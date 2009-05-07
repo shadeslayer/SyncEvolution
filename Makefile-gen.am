@@ -3,7 +3,17 @@
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src test
 
-EXTRA_DIST = HACKING description configure-pre.in configure-post.in autogen.sh Makefile-gen.am Doxyfile
+EXTRA_DIST = \
+	HACKING \
+	LICENSE.txt \
+	LICENSE.LGPL-21 \
+	description \
+	configure-pre.in \
+	configure-post.in \
+	autogen.sh \
+	Makefile-gen.am \
+	Doxyfile
+
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs
 
 # binary distribution
