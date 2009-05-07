@@ -42,3 +42,9 @@ style "service-title" {
     font_name = "Bold 14"
 }
 widget "*.sync_service_label" style "service-title"
+
+style "big-button" {
+    GtkButton::inner-border = { 10,10,10,10 }
+    font_name = "Bold 11"
+}
+widget "*.sync_btn*" style "big-button"
