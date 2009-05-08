@@ -212,6 +212,25 @@ clear_error_info (app_data *data)
     gtk_widget_hide (data->error_img);
 }
 
+static char*
+get_pretty_source_name (const char *source_name)
+{
+    if (strcmp (source_name, "addressbook") == 0) {
+        return g_strdup (_("Addressbook"));
+    } else if (strcmp (source_name, "calendar") == 0) {
+        return g_strdup (_("Calendar"));
+    } else if (strcmp (source_name, "todo") == 0) {
+        return g_strdup (_("Todo"));
+    } else if (strcmp (source_name, "memo") == 0) {
+        return g_strdup (_("Memo"));
+    } else {
+        char *tmp;
+        tmp =  g_strdup (source_name);
+        tmp[0] = g_ascii_toupper (tmp[0]);
+        return tmp;
+    }
+}
+
 static void
 add_error_info (app_data *data, const char *message, const char *external_reason)
 {
@@ -987,21 +1006,24 @@ update_service_ui (app_data *data)
     for (l = data->current_service->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
         GtkWidget *check, *box, *lbl;
+        char *name;
         
+        name = get_pretty_source_name (source->name);
         box = gtk_vbox_new (FALSE, 0);
         
         if (source->uri && strlen (source->uri) > 0) {
-            check = gtk_check_button_new_with_label (source->name);
+            check = gtk_check_button_new_with_label (name);
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), source->enabled);
             gtk_widget_set_sensitive (check, TRUE);
         } else {
-            char *name;
+            char *text;
             /* TRANSLATORS: placeholder is a source name, shown with checkboxes in main window */
-            name = g_strdup_printf (_("%s (not supported by this service)"), source->name);
-            check = gtk_check_button_new_with_label (name);
+            text = g_strdup_printf (_("%s (not supported by this service)"), name);
+            check = gtk_check_button_new_with_label (text);
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), FALSE);
             gtk_widget_set_sensitive (check, FALSE);
         }
+        g_free (name);
         g_object_set_data (G_OBJECT (check), "enabled", &source->enabled);
         g_signal_connect (check, "toggled",
                           G_CALLBACK (source_check_toggled_cb), data);
@@ -1022,6 +1044,54 @@ update_service_ui (app_data *data)
 
 }
 
+static char*
+get_report_summary (int local_changes, int remote_changes, int local_rejects, int remote_rejects)
+{
+    char *rejects, *changes, *msg;
+
+    if (local_rejects + remote_rejects == 0) {
+        rejects = NULL;
+    } else if (local_rejects == 0) {
+        rejects = g_strdup_printf (ngettext ("There was one remote rejection.", 
+                                             "There were %d remote rejections.",
+                                             remote_rejects),
+                                   remote_rejects);
+    } else if (remote_rejects == 0) {
+        rejects = g_strdup_printf (ngettext ("There was one local rejection.", 
+                                             "There were %d local rejections.",
+                                             local_rejects),
+                                   local_rejects);
+    } else {
+        rejects = g_strdup_printf (_ ("There were %d local rejections and %d remote rejections."),
+                                   local_rejects, remote_rejects);
+    }
+
+    if (local_changes + remote_changes == 0) {
+        changes = g_strdup_printf (_("Last time: No changes."));
+    } else if (local_changes == 0) {
+        changes = g_strdup_printf (ngettext ("Last time: Sent one change.",
+                                             "Last time: Sent %d changes.",
+                                             remote_changes),
+                                   remote_changes);
+    } else if (remote_changes == 0) {
+        changes = g_strdup_printf (ngettext ("Last time: Received one change.",
+                                             "Last time: Received %d changes.",
+                                             local_changes),
+                                   local_changes);
+    } else {
+        changes = g_strdup_printf (_("Last time: Received %d changes and sent %d changes."),
+                                   local_changes, remote_changes);
+    }
+
+    if (rejects)
+        msg = g_strdup_printf ("%s\n%s", changes, rejects);
+    else
+        msg = g_strdup (changes);
+    g_free (rejects);
+    g_free (changes);
+    return msg;
+}
+
 static void
 update_sync_report_data (SyncevoReport *report, app_data *data)
 {
@@ -1030,36 +1100,19 @@ update_sync_report_data (SyncevoReport *report, app_data *data)
     
     name = syncevo_report_get_name (report);
     lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, name));
-    g_debug (name);
     if (lbl) {
         char *msg;
-        char *rejects;
-        int local_adds, local_updates, local_removes, local_rejects;
-        int remote_adds, remote_updates, remote_removes, remote_rejects;
+        int local_changes, local_adds, local_updates, local_removes, local_rejects;
+        int remote_changes, remote_adds, remote_updates, remote_removes, remote_rejects;
         
         syncevo_report_get_local (report, &local_adds, &local_updates, &local_removes, &local_rejects);
         syncevo_report_get_remote (report, &remote_adds, &remote_updates, &remote_removes, &remote_rejects);
-        
-        if (local_rejects + remote_rejects >0) {
-            rejects = g_strdup_printf ("\nThere were %d local rejections and %d remote rejections.",
-                                       local_rejects, remote_rejects);
-        } else {
-            rejects = g_strdup ("");
-        } 
+        local_changes = local_adds + local_updates + local_removes;
+        remote_changes = remote_adds + remote_updates + remote_removes;
 
-
-        if (local_adds + local_updates + local_removes + 
-            remote_adds + remote_updates + remote_removes == 0) {
-            msg = g_strdup_printf ("Last time: no modifications.%s", rejects);
-        } else {
-            msg = g_strdup_printf ("Last time: modified %d local items and %d remote items.%s",
-                                   local_adds + local_updates + local_removes,
-                                   remote_adds + remote_updates + remote_removes,
-                                   rejects);
-        }
+        msg = get_report_summary (local_changes, remote_changes, local_rejects, remote_rejects);
         gtk_label_set_text (lbl, msg);
         g_free (msg);
-        g_free (rejects);
     }
 }
 
@@ -1196,12 +1249,15 @@ show_settings_window (app_data *data, server_config *config)
     for (l = config->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
         char *str;
+        char *name;
         i++;
 
+        name = get_pretty_source_name (source->name);
         /* TRANSLATORS: placeholder is a source name in settings window */
-        str = g_strdup_printf (_("%s URI"), source->name);
+        str = g_strdup_printf (_("%s URI"), name);
         label = gtk_label_new (str);
         g_free (str);
+        g_free (name);
         gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
         gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
                           0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
@@ -1361,9 +1417,8 @@ server_array_contains (GPtrArray *array, SyncevoServer *server)
     for (i = 0; i < array->len; i++) {
         const char *n;
         SyncevoServer *s = (SyncevoServer*)g_ptr_array_index (array, i);
-        
         syncevo_server_get (s, &n, NULL, NULL);
-        if (strcmp (name, n) == 0)
+        if (g_ascii_strcasecmp (name, n) == 0)
             return TRUE;
     }
     return FALSE;
@@ -1530,8 +1585,6 @@ calc_and_update_progress (app_data *data, char *msg)
     set_sync_progress (data, sync_progress_sync_start + (progress / count), msg);
 }
 
-
-/* TODO this is partly the same code as in update_sync_report_data */
 static void
 refresh_statistics (app_data *data)
 {
@@ -1544,28 +1597,13 @@ refresh_statistics (app_data *data)
         lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, p->name));
         if (lbl) {
             char *msg;
-            char *rejects;
             
-            if (p->rejected_local + p->rejected_remote > 0) {
-                rejects = g_strdup_printf ("\nThere were %d local rejections and %d remote rejections.",
-                                           p->rejected_local, p->rejected_remote);
-            } else {
-                rejects = g_strdup ("");
-            } 
-
-
-            if (p->added_remote + p->modified_remote + p->deleted_remote + 
-                p->added_local + p->modified_local + p->deleted_local == 0) {
-                msg = g_strdup_printf ("Last time: no modifications.%s", rejects);
-            } else {
-                msg = g_strdup_printf ("Last time: modified %d local items and %d remote items.%s",
-                                       p->added_local + p->modified_local + p->deleted_local,
-                                       p->added_remote + p->modified_remote + p->deleted_remote,
-                                       rejects);
-            }
+            msg = get_report_summary (p->added_local + p->modified_local + p->deleted_local,
+                                      p->added_remote + p->modified_remote + p->deleted_remote,
+                                      p->rejected_local,
+                                      p->rejected_remote);
             gtk_label_set_text (lbl, msg);
             g_free (msg);
-            g_free (rejects);
     }
     }
 }
@@ -1583,6 +1621,59 @@ find_source_progress (GList *source_progresses, char *name)
     return NULL;
 }
 
+static char*
+get_error_string_for_code (int error_code)
+{
+    switch (error_code) {
+    case 0:
+    case LOCERR_USERABORT:
+    case LOCERR_USERSUSPEND:
+        return NULL;
+    case DB_Unauthorized:
+        return g_strdup(_("Not authorized"));
+    case DB_Forbidden:
+        return g_strdup(_("Forbidden"));
+    case DB_NotFound:
+        return g_strdup(_("Not found"));
+    case DB_Fatal:
+        return g_strdup(_("Fatal database error"));
+    case DB_Error:
+        return g_strdup(_("Database error"));
+    case DB_Full:
+        return g_strdup(_("No space left"));
+    case LOCERR_PROCESSMSG:
+        /* TODO identify problem item somehow ? */
+        return g_strdup(_("Failed to process SyncML"));
+    case LOCERR_AUTHFAIL:
+        return g_strdup(_("Server authorization failed"));
+    case LOCERR_CFGPARSE:
+        return g_strdup(_("Failed to parse configuration file"));
+    case LOCERR_CFGREAD:
+        return g_strdup(_("Failed to read configuration file"));
+    case LOCERR_NOCFG:
+        return g_strdup(_("No configuration found"));
+    case LOCERR_NOCFGFILE:
+        return g_strdup(_("No configuration file found"));
+    case LOCERR_BADCONTENT:
+        return g_strdup(_("Server sent bad content"));
+    case LOCERR_TIMEOUT:
+        return g_strdup(_("Connection timed out"));
+    case LOCERR_CERT_EXPIRED:
+        return g_strdup(_("Connection certificate has expired"));
+    case LOCERR_CERT_INVALID:
+        return g_strdup(_("Connection certificate is invalid"));
+    case LOCERR_CONN:
+    case LOCERR_NOCONN:
+        return g_strdup(_("Connection failed"));
+    case LOCERR_BADURL:
+        return g_strdup(_("URL is bad"));
+    case LOCERR_SRVNOTFOUND:
+        return g_strdup(_("Server not found"));
+    default:
+        return g_strdup_printf (_("Error %d"), error_code);
+    }
+}
+
 static void
 sync_progress_cb (SyncevoService *service,
                   char *server,
@@ -1592,7 +1683,10 @@ sync_progress_cb (SyncevoService *service,
                   app_data *data)
 {
     static source_progress *source_prog;
-    char *msg;
+    char *msg = NULL;
+    char *error = NULL;
+    char *name = NULL;
+    GTimeVal val;
 
     /* just in case UI was just started and there is another sync in progress */
     set_app_state (data, SYNC_UI_STATE_SYNCING);
@@ -1601,26 +1695,32 @@ sync_progress_cb (SyncevoService *service,
     switch(type) {
     case -1:
         /* syncevolution finished sync */
-        gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Sync complete"));
-        set_sync_progress (data, 1.0 , "");
-        data->synced_this_session = TRUE;
-        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+        error = get_error_string_for_code (extra1);
+        if (error)
+            add_error_info (data, error, NULL);
 
-        if (extra1 != 0) {
-            if (extra1 == LOCERR_TRANSPFAIL) {
-                add_error_info (data, _("Connection error"), NULL);
-            }
-            /* any errors should have been shown in earlier progress messages...
-               not alerting user */
-            g_warning ("Syncevolution sync returned error: %d", extra1);
-        } else {
-            GTimeVal val;
+        switch (extra1) {
+        case 0:
             g_get_current_time (&val);
             data->last_sync = val.tv_sec;
+            refresh_last_synced_label (data);
+            
+            data->synced_this_session = TRUE;
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
+                                _("Sync complete"));
+            break;
+        case LOCERR_USERABORT:
+        case LOCERR_USERSUSPEND:
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
+                                _("Sync canceled"));
+        default:
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
+                                _("Sync Failed"));
         }
-        refresh_last_synced_label (data);
         /* get sync report */
         refresh_statistics (data);
+        set_sync_progress (data, 1.0 , "");
+        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
 
         break;
     case PEV_SESSIONSTART:
@@ -1658,16 +1758,13 @@ sync_progress_cb (SyncevoService *service,
         source_prog->prepare_current = CLAMP (extra1, 0, extra2);
         source_prog->prepare_total = extra2;
 
-        /* TRANSLATORS: placeholder is a source name in a progress text */
-        msg = g_strdup_printf (_("Preparing '%s'"), source);
+        name = get_pretty_source_name (source);
+        /* TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text */
+        msg = g_strdup_printf (_("Preparing '%s'"), name);
         calc_and_update_progress(data, msg);
-        g_free (msg);
         break;
 
     case PEV_ITEMSENT:
-
-        /* TODO: update the stats table as well */
-
         /* find the right source (try last used one first) */
         if (strcmp (source_prog->name, source) != 0) {
             source_prog = find_source_progress (data->source_progresses, source);
@@ -1679,16 +1776,13 @@ sync_progress_cb (SyncevoService *service,
         source_prog->send_current = CLAMP (extra1, 0, extra2);
         source_prog->send_total = extra2;
 
+        name = get_pretty_source_name (source);
         /* TRANSLATORS: placeholder is a source name in a progress text */
-        msg = g_strdup_printf (_("Sending '%s'"), source);
+        msg = g_strdup_printf (_("Sending '%s'"), name);
         calc_and_update_progress (data, msg);
-        g_free (msg);
         break;
 
     case PEV_ITEMRECEIVED:
-
-        /* TODO: update the stats table as well */
-
         /* find the right source (try last used one first) */
         if (strcmp (source_prog->name, source) != 0) {
             source_prog = find_source_progress (data->source_progresses, source);
@@ -1700,77 +1794,18 @@ sync_progress_cb (SyncevoService *service,
         source_prog->receive_current = CLAMP (extra1, 0, extra2);
         source_prog->receive_total = extra2;
 
+        name = get_pretty_source_name (source);
         /* TRANSLATORS: placeholder is a source name in a progress text */
-        msg = g_strdup_printf (_("Receiving '%s'"), source);
+        msg = g_strdup_printf (_("Receiving '%s'"), name);
         calc_and_update_progress (data, msg);
-        g_free (msg);
         break;
 
     case PEV_SYNCEND:
-        msg = NULL;
-        switch (extra1) {
-        case 0:
-        case LOCERR_USERABORT:
-        case LOCERR_USERSUSPEND:
-            break;
-        case DB_Unauthorized:
-            /* TRANSLATORS: placeholder is a source name in a error message */
-            msg = g_strdup_printf (_("%s: Not authorized"), source);
-            break;
-        case DB_Forbidden:
-            msg = g_strdup_printf (_("%s: Forbidden"), source);
-            break;
-        case DB_NotFound:
-            msg = g_strdup_printf (_("%s: Not found"), source);
-            break;
-        case LOCERR_PROCESSMSG:
-            /* TODO identify item somehow */
-            msg = g_strdup_printf (_("%s: Failed to process SyncML"), source);
-            break;
-        case LOCERR_AUTHFAIL:
-            msg = g_strdup_printf (_("%s: Server authorization failed"), source);
-            break;
-        case LOCERR_CFGPARSE:
-            msg = g_strdup_printf (_("%s: Failed to parse config file"), source);
-            break;
-        case LOCERR_CFGREAD:
-            msg = g_strdup_printf (_("%s: Failed to read config file"), source);
-            break;
-        case LOCERR_NOCFG:
-            msg = g_strdup_printf (_("%s: No configuration found"), source);
-            break;
-        case LOCERR_NOCFGFILE:
-            msg = g_strdup_printf (_("%s: No config file found"), source);
-            break;
-        case LOCERR_BADCONTENT:
-            msg = g_strdup_printf (_("%s: Server sent bad content"), source);
-            break;
-        case LOCERR_TIMEOUT:
-            msg = g_strdup_printf (_("%s: Connection timed out"), source);
-            break;
-        case LOCERR_CERT_EXPIRED:
-            msg = g_strdup_printf (_("%s: Connection certificate has expired"), source);
-            break;
-        case LOCERR_CERT_INVALID:
-            msg = g_strdup_printf (_("%s: Connection certificate is invalid"), source);
-            break;
-        case LOCERR_CONN:
-        case LOCERR_NOCONN:
-            msg = g_strdup_printf (_("%s: Connection failed"), source);
-            break;
-        case LOCERR_BADURL:
-            msg = g_strdup_printf (_("%s: URL is bad"), source);
-            break;
-        case LOCERR_SRVNOTFOUND:
-            msg = g_strdup_printf (_("%s: Server not found"), source);
-            break;
-        default:
-            msg = g_strdup_printf (_("%s: Error %d"), source, extra1);
-            break;
-        }
-        if (msg) {
+        error = get_error_string_for_code (extra1);
+        if (error) {
+            name = get_pretty_source_name (source);
+            msg = g_strdup_printf ("%s: %s", name, error);
             add_error_info (data, msg, NULL);
-            g_free (msg);
         }
         break;
     case PEV_DSSTATS_L:
@@ -1810,6 +1845,9 @@ sync_progress_cb (SyncevoService *service,
     default:
         ;
     }
+    g_free (msg);
+    g_free (error);
+    g_free (name);
 }
 
 int 
