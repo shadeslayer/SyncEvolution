@@ -266,6 +266,7 @@ if test "$SYNTHESISSRC" && test "$SYNTHESISSRC" != "none"; then
 
     AC_MSG_NOTICE( [updating the content of $SYNTHESIS_SRC from $SYNTHESISSRC] )
     case "$SYNTHESISSRC" in
+        *.git) protocol=git;;
         *://*) protocol="`echo $SYNTHESISSRC | sed -e 's;://.*;;'`";;
         *) protocol="file";;
     esac
