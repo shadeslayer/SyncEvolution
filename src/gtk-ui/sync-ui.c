@@ -1022,6 +1022,54 @@ update_service_ui (app_data *data)
 
 }
 
+static char*
+get_report_summary (int local_changes, int remote_changes, int local_rejects, int remote_rejects)
+{
+    char *rejects, *changes, *msg;
+
+    if (local_rejects + remote_rejects == 0) {
+        rejects = NULL;
+    } else if (local_rejects == 0) {
+        rejects = g_strdup_printf (ngettext ("There was one remote rejection.", 
+                                             "There were %d remote rejections.",
+                                             remote_rejects),
+                                   remote_rejects);
+    } else if (remote_rejects == 0) {
+        rejects = g_strdup_printf (ngettext ("There was one local rejection.", 
+                                             "There were %d local rejections.",
+                                             local_rejects),
+                                   local_rejects);
+    } else {
+        rejects = g_strdup_printf (_ ("There were %d local rejections and %d remote rejections."),
+                                   local_rejects, remote_rejects);
+    }
+
+    if (local_changes + remote_changes == 0) {
+        changes = g_strdup_printf (_("Last time: No changes."));
+    } else if (local_changes == 0) {
+        changes = g_strdup_printf (ngettext ("Last time: Sent one change.",
+                                             "Last time: Sent %d changes.",
+                                             remote_changes),
+                                   remote_changes);
+    } else if (remote_changes == 0) {
+        changes = g_strdup_printf (ngettext ("Last time: Received one change.",
+                                             "Last time: Received %d changes.",
+                                             local_changes),
+                                   local_changes);
+    } else {
+        changes = g_strdup_printf (_("Last time: Received %d changes and sent %d changes."),
+                                   local_changes, remote_changes);
+    }
+
+    if (rejects)
+        msg = g_strdup_printf ("%s\n%s", changes, rejects);
+    else
+        msg = g_strdup (changes);
+    g_free (rejects);
+    g_free (changes);
+    return msg;
+}
+
 static void
 update_sync_report_data (SyncevoReport *report, app_data *data)
 {
@@ -1032,33 +1080,17 @@ update_sync_report_data (SyncevoReport *report, app_data *data)
     lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, name));
     if (lbl) {
         char *msg;
-        char *rejects;
-        int local_adds, local_updates, local_removes, local_rejects;
-        int remote_adds, remote_updates, remote_removes, remote_rejects;
+        int local_changes, local_adds, local_updates, local_removes, local_rejects;
+        int remote_changes, remote_adds, remote_updates, remote_removes, remote_rejects;
         
         syncevo_report_get_local (report, &local_adds, &local_updates, &local_removes, &local_rejects);
         syncevo_report_get_remote (report, &remote_adds, &remote_updates, &remote_removes, &remote_rejects);
-        
-        if (local_rejects + remote_rejects >0) {
-            rejects = g_strdup_printf ("\nThere were %d local rejections and %d remote rejections.",
-                                       local_rejects, remote_rejects);
-        } else {
-            rejects = g_strdup ("");
-        } 
+        local_changes = local_adds + local_updates + local_removes;
+        remote_changes = remote_adds + remote_updates + remote_removes;
 
-
-        if (local_adds + local_updates + local_removes + 
-            remote_adds + remote_updates + remote_removes == 0) {
-            msg = g_strdup_printf ("Last time: no modifications.%s", rejects);
-        } else {
-            msg = g_strdup_printf ("Last time: modified %d local items and %d remote items.%s",
-                                   local_adds + local_updates + local_removes,
-                                   remote_adds + remote_updates + remote_removes,
-                                   rejects);
-        }
+        msg = get_report_summary (local_changes, remote_changes, local_rejects, remote_rejects);
         gtk_label_set_text (lbl, msg);
         g_free (msg);
-        g_free (rejects);
     }
 }
 
@@ -1529,8 +1561,6 @@ calc_and_update_progress (app_data *data, char *msg)
     set_sync_progress (data, sync_progress_sync_start + (progress / count), msg);
 }
 
-
-/* TODO this is partly the same code as in update_sync_report_data */
 static void
 refresh_statistics (app_data *data)
 {
@@ -1543,28 +1573,13 @@ refresh_statistics (app_data *data)
         lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, p->name));
         if (lbl) {
             char *msg;
-            char *rejects;
             
-            if (p->rejected_local + p->rejected_remote > 0) {
-                rejects = g_strdup_printf ("\nThere were %d local rejections and %d remote rejections.",
-                                           p->rejected_local, p->rejected_remote);
-            } else {
-                rejects = g_strdup ("");
-            } 
-
-
-            if (p->added_remote + p->modified_remote + p->deleted_remote + 
-                p->added_local + p->modified_local + p->deleted_local == 0) {
-                msg = g_strdup_printf ("Last time: no modifications.%s", rejects);
-            } else {
-                msg = g_strdup_printf ("Last time: modified %d local items and %d remote items.%s",
-                                       p->added_local + p->modified_local + p->deleted_local,
-                                       p->added_remote + p->modified_remote + p->deleted_remote,
-                                       rejects);
-            }
+            msg = get_report_summary (p->added_local + p->modified_local + p->deleted_local,
+                                      p->added_remote + p->modified_remote + p->deleted_remote,
+                                      p->rejected_local,
+                                      p->rejected_remote);
             gtk_label_set_text (lbl, msg);
             g_free (msg);
-            g_free (rejects);
     }
     }
 }
