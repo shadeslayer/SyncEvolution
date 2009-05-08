@@ -376,7 +376,8 @@ static PasswordConfigProperty syncPropPassword("password",
                                                "env variable: password = ${<name of environment variable>}\n",
                                                "your SyncML server password");
 static BoolConfigProperty syncPropUseProxy("useProxy",
-                                           "set to T to enable an HTTP proxy");
+                                           "set to T to choose an HTTP proxy explicitly; otherwise the default\n"
+                                           "proxy settings of the underlying HTTP transport mechanism are used");
 static ConfigProperty syncPropProxyHost("proxyHost",
                                         "proxy URL (http://<host>:<port>)");
 static ConfigProperty syncPropProxyUsername("proxyUsername",

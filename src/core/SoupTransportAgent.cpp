@@ -25,6 +25,10 @@
 
 #include <Logging.h>
 
+#ifdef HAVE_LIBSOUP_SOUP_GNOME_FEATURES_H
+#include <libsoup/soup-gnome-features.h>
+#endif
+
 namespace SyncEvolution {
 
 SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
@@ -36,6 +40,10 @@ SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
     m_status(INACTIVE),
     m_response(NULL)
 {
+#ifdef HAVE_LIBSOUP_SOUP_GNOME_FEATURES_H
+    // use default GNOME proxy settings
+    soup_session_add_feature_by_type(m_session.get(), SOUP_TYPE_PROXY_RESOLVER_GNOME);
+#endif
 }
 
 SoupTransportAgent::~SoupTransportAgent()
