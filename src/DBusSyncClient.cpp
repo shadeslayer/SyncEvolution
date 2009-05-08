@@ -57,6 +57,7 @@ void DBusSyncClient::displaySyncProgress(sysync::TProgressEventEnum type,
                                          int32_t extra1, int32_t extra2, int32_t extra3)
 {
 	m_progress (NULL, type, extra1, extra2, extra3, m_userdata);
+	EvolutionSyncClient::displaySyncProgress(type, extra1, extra2, extra3);
 }
 
 void DBusSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
@@ -64,6 +65,7 @@ void DBusSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
                                            int32_t extra1, int32_t extra2, int32_t extra3)
 {
 	m_progress (g_strdup (source.getName()), type, extra1, extra2, extra3, m_userdata);
+	EvolutionSyncClient::displaySourceProgress(type, source, extra1, extra2, extra3);
 }
 
 bool DBusSyncClient::checkForSuspend()
