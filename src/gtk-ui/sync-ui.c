@@ -212,6 +212,25 @@ clear_error_info (app_data *data)
     gtk_widget_hide (data->error_img);
 }
 
+static char*
+get_pretty_source_name (const char *source_name)
+{
+    if (strcmp (source_name, "addressbook") == 0) {
+        return g_strdup (_("Addressbook"));
+    } else if (strcmp (source_name, "calendar") == 0) {
+        return g_strdup (_("Calendar"));
+    } else if (strcmp (source_name, "todo") == 0) {
+        return g_strdup (_("Todo"));
+    } else if (strcmp (source_name, "memo") == 0) {
+        return g_strdup (_("Memo"));
+    } else {
+        char *tmp;
+        tmp =  g_strdup (source_name);
+        tmp[0] = g_ascii_toupper (tmp[0]);
+        return tmp;
+    }
+}
+
 static void
 add_error_info (app_data *data, const char *message, const char *external_reason)
 {
@@ -987,21 +1006,24 @@ update_service_ui (app_data *data)
     for (l = data->current_service->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
         GtkWidget *check, *box, *lbl;
+        char *name;
         
+        name = get_pretty_source_name (source->name);
         box = gtk_vbox_new (FALSE, 0);
         
         if (source->uri && strlen (source->uri) > 0) {
-            check = gtk_check_button_new_with_label (source->name);
+            check = gtk_check_button_new_with_label (name);
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), source->enabled);
             gtk_widget_set_sensitive (check, TRUE);
         } else {
-            char *name;
+            char *text;
             /* TRANSLATORS: placeholder is a source name, shown with checkboxes in main window */
-            name = g_strdup_printf (_("%s (not supported by this service)"), source->name);
-            check = gtk_check_button_new_with_label (name);
+            text = g_strdup_printf (_("%s (not supported by this service)"), name);
+            check = gtk_check_button_new_with_label (text);
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), FALSE);
             gtk_widget_set_sensitive (check, FALSE);
         }
+        g_free (name);
         g_object_set_data (G_OBJECT (check), "enabled", &source->enabled);
         g_signal_connect (check, "toggled",
                           G_CALLBACK (source_check_toggled_cb), data);
@@ -1227,12 +1249,15 @@ show_settings_window (app_data *data, server_config *config)
     for (l = config->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
         char *str;
+        char *name;
         i++;
 
+        name = get_pretty_source_name (source->name);
         /* TRANSLATORS: placeholder is a source name in settings window */
-        str = g_strdup_printf (_("%s URI"), source->name);
+        str = g_strdup_printf (_("%s URI"), name);
         label = gtk_label_new (str);
         g_free (str);
+        g_free (name);
         gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
         gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
                           0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
@@ -1659,7 +1684,8 @@ sync_progress_cb (SyncevoService *service,
 {
     static source_progress *source_prog;
     char *msg = NULL;
-    char *error;
+    char *error = NULL;
+    char *name = NULL;
     GTimeVal val;
 
     /* just in case UI was just started and there is another sync in progress */
@@ -1670,10 +1696,8 @@ sync_progress_cb (SyncevoService *service,
     case -1:
         /* syncevolution finished sync */
         error = get_error_string_for_code (extra1);
-        if (error) {
+        if (error)
             add_error_info (data, error, NULL);
-            g_free (error);
-        }
 
         switch (extra1) {
         case 0:
@@ -1734,10 +1758,10 @@ sync_progress_cb (SyncevoService *service,
         source_prog->prepare_current = CLAMP (extra1, 0, extra2);
         source_prog->prepare_total = extra2;
 
-        /* TRANSLATORS: placeholder is a source name in a progress text */
-        msg = g_strdup_printf (_("Preparing '%s'"), source);
+        name = get_pretty_source_name (source);
+        /* TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text */
+        msg = g_strdup_printf (_("Preparing '%s'"), name);
         calc_and_update_progress(data, msg);
-        g_free (msg);
         break;
 
     case PEV_ITEMSENT:
@@ -1752,10 +1776,10 @@ sync_progress_cb (SyncevoService *service,
         source_prog->send_current = CLAMP (extra1, 0, extra2);
         source_prog->send_total = extra2;
 
+        name = get_pretty_source_name (source);
         /* TRANSLATORS: placeholder is a source name in a progress text */
-        msg = g_strdup_printf (_("Sending '%s'"), source);
+        msg = g_strdup_printf (_("Sending '%s'"), name);
         calc_and_update_progress (data, msg);
-        g_free (msg);
         break;
 
     case PEV_ITEMRECEIVED:
@@ -1770,19 +1794,18 @@ sync_progress_cb (SyncevoService *service,
         source_prog->receive_current = CLAMP (extra1, 0, extra2);
         source_prog->receive_total = extra2;
 
+        name = get_pretty_source_name (source);
         /* TRANSLATORS: placeholder is a source name in a progress text */
-        msg = g_strdup_printf (_("Receiving '%s'"), source);
+        msg = g_strdup_printf (_("Receiving '%s'"), name);
         calc_and_update_progress (data, msg);
-        g_free (msg);
         break;
 
     case PEV_SYNCEND:
         error = get_error_string_for_code (extra1);
         if (error) {
-            msg = g_strdup_printf ("%s: %s", source, error);
+            name = get_pretty_source_name (source);
+            msg = g_strdup_printf ("%s: %s", name, error);
             add_error_info (data, msg, NULL);
-            g_free (error);
-            g_free (msg);
         }
         break;
     case PEV_DSSTATS_L:
@@ -1822,6 +1845,9 @@ sync_progress_cb (SyncevoService *service,
     default:
         ;
     }
+    g_free (msg);
+    g_free (error);
+    g_free (name);
 }
 
 int 
