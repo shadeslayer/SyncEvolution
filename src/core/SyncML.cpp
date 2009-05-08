@@ -20,6 +20,7 @@
 
 #include "SyncML.h"
 #include "ConfigNode.h"
+#include "SyncEvolutionUtil.h"
 #include <sstream>
 #include <iomanip>
 #include <vector>
@@ -422,6 +423,16 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
 
     if (getStart()) {
         out << '|' << center(' ', formatSyncTimes(), text_width) << "|\n";
+    }
+    if (getStatus()) {
+        out << '|' << center(' ',
+                             getStatus() != STATUS_HTTP_OK ?
+                             StringPrintf("synchronization failed (status code %d)", static_cast<int>(getStatus())) :
+                             "synchronization completed successfully",
+                             text_width)
+            << "|\n";
+    }
+    if (getStatus() || getStart()) {
         out << sep;
     }
 }
@@ -453,6 +464,7 @@ ConfigNode &operator << (ConfigNode &node, const SyncReport &report)
 {
     node.setProperty("start", static_cast<long>(report.getStart()));
     node.setProperty("end", static_cast<long>(report.getEnd()));
+    node.setProperty("status", static_cast<int>(report.getStatus()));
 
     BOOST_FOREACH(const SyncReport::value_type &entry, report) {
         const std::string &name = entry.first;
@@ -512,6 +524,10 @@ ConfigNode &operator >> (ConfigNode &node, SyncReport &report)
     }
     if (node.getProperty("end", ts)) {
         report.setEnd(ts);
+    }
+    int status;
+    if (node.getProperty("status", status)) {
+        report.setStatus(static_cast<SyncMLStatus>(status));
     }
 
     ConfigNode::PropsType props;

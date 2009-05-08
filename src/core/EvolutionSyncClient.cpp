@@ -568,7 +568,13 @@ public:
 
     // call at the end of a sync with success == true
     // if all went well to print report
-    void syncDone(bool success, SyncReport *report) {
+    void syncDone(SyncMLStatus status, SyncReport *report) {
+        // record status - failures from now only affect post-processing
+        // and thus do no longer change that result
+        if (report) {
+            report->setStatus(status == 0 ? STATUS_HTTP_OK : status);
+        }
+
         if (m_doLogging) {
             // dump database after sync, but not if already dumping it at the beginning didn't complete
             if (m_reportTodo && m_prepared) {
@@ -596,7 +602,7 @@ public:
                 cout << flush;
                 cerr << flush;
                 cout << "\n";
-                if (success) {
+                if (status == STATUS_OK) {
                     cout << "Synchronization successful.\n";
                 } else if (logfile.size()) {
                     cout << "Synchronization failed, see "
@@ -632,7 +638,7 @@ public:
                     cout << "\n";
                 }
 
-                if (success) {
+                if (status == STATUS_OK) {
                     m_logdir.expire();
                 }
             }
@@ -979,7 +985,7 @@ void EvolutionSyncClient::fatalError(void *object, const char *error)
 {
     SE_LOG_ERROR(NULL, NULL, "%s", error);
     if (m_sourceListPtr) {
-        m_sourceListPtr->syncDone(false, NULL);
+        m_sourceListPtr->syncDone(STATUS_FATAL, NULL);
     }
     exit(1);
 }
@@ -1345,7 +1351,7 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
                 break;
             }
         }
-        sourceList.syncDone(status == STATUS_OK, report);
+        sourceList.syncDone(status, report);
     } catch(...) {
         SyncEvolutionException::handle(&status);
     }

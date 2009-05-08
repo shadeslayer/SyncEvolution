@@ -109,6 +109,9 @@ enum SyncMLStatus {
     /** ok */
     STATUS_OK = 0,
 
+    /** more explicit ok status in cases where 0 might mean "unknown" (SyncReport) */
+    STATUS_HTTP_OK = 200,
+
     /** no content / end of file / end of iteration / empty/NULL value */
     STATUS_NO_CONTENT = 204,
     /** external data has been merged */
@@ -248,11 +251,13 @@ class SyncSourceReport {
 
 class SyncReport : public std::map<std::string, SyncSourceReport> {
     time_t m_start, m_end;
+    SyncMLStatus m_status;
 
  public:
     SyncReport() :
         m_start(0),
-        m_end(0)
+        m_end(0),
+        m_status(STATUS_OK)
         {}
 
     void addSyncSourceReport(const std::string &name,
@@ -269,6 +274,15 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
     /** end time of sync, 0 if unknown (indicates a crash) */
     time_t getEnd() const { return m_end; }
     void setEnd(time_t end) { m_end = end; }
+
+    /**
+     * overall sync result
+     *
+     * STATUS_OK = 0 means unknown status (might have aborted prematurely),
+     * STATUS_HTTP_OK = 200 means successful completion
+     */
+    SyncMLStatus getStatus() const { return m_status; }
+    void setStatus(SyncMLStatus status) { m_status = status; }
 
     void clear() {
         std::map<std::string, SyncSourceReport>::clear();
