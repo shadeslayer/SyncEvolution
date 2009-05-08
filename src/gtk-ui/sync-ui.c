@@ -1392,9 +1392,8 @@ server_array_contains (GPtrArray *array, SyncevoServer *server)
     for (i = 0; i < array->len; i++) {
         const char *n;
         SyncevoServer *s = (SyncevoServer*)g_ptr_array_index (array, i);
-        
         syncevo_server_get (s, &n, NULL, NULL);
-        if (strcmp (name, n) == 0)
+        if (g_ascii_strcasecmp (name, n) == 0)
             return TRUE;
     }
     return FALSE;
