@@ -1009,6 +1009,7 @@ int main()
 	signal(SIGINT, niam);
 
 	g_type_init ();
+	g_thread_init (NULL);
 
 	server = (SyncevoDBusServer*)g_object_new (SYNCEVO_TYPE_DBUS_SERVER, NULL);
 
