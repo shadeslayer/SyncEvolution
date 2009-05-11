@@ -18,6 +18,7 @@
  */
 
 #include <glib-object.h>
+#include <string.h>
 
 #include "syncevo-dbus.h"
 #include "syncevo-marshal.h"
@@ -34,6 +35,7 @@ enum {
 	PROGRESS,
 	SERVER_MESSAGE,
 	NEED_PASSWORD,
+	SERVER_SHUTDOWN,
 	LAST_SIGNAL
 };
 
@@ -56,6 +58,8 @@ static void server_message_cb (DBusGProxy *proxy,
 static void need_password_cb (DBusGProxy *proxy,
                               char *server,
                               SyncevoService *service);
+static void proxy_destroyed (DBusGProxy *proxy,
+                             SyncevoService *service);
 
 G_DEFINE_TYPE (SyncevoService, syncevo_service, G_TYPE_OBJECT);
 
@@ -124,6 +128,90 @@ static void need_password_cb (DBusGProxy *proxy,
 	               server);
 }
 
+static gboolean
+syncevo_service_get_new_proxy (SyncevoService *service)
+{
+	DBusGConnection *connection;
+	GError *error;
+	guint32 result;
+	SyncevoServicePrivate *priv;
+	DBusGProxy *proxy;
+
+	priv = GET_PRIVATE (service);
+	error = NULL;
+
+	connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
+	if (connection == NULL) {
+		g_printerr ("Failed to open connection to bus: %s\n",
+		            error->message);
+		g_error_free (error);
+		priv->proxy = NULL;
+		return FALSE;
+	}
+
+	/* we want to use dbus_g_proxy_new_for_name_owner() for the destroy signal
+	 * so need to start the service by hand by using DBUS proxy: */
+	proxy = dbus_g_proxy_new_for_name (connection,
+	                                   DBUS_SERVICE_DBUS,
+	                                   DBUS_PATH_DBUS,
+	                                   DBUS_INTERFACE_DBUS);
+	if (!dbus_g_proxy_call (proxy, "StartServiceByName", NULL,
+	                        G_TYPE_STRING, SYNCEVO_SERVICE_DBUS_SERVICE,
+	                        G_TYPE_UINT, 0,
+	                        G_TYPE_INVALID,
+	                        G_TYPE_UINT, &result,
+	                        G_TYPE_INVALID)) {
+		g_warning ("StartServiceByName call failed");
+	}
+	g_object_unref (proxy);
+
+	/* the real proxy */
+	proxy = dbus_g_proxy_new_for_name_owner (connection,
+	                                         SYNCEVO_SERVICE_DBUS_SERVICE,
+	                                         SYNCEVO_SERVICE_DBUS_PATH,
+	                                         SYNCEVO_SERVICE_DBUS_INTERFACE,
+	                                         &error);
+	if (proxy == NULL) {
+		g_printerr ("dbus_g_proxy_new_for_name_owner() failed");
+		priv->proxy = NULL;
+		return FALSE;
+	}
+
+	dbus_g_proxy_add_signal (proxy, "Progress",
+	                         G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID);
+	dbus_g_proxy_connect_signal (proxy, "Progress",
+	                             G_CALLBACK (progress_cb), service, NULL);
+	dbus_g_proxy_add_signal (proxy, "ServerMessage",
+	                         G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID);
+	dbus_g_proxy_connect_signal (proxy, "ServerMessage",
+	                             G_CALLBACK (server_message_cb), service, NULL);
+	dbus_g_proxy_add_signal (proxy, "NeedPassword",
+	                         G_TYPE_INVALID);
+	dbus_g_proxy_connect_signal (proxy, "NeedPassword",
+	                             G_CALLBACK (need_password_cb), service, NULL);
+
+	g_signal_connect (proxy, "destroy",
+	                  G_CALLBACK (proxy_destroyed), service);
+
+	priv->proxy = proxy;
+	return TRUE;
+}
+
+static void
+proxy_destroyed (DBusGProxy *proxy,
+                 SyncevoService *service)
+{
+	SyncevoServicePrivate *priv;
+	priv = GET_PRIVATE (service);
+
+	if (priv->proxy) {
+		g_object_unref (priv->proxy);
+	}
+	priv->proxy = NULL;
+
+	g_signal_emit (service, signals[SERVER_SHUTDOWN], 0);
+}
+
 static GObject *
 constructor (GType                  type,
              guint                  n_construct_properties,
@@ -131,28 +219,11 @@ constructor (GType                  type,
 {
 	SyncevoService *service;
 	SyncevoServicePrivate *priv;
-	DBusGConnection *connection;
-	GError *error;
 
-	service = SYNCEVO_SERVICE (G_OBJECT_CLASS (syncevo_service_parent_class)->constructor 
+	service = SYNCEVO_SERVICE (G_OBJECT_CLASS (syncevo_service_parent_class)->constructor
 			(type, n_construct_properties, construct_properties));
 	priv = GET_PRIVATE (service);
 
-	error = NULL;
-	connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
-	if (connection == NULL) {
-		g_printerr ("Failed to open connection to bus: %s\n",
-		            error->message);
-		g_error_free (error);
-		
-		priv->proxy = NULL;
-		return G_OBJECT (service);
-	}
-
-	priv->proxy = dbus_g_proxy_new_for_name (connection, 
-	                                         SYNCEVO_SERVICE_DBUS_SERVICE,
-	                                         SYNCEVO_SERVICE_DBUS_PATH,
-	                                         SYNCEVO_SERVICE_DBUS_INTERFACE);
 	dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_STRING_INT_INT_INT_INT,
 					   G_TYPE_NONE,
 					   G_TYPE_STRING,
@@ -168,18 +239,7 @@ constructor (GType                  type,
 					   G_TYPE_STRING,
 					   G_TYPE_INVALID);
 
-	dbus_g_proxy_add_signal (priv->proxy, "Progress",
-	                         G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID);
-	dbus_g_proxy_connect_signal (priv->proxy, "Progress",
-	                             G_CALLBACK (progress_cb), service, NULL);
-	dbus_g_proxy_add_signal (priv->proxy, "ServerMessage",
-	                         G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID);
-	dbus_g_proxy_connect_signal (priv->proxy, "ServerMessage",
-	                             G_CALLBACK (server_message_cb), service, NULL);
-	dbus_g_proxy_add_signal (priv->proxy, "NeedPassword",
-	                         G_TYPE_INVALID);
-	dbus_g_proxy_connect_signal (priv->proxy, "NeedPassword",
-	                             G_CALLBACK (need_password_cb), service, NULL);
+	syncevo_service_get_new_proxy (service);
 
 	return G_OBJECT (service);
 }
@@ -219,7 +279,14 @@ syncevo_service_class_init (SyncevoServiceClass *klass)
 	                                  g_cclosure_marshal_VOID__VOID,
 	                                  G_TYPE_NONE, 
 	                                  0);
-	
+	signals[SERVER_SHUTDOWN] = g_signal_new ("server-shutdown",
+	                                  G_TYPE_FROM_CLASS (klass),
+	                                  G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+	                                  G_STRUCT_OFFSET (SyncevoServiceClass, server_shutdown),
+	                                  NULL, NULL,
+	                                  g_cclosure_marshal_VOID__VOID,
+	                                  G_TYPE_NONE, 
+	                                  0);
 }
 
 static void
@@ -253,6 +320,16 @@ gboolean syncevo_service_start_sync (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_start_sync (priv->proxy, 
 	                                            server, 
 	                                            sources,
@@ -266,6 +343,16 @@ gboolean syncevo_service_abort_sync (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_abort_sync (priv->proxy, 
 	                                            server, 
 	                                            error);
@@ -279,6 +366,16 @@ gboolean syncevo_service_set_password (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_set_password (priv->proxy, 
 	                                              server, 
 	                                              password,
@@ -292,6 +389,16 @@ gboolean syncevo_service_get_servers (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_get_servers (priv->proxy, 
 	                                             servers, 
 	                                             error);
@@ -305,6 +412,21 @@ get_servers_async_callback (DBusGProxy *proxy,
 {
 	(*(SyncevoGetServersCb)data->callback) (data->service,
 	                                        servers,
+	                                        error,
+	                                        data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
+static void
+get_servers_async_error (SyncevoAsyncData *data)
+{
+	GError *error;
+
+	error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+								 SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+								 "Could not start service");
+	(*(SyncevoGetServersCb)data->callback) (data->service,
+	                                        NULL,
 	                                        error,
 	                                        data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
@@ -324,7 +446,12 @@ syncevo_service_get_servers_async (SyncevoService *service,
 	data->service = service;
 	data->callback = G_CALLBACK (callback);
 	data->userdata = userdata;
-	
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		g_idle_add ((GSourceFunc)get_servers_async_error, data);
+		return;
+	}
+
 	org_Moblin_SyncEvolution_get_servers_async 
 			(priv->proxy,
 			 (org_Moblin_SyncEvolution_get_servers_reply) get_servers_async_callback,
@@ -338,6 +465,16 @@ gboolean syncevo_service_get_templates (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_get_templates (priv->proxy, 
 	                                               templates, 
 	                                               error);
@@ -356,6 +493,21 @@ get_templates_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
+static void
+get_templates_async_error (SyncevoAsyncData *data)
+{
+	GError *error;
+
+	error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+								 SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+								 "Could not start service");
+	(*(SyncevoGetTemplatesCb)data->callback) (data->service,
+	                                          NULL,
+	                                          error,
+	                                          data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
 void syncevo_service_get_templates_async (SyncevoService *service,
                                           SyncevoGetTemplatesCb callback,
                                           gpointer userdata)
@@ -369,7 +521,12 @@ void syncevo_service_get_templates_async (SyncevoService *service,
 	data->service = service;
 	data->callback = G_CALLBACK (callback);
 	data->userdata = userdata;
-	
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		g_idle_add ((GSourceFunc)get_templates_async_error, data);
+		return;
+	}
+
 	org_Moblin_SyncEvolution_get_templates_async 
 			(priv->proxy,
 			 (org_Moblin_SyncEvolution_get_templates_reply) get_templates_async_callback,
@@ -384,6 +541,16 @@ gboolean syncevo_service_get_template_config (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_get_template_config (priv->proxy, 
 	                                                     template,
 	                                                     options, 
@@ -398,6 +565,21 @@ get_template_config_async_callback (DBusGProxy *proxy,
 {
 	(*(SyncevoGetTemplateConfigCb)data->callback) (data->service,
 	                                               options,
+	                                               error,
+	                                               data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
+static void
+get_template_config_async_error (SyncevoAsyncData *data)
+{
+	GError *error;
+
+	error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+								 SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+								 "Could not start service");
+	(*(SyncevoGetTemplateConfigCb)data->callback) (data->service,
+	                                               NULL,
 	                                               error,
 	                                               data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
@@ -418,7 +600,12 @@ syncevo_service_get_template_config_async (SyncevoService *service,
 	data->service = service;
 	data->callback = G_CALLBACK (callback);
 	data->userdata = userdata;
-	
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		g_idle_add ((GSourceFunc)get_template_config_async_error, data);
+		return;
+	}
+
 	org_Moblin_SyncEvolution_get_template_config_async 
 			(priv->proxy,
 			 template,
@@ -434,6 +621,16 @@ gboolean syncevo_service_get_server_config (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_get_server_config (priv->proxy, 
 	                                                   server,
 	                                                   options, 
@@ -448,6 +645,21 @@ get_server_config_async_callback (DBusGProxy *proxy,
 {
 	(*(SyncevoGetServerConfigCb)data->callback) (data->service,
 	                                             options,
+	                                             error,
+	                                             data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
+static void
+get_server_config_async_error (SyncevoAsyncData *data)
+{
+	GError *error;
+
+	error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+								 SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+								 "Could not start service");
+	(*(SyncevoGetServerConfigCb)data->callback) (data->service,
+	                                             NULL,
 	                                             error,
 	                                             data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
@@ -468,7 +680,12 @@ syncevo_service_get_server_config_async (SyncevoService *service,
 	data->service = service;
 	data->callback = G_CALLBACK (callback);
 	data->userdata = userdata;
-	
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		g_idle_add ((GSourceFunc)get_server_config_async_error, data);
+		return;
+	}
+
 	org_Moblin_SyncEvolution_get_server_config_async 
 			(priv->proxy,
 			 server,
@@ -485,6 +702,16 @@ gboolean syncevo_service_set_server_config (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_set_server_config (priv->proxy, 
 	                                                   server,
 	                                                   options, 
@@ -496,6 +723,20 @@ set_server_config_async_callback (DBusGProxy *proxy,
                                   GError *error,
                                   SyncevoAsyncData *data)
 {
+	(*(SyncevoSetServerConfigCb)data->callback) (data->service,
+	                                             error,
+	                                             data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
+static void
+set_server_config_async_error (SyncevoAsyncData *data)
+{
+	GError *error;
+
+	error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+								 SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+								 "Could not start service");
 	(*(SyncevoSetServerConfigCb)data->callback) (data->service,
 	                                             error,
 	                                             data->userdata);
@@ -518,7 +759,12 @@ syncevo_service_set_server_config_async (SyncevoService *service,
 	data->service = service;
 	data->callback = G_CALLBACK (callback);
 	data->userdata = userdata;
-	
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		g_idle_add ((GSourceFunc)set_server_config_async_error, data);
+		return;
+	}
+
 	org_Moblin_SyncEvolution_set_server_config_async
 			(priv->proxy,
 			 server,
@@ -535,6 +781,16 @@ syncevo_service_remove_server_config (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_remove_server_config (priv->proxy, 
 	                                                      server,
 	                                                      error);
@@ -548,6 +804,20 @@ remove_server_config_async_callback (DBusGProxy *proxy,
 	(*(SyncevoRemoveServerConfigCb)data->callback) (data->service,
 	                                             error,
 	                                             data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
+static void
+remove_server_config_async_error (SyncevoAsyncData *data)
+{
+	GError *error;
+
+	error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+								 SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+								 "Could not start service");
+	(*(SyncevoRemoveServerConfigCb)data->callback) (data->service,
+	                                                error,
+	                                                data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
 }
 
@@ -566,7 +836,12 @@ syncevo_service_remove_server_config_async (SyncevoService *service,
 	data->service = service;
 	data->callback = G_CALLBACK (callback);
 	data->userdata = userdata;
-	
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		g_idle_add ((GSourceFunc)remove_server_config_async_error, data);
+		return;
+	}
+
 	org_Moblin_SyncEvolution_remove_server_config_async 
 			(priv->proxy,
 			 server,
@@ -584,6 +859,16 @@ syncevo_service_get_sync_reports (SyncevoService *service,
 	SyncevoServicePrivate *priv;
 
 	priv = GET_PRIVATE (service);
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		if (error) {
+			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+			                              "Could not start service");
+		}
+		return FALSE;
+	}
+
 	return org_Moblin_SyncEvolution_get_sync_reports ( 
 			priv->proxy,
 			server,
@@ -605,6 +890,21 @@ get_sync_reports_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
+static void
+get_sync_reports_async_error (SyncevoAsyncData *data)
+{
+	GError *error;
+
+	error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
+								 SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
+								 "Could not start service");
+	(*(SyncevoGetSyncReportsCb)data->callback) (data->service,
+	                                            NULL,
+	                                            error,
+	                                            data->userdata);
+	g_slice_free (SyncevoAsyncData, data);
+}
+
 void 
 syncevo_service_get_sync_reports_async (SyncevoService *service,
                                        char *server,
@@ -621,7 +921,12 @@ syncevo_service_get_sync_reports_async (SyncevoService *service,
 	data->service = service;
 	data->callback = G_CALLBACK (callback);
 	data->userdata = userdata;
-	
+
+	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
+		g_idle_add ((GSourceFunc)get_sync_reports_async_error, data);
+		return;
+	}
+
 	org_Moblin_SyncEvolution_get_sync_reports_async 
 			(priv->proxy,
 			 server,

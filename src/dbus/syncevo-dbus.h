@@ -25,6 +25,10 @@
 
 G_BEGIN_DECLS 
 
+enum SyncevoServiceError{
+	SYNCEVO_SERVICE_ERROR_COULD_NOT_START = 1,
+};
+
 #define SYNCEVO_SERVICE_DBUS_SERVICE "org.Moblin.SyncEvolution"
 #define SYNCEVO_SERVICE_DBUS_PATH "/org/Moblin/SyncEvolution"
 #define SYNCEVO_SERVICE_DBUS_INTERFACE "org.Moblin.SyncEvolution"
@@ -51,6 +55,7 @@ typedef struct _SyncevoServiceClass {
 	                        char *message);
 	void (*need_password) (SyncevoService *service,
 	                       char *server);
+	void (*server_shutdown) (SyncevoService *service);
 } SyncevoServiceClass;
 
 GType syncevo_service_get_type (void);

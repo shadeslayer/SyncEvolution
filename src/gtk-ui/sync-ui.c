@@ -1693,6 +1693,21 @@ get_error_string_for_code (int error_code)
     }
 }
 
+
+static void
+server_shutdown_cb (SyncevoService *service,
+                    app_data *data)
+{
+    if (data->syncing) {
+        add_error_info (data, _("Sync D-Bus service exited unexpectedly"), NULL);
+
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
+                            _("Sync Failed"));
+        set_sync_progress (data, 1.0 , "");
+        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+    }
+}
+
 static void
 sync_progress_cb (SyncevoService *service,
                   char *server,
@@ -1709,7 +1724,6 @@ sync_progress_cb (SyncevoService *service,
 
     /* just in case UI was just started and there is another sync in progress */
     set_app_state (data, SYNC_UI_STATE_SYNCING);
-
 
     switch(type) {
     case -1:
@@ -1887,6 +1901,8 @@ main (int argc, char *argv[]) {
     data->service = syncevo_service_get_default();
     g_signal_connect (data->service, "progress", 
                       G_CALLBACK (sync_progress_cb), data);
+    g_signal_connect (data->service, "server-shutdown", 
+                      G_CALLBACK (server_shutdown_cb), data);
     init_configuration (data);
 
     gtk_window_present (GTK_WINDOW (data->sync_win));
