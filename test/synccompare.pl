@@ -263,7 +263,7 @@ sub Normalize {
 
     if ($synthesis) {
       # does not preserve certain properties
-      s/^(FN|BDAY|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|NICKNAME|PHOTO|CALURI|SEQUENCE|TRANSP|ORGANIZER)(;[^:;\n]*)*:.*\r?\n?//gm;
+      s/^(FN|BDAY|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|NICKNAME|UID|PHOTO|CALURI|SEQUENCE|TRANSP|ORGANIZER)(;[^:;\n]*)*:.*\r?\n?//gm;
       # default ADR is HOME
       s/^ADR;TYPE=HOME/ADR/gm;
       # only some parts of N are preserved
