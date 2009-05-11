@@ -148,6 +148,9 @@ sub Normalize {
     # sort value lists of specific properties
     s!^(RRULE.*):(.*)!$1 . ":" . join(';',sort(split(/;/, $2)))!meg;
 
+    # INTERVAL=1 is the default and thus can be removed
+    s/^RRULE(.*?);INTERVAL=1(;|$)/RRULE$1$2/mg;
+
     # Ignore remaining "other" email, address and telephone type - this is
     # an Evolution specific extension which might not be preserved.
     s/^(ADR|EMAIL|TEL)([^:\n]*);TYPE=OTHER/$1$2/mg;
