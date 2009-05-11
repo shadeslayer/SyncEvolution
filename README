@@ -183,6 +183,12 @@ listed explicitly.  Some source properties have to be different for
 each source, in which case syncevolution must be called multiple times
 with one source listed in each invocation.
 
+   syncevolution --remove <server>
+
+Deletes the configuration of the selected server. Note that there is
+no confirmation question. Neither local data referenced by the
+configuration nor the content of log dirs are deleted.
+
    syncevolution --run <options for run> <server> [<source> ...]
 
 Options can also be overridden for just the current run, without
@@ -199,12 +205,40 @@ Depends on access to database dumps from the last run, so using the
 
    syncevolution --print-servers
    syncevolution --print-config [--quiet] <server> [sync|<source> ...]
+   syncevolution --print-sessions [--quiet] <server>
 
 These commands print information about existing configurations. When
 printing a configuration a short version without commands can be
 selected with --quiet. When sources are listed, only their
 configuration is show. "Sync" instead or in combination with sources
 lists only the main server configuration.
+
+With --print-session information about previous synchronization sessions
+for the selected server are printed. This depends on the "logdir" option.
+The information includes the log directory name (useful for --restore)
+and the synchronization report. In combination with --quiet, only the
+paths are listed.
+
+   syncevolution --restore <session directory> --before|--after [--dry-run] <server> <source> ...
+
+This restores local data from the backups made before or after a
+synchronization session. The --print-sessions command can be used to
+find these backups. The source(s) have to be listed explicitly. There
+is intentionally no default, because as with --remove there is no
+confirmation question. With --dry-run, the restore is only simulated.
+
+The session directory has to be specified explicitly with its path
+name (absolute or relative to current directory). It does not have to
+be one of the currently active log directories, as long as it contains
+the right database dumps for the selected sources.
+
+A restore tries to minimize the number of item changes (see section
+"Item Changes and Data Changes"). This means that items that are
+identical before and after the change will not be transmitted anew to
+the server during the next synchronization. If the server somehow
+needs to get a clean copy of all items on the client then, use "--sync
+refresh-from-client" in the next run.
+
 
 Here is a full description of all <options> that can be put in front
 of the server name. Whenever an option accepts multiple values, a
@@ -572,6 +606,36 @@ SyncEvolution works as expected. If you do not trust SyncEvolution or
 the server, then it is prudent to run these checks with a copy of the
 original address book. Make a backup of the .evolution/addressbook
 directory.
+
+
+Item Changes and Data Changes
+-----------------------------
+
+SyncML clients and servers consider each entry in a database as one
+item. Items can be added, removed or updated. This is the item change
+information that client and server exchange during a normal,
+incremental synchronization.
+
+If an item is saved, removed locally, and reimported, then this is
+usually reported to a peer as "one item removed, one added" because
+the information available to SyncEvolution are not sufficient to
+determine that this is in fact the same item. One exception are
+iCalendar 2.0 items with their globally unique ID: the modification
+above will be reported to the server as "one item updated".
+
+That is better, but still not quite correct because the content of the
+item has not changed, only the meta information about it which is used
+to detect changes. This cannot be avoided without creating additional
+overhead for normal synchronizations.
+
+SyncEvolution reports "item changes" (the number of added, removed and
+updated items) as well as and data changes. These data changes are
+calculated by comparing database dumps. Because this data comparison
+ignores information about which data belongs to which item, it is able
+to detect that re-adding an item that was removed earlier does not
+change the data, in contrast to the item changes. On the other hand,
+removing one item and adding a different one may look like updating
+just one item, which is not quite correct.
 
 
 Conflict Resolution
