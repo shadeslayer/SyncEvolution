@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(srcdir)/../../core $(BACKEND_CPPFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../../core -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 

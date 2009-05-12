@@ -158,6 +158,16 @@ client_test_SOURCES = \
 	../test/ClientTest.h \
 	../test/client-test-main.cpp \
 	$(CORE_SOURCES)
+
+# Always compile the registry files into client-test because that is
+# the only place where they are compiled with
+# ENABLE_INTEGRATION_TESTS.  This works without undefined references
+# because client-test is linked against all shared backend libraries
+# (non-portable, but works).
+if ENABLE_MODULES
+client_test_SOURCES += $(BACKEND_REGISTRIES)
+endif
+
 CLIENT_LIB_TEST_FILES = \
 	testcases/vcard21.vcf \
 	testcases/vcard30.vcf \
@@ -167,7 +177,7 @@ CLIENT_LIB_TEST_FILES = \
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm core/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'` $(CORE_LD_FLAGS)
-client_test_LDADD = $(CORE_LDADD)
+client_test_LDADD = $(CORE_LDADD) $(SYNCSOURCES)
 # These dependencies are intentionally a bit too broad:
 # they ensure that all files are in place to *run* client-test.
 client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) synccompare
