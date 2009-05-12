@@ -25,7 +25,7 @@
                     <child>
                       <widget class="GtkVBox" id="server_box">
                         <property name="visible">True</property>
-                        <property name="spacing">20</property>
+                        <property name="spacing">10</property>
                         <child>
                           <widget class="GtkHBox" id="hbox3">
                             <property name="visible">True</property>
@@ -103,7 +103,7 @@
                                                         <child>
                                                           <widget class="GtkVBox" id="sources_box">
                                                             <property name="visible">True</property>
-                                                            <property name="spacing">4</property>
+                                                            <property name="spacing">0</property>
                                                             <child>
                                                               <placeholder/>
                                                             </child>
@@ -129,7 +129,7 @@
                                                 <child>
                                                   <widget class="GtkLabel" id="label2">
                                                     <property name="visible">True</property>
-                                                    <property name="xpad">10</property>
+                                                    <property name="xpad">5</property>
                                                     <property name="label" translatable="yes">&lt;b&gt;Data&lt;/b&gt;</property>
                                                     <property name="use_markup">True</property>
                                                   </widget>
@@ -205,7 +205,7 @@
                                                 <child>
                                                   <widget class="GtkLabel" id="label3">
                                                     <property name="visible">True</property>
-                                                    <property name="xpad">10</property>
+                                                    <property name="xpad">5</property>
                                                     <property name="label" translatable="yes">&lt;b&gt;Type of Sync&lt;/b&gt;</property>
                                                     <property name="use_markup">True</property>
                                                   </widget>
@@ -228,7 +228,7 @@
                                       </widget>
                                       <packing>
                                         <property name="expand">False</property>
-                                        <property name="padding">20</property>
+                                        <property name="padding">6</property>
                                       </packing>
                                     </child>
                                   </widget>

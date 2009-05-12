@@ -771,6 +771,7 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
     g_assert (GTK_IS_WINDOW (dummy));
 
     window = mux_window_new ();
+    gtk_window_set_default_size (GTK_WINDOW (window), 1024, 600);
     gtk_widget_set_name (window, gtk_widget_get_name (dummy));
     title = gtk_window_get_title (GTK_WINDOW (dummy));
     if (title && strlen (title) > 0)
@@ -1024,40 +1025,55 @@ update_service_ui (app_data *data)
     
     for (l = data->current_service->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
-        GtkWidget *check, *box, *lbl;
+        GtkWidget *check, *hbox, *box, *lbl;
         char *name;
         
         name = get_pretty_source_name (source->name);
-        box = gtk_vbox_new (FALSE, 0);
         
+        /* argh, GtkCheckButton won't layout nicely with several labels... 
+           There is no way to align the check with the top row and 
+           get the labels to align and not use way too much vertical space.
+           In this hack the labels are not related to the checkbutton at all,
+           this is definitely not nice but looks better */
+
+        hbox = gtk_hbox_new (FALSE, 0);
+        gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), hbox);
+ 
+        box = gtk_vbox_new (FALSE, 0);
+        gtk_box_pack_start (GTK_BOX (hbox), box, FALSE, FALSE, 0);
+        check = gtk_check_button_new ();
+        gtk_box_pack_start (GTK_BOX (box), check, FALSE, FALSE, 0);
+
+        box = gtk_vbox_new (FALSE, 0);
+        gtk_box_pack_start_defaults (GTK_BOX (hbox), box);
+        gtk_container_set_border_width (GTK_CONTAINER (box), 2);
         if (source->uri && strlen (source->uri) > 0) {
-            check = gtk_check_button_new_with_label (name);
+            lbl = gtk_label_new (name);
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), source->enabled);
             gtk_widget_set_sensitive (check, TRUE);
         } else {
             char *text;
             /* TRANSLATORS: placeholder is a source name, shown with checkboxes in main window */
             text = g_strdup_printf (_("%s (not supported by this service)"), name);
-            check = gtk_check_button_new_with_label (text);
+            lbl = gtk_label_new (text);
+            g_free (text);
             gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), FALSE);
             gtk_widget_set_sensitive (check, FALSE);
         }
         g_free (name);
-        g_object_set_data (G_OBJECT (check), "enabled", &source->enabled);
-        g_signal_connect (check, "toggled",
-                          G_CALLBACK (source_check_toggled_cb), data);
-        gtk_box_pack_start_defaults (GTK_BOX (box), check);
+        gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
+        gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
 
         lbl = gtk_label_new (NULL);
         gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
-        gtk_misc_set_padding (GTK_MISC (lbl), 23, 0);
         gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
         /* this is a bit hacky... maybe the link to the label should be in source_config ? */
-        g_hash_table_insert (data->source_report_labels,
-                             source->name,
-                             lbl);
+        g_hash_table_insert (data->source_report_labels, source->name, lbl);
 
-        gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), box);
+        g_object_set_data (G_OBJECT (check), "enabled", &source->enabled);
+        g_signal_connect (check, "toggled",
+                          G_CALLBACK (source_check_toggled_cb), data);
+ 
     }
     gtk_widget_show_all (data->sources_box);
 
