@@ -47,7 +47,10 @@
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 
+
 #include "syncevo-dbus.h"
+#include "sync-ui-marshal.h"
+
 /* for return value definitions */
 /* TODO: would be nice to have a non-synthesis-dependent API but for now it's like this... */
 #include <synthesis/syerror.h>
@@ -66,6 +69,11 @@
 #define SYNC_UI_ICON_SIZE 48
 #define SYNC_UI_LIST_ICON_SIZE 32
 #define SYNC_UI_LIST_BTN_WIDTH 150
+
+#define STRING_VARIANT_HASHTABLE (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, G_TYPE_VALUE))
+
+/* for connman state property */
+static DBusGProxy *proxy = NULL;
 
 typedef struct source_progress {
     char* name;
@@ -92,6 +100,7 @@ typedef struct source_progress {
 } source_progress;
 
 typedef enum app_state {
+    SYNC_UI_STATE_CURRENT_STATE = 0, /* so you can call update_app_state with old values */
     SYNC_UI_STATE_GETTING_SERVER,
     SYNC_UI_STATE_NO_SERVER,
     SYNC_UI_STATE_SERVER_OK,
@@ -125,11 +134,13 @@ typedef struct app_data {
     GtkWidget *server_failure_box;
     GtkWidget *no_server_box;
     GtkWidget *error_box;
-    GtkWidget *error_img;
+    GtkWidget *errors_box;
+    GtkWidget *no_connection_box;
     GtkWidget *main_frame;
     GtkWidget *log_frame;
     GtkWidget *server_icon_box;
 
+    GtkWidget *offline_label;
     GtkWidget *progress;
     GtkWidget *sync_status_label;
     GtkWidget *sync_btn;
@@ -157,6 +168,8 @@ typedef struct app_data {
     GtkWidget *reset_server_btn;
     GtkWidget *stop_using_service_btn;
     GtkWidget *delete_service_btn;
+
+    gboolean online;
 
     gboolean syncing;
     gboolean synced_this_session;
@@ -228,7 +241,7 @@ clear_error_info (app_data *data)
                            (GtkCallback)remove_child,
                            data->error_box);
 
-    gtk_widget_hide (data->error_img);
+    gtk_widget_hide (data->errors_box);
 }
 
 static char*
@@ -268,7 +281,7 @@ add_error_info (app_data *data, const char *message, const char *external_reason
     }
     g_list_free (children);
 
-    gtk_widget_show (data->error_img);
+    gtk_widget_show (data->errors_box);
 
     lbl = gtk_label_new (message);
     gtk_label_set_line_wrap (GTK_LABEL (lbl), TRUE);
@@ -644,13 +657,15 @@ set_sync_progress (app_data *data, float progress, char *status)
 static void
 set_app_state (app_data *data, app_state state)
 {
-    static int old_state = -1;
+    static int current_state = SYNC_UI_STATE_GETTING_SERVER;
 
-    if (old_state == state)
+    if (current_state == state)
         return;
-    old_state = state;
-        
-    switch (state) {
+
+    if (state != SYNC_UI_STATE_CURRENT_STATE)
+        current_state = state;
+
+    switch (current_state) {
     case SYNC_UI_STATE_GETTING_SERVER:
         clear_error_info (data);
         gtk_widget_show (data->server_box);
@@ -691,7 +706,12 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_hide (data->no_server_box);
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
-        gtk_widget_set_sensitive (data->sync_btn, TRUE);
+        if (data->online) {
+            gtk_widget_hide (data->no_connection_box);
+        } else {
+            gtk_widget_show (data->no_connection_box);
+        }
+        gtk_widget_set_sensitive (data->sync_btn, data->online);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
         if (data->synced_this_session)
             gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync again"));
@@ -844,10 +864,12 @@ init_ui (app_data *data)
     data->server_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_box"));
     data->no_server_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_server_box"));
     data->server_failure_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_failure_box"));
-    data->error_img = GTK_WIDGET (gtk_builder_get_object (builder, "error_img"));
+    data->errors_box = GTK_WIDGET (gtk_builder_get_object (builder, "errors_box"));
+    data->no_connection_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_connection_box"));
     data->error_box = GTK_WIDGET (gtk_builder_get_object (builder, "error_box"));
     data->server_icon_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_icon_box"));
 
+    data->offline_label = GTK_WIDGET (gtk_builder_get_object (builder, "offline_label"));
     data->progress = GTK_WIDGET (gtk_builder_get_object (builder, "progressbar"));
     data->edit_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "edit_service_btn"));
     data->change_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "change_service_btn"));
@@ -1797,7 +1819,7 @@ sync_progress_cb (SyncevoService *service,
  
     case PEV_PREPARING:
         /* find the right source (try last used one first) */
-        if (strcmp (source_prog->name, source) != 0) {
+        if (source_prog && strcmp (source_prog->name, source) != 0) {
             source_prog = find_source_progress (data->source_progresses, source);
             if (!source_prog) {
                 g_warning ("Prepare: No alert received for source '%s'", source);
@@ -1815,7 +1837,7 @@ sync_progress_cb (SyncevoService *service,
 
     case PEV_ITEMSENT:
         /* find the right source (try last used one first) */
-        if (strcmp (source_prog->name, source) != 0) {
+        if (source_prog && strcmp (source_prog->name, source) != 0) {
             source_prog = find_source_progress (data->source_progresses, source);
             if (!source_prog) {
                 g_warning ("Sent: No alert received for source '%s'", source);
@@ -1833,7 +1855,7 @@ sync_progress_cb (SyncevoService *service,
 
     case PEV_ITEMRECEIVED:
         /* find the right source (try last used one first) */
-        if (strcmp (source_prog->name, source) != 0) {
+        if (source_prog && strcmp (source_prog->name, source) != 0) {
             source_prog = find_source_progress (data->source_progresses, source);
             if (!source_prog) {
                 g_warning ("Received: No alert received for source '%s'", source);
@@ -1899,6 +1921,70 @@ sync_progress_cb (SyncevoService *service,
     g_free (name);
 }
 
+
+static void
+connman_props_changed (DBusGProxy *proxy, const char *key, GValue *v, app_data *data)
+{
+    const char *state;
+    gboolean online;
+
+    if (strcmp (key, "State") != 0)
+        return;
+    state = g_value_get_string (v);
+    online = (strcmp (state, "online") == 0);
+    if (online != data->online) {
+        data->online = online;
+        set_app_state (data, SYNC_UI_STATE_CURRENT_STATE);
+    }
+}
+
+static void
+init_connman (app_data *data)
+{
+    DBusGConnection *connection;
+    GHashTable *props;
+    GError *error = NULL;
+
+    connection = dbus_g_bus_get (DBUS_BUS_SYSTEM, &error);
+    if (connection == NULL) {
+        g_warning ("Failed to open connection to bus: %s\n",
+                   error->message);
+        g_error_free (error);
+        proxy = NULL;
+        return;
+    }
+
+    proxy = dbus_g_proxy_new_for_name (connection,
+                                       "org.moblin.connman",
+                                       "/",
+                                       "org.moblin.connman.Manager");
+    if (proxy == NULL) {
+        g_printerr ("Failed to get a proxy for Connman");
+        return;
+    }  
+
+    dbus_g_object_register_marshaller (sync_ui_marshal_VOID__STRING_BOXED,
+                                       G_TYPE_NONE,
+                                       G_TYPE_STRING, G_TYPE_BOXED, G_TYPE_INVALID);
+    dbus_g_proxy_add_signal (proxy, "PropertyChanged",
+                             G_TYPE_STRING, G_TYPE_VALUE, NULL);
+    dbus_g_proxy_connect_signal (proxy, "PropertyChanged",
+                                 G_CALLBACK (connman_props_changed), data, NULL);
+
+    /* get initial State value*/
+    if (dbus_g_proxy_call (proxy, "GetProperties", NULL,
+                            G_TYPE_INVALID,
+                            STRING_VARIANT_HASHTABLE, &props, G_TYPE_INVALID)) {
+        GValue *value;
+
+        value = g_hash_table_lookup (props, "State");
+        if (value) {
+            connman_props_changed (proxy, "State", value, data);
+        }
+        g_hash_table_unref (props);
+    }
+}
+
 int 
 main (int argc, char *argv[]) {
     app_data *data;
@@ -1910,9 +1996,12 @@ main (int argc, char *argv[]) {
 
     data = g_slice_new0 (app_data);
     data->source_report_labels = g_hash_table_new (g_str_hash, g_str_equal);
+    data->online = TRUE;
     if (!init_ui (data)) {
         return (1);
     }
+
+    init_connman (data);
 
     data->service = syncevo_service_get_default();
     g_signal_connect (data->service, "progress", 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Tue May 12 16:11:55 2009 -->
+<!--Generated with glade3 3.4.5 on Tue May 12 21:31:30 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="sync_win">
     <property name="border_width">5</property>
@@ -84,7 +84,7 @@
                                               <widget class="GtkFrame" id="frame2">
                                                 <property name="visible">True</property>
                                                 <property name="label_xalign">0</property>
-                                                <property name="shadow_type">GTK_SHADOW_IN</property>
+                                                <property name="shadow_type">GTK_SHADOW_NONE</property>
                                                 <child>
                                                   <widget class="GtkAlignment" id="alignment1">
                                                     <property name="visible">True</property>
@@ -147,7 +147,7 @@
                                               <widget class="GtkFrame" id="frame6">
                                                 <property name="visible">True</property>
                                                 <property name="label_xalign">0</property>
-                                                <property name="shadow_type">GTK_SHADOW_IN</property>
+                                                <property name="shadow_type">GTK_SHADOW_NONE</property>
                                                 <child>
                                                   <widget class="GtkAlignment" id="alignment2">
                                                     <property name="visible">True</property>
@@ -428,12 +428,6 @@ synchronize your data between your netbook and a web service.</property>
                             <child>
                               <widget class="GtkHBox" id="hbox8">
                                 <property name="visible">True</property>
-                                <child>
-                                  <widget class="GtkLabel" id="offline_label">
-                                    <property name="label" translatable="yes">Sorry, you need an internet
-connection to sync.</property>
-                                  </widget>
-                                </child>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -446,46 +440,77 @@ connection to sync.</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkVBox" id="info_box">
+                          <widget class="GtkHBox" id="hbox20">
                             <property name="visible">True</property>
-                            <property name="spacing">5</property>
                             <child>
-                              <widget class="GtkHBox" id="hbox20">
+                              <widget class="GtkVBox" id="vbox19">
+                                <property name="height_request">30</property>
                                 <property name="visible">True</property>
-                                <property name="spacing">5</property>
+                                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                 <child>
-                                  <widget class="GtkImage" id="error_img">
-                                    <property name="visible">True</property>
-                                    <property name="xalign">0</property>
-                                    <property name="yalign">0</property>
-                                    <property name="stock">gtk-dialog-error</property>
-                                    <property name="icon_size">5</property>
+                                  <placeholder/>
+                                </child>
+                              </widget>
+                            </child>
+                            <child>
+                              <widget class="GtkVBox" id="info_box">
+                                <property name="visible">True</property>
+                                <child>
+                                  <widget class="GtkHBox" id="no_connection_box">
+                                    <child>
+                                      <widget class="GtkLabel" id="offline_label">
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Sorry, you need an internet
+connection to sync.</property>
+                                      </widget>
+                                    </child>
                                   </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                  </packing>
                                 </child>
                                 <child>
-                                  <widget class="GtkVBox" id="error_box">
-                                    <property name="visible">True</property>
+                                  <widget class="GtkHBox" id="errors_box">
+                                    <property name="spacing">5</property>
                                     <child>
-                                      <placeholder/>
+                                      <widget class="GtkImage" id="error_img">
+                                        <property name="visible">True</property>
+                                        <property name="xalign">0</property>
+                                        <property name="yalign">0</property>
+                                        <property name="stock">gtk-dialog-error</property>
+                                        <property name="icon_size">5</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">False</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkVBox" id="error_box">
+                                        <property name="visible">True</property>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="position">1</property>
+                                      </packing>
                                     </child>
                                   </widget>
                                   <packing>
+                                    <property name="expand">False</property>
                                     <property name="position">1</property>
                                   </packing>
                                 </child>
                               </widget>
                               <packing>
                                 <property name="expand">False</property>
+                                <property name="padding">5</property>
+                                <property name="position">1</property>
                               </packing>
                             </child>
                           </widget>
                           <packing>
                             <property name="expand">False</property>
-                            <property name="padding">10</property>
+                            <property name="padding">5</property>
                             <property name="position">1</property>
                           </packing>
                         </child>
