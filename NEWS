@@ -1,4 +1,37 @@
-SyncEvolution 0.8.1 -> 0.9 beta 1, 13.05.2008
+SyncEvolution 0.9 beta 1 -> 0.9 beta 2, 15.05.2009
+--------------------------------------------------
+Synthesis SyncML Engine version: see src/synthesis/ChangeLog
+
+Major new feature: a GTK GUI! The "sync-ui" program depends on a
+backend D-Bus service ("synevo-dbus-server") and several auxiliary
+files. Therefore it only runs without hacks after "sudo make install",
+in contrast to the normal command line which can be invoked directly.
+
+New configuration templates can be added to
+/etc/default/applications/syncevolution. These templates may contain
+icons which are used by the GUI (no icons shipped right now).
+
+Information about previous synchronization sessions is now stored in a
+machine-readable format and can be accessed via the new
+--print-sessions options. The output of this information is more
+complete and nicer formatted.
+
+--status now not only shows data changes since the last sync, but also
+the item changes (see README for the difference between the two).
+
+The new --restore option allows restoring local data to the state as
+it was before or after a sync. For this to work, "logdir" must be set
+(done by default for new configurations). The format of database dumps
+was changed to implement this feature: instead of in a flat file,
+items are now saved as individual files in a directory. To get the
+previous format back (for example, to import as one .vcf or .ics file
+manually) concatenate these files.
+
+With --remove one can remove configurations. It leaves data files and
+the local databases untouched.
+
+
+SyncEvolution 0.8.1 -> 0.9 beta 1, 13.05.2009
 ---------------------------------------------
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog
 

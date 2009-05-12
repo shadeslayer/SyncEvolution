@@ -7,8 +7,10 @@ synchronization standard. It supports all of these for GNOME's
 Evolution and contacts for the system address book of the Nokia
 Internet Tablets, Mac OS X and (at one point, but not anymore) the
 iPhone. The command-line tool 'syncevolution' (compiled separately for
-each of these platforms) executes the synchronization. The project
-'Genesis' (available separately) provides a graphical user interface.
+each of these platforms) executes the synchronization. On platforms
+with GTK, the 'sync-ui' provides a graphical user interface. The
+project 'Genesis' (available separately) implements a graphical
+frontend that sits in the system tray.
 
 The items are exchanged in the vCard 2.1/3.0, iCalender 2.0/vCalendar 1.0
 and textual format via the open source Synthesis SyncML engine,
