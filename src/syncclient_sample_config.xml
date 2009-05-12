@@ -794,13 +794,19 @@
             </parameter>
           </property>
 
-          <property name="EXDATE" values="list" suppressempty="yes" delayedparsing="1">
+          <property name="EXDATE" values="list" suppressempty="yes" onlyformode="standard" delayedparsing="1" valueseparator="," altvalueseparator=";">
             <value field="EXDATES"/>
             <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
-            <parameter  onlyformode="standard" name="TZID" default="no" show="yes">
+            <parameter name="TZID" default="no" show="yes">
               <value field="EXDATES" conversion="TZID"/>
             </parameter>
           </property>
+
+          <property name="EXDATE" values="list" suppressempty="yes" onlyformode="old" delayedparsing="1" valueseparator=";" altvalueseparator=",">
+            <value field="EXDATES"/>
+            <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
+          </property>
+
 
           <property name="DTEND" suppressempty="yes" delayedparsing="1">
             <value field="DTEND" conversion="autoenddate"/>
