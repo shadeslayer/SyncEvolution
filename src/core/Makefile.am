@@ -86,7 +86,7 @@ CORE_SOURCES  = \
 libsyncevolution_la_SOURCES = $(CORE_SOURCES)
 libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ $(TRANSPORT_LIBS) @LIBS@ $(SYNTHESIS_LIBS) $(SYNCEVOLUTION_LDADD)
 libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
-libsyncevolution_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEMPLATE_DIR=\""$(sysconfdir)/default/syncevolution"\"
+libsyncevolution_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEMPLATE_DIR=\""$(sysconfdir)/default/syncevolution"\" -DLIBDIR=\""$(libdir)"\"
 
 SyncEvolutionXML.c: $(srcdir)/../syncevolution.xml
 	echo "const char *SyncEvolutionXML =" > $@
