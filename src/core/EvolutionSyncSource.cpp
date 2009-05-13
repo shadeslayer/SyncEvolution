@@ -172,7 +172,7 @@ public:
             dlhandle = dlopen(modules[i], RTLD_NOW|RTLD_GLOBAL);
             if (!dlhandle) {
                 string fullpath = LIBDIR "/syncevolution/";
-                fullpath += modules[1];
+                fullpath += modules[i];
                 dlhandle = dlopen(fullpath.c_str(), RTLD_NOW|RTLD_GLOBAL);
             }
             // remember which modules were found and which were not
