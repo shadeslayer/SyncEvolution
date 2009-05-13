@@ -1636,6 +1636,8 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
 
     /*TODO: avoid the rest if server did not actually change */
 
+    gtk_widget_hide (data->progress);
+
     server_config_free (data->current_service);
     if (!server || strlen (server) == 0) {
         data->current_service = NULL; 
