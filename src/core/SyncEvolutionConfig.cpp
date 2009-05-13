@@ -105,7 +105,12 @@ static void addServers(const string &root, EvolutionSyncConfig::ServerList &res)
     FileConfigTree tree(root, false);
     list<string> servers = tree.getChildren("");
     BOOST_FOREACH(const string &server, servers) {
-        res.push_back(pair<string, string>(server, root + "/" + server));
+        // sanity check: only list server directories which actually
+        // contain a configuration
+        EvolutionSyncConfig config(server);
+        if (config.exists()) {
+            res.push_back(pair<string, string>(server, root + "/" + server));
+        }
     }
 }
 
