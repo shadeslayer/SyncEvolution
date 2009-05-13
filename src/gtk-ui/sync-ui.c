@@ -63,6 +63,8 @@
 #include "mux-window.h"
 #endif
 
+static gboolean support_canceling = FALSE;
+
 #define SYNC_UI_GCONF_DIR "/apps/sync-ui"
 #define SYNC_UI_SERVER_KEY SYNC_UI_GCONF_DIR"/server"
 
@@ -754,9 +756,12 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_show (data->progress);
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Syncing"));
         gtk_widget_set_sensitive (data->main_frame, FALSE);
-        gtk_widget_set_sensitive (data->sync_btn, TRUE);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
-        gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Cancel sync"));
+
+        gtk_widget_set_sensitive (data->sync_btn, support_canceling);
+        if (support_canceling) {
+            gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Cancel sync"));
+        }
 
         data->syncing = TRUE;
         break;
