@@ -457,18 +457,33 @@ mux_window_title_changed (MuxWindow *window,
     }
 }
 
+/* For some reason metacity sometimes won't maximize but will if asked 
+ * another time. For the record, I'm not proud of writing this */
+static gboolean
+mux_window_try_maximize (MuxWindow *self)
+{
+    static int count = 0;
+
+    count++;
+    gtk_window_maximize (GTK_WINDOW (self));
+
+    return (count < 10);
+}
+
 static void
 mux_window_init (MuxWindow *self)
 {
     self->decorations = MUX_DECOR_CLOSE;
 
-    gtk_window_maximize (GTK_WINDOW (self));
     gtk_window_set_decorated (GTK_WINDOW (self), FALSE);
 
     g_signal_connect (self, "notify::title",
                       G_CALLBACK (mux_window_title_changed), NULL);
 
     mux_window_build_title_bar (self);
+
+    gtk_window_maximize (GTK_WINDOW (self));
+    g_timeout_add (10, (GSourceFunc)mux_window_try_maximize, self);
 }
 
 GtkWidget*

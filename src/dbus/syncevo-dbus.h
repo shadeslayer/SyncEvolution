@@ -69,6 +69,14 @@ gboolean syncevo_service_start_sync (SyncevoService *service,
 gboolean syncevo_service_abort_sync (SyncevoService *service,
                                      char *server,
                                      GError **error);
+typedef void (*SyncevoAbortSyncCb) (SyncevoService *service,
+                                     GError *error,
+                                     gpointer userdata);
+void  syncevo_service_abort_sync_async (SyncevoService *service,
+                                        char *server,
+                                        SyncevoAbortSyncCb callback,
+                                        gpointer userdata);
+
 gboolean syncevo_service_set_password (SyncevoService *service,
                                        char *server,
                                        char *password,

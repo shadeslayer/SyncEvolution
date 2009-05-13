@@ -107,6 +107,8 @@ server_config_update_from_option (server_config *server, SyncevoOption *option)
             } else {
                 source->enabled = TRUE;
             }
+        } else if (strcmp (key, "localDB") == 0) {
+            source->supported_locally = (strcmp (value, "1") == 0);
         }
     }
 }
@@ -161,7 +163,7 @@ server_config_get_source_array (server_config *server, SyncMode mode)
         SyncevoSource *src;
         source_config* config = (source_config*)l->data;
         
-        if (config->enabled) {
+        if (config->enabled && config->supported_locally) {
             src = syncevo_source_new (g_strdup (config->name), mode);
             g_ptr_array_add (sources, src);
         }
