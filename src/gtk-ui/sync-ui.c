@@ -508,6 +508,26 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
     }
 }
 
+static void
+abort_sync_cb (SyncevoService *service, GError *error, app_data *data)
+{
+    if (error) {
+        if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+            dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_INVALID_CALL)) {
+
+            /* sync is no longer in progress for some reason */
+            add_error_info (data, _("Failed to cancel: sync was no longer in progress"), error->message);
+            set_sync_progress (data, 1.0 , "");
+            set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+        } else {
+            add_error_info (data, _("Failed to cancel sync"), error->message);
+        }
+        g_error_free (error);
+    } else {
+        set_sync_progress (data, -1.0, _("Canceling sync"));
+    }
+}
+
 static void 
 sync_clicked_cb (GtkButton *btn, app_data *data)
 {
@@ -516,21 +536,9 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
     GError *error = NULL;
 
     if (data->syncing) {
-        syncevo_service_abort_sync (data->service, data->current_service->name, &error);
-        if (error) {
-            if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
-                dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_INVALID_CALL)) {
-
-                /* sync is no longer in progress for some reason */
-                add_error_info (data, _("Failed to cancel: sync was no longer in progress"), error->message);
-                set_sync_progress (data, 1.0 , "");
-                set_app_state (data, SYNC_UI_STATE_SERVER_OK);
-            }
-            g_error_free (error);
-            return;
-        } else {
-            set_sync_progress (data, -1.0, _("Canceling sync"));
-        }
+        syncevo_service_abort_sync_async (data->service, data->current_service->name, 
+                                          (SyncevoAbortSyncCb)abort_sync_cb, data);
+        set_sync_progress (data, -1.0, _("Trying to cancel sync"));
     } else {
         char *message = NULL;
 
