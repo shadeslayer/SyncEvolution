@@ -1708,6 +1708,7 @@ find_source_progress (GList *source_progresses, char *name)
 {
     GList *list;
 
+    /* TODO: it would make more sense if source_progresses was a GHashTable */
     for (list = source_progresses; list; list = list->next) {
         if (strcmp (((source_progress*)list->data)->name, name) == 0) {
             return (source_progress*)list->data;
@@ -1792,7 +1793,7 @@ sync_progress_cb (SyncevoService *service,
                   int extra1, int extra2, int extra3,
                   app_data *data)
 {
-    static source_progress *source_prog;
+    static source_progress *source_prog = NULL;
     char *msg = NULL;
     char *error = NULL;
     char *name = NULL;
@@ -1800,6 +1801,11 @@ sync_progress_cb (SyncevoService *service,
 
     /* just in case UI was just started and there is another sync in progress */
     set_app_state (data, SYNC_UI_STATE_SYNCING);
+
+    /* if this is a source event, find the right source_progress */
+    if (source) {
+        source_prog = find_source_progress (data->source_progresses, source);
+    }
 
     switch(type) {
     case -1:
@@ -1856,16 +1862,10 @@ sync_progress_cb (SyncevoService *service,
         break;
  
     case PEV_PREPARING:
-        /* find the right source (try last used one first) */
-        if (source_prog && strcmp (source_prog->name, source) != 0) {
-            source_prog = find_source_progress (data->source_progresses, source);
-            if (!source_prog) {
-                g_warning ("Prepare: No alert received for source '%s'", source);
-                return;
-            }
+        if (source_prog) {
+            source_prog->prepare_current = CLAMP (extra1, 0, extra2);
+            source_prog->prepare_total = extra2;
         }
-        source_prog->prepare_current = CLAMP (extra1, 0, extra2);
-        source_prog->prepare_total = extra2;
 
         name = get_pretty_source_name (source);
         /* TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text */
@@ -1874,16 +1874,10 @@ sync_progress_cb (SyncevoService *service,
         break;
 
     case PEV_ITEMSENT:
-        /* find the right source (try last used one first) */
-        if (source_prog && strcmp (source_prog->name, source) != 0) {
-            source_prog = find_source_progress (data->source_progresses, source);
-            if (!source_prog) {
-                g_warning ("Sent: No alert received for source '%s'", source);
-                return;
-            }
+        if (source_prog) {
+            source_prog->send_current = CLAMP (extra1, 0, extra2);
+            source_prog->send_total = extra2;
         }
-        source_prog->send_current = CLAMP (extra1, 0, extra2);
-        source_prog->send_total = extra2;
 
         name = get_pretty_source_name (source);
         /* TRANSLATORS: placeholder is a source name in a progress text */
@@ -1892,16 +1886,10 @@ sync_progress_cb (SyncevoService *service,
         break;
 
     case PEV_ITEMRECEIVED:
-        /* find the right source (try last used one first) */
-        if (source_prog && strcmp (source_prog->name, source) != 0) {
-            source_prog = find_source_progress (data->source_progresses, source);
-            if (!source_prog) {
-                g_warning ("Received: No alert received for source '%s'", source);
-                return;
-            }
+        if (source_prog) {
+            source_prog->receive_current = CLAMP (extra1, 0, extra2);
+            source_prog->receive_total = extra2;
         }
-        source_prog->receive_current = CLAMP (extra1, 0, extra2);
-        source_prog->receive_total = extra2;
 
         name = get_pretty_source_name (source);
         /* TRANSLATORS: placeholder is a source name in a progress text */
@@ -1918,7 +1906,6 @@ sync_progress_cb (SyncevoService *service,
         }
         break;
     case PEV_DSSTATS_L:
-        source_prog = find_source_progress (data->source_progresses, source);
         if (!source_prog)
             return;
 
@@ -1927,7 +1914,6 @@ sync_progress_cb (SyncevoService *service,
         source_prog->deleted_local = extra3;
         break;
     case PEV_DSSTATS_R:
-        source_prog = find_source_progress (data->source_progresses, source);
         if (!source_prog)
             return;
 
@@ -1936,7 +1922,6 @@ sync_progress_cb (SyncevoService *service,
         source_prog->deleted_remote = extra3;
         break;
     case PEV_DSSTATS_E:
-        source_prog = find_source_progress (data->source_progresses, source);
         if (!source_prog)
             return;
 
@@ -1944,7 +1929,6 @@ sync_progress_cb (SyncevoService *service,
         source_prog->rejected_remote = extra2;
         break;
     case PEV_DSSTATS_D:
-        source_prog = find_source_progress (data->source_progresses, source);
         if (!source_prog)
             return;
 
