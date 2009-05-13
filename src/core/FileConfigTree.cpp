@@ -69,6 +69,8 @@ static bool rm_filter(const string &path, bool isDir)
             boost::ends_with(path, "/config.ini~") ||
             boost::ends_with(path, "/config.txt") ||
             boost::ends_with(path, "/config.txt~") ||
+            boost::ends_with(path, "/.other.ini") ||
+            boost::ends_with(path, "/.other.ini~") ||
             boost::ends_with(path, "/.internal.ini") ||
             boost::ends_with(path, "/.internal.ini~") ||
             path.find("/.synthesis/") != path.npos;
