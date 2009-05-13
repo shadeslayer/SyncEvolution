@@ -518,9 +518,14 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
     if (data->syncing) {
         syncevo_service_abort_sync (data->service, data->current_service->name, &error);
         if (error) {
-            /* FIXME: this can happen if the server has shutdown and the sync is no longer
-              in progress*/
-            add_error_info (data, _("Failed to cancel sync"), error->message);
+            if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+                dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_INVALID_CALL)) {
+
+                /* sync is no longer in progress for some reason */
+                add_error_info (data, _("Failed to cancel: sync was no longer in progress"), error->message);
+                set_sync_progress (data, 1.0 , "");
+                set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+            }
             g_error_free (error);
             return;
         } else {
@@ -584,15 +589,29 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
                                     sources,
                                     &error);
         if (error) {
-            add_error_info (data, _("Failed to start SyncEvolution sync"), error->message);
-            g_error_free (error);
+            if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+                dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_INVALID_CALL)) {
+
+                /* stop updates of "last synced" */
+                if (data->last_sync_src_id > 0)
+                    g_source_remove (data->last_sync_src_id);
+                set_app_state (data, SYNC_UI_STATE_SYNCING);
+                set_sync_progress (data, sync_progress_clicked, _(""));
+                
+                add_error_info (data, _("A sync is already in progress"), error->message);
+            } else {
+                add_error_info (data, _("Failed to start sync"), error->message);
+                g_error_free (error);
+                return;
+            }
         } else {
+            set_sync_progress (data, sync_progress_clicked, _("Starting sync"));
             /* stop updates of "last synced" */
             if (data->last_sync_src_id > 0)
                 g_source_remove (data->last_sync_src_id);
-            set_sync_progress (data, sync_progress_clicked, _("Starting sync"));
             set_app_state (data, SYNC_UI_STATE_SYNCING);
         }
+
     }
 }
 
@@ -1201,8 +1220,9 @@ static void
 get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error, app_data *data)
 {
     if (error) {
-        /* don't warn if server has disappeared -- probably just command line use */
-        if (error->code != SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER) {
+        /* just warn if current server has disappeared -- probably just command line use */
+        if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+            dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER)) {
             add_error_info (data, 
                             _("Failed to get server configuration from SyncEvolution"), 
                             error->message);
