@@ -880,7 +880,7 @@ init_ui (app_data *data)
     GtkBuilder *builder;
     GError *error = NULL;
     GObject *radio;
-    GtkWidget *frame, *service_save_btn;
+    GtkWidget *frame, *service_save_btn, *setup_service_btn , *image;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -900,6 +900,12 @@ init_ui (app_data *data)
     data->no_connection_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_connection_box"));
     data->error_box = GTK_WIDGET (gtk_builder_get_object (builder, "error_box"));
     data->server_icon_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_icon_box"));
+
+    image = GTK_WIDGET (gtk_builder_get_object (builder, "sync_failure_image"));
+    gtk_image_set_from_file (GTK_IMAGE (image), THEMEDIR "sync-generic.png");
+    image = GTK_WIDGET (gtk_builder_get_object (builder, "no_server_image"));
+    gtk_image_set_from_file (GTK_IMAGE (image), THEMEDIR "sync-generic.png");
+    setup_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "setup_sync_service_btn"));
 
     data->offline_label = GTK_WIDGET (gtk_builder_get_object (builder, "offline_label"));
     data->progress = GTK_WIDGET (gtk_builder_get_object (builder, "progressbar"));
@@ -984,8 +990,9 @@ init_ui (app_data *data)
     g_signal_connect (service_save_btn, "clicked",
                       G_CALLBACK (service_save_clicked_cb), data);
     g_signal_connect (data->change_service_btn, "clicked",
-                      G_CALLBACK (change_service_clicked_cb), 
-                      data);
+                      G_CALLBACK (change_service_clicked_cb), data);
+    g_signal_connect (setup_service_btn, "clicked",
+                      G_CALLBACK (change_service_clicked_cb), data);
     g_signal_connect (data->edit_service_btn, "clicked",
                       G_CALLBACK (edit_services_clicked_cb), data);
     g_signal_connect (data->sync_btn, "clicked", 
