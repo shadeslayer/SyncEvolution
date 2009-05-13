@@ -32,6 +32,7 @@
 
 #include <dbus/dbus-glib-bindings.h>
 
+#include "EvolutionSyncSource.h"
 #include "syncevo-dbus-server.h"
 #include "syncevo-marshal.h"
 
@@ -692,6 +693,8 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
 
 	list<string> sources = config->getSyncSources();
 	BOOST_FOREACH(const string &name, sources) {
+		gboolean local;
+
 		boost::shared_ptr<EvolutionSyncSourceConfig> source_config = config->getSyncSourceConfig(name);
 
 		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getSync()));
@@ -699,6 +702,20 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
 		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("uri"), g_strdup (source_config->getURI()));
 		g_ptr_array_add (*options, option);
 
+		/* check whether we have support locally */
+		EvolutionSyncSourceParams params(name, config->getSyncSourceNodes(name), "");
+		auto_ptr<EvolutionSyncSource> syncSource(EvolutionSyncSource::createSource(params, false));
+		try {
+			local = FALSE;
+			if (syncSource.get()) {
+				syncSource->open();
+				local = TRUE;
+			}
+		} catch (...) {}
+		option = syncevo_option_new (g_strdup (name.c_str()), 
+		                             g_strdup ("localDB"), 
+		                             g_strdup_printf ("%d", local));
+		g_ptr_array_add (*options, option);
 	}
 
 	update_shutdown_timer (obj);
@@ -757,13 +774,33 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 
 	list<string> sources = config->getSyncSources();
 	BOOST_FOREACH(const string &name, sources) {
+		gboolean local;
+
 		boost::shared_ptr<EvolutionSyncSourceConfig> source_config = config->getSyncSourceConfig(name);
 
 		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getSync()));
 		g_ptr_array_add (*options, option);
 		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("uri"), g_strdup (source_config->getURI()));
 		g_ptr_array_add (*options, option);
+
+		/* check whether we have support locally */
+		EvolutionSyncSourceParams params(name, config->getSyncSourceNodes(name), "");
+		auto_ptr<EvolutionSyncSource> syncSource(EvolutionSyncSource::createSource(params, false));
+		try {
+			local = FALSE;
+			if (syncSource.get()) {
+				syncSource->open();
+				local = TRUE;
+			}
+		} catch (...) {}
+		option = syncevo_option_new (g_strdup (name.c_str()), 
+		                             g_strdup ("localDB"), 
+		                             g_strdup_printf ("%d", local));
+		g_ptr_array_add (*options, option);
+
 	}
+
+
 
 	update_shutdown_timer (obj);
 

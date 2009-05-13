@@ -37,6 +37,7 @@ typedef enum {
 typedef struct source_config {
     char *name;
     gboolean enabled;
+    gboolean supported_locally;
     char *uri;
 } source_config;
 

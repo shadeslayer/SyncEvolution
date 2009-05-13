@@ -1077,6 +1077,11 @@ update_service_ui (app_data *data)
         GtkWidget *check, *hbox, *box, *lbl;
         char *name;
         
+        if (!source->supported_locally) {
+            /* could also show as insensitive, like with unsupported services... */
+            continue;
+        }
+
         name = get_pretty_source_name (source->name);
         
         /* argh, GtkCheckButton won't layout nicely with several labels... 
@@ -1367,7 +1372,7 @@ ensure_default_sources_exist(server_config *server)
 {
     server_config_get_source_config (server, "addressbook");
     server_config_get_source_config (server, "calendar");
-    server_config_get_source_config (server, "memo");
+    /* server_config_get_source_config (server, "memo"); */
     server_config_get_source_config (server, "todo");
 }
 
