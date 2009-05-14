@@ -847,20 +847,6 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
 }
 #endif
 
-
-static void
-show_link_button_url (GtkLinkButton *link)
-{
-    const char *url;
-    GError *error = NULL;
-    
-    url = gtk_link_button_get_uri (GTK_LINK_BUTTON (link));
-    if (!g_app_info_launch_default_for_uri (url, NULL, &error)) {
-        g_warning ("Failed to show url '%s': %s", url, error->message);
-        g_error_free (error);
-    }
-}
-
 /* keypress handler for the transient windows (service list & service settings) */
 static gboolean
 key_press_cb (GtkWidget *widget,
@@ -880,7 +866,7 @@ init_ui (app_data *data)
     GtkBuilder *builder;
     GError *error = NULL;
     GObject *radio;
-    GtkWidget *frame, *service_save_btn;
+    GtkWidget *frame, *service_save_btn, *setup_service_btn , *image;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -900,6 +886,12 @@ init_ui (app_data *data)
     data->no_connection_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_connection_box"));
     data->error_box = GTK_WIDGET (gtk_builder_get_object (builder, "error_box"));
     data->server_icon_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_icon_box"));
+
+    image = GTK_WIDGET (gtk_builder_get_object (builder, "sync_failure_image"));
+    gtk_image_set_from_file (GTK_IMAGE (image), THEMEDIR "sync-generic.png");
+    image = GTK_WIDGET (gtk_builder_get_object (builder, "no_server_image"));
+    gtk_image_set_from_file (GTK_IMAGE (image), THEMEDIR "sync-generic.png");
+    setup_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "setup_sync_service_btn"));
 
     data->offline_label = GTK_WIDGET (gtk_builder_get_object (builder, "offline_label"));
     data->progress = GTK_WIDGET (gtk_builder_get_object (builder, "progressbar"));
@@ -973,8 +965,6 @@ init_ui (app_data *data)
                       G_CALLBACK (key_press_cb), NULL);
     g_signal_connect_swapped (data->back_btn, "clicked",
                       G_CALLBACK (gtk_widget_hide), data->services_win);
-    g_signal_connect (data->service_link, "clicked",
-                      G_CALLBACK (show_link_button_url), NULL);
     g_signal_connect (data->delete_service_btn, "clicked",
                       G_CALLBACK (delete_service_clicked_cb), data);
     g_signal_connect (data->stop_using_service_btn, "clicked",
@@ -984,8 +974,9 @@ init_ui (app_data *data)
     g_signal_connect (service_save_btn, "clicked",
                       G_CALLBACK (service_save_clicked_cb), data);
     g_signal_connect (data->change_service_btn, "clicked",
-                      G_CALLBACK (change_service_clicked_cb), 
-                      data);
+                      G_CALLBACK (change_service_clicked_cb), data);
+    g_signal_connect (setup_service_btn, "clicked",
+                      G_CALLBACK (change_service_clicked_cb), data);
     g_signal_connect (data->edit_service_btn, "clicked",
                       G_CALLBACK (edit_services_clicked_cb), data);
     g_signal_connect (data->sync_btn, "clicked", 
@@ -1480,8 +1471,6 @@ add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *
                       GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
     if (url && strlen (url) > 0) {
         link = gtk_link_button_new_with_label (url, _("Launch website"));
-        g_signal_connect (link, "clicked", 
-                          G_CALLBACK (show_link_button_url), NULL);
         gtk_box_pack_start (GTK_BOX (box), link, FALSE, FALSE, 0);
     }
 
@@ -1629,6 +1618,8 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
 
     /*TODO: avoid the rest if server did not actually change */
 
+    gtk_widget_hide (data->progress);
+
     server_config_free (data->current_service);
     if (!server || strlen (server) == 0) {
         data->current_service = NULL; 
@@ -1721,6 +1712,10 @@ static char*
 get_error_string_for_code (int error_code)
 {
     switch (error_code) {
+    case -1:
+        /* TODO: this is a hack... SyncEnd should be a signal of it's own,
+           not just hacked on top of the syncevolution error codes */
+        return g_strdup(_("Service configuration not found"));
     case 0:
     case LOCERR_USERABORT:
     case LOCERR_USERSUSPEND:
@@ -1752,6 +1747,8 @@ get_error_string_for_code (int error_code)
         return g_strdup(_("No configuration file found"));
     case LOCERR_BADCONTENT:
         return g_strdup(_("Server sent bad content"));
+    case LOCERR_TRANSPFAIL:
+        return g_strdup(_("Transport failure (no connection?)"));
     case LOCERR_TIMEOUT:
         return g_strdup(_("Connection timed out"));
     case LOCERR_CERT_EXPIRED:

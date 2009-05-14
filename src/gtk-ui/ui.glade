@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Tue May 12 21:31:30 2009 -->
+<!--Generated with glade3 3.4.5 on Wed May 13 22:19:43 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="sync_win">
     <property name="border_width">5</property>
@@ -278,101 +278,149 @@
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkVBox" id="no_server_box">
+                      <widget class="GtkHBox" id="hbox10">
+                        <property name="visible">True</property>
                         <child>
-                          <widget class="GtkHBox" id="hbox10">
-                            <property name="visible">True</property>
+                          <widget class="GtkVBox" id="no_server_box">
+                            <property name="spacing">10</property>
                             <child>
-                              <widget class="GtkImage" id="no_server_image">
+                              <widget class="GtkHBox" id="hbox21">
                                 <property name="visible">True</property>
-                                <property name="stock">gtk-missing-image</property>
-                                <property name="icon_size">6</property>
+                                <child>
+                                  <widget class="GtkHBox" id="hbox22">
+                                    <property name="visible">True</property>
+                                    <child>
+                                      <widget class="GtkImage" id="no_server_image">
+                                        <property name="visible">True</property>
+                                        <property name="stock">gtk-missing-image</property>
+                                        <property name="icon_size">6</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="no_server_label">
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">&lt;b&gt;No sync service in use&lt;/b&gt;</property>
+                                        <property name="use_markup">True</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="padding">5</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                  </packing>
+                                </child>
                               </widget>
                               <packing>
                                 <property name="expand">False</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkLabel" id="no_server_label">
+                              <widget class="GtkLabel" id="label11">
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">&lt;b&gt;No sync service in use&lt;/b&gt;</property>
-                                <property name="use_markup">True</property>
+                                <property name="xalign">0</property>
+                                <property name="label" translatable="yes">You haven't set up a sync service yet. Sync services let you 
+synchronize your data between your netbook and a web service.</property>
                               </widget>
                               <packing>
                                 <property name="expand">False</property>
-                                <property name="padding">5</property>
                                 <property name="position">1</property>
                               </packing>
                             </child>
+                            <child>
+                              <widget class="GtkHBox" id="hbox23">
+                                <property name="visible">True</property>
+                                <child>
+                                  <widget class="GtkButton" id="setup_sync_service_btn">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="receives_default">True</property>
+                                    <property name="label" translatable="yes">Setup sync service</property>
+                                    <property name="response_id">0</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">False</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">False</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
                           </widget>
                           <packing>
-                            <property name="expand">False</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkLabel" id="label11">
-                            <property name="visible">True</property>
-                            <property name="xalign">0</property>
-                            <property name="label" translatable="yes">You haven't set up a sync service yet. Sync services let you 
-synchronize your data between your netbook and a web service.</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">1</property>
+                            <property name="padding">20</property>
                           </packing>
                         </child>
                       </widget>
                       <packing>
-                        <property name="padding">10</property>
+                        <property name="padding">20</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkVBox" id="server_failure_box">
+                      <widget class="GtkHBox" id="hbox13">
+                        <property name="visible">True</property>
                         <child>
-                          <widget class="GtkHBox" id="hbox13">
-                            <property name="visible">True</property>
+                          <widget class="GtkVBox" id="server_failure_box">
                             <child>
-                              <widget class="GtkImage" id="no_server_image1">
+                              <widget class="GtkHBox" id="hbox24">
                                 <property name="visible">True</property>
-                                <property name="stock">gtk-missing-image</property>
-                                <property name="icon_size">6</property>
+                                <child>
+                                  <widget class="GtkImage" id="sync_failure_image">
+                                    <property name="visible">True</property>
+                                    <property name="stock">gtk-missing-image</property>
+                                    <property name="icon_size">6</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkLabel" id="sync_failure_label">
+                                    <property name="visible">True</property>
+                                    <property name="label" translatable="yes">&lt;b&gt;Sync failure&lt;/b&gt;</property>
+                                    <property name="use_markup">True</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="padding">5</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
                               </widget>
                               <packing>
                                 <property name="expand">False</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkLabel" id="no_server_label1">
+                              <widget class="GtkLabel" id="label12">
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">&lt;b&gt;Sync failure&lt;/b&gt;</property>
-                                <property name="use_markup">True</property>
+                                <property name="xalign">0</property>
+                                <property name="label" translatable="yes">Synchronization is not available (D-Bus service does not answer), sorry.</property>
                               </widget>
                               <packing>
                                 <property name="expand">False</property>
-                                <property name="padding">5</property>
                                 <property name="position">1</property>
                               </packing>
                             </child>
                           </widget>
                           <packing>
-                            <property name="expand">False</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkLabel" id="label12">
-                            <property name="visible">True</property>
-                            <property name="xalign">0</property>
-                            <property name="label" translatable="yes">Synchronization is not available (D-Bus service does not answer), sorry.</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">1</property>
+                            <property name="padding">20</property>
                           </packing>
                         </child>
                       </widget>
                       <packing>
-                        <property name="padding">10</property>
+                        <property name="padding">20</property>
                         <property name="position">2</property>
                       </packing>
                     </child>
