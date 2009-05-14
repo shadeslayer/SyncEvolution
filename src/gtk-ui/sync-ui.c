@@ -1765,6 +1765,8 @@ get_error_string_for_code (int error_code)
         return g_strdup(_("No configuration file found"));
     case LOCERR_BADCONTENT:
         return g_strdup(_("Server sent bad content"));
+    case LOCERR_TRANSPFAIL:
+        return g_strdup(_("Transport failure (no connection?)"));
     case LOCERR_TIMEOUT:
         return g_strdup(_("Connection timed out"));
     case LOCERR_CERT_EXPIRED:
