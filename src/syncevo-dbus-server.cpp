@@ -480,11 +480,15 @@ do_sync (SyncevoDBusServer *obj)
 {
 	int ret;
 
-	SyncReport report;
-
-	ret = (*obj->client).sync(&report);
-	if (ret != 0) {
-		g_printerr ("SyncEvolution returned error %d\n", ret);
+	try {
+		SyncReport report;
+		ret = (*obj->client).sync(&report);
+		if (ret != 0) {
+			g_printerr ("sync returned error %d\n", ret);
+		}
+	} catch (...) {
+		g_printerr ("sync failed (non-existing server?)\n");
+		ret = -1;
 	}
 
 	/* adding a progress signal on top of synthesis ones */
@@ -540,7 +544,6 @@ syncevo_start_sync (SyncevoDBusServer *obj,
 	obj->client = new DBusSyncClient (string (server), source_map, 
 	                                  emit_progress, emit_server_message, need_password, check_for_suspend,
 	                                  obj);
-
 	g_idle_add ((GSourceFunc)do_sync, obj); 
 
 	return TRUE;

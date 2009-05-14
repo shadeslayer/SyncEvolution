@@ -1730,6 +1730,10 @@ static char*
 get_error_string_for_code (int error_code)
 {
     switch (error_code) {
+    case -1:
+        /* TODO: this is a hack... SyncEnd should be a signal of it's own,
+           not just hacked on top of the syncevolution error codes */
+        return g_strdup(_("Service configuration not found"));
     case 0:
     case LOCERR_USERABORT:
     case LOCERR_USERSUSPEND:
