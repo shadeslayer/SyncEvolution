@@ -249,14 +249,6 @@ class RegisterSyncSourceTest
                            const string &testCaseName);
     virtual ~RegisterSyncSourceTest() {}
 
-    /**
-     * Dump items in the native format, not the one currently selected
-     * for exchange with the SyncML server. Useful for testing sync
-     * sources which normally use one format internally, but also
-     * support another one (EvolutionContactSource).
-     */
-    static int dump(ClientTest &client, EvolutionSyncSource &source, const char *file);
-
     const string m_configName;
     const string m_testCaseName;
 };

@@ -372,9 +372,7 @@ public:
         config.sizeProperty = "DESCRIPTION";
         config.import = ClientTest::import;
         config.compare = ClientTest::compare;
-        config.dump = dump;
-        config.testcases =
-            config.testcases_server = "testcases/imemo20.ics";
+        config.testcases = "testcases/imemo20.ics";
         config.type = "evolution-memos";
     }
 } memoTest;

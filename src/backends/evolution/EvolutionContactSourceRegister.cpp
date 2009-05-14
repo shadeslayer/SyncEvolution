@@ -174,8 +174,7 @@ public:
     {
         config.uri = "card"; // Funambol
         config.type = "evolution-contacts:text/x-vcard";
-        config.dump = dump;
-        config.testcases_server = "testcases/vcard30.vcf";
+        config.testcases = "testcases/vcard30.vcf";
     }
 } vCard21Test;
 

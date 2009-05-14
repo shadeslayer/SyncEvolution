@@ -481,16 +481,3 @@ private:
     TestEvolution testClient;
     
 } testEvolution;
-
-int RegisterSyncSourceTest::dump(ClientTest &client, SyncSource &source, const char *file)
-{
-    VolatileConfigNode node;
-    BackupReport report;
-    // remove directory and create anew, old content is lost
-    rm_r(file);
-    if (mkdir(file, 0700)) {
-        EvolutionSyncClient::throwError(file, errno);
-    }
-    ((EvolutionSyncSource &)source).backupData(file, node, report);
-    return 0;
-}
