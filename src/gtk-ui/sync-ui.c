@@ -847,20 +847,6 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
 }
 #endif
 
-
-static void
-show_link_button_url (GtkLinkButton *link)
-{
-    const char *url;
-    GError *error = NULL;
-    
-    url = gtk_link_button_get_uri (GTK_LINK_BUTTON (link));
-    if (!g_app_info_launch_default_for_uri (url, NULL, &error)) {
-        g_warning ("Failed to show url '%s': %s", url, error->message);
-        g_error_free (error);
-    }
-}
-
 /* keypress handler for the transient windows (service list & service settings) */
 static gboolean
 key_press_cb (GtkWidget *widget,
@@ -979,8 +965,6 @@ init_ui (app_data *data)
                       G_CALLBACK (key_press_cb), NULL);
     g_signal_connect_swapped (data->back_btn, "clicked",
                       G_CALLBACK (gtk_widget_hide), data->services_win);
-    g_signal_connect (data->service_link, "clicked",
-                      G_CALLBACK (show_link_button_url), NULL);
     g_signal_connect (data->delete_service_btn, "clicked",
                       G_CALLBACK (delete_service_clicked_cb), data);
     g_signal_connect (data->stop_using_service_btn, "clicked",
@@ -1487,8 +1471,6 @@ add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *
                       GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
     if (url && strlen (url) > 0) {
         link = gtk_link_button_new_with_label (url, _("Launch website"));
-        g_signal_connect (link, "clicked", 
-                          G_CALLBACK (show_link_button_url), NULL);
         gtk_box_pack_start (GTK_BOX (box), link, FALSE, FALSE, 0);
     }
 
