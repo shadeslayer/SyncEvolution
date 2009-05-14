@@ -390,7 +390,7 @@ if($#ARGV > 1) {
   } else {
       open(IN1, "<:utf8", $file1) || die "$file1: $!";
   }
-  if (-d $file1) {
+  if (-d $file2) {
       open(IN2, "-|:utf8", "find $file2 -type f -print0 | xargs -0 cat") || die "$file2: $!";
   } else {
       open(IN2, "<:utf8", $file2) || die "$file2: $!";
