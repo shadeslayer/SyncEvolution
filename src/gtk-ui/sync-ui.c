@@ -518,6 +518,14 @@ reset_service_clicked_cb (GtkButton *btn, app_data *data)
 }
 
 static void
+add_to_acl_cb (GnomeKeyringResult result)
+{
+    if (result != GNOME_KEYRING_RESULT_OK)
+        g_warning ("Adding server to GNOME keyring access control list failed: %s",
+                   gnome_keyring_result_to_message (result));
+}
+
+static void
 set_password_cb (GnomeKeyringResult result, guint32 id, app_data *data)
 {
     if (result != GNOME_KEYRING_RESULT_OK) {
@@ -525,6 +533,17 @@ set_password_cb (GnomeKeyringResult result, guint32 id, app_data *data)
                    gnome_keyring_result_to_message (result));
         return;
     }
+
+    /* add the server to access control list */
+    /* TODO: name and path must match the ones syncevo-dbus-server really has,
+     * so this call should be in the dbus-wrapper library */
+    gnome_keyring_item_grant_access_rights (NULL, 
+                                            "SyncEvolution",
+                                            LIBEXECDIR "/syncevo-dbus-server",
+                                            id,
+                                            GNOME_KEYRING_ACCESS_READ,
+                                            (GnomeKeyringOperationDoneCallback)add_to_acl_cb,
+                                            NULL, NULL);
 }
 
 static void
