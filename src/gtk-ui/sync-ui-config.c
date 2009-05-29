@@ -60,7 +60,16 @@ server_config_update_from_entry (server_config *server, GtkEntry *entry)
     if (*str == NULL || strcmp (*str, new_str) != 0) {
         g_free (*str);
         *str = g_strdup (new_str);
-        server->changed = TRUE;
+
+        if (*str == server->password) {
+            server->auth_changed = TRUE;
+        } else if (*str == server->username ||
+                   *str == server->base_url) {
+            server->auth_changed = TRUE;
+            server->changed = TRUE;
+        }else {
+            server->changed = TRUE;
+        }
     }
 }
 
@@ -78,9 +87,6 @@ server_config_update_from_option (server_config *server, SyncevoOption *option)
         } else if (strcmp (key, "username") == 0) {
             g_free (server->username);
             server->username = g_strdup (value);
-        } else if (strcmp (key, "password") == 0) {
-            g_free (server->password);
-            server->password = g_strdup (value);
         } else if (strcmp (key, "webURL") == 0) {
             if (server->web_url)
             g_free (server->web_url);
@@ -126,8 +132,6 @@ server_config_get_option_array (server_config *server)
     option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup (server->base_url));
     g_ptr_array_add (options, option);
     option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
-    g_ptr_array_add (options, option);
-    option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
     g_ptr_array_add (options, option);
     option = syncevo_option_new (NULL, g_strdup ("webURL"), g_strdup (server->web_url));
     g_ptr_array_add (options, option);

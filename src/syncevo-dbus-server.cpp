@@ -29,8 +29,11 @@
 #include <string.h>
 #include <limits.h>
 
-
 #include <dbus/dbus-glib-bindings.h>
+
+#ifdef USE_GNOME_KEYRING
+#include <gnome-keyring.h>
+#endif
 
 #include "EvolutionSyncSource.h"
 #include "syncevo-dbus-server.h"
@@ -455,17 +458,37 @@ emit_server_message (const char *message,
 	               message);
 }
 
+#ifdef USE_GNOME_KEYRING
 char*
-need_password (const char *message,
+need_password (const char *username,
+               const char *server_url,
                gpointer data)
 {
-	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
+	char *password = NULL;
+	GnomeKeyringResult res;
 
-	g_signal_emit (obj, signals[NEED_PASSWORD], 0);
+	/* TODO: this may block while keyring shows a dialog to user... */
+	res = gnome_keyring_find_password_sync (GNOME_KEYRING_NETWORK_PASSWORD,
+	                                        &password,
+	                                        "user", username,
+	                                        "server", server_url,
+	                                        "protocol", "http",
+	                                        /* port ? */
+	                                        NULL);
 
-	/* TODO */
-	return NULL;
+	switch (res) {
+	case GNOME_KEYRING_RESULT_OK:
+	case GNOME_KEYRING_RESULT_NO_MATCH:
+		break;
+	default:
+		g_warning ("Failed to get password from keyring: %s", 
+		           gnome_keyring_result_to_message (res));
+		break;
+	}
+
+	return password;
 }
+#endif
 
 gboolean 
 check_for_suspend (gpointer data)
@@ -541,9 +564,17 @@ syncevo_start_sync (SyncevoDBusServer *obj,
 
 	map<string,int> source_map;
 	g_ptr_array_foreach (sources, (GFunc)syncevo_source_add_to_map, &source_map);
+
+#ifdef USE_GNOME_KEYRING
 	obj->client = new DBusSyncClient (string (server), source_map, 
 	                                  emit_progress, emit_server_message, need_password, check_for_suspend,
 	                                  obj);
+#else
+	obj->client = new DBusSyncClient (string (server), source_map, 
+	                                  emit_progress, emit_server_message, NULL, check_for_suspend,
+	                                  obj);
+#endif
+
 	g_idle_add ((GSourceFunc)do_sync, obj); 
 
 	return TRUE;
@@ -1100,6 +1131,7 @@ int main()
 
 	g_type_init ();
 	g_thread_init (NULL);
+	g_set_application_name ("SyncEvolution");
 
 	server = (SyncevoDBusServer*)g_object_new (SYNCEVO_TYPE_DBUS_SERVER, NULL);
 

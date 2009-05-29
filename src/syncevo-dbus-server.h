@@ -73,7 +73,8 @@ emit_server_message (const char *message,
                      gpointer data);
 
 char* 
-need_password (const char *message, 
+need_password (const char *username,
+               const char *server_url,
                gpointer data);
 
 gboolean 
