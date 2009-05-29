@@ -54,8 +54,6 @@ typedef struct _SyncevoDBusServerClass {
 	void (*server_message) (SyncevoDBusServer *service,
 	                        char *server,
 	                        char *message);
-	void (*need_password) (SyncevoDBusServer *service,
-	                       char *server);
 } SyncevoDBusServerClass;
 
 GType syncevo_dbus_server_get_type (void);
@@ -71,11 +69,6 @@ emit_progress (const char *source,
 void
 emit_server_message (const char *message, 
                      gpointer data);
-
-char* 
-need_password (const char *username,
-               const char *server_url,
-               gpointer data);
 
 gboolean 
 check_for_suspend (gpointer data);

@@ -41,7 +41,6 @@
 
 static gboolean syncevo_start_sync (SyncevoDBusServer *obj, char *server, GPtrArray *sources, GError **error);
 static gboolean syncevo_abort_sync (SyncevoDBusServer *obj, char *server, GError **error);
-static gboolean syncevo_set_password (SyncevoDBusServer *obj, char *server, char *password, GError **error);
 static gboolean syncevo_get_templates (SyncevoDBusServer *obj, GPtrArray **templates, GError **error);
 static gboolean syncevo_get_template_config (SyncevoDBusServer *obj, char *templ, GPtrArray **options, GError **error);
 static gboolean syncevo_get_servers (SyncevoDBusServer *obj, GPtrArray **servers, GError **error);
@@ -402,7 +401,6 @@ syncevo_report_array_free (SyncevoReportArray *array)
 enum {
 	PROGRESS,
 	SERVER_MESSAGE,
-	NEED_PASSWORD,
 	LAST_SIGNAL
 };
 static guint signals[LAST_SIGNAL] = {0};
@@ -605,21 +603,6 @@ syncevo_abort_sync (SyncevoDBusServer *obj,
 }
 
 static gboolean 
-syncevo_set_password (SyncevoDBusServer *obj,
-                              char *server,
-                              char *password,
-                              GError **error)
-{
-	*error = g_error_new (SYNCEVO_DBUS_ERROR,
-	                      SYNCEVO_DBUS_ERROR_GENERIC_ERROR, 
-	                      "SetPassword not supported yet");
-
-	update_shutdown_timer (obj);
-
-	return FALSE;
-}
-
-static gboolean 
 syncevo_get_servers (SyncevoDBusServer *obj,
                      GPtrArray **servers,
                      GError **error)
@@ -716,8 +699,6 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
 	g_ptr_array_add (*options, option);
 	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup(config->getUsername()));
 	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (NULL, g_strdup("password"), g_strdup(config->getPassword()));
-	g_ptr_array_add (*options, option);
 	option = syncevo_option_new (NULL, g_strdup("webURL"), g_strdup(config->getWebURL().c_str()));
 	g_ptr_array_add (*options, option);
 	option = syncevo_option_new (NULL, g_strdup("iconURI"), g_strdup(config->getIconURI().c_str()));
@@ -791,8 +772,6 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup(config->getSyncURL()));
 	g_ptr_array_add (*options, option);
 	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup(config->getUsername()));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (NULL, g_strdup("password"), g_strdup(config->getPassword()));
 	g_ptr_array_add (*options, option);
 
 	/* url and icon from template if it exists */
@@ -1072,14 +1051,6 @@ syncevo_dbus_server_class_init(SyncevoDBusServerClass *klass)
 	                                  syncevo_marshal_VOID__STRING_STRING,
 	                                  G_TYPE_NONE, 
 	                                  2, G_TYPE_STRING, G_TYPE_STRING);
-	signals[NEED_PASSWORD] = g_signal_new ("need-password",
-	                                  G_TYPE_FROM_CLASS (klass),
-	                                  (GSignalFlags)(G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE),
-	                                  G_STRUCT_OFFSET (SyncevoDBusServerClass, need_password),
-	                                  NULL, NULL,
-	                                  g_cclosure_marshal_VOID__VOID,
-	                                  G_TYPE_NONE, 
-	                                  0);
 
 	/* dbus_glib_syncevo_object_info is provided in the generated glue file */
 	dbus_g_object_type_install_info (SYNCEVO_TYPE_DBUS_SERVER, &dbus_glib_syncevo_object_info);
