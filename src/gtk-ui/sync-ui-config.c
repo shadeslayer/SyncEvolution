@@ -172,6 +172,15 @@ server_config_get_source_array (server_config *server, SyncMode mode)
     return sources;
 }
 
+static int
+source_config_compare (source_config *a, source_config *b)
+{
+    g_assert (a && a->name);
+    g_assert (b && b->name);
+
+    return strcmp (a->name, b->name);
+}
+
 source_config*
 server_config_get_source_config (server_config *server, const char *name)
 {
@@ -191,6 +200,9 @@ server_config_get_source_config (server_config *server, const char *name)
     /* create new source config */
     source = g_slice_new0 (source_config);
     source->name = g_strdup (name);
-    server->source_configs = g_list_append (server->source_configs, source);
+    server->source_configs = g_list_insert_sorted (server->source_configs, 
+                                                   source,
+                                                   (GCompareFunc)source_config_compare);
+
     return source;
 }
