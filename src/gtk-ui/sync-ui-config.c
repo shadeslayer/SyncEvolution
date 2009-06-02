@@ -138,6 +138,13 @@ server_config_get_option_array (server_config *server)
     option = syncevo_option_new (NULL, g_strdup ("iconURI"), g_strdup (server->icon_uri));
     g_ptr_array_add (options, option);
 
+    /* if gnome-keyring password was set, set password option to "-"
+     * (meaning 'use AskPassword()') */
+    if (server->auth_changed) {
+        option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup ("-"));
+        g_ptr_array_add (options, option);
+    }
+
     for (l = server->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
 

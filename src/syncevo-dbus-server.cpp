@@ -470,8 +470,6 @@ need_password (const char *username,
 	                                        &password,
 	                                        "user", username,
 	                                        "server", server_url,
-	                                        "protocol", "http",
-	                                        /* port ? */
 	                                        NULL);
 
 	switch (res) {
