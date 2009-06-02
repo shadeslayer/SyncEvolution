@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Wed May 13 22:19:43 2009 -->
+<!--Generated with glade3 3.4.5 on Tue Jun  2 10:18:21 2009 -->
 <glade-interface>
   <widget class="GtkWindow" id="sync_win">
     <property name="border_width">5</property>
@@ -15,6 +15,7 @@
           <widget class="GtkVBox" id="vbox2">
             <property name="visible">True</property>
             <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
             <child>
               <widget class="GtkFrame" id="main_frame">
                 <property name="visible">True</property>
@@ -24,11 +25,13 @@
                   <widget class="GtkVBox" id="left_box">
                     <property name="visible">True</property>
                     <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                    <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                     <child>
                       <widget class="GtkVBox" id="server_box">
                         <property name="visible">True</property>
                         <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                         <property name="spacing">10</property>
+                        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                         <child>
                           <widget class="GtkHBox" id="hbox3">
                             <property name="visible">True</property>
@@ -72,6 +75,7 @@
                           <widget class="GtkVBox" id="vbox5">
                             <property name="visible">True</property>
                             <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                             <child>
                               <widget class="GtkEventBox" id="sync_data_and_type_box">
                                 <property name="visible">True</property>
@@ -79,12 +83,14 @@
                                   <widget class="GtkVBox" id="vbox15">
                                     <property name="visible">True</property>
                                     <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                                    <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                     <child>
                                       <widget class="GtkHBox" id="hbox15">
                                         <property name="visible">True</property>
                                         <child>
                                           <widget class="GtkVBox" id="vbox16">
                                             <property name="visible">True</property>
+                                            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                             <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                             <child>
                                               <widget class="GtkFrame" id="frame2">
@@ -101,6 +107,7 @@
                                                         <property name="visible">True</property>
                                                         <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                                         <property name="spacing">5</property>
+                                                        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                                         <child>
                                                           <widget class="GtkLabel" id="last_synced_label">
                                                             <property name="visible">True</property>
@@ -110,6 +117,7 @@
                                                         <child>
                                                           <widget class="GtkVBox" id="sources_box">
                                                             <property name="visible">True</property>
+                                                            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                                             <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                                             <child>
                                                               <placeholder/>
@@ -164,6 +172,7 @@
                                                     <child>
                                                       <widget class="GtkVBox" id="vbox17">
                                                         <property name="visible">True</property>
+                                                        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                                         <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                                         <child>
                                                           <widget class="GtkRadioButton" id="two_way_radio">
@@ -291,6 +300,7 @@
                         <property name="visible">True</property>
                         <child>
                           <widget class="GtkVBox" id="no_server_box">
+                            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                             <property name="spacing">10</property>
                             <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                             <child>
@@ -383,6 +393,7 @@ synchronize your data between your netbook and a web service.</property>
                         <child>
                           <widget class="GtkVBox" id="server_failure_box">
                             <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                             <child>
                               <widget class="GtkHBox" id="hbox24">
                                 <property name="visible">True</property>
@@ -453,12 +464,14 @@ synchronize your data between your netbook and a web service.</property>
         <child>
           <widget class="GtkVBox" id="vbox3">
             <property name="width_request">250</property>
-            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
             <property name="visible">True</property>
+            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
             <property name="spacing">5</property>
+            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
             <child>
               <widget class="GtkVBox" id="vbox9">
                 <property name="visible">True</property>
+                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                 <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                 <child>
                   <widget class="GtkFrame" id="log_frame">
@@ -469,9 +482,11 @@ synchronize your data between your netbook and a web service.</property>
                       <widget class="GtkVBox" id="vbox18">
                         <property name="visible">True</property>
                         <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                         <child>
                           <widget class="GtkVBox" id="vbox10">
                             <property name="visible">True</property>
+                            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                             <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                             <child>
                               <widget class="GtkHBox" id="hbox7">
@@ -510,6 +525,7 @@ synchronize your data between your netbook and a web service.</property>
                                 <property name="height_request">30</property>
                                 <property name="visible">True</property>
                                 <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                 <child>
                                   <placeholder/>
                                 </child>
@@ -518,6 +534,7 @@ synchronize your data between your netbook and a web service.</property>
                             <child>
                               <widget class="GtkVBox" id="info_box">
                                 <property name="visible">True</property>
+                                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                 <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                 <child>
                                   <widget class="GtkHBox" id="no_connection_box">
@@ -548,8 +565,9 @@ connection to sync.</property>
                                     </child>
                                     <child>
                                       <widget class="GtkVBox" id="error_box">
-                                        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                         <property name="visible">True</property>
+                                        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                                        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                         <child>
                                           <placeholder/>
                                         </child>
@@ -607,6 +625,7 @@ connection to sync.</property>
                                 <property name="visible">True</property>
                                 <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                 <property name="spacing">10</property>
+                                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                 <child>
                                   <widget class="GtkButton" id="sync_btn">
                                     <property name="visible">True</property>
@@ -624,8 +643,15 @@ connection to sync.</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="label" translatable="yes">Change sync service</property>
                                     <property name="response_id">0</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="label15">
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Change sync
+service</property>
+                                        <property name="justify">GTK_JUSTIFY_CENTER</property>
+                                      </widget>
+                                    </child>
                                   </widget>
                                   <packing>
                                     <property name="fill">False</property>
@@ -687,6 +713,7 @@ connection to sync.</property>
       <widget class="GtkVBox" id="vbox6">
         <property name="visible">True</property>
         <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
         <child>
           <widget class="GtkFrame" id="services_list_frame">
             <property name="visible">True</property>
@@ -699,11 +726,13 @@ connection to sync.</property>
                   <widget class="GtkVBox" id="vbox7">
                     <property name="visible">True</property>
                     <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                    <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                     <child>
                       <widget class="GtkVBox" id="vbox13">
                         <property name="visible">True</property>
                         <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                         <property name="spacing">5</property>
+                        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                         <child>
                           <widget class="GtkLabel" id="label8">
                             <property name="visible">True</property>
@@ -748,6 +777,7 @@ We support the following services: </property>
                                 <child>
                                   <widget class="GtkVBox" id="vbox1">
                                     <property name="visible">True</property>
+                                    <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                     <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                     <child>
                                       <widget class="GtkTable" id="services_table">
@@ -821,6 +851,7 @@ We support the following services: </property>
                         <property name="visible">True</property>
                         <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                         <property name="spacing">5</property>
+                        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                         <child>
                           <widget class="GtkLabel" id="label7">
                             <property name="visible">True</property>
@@ -877,6 +908,7 @@ you can setup a service manually.</property>
                                 <child>
                                   <widget class="GtkVBox" id="vbox11">
                                     <property name="visible">True</property>
+                                    <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                     <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                                     <child>
                                       <widget class="GtkTable" id="manual_services_table">
@@ -997,6 +1029,7 @@ you can setup a service manually.</property>
       <widget class="GtkVBox" id="vbox21">
         <property name="visible">True</property>
         <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
         <child>
           <widget class="GtkFrame" id="service_settings_frame">
             <property name="visible">True</property>
@@ -1009,8 +1042,9 @@ you can setup a service manually.</property>
                 <property name="right_padding">45</property>
                 <child>
                   <widget class="GtkVBox" id="vbox14">
-                    <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                     <property name="visible">True</property>
+                    <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+                    <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                     <child>
                       <widget class="GtkHBox" id="hbox19">
                         <property name="visible">True</property>
@@ -1045,35 +1079,27 @@ you can setup a service manually.</property>
                             <property name="column_spacing">5</property>
                             <property name="row_spacing">4</property>
                             <child>
-                              <widget class="GtkEntry" id="service_name_entry">
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                              </widget>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="right_attach">2</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="service_name_label">
+                              <widget class="GtkLabel" id="label10">
                                 <property name="visible">True</property>
                                 <property name="xalign">1</property>
-                                <property name="label" translatable="yes">Service name</property>
+                                <property name="label" translatable="yes">Password</property>
                               </widget>
                               <packing>
+                                <property name="top_attach">2</property>
+                                <property name="bottom_attach">3</property>
                                 <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkEntry" id="username_entry">
+                              <widget class="GtkLabel" id="label9">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
+                                <property name="xalign">1</property>
+                                <property name="label" translatable="yes">Username</property>
                               </widget>
                               <packing>
-                                <property name="left_attach">1</property>
-                                <property name="right_attach">2</property>
                                 <property name="top_attach">1</property>
                                 <property name="bottom_attach">2</property>
+                                <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                               </packing>
                             </child>
                             <child>
@@ -1090,27 +1116,35 @@ you can setup a service manually.</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkLabel" id="label9">
+                              <widget class="GtkEntry" id="username_entry">
                                 <property name="visible">True</property>
-                                <property name="xalign">1</property>
-                                <property name="label" translatable="yes">Username</property>
+                                <property name="can_focus">True</property>
                               </widget>
                               <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
                                 <property name="top_attach">1</property>
                                 <property name="bottom_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="service_name_label">
+                                <property name="visible">True</property>
+                                <property name="xalign">1</property>
+                                <property name="label" translatable="yes">Service name</property>
+                              </widget>
+                              <packing>
                                 <property name="x_options">GTK_SHRINK | GTK_FILL</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkLabel" id="label10">
+                              <widget class="GtkEntry" id="service_name_entry">
                                 <property name="visible">True</property>
-                                <property name="xalign">1</property>
-                                <property name="label" translatable="yes">Password</property>
+                                <property name="can_focus">True</property>
                               </widget>
                               <packing>
-                                <property name="top_attach">2</property>
-                                <property name="bottom_attach">3</property>
-                                <property name="x_options">GTK_SHRINK | GTK_FILL</property>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
                               </packing>
                             </child>
                           </widget>
@@ -1132,6 +1166,7 @@ you can setup a service manually.</property>
                         <child>
                           <widget class="GtkVBox" id="vbox4">
                             <property name="visible">True</property>
+                            <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                             <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
                             <child>
                               <widget class="GtkHBox" id="hbox5">
@@ -1240,20 +1275,6 @@ you can setup a service manually.</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkButton" id="service_save_btn">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="receives_default">True</property>
-                            <property name="label" translatable="yes">Save and use this service</property>
-                            <property name="response_id">-10</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="pack_type">GTK_PACK_END</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                        <child>
                           <widget class="GtkButton" id="stop_using_service_btn">
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
@@ -1263,6 +1284,20 @@ you can setup a service manually.</property>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">False</property>
+                            <property name="pack_type">GTK_PACK_END</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkButton" id="service_save_btn">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="label" translatable="yes">Save and use this service</property>
+                            <property name="response_id">-10</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
                             <property name="pack_type">GTK_PACK_END</property>
                             <property name="position">1</property>
                           </packing>
