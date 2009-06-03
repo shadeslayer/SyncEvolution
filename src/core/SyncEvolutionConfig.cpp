@@ -437,7 +437,8 @@ static IntConfigProperty syncPropLogLevel("loglevel",
                                           "- 0 (or unset) = INFO messages without log file, DEBUG with log file\n"
                                           "- 1 = only ERROR messages\n"
                                           "- 2 = also INFO messages\n"
-                                          "- 3 = also DEBUG messages");
+                                          "- 3 = also DEBUG messages\n"
+                                          "> 3 = increasing amounts of debug messages for developers");
 static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "enables or disables the detailed (and sometimes slow) comparison\n"
                                                "of database content before and after a sync session",

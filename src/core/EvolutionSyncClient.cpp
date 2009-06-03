@@ -281,7 +281,14 @@ public:
             level = INFO;
             break;
         default:
-            level = DEBUG;
+            if (m_logfile.empty()) {
+                // no log file: print all information to the console
+                level = DEBUG;
+            } else {
+                // have log file: avoid excessive output to the console,
+                // full information is in the log file
+                level = INFO;
+            }
             break;
         }
         if (!usePath) {
@@ -1185,10 +1192,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
     if (index != xml.npos) {
         stringstream debug;
         bool logging = !m_sourceListPtr->getLogdir().empty();
-
-        // @TODO be more selective about which Synthesis logging
-        // options we enable. Currently it logs everything when logging
-        // at all.
+        int loglevel = getLogLevel();
 
         debug <<
             "  <debug>\n"
@@ -1205,13 +1209,16 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
         if (logging) {
             debug <<
                 "    <sessionlogs>yes</sessionlogs>\n"
-                "    <globallogs>yes</globallogs>\n"
-                "    <msgdump>no</msgdump>\n"
-                "    <xmltranslate>no</xmltranslate>\n"
-                "    <enable option=\"all\"/>\n"
-                "    <enable option=\"userdata\"/>\n"
-                "    <enable option=\"scripts\"/>\n"
-                "    <enable option=\"exotic\"/>\n";
+                "    <globallogs>yes</globallogs>\n";
+            debug << "<msgdump>" << (loglevel >= 5 ? "yes" : "no") << "</msgdump>\n";
+            debug << "<xmltranslate>" << (loglevel >= 4 ? "yes" : "no") << "</xmltranslate>\n";
+            if (loglevel >= 3) {
+                debug <<
+                    "    <enable option=\"all\"/>\n"
+                    "    <enable option=\"userdata\"/>\n"
+                    "    <enable option=\"scripts\"/>\n"
+                    "    <enable option=\"exotic\"/>\n";
+            }
         } else {
             debug <<
                 "    <sessionlogs>no</sessionlogs>\n"
