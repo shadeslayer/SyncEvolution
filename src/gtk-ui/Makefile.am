@@ -31,7 +31,7 @@ bin_PROGRAMS = \
 
 
 sync_ui_SOURCES = \
-	sync-ui.c sync-ui-config.c sync-ui-config.h \
+	main.c sync-ui.c sync-ui.h sync-ui-config.c sync-ui-config.h \
 	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h \
 	sync-ui-marshal.c sync-ui-marshal.h
 sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) -L$(top_builddir)/src/dbus -lsyncevo-dbus

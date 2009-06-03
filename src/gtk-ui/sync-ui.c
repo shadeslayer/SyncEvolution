@@ -47,7 +47,6 @@
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 
-
 #include "syncevo-dbus.h"
 #include "sync-ui-marshal.h"
 
@@ -56,7 +55,9 @@
 #include <synthesis/syerror.h>
 #include <synthesis/engine_defs.h>
 
+#include "config.h"
 #include "sync-ui-config.h"
+#include "sync-ui.h"
 
 #ifdef USE_MOBLIN_UX
 #include "mux-frame.h"
@@ -2004,20 +2005,16 @@ init_connman (app_data *data)
     }
 }
 
-int 
-main (int argc, char *argv[]) {
+GtkWidget*
+sync_ui_create_main_window ()
+{
     app_data *data;
-
-    gtk_init (&argc, &argv);
-    bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
-    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-    textdomain (GETTEXT_PACKAGE);
 
     data = g_slice_new0 (app_data);
     data->source_report_labels = g_hash_table_new (g_str_hash, g_str_equal);
     data->online = TRUE;
     if (!init_ui (data)) {
-        return (1);
+        return NULL;
     }
 
     init_connman (data);
@@ -2031,6 +2028,5 @@ main (int argc, char *argv[]) {
 
     gtk_window_present (GTK_WINDOW (data->sync_win));
 
-    gtk_main();
-    return 0;
+    return data->sync_win;
 }
