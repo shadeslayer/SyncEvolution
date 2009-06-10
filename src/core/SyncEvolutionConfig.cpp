@@ -392,7 +392,12 @@ static PasswordConfigProperty syncPropProxyPassword("proxyPassword",
                                                     "see SyncML server password for details\n");
 static StringConfigProperty syncPropClientAuthType("clientAuthType",
                                                    "- empty or \"md5\" for secure method (recommended)\n"
-                                                   "- \"basic\" for insecure method",
+                                                   "- \"basic\" for insecure method\n"
+                                                   "\n"
+                                                   "This setting is only for debugging purpose and only\n"
+                                                   "has an effect during the initial sync of a client.\n"
+                                                   "Later it remembers the method that was supported by\n"
+                                                   "the server and uses that.",
                                                    "md5",
                                                    Values() +
                                                    (Aliases("basic") + "syncml:auth-basic") +
