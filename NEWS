@@ -1,4 +1,4 @@
-SyncEvolution 0.9 beta 1 -> 0.9 beta 2, 15.05.2009
+SyncEvolution 0.9 beta 1 -> 0.9 beta 2, 10.06.2009
 --------------------------------------------------
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog
 
@@ -29,6 +29,29 @@ manually) concatenate these files.
 
 With --remove one can remove configurations. It leaves data files and
 the local databases untouched.
+
+Various bug fixes and improvements:
+
+* compiles and works again on Debian Etch if Boost 1.35 is installed
+  from www.backports.org (Bugzilla #3358)
+
+* uses XDG_CACHE_HOME (= ~/.cache) for logs and database dumps to
+  avoid interfering with .desktop search in XDG_DATA_HOME; the
+  directory there is automatically moved when running syncevolution
+  (Bugzilla #3309)
+
+* re-enabled certain config options (clientAuthType, maxMsgSize, maxObjSize);
+  normally it shouldn't be necessary to modify those (Bugzilla #3242, #2784)
+
+* fixed error handling of unexpected server reply in libsoup transport
+  (Bugzilla #3041)
+
+* message logging is enabled at logLevel 3 (XML translation) and 4 (also
+  original XML or WBXML message)
+
+* GTK GUI fixes since initial Moblin 2.0 beta: only start it once if
+  libunique is available (Bugzilla #3154), wrap text in change sync service"
+  button (Bugzilla #2064), sort sources alphabetically in UI (Bugzilla #2070)
 
 
 SyncEvolution 0.8.1 -> 0.9 beta 1, 13.05.2009
