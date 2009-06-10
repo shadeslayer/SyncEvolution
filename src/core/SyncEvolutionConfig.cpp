@@ -417,8 +417,8 @@ static BoolConfigProperty syncPropWBXML("enableWBXML",
 static ConfigProperty syncPropLogDir("logdir",
                                      "full path to directory where automatic backups and logs\n"
                                      "are stored for all synchronizations; if unset, then\n"
-                                     "\"${XDG_DATA_HOME}/applications/syncevolution/<server>\" (which\n"
-                                     "usually expands to ${HOME}/.local/share/...) will be used;\n"
+                                     "\"${XDG_CACHE_HOME}/syncevolution/<server>\" (which\n"
+                                     "usually expands to ${HOME}/.cache/...) will be used;\n"
                                      "if \"none\", then no backups of the databases are made and any\n"
                                      "output is printed directly to the screen");
 static IntConfigProperty syncPropMaxLogDirs("maxlogdirs",

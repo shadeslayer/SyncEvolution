@@ -199,7 +199,7 @@ class SyncEvolutionException : public std::runtime_error
 
 /**
  * replace ${} with environment variables, with
- * XDG_DATA_HOME and XDG_CONFIG_HOME having their normal
+ * XDG_DATA_HOME, XDG_CACHE_HOME and XDG_CONFIG_HOME having their normal
  * defaults
  */
 std::string SubstEnvironment(const std::string &str);

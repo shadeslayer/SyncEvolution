@@ -324,6 +324,8 @@ std::string SubstEnvironment(const std::string &str)
                     res << getHome() << "/.config";
                 } else if (envname == "XDG_DATA_HOME") {
                     res << getHome() << "/.local/share";
+                } else if (envname == "XDG_CACHE_HOME") {
+                    res << getHome() << "/.cache";
                 }
             }
         } else {

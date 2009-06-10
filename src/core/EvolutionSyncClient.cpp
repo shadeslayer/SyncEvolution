@@ -127,7 +127,20 @@ class LogDir : public LoggerStdout {
 public:
     LogDir(const string &server) : m_server(server), m_file(NULL), m_info(NULL), m_readonly(false), m_report(NULL)
     {
-        setLogdir(SubstEnvironment("${XDG_DATA_HOME}/applications/syncevolution"));
+        // Set default log directory. This will be overwritten with a user-specified
+        // location later on, if one was selected by the user. SyncEvolution >= 0.9 alpha
+        // and < 0.9 beta 2 used XDG_DATA_HOME because the logs and data base dumps
+        // were not considered "non-essential data files". Because XDG_DATA_HOME is
+        // searched for .desktop files and creating large amounts of other files there
+        // slows down that search, the default was changed to XDG_CACHE_DIR.
+        //
+        // To migrate old installations seamlessly, this code here renames the old
+        // default directory to the new one. Errors (like not found) are silently ignored.
+        mkdir_p(SubstEnvironment("${XDG_CACHE_HOME}").c_str());
+        rename(SubstEnvironment("${XDG_DATA_HOME}/applications/syncevolution").c_str(),
+               SubstEnvironment("${XDG_CACHE_HOME}/syncevolution").c_str());
+
+        setLogdir(SubstEnvironment("${XDG_CACHE_HOME}/syncevolution"));
     }
 
     /**
