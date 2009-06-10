@@ -346,7 +346,6 @@ public:
             virtual void prepare() {
                 setLogDir(m_logbase, true);
                 setMaxLogDirs(0, true);
-                setLoSupport(m_options.m_loSupport, true);
                 setMaxObjSize(m_options.m_maxObjSize, true);
                 setMaxMsgSize(m_options.m_maxMsgSize, true);
                 setWBXML(m_options.m_isWBXML, true);

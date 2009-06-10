@@ -398,21 +398,12 @@ static StringConfigProperty syncPropClientAuthType("clientAuthType",
                                                    (Aliases("syncml:auth-basic") + "basic") +
                                                    (Aliases("syncml:auth-md5") + "md5" + ""));
 static ULongConfigProperty syncPropMaxMsgSize("maxMsgSize",
-                                              "Support for large objects and limiting the message size was added in\n"
-                                              "SyncEvolution 0.5, but still disabled in the example configurations\n"
-                                              "of that version. Some servers had problems with that configuration,\n"
-                                              "so now both features are enabled by default and it is recommended\n"
-                                              "to update existing configurations.\n"
-                                              "\n"
                                               "The maximum size of each message can be set (maxMsgSize) and the\n"
                                               "server can be told to never sent items larger than a certain\n"
                                               "threshold (maxObjSize). Presumably the server has to truncate or\n"
-                                              "skip larger items. Finally the client and server may be given the\n"
-                                              "permission to transmit large items in multiple messages (loSupport =\n"
-                                              "large object support).",
-                                              "8192");
-static BoolConfigProperty syncPropLoSupport("loSupport", "", "T");
-static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "500000");
+                                              "skip larger items. Sizes are specified as number of bytes.",
+                                              "20000");
+static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "4000000");
 
 static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)");
 static BoolConfigProperty syncPropWBXML("enableWBXML",
@@ -497,7 +488,6 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropWBXML);
         registry.push_back(&syncPropMaxMsgSize);
         registry.push_back(&syncPropMaxObjSize);
-        registry.push_back(&syncPropLoSupport);
         registry.push_back(&syncPropCompression);
         registry.push_back(&syncPropSSLServerCertificates);
         registry.push_back(&syncPropSSLVerifyServer);
@@ -578,8 +568,6 @@ const char *EvolutionSyncConfig::getSyncURL() const { return m_stringCache.getPr
 void EvolutionSyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getClientAuthType() const { return m_stringCache.getProperty(*m_configNode, syncPropClientAuthType); }
 void EvolutionSyncConfig::setClientAuthType(const string &value, bool temporarily) { syncPropClientAuthType.setProperty(*m_configNode, value, temporarily); }
-bool EvolutionSyncConfig::getLoSupport() const { return syncPropLoSupport.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setLoSupport(bool value, bool temporarily) { syncPropLoSupport.setProperty(*m_configNode, value, temporarily); }
 unsigned long  EvolutionSyncConfig::getMaxMsgSize() const { return syncPropMaxMsgSize.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setMaxMsgSize(unsigned long value, bool temporarily) { syncPropMaxMsgSize.setProperty(*m_configNode, value, temporarily); }
 unsigned int  EvolutionSyncConfig::getMaxObjSize() const { return syncPropMaxObjSize.getProperty(*m_configNode); }

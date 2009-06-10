@@ -9,6 +9,10 @@
   <!-- this string is output to every session debug logfile to identify the config in use -->
   <configidstring>SyncEvolution client config</configidstring>
 
+  <!-- information about maximum supported message and object size (in bytes) -->
+  <maxmsgsize/>
+  <maxobjsize/>
+
   <!-- information for DevInf -->
   <model/>
   <manufacturer/>

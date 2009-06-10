@@ -40,6 +40,7 @@ using namespace SyncEvolution;
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
+#include <algorithm>
 using namespace std;
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1180,6 +1181,18 @@ static void substTag(string &xml, const string &tagname, const string &replaceme
     }
 }
 
+static void substTag(string &xml, const string &tagname, const char *replacement)
+{
+    substTag(xml, tagname, std::string(replacement));
+}
+
+template <class T> void substTag(string &xml, const string &tagname, const T replacement)
+{
+    stringstream str;
+    str << replacement;
+    substTag(xml, tagname, str.str());
+}
+
 void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
 {
     getConfigTemplateXML(xml, configname);
@@ -1267,6 +1280,8 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
     // abuse (?) the firmware version to store the SyncEvolution version number
     substTag(xml, "firmwareversion", getSwv());
     substTag(xml, "devicetype", getDevType());
+    substTag(xml, "maxmsgsize", std::max(getMaxMsgSize(), 10000ul));
+    substTag(xml, "maxobjsize", std::max(getMaxObjSize(), 1024u));
 }
 
 SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)

@@ -695,8 +695,6 @@ class EvolutionSyncConfig {
     virtual void setSyncURL(const string &value, bool temporarily = false);
     virtual const char*  getClientAuthType() const;
     virtual void setClientAuthType(const string &value, bool temporarily = false);
-    virtual bool getLoSupport() const;
-    virtual void setLoSupport(bool value, bool temporarily = false);
     virtual unsigned long getMaxMsgSize() const;
     virtual void setMaxMsgSize(unsigned long value, bool temporarily = false);
     virtual unsigned int getMaxObjSize() const;
