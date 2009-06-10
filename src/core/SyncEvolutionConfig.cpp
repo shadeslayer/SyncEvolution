@@ -395,8 +395,8 @@ static StringConfigProperty syncPropClientAuthType("clientAuthType",
                                                    "- \"basic\" for insecure method",
                                                    "md5",
                                                    Values() +
-                                                   (Aliases("syncml:auth-basic") + "basic") +
-                                                   (Aliases("syncml:auth-md5") + "md5" + ""));
+                                                   (Aliases("basic") + "syncml:auth-basic") +
+                                                   (Aliases("md5") + "syncml:auth-md5" + ""));
 static ULongConfigProperty syncPropMaxMsgSize("maxMsgSize",
                                               "The maximum size of each message can be set (maxMsgSize) and the\n"
                                               "server can be told to never sent items larger than a certain\n"

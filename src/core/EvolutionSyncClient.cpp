@@ -1282,6 +1282,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
     substTag(xml, "devicetype", getDevType());
     substTag(xml, "maxmsgsize", std::max(getMaxMsgSize(), 10000ul));
     substTag(xml, "maxobjsize", std::max(getMaxObjSize(), 1024u));
+    substTag(xml, "defaultauth", getClientAuthType());
 }
 
 SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)

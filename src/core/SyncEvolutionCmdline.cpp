@@ -944,7 +944,8 @@ static string internalToIni(const string &config)
         // substitude aliases with generic values
         boost::replace_first(assignment, "= F", "= 0");
         boost::replace_first(assignment, "= T", "= 1");
-        boost::replace_first(assignment, "= md5", "= syncml:auth-md5");
+        boost::replace_first(assignment, "= syncml:auth-md5", "= md5");
+        boost::replace_first(assignment, "= syncml:auth-basix", "= basic");
         res << assignment << endl;
     }
 
@@ -996,7 +997,7 @@ public:
                               "config.ini:# proxyHost = \n"
                               "config.ini:# proxyUsername = \n"
                               "config.ini:# proxyPassword = \n"
-                              "config.ini:# clientAuthType = syncml:auth-md5\n"
+                              "config.ini:# clientAuthType = md5\n"
                               "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
                               "config.ini:# enableWBXML = 0\n"
                               "config.ini:# maxMsgSize = 20000\n"
