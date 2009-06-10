@@ -44,6 +44,7 @@ using namespace SyncEvolution;
 using namespace std;
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include <boost/foreach.hpp>
 
 #include <sys/stat.h>

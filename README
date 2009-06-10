@@ -679,13 +679,16 @@ SyncEvolution source packages and will be used
 automatically. Instructions for working with upstream Synthesis
 sources directly are contained in the HACKING document.
 
-Also needed are the Evolution and Boost development files. For HTTP,
-either Curl or libsoup can be used. Debian based systems the required
-packages can be installed with
+Also needed are the Evolution and Boost (>= 1.35) development
+files. For HTTP, either Curl or libsoup can be used.
+
+On Debian based systems the required packages can be installed with
    apt-get install evolution-data-server-dev libdb3-dev \
                    libecal1.2-dev libebook1.2-dev \
                    libsoup2.4-dev \
                    libboost-dev
+
+See also the libsynthesis README file for other required packages.
 
 The test framework also requires CPPUnit:
    apt-get install libcppunit-dev

@@ -24,6 +24,7 @@
 #include "Logging.h"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include <boost/foreach.hpp>
 
 #include <list>

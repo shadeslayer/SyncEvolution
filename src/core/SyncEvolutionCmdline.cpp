@@ -37,6 +37,7 @@
 using namespace std;
 
 #include <boost/shared_ptr.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 

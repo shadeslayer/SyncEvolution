@@ -30,7 +30,14 @@ sed -e "s;@CONFIG_SUBS@;$SUBS;" \
 libtoolize -c
 glib-gettextize --force --copy
 intltoolize --force --copy --automake
-aclocal -Im4
+aclocal -I m4
 autoheader
 automake -a -c -Wno-portability
 autoconf
+
+# This hack is required for the autotools on Debian Etch.
+# Without it, configure expects a po/Makefile where
+# only po/Makefile.in is available. This patch fixes
+# configure so that it uses po/Makefile.in, like more
+# recent macros do.
+perl -pi -e 's;test ! -f "po/Makefile";test ! -f "po/Makefile.in";; s;mv "po/Makefile" "po/Makefile.tmp";cp "po/Makefile.in" "po/Makefile.tmp";;' configure

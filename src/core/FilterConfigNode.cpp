@@ -21,6 +21,7 @@
 #include "EvolutionSyncClient.h"
 
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 FilterConfigNode::FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
                                    const ConfigFilter &filter) :
