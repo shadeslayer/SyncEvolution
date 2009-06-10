@@ -57,6 +57,12 @@ class CurlTransportAgent : public TransportAgent
     std::string m_contentType;
     Status m_status;
 
+    /**
+     * libcurl < 7.17.0 does not copy strings passed into curl_easy_setopt().
+     * These are local copies that remain valid as long as needed.
+     */
+    string m_url, m_proxy, m_auth, m_agent;
+
     /** message buffer (owned by caller) */
     const char *m_message;
     /** number of valid bytes in m_message */

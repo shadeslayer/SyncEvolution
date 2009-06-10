@@ -85,20 +85,23 @@ CurlTransportAgent::~CurlTransportAgent()
 
 void CurlTransportAgent::setURL(const std::string &url)
 {
-    CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_URL, url.c_str());
+    m_url = url;
+    CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_URL, m_url.c_str());
     checkCurl(code);
 }
 
 void CurlTransportAgent::setProxy(const std::string &proxy)
 {
-    CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_PROXY, proxy.c_str());
+    m_proxy = proxy;
+    CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_PROXY, m_proxy.c_str());
     checkCurl(code);
 }
 
 void CurlTransportAgent::setProxyAuth(const std::string &user, const std::string &password)
 {
+    m_auth = user + ":" + password;
     CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_PROXYUSERPWD,
-                                     (user + ":" + password).c_str());
+                                     m_auth.c_str());
     checkCurl(code);
 }
 
@@ -109,8 +112,9 @@ void CurlTransportAgent::setContentType(const std::string &type)
 
 void CurlTransportAgent::setUserAgent(const std::string &agent)
 {
+    m_agent = agent;
     CURLcode code = curl_easy_setopt(m_easyHandle, CURLOPT_USERAGENT,
-                                     agent.c_str());
+                                     m_agent.c_str());
     checkCurl(code);
 }
 
