@@ -2035,15 +2035,20 @@ void SyncTests::testMerge() {
         it->second->update(it->second->createSourceA, it->second->config.mergeItem2, it->second->config.itemType);
     }
 
-    // send change to server from client A (no conflict), then from B (conflict)
-    doSync("send",
+    // send change to server from client A (no conflict)
+    doSync("update",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY)));
-    doSync("recv",
-           SyncOptions(SYNC_TWO_WAY,
-                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_TWO_WAY)));
+    // Now the changes from client B (conflict!).
+    // There are several possible outcomes:
+    // - client item completely replaces server item
+    // - server item completely replaces client item (update on client)
+    // - server merges and updates client
+    accessClientB->doSync("conflict",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_TWO_WAY)));
 
-    // figure out how the conflict during ".recv" was handled
+    // figure out how the conflict during ".conflict" was handled
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         std::auto_ptr<SyncSource> copy;
         SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(it->second->createSourceA()));
@@ -2053,10 +2058,25 @@ void SyncTests::testMerge() {
         SOURCE_ASSERT_EQUAL(copy.get(), STATUS_OK, copy->endSync());
         CPPUNIT_ASSERT(numItems >= 1);
         CPPUNIT_ASSERT(numItems <= 2);
-        std::cout << " " << it->second->config.sourceName << ": " << (numItems == 1 ? "conflicting items were merged" : "both of the conflicting items were preserved") << " ";
+        std::cout << " \"" << it->second->config.sourceName << ": " << (numItems == 1 ? "conflicting items were merged" : "both of the conflicting items were preserved") << "\" ";
         std::cout.flush();
-        CPPUNIT_ASSERT_NO_THROW(copy.reset());
+        CPPUNIT_ASSERT_NO_THROW(copy.reset());        
     }
+
+    // now pull the same changes into client A
+    doSync("refresh",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(-1,-1,-1, 0,0,0, true, SYNC_TWO_WAY)));
+
+    // client A and B should have identical data now
+    compareDatabases();
+
+    // Furthermore, it should be identical with the server.
+    // Be extra careful and pull that data anew and compare once more.
+    doSync("check",
+           SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_SERVER)));
+    compareDatabases();
 }
 
 // test what the server does when it has to execute a slow sync
@@ -3346,7 +3366,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "BDAY:2006-01-08\n"
             "X-MOZILLA-HTML:TRUE\n"
             "END:VCARD\n";
-        /* add a telephone number, email and X-AIM to initial item */
+        /* add email and X-AIM to initial item */
         config.mergeItem1 =
             "BEGIN:VCARD\n"
             "VERSION:2.1\n"
@@ -3358,6 +3378,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "EMAIL:john.doe@work.com\n"
             "X-AIM:AIM JOHN\n"
             "END:VCARD\n";
+        /* change X-MOZILLA-HTML */
         config.mergeItem2 =
             "BEGIN:VCARD\n"
             "VERSION:2.1\n"
@@ -3418,7 +3439,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "SEQUENCE:1\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
-        /* change location in insertItem in testMerge() */
+        /* change location and description of insertItem in testMerge(), add alarm */
         config.mergeItem1 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -3437,8 +3458,14 @@ void ClientTest::getTestData(const char *type, Config &config)
             "CLASS:PUBLIC\n"
             "TRANSP:OPAQUE\n"
             "SEQUENCE:1\n"
+            "BEGIN:VALARM\n"
+            "DESCRIPTION:alarm\n"
+            "ACTION:DISPLAY\n"
+            "TRIGGER;VALUE=DURATION;RELATED=START:-PT15M\n"
+            "END:VALARM\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
+        /* change location to something else, add category */
         config.mergeItem2 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -3453,6 +3480,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "LAST-MODIFIED:20060409T213201\n"
             "CREATED:20060409T213201\n"
             "LOCATION:my office\n"
+            "CATEGORIES:WORK\n"
             "DESCRIPTION:what the heck\\, let's even shout a bit\n"
             "CLASS:PUBLIC\n"
             "TRANSP:OPAQUE\n"
