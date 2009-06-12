@@ -369,26 +369,26 @@
           </parameter>
         </property>
 
-        <property name="CALURI">
+        <property name="CALURI" suppressempty="yes">
           <value field="CALURI" show="yes"/>
         </property>
-        <property name="FBURL">
+        <property name="FBURL" suppressempty="yes">
           <value field="FBURL" show="yes"/>
         </property>
-        <property name="X-EVOLUTION-BLOG-URL">
+        <property name="X-EVOLUTION-BLOG-URL" suppressempty="yes">
           <value field="BLOGURL" show="yes"/>
         </property>
-        <property name="X-EVOLUTION-VIDEO-URL">
+        <property name="X-EVOLUTION-VIDEO-URL" suppressempty="yes">
           <value field="VIDEOURL" show="yes"/>
         </property>
 
-        <property name="X-EVOLUTION-MANAGER">
+        <property name="X-EVOLUTION-MANAGER" suppressempty="yes">
           <value field="MANAGER" show="yes"/>
         </property>
-        <property name="X-EVOLUTION-ASSISTANT">
+        <property name="X-EVOLUTION-ASSISTANT" suppressempty="yes">
           <value field="ASSISTANT" show="yes"/>
         </property>
-        <property name="X-EVOLUTION-SPOUSE">
+        <property name="X-EVOLUTION-SPOUSE" suppressempty="yes">
           <value field="SPOUSE" show="yes"/>
         </property>
 
@@ -396,43 +396,43 @@
           <value field="WANTS_HTML" show="yes"/>
         </property>
 
-        <property name="X-AIM">
+        <property name="X-AIM" suppressempty="yes">
           <value field="AIM_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="AIM_SLOT"/>
           </parameter>
         </property>
-        <property name="X-GADUGADU">
+        <property name="X-GADUGADU" suppressempty="yes">
           <value field="GADUGADU_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="GADUGADU_SLOT"/>
           </parameter>
         </property>
-        <property name="X-GROUPWISE">
+        <property name="X-GROUPWISE" suppressempty="yes">
           <value field="GROUPWISE_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="GROUPWISE_SLOT"/>
           </parameter>
         </property>
-        <property name="X-ICQ">
+        <property name="X-ICQ" suppressempty="yes">
           <value field="ICQ_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="ICQ_SLOT"/>
           </parameter>
         </property>
-        <property name="X-JABBER">
+        <property name="X-JABBER" suppressempty="yes">
           <value field="JABBER_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="JABBER_SLOT"/>
           </parameter>
         </property>
-        <property name="X-MSN">
+        <property name="X-MSN" suppressempty="yes">
           <value field="MSN_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="MSN_SLOT"/>
           </parameter>
         </property>
-        <property name="X-YAHOO">
+        <property name="X-YAHOO" suppressempty="yes">
           <value field="YAHOO_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="YAHOO_SLOT"/>
