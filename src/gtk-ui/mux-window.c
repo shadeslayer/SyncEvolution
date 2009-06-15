@@ -186,26 +186,20 @@ static void
 mux_window_size_request (GtkWidget *widget,
                          GtkRequisition *requisition)
 {
-    MuxWindow *mux_win = MUX_WINDOW (widget);
     GtkBin *bin = GTK_BIN (widget);
-    GtkRequisition child_req;
-    GtkRequisition title_req;
+    MuxWindow *mux_win = MUX_WINDOW (widget);
+    GtkRequisition req;
 
-    child_req.width = child_req.height = 0;
-    if (bin->child)
-        gtk_widget_size_request (bin->child, &child_req);
+    /* we will always be maximized so none of this should be necessary
+     * (requisition will never be used), but some widgets to assume
+     * size_request is called */
+    if (mux_win->title_bar && GTK_WIDGET_VISIBLE (mux_win->title_bar))
+        gtk_widget_size_request (mux_win->title_bar, &req);
+    if (bin->child && GTK_WIDGET_VISIBLE (bin->child))
+        gtk_widget_size_request (bin->child, &req);
 
-    title_req.width = title_req.height = 0;
-    if (mux_win->title_bar) {
-        gtk_widget_size_request (mux_win->title_bar, &title_req);
-    }
-
-    requisition->width = MAX (child_req.width, title_req.width) +
-                         2 * (GTK_CONTAINER (widget)->border_width +
-                              GTK_WIDGET (widget)->style->xthickness);
-    requisition->height = title_req.height + child_req.height +
-                          2 * (GTK_CONTAINER (widget)->border_width +
-                               GTK_WIDGET (widget)->style->ythickness);
+    requisition->width = 1024;
+    requisition->height = 600;
 }
 
 static void
