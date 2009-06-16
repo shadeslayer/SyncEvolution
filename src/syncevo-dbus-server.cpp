@@ -463,13 +463,20 @@ need_password (const char *username,
                gpointer data)
 {
 	char *password = NULL;
+	char *server = NULL;
 	GnomeKeyringResult res;
 
-	/* TODO: this may block while keyring shows a dialog to user... */
+	server = strstr (server_url, "://");
+	if (server)
+		server = server + 3;
+
+	if (!server)
+		return NULL;
+
 	res = gnome_keyring_find_password_sync (GNOME_KEYRING_NETWORK_PASSWORD,
 	                                        &password,
 	                                        "user", username,
-	                                        "server", server_url,
+	                                        "server", server,
 	                                        NULL);
 
 	switch (res) {

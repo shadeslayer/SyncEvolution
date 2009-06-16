@@ -413,6 +413,8 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
         g_error_free (error);
         server_data_free (data, TRUE);
     } else {
+        char *server_address;
+
         g_ptr_array_foreach (options, (GFunc)add_server_option, data->config);
         if (data->options_override)
             g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, data->config);
@@ -420,16 +422,27 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
         ensure_default_sources_exist (data->config);
         
         data->config->changed = TRUE;
-        gnome_keyring_find_network_password (data->config->username,
-                                             NULL,
-                                             data->config->base_url,
-                                             NULL,
-                                             NULL,
-                                             NULL,
-                                             0,
-                                             (GnomeKeyringOperationGetListCallback)find_password_for_settings_cb,
-                                             data,
-                                             NULL);
+
+        server_address = strstr (data->config->base_url, "://");
+        if (server_address)
+            server_address = server_address + 3;
+
+        if (!server_address) {
+            g_warning ("Server configuration has suspect URL '%s'",
+                       data->config->base_url);
+            return;
+        } else {
+            gnome_keyring_find_network_password (data->config->username,
+                                                 NULL,
+                                                 server_address,
+                                                 NULL,
+                                                 NULL,
+                                                 NULL,
+                                                 0,
+                                                 (GnomeKeyringOperationGetListCallback)find_password_for_settings_cb,
+                                                 data,
+                                                 NULL);
+        }
     }
 
     g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
@@ -567,6 +580,12 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
                            _("Service must have a name"));
         return;
     }
+    /* make a wild guess if no scheme in url */
+    if (strstr (server->base_url, "://") == NULL) {
+        char *tmp = g_strdup_printf ("http://%s", server->base_url);
+        g_free (server->base_url);
+        server->base_url = tmp;
+    }
 
     gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
     gtk_widget_hide (GTK_WIDGET (data->services_win));
@@ -577,10 +596,16 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
     data->current_service = server;
 
     if (server->auth_changed) {
+        char *server_address;
+
+        server_address = strstr (server->base_url, "://");
+        if (server_address)
+            server_address = server_address + 3;
+
         gnome_keyring_set_network_password (NULL, /* default keyring */
                                             server->username,
                                             NULL,
-                                            server->base_url,
+                                            server_address,
                                             NULL,
                                             NULL,
                                             NULL,
@@ -1347,6 +1372,8 @@ find_password_cb (GnomeKeyringResult result, GList *list, app_data *data)
 static void
 get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error, app_data *data)
 {
+    char *server_address;
+
     if (error) {
         /* just warn if current server has disappeared -- probably just command line use */
         if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
@@ -1368,16 +1395,25 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
     update_service_ui (data);
     set_app_state (data, SYNC_UI_STATE_SERVER_OK);
 
-    gnome_keyring_find_network_password (data->current_service->username,
-                                         NULL,
-                                         data->current_service->base_url,
-                                         NULL,
-                                         NULL,
-                                         NULL,
-                                         0,
-                                         (GnomeKeyringOperationGetListCallback)find_password_cb,
-                                         data,
-                                         NULL);
+    server_address = strstr (data->current_service->base_url, "://");
+    if (server_address)
+        server_address = server_address + 3;
+
+    if (!server_address) {
+        g_warning ("Server configuration has suspect URL '%s'",
+                   data->current_service->base_url);
+    } else {
+        gnome_keyring_find_network_password (data->current_service->username,
+                                             NULL,
+                                             server_address,
+                                             NULL,
+                                             NULL,
+                                             NULL,
+                                             0,
+                                             (GnomeKeyringOperationGetListCallback)find_password_cb,
+                                             data,
+                                             NULL);
+    }
 
     /* get last sync report (for last sync time) */
     syncevo_service_get_sync_reports_async (service, data->current_service->name, 1,
