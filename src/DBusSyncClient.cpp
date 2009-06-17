@@ -25,7 +25,7 @@ DBusSyncClient::DBusSyncClient(const string &server,
                                const map<string, int> &source_map,
                                void (*progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data),
                                void (*server_message) (const char *message,gpointer data),
-                               char* (*need_password) (const char *message,gpointer data),
+                               char* (*need_password) (const char *username, const char *server_url, gpointer data),
                                gboolean (*check_for_suspend)(gpointer data),
                                gpointer userdata) : 
 	EvolutionSyncClient(server, true, getSyncSources (source_map)),
@@ -61,10 +61,16 @@ bool DBusSyncClient::getPrintChanges() const
 
 string DBusSyncClient::askPassword(const string &descr)
 {
+	string retval;
+	char *password = NULL;
+
 	if (!m_need_password)
-		return NULL;
-	
-	return string (m_need_password (descr.c_str(), m_userdata));
+		throwError(string("Password query not supported"));
+
+	password = m_need_password (getUsername (), getSyncURL(), m_userdata);
+	if (password)
+		retval = string (password);
+	return retval;
 }
 
 void DBusSyncClient::displayServerMessage(const string &message)

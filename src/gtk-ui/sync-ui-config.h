@@ -53,6 +53,7 @@ typedef struct server_config {
     GList *source_configs;
     
     gboolean changed;
+    gboolean auth_changed;
     gboolean from_template;
 } server_config;
 

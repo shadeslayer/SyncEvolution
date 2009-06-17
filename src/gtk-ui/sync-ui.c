@@ -46,6 +46,7 @@
 #include <gconf/gconf-client.h>
 #include <glib/gi18n.h>
 #include <gio/gio.h>
+#include <gnome-keyring.h>
 
 #include "syncevo-dbus.h"
 #include "sync-ui-marshal.h"
@@ -209,8 +210,10 @@ change_service_clicked_cb (GtkButton *btn, app_data *data)
 }
 
 static void 
-edit_services_clicked_cb (GtkButton *btn, app_data *data)
+edit_service_clicked_cb (GtkButton *btn, app_data *data)
 {
+    g_assert (data);
+
     data->current_service->changed = FALSE;
     gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
                                   GTK_WINDOW (data->sync_win));
@@ -338,41 +341,111 @@ set_server_config_cb (SyncevoService *service, GError *error, app_data *data)
  * the method was called for. options_override are options that should 
  * be overridden on the config we get. */
 typedef struct server_data {
-    char *server_name;
+    server_config *config;
     GPtrArray *options_override;
     app_data *data;
 } server_data;
 
+static server_data*
+server_data_new (const char *name, app_data *data)
+{
+    server_data *serv_data;
+
+    serv_data = g_slice_new0 (server_data);
+    serv_data->data = data;
+    serv_data->config = g_slice_new0 (server_config);
+    serv_data->config->name = g_strdup (name);
+
+    return serv_data;
+}
+
+static void
+server_data_free (server_data *data, gboolean free_config)
+{
+    if (!data)
+        return;
+
+    if (free_config && data->config) {
+        server_config_free (data->config);
+    }
+    if (data->options_override) {
+        g_ptr_array_foreach (data->options_override, (GFunc)syncevo_option_free, NULL);
+        g_ptr_array_free (data->options_override, TRUE);
+    }
+    g_slice_free (server_data, data);
+}
+
+static void
+find_password_for_settings_cb (GnomeKeyringResult result, GList *list, server_data *data)
+{
+    switch (result) {
+    case GNOME_KEYRING_RESULT_NO_MATCH:
+        g_warning ("no password found in keyring");
+        break;
+    case GNOME_KEYRING_RESULT_OK:
+        if (list && list->data) {
+            GnomeKeyringNetworkPasswordData *key_data;
+            key_data = (GnomeKeyringNetworkPasswordData*)list->data;
+            data->config->password = g_strdup (key_data->password);
+        }
+        break;
+    default:
+        g_warning ("getting password from GNOME keyring failed: %s",
+                   gnome_keyring_result_to_message (result));
+        break;
+    }
+    show_settings_window (data->data, data->config);
+
+    /* dialog should free server config */
+    server_data_free (data, FALSE);
+    return;
+}
+
+
+/* called when service is reset or service settings are opened 
+ * (for a new or existing service )*/
 static void
 get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, server_data *data)
 {
-    server_config *config;
-
     if (error) {
         show_error_dialog (GTK_WINDOW (data->data->sync_win),
                            _("Failed to get service configuration from SyncEvolution"));
         g_warning ("Failed to get service configuration from SyncEvolution: %s",
                    error->message);
         g_error_free (error);
+        server_data_free (data, TRUE);
     } else {
-        config = g_slice_new0 (server_config);
-        config->name = g_strdup (data->server_name);
-        g_ptr_array_foreach (options, (GFunc)add_server_option, config);
+        char *server_address;
+
+        g_ptr_array_foreach (options, (GFunc)add_server_option, data->config);
         if (data->options_override)
-            g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, config);
+            g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, data->config);
 
-        ensure_default_sources_exist (config);
+        ensure_default_sources_exist (data->config);
         
-        config->changed = TRUE;
-        show_settings_window (data->data, config);
-    }
+        data->config->changed = TRUE;
 
-    g_free (data->server_name);
-    if (data->options_override) {
-        g_ptr_array_foreach (data->options_override, (GFunc)syncevo_option_free, NULL);
-        g_ptr_array_free (data->options_override, TRUE);
+        server_address = strstr (data->config->base_url, "://");
+        if (server_address)
+            server_address = server_address + 3;
+
+        if (!server_address) {
+            g_warning ("Server configuration has suspect URL '%s'",
+                       data->config->base_url);
+            return;
+        } else {
+            gnome_keyring_find_network_password (data->config->username,
+                                                 NULL,
+                                                 server_address,
+                                                 NULL,
+                                                 NULL,
+                                                 NULL,
+                                                 0,
+                                                 (GnomeKeyringOperationGetListCallback)find_password_for_settings_cb,
+                                                 data,
+                                                 NULL);
+        }
     }
-    g_slice_free (server_data ,data);
 
     g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
     g_ptr_array_free (options, TRUE);
@@ -397,12 +470,11 @@ remove_server_config_cb (SyncevoService *service,
             show_services_window (data->data);
 
         if (data->data->current_service && data->data->current_service->name &&
-            strcmp (data->data->current_service->name, data->server_name) == 0)
+            strcmp (data->data->current_service->name, data->config->name) == 0)
             save_gconf_settings (data->data, NULL);
     }
 
-    g_free (data->server_name);
-    g_slice_free (server_data ,data);
+    server_data_free (data, TRUE);
 }
 
 static void
@@ -430,9 +502,7 @@ delete_service_clicked_cb (GtkButton *btn, app_data *data)
 
     gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
 
-    serv_data = g_slice_new0 (server_data);
-    serv_data->data = data;
-    serv_data->server_name = g_strdup (server->name);
+    serv_data = server_data_new (server->name, data);
 
     syncevo_service_remove_server_config_async (data->service,
                                                 server->name, 
@@ -450,19 +520,45 @@ reset_service_clicked_cb (GtkButton *btn, app_data *data)
     server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
     g_assert (server);
 
-    serv_data = g_slice_new0 (server_data);
-    serv_data->data = data;
-    serv_data->server_name = g_strdup (server->name);
+    serv_data = server_data_new (server->name, data);
     serv_data->options_override = g_ptr_array_new ();
+
     option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
-    g_ptr_array_add (serv_data->options_override, option);
-    option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup (server->password));
     g_ptr_array_add (serv_data->options_override, option);
 
     syncevo_service_get_template_config_async (data->service, 
                                                server->name, 
                                                (SyncevoGetTemplateConfigCb)get_server_config_for_template_cb,
                                                serv_data);
+}
+
+static void
+add_to_acl_cb (GnomeKeyringResult result)
+{
+    if (result != GNOME_KEYRING_RESULT_OK)
+        g_warning ("Adding server to GNOME keyring access control list failed: %s",
+                   gnome_keyring_result_to_message (result));
+}
+
+static void
+set_password_cb (GnomeKeyringResult result, guint32 id, app_data *data)
+{
+    if (result != GNOME_KEYRING_RESULT_OK) {
+        g_warning ("setting password in GNOME keyring failed: %s",
+                   gnome_keyring_result_to_message (result));
+        return;
+    }
+
+    /* add the server to access control list */
+    /* TODO: name and path must match the ones syncevo-dbus-server really has,
+     * so this call should be in the dbus-wrapper library */
+    gnome_keyring_item_grant_access_rights (NULL, 
+                                            "SyncEvolution",
+                                            LIBEXECDIR "/syncevo-dbus-server",
+                                            id,
+                                            GNOME_KEYRING_ACCESS_READ,
+                                            (GnomeKeyringOperationDoneCallback)add_to_acl_cb,
+                                            NULL, NULL);
 }
 
 static void
@@ -486,6 +582,12 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
                            _("Service must have a name"));
         return;
     }
+    /* make a wild guess if no scheme in url */
+    if (strstr (server->base_url, "://") == NULL) {
+        char *tmp = g_strdup_printf ("http://%s", server->base_url);
+        g_free (server->base_url);
+        server->base_url = tmp;
+    }
 
     gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
     gtk_widget_hide (GTK_WIDGET (data->services_win));
@@ -494,6 +596,27 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
         server_config_free (data->current_service);
     }
     data->current_service = server;
+
+    if (server->auth_changed) {
+        char *server_address;
+
+        server_address = strstr (server->base_url, "://");
+        if (server_address)
+            server_address = server_address + 3;
+
+        gnome_keyring_set_network_password (NULL, /* default keyring */
+                                            server->username,
+                                            NULL,
+                                            server_address,
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            0,
+                                            server->password,
+                                            (GnomeKeyringOperationGetIntCallback)set_password_cb,
+                                            data, NULL);
+        server->auth_changed = FALSE;
+    }
 
     if (!server->changed) {
         /* no need to save first, set the gconf key right away */
@@ -508,6 +631,7 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
                                                  data);
         g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
         g_ptr_array_free (options, TRUE);
+        server->changed = FALSE;
     }
 }
 
@@ -979,7 +1103,7 @@ init_ui (app_data *data)
     g_signal_connect (setup_service_btn, "clicked",
                       G_CALLBACK (change_service_clicked_cb), data);
     g_signal_connect (data->edit_service_btn, "clicked",
-                      G_CALLBACK (edit_services_clicked_cb), data);
+                      G_CALLBACK (edit_service_clicked_cb), data);
     g_signal_connect (data->sync_btn, "clicked", 
                       G_CALLBACK (sync_clicked_cb), data);
 
@@ -1227,8 +1351,31 @@ get_sync_reports_cb (SyncevoService *service, GPtrArray *reports, GError *error,
 }
 
 static void
+find_password_cb (GnomeKeyringResult result, GList *list, app_data *data)
+{
+    switch (result) {
+    case GNOME_KEYRING_RESULT_NO_MATCH:
+        break;
+    case GNOME_KEYRING_RESULT_OK:
+        if (list && list->data) {
+            GnomeKeyringNetworkPasswordData *key_data;
+            key_data = (GnomeKeyringNetworkPasswordData*)list->data;
+            data->current_service->password = g_strdup (key_data->password);
+        }
+        break;
+    default:
+        g_warning ("getting password from GNOME keyring failed: %s",
+                   gnome_keyring_result_to_message (result));
+        break;
+    }
+    return;
+}
+
+static void
 get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error, app_data *data)
 {
+    char *server_address;
+
     if (error) {
         /* just warn if current server has disappeared -- probably just command line use */
         if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
@@ -1249,6 +1396,26 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
     
     update_service_ui (data);
     set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+
+    server_address = strstr (data->current_service->base_url, "://");
+    if (server_address)
+        server_address = server_address + 3;
+
+    if (!server_address) {
+        g_warning ("Server configuration has suspect URL '%s'",
+                   data->current_service->base_url);
+    } else {
+        gnome_keyring_find_network_password (data->current_service->username,
+                                             NULL,
+                                             server_address,
+                                             NULL,
+                                             NULL,
+                                             NULL,
+                                             0,
+                                             (GnomeKeyringOperationGetListCallback)find_password_cb,
+                                             data,
+                                             NULL);
+    }
 
     /* get last sync report (for last sync time) */
     syncevo_service_get_sync_reports_async (service, data->current_service->name, 1,
@@ -1359,6 +1526,7 @@ show_settings_window (app_data *data, server_config *config)
     }
     gtk_widget_show_all (data->server_settings_table);
 
+    /* TODO should free old server config... make sure do not free currently used config */
     g_object_set_data (G_OBJECT (data->service_settings_win), "server", config);
 
     gtk_window_present (GTK_WINDOW (data->service_settings_win));
@@ -1385,14 +1553,15 @@ setup_service_clicked (GtkButton *btn, app_data *data)
 
     serv_data = g_slice_new0 (server_data);
     serv_data->data = data;
-    serv_data->server_name = g_strdup (name);
+    serv_data->config = g_slice_new0 (server_config);
+    serv_data->config->name = g_strdup (name);
 
     gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
                                   GTK_WINDOW (data->services_win));
 
     syncevo_service_get_server_config_async (data->service, 
-                                             (char*)serv_data->server_name,
-                                             (SyncevoGetServerConfigCb)get_server_config_for_template_cb, 
+                                             (char*)serv_data->config->name,
+                                             (SyncevoGetServerConfigCb)get_server_config_for_template_cb,
                                              serv_data);
 }
 
@@ -1402,8 +1571,7 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
     server_data *serv_data;
     SyncevoOption *option;
     
-    serv_data = g_slice_new0 (server_data);
-    serv_data->data = data;
+    serv_data = server_data_new (NULL, data);
 
     /* syncevolution defaults are not empty, override ... */
     serv_data->options_override = g_ptr_array_new ();
@@ -1427,7 +1595,7 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
 
     syncevo_service_get_server_config_async (data->service, 
                                              "default",
-                                             (SyncevoGetServerConfigCb)get_server_config_for_template_cb, 
+                                             (SyncevoGetServerConfigCb)get_server_config_for_template_cb,
                                              serv_data);
 }
 
@@ -1599,7 +1767,7 @@ static void show_services_window (app_data *data)
                            data->manual_services_table);
 
     syncevo_service_get_templates_async (data->service,
-                                         (SyncevoGetServerConfigCb)get_templates_cb,
+                                         (SyncevoGetTemplatesCb)get_templates_cb,
                                          data);
     gtk_window_present (GTK_WINDOW (data->services_win));
 }
@@ -1632,7 +1800,7 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
         set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
         syncevo_service_get_server_config_async (data->service, 
                                                  server,
-                                                 (SyncevoGetServerConfigCb)get_server_config_cb, 
+                                                 (SyncevoGetServerConfigCb)get_server_config_cb,
                                                  data);
     }
 }

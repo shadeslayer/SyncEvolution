@@ -34,7 +34,6 @@ typedef struct _SyncevoAsyncData {
 enum {
 	PROGRESS,
 	SERVER_MESSAGE,
-	NEED_PASSWORD,
 	SERVER_SHUTDOWN,
 	LAST_SIGNAL
 };
@@ -55,9 +54,6 @@ static void server_message_cb (DBusGProxy *proxy,
                                char *server,
                                char *message,
                                SyncevoService *service);
-static void need_password_cb (DBusGProxy *proxy,
-                              char *server,
-                              SyncevoService *service);
 static void proxy_destroyed (DBusGProxy *proxy,
                              SyncevoService *service);
 
@@ -89,9 +85,6 @@ dispose (GObject *object)
 		dbus_g_proxy_disconnect_signal (priv->proxy, "ServerMessage",
 						G_CALLBACK (server_message_cb),
 						object);
-		dbus_g_proxy_disconnect_signal (priv->proxy, "NeedPassword",
-						G_CALLBACK (need_password_cb),
-						object);
 
 		g_object_unref (priv->proxy);
 		priv->proxy = NULL;
@@ -118,14 +111,6 @@ static void server_message_cb (DBusGProxy *proxy,
 {
 	g_signal_emit (service, signals[SERVER_MESSAGE], 0, 
 	               server, message);
-}
-
-static void need_password_cb (DBusGProxy *proxy,
-                              char *server,
-                              SyncevoService *service)
-{
-	g_signal_emit (service, signals[NEED_PASSWORD], 0, 
-	               server);
 }
 
 static gboolean
@@ -185,10 +170,6 @@ syncevo_service_get_new_proxy (SyncevoService *service)
 	                         G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID);
 	dbus_g_proxy_connect_signal (proxy, "ServerMessage",
 	                             G_CALLBACK (server_message_cb), service, NULL);
-	dbus_g_proxy_add_signal (proxy, "NeedPassword",
-	                         G_TYPE_INVALID);
-	dbus_g_proxy_connect_signal (proxy, "NeedPassword",
-	                             G_CALLBACK (need_password_cb), service, NULL);
 
 	g_signal_connect (proxy, "destroy",
 	                  G_CALLBACK (proxy_destroyed), service);
@@ -271,14 +252,6 @@ syncevo_service_class_init (SyncevoServiceClass *klass)
 	                                  syncevo_marshal_VOID__STRING_STRING,
 	                                  G_TYPE_NONE, 
 	                                  2, G_TYPE_STRING, G_TYPE_STRING);
-	signals[NEED_PASSWORD] = g_signal_new ("need-password",
-	                                  G_TYPE_FROM_CLASS (klass),
-	                                  G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
-	                                  G_STRUCT_OFFSET (SyncevoServiceClass, need_password),
-	                                  NULL, NULL,
-	                                  g_cclosure_marshal_VOID__VOID,
-	                                  G_TYPE_NONE, 
-	                                  0);
 	signals[SERVER_SHUTDOWN] = g_signal_new ("server-shutdown",
 	                                  G_TYPE_FROM_CLASS (klass),
 	                                  G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
@@ -411,30 +384,6 @@ syncevo_service_abort_sync_async (SyncevoService *service,
 			 data);
 }
 
-
-gboolean syncevo_service_set_password (SyncevoService *service,
-                                       char *server,
-                                       char *password,
-                                       GError **error)
-{
-	SyncevoServicePrivate *priv;
-
-	priv = GET_PRIVATE (service);
-
-	if (!priv->proxy && !syncevo_service_get_new_proxy (service)) {
-		if (error) {
-			*error = g_error_new_literal (g_quark_from_static_string ("syncevo-service"),
-			                              SYNCEVO_SERVICE_ERROR_COULD_NOT_START, 
-			                              "Could not start service");
-		}
-		return FALSE;
-	}
-
-	return org_Moblin_SyncEvolution_set_password (priv->proxy, 
-	                                              server, 
-	                                              password,
-	                                              error);
-}
 
 gboolean syncevo_service_get_servers (SyncevoService *service,
                                       GPtrArray **servers,

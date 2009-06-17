@@ -70,16 +70,6 @@
       <arg type="s" name="message" />
     </signal>
 
-
-    <signal name="NeedPassword">
-      <arg type="s" name="server" />
-    </signal>
-    <method name="setPassword">
-      <!-- no return value, check signals for results -->
-      <arg type="s" name="server" direction="in"/>
-      <arg type="s" name="password" direction="in"/>
-    </method>
-
     <method name="GetTemplates">
       <arg type="a(sss)" name="templates" direction="out">
         <doc:doc>

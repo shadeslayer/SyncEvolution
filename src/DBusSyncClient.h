@@ -43,7 +43,7 @@ public:
 				   const map<string, int> &source_map,
 				   void (*progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data) = NULL,
 				   void (*server_message) (const char *message,gpointer data) = NULL,
-				   char* (*need_password) (const char *message,gpointer data) = NULL,
+				   char* (*need_password) (const char *username, const char *server_url, gpointer data) = NULL,
 				   gboolean (*check_for_suspend)(gpointer data) = NULL,
 				   gpointer userdata = NULL);
 
@@ -72,8 +72,8 @@ private:
 	gpointer m_userdata;
 
 	void (*m_progress) (const char *source,int type,int extra1,int extra2,int extra3,gpointer data);
-	void (*m_server_message) (const char *message,gpointer data);
-	char* (*m_need_password) (const char *message,gpointer data);
+	void (*m_server_message) (const char *message, gpointer data);
+	char* (*m_need_password) (const char *username, const char *server_url, gpointer data);
 	gboolean (*m_check_for_suspend) (gpointer data);
 
 	static set<string> getSyncSources (const map<string, int> &source_map)

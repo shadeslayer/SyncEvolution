@@ -53,8 +53,6 @@ typedef struct _SyncevoServiceClass {
 	void (*server_message) (SyncevoService *service,
 	                        char *server,
 	                        char *message);
-	void (*need_password) (SyncevoService *service,
-	                       char *server);
 	void (*server_shutdown) (SyncevoService *service);
 } SyncevoServiceClass;
 
@@ -76,12 +74,6 @@ void  syncevo_service_abort_sync_async (SyncevoService *service,
                                         char *server,
                                         SyncevoAbortSyncCb callback,
                                         gpointer userdata);
-
-gboolean syncevo_service_set_password (SyncevoService *service,
-                                       char *server,
-                                       char *password,
-                                       GError **error);
-
 
 gboolean syncevo_service_get_servers (SyncevoService *service,
                                       GPtrArray **servers,
