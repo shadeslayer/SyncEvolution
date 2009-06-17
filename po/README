@@ -1,0 +1,66 @@
+Translation README
+
+Syncevolution Moblin (GTK+) UI uses standard gettext translations (.po files)
+and Transifex for translator web access.
+
+What follows is a very short technical guide to translating. For more extensive
+documentation, please refer to the GNOME localisation guide* or even the 
+gettext manual** (the latter is unfortunately fairly programmer oriented).
+
+
+Notes to translators
+====================
+
+1. Get the strings that need translating 
+
+The easiest way to get the po-file is via 
+http://translate.moblin.org/projects/syncevolution/ . If the file for your 
+language does not exist yet, take the template file (syncevolution.pot) and 
+rename it to xx.po, where xx is the language code).
+
+Alternatively if you have configured SyncEvolution sources, you can get
+an up-to-date template (.pot) and .po files by running "make update-po" in 
+/po source directory.
+
+
+2. Translate
+
+Simply fill in the empty msgstr strings in the file. Graphical translation 
+tools such as gtranslator are available in most distributions.
+
+Two features a translator must know are c-format strings and plural form handling. 
+For help with c-format strings, see GNOME Localisation Guide*.  
+
+If there are untranslatable strings or you do not understand the context, please
+file a bug on moblin bugzilla (product "SyncEvolution", component "GTK UI").
+
+
+3. Upload
+
+TODO: write this when translate.moblin.org situation is clear
+
+Alternatively you can open a bug on moblin bugzilla and attach the po-file
+there.
+
+
+
+Notes to developers
+===================
+
+New translations are added by adding a .po file to /po-directory and adding
+the language in po/LINGUAS. The translation website watches 'moblin-transifex' 
+branch.
+TODO: explain moblin-transifex in more detail: e.g. when should it be updated?
+
+"make update-po" in /po source directory will update the translation template 
+and all translations with new strings from the code: this does not happen 
+automatically on plain "make".
+TODO: transifex probably does this so this is only needed for testing new strings
+
+When a translation is listed in po/LINGUAS, 'make' will build the message 
+catalog (.gmo) and "make install" will install it.
+
+
+
+*  http://live.gnome.org/TranslationProject/LocalisationGuide
+** http://www.gnu.org/software/gettext/manual/gettext.html
