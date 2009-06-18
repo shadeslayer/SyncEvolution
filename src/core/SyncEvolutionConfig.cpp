@@ -163,6 +163,7 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
     result.addDefaultTemplate("ScheduleWorld", "http://sync.scheduleworld.com");
     result.addDefaultTemplate("Synthesis", "http://www.synthesis.ch");
     result.addDefaultTemplate("Memotoo", "http://www.memotoo.com");
+    result.addDefaultTemplate("Google", "http://m.google.com/sync");
 
     result.sort();
     return result;
@@ -302,6 +303,21 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setURI("task");
         source = config->getSyncSourceConfig("memo");
         source->setURI("note");
+    } else if (boost::iequals(server, "google")) {
+        config->setSyncURL("https://m.google.com/syncml");
+        config->setWebURL("http://m.google.com/sync");
+        config->setClientAuthType("syncml:auth-basic");
+        config->setWBXML(true);
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("contacts");
+        source->setSourceType("addressbook:text/x-vcard");
+        /* Google support only addressbook sync via syncml */
+        source = config->getSyncSourceConfig("calendar");
+        source->setSync("none");
+        source = config->getSyncSourceConfig("todo");
+        source->setSync("none");
+        source = config->getSyncSourceConfig("memo");
+        source->setSync("none");
     } else {
         config.reset();
     }

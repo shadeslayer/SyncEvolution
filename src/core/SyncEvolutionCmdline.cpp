@@ -1201,6 +1201,7 @@ protected:
         help.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                                   "   Funambol = http://my.funambol.com\n"
+                                  "   Google = http://m.google.com/sync\n"
                                   "   Memotoo = http://www.memotoo.com\n"
                                   "   ScheduleWorld = http://sync.scheduleworld.com\n"
                                   "   Synthesis = http://www.synthesis.ch\n",
