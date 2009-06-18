@@ -24,6 +24,7 @@
 #include "FileConfigTree.h"
 #include "VolatileConfigTree.h"
 #include "VolatileConfigNode.h"
+#include "synthesis/timeutil.h"
 
 #include <boost/foreach.hpp>
 #include <iterator>
@@ -467,6 +468,10 @@ static ConfigProperty syncPropIconURI("IconURI",
                                       "Should be a 48x48 pixmap or a SVG (preferred).\n"
                                       "Used only by the GUI.");
 
+static ULongConfigProperty syncPropHashCode("HashCode", "used by the SyncML library internally; do not modify");
+
+static ConfigProperty syncPropConfigDate("ConfigDate", "used by the SyncML library internally; do not modify");
+
 ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
@@ -499,6 +504,10 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropSSLVerifyHost);
         registry.push_back(&syncPropWebURL);
         registry.push_back(&syncPropIconURI);
+        registry.push_back(&syncPropHashCode);
+        syncPropHashCode.setHidden(true);
+        registry.push_back(&syncPropConfigDate);
+        syncPropConfigDate.setHidden(true);
         initialized = true;
     }
 
@@ -595,6 +604,17 @@ std::string EvolutionSyncConfig::getWebURL() const { return syncPropWebURL.getPr
 void EvolutionSyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*m_configNode, url, temporarily); }
 std::string EvolutionSyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setIconURI(const std::string &uri, bool temporarily) { syncPropIconURI.setProperty(*m_configNode, uri, temporarily); }
+unsigned long EvolutionSyncConfig::getHashCode() const { return syncPropHashCode.getProperty(*m_hiddenNode); }
+void EvolutionSyncConfig::setHashCode(unsigned long code) { syncPropHashCode.setProperty(*m_hiddenNode, code); }
+std::string EvolutionSyncConfig::getConfigDate() const { return syncPropConfigDate.getProperty(*m_hiddenNode); }
+void EvolutionSyncConfig::setConfigDate() { 
+    /* Set current timestamp as configdate */
+    char buffer[17]; 
+    time_t ts = time(NULL);
+    strftime(buffer, sizeof(buffer), "%Y%m%dT%H%M%SZ", gmtime(&ts));
+    const std::string date(buffer);
+    syncPropConfigDate.setProperty(*m_hiddenNode, date);
+}
 const char* EvolutionSyncConfig::getSSLServerCertificates() const { return m_stringCache.getProperty(*m_configNode, syncPropSSLServerCertificates); }
 void EvolutionSyncConfig::setSSLServerCertificates(const string &value, bool temporarily) { syncPropSSLServerCertificates.setProperty(*m_configNode, value, temporarily); }
 bool EvolutionSyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.getProperty(*m_configNode); }

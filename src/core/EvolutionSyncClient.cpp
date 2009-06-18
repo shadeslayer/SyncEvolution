@@ -1213,6 +1213,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
 
     string tag;
     size_t index;
+    unsigned long hash = 0;
 
     tag = "<debug/>";
     index = xml.find(tag);
@@ -1268,7 +1269,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
         BOOST_FOREACH(EvolutionSyncSource *source, *m_sourceListPtr) {
             string fragment;
             source->getDatastoreXML(fragment);
-            unsigned long hash = Hash(source->getName()) % INT_MAX;
+            hash = Hash(source->getName()) % INT_MAX;
 
             /**
              * @TODO handle hash collisions
@@ -1297,6 +1298,16 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
     substTag(xml, "maxmsgsize", std::max(getMaxMsgSize(), 10000ul));
     substTag(xml, "maxobjsize", std::max(getMaxObjSize(), 1024u));
     substTag(xml, "defaultauth", getClientAuthType());
+
+    // if the hash code is changed, that means the content of the
+    // config has changed, save the new hash and regen the configdate
+    hash = Hash(xml.c_str());
+    if (getHashCode() != hash) {
+        setConfigDate();
+        setHashCode(hash);
+        flush();
+    }
+    substTag(xml, "configdate", getConfigDate().c_str());
 }
 
 SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)

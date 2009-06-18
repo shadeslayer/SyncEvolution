@@ -657,6 +657,12 @@ class EvolutionSyncConfig {
     virtual std::string getIconURI() const;
     virtual void setIconURI(const std::string &uri, bool temporarily = false);
 
+    virtual unsigned long getHashCode() const;
+    virtual void setHashCode(unsigned long hashCode);
+
+    virtual std::string getConfigDate() const;
+    virtual void setConfigDate(); /* set current time always */
+
     /**@}*/
 
     /**
