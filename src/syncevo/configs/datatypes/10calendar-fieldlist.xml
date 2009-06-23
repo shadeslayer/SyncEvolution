@@ -17,6 +17,7 @@
       <field name="SUMMARY" type="multiline" compare="always"/>
       <field name="DESCRIPTION" type="multiline" compare="slowsync" merge="lines"/>
       <field name="LOCATION" type="multiline" compare="slowsync" merge="lines"/>
+      <field name="URL" type="url" compare="conflict"/>
 
       <!-- recurrence rule block, fields must be in that order, including
            DTSTART as last field !! -->
@@ -39,6 +40,7 @@
 
       <field name="PRIORITY" type="integer" compare="conflict"/>
       <field name="STATUS" type="integer" compare="conflict" merge="fillempty"/>
+      <field name="PERCENT_COMPLETE" type="integer" compare="conflict"/>
 
       <field name="ALARM_TIME" type="timestamp" compare="conflict"/>
       <field name="ALARM_SNOOZE" type="string" compare="conflict"/>
@@ -46,6 +48,7 @@
       <field name="ALARM_MSG" type="string" compare="conflict"/>
       <field name="ALARM_ACTION" type="string" compare="conflict"/>
       <field name="ALARM_REL" type="integer" compare="never"/>
+      <field name="ALARM_UID" type="string" compare="conflict"/>
 
       <!-- non-standard -->
       <field name="PARENT_UID" type="string" compare="never"/>
@@ -59,6 +62,10 @@
       <field name="ATTENDEES" array="yes" type="string" compare="never"/>
       <field name="ATTENDEE_CNS" array="yes" type="string" compare="never"/>
       <field name="ATTENDEE_PARTSTATS" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_ROLE" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_RSVP" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_LANG" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_CUTYPE" array="yes" type="integer" compare="never"/>
       <field name="ORGANIZER" array="no" type="string" compare="never"/>
       <field name="ORGANIZER_CN" array="no" type="string" compare="never"/>
 

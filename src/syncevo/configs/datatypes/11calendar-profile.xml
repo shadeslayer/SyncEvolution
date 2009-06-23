@@ -95,6 +95,10 @@
             <value field="LOCATION"/>
           </property>
 
+          <property name="URL" suppressempty="yes" mandatory="no">
+            <value field="URL"/>
+          </property>
+
           <property name="DTSTART" suppressempty="yes" delayedparsing="1">
             <value field="DTSTART" conversion="autodate"/>
             <parameter onlyformode="standard" name="TZID" default="no" show="yes">
@@ -164,6 +168,9 @@
             </value>
           </property>
 
+          <property name="PERCENT-COMPLETE" onlyformode="standard" suppressempty="yes">
+            <value field="PERCENT_COMPLETE"/>
+          </property>          
 
           <!-- AALARM and DALARM both use the same fields -->
           <property name="AALARM" onlyformode="old" values="4" suppressempty="yes">
@@ -201,6 +208,9 @@
             </property>
             <property name="REPEAT" suppressempty="yes">
               <value field="ALARM_REPEAT"/>
+            </property>
+            <property name="X-EVOLUTION-ALARM-UID" suppressempty="yes">
+              <value field="ALARM_UID"/>
             </property>
           </subprofile>
 
@@ -406,6 +416,32 @@
                 <enum name="DELEGATED"      value="6"/>
               </value>
             </parameter>
+            <parameter name="ROLE" default="no" show="yes">
+              <value field="ATTENDEE_ROLE">
+                <enum name="CHAIR"            value="1"/>
+                <enum name="REQ-PARTICIPANT"  value="2"/>
+                <enum name="OPT-PARTICIPANT"  value="3"/>
+                <enum name="NON-PARTICIPANT"  value="4"/>
+              </value>
+            </parameter>
+            <parameter name="RSVP" default="no" show="yes">
+              <value field="ATTENDEE_RSVP">
+                <enum name="TRUE"             value="1"/>
+                <enum name="FALSE"            value="0"/>
+              </value>
+            </parameter>
+            <parameter name="LANGUAGE" show="yes">
+              <value field="ATTENDEE_LANG"/>
+            </parameter>
+            <parameter name="CUTYPE" default="no" show="yes">
+              <value field="ATTENDEE_CUTYPE">
+                <enum name="INDIVIDUAL"  value="1"/>
+                <enum name="GROUP"       value="2"/>
+                <enum name="RESOURCE"    value="3"/>
+                <enum name="ROOM"        value="4"/>
+                <enum name="UNKNOWN"     value="5"/>
+              </value>
+            </parameter>
           </property>
 
           <property name="ORGANIZER" suppressempty="yes" onlyformode="standard">
@@ -414,7 +450,6 @@
               <value field="ORGANIZER_CN"/>
             </parameter>
           </property>
-
 
           <!-- AALARM and DALARM both use the same fields -->
           <property name="AALARM" onlyformode="old" values="4" suppressempty="yes">
@@ -452,6 +487,9 @@
             </property>
             <property name="REPEAT" suppressempty="yes">
               <value field="ALARM_REPEAT"/>
+            </property>
+            <property name="X-EVOLUTION-ALARM-UID" suppressempty="yes">
+              <value field="ALARM_UID"/>
             </property>
           </subprofile>
 
