@@ -535,6 +535,7 @@
       <field name="SUMMARY" type="multiline" compare="always"/>
       <field name="DESCRIPTION" type="multiline" compare="slowsync" merge="lines"/>
       <field name="LOCATION" type="multiline" compare="slowsync" merge="lines"/>
+      <field name="URL" type="url" compare="conflict"/>
 
       <!-- recurrence rule block, fields must be in that order, including
            DTSTART as last field !! -->
@@ -557,6 +558,7 @@
 
       <field name="PRIORITY" type="integer" compare="conflict"/>
       <field name="STATUS" type="integer" compare="conflict" merge="fillempty"/>
+      <field name="PERCENT_COMPLETE" type="integer" compare="conflict"/>
 
       <field name="ALARM_TIME" type="timestamp" compare="conflict"/>
       <field name="ALARM_SNOOZE" type="string" compare="conflict"/>
@@ -564,6 +566,7 @@
       <field name="ALARM_MSG" type="string" compare="conflict"/>
       <field name="ALARM_ACTION" type="string" compare="conflict"/>
       <field name="ALARM_REL" type="integer" compare="never"/>
+      <field name="ALARM_UID" type="string" compare="conflict"/>
 
       <!-- non-standard -->
       <field name="PARENT_UID" type="string" compare="never"/>
@@ -577,6 +580,10 @@
       <field name="ATTENDEES" array="yes" type="string" compare="never"/>
       <field name="ATTENDEE_CNS" array="yes" type="string" compare="never"/>
       <field name="ATTENDEE_PARTSTATS" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_ROLE" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_RSVP" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_LANG" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_CUTYPE" array="yes" type="integer" compare="never"/>
       <field name="ORGANIZER" array="no" type="string" compare="never"/>
       <field name="ORGANIZER_CN" array="no" type="string" compare="never"/>
 
@@ -680,6 +687,10 @@
             <value field="LOCATION"/>
           </property>
 
+          <property name="URL" suppressempty="yes" mandatory="no">
+            <value field="URL"/>
+          </property>
+
           <property name="DTSTART" suppressempty="yes" delayedparsing="1">
             <value field="DTSTART" conversion="autodate"/>
             <parameter onlyformode="standard" name="TZID" default="no" show="yes">
@@ -749,6 +760,9 @@
             </value>
           </property>
 
+          <property name="PERCENT-COMPLETE" onlyformode="standard" suppressempty="yes">
+            <value field="PERCENT_COMPLETE"/>
+          </property>          
 
           <!-- AALARM and DALARM both use the same fields -->
           <property name="AALARM" onlyformode="old" values="4" suppressempty="yes">
@@ -786,6 +800,9 @@
             </property>
             <property name="REPEAT" suppressempty="yes">
               <value field="ALARM_REPEAT"/>
+            </property>
+            <property name="X-EVOLUTION-ALARM-UID" suppressempty="yes">
+              <value field="ALARM_UID"/>
             </property>
           </subprofile>
 
@@ -991,6 +1008,32 @@
                 <enum name="DELEGATED"      value="6"/>
               </value>
             </parameter>
+            <parameter name="ROLE" default="no" show="yes">
+              <value field="ATTENDEE_ROLE">
+                <enum name="CHAIR"            value="1"/>
+                <enum name="REQ-PARTICIPANT"  value="2"/>
+                <enum name="OPT-PARTICIPANT"  value="3"/>
+                <enum name="NON-PARTICIPANT"  value="4"/>
+              </value>
+            </parameter>
+            <parameter name="RSVP" default="no" show="yes">
+              <value field="ATTENDEE_RSVP">
+                <enum name="TRUE"             value="1"/>
+                <enum name="FALSE"            value="0"/>
+              </value>
+            </parameter>
+            <parameter name="LANGUAGE" show="yes">
+              <value field="ATTENDEE_LANG"/>
+            </parameter>
+            <parameter name="CUTYPE" default="no" show="yes">
+              <value field="ATTENDEE_CUTYPE">
+                <enum name="INDIVIDUAL"  value="1"/>
+                <enum name="GROUP"       value="2"/>
+                <enum name="RESOURCE"    value="3"/>
+                <enum name="ROOM"        value="4"/>
+                <enum name="UNKNOWN"     value="5"/>
+              </value>
+            </parameter>
           </property>
 
           <property name="ORGANIZER" suppressempty="yes" onlyformode="standard">
@@ -1037,6 +1080,9 @@
             </property>
             <property name="REPEAT" suppressempty="yes">
               <value field="ALARM_REPEAT"/>
+            </property>
+            <property name="X-EVOLUTION-ALARM-UID" suppressempty="yes">
+              <value field="ALARM_UID"/>
             </property>
           </subprofile>
 
