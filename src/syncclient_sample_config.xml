@@ -48,8 +48,8 @@
       // make sure we have all trailing and leading spaces eliminated
       DESCRIPTION=NORMALIZED(DESCRIPTION);
       SUMMARY=NORMALIZED(SUMMARY);
-      // eliminate description that is the same as summary
-      if (DESCRIPTION==SUMMARY) DESCRIPTION=EMPTY;
+      // make sure that we have a DESCRIPTION
+      if (DESCRIPTION==EMPTY) DESCRIPTION=SUMMARY;
       // calendar or todo
       if (ISEVENT) {
         // VEVENT
@@ -136,6 +136,8 @@
       // make sure we have at least a summary
       if (SUMMARY==EMPTY) SUMMARY=SUBSTR(DESCRIPTION,0,32); // derive from description
       if (SUMMARY==EMPTY) SUMMARY="unnamed"; // in case description is empty as well
+      // make sure that we have a DESCRIPTION
+      if (DESCRIPTION==EMPTY) DESCRIPTION=SUMMARY;
       // do NOT send duration (some servers crash when doing so)
       DURATION = UNASSIGNED;
       // shape alarm
@@ -530,7 +532,10 @@
             <value field="SUMMARY"/>
           </property>
 
-          <property name="DESCRIPTION" mandatory="yes">
+          <!-- DESCRIPTION is an optional property and libical does not like
+               empty properties, so suppress it here. However, in the scripts
+               we ensure that the DESCRIPTION field should never be empty. -->
+          <property name="DESCRIPTION" suppressempty="yes" mandatory="no">
             <value field="DESCRIPTION"/>
           </property>
 
@@ -738,7 +743,10 @@
             <value field="SUMMARY"/>
           </property>
 
-          <property name="DESCRIPTION" mandatory="yes">
+          <!-- DESCRIPTION is an optional property and libical does not like
+               empty properties, so suppress it here. However, in the scripts
+               we ensure that the DESCRIPTION field should never be empty. -->
+          <property name="DESCRIPTION" suppressempty="yes" mandatory="no">
             <value field="DESCRIPTION"/>
           </property>
 
