@@ -84,7 +84,10 @@
             <value field="SUMMARY"/>
           </property>
 
-          <property name="DESCRIPTION" mandatory="yes">
+          <!-- DESCRIPTION is an optional property and libical does not like
+               empty properties, so suppress it here. However, in the scripts
+               we ensure that the DESCRIPTION field should never be empty. -->
+          <property name="DESCRIPTION" suppressempty="yes" mandatory="no">
             <value field="DESCRIPTION"/>
           </property>
 
@@ -292,7 +295,10 @@
             <value field="SUMMARY"/>
           </property>
 
-          <property name="DESCRIPTION" mandatory="yes">
+          <!-- DESCRIPTION is an optional property and libical does not like
+               empty properties, so suppress it here. However, in the scripts
+               we ensure that the DESCRIPTION field should never be empty. -->
+          <property name="DESCRIPTION" suppressempty="yes" mandatory="no">
             <value field="DESCRIPTION"/>
           </property>
 
