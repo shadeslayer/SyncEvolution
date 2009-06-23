@@ -96,18 +96,6 @@
         	DUE = DATEONLY(DUE);
         }
       }
-      // Common alarm handling
-      // - handle relative alarm time (as possible with VALARM TRIGGER)
-      if (ISDURATION(ALARM_TIME)) {
-        if (ALARM_REL==2)
-          ALARM_TIME = DTEND+ALARM_TIME; // relative to end
-        else {
-          if (ISEVENT)
-            ALARM_TIME = DTSTART+ALARM_TIME; // relative to start for events
-          else
-            ALARM_TIME = DUE+ALARM_TIME; // relative to due for todos
-        }
-      }
     ]]></macro>
 
 
@@ -144,14 +132,6 @@
       if (ALARM_TIME!=EMPTY) {
         if (ITEMDATATYPE()=="iCalendar20") {
           if (ALARM_ACTION==EMPTY) ALARM_ACTION = "AUDIO";
-          ALARM_TIME = CONVERTTOUSERZONE(ALARM_TIME,TRUE); // unfloat into user (system) zone, in case it is floating
-          ALARM_TIME = CONVERTTOZONE(ALARM_TIME,"UTC"); // must always be UTC by iCalendar 2.0 specs
-          // send as duration if we have non-empty non-date DTSTART
-          if (DTSTART!=EMPTY && !ISDATEONLY(DTSTART)) {
-            // make a duration (unfloat DTSTART into system zone in case it is floating first!)
-            ALARM_TIME = ALARM_TIME-CONVERTTOZONE(CONVERTTOUSERZONE(DTSTART,TRUE),"UTC");
-            ALARM_REL = 1; // relative to start
-          }
         }
         else {
           if (ALARM_MSG==EMPTY) ALARM_MSG="alarm";
