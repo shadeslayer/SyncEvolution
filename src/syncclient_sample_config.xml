@@ -3,40 +3,24 @@
 
 <sysync_config version="1.0">
 
-  <!-- this string is output to every session debug logfile to identify the config in use -->
-  <configidstring>Synthesis SyncML Client Engine 3.2 sample config</configidstring>
+  <configvar name="logpath" value="$(defout_path)"/>
 
-  <debug>
-    <!-- path where logfiles are stored -->
-    <!-- <logpath platform="linux">/your/log/directory</logpath> -->
-    <logflushmode>buffered</logflushmode> <!-- buffered is fastest mode, but may loose data on process abort. Other options: "flush" (after every line) or "openclose" (safest, slowest, like in 2.x server) -->
-    <!-- per session log -->
-    <sessionlogs>yes</sessionlogs> <!-- by default, create a session log file for every sync session (might be disabled for special users/devices in scripts) -->
-    <!-- debug format options -->
-    <logformat>html</logformat> <!-- html is nicely colored and easily viewable with a web browser. Other options: "xml", "text" -->
-    <timestamp>yes</timestamp> <!-- show timestamps for structure elements in log -->
-    <timestampall>no</timestampall> <!-- don't show timestamp for every log line -->
-    <timedsessionlognames>yes</timedsessionlognames> <!-- session logs also have the session start timestamp in the filename - makes them more easily sortable -->
-    <!-- thread logging mode -->
-    <subthreadmode>separate</subthreadmode> <!-- write log info from subthreads into separate log files. Other options: "suppress" -->
-    <!-- basic debug level selection -->
-    <enable option="extended"/> <!-- "extended" is a good choice for start testing. For production, use "normal" or "minimal" -->
-    <!-- <enable option="normal"/> --> <!-- "normal" provides rich debug info, but still in reasonable size  -->
-    <!-- <enable option="minimal"/> --> <!-- "minimal" just shows basic flow and error. Not suitable for debugging -->
-    <!-- <enable option="maximal"/> --> <!-- "maximal" can create VERY LARGE logs and cause HEAVY SLOWDOWN. Only for detail debugging  -->
-    <!-- <enable option="all"/> --> <!-- "all" shows EVERYTHING possible, and way too much for any normal situation. For hardcore debugging ONLY! -->
-    <!-- additional debug info switches -->
-    <enable option="userdata"/> <!-- Make this <disable ...> if you don't want user data in the logs -->
-    <disable option="scripts"/> <!-- Make this <enable ...> to show script execution in logs  -->
-    <disable option="exotic"/> <!-- Make this <enable ...> to include very in-detail info. CAN PRODUCE ENORMOUS LOGS and HEAVILY IMPACT PERFORMANCE for large slow syncs - use with care!  -->
-    <!-- see manual for more debug info switches -->
-    <!-- global log options -->
-    <globallogs>no</globallogs> <!-- by default, do not log global session dispatching, creation etc. (not useful in multi-user operation) -->
-    <singlegloballog>no</singlegloballog> <!-- a new global log will be started for every start of the server/application -->
-    <!-- SyncML message dumping options -->
-    <msgdump>no</msgdump> <!-- do not dump syncml traffic 1:1 to files -->
-    <xmltranslate>no</xmltranslate> <!-- do not try to translate syncml traffic into XML (DO NOT SET THIS OPTION IN PRODUCTIVE SERVERS!) -->
-  </debug>
+  <!-- this string is output to every session debug logfile to identify the config in use -->
+  <configidstring>SyncEvolution client config</configidstring>
+
+  <!-- information about maximum supported message and object size (in bytes) -->
+  <maxmsgsize/>
+  <maxobjsize/>
+
+  <!-- information for DevInf -->
+  <model/>
+  <manufacturer/>
+  <hardwareversion/>
+  <firmwareversion/>
+  <devicetype/>
+  <configdate/>
+
+  <debug/>
 
   <transport type="xpt">
     <!-- allow HTTP 1.1 kepp-alive (multiple request-answer-exchanges in single TCP connection) -->
@@ -64,8 +48,8 @@
       // make sure we have all trailing and leading spaces eliminated
       DESCRIPTION=NORMALIZED(DESCRIPTION);
       SUMMARY=NORMALIZED(SUMMARY);
-      // eliminate description that is the same as summary
-      if (DESCRIPTION==SUMMARY) DESCRIPTION=EMPTY;
+      // make sure that we have a DESCRIPTION
+      if (DESCRIPTION==EMPTY) DESCRIPTION=SUMMARY;
       // calendar or todo
       if (ISEVENT) {
         // VEVENT
@@ -76,7 +60,7 @@
         }
         // - detect alldays in vCalendar 1.0 (0:00-0:00 or 23:59 localtime)
         i = ALLDAYCOUNT(DTSTART,DTEND,TRUE);
-        if (ITEMDATATYPE()=="vtodoz10" && i>0) {
+        if (ITEMDATATYPE()=="vCalendar10" && i>0) {
           // DTSTART and DTEND represent allday event, make them date-only values
           // - convert start to user zone (or floating) so it represents midnight
           DTSTART = CONVERTTOUSERZONE(DTSTART);
@@ -112,18 +96,6 @@
         	DUE = DATEONLY(DUE);
         }
       }
-      // Common alarm handling
-      // - handle relative alarm time (as possible with VALARM TRIGGER)
-      if (ISDURATION(ALARM_TIME)) {
-        if (ALARM_REL==2)
-          ALARM_TIME = DTEND+ALARM_TIME; // relative to end
-        else {
-          if (ISEVENT)
-            ALARM_TIME = DTSTART+ALARM_TIME; // relative to start for events
-          else
-            ALARM_TIME = DUE+ALARM_TIME; // relative to due for todos
-        }
-      }
     ]]></macro>
 
 
@@ -152,20 +124,14 @@
       // make sure we have at least a summary
       if (SUMMARY==EMPTY) SUMMARY=SUBSTR(DESCRIPTION,0,32); // derive from description
       if (SUMMARY==EMPTY) SUMMARY="unnamed"; // in case description is empty as well
+      // make sure that we have a DESCRIPTION
+      if (DESCRIPTION==EMPTY) DESCRIPTION=SUMMARY;
       // do NOT send duration (some servers crash when doing so)
       DURATION = UNASSIGNED;
       // shape alarm
       if (ALARM_TIME!=EMPTY) {
         if (ITEMDATATYPE()=="iCalendar20") {
           if (ALARM_ACTION==EMPTY) ALARM_ACTION = "AUDIO";
-          ALARM_TIME = CONVERTTOUSERZONE(ALARM_TIME,TRUE); // unfloat into user (system) zone, in case it is floating
-          ALARM_TIME = CONVERTTOZONE(ALARM_TIME,"UTC"); // must always be UTC by iCalendar 2.0 specs
-          // send as duration if we have non-empty non-date DTSTART
-          if (DTSTART!=EMPTY && !ISDATEONLY(DTSTART)) {
-            // make a duration (unfloat DTSTART into system zone in case it is floating first!)
-            ALARM_TIME = ALARM_TIME-CONVERTTOZONE(CONVERTTOUSERZONE(DTSTART,TRUE),"UTC");
-            ALARM_REL = 1; // relative to start
-          }
         }
         else {
           if (ALARM_MSG==EMPTY) ALARM_MSG="alarm";
@@ -192,6 +158,7 @@
       <field name="TITLE" type="string" compare="conflict" merge="fillempty"/>
 
       <field name="FN" type="string" compare="conflict" merge="fillempty"/>
+      <field name="FILE-AS" type="string" compare="conflict" merge="fillempty"/>
 
       <!-- categories and classification -->
       <field name="CATEGORIES" array="yes" type="string" compare="conflict"/>
@@ -199,27 +166,65 @@
       <!-- organisation -->
       <field name="ORG_NAME" type="string" compare="slowsync" merge="fillempty"/>
       <field name="ORG_DIVISION" type="string" compare="conflict" merge="fillempty"/>
+      <field name="ORG_OFFICE" type="string" compare="conflict" merge="fillempty"/>
+      <field name="ORG_TEAM" type="string" compare="conflict" merge="fillempty"/>
+      <field name="ROLE" type="string" compare="conflict" merge="fillempty"/>
 
-      <!-- birthday -->
+      <!-- birthday and anniversary (not necessarily the same) -->
       <field name="BDAY" type="date" compare="conflict" merge="fillempty"/>
+      <field name="ANNIVERSARY" type="date" compare="conflict" merge="fillempty"/>
 
       <!-- telephone numbers -->
       <field name="TEL"         array="yes" type="telephone" compare="conflict"/>
       <field name="TEL_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="TEL_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="TEL_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+      <field name="TEL_SLOT"    array="yes" type="integer"   compare="never"/>    <!-- offset 3 -->
 
       <!-- emails -->
       <field name="EMAIL"       array="yes" type="multiline" compare="conflict"/>
       <field name="EMAIL_FLAGS" array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="EMAIL_LABEL" array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="EMAIL_ID"    array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+      <field name="EMAIL_SLOT"  array="yes" type="integer"   compare="never"/>    <!-- offset 3 -->
 
       <!-- web addresses -->
-      <field name="WEB"         array="yes" type="url" compare="conflict"/>
+      <field name="WEB"         array="yes" type="string" compare="conflict"/>
       <field name="WEB_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="WEB_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="WEB_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+
+      <!-- would be nicer to have as part of WEB, but parser/encoder does not support mapping
+           with more than one property per field -->
+      <field name="CALURI"      array="yes" type="string" compare="conflict"/>
+      <field name="FBURL"       array="yes" type="string" compare="conflict"/>
+      <field name="BLOGURL"     array="yes" type="string" compare="conflict"/>
+      <field name="VIDEOURL"    array="yes" type="string" compare="conflict"/>
+
+      <!-- related persons: should be turned into array, like WEB and CALURI/FBURL -->
+      <field name="MANAGER"    type="string" compare="conflict"/>
+      <field name="ASSISTANT"  type="string" compare="conflict"/>
+      <field name="SPOUSE"     type="string" compare="conflict"/>
+
+      <!-- does this person want HTML mails? Valid values are TRUE/FALSE; a "boolean"
+           type would be useful, maybe add that later. -->
+      <field name="WANTS_HTML"  type="string" compare="conflict"/>
+
+      <!-- chat handles: should be turned into one array, like WEB and CALURI/FBURL -->
+      <field name="AIM_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="AIM_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="GADUGADU_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="GADUGADU_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="GROUPWISE_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="GROUPWISE_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="ICQ_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="ICQ_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="JABBER_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="JABBER_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="MSN_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="MSN_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="YAHOO_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="YAHOO_SLOT"          array="yes" type="string" compare="conflict"/>
 
       <!-- home address -->
       <field name="ADR_STREET"        array="yes" type="multiline" compare="conflict"/>
@@ -270,7 +275,14 @@
           <value field="FN"/>
         </property>
 
-        <property name="NICKNAME" onlyformode="standard">
+        <property name="X-EVOLUTION-FILE-AS">
+          <value field="FILE-AS"/>
+        </property>
+
+        <!-- onlyformode="standard": not part of vCard 2.1, but some
+             peers (like the Funambol server) accept it anyway in
+             vCard 2.1 -->
+        <property name="NICKNAME">
           <value field="NICKNAME"/>
         </property>
 
@@ -283,9 +295,15 @@
           <position field="CATEGORIES" repeat="array" increment="1" minshow="0"/>
         </property>
 
-        <property name="ORG" values="2">
+        <property name="ORG" values="4">
           <value index="0" field="ORG_NAME"/>
           <value index="1" field="ORG_DIVISION"/>
+          <value index="2" field="ORG_OFFICE"/>
+          <value index="3" field="ORG_TEAM"/>
+        </property>
+
+        <property name="ROLE">
+          <value field="ROLE"/>
         </property>
 
         <property name="TEL">
@@ -301,10 +319,18 @@
               <enum name="FAX"      value="B5"/>
               <enum name="PAGER"    value="B6"/>
               <enum name="PREF"     value="B7"/>
+              <enum name="CAR"      value="B8"/>
+              <enum name="X-EVOLUTION-CALLBACK" value="B9"/>
+              <enum name="X-EVOLUTION-RADIO" value="B10"/>
+              <enum name="X-EVOLUTION-TELEX" value="B11"/>
+              <enum name="X-EVOLUTION-TTYTDD" value="B12"/>
 
               <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
             </value>
+          </parameter>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="TEL_SLOT"/>
           </parameter>
         </property>
 
@@ -322,6 +348,9 @@
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
             </value>
           </parameter>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="EMAIL_SLOT"/>
+          </parameter>
         </property>
 
         <property name="URL">
@@ -337,6 +366,76 @@
               <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
             </value>
+          </parameter>
+        </property>
+
+        <property name="CALURI" suppressempty="yes">
+          <value field="CALURI" show="yes"/>
+        </property>
+        <property name="FBURL" suppressempty="yes">
+          <value field="FBURL" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-BLOG-URL" suppressempty="yes">
+          <value field="BLOGURL" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-VIDEO-URL" suppressempty="yes">
+          <value field="VIDEOURL" show="yes"/>
+        </property>
+
+        <property name="X-EVOLUTION-MANAGER" suppressempty="yes">
+          <value field="MANAGER" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-ASSISTANT" suppressempty="yes">
+          <value field="ASSISTANT" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-SPOUSE" suppressempty="yes">
+          <value field="SPOUSE" show="yes"/>
+        </property>
+
+        <property name="X-MOZILLA-HTML">
+          <value field="WANTS_HTML" show="yes"/>
+        </property>
+
+        <property name="X-AIM" suppressempty="yes">
+          <value field="AIM_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="AIM_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-GADUGADU" suppressempty="yes">
+          <value field="GADUGADU_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="GADUGADU_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-GROUPWISE" suppressempty="yes">
+          <value field="GROUPWISE_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="GROUPWISE_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-ICQ" suppressempty="yes">
+          <value field="ICQ_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="ICQ_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-JABBER" suppressempty="yes">
+          <value field="JABBER_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="JABBER_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-MSN" suppressempty="yes">
+          <value field="MSN_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="MSN_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-YAHOO" suppressempty="yes">
+          <value field="YAHOO_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="YAHOO_SLOT"/>
           </parameter>
         </property>
 
@@ -363,6 +462,10 @@
 
         <property name="BDAY">
           <value field="BDAY"/>
+        </property>
+
+        <property name="X-EVOLUTION-ANNIVERSARY">
+          <value field="ANNIVERSARY"/>
         </property>
 
         <property name="NOTE" filter="no">
@@ -412,6 +515,7 @@
       <field name="SUMMARY" type="multiline" compare="always"/>
       <field name="DESCRIPTION" type="multiline" compare="slowsync" merge="lines"/>
       <field name="LOCATION" type="multiline" compare="slowsync" merge="lines"/>
+      <field name="URL" type="url" compare="conflict"/>
 
       <!-- recurrence rule block, fields must be in that order, including
            DTSTART as last field !! -->
@@ -434,6 +538,7 @@
 
       <field name="PRIORITY" type="integer" compare="conflict"/>
       <field name="STATUS" type="integer" compare="conflict" merge="fillempty"/>
+      <field name="PERCENT_COMPLETE" type="integer" compare="conflict"/>
 
       <field name="ALARM_TIME" type="timestamp" compare="conflict"/>
       <field name="ALARM_SNOOZE" type="string" compare="conflict"/>
@@ -441,6 +546,7 @@
       <field name="ALARM_MSG" type="string" compare="conflict"/>
       <field name="ALARM_ACTION" type="string" compare="conflict"/>
       <field name="ALARM_REL" type="integer" compare="never"/>
+      <field name="ALARM_UID" type="string" compare="conflict"/>
 
       <!-- non-standard -->
       <field name="PARENT_UID" type="string" compare="never"/>
@@ -454,6 +560,10 @@
       <field name="ATTENDEES" array="yes" type="string" compare="never"/>
       <field name="ATTENDEE_CNS" array="yes" type="string" compare="never"/>
       <field name="ATTENDEE_PARTSTATS" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_ROLE" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_RSVP" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_LANG" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_CUTYPE" array="yes" type="integer" compare="never"/>
       <field name="ORGANIZER" array="no" type="string" compare="never"/>
       <field name="ORGANIZER_CN" array="no" type="string" compare="never"/>
 
@@ -546,12 +656,19 @@
             <value field="SUMMARY"/>
           </property>
 
-          <property name="DESCRIPTION" mandatory="yes">
+          <!-- DESCRIPTION is an optional property and libical does not like
+               empty properties, so suppress it here. However, in the scripts
+               we ensure that the DESCRIPTION field should never be empty. -->
+          <property name="DESCRIPTION" suppressempty="yes" mandatory="no">
             <value field="DESCRIPTION"/>
           </property>
 
-          <property name="LOCATION" mandatory="no">
+          <property name="LOCATION" suppressempty="yes" mandatory="no">
             <value field="LOCATION"/>
+          </property>
+
+          <property name="URL" suppressempty="yes" mandatory="no">
+            <value field="URL"/>
           </property>
 
           <property name="DTSTART" suppressempty="yes" delayedparsing="1">
@@ -623,6 +740,9 @@
             </value>
           </property>
 
+          <property name="PERCENT-COMPLETE" onlyformode="standard" suppressempty="yes">
+            <value field="PERCENT_COMPLETE"/>
+          </property>          
 
           <!-- AALARM and DALARM both use the same fields -->
           <property name="AALARM" onlyformode="old" values="4" suppressempty="yes">
@@ -660,6 +780,9 @@
             </property>
             <property name="REPEAT" suppressempty="yes">
               <value field="ALARM_REPEAT"/>
+            </property>
+            <property name="X-EVOLUTION-ALARM-UID" suppressempty="yes">
+              <value field="ALARM_UID"/>
             </property>
           </subprofile>
 
@@ -754,11 +877,14 @@
             <value field="SUMMARY"/>
           </property>
 
-          <property name="DESCRIPTION" mandatory="yes">
+          <!-- DESCRIPTION is an optional property and libical does not like
+               empty properties, so suppress it here. However, in the scripts
+               we ensure that the DESCRIPTION field should never be empty. -->
+          <property name="DESCRIPTION" suppressempty="yes" mandatory="no">
             <value field="DESCRIPTION"/>
           </property>
 
-          <property name="LOCATION" mandatory="no">
+          <property name="LOCATION" suppressempty="yes" mandatory="no">
             <value field="LOCATION"/>
           </property>
 
@@ -794,7 +920,11 @@
             </parameter>
           </property>
 
-          <property name="EXDATE" values="list" suppressempty="yes" onlyformode="standard" delayedparsing="1" valueseparator="," altvalueseparator=";">
+          <!-- ScheduleWorld has a problem (bugzilla.moblin.org #2226)
+               with the EXDATE:value1,value2 format (correct in iCalendar 2.0):
+               as a workaround, accept all valid formats plus ; but
+               generate separate properties with one value each. -->
+          <property name="EXDATE" values="expandedlist" suppressempty="yes" onlyformode="standard" delayedparsing="1" valueseparator="," altvalueseparator=";">
             <value field="EXDATES"/>
             <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
             <parameter name="TZID" default="no" show="yes">
@@ -862,6 +992,32 @@
                 <enum name="DELEGATED"      value="6"/>
               </value>
             </parameter>
+            <parameter name="ROLE" default="no" show="yes">
+              <value field="ATTENDEE_ROLE">
+                <enum name="CHAIR"            value="1"/>
+                <enum name="REQ-PARTICIPANT"  value="2"/>
+                <enum name="OPT-PARTICIPANT"  value="3"/>
+                <enum name="NON-PARTICIPANT"  value="4"/>
+              </value>
+            </parameter>
+            <parameter name="RSVP" default="no" show="yes">
+              <value field="ATTENDEE_RSVP">
+                <enum name="TRUE"             value="1"/>
+                <enum name="FALSE"            value="0"/>
+              </value>
+            </parameter>
+            <parameter name="LANGUAGE" show="yes">
+              <value field="ATTENDEE_LANG"/>
+            </parameter>
+            <parameter name="CUTYPE" default="no" show="yes">
+              <value field="ATTENDEE_CUTYPE">
+                <enum name="INDIVIDUAL"  value="1"/>
+                <enum name="GROUP"       value="2"/>
+                <enum name="RESOURCE"    value="3"/>
+                <enum name="ROOM"        value="4"/>
+                <enum name="UNKNOWN"     value="5"/>
+              </value>
+            </parameter>
           </property>
 
           <property name="ORGANIZER" suppressempty="yes" onlyformode="standard">
@@ -908,6 +1064,9 @@
             </property>
             <property name="REPEAT" suppressempty="yes">
               <value field="ALARM_REPEAT"/>
+            </property>
+            <property name="X-EVOLUTION-ALARM-UID" suppressempty="yes">
+              <value field="ALARM_UID"/>
             </property>
           </subprofile>
 
@@ -1052,354 +1211,17 @@
 
 
   <client type="plugin">
-    <plugin_module>[SDK_textdb]</plugin_module>
-    <plugin_sessionauth>yes</plugin_sessionauth>
-    <plugin_deviceadmin>yes</plugin_deviceadmin>
+    <binfilespath>$(binfilepath)</binfilespath>
+    <defaultauth/>
 
-    <!-- this is how the client identifies itself to the LOCAL database. SDK_textdb
-         sample has a hard-coded user test/test so the following works out of the box -->
-    <localdbuser>test</localdbuser>
-    <localdbpassword>test</localdbpassword>
-    <!-- we need the local DB login for SDK_textdb to work properly, so we don't disable it here -->
-    <nolocaldblogin>false</nolocaldblogin>
+    <!-- SyncEvolution has traditionally not folded long lines in
+         vCard.  Testing showed that servers still have problems with
+         it, so avoid it by default -->
+    <donotfoldcontent>yes</donotfoldcontent>
 
+    <fakedeviceid/>
 
-    <!-- IMPORTANT: Note that the following charset, lineend and quoting settings are relevant for session-level data access only.
-         Most data access takes place in individual <datastores>, which each has the same three settings
-         again locally (see below in the <datastore> sections). -->
-
-    <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
-    <datacharset>UTF-8</datacharset>
-    <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
-    <datalineends>unix</datalineends>
-
-    <!-- If you want a text logfile, specify its full path here: -->
-    <!-- <logfile platform="win32">D:\your\log\directory\yourlogfile.txt</logfile> -->
-    <!-- <logfile platform="linux">/your/log/directory/yourlogfile.txt</logfile> -->
-    <!-- <logfile platform="macosx">/your/log/directory/yourlogfile.txt</logfile> -->
-
-    <logenabled>yes</logenabled> <!-- log enabled by default (session login scripts might disable it for special users/devices) -->
-
-    <!-- the logfile format can be customized with <loglabels> and <logformat>
-         but if these are not specified, a default format will be used
-    -->
-    <!-- This sample produces a simplified logfile:
-    <loglabels>SyncEndTime\tUser\tStatus\tSynctype\tRemoteName\tDatabase\tLocAdded\tLocUpdated\tLocDeleted\n\n</loglabels>
-    <logformat>%seT\t%U\t%sS\t%tS\t%nR\t%lD\t%laI\t%luI\t%ldI\n</logformat>
-    -->
-
-
-    <!-- timeout for unfinished sessions in seconds -->
-    <sessiontimeout>20</sessiontimeout>
-
-
-    <datastore name="contacts" type="plugin">
-      <plugin_module>[SDK_textdb]</plugin_module>
-      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
-
-
-      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
-      <datacharset>UTF-8</datacharset>
-      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
-      <datalineends>unix</datalineends>
-
-      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
-           we must make sure this identifier is stored (and not only the sync time) -->
-      <storesyncidentifiers>yes</storesyncidentifiers>
-
-      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
-      <resumesupport>yes</resumesupport>
-      <resumeitemsupport>yes</resumeitemsupport> 
-
-
-      <!-- Mapping of the fields to the fieldlist "contacts" -->
-      <fieldmap fieldlist="contacts">
-        <automap indexasname="true"/>
-      </fieldmap>
-
-      <!-- datatypes supported by this datastore -->
-      <typesupport>
-        <use datatype="vCard30" mode="rw" preferred="yes"/>
-        <use datatype="vCard21" mode="rw" preferred="legacy"/>
-      </typesupport>
-
-    </datastore>
-
-
-    <datastore name="events" type="plugin">
-      <plugin_module>[SDK_textdb]</plugin_module>
-      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
-
-
-
-      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
-      <datacharset>UTF-8</datacharset>
-      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
-      <datalineends>unix</datalineends>
-
-      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
-           we must make sure this identifier is stored (and not only the sync time) -->
-      <storesyncidentifiers>yes</storesyncidentifiers>
-
-      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
-      <resumesupport>yes</resumesupport>
-      <resumeitemsupport>yes</resumeitemsupport> 
-
-
-      <!-- Mapping of the fields to the fieldlist "calendar" -->
-      <fieldmap fieldlist="calendar">
-        <automap indexasname="true"/>
-      </fieldmap>
-
-      <!-- datatypes supported by this datastore -->
-      <typesupport>
-        <use datatype="iCalendar20" mode="rw" variant="VEVENT" preferred="yes"/>
-        <use datatype="vCalendar10" mode="rw" variant="VEVENT" preferred="legacy"/>
-      </typesupport>
-
-    </datastore>
-
-
-    <datastore name="tasks" type="plugin">
-      <plugin_module>[SDK_textdb]</plugin_module>
-      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
-
-
-
-      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
-      <datacharset>UTF-8</datacharset>
-      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
-      <datalineends>unix</datalineends>
-
-      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
-           we must make sure this identifier is stored (and not only the sync time) -->
-      <storesyncidentifiers>yes</storesyncidentifiers>
-
-      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
-      <resumesupport>yes</resumesupport>
-      <resumeitemsupport>yes</resumeitemsupport> 
-
-
-      <!-- Mapping of the fields to the fieldlist "calendar" -->
-      <fieldmap fieldlist="calendar">
-        <automap indexasname="true"/>
-      </fieldmap>
-
-      <!-- datatypes supported by this datastore -->
-      <typesupport>
-        <use datatype="iCalendar20" mode="rw" variant="VTODO" preferred="yes"/>
-        <use datatype="vCalendar10" mode="rw" variant="VTODO" preferred="legacy"/>
-      </typesupport>
-
-    </datastore>
-
-
-    <datastore name="notes" type="plugin">
-      <plugin_module>[SDK_textdb]</plugin_module>
-      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
-
-
-      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
-      <datacharset>UTF-8</datacharset>
-      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
-      <datalineends>unix</datalineends>
-
-      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
-           we must make sure this identifier is stored (and not only the sync time) -->
-      <storesyncidentifiers>yes</storesyncidentifiers>
-
-      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
-      <resumesupport>yes</resumesupport>
-      <resumeitemsupport>yes</resumeitemsupport> 
-
-
-      <!-- Mapping of the fields to the fieldlist "notes" -->
-      <fieldmap fieldlist="Note">
-        <automap indexasname="true"/>
-      </fieldmap>
-
-      <typesupport>
-        <use datatype="note10" mode="rw" preferred="yes"/>
-        <use datatype="note11" mode="rw"/>
-      </typesupport>
-
-    </datastore>
-
-
-    <datastore name="bookmarks" type="plugin">
-      <plugin_module>[SDK_textdb]</plugin_module>
-      <plugin_datastoreadmin>yes</plugin_datastoreadmin>
-
-
-
-      <!-- text db plugin is designed for UTF-8, make sure data is passed as UTF-8 (and not the ISO-8859-1 default) -->
-      <datacharset>UTF-8</datacharset>
-      <!-- text db plugin is designed for Unix linefeeds (\n, 0x0A), make data is passed with unix linefeeds (and not the DOS CRLF = 0x0D,0x0A default) -->
-      <datalineends>unix</datalineends>
-
-      <!-- plugin DB may have its own identifiers to determine the point in time of changes, so
-           we must make sure this identifier is stored (and not only the sync time) -->
-      <storesyncidentifiers>yes</storesyncidentifiers>
-
-      <!-- TextDB plugin supports resume and resuming partial items, so enable these here -->
-      <resumesupport>yes</resumesupport>
-      <resumeitemsupport>yes</resumeitemsupport> 
-
-
-
-      <!-- Mapping of the fields to the fieldlist "bookmarks" -->
-      <fieldmap fieldlist="bookmarks">
-        <automap indexasname="true"/>
-      </fieldmap>
-
-      <!-- datatypes supported by this datastore -->
-      <typesupport>
-        <use datatype="vBookmark10" mode="rw" preferred="yes"/>
-      </typesupport>
-
-    </datastore>
-
-    <!-- Configuration of Sync Requests -->
-    <!-- ============================== -->
-
-
-
-    <!-- choose default SyncML version : 1.2, 1.1 or 1.0
-         Note: client will try with this default version first,
-         if server does not accept this version, the client
-         re-tries with the next lower version -->
-    <defaultsyncmlversion>1.2</defaultsyncmlversion>
-
-    <!-- choose encoding for SyncML messages: xml or wbxml -->
-    <syncmlencoding>wbxml</syncmlencoding>
-
-    <!-- Preconfigured sync requests. The following configuration specifies
-         what SyncML server is connected and which datatypes are synced
-         when the client application is started -->
-
-
-    <!-- Enter the full server URL
-         - if your server is http, specify something like "http://yourserver.com/path"
-         - if your server is OBEX over infrared (win200 only), specify "obex:irda"
-         - if your server is OBEX over TCP, specify "obex:yourserver" -->
-    <serverurl>http://www.synthesis.ch/synciot</serverurl>
-    <serveruser>test</serveruser>
-    <serverpassword>4test2</serverpassword>
-
-    <!-- Enable the following if your SyncML server can be reached via a HTTP proxy server only:
-    <proxyhost>proxy.in.my.lan:3128</proxyhost>
-    -->
-    <!-- If the proxy needs an authorization as well, specify it here:
-    <proxyuser>my_proxy_user</proxyuser>
-    <proxypassword>my_proxy_pw</proxypassword>
-    -->
-
-    <!-- Enable the following if you need to go via a SOCKS proxy:
-    <sockshost>socks.in.my.lan</sockshost>
-    -->
-
-
-    <!-- For each datastore you want to sync, there must be a <syncrequest> tag
-         Just uncomment those that you need. Enter the server's datastore
-         path in the <dbpath>. Note that <dbpath> is preconfigured
-         for use with a Synthesis SyncML server 1.0.8 or newer. -->
-
-
-
-    <syncrequest datastore="contacts">
-      <localpathextension></localpathextension>
-
-      <dbpath>contacts</dbpath>
-      <dbuser></dbuser>
-      <dbpassword></dbpassword>
-
-      <!--
-        <recordfilter><![CDATA[
-          N[1]&iCON;]]
-        ]]></recordfilter>
-        <filterinclusive>yes</filterinclusive>
-      -->
-
-      <syncmode>twoway</syncmode>
-      <slowsync>false</slowsync>
-    </syncrequest>
-
-
-    <syncrequest datastore="events">
-      <localpathextension></localpathextension>
-
-      <dbpath>events</dbpath>
-      <dbuser></dbuser>
-      <dbpassword></dbpassword>
-
-      <syncmode>twoway</syncmode>
-      <slowsync>false</slowsync>
-    </syncrequest>
-    <!-- For DS 1.2 servers with Filter support (e.g. Synthesis SyncML Server 3.0)
-         you might want to use filters. If so, insert the following lines
-         into the SyncRequest above
-         and adapt filter expressions as needed. See config reference or SyncML DS 1.2
-         standard for filter syntax.
-         The sample expression below shows a filter that only syncs events for the year 2006 -->
-    <!--
-      <recordfilter><![CDATA[
-        SINCE&EQ;20060101&AND;BEFORE&EQ;20061231
-      ]]></recordfilter>
-      <filterinclusive>no</filterinclusive>
-    -->
-
-
-    <syncrequest datastore="tasks">
-      <localpathextension></localpathextension>
-
-      <dbpath>tasks</dbpath>
-      <dbuser></dbuser>
-      <dbpassword></dbpassword>
-
-      <syncmode>twoway</syncmode>
-      <slowsync>false</slowsync>
-    </syncrequest>
-    <!-- For DS 1.2 servers with Filter support (e.g. Synthesis SyncML Server 3.0)
-         you might want to use filters. If so, insert the following lines
-         into the SyncRequest above
-         and adapt filter expressions as needed. See config reference or SyncML DS 1.2
-         standard for filter syntax.
-         The sample expression below shows a filter that only syncs tasks for the year 2006 -->
-    <!--
-      <recordfilter><![CDATA[
-        SINCE&EQ;20060101&AND;BEFORE&EQ;20061231
-      ]]></recordfilter>
-      <filterinclusive>no</filterinclusive>
-    -->
-
-
-		<!--
-    <syncrequest datastore="notes">
-      <localpathextension></localpathextension>
-
-      <dbpath>notes</dbpath>
-      <dbuser></dbuser>
-      <dbpassword></dbpassword>
-
-      <syncmode>twoway</syncmode>
-      <slowsync>false</slowsync>
-    </syncrequest>
-		-->
-    
-    
-		<!--
-    <syncrequest datastore="bookmarks">
-      <localpathextension></localpathextension>
-
-      <dbpath>bookmarks</dbpath>
-      <dbuser></dbuser>
-      <dbpassword></dbpassword>
-
-      <syncmode>twoway</syncmode>
-      <slowsync>false</slowsync>
-    </syncrequest>
-		-->
-
+    <datastore/>
   </client>
 
 </sysync_config>

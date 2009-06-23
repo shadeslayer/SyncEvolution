@@ -1134,7 +1134,7 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
     }
 }
 
-// syncevolution.xml converted to C string constant
+// XML configuration converted to C string constant
 extern "C" {
     extern const char *SyncEvolutionXML;
 }
@@ -1154,7 +1154,7 @@ void EvolutionSyncClient::setSyncModes(const std::vector<EvolutionSyncSource *> 
 void EvolutionSyncClient::getConfigTemplateXML(string &xml, string &configname)
 {
     try {
-        configname = "syncevolution.xml";
+        configname = "syncclient_sample_config.xml";
         if (ReadFile(configname, xml)) {
             return;
         }

@@ -88,7 +88,7 @@ libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ $(TRANSPORT_LIBS) @LIBS
 libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
 libsyncevolution_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEMPLATE_DIR=\""$(sysconfdir)/default/syncevolution"\" -DLIBDIR=\""$(libdir)"\"
 
-SyncEvolutionXML.c: $(srcdir)/../syncevolution.xml
+SyncEvolutionXML.c: $(srcdir)/../syncclient_sample_config.xml
 	echo "const char *SyncEvolutionXML =" > $@
 	sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\(.*\)/"\1\\n"/' $< >>$@
 	echo ";" >>$@
