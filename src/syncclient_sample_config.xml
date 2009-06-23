@@ -940,7 +940,11 @@
             </parameter>
           </property>
 
-          <property name="EXDATE" values="list" suppressempty="yes" onlyformode="standard" delayedparsing="1" valueseparator="," altvalueseparator=";">
+          <!-- ScheduleWorld has a problem (bugzilla.moblin.org #2226)
+               with the EXDATE:value1,value2 format (correct in iCalendar 2.0):
+               as a workaround, accept all valid formats plus ; but
+               generate separate properties with one value each. -->
+          <property name="EXDATE" values="expandedlist" suppressempty="yes" onlyformode="standard" delayedparsing="1" valueseparator="," altvalueseparator=";">
             <value field="EXDATES"/>
             <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
             <parameter name="TZID" default="no" show="yes">
