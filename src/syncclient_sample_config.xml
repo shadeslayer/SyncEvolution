@@ -256,7 +256,10 @@
           <value field="FN"/>
         </property>
 
-        <property name="NICKNAME" onlyformode="standard">
+        <!-- onlyformode="standard": not part of vCard 2.1, but some
+             peers (like the Funambol server) accept it anyway in
+             vCard 2.1 -->
+        <property name="NICKNAME">
           <value field="NICKNAME"/>
         </property>
 
