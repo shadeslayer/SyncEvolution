@@ -91,7 +91,7 @@
             <value field="DESCRIPTION"/>
           </property>
 
-          <property name="LOCATION" mandatory="no">
+          <property name="LOCATION" suppressempty="yes" mandatory="no">
             <value field="LOCATION"/>
           </property>
 
@@ -336,7 +336,7 @@
             <value field="DESCRIPTION"/>
           </property>
 
-          <property name="LOCATION" mandatory="no">
+          <property name="LOCATION" suppressempty="yes" mandatory="no">
             <value field="LOCATION"/>
           </property>
 
