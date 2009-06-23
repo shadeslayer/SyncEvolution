@@ -1,0 +1,498 @@
+# syncevolution
+# Copyright (C) 2009 Intel
+# This file is distributed under the same license as the PACKAGE package.
+# Zhu Yanhai <yanhai.zhu@intel.com>, 2009.
+#
+#: ../src/gtk-ui/sync-ui.c:609
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: syncevolution\n"
+"Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
+"POT-Creation-Date: 2009-06-02 10:32+0300\n"
+"PO-Revision-Date: 2009-06-08 11:44+0800\n"
+"Last-Translator: Zhu Yanhai <yanhai.zhu@intel.com>\n"
+"Language-Team: zh_CN <yanhai.zhu@intel.com\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+#: ../src/gtk-ui/sync-ui.c:253
+msgid "Addressbook"
+msgstr "地址本"
+
+#: ../src/gtk-ui/sync-ui.c:255
+msgid "Calendar"
+msgstr "日历"
+
+#: ../src/gtk-ui/sync-ui.c:257
+msgid "Todo"
+msgstr "待办事宜"
+
+#: ../src/gtk-ui/sync-ui.c:259
+msgid "Memo"
+msgstr "备忘录"
+
+#: ../src/gtk-ui/sync-ui.c:314
+msgid "Failed to save current service in GConf configuration system"
+msgstr "试图在GConf配置系统中保存当前服务时失败"
+
+#: ../src/gtk-ui/sync-ui.c:325
+msgid "Failed to save service configuration to SyncEvolution"
+msgstr "在向SyncEvolution中保存当前服务设置时失败"
+
+#: ../src/gtk-ui/sync-ui.c:352
+msgid "Failed to get service configuration from SyncEvolution"
+msgstr "试图从SyncEvolution中取得服务配置信息时失败"
+
+#: ../src/gtk-ui/sync-ui.c:389
+msgid "Failed to remove service configuration from SyncEvolution"
+msgstr "试图从SyncEvolution中删除服务配置信息时失败"
+
+#: ../src/gtk-ui/sync-ui.c:485
+msgid "Service must have a name"
+msgstr "需要给服务命名"
+
+#. sync is no longer in progress for some reason
+#: ../src/gtk-ui/sync-ui.c:521
+msgid "Failed to cancel: sync was no longer in progress"
+msgstr "不能取消: 同步已经停止"
+
+#: ../src/gtk-ui/sync-ui.c:525
+msgid "Failed to cancel sync"
+msgstr "取消同步失败"
+
+#: ../src/gtk-ui/sync-ui.c:529
+msgid "Canceling sync"
+msgstr "正在取消同步"
+
+#: ../src/gtk-ui/sync-ui.c:543
+msgid "Trying to cancel sync"
+msgstr "尝试取消同步"
+
+#: ../src/gtk-ui/sync-ui.c:550
+#, c-format
+msgid ""
+"Do you want to delete all local data and replace it with data from %s? This "
+"is not usually advised."
+msgstr "您想删除所有本地数据并用来自%s的数据替代它们吗?通常我们不建议您这样做."
+
+#: ../src/gtk-ui/sync-ui.c:555
+#, c-format
+msgid ""
+"Do you want to delete all data in %s and replace it with your local data? "
+"This is not usually advised."
+msgstr "您想删除%s中的所有数据并用您的本地数据来替代它们吗?通常我们不建议您这样做"
+
+#: ../src/gtk-ui/sync-ui.c:571
+msgid "No, cancel sync"
+msgstr "不,取消同步"
+
+#: ../src/gtk-ui/sync-ui.c:572
+msgid "Yes, delete and replace"
+msgstr "是的,删除然后替代"
+
+#: ../src/gtk-ui/sync-ui.c:594
+msgid "No sources are enabled, not syncing"
+msgstr "没有可用数据来源,同步未进行"
+
+#: ../src/gtk-ui/sync-ui.c:611
+msgid "A sync is already in progress"
+msgstr "同步操作已在进行中"
+
+#: ../src/gtk-ui/sync-ui.c:613
+msgid "Failed to start sync"
+msgstr "不能开始同步"
+
+#: ../src/gtk-ui/sync-ui.c:618
+msgid "Starting sync"
+msgstr "正在开始同步"
+
+#: ../src/gtk-ui/sync-ui.c:643
+msgid "Last synced just seconds ago"
+msgstr "最近一次同步操作已于几秒前执行"
+
+#: ../src/gtk-ui/sync-ui.c:646
+msgid "Last synced a minute ago"
+msgstr "最近一次同步操作于一分钟前执行"
+
+#: ../src/gtk-ui/sync-ui.c:649
+#, c-format	
+msgid "Last synced %ld minutes ago"
+msgstr "最近一次同步操作于%ld分钟前执行"
+
+#: ../src/gtk-ui/sync-ui.c:652
+msgid "Last synced an hour ago"
+msgstr "最近一次同步操作于一小时前执行"
+
+#: ../src/gtk-ui/sync-ui.c:655
+#, c-format
+msgid "Last synced %ld hours ago"
+msgstr "最近一次同步操作于%ld小时前执行"
+
+#: ../src/gtk-ui/sync-ui.c:658
+msgid "Last synced a day ago"
+msgstr "最近一次同步操作于一天前进行"
+
+#: ../src/gtk-ui/sync-ui.c:661
+#, c-format
+msgid "Last synced %ld days ago"
+msgstr "最近一次同步操作于%ld天前进行"
+
+#: ../src/gtk-ui/sync-ui.c:746
+msgid "Sync again"
+msgstr "再次同步"
+
+#: ../src/gtk-ui/sync-ui.c:748 ../src/gtk-ui/ui.glade.h:29
+msgid "Sync now"
+msgstr "现在同步"
+
+#: ../src/gtk-ui/sync-ui.c:757
+msgid "Syncing"
+msgstr "正在同步"
+
+#: ../src/gtk-ui/sync-ui.c:763
+msgid "Cancel sync"
+msgstr "取消同步"
+
+#. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
+#: ../src/gtk-ui/sync-ui.c:1107
+#, c-format
+msgid "%s (not supported by this service)"
+msgstr "%s (不被当前服务所支持)"
+
+#: ../src/gtk-ui/sync-ui.c:1140
+#, c-format
+msgid "There was one remote rejection."
+msgid_plural "There were %d remote rejections."
+msgstr[0] "出现了一个远端拒绝"
+msgstr[1] "出现了%d个远端拒绝"
+
+#: ../src/gtk-ui/sync-ui.c:1145
+#, c-format
+msgid "There was one local rejection."
+msgid_plural "There were %d local rejections."
+msgstr[0] "出现了一个本地拒绝"
+msgstr[1] "出现了%d个本地拒绝"
+
+#: ../src/gtk-ui/sync-ui.c:1150
+#, c-format
+msgid "There were %d local rejections and %d remote rejections."
+msgstr "一共出现了%d个本地拒绝和%d个远端拒绝"
+
+#: ../src/gtk-ui/sync-ui.c:1155
+#, c-format
+msgid "Last time: No changes."
+msgstr "最近一次: 没有更改"
+
+#: ../src/gtk-ui/sync-ui.c:1157
+#, c-format
+msgid "Last time: Sent one change."
+msgid_plural "Last time: Sent %d changes."
+msgstr[0] "最近一次: 发送了一个更改"
+msgstr[1] "最近一次: 发现了%d个更改"
+
+#: ../src/gtk-ui/sync-ui.c:1162
+#, c-format
+msgid "Last time: Received one change."
+msgid_plural "Last time: Received %d changes."
+msgstr[0] "最近一次: 收到了一个更改"
+msgstr[1] "最近一次: 收到了%d个更改"
+
+#: ../src/gtk-ui/sync-ui.c:1167
+#, c-format
+msgid "Last time: Received %d changes and sent %d changes."
+msgstr "最近一次: 收到了%d个更改并发送了%d个更改"
+
+#: ../src/gtk-ui/sync-ui.c:1236
+msgid "Failed to get server configuration from SyncEvolution"
+msgstr "未能从SyncEvolution处取得服务器配置信息"
+
+#: ../src/gtk-ui/sync-ui.c:1282
+msgid "New service"
+msgstr "新服务"
+
+#: ../src/gtk-ui/sync-ui.c:1323
+msgid "Server URL"
+msgstr "服务器的URL"
+
+#. TRANSLATORS: placeholder is a source name in settings window
+#: ../src/gtk-ui/sync-ui.c:1343
+#, c-format
+msgid "%s URI"
+msgstr "%s URI"
+
+#: ../src/gtk-ui/sync-ui.c:1473 ../src/gtk-ui/ui.glade.h:17
+msgid "Launch website"
+msgstr "打开站点"
+
+#: ../src/gtk-ui/sync-ui.c:1477
+msgid "Setup and use"
+msgstr "配置并使用"
+
+#: ../src/gtk-ui/sync-ui.c:1523
+msgid "Failed to get list of manually setup services from SyncEvolution"
+msgstr "未能从SyncEvolution取得手动设置服务列表"
+
+#: ../src/gtk-ui/sync-ui.c:1564
+msgid "Failed to get list of supported services from SyncEvolution"
+msgstr "未能从SyncEvolution得到支持的服务列表"
+
+#. TODO: this is a hack... SyncEnd should be a signal of it's own,
+#. not just hacked on top of the syncevolution error codes
+#: ../src/gtk-ui/sync-ui.c:1718
+msgid "Service configuration not found"
+msgstr "服务配置没找到"
+
+#: ../src/gtk-ui/sync-ui.c:1724
+msgid "Not authorized"
+msgstr "未认证"
+
+#: ../src/gtk-ui/sync-ui.c:1726
+msgid "Forbidden"
+msgstr "被禁止"
+
+#: ../src/gtk-ui/sync-ui.c:1728
+msgid "Not found"
+msgstr "没找到"
+
+#: ../src/gtk-ui/sync-ui.c:1730
+msgid "Fatal database error"
+msgstr "严重的数据库错误"
+
+#: ../src/gtk-ui/sync-ui.c:1732
+msgid "Database error"
+msgstr "数据库错误"
+
+#: ../src/gtk-ui/sync-ui.c:1734
+msgid "No space left"
+msgstr "没有剩余空间"
+
+#. TODO identify problem item somehow ?
+#: ../src/gtk-ui/sync-ui.c:1737
+msgid "Failed to process SyncML"
+msgstr "处理SyncML失败"
+
+#: ../src/gtk-ui/sync-ui.c:1739
+msgid "Server authorization failed"
+msgstr "服务器认证失败"
+
+#: ../src/gtk-ui/sync-ui.c:1741
+msgid "Failed to parse configuration file"
+msgstr "解析配置文件出错"
+
+#: ../src/gtk-ui/sync-ui.c:1743
+msgid "Failed to read configuration file"
+msgstr "读配置文件时出错"
+
+#: ../src/gtk-ui/sync-ui.c:1745
+msgid "No configuration found"
+msgstr "未找到配置"
+
+#: ../src/gtk-ui/sync-ui.c:1747
+msgid "No configuration file found"
+msgstr "未找到配置文件"
+
+#: ../src/gtk-ui/sync-ui.c:1749
+msgid "Server sent bad content"
+msgstr "服务器发送的内容错误"
+
+#: ../src/gtk-ui/sync-ui.c:1751
+msgid "Transport failure (no connection?)"
+msgstr "传输错误(没建立连接?)"
+
+#: ../src/gtk-ui/sync-ui.c:1753
+msgid "Connection timed out"
+msgstr "连接超时"
+
+#: ../src/gtk-ui/sync-ui.c:1755
+msgid "Connection certificate has expired"
+msgstr "该连接的认证已过期"
+
+#: ../src/gtk-ui/sync-ui.c:1757
+msgid "Connection certificate is invalid"
+msgstr "连接认证不合法"
+
+#: ../src/gtk-ui/sync-ui.c:1760
+msgid "Connection failed"
+msgstr "连接失败"
+
+#: ../src/gtk-ui/sync-ui.c:1762
+msgid "URL is bad"
+msgstr "URL有误"
+
+#: ../src/gtk-ui/sync-ui.c:1764
+msgid "Server not found"
+msgstr "没找到服务器"
+
+#: ../src/gtk-ui/sync-ui.c:1766
+#, c-format
+msgid "Error %d"
+msgstr "错误 %d"
+
+#: ../src/gtk-ui/sync-ui.c:1776
+msgid "Sync D-Bus service exited unexpectedly"
+msgstr "Sync的D-Bus服务异常退出"
+
+#: ../src/gtk-ui/sync-ui.c:1779 ../src/gtk-ui/sync-ui.c:1830
+msgid "Sync Failed"
+msgstr "同步失败"
+
+#: ../src/gtk-ui/sync-ui.c:1822
+msgid "Sync complete"
+msgstr "同步完成"
+
+#: ../src/gtk-ui/sync-ui.c:1827
+msgid "Sync canceled"
+msgstr "同步被取消"
+
+#. NOTE extra1 can be error here
+#: ../src/gtk-ui/sync-ui.c:1845
+msgid "Ending sync"
+msgstr "结束同步"
+
+#. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
+#: ../src/gtk-ui/sync-ui.c:1869
+#, c-format
+msgid "Preparing '%s'"
+msgstr "正在准备 '%s'"
+
+#. TRANSLATORS: placeholder is a source name in a progress text
+#: ../src/gtk-ui/sync-ui.c:1881
+#, c-format
+msgid "Sending '%s'"
+msgstr "正在发送 '%s'"
+
+#. TRANSLATORS: placeholder is a source name in a progress text
+#: ../src/gtk-ui/sync-ui.c:1893
+#, c-format
+msgid "Receiving '%s'"
+msgstr "正在接收 '%s'"
+
+#: ../src/gtk-ui/ui.glade.h:1
+msgid "<b>Data</b>"
+msgstr "<b>数据</b>"
+
+#: ../src/gtk-ui/ui.glade.h:2
+msgid "<b>No sync service in use</b>"
+msgstr "<b>没有正在使用中的同步服务</b>"
+
+#: ../src/gtk-ui/ui.glade.h:3
+msgid "<b>Sync failure</b>"
+msgstr "<b>同步失败</b>"
+
+#: ../src/gtk-ui/ui.glade.h:4
+msgid "<b>Type of Sync</b>"
+msgstr "<b>同步类型</b>"
+
+#: ../src/gtk-ui/ui.glade.h:5
+msgid "<big>Manual setup</big>"
+msgstr "<big>手动设置</big>"
+
+#: ../src/gtk-ui/ui.glade.h:6
+msgid "<big>Supported services</big>"
+msgstr "<big>支持的服务</big>"
+
+#: ../src/gtk-ui/ui.glade.h:7
+msgid "Add new service"
+msgstr "添加新服务"
+
+#: ../src/gtk-ui/ui.glade.h:8
+msgid "Back to sync"
+msgstr "返回同步"
+
+#: ../src/gtk-ui/ui.glade.h:9
+msgid ""
+"Change sync\n"
+"service"
+msgstr "改变同步服务"
+
+#: ../src/gtk-ui/ui.glade.h:11
+msgid "Delete all local data and replace it with remote data"
+msgstr "删除所有本地数据并用远程数据替代它们"
+
+#: ../src/gtk-ui/ui.glade.h:12
+msgid "Delete all remote data and replace it with local data"
+msgstr "删除所有远程数据并用本地数据替代它们"
+
+#: ../src/gtk-ui/ui.glade.h:13
+msgid "Delete this service"
+msgstr "删除此项服务"
+
+#: ../src/gtk-ui/ui.glade.h:14
+msgid "Edit service settings"
+msgstr "编辑服务设置"
+
+#: ../src/gtk-ui/ui.glade.h:15
+msgid ""
+"If you don't see your service above but know that your sync provider uses "
+"SyncML\n"
+"you can setup a service manually."
+msgstr "如果您没有在上边看见您的服务,但知道您的服务提供者使用了SyncML\n"
+"那么您可以手动设置服务"
+
+#: ../src/gtk-ui/ui.glade.h:18
+msgid "Merge local and remote data (recommended)"
+msgstr "合并本地和远程数据(推荐)"
+
+#: ../src/gtk-ui/ui.glade.h:19
+msgid "Password"
+msgstr "密码"
+
+#: ../src/gtk-ui/ui.glade.h:20
+msgid "Reset original server settings"
+msgstr "恢复服务器原始设置"
+
+#: ../src/gtk-ui/ui.glade.h:21
+msgid "Save and use this service"
+msgstr "保存并使用此服务"
+
+#: ../src/gtk-ui/ui.glade.h:22
+msgid "Server settings"
+msgstr "服务器设置"
+
+#: ../src/gtk-ui/ui.glade.h:23
+msgid "Service name"
+msgstr "服务名字"
+
+#: ../src/gtk-ui/ui.glade.h:24
+msgid "Setup sync service"
+msgstr "设置同步服务"
+
+#: ../src/gtk-ui/ui.glade.h:25
+msgid ""
+"Sorry, you need an internet\n"
+"connection to sync."
+msgstr "抱歉,您需要一个Internet连接来进行同步"
+
+#: ../src/gtk-ui/ui.glade.h:27
+msgid "Stop using this service"
+msgstr "停止使用此服务"
+
+#: ../src/gtk-ui/ui.glade.h:28
+msgid "Sync"
+msgstr "同步"
+
+#: ../src/gtk-ui/ui.glade.h:30
+msgid ""
+"Synchronization is not available (D-Bus service does not answer), sorry."
+msgstr "抱歉,同步操作不可用(D-Bus服务无应答)."
+
+#: ../src/gtk-ui/ui.glade.h:31
+msgid ""
+"To sync you'll need a network connection and an account with a sync "
+"service.\n"
+"We support the following services: "
+msgstr "要进行同步您需要一个网络连接和一个同步服务的账号.\n"
+"我们目前支持以下服务"
+
+#: ../src/gtk-ui/ui.glade.h:33
+msgid "Username"
+msgstr "用户名"
+
+#: ../src/gtk-ui/ui.glade.h:34
+msgid ""
+"You haven't set up a sync service yet. Sync services let you \n"
+"synchronize your data between your netbook and a web service."
+msgstr "您尚未设置同步服务.同步服务允许您在您的上网本和Web服务之间同步数据"
