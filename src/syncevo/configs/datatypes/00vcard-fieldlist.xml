@@ -13,6 +13,7 @@
       <field name="TITLE" type="string" compare="conflict" merge="fillempty"/>
 
       <field name="FN" type="string" compare="conflict" merge="fillempty"/>
+      <field name="FILE-AS" type="string" compare="conflict" merge="fillempty"/>
 
       <!-- categories and classification -->
       <field name="CATEGORIES" array="yes" type="string" compare="conflict"/>
@@ -20,27 +21,65 @@
       <!-- organisation -->
       <field name="ORG_NAME" type="string" compare="slowsync" merge="fillempty"/>
       <field name="ORG_DIVISION" type="string" compare="conflict" merge="fillempty"/>
+      <field name="ORG_OFFICE" type="string" compare="conflict" merge="fillempty"/>
+      <field name="ORG_TEAM" type="string" compare="conflict" merge="fillempty"/>
+      <field name="ROLE" type="string" compare="conflict" merge="fillempty"/>
 
-      <!-- birthday -->
+      <!-- birthday and anniversary (not necessarily the same) -->
       <field name="BDAY" type="date" compare="conflict" merge="fillempty"/>
+      <field name="ANNIVERSARY" type="date" compare="conflict" merge="fillempty"/>
 
       <!-- telephone numbers -->
       <field name="TEL"         array="yes" type="telephone" compare="conflict"/>
       <field name="TEL_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="TEL_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="TEL_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+      <field name="TEL_SLOT"    array="yes" type="integer"   compare="never"/>    <!-- offset 3 -->
 
       <!-- emails -->
       <field name="EMAIL"       array="yes" type="multiline" compare="conflict"/>
       <field name="EMAIL_FLAGS" array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="EMAIL_LABEL" array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="EMAIL_ID"    array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+      <field name="EMAIL_SLOT"  array="yes" type="integer"   compare="never"/>    <!-- offset 3 -->
 
       <!-- web addresses -->
       <field name="WEB"         array="yes" type="string" compare="conflict"/>
       <field name="WEB_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="WEB_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="WEB_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+
+      <!-- would be nicer to have as part of WEB, but parser/encoder does not support mapping
+           with more than one property per field -->
+      <field name="CALURI"      array="yes" type="string" compare="conflict"/>
+      <field name="FBURL"       array="yes" type="string" compare="conflict"/>
+      <field name="BLOGURL"     array="yes" type="string" compare="conflict"/>
+      <field name="VIDEOURL"    array="yes" type="string" compare="conflict"/>
+
+      <!-- related persons: should be turned into array, like WEB and CALURI/FBURL -->
+      <field name="MANAGER"    type="string" compare="conflict"/>
+      <field name="ASSISTANT"  type="string" compare="conflict"/>
+      <field name="SPOUSE"     type="string" compare="conflict"/>
+
+      <!-- does this person want HTML mails? Valid values are TRUE/FALSE; a "boolean"
+           type would be useful, maybe add that later. -->
+      <field name="WANTS_HTML"  type="string" compare="conflict"/>
+
+      <!-- chat handles: should be turned into one array, like WEB and CALURI/FBURL -->
+      <field name="AIM_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="AIM_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="GADUGADU_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="GADUGADU_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="GROUPWISE_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="GROUPWISE_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="ICQ_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="ICQ_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="JABBER_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="JABBER_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="MSN_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="MSN_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="YAHOO_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="YAHOO_SLOT"          array="yes" type="string" compare="conflict"/>
 
       <!-- home address -->
       <field name="ADR_STREET"        array="yes" type="multiline" compare="conflict"/>

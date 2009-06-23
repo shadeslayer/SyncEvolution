@@ -26,6 +26,10 @@
           <value field="FN"/>
         </property>
 
+        <property name="X-EVOLUTION-FILE-AS">
+          <value field="FILE-AS"/>
+        </property>
+
         <!-- onlyformode="standard": not part of vCard 2.1, but some
              peers (like the Funambol server) accept it anyway in
              vCard 2.1 -->
@@ -42,9 +46,15 @@
           <position field="CATEGORIES" repeat="array" increment="1" minshow="0"/>
         </property>
 
-        <property name="ORG" values="2">
+        <property name="ORG" values="4">
           <value index="0" field="ORG_NAME"/>
           <value index="1" field="ORG_DIVISION"/>
+          <value index="2" field="ORG_OFFICE"/>
+          <value index="3" field="ORG_TEAM"/>
+        </property>
+
+        <property name="ROLE">
+          <value field="ROLE"/>
         </property>
 
         <property name="TEL">
@@ -60,10 +70,18 @@
               <enum name="FAX"      value="B5"/>
               <enum name="PAGER"    value="B6"/>
               <enum name="PREF"     value="B7"/>
+              <enum name="CAR"      value="B8"/>
+              <enum name="X-EVOLUTION-CALLBACK" value="B9"/>
+              <enum name="X-EVOLUTION-RADIO" value="B10"/>
+              <enum name="X-EVOLUTION-TELEX" value="B11"/>
+              <enum name="X-EVOLUTION-TTYTDD" value="B12"/>
 
               <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
             </value>
+          </parameter>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="TEL_SLOT"/>
           </parameter>
         </property>
 
@@ -81,6 +99,9 @@
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
             </value>
           </parameter>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="EMAIL_SLOT"/>
+          </parameter>
         </property>
 
         <property name="URL">
@@ -96,6 +117,76 @@
               <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
               <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
             </value>
+          </parameter>
+        </property>
+
+        <property name="CALURI" suppressempty="yes">
+          <value field="CALURI" show="yes"/>
+        </property>
+        <property name="FBURL" suppressempty="yes">
+          <value field="FBURL" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-BLOG-URL" suppressempty="yes">
+          <value field="BLOGURL" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-VIDEO-URL" suppressempty="yes">
+          <value field="VIDEOURL" show="yes"/>
+        </property>
+
+        <property name="X-EVOLUTION-MANAGER" suppressempty="yes">
+          <value field="MANAGER" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-ASSISTANT" suppressempty="yes">
+          <value field="ASSISTANT" show="yes"/>
+        </property>
+        <property name="X-EVOLUTION-SPOUSE" suppressempty="yes">
+          <value field="SPOUSE" show="yes"/>
+        </property>
+
+        <property name="X-MOZILLA-HTML">
+          <value field="WANTS_HTML" show="yes"/>
+        </property>
+
+        <property name="X-AIM" suppressempty="yes">
+          <value field="AIM_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="AIM_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-GADUGADU" suppressempty="yes">
+          <value field="GADUGADU_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="GADUGADU_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-GROUPWISE" suppressempty="yes">
+          <value field="GROUPWISE_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="GROUPWISE_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-ICQ" suppressempty="yes">
+          <value field="ICQ_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="ICQ_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-JABBER" suppressempty="yes">
+          <value field="JABBER_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="JABBER_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-MSN" suppressempty="yes">
+          <value field="MSN_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="MSN_SLOT"/>
+          </parameter>
+        </property>
+        <property name="X-YAHOO" suppressempty="yes">
+          <value field="YAHOO_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="YAHOO_SLOT"/>
           </parameter>
         </property>
 
@@ -122,6 +213,10 @@
 
         <property name="BDAY">
           <value field="BDAY"/>
+        </property>
+
+        <property name="X-EVOLUTION-ANNIVERSARY">
+          <value field="ANNIVERSARY"/>
         </property>
 
         <property name="NOTE" filter="no">
