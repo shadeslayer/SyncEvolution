@@ -202,7 +202,7 @@
       <field name="EMAIL_ID"    array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
 
       <!-- web addresses -->
-      <field name="WEB"         array="yes" type="url" compare="conflict"/>
+      <field name="WEB"         array="yes" type="string" compare="conflict"/>
       <field name="WEB_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
       <field name="WEB_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
       <field name="WEB_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
