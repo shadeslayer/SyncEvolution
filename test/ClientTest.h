@@ -113,8 +113,8 @@ struct SyncOptions {
  
     SyncOptions(SyncMode syncMode = SYNC_NONE,
                 const CheckSyncReport &checkReport = CheckSyncReport(),
-                long maxMsgSize = 0,
-                long maxObjSize = 0,
+                long maxMsgSize = 128 * 1024, // 128KB = large enough that normal tests should run with a minimal number of messages
+                long maxObjSize = 1 * 1024 * 1024 * 1024, // 1GB = basically unlimited...
                 bool loSupport = false,
                 bool isWBXML = defaultWBXML(),
                 Callback_t startCallback = EmptyCallback) :
