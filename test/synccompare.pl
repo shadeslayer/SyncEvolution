@@ -201,6 +201,9 @@ sub Normalize {
     # removed or added by servers
     s/^DESCRIPTION:(.*?)(\\n)+$/DESCRIPTION:$1/gm;
 
+    # use the shorter property name when there are alternatives
+    s/^X-EVOLUTION-(SPOUSE|MANAGER|ASSISTANT|ANNIVERSARY)/X-$1/gm;
+
     # if there is no DESCRIPTION in a VJOURNAL, then use the
     # summary: that's what is done when exchanging such a
     # VJOURNAL as plain text
@@ -293,7 +296,7 @@ sub Normalize {
 
     if ($funambol) {
       # several properties are not preserved
-      s/^(CALURI|FBURL|FN|PHOTO|X-EVOLUTION-ANNIVERSARY|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|X-EVOLUTION-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-MANAGER|X-EVOLUTION-SPOUSE|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
+      s/^(CALURI|FBURL|FN|PHOTO|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
 
       # quoted-printable line breaks are =0D=0A, not just single =0A
       s/(?<!=0D)=0A/=0D=0A/g;
