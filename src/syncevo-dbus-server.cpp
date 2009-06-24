@@ -32,7 +32,11 @@
 #include <dbus/dbus-glib-bindings.h>
 
 #ifdef USE_GNOME_KEYRING
+// extern "C" is missing in 2.24.1, leading to
+// link errors. Specifying it here is a workaround.
+extern "C" {
 #include <gnome-keyring.h>
+}
 #endif
 
 #include "EvolutionSyncSource.h"
