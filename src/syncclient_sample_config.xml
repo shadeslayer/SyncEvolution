@@ -1222,6 +1222,10 @@
     <fakedeviceid/>
 
     <datastore/>
+
+    <remoterule name="EVOLUTION">
+      <deviceid>none - this rule is activated via its name in MAKE/PARSETEXTWITHPROFILE() macro calls</deviceid>
+    </remoterule>
   </client>
 
 </sysync_config>
