@@ -33,7 +33,7 @@
         <!-- sub-profile for tasks -->
         <subprofile name="VTODO" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="0">
 
-          <property name="LAST-MODIFIED">
+          <property name="LAST-MODIFIED" suppressempty="yes">
             <value field="DMODIFIED"/>
           </property>
 
@@ -234,7 +234,7 @@
         <!-- sub-profile for event -->
         <subprofile name="VEVENT" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="1">
 
-          <property name="LAST-MODIFIED">
+          <property name="LAST-MODIFIED" suppressempty="yes">
             <value field="DMODIFIED"/>
           </property>
 
