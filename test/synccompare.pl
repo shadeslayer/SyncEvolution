@@ -311,6 +311,10 @@ sub Normalize {
       # this particular type is not preserved
       s/ADR;TYPE=PARCEL:Test Box #3/ADR;TYPE=HOME:Test Box #3/;
     }
+    if ($funambol) {
+      #several properties are not preserved by funambol server in icalendar2.0 format
+      s/^(UID|SEQUENCE|TRANSP|LAST-MODIFIED|X-EVOLUTION-ALARM-UID)(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
 
     if ($funambol || $egroupware) {
       # NOTE may be truncated due to length resistrictions
