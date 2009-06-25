@@ -297,6 +297,9 @@ void EvolutionSyncSource::getSynthesisInfo(string &profile,
         datatypes =
             "        <use datatype='note10' mode='rw' preferred='yes'/>\n"
             "        <use datatype='note11' mode='rw'/>\n";
+    } else if (type == "text/calendar:2.0!" || type == "text/calendar!") { //only support and force to use icalendar2.0
+        datatypes =
+            "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
     } else {
         throwError(string("configured MIME type not supported: ") + type);
     }

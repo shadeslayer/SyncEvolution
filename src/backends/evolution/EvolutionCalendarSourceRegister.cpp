@@ -66,7 +66,9 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
     isMe = sourceType.first == "Evolution Calendar";
     if (isMe || sourceType.first == "calendar") {
         if (sourceType.second == "" || sourceType.second == "text/calendar" ||
-            sourceType.second == "text/x-vcalendar" /* this is for backwards compatibility with broken configs */ ) {
+            sourceType.second == "text/x-vcalendar" /* this is for backwards compatibility with broken configs */ ||
+            sourceType.second == "text/calendar:2.0!" || // force to use icalendar2.0
+            sourceType.second == "text/calendar!" ) { // force to use icalendar2.0
             return
 #ifdef ENABLE_ECAL
                 enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, params) :
