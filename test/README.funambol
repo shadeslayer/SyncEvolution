@@ -1,0 +1,49 @@
+Thiss document is used to show interoperability test information with funambol server.
+
+* The Funambol Server's device information 
+  Funambol Data Synchronization Server v.7.1.1
+    Man=Funambol
+    Mod=DS Server CarEd
+    SwV=7.1.1
+    HwV=-
+    FwV=-
+    OEM=-
+    DevID=funambol
+    DevTyp=server
+    VerDTD=1.2
+    UTC=true
+    SupportLargeObjs=true
+    SupportNumberOfChanges=true
+    Ext=X-funambol-smartslow
+
+* Data formats we need to test:
+Client::Sync::vcard21
+Client::Sync::ical20
+Client::Sync::itodo20
+
+* Know properties got lost in Funambol server:
+VCard21
+  -- N/A
+
+ical20
+itodo20
+  -- UID, SEQUENCE, TRANSP, LAST-MODIFIED, X-EVOLUTION-ALARM-UID 
+
+* Known failures:
+Client::Sync::vcard21
+  -- Client::Sync::vcard21::testItems
+  -- Client::Sync::vcard21::testItemsXML
+
+Client::Sync::ical20
+  -- Client::Sync::ical20::testTwinning
+  -- Client::Sync::ical20::testItems
+  -- Client::Sync::ical20::testItemsXML
+  -- Client::Sync::ical20::testMaxMsg
+  -- Client::Sync::ical20::testLargeObject
+
+Client::Sync::itodo20
+  -- Client::Sync::itodo20::testTwinning
+  -- Client::Sync::itodo20::testItems
+  -- Client::Sync::itodo20::testItemsXML
+  -- Client::Sync::itodo20::testMaxMsg
+  -- Client::Sync::itodo20::testLargeObject
