@@ -39,7 +39,7 @@ else
 SYNCEVOLUTION_LDADD += $(SYNCSOURCES)
 SYNCEVOLUTION_DEP += $(SYNCSOURCES)
 endif
-EXTRA_DIST = shlibs.local Makefile-gen.am syncevolution.xml $(service_in_files)
+EXTRA_DIST = shlibs.local Makefile-gen.am syncclient_sample_config.xml $(service_in_files)
 
 TEMPLATE_FILES = @TEMPLATE_FILES@
 nobase_dist_sysconf_DATA = $(TEMPLATE_FILES)
@@ -117,7 +117,7 @@ dist-hook:
 		  ( rm -f ChangeLog.tmp ; \
 		     echo Failed to generate ChangeLog >&2 ) \
                 ); \
-	elsif test $SYNTHESIS_SRC != "no-synthesis-source"; \
+	elif test $(SYNTHESIS_SRC) != "no-synthesis-source"; then \
 		cp -a $(SYNTHESIS_SRC)/* $(distdir)/synthesis  && \
 		for i in _build autom4te.cache; do [ ! -d "$(SYNTHESIS_SRC)/$$i" ] || chmod -R u+rwx "$(SYNTHESIS_SRC)/$$i"; done && \
 		find "$(distdir)" -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name .svn -o -name .git -o -name autom4te.cache -print0 | xargs -0 rm -rf; \

@@ -32,8 +32,8 @@ bin_PROGRAMS = \
 
 sync_ui_SOURCES = \
 	main.c sync-ui.c sync-ui.h sync-ui-config.c sync-ui-config.h \
-	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h \
-	sync-ui-marshal.c sync-ui-marshal.h
+	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h
+nodist_sync_ui_SOURCES = sync-ui-marshal.c sync-ui-marshal.h
 sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) -L$(top_builddir)/src/dbus -lsyncevo-dbus
 sync_ui_CFLAGS = $(GUI_CFLAGS) $(DBUS_GLIB_CFLAGS) \
                  -DGLADEDIR=\""$(gladedir)"\" \
@@ -43,8 +43,10 @@ sync_ui_CFLAGS = $(GUI_CFLAGS) $(DBUS_GLIB_CFLAGS) \
 sync_ui_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) -I$(top_builddir)/src/dbus -I$(top_srcdir)/src/dbus $(SYNTHESIS_CFLAGS) 
 
 noinst_DATA = sync-ui-marshal.list
+if COND_GUI
 BUILT_SOURCES = \
 	syncevo-bindings.h sync-ui-marshal.c sync-ui-marshal.h
+endif
 CLEANFILES = $(BUILT_SOURCES) 
 
 %-bindings.h: stamp-%-bindings.h
