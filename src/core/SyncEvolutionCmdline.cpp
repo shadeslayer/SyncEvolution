@@ -1002,7 +1002,7 @@ public:
                               "config.ini:# proxyPassword = \n"
                               "config.ini:# clientAuthType = md5\n"
                               "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
-                              "config.ini:# enableWBXML = 0\n"
+                              "config.ini:# enableWBXML = 1\n"
                               "config.ini:# maxMsgSize = 20000\n"
                               "config.ini:# maxObjSize = 4000000\n"
                               "config.ini:# enableCompression = 0\n"
@@ -1741,6 +1741,10 @@ private:
         boost::replace_first(config,
                              "WebURL = http://sync.scheduleworld.com",
                              "WebURL = http://my.funambol.com");
+
+        boost::replace_first(config,
+                             "# enableWBXML = 1",
+                             "enableWBXML = 0");
 
         boost::replace_first(config,
                              "addressbook/config.ini:uri = card3",
