@@ -267,9 +267,11 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         config->setWebURL("http://my.funambol.com");
         config->setWBXML(false);
         source = config->getSyncSourceConfig("calendar");
-        source->setSync("disabled");
+        source->setSync("two-way");
+        source->setURI("event");
         source = config->getSyncSourceConfig("todo");
-        source->setSync("disabled");
+        source->setSync("two-way");
+        source->setURI("task");
     } else if (boost::iequals(server, "synthesis")) {
         config->setSyncURL("http://www.synthesis.ch/sync");
         config->setWebURL("http://www.synthesis.ch");
