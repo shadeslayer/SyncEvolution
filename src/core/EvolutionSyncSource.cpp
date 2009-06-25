@@ -237,7 +237,8 @@ EvolutionSyncSource *EvolutionSyncSource::createTestingSource(const string &name
 
 void EvolutionSyncSource::getSynthesisInfo(string &profile,
                                            string &datatypes,
-                                           string &native)
+                                           string &native,
+                                           XMLConfigFragments &fragments)
 {
     string type = getMimeType();
 
@@ -301,14 +302,14 @@ void EvolutionSyncSource::getSynthesisInfo(string &profile,
     }
 }
 
-void EvolutionSyncSource::getDatastoreXML(string &xml)
+void EvolutionSyncSource::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
 {
     stringstream xmlstream;
     string profile;
     string datatypes;
     string native;
 
-    getSynthesisInfo(profile, datatypes, native);
+    getSynthesisInfo(profile, datatypes, native, fragments);
 
     xmlstream <<
         "      <plugin_module>SyncEvolution</plugin_module>\n"

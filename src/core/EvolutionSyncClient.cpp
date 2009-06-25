@@ -1204,7 +1204,7 @@ void EvolutionSyncClient::getConfigTemplateXML(string &xml, string &configname)
     xml = SyncEvolutionXML;
 }
 
-static void substTag(string &xml, const string &tagname, const string &replacement)
+static void substTag(string &xml, const string &tagname, const string &replacement, bool replaceElement = false)
 {
     string tag;
     size_t index;
@@ -1218,23 +1218,27 @@ static void substTag(string &xml, const string &tagname, const string &replaceme
     if (index != xml.npos) {
         string tmp;
         tmp.reserve(tagname.size() * 2 + 2 + 3 + replacement.size());
-        tmp += "<";
-        tmp += tagname;
-        tmp += ">";
+        if (!replaceElement) {
+            tmp += "<";
+            tmp += tagname;
+            tmp += ">";
+        }
         tmp += replacement;
-        tmp += "</";
-        tmp += tagname;
-        tmp += ">";
+        if (!replaceElement) {
+            tmp += "</";
+            tmp += tagname;
+            tmp += ">";
+        }
         xml.replace(index, tag.size(), tmp);
     }
 }
 
-static void substTag(string &xml, const string &tagname, const char *replacement)
+static void substTag(string &xml, const string &tagname, const char *replacement, bool replaceElement = false)
 {
     substTag(xml, tagname, std::string(replacement));
 }
 
-template <class T> void substTag(string &xml, const string &tagname, const T replacement)
+template <class T> void substTag(string &xml, const string &tagname, const T replacement, bool replaceElement = false)
 {
     stringstream str;
     str << replacement;
@@ -1295,6 +1299,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
         xml.replace(index, tag.size(), debug.str());
     }
 
+    XMLConfigFragments fragments;
     tag = "<datastore/>";
     index = xml.find(tag);
     if (index != xml.npos) {
@@ -1302,7 +1307,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
 
         BOOST_FOREACH(EvolutionSyncSource *source, *m_sourceListPtr) {
             string fragment;
-            source->getDatastoreXML(fragment);
+            source->getDatastoreXML(fragment, fragments);
             hash = Hash(source->getName()) % INT_MAX;
 
             /**
@@ -1321,6 +1326,11 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
         }
         xml.replace(index, tag.size(), datastores.str());
     }
+
+    substTag(xml, "fieldlists", fragments.m_fieldlists.join(), true);
+    substTag(xml, "profiles", fragments.m_profiles.join(), true);
+    substTag(xml, "datatypes", fragments.m_datatypes.join(), true);
+    substTag(xml, "remoterules", fragments.m_remoterules.join(), true);
 
     substTag(xml, "fakedeviceid", getDevID());
     substTag(xml, "model", getMod());

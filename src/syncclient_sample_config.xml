@@ -1237,7 +1237,9 @@
       <use profile="vBookmark"/>
     </datatype>
 
-
+    <fieldlists/>
+    <profiles/>
+    <datatypes/>
   </datatypes>
 
 
@@ -1257,6 +1259,8 @@
     <remoterule name="EVOLUTION">
       <deviceid>none - this rule is activated via its name in MAKE/PARSETEXTWITHPROFILE() macro calls</deviceid>
     </remoterule>
+
+    <remoterules/>
   </client>
 
 </sysync_config>

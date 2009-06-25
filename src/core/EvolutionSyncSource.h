@@ -269,6 +269,55 @@ class TestRegistry : public vector<const RegisterSyncSourceTest *>
 };
 
 /**
+ * a container for Synthesis XML config fragments
+ *
+ * Backends can define their own field lists, profiles, datatypes and
+ * remote rules. The name of each of these entities have to be unique:
+ * either prefix each name with the name of the backend or coordinate
+ * with other developers (e.g. regarding shared field lists).
+ *
+ * To add new items, add them to the respective hash in your backend's
+ * getDatastoreXML() or getSynthesisInfo() implementation. Both
+ * methods have default implementations: getSynthesisInfo() is called
+ * by the default getDatastoreXML() to provide some details and
+ * provides them based on the "type" configuration option.
+ *
+ * The default config XML contains several predefined items:
+ * - field lists: contacts, calendar, Note, bookmarks
+ * - profiles: vCard, vCalendar, Note, vBookmark
+ * - datatypes: vCard21, vCard30, vCalendar10, iCalendar20,
+ *              note10/11 (no difference except the versioning!),
+ *              vBookmark10
+ * - remote rule: EVOLUTION
+ *
+ * These items do not appear in the hashes, so avoid picking the same
+ * names. The entries of each hash has to be a well-formed XML
+ * element, their keys the name encoded in each XML element.
+ */
+struct XMLConfigFragments {
+    class mapping : public std::map<std::string, std::string> {
+    public:
+        string join() {
+            string res;
+            size_t len = 0;
+            BOOST_FOREACH(const value_type &entry, *this) {
+                len += entry.second.size() + 1;
+            }
+            res.reserve(len);
+            BOOST_FOREACH(const value_type &entry, *this) {
+                res += entry.second;
+                res += "\n";
+            }
+            return res;
+        }
+    } m_fieldlists,
+        m_profiles,
+        m_datatypes,
+        m_remoterules;
+};
+
+
+/**
  * SyncEvolution accesses all sources through this interface.  This
  * class also implements common functionality for all SyncSources:
  * - handling of change IDs and URI
@@ -520,9 +569,10 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
      * See EvolutionSyncClient::getConfigXML() for details about
      * predefined <datatype> entries that can be referenced here.
      *
-     * @retval xml    put content of <datastore>...</datastore> here
+     * @retval xml         put content of <datastore>...</datastore> here
+     * @retval fragments   the necessary definitions for the datastore have to be added here
      */
-    virtual void getDatastoreXML(string &xml);
+    virtual void getDatastoreXML(string &xml, XMLConfigFragments &fragments);
 
     /**
      * Synthesis <datatype> name which matches the format used
@@ -534,7 +584,8 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
      */
     virtual string getNativeDatatypeName() {
         string profile, datatypes, native;
-        getSynthesisInfo(profile, datatypes, native);
+        XMLConfigFragments fragments;
+        getSynthesisInfo(profile, datatypes, native, fragments);
         return native;
     }
 
@@ -689,10 +740,12 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
      * @retval profile     profile name to use for MAKE/PARSETEXTWITHPROFILE
      * @retval datatypes   list of supported datatypes in "<use .../>" format
      * @retval native      native datatype (see getNativeDatatypeName())
+     * @retval fragments   the necessary definitions for the other return values have to be added here
      */
     virtual void getSynthesisInfo(string &profile,
                                   string &datatypes,
-                                  string &native);
+                                  string &native,
+                                  XMLConfigFragments &fragments);
 
  public:
 #ifdef HAVE_EDS
