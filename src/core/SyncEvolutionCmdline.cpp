@@ -987,7 +987,9 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
 public:
     SyncEvolutionCmdlineTest() :
         m_testDir("SyncEvolutionCmdlineTest"),
-        m_scheduleWorldConfig("config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
+        m_scheduleWorldConfig(".internal.ini:# HashCode = 0\n"
+                              ".internal.ini:# ConfigDate = \n"
+                              "config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
                               "config.ini:username = your SyncML server account name\n"
                               "config.ini:password = your SyncML server password\n"
                               "config.ini:# logdir = \n"
@@ -1478,6 +1480,8 @@ protected:
         InitList<string> props = InitList<string>("serverNonce") +
             "clientNonce" +
             "devInfoHash" +
+            "HashCode" +
+            "ConfigDate" +
             "last";
         BOOST_FOREACH(string &prop, props) {
             boost::replace_all(oldConfig,
