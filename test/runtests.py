@@ -141,7 +141,7 @@ class Action:
 class Context:
     """Provides services required by actions and handles running them."""
 
-    def __init__(self, tmpdir, resultdir, uri, workdir, mailtitle, sender, recipients, enabled, skip, nologs, setupcmd):
+    def __init__(self, tmpdir, resultdir, uri, workdir, mailtitle, sender, recipients, mailhost, enabled, skip, nologs, setupcmd):
         # preserve normal stdout because stdout/stderr will be redirected
         self.out = os.fdopen(os.dup(1), "w")
         self.todo = []
@@ -154,6 +154,7 @@ class Context:
         self.mailtitle = mailtitle
         self.sender = sender
         self.recipients = recipients
+        self.mailhost = mailhost
         self.enabled = enabled
         self.skip = skip
         self.nologs = nologs
@@ -240,7 +241,7 @@ class Context:
 
         # report result by email
         if self.recipients:
-            server = smtplib.SMTP("localhost")
+            server = smtplib.SMTP(self.mailhost)
             msg = "From: %s\r\nTo: %s\r\nSubject: %s: %s\r\n\r\n%s\n\n%s" % \
                   (self.sender,
                    ", ".join(self.recipients),
@@ -316,30 +317,29 @@ class SVNCheckout(Action):
         if os.access("autogen.sh", os.F_OK):
             context.runCommand("%s ./autogen.sh" % (self.runner))
 
-class ClientCheckout(CVSCheckout):
-    def __init__(self, name, revision):
-        """checkout C++ client source code and apply all patches"""
-        CVSCheckout.__init__(self,
-                             name, context.workdir, options.shell,
-                             ":ext:pohly@cvs.forge.objectweb.org:/cvsroot/sync4j",
-                             "3x/client-api/native",
-                             revision)
-        if not revision:
-            # the directory specified by the base class will never be created
-            self.basedir = ""
+class GitCheckout(Action):
+    """Does a git clone (if directory does not exist yet) or a fetch+checkout (if it does)."""
+    
+    def __init__(self, name, workdir, runner, url, revision):
+        """workdir defines the directory to do the checkout in with 'name' as name of the sub directory,
+        URL the server and repository,
+        revision the desired branch or tag"""
+        Action.__init__(self,name)
+        self.workdir = workdir
+        self.runner = runner
+        self.url = url
+        self.revision = revision
+        self.basedir = os.path.join(abspath(workdir), name)
 
     def execute(self):
-        if self.revision:
-            # undo patches before upgrading
-            try:
-                os.chdir(self.basedir)
-                context.runCommand("patcher -B")
-            except:
-                pass
-            # checkout/upgrade
-            CVSCheckout.execute(self)
-            #patch again
-            context.runCommand("echo $PATH; which patcher; patcher -A")
+        if os.access(self.basedir, os.F_OK):
+            cmd = "cd %s && git fetch %s && git checkout %s && git pull" % (self.basedir, self.url, self.revision)
+        else:
+            cmd = "git clone %s %s && cd %s && git checkout %s" % (self.url, self.basedir, self.basedir, self.revision)
+        context.runCommand(cmd)
+        os.chdir(self.basedir)
+        if os.access("autogen.sh", os.F_OK):
+            context.runCommand("%s ./autogen.sh" % (self.runner))
 
 class AutotoolsBuild(Action):
     def __init__(self, name, src, configargs, runner, dependencies):
@@ -433,11 +433,11 @@ parser.add_option("", "--test-prefix",
                   type="string", dest="testprefix", default="",
                   help="a prefix which is put in front of client-test (e.g. valgrind)")
 parser.add_option("", "--syncevo-tag",
-                  type="string", dest="syncevotag", default="trunk",
-                  help="the tag of SyncEvolution (e.g. tags/syncevolution-0.7, default trunk")
-parser.add_option("", "--client-tag",
-                  type="string", dest="clienttag", default="",
-                  help="the tag of the client library (default empty = not checkout out)")
+                  type="string", dest="syncevotag", default="master",
+                  help="the tag of SyncEvolution (e.g. syncevolution-0.7, default is 'master'")
+parser.add_option("", "--synthesis-tag",
+                  type="string", dest="synthesistag", default="master",
+                  help="the tag of the synthesis library (default = master in the moblin.org repo)")
 parser.add_option("", "--configure",
                   type="string", dest="configure", default="",
                   help="additional parameters for configure")
@@ -466,6 +466,9 @@ parser.add_option("", "--from",
 parser.add_option("", "--to",
                   action="append", type="string", dest="recipients",
                   help="recipient of result email (option can be given multiple times)")
+parser.add_option("", "--mailhost",
+                  type="string", dest="mailhost", default="localhost",
+                  help="SMTP mail server to be used for outgoing mail")
 parser.add_option("", "--subject",
                   type="string", dest="subject", default="SyncML Tests " + time.strftime("%Y-%m-%d"),
                   help="subject of result email (default is \"SyncML Tests <date>\"")
@@ -485,7 +488,7 @@ if options.recipients and not options.sender:
     sys.exit(1)
 
 context = Context(options.tmpdir, options.resultdir, options.uri, options.workdir,
-                  options.subject, options.sender, options.recipients,
+                  options.subject, options.sender, options.recipients, options.mailhost,
                   options.enabled, options.skip, options.nologs, options.setupcmd)
 
 class EvoSvn(Action):
@@ -533,13 +536,21 @@ for prebuilt in options.prebuilt:
                                       [ "Client::Source", "SyncEvolution" ],
                                       testPrefix=options.testprefix))
 
-class SyncEvolutionCheckout(SVNCheckout):
+class SyncEvolutionCheckout(GitCheckout):
     def __init__(self, name, revision):
         """checkout SyncEvolution"""
-        SVNCheckout.__init__(self,
+        GitCheckout.__init__(self,
                              name, context.workdir, options.shell,
-                             "https://zeitsenke.de/svn/SyncEvolution/%s" % revision,
-                             "SyncEvolution")
+                             "git@git.moblin.org:syncevolution.git",
+                             revision)
+
+class SynthesisCheckout(GitCheckout):
+    def __init__(self, name, revision):
+        """checkout libsynthesis"""
+        GitCheckout.__init__(self,
+                             name, context.workdir, options.shell,
+                             "git@git.moblin.org:libsynthesis.git",
+                             revision)
 
 class SyncEvolutionBuild(AutotoolsBuild):
     def execute(self):
@@ -547,33 +558,33 @@ class SyncEvolutionBuild(AutotoolsBuild):
         os.chdir("src")
         context.runCommand("%s make test CXXFLAGS=-O0" % (self.runner))
 
-client = ClientCheckout("client-api", options.clienttag)
-context.add(client)
+libsynthesis = SynthesisCheckout("libsynthesis", options.synthesistag)
+context.add(libsynthesis)
 sync = SyncEvolutionCheckout("syncevolution", options.syncevotag)
 context.add(sync)
-if options.clienttag:
-    client_source = "--with-funambol-src=%s" % client.basedir
+if options.synthesistag:
+    synthesis_source = "--with-synthesis-src=%s" % libsynthesis.basedir
 else:
-    client_source = ""
+    synthesis_source = ""
 compile = SyncEvolutionBuild("compile",
                              sync.basedir,
-                             "%s %s" % (options.configure, client_source),
+                             "%s %s" % (options.configure, synthesis_source),
                              options.shell,
-                             [ client.name, sync.name ])
+                             [ libsynthesis.name, sync.name ])
 context.add(compile)
 
 class SyncEvolutionCross(AutotoolsBuild):
-    def __init__(self, syncevosrc, syncclientsrc, host, oedir, dependencies):
+    def __init__(self, syncevosrc, synthesissrc, host, oedir, dependencies):
         """cross-compile SyncEvolution using a certain OpenEmbedded build dir:
         host is the platform identifier (e.g. x86_64-linux),
         oedir must contain the 'tmp/cross' and 'tmp/staging/<host>' directories"""
-        if syncclientsrc:
-            client_source = "--with-funambol-src=%s" % syncclientsrc
+        if synthesissrc:
+            synthesis_source = "--with-funambol-src=%s" % synthesissrc
         else:
-            client_source = ""
+            synthesis_source = ""
         AutotoolsBuild.__init__(self, "cross-compile", syncevosrc, \
                                 "--host=%s %s CPPFLAGS=-I%s/tmp/staging/%s/include/ LDFLAGS='-Wl,-rpath-link=%s/tmp/staging/%s/lib/ -Wl,--allow-shlib-undefined'" % \
-                                ( host, client_source, oedir, host, oedir, host ), \
+                                ( host, synthesis_source, oedir, host, oedir, host ), \
                                 "PKG_CONFIG_PATH=%s/tmp/staging/%s/share/pkgconfig PATH=%s/tmp/cross/bin:$PATH" % \
                                 ( oedir, host, oedir ),
                                 dependencies)
@@ -583,7 +594,7 @@ class SyncEvolutionCross(AutotoolsBuild):
         AutotoolsBuild.execute(self)
 
 if options.oedir and options.host:
-    cross = SyncEvolutionCross(sync.basedir, client.basedir, options.host, options.oedir, [ client.name, sync.name, compile.name ])
+    cross = SyncEvolutionCross(sync.basedir, libsynthesis.basedir, options.host, options.oedir, [ libsynthesis.name, sync.name, compile.name ])
     context.add(cross)
 
 class SyncEvolutionDist(AutotoolsBuild):
