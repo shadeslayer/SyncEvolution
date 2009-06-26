@@ -1676,9 +1676,7 @@ void SyncTests::addTests() {
             }
         }
 
-        // TODO: enable interrupted sync tests again
-        if (false &&
-            config.retrySync &&
+        if (config.retrySync &&
             config.insertItem &&
             config.updateItem &&
             accessClientB &&
@@ -1694,6 +1692,24 @@ void SyncTests::addTests() {
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeFull);
             addTest(retryTests);
         }
+
+        if (config.retrySync &&
+            config.insertItem &&
+            config.updateItem &&
+            accessClientB &&
+            config.dump &&
+            config.compare) {
+            CppUnit::TestSuite *suspendTests = new CppUnit::TestSuite(getName() + "::Suspend");
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendClientAdd);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendClientRemove);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendClientUpdate);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerAdd);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerRemove);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerUpdate);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendFull);
+            addTest(suspendTests);
+        }
+
     }
 }
 
@@ -2663,29 +2679,15 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     compareDatabases();
 }
 
-// TODO: this class needs to be used by TestClient::sync() to interrupt message transmission
-class TransportFaultInjector : public TransportAgent {
-    int m_interruptAtMessage, m_messageCount;
-    TransportAgent *m_wrappedAgent;
-    Status m_status;
+class TransportFaultInjector : public TransportWrapper{
 public:
-    TransportFaultInjector(int interruptAtMessage) {
-        m_messageCount = 0;
-        m_interruptAtMessage = interruptAtMessage;
-        m_wrappedAgent = NULL;
-        m_status = INACTIVE;
+    TransportFaultInjector()
+         :TransportWrapper() {
     }
+
     ~TransportFaultInjector() {
     }
 
-    int getMessageCount() { return m_messageCount; }
-
-    virtual void setURL(const std::string &url) { m_wrappedAgent->setURL(url); }
-    virtual void setProxy(const std::string &proxy) { m_wrappedAgent->setProxy(proxy); }
-    virtual void setProxyAuth(const std::string &user,
-                              const std::string &password) { m_wrappedAgent->setProxyAuth(user, password); }
-    virtual void setContentType(const std::string &type) { m_wrappedAgent->setContentType(type); }
-    virtual void setUserAgent(const::string &agent) { m_wrappedAgent->setUserAgent(agent); }
     virtual void send(const char *data, size_t len)
     {
         if (m_interruptAtMessage == m_messageCount) {
@@ -2695,9 +2697,6 @@ public:
         if (m_interruptAtMessage >= 0 &&
             m_messageCount > m_interruptAtMessage) {
             throw string("TransportFaultInjector: interrupt before send");
-        }
-        if (m_interruptAtMessage == m_messageCount) {
-            // TODO: force message receive error m_wrappedAgent->setMaxMsgSize(1);
         }
     
         m_wrappedAgent->send(data, len);
@@ -2714,13 +2713,48 @@ public:
         }
     }
 
-    virtual void cancel() { m_wrappedAgent->cancel(); }
-    virtual Status wait() { return m_status; }
     virtual void getReply(const char *&data, size_t &len, std::string &contentType) {
         if (m_status == FAILED) {
             data = "";
             len = 0;
         } else {
+            m_wrappedAgent->getReply(data, len, contentType);
+        }
+    }
+};
+
+/**
+ * Emulates a user suspend just after receving response 
+ * from server.
+ */
+class UserSuspendInjector : public TransportWrapper{
+public:
+    UserSuspendInjector()
+         :TransportWrapper() {
+    }
+
+    ~UserSuspendInjector() {
+    }
+
+    virtual void send(const char *data, size_t len)
+    {
+        m_wrappedAgent->send(data, len);
+        m_status = m_wrappedAgent->wait();
+    }
+
+    virtual void getReply(const char *&data, size_t &len, std::string &contentType) {
+        if (m_status == FAILED) {
+            data = "";
+            len = 0;
+        } else {
+            if (m_interruptAtMessage == m_messageCount) {
+                 SE_LOG_DEBUG(NULL, NULL, "UserSuspendInjector: user suspend after getting reply #%d", m_messageCount);
+            }
+            m_messageCount++;
+            if (m_interruptAtMessage >= 0 &&
+                    m_messageCount > m_interruptAtMessage) {
+                m_options->m_isSuspended = true;
+            }
             m_wrappedAgent->getReply(data, len, contentType);
         }
     }
@@ -2774,11 +2808,14 @@ public:
  * >= 0 to execute one uninterrupted run and then interrupt at that
  * message.
  */
-void SyncTests::doInterruptResume(int changes)
+void SyncTests::doInterruptResume(int changes, 
+                  boost::shared_ptr<TransportWrapper> wrapper)
 {
     int interruptAtMessage = -1;
     const char *t = getenv("CLIENT_TEST_INTERRUPT_AT");
     int requestedInterruptAt = t ? atoi(t) : -1;
+    const char *s = getenv("CLIENT_TEST_INTERRUPT_SLEEP");
+    int sleep_t = s ? atoi(s) : 0;
     size_t i;
     std::string refFileBase = getCurrentTest() + ".ref.";
     bool equal = true;
@@ -2859,18 +2896,18 @@ void SyncTests::doInterruptResume(int changes)
         }
 
         // Now do an interrupted sync between B and server.
-        // The wrapper is a factory and the created transport
-        // all in one class, allocated on the stack. The
-        // explicit delete of the TransportAgent is suppressed
+        // The explicit delete of the TransportAgent is suppressed
         // by overloading the delete operator.
         int wasInterrupted;
         {
-            TransportFaultInjector faultInjector(interruptAtMessage);
+            wrapper->reset();
+            wrapper->setInterruptAtMessage(interruptAtMessage);
             accessClientB->doSync("changesFromB",
                                   SyncOptions(SYNC_TWO_WAY,
-                                              CheckSyncReport(-1, -1, -1, -1, -1, -1, false)));
+                                              CheckSyncReport(-1, -1, -1, -1,
+                                                  -1, -1, false)).setTransportAgent(wrapper));
             wasInterrupted = interruptAtMessage != -1 &&
-                faultInjector.getMessageCount() <= interruptAtMessage;
+                wrapper->getMessageCount() <= interruptAtMessage;
         }
 
         if (interruptAtMessage != -1) {
@@ -2879,7 +2916,9 @@ void SyncTests::doInterruptResume(int changes)
                 break;
             }
 
-            // continue
+            // continue, wait until server timeout
+            if(sleep_t) 
+                sleep (sleep_t);
             accessClientB->doSync("retryB", SyncOptions(SYNC_TWO_WAY));
         }
 
@@ -2938,39 +2977,76 @@ void SyncTests::doInterruptResume(int changes)
 
 void SyncTests::testInterruptResumeClientAdd()
 {
-    doInterruptResume(CLIENT_ADD);
+    doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
 }
 
 void SyncTests::testInterruptResumeClientRemove()
 {
-    doInterruptResume(CLIENT_REMOVE);
+    doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
 }
 
 void SyncTests::testInterruptResumeClientUpdate()
 {
-    doInterruptResume(CLIENT_UPDATE);
+    doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
 }
 
 void SyncTests::testInterruptResumeServerAdd()
 {
-    doInterruptResume(SERVER_ADD);
+    doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
 }
 
 void SyncTests::testInterruptResumeServerRemove()
 {
-    doInterruptResume(SERVER_REMOVE);
+    doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
 }
 
 void SyncTests::testInterruptResumeServerUpdate()
 {
-    doInterruptResume(SERVER_UPDATE);
+    doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
 }
 
 void SyncTests::testInterruptResumeFull()
 {
     doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
-                      SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE);
+                      SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
 }
+
+void SyncTests::testUserSuspendClientAdd()
+{
+    doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendClientRemove()
+{
+    doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendClientUpdate()
+{
+    doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendServerAdd()
+{
+    doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendServerRemove()
+{
+    doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendServerUpdate()
+{
+    doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendFull()
+{
+    doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
+                      SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
 
 void SyncTests::doSync(const SyncOptions &options)
 {

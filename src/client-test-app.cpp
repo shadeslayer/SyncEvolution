@@ -338,8 +338,7 @@ public:
                 EvolutionSyncClient(server, false, activeSources),
                 m_logbase(logbase),
                 m_options(options),
-                m_started(false),
-                m_aborted(false)
+                m_started(false)
                 {}
 
         protected:
@@ -363,18 +362,29 @@ public:
                 if (!m_started) {
                     m_started = true;
                     if (m_options.m_startCallback(*this, m_options)) {
-                        m_aborted = true;
+                        m_options.m_isAborted = true;
                     }
                 }
             }
 
-            virtual bool checkForAbort() { return m_aborted; }
+            virtual bool checkForAbort() { return m_options.m_isAborted; }
+            virtual bool checkForSuspend() {return m_options.m_isSuspended;}
+
+            virtual boost::shared_ptr<TransportAgent> createTransportAgent()
+            {
+                boost::shared_ptr<TransportAgent>wrapper = m_options.m_transport;
+                boost::shared_ptr<TransportAgent>agent =EvolutionSyncClient::createTransportAgent();
+                if (!wrapper.get())
+                    return agent;
+                dynamic_cast<TransportWrapper*>(wrapper.get())->setAgent(agent);
+                dynamic_cast<TransportWrapper*>(wrapper.get())->setSyncOptions(&m_options);
+                return wrapper;
+            }
 
         private:
             const string m_logbase;
             SyncOptions m_options;
             bool m_started;
-            bool m_aborted;
         } client(server, activeSources, logbase, options);
 
         SyncReport report;
