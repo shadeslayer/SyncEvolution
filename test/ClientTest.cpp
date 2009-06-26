@@ -3260,6 +3260,9 @@ void ClientTest::getTestData(const char *type, Config &config)
     config.retrySync = true;
     config.sourceKnowsItemSemantic = true;
     config.itemType = "";
+    config.import = import;
+    config.dump = dump;
+    config.compare = compare;
 
     if (!strcmp(type, "vcard30")) {
         config.sourceName = "vcard30";
@@ -3326,9 +3329,6 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.templateItem = config.insertItem;
         config.uniqueProperties = "FN:N:X-EVOLUTION-FILE-AS";
         config.sizeProperty = "NOTE";
-        config.import = import;
-        config.dump = dump;
-        config.compare = compare;
         config.testcases = "testcases/vcard30.vcf";
     } else if (!strcmp(type, "vcard21")) {
         config.sourceName = "vcard21";
@@ -3391,9 +3391,6 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.templateItem = config.insertItem;
         config.uniqueProperties = "FN:N";
         config.sizeProperty = "NOTE";
-        config.import = import;
-        config.dump = dump;
-        config.compare = compare;
         config.testcases = "testcases/vcard21.vcf";
     } else if(!strcmp(type, "ical20")) {
         config.sourceName = "ical20";
@@ -3530,9 +3527,6 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.templateItem = config.insertItem;
         config.uniqueProperties = "SUMMARY:UID:LOCATION";
         config.sizeProperty = "DESCRIPTION";
-        config.import = import;
-        config.dump = dump;
-        config.compare = compare;
         config.testcases = "testcases/ical20.ics";
     } if(!strcmp(type, "vcal10")) {
         config.sourceName = "vcal10";
@@ -3590,9 +3584,6 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.templateItem = config.insertItem;
         config.uniqueProperties = "SUMMARY:UID:LOCATION";
         config.sizeProperty = "DESCRIPTION";
-        config.import = import;
-        config.dump = dump;
-        config.compare = compare;
         config.testcases = "testcases/vcal10.ics";
     } else if(!strcmp(type, "itodo20")) {
         config.sourceName = "itodo20";
@@ -3666,10 +3657,53 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.templateItem = config.insertItem;
         config.uniqueProperties = "SUMMARY:UID";
         config.sizeProperty = "DESCRIPTION";
-        config.import = import;
-        config.dump = dump;
-        config.compare = compare;
         config.testcases = "testcases/itodo20.ics";
+    } else if(!strcmp(type, "text")) {
+        // The "text" test uses iCalendar 2.0 VJOURNAL
+        // as format because synccompare doesn't handle
+        // plain text. A backend which wants to use this
+        // test data must support importing/exporting
+        // the test data in that format, see EvolutionMemoSource
+        // for an example.
+        config.uri = "note"; // ScheduleWorld
+        config.type = "memo";
+        config.itemType = "text/calendar";
+        config.insertItem =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "SUMMARY:Summary\n"
+            "DESCRIPTION:Summary\\nBody text<<REVISION>>\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n";
+        config.updateItem =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "SUMMARY:Summary Modified\n"
+            "DESCRIPTION:Summary Modified\\nBody text\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n";
+        /* change summary, as in updateItem, and the body in the other merge item */
+        config.mergeItem1 = config.updateItem;
+        config.mergeItem2 =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "SUMMARY:Summary\n"
+            "DESCRIPTION:Summary\\nBody modified\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n";                
+        config.templateItem = config.insertItem;
+        config.uniqueProperties = "SUMMARY:DESCRIPTION";
+        config.sizeProperty = "DESCRIPTION";
+        config.testcases = "testcases/imemo20.ics";
     }
 }
 
