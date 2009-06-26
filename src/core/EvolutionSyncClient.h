@@ -43,6 +43,22 @@ using namespace SyncEvolution;
 class SourceList;
 class EvolutionSyncSource;
 
+struct SuspendFlags
+{
+    static const time_t ABORT_INTERVAL = 2; 
+    enum CLIENT_STATE
+    {
+        CLIENT_NORMAL,
+        CLIENT_SUSPEND,
+        CLIENT_ABORT,
+        CLIENT_ILLEGAL
+    }state;
+    time_t last_suspend;
+
+    SuspendFlags():state(CLIENT_NORMAL),last_suspend(0)
+    {}
+};
+
 /**
  * This is the main class inside SyncEvolution which
  * looks at the configuration, activates all enabled
@@ -59,6 +75,11 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     const bool m_doLogging;
     bool m_quiet;
     bool m_dryrun;
+
+    /**
+     * flags for suspend and abort
+     */
+    static SuspendFlags s_flags;
 
     /**
      * a pointer to the active SourceList instance if one exists; 
@@ -109,6 +130,8 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
 
     bool getDryRun() { return m_dryrun; }
     void setDryRun(bool dryrun) { m_dryrun = dryrun; }
+
+    static SuspendFlags& getSuspendFlags() {return s_flags;}
 
     /**
      * Executes the sync, throws an exception in case of failure.
@@ -407,7 +430,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      *
      * @return true if user wants to abort
      */
-    virtual bool checkForAbort() { return false; }
+    virtual bool checkForAbort() { return (s_flags.state == SuspendFlags::CLIENT_ABORT);}
 
     /**
      * Called to find out whether user wants to suspend sync.
@@ -415,7 +438,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * Same as checkForAbort(), but the session is finished
      * gracefully so that it can be resumed.
      */
-    virtual bool checkForSuspend() { return false; }
+    virtual bool checkForSuspend() { return (s_flags.state == SuspendFlags::CLIENT_SUSPEND);}
 
  private:
     /**

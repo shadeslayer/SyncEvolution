@@ -18,6 +18,7 @@
  */
 
 #include "CurlTransportAgent.h"
+#include "EvolutionSyncClient.h"
 
 #ifdef ENABLE_LIBCURL
 
@@ -39,7 +40,8 @@ CurlTransportAgent::CurlTransportAgent() :
      * its read callback and reply is stored in write callback
      */
     CURLcode code;
-    if ((code = curl_easy_setopt(m_easyHandle, CURLOPT_NOPROGRESS, true)) ||
+    if ((code = curl_easy_setopt(m_easyHandle, CURLOPT_NOPROGRESS, false)) ||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_PROGRESSFUNCTION, progressCallback)) ||
         (code = curl_easy_setopt(m_easyHandle, CURLOPT_WRITEFUNCTION, writeDataCallback)) ||
         (code = curl_easy_setopt(m_easyHandle, CURLOPT_WRITEDATA, (void *)this)) ||
         (code = curl_easy_setopt(m_easyHandle, CURLOPT_READFUNCTION, readDataCallback)) ||
@@ -230,6 +232,15 @@ void CurlTransportAgent::checkCurl(CURLcode code)
     if (code) {
         SE_THROW_EXCEPTION(TransportException, m_curlErrorText);
     }
+}
+
+int CurlTransportAgent::progressCallback(void*, double, double, double, double)
+{
+    SuspendFlags& s_flags = EvolutionSyncClient::getSuspendFlags();
+    //abort transfer
+    if (s_flags.state == SuspendFlags::CLIENT_ABORT)
+        return -1;
+    return 0;
 }
 
 } // namespace SyncEvolution

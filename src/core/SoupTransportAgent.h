@@ -76,6 +76,11 @@ class SoupTransportAgent : public TransportAgent
     Status m_status;
     std::string m_failure;
 
+    /** User Abort check interval */
+    static const gint ABORT_CHECK_INTERVAL = 1;
+    /** This function is called regularly to check user abort event */
+    static gboolean AbortCallback (gpointer data);
+
     /** response, copied from SoupMessage */
     eptr<SoupBuffer, SoupBuffer, GLibUnref> m_response;
     std::string m_responseContentType;

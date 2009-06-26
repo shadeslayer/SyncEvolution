@@ -18,6 +18,7 @@
  */
 
 #include "SoupTransportAgent.h"
+#include "EvolutionSyncClient.h"
 
 #ifdef ENABLE_LIBSOUP
 
@@ -44,6 +45,7 @@ SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
     // use default GNOME proxy settings
     soup_session_add_feature_by_type(m_session.get(), SOUP_TYPE_PROXY_RESOLVER_GNOME);
 #endif
+    g_timeout_add_seconds(ABORT_CHECK_INTERVAL, (GSourceFunc) AbortCallback, static_cast<gpointer> (this));
 }
 
 SoupTransportAgent::~SoupTransportAgent()
@@ -107,7 +109,9 @@ void SoupTransportAgent::send(const char *data, size_t len)
 
 void SoupTransportAgent::cancel()
 {
-    /** @TODO: implement if needed */
+    m_status = FAILED;
+    if(g_main_loop_is_running(m_loop.get()))
+      g_main_loop_quit(m_loop.get());
 }
 
 TransportAgent::Status SoupTransportAgent::wait()
@@ -188,6 +192,18 @@ void SoupTransportAgent::HandleSessionCallback(SoupSession *session,
     }
 
     g_main_loop_quit(m_loop.get());
+}
+
+gboolean SoupTransportAgent::AbortCallback(gpointer transport)
+{
+    SuspendFlags& s_flags = EvolutionSyncClient::getSuspendFlags();
+
+    if (s_flags.state == SuspendFlags::CLIENT_ABORT)
+    {
+        static_cast<SoupTransportAgent *>(transport)->cancel();
+        return FALSE;
+    }
+    return TRUE;
 }
 
 } // namespace SyncEvolution

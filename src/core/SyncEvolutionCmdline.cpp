@@ -41,6 +41,8 @@ using namespace std;
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
+extern "C" void suspend_handler(int sig);
+
 SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, const char * const * argv, ostream &out, ostream &err) :
     m_argc(argc),
     m_argv(argv),
@@ -446,7 +448,11 @@ bool SyncEvolutionCmdline::run() {
                 return false;
             }
 
-            return client.sync() == STATUS_OK;
+            //add the handler for suspend support
+            sighandler_t old_handler = signal(SIGINT, suspend_handler);
+            int status = client.sync();
+            signal(SIGINT, old_handler);
+            return (status == STATUS_OK);
         }
     }
 

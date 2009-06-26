@@ -88,6 +88,9 @@ class CurlTransportAgent : public TransportAgent
     static size_t writeDataCallback(void *ptr, size_t size, size_t nmemb, void *stream) throw();
     size_t writeData(void *buffer, size_t size) throw();
 
+    /** CURLOPT_PROGRESS callback, use this function to detect user abort */
+    static int progressCallback (void *ptr, double dltotal, double dlnow, double uptotal, double upnow);
+
     /** check curl error code and turn into exception */
     void checkCurl(CURLcode code);
 

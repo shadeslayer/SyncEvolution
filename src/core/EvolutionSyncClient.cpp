@@ -41,6 +41,7 @@ using namespace SyncEvolution;
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
+#include <ctime>
 using namespace std;
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -57,6 +58,40 @@ using namespace std;
 #include "synthesis/SDK_util.h"
 
 SourceList *EvolutionSyncClient::m_sourceListPtr;
+
+SuspendFlags EvolutionSyncClient::s_flags;
+
+extern "C" void suspend_handler(int sig)
+{
+  time_t current;
+  time (&current);
+  SuspendFlags& s_flags = EvolutionSyncClient::getSuspendFlags();
+  //first time suspend or already aborted
+  if (s_flags.state == SuspendFlags::CLIENT_NORMAL)
+  {
+      s_flags.state = SuspendFlags::CLIENT_SUSPEND;
+      s_flags.last_suspend = current;
+      SE_LOG_INFO(NULL, NULL,"Asking server to suspend... press CTRL-C twice  \
+quickly (within 2s) to stop sync immediately (can cause problems  during next sync!)");
+      return;
+  }
+  else 
+  {
+      if (current - s_flags.last_suspend
+              < s_flags.ABORT_INTERVAL) 
+      {
+          s_flags.state = SuspendFlags::CLIENT_ABORT;
+          SE_LOG_INFO(NULL, NULL, "Aboring sync as requested via CTRL-C ...");
+      }
+      else
+      {
+          s_flags.last_suspend = current;
+          SE_LOG_INFO(NULL, NULL, "Suspend in progress... Press CTRL-C twice \
+quickly (within 2s) to stop sync immediately (can cause problems during next sync!)");
+      }
+  }
+}
+
 
 EvolutionSyncClient::EvolutionSyncClient(const string &server,
                                          bool doLogging,
@@ -1559,15 +1594,27 @@ SyncMLStatus EvolutionSyncClient::doSync()
     // Exceptions are caught and lead to a call of SessionStep() with
     // parameter STEPCMD_ABORT -> abort session as soon as possible.
     bool aborting = false;
-    bool suspending = false;
+    int suspending = 0; 
     sysync::uInt16 previousStepCmd = stepCmd;
     do {
         try {
-            // check for suspend or abort, if so, modify step command for next step
-            if (checkForSuspend()) {
+            // check for suspend, if so, modify step command for next step
+            // Since the suspend will actually be committed until it is
+            // sending out a message, we can safely delay the suspend to
+            // GOTDATA state.
+            // After exception occurs, stepCmd will be set to abort to force
+            // aborting, must avoid to change it back to suspend cmd.
+            if (checkForSuspend() && stepCmd == sysync::STEPCMD_GOTDATA) {
                 stepCmd = sysync::STEPCMD_SUSPEND;
             }
-            if (checkForAbort()) {
+
+            //check for abort, if so, modify step command for next step.
+            //We think abort is useful when the server is unresponsive or 
+            //too slow to the user; therefore, we can delay abort at other
+            //points to this two points (before sending and before receiving
+            //the data).
+            if (checkForAbort() && stepCmd == (sysync::STEPCMD_SENDDATA 
+                    || stepCmd == sysync::STEPCMD_NEEDDATA)) {
                 stepCmd = sysync::STEPCMD_ABORT;
             }
 
@@ -1584,12 +1631,19 @@ SyncMLStatus EvolutionSyncClient::doSync()
             if (stepCmd == sysync::STEPCMD_SUSPEND) {
                 if (suspending) {
                     stepCmd = previousStepCmd;
+                    suspending++;
                 } else {
-                    suspending = true;
+                    suspending++; 
                 }
             }
             m_engine.SessionStep(session, stepCmd, &progressInfo);
-            previousStepCmd = stepCmd;
+            //During suspention we actually insert a STEPCMD_SUSPEND cmd
+            //Should restore to the original step here
+            if(suspending == 1)
+            {
+                stepCmd = previousStepCmd;
+                continue;
+            }
             switch (stepCmd) {
             case sysync::STEPCMD_OK:
                 // no progress info, call step again
