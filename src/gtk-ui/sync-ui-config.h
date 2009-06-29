@@ -52,8 +52,12 @@ typedef struct server_config {
 
     GList *source_configs;
     
+    /* any field in struct has changed */
     gboolean changed;
+
+    /* a authentication detail (base_url/username/password) has changed */
     gboolean auth_changed;
+    
     gboolean from_template;
 } server_config;
 

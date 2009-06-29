@@ -615,7 +615,6 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
                                             server->password,
                                             (GnomeKeyringOperationGetIntCallback)set_password_cb,
                                             data, NULL);
-        server->auth_changed = FALSE;
     }
 
     if (!server->changed) {
@@ -631,8 +630,10 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
                                                  data);
         g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
         g_ptr_array_free (options, TRUE);
-        server->changed = FALSE;
     }
+
+    server->auth_changed = FALSE;
+    server->changed = FALSE;
 }
 
 static void

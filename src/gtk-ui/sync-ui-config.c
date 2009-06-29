@@ -58,18 +58,16 @@ server_config_update_from_entry (server_config *server, GtkEntry *entry)
     new_str = gtk_entry_get_text (entry);
 
     if (*str == NULL || strcmp (*str, new_str) != 0) {
+
+        server->changed = TRUE;
+        if (*str == server->password ||
+            *str == server->username ||
+            *str == server->base_url) {
+            server->auth_changed = TRUE;
+        }
+
         g_free (*str);
         *str = g_strdup (new_str);
-
-        if (*str == server->password) {
-            server->auth_changed = TRUE;
-        } else if (*str == server->username ||
-                   *str == server->base_url) {
-            server->auth_changed = TRUE;
-            server->changed = TRUE;
-        }else {
-            server->changed = TRUE;
-        }
     }
 }
 
