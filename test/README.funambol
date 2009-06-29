@@ -16,6 +16,11 @@ Thiss document is used to show interoperability test information with funambol s
     SupportNumberOfChanges=true
     Ext=X-funambol-smartslow
 
+* Test Environment Variables Settings
+  CLIENT_TEST_SERVER=funambol CLIENT_TEST_XML=1 CLIENT_TEST_MAX_ITEMSIZE=2048 \
+  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test/
+
+
 * Data formats we need to test:
 Client::Sync::vcard21
 Client::Sync::ical20
