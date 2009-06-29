@@ -253,6 +253,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         boost::iequals(server, "default")) {
         config->setSyncURL("http://sync.scheduleworld.com/funambol/ds");
         config->setWebURL("http://sync.scheduleworld.com");
+        config->setConsumerReady(true);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
         source->setSourceType("addressbook:text/vcard");
@@ -266,6 +267,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         config->setSyncURL("http://my.funambol.com/sync");
         config->setWebURL("http://my.funambol.com");
         config->setWBXML(false);
+        config->setConsumerReady(true);
         source = config->getSyncSourceConfig("calendar");
         source->setSync("two-way");
         source->setURI("event");
@@ -473,6 +475,14 @@ static ConfigProperty syncPropIconURI("IconURI",
                                       "Should be a 48x48 pixmap or a SVG (preferred).\n"
                                       "Used only by the GUI.");
 
+static BoolConfigProperty syncPropConsumerReady("ConsumerReady",
+                                                "Set to true in a configuration template to indicate\n"
+                                                "that the server works well enough and is available\n"
+                                                "for normal users. Used by the GUI to limit the choice\n"
+                                                "of configurations offered to users.\n"
+                                                "Has no effect in a user's server configuration.\n",
+                                                "0");
+
 static ULongConfigProperty syncPropHashCode("HashCode", "used by the SyncML library internally; do not modify");
 
 static ConfigProperty syncPropConfigDate("ConfigDate", "used by the SyncML library internally; do not modify");
@@ -509,6 +519,7 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropSSLVerifyHost);
         registry.push_back(&syncPropWebURL);
         registry.push_back(&syncPropIconURI);
+        registry.push_back(&syncPropConsumerReady);
         registry.push_back(&syncPropHashCode);
         syncPropHashCode.setHidden(true);
         registry.push_back(&syncPropConfigDate);
@@ -608,6 +619,8 @@ void EvolutionSyncConfig::setPrintChanges(bool value, bool temporarily) { syncPr
 std::string EvolutionSyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*m_configNode, url, temporarily); }
 std::string EvolutionSyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*m_configNode); }
+bool EvolutionSyncConfig::getConsumerReady() const { return syncPropConsumerReady.getProperty(*m_configNode); }
+void EvolutionSyncConfig::setConsumerReady(bool ready) { return syncPropConsumerReady.setProperty(*m_configNode, ready); }
 void EvolutionSyncConfig::setIconURI(const std::string &uri, bool temporarily) { syncPropIconURI.setProperty(*m_configNode, uri, temporarily); }
 unsigned long EvolutionSyncConfig::getHashCode() const { return syncPropHashCode.getProperty(*m_hiddenNode); }
 void EvolutionSyncConfig::setHashCode(unsigned long code) { syncPropHashCode.setProperty(*m_hiddenNode, code); }

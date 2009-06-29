@@ -657,6 +657,15 @@ class EvolutionSyncConfig {
     virtual std::string getIconURI() const;
     virtual void setIconURI(const std::string &uri, bool temporarily = false);
 
+    /**
+     * A property of server template configs. True if the server is
+     * ready for use by "normal" users (everyone can get an account
+     * and some kind of support, we have tested the server well
+     * enough, ...).
+     */
+    virtual bool getConsumerReady() const;
+    virtual void setConsumerReady(bool ready);
+
     virtual unsigned long getHashCode() const;
     virtual void setHashCode(unsigned long hashCode);
 

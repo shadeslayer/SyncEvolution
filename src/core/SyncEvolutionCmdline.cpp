@@ -1011,6 +1011,7 @@ public:
                               "config.ini:# SSLVerifyHost = 1\n"
                               "config.ini:WebURL = http://sync.scheduleworld.com\n"
                               "config.ini:# IconURI = \n"
+                              "config.ini:ConsumerReady = 1\n"
                               "sources/addressbook/.internal.ini:# last = 0\n"
                               "sources/addressbook/config.ini:sync = two-way\n"
                               "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
@@ -1421,7 +1422,9 @@ protected:
                               "\n"
                               "WebURL:\n"
                               "\n"
-                              "IconURI:\n");
+                              "IconURI:\n"
+                              "\n"
+                              "ConsumerReady:\n");
         string sourceProperties("sync:\n"
                                 "\n"
                                 "type:\n"
@@ -1779,6 +1782,10 @@ private:
         boost::replace_first(config,
                              "WebURL = http://sync.scheduleworld.com",
                              "WebURL = http://www.synthesis.ch");        
+
+        boost::replace_first(config,
+                             "ConsumerReady = 1",
+                             "# ConsumerReady = 0");
 
         boost::replace_first(config,
                              "addressbook/config.ini:uri = card3",
