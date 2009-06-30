@@ -302,7 +302,7 @@ sub Normalize {
 
     if ($funambol) {
       # several properties are not preserved
-      s/^(CALURI|FBURL|FN|PHOTO|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
+      s/^(CALURI|FBURL|FN|PHOTO|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-YAHOO|X-ASSISTANT)(;[^:;\n]*)*:.*\r?\n?//gm;
 
       # quoted-printable line breaks are =0D=0A, not just single =0A
       s/(?<!=0D)=0A/=0D=0A/g;
