@@ -407,6 +407,8 @@ find_password_for_settings_cb (GnomeKeyringResult result, GList *list, server_da
 static void
 get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, server_data *data)
 {
+    gboolean getting_password = FALSE;
+
     if (error) {
         show_error_dialog (GTK_WINDOW (data->data->sync_win),
                            _("Failed to get service configuration from SyncEvolution"));
@@ -425,25 +427,35 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
         
         data->config->changed = TRUE;
 
-        server_address = strstr (data->config->base_url, "://");
-        if (server_address)
-            server_address = server_address + 3;
+        /* get password from keyring if we have an url */
+        if (data->config->base_url) {
+            server_address = strstr (data->config->base_url, "://");
+            if (server_address)
+                server_address = server_address + 3;
 
-        if (!server_address) {
-            g_warning ("Server configuration has suspect URL '%s'",
-                       data->config->base_url);
-            return;
-        } else {
-            gnome_keyring_find_network_password (data->config->username,
-                                                 NULL,
-                                                 server_address,
-                                                 NULL,
-                                                 NULL,
-                                                 NULL,
-                                                 0,
-                                                 (GnomeKeyringOperationGetListCallback)find_password_for_settings_cb,
-                                                 data,
-                                                 NULL);
+            if (!server_address) {
+                g_warning ("Server configuration has suspect URL '%s'",
+                           data->config->base_url);
+            } else {
+                gnome_keyring_find_network_password (data->config->username,
+                                                     NULL,
+                                                     server_address,
+                                                     NULL,
+                                                     NULL,
+                                                     NULL,
+                                                     0,
+                                                     (GnomeKeyringOperationGetListCallback)find_password_for_settings_cb,
+                                                     data,
+                                                     NULL);
+                getting_password = TRUE;
+            }
+        }
+
+        if (!getting_password) {
+            show_settings_window (data->data, data->config);
+
+            /* dialog should free server config */
+            server_data_free (data, FALSE);
         }
     }
 
