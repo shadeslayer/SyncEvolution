@@ -215,6 +215,10 @@ void SharedEngine::doDebug(SyncEvolution::Logger::Level level,
                            const char *format,
                            va_list args)
 {
-    // TODO: log the additional information
-    DoDEBUG(m_engine->fCI, 0, false, "", "", args, format);
+    std::string str = StringPrintfV(format, args);
+    SySyncDebugPuts(m_engine->fCI, file, line, function,
+                    level <= SyncEvolution::Logger::ERROR ? DBG_ERROR :
+                    level <= SyncEvolution::Logger::INFO ? DBG_HOT :
+                    0, prefix,
+                    str.c_str());
 }
