@@ -71,8 +71,7 @@ extern "C" void suspend_handler(int sig)
   {
       s_flags.state = SuspendFlags::CLIENT_SUSPEND;
       s_flags.last_suspend = current;
-      SE_LOG_INFO(NULL, NULL,"Asking server to suspend... press CTRL-C twice  \
-quickly (within 2s) to stop sync immediately (can cause problems  during next sync!)");
+      SE_LOG_INFO(NULL, NULL,"Asking server to suspend...\nPress CTRL-C again quickly (within 2s) to stop sync immediately (can cause problems during next sync!)");
       return;
   }
   else 
@@ -86,8 +85,7 @@ quickly (within 2s) to stop sync immediately (can cause problems  during next sy
       else
       {
           s_flags.last_suspend = current;
-          SE_LOG_INFO(NULL, NULL, "Suspend in progress... Press CTRL-C twice \
-quickly (within 2s) to stop sync immediately (can cause problems during next sync!)");
+          SE_LOG_INFO(NULL, NULL, "Suspend in progress...\nPress CTRL-C again quickly (within 2s) to stop sync immediately (can cause problems during next sync!)");
       }
   }
 }
