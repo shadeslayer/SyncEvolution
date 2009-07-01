@@ -314,6 +314,14 @@ sub Normalize {
     if ($funambol) {
       #several properties are not preserved by funambol server in icalendar2.0 format
       s/^(UID|SEQUENCE|TRANSP|LAST-MODIFIED|X-EVOLUTION-ALARM-UID)(;[^:;\n]*)*:.*\r?\n?//gm;
+
+      if (/^BEGIN:VTODO/m ) {
+        #several properties are not preserved by funambol server in itodo2.0 format and
+        s/^(STATUS)(;[^:;\n]*)*:.*\r?\n?//gm;
+
+        #some new properties are added by funambol server
+        s/^(CLASS:PUBLIC|PERCENT-COMPLETE:0).*\r?\n?//gm;
+      }
     }
 
     if ($funambol || $egroupware) {
