@@ -201,7 +201,13 @@ sub Normalize {
     # removed or added by servers
     s/^DESCRIPTION:(.*?)(\\n)+$/DESCRIPTION:$1/gm;
 
-    # use the shorter property name when there are alternatives
+    # use the shorter property name when there are alternatives,
+    # but avoid duplicates
+    foreach my $i ("SPOUSE", "MANAGER", "ASSISTANT", "ANNIVERSARY") {
+        if (/^X-\Q$i\E:(.*?)$/m) {
+            s/^X-EVOLUTION-\Q$i\E:\Q$1\E\n//m;
+        }
+    }
     s/^X-EVOLUTION-(SPOUSE|MANAGER|ASSISTANT|ANNIVERSARY)/X-$1/gm;
 
     # if there is no DESCRIPTION in a VJOURNAL, then use the
