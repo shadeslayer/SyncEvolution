@@ -142,7 +142,7 @@ void TrackingSyncSource::backupData(const string &dir, ConfigNode &node, BackupR
     BOOST_FOREACH(const StringPair &mapping, revisions) {
         const string &uid = mapping.first;
         const string &rev = mapping.second;
-        cxxptr<SyncItem> item(createItem(uid), "sync item");
+        cxxptr<SyncItem> item(createItem(uid, "raw"), "sync item");
 
         stringstream filename;
         filename << dir << "/" << counter;

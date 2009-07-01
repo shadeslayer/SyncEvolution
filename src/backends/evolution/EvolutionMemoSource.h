@@ -39,11 +39,14 @@ class EvolutionMemoSource : public EvolutionCalendarSource
     //
     // implementation of EvolutionSyncSource
     //
-    virtual SyncItem *createItem(const string &uid);
+    virtual SyncItem *createItem(const string &uid, const char *type = NULL);
     virtual InsertItemResult insertItem(const string &luid, const SyncItem &item);
     virtual const char *getMimeType() const { return "text/plain"; }
     virtual const char *getMimeVersion() const { return "1.0"; }
     virtual const char *getSupportedTypes() const { return "text/plain:1.0"; }
+
+ private:
+    bool isNativeType(const char *type);
 };
 
 #endif // ENABLE_ECAL

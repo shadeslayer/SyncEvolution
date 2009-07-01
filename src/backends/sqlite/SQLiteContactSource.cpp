@@ -192,7 +192,7 @@ void SQLiteContactSource::listAllItems(RevisionMap_t &revisions)
     }
 }
 
-SyncItem *SQLiteContactSource::createItem(const string &uid)
+SyncItem *SQLiteContactSource::createItem(const string &uid, const char *type)
 {
     logItem(uid, "extracting from database", true);
 

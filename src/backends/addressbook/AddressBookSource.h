@@ -168,7 +168,7 @@ class AddressBookSource : public TrackingSyncSource
     virtual void listAllItems(RevisionMap_t &revisions);
     virtual void exportData(ostream &out);
     virtual InsertItemResult insertItem(const string &uid, const SyncItem &item);
-    virtual SyncItem *createItem(const string &uid) { return createItem(uid, m_asVCard30); }
+    virtual SyncItem *createItem(const string &uid, const char *type = NULL) { return createItem(uid, m_asVCard30); }
     virtual SyncItem *createItem(const string &uid, bool asVCard30);
     virtual void deleteItem(const string &uid);
     virtual void flush() {}

@@ -30,8 +30,12 @@ using namespace std;
 
 #include "Logging.h"
 
-SyncItem *EvolutionMemoSource::createItem(const string &luid)
+SyncItem *EvolutionMemoSource::createItem(const string &luid, const char  *type)
 {
+    if (isNativeType(type)) {
+        return EvolutionCalendarSource::createItem(luid, type);
+    }
+
     logItem( luid, "extracting from EV" );
 
     ItemID id(luid);
@@ -121,9 +125,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
     // fall back to inserting iCalendar 2.0 if
     // real SyncML server has sent vCalendar 1.0 or iCalendar 2.0
     // or the test system inserts such an item
-    if (!strcasecmp(type.c_str(), "raw") ||
-        !strcasecmp(type.c_str(), "text/x-vcalendar") ||
-        !strcasecmp(type.c_str(), "text/calendar")) {
+    if (isNativeType(type.c_str())) {
         return EvolutionCalendarSource::insertItem(luid, item);
     }
     
@@ -215,6 +217,14 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
     }
 
     return InsertItemResult(newluid, modTime, merged);
+}
+
+bool EvolutionMemoSource::isNativeType(const char *type)
+{
+    return type &&
+        (!strcasecmp(type, "raw") ||
+         !strcasecmp(type, "text/x-vcalendar") ||
+         !strcasecmp(type, "text/calendar"));
 }
 
 #endif /* ENABLE_ECAL */

@@ -278,7 +278,7 @@ string EvolutionContactSource::getRevision(const string &luid)
     return rev;
 }
 
-SyncItem *EvolutionContactSource::createItem(const string &luid)
+SyncItem *EvolutionContactSource::createItem(const string &luid, const char *type)
 {
     logItem(luid, "extracting from EV", true);
 

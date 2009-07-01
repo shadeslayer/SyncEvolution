@@ -94,7 +94,7 @@ public:
 
     virtual Databases getDatabases() { return m_source->getDatabases(); }
     virtual void open() { m_source->open(); }
-    virtual SyncItem *createItem(const string &uid) { return m_source->createItem(uid); }
+    virtual SyncItem *createItem(const string &uid, const char *type) { return m_source->createItem(uid, type); }
     virtual void close() { m_source->close(); }
     virtual void backupData(const string &dir, ConfigNode &node, BackupReport &report) { m_source->backupData(dir, node, report); }
     virtual void restoreData(const string &dir, const ConfigNode &node, bool dryrun, SyncSourceReport &report) { m_source->restoreData(dir, node, dryrun, report); }

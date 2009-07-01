@@ -55,7 +55,7 @@ class EvolutionContactSource : public TrackingSyncSource
     virtual const char *getMimeVersion() const;
     virtual const char *getSupportedTypes() const { return "text/vcard:3.0,text/x-vcard:2.1"; }
    
-    virtual SyncItem *createItem(const string &uid);
+    virtual SyncItem *createItem(const string &uid, const char *type = NULL);
     
   protected:
     //

@@ -36,6 +36,7 @@
 #include <Logging.h>
 #include <SyncEvolutionUtil.h>
 #include <EvolutionSyncClient.h>
+#include <VolatileConfigNode.h>
 
 #include <synthesis/dataconversion.h>
 
@@ -3148,16 +3149,14 @@ SyncTests *ClientTest::createSyncTests(const std::string &name, std::vector<int>
 
 int ClientTest::dump(ClientTest &client, SyncSource &source, const char *file)
 {
-    std::ofstream out(file);
-
     std::auto_ptr<SyncItem> item;
-    SOURCE_ASSERT_NO_FAILURE(&source, item.reset(source.getFirstItem()));
-    while (item.get()) {
-        out << (char *)item->getData() << std::endl;
-        SOURCE_ASSERT_NO_FAILURE(&source, item.reset(source.getNextItem()));
-    }
-    out.close();
-    return out.bad();
+    BackupReport report;
+    VolatileConfigNode node;
+
+    rm_r(file);
+    mkdir_p(file);
+    source.backupData(file, node, report);
+    return 0;
 }
 
 void ClientTest::getItems(const char *file, list<string> &items)

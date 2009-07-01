@@ -150,7 +150,7 @@ void FileSyncSource::listAllItems(RevisionMap_t &revisions)
     }
 }
 
-SyncItem *FileSyncSource::createItem(const string &uid)
+SyncItem *FileSyncSource::createItem(const string &uid, const char *type)
 {
     string filename = createFilename(uid);
 

@@ -162,8 +162,11 @@ class TrackingSyncSource : public EvolutionSyncSource
      * free that item. May throw exceptions.
      *
      * @param uid      identifies the item
+     * @param type     MIME type preferred by caller for item;
+     *                 can be ignored. "raw" selects the native
+     *                 format of the source.
      */
-    virtual SyncItem *createItem(const string &uid) = 0;
+    virtual SyncItem *createItem(const string &uid, const char *type = NULL) = 0;
 
     /**
      * removes and item

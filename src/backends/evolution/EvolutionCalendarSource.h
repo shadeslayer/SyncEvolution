@@ -55,13 +55,12 @@ class EvolutionCalendarSource : public TrackingSyncSource
     virtual Databases getDatabases();
     virtual void open();
     virtual void close(); 
-    virtual void exportData(ostream &out);
     virtual string fileSuffix() const { return "ics"; }
     virtual const char *getMimeType() const { return "text/calendar"; }
     virtual const char *getMimeVersion() const { return "2.0"; }
     virtual const char *getSupportedTypes() const { return "text/calendar:2.0"; }
    
-    virtual SyncItem *createItem(const string &luid);
+    virtual SyncItem *createItem(const string &luid, const char *type);
 
   protected:
     //

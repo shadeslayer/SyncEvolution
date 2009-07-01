@@ -354,8 +354,11 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
      * - mime type
      *
      * @param uid      identifies the item
+     * @param type     MIME type preferred by caller for item;
+     *                 can be ignored. "raw" selects the native
+     *                 format of the source.
      */
-    virtual SyncItem *createItem(const string &uid) = 0;
+    virtual SyncItem *createItem(const string &uid, const char *type = NULL) = 0;
 
     /**
      * closes the data source so that it can be reopened

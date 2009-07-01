@@ -233,27 +233,7 @@ void EvolutionCalendarSource::close()
     m_calendar = NULL;
 }
 
-void EvolutionCalendarSource::exportData(ostream &out)
-{
-    GList *nextItem;
-    GError *gerror = NULL;
-
-    if (!e_cal_get_object_list_as_comp(m_calendar,
-                                       "(contains? \"any\" \"\")",
-                                       &nextItem,
-                                       &gerror)) {
-        throwError( "reading all items", gerror );
-    }
-    eptr<GList> listptr(nextItem);
-    while (nextItem) {
-        ItemID id = getItemID(E_CAL_COMPONENT(nextItem->data));
-        out << retrieveItemAsString(id);
-        out << "\r\n";
-        nextItem = nextItem->next;
-    }
-}
-
-SyncItem *EvolutionCalendarSource::createItem(const string &luid)
+SyncItem *EvolutionCalendarSource::createItem(const string &luid, const char *type)
 {
     logItem( luid, "extracting from EV", true );
 

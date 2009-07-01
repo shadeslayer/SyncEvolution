@@ -63,7 +63,7 @@ class FileSyncSource : public TrackingSyncSource, private boost::noncopyable
     virtual void open();
     virtual void close();
     virtual Databases getDatabases();
-    virtual SyncItem *createItem(const string &uid);
+    virtual SyncItem *createItem(const string &uid, const char *type = NULL);
     virtual string fileSuffix() const;
     virtual const char *getMimeType() const;
     virtual const char *getMimeVersion() const;
