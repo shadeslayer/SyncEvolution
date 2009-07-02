@@ -32,6 +32,7 @@ using namespace std;
 #include "SyncEvolutionCmdline.h"
 #include "EvolutionSyncSource.h"
 #include "EvolutionSyncClient.h"
+#include "LogRedirect.h"
 
 #if defined(ENABLE_MAEMO) && defined (ENABLE_EBOOK)
 
@@ -73,7 +74,13 @@ int main( int argc, char **argv )
     // the application increase the default timeout.
     setenv("DBUS_DEFAULT_TIMEOUT", "600000", 0);
 #endif
-    
+
+    // Intercept stdout/stderr and route it through our logging.
+    // Not currently active because it also intercepts our own
+    // cout output, which is neither desirable nor works well
+    // because it splits lines (no line buffering?!).
+    // SyncEvolution::LogRedirect redirect;
+   
 #if defined(HAVE_GLIB)
     // this is required when using glib directly or indirectly
     g_type_init();

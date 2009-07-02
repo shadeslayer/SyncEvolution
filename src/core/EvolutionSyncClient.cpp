@@ -111,8 +111,9 @@ EvolutionSyncClient::~EvolutionSyncClient()
 // this class owns the logging directory and is responsible
 // for redirecting output at the start and end of sync (even
 // in case of exceptions thrown!)
-class LogDir : public LoggerStdout {
+class LogDir : public LoggerBase {
     EvolutionSyncClient &m_client;
+    Logger &m_parentLogger;  /**< the logger which was active before we started to intercept messages */
     string m_logdir;         /**< configured backup root dir */
     int m_maxlogdirs;        /**< number of backup dirs to preserve, 0 if unlimited */
     string m_prefix;         /**< common prefix of backup dirs */
@@ -145,7 +146,7 @@ class LogDir : public LoggerStdout {
     }
 
 public:
-    LogDir(EvolutionSyncClient &client) : m_client(client), m_info(NULL), m_readonly(false), m_report(NULL)
+    LogDir(EvolutionSyncClient &client) : m_client(client), m_parentLogger(LoggerBase::instance()), m_info(NULL), m_readonly(false), m_report(NULL)
     {
         // Set default log directory. This will be overwritten with a user-specified
         // location later on, if one was selected by the user. SyncEvolution >= 0.9 alpha
@@ -317,10 +318,10 @@ public:
             break;
         }
         if (!usePath) {
-            instance().setLevel(level);
+            LoggerBase::instance().setLevel(level);
         }
         setLevel(level);
-        pushLogger(this);
+        LoggerBase::pushLogger(this);
 
         time_t start = time(NULL);
         if (m_report) {
@@ -367,8 +368,8 @@ public:
 
     // remove redirection of logging
     void restore() {
-        if (&instance() == this) {
-            popLogger();
+        if (&LoggerBase::instance() == this) {
+            LoggerBase::popLogger();
         }
         time_t end = time(NULL);
         if (m_report) {
@@ -407,8 +408,8 @@ public:
             m_client.getEngine().doDebug(level, prefix, file, line, function, format, argscopy);
             va_end(argscopy);
         }
-        // always to stdout
-        LoggerStdout::messagev(level, prefix, file, line, function, format, args);
+        // always to parent (usually stdout)
+        m_parentLogger.messagev(level, prefix, file, line, function, format, args);
     }
 
 private:

@@ -38,6 +38,8 @@ CORE_SOURCES  = \
 	Logging.cpp \
 	LogStdout.h \
 	LogStdout.cpp \
+	LogRedirect.h \
+	LogRedirect.cpp \
 	\
 	TransportAgent.h \
 	CurlTransportAgent.h \
