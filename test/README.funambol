@@ -19,6 +19,9 @@ Thiss document is used to show interoperability test information with funambol s
 * Test Environment Variables Settings
   CLIENT_TEST_SERVER=funambol CLIENT_TEST_XML=1 CLIENT_TEST_MAX_ITEMSIZE=2048 \
   CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test/
+ 
+* Test Profiles Settings
+  Make sure you calendar type set as 'calendar:text/calendar!' to force to use ical20
 
 
 * Data formats we need to test:
