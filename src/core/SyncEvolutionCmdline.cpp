@@ -27,7 +27,6 @@
 
 #include <unistd.h>
 #include <errno.h>
-#include <signal.h>
 
 #include <iostream>
 #include <iomanip>
@@ -41,8 +40,6 @@ using namespace std;
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
-
-extern "C" void suspend_handler(int sig);
 
 SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, const char * const * argv, ostream &out, ostream &err) :
     m_argc(argc),
@@ -449,11 +446,7 @@ bool SyncEvolutionCmdline::run() {
                 return false;
             }
 
-            //add the handler for suspend support
-            sighandler_t old_handler = signal(SIGINT, suspend_handler);
-            int status = client.sync();
-            signal(SIGINT, old_handler);
-            return (status == STATUS_OK);
+            return ( client.sync() == STATUS_OK);
         }
     }
 

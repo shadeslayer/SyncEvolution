@@ -75,6 +75,7 @@ class SoupTransportAgent : public TransportAgent
     eptr<GMainLoop, GMainLoop, GLibUnref> m_loop;
     Status m_status;
     std::string m_failure;
+    guint m_abortEventSource;
 
     /** User Abort check interval */
     static const gint ABORT_CHECK_INTERVAL = 1;

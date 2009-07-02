@@ -39,13 +39,13 @@ SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
            g_main_loop_new(NULL, TRUE),
            "Soup main loop"),
     m_status(INACTIVE),
+    m_abortEventSource(-1),
     m_response(NULL)
 {
 #ifdef HAVE_LIBSOUP_SOUP_GNOME_FEATURES_H
     // use default GNOME proxy settings
     soup_session_add_feature_by_type(m_session.get(), SOUP_TYPE_PROXY_RESOLVER_GNOME);
 #endif
-    g_timeout_add_seconds(ABORT_CHECK_INTERVAL, (GSourceFunc) AbortCallback, static_cast<gpointer> (this));
 }
 
 SoupTransportAgent::~SoupTransportAgent()
@@ -103,6 +103,7 @@ void SoupTransportAgent::send(const char *data, size_t len)
     soup_message_set_request(message, m_contentType.c_str(),
                              SOUP_MEMORY_TEMPORARY, data, len);
     m_status = ACTIVE;
+    m_abortEventSource = g_timeout_add_seconds(ABORT_CHECK_INTERVAL, (GSourceFunc) AbortCallback, static_cast<gpointer> (this));
     soup_session_queue_message(m_session.get(), message,
                                SessionCallback, static_cast<gpointer>(this));
 }
@@ -110,6 +111,7 @@ void SoupTransportAgent::send(const char *data, size_t len)
 void SoupTransportAgent::cancel()
 {
     m_status = FAILED;
+    soup_session_abort(m_session.get());
     if(g_main_loop_is_running(m_loop.get()))
       g_main_loop_quit(m_loop.get());
 }
@@ -137,6 +139,7 @@ TransportAgent::Status SoupTransportAgent::wait()
         SE_THROW_EXCEPTION(TransportException, failure);
     }
 
+    g_source_remove(m_abortEventSource);
     return m_status;
 }
 

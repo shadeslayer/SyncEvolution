@@ -51,6 +51,7 @@ using namespace std;
 #include <sys/stat.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <signal.h>
 #include <dirent.h>
 #include <errno.h>
 
@@ -1443,6 +1444,11 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
 
 SyncMLStatus EvolutionSyncClient::doSync()
 {
+    struct sigaction new_action, old_action;
+    new_action.sa_handler= suspend_handler;
+    sigemptyset (&new_action.sa_mask);
+    new_action.sa_flags = 0;
+    sigaction (SIGINT, &new_action, &old_action);
     SyncMLStatus status = STATUS_OK;
 
     // Synthesis SDK
@@ -1779,6 +1785,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
         }
     } while (stepCmd != sysync::STEPCMD_DONE && stepCmd != sysync::STEPCMD_ERROR);
 
+    sigaction (SIGINT, &old_action, NULL);
     return status;
 }
 
