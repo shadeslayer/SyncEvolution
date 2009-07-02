@@ -314,10 +314,18 @@ sub Normalize {
     if ($funambol) {
       #several properties are not preserved by funambol server in icalendar2.0 format
       s/^(UID|SEQUENCE|TRANSP|LAST-MODIFIED|X-EVOLUTION-ALARM-UID)(;[^:;\n]*)*:.*\r?\n?//gm;
+      if (/^BEGIN:VEVENT/m ) {
+        #several properties are not preserved by funambol server in itodo2.0 format and
+        s/^(RECURRENCE-ID|ATTENDEE)(;[^:;\n]*)*:.*\r?\n?//gm;
+        #REPEAT:0 is added by funambol server so ignore it
+        s/^(REPEAT:0).*\r?\n?//gm;
+        #CN parameter is lost by funambol server
+        s/^ORGANIZER([^:\n]*);CN=([^:\n]*)(;[^:\n])*:(.*\r?\n?)/ORGANIZER$1$3:$4/mg;
+      }
 
       if (/^BEGIN:VTODO/m ) {
         #several properties are not preserved by funambol server in itodo2.0 format and
-        s/^(STATUS)(;[^:;\n]*)*:.*\r?\n?//gm;
+        s/^(STATUS|URL)(;[^:;\n]*)*:.*\r?\n?//gm;
 
         #some new properties are added by funambol server
         s/^(CLASS:PUBLIC|PERCENT-COMPLETE:0).*\r?\n?//gm;
