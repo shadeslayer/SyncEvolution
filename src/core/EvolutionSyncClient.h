@@ -254,17 +254,45 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     SharedEngine getEngine() { return m_engine; }
     const SharedEngine getEngine() const { return m_engine; }
 
+    bool getDoLogging() { return m_doLogging; }
+    std::string getServer() { return m_server; }
+
     /**
      * Handle for active session, may be NULL.
      */
     SharedSession getSession() { return m_session; }
 
   protected:
+    /** exchange active Synthesis engine */
     SharedEngine swapEngine(SharedEngine newengine) {
         SharedEngine oldengine = m_engine;
         m_engine = newengine;
         return oldengine;
     }
+
+    /** sentinel class which creates, installs and removes a new
+        Synthesis engine for the duration of its own life time */
+    class SwapEngine {
+        EvolutionSyncClient &m_client;
+        SharedEngine m_oldengine;
+
+    public:
+        SwapEngine(EvolutionSyncClient &client) :
+        m_client(client) {
+            SharedEngine syncengine(m_client.createEngine());
+            m_oldengine = m_client.swapEngine(syncengine);
+        }
+
+        ~SwapEngine() {
+            m_client.swapEngine(m_oldengine);
+        }
+    };
+
+    /**
+     * Create a Synthesis engine for the currently active
+     * sources (might be empty!) and settings.
+     */
+    SharedEngine createEngine();
 
     /**
      * Maps from source name to sync mode with one default

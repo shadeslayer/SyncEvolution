@@ -25,7 +25,6 @@
 #include "SafeConfigNode.h"
 #include "FileConfigNode.h"
 
-#include "Logging.h"
 #include "LogStdout.h"
 #include "TransportAgent.h"
 #include "CurlTransportAgent.h"
@@ -100,21 +99,8 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server,
     m_sources(sources),
     m_doLogging(doLogging),
     m_quiet(false),
-    m_dryrun(false),
-    m_engine(new sysync::TEngineModuleBridge())
+    m_dryrun(false)
 {
-    // Use libsynthesis that we were linked against.  The name of a
-    // .so could be given here, too, to use that instead.  This
-    // instance of the engine is used outside of the sync session
-    // itself. doSync() then creates another engine for the sync
-    // itself. That is necessary because the engine shutdown depends
-    // on the context of the sync (in particular instantiated sync
-    // sources).
-    m_engine.Connect("[]", 0,
-                     sysync::DBG_PLUGIN_NONE|
-                     sysync::DBG_PLUGIN_INT|
-                     sysync::DBG_PLUGIN_DB|
-                     sysync::DBG_PLUGIN_EXOT);
 }
 
 EvolutionSyncClient::~EvolutionSyncClient()
@@ -126,13 +112,12 @@ EvolutionSyncClient::~EvolutionSyncClient()
 // for redirecting output at the start and end of sync (even
 // in case of exceptions thrown!)
 class LogDir : public LoggerStdout {
+    EvolutionSyncClient &m_client;
     string m_logdir;         /**< configured backup root dir */
     int m_maxlogdirs;        /**< number of backup dirs to preserve, 0 if unlimited */
     string m_prefix;         /**< common prefix of backup dirs */
     string m_path;           /**< path to current logging and backup dir */
-    const string &m_server;  /**< name of the server for this synchronization */
     string m_logfile;        /**< path to log file there, empty if not writing one */
-    FILE *m_file;            /**< file handle for log file, NULL if not writing one */
     SafeConfigNode *m_info;  /**< key/value representation of sync information */
     bool m_readonly;         /**< m_info is not to be written to */
     SyncReport *m_report;    /**< record start/end times here */
@@ -146,7 +131,7 @@ class LogDir : public LoggerStdout {
         }
         m_logdir = logdir.substr(0, off);
 
-        string lower = m_server;
+        string lower = m_client.getServer();
         boost::to_lower(lower);
 
         if (boost::iends_with(m_logdir, "syncevolution")) {
@@ -160,7 +145,7 @@ class LogDir : public LoggerStdout {
     }
 
 public:
-    LogDir(const string &server) : m_server(server), m_file(NULL), m_info(NULL), m_readonly(false), m_report(NULL)
+    LogDir(EvolutionSyncClient &client) : m_client(client), m_info(NULL), m_readonly(false), m_report(NULL)
     {
         // Set default log directory. This will be overwritten with a user-specified
         // location later on, if one was selected by the user. SyncEvolution >= 0.9 alpha
@@ -259,9 +244,9 @@ public:
     void startSession(const char *path, int maxlogdirs, int logLevel, bool usePath, SyncReport *report, const string &logname) {
         m_maxlogdirs = maxlogdirs;
         m_report = report;
+        m_logfile = "";
         if (path && !strcasecmp(path, "none")) {
             m_path = "";
-            m_logfile = "";
         } else {
             if (path && path[0]) {
                 setLogdir(SubstEnvironment(path));
@@ -304,16 +289,7 @@ public:
                     EvolutionSyncClient::throwError(m_path, errno);
                 }
             }
-            m_logfile = m_path + "/" + logname + ".log";
-        }
-
-        if (m_logfile.size()) {
-            // redirect logging into that directory, including stderr,
-            // after truncating it
-            m_file = fopen(m_logfile.c_str(), "w");
-            if (!m_file) {
-                SE_LOG_ERROR(NULL, NULL, "creating log file %s failed", m_logfile.c_str());
-            }
+            m_logfile = m_path + "/" + "sysync_linux.html";
         }
 
         // update log level of default logger and our own replacement
@@ -409,10 +385,6 @@ public:
             delete m_info;
             m_info = NULL;
         }
-        if (m_file) {
-            fclose(m_file);
-            m_file = NULL;
-        }
     }
 
     ~LogDir() {
@@ -428,17 +400,14 @@ public:
                           const char *format,
                           va_list args)
     {
-        if (m_file) {
+        if (m_client.getEngine().get()) {
             va_list argscopy;
             va_copy(argscopy, args);
-            // once to file, with full debugging
-            // TODO: configurable level of detail for file
-            LoggerStdout::messagev(m_file, level, DEBUG,
-                                   prefix, file, line, function,
-                                   format, argscopy);
+            // once to Synthesis log, with full debugging
+            m_client.getEngine().doDebug(level, prefix, file, line, function, format, argscopy);
             va_end(argscopy);
         }
-        // to stdout
+        // always to stdout
         LoggerStdout::messagev(level, prefix, file, line, function, format, args);
     }
 
@@ -534,8 +503,8 @@ public:
         source.restoreData(dir, *node, dryrun, report);
     }
 
-    SourceList(const string &server, bool doLogging) :
-        m_logdir(server),
+    SourceList(EvolutionSyncClient &client, bool doLogging) :
+        m_logdir(client),
         m_prepared(false),
         m_doLogging(doLogging),
         m_reportTodo(true),
@@ -1271,6 +1240,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
             "    <timestampall>no</timestampall>\n"
             "    <timedsessionlognames>no</timedsessionlognames>\n"
             "    <subthreadmode>suppress</subthreadmode>\n"
+            "    <logsessionstoglobal>yes</logsessionstoglobal>\n"
             "    <singlegloballog>yes</singlegloballog>\n";
         if (logging) {
             debug <<
@@ -1322,7 +1292,18 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
                 "    </datastore>\n\n";
         }
         if (datastores.str().empty()) {
-            throwError("no sources active, check configuration");
+            // Add dummy datastore, the engine needs it. sync()
+            // checks that we have a valid configuration if it is
+            // really needed.
+#if 0
+            datastores << "<datastore name=\"____dummy____\" type=\"plugin\">"
+                "<plugin_module>SyncEvolution</plugin_module>"
+                "<fieldmap fieldlist=\"contacts\"/>"
+                "<typesupport>"
+                "<use datatype=\"vCard30\"/>"
+                "</typesupport>"
+                "</datastore>";
+#endif
         }
         xml.replace(index, tag.size(), datastores.str());
     }
@@ -1354,6 +1335,34 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
     substTag(xml, "configdate", getConfigDate().c_str());
 }
 
+SharedEngine EvolutionSyncClient::createEngine()
+{
+    SharedEngine engine(new sysync::TEngineModuleBridge);
+
+    // Use libsynthesis that we were linked against.  The name of a
+    // .so could be given here, too, to use that instead.  This
+    // instance of the engine is used outside of the sync session
+    // itself. doSync() then creates another engine for the sync
+    // itself. That is necessary because the engine shutdown depends
+    // on the context of the sync (in particular instantiated sync
+    // sources).
+    engine.Connect("[]", 0,
+                   sysync::DBG_PLUGIN_NONE|
+                   sysync::DBG_PLUGIN_INT|
+                   sysync::DBG_PLUGIN_DB|
+                   sysync::DBG_PLUGIN_EXOT);
+
+    SharedKey configvars = engine.OpenKeyByPath(SharedKey(), "/configvars");
+    string logdir = m_sourceListPtr->getLogdir();
+    engine.SetStrValue(configvars, "defout_path",
+                       logdir.size() ? logdir : "/dev/null");
+    engine.SetStrValue(configvars, "conferrpath", "console");
+    engine.SetStrValue(configvars, "binfilepath", getRootPath() + "/.synthesis");
+    configvars.reset();
+
+    return engine;
+}
+
 SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
@@ -1364,7 +1373,7 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
     }
 
     // redirect logging as soon as possible
-    SourceList sourceList(m_server, m_doLogging);
+    SourceList sourceList(*this, m_doLogging);
     sourceList.setLogLevel(m_quiet ? SourceList::LOGGING_QUIET :
                            getPrintChanges() ? SourceList::LOGGING_FULL :
                            SourceList::LOGGING_SUMMARY);
@@ -1380,58 +1389,76 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
         // let derived classes override settings, like the log dir
         prepare();
 
+        // choose log directory
         sourceList.startSession(getLogDir(),
                                 getMaxLogDirs(),
                                 getLogLevel(),
                                 report,
                                 "client");
 
-        // dump some summary information at the beginning of the log
-        SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername());
-        SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv(), getDevType());
-        SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
-        SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
+        // create a Synthesis engine, used purely for logging purposes
+        // at this time
+        SwapEngine swapengine(*this);
+        string xml, configname;
+        getConfigXML(xml, configname);
+        m_engine.InitEngineXML(xml.c_str());
 
-        // instantiate backends, but do not open them yet
-        initSources(sourceList);
+        try {
+            // dump some summary information at the beginning of the log
+            SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername());
+            SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv(), getDevType());
+            SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
+            SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
 
-        // request all config properties once: throwing exceptions
-        // now is okay, whereas later it would lead to leaks in the
-        // not exception safe client library
-        EvolutionSyncConfig dummy;
-        set<string> activeSources = sourceList.getSources();
-        dummy.copy(*this, &activeSources);
+            // instantiate backends, but do not open them yet
+            initSources(sourceList);
+            if (sourceList.empty()) {
+                throwError("no sources active, check configuration");
+            }
 
-        // start background thread if not running yet:
-        // necessary to catch problems with Evolution backend
-        startLoopThread();
+            // request all config properties once: throwing exceptions
+            // now is okay, whereas later it would lead to leaks in the
+            // not exception safe client library
+            EvolutionSyncConfig dummy;
+            set<string> activeSources = sourceList.getSources();
+            dummy.copy(*this, &activeSources);
 
-        // ask for passwords now
-        checkPassword(*this);
-        if (getUseProxy()) {
-            checkProxyPassword(*this);
+            // start background thread if not running yet:
+            // necessary to catch problems with Evolution backend
+            startLoopThread();
+
+            // ask for passwords now
+            checkPassword(*this);
+            if (getUseProxy()) {
+                checkProxyPassword(*this);
+            }
+            BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+                source->checkPassword(*this);
+            }
+
+            // open each source - failing now is still safe
+            BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+                source->open();
+            }
+
+            // give derived class also a chance to update the configs
+            prepare(sourceList);
+
+            // ready to go: dump initial databases and prepare for final report
+            sourceList.syncPrepare();
+
+            // run sync session
+            status = doSync();
+        } catch (...) {
+            // handle the exception here while the engine (and logging!) is still alive
+            SyncEvolutionException::handle(&status);
+            goto report;
         }
-        BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
-            source->checkPassword(*this);
-        }
-
-        // open each source - failing now is still safe
-        BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
-            source->open();
-        }
-
-        // give derived class also a chance to update the configs
-        prepare(sourceList);
-
-	// ready to go: dump initial databases and prepare for final report
-	sourceList.syncPrepare();
-
-        // run sync session
-        status = doSync();
     } catch (...) {
         SyncEvolutionException::handle(&status);
     }
 
+ report:
     try {
         // Print final report before cleaning up.
         // Status was okay only if all sources succeeded.
@@ -1460,48 +1487,15 @@ SyncMLStatus EvolutionSyncClient::doSync()
     new_action.sa_flags = 0;
     sigaction (SIGINT, &new_action, &old_action);
     SyncMLStatus status = STATUS_OK;
+    std::string s;
 
-    // Synthesis SDK
-    string s;
-
-    // create new sync engine for the duration of this function
-    class SwapEngine {
-        EvolutionSyncClient &m_client;
-        SharedEngine m_oldengine;
-
-    public:
-        SwapEngine(EvolutionSyncClient &client) :
-            m_client(client) {
-            SharedEngine syncengine(new sysync::TEngineModuleBridge());
-            syncengine.Connect("[]", 0,
-                               sysync::DBG_PLUGIN_NONE|
-                               sysync::DBG_PLUGIN_INT|
-                               sysync::DBG_PLUGIN_DB|
-                               sysync::DBG_PLUGIN_EXOT);
-            m_oldengine = m_client.swapEngine(syncengine);
-        }
-
-        ~SwapEngine() {
-            m_client.swapEngine(m_oldengine);
-        }
-    } swapengine(*this);
-
-    SharedKey configvars = m_engine.OpenKeyByPath(SharedKey(), "/configvars");
-    string logdir = m_sourceListPtr->getLogdir();
-    m_engine.SetStrValue(configvars, "defout_path",
-                         logdir.size() ? logdir : "/dev/null");
-    // TODO: redirect to log file?
-    m_engine.SetStrValue(configvars, "conferrpath", "console");
-    m_engine.SetStrValue(configvars, "binfilepath", getRootPath() + "/.synthesis");
-    configvars.reset();
-
+    // re-init engine with all sources configured
     string xml, configname;
     getConfigXML(xml, configname);
-    SE_LOG_DEBUG(NULL, NULL, "%s", xml.c_str());
     m_engine.InitEngineXML(xml.c_str());
-    SharedKey profiles = m_engine.OpenKeyByPath(SharedKey(), "/profiles");
-  
+
     // check the settings status (MUST BE DONE TO MAKE SETTINGS READY)
+    SharedKey profiles = m_engine.OpenKeyByPath(SharedKey(), "/profiles");
     m_engine.GetStrValue(profiles, "settingsstatus");
     // allow creating new settings when existing settings are not up/downgradeable
     m_engine.SetStrValue(profiles, "overwrite",  "1");
@@ -1590,7 +1584,6 @@ SyncMLStatus EvolutionSyncClient::doSync()
     targets.reset();
     profile.reset();
     profiles.reset();
-    configvars.reset();
 
     // reopen profile keys
     profiles = m_engine.OpenKeyByPath(SharedKey(), "/profiles");
@@ -1807,7 +1800,7 @@ void EvolutionSyncClient::status()
         throwError("cannot proceed without configuration");
     }
 
-    SourceList sourceList(m_server, false);
+    SourceList sourceList(*this, false);
     initSources(sourceList);
     BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
         source->checkPassword(*this);
@@ -1856,7 +1849,7 @@ void EvolutionSyncClient::checkStatus(SyncReport &report)
         throwError("cannot proceed without configuration");
     }
 
-    SourceList sourceList(m_server, false);
+    SourceList sourceList(*this, false);
     initSources(sourceList);
     BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
         source->checkPassword(*this);
@@ -1916,7 +1909,7 @@ void EvolutionSyncClient::restore(const string &dirname, RestoreDatabase databas
         throwError("cannot proceed without configuration");
     }
 
-    SourceList sourceList(m_server, false);
+    SourceList sourceList(*this, false);
     sourceList.startSession(dirname.c_str(), 0, 0, NULL, "restore");
     LoggerBase::instance().setLevel(Logger::INFO);
     initSources(sourceList);
@@ -1967,13 +1960,13 @@ void EvolutionSyncClient::restore(const string &dirname, RestoreDatabase databas
 
 void EvolutionSyncClient::getSessions(vector<string> &dirs)
 {
-    LogDir logging(m_server);
+    LogDir logging(*this);
     logging.previousLogdirs(getLogDir(), dirs);
 }
 
 void EvolutionSyncClient::readSessionInfo(const string &dir, SyncReport &report)
 {
-    LogDir logging(m_server);
+    LogDir logging(*this);
     logging.openLogdir(dir);
     logging.readReport(report);
 }

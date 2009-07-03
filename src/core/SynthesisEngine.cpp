@@ -20,6 +20,8 @@
 #include "SynthesisEngine.h"
 #include "SyncEvolutionUtil.h"
 
+#include <synthesis/SDK_util.h>
+
 void SharedEngine::Connect(const string &aEngineName,
                            sysync::CVersion aPrgVersion,
                            sysync::uInt16 aDebugFlags)
@@ -203,4 +205,16 @@ void SharedEngine::SetInt32Value(const SharedKey &aKeyH, const string &aValName,
     if (err) {
         throw BadSynthesisResult(string("error writing value ") + aValName, static_cast<sysync::TSyErrorEnum>(err));
     }
+}
+
+void SharedEngine::doDebug(SyncEvolution::Logger::Level level,
+                           const char *prefix,
+                           const char *file,
+                           int line,
+                           const char *function,
+                           const char *format,
+                           va_list args)
+{
+    // TODO: log the additional information
+    DoDEBUG(m_engine->fCI, 0, false, "", "", args, format);
 }

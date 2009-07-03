@@ -23,6 +23,8 @@
 
 #include <config.h>
 
+#include <Logging.h>
+
 #include <synthesis/generic_types.h>
 #include <synthesis/sync_declarations.h>
 #include <synthesis/engine_defs.h>
@@ -99,6 +101,14 @@ class SharedEngine {
 
     sysync::sInt32 GetInt32Value(const SharedKey &aKeyH, const string &aValName);
     void SetInt32Value(const SharedKey &aKeyH, const string &aValName, sysync::sInt32 aValue);
+
+    void doDebug(SyncEvolution::Logger::Level level,
+                 const char *prefix,
+                 const char *file,
+                 int line,
+                 const char *function,
+                 const char *format,
+                 va_list args);
 };
 
 /**
