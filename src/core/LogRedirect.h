@@ -88,7 +88,8 @@ class LogRedirect : public LoggerStdout
     void process(FDs &fds) throw();
 
  public:
-    LogRedirect() throw();
+    /** redirect both stderr and stdout or just stderr */
+    LogRedirect(bool both = true) throw();
     ~LogRedirect() throw();
 
     void process() throw();
@@ -100,17 +101,7 @@ class LogRedirect : public LoggerStdout
                           int line,
                           const char *function,
                           const char *format,
-                          va_list args)
-    {
-        // check for other output first
-        process();
-        LoggerStdout::messagev(m_out,
-                               level, getLevel(),
-                               prefix,
-                               file, line, function,
-                               format,
-                               args);
-    }
+                          va_list args);
 };
 
 } // namespace

@@ -27,23 +27,42 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <algorithm>
 
+#ifdef HAVE_GLIB
+# include <glib.h>
+#endif
+
 namespace SyncEvolution {
 
-LogRedirect::LogRedirect() throw()
+LogRedirect::LogRedirect(bool both) throw()
 {
     m_processing = false;
     m_buffer = NULL;
     m_len = 0;
-    redirect(1, m_stdout);
+    m_out = NULL;
+    m_stderr.m_original =
+        m_stderr.m_read =
+        m_stderr.m_write =
+        m_stderr.m_copy = -1;
+    m_stdout.m_original =
+        m_stdout.m_read =
+        m_stdout.m_write =
+        m_stdout.m_copy = -1;
     redirect(2, m_stderr);
-    m_out = fdopen(dup(m_stdout.m_copy), "w");
-    if (!m_out) {
-        restore(m_stdout);
-        restore(m_stderr);
-        perror("LogRedirect fdopen");
+    if (both) {
+        redirect(1, m_stdout);
+        m_out = fdopen(dup(m_stdout.m_copy), "w");
+        if (!m_out) {
+            restore(m_stdout);
+            restore(m_stderr);
+            perror("LogRedirect fdopen");
+        }
     }
     LoggerBase::pushLogger(this);
 }
@@ -60,6 +79,24 @@ LogRedirect::~LogRedirect() throw()
         free(m_buffer);
     }
     LoggerBase::popLogger();
+}
+
+void LogRedirect::messagev(Level level,
+                           const char *prefix,
+                           const char *file,
+                           int line,
+                           const char *function,
+                           const char *format,
+                           va_list args)
+{
+    // check for other output first
+    process();
+    LoggerStdout::messagev(m_out ? m_out : stdout,
+                           level, getLevel(),
+                           prefix,
+                           file, line, function,
+                           format,
+                           args);
 }
 
 void LogRedirect::redirect(int original, FDs &fds) throw()
@@ -128,6 +165,9 @@ void LogRedirect::redirect(int original, FDs &fds) throw()
 
 void LogRedirect::restore(FDs &fds) throw()
 {
+    if (fds.m_copy < 0) {
+        return;
+    }
     dup2(fds.m_copy, fds.m_original);
     close(fds.m_copy);
     close(fds.m_write);
@@ -183,10 +223,35 @@ void LogRedirect::process(FDs &fds) throw()
             // Now pass it to logger, with a level determined by
             // the channel. This is the point where we can filter
             // out known noise.
-            LoggerBase::instance().message(fds.m_original == 2 ? Logger::ERROR : Logger::INFO,
-                                           fds.m_original == 2 ? "stderr" : NULL,
+            const char *prefix = NULL;
+            Logger::Level level = Logger::DEV;
+            const char *text = m_buffer;
+
+            if (fds.m_original == 1) {
+                // stdout: not sure what this could be, so show it
+                level = Logger::INFO;
+            } else if (fds.m_original == 2) {
+                // stderr: not normally useful for users, so we
+                // can filter it more aggressively. For example,
+                // swallow extra line breaks, glib inserts those.
+                while (*text == '\n') {
+                    text++;
+                }
+                const char *glib_debug_prefix = "** (process:";
+                const char *glib_msg_prefix = "** Message:";
+                if (!strncmp(text, glib_debug_prefix, strlen(glib_debug_prefix)) ||
+                    !strncmp(text, glib_msg_prefix, strlen(glib_msg_prefix))) {
+                    level = Logger::DEBUG;
+                    prefix = "glib";
+                } else {
+                    level = Logger::DEV;
+                    prefix = "stderr";
+                }
+            }
+
+            LoggerBase::instance().message(level, prefix,
                                            NULL, 0, NULL,
-                                           "%s", m_buffer);
+                                           "%s", text);
         }
     } while(have_message);
 }
@@ -223,6 +288,9 @@ class LogRedirectTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(largeChunk);
     CPPUNIT_TEST(streams);
     CPPUNIT_TEST(overload);
+#ifdef HAVE_GLIB
+    CPPUNIT_TEST(glib);
+#endif
     CPPUNIT_TEST_SUITE_END();
 
     /**
@@ -235,9 +303,9 @@ class LogRedirectTest : public CppUnit::TestFixture {
         std::stringstream m_streams[DEBUG + 1];
         SyncEvolution::LogRedirect *m_redirect;
 
-        LogBuffer()
+        LogBuffer(bool both = true)
         {
-            m_redirect = new SyncEvolution::LogRedirect();
+            m_redirect = new SyncEvolution::LogRedirect(both);
             pushLogger(this);
         }
         ~LogBuffer()
@@ -295,7 +363,7 @@ public:
         buffer.m_redirect->process();
 
         CPPUNIT_ASSERT_EQUAL(std::string(simpleMessage), buffer.m_streams[SyncEvolution::Logger::INFO].str());
-        CPPUNIT_ASSERT_EQUAL(std::string(errorMessage), buffer.m_streams[SyncEvolution::Logger::ERROR].str());
+        CPPUNIT_ASSERT_EQUAL(std::string(errorMessage), buffer.m_streams[SyncEvolution::Logger::DEV].str());
     }
 
     void overload()
@@ -312,6 +380,57 @@ public:
         CPPUNIT_ASSERT(buffer.m_streams[SyncEvolution::Logger::INFO].str().size() > large.size());
     }
 
+#ifdef HAVE_GLIB
+    void glib()
+    {
+        static const char *filename = "LogRedirectTest_glib.out";
+        int new_stdout = open(filename, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU);
+
+        // check that intercept all glib message and don't print anything to stdout
+        int orig_stdout = -1;
+        try {
+            orig_stdout = dup(1);
+            dup2(new_stdout, 1);
+
+            LogBuffer buffer(false);
+
+            fprintf(stdout, "normal message stdout\n");
+            fflush(stdout);
+
+            fprintf(stderr, "normal message stderr\n");
+            fflush(stderr);
+
+            // ** (process:13552): WARNING **: test warning
+            g_warning("test warning");
+            // ** Message: test message
+            g_message("test message");
+            // ** (process:13552): CRITICAL **: test critical
+            g_critical("test critical");
+            // would abort:
+            // g_error("error")
+            // ** (process:13552): DEBUG: test debug
+            g_debug("test debug");
+
+            buffer.m_redirect->process();
+
+            std::string debug = buffer.m_streams[SyncEvolution::Logger::DEBUG].str();
+            std::string dev = buffer.m_streams[SyncEvolution::Logger::DEV].str();
+            CPPUNIT_ASSERT(debug.find("test warning") != debug.npos);
+            CPPUNIT_ASSERT(dev.find("normal message stderr") != dev.npos);
+        } catch(...) {
+            dup2(orig_stdout, 1);
+            throw;
+        }
+        dup2(orig_stdout, 1);
+
+        lseek(new_stdout, 0, SEEK_SET);
+        char out[128];
+        ssize_t l = read(new_stdout, out, sizeof(out) - 1);
+        CPPUNIT_ASSERT(l > 0);
+        out[l] = 0;
+        CPPUNIT_ASSERT(boost::starts_with(std::string(out), "normal message stdout"));
+    }
+#endif
 };
 
 SYNCEVOLUTION_TEST_SUITE_REGISTRATION(LogRedirectTest);
