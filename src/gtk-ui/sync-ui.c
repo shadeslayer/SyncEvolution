@@ -235,6 +235,7 @@ show_error_dialog (GtkWindow *parent, const char* message)
                                 GTK_DIALOG_MODAL,
                                 GTK_MESSAGE_ERROR,
                                 GTK_BUTTONS_OK,
+                                "%s",
                                 message);
     gtk_dialog_run (GTK_DIALOG (w));
     gtk_widget_destroy (w);
@@ -704,6 +705,7 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
                                         GTK_DIALOG_MODAL,
                                         GTK_MESSAGE_QUESTION,
                                         GTK_BUTTONS_NONE,
+                                        "%s",
                                         message);
             gtk_dialog_add_buttons (GTK_DIALOG (w), 
                                     _("No, cancel sync"), GTK_RESPONSE_NO,
