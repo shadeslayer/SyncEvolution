@@ -46,7 +46,7 @@ nobase_dist_sysconf_DATA = $(TEMPLATE_FILES)
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
-CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES)
+CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES) $(CLIENT_LIB_PATCHED_FILES)
 
 # synccompare is created by replacing its 'import Algorithm::Diff;'
 # with a simplified copy of Diff.pm.
@@ -174,18 +174,27 @@ CLIENT_LIB_TEST_FILES = \
 	testcases/ical20.ics \
 	testcases/imemo20.ics \
 	testcases/itodo20.ics
+
+CLIENT_LIB_TEST_FILES += $(subst .patch,,$(subst $(srcdir)/../test/,,$(wildcard $(srcdir)/../test/testcases/*.patch)))
+CLIENT_LIB_PATCHED_FILES = $(subst .patch,,$(wildcard $(srcdir)/../test/testcases/*.patch))
+
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm core/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'` $(CORE_LD_FLAGS)
 client_test_LDADD = $(CORE_LDADD) $(SYNCSOURCES)
 # These dependencies are intentionally a bit too broad:
 # they ensure that all files are in place to *run* client-test.
-client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) synccompare
 
 # copy test files because client-test expects them here
+.PHONY: patch2testcase 
+patch2testcases : $(subst .patch,,$(wildcard $(srcdir)/../test/testcases/*.patch))
+$(srcdir)/../test/testcases/% : $(srcdir)/../test/testcases/%.patch
+	patch -o $@ -i $< `echo $@ | rev | cut -d '.' -f 3- | rev`
+
+client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) patch2testcases $(CLIENT_LIB_TEST_FILES) synccompare
 
 LOCAL_TEST_FILES=$(subst $(srcdir)/../test/,,$(wildcard $(srcdir)/../test/* $(srcdir)/../test/testcases/*))
-$(filter testcases/%, $(filter $(LOCAL_TEST_FILES), $(CLIENT_LIB_TEST_FILES))) : % : $(srcdir)/../test/%
+$(filter testcases/%, $(subst $(srcdir)/../test/,,$(CLIENT_LIB_TEST_FILES))) : % : $(srcdir)/../test/%
 	mkdir -p testcases
 	cp $< $@
 

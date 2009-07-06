@@ -3245,7 +3245,11 @@ void ClientTest::getItems(const char *file, list<string> &items)
 
     // import the file
     std::ifstream input;
-    input.open(file);
+    string server = getenv("CLIENT_TEST_SERVER");
+    input.open ((string (file) + '.' + server +".tem").c_str());
+
+    if(input.fail())
+        input.open(file);
     CPPUNIT_ASSERT(!input.bad());
     CPPUNIT_ASSERT(input.is_open());
     std::string data, line;

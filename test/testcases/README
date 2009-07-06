@@ -1,0 +1,13 @@
+The test case files are as follows (take itodo20.ics as example):
+    itodo20.ics                      (common case for all servers)
+    itod20.ics.funambol.tem          (server specific case)
+During test, it will first try the server specific case(*.$server.tem), if not 
+found fall back to the common case. 
+
+To avoid redundancy, the server specifc case is stored as a diff(patch) based on
+server common case; two make rules are added: patch2testcase in src/Makefile and 
+testcase2patch in test/Makefile. patch2testcase is activated automatically when
+you build the client test binary; while testcase2patch is to be used manually. 
+When need to update the patch (triggered by update/add a server specific test
+case or update a server common case in test/testcases), cd test/ and make
+testcase2patch. 
