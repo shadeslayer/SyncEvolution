@@ -118,7 +118,14 @@ class LogDir : public LoggerBase {
     int m_maxlogdirs;        /**< number of backup dirs to preserve, 0 if unlimited */
     string m_prefix;         /**< common prefix of backup dirs */
     string m_path;           /**< path to current logging and backup dir */
-    string m_logfile;        /**< path to log file there, empty if not writing one */
+    string m_logfile;        /**< Path to log file there, empty if not writing one.
+                                  The file is no longer written by this class, nor
+                                  does it control the basename of it. Writing the
+                                  log file is enabled by the XML configuration that
+                                  we prepare for the Synthesis engine; the base name
+                                  of the file is hard-coded in the engine. Despite
+                                  that this class still is the central point to ask
+                                  for the name of the log file. */
     SafeConfigNode *m_info;  /**< key/value representation of sync information */
     bool m_readonly;         /**< m_info is not to be written to */
     SyncReport *m_report;    /**< record start/end times here */

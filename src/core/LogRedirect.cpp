@@ -227,10 +227,10 @@ void LogRedirect::process(FDs &fds) throw()
             Logger::Level level = Logger::DEV;
             const char *text = m_buffer;
 
-            if (fds.m_original == 1) {
+            if (fds.m_original == STDOUT_FILENO) {
                 // stdout: not sure what this could be, so show it
                 level = Logger::INFO;
-            } else if (fds.m_original == 2) {
+            } else if (fds.m_original == STDERR_FILENO) {
                 // stderr: not normally useful for users, so we
                 // can filter it more aggressively. For example,
                 // swallow extra line breaks, glib inserts those.
@@ -333,7 +333,7 @@ public:
         LogBuffer buffer;
 
         static const char *simpleMessage = "hello world";
-        CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(simpleMessage), write(1, simpleMessage, strlen(simpleMessage)));
+        CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(simpleMessage), write(STDOUT_FILENO, simpleMessage, strlen(simpleMessage)));
         buffer.m_redirect->process();
 
         CPPUNIT_ASSERT_EQUAL(buffer.m_streams[SyncEvolution::Logger::INFO].str(), std::string(simpleMessage));
@@ -345,7 +345,7 @@ public:
 
         std::string large;
         large.append(60 * 1024, 'h');
-        CPPUNIT_ASSERT_EQUAL((ssize_t)large.size(), write(1, large.c_str(), large.size()));
+        CPPUNIT_ASSERT_EQUAL((ssize_t)large.size(), write(STDOUT_FILENO, large.c_str(), large.size()));
         buffer.m_redirect->process();
 
         CPPUNIT_ASSERT_EQUAL(large.size(), buffer.m_streams[SyncEvolution::Logger::INFO].str().size());
@@ -357,9 +357,9 @@ public:
         LogBuffer buffer;
 
         static const char *simpleMessage = "hello world";
-        CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(simpleMessage), write(1, simpleMessage, strlen(simpleMessage)));
+        CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(simpleMessage), write(STDOUT_FILENO, simpleMessage, strlen(simpleMessage)));
         static const char *errorMessage = "such a cruel place";
-        CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(errorMessage), write(2, errorMessage, strlen(errorMessage)));
+        CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(errorMessage), write(STDERR_FILENO, errorMessage, strlen(errorMessage)));
         buffer.m_redirect->process();
 
         CPPUNIT_ASSERT_EQUAL(std::string(simpleMessage), buffer.m_streams[SyncEvolution::Logger::INFO].str());
@@ -373,7 +373,7 @@ public:
         std::string large;
         large.append(1024, 'h');
         for (int i = 0; i < 4000; i++) {
-            CPPUNIT_ASSERT_EQUAL((ssize_t)large.size(), write(1, large.c_str(), large.size()));
+            CPPUNIT_ASSERT_EQUAL((ssize_t)large.size(), write(STDOUT_FILENO, large.c_str(), large.size()));
         }
         buffer.m_redirect->process();
 
@@ -389,8 +389,8 @@ public:
         // check that intercept all glib message and don't print anything to stdout
         int orig_stdout = -1;
         try {
-            orig_stdout = dup(1);
-            dup2(new_stdout, 1);
+            orig_stdout = dup(STDOUT_FILENO);
+            dup2(new_stdout, STDOUT_FILENO);
 
             LogBuffer buffer(false);
 
@@ -418,10 +418,10 @@ public:
             CPPUNIT_ASSERT(debug.find("test warning") != debug.npos);
             CPPUNIT_ASSERT(dev.find("normal message stderr") != dev.npos);
         } catch(...) {
-            dup2(orig_stdout, 1);
+            dup2(orig_stdout, STDOUT_FILENO);
             throw;
         }
-        dup2(orig_stdout, 1);
+        dup2(orig_stdout, STDOUT_FILENO);
 
         lseek(new_stdout, 0, SEEK_SET);
         char out[128];

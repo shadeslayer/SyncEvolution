@@ -33,7 +33,9 @@
  * intended to reach the user.
  *
  * This class tries to be simple and therefore avoids threads
- * and forking. The redirected output has to be read whenever
+ * and forking. It intentionally doesn't protect against multiple
+ * threads accessing it. This is something that has to be avoided
+ * by the user. The redirected output has to be read whenever
  * possible, ideally before producing other log output (process()).
  *
  * Because the same thread that produces the output also reads it,
@@ -48,7 +50,7 @@
  * - socketpair() creates an anonymous connection, no-one else
  *   can send us unwanted data (in contrast to, say, UDP)
  * - unlimited chunk size
- * - *but* packets are *not* dropped if two much output is produced
+ * - *but* packets are *not* dropped if too much output is produced
  *   (found with LogRedirectTest::overload test and confirmed by
  *    "man unix")
  *
@@ -83,6 +85,8 @@ class LogRedirect : public LoggerStdout
     size_t m_len;           /** total length of buffer */
     bool m_processing;      /** flag to detect recursive process() calls */
 
+    // non-virtual helper functions which can always be called,
+    // including the constructor and destructor
     void redirect(int original, FDs &fds) throw();
     void restore(FDs &fds) throw();
     void process(FDs &fds) throw();
