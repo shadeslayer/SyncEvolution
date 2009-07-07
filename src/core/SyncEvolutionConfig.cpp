@@ -911,17 +911,26 @@ void EvolutionSyncSourceConfig::setSync(const string &value, bool temporarily) {
 unsigned long EvolutionSyncSourceConfig::getLast() const { return sourcePropLast.getProperty(*m_nodes.m_hiddenNode); }
 void EvolutionSyncSourceConfig::setLast(unsigned long timestamp) { sourcePropLast.setProperty(*m_nodes.m_hiddenNode, timestamp); }
 string EvolutionSyncSourceConfig::getSourceTypeString(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.m_configNode); }
-pair<string, string> EvolutionSyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
+SourceType EvolutionSyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
     string type = getSourceTypeString(nodes);
+    SourceType sourceType;
     size_t colon = type.find(':');
     if (colon != type.npos) {
         string backend = type.substr(0, colon);
         string format = type.substr(colon + 1);
         sourcePropSourceType.normalizeValue(backend);
-        return pair<string, string>(backend, format);
+        size_t formatLen = format.size();
+        if(format[formatLen - 1] == '!') {
+            sourceType.m_forceFormat = true;
+            format = format.substr(0, formatLen - 1);
+        }
+        sourceType.m_backend = backend;
+        sourceType.m_format  = format;
     } else {
-        return pair<string, string>(type, "");
+        sourceType.m_backend = type;
+        sourceType.m_format  = "";
     }
+    return sourceType;
 }
-pair<string, string> EvolutionSyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
+SourceType EvolutionSyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
 void EvolutionSyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*m_nodes.m_configNode, value, temporarily); }

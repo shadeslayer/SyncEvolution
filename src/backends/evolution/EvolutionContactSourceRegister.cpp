@@ -23,22 +23,22 @@
 
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
-    pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
-    bool isMe = sourceType.first == "Evolution Address Book";
-    bool maybeMe = sourceType.first == "addressbook";
+    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    bool isMe = sourceType.m_backend == "Evolution Address Book";
+    bool maybeMe = sourceType.m_backend == "addressbook";
     bool enabled;
 
     EDSAbiWrapperInit();
     enabled = EDSAbiHaveEbook && EDSAbiHaveEdataserver;
     
     if (isMe || maybeMe) {
-        if (sourceType.second == "" || sourceType.second == "text/x-vcard") {
+        if (sourceType.m_format == "" || sourceType.m_format == "text/x-vcard") {
             return
 #ifdef ENABLE_EBOOK
                 enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_21) :
 #endif
                 isMe ? RegisterSyncSource::InactiveSource : NULL;
-        } else if (sourceType.second == "text/vcard") {
+        } else if (sourceType.m_format == "text/vcard") {
             return
 #ifdef ENABLE_EBOOK
                 enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_30) :

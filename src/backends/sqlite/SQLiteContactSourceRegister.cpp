@@ -23,16 +23,16 @@
 
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
-    pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
-    bool isMe = sourceType.first == "SQLite Address Book";
+    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    bool isMe = sourceType.m_backend == "SQLite Address Book";
 
 #ifndef ENABLE_SQLITE
     return isMe ? RegisterSyncSource::InactiveSource : NULL;
 #else
-    bool maybeMe = sourceType.first == "addressbook";
+    bool maybeMe = sourceType.m_backend == "addressbook";
     
     if (isMe || maybeMe) {
-        if (sourceType.second == "" || sourceType.second == "text/x-vcard") {
+        if (sourceType.m_format == "" || sourceType.m_format == "text/x-vcard") {
             return new SQLiteContactSource(params);
         } else {
             return NULL;

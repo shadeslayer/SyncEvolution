@@ -23,10 +23,10 @@
 
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
-    pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
     // The string returned by getSourceType() is always the one
     // registered as main Aliases() below.
-    bool isMe = sourceType.first == "Files in one directory";
+    bool isMe = sourceType.m_backend == "Files in one directory";
 
 #ifndef ENABLE_FILE
     // tell SyncEvolution if the user wanted to use a disabled sync source,
@@ -35,14 +35,14 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
 #else
     // Also recognize one of the standard types?
     // Not in the FileSyncSource!
-    bool maybeMe = false /* sourceType.first == "addressbook" */;
+    bool maybeMe = false /* sourceType.m_backend == "addressbook" */;
     
     if (isMe || maybeMe) {
         // The FileSyncSource always needs the data format
-        // parameter in sourceType.second.
-        if (/* sourceType.second == "" || sourceType.second == "text/x-vcard" */
-            sourceType.second.size()) {
-            return new FileSyncSource(params, sourceType.second);
+        // parameter in sourceType.m_format.
+        if (/* sourceType.m_format == "" || sourceType.m_format == "text/x-vcard" */
+            sourceType.m_format.size()) {
+            return new FileSyncSource(params, sourceType.m_format);
         } else {
             return NULL;
         }

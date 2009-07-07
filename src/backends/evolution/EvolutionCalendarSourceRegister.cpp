@@ -26,17 +26,16 @@
 
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
-    pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
     bool isMe;
     bool enabled;
 
     EDSAbiWrapperInit();
     enabled = EDSAbiHaveEcal && EDSAbiHaveEdataserver;
 
-    isMe = sourceType.first == "Evolution Task List";
-    if (isMe || sourceType.first == "todo") {
-        if (sourceType.second == "" || sourceType.second == "text/calendar" || 
-            sourceType.second == "text/calendar!") {
+    isMe = sourceType.m_backend == "Evolution Task List";
+    if (isMe || sourceType.m_backend == "todo") {
+        if (sourceType.m_format == "" || sourceType.m_format == "text/calendar") { 
             return
 #ifdef ENABLE_ECAL
                 enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, params) :
@@ -45,15 +44,15 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
         }
     }
 
-    isMe = sourceType.first == "Evolution Memos";
-    if (isMe || sourceType.first == "memo") {
-        if (sourceType.second == "" || sourceType.second == "text/plain") {
+    isMe = sourceType.m_backend == "Evolution Memos";
+    if (isMe || sourceType.m_backend == "memo") {
+        if (sourceType.m_format == "" || sourceType.m_format == "text/plain") {
             return
 #ifdef ENABLE_ECAL
                 enabled ? new EvolutionMemoSource(params) :
 #endif
                 isMe ? RegisterSyncSource::InactiveSource : NULL;
-        } else if (sourceType.second == "text/calendar") {
+        } else if (sourceType.m_format == "text/calendar") {
             return
 #ifdef ENABLE_ECAL
                 enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, params) :
@@ -64,12 +63,10 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
         }
     }
 
-    isMe = sourceType.first == "Evolution Calendar";
-    if (isMe || sourceType.first == "calendar") {
-        if (sourceType.second == "" || sourceType.second == "text/calendar" ||
-            sourceType.second == "text/x-vcalendar" /* this is for backwards compatibility with broken configs */ ||
-            sourceType.second == "text/calendar:2.0!" || // force to use icalendar2.0
-            sourceType.second == "text/calendar!" ) { // force to use icalendar2.0
+    isMe = sourceType.m_backend == "Evolution Calendar";
+    if (isMe || sourceType.m_backend == "calendar") {
+        if (sourceType.m_format == "" || sourceType.m_format == "text/calendar" ||
+            sourceType.m_format == "text/x-vcalendar" /* this is for backwards compatibility with broken configs */ ) {
             return
 #ifdef ENABLE_ECAL
                 enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_EVENT, params) :

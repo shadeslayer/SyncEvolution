@@ -190,7 +190,7 @@ public:
 EvolutionSyncSource *EvolutionSyncSource::createSource(const EvolutionSyncSourceParams &params, bool error)
 {
     string sourceTypeString = getSourceTypeString(params.m_nodes);
-    pair<string, string> sourceType = getSourceType(params.m_nodes);
+    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
 
     const SourceRegistry &registry(getSourceRegistry());
     BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
@@ -272,34 +272,40 @@ void EvolutionSyncSource::getSynthesisInfo(string &profile,
         throwError(string("default MIME type not supported: ") + type);
     }
 
-    pair <string, string> sourceType = getSourceType();
-    if (!sourceType.second.empty()) {
-        type = sourceType.second;
+    SourceType sourceType = getSourceType();
+    if (!sourceType.m_format.empty()) {
+        type = sourceType.m_format;
     }
 
     if (type == "text/x-vcard:2.1" || type == "text/x-vcard") {
         datatypes =
-            "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n"
-            "        <use datatype='vCard30' mode='rw'/>\n";
+            "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n";
+        if(!sourceType.m_forceFormat)
+            datatypes +=
+                "        <use datatype='vCard30' mode='rw'/>\n";
     } else if (type == "text/vcard:3.0" || type == "text/vcard") {
         datatypes =
-            "        <use datatype='vCard21' mode='rw'/>\n"
             "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
+        if(!sourceType.m_forceFormat)
+            datatypes +=
+                "        <use datatype='vCard21' mode='rw'/>\n";
     } else if (type == "text/x-vcalendar:2.0" || type == "text/x-vcalendar") {
         datatypes =
-            "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n"
-            "        <use datatype='icalendar20' mode='rw'/>\n";
+            "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n";
+        if(!sourceType.m_forceFormat)
+            datatypes +=
+                "        <use datatype='icalendar20' mode='rw'/>\n";
     } else if (type == "text/calendar:2.0" || type == "text/calendar") {
         datatypes =
-            "        <use datatype='vcalendar10' mode='rw'/>\n"
             "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
+        if(!sourceType.m_forceFormat)
+            datatypes +=
+                "        <use datatype='vcalendar10' mode='rw'/>\n";
     } else if (type == "text/plain:1.0" || type == "text/plain") {
+        // note10 are the same as note11, so ignore force format
         datatypes =
             "        <use datatype='note10' mode='rw' preferred='yes'/>\n"
             "        <use datatype='note11' mode='rw'/>\n";
-    } else if (type == "text/calendar:2.0!" || type == "text/calendar!") { //only support and force to use icalendar2.0
-        datatypes =
-            "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
     } else {
         throwError(string("configured MIME type not supported: ") + type);
     }

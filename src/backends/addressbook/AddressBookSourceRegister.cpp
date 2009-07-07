@@ -22,13 +22,13 @@
 
 static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
 {
-    pair <string, string> sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
-    bool isMe = sourceType.first == "apple-contacts";
+    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    bool isMe = sourceType.m_backend == "apple-contacts";
 
 #ifndef ENABLE_ADDRESSBOOK
     return isMe ? RegisterSyncSource::InactiveSource : NULL;
 #else
-    bool maybeMe = sourceType.first == "addressbook";
+    bool maybeMe = sourceType.m_backend == "addressbook";
     
     if (isMe || maybeMe) {
         // Hack: choose default based on server URI.  "card3"
@@ -40,9 +40,9 @@ static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params
             vCard3 = true;
         }
 
-        if (sourceType.second == "text/x-vcard") {
+        if (sourceType.m_format == "text/x-vcard") {
             vCard3 = false;
-        } else if (sourceType.second == "text/vcard") {
+        } else if (sourceType.m_format == "text/vcard") {
             vCard3 = true;
         }
 
