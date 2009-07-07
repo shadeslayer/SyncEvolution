@@ -68,6 +68,9 @@
  * of the application and in low-level error scenarios, it
  * must not throw exceptions or return errors. If something
  * doesn't work, it stops redirecting output.
+ *
+ * Redirection is disabled if the environment variable
+ * SYNCEVOLUTION_DEBUG is set (regardless of its value).
  */
 
 namespace SyncEvolution {

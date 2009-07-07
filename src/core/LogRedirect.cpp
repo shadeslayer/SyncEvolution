@@ -54,14 +54,16 @@ LogRedirect::LogRedirect(bool both) throw()
         m_stdout.m_read =
         m_stdout.m_write =
         m_stdout.m_copy = -1;
-    redirect(2, m_stderr);
-    if (both) {
-        redirect(1, m_stdout);
-        m_out = fdopen(dup(m_stdout.m_copy), "w");
-        if (!m_out) {
-            restore(m_stdout);
-            restore(m_stderr);
-            perror("LogRedirect fdopen");
+    if (!getenv("SYNCEVOLUTION_DEBUG")) {
+        redirect(STDERR_FILENO, m_stderr);
+        if (both) {
+            redirect(STDOUT_FILENO, m_stdout);
+            m_out = fdopen(dup(m_stdout.m_copy), "w");
+            if (!m_out) {
+                restore(m_stdout);
+                restore(m_stderr);
+                perror("LogRedirect fdopen");
+            }
         }
     }
     LoggerBase::pushLogger(this);

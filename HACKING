@@ -208,3 +208,9 @@ Debugging
 The following packages contain debug information for
 relevant libraries on Ubuntu 7.10:
   evolution-data-server-dbg libglib2.0-0-dbg evolution-dbg
+
+Normally, syncevolution redirects stderr to its own log file.  In
+crash scenarios the final error messages may get lost. To debug such
+cases, disable redirection by setting the environment variable
+SYNCEVOLUTION_DEBUG (value doesn't matter) and capture the output
+normally.
