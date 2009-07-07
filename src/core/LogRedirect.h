@@ -25,7 +25,9 @@
 /**
  * Intercepts all text written to stdout or stderr and passes it
  * through the currently active logger, which may or may not be
- * this instance itself.
+ * this instance itself. In addition, it catches SIGSEGV, SIGABRT,
+ * SIGBUS and processes pending output before shutting down
+ * by raising these signals again.
  *
  * The interception is done by replacing the file descriptors
  * 1 and 2. The original file descriptors are preserved; the
@@ -69,8 +71,8 @@
  * must not throw exceptions or return errors. If something
  * doesn't work, it stops redirecting output.
  *
- * Redirection is disabled if the environment variable
- * SYNCEVOLUTION_DEBUG is set (regardless of its value).
+ * Redirection and signal handlers are disabled if the environment
+ * variable SYNCEVOLUTION_DEBUG is set (regardless of its value).
  */
 
 namespace SyncEvolution {
@@ -87,12 +89,15 @@ class LogRedirect : public LoggerStdout
     char *m_buffer;         /** typically fairly small buffer for reading */
     size_t m_len;           /** total length of buffer */
     bool m_processing;      /** flag to detect recursive process() calls */
+    static LogRedirect *m_redirect; /**< single active instance, for signal handler */
 
     // non-virtual helper functions which can always be called,
     // including the constructor and destructor
     void redirect(int original, FDs &fds) throw();
     void restore(FDs &fds) throw();
+    void restore() throw();
     void process(FDs &fds) throw();
+    static void abortHandler(int sig) throw();
 
  public:
     /** redirect both stderr and stdout or just stderr */

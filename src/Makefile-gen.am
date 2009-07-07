@@ -258,6 +258,17 @@ nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
 client_test_DEPENDENCIES += all
 endif
 
+# test program for output redirection, has to be built
+# and run manually
+EXTRA_PROGRAMS += abort-redirect
+CLEANFILES += abort-redirect.log
+abort_redirect_SOURCES = ../test/abort-redirect.cpp
+abort_redirect_CPPFLAGS = -DHAVE_CONFIG_H $(AM_CPPFLAGS)
+abort_redirect_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
+abort_redirect_LDFLAGS = $(CORE_LD_FLAGS)
+abort_redirect_LDADD = $(CORE_LDADD)
+abort_redirect_DEPENDENCIES = all
+
 
 # special target for testing with valgrind
 valgrind : test

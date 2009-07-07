@@ -1,4 +1,5 @@
 EXTRA_DIST = \
+	abort-redirect.cpp \
         ClientTest.h \
         ClientTest.cpp \
 	COPYING \

@@ -33,12 +33,30 @@
 #include <boost/algorithm/string/predicate.hpp>
 
 #include <algorithm>
+#include <iostream>
 
 #ifdef HAVE_GLIB
 # include <glib.h>
 #endif
 
 namespace SyncEvolution {
+
+LogRedirect *LogRedirect::m_redirect;
+
+void LogRedirect::abortHandler(int sig) throw()
+{
+    SE_LOG_ERROR(NULL, NULL, "caught signal %d, shutting down", sig);
+
+    // shut down redirection, also flushes to log
+    if (m_redirect) {
+        m_redirect->restore();
+    }
+
+    // Raise same signal again. Because our handler
+    // is automatically removed, this will abort
+    // for real now.
+    raise(sig);
+}
 
 LogRedirect::LogRedirect(bool both) throw()
 {
@@ -67,13 +85,31 @@ LogRedirect::LogRedirect(bool both) throw()
         }
     }
     LoggerBase::pushLogger(this);
+    m_redirect = this;
+
+    if (!getenv("SYNCEVOLUTION_DEBUG")) {
+        struct sigaction new_action, old_action;
+        memset(&new_action, 0, sizeof(new_action));
+        new_action.sa_handler = abortHandler;
+        sigemptyset(&new_action.sa_mask);
+        // disable handler after it was called once
+        new_action.sa_flags = SA_RESETHAND;
+        // block signals while we handler is active
+        // to prevent recursive calls
+        sigaddset(&new_action.sa_mask, SIGABRT);
+        sigaddset(&new_action.sa_mask, SIGSEGV);
+        sigaddset(&new_action.sa_mask, SIGBUS);
+        sigaction(SIGABRT, &new_action, &old_action);
+        sigaction(SIGSEGV, &new_action, &old_action);
+        sigaction(SIGBUS, &new_action, &old_action);
+    }
 }
 
 LogRedirect::~LogRedirect() throw()
 {
+    m_redirect = NULL;
     process();
-    restore(m_stdout);
-    restore(m_stderr);
+    restore();
     if (m_out) {
         fclose(m_out);
     }
@@ -81,6 +117,12 @@ LogRedirect::~LogRedirect() throw()
         free(m_buffer);
     }
     LoggerBase::popLogger();
+}
+
+void LogRedirect::restore() throw()
+{
+    restore(m_stdout);
+    restore(m_stderr);
 }
 
 void LogRedirect::messagev(Level level,
@@ -170,6 +212,17 @@ void LogRedirect::restore(FDs &fds) throw()
     if (fds.m_copy < 0) {
         return;
     }
+
+    // flush streams and process what they might have written
+    if (fds.m_original == STDOUT_FILENO) {
+        fflush(stdout);
+        std::cout << std::flush;
+    } else {
+        fflush(stderr);
+        std::cerr << std::flush;
+    }
+    process(fds);
+
     dup2(fds.m_copy, fds.m_original);
     close(fds.m_copy);
     close(fds.m_write);
