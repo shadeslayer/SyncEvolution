@@ -1,4 +1,4 @@
-Thiss document is used to show interoperability test information with funambol server.
+This document is used to show interoperability test information with funambol server.
 
 * The Funambol Server's device information 
   Funambol Data Synchronization Server v.7.1.1
@@ -23,35 +23,43 @@ Thiss document is used to show interoperability test information with funambol s
 * Test Profiles Settings
   Make sure you calendar type set as 'calendar:text/calendar!' to force to use ical20
 
-
 * Data formats we need to test:
 Client::Sync::vcard21
 Client::Sync::ical20
 Client::Sync::itodo20
+Client::Sync::text
 
-* Know properties got lost in Funambol server:
+* Know Limitations in Funambol server:
 VCard21
-  -- N/A
-
+  -- Below properties are lost:
+     CALURI, FBURL, FN, PHOTO, X-MOZILLA-HTML, X-EVOLUTION-FILE-AS, X-AIM, 
+     X-EVOLUTION-BLOG-URL, X-EVOLUTION-VIDEO-URL, X-GROUPWISE, X-ICQ, 
+     X-YAHOO, X-ASSISTANT,X-EVOLUTION-UI-SLOT
+  -- 'ORG' loses 'office'
+  -- 'TEL' has no concept of 'preferred' phone number
 ical20
+  -- Below properties are lost:
+     UID, SEQUENCE, TRANSP, LAST-MODIFIED, X-EVOLUTION-ALARM-UID, RECURRENCE-ID, ATTENDEE
+  -- Below properties(together with default values) are added by server:
+     REPEAT:0
+  -- Below properties lose parameters by server:
+     ORGANIZER(CN)
 itodo20
-  -- UID, SEQUENCE, TRANSP, LAST-MODIFIED, X-EVOLUTION-ALARM-UID 
+  -- Below properties are lost:
+     UID, SEQUENCE, TRANSP, LAST-MODIFIED, X-EVOLUTION-ALARM-UID, STATUS, URL
+  -- Below properties(together with default values) are added by server:
+     CLASS:PUBLIC, PERCENT-COMPLETE:0
 
-* Known failures:
+* Known test failures:
 Client::Sync::vcard21
-  -- Client::Sync::vcard21::testItems
-  -- Client::Sync::vcard21::testItemsXML
+  -- NONE
 
 Client::Sync::ical20
-  -- Client::Sync::ical20::testTwinning
   -- Client::Sync::ical20::testItems
   -- Client::Sync::ical20::testItemsXML
-  -- Client::Sync::ical20::testMaxMsg
-  -- Client::Sync::ical20::testLargeObject
 
 Client::Sync::itodo20
-  -- Client::Sync::itodo20::testTwinning
-  -- Client::Sync::itodo20::testItems
-  -- Client::Sync::itodo20::testItemsXML
-  -- Client::Sync::itodo20::testMaxMsg
-  -- Client::Sync::itodo20::testLargeObject
+  -- NONE
+
+Client::Sync::text
+  -- NONE
