@@ -1,4 +1,5 @@
 This document is used to show interoperability test information with funambol server.
+http://bugzilla.moblin.org/show_bug.cgi?id=2422
 
 * The Funambol Server's device information 
   Funambol Data Synchronization Server v.7.1.1
@@ -45,11 +46,16 @@ ical20
      REPEAT:0
   -- Below properties lose parameters by server:
      ORGANIZER(CN)
+     http://forge.ow2.org/tracker/index.php?func=detail&aid=313968&group_id=96&atid=100096
 itodo20
   -- Below properties are lost:
      UID, SEQUENCE, TRANSP, LAST-MODIFIED, X-EVOLUTION-ALARM-UID, STATUS, URL
   -- Below properties(together with default values) are added by server:
      CLASS:PUBLIC, PERCENT-COMPLETE:0
+
+Both itodo20 and ical20:
+  -- ACTION in VALARM is never sent although required by standard
+     http://forge.ow2.org/tracker/index.php?func=detail&aid=313969&group_id=96&atid=100096
 
 * Known test failures:
 Client::Sync::vcard21
