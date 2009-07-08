@@ -88,18 +88,23 @@ syncevo_option_free (SyncevoOption *option)
 	}
 }
 
-SyncevoServer* syncevo_server_new (char *name, char *url, char *icon)
+SyncevoServer* syncevo_server_new (char *name, char *url, char *icon, gboolean consumer_ready)
 {
 	GValue val = {0, };
 
 	g_value_init (&val, SYNCEVO_SERVER_TYPE);
 	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_SERVER_TYPE));
-	dbus_g_type_struct_set (&val, 0, name, 1, url, 2, icon, G_MAXUINT);
+	dbus_g_type_struct_set (&val,
+	                        0, name,
+	                        1, url,
+	                        2, icon,
+	                        3, consumer_ready,
+	                        G_MAXUINT);
 
 	return (SyncevoServer*) g_value_get_boxed (&val);
 }
 
-void syncevo_server_get (SyncevoServer *server, const char **name, const char **url, const char **icon)
+void syncevo_server_get (SyncevoServer *server, const char **name, const char **url, const char **icon, gboolean *consumer_ready)
 {
 	g_return_if_fail (server);
 
@@ -111,6 +116,9 @@ void syncevo_server_get (SyncevoServer *server, const char **name, const char **
 	}
 	if (icon) {
 		*icon = g_value_get_string (g_value_array_get_nth (server, 2));
+	}
+	if (consumer_ready) {
+		*consumer_ready = g_value_get_boolean (g_value_array_get_nth (server, 3));
 	}
 }
 

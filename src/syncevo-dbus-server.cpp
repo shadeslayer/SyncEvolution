@@ -93,7 +93,7 @@ syncevo_dbus_error_get_type (void)
 typedef GValueArray SyncevoSource;
 #define SYNCEVO_OPTION_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID))
 typedef GValueArray SyncevoOption;
-#define SYNCEVO_SERVER_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID))
+#define SYNCEVO_SERVER_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_INVALID))
 typedef GValueArray SyncevoServer;
 
 #define SYNCEVO_REPORT_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID))
@@ -179,18 +179,23 @@ syncevo_option_free (SyncevoOption *option)
 	}
 }
 
-SyncevoServer* syncevo_server_new (char *name, char *url, char *icon)
+SyncevoServer* syncevo_server_new (char *name, char *url, char *icon, gboolean consumer_ready)
 {
 	GValue val = {0, };
 
 	g_value_init (&val, SYNCEVO_SERVER_TYPE);
 	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_SERVER_TYPE));
-	dbus_g_type_struct_set (&val, 0, name, 1, url, 2, icon, G_MAXUINT);
+	dbus_g_type_struct_set (&val,
+	                        0, name,
+	                        1, url,
+	                        2, icon,
+	                        3, consumer_ready,
+	                        G_MAXUINT);
 
 	return (SyncevoServer*) g_value_get_boxed (&val);
 }
 
-void syncevo_server_get (SyncevoServer *server, const char **name, const char **url, const char **icon)
+void syncevo_server_get (SyncevoServer *server, const char **name, const char **url, const char **icon, gboolean *consumer_ready)
 {
 	if (name) {
 		*name = g_value_get_string (g_value_array_get_nth (server, 0));
@@ -200,6 +205,9 @@ void syncevo_server_get (SyncevoServer *server, const char **name, const char **
 	}
 	if (icon) {
 		*icon = g_value_get_string (g_value_array_get_nth (server, 2));
+	}
+	if (consumer_ready) {
+		*consumer_ready = g_value_get_boolean (g_value_array_get_nth (server, 3));
 	}
 }
 
@@ -628,7 +636,10 @@ syncevo_get_servers (SyncevoDBusServer *obj,
 	EvolutionSyncConfig::ServerList list = EvolutionSyncConfig::getServers();
 
 	BOOST_FOREACH(const EvolutionSyncConfig::ServerList::value_type &server,list) {
-		char *name, *url, *icon;
+		char *name = NULL;
+		char *url = NULL;
+		char *icon = NULL;
+		gboolean ready = TRUE;
 		SyncevoServer *srv;
 
 		boost::shared_ptr<EvolutionSyncConfig> config (EvolutionSyncConfig::createServerTemplate (server.first));
@@ -636,9 +647,11 @@ syncevo_get_servers (SyncevoDBusServer *obj,
 		if (config.get()) {
 			url = g_strdup (config->getWebURL().c_str());
 			icon = g_strdup (config->getIconURI().c_str());
+			ready = config->getConsumerReady();
 		}
 		name = g_strdup (server.first.c_str());
-		srv = syncevo_server_new (name, url, icon);
+		srv = syncevo_server_new (name, url, icon, ready);
+
 		g_ptr_array_add (*servers, srv);
 	}
 
@@ -665,13 +678,16 @@ syncevo_get_templates (SyncevoDBusServer *obj,
 
 	BOOST_FOREACH(const EvolutionSyncConfig::ServerList::value_type &server,list) {
 		char *name, *url, *icon;
+		gboolean ready;
 		SyncevoServer *temp;
 
 		boost::shared_ptr<EvolutionSyncConfig> config (EvolutionSyncConfig::createServerTemplate (server.first));
 		name = g_strdup (server.first.c_str());
 		url = g_strdup (config->getWebURL().c_str());
 		icon = g_strdup (config->getIconURI().c_str());
-		temp = syncevo_server_new (name, url, icon);
+		ready = config->getConsumerReady();
+		temp = syncevo_server_new (name, url, icon, ready);
+
 		g_ptr_array_add (*templates, temp);
 	}
 
@@ -687,6 +703,7 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
                              GError **error)
 {
 	SyncevoOption *option;
+	const char *ready;
 
 	if (!templ || !options) {
 		*error = g_error_new (SYNCEVO_DBUS_ERROR,
@@ -712,6 +729,11 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
 	g_ptr_array_add (*options, option);
 	option = syncevo_option_new (NULL, g_strdup("iconURI"), g_strdup(config->getIconURI().c_str()));
 	g_ptr_array_add (*options, option);
+
+	ready = (config->getConsumerReady() ? "yes" : "no");
+	option = syncevo_option_new (NULL, g_strdup("consumerReady"), g_strdup(ready));
+	g_ptr_array_add (*options, option);
+
 	option = syncevo_option_new (NULL, g_strdup("fromTemplate"), g_strdup("yes"));
 	g_ptr_array_add (*options, option);
 
@@ -783,14 +805,20 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup(config->getUsername()));
 	g_ptr_array_add (*options, option);
 
-	/* url and icon from template if it exists */
+	/* get template options if template exists */
 	boost::shared_ptr<EvolutionSyncConfig> templ = EvolutionSyncConfig::createServerTemplate( string (server));
 	if (templ.get()) {
+		const char *ready;
+
 		option = syncevo_option_new (NULL, g_strdup("fromTemplate"), g_strdup("yes"));
 		g_ptr_array_add (*options, option);
 		option = syncevo_option_new (NULL, g_strdup("webURL"), g_strdup(templ->getWebURL().c_str()));
 		g_ptr_array_add (*options, option);
 		option = syncevo_option_new (NULL, g_strdup("iconURI"), g_strdup(templ->getIconURI().c_str()));
+		g_ptr_array_add (*options, option);
+
+		ready = templ->getConsumerReady() ? "yes" : "no";
+		option = syncevo_option_new (NULL, g_strdup("consumerReady"), g_strdup (ready));
 		g_ptr_array_add (*options, option);
 	}
 

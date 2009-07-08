@@ -37,9 +37,12 @@ static void
 print_server (SyncevoServer *temp, gpointer userdata)
 {
 	const char *name, *url, *icon;
+	gboolean ready;
 
-	syncevo_server_get (temp, &name, &url, &icon);
-	g_debug ("  Got server %s (%s, %s)", name, url, icon);
+	syncevo_server_get (temp, &name, &url, &icon, &ready);
+	g_debug ("  Got server %s (%s, %s, %sconsumer ready)",
+	         name, url, icon,
+	         ready ? "" : "non-");
 }
 
 static void

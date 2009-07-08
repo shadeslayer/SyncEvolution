@@ -460,8 +460,10 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
         }
     }
 
-    g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
-    g_ptr_array_free (options, TRUE);
+    if (options) {
+        g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
+        g_ptr_array_free (options, TRUE);
+    }
 }
 
 static void
@@ -1564,7 +1566,7 @@ setup_service_clicked (GtkButton *btn, app_data *data)
     const char *name;
 
     server = g_object_get_data (G_OBJECT (btn), "server");
-    syncevo_server_get (server, &name, NULL, NULL);
+    syncevo_server_get (server, &name, NULL, NULL, NULL);
 
     serv_data = g_slice_new0 (server_data);
     serv_data->data = data;
@@ -1629,7 +1631,7 @@ add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *
     GtkWidget *label, *box, *link, *btn;
     const char *name, *url, *icon;
     
-    syncevo_server_get (server, &name, &url, &icon);
+    syncevo_server_get (server, &name, &url, &icon, NULL);
     
     box = gtk_hbox_new (FALSE, 0);
     gtk_widget_set_size_request (box, SYNC_UI_LIST_ICON_SIZE, SYNC_UI_LIST_ICON_SIZE);
@@ -1680,12 +1682,12 @@ server_array_contains (GPtrArray *array, SyncevoServer *server)
     int i;
     const char *name;
 
-    syncevo_server_get (server, &name, NULL, NULL);
+    syncevo_server_get (server, &name, NULL, NULL, NULL);
 
     for (i = 0; i < array->len; i++) {
         const char *n;
         SyncevoServer *s = (SyncevoServer*)g_ptr_array_index (array, i);
-        syncevo_server_get (s, &n, NULL, NULL);
+        syncevo_server_get (s, &n, NULL, NULL, NULL);
         if (g_ascii_strcasecmp (name, n) == 0)
             return TRUE;
     }
@@ -1757,9 +1759,16 @@ get_templates_cb (SyncevoService *service,
                       templates->len, 4);
 
     for (i = 0; i < templates->len; i++) {
-        add_server_to_table (GTK_TABLE (data->services_table), i, 
-                             (SyncevoServer*)g_ptr_array_index (templates, i),
-                             data);
+        SyncevoServer *server;
+        gboolean consumer_ready;
+
+        server = (SyncevoServer*)g_ptr_array_index (templates, i);
+        syncevo_server_get (server, NULL, NULL, NULL, &consumer_ready);
+        if (consumer_ready) {
+            add_server_to_table (GTK_TABLE (data->services_table), i, 
+                                 server,
+                                 data);
+        }
     }
     gtk_widget_show_all (data->services_table);
 
