@@ -2643,7 +2643,7 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     int maxMsgSize = 8 * 1024;
     const char* maxItemSize = getenv("CLIENT_TEST_MAX_ITEMSIZE");
     int tmpSize = maxItemSize ? atoi(maxItemSize) : 0;
-    if(tmpSize != 0) 
+    if(tmpSize > 0) 
         maxMsgSize = tmpSize;
 
     // clean server and client A
