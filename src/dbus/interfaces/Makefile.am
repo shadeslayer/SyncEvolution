@@ -3,7 +3,7 @@
 
 BUILT_SOURCES = syncevo.xml syncevo-dbus-glue.h syncevo-marshal.c syncevo-marshal.h syncevo-bindings.h
 
-noinst_DATA = syncevo-marshal.list syncevo.xml
+noinst_DATA = syncevo.xml
 CLEANFILES = $(noinst_DATA) $(BUILT_SOURCES)
 EXTRA_DIST = $(noinst_DATA) 
 
