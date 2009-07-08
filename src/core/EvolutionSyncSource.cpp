@@ -280,27 +280,31 @@ void EvolutionSyncSource::getSynthesisInfo(string &profile,
     if (type == "text/x-vcard:2.1" || type == "text/x-vcard") {
         datatypes =
             "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n";
-        if(!sourceType.m_forceFormat)
+        if (!sourceType.m_forceFormat) {
             datatypes +=
                 "        <use datatype='vCard30' mode='rw'/>\n";
+        }
     } else if (type == "text/vcard:3.0" || type == "text/vcard") {
         datatypes =
             "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
-        if(!sourceType.m_forceFormat)
+        if (!sourceType.m_forceFormat) {
             datatypes +=
                 "        <use datatype='vCard21' mode='rw'/>\n";
+        }
     } else if (type == "text/x-vcalendar:2.0" || type == "text/x-vcalendar") {
         datatypes =
             "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n";
-        if(!sourceType.m_forceFormat)
+        if (!sourceType.m_forceFormat) {
             datatypes +=
                 "        <use datatype='icalendar20' mode='rw'/>\n";
+        }
     } else if (type == "text/calendar:2.0" || type == "text/calendar") {
         datatypes =
             "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
-        if(!sourceType.m_forceFormat)
+        if (!sourceType.m_forceFormat) {
             datatypes +=
                 "        <use datatype='vcalendar10' mode='rw'/>\n";
+        }
     } else if (type == "text/plain:1.0" || type == "text/plain") {
         // note10 are the same as note11, so ignore force format
         datatypes =
