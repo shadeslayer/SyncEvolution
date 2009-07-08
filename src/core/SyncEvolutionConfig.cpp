@@ -269,9 +269,11 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source = config->getSyncSourceConfig("calendar");
         source->setSync("two-way");
         source->setURI("event");
+        source->setSourceType("calendar:text/calendar!");
         source = config->getSyncSourceConfig("todo");
         source->setSync("two-way");
         source->setURI("task");
+        source->setSourceType("todo:text/calendar!");
     } else if (boost::iequals(server, "synthesis")) {
         config->setSyncURL("http://www.synthesis.ch/sync");
         config->setWebURL("http://www.synthesis.ch");

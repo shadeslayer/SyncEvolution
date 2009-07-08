@@ -1,3 +1,15 @@
+UPGRADING
+
+When enabling calendar and todo synchronization with Funambol
+in an existing configuration, set the type so that iCalendar 2.0 is
+used:
+syncevolution --configure --source-type sync=two-way funambol calendar todo
+syncevolution --configure --source-type type='calendar:text/calendar!' funambol calendar
+syncevolution --configure --source-type type='todo:text/calendar!' funambol todo
+
+When creating a configuration anew, this is not necessary because the
+configuration template contains those types.
+
 SyncEvolution 0.9 beta 1 -> 0.9 beta 2, 12.06.2009
 --------------------------------------------------
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog

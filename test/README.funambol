@@ -21,7 +21,8 @@ This document is used to show interoperability test information with funambol se
   CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test/
  
 * Test Profiles Settings
-  Make sure you calendar type set as 'calendar:text/calendar!' to force to use ical20
+  Make sure your calendar type is 'calendar:text/calendar!'
+  and task type is 'tasks:text/calendar!' to force to use ical20
 
 * Data formats we need to test:
 Client::Sync::vcard21

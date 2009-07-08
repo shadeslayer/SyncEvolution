@@ -1757,15 +1757,15 @@ private:
                              "calendar/config.ini:uri = cal2",
                              "calendar/config.ini:uri = event");
         boost::replace_first(config,
-                             "calendar/config.ini:sync = two-way",
-                             "calendar/config.ini:sync = disabled");
+                             "calendar/config.ini:type = calendar",
+                             "calendar/config.ini:type = calendar:text/calendar!");
 
         boost::replace_first(config,
                              "todo/config.ini:uri = task2",
                              "todo/config.ini:uri = task");
         boost::replace_first(config,
-                             "todo/config.ini:sync = two-way",
-                             "todo/config.ini:sync = disabled");
+                             "todo/config.ini:type = todo",
+                             "todo/config.ini:type = todo:text/calendar!");
 
         return config;
     }
