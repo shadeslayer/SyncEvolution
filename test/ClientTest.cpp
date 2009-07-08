@@ -782,14 +782,15 @@ void LocalTests::testImport() {
     std::auto_ptr<SyncSource> source;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
     SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->beginSync(SYNC_NONE));
-    SOURCE_ASSERT_EQUAL(source.get(), 0, config.import(client, *source.get(), config.testcases));
+    std::string testcases;
+    SOURCE_ASSERT_EQUAL(source.get(), 0, config.import(client, *source.get(), config.testcases, testcases));
     SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->endSync());
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // export again and compare against original file
     std::auto_ptr<SyncSource> copy;
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
-    compareDatabases(config.testcases, *copy.get());
+    compareDatabases(testcases.c_str(), *copy.get());
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 }
 
@@ -2483,7 +2484,8 @@ bool SyncTests::doConversionCallback(bool *success,
         }
 
         std::list<std::string> items;
-        ClientTest::getItems(config->testcases, items);
+        std::string testcases;
+        ClientTest::getItems(config->testcases, items, testcases);
         std::string converted = getCurrentTest();
         converted += ".converted.";
         converted += config->sourceName;
@@ -2504,7 +2506,7 @@ bool SyncTests::doConversionCallback(bool *success,
             }
         }
         out.close();
-        CPPUNIT_ASSERT(config->compare(client, config->testcases, converted.c_str()));
+        CPPUNIT_ASSERT(config->compare(client, testcases.c_str(), converted.c_str()));
     }
 
     // abort sync after completing the test successfully (no exception so far!)
@@ -3239,17 +3241,20 @@ int ClientTest::dump(ClientTest &client, SyncSource &source, const char *file)
     return 0;
 }
 
-void ClientTest::getItems(const char *file, list<string> &items)
+void ClientTest::getItems(const char *file, list<string> &items, std::string &testcases)
 {
     items.clear();
 
     // import the file
     std::ifstream input;
     string server = getenv("CLIENT_TEST_SERVER");
-    input.open ((string (file) + '.' + server +".tem").c_str());
+    testcases = string(file) + '.' + server +".tem";
+    input.open(testcases.c_str());
 
-    if(input.fail())
-        input.open(file);
+    if(input.fail()) {
+        testcases = file;
+        input.open(testcases.c_str());
+    }
     CPPUNIT_ASSERT(!input.bad());
     CPPUNIT_ASSERT(input.is_open());
     std::string data, line;
@@ -3277,10 +3282,10 @@ void ClientTest::getItems(const char *file, list<string> &items)
     }
 }
 
-int ClientTest::import(ClientTest &client, SyncSource &source, const char *file)
+int ClientTest::import(ClientTest &client, SyncSource &source, const char *file, std::string &realfile)
 {
     list<string> items;
-    getItems(file, items);
+    getItems(file, items, realfile);
     BOOST_FOREACH(string &data, items) {
         importItem(&source, data);
     }

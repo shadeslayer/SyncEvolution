@@ -251,13 +251,17 @@ class ClientTest {
 
     /**
      * utility function for splitting file into items with blank lines as separator
+     *
+     * @retval realfile       If <file>.<server>.tem exists, then it is used instead
+     *                        of the generic version. The caller gets the name of the
+     *                        file that was opened here.
      */
-    static void getItems(const char *file, std::list<std::string> &items);
+    static void getItems(const char *file, std::list<std::string> &items, std::string &realfile);
 
     /**
      * utility function for importing items with blank lines as separator
      */
-    static int import(ClientTest &client, SyncSource &source, const char *file);
+    static int import(ClientTest &client, SyncSource &source, const char *file, std::string &realfile);
 
     /**
      * utility function for comparing vCard and iCal files with the external
@@ -477,9 +481,11 @@ class ClientTest {
          *
          * @param source     sync source A already created and with beginSync() called
          * @param file       the name of the file to import
+         * @retval realfile  the name of the file that was really imported;
+         *                   this may depend on the current server that is being tested
          * @return error code, 0 for success
          */
-        int (*import)(ClientTest &client, SyncSource &source, const char *file);
+        int (*import)(ClientTest &client, SyncSource &source, const char *file, std::string &realfile);
 
         /**
          * a function which compares two files with items in the format used by "dump"
