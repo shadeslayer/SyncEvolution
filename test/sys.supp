@@ -340,3 +340,133 @@
    obj:/lib/ld-*.so
    fun:_dl_open
 }
+
+# ==19340== 
+# ==19340== 16 bytes in 1 blocks are definitely lost in loss record 5 of 168
+# ==19340==    at 0x4C223DC: calloc (vg_replace_malloc.c:397)
+# ==19340==    by 0x64EBE12: g_malloc0 (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19340==    by 0x64E58F9: g_main_loop_new (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19340==    by 0x4E3FDC4: startup_mainloop (e-book.c:3772)
+# ==19340==    by 0x650A233: (within /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19340==    by 0x57433F6: start_thread (in /lib/libpthread-2.7.so)
+# ==19340==    by 0x742DB3C: clone (in /lib/libc-2.7.so)
+{
+   g_main_loop_new
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:g_main_loop_new
+   fun:startup_mainloop
+   obj:libglib-2.0.so*
+   fun:start_thread
+}
+
+# ==19340== 
+# ==19340== 
+# ==19340== 292 (52 direct, 240 indirect) bytes in 1 blocks are definitely lost in loss record 83 of 168
+# ==19340==    at 0x4C232CB: malloc (vg_replace_malloc.c:207)
+# ==19340==    by 0x743E250: nss_parse_service_list (in /lib/libc-2.7.so)
+# ==19340==    by 0x743EB0E: __nss_database_lookup (in /lib/libc-2.7.so)
+# ==19340==    by 0xEDB642F: ???
+# ==19340==    by 0xEDB7968: ???
+# ==19340==    by 0x73F2A40: getpwnam_r@@GLIBC_2.2.5 (in /lib/libc-2.7.so)
+# ==19340==    by 0x6513F1F: (within /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19340==    by 0x651546D: g_get_user_name (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19340==    by 0x89AAF04: gconf_get_daemon_dir (in /usr/lib/libgconf-2.so.4.1.5)
+# ==19340==    by 0x89ACF20: gconf_activate_server (in /usr/lib/libgconf-2.so.4.1.5)
+# ==19340==    by 0x89B80B3: (within /usr/lib/libgconf-2.so.4.1.5)
+# ==19340==    by 0x89B8C0D: (within /usr/lib/libgconf-2.so.4.1.5)
+# ==19340==    by 0x89B9B68: gconf_engine_get_default (in /usr/lib/libgconf-2.so.4.1.5)
+# ==19340==    by 0x89C1777: gconf_client_get_default (in /usr/lib/libgconf-2.so.4.1.5)
+# ==19340==    by 0x4E416ED: e_book_get_addressbooks (e-book.c:3761)
+# ==19340==    by 0x6AFE42: EvolutionContactSource::open() (EvolutionContactSource.cpp:124)
+# ==19340==    by 0x52A577: TestEvolutionSyncSource::beginSync(SyncMode) (client-test-app.cpp:68)
+# ==19340==    by 0x5CF2DA: LocalTests::testIterateTwice() (ClientTest.cpp:610)
+# ==19340==    by 0x60CCE1: CppUnit::TestCaller<LocalTests>::runTest() (TestCaller.h:166)
+# ==19340==    by 0x6795846: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6787C43: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6791758: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x679149B: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x679D23F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x67954DC: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6795E3B: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6795D65: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6795E3B: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6795D65: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x679CFC9: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   pwnam_r II
+   Memcheck:Leak
+   fun:malloc
+   fun:nss_parse_service_list
+   fun:__nss_database_lookup
+   obj:*
+   obj:*
+   fun:getpwnam_r*
+}
+
+# ==19927== 1,018,472 (864,248 direct, 154,224 indirect) bytes in 32,959 blocks are definitely lost in loss record 35 of 38
+# ==19927==    at 0x4C223DC: calloc (vg_replace_malloc.c:397)
+# ==19927==    by 0x64EBE12: g_malloc0 (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x84F7066: ORBit_alloc_by_tc (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84F6BEB: CORBA_exception_set_system (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x85039A4: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x8504AFC: ORBit_handle_request (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84F003D: giop_connection_handle_input (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x850B41F: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x64E4383: g_main_context_dispatch (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x64E7694: (within /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x64E79B4: g_main_loop_run (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x8509B7F: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x650A233: (within /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x57433F6: start_thread (in /lib/libpthread-2.7.so)
+# ==19927==    by 0x742DB3C: clone (in /lib/libc-2.7.so)
+{
+   ORBit_handle_request + exception
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_by_tc
+   fun:CORBA_exception_set_system
+   obj:*
+   fun:ORBit_handle_request
+   fun:giop_connection_handle_input
+   obj:*
+   fun:g_main_context_dispatch
+   obj:*
+   fun:g_main_loop_run
+}
+
+# ==19927== 1,555,553 (1,359,577 direct, 195,976 indirect) bytes in 33,623 blocks are definitely lost in loss record 36 of 38
+# ==19927==    at 0x4C232CB: malloc (vg_replace_malloc.c:207)
+# ==19927==    by 0x64EBE6B: g_malloc (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x84F72FC: ORBit_alloc_string (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84F700D: CORBA_string_dup (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84F6B67: CORBA_exception_set (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x85039A4: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x8504AFC: ORBit_handle_request (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84F003D: giop_connection_handle_input (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x850B41F: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x64E4383: g_main_context_dispatch (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x64E7694: (within /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x64E79B4: g_main_loop_run (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x8509B7F: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x650A233: (within /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x57433F6: start_thread (in /lib/libpthread-2.7.so)
+# ==19927==    by 0x742DB3C: clone (in /lib/libc-2.7.so)
+{
+   ORBit_handle_request + exception II
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:CORBA_exception_set
+   obj:*
+   fun:ORBit_handle_request
+   fun:giop_connection_handle_input
+   obj:*
+   fun:g_main_context_dispatch
+   obj:*
+   fun:g_main_loop_run
+}

@@ -407,6 +407,97 @@
    fun:e_data_book_new
 }
 
+# ==19340== 208 bytes in 1 blocks are possibly lost in loss record 90 of 168
+# ==19340==    at 0x4C233A2: realloc (vg_replace_malloc.c:429)
+# ==19340==    by 0x64EBD88: g_realloc (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19340==    by 0x84F720E: ORBit_realloc_tcval (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19340==    by 0x84FAF33: ORBit_sequence_append (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19340==    by 0x82B89D0: bonobo_activation_init_activation_env (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==19340==    by 0x82BC3F2: bonobo_activation_orb_init (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==19340==    by 0x82BC76E: bonobo_activation_init (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==19340==    by 0x80634C0: bonobo_init_full (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==19340==    by 0x4E4243D: e_book_new (e-book.c:3792)
+# ==19340==    by 0x4E424CE: e_book_new_from_uri (e-book.c:3856)
+# ==19340==    by 0x6B006C: EvolutionContactSource::open() (EvolutionContactSource.cpp:140)
+# ==19340==    by 0x52A577: TestEvolutionSyncSource::beginSync(SyncMode) (client-test-app.cpp:68)
+# ==19340==    by 0x5CF2DA: LocalTests::testIterateTwice() (ClientTest.cpp:610)
+# ==19340==    by 0x60CCE1: CppUnit::TestCaller<LocalTests>::runTest() (TestCaller.h:166)
+# ==19340==    by 0x6795846: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6787C43: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6791758: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x679149B: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x679D23F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x67954DC: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6795E3B: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6795D65: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6795E3B: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x6795D65: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x679CFC9: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x679F5C1: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x67A25DA: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19340==    by 0x613976: main (client-test-main.cpp:255)
+{
+   e_book_new VII
+   Memcheck:Leak
+   fun:realloc
+   fun:g_realloc
+   fun:ORBit_realloc_tcval
+   fun:ORBit_sequence_append
+   fun:bonobo_activation_init_activation_env
+   fun:bonobo_activation_orb_init
+   fun:bonobo_activation_init
+   fun:bonobo_init_full
+   fun:e_book_new
+}
+
+# ==19927== 42,760 bytes in 1,070 blocks are possibly lost in loss record 25 of 38
+# ==19927==    at 0x4C223DC: calloc (vg_replace_malloc.c:397)
+# ==19927==    by 0x64EBE12: g_malloc0 (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==19927==    by 0x84F70E7: ORBit_alloc_tcval (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x8500805: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84FE48A: IOP_generate_profiles (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84F563B: ORBit_marshal_object (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84FBBA7: ORBit_marshal_value (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84F2835: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x84F3CAC: ORBit_small_invoke_stub (in /usr/lib/libORBit-2.so.0.1.0)
+# ==19927==    by 0x4E3B0DA: GNOME_Evolution_Addressbook_BookFactory_getBook (Evolution-DataServer-Addressbook-stubs.c:330)
+# ==19927==    by 0x4E420BE: e_book_new (e-book.c:3340)
+# ==19927==    by 0x4E424CE: e_book_new_from_uri (e-book.c:3856)
+# ==19927==    by 0x6B006C: EvolutionContactSource::open() (EvolutionContactSource.cpp:140)
+# ==19927==    by 0x52A577: TestEvolutionSyncSource::beginSync(SyncMode) (client-test-app.cpp:68)
+# ==19927==    by 0x5D002D: LocalTests::deleteAll(CreateSource) (ClientTest.cpp:389)
+# ==19927==    by 0x52FCD2: LocalTests::testLocalDeleteAll() (ClientTest.cpp:634)
+# ==19927==    by 0x60CCE1: CppUnit::TestCaller<LocalTests>::runTest() (TestCaller.h:166)
+# ==19927==    by 0x6795846: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6787C43: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6791758: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x679149B: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x679D23F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x67954DC: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6795E3B: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6795D65: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6795E3B: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6795D65: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x679CFC9: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x679F5C1: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x67A25DA: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_book_new VIII
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_tcval
+   obj:*
+   fun:IOP_generate_profiles
+   fun:ORBit_marshal_object
+   fun:ORBit_marshal_value
+   obj:*
+   fun:ORBit_small_invoke_stub
+   fun:GNOME_Evolution_Addressbook_BookFactory_getBook
+   fun:e_book_new
+}
+
+
 # ==14222== Syscall param writev(vector[...]) points to uninitialised byte(s)
 # ==14222==    at 0x4000792: (within /lib/ld-2.3.6.so)
 # ==14222==    by 0x4852E5A: write_data_T (linc-connection.c:986)
@@ -1436,7 +1527,6 @@
    fun:icalparser_add_line
    fun:icalparser_parse
    fun:icalparser_parse_string
-   fun:icalcomponent_new_from_string
 }
 
 # ==23265== 30,420 (5,408 direct, 25,012 indirect) bytes in 169 blocks are definitely lost in loss record 33 of 47
@@ -1479,8 +1569,17 @@
    fun:icalparser_add_line
    fun:icalparser_parse
    fun:icalparser_parse_string
-   fun:icalcomponent_new_from_string
 }
+{
+   icalcomponent_new_from_string III, version 2
+   Memcheck:Leak
+   fun:malloc
+   fun:icalproperty_new_impl
+   fun:icalparser_add_line
+   fun:icalparser_parse
+   fun:icalparser_parse_string
+}
+
 
 # ==1142== 20 bytes in 1 blocks are possibly lost in loss record 5 of 43
 # ==1142==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
@@ -1523,7 +1622,6 @@
    fun:icalparser_add_line
    fun:icalparser_parse
    fun:icalparser_parse_string
-   fun:icalcomponent_new_from_string
 }
 
 ##### evolution-data-server ####
@@ -1993,6 +2091,47 @@
    fun:icalparser_parse
    fun:icalparser_parse_string
    fun:build_change_list
+}
+
+# ==19927== 25,544 (15,656 direct, 9,888 indirect) bytes in 103 blocks are definitely lost in loss record 29 of 38
+# ==19927==    at 0x4C232CB: malloc (vg_replace_malloc.c:207)
+# ==19927==    by 0x5BEFD19: icalvalue_new_impl (icalvalue.c:75)
+# ==19927==    by 0x5BF03F1: icalvalue_new_from_string_with_error (icalvalue.c:550)
+# ==19927==    by 0x5BE2A27: icalparser_add_line (icalparser.c:959)
+# ==19927==    by 0x5BE2F6C: icalparser_parse (icalparser.c:591)
+# ==19927==    by 0x5BE3180: icalparser_parse_string (icalparser.c:1132)
+# ==19927==    by 0x6BAF30: EvolutionCalendarSource::insertItem(std::string const&, SyncItem const&) (EvolutionCalendarSource.cpp:288)
+# ==19927==    by 0x6B4B2F: TrackingSyncSource::addItemThrow(SyncItem&) (TrackingSyncSource.cpp:275)
+# ==19927==    by 0x6724F8: EvolutionSyncSource::processItem(char const*, SyncMLStatus (EvolutionSyncSource::*)(SyncItem&), SyncItem&, bool) (EvolutionSyncSource.cpp:547)
+# ==19927==    by 0x672684: EvolutionSyncSource::addItem(SyncItem&) (EvolutionSyncSource.cpp:499)
+# ==19927==    by 0x524F52: TestEvolutionSyncSource::addItem(SyncItem&) (client-test-app.cpp:89)
+# ==19927==    by 0x53E34B: importItem(EvolutionSyncSource*, std::string&) (ClientTest.cpp:164)
+# ==19927==    by 0x5D4A00: LocalTests::insertManyItems(CreateSource, int, int, int) (ClientTest.cpp:585)
+# ==19927==    by 0x5AC1F7: LocalTests::testManyChanges() (ClientTest.cpp:823)
+# ==19927==    by 0x60CCE1: CppUnit::TestCaller<LocalTests>::runTest() (TestCaller.h:166)
+# ==19927==    by 0x6795846: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6787C43: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6791758: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x679149B: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x679D23F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x67954DC: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6795E3B: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6795D65: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6795E3B: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x6795D65: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x679CFC9: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x679F5C1: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x67A25DA: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==19927==    by 0x613976: main (client-test-main.cpp:255)
+{
+   icalvalue_new_impl
+   Memcheck:Leak
+   fun:malloc
+   fun:icalvalue_new_impl
+   fun:icalvalue_new_from_string_with_error
+   fun:icalparser_add_line
+   fun:icalparser_parse
+   fun:icalparser_parse_string
 }
 
 # ==2499== 27,832 (700 direct, 27,132 indirect) bytes in 35 blocks are definitely lost in loss record 31 of 61
