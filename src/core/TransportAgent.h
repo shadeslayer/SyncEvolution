@@ -59,6 +59,17 @@ class TransportAgent
                               const std::string &password) = 0;
 
     /**
+     * control how SSL certificates are checked
+     *
+     * @param cacerts         path to a single CA certificate file
+     * @param verifyServer    enable server verification (should always be on)
+     * @param verifyHost      do strict hostname checking in the certificate
+     */
+    virtual void setSSL(const std::string &cacerts,
+                        bool verifyServer,
+                        bool verifyHost) = 0;
+
+    /**
      * define content type for post, see content type constants
      */
     virtual void setContentType(const std::string &type) = 0;

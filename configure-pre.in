@@ -133,6 +133,15 @@ TRANSPORT=
 TRANSPORT_LIBS=
 TRANSPORT_CFLAGS=
 
+AC_ARG_WITH(ca-certificates,
+            AS_HELP_STRING([--with-ca-certificates=<colon separated list of files>],
+                           [Specifies location of one or more CA certificate files.
+                           This sets the default value for the SSLServerCertificates option.
+                           Default: empty when using libcurl (because it has its own default),
+                           a list of paths known to work for Debian and Red Hat otherwise.]),
+            [CA_CERTIFICATES="$withval"])
+
+
 # choose default transport (mirrors code in EvolutionSyncClient::createTransportAgent())
 if test "$have_libsoup" = "yes"; then
    default_transport="libsoup"
@@ -183,6 +192,15 @@ if test ! "$TRANSPORT" &&
    test "$libcurl_disabled" != "yes"; then
    AC_ERROR([no transport library found, configure with --disable-libcurl --disable-libsoup to continue anyway (only useful if users of libsyncevolution provide transport implementation)])
 fi
+
+echo "$libsoup_disabled: $CA_CERTIFICATES"
+# for libsoup we must specify the SSL certificate file outself
+if test "$libsoup_disabled" != "yes" && test -z "$CA_CERTIFICATES"; then
+   # Debian and Red Hat paths
+   CA_CERTIFICATES="/etc/ssl/certs/ca-certificates.crt:/usr/share/ssl/certs/ca-bundle.crt"
+fi
+echo "$libsoup_disabled: $CA_CERTIFICATES"
+AC_DEFINE_UNQUOTED(SYNCEVOLUTION_SSL_SERVER_CERTIFICATES, "$CA_CERTIFICATES", [default value for SSLServerCertificates option])
 
 AC_SUBST(TRANSPORT_LIBS)
 AC_SUBST(TRANSPORT_CFLAGS)

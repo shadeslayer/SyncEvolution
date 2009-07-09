@@ -981,6 +981,9 @@ public:
     virtual void setProxy(const std::string &proxy) { m_wrappedAgent->setProxy(proxy); }
     virtual void setProxyAuth(const std::string &user,
                               const std::string &password) { m_wrappedAgent->setProxyAuth(user, password); }
+    virtual void setSSL(const std::string &cacerts,
+                        bool verifyServer,
+                        bool verifyHost) { m_wrappedAgent->setSSL(cacerts, verifyServer, verifyHost); }
     virtual void setContentType(const std::string &type) { m_wrappedAgent->setContentType(type); }
     virtual void setUserAgent(const::string &agent) { m_wrappedAgent->setUserAgent(agent); }
     virtual void setAgent(boost::shared_ptr<SyncEvolution::TransportAgent> agent) {m_wrappedAgent = agent;}

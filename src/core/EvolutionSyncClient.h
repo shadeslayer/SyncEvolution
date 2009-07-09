@@ -488,6 +488,13 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     SyncMLStatus doSync();
 
     /**
+     * iterate over files mentioned in getSSLServerCertificates()
+     * and return name of first one which is found, empty string
+     * if none
+     */
+    std::string findSSLServerCertificate();
+
+    /**
      * override sync mode of all active sync sources if set
      */
     string m_overrideMode;

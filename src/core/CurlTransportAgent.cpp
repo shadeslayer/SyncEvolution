@@ -120,11 +120,24 @@ void CurlTransportAgent::setUserAgent(const std::string &agent)
     checkCurl(code);
 }
 
-/**
- * @TODO: curl_easy_setopt(m_easyHandle, CURLOPT_CAINFO, certificates
- * (code = curl_easy_setopt(m_easyHandle, CURLOPT_SSL_VERIFYPEER, (long)SSLVerifyServer)) ||
- * (code = curl_easy_setopt(m_easyHandle, CURLOPT_SSL_VERIFYHOST, (long)(SSLVerifyHost ? 2 : 0))) ||
- */
+void CurlTransportAgent::setSSL(const std::string &cacerts,
+                                bool verifyServer,
+                                bool verifyHost)
+{
+    m_cacerts = cacerts;
+    CURLcode code = CURLE_OK;
+
+    if (!m_cacerts.empty()) {
+        code = curl_easy_setopt(m_easyHandle, CURLOPT_CAINFO, m_cacerts.c_str());
+    }
+    if (!code) {
+        code = curl_easy_setopt(m_easyHandle, CURLOPT_SSL_VERIFYPEER, (long)verifyServer);
+    }
+    if (!code) {
+        code = curl_easy_setopt(m_easyHandle, CURLOPT_SSL_VERIFYHOST, (long)(verifyHost ? 2 : 0));
+    }
+    checkCurl(code);
+}
 
 void CurlTransportAgent::send(const char *data, size_t len)
 {

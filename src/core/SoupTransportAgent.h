@@ -59,6 +59,9 @@ class SoupTransportAgent : public TransportAgent
     virtual void setURL(const std::string &url);
     virtual void setProxy(const std::string &proxy);
     virtual void setProxyAuth(const std::string &user, const std::string &password);
+    virtual void setSSL(const std::string &cacerts,
+                        bool verifyServer,
+                        bool verifyHost);
     virtual void setContentType(const std::string &type);
     virtual void setUserAgent(const std::string &agent);
     virtual void send(const char *data, size_t len);
@@ -69,6 +72,8 @@ class SoupTransportAgent : public TransportAgent
  private:
     std::string m_proxyUser;
     std::string m_proxyPassword;
+    std::string m_cacerts;
+    bool m_verifySSL;
     std::string m_URL;
     std::string m_contentType;
     eptr<SoupSession, GObject> m_session;

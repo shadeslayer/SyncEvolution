@@ -18,6 +18,8 @@
  * 02110-1301  USA
  */
 
+#include "config.h"
+
 #include "SyncEvolutionConfig.h"
 #include "EvolutionSyncSource.h"
 #include "EvolutionSyncClient.h"
@@ -450,7 +452,8 @@ static BoolConfigProperty syncPropPrintChanges("printChanges",
 static ConfigProperty syncPropSSLServerCertificates("SSLServerCertificates",
                                                     "A string specifying the location of the certificates\n"
                                                     "used to authenticate the server. When empty, the\n"
-                                                    "system's default location will be searched.");
+                                                    "system's default location will be searched.",
+                                                    SYNCEVOLUTION_SSL_SERVER_CERTIFICATES);
 static BoolConfigProperty syncPropSSLVerifyServer("SSLVerifyServer",
                                                   "The client refuses to establish the connection unless\n"
                                                   "the server presents a valid certificate. Disabling this\n"

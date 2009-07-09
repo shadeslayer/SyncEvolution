@@ -46,6 +46,7 @@ using namespace std;
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include <sys/stat.h>
 #include <pwd.h>
@@ -1583,7 +1584,9 @@ SyncMLStatus EvolutionSyncClient::doSync()
                             getProxyPassword());
     }
     agent->setUserAgent(getUserAgent());
-    // TODO: SSL settings
+    agent->setSSL(findSSLServerCertificate(),
+                  getSSLVerifyServer(),
+                  getSSLVerifyHost());
 
     // Close all keys so that engine can flush the modified config.
     // Otherwise the session reads the unmodified values from the
@@ -1977,4 +1980,18 @@ void EvolutionSyncClient::readSessionInfo(const string &dir, SyncReport &report)
     LogDir logging(*this);
     logging.openLogdir(dir);
     logging.readReport(report);
+}
+
+std::string EvolutionSyncClient::findSSLServerCertificate()
+{
+    std::string paths = getSSLServerCertificates();
+    std::vector< std::string > files;
+    boost::split(files, paths, boost::is_any_of(":"));
+    BOOST_FOREACH(std::string file, files) {
+        if (!file.empty() && !access(file.c_str(), R_OK)) {
+            return file;
+        }
+    }
+
+    return "";
 }

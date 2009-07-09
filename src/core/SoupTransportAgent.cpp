@@ -81,6 +81,14 @@ void SoupTransportAgent::setProxyAuth(const std::string &user, const std::string
     m_proxyPassword = password;
 }
 
+void SoupTransportAgent::setSSL(const std::string &cacerts,
+                                bool verifyServer,
+                                bool verifyHost)
+{
+    m_verifySSL = verifyServer || verifyHost;
+    m_cacerts = cacerts;
+}
+
 void SoupTransportAgent::setContentType(const std::string &type)
 {
     m_contentType = type;
@@ -96,15 +104,29 @@ void SoupTransportAgent::setUserAgent(const std::string &agent)
 void SoupTransportAgent::send(const char *data, size_t len)
 {
     // ownership is transferred to libsoup in soup_session_queue_message()
-    SoupMessage *message = soup_message_new("POST", m_URL.c_str());
-    if (!message) {
+    eptr<SoupMessage, GObject> message(soup_message_new("POST", m_URL.c_str()));
+    if (!message.get()) {
         SE_THROW_EXCEPTION(TransportException, "could not allocate SoupMessage");
     }
-    soup_message_set_request(message, m_contentType.c_str(),
+
+    // use CA certificates if available and needed,
+    // fail if not available and needed
+    if (m_verifySSL) {
+        if (!m_cacerts.empty()) {
+            g_object_set(m_session.get(), SOUP_SESSION_SSL_CA_FILE, m_cacerts.c_str(), NULL);
+        } else {
+            SoupURI *uri = soup_message_get_uri(message.get());
+            if (!strcmp(uri->scheme, SOUP_URI_SCHEME_HTTPS)) {
+                SE_THROW_EXCEPTION(TransportException, "SSL certificate checking requested, but no CA certificate file configured");
+            }
+        }
+    }
+
+    soup_message_set_request(message.get(), m_contentType.c_str(),
                              SOUP_MEMORY_TEMPORARY, data, len);
     m_status = ACTIVE;
     m_abortEventSource = g_timeout_add_seconds(ABORT_CHECK_INTERVAL, (GSourceFunc) AbortCallback, static_cast<gpointer> (this));
-    soup_session_queue_message(m_session.get(), message,
+    soup_session_queue_message(m_session.get(), message.release(),
                                SessionCallback, static_cast<gpointer>(this));
 }
 
