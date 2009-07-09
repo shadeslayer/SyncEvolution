@@ -46,7 +46,7 @@ nobase_dist_sysconf_DATA = $(TEMPLATE_FILES)
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
-CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES) $(CLIENT_LIB_PATCHED_FILES)
+CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES)
 
 # synccompare is created by replacing its 'import Algorithm::Diff;'
 # with a simplified copy of Diff.pm.
@@ -168,6 +168,11 @@ if ENABLE_MODULES
 client_test_SOURCES += $(BACKEND_REGISTRIES)
 endif
 
+# list of test file base files
+#
+# Generated files (testcases/ical20.ics.funambol.tem) are derived from
+# the original base file ($(srcdir)/test/testcases/ical20.ics) by
+# applying a patch ($(srcdir)/test/testcases/ical20.ics.funambol.tem.patch).
 CLIENT_LIB_TEST_FILES = \
 	testcases/vcard21.vcf \
 	testcases/vcard30.vcf \
@@ -175,8 +180,14 @@ CLIENT_LIB_TEST_FILES = \
 	testcases/imemo20.ics \
 	testcases/itodo20.ics
 
-CLIENT_LIB_TEST_FILES += $(subst .patch,,$(subst $(srcdir)/../test/,,$(wildcard $(srcdir)/../test/testcases/*.patch)))
-CLIENT_LIB_PATCHED_FILES = $(subst .patch,,$(wildcard $(srcdir)/../test/testcases/*.patch))
+# all patch files
+TEST_FILES_PATCHES = $(wildcard $(srcdir)/../test/testcases/*.patch)
+# generated local files
+TEST_FILES_GENERATED = $(subst .patch,,$(subst $(srcdir)/../test/,,$(TEST_FILES_PATCHES)))
+# all patched files, regardless whether the patch already exists
+TEST_FILES_PATCHED = $(wildcard testcases/*.tem)
+# add files created via patches
+CLIENT_LIB_TEST_FILES += $(TEST_FILES_GENERATED)
 
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
@@ -185,18 +196,52 @@ client_test_LDADD = $(CORE_LDADD) $(SYNCSOURCES)
 # These dependencies are intentionally a bit too broad:
 # they ensure that all files are in place to *run* client-test.
 
-# copy test files because client-test expects them here
-.PHONY: patch2testcase 
-patch2testcases : $(subst .patch,,$(wildcard $(srcdir)/../test/testcases/*.patch))
-$(srcdir)/../test/testcases/% : $(srcdir)/../test/testcases/%.patch
-	patch -o $@ -i $< `echo $@ | rev | cut -d '.' -f 3- | rev`
+# rule to generate patched files from patches:
+# make cannot compute the dependencies completely, so run the commands
+# on each make invocation and do the time stamp test ourselves
+.PHONY: $(TEST_FILES_GENERATED)
+$(TEST_FILES_GENERATED):
+	@ mkdir -p src/testcases
+	@ echo "checking whether server specific test cases $@ are up-to-date"
+	set -e; \
+	patchfile=$(srcdir)/../test/$@.patch; \
+	basefile=$(srcdir)/../test/$(basename $(basename $@)); \
+	[ ! $@ -ot $$patchfile ] && [ ! $@ -ot $$basefile ] || \
+	patch -o $@ -i $$patchfile $$basefile
 
-client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) patch2testcases $(CLIENT_LIB_TEST_FILES) synccompare
+# rule to regenerate patches:
+# like generating the patched files, this is run every time.
+# It must avoid making the patch file more recent than the
+# patched file, otherwise the rule above would needlessly recreate
+# it (not nice when having the file open in an editor).
+#
+# To avoid needlessly updating the content of the patch file,
+# the first two lines with changing information (paths, file dates)
+# are stripped from it.
+.PHONY: testcase2patch
+testcase2patch:
+	@ echo "checking whether test case patch files are up-to-date"
+	set -e; \
+	for i in testcases/*.tem; do \
+		patchfile=$(srcdir)/../test/$$i.patch; \
+		basefile=$(srcdir)/../test/`echo $$i | cut -d . -f  -2`; \
+		if [ $$patchfile -ot $$i ] || [ $$patchfile -ot $$basefile ]; then \
+			diff -u $$basefile $$i | tail -n +3 > $$patchfile || true; \
+			touch -r $$i $$patchfile; \
+			echo "updated $$patchfile"; \
+		fi; \
+	done
 
-LOCAL_TEST_FILES=$(subst $(srcdir)/../test/,,$(wildcard $(srcdir)/../test/* $(srcdir)/../test/testcases/*))
-$(filter testcases/%, $(subst $(srcdir)/../test/,,$(CLIENT_LIB_TEST_FILES))) : % : $(srcdir)/../test/%
+# copy base test files
+$(filter-out %.tem, $(filter testcases/%, $(subst $(srcdir)/../test/,,$(CLIENT_LIB_TEST_FILES)))) : % : $(srcdir)/../test/%
 	mkdir -p testcases
 	cp $< $@
+
+# The binary does not really depend on the test cases, only running it does.
+# Listing the dependencies here is done to ensure that one doesn't accidentally
+# runs the binary with out-dated auxiliary files.
+client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) testcase2patch synccompare
+
 
 # distribute test system?
 if ENABLE_TESTING
