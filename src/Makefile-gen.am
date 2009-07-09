@@ -207,7 +207,7 @@ $(TEST_FILES_GENERATED):
 	patchfile=$(srcdir)/../test/$@.patch; \
 	basefile=$(srcdir)/../test/$(basename $(basename $@)); \
 	[ ! $@ -ot $$patchfile ] && [ ! $@ -ot $$basefile ] || \
-	patch -o $@ -i $$patchfile $$basefile
+	(echo '*** foo'; echo '--- bar'; cat $$patchfile) | patch -o $@ $$basefile
 
 # rule to regenerate patches:
 # like generating the patched files, this is run every time.
@@ -219,7 +219,7 @@ $(TEST_FILES_GENERATED):
 # the first two lines with changing information (paths, file dates)
 # are stripped from it.
 .PHONY: testcase2patch
-testcase2patch:
+testcase2patch: $(TEST_FILES_GENERATED)
 	@ echo "checking whether test case patch files are up-to-date"
 	set -e; \
 	for i in testcases/*.tem; do \
