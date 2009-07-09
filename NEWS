@@ -1,3 +1,36 @@
+SyncEvolution 0.9 beta 2 -> 0.9 beta 3, xxxxxxxxxx
+--------------------------------------------------
+Synthesis SyncML Engine version: see src/synthesis/ChangeLog
+
+Enabled calendar and task synchronization for myFunambol.com.
+Not all iCalendar 2.0 features are supported by the server,
+most notably support for meetings (drops attendees), meeting
+invitations (drops UID), detached recurrences
+(drops RECURRENCE-ID). See test/README.funambol for details.
+
+Interoperability with the Funambol server was improved by adding
+support for some vCard extensions (X-MANAGER/ASSISTANT/SPOUSE/ANNIVERSARY,
+Bugzilla #2418).
+
+CTRL-C no longer kills SyncEvolution right away. Instead it
+asks the server to suspend the session. If that takes too
+long, then pressing CTRL-C twice quickly will abort the sync
+without waiting for the server (warning, this may lead to a
+slow sync in the next session).
+
+WBXML is enabled by default now, except for Funambol (Bugzilla #2415).
+Using WBXML reduces message sizes and increases parsing
+performance. It was not enabled initially in the 0.9 releases in order
+to test this new feature more thoroughly. Old configs don't have an
+explicit enableWBXML setting and therefore will automatically use the
+new default.
+
+Various bug fixes and improvements:
+
+* only show servers in GUI which are tested and supported (Bugzilla #3336)
+* added several translations of the GUI
+* lots of testing improvements
+
 UPGRADING
 
 When enabling calendar and todo synchronization with Funambol
@@ -9,6 +42,7 @@ syncevolution --configure --source-type type='todo:text/calendar!' funambol todo
 
 When creating a configuration anew, this is not necessary because the
 configuration template contains those types.
+
 
 SyncEvolution 0.9 beta 1 -> 0.9 beta 2, 12.06.2009
 --------------------------------------------------
