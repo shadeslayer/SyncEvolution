@@ -1200,6 +1200,51 @@
    fun:e_cal_new
 }
 
+# ==31023== 13,056 (6,072 direct, 6,984 indirect) bytes in 115 blocks are definitely lost in loss record 29 of 42
+# ==31023==    at 0x4C223DC: calloc (vg_replace_malloc.c:397)
+# ==31023==    by 0x64EBE12: g_malloc0 (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==31023==    by 0x8501B18: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==31023==    by 0x8501FB4: ORBit_POA_new_from (in /usr/lib/libORBit-2.so.0.1.0)
+# ==31023==    by 0x8063091: bonobo_poa_new_from (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==31023==    by 0x8063197: bonobo_poa_get_threadedv (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==31023==    by 0x806335C: bonobo_poa_get_threaded (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==31023==    by 0x5BC130B: e_cal_listener_new (e-cal-listener.c:1032)
+# ==31023==    by 0x5BAF560: e_cal_init (e-cal.c:1057)
+# ==31023==    by 0x6294713: g_type_create_instance (in /usr/lib/libgobject-2.0.so.0.1600.6)
+# ==31023==    by 0x6279F4C: (within /usr/lib/libgobject-2.0.so.0.1600.6)
+# ==31023==    by 0x627A53F: g_object_newv (in /usr/lib/libgobject-2.0.so.0.1600.6)
+# ==31023==    by 0x627B041: g_object_new_valist (in /usr/lib/libgobject-2.0.so.0.1600.6)
+# ==31023==    by 0x627B180: g_object_new (in /usr/lib/libgobject-2.0.so.0.1600.6)
+# ==31023==    by 0x5BAEECA: e_cal_new (e-cal.c:1412)
+# ==31023==    by 0x5BAF3CB: e_cal_new_from_uri (e-cal.c:1449)
+# ==31023==    by 0x6C45FD: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:163)
+# ==31023==    by 0x52C7E7: TestEvolutionSyncSource::beginSync(SyncMode) (client-test-app.cpp:68)
+# ==31023==    by 0x5D229D: LocalTests::deleteAll(CreateSource) (ClientTest.cpp:389)
+# ==31023==    by 0x52E4F2: SyncTests::refreshClient(SyncOptions) (ClientTest.cpp:1817)
+# ==31023==    by 0x5DC6D6: SyncTests::testItems() (ClientTest.cpp:2531)
+# ==31023==    by 0x60EE75: CppUnit::TestCaller<SyncTests>::runTest() (TestCaller.h:166)
+# ==31023==    by 0x6795846: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==31023==    by 0x6787C43: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==31023==    by 0x6791758: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==31023==    by 0x679149B: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==31023==    by 0x679D23F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==31023==    by 0x67954DC: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==31023==    by 0x679CFC9: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==31023==    by 0x679F5C1: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   e_cal_init II
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   obj:*libORBit*
+   fun:ORBit_POA_new_from
+   fun:bonobo_poa_new_from
+   fun:bonobo_poa_get_threadedv
+   fun:bonobo_poa_get_threaded
+   fun:e_cal_listener_new
+   fun:e_cal_init
+}
+
 # ==5228== 1,668 bytes in 48 blocks are possibly lost in loss record 28 of 36
 # ==5228==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
 # ==5228==    by 0x4293994: g_malloc0 (gmem.c:151)
@@ -1403,6 +1448,47 @@
    fun:bonobo_activation_query
    fun:get_factories
    fun:fetch_corba_cal
+   fun:e_cal_new
+}
+
+# ==22473== 208 bytes in 1 blocks are possibly lost in loss record 97 of 177
+# ==22473==    at 0x4C233A2: realloc (vg_replace_malloc.c:429)
+# ==22473==    by 0x64EBD88: g_realloc (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==22473==    by 0x84F720E: ORBit_realloc_tcval (in /usr/lib/libORBit-2.so.0.1.0)
+# ==22473==    by 0x84FAF33: ORBit_sequence_append (in /usr/lib/libORBit-2.so.0.1.0)
+# ==22473==    by 0x82B89D0: bonobo_activation_init_activation_env (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==22473==    by 0x82BC3F2: bonobo_activation_orb_init (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==22473==    by 0x82BC76E: bonobo_activation_init (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==22473==    by 0x80634C0: bonobo_init_full (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==22473==    by 0x5BAF111: e_cal_new (e-cal.c:1324)
+# ==22473==    by 0x5BAF3CB: e_cal_new_from_uri (e-cal.c:1449)
+# ==22473==    by 0x6C45E1: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:163)
+# ==22473==    by 0x52C7E7: TestEvolutionSyncSource::beginSync(SyncMode) (client-test-app.cpp:68)
+# ==22473==    by 0x5D229D: LocalTests::deleteAll(CreateSource) (ClientTest.cpp:389)
+# ==22473==    by 0x60BD80: SyncTests::deleteAll(SyncTests::DeleteAllMode) (ClientTest.cpp:1759)
+# ==22473==    by 0x5DC3DB: SyncTests::testItems() (ClientTest.cpp:2521)
+# ==22473==    by 0x60EE75: CppUnit::TestCaller<SyncTests>::runTest() (TestCaller.h:166)
+# ==22473==    by 0x6795846: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22473==    by 0x6787C43: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22473==    by 0x6791758: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22473==    by 0x679149B: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22473==    by 0x679D23F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22473==    by 0x67954DC: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22473==    by 0x679CFC9: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22473==    by 0x679F5C1: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22473==    by 0x67A25DA: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22473==    by 0x615BE6: main (client-test-main.cpp:255)
+{
+   e_cal_new IX
+   Memcheck:Leak
+   fun:realloc
+   fun:g_realloc
+   fun:ORBit_realloc_tcval
+   fun:ORBit_sequence_append
+   fun:bonobo_activation_init_activation_env
+   fun:bonobo_activation_orb_init
+   fun:bonobo_activation_init
+   fun:bonobo_init_full
    fun:e_cal_new
 }
 
@@ -3307,4 +3393,174 @@
    fun:ORBit_small_invoke_stub_n
    fun:ORBit_c_stub_invoke
    fun:ConfigServer_add_client
+}
+
+# ==22473== 126,995 bytes in 1,589 blocks are possibly lost in loss record 177 of 177
+# ==22473==    at 0x4C23B29: operator new(unsigned long) (vg_replace_malloc.c:230)
+# ==22473==    by 0x6C5D2E0: std::string::_Rep::_S_create(unsigned long, unsigned long, std::allocator<char> const&) (in /usr/lib/libstdc++.so.6.0.9)
+# ==22473==    by 0x6C5E0F4: (within /usr/lib/libstdc++.so.6.0.9)
+# ==22473==    by 0x6C5E271: std::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string(char const*, std::allocator<char> const&) (in /usr/lib/libstdc++.so.6.0.9)
+# ==22473==    by 0x6E6CC0: sysync::tzdata::tzdata() (timezones.cpp:80)
+# ==22473==    by 0x6E25DA: __static_initialization_and_destruction_0(int, int) (timezones.cpp:85)
+# ==22473==    by 0x6E2604: global constructors keyed to _ZN6sysync6GZones10initializeEv (timezones.cpp:1389)
+# ==22473==    by 0x7D95D9: (within /scratch/work/eeepc/syncevolution/src/client-test)
+# ==22473==    by 0x51CCB2: (within /scratch/work/eeepc/syncevolution/src/client-test)
+# ==22473==    by 0x100000006EB48AF: ???
+# ==22473==    by 0x7D9554: __libc_csu_init (in /scratch/work/eeepc/syncevolution/src/client-test)
+# ==22473==    by 0x737415D: (below main) (in /lib/libc-2.7.so)
+{
+   sysync::tzdata::tzdata()
+   Memcheck:Leak
+   fun:_Znwm
+   fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+   obj:*libstdc++.so*
+   fun:_ZNSsC1EPKcRKSaIcE
+   fun:_ZN6sysync6tzdataC1Ev
+}
+
+# ==22471== Invalid read of size 8
+# ==22471==    at 0x5BEA24E: icaltzutil_fetch_timezone (icaltz-util.c:354)
+# ==22471==    by 0x5BEB468: icaltimezone_load_builtin_timezone (icaltimezone.c:1758)
+# ==22471==    by 0x5BEB4AA: icaltimezone_get_component (icaltimezone.c:1223)
+# ==22471==    by 0x6EEBC5: sysync::loadSystemZoneDefinitions(sysync::GZones*) (platform_timezones.cpp:55)
+# ==22471==    by 0x6E5430: sysync::GZones::initialize() (timezones.cpp:95)
+# ==22471==    by 0x74F692: sysync::TSyncAppBase::TSyncAppBase() (syncappbase.cpp:1212)
+# ==22471==    by 0x71A2A8: sysync::TSyncClientBase::TSyncClientBase() (syncclientbase.cpp:345)
+# ==22471==    by 0x7A094C: sysync::TEngineClientBase::TEngineClientBase() (engineclientbase.cpp:97)
+# ==22471==    by 0x6EEEF3: sysync::TCustomClientEngineBase::TCustomClientEngineBase() (clientengine_custom_Base.cpp:49)
+# ==22471==    by 0x6EEF89: sysync::TCustomClientEngineInterface::newSyncAppBase() (clientengine_custom_Base.cpp:39)
+# ==22471==    by 0x6CCADB: sysync::TEngineInterface::Init() (engineinterface.cpp:1016)
+# ==22471==    by 0x6ECC7A: sysync::TEngineModuleBase::Connect(std::string, unsigned long, unsigned short) (enginemodulebase.cpp:76)
+# ==22471==    by 0x6CD1B1: SySync_ConnectEngine (engineinterface.cpp:1757)
+# ==22471==    by 0x6CB2BE: sysync::UI_Connect(sysync::SDK_InterfaceType*&, void*&, char const*, unsigned long, unsigned short) (UI_util.cpp:164)
+# ==22471==    by 0x6CAB14: sysync::TEngineModuleBridge::Init() (enginemodulebridge.cpp:43)
+# ==22471==    by 0x6ECC7A: sysync::TEngineModuleBase::Connect(std::string, unsigned long, unsigned short) (enginemodulebase.cpp:76)
+# ==22471==    by 0x6B1AD7: SharedEngine::Connect(std::string const&, unsigned long, unsigned short) (SynthesisEngine.cpp:29)
+# ==22471==    by 0x680CD7: EvolutionSyncClient::createEngine() (EvolutionSyncClient.cpp:1361)
+# ==22471==    by 0x6908B9: EvolutionSyncClient::SwapEngine::SwapEngine(EvolutionSyncClient&) (EvolutionSyncClient.h:282)
+# ==22471==    by 0x6883C9: EvolutionSyncClient::sync(SyncReport*) (EvolutionSyncClient.cpp:1409)
+# ==22471==    by 0x528EB7: TestEvolution::doSync(int const*, std::string const&, SyncOptions const&) (client-test-app.cpp:391)
+# ==22471==    by 0x5398BB: SyncTests::doSync(SyncOptions const&) (ClientTest.cpp:3096)
+# ==22471==    by 0x610CC4: SyncTests::doSync(char const*, SyncOptions const&) (ClientTest.h:950)
+# ==22471==    by 0x60BE87: SyncTests::deleteAll(SyncTests::DeleteAllMode) (ClientTest.cpp:1761)
+# ==22471==    by 0x5DC3DB: SyncTests::testItems() (ClientTest.cpp:2521)
+# ==22471==    by 0x60EE75: CppUnit::TestCaller<SyncTests>::runTest() (TestCaller.h:166)
+# ==22471==    by 0x6795846: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22471==    by 0x6787C43: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22471==    by 0x6791758: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22471==    by 0x679149B: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22471==  Address 0xece4088 is 0 bytes after a block of size 0 alloc'd
+# ==22471==    at 0x4C223DC: calloc (vg_replace_malloc.c:397)
+# ==22471==    by 0x5BE9DF0: icaltzutil_fetch_timezone (icaltz-util.c:259)
+# ==22471==    by 0x5BEB468: icaltimezone_load_builtin_timezone (icaltimezone.c:1758)
+# ==22471==    by 0x5BEB4AA: icaltimezone_get_component (icaltimezone.c:1223)
+# ==22471==    by 0x6EEBC5: sysync::loadSystemZoneDefinitions(sysync::GZones*) (platform_timezones.cpp:55)
+# ==22471==    by 0x6E5430: sysync::GZones::initialize() (timezones.cpp:95)
+# ==22471==    by 0x74F692: sysync::TSyncAppBase::TSyncAppBase() (syncappbase.cpp:1212)
+# ==22471==    by 0x71A2A8: sysync::TSyncClientBase::TSyncClientBase() (syncclientbase.cpp:345)
+# ==22471==    by 0x7A094C: sysync::TEngineClientBase::TEngineClientBase() (engineclientbase.cpp:97)
+# ==22471==    by 0x6EEEF3: sysync::TCustomClientEngineBase::TCustomClientEngineBase() (clientengine_custom_Base.cpp:49)
+# ==22471==    by 0x6EEF89: sysync::TCustomClientEngineInterface::newSyncAppBase() (clientengine_custom_Base.cpp:39)
+# ==22471==    by 0x6CCADB: sysync::TEngineInterface::Init() (engineinterface.cpp:1016)
+# ==22471==    by 0x6ECC7A: sysync::TEngineModuleBase::Connect(std::string, unsigned long, unsigned short) (enginemodulebase.cpp:76)
+# ==22471==    by 0x6CD1B1: SySync_ConnectEngine (engineinterface.cpp:1757)
+# ==22471==    by 0x6CB2BE: sysync::UI_Connect(sysync::SDK_InterfaceType*&, void*&, char const*, unsigned long, unsigned short) (UI_util.cpp:164)
+# ==22471==    by 0x6CAB14: sysync::TEngineModuleBridge::Init() (enginemodulebridge.cpp:43)
+# ==22471==    by 0x6ECC7A: sysync::TEngineModuleBase::Connect(std::string, unsigned long, unsigned short) (enginemodulebase.cpp:76)
+# ==22471==    by 0x6B1AD7: SharedEngine::Connect(std::string const&, unsigned long, unsigned short) (SynthesisEngine.cpp:29)
+# ==22471==    by 0x680CD7: EvolutionSyncClient::createEngine() (EvolutionSyncClient.cpp:1361)
+# ==22471==    by 0x6908B9: EvolutionSyncClient::SwapEngine::SwapEngine(EvolutionSyncClient&) (EvolutionSyncClient.h:282)
+# ==22471==    by 0x6883C9: EvolutionSyncClient::sync(SyncReport*) (EvolutionSyncClient.cpp:1409)
+# ==22471==    by 0x528EB7: TestEvolution::doSync(int const*, std::string const&, SyncOptions const&) (client-test-app.cpp:391)
+# ==22471==    by 0x5398BB: SyncTests::doSync(SyncOptions const&) (ClientTest.cpp:3096)
+# ==22471==    by 0x610CC4: SyncTests::doSync(char const*, SyncOptions const&) (ClientTest.h:950)
+# ==22471==    by 0x60BE87: SyncTests::deleteAll(SyncTests::DeleteAllMode) (ClientTest.cpp:1761)
+# ==22471==    by 0x5DC3DB: SyncTests::testItems() (ClientTest.cpp:2521)
+# ==22471==    by 0x60EE75: CppUnit::TestCaller<SyncTests>::runTest() (TestCaller.h:166)
+# ==22471==    by 0x6795846: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22471==    by 0x6787C43: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22471==    by 0x6791758: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+{
+   ical timezones
+   Memcheck:Addr8
+   fun:icaltzutil_fetch_timezone
+   fun:icaltimezone_load_builtin_timezone
+   fun:icaltimezone_get_component
+   fun:_ZN6sysync25loadSystemZoneDefinitionsEPNS_6GZonesE
+}
+
+# ==22471== Syscall param write(buf) points to uninitialised byte(s)
+# ==22471==    at 0x741FBFB: (within /lib/libc-2.7.so)
+# ==22471==    by 0x73C3CE2: _IO_file_write@@GLIBC_2.2.5 (in /lib/libc-2.7.so)
+# ==22471==    by 0x73C3BC3: _IO_do_write@@GLIBC_2.2.5 (in /lib/libc-2.7.so)
+# ==22471==    by 0x73C4248: _IO_file_sync@@GLIBC_2.2.5 (in /lib/libc-2.7.so)
+# ==22471==    by 0x73B9229: fflush (in /lib/libc-2.7.so)
+# ==22471==    by 0x7A0C84: sysync::TBinFile::platformFlushFile() (binfile.cpp:95)
+# ==22471==    by 0x7A2F3A: sysync::TBinFileBase::flushHeader() (binfilebase.cpp:240)
+# ==22471==    by 0x7A39BA: sysync::TBinFileBase::create(unsigned int, unsigned int, void*, bool) (binfilebase.cpp:187)
+# ==22471==    by 0x7AD234: sysync::TBinfileImplDS::openChangeLog() (binfileimplds.cpp:529)
+# ==22471==    by 0x7AF94E: sysync::TBinfileImplDS::implMakeAdminReady(char const*, char const*, char const*) (binfileimplds.cpp:1022)
+# ==22471==    by 0x7B67E4: sysync::TCustomImplDS::implMakeAdminReady(char const*, char const*, char const*) (customimplds.cpp:1514)
+# ==22471==    by 0x7BF61F: sysync::TStdLogicDS::logicMakeAdminReady(char const*, char const*) (stdlogicds.cpp:120)
+# ==22471==    by 0x6D2951: sysync::TLocalEngineDS::engInitSyncAnchors(char const*, char const*) (localengineds.cpp:3165)
+# ==22471==    by 0x6D78ED: sysync::TLocalEngineDS::engPrepareClientSyncAlert(sysync::TLocalEngineDS*) (localengineds.cpp:3207)
+# ==22471==    by 0x7A7351: sysync::TSyncClient::NextMessage(bool&) (syncclient.cpp:900)
+# ==22471==    by 0x7A8344: sysync::TSyncClient::generatingStep(unsigned short&, sysync::TEngineProgressType*) (syncclient.cpp:487)
+# ==22471==    by 0x7A89F1: sysync::TSyncClient::SessionStep(unsigned short&, sysync::TEngineProgressType*) (syncclient.cpp:427)
+# ==22471==    by 0x71A49F: sysync::TClientEngineInterface::SessionStep(sysync::SessionType*, unsigned short&, sysync::TEngineProgressType*) (syncclientbase.cpp:274)
+# ==22471==    by 0x6CB757: SessionStep (engineentry.cpp:88)
+# ==22471==    by 0x6C9E4A: sysync::TEngineModuleBridge::SessionStep(sysync::SessionType*, unsigned short&, sysync::TEngineProgressType*) (enginemodulebridge.cpp:108)
+# ==22471==    by 0x6B0E6E: SharedEngine::SessionStep(boost::shared_ptr<sysync::SessionType> const&, unsigned short&, sysync::TEngineProgressType*) (SynthesisEngine.cpp:92)
+# ==22471==    by 0x684949: EvolutionSyncClient::doSync() (EvolutionSyncClient.cpp:1654)
+# ==22471==    by 0x688B65: EvolutionSyncClient::sync(SyncReport*) (EvolutionSyncClient.cpp:1459)
+# ==22471==    by 0x528EB7: TestEvolution::doSync(int const*, std::string const&, SyncOptions const&) (client-test-app.cpp:391)
+# ==22471==    by 0x5398BB: SyncTests::doSync(SyncOptions const&) (ClientTest.cpp:3096)
+# ==22471==    by 0x610CC4: SyncTests::doSync(char const*, SyncOptions const&) (ClientTest.h:950)
+# ==22471==    by 0x60BE87: SyncTests::deleteAll(SyncTests::DeleteAllMode) (ClientTest.cpp:1761)
+# ==22471==    by 0x5DC3DB: SyncTests::testItems() (ClientTest.cpp:2521)
+# ==22471==    by 0x60EE75: CppUnit::TestCaller<SyncTests>::runTest() (TestCaller.h:166)
+# ==22471==    by 0x6795846: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.0.0.0)
+# ==22471==  Address 0x4024021 is not stack'd, malloc'd or (recently) free'd
+{
+   uninitialized data in binfile
+   Memcheck:Param
+   write(buf)
+   obj:*libc*
+   fun:_IO_file_write*
+   fun:_IO_do_write*
+   fun:_IO_file_sync*
+   fun:fflush
+   fun:_ZN6sysync8TBinFile17platformFlushFileEv
+}
+
+# ==27326== Syscall param write(buf) points to uninitialised byte(s)
+# ==27326==    at 0x741FBFB: (within /lib/libc-2.7.so)
+# ==27326==    by 0x73C3CE2: _IO_file_write@@GLIBC_2.2.5 (in /lib/libc-2.7.so)
+# ==27326==    by 0x73C3BC3: _IO_do_write@@GLIBC_2.2.5 (in /lib/libc-2.7.so)
+# ==27326==    by 0x73C5908: _IO_switch_to_get_mode (in /lib/libc-2.7.so)
+# ==27326==    by 0x73C3EF7: _IO_file_seekoff@@GLIBC_2.2.5 (in /lib/libc-2.7.so)
+# ==27326==    by 0x73C0E79: fseek (in /lib/libc-2.7.so)
+# ==27326==    by 0x7A0D9C: sysync::TBinFile::platformSeekFile(unsigned int, bool) (binfile.cpp:74)
+# ==27326==    by 0x7A329D: sysync::TBinFileBase::newRecord(unsigned int&, void const*) (binfilebase.cpp:296)
+# ==27326==    by 0x7B3280: sysync::TBinFileBase::newRecord(void const*) (binfilebase.h:106)
+# ==27326==    by 0x7B0C79: sysync::TBinfileImplDS::changeLogPreflight(bool&) (binfileimplds.cpp:839)
+# ==27326==    by 0x7B16EF: sysync::TBinfileImplDS::implGetItem(bool&, bool&, sysync::TSyncItem*&) (binfileimplds.cpp:1337)
+# ==27326==    by 0x7BF14C: sysync::TStdLogicDS::logicGenerateSyncCommandsAsClient(std::list<sysync::TSmlCommand*, std::allocator<sysync::TSmlCommand*> >&, sysync::TSmlCommand*&, char const*) (stdlogicds.cpp:939)
+# ==27326==    by 0x6D2BA0: sysync::TLocalEngineDS::engGenerateSyncCommands(std::list<sysync::TSmlCommand*, std::allocator<sysync::TSmlCommand*> >&, sysync::TSmlCommand*&, char const*) (localengineds.cpp:2859)
+# ==27326==    by 0x711719: sysync::TSyncCommand::generateCommandsAndClose() (synccommand.cpp:972)
+# ...
+# ==27326==  Address 0x40241ad is not stack'd, malloc'd or (recently) free'd
+# ==27326==  Uninitialised value was created by a stack allocation
+# ==27326==    at 0x7B0278: sysync::TBinfileImplDS::changeLogPreflight(bool&) (binfileimplds.cpp:596)
+{
+   uninitialized data in binfile II
+   Memcheck:Param
+   write(buf)
+   obj:*libc*
+   fun:_IO_file_write*
+   fun:_IO_do_write*
+   fun:_IO_switch_to_get_mode
+   fun:_IO_file_seekoff*
+   fun:fseek
+   fun:_ZN6sysync8TBinFile16platformSeekFileEjb
 }
