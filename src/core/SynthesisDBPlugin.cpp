@@ -620,7 +620,11 @@ TSyError SyncEvolution_ReadNextItemAsKey( CContext aContext, ItemID aID, KeyH aI
     }
 
     if (!res) {
-        aID->item = StrAlloc(luid.c_str());
+        // use NULL instead of empty string because
+        // a) our caller treats that like an empty string
+        // b) if we do a strdup here for ReadNextItem_EOF, then
+        //    the caller will leak the copy
+        aID->item = luid.empty() ? NULL : StrAlloc(luid.c_str());
     }
 
     DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_RNK, "%s aStatus=%d aItemKey=%08X aID=(%s,%s)",
