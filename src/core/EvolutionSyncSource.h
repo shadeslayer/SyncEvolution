@@ -816,8 +816,11 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
          */
         SyncItem *start();
 
-        /** return current item if available, step to next one */
-        SyncItem *iterate();
+        /**
+         * return current item if available, step to next one
+         * @param idOnly     only return the item ID, ignoring type and content
+         */
+        SyncItem *iterate(bool idOnly = false);
 
         /**
          * add to list, with logging

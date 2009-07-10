@@ -459,8 +459,7 @@ void EvolutionSyncSource::rewindItems() throw()
 
 SyncItem::State EvolutionSyncSource::nextItem(string *data, string &luid) throw()
 {
-    /** @TODO: avoid reading data if not necessary */
-    SyncItem *item = m_allItems.iterate();
+    cxxptr<SyncItem> item(m_allItems.iterate(data ? false : true));
     SyncItem::State state = SyncItem::NO_MORE_ITEMS;
 
     if (item) {
@@ -674,15 +673,14 @@ SyncItem *EvolutionSyncSource::Items::start()
     return iterate();
 }
 
-SyncItem *EvolutionSyncSource::Items::iterate()
+SyncItem *EvolutionSyncSource::Items::iterate(bool idOnly)
 {
     if (m_it != end()) {
         const string &uid( *m_it );
         SE_LOG_DEBUG(&m_source, NULL, "next %s item: %s", m_type.c_str(), uid.c_str());
         ++m_it;
-        if (&m_source.m_deletedItems == this) {
-            // just tell caller the uid of the deleted item
-            // and the type that it probably had
+        if (&m_source.m_deletedItems == this || idOnly) {
+            // just tell caller the uid of the (possibly deleted) item
             cxxptr<SyncItem> item(new SyncItem());
             item->setKey(uid);
             return item.release();
