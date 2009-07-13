@@ -292,7 +292,7 @@ static std::string updateItem(CreateSource createSource, const std::string &uid,
     SyncItem item;
     item.setKey(uid.c_str());
     item.setData(data, (long)strlen(data) + 1);
-    item.setDataType((""));
+    item.setDataType("raw");
     SOURCE_ASSERT_EQUAL(source.get(), STATUS_OK, source->updateItem(item));
     SOURCE_ASSERT(source.get(), !item.getKey().empty());
     newuid = item.getKey();
