@@ -94,6 +94,10 @@ class CheckSyncReport {
  * parameters for running a sync
  */
 struct SyncOptions {
+    /** default maximum message size */
+    static const long DEFAULT_MAX_MSG_SIZE = 128 * 1024;
+    /** default maximum object size */
+    static const long DEFAULT_MAX_OBJ_SIZE = 1024 * 1024 * 1024;
     /** sync mode chosen by client */
     SyncMode m_syncMode;
     /**
@@ -129,8 +133,8 @@ struct SyncOptions {
 
     SyncOptions(SyncMode syncMode = SYNC_NONE,
                 const CheckSyncReport &checkReport = CheckSyncReport(),
-                long maxMsgSize = 128 * 1024, // 128KB = large enough that normal tests should run with a minimal number of messages
-                long maxObjSize = 1 * 1024 * 1024 * 1024, // 1GB = basically unlimited...
+                long maxMsgSize = DEFAULT_MAX_MSG_SIZE, // 128KB = large enough that normal tests should run with a minimal number of messages
+                long maxObjSize = DEFAULT_MAX_OBJ_SIZE, // 1GB = basically unlimited...
                 bool loSupport = false,
                 bool isWBXML = defaultWBXML(),
                 Callback_t startCallback = EmptyCallback,

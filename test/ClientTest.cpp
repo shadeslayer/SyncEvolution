@@ -2391,7 +2391,9 @@ void SyncTests::testManyItems() {
     doSync("send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, num_items,0,0, true, SYNC_TWO_WAY),
-                       64 * 1024, 64 * 1024, true));
+                       SyncOptions::DEFAULT_MAX_MSG_SIZE,
+                       SyncOptions::DEFAULT_MAX_OBJ_SIZE, 
+                       true));
 
     // ensure that client has the same data, ignoring data conversion
     // issues (those are covered by testItems())
@@ -2404,7 +2406,9 @@ void SyncTests::testManyItems() {
     doSync("twinning",
            SyncOptions(SYNC_SLOW,
                        CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW),
-                       64 * 1024, 64 * 1024, true));
+                       SyncOptions::DEFAULT_MAX_MSG_SIZE,
+                       SyncOptions::DEFAULT_MAX_OBJ_SIZE, 
+                       true));
 
     // compare
     compareDatabases();
@@ -2567,8 +2571,8 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     doSync("send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, -1,0,0, true, SYNC_TWO_WAY), // number of items sent to server depends on source
-                       withMaxMsgSize ? maxMsgSize : 0,
-                       withMaxMsgSize ? maxMsgSize * 100 : 0,
+                       withMaxMsgSize ? SyncOptions::DEFAULT_MAX_MSG_SIZE: 0,
+                       withMaxMsgSize ? SyncOptions::DEFAULT_MAX_OBJ_SIZE : 0,
                        withLargeObject));
 
     // copy to second client
