@@ -702,7 +702,7 @@ class FunambolTest(SyncEvolutionTest):
             serverlogs = ""
         SyncEvolutionTest.__init__(self, name, build, serverlogs,
                                    runner, [ ],
-                                   "CLIENT_TEST_SOURCES=vcard21,text CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol",
+                                   "CLIENT_TEST_SOURCES=vcard21,ical20,itodo20,text CLIENT_TEST_XML=1 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol",
                                    lineFilter=lambda x: x.replace('dogfood.funambol.com','<host hidden>'),
                                    testPrefix=testPrefix)
         self.funamboldir = funamboldir
