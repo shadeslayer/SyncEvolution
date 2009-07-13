@@ -683,10 +683,18 @@ Also needed are the Evolution and Boost (>= 1.35) development
 files. For HTTP, either Curl or libsoup can be used.
 
 On Debian based systems the required packages can be installed with
-   apt-get install evolution-data-server-dev libdb3-dev \
+   apt-get install evolution-data-server-dev \
                    libecal1.2-dev libebook1.2-dev \
-                   libsoup2.4-dev \
+                   libsoup2.2-dev \
                    libboost-dev
+
+libboost-dev >= 1.34, available as libboost1.35-dev backport for Debian Etch.
+
+Necessary on some distros due to bad dependencies (not needed by SyncEvolution itself):
+   apt-get install libdb3-dev
+
+Optional (enables reading proxy settings from GNOME preferences):
+   apt-get install libsoup-gnome2.4-dev
 
 See also the libsynthesis README file for other required packages.
 
@@ -695,10 +703,15 @@ The test framework also requires CPPUnit:
 
 For the GUI and its D-Bus based service backend:
    apt-get install libdbus-glib-1-dev \
+                   libglib2.0-dev \
                    libgtk2.0-dev libglade2-dev \
-                   libgio2.0-dev \
                    libgnome-keyring-dev \
                    libgconf2-dev libgnomevfs2-dev
+
+Optional packages for GUI:
+   apt-get install libunique-dev
+
+libunique = ensure that GTK GUI only runs once per user
 
 The build system is the normal autotools system.  See INSTALL for
 general instructions how to use that and "./configure --help" for
@@ -709,6 +722,10 @@ possible. But because this is usually not what people want,
 the configure script needs explicit --disable-ecal --disable-ebook
 parameters, otherwise it will refuse to compile without Evolution
 support.
+
+When compiling from a git checkout, remember to run "./autogen.sh".
+It depends on:
+  apt-get install libtool intltool automake
 
 
 Supporting SyncEvolution
