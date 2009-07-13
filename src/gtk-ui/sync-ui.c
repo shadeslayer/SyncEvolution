@@ -1592,6 +1592,10 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
 
     /* syncevolution defaults are not empty, override ... */
     serv_data->options_override = g_ptr_array_new ();
+    option = syncevo_option_new (NULL, "username", NULL);
+    g_ptr_array_add (serv_data->options_override, option);
+    option = syncevo_option_new (NULL, "password", NULL);
+    g_ptr_array_add (serv_data->options_override, option);
     option = syncevo_option_new (NULL, "syncURL", NULL);
     g_ptr_array_add (serv_data->options_override, option);
     option = syncevo_option_new (NULL, "webURL", NULL);
