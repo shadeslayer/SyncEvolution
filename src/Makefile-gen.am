@@ -84,6 +84,7 @@ libstdc++.a :
 syncevolution_SOURCES = \
 	syncevolution.cpp \
 	$(CORE_SOURCES)
+nodist_syncevolution_SOURCES = ../test/test.cpp
 
 # SYNCEVOLUTION_LDADD will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
 # if linking statically against them, empty otherwise;
@@ -139,7 +140,9 @@ syncevo_dbus_server_SOURCES = \
 	syncevo-dbus-server.cpp syncevo-dbus-server.h \
 	DBusSyncClient.cpp DBusSyncClient.h \
 	$(CORE_SOURCES)
-nodist_syncevo_dbus_server_SOURCES = dbus/interfaces/syncevo-marshal.c
+nodist_syncevo_dbus_server_SOURCES = \
+	dbus/interfaces/syncevo-marshal.c \
+	../test/test.cpp
 
 syncevo_dbus_server_LDADD = $(DBUS_GLIB_LIBS) $(KEYRING_LIBS) $(CORE_LDADD)
 syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -Idbus/interfaces $(DBUS_GLIB_CFLAGS) $(KEYRING_CFLAGS) $(AM_CPPFLAGS)
@@ -158,6 +161,7 @@ client_test_SOURCES = \
 	../test/ClientTest.h \
 	../test/client-test-main.cpp \
 	$(CORE_SOURCES)
+nodist_client_test_SOURCES = ../test/test.cpp
 
 # Always compile the registry files into client-test because that is
 # the only place where they are compiled with

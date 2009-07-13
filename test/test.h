@@ -58,6 +58,20 @@ extern const std::string &getCurrentTest();
 // removes special characters like colons and slashes
 extern void simplifyFilename(std::string &filename);
 
+// redefine CPPUNIT_TEST so that we can filter tests
+#undef CPPUNIT_TEST
+#define CPPUNIT_TEST(testMethod) \
+    CPPUNIT_TEST_SUITE_ADD_TEST( \
+        ( FilterTest(new CPPUNIT_NS::TestCaller<TestFixtureType>( \
+                     context.getTestNameFor( #testMethod), \
+                     &TestFixtureType::testMethod, \
+                     context.makeFixture() ) ) ) )
+
+/**
+ * replace test with dummy if filtered out via CLIENT_TEST_SKIP
+ */
+CppUnit::Test *FilterTest(CppUnit::Test *test);
+
 #endif // ENABLE_UNIT_TESTS
 
 /** @endcond */

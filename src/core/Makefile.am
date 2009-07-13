@@ -1,4 +1,4 @@
-AM_CPPFLAGS = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@
+AM_CPPFLAGS = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test
 
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library

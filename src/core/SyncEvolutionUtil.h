@@ -142,7 +142,7 @@ class ReadDir {
  * @verbatim
    #include <config.h>
    #ifdef ENABLE_UNIT_TESTS
-   # include <cppunit/extensions/HelperMacros.h>
+   # include "test.h"
    class Foo : public CppUnit::TestFixture {
        CPPUNIT_TEST_SUITE(foo);
        CPPUNIT_TEST(testBar);

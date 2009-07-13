@@ -37,7 +37,7 @@
 #include <dirent.h>
 
 #ifdef ENABLE_UNIT_TESTS
-#include <cppunit/extensions/HelperMacros.h>
+#include "test.h"
 CPPUNIT_REGISTRY_ADD_TO_DEFAULT("SyncEvolution");
 #endif
 

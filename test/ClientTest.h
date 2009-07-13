@@ -37,6 +37,8 @@ typedef EvolutionSyncSource SyncSource;
 #include <SyncML.h>
 #include <TransportAgent.h>
 
+#include "test.h"
+
 #ifdef ENABLE_INTEGRATION_TESTS
 
 #include <cppunit/TestSuite.h>
@@ -1047,8 +1049,7 @@ public:
     ADD_TEST_TO_SUITE(this, _class, _function)
 
 #define ADD_TEST_TO_SUITE(_suite, _class, _function) \
-    _suite->addTest(new CppUnit::TestCaller<_class>(_suite->getName() + "::" #_function, &_class::_function, *this))
-
+    _suite->addTest(FilterTest(new CppUnit::TestCaller<_class>(_suite->getName() + "::" #_function, &_class::_function, *this)))
 
 #endif // ENABLE_INTEGRATION_TESTS
 #endif // INCL_TESTSYNCCLIENT

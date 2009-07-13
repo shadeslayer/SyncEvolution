@@ -1691,7 +1691,7 @@ void SyncTests::addTests() {
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeServerRemove);
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeServerUpdate);
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeFull);
-            addTest(retryTests);
+            addTest(FilterTest(retryTests));
         }
 
         if (config.retrySync &&
@@ -1708,7 +1708,7 @@ void SyncTests::addTests() {
             ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerRemove);
             ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerUpdate);
             ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendFull);
-            addTest(suspendTests);
+            addTest(FilterTest(suspendTests));
         }
 
     }
@@ -3133,10 +3133,10 @@ public:
                 LocalTests *sourcetests =
                     client.createLocalTests(tests->getName() + "::" + config.sourceName, source, config);
                 sourcetests->addTests();
-                tests->addTest(sourcetests);
+                tests->addTest(FilterTest(sourcetests));
             }
         }
-        alltests->addTest(tests);
+        alltests->addTest(FilterTest(tests));
         tests = 0;
 
         // create sync tests with just one source
@@ -3150,7 +3150,7 @@ public:
                 SyncTests *synctests =
                     client.createSyncTests(tests->getName() + "::" + config.sourceName, sources);
                 synctests->addTests();
-                tests->addTest(synctests);
+                tests->addTest(FilterTest(synctests));
             }
         }
 
@@ -3175,7 +3175,7 @@ public:
             SyncTests *synctests =
                 client.createSyncTests(tests->getName() + "::" + name, sources);
             synctests->addTests();
-            tests->addTest(synctests);
+            tests->addTest(FilterTest(synctests));
             synctests = 0;
 
             // now also in reversed order - who knows, it might make a difference
@@ -3183,11 +3183,11 @@ public:
             synctests =
                 client.createSyncTests(tests->getName() + "::" + name_reversed, sources);
             synctests->addTests();
-            tests->addTest(synctests);
+            tests->addTest(FilterTest(synctests));
             synctests = 0;
         }
 
-        alltests->addTest(tests);
+        alltests->addTest(FilterTest(tests));
         tests = 0;
 
         return alltests;

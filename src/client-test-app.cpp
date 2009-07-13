@@ -22,7 +22,6 @@
 
 #include <ClientTest.h>
 
-#include <cppunit/extensions/HelperMacros.h>
 #include <exception>
 #include <fstream>
 #include <fcntl.h>

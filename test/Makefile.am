@@ -5,6 +5,7 @@ EXTRA_DIST = \
 	COPYING \
         client-test-main.cpp \
 	test.h \
+	test.cpp \
         Algorithm/Artistic \
         Algorithm/COPYING \
         Algorithm/Diff.pm \

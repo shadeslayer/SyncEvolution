@@ -336,7 +336,7 @@ void LogRedirect::process() throw()
 } // namespace SyncEvolution
 
 #ifdef ENABLE_UNIT_TESTS
-#include <cppunit/extensions/HelperMacros.h>
+#include "test.h"
 
 class LogRedirectTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(LogRedirectTest);
