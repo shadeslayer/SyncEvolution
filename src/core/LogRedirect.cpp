@@ -242,7 +242,7 @@ void LogRedirect::process(FDs &fds) throw()
     }
 
     do {
-        ssize_t available;
+        ssize_t available = 0;
         have_message = false;
 
         // keep peeking at the data with increasing buffer sizes until
