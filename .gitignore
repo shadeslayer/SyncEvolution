@@ -15,5 +15,8 @@ ltmain.sh
 missing
 Makefile.in
 src/Makefile.am
+po/Makefile.in.in
+mkinstalldirs
+intltool-*.in
 .gitignore
 *.patch

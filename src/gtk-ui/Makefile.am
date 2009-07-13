@@ -14,13 +14,11 @@ themerc_DATA = \
 	sync-ui.rc
 
 desktopdir = $(datadir)/applications
-desktop_DATA = \
-	sync.desktop
 
 EXTRA_DIST = \
 	ui.glade \
 	$(themerc_DATA) \
-	$(desktop_DATA) \
+	$(applications_in_files) \
 	$(noinst_DATA)
 
 ui.xml: ui.glade
