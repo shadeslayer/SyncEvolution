@@ -2,6 +2,10 @@
 
 set -e
 
+# wipe out temporary autotools files, necessary
+# when switching between distros
+rm -rf aclocal.m4 m4/lib* autom4te.cache config.guess config.sub config.h.in configure depcomp install-sh ltmain.sh missing 
+
 # generate configure.in from main configure-*.in pieces
 # and all backend configure-sub.in pieces
 rm -f configure.in
