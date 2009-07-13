@@ -57,7 +57,7 @@ my $server = $ENV{CLIENT_TEST_SERVER};
 my $client = $ENV{CLIENT_TEST_CLIENT} || "evolution";
 my $scheduleworld = $server =~ /scheduleworld/;
 my $synthesis = $server =~ /synthesis/;
-#my $zyb = $server =~ /zyb/;
+my $zyb = $server =~ /zyb/;
 my $mobical = $server =~ /mobical/;
 my $memotoo = $server =~ /memotoo/;
 
@@ -402,6 +402,10 @@ sub Normalize {
         s/^(UID|SEQUENCE|DTSTART|URL|PERCENT-COMPLETE|CLASS)(;[^:;\n]*)*:.*\r?\n?//gm;
         s/^PRIORITY:0\r?\n?//gm;
       }
+    }
+
+    if ($zyb) {
+        s/^(CALURI|CATEGORIES|FBURL|NICKNAME|X-MOZILLA-HTML|PHOTO|X-EVOLUTION-FILE-AS|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-MANAGER|X-SPOUSE|X-YAHOO|X-AIM)(;[^:;\n]*)*:.*\r?\n?//gm;
     }
 
     # treat X-MOZILLA-HTML=FALSE as if the property didn't exist
