@@ -57,7 +57,9 @@ typedef struct server_config {
 
     /* a authentication detail (base_url/username/password) has changed */
     gboolean auth_changed;
-    
+
+    gboolean password_changed;
+
     gboolean from_template;
 } server_config;
 

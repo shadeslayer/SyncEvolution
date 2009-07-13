@@ -57,12 +57,16 @@ server_config_update_from_entry (server_config *server, GtkEntry *entry)
     g_assert (str);
     new_str = gtk_entry_get_text (entry);
 
-    if (*str == NULL || strcmp (*str, new_str) != 0) {
+    if ((*str == NULL && strlen (new_str) != 0) ||
+        (*str != NULL && strcmp (*str, new_str) != 0)) {
 
         server->changed = TRUE;
-        if (*str == server->password ||
-            *str == server->username ||
-            *str == server->base_url) {
+
+        if (*str == server->password) {
+            server->auth_changed = TRUE;
+            server->password_changed = TRUE;
+        } else if (*str == server->username ||
+                   *str == server->base_url) {
             server->auth_changed = TRUE;
         }
 
@@ -137,8 +141,8 @@ server_config_get_option_array (server_config *server)
     g_ptr_array_add (options, option);
 
     /* if gnome-keyring password was set, set password option to "-"
-     * (meaning 'use AskPassword()') */
-    if (server->auth_changed) {
+     * (meaning 'use AskPassword()'). Otherwise don't touch the password */
+    if (server->password_changed) {
         option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup ("-"));
         g_ptr_array_add (options, option);
     }

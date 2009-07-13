@@ -614,20 +614,30 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
 
     if (server->auth_changed) {
         char *server_address;
+        char *password;
+        char *username;
 
         server_address = strstr (server->base_url, "://");
         if (server_address)
             server_address = server_address + 3;
 
+        password = server->password;
+        if (!password)
+            password = "";
+
+        username = server->username;
+        if (!username)
+            username = "";
+
         gnome_keyring_set_network_password (NULL, /* default keyring */
-                                            server->username,
+                                            username,
                                             NULL,
                                             server_address,
                                             NULL,
                                             NULL,
                                             NULL,
                                             0,
-                                            server->password,
+                                            password,
                                             (GnomeKeyringOperationGetIntCallback)set_password_cb,
                                             data, NULL);
     }
@@ -648,6 +658,7 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
     }
 
     server->auth_changed = FALSE;
+    server->password_changed = FALSE;
     server->changed = FALSE;
 }
 
