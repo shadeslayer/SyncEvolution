@@ -206,7 +206,7 @@ client_test_LDADD = $(CORE_LDADD) $(SYNCSOURCES)
 # on each make invocation and do the time stamp test ourselves
 .PHONY: $(TEST_FILES_GENERATED)
 $(TEST_FILES_GENERATED):
-	@ mkdir -p src/testcases
+	@ mkdir -p testcases
 	@ echo "checking whether server specific test cases $@ are up-to-date"
 	set -e; \
 	patchfile=$(srcdir)/../test/$@.patch; \
