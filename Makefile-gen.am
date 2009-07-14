@@ -69,7 +69,7 @@ TYPE_rpm = -R
 # Dependency calculation is intentionally incomplete:
 # - don't force dependency on specific EDS libs via backends, their versions change too much (handled via --enable-evolution-compatibility and dynamic loading of the backends)
 # - ignore client-test dependencies (because users typically don't run it)
-REQUIRES_deb = --requires="'$(shell echo determining dependencies; set -x; cd dist; dpkg-shlibdeps -L$(srcdir)/src/shlibs.local --ignore-missing-info -O $$(for i in $$(find $(distdir) -type f -perm /u+x | grep -v -e client-test -e lib/syncevolution/); do if file $$i | grep ELF >/dev/null; then echo $$i; fi; done) | sed -e 's/[^=]*=//')'"
+REQUIRES_deb = --requires="'$(shell set -x; cd dist; dpkg-shlibdeps -L$(srcdir)/src/shlibs.local --ignore-missing-info -O $$(for i in $$(find $(distdir) -type f -perm /u+x | grep -v -e client-test -e lib/syncevolution/sync); do if file $$i | grep ELF >/dev/null; then echo $$i; fi; done) | sed -e 's/[^=]*=//')'"
 VERSION_deb = `echo 1:$(VERSION) | perl -p -e 's/(\d+\.\d+)([-a-z0-9]+)/sprintf("%0.1f+$$1$$2", ($$1 - 0.1))/e'`
 VERSION_rpm = `echo $(VERSION) | sed -e s/-/_/g`
 RELEASE = 2
