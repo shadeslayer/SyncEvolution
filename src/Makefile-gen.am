@@ -259,7 +259,7 @@ else
 # haven't changed. If client-test is part of the regular targets built
 # by "all", then it must not depend on all!
 EXTRA_PROGRAMS += client-test
-nodist_client_test_SOURCES = $(CLIENT_LIB_TEST_FILES)
+nodist_client_test_SOURCES += $(CLIENT_LIB_TEST_FILES)
 client_test_DEPENDENCIES += all
 endif
 
