@@ -1,6 +1,7 @@
 applicationsdir = $(datadir)/applications
 applications_in_files = sync.desktop.in
-applications_DATA = $(applications_in_files:.desktop.in=.desktop)
+applications_generated = $(applications_in_files:.desktop.in=.desktop)
+applications_DATA = $(applications_generated)
 @INTLTOOL_DESKTOP_RULE@
 
 gladedir = $(datadir)/syncevolution/
@@ -45,7 +46,9 @@ if COND_GUI
 BUILT_SOURCES = \
 	syncevo-bindings.h sync-ui-marshal.c sync-ui-marshal.h
 endif
-CLEANFILES = $(BUILT_SOURCES) 
+CLEANFILES = $(BUILT_SOURCES) \
+	ui.xml \
+        $(applications_generated)
 
 %-bindings.h: stamp-%-bindings.h
 	@true

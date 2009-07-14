@@ -46,7 +46,8 @@ nobase_dist_sysconf_DATA = $(TEMPLATE_FILES)
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
-CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES)
+CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES) \
+	org.Moblin.SyncEvolution.service
 
 # synccompare is created by replacing its 'import Algorithm::Diff;'
 # with a simplified copy of Diff.pm.
