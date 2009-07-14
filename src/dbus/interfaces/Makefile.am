@@ -4,8 +4,8 @@
 BUILT_SOURCES = syncevo.xml syncevo-dbus-glue.h syncevo-marshal.c syncevo-marshal.h syncevo-bindings.h
 
 noinst_DATA = syncevo.xml
-CLEANFILES = $(noinst_DATA) $(BUILT_SOURCES)
-EXTRA_DIST = syncevo-marshal.list stamp-syncevo-dbus-glue.h $(noinst_DATA)
+CLEANFILES = $(noinst_DATA) $(BUILT_SOURCES) stamp-syncevo-dbus-glue.h
+EXTRA_DIST = syncevo-marshal.list spec-strip-docs.xsl $(noinst_DATA)
 
 %-bindings.h: stamp-%-bindings.h
 	@true
