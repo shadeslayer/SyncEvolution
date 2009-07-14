@@ -16,15 +16,34 @@ EXTRA_DIST = \
 	Doxyfile
 
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs 
+CLEANFILES =
 
-# binary distribution
-distbin : README all
+# binary distribution as .tar.gz
+if COND_DBUS
+# when building with D-Bus, we have no choice: the service has to go into /usr
+# in order to be found
+distbin : README NEWS COPYING INSTALL-tar-gz all
+	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 )
+	@ [ "$(prefix)" == "/usr" ] || (echo "please reconfigure with --prefix=/usr"; exit 1 )
+	rm -rf $(distdir)
+	$(MAKE) DESTDIR=`pwd`/$(distdir) install
+	rm -rf $(distdir)/usr/etc
+	mkdir -p $(distdir)/usr/share/doc/syncevolution
+	cp $(srcdir)/INSTALL-tar-gz $(distdir)/INSTALL
+	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(distdir)/usr/share/doc/syncevolution
+	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
+	rm -rf $(distdir)
+else
+# without D-Bus, we can simply create an archive with a bin directory
+# and everything works
+distbin : README NEWS COPYING all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 ) 
 	rm -rf $(distdir)
 	$(MAKE) prefix=`pwd`/$(distdir) install
 	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(distdir)
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
+endif
 
 iphone : SyncEvolution.plist
 
@@ -47,7 +66,10 @@ $(IPHONE_FILENAME) : all
 
 TYPE_deb = -D
 TYPE_rpm = -R
-REQUIRES_deb = --requires="'$(shell dpkg-shlibdeps -L$(srcdir)/src/shlibs.local -O src/syncevolution | sed -e 's/[^=]*=//')'"
+# Dependency calculation is intentionally incomplete:
+# - don't force dependency on specific EDS libs via backends, their versions change too much (handled via --enable-evolution-compatibility and dynamic loading of the backends)
+# - ignore client-test dependencies (because users typically don't run it)
+REQUIRES_deb = --requires="'$(shell set -x; dpkg-shlibdeps -L$(srcdir)/src/shlibs.local --ignore-missing-info -O $$(for i in $$(find $< -type f -perm /u+x | grep -v -e client-test -e lib/syncevolution/); do if file $$i | grep ELF >/dev/null; then echo $$i; fi; done) | sed -e 's/[^=]*=//')'"
 VERSION_deb = `echo 1:$(VERSION) | perl -p -e 's/(\d+\.\d+)([-a-z0-9]+)/sprintf("%0.1f+$$1$$2", ($$1 - 0.1))/e'`
 VERSION_rpm = `echo $(VERSION) | sed -e s/-/_/g`
 RELEASE = 2
@@ -67,7 +89,7 @@ PKGS = $(addprefix syncevolution-evolution-, 2.6 2.8 2.12)
 #
 # --replaces is necessary for migrating from syncevolution-evolution-<evover>
 # to syncevolution-evolution (as per http://wiki.debian.org/Renaming_a_Package)
-deb rpm : all doc-pak description-pak
+deb rpm : dist/$(distdir) doc-pak description-pak
 	tmpdir=`mktemp -d $$HOME/syncevolution.XXXXXXXXXX` && \
 	trap "rm -rf $$tmpdir" EXIT && \
 	docdir="$(docdir)" && \
@@ -76,6 +98,7 @@ deb rpm : all doc-pak description-pak
 		$(TYPE_$@) \
 		$(REQUIRES_$@) \
 		--fstrans=yes \
+		--strip=no \
 		--pkgversion=$(VERSION_$@) \
 		--pkgrelease=$(RELEASE) \
 		--pkgname=$(PKGNAME) \
@@ -87,7 +110,17 @@ deb rpm : all doc-pak description-pak
 		--pkgsource='http://sourceforge.net/project/showfiles.php?group_id=146288' \
 		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
 		--pkggroup='gnome' \
-		--docdir=":$$docdir" $(MAKE) install
+		--docdir=":$$docdir" cp -r `pwd`/$</usr/* /usr
+
+.PHONY: dist/$(distdir)
+dist/$(distdir): all
+	rm -rf $@
+	$(MAKE) install DESTDIR=`pwd`/$@
+	rm -rf $@/usr/etc $@/usr/include
+	find $@ -name *.la -o -name *.so -delete
+clean-local:
+	rm -rf dist
+
 
 doc-pak : README NEWS COPYING
 	mkdir $@
