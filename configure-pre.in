@@ -258,6 +258,9 @@ if test $enable_dbus_service == "yes"; then
     PKG_CHECK_MODULES(DBUS_GLIB, dbus-glib-1 glib-2.0)
     AC_PATH_PROG(DBUS_BINDING_TOOL, dbus-binding-tool)
     AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
+    if test -z "$XSLT"; then
+       AC_ERROR([xsltproc not found, is required for D-Bus service])
+    fi
 fi
 AC_SUBST(DBUS_GLIB_CFLAGS)
 AC_SUBST(DBUS_GLIB_LIBS)

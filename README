@@ -685,7 +685,7 @@ files. For HTTP, either Curl or libsoup can be used.
 On Debian based systems the required packages can be installed with
    apt-get install evolution-data-server-dev \
                    libecal1.2-dev libebook1.2-dev \
-                   libsoup2.2-dev \
+                   libsoup2.4-dev \
                    libboost-dev
 
 libboost-dev >= 1.34, available as libboost1.35-dev backport for Debian Etch.
@@ -703,6 +703,7 @@ The test framework also requires CPPUnit:
 
 For the GUI and its D-Bus based service backend:
    apt-get install libdbus-glib-1-dev \
+                   xsltproc \
                    libglib2.0-dev \
                    libgtk2.0-dev libglade2-dev \
                    libgnome-keyring-dev \
