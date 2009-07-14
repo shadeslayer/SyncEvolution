@@ -616,9 +616,9 @@ class SyncEvolutionDist(AutotoolsBuild):
 		   	context.runCommand("%s make BINSUFFIX=%s PKGARCH=lpia deb" % (self.runner, self.packagesuffix))
 			break
         if self.binsuffix:
-            context.runCommand("%s make BINSUFFIX=%s distbin distcheck" % (self.runner, self.binsuffix))
-        else:
-            context.runCommand("%s make distcheck" % (self.runner))
+            context.runCommand("%s make BINSUFFIX=%s distbin" % (self.runner, self.binsuffix))
+        context.runCommand("%s make distcheck" % (self.runner))
+        context.runCommand("%s make DISTCHECK_CONFIGURE_FLAGS=--enable-gui distcheck" % (self.runner))
 
 dist = SyncEvolutionDist("dist",
                          options.binsuffix,
