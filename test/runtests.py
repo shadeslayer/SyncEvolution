@@ -141,7 +141,7 @@ class Action:
 class Context:
     """Provides services required by actions and handles running them."""
 
-    def __init__(self, tmpdir, resultdir, uri, workdir, mailtitle, sender, recipients, mailhost, enabled, skip, nologs, setupcmd):
+    def __init__(self, tmpdir, resultdir, uri, workdir, mailtitle, sender, recipients, mailhost, enabled, skip, nologs, setupcmd, make):
         # preserve normal stdout because stdout/stderr will be redirected
         self.out = os.fdopen(os.dup(1), "w")
         self.todo = []
@@ -159,6 +159,7 @@ class Context:
         self.skip = skip
         self.nologs = nologs
         self.setupcmd = setupcmd
+        self.make = make
 
     def runCommand(self, cmd):
         """Log and run the given command, throwing an exception if it fails."""
@@ -358,7 +359,7 @@ class AutotoolsBuild(Action):
         del_dir(self.builddir)
         cd(self.builddir)
         context.runCommand("%s %s/configure %s" % (self.runner, self.src, self.configargs))
-        context.runCommand("%s make install DESTDIR=%s" % (self.runner, self.installdir))
+        context.runCommand("%s %s install DESTDIR=%s" % (self.runner, context.make, self.installdir))
 
 
 class SyncEvolutionTest(Action):
@@ -383,7 +384,7 @@ class SyncEvolutionTest(Action):
             if context.setupcmd:
                 context.runCommand("%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name))
             basecmd = "%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_FAILURES=EvolutionCalendarTest::testOpenDefaultMemo CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s env LD_LIBRARY_PATH=build-synthesis/src/.libs ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
-            context.runCommand("make testclean")
+            context.runCommand("%s testclean", context.make)
             if self.tests:
                 context.runCommand("%s %s" % (basecmd, " ".join(self.tests)))
             else:
@@ -481,6 +482,9 @@ parser.add_option("", "--prebuilt",
 parser.add_option("", "--setup-command",
                   type="string", dest="setupcmd",
                   help="invoked with <test name> <args to start syncevolution>, should setup local account for the test")
+parser.add_option("", "--make-command",
+                  type="string", dest="makecmd", default="make",
+                  help="command to use instead of plain make, for example 'make -j'")
 
 (options, args) = parser.parse_args()
 if options.recipients and not options.sender:
@@ -489,7 +493,8 @@ if options.recipients and not options.sender:
 
 context = Context(options.tmpdir, options.resultdir, options.uri, options.workdir,
                   options.subject, options.sender, options.recipients, options.mailhost,
-                  options.enabled, options.skip, options.nologs, options.setupcmd)
+                  options.enabled, options.skip, options.nologs, options.setupcmd,
+                  options.makecmd)
 
 class EvoSvn(Action):
     """Builds Evolution from SVN using Paul Smith's Evolution Makefile."""
@@ -516,7 +521,7 @@ class EvoSvn(Action):
 	localmk.close()
         if os.access(".stamp", os.F_OK):
             context.runCommand("make check-changelog")
-        context.runCommand("make %s" % self.makeoptions)
+        context.runCommand("%s %s" % (context.make, self.makeoptions))
 
 for evosvn in options.evosvn:
     name, path = evosvn.split("=")
@@ -556,7 +561,7 @@ class SyncEvolutionBuild(AutotoolsBuild):
     def execute(self):
         AutotoolsBuild.execute(self)
         os.chdir("src")
-        context.runCommand("%s make test CXXFLAGS=-O0" % (self.runner))
+        context.runCommand("%s %s test CXXFLAGS=-O0" % (self.runner, context.make))
 
 libsynthesis = SynthesisCheckout("libsynthesis", options.synthesistag)
 context.add(libsynthesis)
@@ -609,16 +614,16 @@ class SyncEvolutionDist(AutotoolsBuild):
     def execute(self):
         cd(self.builddir)
         if self.packagesuffix:
-            context.runCommand("%s make BINSUFFIX=%s deb" % (self.runner, self.packagesuffix))
+            context.runCommand("%s %s BINSUFFIX=%s deb" % (self.runner, context.make, self.packagesuffix))
 	    put, get = os.popen4("dpkg-architecture -qDEB_HOST_ARCH")
 	    for arch in get.readlines():
 	           if "i386" in arch:
-		   	context.runCommand("%s make BINSUFFIX=%s PKGARCH=lpia deb" % (self.runner, self.packagesuffix))
+		   	context.runCommand("%s %s BINSUFFIX=%s PKGARCH=lpia deb" % (self.runner, context.make, self.packagesuffix))
 			break
         if self.binsuffix:
-            context.runCommand("%s make BINSUFFIX=%s distbin" % (self.runner, self.binsuffix))
-        context.runCommand("%s make distcheck" % (self.runner))
-        context.runCommand("%s make DISTCHECK_CONFIGURE_FLAGS=--enable-gui distcheck" % (self.runner))
+            context.runCommand("%s %s BINSUFFIX=%s distbin" % (self.runner, context.make, self.binsuffix))
+        context.runCommand("%s %s distcheck" % (self.runner, context.make))
+        context.runCommand("%s %s DISTCHECK_CONFIGURE_FLAGS=--enable-gui distcheck" % (self.runner, context.make))
 
 dist = SyncEvolutionDist("dist",
                          options.binsuffix,
