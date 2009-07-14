@@ -112,13 +112,14 @@ deb rpm : dist/$(distdir) doc-pak description-pak
 		--pkggroup='gnome' \
 		--docdir=":$$docdir" cp -r `pwd`/$</usr/* /usr
 
-.PHONY: dist/$(distdir)
+.PHONY: dist/$(distdir) clean_dist
 dist/$(distdir): all
 	rm -rf $@
 	$(MAKE) install DESTDIR=`pwd`/$@
 	rm -rf $@/usr/etc $@/usr/include
 	find $@ -name *.la -o -name *.so -delete
-clean-local:
+clean-local: clean_dist
+clean_dist:
 	rm -rf dist
 
 
