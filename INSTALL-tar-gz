@@ -1,0 +1,12 @@
+This archive contains all files necessary to run SyncEvolution *as
+part of the system*.
+
+This means that the files have to be placed in the root file
+system. This is necessary because some system services (D-Bus server)
+would not be able to find them without further hacks otherwise.
+
+To install the files, unpack them and then run:
+  sudo cp -a usr/* /usr
+
+*** Warning: *** this bypasses the system's package management. If
+there are packages for your system, then better install those.
