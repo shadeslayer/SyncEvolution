@@ -640,7 +640,7 @@ context.add(evolutiontest)
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       [ "Client::Sync" ],
-                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES=Client::Sync::vcard30::testCopy CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5",
+                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard30::Retry,Client::Sync::vcard30::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend CLIENT_TEST_FAILURES=Client::Sync::vcard30::testCopy CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5",
                                       testPrefix=options.testprefix)
 context.add(scheduleworldtest)
 
@@ -702,7 +702,7 @@ class FunambolTest(SyncEvolutionTest):
             serverlogs = ""
         SyncEvolutionTest.__init__(self, name, build, serverlogs,
                                    runner, [ ],
-                                   "CLIENT_TEST_SOURCES=vcard21,ical20,itodo20,text CLIENT_TEST_XML=1 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol",
+                                   "CLIENT_TEST_SOURCES=vcard21,ical20,itodo20,text CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend CLIENT_TEST_XML=1 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol",
                                    lineFilter=lambda x: x.replace('dogfood.funambol.com','<host hidden>'),
                                    testPrefix=testPrefix)
         self.funamboldir = funamboldir
