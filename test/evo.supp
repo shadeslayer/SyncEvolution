@@ -1492,6 +1492,77 @@
    fun:e_cal_new
 }
 
+# ==12803== 607 bytes in 26 blocks are possibly lost in loss record 17 of 46
+# ==12803==    at 0x4C2260E: malloc (vg_replace_malloc.c:207)
+# ==12803==    by 0x6174BA2: g_malloc (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==12803==    by 0x91F6B2C: ORBit_alloc_string (in /usr/lib/libORBit-2.so.0.1.0)
+# ==12803==    by 0x91F683D: CORBA_string_dup (in /usr/lib/libORBit-2.so.0.1.0)
+# ==12803==    by 0x8FB7D4D: Bonobo_ServerInfo_copy (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==12803==    by 0x8FB7DFA: Bonobo_ServerInfoList_duplicate (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==12803==    by 0x8FB6189: bonobo_activation_query (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==12803==    by 0x585BABA: e_cal_new (in /usr/lib/libecal-1.2.so.7.2.0)
+# ==12803==    by 0x585BECB: e_cal_new_from_uri (in /usr/lib/libecal-1.2.so.7.2.0)
+# ==12803==    by 0x618B6C: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:163)
+# ==12803==    by 0x4648E2: TestEvolutionSyncSource::beginSync(SyncMode) (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==12803==    by 0x55492C: LocalTests::testIterateTwice() (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==12803==    by 0x5AA6DF: CppUnit::TestCaller<LocalTests>::runTest() (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==12803==    by 0x4E51406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E437D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E4D278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E4CFBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E58D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E5109C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E519FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E51925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E519FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E51925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E58B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E5B121: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x4E5E13A: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12803==    by 0x5B1C15: main (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+{
+   e_cal_new X
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:Bonobo_ServerInfo_copy
+   fun:Bonobo_ServerInfoList_duplicate
+   fun:bonobo_activation_query
+   fun:e_cal_new
+}
+
+# ==28640== 419 bytes in 18 blocks are possibly lost in loss record 78 of 169
+# ==28640==    at 0x4C2260E: malloc (vg_replace_malloc.c:207)
+# ==28640==    by 0x6174BA2: g_malloc (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==28640==    by 0x91F6B2C: ORBit_alloc_string (in /usr/lib/libORBit-2.so.0.1.0)
+# ==28640==    by 0x91F683D: CORBA_string_dup (in /usr/lib/libORBit-2.so.0.1.0)
+# ==28640==    by 0x8FB7C1B: Bonobo_ActivationPropertyValue_copy (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==28640==    by 0x8FB7CF2: CORBA_sequence_Bonobo_ActivationProperty_copy (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==28640==    by 0x8FB7DFA: Bonobo_ServerInfoList_duplicate (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==28640==    by 0x8FB6189: bonobo_activation_query (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==28640==    by 0x585BABA: e_cal_new (in /usr/lib/libecal-1.2.so.7.2.0)
+# ==28640==    by 0x585BECB: e_cal_new_from_uri (in /usr/lib/libecal-1.2.so.7.2.0)
+# ==28640==    by 0x618B6C: EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:163)
+# ==28640==    by 0x4648E2: TestEvolutionSyncSource::beginSync(SyncMode) (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==28640==    by 0x54A9B1: LocalTests::insert(CreateSource, char const*, char const*, bool) (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==28640==    by 0x46C01F: LocalTests::testSimpleInsert() (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==28640==    by 0x5AA6DF: CppUnit::TestCaller<LocalTests>::runTest() (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+{
+   e_cal_new XI
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:Bonobo_ActivationPropertyValue_copy
+   fun:CORBA_sequence_Bonobo_ActivationProperty_copy
+   fun:Bonobo_ServerInfoList_duplicate
+   fun:bonobo_activation_query
+   fun:e_cal_new
+}
+
 # ==20460== 16 bytes in 1 blocks are definitely lost in loss record 5 of 41
 # ==20460==    at 0x401D4B0: malloc (vg_replace_malloc.c:149)
 # ==20460==    by 0x411BC5C: icaltzutil_fetch_timezone (icaltz-util.c:266)
@@ -3564,3 +3635,131 @@
    fun:fseek
    fun:_ZN6sysync8TBinFile16platformSeekFileEjb
 }
+
+# ==12957== 2,248 bytes in 37 blocks are possibly lost in loss record 150 of 161
+# ==12957==    at 0x4C203E4: calloc (vg_replace_malloc.c:397)
+# ==12957==    by 0x6174B49: g_malloc0 (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==12957==    by 0x91F6917: ORBit_alloc_tcval (in /usr/lib/libORBit-2.so.0.1.0)
+# ==12957==    by 0x9200035: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==12957==    by 0x91FDCBA: IOP_generate_profiles (in /usr/lib/libORBit-2.so.0.1.0)
+# ==12957==    by 0x91F4E6B: ORBit_marshal_object (in /usr/lib/libORBit-2.so.0.1.0)
+# ==12957==    by 0x91FB3D7: ORBit_marshal_value (in /usr/lib/libORBit-2.so.0.1.0)
+# ==12957==    by 0x91F20BF: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==12957==    by 0x91F34EC: ORBit_small_invoke_stub (in /usr/lib/libORBit-2.so.0.1.0)
+# ==12957==    by 0x8B1FAD8: ConfigServer_add_client (in /usr/lib/libgconf-2.so.4.1.5)
+# ==12957==    by 0x8B134BC: (within /usr/lib/libgconf-2.so.4.1.5)
+# ==12957==    by 0x8B13FDD: (within /usr/lib/libgconf-2.so.4.1.5)
+# ==12957==    by 0x8B141F8: (within /usr/lib/libgconf-2.so.4.1.5)
+# ==12957==    by 0x8B148F6: gconf_engine_notify_add (in /usr/lib/libgconf-2.so.4.1.5)
+# ==12957==    by 0x8B1C5FF: gconf_client_add_dir (in /usr/lib/libgconf-2.so.4.1.5)
+# ==12957==    by 0x88E4D11: e_source_list_new_for_gconf (in /usr/lib/libedataserver-1.2.so.9.1.0)
+# ==12957==    by 0xC2855BF: e_book_get_addressbooks (in /usr/lib/libebook-1.2.so.9.1.1)
+# ==12957==    by 0x60FF33: EvolutionContactSource::open() (EvolutionContactSource.cpp:124)
+# ==12957==    by 0x4648E2: TestEvolutionSyncSource::beginSync(SyncMode) (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==12957==    by 0x55492C: LocalTests::testIterateTwice() (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==12957==    by 0x5AA6DF: CppUnit::TestCaller<LocalTests>::runTest() (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==12957==    by 0x4E51406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12957==    by 0x4E437D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12957==    by 0x4E4D278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12957==    by 0x4E4CFBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12957==    by 0x4E58D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12957==    by 0x4E5109C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12957==    by 0x4E519FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12957==    by 0x4E51925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12957==    by 0x4E519FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+{
+   e_book_get_addressbooks
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_tcval
+   obj:*libORBit*
+   fun:IOP_generate_profiles
+   fun:ORBit_marshal_object
+   fun:ORBit_marshal_value
+   obj:*libORBit*
+   fun:ORBit_small_invoke_stub
+   fun:ConfigServer_add_client
+   obj:*libgconf*
+   obj:*libgconf*
+   obj:*libgconf*
+   fun:gconf_engine_notify_add
+   fun:gconf_client_add_dir
+   fun:e_source_list_new_for_gconf
+   fun:e_book_get_addressbooks
+}
+
+# ==13858== 2,248 bytes in 37 blocks are possibly lost in loss record 150 of 161
+# ==13858==    at 0x4C203E4: calloc (vg_replace_malloc.c:397)
+# ==13858==    by 0x6174B49: g_malloc0 (in /usr/lib/libglib-2.0.so.0.1600.6)
+# ==13858==    by 0x91F6896: ORBit_alloc_by_tc (in /usr/lib/libORBit-2.so.0.1.0)
+# ==13858==    by 0x9200016: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==13858==    by 0x91FDCBA: IOP_generate_profiles (in /usr/lib/libORBit-2.so.0.1.0)
+# ==13858==    by 0x91F4E6B: ORBit_marshal_object (in /usr/lib/libORBit-2.so.0.1.0)
+# ==13858==    by 0x91FB3D7: ORBit_marshal_value (in /usr/lib/libORBit-2.so.0.1.0)
+# ==13858==    by 0x91F20BF: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==13858==    by 0x91F34EC: ORBit_small_invoke_stub (in /usr/lib/libORBit-2.so.0.1.0)
+# ==13858==    by 0x8B1FAD8: ConfigServer_add_client (in /usr/lib/libgconf-2.so.4.1.5)
+# ==13858==    by 0x8B134BC: (within /usr/lib/libgconf-2.so.4.1.5)
+# ==13858==    by 0x8B13FDD: (within /usr/lib/libgconf-2.so.4.1.5)
+# ==13858==    by 0x8B141F8: (within /usr/lib/libgconf-2.so.4.1.5)
+# ==13858==    by 0x8B148F6: gconf_engine_notify_add (in /usr/lib/libgconf-2.so.4.1.5)
+# ==13858==    by 0x8B1C5FF: gconf_client_add_dir (in /usr/lib/libgconf-2.so.4.1.5)
+# ==13858==    by 0x88E4D11: e_source_list_new_for_gconf (in /usr/lib/libedataserver-1.2.so.9.1.0)
+# ==13858==    by 0xC2855BF: e_book_get_addressbooks (in /usr/lib/libebook-1.2.so.9.1.1)
+# ==13858==    by 0x60FF33: EvolutionContactSource::open() (EvolutionContactSource.cpp:124)
+# ==13858==    by 0x4648E2: TestEvolutionSyncSource::beginSync(SyncMode) (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==13858==    by 0x55492C: LocalTests::testIterateTwice() (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==13858==    by 0x5AA6DF: CppUnit::TestCaller<LocalTests>::runTest() (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==13858==    by 0x4E51406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13858==    by 0x4E437D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13858==    by 0x4E4D278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13858==    by 0x4E4CFBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13858==    by 0x4E58D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13858==    by 0x4E5109C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13858==    by 0x4E519FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13858==    by 0x4E51925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13858==    by 0x4E519FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+{
+   e_book_get_addressbooks II
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_by_tc
+   obj:*libORBit*
+   fun:IOP_generate_profiles
+   fun:ORBit_marshal_object
+   fun:ORBit_marshal_value
+   obj:*libORBit*
+   fun:ORBit_small_invoke_stub
+   fun:ConfigServer_add_client
+   obj:*libgconf*
+   obj:*libgconf*
+   obj:*libgconf*
+   fun:gconf_engine_notify_add
+   fun:gconf_client_add_dir
+   fun:e_source_list_new_for_gconf
+   fun:e_book_get_addressbooks
+}
+
+# ==28640== 63,343 bytes in 735 blocks are possibly lost in loss record 163 of 169
+# ==28640==    at 0x4C21FCC: operator new(unsigned long) (vg_replace_malloc.c:230)
+# ==28640==    by 0x6499450: std::string::_Rep::_S_create(unsigned long, unsigned long, std::allocator<char> const&) (in /usr/lib/libstdc++.so.6.0.10)
+# ==28640==    by 0x6499E14: (within /usr/lib/libstdc++.so.6.0.10)
+# ==28640==    by 0x6499F52: std::string::string(char const*, std::allocator<char> const&) (in /usr/lib/libstdc++.so.6.0.10)
+# ==28640==    by 0x5FB83B: __static_initialization_and_destruction_0(int, int) (SyncEvolutionConfig.cpp:871)
+# ==28640==    by 0x629F55: (within /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==28640==    by 0x454952: (within /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==28640==    by 0x7FF00048F: ???
+# ==28640==    by 0x629EE4: __libc_csu_init (in /work/runtests/head-evolution-lenny-2.22.3.1-full/build/src/client-test)
+# ==28640==    by 0x6936131: (below main) (in /lib/libc-2.7.so)
+{
+   static strings
+   Memcheck:Leak
+   fun:_Znwm
+   fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+   obj:*libstdc++*
+   fun:_ZNSsC1EPKcRKSaIcE
+   fun:_Z41__static_initialization_and_destruction_0ii
+}
+
