@@ -1,0 +1,8 @@
+This directory contains m4 macros which we store in our own git
+repository because they are not necessarily available in a typical
+Linux distro.
+
+The m4 directory is created automatically during autogen.sh and
+contains temporary copies of system macros. It is wiped out at the
+beginning of our autogen.sh because these copies do not always work
+when moving between distros: libtool had problems with that.
