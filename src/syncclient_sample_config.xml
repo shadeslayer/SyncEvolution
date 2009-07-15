@@ -96,6 +96,12 @@
         	DUE = DATEONLY(DUE);
         }
       }
+      // a workaround for funambol: adding 'action' for 'alarm'
+      if (ITEMDATATYPE()=="iCalendar20") {
+        if (ALARM_TIME!=EMPTY && ALARM_ACTION==EMPTY) {
+            ALARM_ACTION = "DISPLAY";
+        }
+      }
     ]]></macro>
 
 
