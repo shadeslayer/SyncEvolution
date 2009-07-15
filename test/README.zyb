@@ -1,0 +1,29 @@
+This document is used to show interoperability test information with zyb server.
+http://bugzilla.moblin.org/show_bug.cgi?id=2424
+
+* The zyb Server's device information 
+  ZYB HTTP SyncML Server
+  Version:3.9.18
+  Build:3.9.18b572
+
+* Test Environment Variables Settings
+  CLIENT_TEST_SERVER=zyb CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test/
+ 
+* Test Profiles Settings
+  -- N/A
+
+* Data formats we need to test:
+  -- Client::Sync::vcard21
+
+* Know Limitations in ZYB server:
+VCard21
+  -- Only below properties are accepted:
+     FN, N, PHOTO, BDAY, ADR, LABEL, TEL, EMAIL, TZ, GEO, TITLE, ROLE, LOGO, ORG, NOTE, REV, SOUND, URL 
+  -- The property 'N' parser error: treat "\;" as the delimiter
+  -- The property 'ADR': if it is long, three extra chars '\r', '\n' and ' 'will be added in the property value.
+  -- Server does escaped text processing, e.g, "&lt\;" is converted to "<"
+  -- Server sends mismatch anchors between two sync even if there is no failure. 
+
+* Known test failures:
+  -- NONE
+
