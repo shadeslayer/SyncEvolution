@@ -34,9 +34,9 @@ Client::Sync::text
 * Know Limitations in Funambol server:
 VCard21
   -- Below properties are lost:
-     CALURI, FBURL, FN, PHOTO, X-MOZILLA-HTML, X-EVOLUTION-FILE-AS, X-AIM, 
+     CALURI, FBURL, X-MOZILLA-HTML, X-EVOLUTION-FILE-AS, X-AIM, 
      X-EVOLUTION-BLOG-URL, X-EVOLUTION-VIDEO-URL, X-GROUPWISE, X-ICQ, 
-     X-YAHOO, X-ASSISTANT,X-EVOLUTION-UI-SLOT
+     X-YAHOO, X-ASSISTANT
   -- 'ORG' loses 'office'
   -- 'TEL' has no concept of 'preferred' phone number
 ical20
