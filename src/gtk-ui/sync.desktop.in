@@ -1,6 +1,6 @@
 [Desktop Entry]
 _Name=Sync
-_Comment=Bring your data with you
+_Comment=Up to date
 Version=1.0
 Type=Application
 Exec=sync-ui
