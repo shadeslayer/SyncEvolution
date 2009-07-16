@@ -6,6 +6,9 @@ set -e
 # when switching between distros
 rm -rf aclocal.m4 m4 autom4te.cache config.guess config.sub config.h.in configure depcomp install-sh ltmain.sh missing 
 
+# intltoolize fails to copy its macros unless m4 exits
+mkdir m4
+
 sh ./gen-autotools.sh
 
 libtoolize -c
