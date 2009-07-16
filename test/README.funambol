@@ -37,6 +37,7 @@ VCard21
      CALURI, FBURL, X-MOZILLA-HTML, X-EVOLUTION-FILE-AS, X-AIM, 
      X-EVOLUTION-BLOG-URL, X-EVOLUTION-VIDEO-URL, X-GROUPWISE, X-ICQ, 
      X-YAHOO, X-ASSISTANT
+  -- The parameter 'X-EVOLUTION-URI-SLOT'of properties like 'TEL' and 'EMAIL' is lost
   -- 'ORG' loses 'office'
   -- 'TEL' has no concept of 'preferred' phone number
 ical20
