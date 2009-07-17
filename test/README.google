@@ -1,0 +1,57 @@
+This document is used to show interoperability test information with google server.
+http://bugzilla.moblin.org/show_bug.cgi?id=2423
+
+* The google Server's device information 
+    Man=Google
+    Mod=Sync
+    SwV=0.01
+    HwV=-
+    OEM=-
+    DevID=Google
+    DevTyp=server
+    VerDTD=1.2
+    UTC=
+    SupportLargeObjs=true
+    SupportNumberOfChanges=true
+
+* Test Environment Variables Settings
+  CLIENT_TEST_SERVER=google CLIENT_TEST_XML=0 CLIENT_TEST_MAX_ITEMSIZE=2048 \
+  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test/                             \
+  CLIENT_TEST_SKIP=Client::Sync::vcard21::testRefreshFromClientSync,         \
+  Client::Sync::vcard21::testRefreshFromClientSemantic,                       \
+  Client::Sync::vcard21::testRefreshStatus,                                   \
+  Client::Sync::vcard21::testOneWayFromClient,                                \
+  Client::Sync::vcard21::testItemsXML,                                         \
+  Client::Sync::vcard21::testRetry,Client::Sync::vcard21::Suspend
+
+
+* Data formats we need to test:
+Client::Sync::vcard21
+
+* Know Limitations in google server:
+Only supports Contact Sync over SyncML and only supports vcard2.1 format. 
+Only supports WBXML for transmitting.
+Don't support one-way-from-client and refresh-from-client sync.
+Return 200(OK) instead of 201(Added) for replace operation from client.
+Delete operation does not permanently remove items.
+
+VCard21
+  -- Below properties are lost:
+     X-EVOLUTION-FILE-AS X-AIM X-EVOLUTION-UI-SLOT X-ANNIVERSARY X-ASSISTANT
+     X-EVOLUTION-BLOG-URL X-EVOLUTION-VIDEO-URL X-GROUPWISE X-ICQ X-MANAGER
+     X-SPOUSE X-MOZILLA-HTML X-YAHOO CATEGORIES NICKNAME BDAY URL FBURL CALURI
+     ROLE  
+  -- 'FN' value mismatch
+  -- 'NOTE' lost ';'
+  -- 'TEL' do not support 'CAR' sub type
+  -- 'ORG' lost ';' as the delimiter
+
+* Known test failures:
+Client::Sync::vcard21
+  -- Client::Sync::vcard21::testRefreshFromClientSync
+     Client::Sync::vcard21::testRefreshFromClientSemantic
+     Client::Sync::vcard21::testRefreshStatus
+     Client::Sync::vcard21::testOneWayFromClient
+     Client::Sync::vcard21::testItemsXML
+     Client::Sync::vcard21::Retry
+     Client::Sync::vcard21::Suspend

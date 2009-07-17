@@ -2167,7 +2167,7 @@ void SyncTests::testOneWayFromServer() {
 
     // add one item on first client, copy to server, and check change tracking via second source
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->insertManyItems(it->second->createSourceA, 1, 1);
+        it->second->insertManyItems(it->second->createSourceA, 200, 1);
     }
     doSync("send",
            SyncOptions(SYNC_TWO_WAY,

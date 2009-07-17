@@ -64,6 +64,7 @@ my $synthesis = $server =~ /synthesis/;
 
 my $egroupware = $server =~ /egroupware/;
 my $funambol = $server =~ /funambol/;
+my $google = $server =~ /google/;
 my $evolution = $client =~ /evolution/;
 my $addressbook = $client =~ /addressbook/;
 
@@ -234,7 +235,7 @@ sub Normalize {
     s;^BEGIN:VTIMEZONE.*?^TZID:/[^/\n]*/[^/\n]*/(\S+).*^END:VTIMEZONE;BEGIN:VTIMEZONE\nTZID:$1 [...]\nEND:VTIMEZONE;gms;
     s;TZID=/[^/\n]*/[^/\n]*/(.*)$;TZID=$1;gm;
 
-    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol) {
+    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google) {
       # does not preserve X-EVOLUTION-UI-SLOT=
       s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
     }
@@ -258,6 +259,23 @@ sub Normalize {
       s/^ADR(.*?):([^;]*?);[^;]*?;/ADR$1:$2;;/mg;
       # has no concept of "preferred" phone number
       s/^(TEL.*);TYPE=PREF/$1/mg;
+    }
+
+   if($google) {
+      # ignore the PHOTO encoding data 
+      s/^PHOTO(.*?): .*\n/^PHOTO$1: [...]\n/mg; 
+      # FN propertiey is not correct 
+      s/^FN:.*\n/FN$1: [...]\n/mg;
+      # ';' in NOTE is lost by the server: ; in middle is replace by white space
+      # while ; in the end is omitted.
+      while (s!^NOTE:(.*)\\\;(.+)\n!NOTE:$1 $2\n!mg) {}
+      s!^NOTE:(.*)\\\;\n!NOTE:$1\n!mg;
+      # ';' in ORG is lost 
+      while (s!^ORG:(.*)\;(.*)\n!ORG:$1 $2\n!mg) {}
+      # Not support car type in telephone
+      s!^TEL\;TYPE=CAR(.*)\n!TEL$1\n!mg;
+      # some properties are lost
+      s/^(X-EVOLUTION-FILE-AS|NICKNAME|BDAY|CATEGORIES|CALURI|FBURL|ROLE|URL|X-AIM|X-EVOLUTION-UI-SLOT|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-MANAGER|X-SPOUSE|X-MOZILLA-HTML|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
     }
 
     if ($addressbook) {

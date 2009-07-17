@@ -1,0 +1,9 @@
+@@ -166,7 +166,7 @@
+ X-EVOLUTION-SPOUSE:Joan Doe
+ NOTE:This is a test case which uses almost all Evolution fields.
+ FN:John Doe
+-N:Doe;John;;;
++N:NewDoe;John;;;
+ X-EVOLUTION-FILE-AS:Doe\, John
+ CATEGORIES:TEST
+ X-EVOLUTION-BLOG-URL:web log
