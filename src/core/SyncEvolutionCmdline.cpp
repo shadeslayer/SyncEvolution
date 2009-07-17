@@ -1040,7 +1040,14 @@ public:
                               "sources/todo/config.ini:uri = task2\n"
                               "sources/todo/config.ini:# evolutionuser = \n"
                               "sources/todo/config.ini:# evolutionpassword = \n")
-    {}
+    {
+#ifdef ENABLE_LIBSOUP
+        // path to SSL certificates has to be set only for libsoup
+        boost::replace_first(m_scheduleWorldConfig,
+                             "SSLServerCertificates = ",
+                             "SSLServerCertificates = /etc/ssl/certs/ca-certificates.crt:/etc/pki/tls/certs/ca-bundle.crt:/usr/share/ssl/certs/ca-bundle.crt");
+#endif
+    }
 
 protected:
 
@@ -1654,7 +1661,7 @@ protected:
     }
 
     const string m_testDir;
-    const string m_scheduleWorldConfig;
+    string m_scheduleWorldConfig;
         
 
 private:
