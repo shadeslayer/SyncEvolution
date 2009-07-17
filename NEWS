@@ -12,6 +12,9 @@ Interoperability with the Funambol server was improved by adding
 support for some vCard extensions (X-MANAGER/ASSISTANT/SPOUSE/ANNIVERSARY,
 Bugzilla #2418).
 
+Synchronization with Google Contacts was enabled and tested.
+A configuration template for that server is now provided.
+
 CTRL-C no longer kills SyncEvolution right away. Instead it
 asks the server to suspend the session. If that takes too
 long, then pressing CTRL-C twice quickly will abort the sync
