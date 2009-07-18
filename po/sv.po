@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2009-06-30 04:10+0000\n"
+"POT-Creation-Date: 2009-07-15 09:18+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: GLSSVE_GMartinson <gmartinson@gmail.com>\n"
 "Language-Team: \n"
@@ -13,353 +13,353 @@ msgstr ""
 "X-Poedit-Language: Swedish\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
-#: ../src/gtk-ui/sync-ui.c:254
+#: ../src/gtk-ui/sync-ui.c:258
 msgid "Addressbook"
 msgstr "Addressbok"
 
-#: ../src/gtk-ui/sync-ui.c:256
+#: ../src/gtk-ui/sync-ui.c:260
 msgid "Calendar"
 msgstr "Kalender"
 
-#: ../src/gtk-ui/sync-ui.c:258
+#: ../src/gtk-ui/sync-ui.c:262
 msgid "Todo"
 msgstr "Attgöra"
 
-#: ../src/gtk-ui/sync-ui.c:260
+#: ../src/gtk-ui/sync-ui.c:264
 msgid "Memo"
 msgstr "Memo"
 
-#: ../src/gtk-ui/sync-ui.c:315
+#: ../src/gtk-ui/sync-ui.c:319
 msgid "Failed to save current service in GConf configuration system"
 msgstr "Misslyckades att spara nuvarande tjänst i GConf konfiguration"
 
-#: ../src/gtk-ui/sync-ui.c:326
+#: ../src/gtk-ui/sync-ui.c:330
 msgid "Failed to save service configuration to SyncEvolution"
 msgstr "Misslyckades att spara tjänstekonfigurationen i SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:353
+#: ../src/gtk-ui/sync-ui.c:415
 msgid "Failed to get service configuration from SyncEvolution"
 msgstr "Misslyckades med att hämta tjänstkonfiguration från SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:390
+#: ../src/gtk-ui/sync-ui.c:478
 msgid "Failed to remove service configuration from SyncEvolution"
 msgstr "Misslyckades att radera tjänstekonfigurationen från SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:486
+#: ../src/gtk-ui/sync-ui.c:597
 msgid "Service must have a name"
 msgstr "Du måste ange ett namn på tjänsten."
 
 #. sync is no longer in progress for some reason
-#: ../src/gtk-ui/sync-ui.c:522
+#: ../src/gtk-ui/sync-ui.c:662
 msgid "Failed to cancel: sync was no longer in progress"
 msgstr "Misslyckades att avbryta: synkronisationen var inte igång"
 
-#: ../src/gtk-ui/sync-ui.c:526
+#: ../src/gtk-ui/sync-ui.c:666
 msgid "Failed to cancel sync"
 msgstr "Misslyckades med att avbryta synkronisering"
 
-#: ../src/gtk-ui/sync-ui.c:530
+#: ../src/gtk-ui/sync-ui.c:670
 msgid "Canceling sync"
 msgstr "Avbryter synkronisering"
 
-#: ../src/gtk-ui/sync-ui.c:544
+#: ../src/gtk-ui/sync-ui.c:684
 msgid "Trying to cancel sync"
 msgstr "Försöker att avbryta synkronisering"
 
-#: ../src/gtk-ui/sync-ui.c:551
+#: ../src/gtk-ui/sync-ui.c:691
 #, c-format
 msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
 msgstr "Vill du radera all lokal data och ersätta den med data från %s? Detta rekommenderas ej vanligtvis."
 
-#: ../src/gtk-ui/sync-ui.c:556
+#: ../src/gtk-ui/sync-ui.c:696
 #, c-format
 msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
 msgstr "Vill du radera all data på %s och ersätta den med lokal data? Detta rekommenderas vanligtvis inte."
 
-#: ../src/gtk-ui/sync-ui.c:572
+#: ../src/gtk-ui/sync-ui.c:713
 msgid "No, cancel sync"
 msgstr "Nej, avbryt synkronisering "
 
-#: ../src/gtk-ui/sync-ui.c:573
+#: ../src/gtk-ui/sync-ui.c:714
 msgid "Yes, delete and replace"
 msgstr "Ja, radera och ersätt filer"
 
-#: ../src/gtk-ui/sync-ui.c:595
+#: ../src/gtk-ui/sync-ui.c:736
 msgid "No sources are enabled, not syncing"
 msgstr "Inga datakällor är anslutna, synkroniserar inte"
 
-#: ../src/gtk-ui/sync-ui.c:612
+#: ../src/gtk-ui/sync-ui.c:753
 msgid "A sync is already in progress"
 msgstr "En synkronisering pågår redan"
 
-#: ../src/gtk-ui/sync-ui.c:614
+#: ../src/gtk-ui/sync-ui.c:755
 msgid "Failed to start sync"
 msgstr "Misslyckades med att starta synkronisering"
 
-#: ../src/gtk-ui/sync-ui.c:619
+#: ../src/gtk-ui/sync-ui.c:760
 msgid "Starting sync"
 msgstr "Startar synkronisering"
 
-#: ../src/gtk-ui/sync-ui.c:644
+#: ../src/gtk-ui/sync-ui.c:785
 msgid "Last synced just seconds ago"
 msgstr "Senast synkroniserad endast för några sekunder sedan"
 
-#: ../src/gtk-ui/sync-ui.c:647
+#: ../src/gtk-ui/sync-ui.c:788
 msgid "Last synced a minute ago"
 msgstr "Senaste synkronisering för en minut sedan"
 
-#: ../src/gtk-ui/sync-ui.c:650
+#: ../src/gtk-ui/sync-ui.c:791
 #, c-format
 msgid "Last synced %ld minutes ago"
 msgstr "Senaste synk %ld minuter sedan"
 
-#: ../src/gtk-ui/sync-ui.c:653
+#: ../src/gtk-ui/sync-ui.c:794
 msgid "Last synced an hour ago"
 msgstr "Senaste synkronisering för en timme sedan"
 
-#: ../src/gtk-ui/sync-ui.c:656
+#: ../src/gtk-ui/sync-ui.c:797
 #, c-format
 msgid "Last synced %ld hours ago"
 msgstr "Senaste synk %ld timmar sedan"
 
-#: ../src/gtk-ui/sync-ui.c:659
+#: ../src/gtk-ui/sync-ui.c:800
 msgid "Last synced a day ago"
 msgstr "Senast synkroniserad igår"
 
-#: ../src/gtk-ui/sync-ui.c:662
+#: ../src/gtk-ui/sync-ui.c:803
 #, c-format
 msgid "Last synced %ld days ago"
 msgstr "Senaste synk %ld dagar sedan"
 
-#: ../src/gtk-ui/sync-ui.c:747
+#: ../src/gtk-ui/sync-ui.c:888
 msgid "Sync again"
 msgstr "Synkronisera igen"
 
-#: ../src/gtk-ui/sync-ui.c:749
+#: ../src/gtk-ui/sync-ui.c:890
 #: ../src/gtk-ui/ui.glade.h:29
 msgid "Sync now"
 msgstr "Synkronisera nu"
 
-#: ../src/gtk-ui/sync-ui.c:758
+#: ../src/gtk-ui/sync-ui.c:899
 msgid "Syncing"
 msgstr "Synkroniserar "
 
-#: ../src/gtk-ui/sync-ui.c:764
+#: ../src/gtk-ui/sync-ui.c:905
 msgid "Cancel sync"
 msgstr "Avbryt synkronisering"
 
 #. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
-#: ../src/gtk-ui/sync-ui.c:1108
+#: ../src/gtk-ui/sync-ui.c:1249
 #, c-format
 msgid "%s (not supported by this service)"
 msgstr "%s (stöds inte av denna tjänst)"
 
-#: ../src/gtk-ui/sync-ui.c:1141
+#: ../src/gtk-ui/sync-ui.c:1282
 #, c-format
 msgid "There was one remote rejection."
 msgid_plural "There were %d remote rejections."
 msgstr[0] "Det finns en fjärr refusering"
 msgstr[1] "Det finns %d fjärr refuseringar"
 
-#: ../src/gtk-ui/sync-ui.c:1146
+#: ../src/gtk-ui/sync-ui.c:1287
 #, c-format
 msgid "There was one local rejection."
 msgid_plural "There were %d local rejections."
 msgstr[0] "Det finns en lokal refusering"
 msgstr[1] "Det finns %d lokala refuseringar"
 
-#: ../src/gtk-ui/sync-ui.c:1151
+#: ../src/gtk-ui/sync-ui.c:1292
 #, c-format
 msgid "There were %d local rejections and %d remote rejections."
 msgstr "Det finns %d lokala refuseringar och %d fjärr refuseringar"
 
-#: ../src/gtk-ui/sync-ui.c:1156
+#: ../src/gtk-ui/sync-ui.c:1297
 #, c-format
 msgid "Last time: No changes."
 msgstr "Senast: Inga ändringar."
 
-#: ../src/gtk-ui/sync-ui.c:1158
+#: ../src/gtk-ui/sync-ui.c:1299
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %d changes."
 msgstr[0] "Senast: Skickade en ändring"
 msgstr[1] "Senast: Skickade %d ändringar"
 
-#: ../src/gtk-ui/sync-ui.c:1163
+#: ../src/gtk-ui/sync-ui.c:1304
 #, c-format
 msgid "Last time: Received one change."
 msgid_plural "Last time: Received %d changes."
 msgstr[0] "Senast: Mottog en ändring"
 msgstr[1] "Senast: Mottog %d ändringar"
 
-#: ../src/gtk-ui/sync-ui.c:1168
+#: ../src/gtk-ui/sync-ui.c:1309
 #, c-format
 msgid "Last time: Received %d changes and sent %d changes."
 msgstr "Senast: Mottog %d ändringar och skickade %d ändringar"
 
-#: ../src/gtk-ui/sync-ui.c:1237
+#: ../src/gtk-ui/sync-ui.c:1401
 msgid "Failed to get server configuration from SyncEvolution"
 msgstr "Misslyckades med att hämta serverkonfiguration från SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:1283
+#: ../src/gtk-ui/sync-ui.c:1467
 msgid "New service"
 msgstr "Ny tjänst"
 
-#: ../src/gtk-ui/sync-ui.c:1324
+#: ../src/gtk-ui/sync-ui.c:1508
 msgid "Server URL"
 msgstr "URL server"
 
 #. TRANSLATORS: placeholder is a source name in settings window
-#: ../src/gtk-ui/sync-ui.c:1344
+#: ../src/gtk-ui/sync-ui.c:1528
 #, c-format
 msgid "%s URI"
 msgstr "%s URI"
 
-#: ../src/gtk-ui/sync-ui.c:1474
+#: ../src/gtk-ui/sync-ui.c:1659
 #: ../src/gtk-ui/ui.glade.h:17
 msgid "Launch website"
 msgstr "Öppna webbplatsen "
 
-#: ../src/gtk-ui/sync-ui.c:1478
+#: ../src/gtk-ui/sync-ui.c:1663
 msgid "Setup and use"
-msgstr "Inställningar och användning"
+msgstr "Inställningar"
 
-#: ../src/gtk-ui/sync-ui.c:1524
+#: ../src/gtk-ui/sync-ui.c:1709
 msgid "Failed to get list of manually setup services from SyncEvolution"
 msgstr "Misslyckades att få en lista av manuella inställningstjänster från SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:1565
+#: ../src/gtk-ui/sync-ui.c:1750
 msgid "Failed to get list of supported services from SyncEvolution"
 msgstr "Misslyckades att få en lista med tjänster som stöds från SyncEvolution"
 
 #. TODO: this is a hack... SyncEnd should be a signal of it's own,
 #. not just hacked on top of the syncevolution error codes
-#: ../src/gtk-ui/sync-ui.c:1719
+#: ../src/gtk-ui/sync-ui.c:1911
 msgid "Service configuration not found"
 msgstr "Konfigurationsfilen hittades inte"
 
-#: ../src/gtk-ui/sync-ui.c:1725
+#: ../src/gtk-ui/sync-ui.c:1917
 msgid "Not authorized"
 msgstr "Inte tillåten"
 
-#: ../src/gtk-ui/sync-ui.c:1727
+#: ../src/gtk-ui/sync-ui.c:1919
 msgid "Forbidden"
 msgstr "Förbjuden"
 
-#: ../src/gtk-ui/sync-ui.c:1729
+#: ../src/gtk-ui/sync-ui.c:1921
 msgid "Not found"
 msgstr "Hittades inte"
 
-#: ../src/gtk-ui/sync-ui.c:1731
+#: ../src/gtk-ui/sync-ui.c:1923
 msgid "Fatal database error"
 msgstr "Ödesdigert fel: databasfel"
 
-#: ../src/gtk-ui/sync-ui.c:1733
+#: ../src/gtk-ui/sync-ui.c:1925
 msgid "Database error"
 msgstr "Databasfel"
 
-#: ../src/gtk-ui/sync-ui.c:1735
+#: ../src/gtk-ui/sync-ui.c:1927
 msgid "No space left"
 msgstr "inte tillräckligt med diskutrymme"
 
 #. TODO identify problem item somehow ?
-#: ../src/gtk-ui/sync-ui.c:1738
+#: ../src/gtk-ui/sync-ui.c:1930
 msgid "Failed to process SyncML"
 msgstr "Misslyckades att hantera SyncML"
 
-#: ../src/gtk-ui/sync-ui.c:1740
+#: ../src/gtk-ui/sync-ui.c:1932
 msgid "Server authorization failed"
 msgstr "Misslyckades att ansluta till server"
 
-#: ../src/gtk-ui/sync-ui.c:1742
+#: ../src/gtk-ui/sync-ui.c:1934
 msgid "Failed to parse configuration file"
 msgstr "Misslyckades med att analysera konfigurationsfilen "
 
-#: ../src/gtk-ui/sync-ui.c:1744
+#: ../src/gtk-ui/sync-ui.c:1936
 msgid "Failed to read configuration file"
 msgstr "Misslyckades med att öppna konfigurationsfilen"
 
-#: ../src/gtk-ui/sync-ui.c:1746
+#: ../src/gtk-ui/sync-ui.c:1938
 msgid "No configuration found"
 msgstr "Konfiurationen hittades inte"
 
-#: ../src/gtk-ui/sync-ui.c:1748
+#: ../src/gtk-ui/sync-ui.c:1940
 msgid "No configuration file found"
 msgstr "Konfigurationsfilen hittades inte"
 
-#: ../src/gtk-ui/sync-ui.c:1750
+#: ../src/gtk-ui/sync-ui.c:1942
 msgid "Server sent bad content"
 msgstr "Server skickade felaktigt innehåll"
 
-#: ../src/gtk-ui/sync-ui.c:1752
+#: ../src/gtk-ui/sync-ui.c:1944
 msgid "Transport failure (no connection?)"
 msgstr "Överföringsfel (ingen anslutning)?"
 
-#: ../src/gtk-ui/sync-ui.c:1754
+#: ../src/gtk-ui/sync-ui.c:1946
 msgid "Connection timed out"
 msgstr "Anslutningstiden överskreds"
 
-#: ../src/gtk-ui/sync-ui.c:1756
+#: ../src/gtk-ui/sync-ui.c:1948
 msgid "Connection certificate has expired"
 msgstr "Utfärdat certifikat har gått ut"
 
-#: ../src/gtk-ui/sync-ui.c:1758
+#: ../src/gtk-ui/sync-ui.c:1950
 msgid "Connection certificate is invalid"
 msgstr "Anslutningscertifikatet är ogiltig."
 
-#: ../src/gtk-ui/sync-ui.c:1761
+#: ../src/gtk-ui/sync-ui.c:1953
 msgid "Connection failed"
 msgstr "Anslutningen misslyckades"
 
-#: ../src/gtk-ui/sync-ui.c:1763
+#: ../src/gtk-ui/sync-ui.c:1955
 msgid "URL is bad"
 msgstr "Felaktig URL"
 
-#: ../src/gtk-ui/sync-ui.c:1765
+#: ../src/gtk-ui/sync-ui.c:1957
 msgid "Server not found"
 msgstr "Server kunde inte hittas"
 
-#: ../src/gtk-ui/sync-ui.c:1767
+#: ../src/gtk-ui/sync-ui.c:1959
 #, c-format
 msgid "Error %d"
 msgstr "Fel %d"
 
-#: ../src/gtk-ui/sync-ui.c:1777
+#: ../src/gtk-ui/sync-ui.c:1969
 msgid "Sync D-Bus service exited unexpectedly"
 msgstr "Synktjänsten D-Bus avslutades"
 
-#: ../src/gtk-ui/sync-ui.c:1780
-#: ../src/gtk-ui/sync-ui.c:1831
+#: ../src/gtk-ui/sync-ui.c:1972
+#: ../src/gtk-ui/sync-ui.c:2023
 msgid "Sync Failed"
 msgstr "Synkronisering misslyckades"
 
-#: ../src/gtk-ui/sync-ui.c:1823
+#: ../src/gtk-ui/sync-ui.c:2015
 msgid "Sync complete"
 msgstr "Synkronisering färdig"
 
-#: ../src/gtk-ui/sync-ui.c:1828
+#: ../src/gtk-ui/sync-ui.c:2020
 msgid "Sync canceled"
 msgstr "Synkronisering avbruten"
 
 #. NOTE extra1 can be error here
-#: ../src/gtk-ui/sync-ui.c:1846
+#: ../src/gtk-ui/sync-ui.c:2038
 msgid "Ending sync"
 msgstr "Avslutar synkronisering"
 
 #. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
-#: ../src/gtk-ui/sync-ui.c:1870
+#: ../src/gtk-ui/sync-ui.c:2062
 #, c-format
 msgid "Preparing '%s'"
 msgstr "Förbereder '%s'"
 
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:1882
+#: ../src/gtk-ui/sync-ui.c:2074
 #, c-format
 msgid "Sending '%s'"
 msgstr "Skickas till '%s'"
 
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:1894
+#: ../src/gtk-ui/sync-ui.c:2086
 #, c-format
 msgid "Receiving '%s'"
 msgstr "Tas emot från '%s'"
@@ -390,7 +390,7 @@ msgstr "<big>Tjänster som stöds</big>"
 
 #: ../src/gtk-ui/ui.glade.h:7
 msgid "Add new service"
-msgstr "Lägg till en ny tjänst"
+msgstr "Lägg till ny tjänst"
 
 #: ../src/gtk-ui/ui.glade.h:8
 msgid "Back to sync"
@@ -469,6 +469,7 @@ msgid "Stop using this service"
 msgstr "Sluta använda denna tjänst"
 
 #: ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/sync.desktop.in.h:2
 msgid "Sync"
 msgstr "Synkronisering "
 
@@ -495,4 +496,8 @@ msgid ""
 msgstr ""
 "Du har inte installerat synktjänst ännu. Synktjänst låter dig \n"
 "synkronisera din data mellan din netbook och en webbtjänst."
+
+#: ../src/gtk-ui/sync.desktop.in.h:1
+msgid "Bring your data with you"
+msgstr "Ta med dig din information"
 
