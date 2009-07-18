@@ -164,6 +164,7 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
     result.addDefaultTemplate("Synthesis", "http://www.synthesis.ch");
     result.addDefaultTemplate("Memotoo", "http://www.memotoo.com");
     result.addDefaultTemplate("Google", "http://m.google.com/sync");
+    result.addDefaultTemplate("ZYB", "http://www.zyb.com");
 
     result.sort();
     return result;
@@ -318,6 +319,19 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source->setSync("none");
         source = config->getSyncSourceConfig("memo");
         source->setSync("none");
+    } else if (boost::iequals(server, "zyb")) {
+        config->setSyncURL("http://sync.zyb.com");
+        config->setWebURL("http://www.zyb.com");
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("contacts");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("calendar");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("task");
+        source->setSync("disabled");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("note");
+        source->setSync("disabled");
     } else {
         config.reset();
     }

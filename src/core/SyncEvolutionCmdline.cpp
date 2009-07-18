@@ -1211,7 +1211,8 @@ protected:
                                   "   Google = http://m.google.com/sync\n"
                                   "   Memotoo = http://www.memotoo.com\n"
                                   "   ScheduleWorld = http://sync.scheduleworld.com\n"
-                                  "   Synthesis = http://www.synthesis.ch\n",
+                                  "   Synthesis = http://www.synthesis.ch\n"
+                                  "   ZYB = http://www.zyb.com\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
     }
