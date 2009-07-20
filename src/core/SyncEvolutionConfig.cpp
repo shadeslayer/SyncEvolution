@@ -309,6 +309,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         config->setWebURL("http://m.google.com/sync");
         config->setClientAuthType("syncml:auth-basic");
         config->setWBXML(true);
+        config->setConsumerReady(true);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("contacts");
         source->setSourceType("addressbook:text/x-vcard");
