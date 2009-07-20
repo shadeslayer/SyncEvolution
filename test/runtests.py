@@ -725,6 +725,13 @@ funambol = FunambolTest("funambol", compile,
                         options.testprefix)
 context.add(funambol)
 
+zybtest = SyncEvolutionTest("zyb", compile,
+                            "", options.shell,
+                            [ "Client::Sync" ],
+                            "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_SERVER=zyb CLIENT_TEST_DELAY=5",
+                            testPrefix=options.testprefix)
+context.add(zybtest)
+
 if options.list:
     for action in context.todo:
         print action.name
