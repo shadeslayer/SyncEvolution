@@ -193,13 +193,11 @@ if test ! "$TRANSPORT" &&
    AC_ERROR([no transport library found, configure with --disable-libcurl --disable-libsoup to continue anyway (only useful if users of libsyncevolution provide transport implementation)])
 fi
 
-echo "$libsoup_disabled: $CA_CERTIFICATES"
 # for libsoup we must specify the SSL certificate file outself
 if test "$libsoup_disabled" != "yes" && test -z "$CA_CERTIFICATES"; then
    # Debian and Red Hat paths
    CA_CERTIFICATES="/etc/ssl/certs/ca-certificates.crt:/etc/pki/tls/certs/ca-bundle.crt:/usr/share/ssl/certs/ca-bundle.crt"
 fi
-echo "$libsoup_disabled: $CA_CERTIFICATES"
 AC_DEFINE_UNQUOTED(SYNCEVOLUTION_SSL_SERVER_CERTIFICATES, "$CA_CERTIFICATES", [default value for SSLServerCertificates option])
 
 AC_SUBST(TRANSPORT_LIBS)
