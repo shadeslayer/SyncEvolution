@@ -706,21 +706,25 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
 	const char *ready;
 
 	if (!templ || !options) {
+		if (options)
+			*options = NULL;
+
 		*error = g_error_new (SYNCEVO_DBUS_ERROR,
 		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
 		                      "Template and options arguments must be given");
 		return FALSE;
 	}
 
-	*options = g_ptr_array_new ();
-
 	boost::shared_ptr<EvolutionSyncConfig> config (EvolutionSyncConfig::createServerTemplate (string (templ)));
 	if (!config.get()) {
+		*options = NULL;
 		*error = g_error_new (SYNCEVO_DBUS_ERROR,
 		                      SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER, 
 		                      "No template '%s' found", templ);
 		return FALSE;
 	}
+
+	*options = g_ptr_array_new ();
 	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup(config->getSyncURL()));
 	g_ptr_array_add (*options, option);
 	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup(config->getUsername()));
@@ -778,25 +782,28 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 	SyncevoOption *option;
 
 	if (!server || !options) {
+		if (options)
+			*options = NULL;
 		*error = g_error_new (SYNCEVO_DBUS_ERROR,
 		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
 		                      "Server and options arguments must be given");
 		return FALSE;
 	}
 
-	*options = g_ptr_array_new ();
-
 	boost::shared_ptr<EvolutionSyncConfig> from(new EvolutionSyncConfig (string (server)));
 	/* if config does not exist, create from template */
 	if (!from->exists()) {
 		from = EvolutionSyncConfig::createServerTemplate( string (server));
 		if (!from.get()) {
+			*options = NULL;
 			*error = g_error_new (SYNCEVO_DBUS_ERROR,
 			                      SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER,
 			                      "No server or template '%s' found", server);
 			return FALSE;
 		}
 	}
+
+	*options = g_ptr_array_new ();
 	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(string (server)));
 	config->copy(*from, NULL);
 

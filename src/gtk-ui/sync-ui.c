@@ -458,11 +458,11 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
             /* dialog should free server config */
             server_data_free (data, FALSE);
         }
-    }
 
-    if (options) {
-        g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
-        g_ptr_array_free (options, TRUE);
+        if (options) {
+            g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
+            g_ptr_array_free (options, TRUE);
+        }
     }
 }
 
