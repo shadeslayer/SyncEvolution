@@ -305,7 +305,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source = config->getSyncSourceConfig("memo");
         source->setURI("note");
     } else if (boost::iequals(server, "google")) {
-        config->setSyncURL("https://m.google.com/syncml");
+        config->setSyncURL("http://m.google.com/syncml");
         config->setWebURL("http://m.google.com/sync");
         config->setClientAuthType("syncml:auth-basic");
         config->setWBXML(true);
