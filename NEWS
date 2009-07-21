@@ -6,8 +6,7 @@ Enabled calendar and task synchronization for myFunambol.com.
 Not all iCalendar 2.0 features are supported by the server,
 most notably support for meetings (drops attendees), meeting
 invitations (drops UID), detached recurrences
-(drops RECURRENCE-ID). See test/README.funambol in the
-source distribution for details.
+(drops RECURRENCE-ID). See README.funambol for details.
 
 Interoperability with the Funambol server was improved by adding
 support for some vCard extensions (X-MANAGER/ASSISTANT/SPOUSE/ANNIVERSARY,
@@ -19,7 +18,7 @@ follows the vCard 2.1 specification and thus does not support some
 of the vCard 3.0 additions, nor some of the common extensions. As
 a result, several properties are not synchronized (nickname, birthday,
 spouse/manager, URLs, ...). Only one top-level organization seems to
-be supported. For details, again see test/README.google.
+be supported. For details, see README.google.
 
 Regarding Google's SyncML support, refresh-from-client and
 one-way-from-client sync modes are not supported. Deleting contacts

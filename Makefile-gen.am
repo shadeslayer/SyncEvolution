@@ -18,11 +18,13 @@ EXTRA_DIST = \
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs 
 CLEANFILES =
 
+TEST_README_FILES = $(wildcard $(srcdir)/test/README.*)
+
 # binary distribution as .tar.gz
 if COND_DBUS
 # when building with D-Bus, we have no choice: the service has to go into /usr
 # in order to be found
-distbin : README NEWS COPYING INSTALL-tar-gz all
+distbin : README NEWS COPYING $(TEST_README_FILES) INSTALL-tar-gz all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 )
 	@ [ "$(prefix)" == "/usr" ] || (echo "please reconfigure with --prefix=/usr"; exit 1 )
 	rm -rf $(distdir)
@@ -30,7 +32,7 @@ distbin : README NEWS COPYING INSTALL-tar-gz all
 	rm -rf $(distdir)/usr/etc
 	mkdir -p $(distdir)/usr/share/doc/syncevolution
 	cp $(srcdir)/INSTALL-tar-gz $(distdir)/INSTALL
-	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(distdir)/usr/share/doc/syncevolution
+	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)/usr/share/doc/syncevolution
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
 else
@@ -40,7 +42,7 @@ distbin : README NEWS COPYING all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 ) 
 	rm -rf $(distdir)
 	$(MAKE) prefix=`pwd`/$(distdir) install
-	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(distdir)
+	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
 endif
@@ -127,7 +129,7 @@ dist/debian/control:
 	mkdir -p ${@D}
 	touch $@
 
-doc-pak : README NEWS COPYING
+doc-pak : README NEWS COPYING $(TEST_README_FILES)
 	rm -rf $@
 	mkdir $@
 	cp $+ $@
