@@ -138,9 +138,10 @@ msgstr "前回の同期化は前日に行われました"
 msgid "Last synced %ld days ago"
 msgstr "前回の同期化は%ld日前に行われました"
 
+# space limitation
 #: ../src/gtk-ui/sync-ui.c:888
 msgid "Sync again"
-msgstr "もう 1 度同期化する"
+msgstr "もう1度同期化"
 
 #: ../src/gtk-ui/sync-ui.c:890
 #: ../src/gtk-ui/ui.glade.h:29
@@ -343,14 +344,16 @@ msgstr "エラー：%d"
 msgid "Sync D-Bus service exited unexpectedly"
 msgstr "同期 D-Bus サービスが突然終了しました"
 
+# space limitation
 #: ../src/gtk-ui/sync-ui.c:1972
 #: ../src/gtk-ui/sync-ui.c:2023
 msgid "Sync Failed"
-msgstr "同期化に失敗しました"
+msgstr "同期化の失敗"
 
+# space limitation
 #: ../src/gtk-ui/sync-ui.c:2015
 msgid "Sync complete"
-msgstr "同期化が完了しました"
+msgstr "同期化の完了"
 
 #: ../src/gtk-ui/sync-ui.c:2020
 msgid "Sync canceled"
@@ -406,9 +409,10 @@ msgstr "<big>手動設定</big>"
 msgid "<big>Supported services</big>"
 msgstr "<big>サポートされいてるサービス</big>"
 
+# space limitation
 #: ../src/gtk-ui/ui.glade.h:7
 msgid "Add new service"
-msgstr "新規サービスの追加"
+msgstr "新規サービス"
 
 #: ../src/gtk-ui/ui.glade.h:8
 msgid "Back to sync"
