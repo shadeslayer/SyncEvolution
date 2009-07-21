@@ -18,6 +18,11 @@
  * 02110-1301  USA
  */
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE 1
+#endif
+#include <dlfcn.h>
+
 #include "EvolutionSyncClient.h"
 #include "EvolutionSyncSource.h"
 #include "SyncEvolutionUtil.h"
@@ -1372,6 +1377,13 @@ SharedEngine EvolutionSyncClient::createEngine()
     return engine;
 }
 
+namespace {
+    void GnutlsLogFunction(int level, const char *str)
+    {
+        SE_LOG_DEBUG(NULL, "GNUTLS", "level %d: %s", level, str);
+    }
+}
+
 SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
@@ -1387,6 +1399,24 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
                            getPrintChanges() ? SourceList::LOGGING_FULL :
                            SourceList::LOGGING_SUMMARY);
     m_sourceListPtr = &sourceList;
+
+    if (getenv("SYNCEVOLUTION_GNUTLS_DEBUG")) {
+        // Enable libgnutls debugging without creating a hard dependency on it,
+        // because we don't call it directly and might not even be linked against
+        // it. Therefore check for the relevant symbols via dlsym().
+        void (*set_log_level)(int);
+        void (*set_log_function)(void (*func)(int level, const char *str));
+
+        set_log_level = (typeof(set_log_level))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_level");
+        set_log_function = (typeof(set_log_function))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_function");
+
+        if (set_log_level && set_log_function) {
+            set_log_level(atoi(getenv("SYNCEVOLUTION_GNUTLS_DEBUG")));
+            set_log_function(GnutlsLogFunction);
+        } else {
+            SE_LOG_ERROR(NULL, NULL, "SYNCEVOLUTION_GNUTLS_DEBUG debugging not possible, log functions not found");
+        }
+    }
 
     try {
         SyncReport buffer;
