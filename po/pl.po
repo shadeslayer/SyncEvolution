@@ -1,8 +1,13 @@
+# pl locale
+# Copyright (C) 2009 Intel Corporation
+# This file is distributed under the same license as the syncevolution package.
+# Andrzej Zaborowski <andrew.zaborowski@intel.com>, 2009.
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: Moblin\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2009-06-26 08:48+0000\n"
+"POT-Creation-Date: 2009-07-18 09:19+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: Andrzej Zaborowski <andrew.zaborowski@intel.com>\n"
 "Language-Team: Moblin\n"
@@ -14,168 +19,168 @@ msgstr ""
 "X-Poedit-SourceCharset: utf-8\n"
 "X-Poedit-Bookmarks: -1,37,-1,-1,-1,-1,-1,-1,-1,-1\n"
 
-#: ../src/gtk-ui/sync-ui.c:254
+#: ../src/gtk-ui/sync-ui.c:258
 msgid "Addressbook"
 msgstr "Książka adresowa"
 
-#: ../src/gtk-ui/sync-ui.c:256
+#: ../src/gtk-ui/sync-ui.c:260
 msgid "Calendar"
 msgstr "Kalendarz"
 
 # <to do>
-#: ../src/gtk-ui/sync-ui.c:258
+#: ../src/gtk-ui/sync-ui.c:262
 msgid "Todo"
 msgstr "Do zrobiena"
 
 # Note
-#: ../src/gtk-ui/sync-ui.c:260
+#: ../src/gtk-ui/sync-ui.c:264
 msgid "Memo"
 msgstr "Notatka"
 
 # Error while saving the current service into the configuration system GConf
-#: ../src/gtk-ui/sync-ui.c:315
+#: ../src/gtk-ui/sync-ui.c:319
 msgid "Failed to save current service in GConf configuration system"
 msgstr "Błąd przy zapisie aktualnej usługi w systemie konfiguracji GConf"
 
 # Error while saving the configuration of the service in SyncEvolution
-#: ../src/gtk-ui/sync-ui.c:326
+#: ../src/gtk-ui/sync-ui.c:330
 msgid "Failed to save service configuration to SyncEvolution"
 msgstr "Błąd przy zapisie konfiguracji usługi w SyncEvolution"
 
 # Error while saving the current service into the configuration system GConf
-#: ../src/gtk-ui/sync-ui.c:353
+#: ../src/gtk-ui/sync-ui.c:415
 msgid "Failed to get service configuration from SyncEvolution"
 msgstr "Błąd przy pobieraniu konfiguracji usługi z SynEvolution"
 
 # Error while deleting the configuration of the service from SyncEvolution
-#: ../src/gtk-ui/sync-ui.c:390
+#: ../src/gtk-ui/sync-ui.c:478
 msgid "Failed to remove service configuration from SyncEvolution"
 msgstr "Błąd przy usuwaniu konfiguracji usługi z SynEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:486
+#: ../src/gtk-ui/sync-ui.c:597
 msgid "Service must have a name"
 msgstr "Usługa musi mieć nazwę"
 
 #. sync is no longer in progress for some reason
-#: ../src/gtk-ui/sync-ui.c:522
+#: ../src/gtk-ui/sync-ui.c:673
 msgid "Failed to cancel: sync was no longer in progress"
 msgstr "Błąd przy anulowaniu: synchronizacja już się zakończyła"
 
 # Error during the cancellation of the synchronization
-#: ../src/gtk-ui/sync-ui.c:526
+#: ../src/gtk-ui/sync-ui.c:677
 msgid "Failed to cancel sync"
 msgstr "Błąd przy anulowaniu synchronizacji"
 
 # The synchronization is being cancelled
-#: ../src/gtk-ui/sync-ui.c:530
+#: ../src/gtk-ui/sync-ui.c:681
 msgid "Canceling sync"
 msgstr "Anulowanie synchronizacji"
 
 # We are trying  to cancel the synchronization
-#: ../src/gtk-ui/sync-ui.c:544
+#: ../src/gtk-ui/sync-ui.c:695
 msgid "Trying to cancel sync"
 msgstr "Trwa próba anulowania synchronizacji"
 
-#: ../src/gtk-ui/sync-ui.c:551
+#: ../src/gtk-ui/sync-ui.c:702
 #, c-format
 msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
 msgstr "Czy chcesz usunąć wszystkie lokalne dane i zastąpić je danymi z %s? Nie jest to zwykle zalecane."
 
-#: ../src/gtk-ui/sync-ui.c:556
+#: ../src/gtk-ui/sync-ui.c:707
 #, c-format
 msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
 msgstr "Czy chcesz usunąć wszystkie dane w %s i zastąpić je danymi lokalnymi? Nie jest to zwykle zalecane."
 
-#: ../src/gtk-ui/sync-ui.c:572
+#: ../src/gtk-ui/sync-ui.c:724
 msgid "No, cancel sync"
 msgstr "Nie, anuluj synchronizację"
 
-#: ../src/gtk-ui/sync-ui.c:573
+#: ../src/gtk-ui/sync-ui.c:725
 msgid "Yes, delete and replace"
 msgstr "Tak, usuń i zastąp"
 
 # Synchronization won't take place because it has not been set with what it will be compared to
-#: ../src/gtk-ui/sync-ui.c:595
+#: ../src/gtk-ui/sync-ui.c:747
 msgid "No sources are enabled, not syncing"
 msgstr "Synchronizacja nie może zostać wykonana ponieważ nie podano źródła do porównania"
 
 # A synchronization is already being processed
-#: ../src/gtk-ui/sync-ui.c:612
+#: ../src/gtk-ui/sync-ui.c:764
 msgid "A sync is already in progress"
 msgstr "Synchronizacja jest już w trakcie"
 
-#: ../src/gtk-ui/sync-ui.c:614
+#: ../src/gtk-ui/sync-ui.c:766
 msgid "Failed to start sync"
 msgstr "Błąd przy inicjalizacji synchronizacji"
 
-#: ../src/gtk-ui/sync-ui.c:619
+#: ../src/gtk-ui/sync-ui.c:771
 msgid "Starting sync"
 msgstr "Rozpoczynanie synchronizacji"
 
 # Last synchronization happened a few seconds ago
-#: ../src/gtk-ui/sync-ui.c:644
+#: ../src/gtk-ui/sync-ui.c:796
 msgid "Last synced just seconds ago"
 msgstr "Ostatnio synchronizowano przed paroma sekundami"
 
 # Last synchronization happened one minute ago
-#: ../src/gtk-ui/sync-ui.c:647
+#: ../src/gtk-ui/sync-ui.c:799
 msgid "Last synced a minute ago"
 msgstr "Ostatnio synchronizowano minutę temu"
 
 # Last synchronization happened %ld minutes ago
-#: ../src/gtk-ui/sync-ui.c:650
+#: ../src/gtk-ui/sync-ui.c:802
 #, c-format
 msgid "Last synced %ld minutes ago"
 msgstr "Ostatnio synchronizowano przed %ld minutami"
 
 # Last synchronization happened one hour ago
-#: ../src/gtk-ui/sync-ui.c:653
+#: ../src/gtk-ui/sync-ui.c:805
 msgid "Last synced an hour ago"
 msgstr "Ostatnio synchronizowano godzinę temu"
 
 # Last synchronization happened %ld hours ago
-#: ../src/gtk-ui/sync-ui.c:656
+#: ../src/gtk-ui/sync-ui.c:808
 #, c-format
 msgid "Last synced %ld hours ago"
 msgstr "Ostatnio synchronizowano przed %ld godzinami"
 
 # Last synchronization happened one day ago
-#: ../src/gtk-ui/sync-ui.c:659
+#: ../src/gtk-ui/sync-ui.c:811
 msgid "Last synced a day ago"
 msgstr "Ostatnio synchronizowano wczoraj"
 
 # Last synchronization happened %ld days ago
-#: ../src/gtk-ui/sync-ui.c:662
+#: ../src/gtk-ui/sync-ui.c:814
 #, c-format
 msgid "Last synced %ld days ago"
 msgstr "Ostatnio synchronizowano %ld dni temu"
 
-#: ../src/gtk-ui/sync-ui.c:747
+#: ../src/gtk-ui/sync-ui.c:899
 msgid "Sync again"
 msgstr "Synchronizuj jeszcze raz"
 
-#: ../src/gtk-ui/sync-ui.c:749
+#: ../src/gtk-ui/sync-ui.c:901
 #: ../src/gtk-ui/ui.glade.h:29
 msgid "Sync now"
 msgstr "Synchronizuj teraz"
 
 # Synchronization is taking place
-#: ../src/gtk-ui/sync-ui.c:758
+#: ../src/gtk-ui/sync-ui.c:910
 msgid "Syncing"
 msgstr "Synchronizowanie"
 
-#: ../src/gtk-ui/sync-ui.c:764
+#: ../src/gtk-ui/sync-ui.c:916
 msgid "Cancel sync"
 msgstr "Anuluj synchronizację"
 
 # %s (not compatible with this service)
 #. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
-#: ../src/gtk-ui/sync-ui.c:1108
+#: ../src/gtk-ui/sync-ui.c:1260
 #, c-format
 msgid "%s (not supported by this service)"
 msgstr "%s (nie kompatybilne z tą usługą)"
 
-#: ../src/gtk-ui/sync-ui.c:1141
+#: ../src/gtk-ui/sync-ui.c:1293
 #, c-format
 msgid "There was one remote rejection."
 msgid_plural "There were %d remote rejections."
@@ -183,7 +188,7 @@ msgstr[0] "Druga strona odrzuciła jeden z elementów"
 msgstr[1] "Druga strona odrzuciła %d elementy"
 msgstr[2] "Druga strona odrzuciła %d elementów"
 
-#: ../src/gtk-ui/sync-ui.c:1146
+#: ../src/gtk-ui/sync-ui.c:1298
 #, c-format
 msgid "There was one local rejection."
 msgid_plural "There were %d local rejections."
@@ -191,17 +196,17 @@ msgstr[0] "Odrzucono jeden z elementów"
 msgstr[1] "Odrzucono %d elementy"
 msgstr[2] "Odrzucono %d elementów"
 
-#: ../src/gtk-ui/sync-ui.c:1151
+#: ../src/gtk-ui/sync-ui.c:1303
 #, c-format
 msgid "There were %d local rejections and %d remote rejections."
 msgstr "Odrzucono %d elementów podczas gdy druga strona odrzuciła %d elementów."
 
-#: ../src/gtk-ui/sync-ui.c:1156
+#: ../src/gtk-ui/sync-ui.c:1308
 #, c-format
 msgid "Last time: No changes."
 msgstr "Ostatnio: brak zmian."
 
-#: ../src/gtk-ui/sync-ui.c:1158
+#: ../src/gtk-ui/sync-ui.c:1310
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %d changes."
@@ -209,7 +214,7 @@ msgstr[0] "Ostatnio: wysłano jedną zmianę."
 msgstr[1] "Ostatnio: wysłano %d zmiany."
 msgstr[2] "Ostatnio: wysłano %d zmian."
 
-#: ../src/gtk-ui/sync-ui.c:1163
+#: ../src/gtk-ui/sync-ui.c:1315
 #, c-format
 msgid "Last time: Received one change."
 msgid_plural "Last time: Received %d changes."
@@ -217,195 +222,195 @@ msgstr[0] "Ostatnio: przyjęto jedną zmianę."
 msgstr[1] "Ostatnio: przyjęto %d zmiany."
 msgstr[2] "Ostatnio: przyjęto %d zmian."
 
-#: ../src/gtk-ui/sync-ui.c:1168
+#: ../src/gtk-ui/sync-ui.c:1320
 #, c-format
 msgid "Last time: Received %d changes and sent %d changes."
 msgstr "Ostatnio: przyjęto %d zmian i wysłano %d zmian."
 
-#: ../src/gtk-ui/sync-ui.c:1237
+#: ../src/gtk-ui/sync-ui.c:1412
 msgid "Failed to get server configuration from SyncEvolution"
 msgstr "Błąd przy pobieraniu konfiguracji serwera z SyncEvolution"
 
 # New service
-#: ../src/gtk-ui/sync-ui.c:1283
+#: ../src/gtk-ui/sync-ui.c:1478
 msgid "New service"
 msgstr "Nowa usługa"
 
 # URL of the server
-#: ../src/gtk-ui/sync-ui.c:1324
+#: ../src/gtk-ui/sync-ui.c:1519
 msgid "Server URL"
 msgstr "URL serwera"
 
 # URI of %s
 #. TRANSLATORS: placeholder is a source name in settings window
-#: ../src/gtk-ui/sync-ui.c:1344
+#: ../src/gtk-ui/sync-ui.c:1539
 #, c-format
 msgid "%s URI"
 msgstr "URI %s"
 
 # Open the website
-#: ../src/gtk-ui/sync-ui.c:1474
+#: ../src/gtk-ui/sync-ui.c:1674
 #: ../src/gtk-ui/ui.glade.h:17
 msgid "Launch website"
 msgstr "Otworzyć stronę www"
 
 # Configuring and using
-#: ../src/gtk-ui/sync-ui.c:1478
+#: ../src/gtk-ui/sync-ui.c:1678
 msgid "Setup and use"
 msgstr "Skonfiguruj i użyj"
 
 # Error while obtaining the list of services configured manually from SyncEvolution
-#: ../src/gtk-ui/sync-ui.c:1524
+#: ../src/gtk-ui/sync-ui.c:1724
 msgid "Failed to get list of manually setup services from SyncEvolution"
 msgstr "Błąd przy pobieraniu listy ręcznie ustawionych usług z SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:1565
+#: ../src/gtk-ui/sync-ui.c:1765
 msgid "Failed to get list of supported services from SyncEvolution"
 msgstr "Błąd przy pobieraniu listy kompatybilnych usług z SyncEvolution"
 
 # The configuration service has not been found
 #. TODO: this is a hack... SyncEnd should be a signal of it's own,
 #. not just hacked on top of the syncevolution error codes
-#: ../src/gtk-ui/sync-ui.c:1719
+#: ../src/gtk-ui/sync-ui.c:1926
 msgid "Service configuration not found"
 msgstr "Nie znaleziono konfiguracji usługi"
 
-#: ../src/gtk-ui/sync-ui.c:1725
+#: ../src/gtk-ui/sync-ui.c:1932
 msgid "Not authorized"
 msgstr "Brak autoryzacji"
 
-#: ../src/gtk-ui/sync-ui.c:1727
+#: ../src/gtk-ui/sync-ui.c:1934
 msgid "Forbidden"
 msgstr "Nie dozwolone"
 
 # has not been found
-#: ../src/gtk-ui/sync-ui.c:1729
+#: ../src/gtk-ui/sync-ui.c:1936
 msgid "Not found"
 msgstr "Nie znaleziono"
 
 # Fatal error in the database
-#: ../src/gtk-ui/sync-ui.c:1731
+#: ../src/gtk-ui/sync-ui.c:1938
 msgid "Fatal database error"
 msgstr "Krytyczny błąd bazy danych"
 
-#: ../src/gtk-ui/sync-ui.c:1733
+#: ../src/gtk-ui/sync-ui.c:1940
 msgid "Database error"
 msgstr "Błąd bazy danych"
 
 # There is no space left
-#: ../src/gtk-ui/sync-ui.c:1735
+#: ../src/gtk-ui/sync-ui.c:1942
 msgid "No space left"
 msgstr "Nie ma już miejsca"
 
 #. TODO identify problem item somehow ?
-#: ../src/gtk-ui/sync-ui.c:1738
+#: ../src/gtk-ui/sync-ui.c:1945
 msgid "Failed to process SyncML"
 msgstr "Błąd przetwarzania SyncML"
 
 # the server didn't accept the authorization
-#: ../src/gtk-ui/sync-ui.c:1740
+#: ../src/gtk-ui/sync-ui.c:1947
 msgid "Server authorization failed"
 msgstr "Serwer nie zaakceptował autoryzacji"
 
 # Error while analysing the syntax of the configuration file
-#: ../src/gtk-ui/sync-ui.c:1742
+#: ../src/gtk-ui/sync-ui.c:1949
 msgid "Failed to parse configuration file"
 msgstr "Błąd składniowy w pliku konfiguracyjnym"
 
 # Error while reading the configuration file
-#: ../src/gtk-ui/sync-ui.c:1744
+#: ../src/gtk-ui/sync-ui.c:1951
 msgid "Failed to read configuration file"
 msgstr "Błąd odczytu pliku konfiguracyjnego"
 
 # The configuration has not been found
-#: ../src/gtk-ui/sync-ui.c:1746
+#: ../src/gtk-ui/sync-ui.c:1953
 msgid "No configuration found"
 msgstr "Nie znaleziono konfiguracji"
 
 # The configuration file has not been found
-#: ../src/gtk-ui/sync-ui.c:1748
+#: ../src/gtk-ui/sync-ui.c:1955
 msgid "No configuration file found"
 msgstr "Nie znaleziono pliku konfiguracyjnego"
 
 # The server sent an an invalid content
-#: ../src/gtk-ui/sync-ui.c:1750
+#: ../src/gtk-ui/sync-ui.c:1957
 msgid "Server sent bad content"
 msgstr "Serwer przysłał nie prawidłowe dane"
 
 # Error during transport (is there no connection?)
-#: ../src/gtk-ui/sync-ui.c:1752
+#: ../src/gtk-ui/sync-ui.c:1959
 msgid "Transport failure (no connection?)"
 msgstr "Błąd transportu (brak polączenia?)"
 
 # Connection went over the waiting time
-#: ../src/gtk-ui/sync-ui.c:1754
+#: ../src/gtk-ui/sync-ui.c:1961
 msgid "Connection timed out"
 msgstr "Połączenie przekroczyło czas oczekiwania"
 
-#: ../src/gtk-ui/sync-ui.c:1756
+#: ../src/gtk-ui/sync-ui.c:1963
 msgid "Connection certificate has expired"
 msgstr "Wygasł certyfikat połączenia"
 
 # The connection certificate is not valid
-#: ../src/gtk-ui/sync-ui.c:1758
+#: ../src/gtk-ui/sync-ui.c:1965
 msgid "Connection certificate is invalid"
 msgstr "Niewłaściwy certyfikat połączenia"
 
-#: ../src/gtk-ui/sync-ui.c:1761
+#: ../src/gtk-ui/sync-ui.c:1968
 msgid "Connection failed"
 msgstr "Błąd połączenia"
 
 # The URL is incorrect
-#: ../src/gtk-ui/sync-ui.c:1763
+#: ../src/gtk-ui/sync-ui.c:1970
 msgid "URL is bad"
 msgstr "Nieprawidłowy URL"
 
-#: ../src/gtk-ui/sync-ui.c:1765
+#: ../src/gtk-ui/sync-ui.c:1972
 msgid "Server not found"
 msgstr "Nie znaleziono serwera"
 
-#: ../src/gtk-ui/sync-ui.c:1767
+#: ../src/gtk-ui/sync-ui.c:1974
 #, c-format
 msgid "Error %d"
 msgstr "Błąd %d"
 
 # the syncronization service D-Bus closed unexpectedly
-#: ../src/gtk-ui/sync-ui.c:1777
+#: ../src/gtk-ui/sync-ui.c:1984
 msgid "Sync D-Bus service exited unexpectedly"
 msgstr "Usługa D-Bus synchronizacji zakończyła nieoczekiwanie"
 
-#: ../src/gtk-ui/sync-ui.c:1780
-#: ../src/gtk-ui/sync-ui.c:1831
+#: ../src/gtk-ui/sync-ui.c:1987
+#: ../src/gtk-ui/sync-ui.c:2038
 msgid "Sync Failed"
 msgstr "Synchronizacja nie powiodła się"
 
-#: ../src/gtk-ui/sync-ui.c:1823
+#: ../src/gtk-ui/sync-ui.c:2030
 msgid "Sync complete"
 msgstr "Synchronizacja zakończona"
 
-#: ../src/gtk-ui/sync-ui.c:1828
+#: ../src/gtk-ui/sync-ui.c:2035
 msgid "Sync canceled"
 msgstr "Synchronizacja anulowana"
 
 #. NOTE extra1 can be error here
-#: ../src/gtk-ui/sync-ui.c:1846
+#: ../src/gtk-ui/sync-ui.c:2053
 msgid "Ending sync"
 msgstr "Zamykanie synchronizacji"
 
 #. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
-#: ../src/gtk-ui/sync-ui.c:1870
+#: ../src/gtk-ui/sync-ui.c:2077
 #, c-format
 msgid "Preparing '%s'"
 msgstr "Przygotowywanie '%s'"
 
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:1882
+#: ../src/gtk-ui/sync-ui.c:2089
 #, c-format
 msgid "Sending '%s'"
 msgstr "Wysyłanie '%s'"
 
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:1894
+#: ../src/gtk-ui/sync-ui.c:2101
 #, c-format
 msgid "Receiving '%s'"
 msgstr "Odbieranie '%s'"
@@ -521,6 +526,7 @@ msgid "Stop using this service"
 msgstr "Zaprzestań używania usługi"
 
 #: ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/sync.desktop.in.h:1
 msgid "Sync"
 msgstr "Synchronizuj"
 
@@ -548,4 +554,8 @@ msgid ""
 msgstr ""
 "Nie ustawiłeś jeszcze usługi synchronizacji pomiędzy netbookiem\n"
 "a web-serwisem."
+
+#: ../src/gtk-ui/sync.desktop.in.h:2
+msgid "Up to date"
+msgstr "Aktualny"
 
