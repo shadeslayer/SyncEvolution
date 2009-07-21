@@ -732,6 +732,13 @@ zybtest = SyncEvolutionTest("zyb", compile,
                             testPrefix=options.testprefix)
 context.add(zybtest)
 
+googletest = SyncEvolutionTest("google", compile,
+                               "", options.shell,
+                               [ "Client::Sync" ],
+                               "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_XML=0 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_FAILURES=Client::Sync::vcard21::testRefreshFromClientSync,Client::Sync::vcard21::testRefreshFromClientSemantic,Client::Sync::vcard21::testRefreshStatus,Client::Sync::vcard21::testOneWayFromClient,Client::Sync::vcard21::testItemsXML CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_SERVER=google CLIENT_TEST_DELAY=5",
+                               testPrefix=options.testprefix)
+context.add(googletest)
+
 if options.list:
     for action in context.todo:
         print action.name
