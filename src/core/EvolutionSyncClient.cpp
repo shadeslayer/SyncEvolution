@@ -298,7 +298,7 @@ public:
                     EvolutionSyncClient::throwError(m_path, errno);
                 }
             }
-            m_logfile = m_path + "/" + "sysync_linux.html";
+            m_logfile = m_path + "/" + "sysynclib_linux.html";
         }
 
         // update log level of default logger and our own replacement
