@@ -641,7 +641,7 @@ context.add(evolutiontest)
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       [ "Client::Sync" ],
-                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard30::Retry,Client::Sync::vcard30::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard30_ical20_itodo20_text::Retry,Client::Sync::vcard30_ical20_itodo20_text::Suspend,Client::Sync::text_itodo20_ical20_vcard30::Retry,Client::Sync::text_itodo20_ical20_vcard30::Suspend CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5",
+                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES=Client::Sync::text::testManyItems,Client::Sync::vcard30_ical20_itodo20_text::testManyItems,Client::Sync::text_itodo20_ical20_vcard30::testManyItems CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard30::Retry,Client::Sync::vcard30::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard30_ical20_itodo20_text::Retry,Client::Sync::vcard30_ical20_itodo20_text::Suspend,Client::Sync::text_itodo20_ical20_vcard30::Retry,Client::Sync::text_itodo20_ical20_vcard30::Suspend CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5",
                                       testPrefix=options.testprefix)
 context.add(scheduleworldtest)
 
