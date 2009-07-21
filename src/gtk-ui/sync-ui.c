@@ -592,9 +592,10 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
     gtk_container_foreach (GTK_CONTAINER (data->server_settings_table), 
                            (GtkCallback)update_server_config, server);
 
-    if (!server->name || strlen (server->name) == 0) {
+    if (!server->name || strlen (server->name) == 0 ||
+        !server->base_url || strlen (server->base_url) == 0) {
         show_error_dialog (GTK_WINDOW (data->service_settings_win), 
-                           _("Service must have a name"));
+                           _("Service must have a name and server URL"));
         return;
     }
     /* make a wild guess if no scheme in url */
