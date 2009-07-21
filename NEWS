@@ -42,8 +42,6 @@ new default.
 Various bug fixes and improvements:
 
 * only show servers in GUI which are tested and supported (Bugzilla #3336)
-* enabled SSL certificate checking with libsoup if a suitable .crt file
-  is installed on the system  (#4220)
 * a single log file is written in .html format (#3474)
 * added several translations of the GUI
 * lots of testing improvements, build binary packages again
