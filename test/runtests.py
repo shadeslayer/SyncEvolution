@@ -49,9 +49,16 @@ def del_dir(path):
 def copyLog(filename, dirname, htaccess, lineFilter=None):
     """Make a gzipped copy (if possible) with the original time stamps and find the most severe problem in it.
     That line is then added as description in a .htaccess AddDescription.
+    For directories just copy the whole directory tree.
     """
     info = os.stat(filename)
     outname = os.path.join(dirname, os.path.basename(filename))
+
+    if os.path.isdir(filename):
+        # copy whole directory, without any further processing at the moment
+        shutil.copytree(filename, outname, symlinks=True)
+        return
+
     if True:
         outname = outname + ".gz"
         out = gzip.open(outname, "wb")
@@ -390,7 +397,7 @@ class SyncEvolutionTest(Action):
             else:
                 context.runCommand(basecmd)
         finally:
-            tocopy = re.compile(r'.*\.log')
+            tocopy = re.compile(r'.*\.log|.*\.client.[AB]')
             htaccess = file(os.path.join(resdir, ".htaccess"), "a")
             for f in os.listdir(self.srcdir):
                 if tocopy.match(f):
