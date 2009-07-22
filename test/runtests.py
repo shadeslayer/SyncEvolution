@@ -59,7 +59,8 @@ def copyLog(filename, dirname, htaccess, lineFilter=None):
         shutil.copytree(filename, outname, symlinks=True)
         return
 
-    if True:
+    # .out files are typically small nowadays, so don't compress
+    if False:
         outname = outname + ".gz"
         out = gzip.open(outname, "wb")
     else:
