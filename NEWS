@@ -26,6 +26,12 @@ moves them out of the main address without deleting them permanently. When
 adding such a contact again, the server discards the data sent by the
 client and recreates the contact with the data that it remembered.
 
+SSL certificate checking with libsoup (the default transport) is now
+supported (#2431). However, libsoup/gnutls are very strict about SSL
+certificate checking and reject version 1 certificates, like the one
+used by Verisign for Google (#4551). At the moment the only solution
+is to fall back to plain http in the Google configuration template.
+
 CTRL-C no longer kills SyncEvolution right away. Instead it
 asks the server to suspend the session. If that takes too
 long, then pressing CTRL-C twice quickly will abort the sync
