@@ -498,6 +498,13 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * override sync mode of all active sync sources if set
      */
     string m_overrideMode;
-};
 
+    int m_retries;
+    int m_timeout;
+    int m_retryCount;
+
+public:
+    static bool transport_cb (void *data);
+    bool processTransportCb();
+};
 #endif // INCL_EVOLUTIONSYNCCLIENT

@@ -1158,6 +1158,23 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
     }
 }
 
+bool EvolutionSyncClient::transport_cb (void *udata)
+{
+    return static_cast <EvolutionSyncClient *> (udata) -> processTransportCb();
+}
+
+bool EvolutionSyncClient::processTransportCb()
+{
+    if(++m_retries > m_retryCount)
+    {
+        SE_LOG_INFO(NULL, NULL, "Transport: give up after %d tries", m_retries-1);
+        return false;
+    }
+
+    SE_LOG_INFO(NULL, NULL, "Transport: retry send #%d after %d seconds timeout", m_retries, m_timeout);
+    return true;
+}
+
 // XML configuration converted to C string constant
 extern "C" {
     extern const char *SyncEvolutionXML;
@@ -1613,6 +1630,8 @@ SyncMLStatus EvolutionSyncClient::doSync()
     } catch (NoSuchKey error) {
     }
 
+    m_timeout = getReqTimeout();
+    m_retryCount = getReqRetries();
     // run an HTTP client sync session
     boost::shared_ptr<TransportAgent> agent(createTransportAgent());
     if (getUseProxy()) {
@@ -1650,6 +1669,8 @@ SyncMLStatus EvolutionSyncClient::doSync()
     // parameter STEPCMD_ABORT -> abort session as soon as possible.
     bool aborting = false;
     int suspending = 0; 
+    m_retries = 0;
+    bool resend = false;
     sysync::uInt16 previousStepCmd = stepCmd;
     do {
         try {
@@ -1691,6 +1712,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                     suspending++; 
                 }
             }
+
             m_engine.SessionStep(session, stepCmd, &progressInfo);
             //During suspention we actually insert a STEPCMD_SUSPEND cmd
             //Should restore to the original step here
@@ -1754,6 +1776,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                 // tbd: close communication channel if still open to make sure it is
                 //       re-opened for the next request
                 stepCmd = sysync::STEPCMD_STEP;
+                m_retries = 0;
                 break;
             case sysync::STEPCMD_SENDDATA: {
                 // send data to remote
@@ -1768,13 +1791,20 @@ SyncMLStatus EvolutionSyncClient::doSync()
                                          "contenttype");
                 agent->setContentType(s);
                 sessionKey.reset();
-                    
+                
+                //register transport callback
+                agent->setCallback (transport_cb, this, m_timeout);
                 // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
                 // sent or have it copied into caller's buffer using
                 // ReadSyncMLBuffer(), then send it to the server
-                sendBuffer = m_engine.GetSyncMLBuffer(session, true);
+                if(!resend) {
+                    sendBuffer = m_engine.GetSyncMLBuffer(session, true);
+                }else {
+                    SE_LOG_INFO (NULL, NULL, "EvolutionSyncClient: resend previous request");
+                }
                 agent->send(sendBuffer.get(), sendBuffer.size());
                 stepCmd = sysync::STEPCMD_SENTDATA; // we have sent the data
+                resend = false;
                 break;
             }
             case sysync::STEPCMD_NEEDDATA:
@@ -1782,7 +1812,12 @@ SyncMLStatus EvolutionSyncClient::doSync()
                 case TransportAgent::ACTIVE:
                     stepCmd = sysync::STEPCMD_SENTDATA; // still sending the data?!
                     break;
+                case TransportAgent::TIME_OUT:
+                    stepCmd = sysync::STEPCMD_RESENDDATA;
+                    resend = true;
+                    break;
                 case TransportAgent::GOT_REPLY: {
+                    m_retries = 0;
                     sendBuffer.reset();
                     const char *reply;
                     size_t replylen;

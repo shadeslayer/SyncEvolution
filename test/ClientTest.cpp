@@ -1713,6 +1713,23 @@ void SyncTests::addTests() {
             addTest(FilterTest(suspendTests));
         }
 
+        if (config.retrySync &&
+                config.insertItem &&
+                config.updateItem &&
+                accessClientB &&
+                config.dump &&
+                config.compare) {
+            CppUnit::TestSuite *resendTests = new CppUnit::TestSuite(getName() + "::Resend");
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendClientAdd);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendClientRemove);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendClientUpdate);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendServerAdd);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendServerRemove);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendServerUpdate);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendFull);
+            addTest(FilterTest(resendTests));
+        }
+
     }
 }
 
@@ -2752,6 +2769,47 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     compareDatabases();
 }
 
+class TransportResendInjector : public TransportWrapper{
+private:
+    int timeout;
+public:
+    TransportResendInjector()
+         :TransportWrapper() {
+             const char *s = getenv("CLIENT_TEST_RESEND_TIMEOUT");
+             timeout = s ? atoi(s) : 0;
+    }
+
+    ~TransportResendInjector() {
+    }
+
+    virtual void send(const char *data, size_t len)
+    {
+        m_messageCount++;
+        if (m_interruptAtMessage >= 0 &&
+                m_messageCount == m_interruptAtMessage+1) {
+            m_wrappedAgent->send(data, len);
+            m_status = m_wrappedAgent->wait();
+            //trigger client side resend
+            sleep (timeout);
+            m_status = TIME_OUT;
+        }
+        else 
+        {
+            m_wrappedAgent->send(data, len);
+            m_status = m_wrappedAgent->wait();
+        }
+    }
+
+    virtual void getReply(const char *&data, size_t &len, std::string &contentType) {
+        if (m_status == FAILED) {
+            data = "";
+            len = 0;
+        } else {
+            m_wrappedAgent->getReply(data, len, contentType);
+        }
+    }
+};
+
 class TransportFaultInjector : public TransportWrapper{
 public:
     TransportFaultInjector()
@@ -2992,7 +3050,11 @@ void SyncTests::doInterruptResume(int changes,
             // continue, wait until server timeout
             if(sleep_t) 
                 sleep (sleep_t);
-            accessClientB->doSync("retryB", SyncOptions(SYNC_TWO_WAY));
+
+            // no need for resend tests 
+            if (!dynamic_cast <TransportResendInjector *> (wrapper.get())) {
+                accessClientB->doSync("retryB", SyncOptions(SYNC_TWO_WAY));
+            }
         }
 
         // copy changes to client A
@@ -3120,6 +3182,42 @@ void SyncTests::testUserSuspendFull()
                       SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
 }
 
+void SyncTests::testResendClientAdd()
+{
+    doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+}
+
+void SyncTests::testResendClientRemove()
+{
+    doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+}
+
+void SyncTests::testResendClientUpdate()
+{
+    doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+}
+
+void SyncTests::testResendServerAdd()
+{
+    doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+}
+
+void SyncTests::testResendServerRemove()
+{
+    doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+}
+
+void SyncTests::testResendServerUpdate()
+{
+    doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+}
+
+void SyncTests::testResendFull()
+{
+    doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
+                      SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, 
+                      boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+}
 
 void SyncTests::doSync(const SyncOptions &options)
 {

@@ -40,6 +40,8 @@ SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
            "Soup main loop"),
     m_status(INACTIVE),
     m_abortEventSource(-1),
+    m_cbEventSource(-1),
+    m_cb(NULL),
     m_response(NULL)
 {
 #ifdef HAVE_LIBSOUP_SOUP_GNOME_FEATURES_H
@@ -101,6 +103,13 @@ void SoupTransportAgent::setUserAgent(const std::string &agent)
                  NULL);
 }
 
+void SoupTransportAgent::setCallback (TransportCallback cb, void *data, int interval)
+{
+    m_cb = cb;
+    m_cbData = data;
+    m_cbInterval = interval;
+}
+
 void SoupTransportAgent::send(const char *data, size_t len)
 {
     // ownership is transferred to libsoup in soup_session_queue_message()
@@ -126,6 +135,10 @@ void SoupTransportAgent::send(const char *data, size_t len)
                              SOUP_MEMORY_TEMPORARY, data, len);
     m_status = ACTIVE;
     m_abortEventSource = g_timeout_add_seconds(ABORT_CHECK_INTERVAL, (GSourceFunc) AbortCallback, static_cast<gpointer> (this));
+    if(m_cb){
+        m_message = message.get();
+        m_cbEventSource = g_timeout_add_seconds(m_cbInterval, (GSourceFunc) TimeoutCallback, static_cast<gpointer> (this));
+    }
     soup_session_queue_message(m_session.get(), message.release(),
                                SessionCallback, static_cast<gpointer>(this));
 }
@@ -155,6 +168,10 @@ TransportAgent::Status SoupTransportAgent::wait()
         break;
     }
 
+    /** For a canceled message, does not check the return status */
+    if(m_status == TIME_OUT){
+        m_failure.clear();
+    }
     if (!m_failure.empty()) {
         std::string failure;
         std::swap(failure, m_failure);
@@ -162,6 +179,7 @@ TransportAgent::Status SoupTransportAgent::wait()
     }
 
     g_source_remove(m_abortEventSource);
+    g_source_remove(m_cbEventSource);
     return m_status;
 }
 
@@ -231,6 +249,25 @@ gboolean SoupTransportAgent::AbortCallback(gpointer transport)
     return TRUE;
 }
 
+gboolean SoupTransportAgent::processCallback()
+{
+    bool cont = m_cb(m_cbData);
+    if(cont){
+        //stop the message processing and mark status as timeout
+        guint message_status;
+        soup_session_cancel_message(m_session.get(), m_message, message_status);
+        m_status = TIME_OUT;
+    }else {
+        cancel();
+    }
+    return FALSE;
+}
+
+gboolean SoupTransportAgent::TimeoutCallback(gpointer transport)
+{
+    SoupTransportAgent * sTransport = static_cast<SoupTransportAgent *>(transport);
+    return sTransport->processCallback();
+}
 } // namespace SyncEvolution
 
 #endif // ENABLE_LIBSOUP

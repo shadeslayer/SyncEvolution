@@ -497,6 +497,11 @@ static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "enables or disables the detailed (and sometimes slow) comparison\n"
                                                "of database content before and after a sync session",
                                                "1");
+static IntConfigProperty syncPropReqTimeout("RequestTimeout",
+                                          "The time client waiting for a SyncML response after a sucessful request",
+                                          "60");
+static IntConfigProperty syncPropReqRetries("RequestRetries",
+                                          "How many times the client will retry for a timeout, sync will abort after all failed retries",                                 "3");
 static ConfigProperty syncPropSSLServerCertificates("SSLServerCertificates",
                                                     "A string specifying the location of the certificates\n"
                                                     "used to authenticate the server. When empty, the\n"
@@ -559,6 +564,8 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropProxyUsername);
         registry.push_back(&syncPropProxyPassword);
         registry.push_back(&syncPropClientAuthType);
+        registry.push_back(&syncPropReqTimeout);
+        registry.push_back(&syncPropReqRetries);
         registry.push_back(&syncPropDevID);
         syncPropDevID.setObligatory(true);
         registry.push_back(&syncPropWBXML);
@@ -665,6 +672,10 @@ int EvolutionSyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getPr
 void EvolutionSyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*m_configNode, value, temporarily); }
 int EvolutionSyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
+int EvolutionSyncConfig::getReqTimeout() const {return syncPropReqTimeout.getProperty(*m_configNode);}
+void EvolutionSyncConfig::setReqTimeout(int value, bool temporarily) {syncPropReqTimeout.setProperty(*m_configNode, value, temporarily);}
+int EvolutionSyncConfig::getReqRetries() const {return syncPropReqRetries.getProperty(*m_configNode);}
+void EvolutionSyncConfig::setReqRetries(int value, bool temporarily) {return syncPropReqRetries.setProperty(*m_configNode,value,temporarily);}
 bool EvolutionSyncConfig::getPrintChanges() const { return syncPropPrintChanges.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*m_configNode, value, temporarily); }
 std::string EvolutionSyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*m_configNode); }

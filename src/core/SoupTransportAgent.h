@@ -68,7 +68,8 @@ class SoupTransportAgent : public TransportAgent
     virtual void cancel();
     virtual Status wait();
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
-
+    virtual void setCallback (TransportCallback cb, void *udata, int interval);
+    gboolean processCallback();
  private:
     std::string m_proxyUser;
     std::string m_proxyPassword;
@@ -82,10 +83,18 @@ class SoupTransportAgent : public TransportAgent
     std::string m_failure;
     guint m_abortEventSource;
 
+    SoupMessage *m_message;
+    guint m_cbEventSource;
+    TransportCallback m_cb;
+    int m_cbInterval;
+    void *m_cbData;
+
     /** User Abort check interval */
     static const gint ABORT_CHECK_INTERVAL = 1;
     /** This function is called regularly to check user abort event */
     static gboolean AbortCallback (gpointer data);
+    /** This function is called regularly to detect timeout */
+    static gboolean TimeoutCallback (gpointer data);
 
     /** response, copied from SoupMessage */
     eptr<SoupBuffer, SoupBuffer, GLibUnref> m_response;

@@ -31,6 +31,7 @@ CurlTransportAgent::CurlTransportAgent() :
     m_easyHandle(easyInit()),
     m_slist(NULL),
     m_status(INACTIVE),
+    m_cb(NULL),
     m_reply(NULL),
     m_replyLen(0),
     m_replySize(0)
@@ -139,6 +140,13 @@ void CurlTransportAgent::setSSL(const std::string &cacerts,
     checkCurl(code);
 }
 
+void CurlTransportAgent::setCallback (TransportCallback cb, void *udata, int interval)
+{
+    m_cb = cb;
+    m_cbData = udata;
+    m_cbInterval = interval;
+}
+
 void CurlTransportAgent::send(const char *data, size_t len)
 {
     CURLcode code;
@@ -164,13 +172,21 @@ void CurlTransportAgent::send(const char *data, size_t len)
     m_slist = curl_slist_append(m_slist, contentHeader.c_str());
 
     m_status = ACTIVE;
-    if ((code = curl_easy_setopt(m_easyHandle, CURLOPT_HTTPHEADER, m_slist)) ||
+    if(m_cb){
+        m_elapsed = 0;
+    }
+    m_aborting = false;
+    if ((code = curl_easy_setopt(m_easyHandle, CURLOPT_PROGRESSDATA, static_cast<void *> (this)))||
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_HTTPHEADER, m_slist)) ||
         (code = curl_easy_setopt(m_easyHandle, CURLOPT_POSTFIELDSIZE, len)) ||
-        (code = curl_easy_perform(m_easyHandle))) {
+        ((code = curl_easy_perform(m_easyHandle)) && ((code != CURLE_ABORTED_BY_CALLBACK)||m_aborting))
+       ){
         m_status = CANCELED;
         checkCurl(code);
     }
-    m_status = GOT_REPLY;
+    if(code != CURLE_ABORTED_BY_CALLBACK) {
+        m_status = GOT_REPLY;
+    }
 }
 
 void CurlTransportAgent::cancel()
@@ -247,12 +263,32 @@ void CurlTransportAgent::checkCurl(CURLcode code)
     }
 }
 
-int CurlTransportAgent::progressCallback(void*, double, double, double, double)
+int CurlTransportAgent::progressCallback(void* transport, double, double, double, double)
 {
+    CurlTransportAgent *agent = static_cast<CurlTransportAgent *> (transport);
     SuspendFlags& s_flags = EvolutionSyncClient::getSuspendFlags();
     //abort transfer
-    if (s_flags.state == SuspendFlags::CLIENT_ABORT)
+    if (s_flags.state == SuspendFlags::CLIENT_ABORT){
+        agent->setAborting (true);
         return -1;
+    }
+    return agent->processCallback();
+}
+
+int CurlTransportAgent::processCallback()
+{
+    if (m_cb){   
+        if (++m_elapsed  > m_cbInterval){
+            m_elapsed = 0;
+            bool cont = m_cb (m_cbData);
+            if (cont) {
+                m_status = TIME_OUT;
+            }else {
+                m_aborting = true;
+            }
+            return -1;
+        }
+    }
     return 0;
 }
 

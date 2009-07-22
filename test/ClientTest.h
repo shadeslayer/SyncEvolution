@@ -943,6 +943,13 @@ protected:
     virtual void testUserSuspendServerUpdate();
     virtual void testUserSuspendFull();
 
+    virtual void testResendClientAdd();
+    virtual void testResendClientRemove();
+    virtual void testResendClientUpdate();
+    virtual void testResendServerAdd();
+    virtual void testResendServerRemove();
+    virtual void testResendServerUpdate();
+    virtual void testResendFull();
 
     /**
      * implements testMaxMsg(), testLargeObject(), testLargeObjectEncoded()
@@ -1009,6 +1016,8 @@ public:
         m_options = NULL;
     }
     virtual Status wait() { return m_status; }
+    virtual void setCallback (TransportCallback cb, void *udata, int interval) 
+    { return m_wrappedAgent->setCallback(cb, udata, interval);}
 };
 
 /** assert equality, include string in message if unequal */

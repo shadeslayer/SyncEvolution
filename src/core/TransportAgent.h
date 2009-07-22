@@ -41,6 +41,7 @@ namespace SyncEvolution {
 class TransportAgent
 {
  public:
+     typedef bool (*TransportCallback) (void *udata);
     /**
      * set transport specific URL of next message
      */
@@ -118,6 +119,10 @@ class TransportAgent
          */
         FAILED,
         /**
+         * transport timeout
+         */
+        TIME_OUT,
+        /**
          * unused transport, configure and use send()
          */
         INACTIVE
@@ -129,6 +134,13 @@ class TransportAgent
      * Returns immediately if no transmission is pending.
      */
     virtual Status wait() = 0;
+
+    /**
+     * The callback is called every interval seconds, with udata as the last
+     * parameter. The callback will return true to indicate retry and false 
+     * to indicate abort.
+     */
+    virtual void setCallback (TransportCallback cb, void * udata, int interval) = 0;
 
     /**
      * provides access to reply data
@@ -147,6 +159,7 @@ class TransportAgent
 
     /** normal HTTP URL encoded */
     static const char * const m_contentTypeURLEncoded;
+
 };
 
 class TransportException : public SyncEvolutionException

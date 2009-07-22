@@ -53,12 +53,21 @@ class CurlTransportAgent : public TransportAgent
     virtual void cancel();
     virtual Status wait();
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
+    virtual void setCallback (TransportCallback cb, void * udata, int interval);
+    int processCallback();
+    void setAborting(bool aborting) {m_aborting = aborting;}
 
  private:
     CURL *m_easyHandle;
     curl_slist *m_slist;
     std::string m_contentType;
     Status m_status;
+    bool m_aborting;
+
+    TransportCallback m_cb;
+    void *m_cbData;
+    int m_elapsed;
+    int m_cbInterval;
 
     /**
      * libcurl < 7.17.0 does not copy strings passed into curl_easy_setopt().
