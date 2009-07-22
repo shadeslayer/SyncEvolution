@@ -148,7 +148,7 @@ class Action:
 class Context:
     """Provides services required by actions and handles running them."""
 
-    def __init__(self, tmpdir, resultdir, uri, workdir, mailtitle, sender, recipients, mailhost, enabled, skip, nologs, setupcmd, make):
+    def __init__(self, tmpdir, resultdir, uri, workdir, mailtitle, sender, recipients, mailhost, enabled, skip, nologs, setupcmd, make, sanitychecks):
         # preserve normal stdout because stdout/stderr will be redirected
         self.out = os.fdopen(os.dup(1), "w")
         self.todo = []
@@ -167,6 +167,7 @@ class Context:
         self.nologs = nologs
         self.setupcmd = setupcmd
         self.make = make
+        self.sanitychecks = sanitychecks
 
     def runCommand(self, cmd):
         """Log and run the given command, throwing an exception if it fails."""
@@ -370,7 +371,7 @@ class AutotoolsBuild(Action):
 
 
 class SyncEvolutionTest(Action):
-    def __init__(self, name, build, serverlogs, runner, tests, testenv="", lineFilter=None, testPrefix=""):
+    def __init__(self, name, build, serverlogs, runner, tests, sources, testenv="", lineFilter=None, testPrefix="", serverName=""):
         """Execute TestEvolution for all (empty tests) or the
         selected tests."""
         Action.__init__(self, name)
@@ -378,11 +379,15 @@ class SyncEvolutionTest(Action):
         self.serverlogs = serverlogs
         self.runner = runner
         self.tests = tests
+        self.sources = sources
         self.testenv = testenv
         if build.name:
             self.dependencies.append(build.name)
         self.lineFilter = lineFilter
         self.testPrefix = testPrefix
+        self.serverName = serverName
+        if not self.serverName:
+            self.serverName = name
 
     def execute(self):
         resdir = os.getcwd()
@@ -390,10 +395,19 @@ class SyncEvolutionTest(Action):
         try:
             if context.setupcmd:
                 context.runCommand("%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name))
-            basecmd = "%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_FAILURES=EvolutionCalendarTest::testOpenDefaultMemo CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s env LD_LIBRARY_PATH=build-synthesis/src/.libs ./client-test" % (self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
+            basecmd = "CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_FAILURES=EvolutionCalendarTest::testOpenDefaultMemo CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s env LD_LIBRARY_PATH=build-synthesis/src/.libs ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
             context.runCommand("%s testclean" % context.make)
             if self.tests:
-                context.runCommand("%s %s" % (basecmd, " ".join(self.tests)))
+                tests = []
+                for test in self.tests:
+                    if test == "Client::Sync" and context.sanitychecks:
+                        # Replace with one simpler, faster testItems test, but be careful to
+                        # pick an enabled source and the right mode (XML vs. WBXML).
+                        # The first listed source and WBXML should be safe.
+                        tests.append("Client::Sync::%s::testItems" % self.sources[0])
+                    else:
+                        tests.append(test)
+                context.runCommand("%s %s" % (basecmd, " ".join(tests)))
             else:
                 context.runCommand(basecmd)
         finally:
@@ -492,6 +506,9 @@ parser.add_option("", "--setup-command",
 parser.add_option("", "--make-command",
                   type="string", dest="makecmd", default="make",
                   help="command to use instead of plain make, for example 'make -j'")
+parser.add_option("", "--sanity-checks",
+                  action="store_true", dest="sanitychecks", default=False,
+                  help="run limited number of sanity checks instead of full set")
 
 (options, args) = parser.parse_args()
 if options.recipients and not options.sender:
@@ -501,7 +518,7 @@ if options.recipients and not options.sender:
 context = Context(options.tmpdir, options.resultdir, options.uri, options.workdir,
                   options.subject, options.sender, options.recipients, options.mailhost,
                   options.enabled, options.skip, options.nologs, options.setupcmd,
-                  options.makecmd)
+                  options.makecmd, options.sanitychecks)
 
 class EvoSvn(Action):
     """Builds Evolution from SVN using Paul Smith's Evolution Makefile."""
@@ -642,20 +659,23 @@ context.add(dist)
 evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
                                   [ "Client::Source", "SyncEvolution" ],
+                                  [],
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
 
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       [ "Client::Sync" ],
-                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES=Client::Sync::text::testManyItems,Client::Sync::vcard30_ical20_itodo20_text::testManyItems,Client::Sync::text_itodo20_ical20_vcard30::testManyItems CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard30::Retry,Client::Sync::vcard30::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard30_ical20_itodo20_text::Retry,Client::Sync::vcard30_ical20_itodo20_text::Suspend,Client::Sync::text_itodo20_ical20_vcard30::Retry,Client::Sync::text_itodo20_ical20_vcard30::Suspend CLIENT_TEST_SOURCES=ical20,vcard30,itodo20,text CLIENT_TEST_SERVER=scheduleworld CLIENT_TEST_DELAY=5",
+                                      [ "vcard30", "ical20", "itodo20", "text" ],
+                                      "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES=Client::Sync::text::testManyItems,Client::Sync::vcard30_ical20_itodo20_text::testManyItems,Client::Sync::text_itodo20_ical20_vcard30::testManyItems CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard30::Retry,Client::Sync::vcard30::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard30_ical20_itodo20_text::Retry,Client::Sync::vcard30_ical20_itodo20_text::Suspend,Client::Sync::text_itodo20_ical20_vcard30::Retry,Client::Sync::text_itodo20_ical20_vcard30::Suspend CLIENT_TEST_DELAY=5",
                                       testPrefix=options.testprefix)
 context.add(scheduleworldtest)
 
 memotootest = SyncEvolutionTest("memotoo", compile,
                                 "", options.shell,
                                 [ "Client::Sync" ],
-                                "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SOURCES=ical20,vcard21,itodo20,text CLIENT_TEST_SERVER=memotoo CLIENT_TEST_DELAY=15",
+                                [ "vcard21" ],
+                                "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES= CLIENT_TEST_DELAY=15",
                                 testPrefix=options.testprefix)
 context.add(memotootest)
 
@@ -664,6 +684,7 @@ egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    [ "Client::Sync::vcard21", "Client::Sync::ical20::testCopy", "Client::Sync::ical20::testUpdate", "Client::Sync::ical20::testDelete", \
                                      "Client::Sync::vcard21_ical20::testCopy", "Client::Sync::vcard21_ical20::testUpdate", "Client::Sync::vcard21_ical20::testDelete" \
                                      "Client::Sync::ical20_vcard21::testCopy", "Client::Sync::ical20_vcard21::testUpdate", "Client::Sync::ical20_vcard21::testDelete"  ],
+                                   [ "vcard21", "ical20" ],
                                    # ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus - refresh-from-client not supported by server
                                    # ContactSync::testOneWayFromClient - not supported by server?
                                    # ContactSync::testItems - loses a lot of information
@@ -671,7 +692,7 @@ egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    # ContactSync::testMaxMsg,ContactSync::testLargeObject,ContactSync::testLargeObjectBin - server fails to parse extra info?
                                    # ContactSync::testTwinning - duplicates contacts
                                    # CalendarSync::testCopy,CalendarSync::testUpdate - shifts time?
-                                   "CLIENT_TEST_SOURCES=vcard21,ical20 CLIENT_TEST_SERVER=egroupware CLIENT_TEST_FAILURES=ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus,ContactSync::testOneWayFromClient,ContactSync::testAddUpdate,ContactSync::testItems,ContactSync::testComplexUpdate,ContactSync::testTwinning,ContactSync::testMaxMsg,ContactSync::testLargeObject,ContactSync::testLargeObjectBin,CalendarSync::testCopy,CalendarSync::testUpdate",
+                                   "CLIENT_TEST_FAILURES=ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus,ContactSync::testOneWayFromClient,ContactSync::testAddUpdate,ContactSync::testItems,ContactSync::testComplexUpdate,ContactSync::testTwinning,ContactSync::testMaxMsg,ContactSync::testLargeObject,ContactSync::testLargeObjectBin,CalendarSync::testCopy,CalendarSync::testUpdate",
                                    lambda x: x.replace('oasis.ethz.ch','<host hidden>').\
                                              replace('cG9obHk6cWQyYTVtZ1gzZk5GQQ==','xxx'),
                                    testPrefix=options.testprefix)
@@ -681,7 +702,9 @@ class SynthesisTest(SyncEvolutionTest):
     def __init__(self, name, build, synthesisdir, runner, testPrefix):
         SyncEvolutionTest.__init__(self, name, build, "", # os.path.join(synthesisdir, "logs")
                                    runner, [ "Client::Sync" ],
-                                   "CLIENT_TEST_SOURCES=vcard21,text CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard21_text::Retry,Client::Sync::vcard21_text::Suspend  CLIENT_TEST_NUM_ITEMS=20 CLIENT_TEST_SERVER=synthesis CLIENT_TEST_DELAY=2",
+                                   [ "vcard21", "text" ],
+                                   "CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard21_text::Retry,Client::Sync::vcard21_text::Suspend  CLIENT_TEST_NUM_ITEMS=20 CLIENT_TEST_DELAY=2",
+                                   serverName="synthesis",
                                    testPrefix=testPrefix)
         self.synthesisdir = synthesisdir
         # self.dependencies.append(evolutiontest.name)
@@ -709,9 +732,12 @@ class FunambolTest(SyncEvolutionTest):
         else:
             serverlogs = ""
         SyncEvolutionTest.__init__(self, name, build, serverlogs,
-                                   runner, [ ],
-                                   "CLIENT_TEST_SOURCES=vcard21,ical20,itodo20,text CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard21_ical20_itodo20_text::Retry,Client::Sync::vcard21_ical20_itodo20_text::Suspend,Client::Sync::text_itodo20_ical20_vcard21::Retry,Client::Sync::text_itodo20_ical20_vcard21::Suspend CLIENT_TEST_XML=1 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= CLIENT_TEST_SERVER=funambol",
+                                   runner,
+                                   [ "Client::Sync" ],
+                                   [ "vcard21", "ical20", "itodo20", "text" ],
+                                   "CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard21_ical20_itodo20_text::Retry,Client::Sync::vcard21_ical20_itodo20_text::Suspend,Client::Sync::text_itodo20_ical20_vcard21::Retry,Client::Sync::text_itodo20_ical20_vcard21::Suspend CLIENT_TEST_XML=1 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_DELAY=10 CLIENT_TEST_FAILURES= ",
                                    lineFilter=lambda x: x.replace('dogfood.funambol.com','<host hidden>'),
+                                   serverName="funambol",
                                    testPrefix=testPrefix)
         self.funamboldir = funamboldir
         # self.dependencies.append(evolutiontest.name)
@@ -735,14 +761,16 @@ context.add(funambol)
 zybtest = SyncEvolutionTest("zyb", compile,
                             "", options.shell,
                             [ "Client::Sync" ],
-                            "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_SERVER=zyb CLIENT_TEST_DELAY=5",
+                            [ "vcard21" ],
+                            "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend CLIENT_TEST_DELAY=5",
                             testPrefix=options.testprefix)
 context.add(zybtest)
 
 googletest = SyncEvolutionTest("google", compile,
                                "", options.shell,
                                [ "Client::Sync" ],
-                               "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_XML=0 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_FAILURES=Client::Sync::vcard21::testRefreshFromClientSync,Client::Sync::vcard21::testRefreshFromClientSemantic,Client::Sync::vcard21::testRefreshStatus,Client::Sync::vcard21::testOneWayFromClient,Client::Sync::vcard21::testItemsXML CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend CLIENT_TEST_SOURCES=vcard21 CLIENT_TEST_SERVER=google CLIENT_TEST_DELAY=5",
+                               [ "vcard21" ],
+                               "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_XML=0 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_FAILURES=Client::Sync::vcard21::testRefreshFromClientSync,Client::Sync::vcard21::testRefreshFromClientSemantic,Client::Sync::vcard21::testRefreshStatus,Client::Sync::vcard21::testOneWayFromClient,Client::Sync::vcard21::testItemsXML CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend CLIENT_TEST_DELAY=5",
                                testPrefix=options.testprefix)
 context.add(googletest)
 
