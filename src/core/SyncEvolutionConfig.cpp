@@ -305,11 +305,16 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         source = config->getSyncSourceConfig("memo");
         source->setURI("note");
     } else if (boost::iequals(server, "google")) {
-        config->setSyncURL("http://m.google.com/syncml");
+        config->setSyncURL("https://m.google.com/syncml");
         config->setWebURL("http://m.google.com/sync");
         config->setClientAuthType("syncml:auth-basic");
         config->setWBXML(true);
         config->setConsumerReady(true);
+        // temporarily (?) disabled certificate checking because
+        // libsoup/gnutls do not accept the Verisign certificate
+        // (GNOME Bugzilla #589323)
+        config->setSSLVerifyServer(false);
+        config->setSSLVerifyHost(false);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("contacts");
         source->setSourceType("addressbook:text/x-vcard");
