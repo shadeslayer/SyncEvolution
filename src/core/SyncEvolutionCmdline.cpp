@@ -1699,7 +1699,7 @@ private:
             success = m_cmdline->parse() &&
                 m_cmdline->run();
             if (m_err.str().size()) {
-                cerr << endl << m_err.str();
+                cout << endl << m_err.str();
             }
             CPPUNIT_ASSERT(success);
         }

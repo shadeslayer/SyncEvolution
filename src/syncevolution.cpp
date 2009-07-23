@@ -76,7 +76,9 @@ int main( int argc, char **argv )
 #endif
 
     // Intercept stderr and route it through our logging.
-    // stdout is printed normally.
+    // stdout is printed normally. Deconstructing it when
+    // leaving main() does one final processing of pending
+    // output.
     SyncEvolution::LogRedirect redirect(false);
 
 #if defined(HAVE_GLIB)
@@ -107,7 +109,13 @@ int main( int argc, char **argv )
     try {
         EDSAbiWrapperInit();
 
-        SyncEvolutionCmdline cmdline(argc, argv, cout, cerr);
+        /*
+         * don't log errors to cerr: LogRedirect cannot distinguish
+         * between our valid error messages and noise from other
+         * libs, therefore it would get suppressed (logged at
+         * level DEVELOPER, while output is at most INFO)
+         */
+        SyncEvolutionCmdline cmdline(argc, argv, cout, cout);
         if (cmdline.parse() &&
             cmdline.run()) {
             return 0;

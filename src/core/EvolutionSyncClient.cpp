@@ -1876,9 +1876,9 @@ void EvolutionSyncClient::status()
             SyncEvolutionException::handle();
         }
     } else {
-        cerr << "Previous log directory not found.\n";
+        cout << "Previous log directory not found.\n";
         if (!getLogDir() || !getLogDir()[0]) {
-            cerr << "Enable the 'logdir' option and synchronize to use this feature.\n";
+            cout << "Enable the 'logdir' option and synchronize to use this feature.\n";
         }
     }
 }
