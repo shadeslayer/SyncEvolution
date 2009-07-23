@@ -1,3 +1,9 @@
+Google: 
+
+The server drops photos if they exceed a certain size. The limit is somewhere
+between 40KB (okay) and 80KB (dropped).
+
+
 SyncEvolution 0.9 beta 2 -> 0.9 beta 3, 21.07.2009
 --------------------------------------------------
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog

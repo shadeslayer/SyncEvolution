@@ -34,6 +34,8 @@ Only supports WBXML for transmitting.
 Don't support one-way-from-client and refresh-from-client sync.
 Return 200(OK) instead of 201(Added) for replace operation from client.
 Delete operation does not permanently remove items.
+The server drops photos if they exceed a certain size. The limit is somewhere
+between 40KB (okay) and 80KB (dropped).
 
 VCard21
   -- Below properties are lost:
