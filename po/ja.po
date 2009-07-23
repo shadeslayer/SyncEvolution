@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2009-07-15 09:18+0000\n"
+"POT-Creation-Date: 2009-07-22 09:19+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: GLSJPN_Yukari <yukarix.yamashita@intel.com>\n"
 "Language-Team: \n"
@@ -46,341 +46,341 @@ msgstr "SyncEvolution からサービス設定を入手するのに失敗しま�
 msgid "Failed to remove service configuration from SyncEvolution"
 msgstr "SyncEvolution からのサービス設定の削除が失敗しました"
 
-#: ../src/gtk-ui/sync-ui.c:597
-msgid "Service must have a name"
-msgstr "サービスには名前が必要です"
+#: ../src/gtk-ui/sync-ui.c:598
+msgid "Service must have a name and server URL"
+msgstr "サービスには名前とサーバーの URL が必要です"
 
 # "sync process"
 #. sync is no longer in progress for some reason
-#: ../src/gtk-ui/sync-ui.c:662
+#: ../src/gtk-ui/sync-ui.c:674
 msgid "Failed to cancel: sync was no longer in progress"
 msgstr "キャンセルに失敗しました：同期化プロセスは進行していません"
 
-#: ../src/gtk-ui/sync-ui.c:666
+#: ../src/gtk-ui/sync-ui.c:678
 msgid "Failed to cancel sync"
 msgstr "同期化のキャンセルに失敗しました"
 
-#: ../src/gtk-ui/sync-ui.c:670
+#: ../src/gtk-ui/sync-ui.c:682
 msgid "Canceling sync"
 msgstr "同期化をキャンセルしています"
 
-#: ../src/gtk-ui/sync-ui.c:684
+#: ../src/gtk-ui/sync-ui.c:696
 msgid "Trying to cancel sync"
 msgstr "同期化のキャンセルを試行しています"
 
-#: ../src/gtk-ui/sync-ui.c:691
+#: ../src/gtk-ui/sync-ui.c:703
 #, c-format
 msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
 msgstr "ローカルデータをすべて削除して、%s のデータに置き換えますか？通常は推奨されません。"
 
-#: ../src/gtk-ui/sync-ui.c:696
+#: ../src/gtk-ui/sync-ui.c:708
 #, c-format
 msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
 msgstr "%s のデータをすべて削除して、ローカルデータに置き換えますか？通常は推奨されません。"
 
 # "sync process"
-#: ../src/gtk-ui/sync-ui.c:713
+#: ../src/gtk-ui/sync-ui.c:725
 msgid "No, cancel sync"
 msgstr "いいえ、同期化をキャンセルする"
 
-#: ../src/gtk-ui/sync-ui.c:714
+#: ../src/gtk-ui/sync-ui.c:726
 msgid "Yes, delete and replace"
 msgstr "はい、削除して置き換える"
 
 # because sources are not enabled, so there is no syncing.
-#: ../src/gtk-ui/sync-ui.c:736
+#: ../src/gtk-ui/sync-ui.c:748
 msgid "No sources are enabled, not syncing"
 msgstr "ソースが有効化されていないので、同期化されません"
 
-#: ../src/gtk-ui/sync-ui.c:753
+#: ../src/gtk-ui/sync-ui.c:765
 msgid "A sync is already in progress"
 msgstr "同期化がすでに進行中です"
 
 # sync process
-#: ../src/gtk-ui/sync-ui.c:755
+#: ../src/gtk-ui/sync-ui.c:767
 msgid "Failed to start sync"
 msgstr "同期化の開始に失敗しました"
 
 # "sync process"
-#: ../src/gtk-ui/sync-ui.c:760
+#: ../src/gtk-ui/sync-ui.c:772
 msgid "Starting sync"
 msgstr "同期化を開始しています"
 
 # last syncing happened few sedonds ago
-#: ../src/gtk-ui/sync-ui.c:785
+#: ../src/gtk-ui/sync-ui.c:797
 msgid "Last synced just seconds ago"
 msgstr "前回の同期化は数秒前に行われました"
 
-#: ../src/gtk-ui/sync-ui.c:788
+#: ../src/gtk-ui/sync-ui.c:800
 msgid "Last synced a minute ago"
 msgstr "前回の同期化は1分前に行われました"
 
-#: ../src/gtk-ui/sync-ui.c:791
+#: ../src/gtk-ui/sync-ui.c:803
 #, c-format
 msgid "Last synced %ld minutes ago"
 msgstr "前回の同期化は%ld分前に行われました"
 
-#: ../src/gtk-ui/sync-ui.c:794
+#: ../src/gtk-ui/sync-ui.c:806
 msgid "Last synced an hour ago"
 msgstr "前回の同期化は1時間前に行われました"
 
-#: ../src/gtk-ui/sync-ui.c:797
+#: ../src/gtk-ui/sync-ui.c:809
 #, c-format
 msgid "Last synced %ld hours ago"
 msgstr "前回の同期化は%ld時間前に行われました"
 
-#: ../src/gtk-ui/sync-ui.c:800
+#: ../src/gtk-ui/sync-ui.c:812
 msgid "Last synced a day ago"
 msgstr "前回の同期化は前日に行われました"
 
-#: ../src/gtk-ui/sync-ui.c:803
+#: ../src/gtk-ui/sync-ui.c:815
 #, c-format
 msgid "Last synced %ld days ago"
 msgstr "前回の同期化は%ld日前に行われました"
 
 # space limitation
-#: ../src/gtk-ui/sync-ui.c:888
+#: ../src/gtk-ui/sync-ui.c:900
 msgid "Sync again"
 msgstr "もう1度同期化"
 
-#: ../src/gtk-ui/sync-ui.c:890
+#: ../src/gtk-ui/sync-ui.c:902
 #: ../src/gtk-ui/ui.glade.h:29
 msgid "Sync now"
 msgstr "今、同期化する"
 
-#: ../src/gtk-ui/sync-ui.c:899
+#: ../src/gtk-ui/sync-ui.c:911
 msgid "Syncing"
 msgstr "同期化中"
 
-#: ../src/gtk-ui/sync-ui.c:905
+#: ../src/gtk-ui/sync-ui.c:917
 msgid "Cancel sync"
 msgstr "同期化のキャンセル"
 
 #. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
-#: ../src/gtk-ui/sync-ui.c:1249
+#: ../src/gtk-ui/sync-ui.c:1261
 #, c-format
 msgid "%s (not supported by this service)"
 msgstr "%s (このサービスではサポートされていません)"
 
-#: ../src/gtk-ui/sync-ui.c:1282
+#: ../src/gtk-ui/sync-ui.c:1294
 #, c-format
 msgid "There was one remote rejection."
 msgid_plural "There were %d remote rejections."
 msgstr[0] "リモートで接続拒否が 1 件ありました。"
 msgstr[1] "リモートで接続拒否が %d 件ありました。"
 
-#: ../src/gtk-ui/sync-ui.c:1287
+#: ../src/gtk-ui/sync-ui.c:1299
 #, c-format
 msgid "There was one local rejection."
 msgid_plural "There were %d local rejections."
 msgstr[0] "ローカルで接続拒否が 1 件ありました。"
 msgstr[1] "ローカルで接続拒否が %d 件ありました。"
 
-#: ../src/gtk-ui/sync-ui.c:1292
+#: ../src/gtk-ui/sync-ui.c:1304
 #, c-format
 msgid "There were %d local rejections and %d remote rejections."
 msgstr "ローカルの接続拒否が %d 件、およびリモートの接続拒否が %d 件あります。"
 
-#: ../src/gtk-ui/sync-ui.c:1297
+#: ../src/gtk-ui/sync-ui.c:1309
 #, c-format
 msgid "Last time: No changes."
 msgstr "前回：変更なし。"
 
-#: ../src/gtk-ui/sync-ui.c:1299
+#: ../src/gtk-ui/sync-ui.c:1311
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %d changes."
 msgstr[0] "前回：1 箇所の変更が送信されました。"
 msgstr[1] "前回：%d 箇所の変更が送信されました。"
 
-#: ../src/gtk-ui/sync-ui.c:1304
+#: ../src/gtk-ui/sync-ui.c:1316
 #, c-format
 msgid "Last time: Received one change."
 msgid_plural "Last time: Received %d changes."
 msgstr[0] "前回：1 箇所の変更を受信しました。"
 msgstr[1] "前回：%d 箇所の変更を受信しました。"
 
-#: ../src/gtk-ui/sync-ui.c:1309
+#: ../src/gtk-ui/sync-ui.c:1321
 #, c-format
 msgid "Last time: Received %d changes and sent %d changes."
 msgstr "前回：%d 箇所の変更を受信し、%d 箇所の変更を送信しました。"
 
-#: ../src/gtk-ui/sync-ui.c:1401
+#: ../src/gtk-ui/sync-ui.c:1413
 msgid "Failed to get server configuration from SyncEvolution"
 msgstr "サーバー設定を SyncEvolution から入手するのに失敗しました"
 
-#: ../src/gtk-ui/sync-ui.c:1467
+#: ../src/gtk-ui/sync-ui.c:1479
 msgid "New service"
 msgstr "新規サービス"
 
-#: ../src/gtk-ui/sync-ui.c:1508
+#: ../src/gtk-ui/sync-ui.c:1520
 msgid "Server URL"
 msgstr "サーバーの URL"
 
 #. TRANSLATORS: placeholder is a source name in settings window
-#: ../src/gtk-ui/sync-ui.c:1528
+#: ../src/gtk-ui/sync-ui.c:1540
 #, c-format
 msgid "%s URI"
 msgstr "%s の URI"
 
 # Access Web site
-#: ../src/gtk-ui/sync-ui.c:1659
+#: ../src/gtk-ui/sync-ui.c:1675
 #: ../src/gtk-ui/ui.glade.h:17
 msgid "Launch website"
 msgstr "Web サイトにアクセス"
 
-#: ../src/gtk-ui/sync-ui.c:1663
+#: ../src/gtk-ui/sync-ui.c:1679
 msgid "Setup and use"
 msgstr "設定して使用"
 
-#: ../src/gtk-ui/sync-ui.c:1709
+#: ../src/gtk-ui/sync-ui.c:1725
 msgid "Failed to get list of manually setup services from SyncEvolution"
 msgstr "手動設定サービスのリストを SyncEvolution から入手するのに失敗しました"
 
-#: ../src/gtk-ui/sync-ui.c:1750
+#: ../src/gtk-ui/sync-ui.c:1766
 msgid "Failed to get list of supported services from SyncEvolution"
 msgstr "サポートされているサービスのリストを SyncEvolution から入手するのに失敗しました"
 
 #. TODO: this is a hack... SyncEnd should be a signal of it's own,
 #. not just hacked on top of the syncevolution error codes
-#: ../src/gtk-ui/sync-ui.c:1911
+#: ../src/gtk-ui/sync-ui.c:1927
 msgid "Service configuration not found"
 msgstr "サービス設定が見つかりませんでした"
 
-#: ../src/gtk-ui/sync-ui.c:1917
+#: ../src/gtk-ui/sync-ui.c:1933
 msgid "Not authorized"
 msgstr "認証されていません"
 
 # "access is forbidden"
-#: ../src/gtk-ui/sync-ui.c:1919
+#: ../src/gtk-ui/sync-ui.c:1935
 msgid "Forbidden"
 msgstr "アクセスが禁止されています"
 
-#: ../src/gtk-ui/sync-ui.c:1921
+#: ../src/gtk-ui/sync-ui.c:1937
 msgid "Not found"
 msgstr "見つかりませんでした"
 
-#: ../src/gtk-ui/sync-ui.c:1923
+#: ../src/gtk-ui/sync-ui.c:1939
 msgid "Fatal database error"
 msgstr "データベースの致命的エラー"
 
-#: ../src/gtk-ui/sync-ui.c:1925
+#: ../src/gtk-ui/sync-ui.c:1941
 msgid "Database error"
 msgstr "データベース・エラー"
 
 # "there is no space"
-#: ../src/gtk-ui/sync-ui.c:1927
+#: ../src/gtk-ui/sync-ui.c:1943
 msgid "No space left"
 msgstr "スペースがありません"
 
 #. TODO identify problem item somehow ?
-#: ../src/gtk-ui/sync-ui.c:1930
+#: ../src/gtk-ui/sync-ui.c:1946
 msgid "Failed to process SyncML"
 msgstr "SyncML プロセスに失敗しました"
 
-#: ../src/gtk-ui/sync-ui.c:1932
+#: ../src/gtk-ui/sync-ui.c:1948
 msgid "Server authorization failed"
 msgstr "サーバー認証に失敗しました"
 
-#: ../src/gtk-ui/sync-ui.c:1934
+#: ../src/gtk-ui/sync-ui.c:1950
 msgid "Failed to parse configuration file"
 msgstr "設定ファイルの中断に失敗しました"
 
-#: ../src/gtk-ui/sync-ui.c:1936
+#: ../src/gtk-ui/sync-ui.c:1952
 msgid "Failed to read configuration file"
 msgstr "設定ファイルの読み込みに失敗しました"
 
 # "configuration entries (items) are not found"
-#: ../src/gtk-ui/sync-ui.c:1938
+#: ../src/gtk-ui/sync-ui.c:1954
 msgid "No configuration found"
 msgstr "設定項目が見つかりません"
 
 # "configuration file is not found"
-#: ../src/gtk-ui/sync-ui.c:1940
+#: ../src/gtk-ui/sync-ui.c:1956
 msgid "No configuration file found"
 msgstr "設定ファイルが見つかりません"
 
-#: ../src/gtk-ui/sync-ui.c:1942
+#: ../src/gtk-ui/sync-ui.c:1958
 msgid "Server sent bad content"
 msgstr "サーバーが悪いコンテンツを送信しました"
 
-#: ../src/gtk-ui/sync-ui.c:1944
+#: ../src/gtk-ui/sync-ui.c:1960
 msgid "Transport failure (no connection?)"
 msgstr "転送の失敗 (接続なし？)"
 
 # "connection time timed out"
-#: ../src/gtk-ui/sync-ui.c:1946
+#: ../src/gtk-ui/sync-ui.c:1962
 msgid "Connection timed out"
 msgstr "接続時間がタイムアウトしました"
 
-#: ../src/gtk-ui/sync-ui.c:1948
+#: ../src/gtk-ui/sync-ui.c:1964
 msgid "Connection certificate has expired"
 msgstr "接続証明書の期限が切れています"
 
-#: ../src/gtk-ui/sync-ui.c:1950
+#: ../src/gtk-ui/sync-ui.c:1966
 msgid "Connection certificate is invalid"
 msgstr "接続証明書が無効です"
 
-#: ../src/gtk-ui/sync-ui.c:1953
+#: ../src/gtk-ui/sync-ui.c:1969
 msgid "Connection failed"
 msgstr "接続に失敗しました"
 
 # "URL is not appropriate"
-#: ../src/gtk-ui/sync-ui.c:1955
+#: ../src/gtk-ui/sync-ui.c:1971
 msgid "URL is bad"
 msgstr "URL が適切ではありません"
 
-#: ../src/gtk-ui/sync-ui.c:1957
+#: ../src/gtk-ui/sync-ui.c:1973
 msgid "Server not found"
 msgstr "サーバーが見つかりません"
 
 # in case the error message is in JPN, added colon
-#: ../src/gtk-ui/sync-ui.c:1959
+#: ../src/gtk-ui/sync-ui.c:1975
 #, c-format
 msgid "Error %d"
 msgstr "エラー：%d"
 
-#: ../src/gtk-ui/sync-ui.c:1969
+#: ../src/gtk-ui/sync-ui.c:1985
 msgid "Sync D-Bus service exited unexpectedly"
 msgstr "同期 D-Bus サービスが突然終了しました"
 
 # space limitation
-#: ../src/gtk-ui/sync-ui.c:1972
-#: ../src/gtk-ui/sync-ui.c:2023
+#: ../src/gtk-ui/sync-ui.c:1988
+#: ../src/gtk-ui/sync-ui.c:2039
 msgid "Sync Failed"
 msgstr "同期化の失敗"
 
 # space limitation
-#: ../src/gtk-ui/sync-ui.c:2015
+#: ../src/gtk-ui/sync-ui.c:2031
 msgid "Sync complete"
 msgstr "同期化の完了"
 
-#: ../src/gtk-ui/sync-ui.c:2020
+#: ../src/gtk-ui/sync-ui.c:2036
 msgid "Sync canceled"
 msgstr "同期化がキャンセルされました"
 
 #. NOTE extra1 can be error here
-#: ../src/gtk-ui/sync-ui.c:2038
+#: ../src/gtk-ui/sync-ui.c:2054
 msgid "Ending sync"
 msgstr "同期化を終了しています"
 
 # added colon to separate
 #. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
-#: ../src/gtk-ui/sync-ui.c:2062
+#: ../src/gtk-ui/sync-ui.c:2078
 #, c-format
 msgid "Preparing '%s'"
 msgstr "待機中です：%s"
 
 # added colon to separate
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:2074
+#: ../src/gtk-ui/sync-ui.c:2090
 #, c-format
 msgid "Sending '%s'"
 msgstr "送信中です：%s"
 
 # added colon to separate
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:2086
+#: ../src/gtk-ui/sync-ui.c:2102
 #, c-format
 msgid "Receiving '%s'"
 msgstr "受信中です：%s"
@@ -492,7 +492,7 @@ msgid "Stop using this service"
 msgstr "このサービスの使用をやめる"
 
 #: ../src/gtk-ui/ui.glade.h:28
-#: ../src/gtk-ui/sync.desktop.in.h:2
+#: ../src/gtk-ui/sync.desktop.in.h:1
 msgid "Sync"
 msgstr "同期化"
 
@@ -522,8 +522,7 @@ msgstr ""
 "同期化サービスが、まだ設定されていません。同期化サービスで\n"
 "ネットブックと Web サービス間のデータを同期化します。"
 
-# "data backup system"
-#: ../src/gtk-ui/sync.desktop.in.h:1
-msgid "Bring your data with you"
-msgstr "データ・バックアップ・システム"
+#: ../src/gtk-ui/sync.desktop.in.h:2
+msgid "Up to date"
+msgstr "最新の情報に更新"
 
