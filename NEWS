@@ -1,7 +1,26 @@
-Google: 
+SyncEvolution 0.9 beta 3 -> 0.9 beta 3 hotfix, 23.07.2009
+---------------------------------------------------------
 
-The server drops photos if they exceed a certain size. The limit is somewhere
-between 40KB (okay) and 80KB (dropped).
+Found additional Google limitation: the server drops photos if they
+exceed a certain size. The limit is somewhere between 40KB (okay) and
+80KB (dropped).
+
+The last-minute workaround for Google/libsoup/gnutls (using http)
+didn't work because apparently Google only supports SyncML over https
+(Bugzilla #4551).  Now the default configuration template uses https
+with all certificate checking disabled. A patch for libsoup was
+submitted to upstream.
+
+Some error messages by the "syncevolution" command line tool were not
+printed (#4676). The root cause was the intentional interception of
+stderr to hide the noise printed by various system libraries
+(#1333). Unfortunately remarks about incorrect command line options
+were among swallowed messages. No good workaround available short of
+disabling the redirection with SYNCEVOLUTION_DEBUG=1, so let's release
+an update...
+
+Other changes:
+* updated translations
 
 
 SyncEvolution 0.9 beta 2 -> 0.9 beta 3, 21.07.2009

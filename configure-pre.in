@@ -1,7 +1,7 @@
 dnl -*- mode: Autoconf; -*-
 dnl Invoke autogen.sh to produce a configure script.
 
-AC_INIT([syncevolution], [0.8.1+0.9+beta3])
+AC_INIT([syncevolution], [0.8.1+0.9+beta3+20090723])
 AM_INIT_AUTOMAKE([tar-ustar])
 AC_CONFIG_MACRO_DIR([m4])
 define([SYNTHESISSRC_REPO], [])
