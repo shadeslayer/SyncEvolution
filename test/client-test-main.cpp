@@ -175,6 +175,19 @@ public:
         SyncEvolution::LoggerBase::popLogger();
         m_logger.reset();
 
+        string logfile = m_currentTest + ".log";
+        simplifyFilename(logfile);
+        
+        const char* compareLog = getenv("CLIENT_TEST_COMPARE_LOG");
+        if(compareLog && strlen(compareLog)) {
+            FILE *fd = fopen ("____compare.log","r");
+            if (fd != NULL) {
+                fclose(fd);
+                system ((string("cat ____compare.log >>")+logfile).c_str());
+                system ("rm ____compare.log");
+            }
+        }
+
         cerr << " " << result << "\n";
         if (!failure.empty()) {
             cerr << failure << "\n";

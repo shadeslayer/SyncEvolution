@@ -3338,6 +3338,13 @@ bool ClientTest::compare(ClientTest &client, const char *fileA, const char *file
     setenv("CLIENT_TEST_RIGHT_NAME", fileB, 1);
     setenv("CLIENT_TEST_REMOVED", "only in left file", 1);
     setenv("CLIENT_TEST_ADDED", "only in right file", 1);
+    const char* compareLog = getenv("CLIENT_TEST_COMPARE_LOG");
+    if(compareLog && strlen(compareLog))
+    {
+       string tmpfile = "____compare.log";
+       cmdstr =string("bash -c 'set -o pipefail;") + cmdstr;
+       cmdstr += " 2>&1|tee " +tmpfile+"'";
+    }
     bool success = system(cmdstr.c_str()) == 0;
     if (!success) {
         printf("failed: env CLIENT_TEST_SERVER=%s PATH=.:$PATH synccompare %s %s\n",
