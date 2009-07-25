@@ -1,4 +1,3 @@
-#: ../src/gtk-ui/sync-ui.c:763
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
@@ -35,8 +34,7 @@ msgstr "Nota"
 # Error while saving the current service into the configuration system GConf
 #: ../src/gtk-ui/sync-ui.c:319
 msgid "Failed to save current service in GConf configuration system"
-msgstr ""
-"Error al guardar el servicio actual en el systema de configuración GConf"
+msgstr "Error al guardar el servicio actual en el systema de configuración GConf"
 
 # Error while saving the configuration of the service in SyncEvolution
 #: ../src/gtk-ui/sync-ui.c:330
@@ -46,8 +44,7 @@ msgstr "Error al guardar la configuración del servicio en SyncEvolution"
 # Error while saving the current service into the configuration system GConf
 #: ../src/gtk-ui/sync-ui.c:415
 msgid "Failed to get service configuration from SyncEvolution"
-msgstr ""
-"Error al guardar el servicio actual en el systema de configuración GConf"
+msgstr "Error al guardar el servicio actual en el systema de configuración GConf"
 
 # Error while deleting the configuration of the service from SyncEvolution
 #: ../src/gtk-ui/sync-ui.c:478
@@ -61,8 +58,7 @@ msgstr "El servicio debe llamarse de alguna manera y tener una URL"
 #. sync is no longer in progress for some reason
 #: ../src/gtk-ui/sync-ui.c:674
 msgid "Failed to cancel: sync was no longer in progress"
-msgstr ""
-"Error durante la cancelación: ya no estaba efectuándose la sincronización"
+msgstr "Error durante la cancelación: ya no estaba efectuándose la sincronización"
 
 # Error during the cancellation of the synchronization
 #: ../src/gtk-ui/sync-ui.c:678
@@ -81,21 +77,13 @@ msgstr "Estamos intentando cancelar la sincronización"
 
 #: ../src/gtk-ui/sync-ui.c:703
 #, c-format
-msgid ""
-"Do you want to delete all local data and replace it with data from %s? This "
-"is not usually advised."
-msgstr ""
-"¿Quieres borrar todos los datos locales y sustituirlos por los datos de %s? "
-"Normalmente, no es recomendable."
+msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
+msgstr "¿Quieres borrar todos los datos locales y sustituirlos por los datos de %s? Normalmente, no es recomendable."
 
 #: ../src/gtk-ui/sync-ui.c:708
 #, c-format
-msgid ""
-"Do you want to delete all data in %s and replace it with your local data? "
-"This is not usually advised."
-msgstr ""
-"¿Quieres borrar todos los datos de %s y sustituirlos por los datos locales? "
-"Normalmente, no es recomendable."
+msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
+msgstr "¿Quieres borrar todos los datos de %s y sustituirlos por los datos locales? Normalmente, no es recomendable."
 
 #: ../src/gtk-ui/sync-ui.c:725
 msgid "No, cancel sync"
@@ -108,9 +96,7 @@ msgstr "Sí, borrar y reemplazar"
 # Synchronization won't take place because it has not been set with what it will be compared to
 #: ../src/gtk-ui/sync-ui.c:748
 msgid "No sources are enabled, not syncing"
-msgstr ""
-"No se hará la sincronización porque no se ha establecido con qué se va a "
-"hacer la comparación"
+msgstr "No se hará la sincronización porque no se ha establecido con qué se va a hacer la comparación"
 
 # A synchronization is already being processed
 #: ../src/gtk-ui/sync-ui.c:765
@@ -167,7 +153,8 @@ msgstr "La última sincronización tuvo lugar hace %ld días"
 msgid "Sync again"
 msgstr "Sincronizar otra vez"
 
-#: ../src/gtk-ui/sync-ui.c:902 ../src/gtk-ui/ui.glade.h:29
+#: ../src/gtk-ui/sync-ui.c:902
+#: ../src/gtk-ui/ui.glade.h:29
 msgid "Sync now"
 msgstr "Sincronizar ahora"
 
@@ -252,7 +239,8 @@ msgid "%s URI"
 msgstr "URI de %s"
 
 # Open the website
-#: ../src/gtk-ui/sync-ui.c:1675 ../src/gtk-ui/ui.glade.h:17
+#: ../src/gtk-ui/sync-ui.c:1675
+#: ../src/gtk-ui/ui.glade.h:17
 msgid "Launch website"
 msgstr "Abrir el sitio web"
 
@@ -264,9 +252,7 @@ msgstr "Configurar y usar"
 # Error while obtaining the list of services configured manually from SyncEvolution
 #: ../src/gtk-ui/sync-ui.c:1725
 msgid "Failed to get list of manually setup services from SyncEvolution"
-msgstr ""
-"Error al obtener de SyncEvolution la lista de servicios establecidos "
-"manualmente"
+msgstr "Error al obtener de SyncEvolution la lista de servicios establecidos manualmente"
 
 #: ../src/gtk-ui/sync-ui.c:1766
 msgid "Failed to get list of supported services from SyncEvolution"
@@ -383,7 +369,8 @@ msgstr "Error: %d"
 msgid "Sync D-Bus service exited unexpectedly"
 msgstr "El servicio de sincronización D-Bus se cerró inesperadamente"
 
-#: ../src/gtk-ui/sync-ui.c:1988 ../src/gtk-ui/sync-ui.c:2039
+#: ../src/gtk-ui/sync-ui.c:1988
+#: ../src/gtk-ui/sync-ui.c:2039
 msgid "Sync Failed"
 msgstr "Falló la sincronización"
 
@@ -479,12 +466,10 @@ msgstr "Editar la configuración del servicio"
 
 #: ../src/gtk-ui/ui.glade.h:15
 msgid ""
-"If you don't see your service above but know that your sync provider uses "
-"SyncML\n"
+"If you don't see your service above but know that your sync provider uses SyncML\n"
 "you can setup a service manually."
 msgstr ""
-"If you don't see your service above but know that your sync provider uses "
-"SyncML\n"
+"If you don't see your service above but know that your sync provider uses SyncML\n"
 "you can setup a service manually."
 
 #: ../src/gtk-ui/ui.glade.h:18
@@ -515,7 +500,7 @@ msgstr "Nombre del servicio"
 # Configuration of the synchronization service
 #: ../src/gtk-ui/ui.glade.h:24
 msgid "Setup sync service"
-msgstr "Configuración del servicio de sincronización"
+msgstr "Ajustes del servicio de sincronización"
 
 # Synchronization needs an Internet connection.
 #: ../src/gtk-ui/ui.glade.h:25
@@ -530,25 +515,21 @@ msgstr ""
 msgid "Stop using this service"
 msgstr "Dejar de usar este servicio"
 
-#: ../src/gtk-ui/ui.glade.h:28 ../src/gtk-ui/sync.desktop.in.h:1
+#: ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/sync.desktop.in.h:1
 msgid "Sync"
 msgstr "Sincronizar"
 
 #: ../src/gtk-ui/ui.glade.h:30
-msgid ""
-"Synchronization is not available (D-Bus service does not answer), sorry."
-msgstr ""
-"Lo sentimos, pero la sincronización no está disponible (el servicio D-Bus no "
-"responde)."
+msgid "Synchronization is not available (D-Bus service does not answer), sorry."
+msgstr "Lo sentimos, pero la sincronización no está disponible (el servicio D-Bus no responde)."
 
 #: ../src/gtk-ui/ui.glade.h:31
 msgid ""
-"To sync you'll need a network connection and an account with a sync "
-"service.\n"
+"To sync you'll need a network connection and an account with a sync service.\n"
 "We support the following services: "
 msgstr ""
-"Para ejecutar la sincronización hacen falta una conexión de red y una "
-"cuenta\n"
+"Para ejecutar la sincronización hacen falta una conexión de red y una cuenta\n"
 "en un servicio de syncronización. Son compatibles los siguientes servicios:"
 
 #: ../src/gtk-ui/ui.glade.h:33
@@ -570,3 +551,4 @@ msgstr "Al día"
 
 #~ msgid "Bring your data with you"
 #~ msgstr "Llévate tus datos"
+
