@@ -782,8 +782,9 @@ public:
 
 protected:
     /** list with all local test classes for manipulating the sources and their index in the client */
-    std::vector< std::pair<int, LocalTests *> > sources;
-    typedef std::vector< std::pair<int, LocalTests *> >::iterator source_it;
+    typedef std::vector< std::pair<int, LocalTests *> > source_array_t;
+    source_array_t sources;
+    typedef source_array_t::iterator source_it;
 
     /**
      * Stack of log file prefixes which are to be appended to the base name,
@@ -906,6 +907,7 @@ protected:
     }
 
     virtual void testManyItems();
+    virtual void testSlowSyncSemantic();
 
     virtual void doInterruptResume(int changes,
                   boost::shared_ptr<TransportWrapper> wrapper); 

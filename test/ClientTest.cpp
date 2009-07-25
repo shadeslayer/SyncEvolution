@@ -1652,6 +1652,7 @@ void SyncTests::addTests() {
                     ADD_TEST(SyncTests, testDelete);
                     ADD_TEST(SyncTests, testAddUpdate);
                     ADD_TEST(SyncTests, testManyItems);
+                    ADD_TEST(SyncTests, testSlowSyncSemantic);
 
                     if (config.updateItem) {
                         ADD_TEST(SyncTests, testUpdate);
@@ -2635,6 +2636,43 @@ void SyncTests::testManyItems() {
     compareDatabases();
 }
 
+/**
+ * - get client A, server, client B in sync with one item
+ * - force slow sync in A: must not duplicate items, but may update it locally
+ * - refresh client B (in case that the item was updated)
+ * - delete item in B and server via two-way sync
+ * - refresh-from-server in B to check that item is gone
+ * - two-way in A: must delete the item
+ */
+void SyncTests::testSlowSyncSemantic()
+{
+    // set up one item everywhere
+    doCopy();
+
+    // slow in A
+    doSync("slow",
+           SyncOptions(SYNC_SLOW,
+                       CheckSyncReport(0,-1,0, -1,-1,0, true, SYNC_SLOW)));
+
+    // refresh B, delete item
+    accessClientB->doSync("refresh",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(0,-1,0, 0,0,0, true, SYNC_TWO_WAY)));
+    BOOST_FOREACH(source_array_t::value_type &source_pair, accessClientB->sources)  {
+        source_pair.second->deleteAll(source_pair.second->createSourceA);
+    }
+    accessClientB->doSync("delete",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
+    accessClientB->doSync("check",
+                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                                      CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+
+    // now the item should also be deleted on A
+    doSync("delete",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY)));
+}
 
 /**
  * implements testMaxMsg(), testLargeObject(), testLargeObjectEncoded()
