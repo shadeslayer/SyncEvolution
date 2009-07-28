@@ -66,7 +66,7 @@ class CurlTransportAgent : public TransportAgent
 
     TransportCallback m_cb;
     void *m_cbData;
-    int m_elapsed;
+    time_t m_sendStartTime;
     int m_cbInterval;
 
     /**

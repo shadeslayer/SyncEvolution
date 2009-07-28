@@ -23,6 +23,7 @@
 #ifdef ENABLE_LIBCURL
 
 #include <algorithm>
+#include <ctime>
 #include "SyncEvolutionUtil.h"
 
 namespace SyncEvolution {
@@ -173,7 +174,7 @@ void CurlTransportAgent::send(const char *data, size_t len)
 
     m_status = ACTIVE;
     if(m_cb){
-        m_elapsed = 0;
+        m_sendStartTime = time(NULL);
     }
     m_aborting = false;
     if ((code = curl_easy_setopt(m_easyHandle, CURLOPT_PROGRESSDATA, static_cast<void *> (this)))||
@@ -278,8 +279,8 @@ int CurlTransportAgent::progressCallback(void* transport, double, double, double
 int CurlTransportAgent::processCallback()
 {
     if (m_cb){   
-        if (++m_elapsed  > m_cbInterval){
-            m_elapsed = 0;
+        time_t curTime = time(NULL);
+        if (curTime - m_sendStartTime > m_cbInterval){
             bool cont = m_cb (m_cbData);
             if (cont) {
                 m_status = TIME_OUT;

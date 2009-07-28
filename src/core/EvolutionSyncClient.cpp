@@ -1630,8 +1630,8 @@ SyncMLStatus EvolutionSyncClient::doSync()
     } catch (NoSuchKey error) {
     }
 
-    m_timeout = getReqTimeout();
-    m_retryCount = getReqRetries();
+    m_timeout = getResendTimeout();
+    m_retryCount = getResendRetries();
     // run an HTTP client sync session
     boost::shared_ptr<TransportAgent> agent(createTransportAgent());
     if (getUseProxy()) {
