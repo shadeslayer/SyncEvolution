@@ -1251,7 +1251,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
             "    <logformat>html</logformat>\n"
             "    <folding>auto</folding>\n"
             "    <timestamp>yes</timestamp>\n"
-            "    <timestampall>no</timestampall>\n"
+            "    <timestampall>yes</timestampall>\n"
             "    <timedsessionlognames>no</timedsessionlognames>\n"
             "    <subthreadmode>suppress</subthreadmode>\n"
             "    <logsessionstoglobal>yes</logsessionstoglobal>\n"
