@@ -1510,7 +1510,10 @@ show_settings_window (app_data *data, server_config *config)
         gtk_widget_hide (data->stop_using_service_btn);
 
     gtk_entry_set_text (GTK_ENTRY (data->username_entry), 
-                        config->username ? config->username : "");
+                        (config->username &&
+                         strcmp(config->username, "your SyncML server account name")) ?
+                        config->username :
+                        "");
     g_object_set_data (G_OBJECT (data->username_entry), "value", &config->username);
 
     gtk_entry_set_text (GTK_ENTRY (data->password_entry),
