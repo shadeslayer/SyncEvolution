@@ -115,7 +115,8 @@ class TransportAgent
          */
         CANCELED,
         /**
-         * sending message has failed
+         * sending message has failed, transport should not throw an exception
+         * if the error is recoverable (such as a temporary network error)
          */
         FAILED,
         /**

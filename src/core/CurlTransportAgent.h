@@ -105,7 +105,7 @@ class CurlTransportAgent : public TransportAgent
     static int progressCallback (void *ptr, double dltotal, double dlnow, double uptotal, double upnow);
 
     /** check curl error code and turn into exception */
-    void checkCurl(CURLcode code);
+    void checkCurl(CURLcode code, bool exception = true);
 
     /**
      * initialize curl if necessary, return new handle

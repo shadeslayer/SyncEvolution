@@ -179,13 +179,16 @@ void CurlTransportAgent::send(const char *data, size_t len)
     m_aborting = false;
     if ((code = curl_easy_setopt(m_easyHandle, CURLOPT_PROGRESSDATA, static_cast<void *> (this)))||
         (code = curl_easy_setopt(m_easyHandle, CURLOPT_HTTPHEADER, m_slist)) ||
-        (code = curl_easy_setopt(m_easyHandle, CURLOPT_POSTFIELDSIZE, len)) ||
-        ((code = curl_easy_perform(m_easyHandle)) && ((code != CURLE_ABORTED_BY_CALLBACK)||m_aborting))
+        (code = curl_easy_setopt(m_easyHandle, CURLOPT_POSTFIELDSIZE, len))
        ){
         m_status = CANCELED;
         checkCurl(code);
     }
-    if(code != CURLE_ABORTED_BY_CALLBACK) {
+
+    if ((code = curl_easy_perform(m_easyHandle))) {
+        m_status = FAILED;
+        checkCurl(code, false);
+    } else {
         m_status = GOT_REPLY;
     }
 }
@@ -257,10 +260,14 @@ size_t CurlTransportAgent::readData(void *buffer, size_t size) throw()
     return curr;
 }
 
-void CurlTransportAgent::checkCurl(CURLcode code)
+void CurlTransportAgent::checkCurl(CURLcode code, bool exception)
 {
     if (code) {
-        SE_THROW_EXCEPTION(TransportException, m_curlErrorText);
+        if(exception){
+            SE_THROW_EXCEPTION(TransportException, m_curlErrorText);
+        }else {
+            SE_LOG_INFO(NULL, NULL, "CurlTransport Failure: %s", m_curlErrorText);
+        }
     }
 }
 
@@ -281,6 +288,8 @@ int CurlTransportAgent::processCallback()
     if (m_cb){   
         time_t curTime = time(NULL);
         if (curTime - m_sendStartTime > m_cbInterval){
+            //change here to avoid duplicate call back to the upper layer
+            m_sendStartTime = curTime; 
             bool cont = m_cb (m_cbData);
             if (cont) {
                 m_status = TIME_OUT;

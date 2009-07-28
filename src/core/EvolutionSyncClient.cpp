@@ -1165,13 +1165,9 @@ bool EvolutionSyncClient::transport_cb (void *udata)
 
 bool EvolutionSyncClient::processTransportCb()
 {
-    if(++m_retries > m_retryCount)
-    {
-        SE_LOG_INFO(NULL, NULL, "Transport: give up after %d tries", m_retries-1);
-        return false;
-    }
-
-    SE_LOG_INFO(NULL, NULL, "Transport: retry send #%d after %d seconds timeout", m_retries, m_timeout);
+    //Always return true to continue, we will detect the retry count at
+    //the higher level together with transport error scenarios.
+    SE_LOG_INFO(NULL, NULL, "Transport timeout after %d seconds timeout", m_timeout);
     return true;
 }
 
@@ -1689,8 +1685,9 @@ SyncMLStatus EvolutionSyncClient::doSync()
             //too slow to the user; therefore, we can delay abort at other
             //points to this two points (before sending and before receiving
             //the data).
-            if (checkForAbort() && stepCmd == (sysync::STEPCMD_SENDDATA 
-                    || stepCmd == sysync::STEPCMD_NEEDDATA)) {
+            if (checkForAbort() && (stepCmd == sysync::STEPCMD_RESENDDATA
+                        || stepCmd ==sysync::STEPCMD_SENDDATA 
+                        || stepCmd == sysync::STEPCMD_NEEDDATA)) {
                 stepCmd = sysync::STEPCMD_ABORT;
             }
 
@@ -1800,7 +1797,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                 if(!resend) {
                     sendBuffer = m_engine.GetSyncMLBuffer(session, true);
                 }else {
-                    SE_LOG_INFO (NULL, NULL, "EvolutionSyncClient: resend previous request");
+                    SE_LOG_INFO (NULL, NULL, "EvolutionSyncClient: resend previous request #%d", m_retries);
                 }
                 agent->send(sendBuffer.get(), sendBuffer.size());
                 stepCmd = sysync::STEPCMD_SENTDATA; // we have sent the data
@@ -1813,12 +1810,16 @@ SyncMLStatus EvolutionSyncClient::doSync()
                     stepCmd = sysync::STEPCMD_SENTDATA; // still sending the data?!
                     break;
                 case TransportAgent::TIME_OUT:
-                    stepCmd = sysync::STEPCMD_RESENDDATA;
-                    resend = true;
+                case TransportAgent::FAILED:
+                    if(m_retries++ >= m_retryCount){
+                        SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries",m_retryCount);
+                        stepCmd = sysync::STEPCMD_ABORT;
+                    }else {
+                        stepCmd = sysync::STEPCMD_RESENDDATA;
+                        resend = true;
+                    }
                     break;
                 case TransportAgent::GOT_REPLY: {
-                    m_retries = 0;
-                    sendBuffer.reset();
                     const char *reply;
                     size_t replylen;
                     string contentType;
@@ -1829,6 +1830,8 @@ SyncMLStatus EvolutionSyncClient::doSync()
                         contentType.find("application/vnd.syncml+wbxml") != contentType.npos ||
                         contentType.find("application/vnd.syncml+xml") != contentType.npos) {
                         // put answer received earlier into SyncML engine's buffer
+                        m_retries = 0;
+                        sendBuffer.reset();
                         m_engine.WriteSyncMLBuffer(session,
                                                    reply,
                                                    replylen);
@@ -1837,7 +1840,14 @@ SyncMLStatus EvolutionSyncClient::doSync()
                         SE_LOG_DEBUG(NULL, NULL, "unexpected content type '%s' in reply, %d bytes:\n%.*s",
                                      contentType.c_str(), (int)replylen, (int)replylen, reply);
                         SE_LOG_ERROR(NULL, NULL, "unexpected reply from server; might be a temporary problem, try again later");
-                        stepCmd = sysync::STEPCMD_TRANSPFAIL;
+
+                        if(m_retries++ >= m_retryCount){
+                            SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries",m_retryCount);
+                            stepCmd = sysync::STEPCMD_ABORT;
+                        }else {
+                            stepCmd = sysync::STEPCMD_RESENDDATA;
+                            resend = true;
+                        }
                     }
                     break;
                 }

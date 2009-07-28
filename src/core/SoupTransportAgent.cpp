@@ -145,7 +145,7 @@ void SoupTransportAgent::send(const char *data, size_t len)
 
 void SoupTransportAgent::cancel()
 {
-    m_status = FAILED;
+    m_status = CANCELED;
     soup_session_abort(m_session.get());
     if(g_main_loop_is_running(m_loop.get()))
       g_main_loop_quit(m_loop.get());
@@ -168,9 +168,13 @@ TransportAgent::Status SoupTransportAgent::wait()
         break;
     }
 
-    /** For a canceled message, does not check the return status */
-    if(m_status == TIME_OUT){
-        m_failure.clear();
+    /** For a canceled message, does not throw exception, just print a warning, the 
+     * upper layer may decide to retry
+     */
+    if(m_status == TIME_OUT || m_status == FAILED){
+        std::string failure;
+        std::swap(failure, m_failure);
+        SE_LOG_INFO(NULL, NULL, "SoupTransport Failure: %s", failure.c_str());
     }
     if (!m_failure.empty()) {
         std::string failure;
