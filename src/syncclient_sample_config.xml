@@ -66,6 +66,27 @@
           DTSTART = CONVERTTOUSERZONE(DTSTART);
           MAKEALLDAY(DTSTART,DTEND,i);
         }
+
+        // Make sure that all EXDATE times are in the same timezone as the start
+        // time. Some servers send them as UTC, which is all fine and well, but
+        // only if the timezone definition doesn't change. Also, libical does not
+        // handle such UTC EXDATEs, so let's convert it while the UTC and
+        // time zone definition (hopefully) are in sync.
+        if (TIMEZONE(DTSTART) != "UTC" && !ISFLOATING(DTSTART)) {
+          i = 0;
+          timestamp exdate;
+          while (i<SIZE(EXDATES)) {
+            exdate = EXDATES[i];
+            if (!ISDATEONLY(exdate) &&
+                (TIMEZONE(exdate) == "UTC" || ISFLOATING(exdate))) {
+              // "unfloat" floating time stamps: not sure whether that occcurs
+              // in practice, but it looks as wrong as UTC EXDATEs
+              EXDATES[i] = CONVERTTOZONE(exdate,DTSTART,TRUE);
+            }
+            i=i+1;
+          }
+        }
+
         // - shape attendees (and make sure ATTENDEES[] is assigned even for empty email addresses)
         i=0;
         while(i<SIZE(ATTENDEES) || i<SIZE(ATTENDEE_CNS)) {
