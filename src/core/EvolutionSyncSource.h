@@ -352,6 +352,7 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
         m_deletedItems( *this, "deleted", SyncItem::DELETED ),
         m_isModified( false ),
         m_modTimeStamp(0),
+        m_numDeleted(0),
         m_hasFailed( false )
         {
         }
@@ -722,6 +723,10 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
                           va_list args);
     /**@}*/
 
+    long getNumDeleted() { return m_numDeleted; }
+    void setNumDeleted(long num) { m_numDeleted = num; }
+    void incrementNumDeleted() { m_numDeleted++; }
+
   protected:
 #ifdef HAVE_EDS
     /**
@@ -855,6 +860,15 @@ class EvolutionSyncSource : public EvolutionSyncSourceConfig, public LoggerBase,
 
     /** time stamp of latest database modification, for sleepSinceModification() */
     time_t m_modTimeStamp;
+
+    /**
+     * Counter for items deleted in the source. Has to be incremented
+     * by RemoveAllItems() and DeleteItem(). This counter is used to
+     * update the Synthesis engine counter in those cases where the
+     * engine does not (refresh from server) or cannot
+     * (RemoveAllItems()) count the removals itself.
+     */
+    long m_numDeleted;
 
     /** keeps track of failure state */
     bool m_hasFailed;

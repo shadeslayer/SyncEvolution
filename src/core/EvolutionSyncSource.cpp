@@ -505,7 +505,11 @@ SyncMLStatus EvolutionSyncSource::updateItem(SyncItem& item) throw()
 
 SyncMLStatus EvolutionSyncSource::deleteItem(SyncItem& item) throw()
 {
-    return processItem("delete", &EvolutionSyncSource::deleteItemThrow, item, false);
+    SyncMLStatus status = processItem("delete", &EvolutionSyncSource::deleteItemThrow, item, false);
+    if (status == STATUS_OK) {
+        incrementNumDeleted();
+    }
+    return status;
 }
 
 SyncMLStatus EvolutionSyncSource::removeAllItems() throw()
@@ -518,6 +522,7 @@ SyncMLStatus EvolutionSyncSource::removeAllItems() throw()
             item.setKey(key.c_str());
             logItem(item, "delete all items");
             deleteItemThrow(item);
+            incrementNumDeleted();
             m_isModified = true;
         }
     } catch (...) {

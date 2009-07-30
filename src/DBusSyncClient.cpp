@@ -89,7 +89,17 @@ void DBusSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
                                            EvolutionSyncSource &source,
                                            int32_t extra1, int32_t extra2, int32_t extra3)
 {
-	m_progress (g_strdup (source.getName()), type, extra1, extra2, extra3, m_userdata);
+	m_progress (g_strdup (source.getName()), type, extra1, extra2,
+                    // Synthesis engine doesn't count locally
+                    // deleted items during
+                    // refresh-from-server. That's a matter of
+                    // taste. In SyncEvolution we'd like these
+                    // items to show up, so add it here.
+                    (type == sysync::PEV_DSSTATS_L &&
+                     source.getFinalSyncMode() == SYNC_REFRESH_FROM_SERVER) ? 
+                    source.getNumDeleted() :
+                    extra3,
+                    m_userdata);
 	EvolutionSyncClient::displaySourceProgress(type, source, extra1, extra2, extra3);
 }
 

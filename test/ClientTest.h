@@ -908,6 +908,7 @@ protected:
 
     virtual void testManyItems();
     virtual void testSlowSyncSemantic();
+    virtual void testComplexRefreshFromServerSemantic();
 
     virtual void doInterruptResume(int changes,
                   boost::shared_ptr<TransportWrapper> wrapper); 

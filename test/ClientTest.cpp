@@ -1653,6 +1653,7 @@ void SyncTests::addTests() {
                     ADD_TEST(SyncTests, testAddUpdate);
                     ADD_TEST(SyncTests, testManyItems);
                     ADD_TEST(SyncTests, testSlowSyncSemantic);
+                    ADD_TEST(SyncTests, testComplexRefreshFromServerSemantic);
 
                     if (config.updateItem) {
                         ADD_TEST(SyncTests, testUpdate);
@@ -2672,6 +2673,34 @@ void SyncTests::testSlowSyncSemantic()
     doSync("delete",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY)));
+}
+
+/**
+ * check that refresh-from-server works correctly:
+ * - create the same item on A, server, B via testCopy()
+ * - refresh B (one item deleted, one created)
+ * - delete item on A and server
+ * - refresh B (one item deleted)
+ */
+void SyncTests::testComplexRefreshFromServerSemantic()
+{
+    testCopy();
+
+    // check refresh with one item on server
+    accessClientB->doSync("refresh-one",
+                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                                      CheckSyncReport(1,0,1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+
+    // delete that item via A, check again
+    BOOST_FOREACH(source_array_t::value_type &source_pair, sources)  {
+        source_pair.second->deleteAll(source_pair.second->createSourceA);
+    }
+    doSync("delete-item",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
+    accessClientB->doSync("refresh-none",
+                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                                      CheckSyncReport(0,0,1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
 }
 
 /**
