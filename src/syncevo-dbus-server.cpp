@@ -1147,6 +1147,7 @@ int main()
 	g_type_init ();
 	g_thread_init (NULL);
 	g_set_application_name ("SyncEvolution");
+	dbus_g_thread_init ();
 
 	server = (SyncevoDBusServer*)g_object_new (SYNCEVO_TYPE_DBUS_SERVER, NULL);
 
