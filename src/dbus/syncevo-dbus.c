@@ -665,7 +665,9 @@ get_server_config_async_error (SyncevoAsyncData *data)
 	                                             NULL,
 	                                             error,
 	                                             data->userdata);
-	g_slice_free (SyncevoAsyncData, data);
+        // This function may be called again, cannot free data.
+        // See Bugzilla #4919.
+	// g_slice_free (SyncevoAsyncData, data);
 }
 
 void 
