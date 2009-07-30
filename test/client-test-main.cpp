@@ -184,7 +184,6 @@ public:
             if (fd != NULL) {
                 fclose(fd);
                 system ((string("cat ____compare.log >>")+logfile).c_str());
-                system ("rm ____compare.log");
             }
         }
 
