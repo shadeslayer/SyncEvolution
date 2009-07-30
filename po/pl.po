@@ -3,20 +3,18 @@
 # This file is distributed under the same license as the syncevolution package.
 # Andrzej Zaborowski <andrew.zaborowski@intel.com>, 2009.
 #
-#: ../src/gtk-ui/sync-ui.c:763
 msgid ""
 msgstr ""
 "Project-Id-Version: Moblin\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2009-07-22 09:19+0000\n"
+"POT-Creation-Date: 2009-07-29 03:16+0000\n"
 "PO-Revision-Date: \n"
-"Last-Translator: Andrzej Zaborowski <andrew.zaborowski@intel.com>\n"
+"Last-Translator: GLSJPN_Yukari <yukarix.yamashita@intel.com>\n"
 "Language-Team: Moblin\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
-"|| n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Poedit-Language: Polish\n"
 "X-Poedit-SourceCharset: utf-8\n"
 "X-Poedit-Bookmarks: -1,37,-1,-1,-1,-1,-1,-1,-1,-1\n"
@@ -85,21 +83,13 @@ msgstr "Trwa próba anulowania synchronizacji"
 
 #: ../src/gtk-ui/sync-ui.c:703
 #, c-format
-msgid ""
-"Do you want to delete all local data and replace it with data from %s? This "
-"is not usually advised."
-msgstr ""
-"Czy chcesz usunąć wszystkie lokalne dane i zastąpić je danymi z %s? Nie jest "
-"to zwykle zalecane."
+msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
+msgstr "Czy chcesz usunąć wszystkie lokalne dane i zastąpić je danymi z %s? Nie jest to zwykle zalecane."
 
 #: ../src/gtk-ui/sync-ui.c:708
 #, c-format
-msgid ""
-"Do you want to delete all data in %s and replace it with your local data? "
-"This is not usually advised."
-msgstr ""
-"Czy chcesz usunąć wszystkie dane w %s i zastąpić je danymi lokalnymi? Nie "
-"jest to zwykle zalecane."
+msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
+msgstr "Czy chcesz usunąć wszystkie dane w %s i zastąpić je danymi lokalnymi? Nie jest to zwykle zalecane."
 
 #: ../src/gtk-ui/sync-ui.c:725
 msgid "No, cancel sync"
@@ -112,9 +102,7 @@ msgstr "Tak, usuń i zastąp"
 # Synchronization won't take place because it has not been set with what it will be compared to
 #: ../src/gtk-ui/sync-ui.c:748
 msgid "No sources are enabled, not syncing"
-msgstr ""
-"Synchronizacja nie może zostać wykonana ponieważ nie podano źródła do "
-"porównania"
+msgstr "Synchronizacja nie może zostać wykonana ponieważ nie podano źródła do porównania"
 
 # A synchronization is already being processed
 #: ../src/gtk-ui/sync-ui.c:765
@@ -143,7 +131,7 @@ msgstr "Ostatnio synchronizowano minutę temu"
 #: ../src/gtk-ui/sync-ui.c:803
 #, c-format
 msgid "Last synced %ld minutes ago"
-msgstr "Ostatnio synchronizowano przed %ld minutami"
+msgstr "Ostatnio synchronizowano %ld minut temu"
 
 # Last synchronization happened one hour ago
 #: ../src/gtk-ui/sync-ui.c:806
@@ -154,7 +142,7 @@ msgstr "Ostatnio synchronizowano godzinę temu"
 #: ../src/gtk-ui/sync-ui.c:809
 #, c-format
 msgid "Last synced %ld hours ago"
-msgstr "Ostatnio synchronizowano przed %ld godzinami"
+msgstr "Ostatnio synchronizowano %ld godzin temu"
 
 # Last synchronization happened one day ago
 #: ../src/gtk-ui/sync-ui.c:812
@@ -171,7 +159,8 @@ msgstr "Ostatnio synchronizowano %ld dni temu"
 msgid "Sync again"
 msgstr "Synchronizuj jeszcze raz"
 
-#: ../src/gtk-ui/sync-ui.c:902 ../src/gtk-ui/ui.glade.h:29
+#: ../src/gtk-ui/sync-ui.c:902
+#: ../src/gtk-ui/ui.glade.h:29
 msgid "Sync now"
 msgstr "Synchronizuj teraz"
 
@@ -210,8 +199,7 @@ msgstr[2] "Odrzucono %d elementów"
 #: ../src/gtk-ui/sync-ui.c:1304
 #, c-format
 msgid "There were %d local rejections and %d remote rejections."
-msgstr ""
-"Odrzucono %d elementów podczas gdy druga strona odrzuciła %d elementów."
+msgstr "Odrzucono %d elementów podczas gdy druga strona odrzuciła %d elementów."
 
 #: ../src/gtk-ui/sync-ui.c:1309
 #, c-format
@@ -261,7 +249,8 @@ msgid "%s URI"
 msgstr "URI %s"
 
 # Open the website
-#: ../src/gtk-ui/sync-ui.c:1675 ../src/gtk-ui/ui.glade.h:17
+#: ../src/gtk-ui/sync-ui.c:1675
+#: ../src/gtk-ui/ui.glade.h:17
 msgid "Launch website"
 msgstr "Otworzyć stronę www"
 
@@ -390,9 +379,10 @@ msgstr "Błąd %d"
 msgid "Sync D-Bus service exited unexpectedly"
 msgstr "Usługa D-Bus synchronizacji zakończyła nieoczekiwanie"
 
-#: ../src/gtk-ui/sync-ui.c:1988 ../src/gtk-ui/sync-ui.c:2039
+#: ../src/gtk-ui/sync-ui.c:1988
+#: ../src/gtk-ui/sync-ui.c:2039
 msgid "Sync Failed"
-msgstr "Synchronizacja nie powiodła się"
+msgstr "Nie powiodło się"
 
 #: ../src/gtk-ui/sync-ui.c:2031
 msgid "Sync complete"
@@ -486,12 +476,10 @@ msgstr "Edycja ustawień usługi"
 
 #: ../src/gtk-ui/ui.glade.h:15
 msgid ""
-"If you don't see your service above but know that your sync provider uses "
-"SyncML\n"
+"If you don't see your service above but know that your sync provider uses SyncML\n"
 "you can setup a service manually."
 msgstr ""
-"Jeśli Twoja usługa nie jest widoczna powyżej a wiesz że dostawca używa "
-"SyncML\n"
+"Jeśli Twoja usługa nie jest widoczna powyżej a wiesz że dostawca używa SyncML\n"
 "możesz ustawić usługę ręcznie."
 
 #: ../src/gtk-ui/ui.glade.h:18
@@ -537,23 +525,21 @@ msgstr ""
 msgid "Stop using this service"
 msgstr "Zaprzestań używania usługi"
 
-#: ../src/gtk-ui/ui.glade.h:28 ../src/gtk-ui/sync.desktop.in.h:1
+#: ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/sync.desktop.in.h:1
 msgid "Sync"
 msgstr "Synchronizuj"
 
 #: ../src/gtk-ui/ui.glade.h:30
-msgid ""
-"Synchronization is not available (D-Bus service does not answer), sorry."
+msgid "Synchronization is not available (D-Bus service does not answer), sorry."
 msgstr "Niestety synchronizacja jest niedostępna (usługa D-Bus nie odpowiada)."
 
 #: ../src/gtk-ui/ui.glade.h:31
 msgid ""
-"To sync you'll need a network connection and an account with a sync "
-"service.\n"
+"To sync you'll need a network connection and an account with a sync service.\n"
 "We support the following services: "
 msgstr ""
-"Aby móc synchronizować potrzebne są połączenie z siecią oraz konto dla "
-"usługi\n"
+"Aby móc synchronizować potrzebne są połączenie z siecią oraz konto dla usługi\n"
 "synchronizacji. Następujące usługi są kompatybilne:"
 
 #: ../src/gtk-ui/ui.glade.h:33
@@ -572,3 +558,4 @@ msgstr ""
 #: ../src/gtk-ui/sync.desktop.in.h:2
 msgid "Up to date"
 msgstr "Aktualny"
+
