@@ -7,3 +7,4 @@ Exec=sync-ui
 Icon=sync
 Categories=Network;GTK;
 Terminal=false
+StartupNotify=true
