@@ -3428,6 +3428,7 @@ void ClientTest::getTestData(const char *type, Config &config)
 
     if (!strcmp(type, "vcard30")) {
         config.sourceName = "vcard30";
+        config.sourceNameServerTemplate = "addressbook";
         config.uri = "card3"; // ScheduleWorld
         config.type = "text/vcard";
         config.insertItem =
@@ -3494,6 +3495,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.testcases = "testcases/vcard30.vcf";
     } else if (!strcmp(type, "vcard21")) {
         config.sourceName = "vcard21";
+        config.sourceNameServerTemplate = "addressbook";
         config.uri = "card"; // Funambol
         config.type = "text/x-vcard";
         config.insertItem =
@@ -3556,6 +3558,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.testcases = "testcases/vcard21.vcf";
     } else if(!strcmp(type, "ical20")) {
         config.sourceName = "ical20";
+        config.sourceNameServerTemplate = "calendar";
         config.uri = "cal2"; // ScheduleWorld
         config.type = "text/x-vcalendar";
         config.insertItem =
@@ -3692,6 +3695,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.testcases = "testcases/ical20.ics";
     } if(!strcmp(type, "vcal10")) {
         config.sourceName = "vcal10";
+        config.sourceNameServerTemplate = "calendar";
         config.uri = "cal"; // Funambol 3.0
         config.type = "text/x-vcalendar";
         config.insertItem =
@@ -3749,6 +3753,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.testcases = "testcases/vcal10.ics";
     } else if(!strcmp(type, "itodo20")) {
         config.sourceName = "itodo20";
+        config.sourceNameServerTemplate = "todo";
         config.uri = "task2"; // ScheduleWorld
         config.type = "text/x-vcalendar";
         config.insertItem =
@@ -3828,6 +3833,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         // the test data in that format, see EvolutionMemoSource
         // for an example.
         config.uri = "note"; // ScheduleWorld
+        config.sourceNameServerTemplate = "memo";
         config.type = "memo";
         config.itemType = "text/calendar";
         config.insertItem =

@@ -256,9 +256,16 @@ public:
         LoggerBase::instance().setLevel(Logger::DEBUG);
         std::string root = std::string("evolution/") + server + "_" + id;
         EvolutionSyncConfig config(string(server) + "_" + id);
+        boost::shared_ptr<EvolutionSyncConfig> from = boost::shared_ptr<EvolutionSyncConfig> ();
+
         if (!config.exists()) {
             // no configuration yet
             config.setDefaults();
+            from = EvolutionSyncConfig::createServerTemplate(server);
+            if(from) {
+                set<string> filter;
+                config.copy(*from, &filter);
+            }
             config.setDevID(id == "1" ? "sc-api-nat" : "sc-pim-ppc");
         }
         BOOST_FOREACH(const RegisterSyncSourceTest *test, m_configs) {
@@ -273,6 +280,10 @@ public:
                 sc = config.getSyncSourceConfig(testconfig.sourceName);
                 CPPUNIT_ASSERT(sc);
                 sc->setURI(testconfig.uri);
+                if(from && testconfig.sourceNameServerTemplate){
+                    boost::shared_ptr<EvolutionSyncSourceConfig> scServerTemplate = from->getSyncSourceConfig(testconfig.sourceNameServerTemplate);
+                    sc->setURI(scServerTemplate->getURI());
+                }
                 sc->setSourceType(testconfig.type);
             }
 

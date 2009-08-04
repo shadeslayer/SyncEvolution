@@ -308,6 +308,13 @@ class ClientTest {
         const char *uri;
 
         /**
+         * A corresponding source name in the default server template,
+         * this is used to copy corresponding uri set in the server template
+         * instead of the uri field above (which is the same for all servers).
+         */
+        const char *sourceNameServerTemplate;
+
+        /**
          * A member function of a subclass which is called to create a
          * sync source referencing the data. This is used in tests of
          * the SyncSource API itself as well as in tests which need to
