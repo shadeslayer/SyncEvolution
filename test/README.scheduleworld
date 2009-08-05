@@ -1,8 +1,0 @@
-ScheduleWorld resolves conflicts where the client deleted an item that
-was updated on the server by deleting the item on the server (Bugzilla
-#4369). Other servers always preserve the updated item in an update/delete
-conflict, regardless which side has the update.
-
-Advice: always sync before making changes. If it is too late for that,
-copy items instead of updating them if they were deleted elsewhere,
-otherwise the updated item may get lost later on.
