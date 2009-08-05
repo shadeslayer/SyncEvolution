@@ -475,7 +475,7 @@ need_password (const char *username,
                gpointer data)
 {
 	char *password = NULL;
-	char *server = NULL;
+	const char *server = NULL;
 	GnomeKeyringResult res;
 
 	server = strstr (server_url, "://");
