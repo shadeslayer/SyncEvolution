@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
 "POT-Creation-Date: 2009-08-05 09:19+0000\n"
-"PO-Revision-Date: 2009-08-05 15:26-0800\n"
+"PO-Revision-Date: 2009-08-07 19:06-0800\n"
 "Last-Translator: Auke Kok <auke-jan.h.kok@intel.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -168,9 +168,9 @@ msgstr[0] "Er was een lokale verwerping."
 msgstr[1] "Er waren %d lokale verwerpingen."
 
 #: ../src/gtk-ui/sync-ui.c:1304
-#, fuzzy, c-format
+#, c-format
 msgid "There were %d local rejections and %d remote rejections."
-msgstr "Er waren %d lokale en %d remote verwerpingen"
+msgstr "Er waren %d lokale en %d externe verwerpingen"
 
 #: ../src/gtk-ui/sync-ui.c:1309
 #, c-format
@@ -404,14 +404,12 @@ msgstr ""
 "service"
 
 #: ../src/gtk-ui/ui.glade.h:11
-#, fuzzy
 msgid "Delete all local data and replace it with remote data"
-msgstr "Verwijder alle lokale data en vervang het met remote data"
+msgstr "Verwijder alle lokale data en vervang het met externe data"
 
 #: ../src/gtk-ui/ui.glade.h:12
-#, fuzzy
 msgid "Delete all remote data and replace it with local data"
-msgstr "Verwijder alle remote data en vervang het met lokale data"
+msgstr "Verwijder alle externe data en vervang het met lokale data"
 
 #: ../src/gtk-ui/ui.glade.h:13
 msgid "Delete this service"
@@ -430,9 +428,8 @@ msgstr ""
 "kun je handmatig een service opzetten."
 
 #: ../src/gtk-ui/ui.glade.h:18
-#, fuzzy
 msgid "Merge local and remote data (recommended)"
-msgstr "Voeg lokale en remote data samen (aanbevolen)"
+msgstr "Voeg lokale en externe data samen (aanbevolen)"
 
 #: ../src/gtk-ui/ui.glade.h:19
 msgid "Password"
