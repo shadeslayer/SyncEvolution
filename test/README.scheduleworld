@@ -1,0 +1,7 @@
+Very complete support for Evolution data. No known lost properties
+at this time.
+
+Interrupted sync sessions are not resumed. Instead the server falls
+back to a slow sync, which may lead to duplicates (Bugzilla #3733).
+Resuming from a failed sync is currently only supported by the
+Synthesis server.
