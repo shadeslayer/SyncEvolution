@@ -3485,6 +3485,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "TITLE:developer\n"
             "FN:John Doe\n"
             "N:Doe;John;;;\n"
+            "TEL;TYPE=WORK;TYPE=VOICE:123456\n"
             "X-EVOLUTION-FILE-AS:Doe\\, John\n"
             "X-MOZILLA-HTML:TRUE\n"
             "BDAY:2006-01-08\n"
