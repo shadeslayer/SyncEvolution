@@ -116,6 +116,7 @@ deb rpm : dist/$(distdir) dist/debian/control doc-pak description-pak
 		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
 		--pkggroup='gnome' \
 		--docdir=":$$docdir" cp -r `pwd`/$</usr/* /usr
+	if [ $@ == "rpm" ]; then cp /usr/src/rpm/RPMS/*/syncevolution-${VERSION}-2.*.rpm .; fi
 
 .PHONY: dist/$(distdir) clean_dist
 dist/$(distdir): all
