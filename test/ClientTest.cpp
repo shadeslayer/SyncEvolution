@@ -3909,8 +3909,14 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
                                                       SyncSourceReport::ITEM_ANY,
                                                       SyncSourceReport::ITEM_REJECT));
 
+        const char* checkSyncModeStr = getenv("CLIENT_TEST_NOCHECK_SYNCMODE");
+        bool checkSyncMode = true;
+        if (checkSyncModeStr && 
+                (!strcmp(checkSyncModeStr, "1") || !strcasecmp(checkSyncModeStr, "t"))) {
+            checkSyncMode = false;
+        }
 
-        if (syncMode != SYNC_NONE) {
+        if (syncMode != SYNC_NONE && checkSyncMode) {
             CLIENT_TEST_EQUAL(name, syncMode, source.getFinalSyncMode());
         }
 
