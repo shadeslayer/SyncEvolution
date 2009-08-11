@@ -790,9 +790,10 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 		return FALSE;
 	}
 
-	boost::shared_ptr<EvolutionSyncConfig> from(new EvolutionSyncConfig (string (server)));
+	boost::shared_ptr<EvolutionSyncConfig> from;
+	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig (string (server)));
 	/* if config does not exist, create from template */
-	if (!from->exists()) {
+	if (!config->exists()) {
 		from = EvolutionSyncConfig::createServerTemplate( string (server));
 		if (!from.get()) {
 			*options = NULL;
@@ -801,12 +802,10 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 			                      "No server or template '%s' found", server);
 			return FALSE;
 		}
+		config->copy(*from, NULL);
 	}
 
 	*options = g_ptr_array_new ();
-	boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(string (server)));
-	config->copy(*from, NULL);
-
 	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup(config->getSyncURL()));
 	g_ptr_array_add (*options, option);
 	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup(config->getUsername()));
@@ -856,8 +855,6 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 		g_ptr_array_add (*options, option);
 
 	}
-
-
 
 	update_shutdown_timer (obj);
 
