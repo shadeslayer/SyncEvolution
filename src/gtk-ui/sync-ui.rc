@@ -16,13 +16,6 @@ style "mux-frame" {
 }
 class "MuxFrame" style "mux-frame"
 
-# tooltips seem to take their color from the window bg? working around that 
-style "mux-tooltip-fix" { 
-    bg[NORMAL] = "#ffffff" 
-} 
-widget "gtk-tooltip*" style "mux-tooltip-fix" 
-
-
 # sync-ui specific rules
 
 style "data-box" {
