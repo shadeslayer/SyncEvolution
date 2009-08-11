@@ -342,7 +342,7 @@ abort_sync_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
-static void
+static gboolean
 abort_sync_async_error (SyncevoAsyncData *data)
 {
 	GError *error;
@@ -354,6 +354,8 @@ abort_sync_async_error (SyncevoAsyncData *data)
 	                                       error,
 	                                       data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
+
+	return FALSE;
 }
 
 void 
@@ -420,7 +422,7 @@ get_servers_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
-static void
+static gboolean
 get_servers_async_error (SyncevoAsyncData *data)
 {
 	GError *error;
@@ -433,6 +435,8 @@ get_servers_async_error (SyncevoAsyncData *data)
 	                                        error,
 	                                        data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
+
+	return FALSE;
 }
 
 void 
@@ -496,7 +500,7 @@ get_templates_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
-static void
+static gboolean
 get_templates_async_error (SyncevoAsyncData *data)
 {
 	GError *error;
@@ -509,6 +513,8 @@ get_templates_async_error (SyncevoAsyncData *data)
 	                                          error,
 	                                          data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
+
+	return FALSE;
 }
 
 void syncevo_service_get_templates_async (SyncevoService *service,
@@ -573,7 +579,7 @@ get_template_config_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
-static void
+static gboolean
 get_template_config_async_error (SyncevoAsyncData *data)
 {
 	GError *error;
@@ -586,6 +592,8 @@ get_template_config_async_error (SyncevoAsyncData *data)
 	                                               error,
 	                                               data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
+
+	return FALSE;
 }
 
 void 
@@ -653,7 +661,7 @@ get_server_config_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
-static void
+static gboolean
 get_server_config_async_error (SyncevoAsyncData *data)
 {
 	GError *error;
@@ -665,9 +673,8 @@ get_server_config_async_error (SyncevoAsyncData *data)
 	                                             NULL,
 	                                             error,
 	                                             data->userdata);
-        // This function may be called again, cannot free data.
-        // See Bugzilla #4919.
-	// g_slice_free (SyncevoAsyncData, data);
+
+	return FALSE;
 }
 
 void 
@@ -734,7 +741,7 @@ set_server_config_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
-static void
+static gboolean
 set_server_config_async_error (SyncevoAsyncData *data)
 {
 	GError *error;
@@ -746,6 +753,8 @@ set_server_config_async_error (SyncevoAsyncData *data)
 	                                             error,
 	                                             data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
+
+	return FALSE;
 }
 
 void 
@@ -812,7 +821,7 @@ remove_server_config_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
-static void
+static gboolean
 remove_server_config_async_error (SyncevoAsyncData *data)
 {
 	GError *error;
@@ -824,6 +833,8 @@ remove_server_config_async_error (SyncevoAsyncData *data)
 	                                                error,
 	                                                data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
+
+	return FALSE;
 }
 
 void 
@@ -895,7 +906,7 @@ get_sync_reports_async_callback (DBusGProxy *proxy,
 	g_slice_free (SyncevoAsyncData, data);
 }
 
-static void
+static gboolean
 get_sync_reports_async_error (SyncevoAsyncData *data)
 {
 	GError *error;
@@ -908,6 +919,8 @@ get_sync_reports_async_error (SyncevoAsyncData *data)
 	                                            error,
 	                                            data->userdata);
 	g_slice_free (SyncevoAsyncData, data);
+
+	return FALSE;
 }
 
 void 
