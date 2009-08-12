@@ -201,6 +201,13 @@ Only minor changes:
   which is a bit misleading (#5185).
 * fixed build issue on Fedora 11/g++ 4.4 (Bugzilla #5061)
 * some build and test improvements
+* proper fix for D-Bus error functions (#4919)
+* improve sync-ui startup time by avoiding an unnecessary
+  copying of the sync config into itself (#5021)
+* adapted tooltip style (used for SyncML server links) to new
+  Moblin theme, they weren't visible earlier (#5017)
+* notify zone selector in Moblin 2.0 about sync-ui startup (#4752)
+* sync-ui: minor layout change for fatal error situation
 
 
 SyncEvolution 0.9 beta 3 -> 0.9 beta 3 hotfix, 23.07.2009
