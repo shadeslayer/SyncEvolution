@@ -383,6 +383,7 @@ synchronize your data between your netbook and a web service.</property>
                         </child>
                       </widget>
                       <packing>
+                        <property name="expand">False</property>
                         <property name="padding">20</property>
                         <property name="position">1</property>
                       </packing>
@@ -442,6 +443,7 @@ synchronize your data between your netbook and a web service.</property>
                         </child>
                       </widget>
                       <packing>
+                        <property name="expand">False</property>
                         <property name="padding">20</property>
                         <property name="position">2</property>
                       </packing>
