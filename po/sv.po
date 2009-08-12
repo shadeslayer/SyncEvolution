@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2009-07-27 09:20+0000\n"
+"POT-Creation-Date: 2009-07-29 09:20+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: GLSSVE_GMartinson <gmartinson@gmail.com>\n"
 "Language-Team: \n"
@@ -23,7 +23,7 @@ msgstr "Kalender"
 
 #: ../src/gtk-ui/sync-ui.c:262
 msgid "Todo"
-msgstr "Attgöra"
+msgstr "Att göra"
 
 #: ../src/gtk-ui/sync-ui.c:264
 msgid "Memo"
@@ -331,20 +331,20 @@ msgstr "Synktjänsten D-Bus avslutades"
 #: ../src/gtk-ui/sync-ui.c:1988
 #: ../src/gtk-ui/sync-ui.c:2039
 msgid "Sync Failed"
-msgstr "Synkronisering misslyckades"
+msgstr "Synk misslyckades"
 
 #: ../src/gtk-ui/sync-ui.c:2031
 msgid "Sync complete"
-msgstr "Synkronisering färdig"
+msgstr "Synk färdig"
 
 #: ../src/gtk-ui/sync-ui.c:2036
 msgid "Sync canceled"
-msgstr "Synkronisering avbruten"
+msgstr "Synk avbruten"
 
 #. NOTE extra1 can be error here
 #: ../src/gtk-ui/sync-ui.c:2054
 msgid "Ending sync"
-msgstr "Avslutar synkronisering"
+msgstr "Avslutar synk"
 
 #. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
 #: ../src/gtk-ui/sync-ui.c:2078

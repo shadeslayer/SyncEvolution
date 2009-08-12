@@ -2,9 +2,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2009-07-22 09:19+0000\n"
+"POT-Creation-Date: 2009-07-29 09:20+0000\n"
 "PO-Revision-Date: \n"
-"Last-Translator: Loïc Dufresne de Virel <loic.dufresne.de.virel@intel.com>\n"
+"Last-Translator: glsfra_Sophie <sophiex.marchese@intel.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -135,10 +135,11 @@ msgstr "Dernière synchro il y a %ld jours"
 msgid "Sync again"
 msgstr "Synchroniser de nouveau"
 
+# QA FRA : I erased the "now" in the French translation because it caused a truncation
 #: ../src/gtk-ui/sync-ui.c:902
 #: ../src/gtk-ui/ui.glade.h:29
 msgid "Sync now"
-msgstr "Synchroniser maintenant"
+msgstr "Synchroniser"
 
 #: ../src/gtk-ui/sync-ui.c:911
 msgid "Syncing"
@@ -387,7 +388,7 @@ msgstr "<big>Configuration manuelle</big>"
 
 #: ../src/gtk-ui/ui.glade.h:6
 msgid "<big>Supported services</big>"
-msgstr "<big>Sservices pris en charge</big>"
+msgstr "<big>Services pris en charge</big>"
 
 # "New" for lack of space
 #: ../src/gtk-ui/ui.glade.h:7
