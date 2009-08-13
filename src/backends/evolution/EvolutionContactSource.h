@@ -34,7 +34,9 @@
 /**
  * Implements access to Evolution address books.
  */
-class EvolutionContactSource : public EvolutionSyncSource, private boost::noncopyable
+class EvolutionContactSource : public EvolutionSyncSource,
+    public SyncSourceLogging,
+    private boost::noncopyable
 {
   public:
     EvolutionContactSource(const SyncSourceParams &params,
@@ -58,6 +60,9 @@ class EvolutionContactSource : public EvolutionSyncSource, private boost::noncop
     virtual InsertItemResult insertItem(const string &uid, const std::string &item, bool raw);
     void readItem(const std::string &luid, std::string &item, bool raw);
     virtual void removeItem(const string &uid);
+
+    // implementation of SyncSourceLogging callback
+    virtual std::string getDescription(const string &luid);
 
     // need to override native format: it is always vCard 3.0
     void getSynthesisInfo(SynthesisInfo &info,

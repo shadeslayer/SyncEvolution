@@ -64,6 +64,9 @@ EvolutionContactSource::EvolutionContactSource(const SyncSourceParams &params,
     EvolutionSyncSource(params),
     m_vcardFormat(vcardFormat)
 {
+    SyncSourceLogging::init(InitList<std::string>("N_FIRST") + "N_MIDDLE" + "N_LAST",
+                            " ",
+                            m_operations);
 }
 
 EvolutionSyncSource::Databases EvolutionContactSource::getDatabases()
@@ -310,6 +313,56 @@ void EvolutionContactSource::removeItem(const string &uid)
             throwError( string( "deleting contact " ) + uid,
                         gerror );
         }
+    }
+}
+
+std::string EvolutionContactSource::getDescription(const string &luid)
+{
+    try {
+        EContact *contact;
+        GError *gerror = NULL;
+        if (!e_book_get_contact(m_addressbook,
+                                luid.c_str(),
+                                &contact,
+                                &gerror)) {
+            throwError(string("reading contact ") + luid,
+                       gerror);
+        }
+        eptr<EContact, GObject> contactptr(contact, "contact");
+        const char *name = (const char *)e_contact_get_const(contact, E_CONTACT_FULL_NAME);
+        if (name) {
+            return name;
+        }
+        const char *fileas = (const char *)e_contact_get_const(contact, E_CONTACT_FILE_AS);
+        if (fileas) {
+            return fileas;
+        }
+        EContactName *names =
+            (EContactName *)e_contact_get(contact, E_CONTACT_NAME);
+        std::list<std::string> buffer;
+        if (names) {
+            try {
+                if (names->given && names->given[0]) {
+                    buffer.push_back(names->given);
+                }
+                if (names->additional && names->additional[0]) {
+                    buffer.push_back(names->additional);
+                }
+                if (names->family && names->family[0]) {
+                    buffer.push_back(names->family);
+                }
+            } catch (...) {
+            }
+            e_contact_name_free(names);
+        }
+        return boost::join(buffer, " ");
+    } catch (...) {
+        // Instead of failing we log the error and ask
+        // the caller to log the UID. That way transient
+        // errors or errors in the logging code don't
+        // prevent syncs.
+        handleException();
+        return "";
     }
 }
 
