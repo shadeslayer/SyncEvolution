@@ -60,14 +60,12 @@ class EvolutionContactSource : public EvolutionSyncSource, private boost::noncop
     virtual void removeItem(const string &uid);
 
     // need to override native format: it is always vCard 3.0
-    void getSynthesisInfo(string &profile,
-                          string &datatypes,
-                          string &native,
+    void getSynthesisInfo(SynthesisInfo &info,
                           XMLConfigFragments &fragments)
     {
-        TrackingSyncSource::getSynthesisInfo(profile, datatypes, native, fragments);
-        profile = "\"vCard\", 2";
-        native = "vCard30";
+        TrackingSyncSource::getSynthesisInfo(info, fragments);
+        info.m_profile = "\"vCard\", 2";
+        info.m_native = "vCard30";
     }
 
   private:

@@ -72,11 +72,9 @@ void SyncSourceBase::messagev(Level level,
 void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
 {
     stringstream xmlstream;
-    string profile;
-    string datatypes;
-    string native;
+    SynthesisInfo info;
 
-    getSynthesisInfo(profile, datatypes, native, fragments);
+    getSynthesisInfo(info, fragments);
 
     xmlstream <<
         "      <plugin_module>SyncEvolution</plugin_module>\n"
@@ -114,28 +112,31 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
         "      <storesyncidentifiers>yes</storesyncidentifiers>\n"
         "\n";
     
-    if (!profile.empty()) {
+    xmlstream <<
+        "      <!-- Mapping of the fields to the fieldlist -->\n"
+        "      <fieldmap fieldlist='" << info.m_fieldlist << "'>\n";
+    if (!info.m_profile.empty()) {
         xmlstream <<
-            "      <!-- Mapping of the fields to the fieldlist 'contacts' -->\n"
-            "      <fieldmap fieldlist='contacts'>\n"
             "        <initscript><![CDATA[\n"
             "           string itemdata;\n"
             "        ]]></initscript>\n"
             "        <beforewritescript><![CDATA[\n"
-            "           itemdata = MAKETEXTWITHPROFILE(" << profile << ", \"EVOLUTION\");\n"
+            "           itemdata = MAKETEXTWITHPROFILE(" << info.m_profile << ", \"EVOLUTION\");\n"
             "        ]]></beforewritescript>\n"
             "        <afterreadscript><![CDATA[\n"
-            "           PARSETEXTWITHPROFILE(itemdata, " << profile << ", \"EVOLUTION\");\n"
+            "           PARSETEXTWITHPROFILE(itemdata, " << info.m_profile << ", \"EVOLUTION\");\n"
             "        ]]></afterreadscript>\n"
-            "        <map name='data' references='itemdata' type='string'/>\n"
-            "      </fieldmap>\n"
-            "\n";
+            "        <map name='data' references='itemdata' type='string'/>\n";
     }
+    xmlstream << 
+        "        <automap/>\n"
+        "      </fieldmap>\n"
+        "\n";
 
     xmlstream <<
         "      <!-- datatypes supported by this datastore -->\n"
         "      <typesupport>\n" <<
-        datatypes <<
+        info.m_datatypes <<
         "      </typesupport>\n";
 
     xml = xmlstream.str();
@@ -143,10 +144,10 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
 
 string SyncSourceBase::getNativeDatatypeName()
 {
-    string profile, datatypes, native;
+    SynthesisInfo info;
     XMLConfigFragments fragments;
-    getSynthesisInfo(profile, datatypes, native, fragments);
-    return native;
+    getSynthesisInfo(info, fragments);
+    return info.m_native;
 }
 
 SDKInterface *SyncSource::getSynthesisAPI() const
@@ -374,39 +375,42 @@ sysync::TSyError SyncSourceDelete::deleteItemSynthesis(sysync::cItemID aID)
 }
 
 
-void SyncSourceSerialize::getSynthesisInfo(string &profile,
-                                           string &datatypes,
-                                           string &native,
+void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
                                            XMLConfigFragments &fragments)
 {
     string type = getMimeType();
 
     if (type == "text/x-vcard") {
-        native = "vCard21";
-        profile = "\"vCard\", 1";
-        datatypes =
+        info.m_native = "vCard21";
+        info.m_fieldlist = "contacts";
+        info.m_profile = "\"vCard\", 1";
+        info.m_datatypes =
             "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n"
             "        <use datatype='vCard30' mode='rw'/>\n";
     } else if (type == "text/vcard") {
-        native = "vCard30";
-        profile = "\"vCard\", 2";
-        datatypes =
+        info.m_native = "vCard30";
+        info.m_fieldlist = "contacts";
+        info.m_profile = "\"vCard\", 2";
+        info.m_datatypes =
             "        <use datatype='vCard21' mode='rw'/>\n"
             "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
     } else if (type == "text/x-calendar") {
-        native = "vCalendar10";
-        profile = "\"vCalendar\", 1";
-        datatypes =
+        info.m_native = "vCalendar10";
+        info.m_fieldlist = "calendar";
+        info.m_profile = "\"vCalendar\", 1";
+        info.m_datatypes =
             "        <use datatype='vCalendar10' mode='rw' preferred='yes'/>\n"
             "        <use datatype='iCalendar20' mode='rw'/>\n";
     } else if (type == "text/calendar") {
-        native = "iCalendar20";
-        profile = "\"vCalendar\", 2";
-        datatypes =
+        info.m_native = "iCalendar20";
+        info.m_fieldlist = "calendar";
+        info.m_profile = "\"vCalendar\", 2";
+        info.m_datatypes =
             "        <use datatype='vCalendar10' mode='rw'/>\n"
             "        <use datatype='iCalendar20' mode='rw' preferred='yes'/>\n";
     } else if (type == "text/plain") {
-        profile = "\"Note\", 2";
+        info.m_fieldlist = "Note";
+        info.m_profile = "\"Note\", 2";
     } else {
         throwError(string("default MIME type not supported: ") + type);
     }
@@ -417,36 +421,36 @@ void SyncSourceSerialize::getSynthesisInfo(string &profile,
     }
 
     if (type == "text/x-vcard:2.1" || type == "text/x-vcard") {
-        datatypes =
+        info.m_datatypes =
             "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n";
         if (!sourceType.m_forceFormat) {
-            datatypes +=
+            info.m_datatypes +=
                 "        <use datatype='vCard30' mode='rw'/>\n";
         }
     } else if (type == "text/vcard:3.0" || type == "text/vcard") {
-        datatypes =
+        info.m_datatypes =
             "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
         if (!sourceType.m_forceFormat) {
-            datatypes +=
+            info.m_datatypes +=
                 "        <use datatype='vCard21' mode='rw'/>\n";
         }
     } else if (type == "text/x-vcalendar:2.0" || type == "text/x-vcalendar") {
-        datatypes =
+        info.m_datatypes =
             "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n";
         if (!sourceType.m_forceFormat) {
-            datatypes +=
+            info.m_datatypes +=
                 "        <use datatype='icalendar20' mode='rw'/>\n";
         }
     } else if (type == "text/calendar:2.0" || type == "text/calendar") {
-        datatypes =
+        info.m_datatypes =
             "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
         if (!sourceType.m_forceFormat) {
-            datatypes +=
+            info.m_datatypes +=
                 "        <use datatype='vcalendar10' mode='rw'/>\n";
         }
     } else if (type == "text/plain:1.0" || type == "text/plain") {
         // note10 are the same as note11, so ignore force format
-        datatypes =
+        info.m_datatypes =
             "        <use datatype='note10' mode='rw' preferred='yes'/>\n"
             "        <use datatype='note11' mode='rw'/>\n";
     } else {

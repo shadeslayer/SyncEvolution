@@ -424,19 +424,31 @@ class SyncSourceBase : public Logger {
 
 
  protected:
+    struct SynthesisInfo {
+        /**
+         * name to use for MAKE/PARSETEXTWITHPROFILE,
+         * leave empty when acessing the field list directly
+         */
+        std::string m_profile;
+    
+        /** list of supported datatypes in "<use .../>" format */
+        std::string m_datatypes;
+
+        /** native datatype (see getNativeDatatypeName()) */
+        std::string m_native;
+
+        /** name of the field list used by the datatypes */
+        std::string m_fieldlist;
+    };
+
     /**
-     * helper function for getDatastoreXML()
+     * helper function for getDatastoreXML(): fill in information
+     * as necessary
      *
-     * @retval profile     profile name to use for MAKE/PARSETEXTWITHPROFILE,
-     *                     leave empty when acessing the field list directly
-     * @retval datatypes   list of supported datatypes in "<use .../>" format
-     * @retval native      native datatype (see getNativeDatatypeName())
-     * @retval fragments   the necessary definitions for the other return values
-     *                     have to be added here
+     * @retval fragments   the necessary definitions for the other
+     *                     return values have to be added here
      */
-    virtual void getSynthesisInfo(string &profile,
-                                  string &datatypes,
-                                  string &native,
+    virtual void getSynthesisInfo(SynthesisInfo &info,
                                   XMLConfigFragments &fragments) = 0;
 };
 
@@ -930,9 +942,7 @@ class SyncSourceSerialize : virtual public SyncSourceBase, virtual public SyncSo
      * to provide the information necessary for automatic
      * conversion to the sync source's internal item representation
      */
-    virtual void getSynthesisInfo(string &profile,
-                                  string &datatypes,
-                                  string &native,
+    virtual void getSynthesisInfo(SynthesisInfo &info,
                                   XMLConfigFragments &fragments);
  private:
     sysync::TSyError readItemAsKey(sysync::cItemID aID, sysync::KeyH aItemKey);
