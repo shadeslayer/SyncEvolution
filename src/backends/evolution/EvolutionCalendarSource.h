@@ -37,7 +37,9 @@
  * handled as one item for the main event and one item
  * for each detached recurrence.
  */
-class EvolutionCalendarSource : public EvolutionSyncSource, private boost::noncopyable
+class EvolutionCalendarSource : public EvolutionSyncSource,
+    public SyncSourceLogging,
+    private boost::noncopyable
 {
   public:
     /**
@@ -68,6 +70,9 @@ class EvolutionCalendarSource : public EvolutionSyncSource, private boost::nonco
     virtual InsertItemResult insertItem(const string &uid, const std::string &item, bool raw);
     void readItem(const std::string &luid, std::string &item, bool raw);
     virtual void removeItem(const string &uid);
+
+    // implementation of SyncSourceLogging callback
+    virtual std::string getDescription(const string &luid);
 
   protected:
     /** valid after open(): the calendar that this source references */

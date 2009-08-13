@@ -78,14 +78,23 @@ EvolutionCalendarSource::EvolutionCalendarSource(ECalSourceType type,
 {
     switch (m_type) {
      case E_CAL_SOURCE_TYPE_EVENT:
+        SyncSourceLogging::init(InitList<std::string>("SUMMARY") + "LOCATION",
+                                ", ",
+                                m_operations);
         m_typeName = "calendar";
         m_newSystem = e_cal_new_system_calendar;
         break;
      case E_CAL_SOURCE_TYPE_TODO:
+        SyncSourceLogging::init(InitList<std::string>("SUMMARY"),
+                                ", ",
+                                m_operations);
         m_typeName = "task list";
         m_newSystem = e_cal_new_system_tasks;
         break;
      case E_CAL_SOURCE_TYPE_JOURNAL:
+        SyncSourceLogging::init(InitList<std::string>("SUBJECT"),
+                                ", ",
+                                m_operations);
         m_typeName = "memo list";
         // This is not available in older Evolution versions.
         // A configure check could detect that, but as this isn't
@@ -605,6 +614,55 @@ string EvolutionCalendarSource::retrieveItemAsString(const ItemID &id)
     }
     
     return data;
+}
+
+std::string EvolutionCalendarSource::getDescription(const string &luid)
+{
+    try {
+        eptr<icalcomponent> comp(retrieveItem(ItemID(luid)));
+        std::string descr;
+
+        const char *summary = icalcomponent_get_summary(comp);
+        if (summary && summary[0]) {
+            descr += summary;
+        }
+        
+        if (m_type == E_CAL_SOURCE_TYPE_EVENT) {
+            const char *location = icalcomponent_get_location(comp);
+            if (location && location[0]) {
+                if (!descr.empty()) {
+                    descr += ", ";
+                }
+                descr += location;
+            }
+        }
+
+        if (m_type == E_CAL_SOURCE_TYPE_JOURNAL &&
+            descr.empty()) {
+            // fallback to first line of body text
+            icalproperty *desc = icalcomponent_get_first_property(comp, ICAL_DESCRIPTION_PROPERTY);
+            if (desc) {
+                const char *text = icalproperty_get_description(desc);
+                if (text) {
+                    const char *eol = strchr(text, '\n');
+                    if (eol) {
+                        descr.assign(text, eol - text);
+                    } else {
+                        descr = text;
+                    }
+                }
+            }
+        }
+
+        return descr;
+    } catch (...) {
+        // Instead of failing we log the error and ask
+        // the caller to log the UID. That way transient
+        // errors or errors in the logging code don't
+        // prevent syncs.
+        handleException();
+        return "";
+    }
 }
 
 string EvolutionCalendarSource::ItemID::getLUID() const
