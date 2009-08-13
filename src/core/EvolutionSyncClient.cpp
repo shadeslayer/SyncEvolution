@@ -1556,6 +1556,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
     string xml, configname;
     getConfigXML(xml, configname);
     m_engine.InitEngineXML(xml.c_str());
+    SE_LOG_DEV(NULL, NULL, "Full XML configuration:\n%s", xml.c_str());
 
     // check the settings status (MUST BE DONE TO MAKE SETTINGS READY)
     SharedKey profiles = m_engine.OpenKeyByPath(SharedKey(), "/profiles");
