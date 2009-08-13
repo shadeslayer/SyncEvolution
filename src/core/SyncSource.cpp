@@ -719,3 +719,91 @@ void SyncSourceRevisions::init(SyncSourceRaw *raw,
     ops.m_endSession.push_back(boost::bind(&SyncSourceRevisions::sleepSinceModification,
                                            this));
 }
+
+std::string SyncSourceLogging::getDescription(sysync::KeyH aItemKey)
+{
+    try {
+        std::list<std::string> values;
+
+        BOOST_FOREACH(const std::string &field, m_fields) {
+            SharedBuffer value;
+            if (!getSynthesisAPI()->getValue(aItemKey, field, value) &&
+                value.size()) {
+                values.push_back(std::string(value.get()));
+            }
+        }
+
+        std::string description = boost::join(values, m_sep);
+        return description;
+    } catch (...) {
+        // Instead of failing we log the error and ask
+        // the caller to log the UID. That way transient
+        // errors or errors in the logging code don't
+        // prevent syncs.
+        handleException();
+        return "";
+    }
+}
+
+std::string SyncSourceLogging::getDescription(const string &luid)
+{
+    return "";
+}
+
+sysync::TSyError SyncSourceLogging::insertItemAsKey(sysync::KeyH aItemKey, sysync::ItemID newID, const boost::function<SyncSource::Operations::InsertItemAsKey_t> &parent)
+{
+    std::string description = getDescription(aItemKey);
+    SE_LOG_INFO(this, NULL,
+                description.empty() ? "%s <%s>" : "%s \"%s\"",
+                "adding",
+                !description.empty() ? description.c_str() : "???");
+    if (parent) {
+        return parent(aItemKey, newID);
+    } else {
+        return sysync::LOCERR_NOTIMP;
+    }
+}
+
+sysync::TSyError SyncSourceLogging::updateItemAsKey(sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID newID, const boost::function<SyncSource::Operations::UpdateItemAsKey_t> &parent)
+{
+    std::string description = getDescription(aItemKey);
+    SE_LOG_INFO(this, NULL,
+                description.empty() ? "%s <%s>" : "%s \"%s\"",
+                "updating",
+                !description.empty() ? description.c_str() : aID ? aID->item : "???");
+    if (parent) {
+        return parent(aItemKey, aID, newID);
+    } else {
+        return sysync::LOCERR_NOTIMP;
+    }
+}
+
+sysync::TSyError SyncSourceLogging::deleteItem(sysync::cItemID aID, const boost::function<SyncSource::Operations::DeleteItem_t> &parent)
+{
+    std::string description = getDescription(aID->item);
+    SE_LOG_INFO(this, NULL,
+                description.empty() ? "%s <%s>" : "%s \"%s\"",
+                "deleting",
+                !description.empty() ? description.c_str() : aID->item);
+    if (parent) {
+        return parent(aID);
+    } else {
+        return sysync::LOCERR_NOTIMP;
+    }
+}
+
+void SyncSourceLogging::init(const std::list<std::string> &fields,
+                             const std::string &sep,
+                             SyncSource::Operations &ops)
+{
+    m_fields = fields;
+    m_sep = sep;
+
+    ops.m_insertItemAsKey = boost::bind(&SyncSourceLogging::insertItemAsKey,
+                                        this, _1, _2, ops.m_insertItemAsKey);
+    ops.m_updateItemAsKey = boost::bind(&SyncSourceLogging::updateItemAsKey,
+                                        this, _1, _2, _3, ops.m_updateItemAsKey);
+    ops.m_deleteItem = boost::bind(&SyncSourceLogging::deleteItem,
+                                   this, _1, ops.m_deleteItem);
+}
+

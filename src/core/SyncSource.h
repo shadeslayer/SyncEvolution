@@ -1084,6 +1084,63 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
 
 
 /**
+ * Common logging for sync sources.
+ *
+ * This class wraps the Synthesis DB functors that were set before
+ * calling its init() method. The wrappers then log a single line
+ * describing what is happening (adding/updating/removing)
+ * to which item (with a short item specific description extracted
+ * from the incoming item data or the backend).
+ */
+class SyncSourceLogging : public virtual SyncSourceBase
+{
+ public:
+    /**
+     * wrap Synthesis DB Interface operations
+     *
+     * @param fields     list of fields to read in getDescription()
+     * @param sep        separator between non-empty fields
+     */
+    void init(const std::list<std::string> &fields,
+              const std::string &sep,
+              SyncSource::Operations &ops);
+
+    /**
+     * Extract short description from Synthesis item data.
+     * The default implementation reads a list of fields
+     * as strings and concatenates the non-empty ones
+     * with a separator.
+     *
+     * @param aItemKey     key for reading fields
+     * @return description, empty string will cause the ID of the item to be printed
+     */
+    virtual std::string getDescription(sysync::KeyH aItemKey);
+
+    /**
+     * Extract short description from backend.
+     * Necessary for deleted items. The default implementation
+     * returns an empty string, so that implementing this
+     * is optional.
+     *
+     * @param luid          LUID of the item to be deleted in the backend
+     * @return description, empty string will cause the ID of the item to be printed
+     */
+    virtual std::string getDescription(const string &luid);
+
+ private:
+    std::list<std::string> m_fields;
+    std::string m_sep;
+
+    sysync::TSyError insertItemAsKey(sysync::KeyH aItemKey, sysync::ItemID newID,
+                                     const boost::function<SyncSource::Operations::InsertItemAsKey_t> &parent);
+    sysync::TSyError updateItemAsKey(sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID newID,
+                                     const boost::function<SyncSource::Operations::UpdateItemAsKey_t> &parent);
+    sysync::TSyError deleteItem(sysync::cItemID aID,
+                                const boost::function<SyncSource::Operations::DeleteItem_t> &parent);
+};
+
+
+/**
  * This is an interface definition that is expected by the client-test
  * program. Part of the reason for this requirement is that the test
  * program was originally written for the Funambol SyncSource API.
