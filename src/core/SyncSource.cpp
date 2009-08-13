@@ -22,6 +22,7 @@
 #include "EvolutionSyncClient.h"
 #include "SyncEvolutionUtil.h"
 
+#include "SynthesisEngine.h"
 #include <synthesis/SDK_util.h>
 #include <synthesis/sync_dbapidef.h>
 
@@ -148,6 +149,21 @@ string SyncSourceBase::getNativeDatatypeName()
     return native;
 }
 
+SDKInterface *SyncSource::getSynthesisAPI() const
+{
+    return m_synthesisAPI.empty() ?
+        NULL :
+        static_cast<SDKInterface *>(m_synthesisAPI[m_synthesisAPI.size() - 1]);
+}
+
+void SyncSource::pushSynthesisAPI(sysync::SDK_InterfaceType *synthesisAPI)
+{
+    m_synthesisAPI.push_back(synthesisAPI);
+}
+
+void SyncSource::popSynthesisAPI() {
+    m_synthesisAPI.pop_back();
+}
 
 SourceRegistry &SyncSource::getSourceRegistry()
 {
@@ -443,37 +459,15 @@ sysync::TSyError SyncSourceSerialize::readItemAsKey(sysync::cItemID aID, sysync:
     std::string item;
 
     readItem(aID->item, item);
-    TSyError res =
-        getSynthesisAPI()->ui.SetValue(getSynthesisAPI(),
-                                       aItemKey,
-                                       "data",
-                                       sysync::VALTYPE_TEXT,
-                                       item.c_str(),
-                                       item.size());
+    TSyError res = getSynthesisAPI()->setValue(aItemKey, "data", item.c_str(), item.size());
     return res;
 }
 
 sysync::TSyError SyncSourceSerialize::insertItemAsKey(sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID newID)
 {
-    sysync::memSize len;
-    boost::scoped_array<char> data;
-    TSyError res =
-        getSynthesisAPI()->ui.GetValue(getSynthesisAPI(),
-                                       aItemKey,
-                                       "data",
-                                       sysync::VALTYPE_TEXT,
-                                       NULL, 0,
-                                       &len);
-    if (!res) {
-        data.reset(new char[len + 1]);
-        data[len] = 0;
-        res = getSynthesisAPI()->ui.GetValue(getSynthesisAPI(),
-                                             aItemKey,
-                                             "data",
-                                             sysync::VALTYPE_TEXT,
-                                             data.get(), len + 1,
-                                             &len);
-    }
+    SharedBuffer data;
+    TSyError res = getSynthesisAPI()->getValue(aItemKey, "data", data);
+
     if (!res) {
         InsertItemResult inserted =
             insertItem(!aID ? "" : aID->item, data.get());

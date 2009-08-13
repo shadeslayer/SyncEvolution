@@ -33,6 +33,7 @@ using namespace SyncEvolution;
 #include <boost/function.hpp>
 
 class SyncSource;
+class SDKInterface;
 
 /**
  * This set of parameters always has to be passed when constructing
@@ -419,7 +420,7 @@ class SyncSourceBase : public Logger {
      * (between SyncEvolution_Module_CreateContext() and
      * SyncEvolution_Module_DeleteContext())
      */
-    virtual sysync::SDK_InterfaceType *getSynthesisAPI() const = 0;
+    virtual SDKInterface *getSynthesisAPI() const = 0;
 
 
  protected:
@@ -611,25 +612,17 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
      * (between SyncEvolution_Module_CreateContext() and
      * SyncEvolution_Module_DeleteContext())
      */
-    virtual sysync::SDK_InterfaceType *getSynthesisAPI() const {
-        return m_synthesisAPI.empty() ?
-            NULL :
-            m_synthesisAPI[m_synthesisAPI.size() - 1];
-    }
+    virtual SDKInterface *getSynthesisAPI() const;
 
     /**
      * change the Synthesis API that is used by the source
      */
-    void pushSynthesisAPI(sysync::SDK_InterfaceType *synthesisAPI) {
-        m_synthesisAPI.push_back(synthesisAPI);
-    }
+    void pushSynthesisAPI(sysync::SDK_InterfaceType *synthesisAPI);
 
     /**
      * remove latest Synthesis API and return to previous one (if any)
      */
-    void popSynthesisAPI() {
-        m_synthesisAPI.pop_back();
-    }
+    void popSynthesisAPI();
 
     /**
      * factory function for a SyncSource that provides the

@@ -222,3 +222,43 @@ void SharedEngine::doDebug(SyncEvolution::Logger::Level level,
                     0, prefix,
                     str.c_str());
 }
+
+
+sysync::TSyError SDKInterface::setValue(sysync::KeyH aItemKey,
+                                        const std::string &field,
+                                        const char *data,
+                                        size_t datalen)
+{
+    return this->ui.SetValue(this,
+                             aItemKey,
+                             field.c_str(),
+                             sysync::VALTYPE_TEXT,
+                             data,
+                             datalen);
+}
+
+sysync::TSyError SDKInterface::getValue(sysync::KeyH aItemKey,
+                                        const std::string &field,
+                                        SharedBuffer &data)
+{
+    sysync::memSize len;
+    TSyError res =
+        this->ui.GetValue(this,
+                          aItemKey,
+                          field.c_str(),
+                          sysync::VALTYPE_TEXT,
+                          NULL, 0,
+                          &len);
+    if (!res) {
+        data = SharedBuffer(new char[len + 1], len);
+        data[len] = 0;
+        res = this->ui.GetValue(this,
+                                aItemKey,
+                                field.c_str(),
+                                sysync::VALTYPE_TEXT,
+                                data.get(), len + 1,
+                                &len);
+    }
+
+    return res;
+}

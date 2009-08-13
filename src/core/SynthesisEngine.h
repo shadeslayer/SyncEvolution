@@ -37,6 +37,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/shared_array.hpp>
+#include <boost/scoped_array.hpp>
 #include <stdexcept>
 
 typedef boost::shared_ptr<sysync::SessionType> SharedSession;
@@ -136,6 +137,23 @@ class NoSuchKey : public BadSynthesisResult
     NoSuchKey(const string &what) :
     BadSynthesisResult(what, sysync::DB_NoContent)
         {}
+};
+
+/**
+ * A class which wraps the underlying sysync::SDK_InterfaceType
+ * methods. Any sysync::SDK_InterfaceType pointer can be casted
+ * into this class because this class doesn't add any virtual
+ * functions or data.
+ */
+struct SDKInterface : public sysync::SDK_InterfaceType
+{
+    sysync::TSyError setValue(sysync::KeyH aItemKey,
+                              const std::string &field,
+                              const char *data,
+                              size_t datalen);
+    sysync::TSyError getValue(sysync::KeyH aItemKey,
+                              const std::string &field,
+                              SharedBuffer &data);
 };
 
 #endif // INCL_SYNTHESISENGINE
