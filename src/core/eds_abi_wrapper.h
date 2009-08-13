@@ -85,6 +85,8 @@ struct EDSAbiWrapper {
     gboolean (*e_book_commit_contact) (EBook *book, EContact *contact, GError **error);
     EContact* (*e_contact_duplicate) (EContact *contact);
     gconstpointer (*e_contact_get_const) (EContact *contact, EContactField field_id);
+    gpointer (*e_contact_get) (EContact *contact, EContactField field_id);
+    void (*e_contact_name_free)(EContactName *name);
     GType (*e_contact_get_type) (void);
     EContact* (*e_contact_new_from_vcard) (const char *vcard);
     void (*e_contact_set) (EContact *contact, EContactField field_id, const gpointer value);
@@ -186,6 +188,8 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define e_book_commit_contact EDSAbiWrapperSingleton.e_book_commit_contact
 #   define e_contact_duplicate EDSAbiWrapperSingleton.e_contact_duplicate
 #   define e_contact_get_const EDSAbiWrapperSingleton.e_contact_get_const
+#   define e_contact_get EDSAbiWrapperSingleton.e_contact_get
+#   define e_contact_name_free EDSAbiWrapperSingleton.e_contact_name_free
 #   define e_contact_get_type EDSAbiWrapperSingleton.e_contact_get_type
 #   define e_contact_new_from_vcard EDSAbiWrapperSingleton.e_contact_new_from_vcard
 #   define e_contact_set EDSAbiWrapperSingleton.e_contact_set

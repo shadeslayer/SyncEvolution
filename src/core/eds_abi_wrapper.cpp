@@ -180,6 +180,8 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.e_book_commit_contact, "e_book_commit_contact",
                 &EDSAbiWrapperSingleton.e_contact_duplicate, "e_contact_duplicate",
                 &EDSAbiWrapperSingleton.e_contact_get_const, "e_contact_get_const",
+                &EDSAbiWrapperSingleton.e_contact_get, "e_contact_get",
+                &EDSAbiWrapperSingleton.e_contact_name_free, "e_contact_name_free",
                 &EDSAbiWrapperSingleton.e_contact_get_type, "e_contact_get_type",
                 &EDSAbiWrapperSingleton.e_contact_new_from_vcard, "e_contact_new_from_vcard",
                 &EDSAbiWrapperSingleton.e_contact_set, "e_contact_set",
