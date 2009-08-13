@@ -612,6 +612,8 @@ TSyError SyncEvolution_ReadNextItemAsKey( CContext aContext, ItemID aID, KeyH aI
     SyncSource *source = DBC( aContext );
 
     TSyError res = LOCERR_OK;
+    *aStatus = 0;
+    memset(aID, 0, sizeof(*aID));
     if (source->getOperations().m_readNextItem) {
         try {
             res = source->getOperations().m_readNextItem(aID, aStatus, aFirst);
