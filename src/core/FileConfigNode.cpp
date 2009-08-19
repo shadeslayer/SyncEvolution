@@ -67,12 +67,19 @@ void FileConfigNode::read()
 
     m_lines.clear();
     if (file) {
+        /** add check to avoid errors when a line is larger than 512 bytes */
+        string line;
         while (fgets(buffer, sizeof(buffer), file)) {
             char *eol = strchr(buffer, '\n');
             if (eol) {
                 *eol = 0;
+                line += buffer;
+            } else {
+                line += buffer;
+                continue;
             }
-            m_lines.push_back(buffer);
+            m_lines.push_back(line);
+            line = "";
         }
         m_exists = true;
         fclose(file);
