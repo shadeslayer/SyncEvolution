@@ -7,11 +7,11 @@ service_DATA = $(service_in_files:.service.in=.service)
 $(service_DATA): $(service_in_files) Makefile
 	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
 
-DBUS_DIR = dbus
+DBUS_DIRS = gdbus dbus
 else
 if COND_GUI
 # jump into interface directory directly instead of going through dbus
-DBUS_DIR = dbus/interfaces
+DBUS_DIRS = dbus/interfaces
 endif
 endif
 
@@ -19,8 +19,8 @@ if COND_GUI
 GUI_DIR = gtk-ui
 endif
 
-SUBDIRS = $(SYNTHESIS_SUBDIR) $(DBUS_DIR) syncevo $(BACKENDS) $(GUI_DIR)
-DIST_SUBDIRS = dbus syncevo $(BACKENDS) gtk-ui
+SUBDIRS = $(SYNTHESIS_SUBDIR) $(DBUS_DIRS) syncevo $(BACKENDS) $(GUI_DIR)
+DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui
 BUILT_SOURCES =
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS) $(GLIB_CFLAGS)

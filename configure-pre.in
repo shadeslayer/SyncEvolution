@@ -285,7 +285,15 @@ if test $enable_dbus_service == "yes"; then
     if test -z "$XSLT"; then
        AC_ERROR([xsltproc not found, is required for D-Bus service])
     fi
+    PKG_CHECK_MODULES(DBUS, dbus-1, dummy=yes,
+                      AC_MSG_ERROR(libdbus-1 is required))
+    AC_CHECK_LIB(dbus-1, dbus_watch_get_unix_fd, dummy=yes,
+                 AC_DEFINE(NEED_DBUS_WATCH_GET_UNIX_FD, 1,
+                 [Define to 1 if you need the dbus_watch_get_unix_fd() function.]))
+    need_glib=yes
 fi
+AC_SUBST(DBUS_CFLAGS)
+AC_SUBST(DBUS_LIBS)
 AC_SUBST(DBUS_GLIB_CFLAGS)
 AC_SUBST(DBUS_GLIB_LIBS)
 AC_SUBST(KEYRING_CFLAGS) 
