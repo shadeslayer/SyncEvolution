@@ -31,7 +31,7 @@ class HashConfigNode : public ConfigNode {
     virtual void flush() {}
     virtual string readProperty(const string &property) const {
         std::map<std::string, std::string>::const_iterator it = m_props.find(property);
-        if (it != m_props.end()) {
+        if (it == m_props.end()) {
             return "";
         } else {
             return it->second;
