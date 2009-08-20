@@ -25,6 +25,8 @@
 
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include <dbus/dbus.h>
 
@@ -1002,6 +1004,39 @@ gboolean g_dbus_unregister_interface(DBusConnection *connection,
 	return TRUE;
 }
 
+char *printf_dyn(const char *format, va_list ap)
+{
+    va_list aq;
+
+    char *buffer = NULL;
+    ssize_t size = 0;
+    ssize_t realsize = 255;
+    do {
+        // vsnprintf() destroys ap, so make a copy first
+        va_copy(aq, ap);
+
+        if (size < realsize) {
+            buffer = (char *)realloc(buffer, realsize + 1);
+            if (!buffer) {
+                if (buffer) {
+                    free(buffer);
+                }
+                return "";
+            }
+            size = realsize;
+        }
+
+        realsize = vsnprintf(buffer, size + 1, format, aq);
+        if (realsize == -1) {
+            // old-style vnsprintf: exact len unknown, try again with doubled size
+            realsize = size * 2;
+        }
+        va_end(aq);
+    } while(realsize > size);
+
+    return buffer;
+}
+
 /**
  * g_dbus_create_error_valist:
  * @message: the originating message
@@ -1016,9 +1051,15 @@ gboolean g_dbus_unregister_interface(DBusConnection *connection,
 DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
 						const char *format, va_list args)
 {
+	DBusMessage *msg;
+        char *descr;
+
 	DBG("message %p name %s", message, name);
 
-	return dbus_message_new_error(message, name, NULL);
+	descr = printf_dyn(format, args);
+	msg = dbus_message_new_error(message, name, descr);
+	free(descr);
+	return msg;
 }
 
 /**
