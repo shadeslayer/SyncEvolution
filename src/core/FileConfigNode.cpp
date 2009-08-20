@@ -48,14 +48,60 @@ boost::shared_ptr<ConfigNode> ConfigNode::createFileNode(const string &filename)
     return savenode;
 }
 
-FileConfigNode::FileConfigNode(const string &path, const string &fileName, bool readonly) :
+FileBaseConfigNode::FileBaseConfigNode(const string &path, const string &fileName, bool readonly) :
     m_path(path),
     m_fileName(fileName),
     m_modified(false),
     m_readonly(readonly),
-    m_exists(false)
+    m_exists(false) 
+{
+}
+
+void FileBaseConfigNode::flush()
+{
+    if (!m_modified) {
+        return;
+    }
+
+    if (m_readonly) {
+        throw std::runtime_error(m_path + "/" + m_fileName + ": internal error: flushing read-only file config node not allowed");
+    }
+
+    mkdir_p(m_path);
+
+    string filename = m_path + "/" + m_fileName;
+    string tmpFilename = m_path + "/.#" + m_fileName;
+
+    FILE *file = fopen(tmpFilename.c_str(), "w");
+    if (file) {
+        toFile(file);
+        fflush(file);
+        bool failed = ferror(file);
+        if (fclose(file)) {
+            failed = true;
+        }
+        if (failed ||
+            rename(tmpFilename.c_str(), filename.c_str())) {
+            EvolutionSyncClient::throwError(tmpFilename, errno);
+        }
+    } else {
+        EvolutionSyncClient::throwError(tmpFilename, errno);
+    }
+
+    m_modified = false;
+    m_exists = true;
+}
+
+FileConfigNode::FileConfigNode(const string &path, const string &fileName, bool readonly) :
+    FileBaseConfigNode(path,fileName,readonly)
 {
     read();
+}
+
+void FileConfigNode::toFile(FILE* file) {
+    BOOST_FOREACH(const string &line, m_lines) {
+        fprintf(file, "%s\n", line.c_str());
+    }
 }
 
 void FileConfigNode::read()
@@ -87,42 +133,6 @@ void FileConfigNode::read()
     m_modified = false;
 }
 
-void FileConfigNode::flush()
-{
-    if (!m_modified) {
-        return;
-    }
-
-    if (m_readonly) {
-        throw std::runtime_error(m_path + "/" + m_fileName + ": internal error: flushing read-only file config node not allowed");
-    }
-
-    mkdir_p(m_path);
-
-    string filename = m_path + "/" + m_fileName;
-    string tmpFilename = m_path + "/.#" + m_fileName;
-
-    FILE *file = fopen(tmpFilename.c_str(), "w");
-    if (file) {
-        BOOST_FOREACH(const string &line, m_lines) {
-            fprintf(file, "%s\n", line.c_str());
-        }
-        fflush(file);
-        bool failed = ferror(file);
-        if (fclose(file)) {
-            failed = true;
-        }
-        if (failed ||
-            rename(tmpFilename.c_str(), filename.c_str())) {
-            EvolutionSyncClient::throwError(tmpFilename, errno);
-        }
-    } else {
-        EvolutionSyncClient::throwError(tmpFilename, errno);
-    }
-
-    m_modified = false;
-    m_exists = true;
-}
 
 /**
  * get property and value from line, if any present
@@ -308,5 +318,91 @@ void FileConfigNode::setProperty(const string &property,
 
     m_lines.push_back(newstr);
     m_modified = true;
+}
+
+HashFileConfigNode::HashFileConfigNode(const string &path, const string &fileName, bool readonly) :
+    FileBaseConfigNode(path,fileName,readonly)
+{
+    read();
+}
+
+void HashFileConfigNode::read()
+{
+    string filename = m_path + "/" + m_fileName;
+
+    FILE *file = fopen(filename.c_str(), "r");
+    char buffer[512];
+
+    if (file) {
+        string line;
+        while (fgets(buffer, sizeof(buffer), file)) {
+            char *eol = strchr(buffer, '\n');
+            if (eol) {
+                *eol = 0;
+                line += buffer;
+            }else{
+                line += buffer;
+                continue;
+            }
+            string property, value;
+            bool isComment;
+            if (getContent(line, property, value, isComment, false)) {
+                m_props.insert(StringPair(property, value));
+            }
+            line = "";
+        }
+        m_exists = true;
+        fclose(file);
+    }
+    m_modified = false;
+}
+
+void HashFileConfigNode::toFile(FILE* file) {
+    BOOST_FOREACH(const StringPair &prop, m_props) {
+        fprintf(file, "%s = %s\n", prop.first.c_str(),prop.second.c_str());
+    }
+}
+
+void HashFileConfigNode::readProperties(map<string, string> &props) const {
+    BOOST_FOREACH(const StringPair &prop, m_props) {
+        props.insert(prop);
+    }
+}
+
+string HashFileConfigNode::readProperty(const string &property) const {
+    std::map<std::string, std::string>::const_iterator it = m_props.find(property);
+    if (it != m_props.end()) {
+        return it->second;
+    } else {
+        return "";
+    }
+}
+
+void HashFileConfigNode::removeProperty(const string &property){
+    map<string, string>::iterator it = m_props.find(property);
+    if(it != m_props.end()) {
+        m_props.erase(it);
+        m_modified = true;
+    }
+}
+
+void HashFileConfigNode::setProperty(const string &property,
+                                 const string &newvalue,
+                                 const string &comment,
+                                 const string *defValue) {
+    /** we don't support property comments here. Also, we ignore comment*/
+    if (defValue &&
+        *defValue == newvalue) {
+        return;
+    }
+    map<string, string>::iterator it = m_props.find(property);
+    if(it != m_props.end()) {
+        string oldvalue = it->second;
+        if(oldvalue != newvalue) {
+            m_props.erase(it);
+            m_props.insert(StringPair(property, newvalue));
+            m_modified = true;
+        }
+    }
 }
 

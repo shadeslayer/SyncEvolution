@@ -122,8 +122,11 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
     NodeCache_t::iterator found = m_nodes.find(fullname);
     if (found != m_nodes.end()) {
         return found->second;
-    } else {
+    } else if(type != other){
         boost::shared_ptr<ConfigNode> node(new FileConfigNode(fullpath, filename, m_readonly));
+        return m_nodes[fullname] = node;
+    } else {
+        boost::shared_ptr<ConfigNode> node(new HashFileConfigNode(fullpath, filename, m_readonly));
         return m_nodes[fullname] = node;
     }
 }

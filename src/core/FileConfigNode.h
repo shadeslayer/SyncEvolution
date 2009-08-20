@@ -27,6 +27,37 @@
 using namespace std;
 
 /**
+ * A base class for file related config
+ */
+class FileBaseConfigNode: public ConfigNode {
+  protected:
+    string m_path;
+    string m_fileName;
+    bool m_modified;
+    const bool m_readonly;
+    bool m_exists;
+    
+    /**
+     * Open or create a new file. The file will be read (if it exists)
+     * but not create or written to unless flush() is called explicitly
+     *
+     * @param path      node name, maps to directory
+     * @param fileName  name of file inside that directory
+     * @param readonly  do not create or write file, it must exist;
+     *                  flush() will throw an exception when changes would have to be written
+     */
+    FileBaseConfigNode(const string &path, const string &fileName, bool readonly);
+    /** 
+     * a virtual method to serial data structure to the file
+     * It is used by flush function to flush memory into disk file
+     */
+    virtual void toFile(FILE* file) = 0;
+  public:
+    virtual void flush();
+    virtual string getName() const { return m_path + "/" + m_fileName; }
+    virtual bool exists() const { return m_exists; }
+};
+/**
  * This class started its life as the Posix implementation of the
  * ManagementNode in the Funambol C++ client library. Nowadays it is
  * part of the SyncEvoluition ConfigTree (see there for details).
@@ -41,16 +72,14 @@ using namespace std;
  *
  * @todo rewrite with standard C++ containers
  */
-class FileConfigNode : public ConfigNode {
-    string m_path;
-    string m_fileName;
-
+class FileConfigNode : public FileBaseConfigNode {
     list<string> m_lines;
-    bool m_modified;
-    const bool m_readonly;
-    bool m_exists;
 
     void read();
+
+ protected:
+
+    virtual void toFile(FILE* file);
 
  public:
     /**
@@ -67,9 +96,6 @@ class FileConfigNode : public ConfigNode {
     /* keep underlying methods visible; our own setProperty() would hide them */
     using ConfigNode::setProperty;
 
-    virtual string getName() const { return m_path + "/" + m_fileName; }
-
-    virtual void flush();
     virtual string readProperty(const string &property) const;
     virtual void setProperty(const string &property,
                              const string &value,
@@ -77,7 +103,33 @@ class FileConfigNode : public ConfigNode {
                              const string *defValue = NULL);
     virtual void readProperties(map<string, string> &props) const;
     virtual void removeProperty(const string &property);
-    virtual bool exists() const { return m_exists; }
+};
+
+/**
+ * The main difference from FileConfigNode is to store pair of 'property-value'
+ * in a map to avoid O(n^2) string comparison
+ * Here comments for property default value are discarded.
+ */
+class HashFileConfigNode: public FileBaseConfigNode {
+    map<std::string, std::string> m_props;
+    /**
+     * Map used to store pairs
+     */
+    void read();
+
+ protected:
+
+    virtual void toFile(FILE* file);
+
+ public:
+    HashFileConfigNode(const string &path, const string &fileName, bool readonly);
+    virtual string readProperty(const string &property) const;
+    virtual void setProperty(const string &property,
+                             const string &value,
+                             const string &comment = "",
+                             const string *defValue = NULL);
+    virtual void readProperties(map<string, string> &props) const;
+    virtual void removeProperty(const string &property);
 };
 
 #endif
