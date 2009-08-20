@@ -26,28 +26,28 @@ http://bugzilla.moblin.org/show_bug.cgi?id=3009
   Client::Sync::vcard21::testDelete,                                        \
   Client::Sync::vcard21::testItemsXML,                                      \
   Client::Sync::vcard21::testOneWayFromServer,                              \
-  Client::Sync::vcard21::testRetry,Client::Sync::vcard21::Suspend,          \
+  Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,              \
   Client::Sync::ical20::testRefreshFromClientSync,                          \
   Client::Sync::ical20::testSlowSyncSemantic,                               \
   Client::Sync::ical20::testRefreshStatus,                                  \
   Client::Sync::ical20::testDelete,                                         \
   Client::Sync::ical20::testItemsXML,                                       \
   Client::Sync::ical20::testOneWayFromServer,                               \
-  Client::Sync::ical20::testRetry,Client::Sync::vcard21::Suspend,           \
+  Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,                \
   Client::Sync::itodo20::testRefreshFromClientSync,                         \
   Client::Sync::itodo20::testSlowSyncSemantic,                              \
   Client::Sync::itodo20::testRefreshStatus,                                 \
   Client::Sync::itodo20::testDelete,                                        \
   Client::Sync::itodo20::testItemsXML,                                      \
   Client::Sync::itodo20::testOneWayFromServer,                              \
-  Client::Sync::itodo20::testRetry,Client::Sync::vcard21::Suspend,          \
+  Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,              \
   Client::Sync::text::testRefreshFromClientSync,                            \
   Client::Sync::text::testSlowSyncSemantic,                                 \
   Client::Sync::text::testRefreshStatus,                                    \
   Client::Sync::text::testDelete,                                           \
   Client::Sync::text::testItemsXML,                                         \
   Client::Sync::text::testOneWayFromServer,                                 \
-  Client::Sync::text::testRetry,Client::Sync::vcard21::Suspend,             \
+  Client::Sync::text::Retry,Client::Sync::text::Suspend,                    \
   
  
 * Test Profiles Settings
@@ -111,7 +111,7 @@ Client::Sync::vcard21
      Client::Sync::vcard21::testDelete
      Client::Sync::vcard21::testItemsXML
      Client::Sync::vcard21::testOneWayFromServer
-     Client::Sync::vcard21::testRetry
+     Client::Sync::vcard21::Retry
      Client::Sync::vcard21::Suspend
 
 Client::Sync::ical20
@@ -121,7 +121,7 @@ Client::Sync::ical20
      Client::Sync::ical20::testDelete
      Client::Sync::ical20::testItemsXML
      Client::Sync::ical20::testOneWayFromServer
-     Client::Sync::ical20::testRetry
+     Client::Sync::ical20::Retry
      Client::Sync::ical20::Suspend
 
 Client::Sync::itodo20
@@ -131,7 +131,7 @@ Client::Sync::itodo20
      Client::Sync::itodo20::testDelete
      Client::Sync::itodo20::testOneWayFromServer
      Client::Sync::itodo20::testItemsXML
-     Client::Sync::itodo20::testRetry
+     Client::Sync::itodo20::Retry
      Client::Sync::itodo20::Suspend
 
 
@@ -142,5 +142,5 @@ Client::Sync::text
      Client::Sync::text::testDelete
      Client::Sync::text::testOneWayFromServer
      Client::Sync::text::testItemsXML
-     Client::Sync::text::testRetry
+     Client::Sync::text::Retry
      Client::Sync::text::Suspend
