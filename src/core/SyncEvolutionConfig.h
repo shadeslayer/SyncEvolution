@@ -37,8 +37,8 @@ using namespace std;
  * @{
  */
 
-class EvolutionSyncSourceConfig;
-class PersistentEvolutionSyncSourceConfig;
+class SyncSourceConfig;
+class PersistentSyncSourceConfig;
 class ConfigTree;
 struct SyncSourceNodes;
 struct ConstSyncSourceNodes;
@@ -442,8 +442,8 @@ class ConfigStringCache {
  * to properties actually stored in files. EvolutionSyncClient
  * inherits from this class so that a derived client has the chance to
  * override every single property (although it doesn't have to).
- * Likewise EvolutionSyncSource is derived from
- * EvolutionSyncSourceConfig.
+ * Likewise SyncSource is derived from
+ * SyncSourceConfig.
  *
  * Properties can be set permanently (this changes the underlying
  * ConfigNode) and temporarily (this modifies the FilterConfigNode
@@ -574,15 +574,15 @@ class EvolutionSyncConfig {
      * from the set of sync source configs used by the SyncManager:
      * the SyncManger uses the AbstractSyncSourceConfig. In
      * SyncEvolution those are implemented by the
-     * EvolutionSyncSource's actually instantiated by
+     * SyncSource's actually instantiated by
      * EvolutionSyncClient. Those are complete whereas
-     * PersistentEvolutionSyncSourceConfig only provides access to a
+     * PersistentSyncSourceConfig only provides access to a
      * subset of the properties.
      *
      * Can be called for sources which do not exist yet.
      */
-    virtual boost::shared_ptr<PersistentEvolutionSyncSourceConfig> getSyncSourceConfig(const string &name);
-    virtual boost::shared_ptr<const PersistentEvolutionSyncSourceConfig> getSyncSourceConfig(const string &name) const {
+    virtual boost::shared_ptr<PersistentSyncSourceConfig> getSyncSourceConfig(const string &name);
+    virtual boost::shared_ptr<const PersistentSyncSourceConfig> getSyncSourceConfig(const string &name) const {
         return const_cast<EvolutionSyncConfig *>(this)->getSyncSourceConfig(name);
     }
 
@@ -778,7 +778,7 @@ private:
 };
 
 /**
- * This set of config nodes is to be used by EvolutionSyncSourceConfig
+ * This set of config nodes is to be used by SyncSourceConfig
  * to accesss properties.
  */
 struct SyncSourceNodes {
@@ -835,9 +835,9 @@ struct SourceType {
  * Some properties are not configurable and have to be provided
  * by derived classes.
  */
-class EvolutionSyncSourceConfig {
+class SyncSourceConfig {
  public:
-    EvolutionSyncSourceConfig(const string &name, const SyncSourceNodes &nodes);
+    SyncSourceConfig(const string &name, const SyncSourceNodes &nodes);
 
     static ConfigPropertyRegistry &getRegistry();
 
@@ -872,7 +872,7 @@ class EvolutionSyncSourceConfig {
 
     /**
      * Returns the data source type configured as part of the given
-     * configuration; different EvolutionSyncSources then check whether
+     * configuration; different SyncSources then check whether
      * they support that type. This call has to work before instantiating
      * a source and thus gets passed a node to read from.
      *
@@ -892,35 +892,7 @@ class EvolutionSyncSourceConfig {
     /**@}*/
 
     /**
-     * @name Calls which have to be implemented by each EvolutionSyncSource.
-     */
-    /**@{*/
-
-    /**
-     * Returns the preferred mime type of the items handled by the sync source.
-     * Example: "text/x-vcard"
-     */
-    virtual const char *getMimeType() const = 0;
-
-    /**
-     * Returns the version of the mime type used by client.
-     * Example: "2.1"
-     */
-    virtual const char *getMimeVersion() const = 0;
-
-    /**
-     * A string representing the source types (with versions) supported by the SyncSource.
-     * The string must be formatted as a sequence of "type:version" separated by commas ','.
-     * For example: "text/x-vcard:2.1,text/vcard:3.0".
-     * The version can be left empty, for example: "text/x-s4j-sifc:".
-     * Supported types will be sent as part of the DevInf.
-     */
-    virtual const char* getSupportedTypes() const = 0;
-
-    /**@}*/
-
-    /**
-     * @name Calls which usually do not have to be implemented by each EvolutionSyncSource.
+     * @name Calls which usually do not have to be implemented by each SyncSource.
      */
     /**@{*/
 
@@ -988,8 +960,6 @@ class EvolutionSyncSourceConfig {
      * @name Calls implemented by SyncEvolution.
      */
     /**@{*/
-    virtual const char *getType() const { return getMimeType(); }
-    virtual const char *getVersion() const { return getMimeVersion(); }
     virtual const char*  getName() const { return m_name.c_str(); }
     /**@}*/
 
@@ -1002,12 +972,12 @@ class EvolutionSyncSourceConfig {
 
 /**
  * Adds dummy implementations of the missing calls to
- * EvolutionSyncSourceConfig so that the other properties can be read.
+ * SyncSourceConfig so that the other properties can be read.
  */
-class PersistentEvolutionSyncSourceConfig : public EvolutionSyncSourceConfig {
+class PersistentSyncSourceConfig : public SyncSourceConfig {
  public:
-    PersistentEvolutionSyncSourceConfig(const string &name, const SyncSourceNodes &nodes) :
-    EvolutionSyncSourceConfig(name, nodes) {}
+    PersistentSyncSourceConfig(const string &name, const SyncSourceNodes &nodes) :
+    SyncSourceConfig(name, nodes) {}
 
     virtual const char* getMimeType() const { return ""; }
     virtual const char* getMimeVersion() const { return ""; }

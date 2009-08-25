@@ -19,7 +19,7 @@
  */
 
 #include "config.h"
-#include "EvolutionSyncSource.h"
+#include "SyncSource.h"
 
 #ifdef ENABLE_SQLITE
 
@@ -163,13 +163,6 @@ void SQLiteContactSource::open()
 
 void SQLiteContactSource::close()
 {
-    // Our change tracking is time based.
-    // Don't let caller proceed without waiting for
-    // one second to prevent being called again before
-    // the modification time stamp is larger than it
-    // is now.
-    sleepSinceModification(1);
-
     m_sqlite.close();
 }
 

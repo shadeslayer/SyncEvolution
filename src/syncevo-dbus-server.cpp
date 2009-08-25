@@ -745,7 +745,7 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
 	BOOST_FOREACH(const string &name, sources) {
 		gboolean local;
 
-		boost::shared_ptr<EvolutionSyncSourceConfig> source_config = config->getSyncSourceConfig(name);
+		boost::shared_ptr<SyncSourceConfig> source_config = config->getSyncSourceConfig(name);
 
 		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getSync()));
 		g_ptr_array_add (*options, option);
@@ -753,8 +753,8 @@ syncevo_get_template_config (SyncevoDBusServer *obj,
 		g_ptr_array_add (*options, option);
 
 		/* check whether we have support locally */
-		EvolutionSyncSourceParams params(name, config->getSyncSourceNodes(name), "");
-		auto_ptr<EvolutionSyncSource> syncSource(EvolutionSyncSource::createSource(params, false));
+		SyncSourceParams params(name, config->getSyncSourceNodes(name), "");
+		auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
 		try {
 			local = FALSE;
 			if (syncSource.get()) {
@@ -832,7 +832,7 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 	BOOST_FOREACH(const string &name, sources) {
 		gboolean local;
 
-		boost::shared_ptr<EvolutionSyncSourceConfig> source_config = config->getSyncSourceConfig(name);
+		boost::shared_ptr<SyncSourceConfig> source_config = config->getSyncSourceConfig(name);
 
 		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getSync()));
 		g_ptr_array_add (*options, option);
@@ -840,8 +840,8 @@ syncevo_get_server_config (SyncevoDBusServer *obj,
 		g_ptr_array_add (*options, option);
 
 		/* check whether we have support locally */
-		EvolutionSyncSourceParams params(name, config->getSyncSourceNodes(name), "");
-		auto_ptr<EvolutionSyncSource> syncSource(EvolutionSyncSource::createSource(params, false));
+		SyncSourceParams params(name, config->getSyncSourceNodes(name), "");
+		auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
 		try {
 			local = FALSE;
 			if (syncSource.get()) {
@@ -914,7 +914,7 @@ syncevo_set_server_config (SyncevoDBusServer *obj,
 				config->setIconURI (string (value));
 			}
 		} else if (ns && key) {
-			boost::shared_ptr<EvolutionSyncSourceConfig> source_config = config->getSyncSourceConfig(ns);
+			boost::shared_ptr<SyncSourceConfig> source_config = config->getSyncSourceConfig(ns);
 			if (strcmp (key, "sync") == 0) {
 				source_config->setSync (string (value));
 			} else if (strcmp (key, "uri") == 0) {

@@ -36,6 +36,10 @@
 #include <exception>
 using namespace std;
 
+namespace SyncEvolution {
+    class Logger;
+}
+
 /** case-insensitive less than for assoziative containers */
 template <class T> class Nocase : public std::binary_function<T, T, bool> {
 public:
@@ -193,8 +197,11 @@ class SyncEvolutionException : public std::runtime_error
      * an error. Turns certain known exceptions into the corresponding
      * status code if status still was STATUS_OK when called.
      * Returns updated status code.
+     *
+     * @param logger    the class which does the logging
      */
-    static SyncMLStatus handle(SyncMLStatus *status = NULL);
+    static SyncMLStatus handle(SyncMLStatus *status = NULL, SyncEvolution::Logger *logger = NULL);
+    static SyncMLStatus handle(SyncEvolution::Logger *logger) { return handle(NULL, logger); }
 };
 
 /**

@@ -22,7 +22,7 @@
 
 #include "SyncEvolutionConfig.h"
 #include "FilterConfigNode.h"
-class EvolutionSyncSource;
+class SyncSource;
 
 #include <set>
 using namespace std;
@@ -114,7 +114,7 @@ private:
     /**
      * list all known data sources of a certain type
      */
-    void listSources(EvolutionSyncSource &syncSource, const string &header);
+    void listSources(SyncSource &syncSource, const string &header);
 
     void dumpServers(const string &preamble,
                      const EvolutionSyncConfig::ServerList &servers);

@@ -21,7 +21,7 @@
 #ifndef INCL_TRACKINGSYNCSOURCE
 #define INCL_TRACKINGSYNCSOURCE
 
-#include "EvolutionSyncSource.h"
+#include "SyncSource.h"
 #include "ConfigNode.h"
 
 #include <boost/shared_ptr.hpp>
@@ -35,8 +35,8 @@ using namespace std;
  * by implementing the pure virtual functions below:
  * - open() the data
  * - enumerate all existing items
- * - provide UID and "revision string": 
- *   The UID must remain *constant* when the user edits an item (it
+ * - provide LUID and "revision string": 
+ *   The LUID must remain *constant* when the user edits an item (it
  *   may change when SyncEvolution changes an item), whereas the
  *   revision string must *change* each time the item is changed
  *   by anyone.
@@ -60,13 +60,21 @@ using namespace std;
  *   (beware, such a hash might change as the textual representation
  *    changes even though the item is unchanged)
  */
-class TrackingSyncSource : public EvolutionSyncSource
+class TrackingSyncSource : public TestingSyncSource, virtual public SyncSourceRevisions
 {
   public:
     /**
      * Creates a new tracking sync source.
+     *
+     * @param granularity    sync sources whose revision string
+     *                       is based on time should specify the number
+     *                       of seconds which has to pass before changes
+     *                       are detected reliably (see SyncSourceRevisions
+     *                       for details), otherwise pass 0
      */
-    TrackingSyncSource(const EvolutionSyncSourceParams &params);
+    TrackingSyncSource(const SyncSourceParams &params,
+                       int granularitySeconds = 1);
+    ~TrackingSyncSource() {}
 
     /**
      * returns a list of all know sources for the kind of items
@@ -83,25 +91,10 @@ class TrackingSyncSource : public EvolutionSyncSource
     virtual void open() = 0;
 
     /**
-     * Dump all data from source unmodified into the given directory.
-     * The ConfigNode can be used to store meta information needed for
-     * restoring that state. Both directory and node are empty.
-     */
-    virtual void backupData(const string &dirname, ConfigNode &node, BackupReport &report);
-
-    /**
-     * Restore database from data stored in backupData(). Will be
-     * called inside open()/close() pair. beginSync() is *not* called.
-     */
-    virtual void restoreData(const string &dirname, const ConfigNode &node, bool dryrun, SyncSourceReport &report);
-
-    typedef map<string, string> RevisionMap_t;
-
-    /**
-     * fills the complete mapping from UID to revision string of all
+     * fills the complete mapping from LUID to revision string of all
      * currently existing items
      *
-     * Usually both UID and revision string must be non-empty. The
+     * Usually both LUID and revision string must be non-empty. The
      * only exception is a refresh-from-client: in that case the
      * revision string may be empty. The implementor of this call
      * cannot know whether empty strings are allowed, therefore it
@@ -109,69 +102,46 @@ class TrackingSyncSource : public EvolutionSyncSource
      * string. The caller of this method will detect situations where
      * a non-empty string is necessary and none was provided.
      */
-    virtual void listAllItems(RevisionMap_t &revisions) = 0;
-
-    class InsertItemResult {
-    public:
-        /**
-         * @param uid       the uid after the operation; during an update the uid must
-         *                  not be changed, so return the original one here
-         * @param revision  the revision string after the operation
-         * @param merged    set this to true if an existing item was updated instead of adding it
-         */
-        InsertItemResult(const string &uid,
-                         const string &revision,
-                         bool merged) :
-        m_uid(uid),
-            m_revision(revision),
-            m_merged(merged)
-            {}
-
-        const string m_uid;
-        const string m_revision;
-        const bool m_merged;
-    };
+    virtual void listAllItems(SyncSourceRevisions::RevisionMap_t &revisions) = 0;
 
     /**
      * Create or modify an item.
      *
-     * The sync source should be flexible: if the UID is non-empty, it
-     * shall modify the item referenced by the UID. If the UID is
+     * The sync source should be flexible: if the LUID is non-empty, it
+     * shall modify the item referenced by the LUID. If the LUID is
      * empty, the normal operation is to add it. But if the item
      * already exists (e.g., a calendar event which was imported
      * by the user manually), then the existing item should be
      * updated also in the second case.
      *
-     * Passing a UID of an item which does not exist is an error.
+     * Passing a LUID of an item which does not exist is an error.
      * This error should be reported instead of covering it up by
      * (re)creating the item.
      *
-     * Errors are signalled by throwing an exception. Returning empty
+     * Errors are signaled by throwing an exception. Returning empty
      * strings in the result is an error which triggers an "item could
      * not be stored" error.
      *
-     * @param uid      identifies the item to be modified, empty for creating
-     * @param item     contains the new content of the item and its MIME type
+     * @param luid     identifies the item to be modified, empty for creating
+     * @param item     contains the new content of the item
+     * @param raw      item has internal format instead of engine format
      * @return the result of inserting the item
      */
-    virtual InsertItemResult insertItem(const string &uid, const SyncItem &item) = 0;
+    virtual InsertItemResult insertItem(const std::string &luid, const std::string &item, bool raw) = 0;
 
     /**
-     * Extract information for the item identified by UID
-     * and store it in a new SyncItem. The caller must
-     * free that item. May throw exceptions.
+     * Return item data in engine format.
      *
-     * @param uid      identifies the item
-     * @param type     MIME type preferred by caller for item;
-     *                 can be ignored. "raw" selects the native
-     *                 format of the source.
+     * @param luid     identifies the item
+     * @param raw      return item in internal format instead of engine format
+     * @retval item    item data
      */
-    virtual SyncItem *createItem(const string &uid, const char *type = NULL) = 0;
+    virtual void readItem(const std::string &luid, std::string &item, bool raw) = 0;
 
     /**
-     * removes and item
+     * delete the item (renamed so that it can be wrapped by deleteItem())
      */
-    virtual void deleteItem(const string &uid) = 0;
+    virtual void removeItem(const string &luid) = 0;
 
     /**
      * optional: write all changes, throw error if that fails
@@ -193,11 +163,6 @@ class TrackingSyncSource : public EvolutionSyncSource
     virtual void close() = 0;
 
     /**
-     * file suffix for database files
-     */
-    virtual string fileSuffix() const = 0;
-
-    /**
      * Returns the preferred mime type of the items handled by the sync source.
      * Example: "text/x-vcard"
      */
@@ -209,30 +174,19 @@ class TrackingSyncSource : public EvolutionSyncSource
      */
     virtual const char *getMimeVersion() const = 0;
 
-    /**
-     * A string representing the source types (with versions) supported by the SyncSource.
-     * The string must be formatted as a sequence of "type:version" separated by commas ','.
-     * For example: "text/x-vcard:2.1,text/vcard:3.0".
-     * The version can be left empty, for example: "text/x-s4j-sifc:".
-     * Supported types will be sent as part of the DevInf.
-     */
-    virtual const char* getSupportedTypes() const = 0;
-
- protected:
-    /** log a one-line info about an item */
-    virtual void logItem(const string &uid, const string &info, bool debug = false) = 0;
-    virtual void logItem(const SyncItem &item, const string &info, bool debug = false) = 0;
+    using SyncSource::getName;
 
   private:
-    /* implementations of EvolutionSyncSource callbacks */
-    virtual bool checkStatus() { beginSyncThrow(true, true, false); return true; }
-    virtual void beginSyncThrow(bool needAll,
-                                bool needPartial,
-                                bool deleteLocal);
-    virtual void endSyncThrow();
-    virtual SyncMLStatus addItemThrow(SyncItem& item);
-    virtual SyncMLStatus updateItemThrow(SyncItem& item);
-    virtual SyncMLStatus deleteItemThrow(SyncItem& item);
+    void checkStatus();
+
+    /* implementations of SyncSource callbacks */
+    virtual void beginSync(const std::string &lastToken, const std::string &resumeToken);
+    virtual std::string endSync(bool success);
+    virtual void deleteItem(const string &luid);
+    virtual InsertItemResult insertItem(const std::string &luid, const std::string &item);
+    virtual void readItem(const std::string &luid, std::string &item);
+    virtual InsertItemResult insertItemRaw(const std::string &luid, const std::string &item);
+    virtual void readItemRaw(const std::string &luid, std::string &item);
 
     boost::shared_ptr<ConfigNode> m_trackingNode;
 };

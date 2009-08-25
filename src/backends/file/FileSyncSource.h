@@ -32,7 +32,7 @@
  * directory has to be specified via the database name, using
  * [file://]<path> as format. The file:// prefix is optional, but the
  * directory is only created if it is used.
- * EvolutionSyncSource::getDatabaseID() gives us the database name.
+ * SyncSource::getDatabaseID() gives us the database name.
  *
  * Change tracking is done via the file systems modification time
  * stamp: editing a file treats it as modified and then sends it to
@@ -54,27 +54,23 @@
 class FileSyncSource : public TrackingSyncSource, private boost::noncopyable
 {
   public:
-    FileSyncSource(const EvolutionSyncSourceParams &params,
+    FileSyncSource(const SyncSourceParams &params,
                    const string &dataformat);
 
 
  protected:
-    /* implementation of EvolutionSyncSource interface */
+    /* implementation of SyncSource interface */
     virtual void open();
     virtual void close();
     virtual Databases getDatabases();
-    virtual SyncItem *createItem(const string &uid, const char *type = NULL);
-    virtual string fileSuffix() const;
     virtual const char *getMimeType() const;
     virtual const char *getMimeVersion() const;
-    virtual const char *getSupportedTypes() const;
-    virtual void logItem(const string &uid, const string &info, bool debug = false);
-    virtual void logItem(const SyncItem &item, const string &info, bool debug = false);
 
     /* implementation of TrackingSyncSource interface */
     virtual void listAllItems(RevisionMap_t &revisions);
-    virtual InsertItemResult insertItem(const string &uid, const SyncItem &item);
-    virtual void deleteItem(const string &uid);
+    virtual InsertItemResult insertItem(const string &luid, const std::string &item, bool raw);
+    void readItem(const std::string &luid, std::string &item, bool raw);
+    virtual void removeItem(const string &uid);
 
  private:
     /**

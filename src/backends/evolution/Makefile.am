@@ -13,6 +13,8 @@ endif
 MAINTAINERCLEANFILES = Makefile.in
 
 SYNCECAL_SOURCES = \
+	EvolutionSyncSource.h \
+	EvolutionSyncSource.cpp \
         EvolutionCalendarSource.h \
         EvolutionMemoSource.h \
 	EvolutionCalendarSource.cpp \
@@ -27,6 +29,8 @@ SYNCECAL_SOURCES += \
 endif
 
 SYNCEBOOK_SOURCES = \
+	EvolutionSyncSource.h \
+	EvolutionSyncSource.cpp \
         EvolutionContactSource.h \
 	EvolutionContactSource.cpp
 

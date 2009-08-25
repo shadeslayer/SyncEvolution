@@ -50,7 +50,7 @@ public:
 	~DBusSyncClient();
 
 protected:
-	virtual void prepare(const std::vector<EvolutionSyncSource *> &sources);
+	virtual void prepare(const std::vector<SyncSource *> &sources);
 
 	virtual bool getPrintChanges() const;
 
@@ -62,7 +62,7 @@ protected:
 	                                 int32_t extra1, int32_t extra2, int32_t extra3);
 
 	virtual void displaySourceProgress(sysync::TProgressEventEnum type,
-	                                   EvolutionSyncSource &source,
+	                                   SyncSource &source,
 	                                   int32_t extra1, int32_t extra2, int32_t extra3);
 
 	virtual bool checkForSuspend();

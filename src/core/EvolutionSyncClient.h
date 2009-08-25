@@ -41,7 +41,7 @@ namespace SyncEvolution {
 }
 using namespace SyncEvolution;
 class SourceList;
-class EvolutionSyncSource;
+class SyncSource;
 
 struct SuspendFlags
 {
@@ -223,7 +223,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * "backend-died" signals are not delivered. The problem with
      * the thread is that it seems to interfere with gconf startup
      * when added to the main() function of syncevolution. Therefore
-     * it is started by EvolutionSyncSource::beginSync() (for unit
+     * it is started by SyncSource::beginSync() (for unit
      * testing of sync sources) and EvolutionSyncClient::sync() (for
      * normal operation).
      */
@@ -239,7 +239,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * @TODO: roll SourceList into EvolutionSyncClient and
      * make this non-static
      */
-    static EvolutionSyncSource *findSource(const char *name);
+    static SyncSource *findSource(const char *name);
 
     /**
      * intercept config filters
@@ -332,7 +332,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * source is not modified and the default from the
      * configuration is used.
      */
-    void setSyncModes(const std::vector<EvolutionSyncSource *> &sources,
+    void setSyncModes(const std::vector<SyncSource *> &sources,
                       const SyncModes &modes);
 
     /**
@@ -392,7 +392,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      *
      * @param sources   a NULL terminated array of all active sources
      */
-    virtual void prepare(const std::vector<EvolutionSyncSource *> &sources) {}
+    virtual void prepare(const std::vector<SyncSource *> &sources) {}
 
     /**
      * instantiate transport agent
@@ -444,7 +444,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * @param extra3  extra information depending on type
      */
     virtual void displaySourceProgress(sysync::TProgressEventEnum type,
-                                       EvolutionSyncSource &source,
+                                       SyncSource &source,
                                        int32_t extra1, int32_t extra2, int32_t extra3);
 
     /**

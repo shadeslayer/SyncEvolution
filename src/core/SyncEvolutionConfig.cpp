@@ -21,7 +21,7 @@
 #include "config.h"
 
 #include "SyncEvolutionConfig.h"
-#include "EvolutionSyncSource.h"
+#include "SyncSource.h"
 #include "EvolutionSyncClient.h"
 #include "FileConfigTree.h"
 #include "VolatileConfigTree.h"
@@ -36,8 +36,8 @@
 #include <unistd.h>
 #include "config.h"
 
-static bool SourcePropSourceTypeIsSet(boost::shared_ptr<EvolutionSyncSourceConfig> source);
-static bool SourcePropURIIsSet(boost::shared_ptr<EvolutionSyncSourceConfig> source);
+static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source);
+static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source);
 
 void ConfigProperty::splitComment(const string &comment, list<string> &commentLines)
 {
@@ -191,7 +191,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     boost::shared_ptr<FileConfigTree> tree(new FileConfigTree(templateConfig, false));
     tree->setReadOnly(true);
     boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(server, tree));
-    boost::shared_ptr<PersistentEvolutionSyncSourceConfig> source;
+    boost::shared_ptr<PersistentSyncSourceConfig> source;
 
     config->setDefaults(false);
     // The prefix is important: without it, myFUNAMBOL 6.x and 7.0 map
@@ -373,10 +373,10 @@ void EvolutionSyncConfig::remove()
     m_tree.reset(new VolatileConfigTree());
 }
 
-boost::shared_ptr<PersistentEvolutionSyncSourceConfig> EvolutionSyncConfig::getSyncSourceConfig(const string &name)
+boost::shared_ptr<PersistentSyncSourceConfig> EvolutionSyncConfig::getSyncSourceConfig(const string &name)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
-    return boost::shared_ptr<PersistentEvolutionSyncSourceConfig>(new PersistentEvolutionSyncSourceConfig(name, nodes));
+    return boost::shared_ptr<PersistentSyncSourceConfig>(new PersistentSyncSourceConfig(name, nodes));
 }
 
 list<string> EvolutionSyncConfig::getSyncSources() const
@@ -732,7 +732,7 @@ void EvolutionSyncConfig::setDefaults(bool force)
 void EvolutionSyncConfig::setSourceDefaults(const string &name, bool force)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
-    setDefaultProps(EvolutionSyncSourceConfig::getRegistry(),
+    setDefaultProps(SyncSourceConfig::getRegistry(),
                     nodes.m_configNode, force);
 }
 
@@ -779,8 +779,8 @@ void EvolutionSyncConfig::copy(const EvolutionSyncConfig &other,
             sourceFilter->find(sourceName) != sourceFilter->end()) {
             ConstSyncSourceNodes fromNodes = other.getSyncSourceNodes(sourceName);
             SyncSourceNodes toNodes = this->getSyncSourceNodes(sourceName);
-            copyProperties(*fromNodes.m_configNode, *toNodes.m_configNode, false, EvolutionSyncSourceConfig::getRegistry());
-            copyProperties(*fromNodes.m_hiddenNode, *toNodes.m_hiddenNode, true, EvolutionSyncSourceConfig::getRegistry());
+            copyProperties(*fromNodes.m_configNode, *toNodes.m_configNode, false, SyncSourceConfig::getRegistry());
+            copyProperties(*fromNodes.m_hiddenNode, *toNodes.m_hiddenNode, true, SyncSourceConfig::getRegistry());
             copyProperties(*fromNodes.m_trackingNode, *toNodes.m_trackingNode);
         }
     }
@@ -790,13 +790,13 @@ const char *EvolutionSyncConfig::getSwv() const { return VERSION; }
 const char *EvolutionSyncConfig::getDevType() const { return DEVICE_TYPE; }
 
                      
-EvolutionSyncSourceConfig::EvolutionSyncSourceConfig(const string &name, const SyncSourceNodes &nodes) :
+SyncSourceConfig::SyncSourceConfig(const string &name, const SyncSourceNodes &nodes) :
     m_name(name),
     m_nodes(nodes)
 {
 }
 
-StringConfigProperty EvolutionSyncSourceConfig::m_sourcePropSync("sync",
+StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
                                            "requests a certain synchronization mode:\n"
                                            "  two-way             = only send/receive changes since last sync\n"
                                            "  slow                = exchange all items\n"
@@ -870,7 +870,7 @@ public:
         stringstream enabled, disabled;
         stringstream res;
 
-        SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
+        SourceRegistry &registry(SyncSource::getSourceRegistry());
         BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
             const string &comment = sourceInfos->m_typeDescr;
             stringstream *curr = sourceInfos->m_enabled ? &enabled : &disabled;
@@ -894,7 +894,7 @@ public:
     virtual Values getValues() const {
         Values res(StringConfigProperty::getValues());
 
-        const SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
+        const SourceRegistry &registry(SyncSource::getSourceRegistry());
         BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
             copy(sourceInfos->m_typeValues.begin(),
                  sourceInfos->m_typeValues.end(),
@@ -915,7 +915,7 @@ public:
         }
     }
 } sourcePropSourceType;
-static bool SourcePropSourceTypeIsSet(boost::shared_ptr<EvolutionSyncSourceConfig> source)
+static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source)
 {
     return source->isSet(sourcePropSourceType);
 }
@@ -938,7 +938,7 @@ static ConfigProperty sourcePropDatabaseID("evolutionsource",
 static ConfigProperty sourcePropURI("uri",
                                     "this is appended to the server's URL to identify the\n"
                                     "server's database");
-static bool SourcePropURIIsSet(boost::shared_ptr<EvolutionSyncSourceConfig> source)
+static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source)
 {
     return source->isSet(sourcePropURI);
 }
@@ -955,14 +955,14 @@ static PasswordConfigProperty sourcePropPassword("evolutionpassword", "");
 static ULongConfigProperty sourcePropLast("last",
                                           "used by the SyncML library internally; do not modify");
 
-ConfigPropertyRegistry &EvolutionSyncSourceConfig::getRegistry()
+ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
     static bool initialized;
 
     if (!initialized) {
-        registry.push_back(&EvolutionSyncSourceConfig::m_sourcePropSync);
-        EvolutionSyncSourceConfig::m_sourcePropSync.setObligatory(true);
+        registry.push_back(&SyncSourceConfig::m_sourcePropSync);
+        SyncSourceConfig::m_sourcePropSync.setObligatory(true);
         registry.push_back(&sourcePropSourceType);
         registry.push_back(&sourcePropDatabaseID);
         registry.push_back(&sourcePropURI);
@@ -976,26 +976,26 @@ ConfigPropertyRegistry &EvolutionSyncSourceConfig::getRegistry()
     return registry;
 }
 
-const char *EvolutionSyncSourceConfig::getDatabaseID() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropDatabaseID); }
-void EvolutionSyncSourceConfig::setDatabaseID(const string &value, bool temporarily) { sourcePropDatabaseID.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *EvolutionSyncSourceConfig::getUser() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropUser); }
-void EvolutionSyncSourceConfig::setUser(const string &value, bool temporarily) { sourcePropUser.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *EvolutionSyncSourceConfig::getPassword() const {
+const char *SyncSourceConfig::getDatabaseID() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropDatabaseID); }
+void SyncSourceConfig::setDatabaseID(const string &value, bool temporarily) { sourcePropDatabaseID.setProperty(*m_nodes.m_configNode, value, temporarily); }
+const char *SyncSourceConfig::getUser() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropUser); }
+void SyncSourceConfig::setUser(const string &value, bool temporarily) { sourcePropUser.setProperty(*m_nodes.m_configNode, value, temporarily); }
+const char *SyncSourceConfig::getPassword() const {
     string password = sourcePropPassword.getCachedProperty(*m_nodes.m_configNode, m_cachedPassword);
     return m_stringCache.storeString(sourcePropPassword.getName(), password);
 }
-void EvolutionSyncSourceConfig::checkPassword(ConfigUserInterface &ui) {
+void SyncSourceConfig::checkPassword(ConfigUserInterface &ui) {
     sourcePropPassword.checkPassword(*m_nodes.m_configNode, ui, m_name + " backend", m_cachedPassword);
 }
-void EvolutionSyncSourceConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; sourcePropPassword.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *EvolutionSyncSourceConfig::getURI() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropURI); }
-void EvolutionSyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *EvolutionSyncSourceConfig::getSync() const { return m_stringCache.getProperty(*m_nodes.m_configNode, m_sourcePropSync); }
-void EvolutionSyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*m_nodes.m_configNode, value, temporarily); }
-unsigned long EvolutionSyncSourceConfig::getLast() const { return sourcePropLast.getProperty(*m_nodes.m_hiddenNode); }
-void EvolutionSyncSourceConfig::setLast(unsigned long timestamp) { sourcePropLast.setProperty(*m_nodes.m_hiddenNode, timestamp); }
-string EvolutionSyncSourceConfig::getSourceTypeString(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.m_configNode); }
-SourceType EvolutionSyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
+void SyncSourceConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; sourcePropPassword.setProperty(*m_nodes.m_configNode, value, temporarily); }
+const char *SyncSourceConfig::getURI() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropURI); }
+void SyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*m_nodes.m_configNode, value, temporarily); }
+const char *SyncSourceConfig::getSync() const { return m_stringCache.getProperty(*m_nodes.m_configNode, m_sourcePropSync); }
+void SyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*m_nodes.m_configNode, value, temporarily); }
+unsigned long SyncSourceConfig::getLast() const { return sourcePropLast.getProperty(*m_nodes.m_hiddenNode); }
+void SyncSourceConfig::setLast(unsigned long timestamp) { sourcePropLast.setProperty(*m_nodes.m_hiddenNode, timestamp); }
+string SyncSourceConfig::getSourceTypeString(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.m_configNode); }
+SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
     string type = getSourceTypeString(nodes);
     SourceType sourceType;
     size_t colon = type.find(':');
@@ -1016,5 +1016,5 @@ SourceType EvolutionSyncSourceConfig::getSourceType(const SyncSourceNodes &nodes
     }
     return sourceType;
 }
-SourceType EvolutionSyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
-void EvolutionSyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*m_nodes.m_configNode, value, temporarily); }
+SourceType SyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
+void SyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*m_nodes.m_configNode, value, temporarily); }

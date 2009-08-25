@@ -21,9 +21,9 @@
 #include "SQLiteContactSource.h"
 #include "test.h"
 
-static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
+static SyncSource *createSource(const SyncSourceParams &params)
 {
-    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
     bool isMe = sourceType.m_backend == "SQLite Address Book";
 
 #ifndef ENABLE_SQLITE
@@ -64,11 +64,11 @@ class EvolutionSQLiteContactsTest : public CppUnit::TestFixture {
 
 protected:
     void testInstantiate() {
-        boost::shared_ptr<EvolutionSyncSource> source;
-        source.reset(EvolutionSyncSource::createTestingSource("contacts", "contacts", true));
-        source.reset(EvolutionSyncSource::createTestingSource("contacts", "addressbook", true));
-        source.reset(EvolutionSyncSource::createTestingSource("contacts", "sqlite-contacts", true));
-        source.reset(EvolutionSyncSource::createTestingSource("contacts", "SQLite Address Book:text/x-vcard", true));
+        boost::shared_ptr<SyncSource> source;
+        source.reset(SyncSource::createTestingSource("contacts", "contacts", true));
+        source.reset(SyncSource::createTestingSource("contacts", "addressbook", true));
+        source.reset(SyncSource::createTestingSource("contacts", "sqlite-contacts", true));
+        source.reset(SyncSource::createTestingSource("contacts", "SQLite Address Book:text/x-vcard", true));
     }
 };
 

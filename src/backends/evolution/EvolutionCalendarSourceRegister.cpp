@@ -24,9 +24,9 @@
 
 #include <boost/algorithm/string.hpp>
 
-static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
+static SyncSource *createSource(const SyncSourceParams &params)
 {
-    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
     bool isMe;
     bool enabled;
 
@@ -117,48 +117,44 @@ class EvolutionCalendarTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE_END();
 
 protected:
-    static string addItem(boost::shared_ptr<EvolutionSyncSource> source,
+    static string addItem(boost::shared_ptr<TestingSyncSource> source,
                           string &data) {
-        SyncItem item;
-
-        item.setData(data.c_str(), data.size());
-        source->addItemThrow(item);
-        CPPUNIT_ASSERT(!item.getKey().empty());
-        return item.getKey();
+        SyncSourceRaw::InsertItemResult res = source->insertItemRaw("", data);
+        return res.m_luid;
     }
 
     void testInstantiate() {
-        boost::shared_ptr<EvolutionSyncSource> source;
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "calendar", true));
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-calendar", true));
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "Evolution Calendar:text/calendar", true));
+        boost::shared_ptr<TestingSyncSource> source;
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "calendar", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "evolution-calendar", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "Evolution Calendar:text/calendar", true));
 
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "tasks", true));
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-tasks", true));
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "Evolution Tasks", true));
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "Evolution Task List:text/calendar", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "tasks", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "evolution-tasks", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "Evolution Tasks", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "Evolution Task List:text/calendar", true));
 
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "memos", true));
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-memos", true));
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "Evolution Memos:text/plain", true));
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "Evolution Memos:text/calendar", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "memos", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "evolution-memos", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "Evolution Memos:text/plain", true));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "Evolution Memos:text/calendar", true));
     }
 
     void testOpenDefaultCalendar() {
-        boost::shared_ptr<EvolutionSyncSource> source;
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-calendar", true, NULL));
+        boost::shared_ptr<TestingSyncSource> source;
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "evolution-calendar", true, NULL));
         CPPUNIT_ASSERT_NO_THROW(source->open());
     }
 
     void testOpenDefaultTodo() {
-        boost::shared_ptr<EvolutionSyncSource> source;
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-tasks", true, NULL));
+        boost::shared_ptr<TestingSyncSource> source;
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "evolution-tasks", true, NULL));
         CPPUNIT_ASSERT_NO_THROW(source->open());
     }
 
     void testOpenDefaultMemo() {
-        boost::shared_ptr<EvolutionSyncSource> source;
-        source.reset(EvolutionSyncSource::createTestingSource("calendar", "evolution-memos", true, NULL));
+        boost::shared_ptr<TestingSyncSource> source;
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "evolution-memos", true, NULL));
         CPPUNIT_ASSERT_NO_THROW(source->open());
     }
 
@@ -168,8 +164,8 @@ protected:
             prefix = "SyncEvolution_Test_";
         }
 
-        boost::shared_ptr<EvolutionSyncSource> source;
-        source.reset(EvolutionSyncSource::createTestingSource("ical20", "evolution-calendar", true, prefix));
+        boost::shared_ptr<TestingSyncSource> source;
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("ical20", "evolution-calendar", true, prefix));
         CPPUNIT_ASSERT_NO_THROW(source->open());
 
         string newyork = 

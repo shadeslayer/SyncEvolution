@@ -33,17 +33,17 @@
 class EvolutionMemoSource : public EvolutionCalendarSource
 {
   public:
-    EvolutionMemoSource(const EvolutionSyncSourceParams &params) :
+    EvolutionMemoSource(const SyncSourceParams &params) :
         EvolutionCalendarSource(E_CAL_SOURCE_TYPE_JOURNAL, params) {}
     
     //
-    // implementation of EvolutionSyncSource
+    // implementation of SyncSource
     //
-    virtual SyncItem *createItem(const string &uid, const char *type = NULL);
-    virtual InsertItemResult insertItem(const string &luid, const SyncItem &item);
+    virtual InsertItemResult insertItem(const string &uid, const std::string &item, bool raw);
+    void readItem(const std::string &luid, std::string &item, bool raw);
     virtual const char *getMimeType() const { return "text/plain"; }
     virtual const char *getMimeVersion() const { return "1.0"; }
-    virtual const char *getSupportedTypes() const { return "text/plain:1.0"; }
+    virtual const char *getSupportedTypes() const { return "text/plain:1.0"; }    
 
  private:
     bool isNativeType(const char *type);

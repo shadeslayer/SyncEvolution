@@ -21,9 +21,9 @@
 #include "EvolutionContactSource.h"
 #include "test.h"
 
-static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
+static SyncSource *createSource(const SyncSourceParams &params)
 {
-    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
     bool isMe = sourceType.m_backend == "Evolution Address Book";
     bool maybeMe = sourceType.m_backend == "addressbook";
     bool enabled;
@@ -76,13 +76,13 @@ class EvolutionContactTest : public CppUnit::TestFixture {
 
 protected:
     void testInstantiate() {
-        boost::shared_ptr<EvolutionSyncSource> source;
-        source.reset(EvolutionSyncSource::createTestingSource("addressbook", "addressbook", true));
-        source.reset(EvolutionSyncSource::createTestingSource("addressbook", "contacts", true));
-        source.reset(EvolutionSyncSource::createTestingSource("addressbook", "evolution-contacts", true));
-        source.reset(EvolutionSyncSource::createTestingSource("addressbook", "Evolution Contacts", true));
-        source.reset(EvolutionSyncSource::createTestingSource("addressbook", "Evolution Address Book:text/x-vcard", true));
-        source.reset(EvolutionSyncSource::createTestingSource("addressbook", "Evolution Address Book:text/vcard", true));
+        boost::shared_ptr<SyncSource> source;
+        source.reset(SyncSource::createTestingSource("addressbook", "addressbook", true));
+        source.reset(SyncSource::createTestingSource("addressbook", "contacts", true));
+        source.reset(SyncSource::createTestingSource("addressbook", "evolution-contacts", true));
+        source.reset(SyncSource::createTestingSource("addressbook", "Evolution Contacts", true));
+        source.reset(SyncSource::createTestingSource("addressbook", "Evolution Address Book:text/x-vcard", true));
+        source.reset(SyncSource::createTestingSource("addressbook", "Evolution Address Book:text/vcard", true));
     }
 
     /**
@@ -93,8 +93,8 @@ protected:
     void testImport() {
         // this only tests that we can instantiate something under the type "addressbook";
         // it might not be an EvolutionContactSource
-        boost::shared_ptr<EvolutionContactSource> source21(dynamic_cast<EvolutionContactSource *>(EvolutionSyncSource::createTestingSource("evolutioncontactsource21", "evolution-contacts:text/x-vcard", true)));
-        boost::shared_ptr<EvolutionContactSource> source30(dynamic_cast<EvolutionContactSource *>(EvolutionSyncSource::createTestingSource("evolutioncontactsource30", "Evolution Address Book:text/vcard", true)));
+        boost::shared_ptr<EvolutionContactSource> source21(dynamic_cast<EvolutionContactSource *>(SyncSource::createTestingSource("evolutioncontactsource21", "evolution-contacts:text/x-vcard", true)));
+        boost::shared_ptr<EvolutionContactSource> source30(dynamic_cast<EvolutionContactSource *>(SyncSource::createTestingSource("evolutioncontactsource30", "Evolution Address Book:text/vcard", true)));
         string parsed;
 
 #if 0
@@ -133,16 +133,6 @@ protected:
                                       "BEGIN:VCARD\nVERSION:2.1\nTEL;TYPE=HOME,VOICE:cell\nEND:VCARD\n",
                                       "text/x-vcard"));
 #endif
-    }
-
-private:
-    string preparse(EvolutionContactSource &source,
-                    const char *data,
-                    const char *type) {
-        SyncItem item;
-        item.setData(data, strlen(data));
-        item.setDataType(type);
-        return source.preparseVCard(item);
     }
 };
 

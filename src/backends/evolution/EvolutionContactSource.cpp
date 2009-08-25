@@ -59,16 +59,10 @@ class unrefEBookChanges {
 const EvolutionContactSource::extensions EvolutionContactSource::m_vcardExtensions;
 const EvolutionContactSource::unique EvolutionContactSource::m_uniqueProperties;
 
-EvolutionContactSource::EvolutionContactSource(const EvolutionSyncSourceParams &params,
+EvolutionContactSource::EvolutionContactSource(const SyncSourceParams &params,
                                                EVCardFormat vcardFormat) :
-    TrackingSyncSource(params),
+    EvolutionSyncSource(params),
     m_vcardFormat(vcardFormat)
-{
-}
-
-EvolutionContactSource::EvolutionContactSource( const EvolutionContactSource &other ) :
-        TrackingSyncSource( other ),
-        m_vcardFormat( other.m_vcardFormat )
 {
 }
 
@@ -227,35 +221,7 @@ void EvolutionContactSource::listAllItems(RevisionMap_t &revisions)
 
 void EvolutionContactSource::close()
 {
-    // Our change tracking is time based.
-    // Don't let caller proceed without waiting for
-    // one second to prevent being called again before
-    // the modification time stamp is larger than it
-    // is now.
-    sleepSinceModification(1);
-
     m_addressbook = NULL;
-}
-
-void EvolutionContactSource::exportData(ostream &out)
-{
-    eptr<EBookQuery> allItemsQuery( e_book_query_any_field_contains(""), "query" );
-    GList *nextItem;
-    GError *gerror = NULL;
-    if (!e_book_get_contacts( m_addressbook, allItemsQuery, &nextItem, &gerror )) {
-        throwError( "reading all items", gerror );
-    }
-    eptr<GList> listptr(nextItem);
-    while (nextItem) {
-        eptr<char> vcardstr(e_vcard_to_string(&E_CONTACT(nextItem->data)->parent,
-                                              EVC_FORMAT_VCARD_30));
-
-        if (!(const char *)vcardstr) {
-            throwError("could not convert contact into string");
-        }
-        out << (const char *)vcardstr << "\r\n\r\n";
-        nextItem = nextItem->next;
-    }
 }
 
 string EvolutionContactSource::getRevision(const string &luid)
@@ -278,10 +244,8 @@ string EvolutionContactSource::getRevision(const string &luid)
     return rev;
 }
 
-SyncItem *EvolutionContactSource::createItem(const string &luid, const char *type)
+void EvolutionContactSource::readItem(const string &luid, std::string &item, bool raw)
 {
-    logItem(luid, "extracting from EV", true);
-
     EContact *contact;
     GError *gerror = NULL;
     if (!e_book_get_contact(m_addressbook,
@@ -297,340 +261,14 @@ SyncItem *EvolutionContactSource::createItem(const string &luid, const char *typ
     if (!vcardstr) {
         throwError(string("failure extracting contact from Evolution " ) + luid);
     }
-    SE_LOG_DEBUG(this, NULL, "%s", vcardstr.get());
 
-#if 0
-    // @TODO reimplement Evolution hacks via Synthesis datatype conversions
-    std::auto_ptr<VObject> vobj(VConverter::parse(vcardstr));
-    if (vobj.get() == 0) {
-        throwError(string("failure parsing contact " ) + uid);
-    }
-
-    vobj->toNativeEncoding();
-
-    for (int index = vobj->propertiesCount() - 1;
-         index >= 0;
-         index--) {
-        VProperty *vprop = vobj->getProperty(index);
-
-        // map ADR;TYPE=OTHER (not standard-compliant)
-        // to ADR;TYPE=PARCEL and vice-versa in preparseVCard();
-        // other TYPE=OTHER instances are simply removed
-
-        bool parcel = false;
-
-        int param = 0;
-        while (param < vprop->parameterCount()) {
-            if (!strcasecmp(vprop->getParameter(param), "TYPE") &&
-                !strcasecmp(vprop->getParameterValue(param), "OTHER")) {
-                vprop->removeParameter(param);
-                if (!strcasecmp(vprop->getName(), "ADR")) {
-                    parcel = true;
-                }
-            } else {
-                param++;
-            }
-        }
-
-        if (parcel) {
-            vprop->addParameter("TYPE", "PARCEL");
-        }
-    }
-
-    // convert from 3.0 to 2.1?
-    if (m_vcardFormat == EVC_FORMAT_VCARD_21) {
-        SE_LOG_DEBUG(this, NULL, "convert to 2.1");
-
-        // escape extended properties so that they are preserved
-        // as custom values by the server
-        for (int index = vobj->propertiesCount() - 1;
-             index >= 0;
-             index--) {
-            VProperty *vprop = vobj->getProperty(index);
-            string name = vprop->getName();
-            if (m_vcardExtensions.find(name) != m_vcardExtensions.end()) {
-                name = m_vcardExtensions.prefix + name;
-                vprop->setName(name.c_str());
-            }
-
-            // replace 3.0 ENCODING=B with 3.0 ENCODING=BASE64
-            char *encoding = vprop->getParameterValue("ENCODING");
-            if (encoding &&
-                !strcasecmp("B", encoding)) {
-                vprop->removeParameter("ENCODING");
-                vprop->addParameter("ENCODING", "BASE64");
-            }
-
-            // Workaround for Funambol 3.0 parser bug:
-            // trailing = are interpreted as soft line break
-            // even if the property doesn't use QUOTED-PRINTABLE encoding.
-            // Avoid that situation by enabling QUOTED-PRINTABLE for
-            // such properties.
-            if (!encoding) {
-                char *value = vprop->getValue();
-
-                if (value &&
-                    value[0] &&
-                    value[strlen(value)-1] == '=') {
-                    vprop->addParameter("ENCODING", "QUOTED-PRINTABLE");
-                }
-            }
-
-            // Split TYPE=foo,bar into TYPE=foo;TYPE=bar because the comma-separated
-            // list is an extension of 3.0.
-            list<string> types;
-            while (true) {
-                char *type = vprop->getParameterValue("TYPE");
-                if (!type) {
-                    break;
-                }
-                StringBuffer buff(type);
-
-                char *token = strtok((char *)buff.c_str(), ",");
-                while (token != NULL) {
-                    types.push_back(token);
-                    token = strtok(NULL, ",");
-                }
-                vprop->removeParameter("TYPE");
-            }
-            BOOST_FOREACH(const string &type, types) {
-                vprop->addParameter("TYPE", type.c_str());
-            }
-
-            // Also make all strings uppercase because 3.0 is
-            // case-insensitive whereas 2.1 requires uppercase.
-            list< pair<string, string> > parameters;
-            while (vprop->parameterCount() > 0) {
-                const char *param = vprop->getParameter(0);
-                const char *value = vprop->getParameterValue(0);
-                if (!param || !value) {
-                    break;
-                }
-                parameters.push_back(pair<string, string>(boost::to_upper_copy(string(param)), boost::to_upper_copy(string(value))));
-                vprop->removeParameter(0);
-            }
-            while (parameters.size() > 0) {
-                pair<string, string> param_value = parameters.front();
-                vprop->addParameter(param_value.first.c_str(), param_value.second.c_str());
-                parameters.pop_front();
-            }
-        }
-
-        vobj->setVersion("2.1");
-        VProperty *vprop = vobj->getProperty("VERSION");
-        vprop->setValue("2.1");
-    }
-
-    vobj->fromNativeEncoding();
-
-    arrayptr<char> finalstr(vobj->toString(), "VOCL string");
-    SE_LOG_DEBUG(this, NULL, "after conversion:");
-    SE_LOG_DEBUG(this, NULL, "%s", (char *)finalstr);
-#endif
-
-    cxxptr<SyncItem> item(new SyncItem(), "SyncItem");
-    item->setKey(luid);
-    item->setData(vcardstr.get(), strlen(vcardstr.get()));
-    return item.release();
-}
-
-string EvolutionContactSource::preparseVCard(SyncItem& item)
-{
-    return item.getData();
-
-#if 0
-    // @TODO Synthesis data conversion
-    string data = (const char *)item.getData();
-    // convert to 3.0 to get rid of quoted-printable encoded
-    // non-ASCII chars, because Evolution does not support
-    // decoding them
-    SE_LOG_DEBUG(this, NULL, "%s", data.c_str());
-    std::auto_ptr<VObject> vobj(VConverter::parse((char *)data.c_str()));
-    if (vobj.get() == 0) {
-        throwError(string("failure parsing contact " ) + item.getKey());
-    }
-    vobj->toNativeEncoding();
-
-    // - convert our escaped properties back
-    // - extend certain properties so that Evolution can parse them
-    // - ensure that unique properties appear indeed only once (because
-    //   for some properties the server doesn't know that they have to be
-    //   unique)
-    // - add X-EVOLUTION-UI-SLOT to TEL and MAIL properties (code just added
-    //   for experiments, never enabled)
-    // - split TYPE=WORK,VOICE into TYPE=WORK;TYPE=VOICE
-    set<string> found;
-
-#ifdef SET_UI_SLOT
-    class slots : public map< string, set<string> > {
-    public:
-        slots() {
-            insert(value_type(string("ADR"), set<string>()));
-            insert(value_type(string("EMAIL"), set<string>()));
-            insert(value_type(string("TEL"), set<string>()));
-        }
-        string assignFree(string type) {
-            int slot = 1;
-            set<string> &used((*this)[type]);
-            
-            while (true) {
-                stringstream buffer;
-                buffer << slot;
-                string slotstr = buffer.str();
-                if (used.find(slotstr) == used.end()) {
-                    used.insert(slotstr);
-                    return slotstr;
-                }
-                slot++;
-            }
-        }
-    } usedSlots;
-#endif
-
-    for (int index = vobj->propertiesCount() - 1;
-         index >= 0;
-         index--) {
-        VProperty *vprop = vobj->getProperty(index);
-        string name = vprop->getName();
-        if (name.size() > m_vcardExtensions.prefix.size() &&
-            !name.compare(0, m_vcardExtensions.prefix.size(), m_vcardExtensions.prefix)) {
-            name = name.substr(m_vcardExtensions.prefix.size());
-            vprop->setName(name.c_str());
-        } else if (name == "ADR" || name == "EMAIL" || name == "TEL") {
-            const char *type = vprop->getParameterValue("TYPE");
-            bool isOther = false;
-            if (type) {
-                if (!strcasecmp(type, "PARCEL")) {
-                    // remove unsupported TYPE=PARCEL that was
-                    // added in createItem() and replace with "OTHER" to be symetric
-                    vprop->removeParameter("TYPE");
-                    isOther = true;
-                } else if (!strcasecmp(type, "PREF,VOICE")) {
-                    // this is not mapped by Evolution to "Primary Phone",
-                    // help a little bit
-                    vprop->removeParameter("TYPE");
-                    vprop->addParameter("TYPE", "PREF");
-                } else if (strchr(type, ',')) {
-                    // Evolution cannot handle e.g. "WORK,VOICE". Split into
-                    // different parts.
-                    string buffer = type, value;
-                    size_t start = 0, end;
-                    vprop->removeParameter("TYPE");
-                    while ((end = buffer.find(',', start)) != buffer.npos) {
-                        value = buffer.substr(start, end - start);
-                        vprop->addParameter("TYPE", value.c_str());
-                        start = end + 1;
-                    }
-                    value = buffer.substr(start);
-                    vprop->addParameter("TYPE", value.c_str());
-                }
-            }
-
-            // ensure that at least one TYPE is set
-            if (!vprop->containsParameter("TYPE") &&
-
-                /* TEL */
-                !vprop->containsParameter("CELL") &&
-                !vprop->containsParameter("CAR") &&
-                !vprop->containsParameter("PREF") &&
-                !vprop->containsParameter("FAX") &&
-                !vprop->containsParameter("VOICE") &&
-                !vprop->containsParameter("MSG") &&
-                !vprop->containsParameter("BBS") &&
-                !vprop->containsParameter("MODEM") &&
-                !vprop->containsParameter("ISDN") &&
-                !vprop->containsParameter("VIDEO") &&
-                !vprop->containsParameter("PAGER") &&
-
-                /* ADR */
-                !vprop->containsParameter("DOM") &&
-                !vprop->containsParameter("INTL") &&
-                !vprop->containsParameter("POSTAL") &&
-                !vprop->containsParameter("PARCEL") &&
-
-                /* EMAIL */
-                !vprop->containsParameter("AOL") &&
-                !vprop->containsParameter("AppleLink") &&
-                !vprop->containsParameter("ATTMail") &&
-                !vprop->containsParameter("CIS") &&
-                !vprop->containsParameter("eWorld") &&
-                !vprop->containsParameter("INTERNET") &&
-                !vprop->containsParameter("IBMMail") &&
-                !vprop->containsParameter("MCIMail") &&
-                !vprop->containsParameter("POWERSHARE") &&
-                !vprop->containsParameter("PRODIGY") &&
-                !vprop->containsParameter("TLX") &&
-                !vprop->containsParameter("X400") &&
-
-                /* all of them */
-                !vprop->containsParameter("HOME") &&
-                !vprop->containsParameter("WORK")) {
-                vprop->addParameter("TYPE", isOther ? "OTHER" : "HOME");
-            }
-
-#ifdef SET_UI_SLOT
-            // remember which slots are set
-            const char *slot = vprop->getParameterValue("X-EVOLUTION-UI-SLOT");
-            if (slot) {
-                usedSlots[name].insert(slot);
-            }
-#endif
-        }
-
-        // replace 2.1 ENCODING=BASE64 with 3.0 ENCODING=B
-        char *encoding = vprop->getParameterValue("ENCODING");
-        if (encoding &&
-            !strcasecmp("BASE64", encoding)) {
-            vprop->removeParameter("ENCODING");
-            vprop->addParameter("ENCODING", "B");
-        }
-
-        if (m_uniqueProperties.find(name) != m_uniqueProperties.end()) {
-            // has to be unique
-            if (found.find(name) != found.end()) {
-                // remove older entry
-                vobj->removeProperty(index);
-            } else {
-                // remember that valid instance exists
-                found.insert(name);
-            }
-        }
-    }
-
-#ifdef SET_UI_SLOT
-    // add missing slot parameters
-    for (int index = 0;
-         index < vobj->propertiesCount();
-         index++) {
-        VProperty *vprop = vobj->getProperty(index);
-        string name = vprop->getName();
-        if (name == "EMAIL" || name == "TEL") {
-            const char *slot = vprop->getParameterValue("X-EVOLUTION-UI-SLOT");
-
-            if (!slot) {
-                string freeslot = usedSlots.assignFree(name);
-                vprop->addParameter("X-EVOLUTION-UI-SLOT", freeslot.c_str());
-            }
-        }
-    }
-#endif
-    
-    vobj->setVersion("3.0");
-    VProperty *vprop = vobj->getProperty("VERSION");
-    vprop->setValue("3.0");
-    vobj->fromNativeEncoding();
-    arrayptr<char> voclstr(vobj->toString(), "VOCL string");
-    data = (char *)voclstr;
-    SE_LOG_DEBUG(this, NULL, "after conversion to 3.0:");
-    SE_LOG_DEBUG(this, NULL, "%s", data.c_str());
-    return data;
-#endif
+    item = vcardstr.get();
 }
 
 TrackingSyncSource::InsertItemResult
-EvolutionContactSource::insertItem(const string &uid, const SyncItem& item)
+EvolutionContactSource::insertItem(const string &uid, const std::string &item, bool raw)
 {
-    eptr<EContact, GObject> contact(e_contact_new_from_vcard(item.getData()));
+    eptr<EContact, GObject> contact(e_contact_new_from_vcard(item.c_str()));
     if (contact) {
         GError *gerror = NULL;
         e_contact_set(contact, E_CONTACT_UID,
@@ -653,13 +291,13 @@ EvolutionContactSource::insertItem(const string &uid, const SyncItem& item)
                        gerror);
         }
     } else {
-        throwError(string("failure parsing vcard " ) + item.getData());
+        throwError(string("failure parsing vcard " ) + item);
     }
     // not reached!
     return InsertItemResult("", "", false);
 }
 
-void EvolutionContactSource::deleteItem(const string &uid)
+void EvolutionContactSource::removeItem(const string &uid)
 {
     GError *gerror = NULL;
     if (!e_book_remove_contact(m_addressbook, uid.c_str(), &gerror)) {
@@ -698,102 +336,6 @@ const char *EvolutionContactSource::getMimeVersion() const
      default:
         return "3.0";
         break;
-    }
-}
-
-void EvolutionContactSource::logItem(const string &uid, const string &info, bool debug)
-{
-    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
-        string line;
-        EContact *contact;
-        GError *gerror = NULL;
-
-        if (e_book_get_contact( m_addressbook,
-                                uid.c_str(),
-                                &contact,
-                                &gerror )) {
-            eptr<EContact, GObject> contactptr(contact);
-
-            const char *fileas = (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
-            if (fileas) {
-                line += fileas;
-            } else {
-                const char *name = (const char *)e_contact_get_const( contact, E_CONTACT_FULL_NAME );
-                if (name) {
-                    line += name;
-                } else {
-                    line += "<unnamed contact>";
-                }
-            }
-        } else {
-            g_clear_error(&gerror);
-            line += "<name unavailable>";
-        }
-        line += " (";
-        line += uid;
-        line += "): ";
-        line += info;
-        
-        SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL, "%s", line.c_str() );
-    }
-}
-
-void EvolutionContactSource::logItem(const SyncItem &item, const string &info, bool debug)
-{
-    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
-        string line;
-        const char *data = (const char *)item.getData();
-        int datasize = item.getDataSize();
-        if (datasize <= 0) {
-            data = "";
-            datasize = 0;
-        }
-        string vcard( data, datasize );
-
-        size_t offset = vcard.find( "FN:");
-        if (offset != vcard.npos) {
-            // accept both "\r\n" and "\n" as line termination:
-            // "\r\n" is the standard, but MemoToo does not follow that
-            int len = vcard.find_first_of("\r\n", offset) - offset - 3;
-            line += vcard.substr( offset + 3, len );
-        } else {
-            line += "<unnamed contact>";
-        }
-
-        if (item.getKey().empty()) {
-            line += ", empty UID";
-        } else {
-            line += ", ";
-            line += item.getKey();
-        
-            EContact *contact;
-            GError *gerror = NULL;
-            if (e_book_get_contact(m_addressbook,
-                                   item.getKey().c_str(),
-                                   &contact,
-                                   &gerror)) {
-                eptr<EContact, GObject> contactptr( contact, "contact" );
-
-                line += ", EV ";
-                const char *fileas = (const char *)e_contact_get_const( contact, E_CONTACT_FILE_AS );
-                if (fileas) {
-                    line += fileas;
-                } else {
-                    const char *name = (const char *)e_contact_get_const( contact, E_CONTACT_FULL_NAME );
-                    if (name) {
-                        line += name;
-                    } else {
-                        line += "<unnamed contact>";
-                    }
-                }
-            } else {
-                line += ", not in Evolution";
-            }
-        }
-        line += ": ";
-        line += info;
-        
-        SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL, "%s", line.c_str() );
     }
 }
 

@@ -42,7 +42,7 @@
 #include <sstream>
 #include <fstream>
 
-FileSyncSource::FileSyncSource(const EvolutionSyncSourceParams &params,
+FileSyncSource::FileSyncSource(const SyncSourceParams &params,
                                const string &dataformat) :
     TrackingSyncSource(params),
     m_entryCounter(0)
@@ -59,16 +59,6 @@ FileSyncSource::FileSyncSource(const EvolutionSyncSourceParams &params,
     m_supportedTypes = dataformat;
 }
 
-string FileSyncSource::fileSuffix() const
-{
-    // database dumps created by SyncEvolution use this file suffix
-    return
-        (m_mimeType == "text/vcard" || m_mimeType == "text/x-vcard") ? "vcf" :
-        (m_mimeType == "text/calendar" || m_mimeType == "text/x-calendar") ? "ics" :
-        (m_mimeType == "text/plain") ? "txt" :
-        "dat";
-}
-
 const char *FileSyncSource::getMimeType() const
 {
     return m_mimeType.c_str();
@@ -77,12 +67,6 @@ const char *FileSyncSource::getMimeType() const
 const char *FileSyncSource::getMimeVersion() const
 {
     return m_mimeVersion.c_str();
-}
-
-const char *FileSyncSource::getSupportedTypes() const
-{
-    // comma separated list, like "text/vcard:3.0,text/x-vcard:2.1"
-    return m_supportedTypes.c_str();
 }
 
 void FileSyncSource::open()
@@ -116,13 +100,6 @@ void FileSyncSource::open()
 
 void FileSyncSource::close()
 {
-    // Our change tracking is time based.
-    // Don't let caller proceed without waiting for
-    // one second to prevent being called again before
-    // the modification time stamp is larger than it
-    // is now.
-    sleepSinceModification(1);
-
     m_basedir.clear();
 }
 
@@ -150,30 +127,16 @@ void FileSyncSource::listAllItems(RevisionMap_t &revisions)
     }
 }
 
-SyncItem *FileSyncSource::createItem(const string &uid, const char *type)
+void FileSyncSource::readItem(const string &uid, std::string &item, bool raw)
 {
     string filename = createFilename(uid);
 
-    ifstream in;
-    in.open(filename.c_str());
-    ostringstream out;
-    char buf[8192];
-    do {
-        in.read(buf, sizeof(buf));
-        out.write(buf, in.gcount());
-    } while(in);
-    if (!in.good() && !in.eof()) {
+    if (!ReadFile(filename, item)) {
         throwError(filename + ": reading failed", errno);
     }
-
-    string content = out.str();
-    cxxptr<SyncItem> item(new SyncItem(), "SyncItem");
-    item->setKey(uid);
-    item->setData(content.c_str(), content.size());
-    return item.release();
 }
 
-TrackingSyncSource::InsertItemResult FileSyncSource::insertItem(const string &uid, const SyncItem &item)
+TrackingSyncSource::InsertItemResult FileSyncSource::insertItem(const string &uid, const std::string &item, bool raw)
 {
     string newuid = uid;
     string creationTime;
@@ -217,7 +180,7 @@ TrackingSyncSource::InsertItemResult FileSyncSource::insertItem(const string &ui
 
     ofstream out;
     out.open(filename.c_str());
-    out.write((const char *)item.getData(), item.getDataSize());
+    out.write(item.c_str(), item.size());
     out.close();
     if (!out.good()) {
         throwError(filename + ": writing failed", errno);
@@ -229,65 +192,12 @@ TrackingSyncSource::InsertItemResult FileSyncSource::insertItem(const string &ui
 }
 
 
-void FileSyncSource::deleteItem(const string &uid)
+void FileSyncSource::removeItem(const string &uid)
 {
     string filename = createFilename(uid);
 
     if (unlink(filename.c_str())) {
         throwError(filename, errno);
-    }
-}
-
-void FileSyncSource::logItem(const string &uid, const string &info, bool debug)
-{
-    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
-        // If there was a good way to extract a short string identifying
-        // the item with uid, we would use it here and log it like this:
-        // SE_LOG(this, NULL, debug ? Logger::DEBUG : Logger::INFO, "%s %s",
-        //        itemName, info.c_str());
-        //
-        // Alternatively we could just log the uid. EvolutionSyncSource::logItem()
-        // is an utility function which extracts a short string from certain
-        // well-known types (FN for vCard, SUMMARY for vCalendar, first line for
-        // text, ...). We use it here although it requires reading the full item
-        // first. Don't fail while reading, we'll trigger a real error later on
-        // if necessary.
-        
-        string filename = createFilename(uid);
-
-        ifstream in;
-        in.open(filename.c_str());
-        ostringstream out;
-        char buf[8192];
-        do {
-            in.read(buf, sizeof(buf));
-            out.write(buf, in.gcount());
-        } while(in);
-        logItemUtil(out.str(),
-                    m_mimeType,
-                    m_mimeVersion,
-                    uid,
-                    info,
-                    debug);
-    }
-}
-
-void FileSyncSource::logItem(const SyncItem &item, const string &info, bool debug)
-{
-    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
-        if (!item.getData()) {
-            // operation on item without data, fall back to logging via uid
-            logItem(string(item.getKey()), info, debug);
-        } else {
-            string data = (const char *)item.getData();
-
-            logItemUtil(data,
-                        m_mimeType,
-                        m_mimeVersion,
-                        item.getKey(),
-                        info,
-                        debug);
-        }
     }
 }
 

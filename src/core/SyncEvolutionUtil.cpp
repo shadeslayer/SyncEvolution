@@ -278,25 +278,25 @@ std::string StringPrintfV(const char *format, va_list ap)
     return res;
 }
 
-SyncMLStatus SyncEvolutionException::handle(SyncMLStatus *status)
+SyncMLStatus SyncEvolutionException::handle(SyncMLStatus *status, Logger *logger)
 {
     SyncMLStatus new_status = STATUS_FATAL;
 
     try {
         throw;
     } catch (const TransportException &ex) {
-        SE_LOG_DEBUG(NULL, NULL, "TransportException thrown at %s:%d",
+        SE_LOG_DEBUG(logger, NULL, "TransportException thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
-        SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
+        SE_LOG_ERROR(logger, NULL, "%s", ex.what());
         new_status = SyncMLStatus(sysync::LOCERR_TRANSPFAIL);
     } catch (const SyncEvolutionException &ex) {
-        SE_LOG_DEBUG(NULL, NULL, "exception thrown at %s:%d",
+        SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
-        SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
+        SE_LOG_ERROR(logger, NULL, "%s", ex.what());
     } catch (const std::exception &ex) {
-        SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
+        SE_LOG_ERROR(logger, NULL, "%s", ex.what());
     } catch (...) {
-        SE_LOG_ERROR(NULL, NULL, "unknown error");
+        SE_LOG_ERROR(logger, NULL, "unknown error");
     }
 
     if (status && *status == STATUS_OK) {

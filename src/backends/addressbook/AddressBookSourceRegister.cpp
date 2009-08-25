@@ -20,9 +20,9 @@
 #include "AddressBookSource.h"
 #include "SyncEvolutionUtil.h"
 
-static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
+static SyncSource *createSource(const SyncSourceParams &params)
 {
-    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
     bool isMe = sourceType.m_backend == "apple-contacts";
 
 #ifndef ENABLE_ADDRESSBOOK
@@ -75,12 +75,12 @@ class EvolutionAddressbookTest : public CppUnit::TestFixture {
 
 protected:
     void testInstantiate() {
-        boost::shared_ptr<EvolutionSyncSource> source;
-        source.reset(EvolutionSyncSource::createTestingSource("contacts", "contacts", true));
-        source.reset(EvolutionSyncSource::createTestingSource("contacts", "addressbook", true));
-        source.reset(EvolutionSyncSource::createTestingSource("contacts", "apple-contacts", true));
-        source.reset(EvolutionSyncSource::createTestingSource("contacts", "Mac OS X Address Book:text/vcard", true));
-        source.reset(EvolutionSyncSource::createTestingSource("contacts", "iPhone Address Book:text/x-vcard", true));
+        boost::shared_ptr<SyncSource> source;
+        source.reset(SyncSource::createTestingSource("contacts", "contacts", true));
+        source.reset(SyncSource::createTestingSource("contacts", "addressbook", true));
+        source.reset(SyncSource::createTestingSource("contacts", "apple-contacts", true));
+        source.reset(SyncSource::createTestingSource("contacts", "Mac OS X Address Book:text/vcard", true));
+        source.reset(SyncSource::createTestingSource("contacts", "iPhone Address Book:text/x-vcard", true));
     }
 };
 

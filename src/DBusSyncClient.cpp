@@ -18,7 +18,7 @@
  */
 
 #include "DBusSyncClient.h"
-#include "EvolutionSyncSource.h"
+#include "SyncSource.h"
 
 
 DBusSyncClient::DBusSyncClient(const string &server,
@@ -42,7 +42,7 @@ DBusSyncClient::~DBusSyncClient()
 {
 }
 
-void DBusSyncClient::prepare(const std::vector<EvolutionSyncSource *> &sources)
+void DBusSyncClient::prepare(const std::vector<SyncSource *> &sources)
 {
 	SyncModes modes (SYNC_NONE);
 
@@ -86,7 +86,7 @@ void DBusSyncClient::displaySyncProgress(sysync::TProgressEventEnum type,
 }
 
 void DBusSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
-                                           EvolutionSyncSource &source,
+                                           SyncSource &source,
                                            int32_t extra1, int32_t extra2, int32_t extra3)
 {
 	m_progress (g_strdup (source.getName()), type, extra1, extra2,

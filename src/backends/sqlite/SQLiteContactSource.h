@@ -49,27 +49,24 @@
 class SQLiteContactSource : public TrackingSyncSource
 {
   public:
-    SQLiteContactSource(const EvolutionSyncSourceParams &params) :
+    SQLiteContactSource(const SyncSourceParams &params) :
         TrackingSyncSource(params)
         {}
 
  protected:
-    /* implementation of EvolutionSyncSource interface */
+    /* implementation of SyncSource interface */
     virtual void open();
     virtual void close();
     virtual Databases getDatabases();
-    virtual SyncItem *createItem(const string &uid, const char *type = NULL);
-    virtual string fileSuffix() const { return "vcf"; }
     virtual const char *getMimeType() const { return "text/x-vcard"; }
     virtual const char *getMimeVersion() const { return "2.1"; }
     virtual const char *getSupportedTypes()const { return "text/vcard:3.0,text/x-vcard:2.1"; }
-    virtual void logItem(const string &uid, const string &info, bool debug = false);
-    virtual void logItem(const SyncItem &item, const string &info, bool debug = false);
 
     /* implementation of TrackingSyncSource interface */
     virtual void listAllItems(RevisionMap_t &revisions);
-    virtual InsertItemResult insertItem(const string &uid, const SyncItem &item);
-    virtual void deleteItem(const string &uid);
+    virtual InsertItemResult insertItem(const string &uid, const std::string &item, bool raw);
+    void readItem(const std::string &luid, std::string &item, bool raw);
+    virtual void removeItem(const string &uid);
 
  private:
     /** encapsulates access to database */

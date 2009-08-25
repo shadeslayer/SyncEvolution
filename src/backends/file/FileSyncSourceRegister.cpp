@@ -21,9 +21,9 @@
 #include "FileSyncSource.h"
 #include "test.h"
 
-static EvolutionSyncSource *createSource(const EvolutionSyncSourceParams &params)
+static SyncSource *createSource(const SyncSourceParams &params)
 {
-    SourceType sourceType = EvolutionSyncSource::getSourceType(params.m_nodes);
+    SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
     // The string returned by getSourceType() is always the one
     // registered as main Aliases() below.
     bool isMe = sourceType.m_backend == "Files in one directory";
@@ -84,10 +84,10 @@ class FileSyncSourceUnitTest : public CppUnit::TestFixture {
 
 protected:
     void testInstantiate() {
-        boost::shared_ptr<EvolutionSyncSource> source;
-        source.reset(EvolutionSyncSource::createTestingSource("file", "file:text/vcard:3.0", true));
-        source.reset(EvolutionSyncSource::createTestingSource("file", "file:text/plain:1.0", true));
-        source.reset(EvolutionSyncSource::createTestingSource("file", "Files in one directory:text/x-vcard:2.1", true));
+        boost::shared_ptr<SyncSource> source;
+        source.reset(SyncSource::createTestingSource("file", "file:text/vcard:3.0", true));
+        source.reset(SyncSource::createTestingSource("file", "file:text/plain:1.0", true));
+        source.reset(SyncSource::createTestingSource("file", "Files in one directory:text/x-vcard:2.1", true));
     }
 };
 

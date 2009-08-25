@@ -21,7 +21,7 @@
 #include "SyncEvolutionCmdline.h"
 #include "FilterConfigNode.h"
 #include "VolatileConfigNode.h"
-#include "EvolutionSyncSource.h"
+#include "SyncSource.h"
 #include "EvolutionSyncClient.h"
 #include "SyncEvolutionUtil.h"
 
@@ -47,7 +47,7 @@ SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, const char * const * argv, 
     m_out(out),
     m_err(err),
     m_validSyncProps(EvolutionSyncConfig::getRegistry()),
-    m_validSourceProps(EvolutionSyncSourceConfig::getRegistry())
+    m_validSourceProps(SyncSourceConfig::getRegistry())
 {}
 
 bool SyncEvolutionCmdline::parse()
@@ -64,7 +64,7 @@ bool SyncEvolutionCmdline::parse()
             string cmdopt(m_argv[opt - 1]);
             if (!parseProp(m_validSourceProps, m_sourceProps,
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt],
-                           EvolutionSyncSourceConfig::m_sourcePropSync.getName().c_str())) {
+                           SyncSourceConfig::m_sourcePropSync.getName().c_str())) {
                 return false;
             }
 
@@ -183,18 +183,18 @@ bool SyncEvolutionCmdline::run() {
         // user asked for information
     } else if (m_argc == 1) {
         // no parameters: list databases and short usage
-        const SourceRegistry &registry(EvolutionSyncSource::getSourceRegistry());
+        const SourceRegistry &registry(SyncSource::getSourceRegistry());
         boost::shared_ptr<FilterConfigNode> configNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> hiddenNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> trackingNode(new VolatileConfigNode());
         SyncSourceNodes nodes(configNode, hiddenNode, trackingNode);
-        EvolutionSyncSourceParams params("list", nodes, "");
+        SyncSourceParams params("list", nodes, "");
         
         BOOST_FOREACH(const RegisterSyncSource *source, registry) {
             BOOST_FOREACH(const Values::value_type &alias, source->m_typeValues) {
                 if (!alias.empty() && source->m_enabled) {
                     configNode->setProperty("type", *alias.begin());
-                    auto_ptr<EvolutionSyncSource> source(EvolutionSyncSource::createSource(params, false));
+                    auto_ptr<SyncSource> source(SyncSource::createSource(params, false));
                     if (source.get() != NULL) {
                         listSources(*source, boost::join(alias, " = "));
                         m_out << "\n";
@@ -241,7 +241,7 @@ bool SyncEvolutionCmdline::run() {
                 ConstSyncSourceNodes nodes = config->getSyncSourceNodes(name);
                 boost::shared_ptr<FilterConfigNode> sourceProps(new FilterConfigNode(boost::shared_ptr<const ConfigNode>(nodes.m_configNode)));
                 sourceProps->setFilter(m_sourceProps);
-                dumpProperties(*sourceProps, EvolutionSyncSourceConfig::getRegistry());
+                dumpProperties(*sourceProps, SyncSourceConfig::getRegistry());
             }
         }
     } else if (m_server == "" && m_argc > 1) {
@@ -322,7 +322,7 @@ bool SyncEvolutionCmdline::run() {
             set<string> sources = m_sources;
             
             BOOST_FOREACH(const string &source, configuredSources) {
-                boost::shared_ptr<PersistentEvolutionSyncSourceConfig> sourceConfig(to->getSyncSourceConfig(source));
+                boost::shared_ptr<PersistentSyncSourceConfig> sourceConfig(to->getSyncSourceConfig(source));
                 string disable = "";
                 set<string>::iterator entry = sources.find(source);
                 bool selected = entry != sources.end();
@@ -338,13 +338,13 @@ bool SyncEvolutionCmdline::run() {
                     }
 
                     // check whether the sync source works
-                    EvolutionSyncSourceParams params("list", to->getSyncSourceNodes(source), "");
-                    auto_ptr<EvolutionSyncSource> syncSource(EvolutionSyncSource::createSource(params, false));
+                    SyncSourceParams params("list", to->getSyncSourceNodes(source), "");
+                    auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
                     if (syncSource.get() == NULL) {
                         disable = "no backend available";
                     } else {
                         try {
-                            EvolutionSyncSource::Databases databases = syncSource->getDatabases();
+                            SyncSource::Databases databases = syncSource->getDatabases();
                             if (databases.empty()) {
                                 disable = "no database to synchronize";
                             }
@@ -364,7 +364,7 @@ bool SyncEvolutionCmdline::run() {
                 } else if (selected) {
                     // user absolutely wants it: enable even if off by default
                     FilterConfigNode::ConfigFilter::const_iterator sync =
-                        m_sourceProps.find(EvolutionSyncSourceConfig::m_sourcePropSync.getName());
+                        m_sourceProps.find(SyncSourceConfig::m_sourcePropSync.getName());
                     sourceConfig->setSync(sync == m_sourceProps.end() ? "two-way" : sync->second);
                 }
             }
@@ -572,12 +572,12 @@ bool SyncEvolutionCmdline::listProperties(const ConfigPropertyRegistry &validPro
     return true;
 }
 
-void SyncEvolutionCmdline::listSources(EvolutionSyncSource &syncSource, const string &header)
+void SyncEvolutionCmdline::listSources(SyncSource &syncSource, const string &header)
 {
     m_out << header << ":\n";
-    EvolutionSyncSource::Databases databases = syncSource.getDatabases();
+    SyncSource::Databases databases = syncSource.getDatabases();
 
-    BOOST_FOREACH(const EvolutionSyncSource::Database &database, databases) {
+    BOOST_FOREACH(const SyncSource::Database &database, databases) {
         m_out << "   " << database.m_name << " (" << database.m_uri << ")";
         if (database.m_isDefault) {
             m_out << " <default>";

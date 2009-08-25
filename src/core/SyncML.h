@@ -50,59 +50,6 @@ std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible = true);
 SyncMode StringToSyncMode(const std::string &str);
 
 /**
- * simple container for SyncML items
- */
-class SyncItem {
- private:
-    /**
-     * Data, might not be text. nul-byte not included in data size.
-     */
-    std::string m_data;
-    /**
-     * Local unique ID of the item.
-     */
-    std::string m_luid;
-    /**
-     * Empty string indicates the default format specified for a sync
-     * source. Might be set to a mime type (e.g. "text/calendar") to
-     * override the default format.
-     */
-    std::string m_datatype;
-
-
- public:
-    std::string getKey() const { return m_luid; }
-    void setKey(const std::string &key) { m_luid = key; }
-    const char *getData() const { return m_data.c_str(); }
-    size_t getDataSize() const { return m_data.size(); }
-    void setData(const char *data, size_t size) { m_data.assign(data, size); }
-    void setData(const std::string &data) { m_data = data; }
-    void setDataType(const std::string &datatype) { m_datatype = datatype; }
-    std::string getDataType() const { return m_datatype; }
-
-    /** result of change tracking and iteration over items */
-    enum State {
-        /** undefined state */
-        NONE,
-        /** not changed */
-        UNCHANGED,
-        /** item added */
-        NEW,
-        /** item updated */
-        UPDATED,
-        /** item deleted (only key, but no data available) */
-        DELETED,
-        /** end of iteration */
-        NO_MORE_ITEMS,
-        /** error reading item */
-        ERROR,
-
-        /** end of enumeration */
-        STATE_MAX,
-    };
-};
-
-/**
  * result of SyncML operations, same codes as in HTTP and the Synthesis engine
  */
 enum SyncMLStatus {

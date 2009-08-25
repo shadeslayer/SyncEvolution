@@ -30,18 +30,15 @@ using namespace std;
 
 #include "Logging.h"
 
-SyncItem *EvolutionMemoSource::createItem(const string &luid, const char  *type)
+void EvolutionMemoSource::readItem(const string &luid, std::string &item, bool raw)
 {
-    if (isNativeType(type)) {
-        return EvolutionCalendarSource::createItem(luid, type);
+    if (raw) {
+        EvolutionCalendarSource::readItem(luid, item, false);
+        return;
     }
-
-    logItem( luid, "extracting from EV" );
 
     ItemID id(luid);
     eptr<icalcomponent> comp(retrieveItem(id));
-    cxxptr<SyncItem> item(new SyncItem(), "SyncItem");
-    item->setKey(luid);
     icalcomponent *cal = icalcomponent_get_first_component(comp, ICAL_VCALENDAR_COMPONENT);
     if (!cal) {
         cal = comp;
@@ -106,27 +103,20 @@ SyncItem *EvolutionMemoSource::createItem(const string &luid, const char  *type)
                 eol = strchr(from, '\n');
             }
             memcpy(to, from, strlen(from) + 1);
-            item->setData(dostext, strlen(dostext));
+            item = dostext.get();
         }
     }
 
-    if (!item->getDataSize()) {
+    if (item.empty()) {
         // no description, use summary
-        item->setData(summary.c_str(), summary.size());
+        item = summary;
     }
-
-    return item.release();
 }
 
-EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const string &luid, const SyncItem &item)
+EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const string &luid, const std::string &item, bool raw)
 {
-    string type = item.getDataType();
-
-    // fall back to inserting iCalendar 2.0 if
-    // real SyncML server has sent vCalendar 1.0 or iCalendar 2.0
-    // or the test system inserts such an item
-    if (isNativeType(type.c_str())) {
-        return EvolutionCalendarSource::insertItem(luid, item);
+    if (raw) {
+        return EvolutionCalendarSource::insertItem(luid, item, false);
     }
     
     bool update = !luid.empty();
@@ -135,9 +125,9 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
     string modTime;
 
     eptr<char> text;
-    text.set((char *)malloc(item.getDataSize() + 1), "copy of item");
-    memcpy(text, item.getData(), item.getDataSize());
-    text[item.getDataSize()] = 0;
+    text.set((char *)malloc(item.size() + 1), "copy of item");
+    memcpy(text, item.c_str(), item.size());
+    text[item.size()] = 0;
 
     // replace all \r\n with \n
     char *from = text, *to = text;
@@ -187,7 +177,6 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
                 // Deal with error due to adding already existing item.
                 // Should never happen for plain text journal entries because
                 // they have no embedded ID, but who knows...
-                logItem(item, "exists already, updating instead");
                 merged = true;
                 g_clear_error(&gerror);
             } else {
@@ -209,7 +198,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
         }
 
         if (!e_cal_modify_object(m_calendar, subcomp, CALOBJ_MOD_ALL, &gerror)) {
-            throwError(string("updating memo item ") + item.getKey(), gerror);
+            throwError(string("updating memo item ") + luid, gerror);
         }
         ItemID newid = getItemID(subcomp);
         newluid = newid.getLUID();

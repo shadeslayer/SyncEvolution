@@ -24,7 +24,7 @@
 #include <dlfcn.h>
 
 #include "EvolutionSyncClient.h"
-#include "EvolutionSyncSource.h"
+#include "SyncSource.h"
 #include "SyncEvolutionUtil.h"
 
 #include "SafeConfigNode.h"
@@ -458,7 +458,7 @@ private:
 // this class owns the sync sources and (together with
 // a logdir) handles writing of per-sync files as well
 // as the final report (
-class SourceList : public vector<EvolutionSyncSource *> {
+class SourceList : public vector<SyncSource *> {
 public:
     enum LogLevel {
         LOGGING_QUIET,    /**< avoid all extra output */
@@ -476,7 +476,7 @@ private:
     string m_previousLogdir; /**< remember previous log dir before creating the new one */
 
     /** create name in current (if set) or previous logdir */
-    string databaseName(EvolutionSyncSource &source, const string suffix, string logdir = "") {
+    string databaseName(SyncSource &source, const string suffix, string logdir = "") {
         if (!logdir.size()) {
             logdir = m_logdir.getLogdir();
         }
@@ -494,27 +494,31 @@ public:
      */
     void dumpDatabases(const string &suffix,
                        BackupReport SyncSourceReport::*report) {
-        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+        BOOST_FOREACH(SyncSource *source, *this) {
             string dir = databaseName(*source, suffix);
             boost::shared_ptr<ConfigNode> node = ConfigNode::createFileNode(dir + ".ini");
             SE_LOG_DEBUG(NULL, NULL, "creating %s", dir.c_str());
             rm_r(dir);
             mkdir_p(dir);
             BackupReport dummy;
-            source->backupData(dir, *node,
-                               report ? source->*report : dummy);
-            SE_LOG_DEBUG(NULL, NULL, "%s created", dir.c_str());
+            if (source->getOperations().m_backupData) {
+                source->getOperations().m_backupData(dir, *node,
+                                                     report ? source->*report : dummy);
+                SE_LOG_DEBUG(NULL, NULL, "%s created", dir.c_str());
+            }
         }
     }
 
-    void restoreDatabase(EvolutionSyncSource &source, const string &suffix, bool dryrun, SyncSourceReport &report)
+    void restoreDatabase(SyncSource &source, const string &suffix, bool dryrun, SyncSourceReport &report)
     {
         string dir = databaseName(source, suffix);
         boost::shared_ptr<ConfigNode> node = ConfigNode::createFileNode(dir + ".ini");
         if (!node->exists()) {
             EvolutionSyncClient::throwError(dir + ": no such database backup found");
         }
-        source.restoreData(dir, *node, dryrun, report);
+        if (source.getOperations().m_restoreData) {
+            source.getOperations().m_restoreData(dir, *node, dryrun, report);
+        }
     }
 
     SourceList(EvolutionSyncClient &client, bool doLogging) :
@@ -569,7 +573,7 @@ public:
         }
 
         cout << intro;
-        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+        BOOST_FOREACH(SyncSource *source, *this) {
             string oldFile = databaseName(*source, oldSuffix, oldDir);
             string newFile = databaseName(*source, newSuffix);
             cout << "*** " << source->getName() << " ***\n" << flush;
@@ -662,7 +666,7 @@ public:
                 // compare databases?
                 if (m_logLevel > LOGGING_SUMMARY && m_prepared) {
                     cout << "\nChanges applied to client during synchronization:\n";
-                    BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+                    BOOST_FOREACH(SyncSource *source, *this) {
                         cout << "*** " << source->getName() << " ***\n" << flush;
 
                         string before = databaseName(*source, "before");
@@ -686,7 +690,7 @@ public:
 
     /** copies information about sources into sync report */
     void updateSyncReport(SyncReport &report) {
-        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+        BOOST_FOREACH(SyncSource *source, *this) {
             report.addSyncSourceReport(source->getName(), *source);
         }
     }
@@ -695,7 +699,7 @@ public:
     set<string> getSources() {
         set<string> res;
 
-        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+        BOOST_FOREACH(SyncSource *source, *this) {
             res.insert(source->getName());
         }
         return res;
@@ -703,14 +707,14 @@ public:
    
     ~SourceList() {
         // free sync sources
-        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+        BOOST_FOREACH(SyncSource *source, *this) {
             delete source;
         }
     }
 
     /** find sync source by name */
-    EvolutionSyncSource *operator [] (const string &name) {
-        BOOST_FOREACH(EvolutionSyncSource *source, *this) {
+    SyncSource *operator [] (const string &name) {
+        BOOST_FOREACH(SyncSource *source, *this) {
             if (name == source->getName()) {
                 return source;
             }
@@ -719,7 +723,7 @@ public:
     }
 
     /** find by index */
-    EvolutionSyncSource *operator [] (int index) { return vector<EvolutionSyncSource *>::operator [] (index); }
+    SyncSource *operator [] (int index) { return vector<SyncSource *>::operator [] (index); }
 };
 
 void unref(SourceList *sourceList)
@@ -772,7 +776,7 @@ void EvolutionSyncClient::displaySyncProgress(sysync::TProgressEventEnum type,
 }
 
 void EvolutionSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
-                                                EvolutionSyncSource &source,
+                                                SyncSource &source,
                                                 int32_t extra1, int32_t extra2, int32_t extra3)
 {
     switch(type) {
@@ -915,17 +919,17 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
         /* datastore statistics for local       (extra1=# added, 
            extra2=# updated,
            extra3=# deleted) */
-        source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_ADDED,
-                           EvolutionSyncSource::ITEM_TOTAL,
+        source.setItemStat(SyncSource::ITEM_LOCAL,
+                           SyncSource::ITEM_ADDED,
+                           SyncSource::ITEM_TOTAL,
                            extra1);
-        source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_UPDATED,
-                           EvolutionSyncSource::ITEM_TOTAL,
+        source.setItemStat(SyncSource::ITEM_LOCAL,
+                           SyncSource::ITEM_UPDATED,
+                           SyncSource::ITEM_TOTAL,
                            extra2);
-        source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_REMOVED,
-                           EvolutionSyncSource::ITEM_TOTAL,
+        source.setItemStat(SyncSource::ITEM_LOCAL,
+                           SyncSource::ITEM_REMOVED,
+                           SyncSource::ITEM_TOTAL,
                            // Synthesis engine doesn't count locally
                            // deleted items during
                            // refresh-from-server. That's a matter of
@@ -939,65 +943,65 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
         /* datastore statistics for remote      (extra1=# added, 
            extra2=# updated,
            extra3=# deleted) */
-        source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_ADDED,
-                           EvolutionSyncSource::ITEM_TOTAL,
+        source.setItemStat(SyncSource::ITEM_REMOTE,
+                           SyncSource::ITEM_ADDED,
+                           SyncSource::ITEM_TOTAL,
                            extra1);
-        source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_UPDATED,
-                           EvolutionSyncSource::ITEM_TOTAL,
+        source.setItemStat(SyncSource::ITEM_REMOTE,
+                           SyncSource::ITEM_UPDATED,
+                           SyncSource::ITEM_TOTAL,
                            extra2);
-        source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_REMOVED,
-                           EvolutionSyncSource::ITEM_TOTAL,
+        source.setItemStat(SyncSource::ITEM_REMOTE,
+                           SyncSource::ITEM_REMOVED,
+                           SyncSource::ITEM_TOTAL,
                            extra3);
         break;
     case sysync::PEV_DSSTATS_E:
         /* datastore statistics for local/remote rejects (extra1=# locally rejected, 
            extra2=# remotely rejected) */
-        source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_ANY,
-                           EvolutionSyncSource::ITEM_REJECT,
+        source.setItemStat(SyncSource::ITEM_LOCAL,
+                           SyncSource::ITEM_ANY,
+                           SyncSource::ITEM_REJECT,
                            extra1);
-        source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_ANY,
-                           EvolutionSyncSource::ITEM_REJECT,
+        source.setItemStat(SyncSource::ITEM_REMOTE,
+                           SyncSource::ITEM_ANY,
+                           SyncSource::ITEM_REJECT,
                            extra2);
         break;
     case sysync::PEV_DSSTATS_S:
         /* datastore statistics for server slowsync  (extra1=# slowsync matches) */
-        source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_ANY,
-                           EvolutionSyncSource::ITEM_MATCH,
+        source.setItemStat(SyncSource::ITEM_REMOTE,
+                           SyncSource::ITEM_ANY,
+                           SyncSource::ITEM_MATCH,
                            extra1);
         break;
     case sysync::PEV_DSSTATS_C:
         /* datastore statistics for server conflicts (extra1=# server won,
            extra2=# client won,
            extra3=# duplicated) */
-        source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_ANY,
-                           EvolutionSyncSource::ITEM_CONFLICT_SERVER_WON,
+        source.setItemStat(SyncSource::ITEM_REMOTE,
+                           SyncSource::ITEM_ANY,
+                           SyncSource::ITEM_CONFLICT_SERVER_WON,
                            extra1);
-        source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_ANY,
-                           EvolutionSyncSource::ITEM_CONFLICT_CLIENT_WON,
+        source.setItemStat(SyncSource::ITEM_REMOTE,
+                           SyncSource::ITEM_ANY,
+                           SyncSource::ITEM_CONFLICT_CLIENT_WON,
                            extra2);
-        source.setItemStat(EvolutionSyncSource::ITEM_REMOTE,
-                           EvolutionSyncSource::ITEM_ANY,
-                           EvolutionSyncSource::ITEM_CONFLICT_DUPLICATED,
+        source.setItemStat(SyncSource::ITEM_REMOTE,
+                           SyncSource::ITEM_ANY,
+                           SyncSource::ITEM_CONFLICT_DUPLICATED,
                            extra3);
         break;
     case sysync::PEV_DSSTATS_D:
         /* datastore statistics for data   volume    (extra1=outgoing bytes,
            extra2=incoming bytes) */
-        source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_ANY,
-                           EvolutionSyncSource::ITEM_SENT_BYTES,
+        source.setItemStat(SyncSource::ITEM_LOCAL,
+                           SyncSource::ITEM_ANY,
+                           SyncSource::ITEM_SENT_BYTES,
                            extra1);
-        source.setItemStat(EvolutionSyncSource::ITEM_LOCAL,
-                           EvolutionSyncSource::ITEM_ANY,
-                           EvolutionSyncSource::ITEM_RECEIVED_BYTES,
+        source.setItemStat(SyncSource::ITEM_LOCAL,
+                           SyncSource::ITEM_ANY,
+                           SyncSource::ITEM_RECEIVED_BYTES,
                            extra2);
         break;
     default:
@@ -1084,19 +1088,19 @@ void EvolutionSyncClient::startLoopThread()
 #endif
 }
 
-EvolutionSyncSource *EvolutionSyncClient::findSource(const char *name)
+SyncSource *EvolutionSyncClient::findSource(const char *name)
 {
     return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
 }
 
 void EvolutionSyncClient::setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter)
 {
-    map<string, string>::const_iterator hasSync = filter.find(EvolutionSyncSourceConfig::m_sourcePropSync.getName());
+    map<string, string>::const_iterator hasSync = filter.find(SyncSourceConfig::m_sourcePropSync.getName());
 
     if (!sync && hasSync != filter.end()) {
         m_overrideMode = hasSync->second;
         FilterConfigNode::ConfigFilter strippedFilter = filter;
-        strippedFilter.erase(EvolutionSyncSourceConfig::m_sourcePropSync.getName());
+        strippedFilter.erase(SyncSourceConfig::m_sourcePropSync.getName());
         EvolutionSyncConfig::setConfigFilter(sync, strippedFilter);
     } else {
         EvolutionSyncConfig::setConfigFilter(sync, filter);
@@ -1108,7 +1112,7 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
     set<string> unmatchedSources = m_sources;
     list<string> configuredSources = getSyncSources();
     BOOST_FOREACH(const string &name, configuredSources) {
-        boost::shared_ptr<PersistentEvolutionSyncSourceConfig> sc(getSyncSourceConfig(name));
+        boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
         
         // is the source enabled?
         string sync = sc->getSync();
@@ -1134,17 +1138,17 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
             string url = getSyncURL();
             boost::replace_first(url, "https://", "http://"); // do not distinguish between protocol in change tracking
             string changeId = string("sync4jevolution:") + url + "/" + name;
-            EvolutionSyncSourceParams params(name,
-                                             getSyncSourceNodes(name),
-                                             changeId);
+            SyncSourceParams params(name,
+                                    getSyncSourceNodes(name),
+                                    changeId);
             // the sync mode has to be set before instantiating the source
             // because the client library reads the preferredSyncMode at that time
             if (!overrideMode.empty()) {
-                params.m_nodes.m_configNode->addFilter(EvolutionSyncSourceConfig::m_sourcePropSync.getName(),
+                params.m_nodes.m_configNode->addFilter(SyncSourceConfig::m_sourcePropSync.getName(),
                                                        overrideMode);
             }
-            EvolutionSyncSource *syncSource =
-                EvolutionSyncSource::createSource(params);
+            SyncSource *syncSource =
+                SyncSource::createSource(params);
             if (!syncSource) {
                 throwError(name + ": type unknown" );
             }
@@ -1176,10 +1180,10 @@ extern "C" {
     extern const char *SyncEvolutionXML;
 }
 
-void EvolutionSyncClient::setSyncModes(const std::vector<EvolutionSyncSource *> &sources,
+void EvolutionSyncClient::setSyncModes(const std::vector<SyncSource *> &sources,
                                        const SyncModes &modes)
 {
-    BOOST_FOREACH(EvolutionSyncSource *source, sources) {
+    BOOST_FOREACH(SyncSource *source, sources) {
         SyncMode mode = modes.getSyncMode(source->getName());
         if (mode != SYNC_NONE) {
             string modeString(PrettyPrintSyncMode(mode));
@@ -1309,7 +1313,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
     if (index != xml.npos) {
         stringstream datastores;
 
-        BOOST_FOREACH(EvolutionSyncSource *source, *m_sourceListPtr) {
+        BOOST_FOREACH(SyncSource *source, *m_sourceListPtr) {
             string fragment;
             source->getDatastoreXML(fragment, fragments);
             hash = Hash(source->getName()) % INT_MAX;
@@ -1491,12 +1495,12 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
             if (getUseProxy()) {
                 checkProxyPassword(*this);
             }
-            BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+            BOOST_FOREACH(SyncSource *source, sourceList) {
                 source->checkPassword(*this);
             }
 
             // open each source - failing now is still safe
-            BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+            BOOST_FOREACH(SyncSource *source, sourceList) {
                 source->open();
             }
 
@@ -1522,7 +1526,7 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
         // Print final report before cleaning up.
         // Status was okay only if all sources succeeded.
         sourceList.updateSyncReport(*report);
-        BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+        BOOST_FOREACH(SyncSource *source, sourceList) {
             if (source->getStatus() != STATUS_OK &&
                 status == STATUS_OK) {
                 status = source->getStatus();
@@ -1587,7 +1591,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
         target = m_engine.OpenSubkey(targets, sysync::KEYVAL_ID_FIRST);
         while (true) {
             s = m_engine.GetStrValue(target, "dbname");
-            EvolutionSyncSource *source = (*m_sourceListPtr)[s];
+            SyncSource *source = (*m_sourceListPtr)[s];
             if (source) {
                 m_engine.SetInt32Value(target, "enabled", 1);
                 int slow = 0;
@@ -1748,7 +1752,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                         // find it...
                         target = m_engine.OpenSubkey(targets, progressInfo.targetID);
                         s = m_engine.GetStrValue(target, "dbname");
-                        EvolutionSyncSource *source = (*m_sourceListPtr)[s];
+                        SyncSource *source = (*m_sourceListPtr)[s];
                         if (source) {
                             displaySourceProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
                                                   *source,
@@ -1895,10 +1899,10 @@ void EvolutionSyncClient::status()
 
     SourceList sourceList(*this, false);
     initSources(sourceList);
-    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+    BOOST_FOREACH(SyncSource *source, sourceList) {
         source->checkPassword(*this);
     }
-    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+    BOOST_FOREACH(SyncSource *source, sourceList) {
         source->open();
     }
 
@@ -1944,10 +1948,10 @@ void EvolutionSyncClient::checkStatus(SyncReport &report)
 
     SourceList sourceList(*this, false);
     initSources(sourceList);
-    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+    BOOST_FOREACH(SyncSource *source, sourceList) {
         source->checkPassword(*this);
     }
-    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+    BOOST_FOREACH(SyncSource *source, sourceList) {
         source->open();
     }
 
@@ -1970,25 +1974,11 @@ static void logRestoreReport(const SyncReport &report, bool dryrun)
 void EvolutionSyncClient::checkSourceChanges(SourceList &sourceList, SyncReport &changes)
 {
     changes.setStart(time(NULL));
-    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
-        if (source->checkStatus()) {
+    BOOST_FOREACH(SyncSource *source, sourceList) {
+        if (source->getOperations().m_checkStatus) {
             SyncSourceReport local;
-            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
-                              SyncSourceReport::ITEM_ADDED,
-                              SyncSourceReport::ITEM_TOTAL,
-                              source->getNumNewItems());
-            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
-                              SyncSourceReport::ITEM_UPDATED,
-                              SyncSourceReport::ITEM_TOTAL,
-                              source->getNumUpdatedItems());
-            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
-                              SyncSourceReport::ITEM_REMOVED,
-                              SyncSourceReport::ITEM_TOTAL,
-                              source->getNumDeletedItems());
-            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
-                              SyncSourceReport::ITEM_ANY,
-                              SyncSourceReport::ITEM_TOTAL,
-                              source->getNumItems());
+
+            source->getOperations().m_checkStatus(local);
             changes.addSyncSourceReport(source->getName(), local);
         }
     }
@@ -2006,13 +1996,13 @@ void EvolutionSyncClient::restore(const string &dirname, RestoreDatabase databas
     sourceList.startSession(dirname.c_str(), 0, 0, NULL, "restore");
     LoggerBase::instance().setLevel(Logger::INFO);
     initSources(sourceList);
-    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+    BOOST_FOREACH(SyncSource *source, sourceList) {
         source->checkPassword(*this);
     }
 
     string datadump = database == DATABASE_BEFORE_SYNC ? "before" : "after";
 
-    BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+    BOOST_FOREACH(SyncSource *source, sourceList) {
         source->open();
     }
 
@@ -2028,7 +2018,7 @@ void EvolutionSyncClient::restore(const string &dirname, RestoreDatabase databas
 
     SyncReport report;
     try {
-        BOOST_FOREACH(EvolutionSyncSource *source, sourceList) {
+        BOOST_FOREACH(SyncSource *source, sourceList) {
             SyncSourceReport sourcereport;
             try {
                 SE_LOG_DEBUG(NULL, NULL, "Restoring %s...", source->getName());

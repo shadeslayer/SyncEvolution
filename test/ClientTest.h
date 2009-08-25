@@ -32,7 +32,7 @@
 class EvolutionSyncClient;
 class EvolutionSyncSource;
 class TransportWrapper;
-typedef EvolutionSyncSource SyncSource;
+class TestingSyncSource;
 
 #include <SyncML.h>
 #include <TransportAgent.h>
@@ -191,16 +191,6 @@ class SyncTests;
  * synchronization against client B. In those tests client A is mapped
  * to the first data source and client B to the second one.
  *
- * Finally the SyncSource API is used in slightly different ways which
- * go beyond what is normally expected from a SyncSource implementation:
- * - beginSync() may be called without setting a sync mode:
- *   when SyncSource::getSyncMode() returns SYNC_NONE the source is
- *   expected to make itself ready to iterate over all, new, updated and
- *   deleted items
- * - items may be added via SyncSource::addItem() with a type of "raw":
- *   this implies that the type is the one used for items in the
- *   ClientTest::Config below
- *
  * Handling configuration and creating classes is entirely done by the
  * subclass of ClientTest, the frameworks makes no assumptions
  * about how this is done. Instead it queries the ClientTest for
@@ -249,7 +239,7 @@ class ClientTest {
     /**
      * utility function for dumping items which are C strings with blank lines as separator
      */
-    static int dump(ClientTest &client, SyncSource &source, const char *file);
+    static int dump(ClientTest &client, TestingSyncSource &source, const char *file);
 
     /**
      * utility function for splitting file into items with blank lines as separator
@@ -263,7 +253,7 @@ class ClientTest {
     /**
      * utility function for importing items with blank lines as separator
      */
-    static int import(ClientTest &client, SyncSource &source, const char *file, std::string &realfile);
+    static int import(ClientTest &client, TestingSyncSource &source, const char *file, std::string &realfile);
 
     /**
      * utility function for comparing vCard and iCal files with the external
@@ -337,7 +327,7 @@ class ClientTest {
          * @param isSourceA true if the requested SyncSource is the first one accessing that
          *                  data, otherwise the second
          */
-        typedef SyncSource *(*createsource_t)(ClientTest &client, int source, bool isSourceA);
+        typedef TestingSyncSource *(*createsource_t)(ClientTest &client, int source, bool isSourceA);
 
         /**
          * Creates a sync source which references the primary database;
@@ -396,6 +386,9 @@ class ClientTest {
          * Type to be set when importing any of the items into the
          * corresponding sync sources. Use "" if sync source doesn't
          * need this information.
+         *
+         * Not currently used! All items are assumed to be in the raw,
+         * internal format (see SyncSourceRaw and SyncSourceSerialize).
          */
         const char *itemType;
 
@@ -478,7 +471,7 @@ class ClientTest {
          * @param file       a file name
          * @return error code, 0 for success
          */
-        int (*dump)(ClientTest &client, SyncSource &source, const char *file);
+        int (*dump)(ClientTest &client, TestingSyncSource &source, const char *file);
 
         /**
          * import test items: which these are is determined entirely by
@@ -494,7 +487,7 @@ class ClientTest {
          *                   this may depend on the current server that is being tested
          * @return error code, 0 for success
          */
-        int (*import)(ClientTest &client, SyncSource &source, const char *file, std::string &realfile);
+        int (*import)(ClientTest &client, TestingSyncSource &source, const char *file, std::string &realfile);
 
         /**
          * a function which compares two files with items in the format used by "dump"
@@ -611,7 +604,7 @@ public:
         source(sourceParam),
         isSourceA(isSourceAParam) {}
 
-    SyncSource *operator() () {
+    TestingSyncSource *operator() () {
         CPPUNIT_ASSERT(createSource);
         return createSource(client, source, isSourceA);
     }
@@ -664,21 +657,21 @@ public:
      * @param relaxed   if true, then disable some of the additional checks after adding the item
      * @return the LUID of the inserted item
      */
-    virtual std::string insert(CreateSource createSource, const char *data, const char *dataType, bool relaxed = false);
+    virtual std::string insert(CreateSource createSource, const char *data, bool relaxed = false);
 
     /**
      * assumes that exactly one element is currently inserted and updates it with the given item
      *
      * @param check     if true, then reopen the source and verify that the reported items are as expected
      */
-    virtual void update(CreateSource createSource, const char *data, const char *dataType, bool check = true);
+    virtual void update(CreateSource createSource, const char *data, bool check = true);
 
     /**
      * updates one item identified by its LUID with the given item
      *
      * The type of the item is cleared, as in insert() above.
      */
-    virtual void update(CreateSource createSource, const char *data, const char *dataType, const std::string &luid);
+    virtual void update(CreateSource createSource, const char *data, const std::string &luid);
 
     /** deletes all items locally via sync source */
     virtual void deleteAll(CreateSource createSource);
@@ -692,7 +685,7 @@ public:
      * @param raiseAssert  raise assertion if comparison yields differences (defaults to true)
      * @return true if the two databases are equal
      */
-    virtual bool compareDatabases(const char *refFile, SyncSource &copy, bool raiseAssert = true);
+    virtual bool compareDatabases(const char *refFile, TestingSyncSource &copy, bool raiseAssert = true);
 
     /**
      * insert artificial items, number of them determined by TEST_EVOLUTION_NUM_ITEMS
@@ -750,26 +743,8 @@ public:
 
 };
 
-enum itemType {
-    NEW_ITEMS,
-    UPDATED_ITEMS,
-    DELETED_ITEMS,
-    TOTAL_ITEMS
-};
-
-/**
- * utility function which counts items of a certain kind known to the sync source
- * @param source      valid source ready to iterate; NULL triggers an assert
- * @param itemType    determines which iterator functions are used
- * @return number of valid items iterated over
- */
-int countItemsOfType(SyncSource *source, itemType type);
-
-typedef std::list<std::string> UIDList;
-/**
- * generates list of UIDs in the specified kind of items
- */
-UIDList listItemsOfType(SyncSource *source, itemType type);
+int countItemsOfType(TestingSyncSource *source, int state);
+std::list<std::string> listItemsOfType(TestingSyncSource *source, int state);
 
 /**
  * Tests synchronization with one or more sync sources enabled.
@@ -1032,30 +1007,29 @@ public:
 #define SOURCE_ASSERT_NO_FAILURE(_source, _x) \
 { \
     CPPUNIT_ASSERT_NO_THROW(_x); \
-    CPPUNIT_ASSERT((_source) && !(_source)->hasFailed()); \
+    CPPUNIT_ASSERT((_source)); \
 }
 
 /** check _x for true and then the status of the _source pointer */
 #define SOURCE_ASSERT(_source, _x) \
 { \
     CPPUNIT_ASSERT(_x); \
-    CPPUNIT_ASSERT((_source) && !(_source)->hasFailed()); \
+    CPPUNIT_ASSERT((_source)); \
 }
 
 /** check that _x evaluates to a specific value and then the status of the _source pointer */
 #define SOURCE_ASSERT_EQUAL(_source, _value, _x) \
 { \
     CPPUNIT_ASSERT_EQUAL(_value, _x); \
-    CPPUNIT_ASSERT((_source) && !(_source)->hasFailed()); \
+    CPPUNIT_ASSERT((_source)); \
 }
 
 /** same as SOURCE_ASSERT() with a specific failure message */
 #define SOURCE_ASSERT_MESSAGE(_message, _source, _x)     \
 { \
     CPPUNIT_ASSERT_MESSAGE((_message), (_x)); \
-    CPPUNIT_ASSERT((_source) && !(_source)->hasFailed()); \
+    CPPUNIT_ASSERT((_source)); \
 }
-
 
 /**
  * convenience macro for adding a test name like a function,

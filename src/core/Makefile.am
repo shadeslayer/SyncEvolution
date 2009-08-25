@@ -54,8 +54,8 @@ CORE_SOURCES  = \
 	SyncEvolutionCmdline.cpp \
         SyncEvolutionCmdline.h \
 	\
-        EvolutionSyncSource.h \
-        EvolutionSyncSource.cpp \
+        SyncSource.h \
+        SyncSource.cpp \
 	\
 	SynthesisDBPlugin.cpp \
 	\

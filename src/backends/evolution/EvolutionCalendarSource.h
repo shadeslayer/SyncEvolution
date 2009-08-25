@@ -22,8 +22,10 @@
 #define INCL_EVOLUTIONCALENDARSOURCE
 
 #include <config.h>
-#include "TrackingSyncSource.h"
+#include "EvolutionSyncSource.h"
 #include "EvolutionSmartPtr.h"
+
+#include <boost/noncopyable.hpp>
 
 #ifdef ENABLE_ECAL
 
@@ -35,7 +37,7 @@
  * handled as one item for the main event and one item
  * for each detached recurrence.
  */
-class EvolutionCalendarSource : public TrackingSyncSource
+class EvolutionCalendarSource : public EvolutionSyncSource, private boost::noncopyable
 {
   public:
     /**
@@ -45,32 +47,27 @@ class EvolutionCalendarSource : public TrackingSyncSource
      *                       E_CAL_SOURCE_TYPE_EVENT
      */
     EvolutionCalendarSource(ECalSourceType type,
-                            const EvolutionSyncSourceParams &params);
-    EvolutionCalendarSource(const EvolutionCalendarSource &other);
+                            const SyncSourceParams &params);
     virtual ~EvolutionCalendarSource() { close(); }
 
     //
-    // implementation of EvolutionSyncSource
+    // implementation of SyncSource
     //
     virtual Databases getDatabases();
     virtual void open();
     virtual void close(); 
-    virtual string fileSuffix() const { return "ics"; }
     virtual const char *getMimeType() const { return "text/calendar"; }
     virtual const char *getMimeVersion() const { return "2.0"; }
     virtual const char *getSupportedTypes() const { return "text/calendar:2.0"; }
-   
-    virtual SyncItem *createItem(const string &luid, const char *type);
 
   protected:
     //
     // implementation of TrackingSyncSource callbacks
     //
     virtual void listAllItems(RevisionMap_t &revisions);
-    virtual InsertItemResult insertItem(const string &luid, const SyncItem &item);
-    virtual void deleteItem(const string &luid);
-    virtual void logItem(const string &luid, const string &info, bool debug = false);
-    virtual void logItem(const SyncItem &item, const string &info, bool debug = false);
+    virtual InsertItemResult insertItem(const string &uid, const std::string &item, bool raw);
+    void readItem(const std::string &luid, std::string &item, bool raw);
+    virtual void removeItem(const string &uid);
 
   protected:
     /** valid after open(): the calendar that this source references */
