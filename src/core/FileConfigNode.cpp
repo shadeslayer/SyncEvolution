@@ -403,6 +403,9 @@ void HashFileConfigNode::setProperty(const string &property,
             m_props.insert(StringPair(property, newvalue));
             m_modified = true;
         }
+    } else {
+        m_props.insert(StringPair(property, newvalue));
+        m_modified = true;
     }
 }
 
