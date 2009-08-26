@@ -40,6 +40,7 @@ typedef struct {
 	guint id;
 	char *name;
 	void *user_data;
+	char *match;
 	GDBusWatchFunction connect;
 	GDBusWatchFunction disconn;
 	GDBusDestroyFunction destroy;
@@ -55,6 +56,7 @@ typedef struct {
 typedef struct {
 	guint id;
 	void *user_data;
+	char *match;
 	GDBusSignalFunction function;
 	GDBusDestroyFunction destroy;
 } SignalData;
@@ -195,7 +197,6 @@ guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
 	ConnectionData *data;
 	WatchData *watch;
 	DBusError error;
-	gchar *match;
 
 	DBG("connection %p name %s", connection, name);
 
@@ -218,23 +219,19 @@ guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
 	watch->connect = connect;
 	watch->disconn = disconnect;
 	watch->destroy = destroy;
-
-	match = g_strdup_printf("interface=%s,member=NameOwnerChanged,arg0=%s",
+	watch->match = g_strdup_printf("interface=%s,member=NameOwnerChanged,arg0=%s",
 						DBUS_INTERFACE_DBUS, name);
-	if (match == NULL)
+	if (watch->match == NULL)
 		goto error;
 
 	dbus_error_init(&error);
 
-	dbus_bus_add_match(connection, match, &error);
+	dbus_bus_add_match(connection, watch->match, &error);
 
 	if (dbus_error_is_set(&error) == TRUE) {
 		dbus_error_free(&error);
-		g_free(match);
 		goto error;
 	}
-
-	g_free(match);
 
 	watch->id = data->next_id++;
 
@@ -245,8 +242,10 @@ guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
 	return watch->id;
 
 error:
-	if (watch != NULL)
+	if (watch != NULL) {
 		g_free(watch->name);
+		g_free(watch->match);
+	}
 	g_free(watch);
 
 	put_connection_data(connection);
@@ -281,7 +280,9 @@ gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag)
 			data->watches = g_slist_remove(data->watches, watch);
 			if (watch->destroy != NULL)
 				watch->destroy(watch->user_data);
+			dbus_bus_remove_match(connection, watch->match, NULL);
 			g_free(watch->name);
+                        g_free(watch->match);
 			g_free(watch);
 			goto done;
 		}
@@ -294,6 +295,8 @@ gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag)
 			data->handlers = g_slist_remove(data->handlers, signal);
 			if (signal->destroy != NULL)
 				signal->destroy(signal->user_data);
+			dbus_bus_remove_match(connection, signal->match, NULL);
+			g_free(signal->match);
 			g_free(signal);
 			goto done;
 		}
@@ -345,6 +348,8 @@ void g_dbus_remove_all_watches(DBusConnection *connection)
 
 		if (watch->destroy != NULL)
 			watch->destroy(watch->user_data);
+		dbus_bus_remove_match(connection, watch->match, NULL);
+		g_free(watch->match);
 		g_free(watch->name);
 		g_free(watch);
 
@@ -362,6 +367,8 @@ void g_dbus_remove_all_watches(DBusConnection *connection)
 
 		if (signal->destroy != NULL)
 			signal->destroy(signal->user_data);
+		dbus_bus_remove_match(connection, signal->match, NULL);
+		g_free(signal->match);
 		g_free(signal);
 
 		dbus_connection_free_data_slot(&connection_slot);
@@ -467,6 +474,10 @@ guint g_dbus_add_signal_watch(DBusConnection *connection,
 	if (signal == NULL)
 		goto error;
 
+	signal->match = g_strdup(rule);
+	if (!signal->match)
+		goto error;
+
 	signal->user_data = user_data;
 
 	signal->function = function;
@@ -490,6 +501,8 @@ guint g_dbus_add_signal_watch(DBusConnection *connection,
 	return signal->id;
 
 error:
+        if (signal)
+		g_free(signal->match);
 	g_free(signal);
 
 	put_connection_data(connection);
