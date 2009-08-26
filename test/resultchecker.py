@@ -47,6 +47,7 @@ def check (resultdir, serverlist,resulturi, srcdir, shellprefix):
 def step1(input, result, indents, dir, resulturi):
     '''Step1 of the result checking, collect system information and 
     check the preparation steps (fetch, compile)'''
+    cont = True
     indent =indents[-1]+space
     indents.append(indent)
     result.write(indent+'''<platform-info>\n''')
@@ -86,6 +87,7 @@ def step1(input, result, indents, dir, resulturi):
             result.write("skipped")
         elif(os.system ("grep -q '^"+tag+" successful' "+input)):
             result.write("failed")
+            cont = False
         else:
             result.write("okay")
         result.write('''</'''+tagsp[tag]+'''>\n''')
@@ -101,7 +103,7 @@ def step1(input, result, indents, dir, resulturi):
     result.write(indent+'''</log-info>\n''')
     indents.pop()
     indent = indents[-1]
-    return (indents, True)
+    return (indents, cont)
 
 def step2(resultdir, result, servers, indents, srcdir, shellprefix):
     '''Step2 of the result checking, for each server listed in
