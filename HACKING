@@ -126,6 +126,9 @@ Building a Release
   use "0.7+0.8beta1" instead of "0.7+0.8-beta1".
 - ensure files were updated:
   ./NEWS debian/changelog
+- update po/LINGUAS
+- check and if necessary, bump the Synthesis .so versions
+  (libsynthesis/src/Makefile.am.in)
 - ensure that Synthesis source code is tagged:
   use <base version>+<syncevo version> if local changes exist
 - commit and tag SyncEvolution source code
