@@ -23,7 +23,7 @@
 #ifdef ENABLE_LIBSOUP
 
 #include <algorithm>
-
+#include <libsoup/soup-status.h>
 #include <Logging.h>
 
 #ifdef HAVE_LIBSOUP_SOUP_GNOME_FEATURES_H
@@ -258,7 +258,7 @@ gboolean SoupTransportAgent::processCallback()
     bool cont = m_cb(m_cbData);
     if(cont){
         //stop the message processing and mark status as timeout
-        guint message_status;
+        guint message_status = SOUP_STATUS_CANCELLED;
         soup_session_cancel_message(m_session.get(), m_message, message_status);
         m_status = TIME_OUT;
     }else {
