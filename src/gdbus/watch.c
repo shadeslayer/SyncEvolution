@@ -302,15 +302,16 @@ gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag)
 	return FALSE;
 
 done:
+        if (!data->watches && !data->handlers) {
+		dbus_connection_remove_filter(connection,
+						filter_function, data);
+		dbus_connection_set_data(connection, connection_slot, NULL, NULL);
+                g_free(data);
+	}
+
 	dbus_connection_free_data_slot(&connection_slot);
 
 	DBG("connection slot %d", connection_slot);
-
-	if (connection_slot < 0) {
-		dbus_connection_remove_filter(connection,
-						filter_function, data);
-		g_free(data);
-	}
 
 	return TRUE;
 }
