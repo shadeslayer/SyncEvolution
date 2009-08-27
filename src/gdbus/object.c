@@ -71,6 +71,20 @@ static InterfaceData *find_interface(GSList *interfaces, const char *name)
 	return NULL;
 }
 
+static ObjectData *find_object(GSList *objects, const char *path)
+{
+	GSList *list;
+
+	for (list = objects; list; list = list->next) {
+		ObjectData *object = list->data;
+
+		if (strcmp(path, object->path) == 0)
+			return object;
+	}
+
+	return NULL;
+}
+
 static GDBusPropertyTable *find_property(InterfaceData *interface,
 					 		const char *name)
 {
@@ -697,30 +711,32 @@ static gboolean g_dbus_register_object(DBusConnection *connection,
 
 	DBG("connection data %p", data);
 
-	object = g_new0(ObjectData, 1);
-
-	object->refcount = 1;
-
-	g_static_mutex_init(&object->mutex);
-
-	object->path = g_strdup(path);
-	object->interfaces = NULL;
-	object->introspect = generate_introspect(connection, path, object);
-
-	if (dbus_connection_register_object_path(connection, path,
-					&object_table, object) == FALSE) {
-		g_free(object->introspect);
-		g_free(object);
-		return FALSE;
-	}
-
-	DBG("object data %p", object);
-
 	g_static_mutex_lock(&data->mutex);
 
-	data->objects = g_slist_append(data->objects, object);
+	object = find_object(data->objects, path);
+
+	if (!object) {
+		object = g_new0(ObjectData, 1);
+		g_static_mutex_init(&object->mutex);
+		object->path = g_strdup(path);
+		object->interfaces = NULL;
+		object->refcount = 0;
+		object->introspect = generate_introspect(connection, path, object);
+		if (dbus_connection_register_object_path(connection, path,
+						&object_table, object) == FALSE) {
+			g_free(object->introspect);
+			g_free(object);
+			return FALSE;
+		}
+
+		data->objects = g_slist_append(data->objects, object);
+        }
+
+	object->refcount++;
 
 	g_static_mutex_unlock(&data->mutex);
+
+	DBG("object data %p", object);
 
 	update_parent(connection, path);
 
@@ -742,6 +758,8 @@ static gboolean g_dbus_unregister_object(DBusConnection *connection,
 {
 	ConnectionData *data;
 	ObjectData *object;
+	gboolean result = TRUE;
+
 
 	DBG("connection %p path %s", connection, path);
 
@@ -758,9 +776,13 @@ static gboolean g_dbus_unregister_object(DBusConnection *connection,
 
 	g_static_mutex_lock(&data->mutex);
 
-	data->objects = g_slist_remove(data->objects, object);
-        if (!data->objects)
-		dbus_connection_set_data(connection, connection_slot, NULL, NULL);
+	object->refcount--;
+	if (!object->refcount) {
+		result = dbus_connection_unregister_object_path(connection, path);
+		data->objects = g_slist_remove(data->objects, object);
+        	if (!data->objects)
+			dbus_connection_set_data(connection, connection_slot, NULL, NULL);
+        }
 
 	g_static_mutex_unlock(&data->mutex);
 
@@ -773,12 +795,9 @@ static gboolean g_dbus_unregister_object(DBusConnection *connection,
 		g_free(data);
 	}
 
-	if (dbus_connection_unregister_object_path(connection, path) == FALSE)
-		return FALSE;
-
 	update_parent(connection, path);
 
-	return TRUE;
+	return result;
 }
 
 #if 0
