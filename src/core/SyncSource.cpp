@@ -18,6 +18,11 @@
  * 02110-1301  USA
  */
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE 1
+#endif
+#include <dlfcn.h>
+
 #include "SyncSource.h"
 #include "EvolutionSyncClient.h"
 #include "SyncEvolutionUtil.h"
