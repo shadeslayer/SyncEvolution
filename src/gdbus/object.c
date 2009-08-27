@@ -759,6 +759,8 @@ static gboolean g_dbus_unregister_object(DBusConnection *connection,
 	g_static_mutex_lock(&data->mutex);
 
 	data->objects = g_slist_remove(data->objects, object);
+        if (!data->objects)
+		dbus_connection_set_data(connection, connection_slot, NULL, NULL);
 
 	g_static_mutex_unlock(&data->mutex);
 
@@ -766,7 +768,7 @@ static gboolean g_dbus_unregister_object(DBusConnection *connection,
 
 	DBG("connection slot %d", connection_slot);
 
-	if (connection_slot < 0) {
+	if (!data->objects) {
 		g_static_mutex_free(&data->mutex);
 		g_free(data);
 	}
