@@ -32,6 +32,7 @@
 #include <synthesis/sync_dbapidef.h>
 
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 #include <ctype.h>
 #include <errno.h>
