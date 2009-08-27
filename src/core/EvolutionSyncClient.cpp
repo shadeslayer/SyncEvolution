@@ -434,10 +434,56 @@ private:
         ReadDir dir(m_logdir);
         BOOST_FOREACH(const string &entry, dir) {
             if (boost::starts_with(entry, m_prefix)) {
-                dirs.push_back(m_logdir + "/" + entry);
+                string remain = boost::erase_first_copy(entry, m_prefix);
+                if(checkDirName(remain)) {
+                    dirs.push_back(m_logdir + "/" + entry);
+                }
             }
         }
         sort(dirs.begin(), dirs.end());
+    }
+    // check the dir name is conforming to what format we write
+    bool checkDirName(const string& value) {
+        const char* str = value.c_str();
+        /** need check whether string after prefix is a valid date-time we wrote, format
+         * should be -YYYY-MM-DD-HH-MM and optional sequence number */
+        static char table[] = {'-','9','9','9','9', //year
+                               '-','1','9', //month
+                               '-','3','9', //date
+                               '-','2','9', //hour
+                               '-','5','9'  //minute
+        };
+        for(int i = 0; i < sizeof(table)/sizeof(table[0]) && *str; i++,str++) {
+            switch(table[i]) {
+                case '-':
+                    if(*str != '-')
+                        return false;
+                    break;
+                case '1':
+                    if(*str < '0' || *str > '1')
+                        return false;
+                    break;
+                case '2':
+                    if(*str < '0' || *str > '2')
+                        return false;
+                    break;
+                case '3':
+                    if(*str < '0' || *str > '3')
+                        return false;
+                    break;
+                case '5':
+                    if(*str < '0' || *str > '5')
+                        return false;
+                    break;
+                case '9':
+                    if(*str < '0' || *str > '9')
+                        return false;
+                    break;
+                default:
+                    return false;
+            };
+        }
+        return true;
     }
 
     // store time stamp in session info
