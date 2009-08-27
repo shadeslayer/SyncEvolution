@@ -209,6 +209,9 @@ class Context:
                 # get action
                 action = self.todo.pop(0)
 
+                if action.isserver:
+                    run_servers.append(action.name);
+
                 # check whether it actually needs to be executed
                 if self.enabled and \
                        not action.name in self.enabled and \
@@ -241,8 +244,6 @@ class Context:
                     self.summary.append("%s done, but check the warnings" % action.name)
                 else:
                     self.summary.append("%s successful" % action.name)
-                if action.isserver:
-                    run_servers.append(action.name);
             except Exception, inst:
                 traceback.print_exc()
                 self.summary.append("%s failed: %s" % (action.name, inst))
