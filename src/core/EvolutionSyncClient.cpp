@@ -453,7 +453,7 @@ private:
                                '-','2','9', //hour
                                '-','5','9'  //minute
         };
-        for(int i = 0; i < sizeof(table)/sizeof(table[0]) && *str; i++,str++) {
+        for(size_t i = 0; i < sizeof(table)/sizeof(table[0]) && *str; i++,str++) {
             switch(table[i]) {
                 case '-':
                     if(*str != '-')
