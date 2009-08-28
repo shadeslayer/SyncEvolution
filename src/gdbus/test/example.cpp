@@ -37,17 +37,19 @@ class Test {
     typedef Result1<const std::string&> string_result;
     struct async
     {
-        async(Watch *watch, string_result *result):
+        async(const boost::shared_ptr<Watch> &watch, Watch *watch2, string_result *result):
             m_watch(watch),
+            m_watch2(watch2),
             m_result(result)
         {}
         ~async()
         {
-            delete m_watch;
+            delete m_watch2;
             delete m_result;
         }
 
-        Watch *m_watch;
+        boost::shared_ptr<Watch> m_watch;
+        Watch *m_watch2;
         string_result *m_result;
     };
         
@@ -59,9 +61,9 @@ class Test {
         return false;
     }
 
-    static void disconnect(const std::string &peer)
+    static void disconnect(const std::string &id, const std::string &peer)
     {
-        std::cout << peer << " has disconnected." << std::endl;
+        std::cout << id << ": " << peer << " has disconnected." << std::endl;
     }
 
 public:
@@ -70,11 +72,15 @@ public:
         text = "Hello World";
     }
 
-    void method_async(int32_t secs, string_result *r)
+    void method_async(const Caller_t &caller,
+                      const boost::shared_ptr<Watch> &watch,
+                      int32_t secs,
+                      string_result *r)
     {
-        Watch *watch = r->createWatch(boost::bind(disconnect,
-                                                  "caller of method_async"));
-        g_timeout_add_seconds(secs, method_idle, new async(watch, r));
+        watch->setCallback(boost::bind(disconnect, "watch1", caller));
+        Watch *watch2 = r->createWatch(boost::bind(disconnect, "watch2", caller));
+        std::cout << "method_async called by " << caller << std::endl;
+        g_timeout_add_seconds(secs, method_idle, new async(watch, watch2, r));
     }
 
     void method2(int32_t arg, int32_t &ret)
@@ -174,7 +180,8 @@ public:
                             &Test::method3>("Method3"),
             makeMethodEntry<Test, std::string &,
                             typeof(&Test::method), &Test::method>("Test"),
-            makeMethodEntry<Test, int32_t, std::string &,
+            makeMethodEntry<Test, const Caller_t &, const boost::shared_ptr<Watch> &,
+                            int32_t, std::string &,
                             typeof(&Test::method_async), &Test::method_async>
                             ("TestAsync", G_DBUS_METHOD_FLAG_ASYNC),
             makeMethodEntry<Test,

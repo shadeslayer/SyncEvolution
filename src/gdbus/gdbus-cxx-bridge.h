@@ -65,6 +65,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace boost {
     void intrusive_ptr_add_ref(DBusConnection *con) { dbus_connection_ref(con); }
@@ -502,7 +503,7 @@ template<class host, int dbus> struct basic_marshal
     /**
      * copy value from D-Bus iterator into variable
      */
-    static void get(DBusMessageIter &iter, host &value)
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host &value)
     {
         if (dbus_message_iter_get_arg_type(&iter) != dbus) {
             throw std::runtime_error("invalid argument");
@@ -591,7 +592,7 @@ template<> struct dbus_traits<bool>
     static std::string getReply() { return ""; }
     static const int dbus = DBUS_TYPE_BOOLEAN;
 
-    static void get(DBusMessageIter &iter, bool &value)
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, bool &value)
     {
         if (dbus_message_iter_get_arg_type(&iter) != dbus) {
             throw std::runtime_error("invalid argument");
@@ -623,7 +624,7 @@ template<> struct dbus_traits<std::string>
     static std::string getReply() { return ""; }
     static const int dbus = DBUS_TYPE_STRING;
 
-    static void get(DBusMessageIter &iter, std::string &value)
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, std::string &value)
     {
         if (dbus_message_iter_get_arg_type(&iter) != dbus) {
             throw std::runtime_error("invalid argument");
@@ -655,7 +656,7 @@ template <> struct dbus_traits<DBusObject_t>
     static std::string getReply() { return ""; }
     static const int dbus = DBUS_TYPE_OBJECT_PATH;
 
-    static void get(DBusMessageIter &iter, DBusObject_t &value)
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, DBusObject_t &value)
     {
         if (dbus_message_iter_get_arg_type(&iter) != dbus) {
             throw std::runtime_error("invalid argument");
@@ -681,6 +682,31 @@ template <> struct dbus_traits<DBusObject_t>
 };
 
 /**
+ * pseudo-parameter: not part of D-Bus signature,
+ * but rather extracted from message attributes
+ */
+template <> struct dbus_traits<Caller_t>
+{
+    static std::string getType() { return ""; }
+    static std::string getSignature() { return ""; }
+    static std::string getReply() { return ""; }
+
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, Caller_t &value)
+    {
+        const char *peer = dbus_message_get_sender(msg);
+        if (!peer) {
+            throw std::runtime_error("D-Bus method call without sender?!");
+        }
+        value = peer;
+    }
+
+    static void append(DBusMessageIter &iter, const DBusObject_t &value) {}
+
+    typedef Caller_t host_type;
+    typedef const Caller_t &arg_type;
+};
+
+/**
  * a std::map - treat it like a D-Bus dict
  */
 template<class K, class V> struct dbus_traits< std::map<K, V> >
@@ -702,7 +728,7 @@ template<class K, class V> struct dbus_traits< std::map<K, V> >
     typedef std::map<K, V> host_type;
     typedef const std::map<K, V> &arg_type;
 
-    static void get(DBusMessageIter &iter, host_type &dict)
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &dict)
     {
         if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_ARRAY) {
             throw std::runtime_error("invalid argument");
@@ -718,8 +744,8 @@ template<class K, class V> struct dbus_traits< std::map<K, V> >
             dbus_message_iter_recurse(&sub, &entry);
             K key;
             V value;
-            dbus_traits<K>::get(entry, key);
-            dbus_traits<V>::get(entry, value);
+            dbus_traits<K>::get(conn, msg, entry, key);
+            dbus_traits<V>::get(conn, msg, entry, value);
             dict.insert(std::make_pair(key, value));
             dbus_message_iter_next(&sub);
         }
@@ -774,7 +800,7 @@ template<class V> struct dbus_traits< std::vector<V> >
     typedef std::vector<V> host_type;
     typedef const std::vector<V> &arg_type;
 
-    static void get(DBusMessageIter &iter, host_type &array)
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &array)
     {
         if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_ARRAY) {
             throw std::runtime_error("invalid argument");
@@ -783,7 +809,7 @@ template<class V> struct dbus_traits< std::vector<V> >
         dbus_message_iter_recurse(&iter, &sub);
         while (dbus_message_iter_get_arg_type(&sub) != DBUS_TYPE_INVALID) {
             V value;
-            dbus_traits<V>::get(sub, value);
+            dbus_traits<V>::get(conn, msg, sub, value);
             array.push_back(value);
         }
         dbus_message_iter_next(&iter);
@@ -830,7 +856,7 @@ template<class C> struct dbus_traits<C &> : public dbus_traits<C>
     /**
      * skip when extracting input arguments
      */
-    static void get(DBusMessageIter &iter, C &value) {}
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, C &value) {}
     static std::string getSignature() { return ""; }
 
     /**
@@ -861,7 +887,7 @@ static DBusMessage *handleException(DBusMessage *msg)
  */
 class DBusWatch : public Watch
 {
-    const DBusConnectionPtr &m_conn;
+    DBusConnectionPtr m_conn;
     boost::function<void (void)> m_callback;
     bool m_called;
     guint m_watchID;
@@ -872,18 +898,28 @@ class DBusWatch : public Watch
         DBusWatch *watch = static_cast<DBusWatch *>(user_data);
         if (!watch->m_called) {
             watch->m_called = true;
-            watch->m_callback();
+            if (watch->m_callback) {
+                watch->m_callback();
+            }
         }
     }
 
  public:
     DBusWatch(const DBusConnectionPtr &conn,
-              const boost::function<void (void)> &callback) :
+              const boost::function<void (void)> &callback = boost::function<void (void)>()) :
         m_conn(conn),
         m_callback(callback),
         m_called(false),
         m_watchID(0)
     {
+    }
+
+    virtual void setCallback(const boost::function<void (void)> &callback)
+    {
+        m_callback = callback;
+        if (m_called && m_callback) {
+            m_callback();
+        }
     }
 
     void activate(const char *peer)
@@ -929,6 +965,30 @@ class DBusWatch : public Watch
         }
     }
 };
+
+/**
+ * pseudo-parameter: not part of D-Bus signature,
+ * but rather extracted from message attributes
+ */
+template <> struct dbus_traits< boost::shared_ptr<Watch> >
+{
+    static std::string getType() { return ""; }
+    static std::string getSignature() { return ""; }
+    static std::string getReply() { return ""; }
+
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, boost::shared_ptr<Watch> &value)
+    {
+        boost::shared_ptr<DBusWatch> watch(new DBusWatch(conn));
+        watch->activate(dbus_message_get_sender(msg));
+        value = watch;
+    }
+
+    static void append(DBusMessageIter &iter, const boost::shared_ptr<Watch> &value) {}
+
+    typedef boost::shared_ptr<Watch> host_type;
+    typedef const boost::shared_ptr<Watch> &arg_type;
+};
+
 
 /**
  * base class for D-Bus results,
@@ -1341,8 +1401,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
         // as return values and have an empty get().
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         // The data pointer given to g_dbus_register_interface()
         // must have been a pointer to an object of our interface
@@ -1429,16 +1489,16 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
-        dbus_traits<A9>::get(iter, a9);
-        dbus_traits<A10>::get(iter, a10);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
+        dbus_traits<A9>::get(conn, msg, iter, a9);
+        dbus_traits<A10>::get(conn, msg, iter, a10);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
 
@@ -1484,15 +1544,15 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
-        dbus_traits<A9>::get(iter, a9);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
+        dbus_traits<A9>::get(conn, msg, iter, a9);
 
         r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9);
 
@@ -1539,16 +1599,16 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
-        dbus_traits<A9>::get(iter, a9);
-        dbus_traits<A10>::get(iter, a10);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
+        dbus_traits<A9>::get(conn, msg, iter, a9);
+        dbus_traits<A10>::get(conn, msg, iter, a10);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10,
                                      new DBusResult0(conn, msg));
@@ -1581,15 +1641,15 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
-        dbus_traits<A9>::get(iter, a9);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
+        dbus_traits<A9>::get(conn, msg, iter, a9);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9,
                                      new DBusResult1<typename dbus_traits<A10>::arg_type>(conn, msg));
@@ -1623,14 +1683,14 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8,
                                      new DBusResult2<typename dbus_traits<A9>::arg_type,
@@ -1665,13 +1725,13 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7,
                                      new DBusResult3<typename dbus_traits<A8>::arg_type,
@@ -1707,12 +1767,12 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
                                      new DBusResult4<typename dbus_traits<A7>::arg_type,
@@ -1749,11 +1809,11 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
                                      new DBusResult5<typename dbus_traits<A6>::arg_type,
@@ -1791,10 +1851,10 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
                                      new DBusResult6<typename dbus_traits<A5>::arg_type,
@@ -1833,9 +1893,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3,
                                      new DBusResult7<typename dbus_traits<A4>::arg_type,
@@ -1875,8 +1935,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         (static_cast<I *>(data)->*m)(a1, a2,
                                      new DBusResult8<typename dbus_traits<A3>::arg_type,
@@ -1917,7 +1977,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult9<typename dbus_traits<A2>::arg_type,
@@ -1993,15 +2053,15 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
-        dbus_traits<A9>::get(iter, a9);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
+        dbus_traits<A9>::get(conn, msg, iter, a9);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9);
 
@@ -2045,14 +2105,14 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
 
         r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8);
 
@@ -2097,15 +2157,15 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
-        dbus_traits<A9>::get(iter, a9);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
+        dbus_traits<A9>::get(conn, msg, iter, a9);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9,
                                      new DBusResult0(conn, msg));
@@ -2137,14 +2197,14 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8,
                                      new DBusResult1<typename dbus_traits<A9>::arg_type>(conn, msg));
@@ -2177,13 +2237,13 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7,
                                      new DBusResult2<typename dbus_traits<A8>::arg_type,
@@ -2217,12 +2277,12 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
                                      new DBusResult3<typename dbus_traits<A7>::arg_type,
@@ -2257,11 +2317,11 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
                                      new DBusResult4<typename dbus_traits<A6>::arg_type,
@@ -2297,10 +2357,10 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
                                      new DBusResult5<typename dbus_traits<A5>::arg_type,
@@ -2337,9 +2397,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3,
                                      new DBusResult6<typename dbus_traits<A4>::arg_type,
@@ -2377,8 +2437,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         (static_cast<I *>(data)->*m)(a1, a2,
                                      new DBusResult7<typename dbus_traits<A3>::arg_type,
@@ -2417,7 +2477,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult8<typename dbus_traits<A2>::arg_type,
@@ -2489,14 +2549,14 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8);
 
@@ -2538,13 +2598,13 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
 
         r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7);
 
@@ -2587,14 +2647,14 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
-        dbus_traits<A8>::get(iter, a8);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
+        dbus_traits<A8>::get(conn, msg, iter, a8);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8,
                                      new DBusResult0(conn, msg));
@@ -2625,13 +2685,13 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7,
                                      new DBusResult1<typename dbus_traits<A8>::arg_type>(conn, msg));
@@ -2663,12 +2723,12 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
                                      new DBusResult2<typename dbus_traits<A7>::arg_type,
@@ -2701,11 +2761,11 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
                                      new DBusResult3<typename dbus_traits<A6>::arg_type,
@@ -2739,10 +2799,10 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
                                      new DBusResult4<typename dbus_traits<A5>::arg_type,
@@ -2777,9 +2837,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3,
                                      new DBusResult5<typename dbus_traits<A4>::arg_type,
@@ -2815,8 +2875,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         (static_cast<I *>(data)->*m)(a1, a2,
                                      new DBusResult6<typename dbus_traits<A3>::arg_type,
@@ -2853,7 +2913,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult7<typename dbus_traits<A2>::arg_type,
@@ -2921,13 +2981,13 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7);
 
@@ -2967,12 +3027,12 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
 
         r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6);
 
@@ -3013,13 +3073,13 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
-        dbus_traits<A7>::get(iter, a7);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        dbus_traits<A7>::get(conn, msg, iter, a7);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7,
                                      new DBusResult0(conn, msg));
@@ -3049,12 +3109,12 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
                                      new DBusResult1<typename dbus_traits<A7>::arg_type>(conn, msg));
@@ -3085,11 +3145,11 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
  
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
                                      new DBusResult2<typename dbus_traits<A6>::arg_type,
@@ -3121,10 +3181,10 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
                                      new DBusResult3<typename dbus_traits<A5>::arg_type,
@@ -3157,9 +3217,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3,
                                      new DBusResult4<typename dbus_traits<A4>::arg_type,
@@ -3193,8 +3253,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         (static_cast<I *>(data)->*m)(a1, a2,
                                      new DBusResult5<typename dbus_traits<A3>::arg_type,
@@ -3229,7 +3289,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult6<typename dbus_traits<A2>::arg_type,
@@ -3293,12 +3353,12 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6);
 
@@ -3335,11 +3395,11 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
 
         r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5);
 
@@ -3378,12 +3438,12 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
-        dbus_traits<A6>::get(iter, a6);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
                                      new DBusResult0(conn, msg));
@@ -3412,11 +3472,11 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
                                      new DBusResult1<typename dbus_traits<A6>::arg_type>(conn, msg));
@@ -3446,10 +3506,10 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
  
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
                                      new DBusResult2<typename dbus_traits<A5>::arg_type,
@@ -3480,9 +3540,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3,
                                      new DBusResult3<typename dbus_traits<A4>::arg_type,
@@ -3514,8 +3574,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         (static_cast<I *>(data)->*m)(a1, a2,
                                      new DBusResult4<typename dbus_traits<A3>::arg_type,
@@ -3548,7 +3608,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult5<typename dbus_traits<A2>::arg_type,
@@ -3607,11 +3667,11 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5);
 
@@ -3646,10 +3706,10 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
 
         r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4);
 
@@ -3685,11 +3745,11 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
-        dbus_traits<A5>::get(iter, a5);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
                                      new DBusResult0(conn, msg));
@@ -3716,10 +3776,10 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
                                      new DBusResult1<typename dbus_traits<A5>::arg_type>(conn, msg));
@@ -3747,9 +3807,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
  
         (static_cast<I *>(data)->*m)(a1, a2, a3,
                                      new DBusResult2<typename dbus_traits<A4>::arg_type,
@@ -3778,8 +3838,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         (static_cast<I *>(data)->*m)(a1, a2,
                                      new DBusResult3<typename dbus_traits<A3>::arg_type,
@@ -3809,7 +3869,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult4<typename dbus_traits<A2>::arg_type,
@@ -3863,10 +3923,10 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4);
 
@@ -3899,9 +3959,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
 
         r = (static_cast<I *>(data)->*m)(a1, a2, a3);
 
@@ -3935,10 +3995,10 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
-        dbus_traits<A4>::get(iter, a4);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
                                      new DBusResult0(conn, msg));
@@ -3964,9 +4024,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3,
                                      new DBusResult1<typename dbus_traits<A4>::arg_type>(conn, msg));
@@ -3993,8 +4053,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
  
         (static_cast<I *>(data)->*m)(a1, a2,
                                      new DBusResult2<typename dbus_traits<A3>::arg_type,
@@ -4022,7 +4082,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult3<typename dbus_traits<A2>::arg_type,
@@ -4072,9 +4132,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3);
 
@@ -4105,8 +4165,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         r = (static_cast<I *>(data)->*m)(a1, a2);
 
@@ -4138,9 +4198,9 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
-        dbus_traits<A3>::get(iter, a3);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
 
         (static_cast<I *>(data)->*m)(a1, a2, a3,
                                      new DBusResult0(conn, msg));
@@ -4165,8 +4225,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         (static_cast<I *>(data)->*m)(a1, a2,
                                      new DBusResult1<typename dbus_traits<A3>::arg_type>(conn, msg));
@@ -4192,7 +4252,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
  
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult2<typename dbus_traits<A2>::arg_type,
@@ -4238,8 +4298,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         (static_cast<I *>(data)->*m)(a1, a2);
 
@@ -4268,7 +4328,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         r = (static_cast<I *>(data)->*m)(a1);
 
@@ -4298,8 +4358,8 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
-        dbus_traits<A2>::get(iter, a2);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
 
         (static_cast<I *>(data)->*m)(a1, a2,
                                      new DBusResult0(conn, msg));
@@ -4323,7 +4383,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult1<typename dbus_traits<A2>::arg_type>(conn, msg));
@@ -4365,7 +4425,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1);
 
@@ -4416,7 +4476,7 @@ DBusMessage *methodFunction(DBusConnection *conn,
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(iter, a1);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
 
         (static_cast<I *>(data)->*m)(a1,
                                      new DBusResult0(conn, msg));

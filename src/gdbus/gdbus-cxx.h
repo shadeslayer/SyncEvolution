@@ -52,8 +52,24 @@ class Watch : private boost::noncopyable
 {
  public:
     virtual ~Watch() {};
+
+    /**
+     * Changes the callback triggered by this Watch.  If the watch has
+     * already fired, the callback is invoked immediately.
+     */
+    virtual void setCallback(const boost::function<void (void)> &callback) = 0;
 };
 
+/**
+ * Special parameter type that identifies a caller. A string in practice.
+ */
+class Caller_t : public std::string
+{
+ public:
+    Caller_t() {}
+    template <class T> Caller_t(T val) : std::string(val) {}
+    template <class T> Caller_t &operator = (T val) { assign(val); return *this; }
+};
 
 /**
  * Call object which needs to be called with the results
@@ -74,11 +90,14 @@ class Result
     virtual void failed(const dbus_error &error) = 0;
 
     /**
-     * Calls the given callback once when the peer
-     * that the result would be delivered to disconnects.
-     * The callback will also be called if the peer
-     * is already gone by the time that the watch is
-     * requested.
+     * Calls the given callback once when the peer that the result
+     * would be delivered to disconnects.  The callback will also be
+     * called if the peer is already gone by the time that the watch
+     * is requested.
+     *
+     * Alternatively a method can ask to get called with a life Watch
+     * by specifying "const boost::shared_ptr<Watch> &" as parameter
+     * and then calling its setCallback().
      */
     virtual Watch *createWatch(const boost::function<void (void)> &callback) = 0;
  };
