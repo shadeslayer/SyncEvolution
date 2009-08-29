@@ -1,0 +1,18 @@
+   <macro name="VCARD_INCOMING_SCRIPT_EVOLUTION"><![CDATA[
+     // a wordaround for cellphone in evolution. for incoming contacts, if there is only one CELL,
+     // strip the HOME or WORK flag from it. Evolution then should show it. */
+     INTEGER i, wanted, cell_phones;
+     i = 0;
+     cell_phones = 0;
+     while(i < SIZE(TEL_FLAGS)) {
+       // 0x10 is the flag of 'cell' type of telephone
+       if(TEL_FLAGS[i] & 0x10) {
+         cell_phones = cell_phones + 1;
+         wanted = i;
+       }
+       i = i + 1;
+     }
+     if(cell_phones == 1) {
+       TEL_FLAGS[wanted] = 0x10;
+     }
+   ]]></macro>
