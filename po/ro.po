@@ -1,0 +1,509 @@
+# Romanian translations for syncevolution package.
+# Copyright (C) 2009 The syncevolution copyright holder
+# This file is distributed under the same license as the syncevolution package.
+# Cosmin Bordeianu <elloxar@gmail.com>, 2009.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: syncevolution\n"
+"Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
+"POT-Creation-Date: 2009-08-24 09:22+0000\n"
+"PO-Revision-Date: 2009-08-29 18:31+0200\n"
+"Last-Translator: Cosmin Bordeianu <elloxar@gmail.com>\n"
+"Language-Team: Moblin Romania <live@moblin.ro>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-Language: Romanian\n"
+"X-Poedit-Country: ROMANIA\n"
+"X-Poedit-SourceCharset: utf-8\n"
+
+#: ../src/gtk-ui/sync-ui.c:258
+msgid "Addressbook"
+msgstr "Jurnal"
+
+#: ../src/gtk-ui/sync-ui.c:260
+msgid "Calendar"
+msgstr "Calendar"
+
+#: ../src/gtk-ui/sync-ui.c:262
+msgid "Todo"
+msgstr "De făcut"
+
+#: ../src/gtk-ui/sync-ui.c:264
+msgid "Memo"
+msgstr "Momento"
+
+#: ../src/gtk-ui/sync-ui.c:319
+msgid "Failed to save current service in GConf configuration system"
+msgstr "Nu s-a putut salva serviciul de configurare al sistemului actual în GConf"
+
+#: ../src/gtk-ui/sync-ui.c:330
+msgid "Failed to save service configuration to SyncEvolution"
+msgstr "Nu s-a putut salva configurația serviciului pentru SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:415
+msgid "Failed to get service configuration from SyncEvolution"
+msgstr "Nu s-a putut obține configurația serviciului pentru SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:478
+msgid "Failed to remove service configuration from SyncEvolution"
+msgstr "Nu s-a putut șterge configurația serviciului pentru SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:598
+msgid "Service must have a name and server URL"
+msgstr "Serviciul trebuie sa conțină un nume și o adresă de internet"
+
+#. sync is no longer in progress for some reason
+#: ../src/gtk-ui/sync-ui.c:674
+msgid "Failed to cancel: sync was no longer in progress"
+msgstr "Nu s-a putut anula: Sincronizarea nu era în curs de desfășurare"
+
+#: ../src/gtk-ui/sync-ui.c:678
+msgid "Failed to cancel sync"
+msgstr "Nu s-a putut anula sincronizarea"
+
+#: ../src/gtk-ui/sync-ui.c:682
+msgid "Canceling sync"
+msgstr "Anulează sincronizarea"
+
+#: ../src/gtk-ui/sync-ui.c:696
+msgid "Trying to cancel sync"
+msgstr "Încerc să anulez sincronizarea"
+
+#: ../src/gtk-ui/sync-ui.c:703
+#, c-format
+msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
+msgstr "Doriți să ștergeți toate datele locale și să le înlocuiți cu date din %s? Acest lucru nu este, de obicei, recomand."
+
+#: ../src/gtk-ui/sync-ui.c:708
+#, c-format
+msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
+msgstr "Doriți să ștergeți toate datele din %s și să le înlocuiți cu datele dvs. locale? Acest lucru nu este, de obicei, recomand."
+
+#: ../src/gtk-ui/sync-ui.c:725
+msgid "No, cancel sync"
+msgstr "Nu, anulează sincronizarea"
+
+#: ../src/gtk-ui/sync-ui.c:726
+msgid "Yes, delete and replace"
+msgstr "Da, șterge și înlocuiește"
+
+#: ../src/gtk-ui/sync-ui.c:748
+msgid "No sources are enabled, not syncing"
+msgstr "Nu există o sursă activată, nu se sincronizează"
+
+#: ../src/gtk-ui/sync-ui.c:765
+msgid "A sync is already in progress"
+msgstr "O sincronizare este deja în curs de desfășurare"
+
+#: ../src/gtk-ui/sync-ui.c:767
+msgid "Failed to start sync"
+msgstr "Nu s-a putut porni sincronizarea"
+
+#: ../src/gtk-ui/sync-ui.c:772
+msgid "Starting sync"
+msgstr "Pornește sincronizarea"
+
+#: ../src/gtk-ui/sync-ui.c:797
+msgid "Last synced just seconds ago"
+msgstr "Ultima sincronizare a fost făcută acum câteva secunde"
+
+#: ../src/gtk-ui/sync-ui.c:800
+msgid "Last synced a minute ago"
+msgstr "Ultima sincronizare a fost făcută acum un minut"
+
+#: ../src/gtk-ui/sync-ui.c:803
+#, c-format
+msgid "Last synced %ld minutes ago"
+msgstr "Ultima sincronizare a fost făcută acum %ld minute"
+
+#: ../src/gtk-ui/sync-ui.c:806
+msgid "Last synced an hour ago"
+msgstr "Ultima sincronizare a fost făcută acum o oră"
+
+#: ../src/gtk-ui/sync-ui.c:809
+#, c-format
+msgid "Last synced %ld hours ago"
+msgstr "Ultima sincronizare a fost făcută acum %ld ore"
+
+#: ../src/gtk-ui/sync-ui.c:812
+msgid "Last synced a day ago"
+msgstr "Ultima sincronizare a fost făcută acum o zi"
+
+#: ../src/gtk-ui/sync-ui.c:815
+#, c-format
+msgid "Last synced %ld days ago"
+msgstr "Ultima sincronizare a fost făcută acum %ld zile"
+
+#: ../src/gtk-ui/sync-ui.c:900
+msgid "Sync again"
+msgstr "Sincronizează din nou"
+
+#: ../src/gtk-ui/sync-ui.c:902
+#: ../src/gtk-ui/ui.glade.h:29
+msgid "Sync now"
+msgstr "Sincronizează acum"
+
+#: ../src/gtk-ui/sync-ui.c:911
+msgid "Syncing"
+msgstr "Se sincronizează"
+
+#: ../src/gtk-ui/sync-ui.c:917
+msgid "Cancel sync"
+msgstr "Anulează sincronizarea"
+
+#. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
+#: ../src/gtk-ui/sync-ui.c:1261
+#, c-format
+msgid "%s (not supported by this service)"
+msgstr "%s (serviciul nu suportă)"
+
+#: ../src/gtk-ui/sync-ui.c:1294
+#, c-format
+msgid "There was one remote rejection."
+msgid_plural "There were %d remote rejections."
+msgstr[0] "A existat o respingere de la distanţă."
+msgstr[1] "Au existat %d respingeri de la distanţă."
+
+#: ../src/gtk-ui/sync-ui.c:1299
+#, c-format
+msgid "There was one local rejection."
+msgid_plural "There were %d local rejections."
+msgstr[0] "A existat o respingere locală."
+msgstr[1] "Au existat %d respingeri locale."
+
+#: ../src/gtk-ui/sync-ui.c:1304
+#, c-format
+msgid "There were %d local rejections and %d remote rejections."
+msgstr "Au existat %d respingeri locale și %d respingeri de la distanță."
+
+#: ../src/gtk-ui/sync-ui.c:1309
+#, c-format
+msgid "Last time: No changes."
+msgstr "Ultima dată: Nici o schimbare"
+
+#: ../src/gtk-ui/sync-ui.c:1311
+#, c-format
+msgid "Last time: Sent one change."
+msgid_plural "Last time: Sent %d changes."
+msgstr[0] "Ultima dată: A fost trimisă o modificare"
+msgstr[1] "Ultima dată: Au fost trimise %d modificări."
+
+#: ../src/gtk-ui/sync-ui.c:1316
+#, c-format
+msgid "Last time: Received one change."
+msgid_plural "Last time: Received %d changes."
+msgstr[0] "Ultima dată: A fost primită o modificare."
+msgstr[1] "Ultima dată: Au fost primite %d modificări."
+
+#: ../src/gtk-ui/sync-ui.c:1321
+#, c-format
+msgid "Last time: Received %d changes and sent %d changes."
+msgstr "Ultima dată: Au fost primite %d modificări și %d au fost trimise."
+
+#: ../src/gtk-ui/sync-ui.c:1413
+msgid "Failed to get server configuration from SyncEvolution"
+msgstr "Nu am putut să retrag configurația serverului de la SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:1479
+msgid "New service"
+msgstr "Serviciu nou"
+
+#: ../src/gtk-ui/sync-ui.c:1523
+msgid "Server URL"
+msgstr "Adresa Serverului"
+
+#. TRANSLATORS: placeholder is a source name in settings window
+#: ../src/gtk-ui/sync-ui.c:1543
+#, c-format
+msgid "%s URI"
+msgstr "%s adrese"
+
+#: ../src/gtk-ui/sync-ui.c:1678
+#: ../src/gtk-ui/ui.glade.h:17
+msgid "Launch website"
+msgstr "Lansează site-ul"
+
+#: ../src/gtk-ui/sync-ui.c:1682
+msgid "Setup and use"
+msgstr "Configurează și folosește"
+
+#: ../src/gtk-ui/sync-ui.c:1728
+msgid "Failed to get list of manually setup services from SyncEvolution"
+msgstr "Nu am putut retrage lista de configurări manuale ale serviciilor de la SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:1769
+msgid "Failed to get list of supported services from SyncEvolution"
+msgstr "Nu am putut retrage lista cu servicii suportate de la SyncEvolution"
+
+#. TODO: this is a hack... SyncEnd should be a signal of it's own,
+#. not just hacked on top of the syncevolution error codes
+#: ../src/gtk-ui/sync-ui.c:1930
+msgid "Service configuration not found"
+msgstr "Nu a fost găsită configurația serviciului"
+
+#: ../src/gtk-ui/sync-ui.c:1936
+msgid "Not authorized"
+msgstr "Nu aveți autorizație"
+
+#: ../src/gtk-ui/sync-ui.c:1938
+msgid "Forbidden"
+msgstr "Interzis"
+
+#: ../src/gtk-ui/sync-ui.c:1940
+msgid "Not found"
+msgstr "Nu a fost găsit(ă)"
+
+#: ../src/gtk-ui/sync-ui.c:1942
+msgid "Fatal database error"
+msgstr "Eroare fatală la baza de date"
+
+#: ../src/gtk-ui/sync-ui.c:1944
+msgid "Database error"
+msgstr "Eroare la baza de date"
+
+#: ../src/gtk-ui/sync-ui.c:1946
+msgid "No space left"
+msgstr "Nu mai există spațiu"
+
+#. TODO identify problem item somehow ?
+#: ../src/gtk-ui/sync-ui.c:1949
+msgid "Failed to process SyncML"
+msgstr "Nu s-a putut procesa SyncML"
+
+#: ../src/gtk-ui/sync-ui.c:1951
+msgid "Server authorization failed"
+msgstr "Autorizaţia serverului nu a reuşit"
+
+#: ../src/gtk-ui/sync-ui.c:1953
+msgid "Failed to parse configuration file"
+msgstr "Nu s-a putut interpreta fișierul de configurare"
+
+#: ../src/gtk-ui/sync-ui.c:1955
+msgid "Failed to read configuration file"
+msgstr "Nu s-a putut citi fișierul de configurare"
+
+#: ../src/gtk-ui/sync-ui.c:1957
+msgid "No configuration found"
+msgstr "Nu s-a găsit nici o configurare"
+
+#: ../src/gtk-ui/sync-ui.c:1959
+msgid "No configuration file found"
+msgstr "Nu s-a găsit nici un fișier de configurare"
+
+#: ../src/gtk-ui/sync-ui.c:1961
+msgid "Server sent bad content"
+msgstr "Serverul a trimis conținut eronat"
+
+#: ../src/gtk-ui/sync-ui.c:1963
+msgid "Transport failure (no connection?)"
+msgstr "Transport eșuat (nici o conexiune?)"
+
+#: ../src/gtk-ui/sync-ui.c:1965
+msgid "Connection timed out"
+msgstr "Timpul acordat conectării a expirat"
+
+#: ../src/gtk-ui/sync-ui.c:1967
+msgid "Connection certificate has expired"
+msgstr "Certificatul conexiunii a expirat"
+
+#: ../src/gtk-ui/sync-ui.c:1969
+msgid "Connection certificate is invalid"
+msgstr "Certificatul conexiunii este invalid"
+
+#: ../src/gtk-ui/sync-ui.c:1972
+msgid "Connection failed"
+msgstr "Conexiunea a eșuat"
+
+#: ../src/gtk-ui/sync-ui.c:1974
+msgid "URL is bad"
+msgstr "Adresa este greșită"
+
+#: ../src/gtk-ui/sync-ui.c:1976
+msgid "Server not found"
+msgstr "Serverul nu a fost găsit"
+
+#: ../src/gtk-ui/sync-ui.c:1978
+#, c-format
+msgid "Error %d"
+msgstr "Eroare %d"
+
+#: ../src/gtk-ui/sync-ui.c:1988
+msgid "Sync D-Bus service exited unexpectedly"
+msgstr "Procesul de sincronizare a serviciului D-Bus s-a întrerupt pe neașteptate"
+
+#: ../src/gtk-ui/sync-ui.c:1991
+#: ../src/gtk-ui/sync-ui.c:2042
+msgid "Sync Failed"
+msgstr "Sincronizarea a eșuat"
+
+#: ../src/gtk-ui/sync-ui.c:2034
+msgid "Sync complete"
+msgstr "Sincronizarea este completă"
+
+#: ../src/gtk-ui/sync-ui.c:2039
+msgid "Sync canceled"
+msgstr "Sincronizarea a fost amânată"
+
+#. NOTE extra1 can be error here
+#: ../src/gtk-ui/sync-ui.c:2057
+msgid "Ending sync"
+msgstr "Terminare sincronizare"
+
+#. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
+#: ../src/gtk-ui/sync-ui.c:2081
+#, c-format
+msgid "Preparing '%s'"
+msgstr "Prepară '%s'"
+
+#. TRANSLATORS: placeholder is a source name in a progress text
+#: ../src/gtk-ui/sync-ui.c:2093
+#, c-format
+msgid "Sending '%s'"
+msgstr "Se trimite '%s'"
+
+#. TRANSLATORS: placeholder is a source name in a progress text
+#: ../src/gtk-ui/sync-ui.c:2105
+#, c-format
+msgid "Receiving '%s'"
+msgstr "Se primește '%s'"
+
+#: ../src/gtk-ui/ui.glade.h:1
+msgid "<b>Data</b>"
+msgstr "<b>Date</b>"
+
+#: ../src/gtk-ui/ui.glade.h:2
+msgid "<b>No sync service in use</b>"
+msgstr "<b>Nici un serviciu de sincronizare în curs</b>"
+
+#: ../src/gtk-ui/ui.glade.h:3
+msgid "<b>Sync failure</b>"
+msgstr "<b>Sincronizare eșuată</b>"
+
+#: ../src/gtk-ui/ui.glade.h:4
+msgid "<b>Type of Sync</b>"
+msgstr "<b>Tipul de sincronizare</b>"
+
+#: ../src/gtk-ui/ui.glade.h:5
+msgid "<big>Manual setup</big>"
+msgstr "<big>Configurare manuală</big>"
+
+#: ../src/gtk-ui/ui.glade.h:6
+msgid "<big>Supported services</big>"
+msgstr "<big>Servicii suportate</big>"
+
+#: ../src/gtk-ui/ui.glade.h:7
+msgid "Add new service"
+msgstr "Adaugă un nou dispozitiv"
+
+#: ../src/gtk-ui/ui.glade.h:8
+msgid "Back to sync"
+msgstr "Înapoi la sincronizare"
+
+#: ../src/gtk-ui/ui.glade.h:9
+msgid ""
+"Change sync\n"
+"service"
+msgstr ""
+"Schimbă serviciul\n"
+"de sincronizare"
+
+#: ../src/gtk-ui/ui.glade.h:11
+msgid "Delete all local data and replace it with remote data"
+msgstr "Șterge toate datele locale și înlocuieștele cu date de la distanţă"
+
+#: ../src/gtk-ui/ui.glade.h:12
+msgid "Delete all remote data and replace it with local data"
+msgstr "Șterge toate datele de la distanță și înlocuieștele cu date locale"
+
+#: ../src/gtk-ui/ui.glade.h:13
+msgid "Delete this service"
+msgstr "Șterge acest serviciu"
+
+#: ../src/gtk-ui/ui.glade.h:14
+msgid "Edit service settings"
+msgstr "Modifică setările serviciului"
+
+#: ../src/gtk-ui/ui.glade.h:15
+msgid ""
+"If you don't see your service above but know that your sync provider uses SyncML\n"
+"you can setup a service manually."
+msgstr ""
+"Dacă nu puteți vedea serviciul dvs. mai sus, dar ştiți că furnizorul dvs. de sincronizări utilizează tehnologia SyncML\n"
+"puteţi configura un serviciu manual."
+
+#: ../src/gtk-ui/ui.glade.h:18
+msgid "Merge local and remote data (recommended)"
+msgstr "Fuzionează datele locale cu cele la distanţă (recomandat)"
+
+#: ../src/gtk-ui/ui.glade.h:19
+msgid "Password"
+msgstr "Parolă"
+
+#: ../src/gtk-ui/ui.glade.h:20
+msgid "Reset original server settings"
+msgstr "Restabilește setările implicite ale serverului"
+
+#: ../src/gtk-ui/ui.glade.h:21
+msgid "Save and use this service"
+msgstr "Salvează și folosește acest serviciu"
+
+#: ../src/gtk-ui/ui.glade.h:22
+msgid "Server settings"
+msgstr "Setările serverului"
+
+#: ../src/gtk-ui/ui.glade.h:23
+msgid "Service name"
+msgstr "Numele serviciului"
+
+#: ../src/gtk-ui/ui.glade.h:24
+msgid "Setup sync service"
+msgstr "Configurează serviciul de sincronizare"
+
+#: ../src/gtk-ui/ui.glade.h:25
+msgid ""
+"Sorry, you need an internet\n"
+"connection to sync."
+msgstr ""
+"Ne pare rău, aveți nevoie de o conexiune\n"
+"la internet pentru sincronizare"
+
+#: ../src/gtk-ui/ui.glade.h:27
+msgid "Stop using this service"
+msgstr "Nu mai folosiți acest serviciu"
+
+#: ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/sync.desktop.in.h:1
+msgid "Sync"
+msgstr "Sincronizare"
+
+#: ../src/gtk-ui/ui.glade.h:30
+msgid "Synchronization is not available (D-Bus service does not answer), sorry."
+msgstr "Sincronizarea nu este accesibilă (Serviciul D-Bus nu răspunde), ne pare rău."
+
+#: ../src/gtk-ui/ui.glade.h:31
+msgid ""
+"To sync you'll need a network connection and an account with a sync service.\n"
+"We support the following services: "
+msgstr ""
+"Pentru a sincroniza aveți nevoie de o conexiune la rețea și un cont cu servicii de sincronizare.\n"
+"Noi sprijinim următoarele servicii: "
+
+#: ../src/gtk-ui/ui.glade.h:33
+msgid "Username"
+msgstr "Utilizator"
+
+#: ../src/gtk-ui/ui.glade.h:34
+msgid ""
+"You haven't set up a sync service yet. Sync services let you \n"
+"synchronize your data between your netbook and a web service."
+msgstr ""
+"Nu ați înfiinţat încă nici un serviciu de sincronizare. Serviciile de sincronizare vă permit să \n"
+"sincronizați datele dvs. între netbookul dvs. şi un serviciu de web."
+
+#: ../src/gtk-ui/sync.desktop.in.h:2
+msgid "Up to date"
+msgstr "La zi"
+
