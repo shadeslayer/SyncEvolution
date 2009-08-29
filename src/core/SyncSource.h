@@ -439,6 +439,12 @@ class SyncSourceBase : public Logger {
 
         /** name of the field list used by the datatypes */
         std::string m_fieldlist;
+
+        /** name of incoming script */
+        std::string m_incomingScript;
+
+        /** name of outgoing script */
+        std::string m_outgoingScript;
     };
 
     /**
