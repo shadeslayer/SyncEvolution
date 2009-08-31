@@ -515,6 +515,8 @@ class ClientTest {
          * of tests.
          */
         bool retrySync;
+        bool suspendSync;
+        bool resendSync;
     };
 
     /**

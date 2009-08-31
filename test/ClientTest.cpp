@@ -1481,7 +1481,7 @@ void SyncTests::addTests() {
             addTest(FilterTest(retryTests));
         }
 
-        if (config.retrySync &&
+        if (config.suspendSync &&
             config.insertItem &&
             config.updateItem &&
             accessClientB &&
@@ -1498,7 +1498,7 @@ void SyncTests::addTests() {
             addTest(FilterTest(suspendTests));
         }
 
-        if (config.retrySync &&
+        if (config.resendSync &&
                 config.insertItem &&
                 config.updateItem &&
                 accessClientB &&
@@ -3253,7 +3253,12 @@ void ClientTest::getTestData(const char *type, Config &config)
     memset(&config, 0, sizeof(config));
     char *numitems = getenv("CLIENT_TEST_NUM_ITEMS");
     config.numItems = numitems ? atoi(numitems) : 100;
-    config.retrySync = true;
+    char *env = getenv("CLIENT_TEST_RETRY");
+    config.retrySync = (env && !strcmp (env, "t")) ?true :false;
+    env = getenv("CLIENT_TEST_RESEND");
+    config.resendSync = (env && !strcmp (env, "t")) ?true :false;
+    env = getenv("CLIENT_TEST_SUSPEND");
+    config.suspendSync = (env && !strcmp (env, "t")) ?true :false;
     config.sourceKnowsItemSemantic = true;
     config.itemType = "";
     config.import = import;
