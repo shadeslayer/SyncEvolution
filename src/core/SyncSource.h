@@ -440,10 +440,25 @@ class SyncSourceBase : public Logger {
         /** name of the field list used by the datatypes */
         std::string m_fieldlist;
 
-        /** name of incoming script */
+        /**
+         * One or more Synthesis script statements, separated
+         * and terminated with a semicolon. Can be left empty.
+         *
+         * If not empty, then these statements are executed directly
+         * before converting the current item fields into
+         * a single string with MAKETEXTWITHPROFILE() in the sync source's
+         * <beforewritescript> (see SyncSourceBase::getDatastoreXML()).
+         *
+         * This value is currently only used by sync sources which
+         * set m_profile.
+         */
         std::string m_incomingScript;
 
-        /** name of outgoing script */
+        /**
+         * Same as m_incomingScript, but used directly after
+         * converting a string into fields with PARSETEXTWITHPROFILE()
+         * in <afterreadscript>.
+         */
         std::string m_outgoingScript;
     };
 
