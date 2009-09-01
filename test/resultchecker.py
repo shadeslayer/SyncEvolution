@@ -38,16 +38,20 @@ def check (resultdir, serverlist,resulturi, srcdir, shellprefix):
     if(os.path.isfile(resultdir+"/output.txt")==False):
         print "main test output file not exist!"
     else:
-        indents,cont = step1(resultdir+"/output.txt",result,indents,resultdir, resulturi)
+        indents,cont = step1(resultdir+"/output.txt",result,indents,resultdir,resulturi, shellprefix, srcdir)
         if (cont):
             step2(resultdir,result,servers,indents,srcdir,shellprefix)
     result.write('''</nightly-test>\n''')
     result.close()
 
-def step1(input, result, indents, dir, resulturi):
+def step1(input, result, indents, dir, resulturi, shellprefix, srcdir):
     '''Step1 of the result checking, collect system information and 
     check the preparation steps (fetch, compile)'''
     cont = True
+    # get the chroot envoriment
+    root = ''
+    if(shellprefix.split()[0] == 'schroot'):
+        root = shellprefix.split()[3]
     indent =indents[-1]+space
     indents.append(indent)
     result.write(indent+'''<platform-info>\n''')
@@ -68,6 +72,24 @@ def step1(input, result, indents, dir, resulturi):
     s = fout.read()
     result.write(indent+s)
     result.write(indent+'''</osinfo>\n''')
+    if(len(root) > 0):
+        result.write(indent+'''<chrootinfo>\n''')
+        fout,fin=popen2.popen2('schroot -i -c'+root+" |grep 'Description'")
+        s = fout.read()
+        s = s + ' name: '+root;
+        result.write(indent+s)
+        result.write(indent+'''</chrootinfo>\n''')
+    result.write(indent+'''<libraryinfo>\n''')
+    libs = ['libsoup-2.4', 'evolution-data-server-1.2', 'glib-2.0','dbus-glib-1']
+    s=''
+    oldpath = os.getcwd()
+    os.chdir(srcdir)
+    for lib in libs:
+        fout,fin=popen2.popen2(shellprefix+' pkg-config --modversion '+lib +' |grep -v pkg-config')
+        s = s + lib +': '+fout.read() +'  '
+    os.chdir(oldpath)
+    result.write(indent+s)
+    result.write(indent+'''</libraryinfo>\n''')
     indents.pop()
     indent = indents[-1]
     result.write(indent+'''</platform-info>\n''')
@@ -204,7 +226,9 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix):
                     indents.append(indent)
                     casename = case.rpartition('_')[2].partition('.')[0]
                     result.write(indent+'<'+casename+'>')
-                    if(os.system('''grep -q 'Failure' '''+case)):
+                    match=case.rpartition('/')[2].rpartition('.')[0].replace('_','::')
+                    match=match+": \*\*\* fail"
+                    if(os.system("grep -q '" + match + "' "+case)):
                        result.write('okay')
                     else:
                         result.write('failed')
