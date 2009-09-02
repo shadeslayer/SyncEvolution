@@ -45,7 +45,7 @@
       cell_phones = 0;
       while(i < SIZE(TEL_FLAGS)) {
         // 0x10 is the flag of 'cell' type of telephone
-        if(TEL_FLAGS[i] | 0x10) {
+        if(TEL_FLAGS[i] & 0x10) {
           cell_phones = cell_phones + 1;
           wanted = i;
         }
