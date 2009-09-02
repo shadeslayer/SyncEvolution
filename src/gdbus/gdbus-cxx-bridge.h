@@ -534,6 +534,7 @@ template<class host, int dbus> struct basic_marshal
 
     typedef host host_type;
     typedef host arg_type;
+    static const int dbus_type = dbus;
 };
 
 template<> struct dbus_traits<uint8_t> :
@@ -717,6 +718,61 @@ template <> struct dbus_traits<Caller_t>
 
     typedef Caller_t host_type;
     typedef const Caller_t &arg_type;
+};
+
+/**
+ * Pass array of basic type plus its number of entries.
+ * Can only be used in cases where the caller owns the
+ * memory and can discard it when the call returns, in
+ * other words, for method calls, asynchronous replys and
+ * signals, but not for return values.
+ */
+template<class V> struct dbus_traits< std::pair<size_t, const V *> >
+{
+    static std::string getContainedType()
+    {
+        return dbus_traits<V>::getType();
+    }
+    static std::string getType()
+    {
+        return std::string("a") +
+            dbus_traits<V>::getType();
+    }
+    static std::string getSignature() {return getType(); }
+    static std::string getReply() { return ""; }
+    typedef std::pair<size_t, const V *> host_type;
+    typedef const host_type &arg_type;
+
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &array)
+    {
+        if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_ARRAY) {
+            throw std::runtime_error("invalid argument");
+        }
+        DBusMessageIter sub;
+        dbus_message_iter_recurse(&iter, &sub);
+        int type = dbus_message_iter_get_arg_type(&sub);
+        if (type != dbus_traits<V>::dbus_type) {
+            throw std::runtime_error("invalid argument");
+        }
+        int nelements;
+        typename dbus_traits<V>::host_type *data;
+        dbus_message_iter_get_fixed_array(&sub, &data, &nelements);
+        array.first = nelements;
+        array.second = data;
+        dbus_message_iter_next(&iter);
+    }
+
+    static void append(DBusMessageIter &iter, arg_type array) {}
+
+    static void append_retval(DBusMessageIter &iter, arg_type array)
+    {
+        DBusMessageIter sub;
+        if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, getContainedType().c_str(), &sub) ||
+            !dbus_message_iter_append_fixed_array(&sub, dbus_traits<V>::dbus_type, &array.second, array.first) ||
+            !dbus_message_iter_close_container(&iter, &sub)) {
+            throw std::runtime_error("out of memory");
+        }
+    }
 };
 
 /**
