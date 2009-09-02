@@ -536,8 +536,8 @@ template<class host, int dbus> struct basic_marshal
     typedef host arg_type;
 };
 
-template<> struct dbus_traits<int8_t> :
-    public basic_marshal< int8_t, DBUS_TYPE_BYTE >
+template<> struct dbus_traits<uint8_t> :
+    public basic_marshal< uint8_t, DBUS_TYPE_BYTE >
 {
     /**
      * plain type, regardless of whether used as
@@ -556,6 +556,19 @@ template<> struct dbus_traits<int8_t> :
     static std::string getReply() { return ""; }
     
 };
+
+/** if the app wants to use signed char, let it and treat it like a byte */
+template<> struct dbus_traits<int8_t> : dbus_traits<uint8_t>
+{
+    typedef int8_t host_type;
+    typedef int8_t arg_type;
+
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &value)
+    {
+        dbus_traits<uint8_t>::get(conn, msg, iter, reinterpret_cast<uint8_t &>(value));
+    }
+};
+
 template<> struct dbus_traits<int16_t> :
     public basic_marshal< int16_t, DBUS_TYPE_INT16 >
 {
