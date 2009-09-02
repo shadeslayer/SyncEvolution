@@ -269,6 +269,9 @@ gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag)
 
 	DBG("connection %p tag %d", connection, tag);
 
+	if (connection_slot < 0)
+		return FALSE;
+
 	data = dbus_connection_get_data(connection, connection_slot);
 	if (data == NULL)
 		return FALSE;
@@ -387,9 +390,14 @@ static void disconnect_function(DBusConnection *connection, void *user_data)
 {
 	DisconnectData *data = user_data;
 
+	// The callback function might remove the watch,
+	// which invalidates the data pointer. Remember
+	// the ID.
+	guint id = data->id;
+
 	data->function(connection, data->user_data);
 
-	g_dbus_remove_watch(connection, data->id);
+	g_dbus_remove_watch(connection, id);
 }
 
 static void disconnect_release(void *user_data)
