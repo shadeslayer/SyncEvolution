@@ -21,7 +21,7 @@
 #define INCL_ADDRESSBOOKSOURCE
 
 #include <config.h>
-#include "TrackingSyncSource.h"
+#include <syncevo/TrackingSyncSource.h>
 
 #ifdef ENABLE_ADDRESSBOOK
 

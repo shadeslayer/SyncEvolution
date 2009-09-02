@@ -29,11 +29,11 @@ using namespace std;
 
 #ifdef ENABLE_EBOOK
 
-#include "EvolutionSyncClient.h"
+#include <syncevo/EvolutionSyncClient.h>
 #include "EvolutionContactSource.h"
-#include "SyncEvolutionUtil.h"
+#include <syncevo/SyncEvolutionUtil.h>
 
-#include "Logging.h"
+#include <syncevo/Logging.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/join.hpp>

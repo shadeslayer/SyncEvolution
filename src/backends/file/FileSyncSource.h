@@ -20,7 +20,7 @@
 #ifndef INCL_FILESYNCSOURCE
 #define INCL_FILESYNCSOURCE
 
-#include "TrackingSyncSource.h"
+#include <syncevo/TrackingSyncSource.h>
 
 #ifdef ENABLE_FILE
 

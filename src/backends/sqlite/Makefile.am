@@ -1,11 +1,11 @@
-AM_CPPFLAGS = -I$(srcdir)/../../core -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../../ -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
 SYNCSOURCES = syncsqlite.la
 MOSTLYCLEANFILES = $(SYNCSOURCES)
 if ENABLE_MODULES
-pkglib_LTLIBRARIES = $(SYNCSOURCES)
+backend_LTLIBRARIES = $(SYNCSOURCES)
 else
 noinst_LTLIBRARIES = $(SYNCSOURCES)
 endif
@@ -20,7 +20,7 @@ SYNCSQLITE_SOURCES = \
 
 syncsqlite_la_SOURCES = $(SYNCSQLITE_SOURCES)
 syncsqlite_la_LIBADD = $(SQLITE_LIBS)
-syncsqlite_la_LDFLAGS = -module -rpath '$(pkglibdir)'
+syncsqlite_la_LDFLAGS = -module -avoid-version
 syncsqlite_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
 # SQLiteContactSource does not support all fields from Funambol vCard 2.1

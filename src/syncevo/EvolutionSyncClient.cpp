@@ -1520,6 +1520,7 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
             SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv(), getDevType());
             SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
             SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
+            SE_LOG_DEV(NULL, NULL, "%s", SyncSourceBackendsDebug());
 
             // instantiate backends, but do not open them yet
             initSources(sourceList);

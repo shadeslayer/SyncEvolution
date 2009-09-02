@@ -28,13 +28,14 @@ using namespace std;
 // include first, it sets HANDLE_LIBICAL_MEMORY for us
 #include "libical/icalstrdup.h"
 
-#include "EvolutionSyncClient.h"
+#include <syncevo/EvolutionSyncClient.h>
+#include <syncevo/EvolutionSmartPtr.h>
+#include <syncevo/Logging.h>
+
 #include "EvolutionCalendarSource.h"
 #include "EvolutionMemoSource.h"
-#include "EvolutionSmartPtr.h"
 #include "e-cal-check-timezones.h"
 
-#include "Logging.h"
 
 #include <boost/foreach.hpp>
 

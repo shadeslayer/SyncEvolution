@@ -109,10 +109,10 @@ enum {
 # define PersonCreateWrapper(_addressbook) ABPersonCreate()
 # define PersonSetImageDataWrapper(_person, _dataref) ABPersonSetImageData(_person, _dataref)
 #endif
-#include "EvolutionSyncClient.h"
+#include <syncevo/EvolutionSyncClient.h>
 #include "AddressBookSource.h"
 
-#include "Logging.h"
+#include <syncevo/Logging.h>
 #include <common/base/util/StringBuffer.h>
 #include "vocl/VConverter.h"
 

@@ -21,12 +21,10 @@
 #ifndef INCL_EVOLUTIONSYNCCLIENT
 #define INCL_EVOLUTIONSYNCCLIENT
 
-#include <config.h>
-
-#include "EvolutionSmartPtr.h"
-#include "SyncEvolutionConfig.h"
-#include "SyncML.h"
-#include "SynthesisEngine.h"
+#include <syncevo/EvolutionSmartPtr.h>
+#include <syncevo/SyncEvolutionConfig.h>
+#include <syncevo/SyncML.h>
+#include <syncevo/SynthesisEngine.h>
 
 #include <string>
 #include <set>

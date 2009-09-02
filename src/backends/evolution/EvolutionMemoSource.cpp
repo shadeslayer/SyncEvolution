@@ -26,9 +26,8 @@ using namespace std;
 #ifdef ENABLE_ECAL
 
 #include "EvolutionMemoSource.h"
-#include "EvolutionSmartPtr.h"
 
-#include "Logging.h"
+#include <syncevo/Logging.h>
 
 void EvolutionMemoSource::readItem(const string &luid, std::string &item, bool raw)
 {

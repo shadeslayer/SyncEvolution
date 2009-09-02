@@ -1,11 +1,11 @@
-AM_CPPFLAGS = -I$(srcdir)/../../core -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../../ -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
 SYNCSOURCES = syncecal.la syncebook.la
 MOSTLYCLEANFILES = $(SYNCSOURCES)
 if ENABLE_MODULES
-pkglib_LTLIBRARIES = $(SYNCSOURCES)
+backend_LTLIBRARIES = $(SYNCSOURCES)
 else
 noinst_LTLIBRARIES = $(SYNCSOURCES)
 endif
@@ -35,18 +35,19 @@ SYNCEBOOK_SOURCES = \
 	EvolutionContactSource.cpp
 
 syncecal_la_SOURCES = $(SYNCECAL_SOURCES)
-syncecal_la_LIBADD = @ECAL_LIBS@ ../../core/libsyncevolution.la
+syncecal_la_LIBADD = @ECAL_LIBS@ ../../syncevo/libsyncevolution.la
 # _GNU_SOURCE and -ldl for libical.c + dlsym():
 syncecal_la_CPPFLAGS = -D_GNU_SOURCE \
 	-De_cal_check_timezones=syncevolution_check_timezones \
 	-De_cal_tzlookup_ecal=syncevolution_tzlookup_ecal \
 	-De_cal_tzlookup_icomp=syncevolution_tzlookup_icomp \
 	-De_cal_match_tzid=syncevolution_match_tzid \
+	-DENABLE_INTEGRATION_TESTS \
 	$(AM_CPPFLAGS)
-syncecal_la_LDFLAGS = -module -rpath '$(pkglibdir)' -ldl
+syncecal_la_LDFLAGS = -module -avoid-version -ldl
 syncecal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 
 syncebook_la_SOURCES = $(SYNCEBOOK_SOURCES)
-syncebook_la_LIBADD = $(EBOOK_LIBS) ../../core/libsyncevolution.la
-syncebook_la_LDFLAGS = -module -rpath '$(pkglibdir)'
-syncebook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
+syncebook_la_LIBADD = $(EBOOK_LIBS) ../../syncevo/libsyncevolution.la
+syncebook_la_LDFLAGS = -module -avoid-version 
+syncebook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) -DENABLE_INTEGRATION_TESTS

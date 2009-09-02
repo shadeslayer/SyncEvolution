@@ -20,12 +20,12 @@
 #ifndef INCL_EVOLUTION_FILTER_CONFIG_NODE
 # define INCL_EVOLUTION_FILTER_CONFIG_NODE
 
-#include <ConfigNode.h>
+#include <syncevo/ConfigNode.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "SyncEvolutionUtil.h"
+#include <syncevo/SyncEvolutionUtil.h>
 
 #include <map>
 #include <utility>

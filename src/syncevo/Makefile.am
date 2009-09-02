@@ -1,4 +1,4 @@
-AM_CPPFLAGS = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test
+AM_CPPFLAGS = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test -I$(top_srcdir)/src -DSYNCEVO_BACKEND=\"$(backendsearchdir)\"
 
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library
@@ -18,7 +18,7 @@ else
 noinst_LTLIBRARIES = libsyncevolution.la
 endif
 
-CORE_SOURCES  = \
+SYNCEVOLUTION_SOURCES  = \
 	ConfigTree.h \
 	ConfigNode.h \
 	HashConfigNode.h \
@@ -84,9 +84,27 @@ CORE_SOURCES  = \
 	TrackingSyncSource.h \
 	TrackingSyncSource.cpp
 
+libsyncevolution_includedir= $(includedir)/syncevo
+libsyncevolution_include_HEADERS= TrackingSyncSource.h  \
+								  FilterConfigNode.h \
+								  SyncEvolutionConfig.h \
+								  SyncSource.h \
+								  SyncEvolutionUtil.h \
+								  EvolutionSyncClient.h \
+								  SynthesisEngine.h \
+								  Logging.h \
+								  SyncML.h \
+								  eds_abi_wrapper.h \
+								  EvolutionSmartPtr.h \
+								  ConfigNode.h 
 
-libsyncevolution_la_SOURCES = $(CORE_SOURCES)
-libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ $(TRANSPORT_LIBS) @LIBS@ $(SYNTHESIS_LIBS) $(SYNCEVOLUTION_LDADD)
+pkgconfigdir=$(libdir)/pkgconfig
+pkgconfig_DATA=syncevolution.pc
+DISTCLEANFILES =syncevolution.pc
+EXTRA_DIST =syncevolution.pc.in
+
+libsyncevolution_la_SOURCES = $(SYNCEVOLUTION_SOURCES)
+libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ $(SYNTHESIS_LIBS) $(TRANSPORT_LIBS) @LIBS@ $(SYNCEVOLUTION_LDADD)
 libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
 libsyncevolution_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEMPLATE_DIR=\""$(sysconfdir)/default/syncevolution"\" -DLIBDIR=\""$(libdir)"\"
 

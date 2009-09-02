@@ -21,7 +21,7 @@
 #define INCL_EVOLUTIONMEMOSOURCE
 
 #include <config.h>
-#include "EvolutionCalendarSource.h"
+#include <EvolutionCalendarSource.h>
 
 #ifdef ENABLE_ECAL
 

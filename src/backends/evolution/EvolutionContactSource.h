@@ -23,7 +23,7 @@
 
 #include <config.h>
 #include "EvolutionSyncSource.h"
-#include "EvolutionSmartPtr.h"
+#include <syncevo/EvolutionSmartPtr.h>
 
 #include <boost/noncopyable.hpp>
 

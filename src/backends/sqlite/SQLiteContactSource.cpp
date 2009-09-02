@@ -19,13 +19,13 @@
  */
 
 #include "config.h"
-#include "SyncSource.h"
+#include <syncevo/SyncSource.h>
 
 #ifdef ENABLE_SQLITE
 
 #include "SQLiteContactSource.h"
 
-#include "Logging.h"
+#include <syncevo/Logging.h>
 #include "vocl/VConverter.h"
 
 #include <algorithm>

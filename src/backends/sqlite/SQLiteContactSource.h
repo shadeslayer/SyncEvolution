@@ -20,7 +20,7 @@
 #ifndef INCL_SQLITECONTACTSOURCE
 #define INCL_SQLITECONTACTSOURCE
 
-#include "TrackingSyncSource.h"
+#include <syncevo/TrackingSyncSource.h>
 #include "SQLiteUtil.h"
 
 #ifdef ENABLE_SQLITE

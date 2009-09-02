@@ -20,7 +20,7 @@
 #ifndef INCL_SYNC_EVOLUTION_CONFIG
 # define INCL_SYNC_EVOLUTION_CONFIG
 
-#include "FilterConfigNode.h"
+#include <syncevo/FilterConfigNode.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>

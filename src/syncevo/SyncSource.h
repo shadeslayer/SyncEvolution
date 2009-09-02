@@ -21,10 +21,9 @@
 #ifndef INCL_SYNCSOURCE
 #define INCL_SYNCSOURCE
 
-#include "config.h"
-#include "SyncEvolutionConfig.h"
-#include "Logging.h"
-#include "SyncML.h"
+#include <syncevo/SyncEvolutionConfig.h>
+#include <syncevo/Logging.h>
+#include <syncevo/SyncML.h>
 using namespace SyncEvolution;
 
 #include <synthesis/sync_declarations.h>
@@ -156,20 +155,253 @@ class RegisterSyncSource
 };
     
 typedef list<const RegisterSyncSource *> SourceRegistry;
-
-
-#ifdef ENABLE_INTEGRATION_TESTS
-#include <ClientTest.h>
-typedef ClientTest::Config ClientTestConfig;
-#else
-/**
- * this class doesn't exist and cannot be referenced in code which is 
- * compiled without ENABLE_INTEGRATION_TEST, but we only need to
- * declare a reference to it, so that's okay
- */
-class ClientTestConfig;
 class ClientTest;
+class TestingSyncSource;
+
+/**
+ * Information about a data source. For the sake of simplicity all
+ * items pointed to are owned by the ClientTest and must
+ * remain valid throughout a test session. Not setting a pointer
+ * is okay, but it will disable all tests that need the
+ * information.
+ */
+struct ClientTestConfig{
+    /**
+     * The name is used in test names and has to be set.
+     */
+    const char *sourceName;
+
+    /**
+     * A default URI to be used when creating a client config.
+     */
+    const char *uri;
+
+    /**
+     * A corresponding source name in the default server template,
+     * this is used to copy corresponding uri set in the server template
+     * instead of the uri field above (which is the same for all servers).
+     */
+    const char *sourceNameServerTemplate;
+
+    /**
+     * A member function of a subclass which is called to create a
+     * sync source referencing the data. This is used in tests of
+     * the SyncSource API itself as well as in tests which need to
+     * modify or check the data sources used during synchronization.
+     *
+     * The test framework will call beginSync() and then some of
+     * the functions it wants to test. After a successful test it
+     * will call endSync() which is then expected to store all
+     * changes persistently. Creating a sync source again
+     * with the same call should not report any
+     * new/updated/deleted items until such changes are made via
+     * another sync source.
+     *
+     * The instance will be deleted by the caller. Because this
+     * may be in the error case or in an exception handler,
+     * the sync source's desctructor should not thow exceptions.
+     *
+     * @param client    the same instance to which this config belongs
+     * @param source    index of the data source (from 0 to ClientTest::getNumSources() - 1)
+     * @param isSourceA true if the requested SyncSource is the first one accessing that
+     *                  data, otherwise the second
+     */
+    typedef TestingSyncSource *(*createsource_t)(ClientTest &client, int source, bool isSourceA);
+
+    /**
+     * Creates a sync source which references the primary database;
+     * it may report the same changes as the sync source used during
+     * sync tests.
+     */
+    createsource_t createSourceA;
+
+    /**
+     * A second sync source also referencing the primary data
+     * source, but configured so that it tracks changes
+     * independently from the the primary sync source.
+     *
+     * In local tests the usage is like this:
+     * - add item via first SyncSource
+     * - iterate over new items in second SyncSource
+     * - check that it lists the added item
+     *
+     * In tests with a server the usage is:
+     * - do a synchronization with the server
+     * - iterate over items in second SyncSource
+     * - check that the total number and number of
+     *   added/updated/deleted items is as expected
+     */
+    createsource_t createSourceB;
+
+    /**
+     * The framework can generate vCard and vCalendar/iCalendar items
+     * automatically by copying a template item and modifying certain
+     * properties.
+     *
+     * This is the template for these automatically generated items.
+     * It must contain the string <<REVISION>> which will be replaced
+     * with the revision parameter of the createItem() method.
+     */
+    const char *templateItem;
+
+    /**
+     * This is a colon (:) separated list of properties which need
+     * to be modified in templateItem.
+     */
+    const char *uniqueProperties;
+
+    /**
+     * the number of items to create during stress tests
+     */
+    int numItems;
+
+    /**
+     * This is a single property in templateItem which can be extended
+     * to increase the size of generated items.
+     */
+    const char *sizeProperty;
+
+    /**
+     * Type to be set when importing any of the items into the
+     * corresponding sync sources. Use "" if sync source doesn't
+     * need this information.
+     *
+     * Not currently used! All items are assumed to be in the raw,
+     * internal format (see SyncSourceRaw and SyncSourceSerialize).
+     */
+    const char *itemType;
+
+    /**
+     * A very simple item that is inserted during basic tests. Ideally
+     * it only contains properties supported by all servers.
+     */
+    const char *insertItem;
+
+    /**
+     * A slightly modified version of insertItem. If the source has UIDs
+     * embedded into the item data, then both must have the same UID.
+     * Again all servers should better support these modified properties.
+     */
+    const char *updateItem;
+
+    /**
+     * A more heavily modified version of insertItem. Same UID if necessary,
+     * but can test changes to items only supported by more advanced
+     * servers.
+     */
+    const char *complexUpdateItem;
+
+    /**
+     * To test merge conflicts two different updates of insertItem are
+     * needed. This is the first such update.
+     */
+    const char *mergeItem1;
+
+    /**
+     * The second merge update item. To avoid true conflicts it should
+     * update different properties than mergeItem1, but even then servers
+     * usually have problems perfectly merging items. Therefore the
+     * test is run without expecting a certain merge result.
+     */
+    const char *mergeItem2;
+
+    /**
+     * These two items are related: one is main one, the other is
+     * a subordinate one. The semantic is that the main item is
+     * complete on it its own, while the other normally should only
+     * be used in combination with the main one.
+     *
+     * Because SyncML cannot express such dependencies between items,
+     * a SyncSource has to be able to insert, updated and remove
+     * both items independently. However, operations which violate
+     * the semantic of the related items (like deleting the parent, but
+     * not the child) may have unspecified results (like also deleting
+     * the child). See LINKED_ITEMS_RELAXED_SEMANTIC.
+     *
+     * One example for main and subordinate items are a recurring
+     * iCalendar 2.0 event and a detached recurrence.
+     */
+    const char *parentItem, *childItem;
+
+    /**
+     * Backends atomic modification tests
+     */
+    bool atomicModification;
+
+    /**
+     * define to 0 to disable tests which slightly violate the
+     * semantic of linked items by inserting children
+     * before/without their parent
+     */
+#ifndef LINKED_ITEMS_RELAXED_SEMANTIC
+# define LINKED_ITEMS_RELAXED_SEMANTIC 1
 #endif
+
+    /**
+     * setting this to false disables tests which depend
+     * on the source's support for linked item semantic
+     * (testLinkedItemsInsertParentTwice, testLinkedItemsInsertChildTwice)
+     */
+    bool sourceKnowsItemSemantic;
+
+    /**
+     * called to dump all items into a file, required by tests which need
+     * to compare items
+     *
+     * ClientTest::dump can be used: it will simply dump all items of the source
+     * with a blank line as separator.
+     *
+     * @param source     sync source A already created and with beginSync() called
+     * @param file       a file name
+     * @return error code, 0 for success
+     */
+    int (*dump)(ClientTest &client, TestingSyncSource &source, const char *file);
+
+    /**
+     * import test items: which these are is determined entirely by
+     * the implementor, but tests work best if several complex items are
+     * imported
+     *
+     * ClientTest::import can be used if the file contains items separated by
+     * empty lines.
+     *
+     * @param source     sync source A already created and with beginSync() called
+     * @param file       the name of the file to import
+     * @retval realfile  the name of the file that was really imported;
+     *                   this may depend on the current server that is being tested
+     * @return error code, 0 for success
+     */
+    int (*import)(ClientTest &client, TestingSyncSource &source, const char *file, std::string &realfile);
+
+    /**
+     * a function which compares two files with items in the format used by "dump"
+     *
+     * @param fileA      first file name
+     * @param fileB      second file name
+     * @return true if the content of the files is considered equal
+     */
+    bool (*compare)(ClientTest &client, const char *fileA, const char *fileB);
+
+    /**
+     * a file with test cases in the format expected by import and compare
+     */
+    const char *testcases;
+
+    /**
+     * the item type normally used by the source (not used by the tests
+     * themselves; client-test.cpp uses it to initialize source configs)
+     */
+    const char *type;
+
+    /**
+     * TRUE if the source supports recovery from an interrupted
+     * synchronization. Enables the Client::Sync::*::Retry group
+     * of tests.
+     */
+    bool retrySync;
+    bool suspendSync;
+    bool resendSync;
+};
 
 /**
  * In addition to registering the sync source itself by creating an
@@ -1194,4 +1426,9 @@ class TestingSyncSource : public SyncSource,
     }
 };
 
+//global function to convey the information for dynamic loaded modules
+//cannot log at the load time because the logger may still have not been
+//initialized.
+const char* SyncSourceBackendsInfo();
+const char* SyncSourceBackendsDebug();
 #endif // INCL_SYNCSOURCE

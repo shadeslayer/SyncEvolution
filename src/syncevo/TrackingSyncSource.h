@@ -21,8 +21,8 @@
 #ifndef INCL_TRACKINGSYNCSOURCE
 #define INCL_TRACKINGSYNCSOURCE
 
-#include "SyncSource.h"
-#include "ConfigNode.h"
+#include <syncevo/SyncSource.h>
+#include <syncevo/ConfigNode.h>
 
 #include <boost/shared_ptr.hpp>
 #include <string>

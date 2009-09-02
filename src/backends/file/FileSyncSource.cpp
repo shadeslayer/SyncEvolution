@@ -37,7 +37,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <SyncEvolutionUtil.h>
+#include <syncevo/SyncEvolutionUtil.h>
 
 #include <sstream>
 #include <fstream>

@@ -21,8 +21,8 @@
 #ifndef INCL_EVOLUTIONSYNCSOURCE
 #define INCL_EVOLUTIONSYNCSOURCE
 
-#include "TrackingSyncSource.h"
-#include "eds_abi_wrapper.h"
+#include <syncevo/TrackingSyncSource.h>
+#include <syncevo/eds_abi_wrapper.h>
 
 using namespace SyncEvolution;
 

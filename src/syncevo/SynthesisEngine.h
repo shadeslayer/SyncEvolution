@@ -21,9 +21,7 @@
 #ifndef INCL_SYNTHESISENGINE
 #define INCL_SYNTHESISENGINE
 
-#include <config.h>
-
-#include <Logging.h>
+#include <syncevo/Logging.h>
 
 #include <synthesis/generic_types.h>
 #include <synthesis/sync_declarations.h>

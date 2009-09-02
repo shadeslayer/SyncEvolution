@@ -21,7 +21,7 @@
 #ifndef INCL_SYNCEVOLUTION_UTIL
 # define INCL_SYNCEVOLUTION_UTIL
 
-#include "SyncML.h"
+#include <syncevo/SyncML.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>

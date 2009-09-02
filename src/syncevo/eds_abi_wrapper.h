@@ -39,7 +39,9 @@
 #ifndef INCL_EDS_ABI_WRAPPER
 #define INCL_EDS_ABI_WRAPPER
 
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #ifdef HAVE_EDS
 #include <glib-object.h>

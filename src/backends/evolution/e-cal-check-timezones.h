@@ -22,7 +22,7 @@
 #ifndef E_CAL_CHECK_TIMEZONES_H
 #define E_CAL_CHECK_TIMEZONES_H
 
-#include "eds_abi_wrapper.h"
+#include <syncevo/eds_abi_wrapper.h>
 /* #include <libical/ical.h> */
 #include <glib.h>
 

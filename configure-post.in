@@ -70,6 +70,17 @@ if test "$enable_evolution_compatibility" == "yes"; then
    AC_DEFINE(EVOLUTION_COMPATIBILITY, 1, [avoid hard dependency on Evolution shared objects])
 fi
 
+dnl --enable-developer-mode
+if test "$enable_developer_mode" == "yes"; then
+backendsearchdir=backends/
+else
+backendsearchdir='$(libdir)'/syncevolution/backends/
+fi
+
+backenddir='$(libdir)'/syncevolution/backends/
+AC_SUBST(backenddir)
+AC_SUBST(backendsearchdir)
+
 dnl This string is sent as part of the SyncML DevInf (device
 dnl information) structure to the server. All SyncEvolution platforms
 dnl use "SyncEvolution" as HTTP user agent and "Mod" (model), so the
@@ -81,7 +92,7 @@ AC_CHECK_HEADERS(stdarg.h valgrind/valgrind.h execinfo.h)
 
 AC_DEFINE(SYNTHESIS, 1, "using Synthesis engine")
 
-AC_CONFIG_FILES(Makefile src/dbus/interfaces/Makefile src/dbus/Makefile src/Makefile src/core/Makefile src/gtk-ui/Makefile po/Makefile.in test/Makefile src/dbus/syncevo-dbus.pc)
+AC_CONFIG_FILES(Makefile src/dbus/interfaces/Makefile src/dbus/Makefile src/Makefile src/syncevo/Makefile src/syncevo/syncevolution.pc src/gtk-ui/Makefile po/Makefile.in test/Makefile src/dbus/syncevo-dbus.pc)
 AC_OUTPUT
 
 echo

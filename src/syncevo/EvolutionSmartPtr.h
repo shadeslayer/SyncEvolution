@@ -21,7 +21,9 @@
 #ifndef INCL_EVOLUTION_SMART_POINTER
 # define INCL_EVOLUTION_SMART_POINTER
 
-#include <config.h>
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include "eds_abi_wrapper.h"
 
 #ifdef HAVE_GLIB

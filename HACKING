@@ -29,10 +29,15 @@ For doing development work the recommended configure line is:
    configure CFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
              CXXFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
              --enable-unit-tests \
-             --enable-libcurl
+             --enable-libcurl \
+             --enable-developer-mode
 
 Enabling libcurl explicitly ensures that it gets built even when not
 the default.
+
+Backend libraries are dynamically scannned and loaded into syncevolution, the
+library path defaults to $prefix/syncevolution/backends. When developer-mode is
+enabled, it will scan libraries in current build directory instead.
 
 -Wno-unknown-pragmas is required to avoid warnings triggered by
 '#pragma }', a trick to preserve indention after 'extern "C" {' in

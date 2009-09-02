@@ -1,11 +1,11 @@
-AM_CPPFLAGS = -I$(srcdir)/../../core -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+AM_CPPFLAGS = -I$(srcdir)/../../ -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
 SYNCSOURCES = syncfile.la
 MOSTLYCLEANFILES = $(SYNCSOURCES)
 if ENABLE_MODULES
-pkglib_LTLIBRARIES = $(SYNCSOURCES)
+backend_LTLIBRARIES = $(SYNCSOURCES)
 else
 noinst_LTLIBRARIES = $(SYNCSOURCES)
 endif
@@ -18,9 +18,8 @@ SYNCFILE_SOURCES = \
 
 syncfile_la_SOURCES = $(SYNCFILE_SOURCES)
 syncfile_la_LIBADD = $(FILE_LIBS)
-syncfile_la_LDFLAGS = -module -rpath '$(pkglibdir)'
-syncfile_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
-
+syncfile_la_LDFLAGS = -module -avoid-version
+syncfile_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) -DENABLE_INTEGRATION_TESTS
 # If you need special test cases for your sync source, then
 # install them here. Here's how the sqlite backend does that:
 #
