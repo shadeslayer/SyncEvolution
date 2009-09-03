@@ -1,3 +1,22 @@
+SyncEvolution 0.9 -> 0.9.1 beta 1, 31.09.2009
+--------------------------------------
+Interoperability with Mobical are now supported.
+
+* Mobical, with contact, calendar, task and memo support
+
+  Mobical follows vcard2.1 and vcalendar1.0 specifications, thus 
+  properties in vcard3.0 and icalendar1.0 are not supported.
+  Moreover, there are some limitations for some properties, such as
+  ORG, ADR in vcard2.1. Some parameters of these 2 properties 
+  are missed by Mobical. For more detail information, please 
+  see README.mobical.
+
+  Regarding SyncML support, mobical always initiates a slow sync
+  no matter what sync mode is requested by client. Besides, now 
+  SyncEvolution could work with Mobical in WBXML mode since Mobical
+  sends its devinf wrapped in the "#cdata" instead of "#pcdata".  
+
+
 SyncEvolution 0.8.1 -> 0.9, 12.08.2009
 --------------------------------------
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog
