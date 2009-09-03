@@ -905,6 +905,104 @@ template<class V> struct dbus_traits< std::vector<V> >
 };
 
 /**
+ * a single member m of type V in a struct K
+ */
+template<class K, class V, V K::*m> struct dbus_member_single
+{
+    static std::string getType()
+    {
+        return dbus_traits<V>::getType();
+    }
+    typedef V host_type;
+
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, K &val)
+    {
+        dbus_traits<V>::get(conn, msg, iter, val.*m);
+    }
+
+    static void append_retval(DBusMessageIter &iter, const K &val)
+    {
+        dbus_traits<V>::append_retval(iter, val.*m);
+    }
+};
+
+/**
+ * a member m of type V in a struct K, followed by another dbus_member
+ * or dbus_member_single to end the chain
+ */
+template<class K, class V, V K::*m, class M> struct dbus_member
+{
+    static std::string getType()
+    {
+        return dbus_traits<V>::getType() + M::getType();
+    }
+    typedef V host_type;
+
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, K &val)
+    {
+        dbus_traits<V>::get(conn, msg, iter, val.*m);
+        M::get(conn, msg, iter, val);
+    }
+
+    static void append_retval(DBusMessageIter &iter, const K &val)
+    {
+        dbus_traits<V>::append_retval(iter, val.*m);
+        M::append_retval(iter, val);
+    }
+};
+
+/**
+ * a helper class which implements dbus_traits for
+ * a class, use with:
+ * struct foo { int a; std::string b;  };
+ * template<> struct dbus_traits< foo > : dbus_struct_traits< foo,
+ *                                                            dbus_member<foo, int, &foo::a,
+ *                                                            dbus_member_single<foo, std::string, &foo::b> > > {};
+ */
+template<class K, class M> struct dbus_struct_traits
+{
+    static std::string getContainedType()
+    {
+        return M::getType();
+    }
+    static std::string getType()
+    {
+        return std::string("(") +
+            getContainedType() +
+            ")";
+    }
+    static std::string getSignature() {return getType(); }
+    static std::string getReply() { return ""; }
+    typedef K host_type;
+    typedef const K &arg_type;
+
+    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &val)
+    {
+        if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRUCT) {
+            throw std::runtime_error("invalid argument");
+        }
+        DBusMessageIter sub;
+        dbus_message_iter_recurse(&iter, &sub);
+        M::get(conn, msg, sub, val);
+        dbus_message_iter_next(&iter);
+    }
+
+    static void append(DBusMessageIter &iter, arg_type val) {}
+
+    static void append_retval(DBusMessageIter &iter, arg_type val)
+    {
+        DBusMessageIter sub;
+        if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_STRUCT, NULL, &sub)) {
+            throw std::runtime_error("out of memory");
+        }
+        M::append_retval(sub, val);
+        if (!dbus_message_iter_close_container(&iter, &sub)) {
+            throw std::runtime_error("out of memory");
+        }
+    }
+};
+
+/**
  * special case const reference parameter:
  * treat like pass-by-value input argument
  *

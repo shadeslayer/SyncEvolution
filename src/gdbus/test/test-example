@@ -27,6 +27,7 @@ print object.Method2(1)
 print object.Method3(1)
 print object.Hash({1: 1, 2: 2, 3: 3})
 print object.Array([1, 2, 3, 4])
+print object.ArgTest((1, 'hello', {'foo': 'bar'}))
 
 loop = gobject.MainLoop()
 

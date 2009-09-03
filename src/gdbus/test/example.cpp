@@ -33,6 +33,12 @@
 #include <memory>
 #include <iostream>
 
+struct args {
+    int a;
+    std::string b;
+    std::map<std::string, std::string> c;
+};
+
 class Test {
     typedef Result1<const std::string&> string_result;
     struct async
@@ -134,7 +140,19 @@ public:
     {
         throw dbus_error("org.example.error.Invalid", "error");
     }
+
+    void argtest(const args &in, args &out)
+    {
+        out = in;
+        out.a = in.a + 1;
+    }
 };
+
+template<> struct dbus_traits<args> :
+    public dbus_struct_traits<args, dbus_member<args, int, &args::a,
+                                    dbus_member<args, std::string, &args::b,
+                                    dbus_member_single<args, std::map<std::string, std::string>, &args::c> > > >
+{};
 
 class DBusTest : public Test
 {
@@ -184,6 +202,11 @@ public:
                             int32_t, std::string &,
                             typeof(&Test::method_async), &Test::method_async>
                             ("TestAsync", G_DBUS_METHOD_FLAG_ASYNC),
+            makeMethodEntry<Test,
+                            const args &,
+                            args &,
+                            typeof(&Test::argtest), &Test::argtest>
+                            ("ArgTest"),
             makeMethodEntry<Test,
                             const std::map<int8_t, int32_t> &,
                             std::map<int16_t, int32_t> &,
