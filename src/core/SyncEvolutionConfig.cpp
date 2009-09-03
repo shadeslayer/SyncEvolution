@@ -342,6 +342,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     } else if (boost::iequals(server, "mobical")) {
         config->setSyncURL("http://www.mobical.net/sync/server");
         config->setWebURL("http://www.mobical.net");
+        config->setConsumerReady(true);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("con");
         source = config->getSyncSourceConfig("calendar");
