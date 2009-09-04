@@ -59,6 +59,7 @@ my $scheduleworld = $server =~ /scheduleworld/;
 my $synthesis = $server =~ /synthesis/;
 #my $zyb = $server =~ /zyb/;
 my $mobical = $server =~ /mobical/;
+my $memotoo = $server =~ /memotoo/;
 
 # TODO: this hack ensures that any synchronization is limited to
 # properties supported by Synthesis. Remove this again.
@@ -237,7 +238,7 @@ sub Normalize {
     s;^BEGIN:VTIMEZONE.*?^TZID:/[^/\n]*/[^/\n]*/(\S+).*^END:VTIMEZONE;BEGIN:VTIMEZONE\nTZID:$1 [...]\nEND:VTIMEZONE;gms;
     s;TZID=/[^/\n]*/[^/\n]*/(.*)$;TZID=$1;gm;
 
-    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical) {
+    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo) {
       # does not preserve X-EVOLUTION-UI-SLOT=
       s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
     }
@@ -356,7 +357,37 @@ sub Normalize {
       # NOTE may be truncated due to length resistrictions
       s/^(NOTE(;[^:;\n]*)*:.{0,160}).*(\r?\n?)/$1$3/gm;
     }
-    #if ($zyb || $mobical) {
+    if ($memotoo) {
+      if (/^BEGIN:VCARD/m ) {
+        s/^(FN|FBURL|CALURI|CATEGORIES|ROLE|X-MOZILLA-HTML|PHOTO|X-EVOLUTION-FILE-AS|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
+        # only preserves ORG "Company", but loses "Department" and "Office"
+        s/^ORG:([^;:\n]+)(;[^;:\n]+)(;[^\n]*)/ORG:$1$2/mg;
+        # only preserves first 6 fields of 'ADR'
+        s/^ADR((;[^;:\n]*)*:)([^;:\n]*)((;[^;:\n]*){5})(;[^;:\n]*)/ADR$1$3$4/mg;
+        # strip 'TYPE=HOME' 
+        s/^URL([^\n:]*);TYPE=HOME/URL$1/mg;
+        s/^EMAIL([^\n:]*);TYPE=HOME/EMAIL$1/mg;
+      }
+      if (/^BEGIN:VEVENT/m ) {
+        s/^(UID|SEQUENCE|TRANSP|RECURRENCE-ID|X-EVOLUTION-ALARM-UID|ORGANIZER)(;[^:;\n]*)*:.*\r?\n?//gm;
+        # RELATED=START is the default behavior though server will lost it
+        s/^TRIGGER([^\n:]*);RELATED=START/TRIGGER$1/mg;
+        # some parameters of 'ATTENDEE' will be lost by server
+        s/^ATTENDEE([^\n:]*);CUTYPE=([^\n;:]*)/ATTENDEE$1/mg;
+        s/^ATTENDEE([^\n:]*);LANGUAGE=([^\n;:]*)/ATTENDEE$1/mg;
+        s/^ATTENDEE([^\n:]*);ROLE=([^\n;:]*)/ATTENDEE$1/mg;
+        s/^ATTENDEE([^\n:]*);RSVP=([^\n;:]*)/ATTENDEE$1/mg;
+        s/^ATTENDEE([^\n:]*);CN=([^\n;:]*)/ATTENDEE$1/mg;
+        s/^ATTENDEE([^\n:]*);PARTSTAT=([^\n;:]*)/ATTENDEE$1/mg;
+        if (/^BEGIN:VALARM/m ) {
+            s/^(DESCRIPTION)(;[^:;\n]*)*:.*\r?\n?//mg;
+        }
+      }
+      if (/^BEGIN:VTODO/m ) {
+        s/^(UID|SEQUENCE|URL|CLASS|PRIORITY)(;[^:;\n]*)*:.*\r?\n?//gm;
+        s/^PERCENT-COMPLETE:0\r?\n?//gm;
+      }
+    }
     if ($mobical) {
       s/^(CALURI|CATEGORIES|FBURL|NICKNAME|X-MOZILLA-HTML|PHOTO|X-EVOLUTION-FILE-AS|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-MANAGER|X-SPOUSE|X-YAHOO|X-AIM)(;[^:;\n]*)*:.*\r?\n?//gm;
 

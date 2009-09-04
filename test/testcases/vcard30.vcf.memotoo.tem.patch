@@ -1,0 +1,34 @@
+@@ -137,7 +137,7 @@
+ NICKNAME:user7
+ X-EVOLUTION-SPOUSE:
+ NOTE:This test case uses line breaks. This is line 1.\nLine 2.\n\nLine brea
+- ks in vcard 2.1 are encoded as =0D=0A.\nThat means the = has to be encod
++ ks in vcard 2.1 are encoded as.\nThat means the = has to be encod
+  ed itself...
+ FN:line breaks
+ N:breaks;line;;;
+@@ -189,7 +189,6 @@
+ EMAIL;TYPE=WORK;X-EVOLUTION-UI-SLOT=1:john.doe@work.com
+ EMAIL;TYPE=HOME;X-EVOLUTION-UI-SLOT=2:john.doe@home.priv
+ EMAIL;TYPE=OTHER;X-EVOLUTION-UI-SLOT=3:john.doe@other.world
+-EMAIL;TYPE=OTHER;X-EVOLUTION-UI-SLOT=4:john.doe@yet.another.world
+ TEL;TYPE=work;TYPE=Voice;X-EVOLUTION-UI-SLOT=1:business 1
+ TEL;TYPE=homE;TYPE=VOICE;X-EVOLUTION-UI-SLOT=2:home 2
+ TEL;TYPE=CELL;X-EVOLUTION-UI-SLOT=3:mobile 3
+@@ -197,7 +196,6 @@
+ TEL;TYPE=HOME;TYPE=FAX;X-EVOLUTION-UI-SLOT=5:homefax 5
+ TEL;TYPE=PAGER;X-EVOLUTION-UI-SLOT=6:pager 6
+ TEL;TYPE=CAR;X-EVOLUTION-UI-SLOT=7:car 7
+-TEL;TYPE=PREF;X-EVOLUTION-UI-SLOT=8:primary 8
+ X-AIM;TYPE=HOME;X-EVOLUTION-UI-SLOT=1:AIM JOHN
+ X-YAHOO;TYPE=HOME;X-EVOLUTION-UI-SLOT=2:YAHOO JDOE
+ X-ICQ;TYPE=HOME;X-EVOLUTION-UI-SLOT=3:ICQ JD
+@@ -282,7 +280,7 @@
+ X-EVOLUTION-SPOUSE:
+ NOTE:The first name is "First \; special \;".
+ FN:Mr. First \; special \; middle Last
+-N:Last;First \; special \;;middle;Mr.;
++N:Last;First special;middle;Mr.;
+ X-EVOLUTION-FILE-AS:Last\, First \; special \;
+ X-EVOLUTION-BLOG-URL:
+ CALURI:

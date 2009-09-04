@@ -1,0 +1,133 @@
+This document is used to show interoperability test information with Memotoo server.
+http://bugzilla.moblin.org/show_bug.cgi?id=5635
+
+* The Memotoo Server's device information 
+    Man=Memotoo.com
+    Mod=SyncML
+    SwV=2.14
+    HwV=-
+    FwV=-
+    OEM=-
+    DevID=memotoo
+    DevTyp=server
+    VerDTD=1.2
+    UTC=-
+    SupportLargeObjs=-
+    SupportNumberOfChanges=-
+
+* Test Environment Variables Settings
+  CLIENT_TEST_SERVER=memotoo CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test/ \
+  CLIENT_TEST_NUM_ITEMS=10                                                  \
+  CLIENT_TEST_NOCHECK_SYNCMODE=1                                            \
+  CLIENT_TEST_SKIP=Client::Sync::vcard21::testRefreshFromClientSync,        \
+  Client::Sync::vcard21::testRefreshFromClientSemantic,                     \
+  Client::Sync::vcard21::testRefreshStatus,                                 \
+  Client::Sync::vcard21::testOneWayFromServer,                              \
+  Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,              \
+  Client::Sync::vcard21::Resend,                                            \
+  Client::Sync::ical20::testRefreshFromClientSync,                          \
+  Client::Sync::ical20::testRefreshFromClientSemantic,                      \
+  Client::Sync::ical20::testRefreshStatus,                                  \
+  Client::Sync::ical20::testOneWayFromServer,                               \
+  Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,                \
+  Client::Sync::ical20::Resend,                                             \
+  Client::Sync::itodo20::testRefreshFromClientSync,                         \
+  Client::Sync::itodo20::testRefreshFromClientSemantic,                     \
+  Client::Sync::itodo20::testRefreshStatus,                                 \
+  Client::Sync::itodo20::testOneWayFromServer,                              \
+  Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,              \
+  Client::Sync::itodo20::Resend,                                            \
+  Client::Sync::text::testRefreshFromClientSync,                            \
+  Client::Sync::text::testRefreshFromClientSemantic,                        \
+  Client::Sync::text::testRefreshStatus,                                    \
+  Client::Sync::text::testOneWayFromServer,                                 \
+  Client::Sync::text::Retry,Client::Sync::text::Suspend,                    \
+  Client::Sync::text::Resend                                            
+  
+ 
+* Test Profiles Settings
+  N/A
+* Data formats we need to test:
+Client::Sync::vcard21
+Client::Sync::ical20
+Client::Sync::itodo20
+Client::Sync::text
+
+* Known Limitations or issues in memotoo server:
+All
+  -- If no data in memotoo server, it always initiates a slow sync. 
+     This causes failures of testRefreshFromClientSync,testRefreshFromClientSemantic, testRefreshStatus,
+     testOneWayFromServer.
+vCard21
+  -- Below properties are not supported:
+     CALURI, FBURL, ROLE, X-MOZILLA-HTML, X-EVOLUTION-FILE-AS,X-EVOLUTION-BLOG-URL, X-EVOLUTION-VIDEO-URL, 
+     X-ICQ, X-YAHOO
+  -- Some extension properties are supported:
+     X-AIM, X-ANNIVERSARY, X-ASSISTANT, X-MANAGER, X-SPOUSE
+  -- The parameter 'X-EVOLUTION-URI-SLOT'of properties like 'TEL' and 'EMAIL' is lost
+  -- 'PHOTO' is compressed by server but still be correct 
+  -- 'FN' is not reserved and is replaced by the composition of 'N' 
+  -- If 'ADR' has type information, then the last field value is lost
+  -- All properties value has parser's bugs for escaped char "\;". This string is lost
+  -- 'N' property lost "\;" if containing it
+  -- ‘ORG’ only reserves its first and second fields ‘org name’ and 'department'
+  -- 'URL' will be added 'TYPE=HOME' if no type information
+  -- 'TEL' will be lost if it has only 'TYPE=PREF' information
+  -- 'EMAIL' will be added 'TYPE=HOME' if no any type information
+  -- For emails without type information, memotoo only preserves one of them 
+  -- If 'X-GROUPWISE' is present, CATEGORIES will be set as the value of 'X-GROUPWISE' instead
+  -- For the string "=3D0D=3D0A", which is encoded for "=0D=0A", it could not be treated as "\n".  
+ical20
+  -- Support iCalendar2.0
+  -- Below properties are not supported by server:
+     UID, SEQUENCE, TRANSP, X-EVOLUTION-ALARM-UID, RECURRENCE-ID, ORGANIZER
+  -- Timezone related information isn't kept on the server and relative date-time is converted 
+     into UTC time correctly, such as DTSTART, DTEND
+  -- The 'UNTIL' component of the 'RRULE' property is converted to UTC time if it is floating time
+  -- String "\\n" is interpreted as "\n"
+  -- String "\\r" is interpreted as ""
+  -- 'DESCRIPTION' in the 'VALARM' component is lost
+itodo20
+  -- Support iCalendar2.0
+  -- Below properties are not supported by server:
+     UID, SEQUENCE, URL
+  -- 'PERCENT-COMPLETE' is set as '0' by default if absent
+  -- 'CLASS' value is always changed to 'private' by server
+  -- 'PRIORITY': Server only accepts 5 values, '1', '3', '5', '7' and '9'. Others will be converted into these
+      values. Default value is '5'
+text
+  -- '<' and '>' in the plain text are converted to "&lt;" and "&gt;" separately
+
+* Known test failures:
+Client::Sync::vcard21
+  Client::Sync::vcard21::testRefreshFromClientSync,
+  Client::Sync::vcard21::testRefreshFromClientSemantic,             
+  Client::Sync::vcard21::testRefreshStatus,                         
+  Client::Sync::vcard21::testOneWayFromServer,                      
+  Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,      
+  Client::Sync::vcard21::Resend,                                    
+
+Client::Sync::ical20
+  Client::Sync::ical20::testRefreshFromClientSync,                  
+  Client::Sync::ical20::testRefreshFromClientSemantic,              
+  Client::Sync::ical20::testRefreshStatus,                          
+  Client::Sync::ical20::testOneWayFromServer,                       
+  Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,        
+  Client::Sync::ical20::Resend,                                     
+
+Client::Sync::itodo20
+  Client::Sync::itodo20::testRefreshFromClientSync,                 
+  Client::Sync::itodo20::testRefreshFromClientSemantic,             
+  Client::Sync::itodo20::testRefreshStatus,                         
+  Client::Sync::itodo20::testOneWayFromServer,                      
+  Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,      
+  Client::Sync::itodo20::Resend,                                    
+
+
+Client::Sync::text
+  Client::Sync::text::testRefreshFromClientSync,                    
+  Client::Sync::text::testRefreshFromClientSemantic,                
+  Client::Sync::text::testRefreshStatus,                            
+  Client::Sync::text::testOneWayFromServer,                         
+  Client::Sync::text::Retry,Client::Sync::text::Suspend,            
+  Client::Sync::text::Resend                                            
