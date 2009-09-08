@@ -14,3 +14,8 @@ libgdbus_la_LIBADD = @GLIB_LIBS@ @DBUS_LIBS@
 AM_CFLAGS = @GLIB_CFLAGS@ @DBUS_CFLAGS@
 
 MAINTAINERCLEANFILES = Makefile.in
+
+noinst_PROGRAMS = example
+example_SOURCES = test/example.cpp
+example_CXXFLAGS = @GLIB_CFLAGS@ @DBUS_CFLAGS@
+example_LDADD = libgdbus.la @GLIB_LIBS@ @DBUS_LIBS@
