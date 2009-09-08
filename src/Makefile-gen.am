@@ -140,18 +140,16 @@ distclean-local:
 
 if COND_DBUS
 syncevo_dbus_server_SOURCES = \
-	syncevo-dbus-server.cpp syncevo-dbus-server.h \
-	DBusSyncClient.cpp DBusSyncClient.h \
+	syncevo-dbus-server.cpp \
 	$(CORE_SOURCES)
 nodist_syncevo_dbus_server_SOURCES = \
-	dbus/interfaces/syncevo-marshal.c \
 	../test/test.cpp
 
-syncevo_dbus_server_LDADD = $(DBUS_GLIB_LIBS) $(KEYRING_LIBS) $(CORE_LDADD)
-syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -Idbus/interfaces $(DBUS_GLIB_CFLAGS) $(KEYRING_CFLAGS) $(AM_CPPFLAGS)
-syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
+syncevo_dbus_server_LDADD = gdbus/libgdbus.la $(CORE_LDADD)
+syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -I$(srcdir)/gdbus $(AM_CPPFLAGS)
+syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS)
 syncevo_dbus_server_LDFLAGS = $(CORE_LD_FLAGS)
-syncevo_dbus_server_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
+syncevo_dbus_server_DEPENDENCIES = gdbus/libgdbus.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
 endif
 
 # With --disable-shared autotools links against libfunambol.a which does not

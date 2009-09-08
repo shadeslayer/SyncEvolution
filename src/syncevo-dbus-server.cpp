@@ -22,6 +22,10 @@
 #include "config.h"
 #endif
 
+#include "gdbus-cxx-bridge.h"
+#include <syncevo/Logging.h>
+#include <syncevo/util.h>
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -29,1129 +33,867 @@
 #include <string.h>
 #include <limits.h>
 
-#include <dbus/dbus-glib-bindings.h>
+#include <list>
+#include <map>
+#include <memory>
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
-#ifdef USE_GNOME_KEYRING
-// extern "C" is missing in 2.24.1, leading to
-// link errors. Specifying it here is a workaround.
-extern "C" {
-#include <gnome-keyring.h>
-}
-#endif
+#include <glib-object.h>
 
-#include "EvolutionSyncSource.h"
-#include "syncevo-dbus-server.h"
-#include "syncevo-marshal.h"
+using namespace SyncEvo;
 
-static gboolean syncevo_start_sync (SyncevoDBusServer *obj, char *server, GPtrArray *sources, GError **error);
-static gboolean syncevo_abort_sync (SyncevoDBusServer *obj, char *server, GError **error);
-static gboolean syncevo_get_templates (SyncevoDBusServer *obj, GPtrArray **templates, GError **error);
-static gboolean syncevo_get_template_config (SyncevoDBusServer *obj, char *templ, GPtrArray **options, GError **error);
-static gboolean syncevo_get_servers (SyncevoDBusServer *obj, GPtrArray **servers, GError **error);
-static gboolean syncevo_get_server_config (SyncevoDBusServer *obj, char *server, GPtrArray **options, GError **error);
-static gboolean syncevo_set_server_config (SyncevoDBusServer *obj, char *server, GPtrArray *options, GError **error);
-static gboolean syncevo_remove_server_config (SyncevoDBusServer *obj, char *server, GError **error);
-static gboolean syncevo_get_sync_reports (SyncevoDBusServer *obj, char *server, int count, GPtrArray **reports, GError **error);
-#include "syncevo-dbus-glue.h"
+static GMainLoop *loop = NULL;
 
-enum SyncevoDBusError{
-	SYNCEVO_DBUS_ERROR_GENERIC_ERROR,
-	SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER,
-	SYNCEVO_DBUS_ERROR_MISSING_ARGS,
-	SYNCEVO_DBUS_ERROR_INVALID_CALL, /* abort called when not syncing, or sync called when already syncing */
+/**
+ * Anything that can be owned by a client, like a connection
+ * or session.
+ */
+class Resource {
+public:
+    virtual ~Resource() {}
 };
 
-static GQuark syncevo_dbus_error_quark(void)
+class Session;
+class Connection;
+class Client;
+
+/**
+ * Implements the main org.syncevolution.Server interface.
+ *
+ * All objects created by it get a reference to the creating
+ * DBusServer instance so that they can call some of its
+ * methods. Because that instance holds references to all
+ * of these objects and deletes them before destructing itself,
+ * that reference is guaranteed to remain valid.
+ */
+class DBusServer : public DBusObjectHelper
 {
-	static GQuark quark = 0;
-	if (!quark)
-		quark = g_quark_from_static_string("syncevo-dbus-server");
-	return quark;
-}
-#define SYNCEVO_DBUS_ERROR (syncevo_dbus_error_quark())
+    uint32_t m_lastSession;
+    typedef std::list< std::pair< boost::shared_ptr<Watch>, boost::shared_ptr<Client> > > Clients_t;
+    Clients_t m_clients;
 
-static GType
-syncevo_dbus_error_get_type (void)
-{
-	static GType etype = 0;
-	if (G_UNLIKELY (etype == 0)) {
-		static const GEnumValue values[] = {
-			{ SYNCEVO_DBUS_ERROR_GENERIC_ERROR, "SYNCEVO_DBUS_ERROR_GENERIC_ERROR", "GenericError" },
-			{ SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER, "SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER", "NoSuchServer" },
-			{ SYNCEVO_DBUS_ERROR_MISSING_ARGS, "SYNCEVO_DBUS_ERROR_MISSING_ARGS", "MissingArgs" },
-			{ SYNCEVO_DBUS_ERROR_INVALID_CALL, "SYNCEVO_DBUS_ERROR_INVALID_CALL", "InvalidCall" },
-			{ 0 }
-		};
-		etype = g_enum_register_static ("SyncevoDBusError", values);
-	}
-	return etype;
-}
-#define SYNCEVO_DBUS_ERROR_TYPE (syncevo_dbus_error_get_type ())
+    /**
+     * The session which currently holds the main lock on the server.
+     * To avoid issues with concurrent modification of data or configs,
+     * only one session may make such modifications at a time. A
+     * plain pointer which is reset by the session's deconstructor.
+     *
+     * A weak pointer did not work because it does not provide access
+     * to the underlying pointer after the last corresponding shared
+     * pointer is gone (which triggers the deconstructing of the session).
+     */
+    Session *m_activeSession;
 
+    /**
+     * The running sync session. Having a separate reference to it
+     * ensures that the object won't go away prematurely, even if all
+     * clients disconnect.
+     */
+    boost::shared_ptr<Session> m_syncSession;
 
-#define SYNCEVO_SOURCE_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INVALID))
-typedef GValueArray SyncevoSource;
-#define SYNCEVO_OPTION_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID))
-typedef GValueArray SyncevoOption;
-#define SYNCEVO_SERVER_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_INVALID))
-typedef GValueArray SyncevoServer;
+    typedef std::list< boost::weak_ptr<Session> > WorkQueue_t;
+    /**
+     * A queue of pending, idle Sessions. Sorted by priority, most
+     * important one first. Currently this is used to give client
+     * requests a boost over remote connections and (in the future)
+     * automatic syncs.
+     *
+     * Active sessions are removed from this list and then continue
+     * to exist as long as a client in m_clients references it or
+     * it is the currently running sync session (m_syncSession).
+     */
+    WorkQueue_t m_workQueue;
 
-#define SYNCEVO_REPORT_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID))
-typedef GValueArray SyncevoReport;
-#define SYNCEVO_REPORT_ARRAY_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_INT, dbus_g_type_get_collection ("GPtrArray", SYNCEVO_REPORT_TYPE), G_TYPE_INVALID))
-typedef GValueArray SyncevoReportArray;
+    /**
+     * Watch callback for a specific client or connection.
+     */
+    void clientGone(Client *c);
 
-GMainLoop *loop;
+    /**
+     * Returns new session number. Checks for overflow, but not
+     * currently for active sessions.
+     */
+    uint32_t getNextSession();
 
+    /**
+     * Implements org.syncevolution.Server.Connect.
+     * Needs a Result object so that it can create the
+     * watch on the connecting client.
+     */
+    void connect(const Caller_t &caller,
+                 const boost::shared_ptr<Watch> &watch,
+                 const std::map<std::string, std::string> &peer,
+                 bool must_authenticate,
+                 uint32_t session,
+                 DBusObject_t &object);
 
-SyncevoSource*
-syncevo_source_new (char *name, int mode)
-{
-	GValue val = {0, };
+    void startSession(const Caller_t &caller,
+                      const boost::shared_ptr<Watch> &watch,
+                      const std::string &server,
+                      DBusObject_t &object);
 
-	g_value_init (&val, SYNCEVO_SOURCE_TYPE);
-	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_SOURCE_TYPE));
-	dbus_g_type_struct_set (&val, 0, name, 1, mode, G_MAXUINT);
+    EmitSignal2<const DBusObject_t &,
+                bool> sessionChanged;
 
-	return (SyncevoSource*) g_value_get_boxed (&val);
-}
+public:
+    DBusServer(const DBusConnectionPtr &conn);
+    ~DBusServer();
 
-void
-syncevo_source_get (SyncevoSource *source, const char **name, int *mode)
-{
-	if (name) {
-		*name = g_value_get_string (g_value_array_get_nth (source, 0));
-	}
-	if (mode) {
-		*mode = g_value_get_int (g_value_array_get_nth (source, 1));
-	}
-}
+    void activate();
 
-static void
-syncevo_source_add_to_map (SyncevoSource *source, map<string, int> source_map)
-{
-	const char *str;
-	int mode;
-	
-	syncevo_source_get (source, &str, &mode);
-	source_map.insert (make_pair (str, mode));
-}
+    /**
+     * look up client by its ID
+     */
+    boost::shared_ptr<Client> findClient(const Caller_t &ID);
 
-void
-syncevo_source_free (SyncevoSource *source)
-{
-	if (source) {
-		g_boxed_free (SYNCEVO_SOURCE_TYPE, source);
-	}
-}
+    /**
+     * find client by its ID or create one anew
+     */
+    boost::shared_ptr<Client> addClient(const DBusConnectionPtr &conn,
+                                        const Caller_t &ID,
+                                        const boost::shared_ptr<Watch> &watch);
 
-SyncevoOption*
-syncevo_option_new (char *ns, char *key, char *value)
-{
-	GValue val = {0, };
+    /**
+     * Enqueue a session. Might also make it ready immediately,
+     * if nothing else is first in the queue. To be called
+     * by the creator of the session, *after* the session is
+     * ready to run.
+     */
+    void enqueue(const boost::shared_ptr<Session> &session);
 
-	g_value_init (&val, SYNCEVO_OPTION_TYPE);
-	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_OPTION_TYPE));
-	dbus_g_type_struct_set (&val, 0, ns, 1, key, 2, value, G_MAXUINT);
+    /**
+     * Remove a session from the work queue. If it is running a sync,
+     * it will keep running and nothing will change. Otherwise, if it
+     * is "ready" (= holds a lock on its configuration), then release
+     * that lock.
+     */
+    void dequeue(Session *session);
 
-	return (SyncevoOption*) g_value_get_boxed (&val);
-}
-
-void
-syncevo_option_get (SyncevoOption *option, const char **ns, const char **key, const char **value)
-{
-	if (ns) {
-		*ns = g_value_get_string (g_value_array_get_nth (option, 0));
-	}
-	if (key) {
-		*key = g_value_get_string (g_value_array_get_nth (option, 1));
-	}
-	if (value) {
-		*value = g_value_get_string (g_value_array_get_nth (option, 2));
-	}
-}
-
-void
-syncevo_option_free (SyncevoOption *option)
-{
-	if (option) {
-		g_boxed_free (SYNCEVO_OPTION_TYPE, option);
-	}
-}
-
-SyncevoServer* syncevo_server_new (char *name, char *url, char *icon, gboolean consumer_ready)
-{
-	GValue val = {0, };
-
-	g_value_init (&val, SYNCEVO_SERVER_TYPE);
-	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_SERVER_TYPE));
-	dbus_g_type_struct_set (&val,
-	                        0, name,
-	                        1, url,
-	                        2, icon,
-	                        3, consumer_ready,
-	                        G_MAXUINT);
-
-	return (SyncevoServer*) g_value_get_boxed (&val);
-}
-
-void syncevo_server_get (SyncevoServer *server, const char **name, const char **url, const char **icon, gboolean *consumer_ready)
-{
-	if (name) {
-		*name = g_value_get_string (g_value_array_get_nth (server, 0));
-	}
-	if (url) {
-		*url = g_value_get_string (g_value_array_get_nth (server, 1));
-	}
-	if (icon) {
-		*icon = g_value_get_string (g_value_array_get_nth (server, 2));
-	}
-	if (consumer_ready) {
-		*consumer_ready = g_value_get_boolean (g_value_array_get_nth (server, 3));
-	}
-}
-
-void syncevo_server_free (SyncevoServer *server)
-{
-	if (server) {
-		g_boxed_free (SYNCEVO_SERVER_TYPE, server);
-	}
-}
-
-SyncevoReport* 
-syncevo_report_new (char *source)
-{
-	GValue val = {0, };
-
-	g_value_init (&val, SYNCEVO_REPORT_TYPE);
-	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_REPORT_TYPE));
-	dbus_g_type_struct_set (&val,
-	                        0, source,
-	                        G_MAXUINT);
-
-	return (SyncevoReport*) g_value_get_boxed (&val);
-}
-
-static void
-insert_int (SyncevoReport *report, int index, int value)
-{
-	GValue val = {0};
-
-	g_value_init (&val, G_TYPE_INT);
-	g_value_set_int (&val, value);
-	g_value_array_insert (report, index, &val);
-}
-
-void
-syncevo_report_set_io (SyncevoReport *report, 
-                       int sent_bytes, int received_bytes)
-{
-	g_return_if_fail (report);
-
-	insert_int (report, 1, sent_bytes);
-	insert_int (report, 2, received_bytes);
-}
-
-
-void 
-syncevo_report_set_local (SyncevoReport *report, 
-                          int adds, int updates, int removes, int rejects)
-{
-	g_return_if_fail (report);
-
-	insert_int (report, 3, adds);
-	insert_int (report, 4, updates);
-	insert_int (report, 5, removes);
-	insert_int (report, 6, rejects);
-}
-
-void
-syncevo_report_set_remote (SyncevoReport *report, 
-                           int adds, int updates, int removes, int rejects)
-{
-	g_return_if_fail (report);
-
-	insert_int (report, 7, adds);
-	insert_int (report, 8, updates);
-	insert_int (report, 9, removes);
-	insert_int (report, 10, rejects);
-}
-
-void
-syncevo_report_set_conflicts (SyncevoReport *report, 
-                              int local_won, int remote_won, int duplicated)
-{
-	g_return_if_fail (report);
-
-	insert_int (report, 11, local_won);
-	insert_int (report, 12, remote_won);
-	insert_int (report, 13, duplicated);
-}
-
-const char*
-syncevo_report_get_name (SyncevoReport *report)
-{
-	g_return_val_if_fail (report, NULL);
-
-	return g_value_get_string (g_value_array_get_nth (report, 0));
-
-}
-
-void
-syncevo_report_get_io (SyncevoReport *report, 
-                       int *bytes_sent, int *bytes_received)
-{
-	g_return_if_fail (report);
-
-	if (bytes_sent) {
-		*bytes_sent = g_value_get_int (g_value_array_get_nth (report, 1));
-	}
-	if (bytes_received) {
-		*bytes_received = g_value_get_int (g_value_array_get_nth (report, 2));
-	}
-}
-
-void
-syncevo_report_get_local (SyncevoReport *report, 
-                          int *adds, int *updates, int *removes, int *rejects)
-{
-	g_return_if_fail (report);
-
-	if (adds) {
-		*adds = g_value_get_int (g_value_array_get_nth (report, 3));
-	}
-	if (updates) {
-		*updates = g_value_get_int (g_value_array_get_nth (report, 4));
-	}
-	if (removes) {
-		*removes = g_value_get_int (g_value_array_get_nth (report, 5));
-	}
-	if (rejects) {
-		*rejects = g_value_get_int (g_value_array_get_nth (report, 6));
-	}
-}
-
-void
-syncevo_report_get_remote (SyncevoReport *report, 
-                           int *adds, int *updates, int *removes, int *rejects)
-{
-	g_return_if_fail (report);
-
-	if (adds) {
-		*adds = g_value_get_int (g_value_array_get_nth (report, 7));
-	}
-	if (updates) {
-		*updates = g_value_get_int (g_value_array_get_nth (report, 8));
-	}
-	if (removes) {
-		*removes = g_value_get_int (g_value_array_get_nth (report, 9));
-	}
-	if (rejects) {
-		*rejects = g_value_get_int (g_value_array_get_nth (report, 10));
-	}
-}
-
-void
-syncevo_report_get_conflicts (SyncevoReport *report, 
-                              int *local_won, int *remote_won, int *duplicated)
-{
-	g_return_if_fail (report);
-
-	if (local_won) {
-		*local_won = g_value_get_int (g_value_array_get_nth (report, 11));
-	}
-	if (remote_won) {
-		*remote_won = g_value_get_int (g_value_array_get_nth (report, 12));
-	}
-	if (duplicated) {
-		*duplicated = g_value_get_int (g_value_array_get_nth (report, 13));
-	}
-}
-
-void
-syncevo_report_free (SyncevoReport *report)
-{
-	if (report) {
-		g_boxed_free (SYNCEVO_REPORT_TYPE, report);
-	}
-}
-
-SyncevoReportArray* syncevo_report_array_new (int end_time, GPtrArray *reports)
-{
-	GValue val = {0, };
-
-	g_value_init (&val, SYNCEVO_REPORT_ARRAY_TYPE);
-	g_value_take_boxed (&val, dbus_g_type_specialized_construct (SYNCEVO_REPORT_ARRAY_TYPE));
-	dbus_g_type_struct_set (&val,
-	                        0, end_time,
-	                        1, reports,
-	                        G_MAXUINT);
-	return (SyncevoReportArray*) g_value_get_boxed (&val);
-}
-
-void syncevo_report_array_get (SyncevoReportArray *array, int *end_time, GPtrArray **reports)
-{
-	g_return_if_fail (array);
-
-	if (end_time) {
-		*end_time = g_value_get_int (g_value_array_get_nth (array, 0));
-	}
-	if (reports) {
-		*reports = (GPtrArray*)g_value_get_boxed (g_value_array_get_nth (array, 1));
-	}
-}
-
-void
-syncevo_report_array_free (SyncevoReportArray *array)
-{
-	if (array) {
-		g_boxed_free (SYNCEVO_REPORT_ARRAY_TYPE, array);
-	}
-}
-
-
-enum {
-	PROGRESS,
-	SERVER_MESSAGE,
-	LAST_SIGNAL
+    /**
+     * Checks whether the server is ready to run another session
+     * and if so, activates the first one in the queue.
+     */
+    void checkQueue();
 };
-static guint signals[LAST_SIGNAL] = {0};
 
-G_DEFINE_TYPE (SyncevoDBusServer, syncevo_dbus_server, G_TYPE_OBJECT);
 
-static gboolean
-shutdown ()
+/**
+ * Tracks a single client and all sessions and connections that it is
+ * connected to. Referencing them ensures that they stay around as
+ * long as needed.
+ */
+class Client
 {
-	g_main_loop_quit (loop);
+    typedef std::list< boost::shared_ptr<Resource> > Resources_t;
+    Resources_t m_resources;
 
-	return FALSE;
+public:
+    const Caller_t m_ID;
+
+    Client(const Caller_t &ID) :
+        m_ID(ID)
+    {}
+
+    ~Client()
+    {
+        SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s is destructing", m_ID.c_str());
+    }
+        
+
+    /**
+     * Attach a specific resource to this client. As long as the
+     * resource is attached, it cannot be freed. Can be called
+     * multiple times, which means that detach() also has to be called
+     * the same number of times to finally detach the resource.
+     */
+    void attach(boost::shared_ptr<Resource> resource)
+    {
+        m_resources.push_back(resource);
+    }
+
+    /**
+     * Detach once from the given resource. Has to be called as
+     * often as attach() to really remove all references to the
+     * session. It's an error to call detach() more often than
+     * attach().
+     */
+    void detach(Resource *resource)
+    {
+        for (Resources_t::iterator it = m_resources.begin();
+             it != m_resources.end();
+             ++it) {
+            if (it->get() == resource) {
+                // got it
+                m_resources.erase(it);
+                return;
+            }
+        }
+
+        throw std::runtime_error("cannot detach from resource that client is not attached to");
+    }
+    void detach(boost::shared_ptr<Resource> resource)
+    {
+        detach(resource.get());
+    }
+
+    /**
+     * return corresponding smart pointer for a certain resource,
+     * empty pointer if not found
+     */
+    boost::shared_ptr<Resource> findResource(Resource *resource)
+    {
+        for (Resources_t::iterator it = m_resources.begin();
+             it != m_resources.end();
+             ++it) {
+            if (it->get() == resource) {
+                // got it
+                return *it;
+            }
+        }
+        return boost::shared_ptr<Resource>();
+    }
+};
+
+/**
+ * Represents and implements the Session interface.  Use
+ * boost::shared_ptr to track it and ensure that there are references
+ * to it as long as the connection is needed.
+ */
+class Session : public DBusObjectHelper, public Resource
+{
+    DBusServer &m_server;
+    boost::weak_ptr<Connection> m_connection;
+
+    bool m_active;
+    int m_priority;
+
+    void close(const Caller_t &caller);
+
+public:
+    Session(DBusServer &server,
+            uint32_t session);
+    ~Session();
+
+    enum {
+        PRI_DEFAULT = 0,
+        PRI_CONNECTION = 10
+    };
+
+    /**
+     * Default priority is 0. Higher means less important.
+     */
+    void setPriority(int priority) { m_priority = priority; }
+    int getPriority() const { return m_priority; }
+
+    void setConnection(const boost::weak_ptr<Connection> c) { m_connection = c; }
+    boost::weak_ptr<Connection> getConnection() { return m_connection; }
+
+    /**
+     * activate D-Bus object, session itself not ready yet
+     */
+    void activate();
+
+    /**
+     * called when the session is ready to run (true) or
+     * lost the right to make changes (false)
+     */
+    void setActive(bool active);
+};
+
+
+/**
+ * Represents and implements the Connection interface.
+ *
+ * The connection interacts with a Session by creating the Session and
+ * exchanging data with it. For that, the connection registers itself
+ * with the Session and unregisters again when it goes away.
+ *
+ * In contrast to clients, the Session only keeps a weak_ptr, which
+ * becomes invalid when the referenced object gets deleted. Typically
+ * this means the Session has to abort, unless reconnecting is
+ * supported.
+ */
+class Connection : public DBusObjectHelper, public Resource
+{
+    DBusServer &m_server;
+    std::map<std::string, std::string> m_peer;
+    bool m_mustAuthenticate;
+    enum {
+        SETUP,          /**< ready for first message */
+        PROCESSING,     /**< received message, waiting for engine's reply */
+        WAITING,        /**< waiting for next follow-up message */
+        FINAL,          /**< engine has sent final reply, wait for ACK by peer */
+        DONE,           /**< peer has closed normally after the final reply */
+        FAILED          /**< in a failed state, no further operation possible */
+    } m_state;
+    std::string m_failure;
+
+    const uint32_t m_sessionNum;
+    boost::shared_ptr<Session> m_session;
+
+    /**
+     * records the reason for the failure, sends Abort signal and puts
+     * the connection into the FAILED state.
+     */
+    void failed(const std::string &reason);
+
+    /**
+     * returns "<description> (<ID> via <transport> <transport_description>)"
+     */
+    static std::string buildDescription(const std::map<std::string, std::string> &peer);
+
+    void process(const Caller_t &caller,
+                 const std::pair<size_t, const uint8_t *> &message,
+                 const std::string &message_type);
+    void close(const Caller_t &caller,
+               bool normal,
+               const std::string &error);
+    EmitSignal0 abort;
+    EmitSignal5<const std::pair<size_t, const uint8_t *> &,
+                const std::string &,
+                const std::map<std::string, std::string> &,
+                bool,
+                uint32_t> reply;
+
+public:
+    const std::string m_description;
+
+    Connection(DBusServer &server,
+               const DBusConnectionPtr &conn,
+               uint32_t session_num,
+               const std::map<std::string, std::string> &peer,
+               bool must_authenticate);
+
+    ~Connection();
+
+    void activate();
+
+    void ready();
+};
+
+/***************** Session implementation ***********************/
+
+void Session::close(const Caller_t &caller)
+{
+    boost::shared_ptr<Client> client(m_server.findClient(caller));
+    if (!client) {
+        throw runtime_error("unknown client");
+    }
+    client->detach(this);
 }
 
-static void
-update_shutdown_timer (SyncevoDBusServer *obj)
-{
-	if (obj->shutdown_timeout_src > 0)
-		g_source_remove (obj->shutdown_timeout_src);
+Session::Session(DBusServer &server,
+                 uint32_t session) :
+    DBusObjectHelper(server.getConnection(),
+                     StringPrintf("/org/syncevolution/Session/%u", session),
+                     "org.syncevolution.Session"),
+    m_server(server),
+    m_active(false),
+    m_priority(PRI_DEFAULT)
+{}
 
-	obj->shutdown_timeout_src = g_timeout_add_seconds (120,
-	                                                   (GSourceFunc)shutdown,
-	                                                   NULL);
+Session::~Session()
+{
+    m_server.dequeue(this);
+}
+    
+
+void Session::activate()
+{
+    static GDBusMethodTable methods[] = {
+        makeMethodEntry<Session,
+                        const Caller_t &,
+                        typeof(&Session::close), &Session::close>
+                        ("Close"),
+        {}
+    };
+
+    static GDBusSignalTable signals[] = {
+        { },
+    };
+
+    DBusObjectHelper::activate(methods,
+                               signals,
+                               NULL,
+                               this);
 }
 
-void
-emit_progress (const char *source,
-                      int type,
-                      int extra1,
-                      int extra2,
-                      int extra3,
-                      gpointer data)
+void Session::setActive(bool active)
 {
-	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
-
-	g_signal_emit (obj, signals[PROGRESS], 0,
-	               obj->server,
-	               source,
-	               type,
-	               extra1,
-	               extra2,
-	               extra3);
+    m_active = active;
+    if (active) {
+        boost::shared_ptr<Connection> c = m_connection.lock();
+        if (c) {
+            c->ready();
+        }
+    }
 }
 
-void
-emit_server_message (const char *message,
-                     gpointer data)
-{
-	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
+/************************ Connection implementation *****************/
 
-	g_signal_emit (obj, signals[SERVER_MESSAGE], 0,
-	               obj->server,
-	               message);
+void Connection::failed(const std::string &reason)
+{
+    if (m_failure.empty()) {
+        m_failure = reason;
+    }
+    if (m_state != FAILED) {
+        abort();
+    }
+    m_state = FAILED;
 }
 
-#ifdef USE_GNOME_KEYRING
-char*
-need_password (const char *username,
-               const char *server_url,
-               gpointer data)
+std::string Connection::buildDescription(const std::map<std::string, std::string> &peer)
 {
-	char *password = NULL;
-	const char *server = NULL;
-	GnomeKeyringResult res;
-
-	server = strstr (server_url, "://");
-	if (server)
-		server = server + 3;
-
-	if (!server)
-		return NULL;
-
-	res = gnome_keyring_find_password_sync (GNOME_KEYRING_NETWORK_PASSWORD,
-	                                        &password,
-	                                        "user", username,
-	                                        "server", server,
-	                                        NULL);
-
-	switch (res) {
-	case GNOME_KEYRING_RESULT_OK:
-	case GNOME_KEYRING_RESULT_NO_MATCH:
-		break;
-	default:
-		g_warning ("Failed to get password from keyring: %s", 
-		           gnome_keyring_result_to_message (res));
-		break;
-	}
-
-	return password;
-}
-#endif
-
-gboolean 
-check_for_suspend (gpointer data)
-{
-	SyncevoDBusServer *obj = (SyncevoDBusServer *)data;
-
-	return obj->aborted;
+    std::map<std::string, std::string>::const_iterator
+        desc = peer.find("description"),
+        id = peer.find("id"),
+        trans = peer.find("transport"),
+        trans_desc = peer.find("transport_description");
+    std::string buffer;
+    buffer.reserve(256);
+    if (desc != peer.end()) {
+        buffer += desc->second;
+    }
+    if (id != peer.end() || trans != peer.end()) {
+        if (!buffer.empty()) {
+            buffer += " ";
+        }
+        buffer += "(";
+        if (id != peer.end()) {
+            buffer += id->second;
+            if (trans != peer.end()) {
+                buffer += " via ";
+            }
+        }
+        if (trans != peer.end()) {
+            buffer += trans->second;
+            if (trans_desc != peer.end()) {
+                buffer += " ";
+                buffer += trans_desc->second;
+            }
+        }
+        buffer += ")";
+    }
+    return buffer;
 }
 
-static gboolean 
-do_sync (SyncevoDBusServer *obj)
+void Connection::process(const Caller_t &caller,
+             const std::pair<size_t, const uint8_t *> &message,
+             const std::string &message_type)
 {
-	int ret;
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s sends %lu bytes, %s",
+                 caller.c_str(),
+                 message.first,
+                 message_type.c_str());
 
-	try {
-		SyncReport report;
-		ret = (*obj->client).sync(&report);
-		if (ret != 0) {
-			g_printerr ("sync returned error %d\n", ret);
-		}
-	} catch (...) {
-		g_printerr ("sync failed (non-existing server?)\n");
-		ret = -1;
-	}
+    boost::shared_ptr<Client> client(m_server.findClient(caller));
+    if (!client) {
+        throw runtime_error("unknown client");
+    }
 
-	/* adding a progress signal on top of synthesis ones */
-	g_signal_emit (obj, signals[PROGRESS], 0,
-	               obj->server,
-	               NULL,
-	               -1,
-	               ret,
-	               0,
-	               0);
+    boost::shared_ptr<Connection> myself =
+        boost::static_pointer_cast<Connection, Resource>(client->findResource(this));
+    if (!myself) {
+        throw runtime_error("client does not own connection");
+    }
 
-	delete obj->client;
-	g_free (obj->server);
-	obj->server = NULL;
-	obj->sources = NULL;
+    switch (m_state) {
+    case SETUP: {
+        // TODO: check message type, determine whether we act
+        // as client or server, choose config, create Session, ...
 
-	/* shutdown after a moment of inactivity */
-	update_shutdown_timer (obj);
+        // For the time being, request a session, then when it
+        // is ready, send a dummy reply.
+        m_session.reset(new Session(m_server,
+                                    m_sessionNum));
+        m_session->setPriority(Session::PRI_CONNECTION);
+        m_session->setConnection(myself);
+        m_server.enqueue(m_session);
+        break;
+    }
+    case WAITING:
+        throw std::runtime_error("not implemented yet");
 
-	return FALSE;
+        // TODO: pass message to session
+        break;
+    case FINAL:
+    case DONE:
+        throw std::runtime_error("protocol error: final reply sent, no further message processing possible");
+        break;
+    case FAILED:
+        throw std::runtime_error(m_failure);
+        break;
+    default:
+        throw std::runtime_error("protocol error: unknown internal state");
+        break;
+    }            
 }
 
-static gboolean  
-syncevo_start_sync (SyncevoDBusServer *obj, 
-                    char *server,
-                    GPtrArray *sources,
-                    GError **error)
+void Connection::close(const Caller_t &caller,
+                       bool normal,
+                       const std::string &error)
 {
-	if (obj->server) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_INVALID_CALL,
-		                      "Sync already in progress. Concurrent syncs are currently not supported");
-		return FALSE;
-	}
-	if (!server) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "Server argument must be set");
-		return FALSE;
-	}
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s closes %s%s%s",
+                 caller.c_str(),
+                 normal ? "normally" : "with error",
+                 error.empty() ? "" : ": ",
+                 error.c_str());
 
-	/* don't auto-shutdown while syncing */
-	if (obj->shutdown_timeout_src > 0) {
-		g_source_remove (obj->shutdown_timeout_src);
-		obj->shutdown_timeout_src = 0;
-	}
+    boost::shared_ptr<Client> client(m_server.findClient(caller));
+    if (!client) {
+        throw runtime_error("unknown client");
+    }
 
-	obj->aborted = FALSE;
-	obj->server = g_strdup (server);
+    if (!normal ||
+        m_state != FINAL) {
+        failed(error.empty() ?
+               "connection closed unexpectedly" :
+               error);
+    } else {
+        m_state = DONE;
+    }
 
-	map<string,int> source_map;
-	g_ptr_array_foreach (sources, (GFunc)syncevo_source_add_to_map, &source_map);
-
-#ifdef USE_GNOME_KEYRING
-	obj->client = new DBusSyncClient (string (server), source_map, 
-	                                  emit_progress, emit_server_message, need_password, check_for_suspend,
-	                                  obj);
-#else
-	obj->client = new DBusSyncClient (string (server), source_map, 
-	                                  emit_progress, emit_server_message, NULL, check_for_suspend,
-	                                  obj);
-#endif
-
-	g_idle_add ((GSourceFunc)do_sync, obj); 
-
-	return TRUE;
+    // remove reference to us from client, will destruct *this*
+    // instance!
+    client->detach(this);
 }
 
-static gboolean 
-syncevo_abort_sync (SyncevoDBusServer *obj,
-                            char *server,
-                            GError **error)
+Connection::Connection(DBusServer &server,
+           const DBusConnectionPtr &conn,
+           uint32_t session_num,
+           const std::map<std::string, std::string> &peer,
+           bool must_authenticate) :
+    DBusObjectHelper(conn.get(),
+                     StringPrintf("/org/syncevolution/Connection/%u", session_num),
+                     "org.syncevolution.Connection"),
+    m_server(server),
+    m_peer(peer),
+    m_mustAuthenticate(must_authenticate),
+    m_state(SETUP),
+    m_sessionNum(session_num),
+    abort(*this, "Abort"),
+    reply(*this, "Reply"),
+    m_description(buildDescription(peer))
+{}
+
+Connection::~Connection()
 {
-	if (!server) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "Server variable must be set");
-		return FALSE;
-	}
-
-	if ((!obj->server) || strcmp (server, obj->server) != 0) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_INVALID_CALL, 
-		                      "Not syncing server '%s'", server);
-		return FALSE;
-	}
-
-	obj->aborted = TRUE;
-
-	return TRUE;
+    SE_LOG_DEBUG(NULL, NULL, "done with connection to '%s'%s%s%s",
+                 m_description.c_str(),
+                 m_state == DONE ? ", normal shutdown" : " unexpectedly",
+                 m_failure.empty() ? "" : ": ",
+                 m_failure.c_str());
+    if (m_state != DONE) {
+        abort();
+    }
+    m_session.use_count();
+    m_session.reset();
 }
 
-static gboolean 
-syncevo_get_servers (SyncevoDBusServer *obj,
-                     GPtrArray **servers,
-                     GError **error)
+void Connection::activate()
 {
-	if (!servers) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "servers argument must be set");
-		return FALSE;
-	}
+    static GDBusMethodTable methods[] = {
+        makeMethodEntry<Connection,
+                        const Caller_t &,
+                        const std::pair<size_t, const uint8_t *> &,
+                        const std::string &,
+                        typeof(&Connection::process), &Connection::process>
+                        ("Process"),
+        makeMethodEntry<Connection,
+                        const Caller_t &,
+                        bool,
+                        const std::string &,
+                        typeof(&Connection::close), &Connection::close>
+                        ("Close"),
+        {}
+    };
 
-	*servers = g_ptr_array_new ();
+    static GDBusSignalTable signals[] = {
+        abort.makeSignalEntry("Abort"),
+        reply.makeSignalEntry("Reply"),
+        { },
+    };
 
-	SyncConfig::ServerList list = SyncConfig::getServers();
-
-	BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,list) {
-		char *name = NULL;
-		char *url = NULL;
-		char *icon = NULL;
-		gboolean ready = TRUE;
-		SyncevoServer *srv;
-
-		boost::shared_ptr<SyncConfig> config (SyncConfig::createServerTemplate (server.first));
-		url = icon = NULL;
-		if (config.get()) {
-			url = g_strdup (config->getWebURL().c_str());
-			icon = g_strdup (config->getIconURI().c_str());
-			ready = config->getConsumerReady();
-		}
-		name = g_strdup (server.first.c_str());
-		srv = syncevo_server_new (name, url, icon, ready);
-
-		g_ptr_array_add (*servers, srv);
-	}
-
-	update_shutdown_timer (obj);
-
-	return TRUE;
+    DBusObjectHelper::activate(methods,
+                               signals,
+                               NULL,
+                               this);
 }
 
-static gboolean 
-syncevo_get_templates (SyncevoDBusServer *obj,
-                       GPtrArray **templates,
-                       GError **error)
+void Connection::ready()
 {
-	if (!templates) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "templates argument must be set");
-		return FALSE;
-	}
+    // TODO: proceed with sync now that our session is ready
 
-	*templates = g_ptr_array_new ();
-
-	SyncConfig::ServerList list = SyncConfig::getServerTemplates();
-
-	BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,list) {
-		char *name, *url, *icon;
-		gboolean ready;
-		SyncevoServer *temp;
-
-		boost::shared_ptr<SyncConfig> config (SyncConfig::createServerTemplate (server.first));
-		name = g_strdup (server.first.c_str());
-		url = g_strdup (config->getWebURL().c_str());
-		icon = g_strdup (config->getIconURI().c_str());
-		ready = config->getConsumerReady();
-		temp = syncevo_server_new (name, url, icon, ready);
-
-		g_ptr_array_add (*templates, temp);
-	}
-
-	update_shutdown_timer (obj);
-
-	return TRUE;
+    // dummy reply
+    m_state = WAITING;
+    const char msg[] = "hello world";
+    try {
+        reply(std::make_pair(sizeof(msg) - 1, (const uint8_t *)msg),
+              "dummy_type", std::map<std::string, std::string>(), true, m_sessionNum);
+    } catch (...) {
+        failed("sending reply failed");
+        throw;
+    }
 }
 
-static gboolean 
-syncevo_get_template_config (SyncevoDBusServer *obj, 
-                             char *templ, 
-                             GPtrArray **options, 
-                             GError **error)
+/********************** DBusServer implementation ******************/
+
+void DBusServer::clientGone(Client *c)
 {
-	SyncevoOption *option;
-	const char *ready;
-
-	if (!templ || !options) {
-		if (options)
-			*options = NULL;
-
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "Template and options arguments must be given");
-		return FALSE;
-	}
-
-	boost::shared_ptr<SyncConfig> config (SyncConfig::createServerTemplate (string (templ)));
-	if (!config.get()) {
-		*options = NULL;
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER, 
-		                      "No template '%s' found", templ);
-		return FALSE;
-	}
-
-	*options = g_ptr_array_new ();
-	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup(config->getSyncURL()));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup(config->getUsername()));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (NULL, g_strdup("webURL"), g_strdup(config->getWebURL().c_str()));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (NULL, g_strdup("iconURI"), g_strdup(config->getIconURI().c_str()));
-	g_ptr_array_add (*options, option);
-
-	ready = (config->getConsumerReady() ? "yes" : "no");
-	option = syncevo_option_new (NULL, g_strdup("consumerReady"), g_strdup(ready));
-	g_ptr_array_add (*options, option);
-
-	option = syncevo_option_new (NULL, g_strdup("fromTemplate"), g_strdup("yes"));
-	g_ptr_array_add (*options, option);
-
-	list<string> sources = config->getSyncSources();
-	BOOST_FOREACH(const string &name, sources) {
-		gboolean local;
-
-		boost::shared_ptr<SyncSourceConfig> source_config = config->getSyncSourceConfig(name);
-
-		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getSync()));
-		g_ptr_array_add (*options, option);
-		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("uri"), g_strdup (source_config->getURI()));
-		g_ptr_array_add (*options, option);
-
-		/* check whether we have support locally */
-		SyncSourceParams params(name, config->getSyncSourceNodes(name), "");
-		auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
-		try {
-			local = FALSE;
-			if (syncSource.get()) {
-				syncSource->open();
-				local = TRUE;
-			}
-		} catch (...) {}
-		option = syncevo_option_new (g_strdup (name.c_str()), 
-		                             g_strdup ("localDB"), 
-		                             g_strdup_printf ("%d", local));
-		g_ptr_array_add (*options, option);
-	}
-
-	update_shutdown_timer (obj);
-
-	return TRUE;
+    for(Clients_t::iterator it = m_clients.begin();
+        it != m_clients.end();
+        ++it) {
+        if (it->second.get() == c) {
+            SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s has disconnected",
+                         c->m_ID.c_str());
+            m_clients.erase(it);
+            return;
+        }
+    }
+    SE_LOG_DEBUG(NULL, NULL, "unknown client has disconnected?!");
 }
 
-static gboolean 
-syncevo_get_server_config (SyncevoDBusServer *obj,
-                           char *server,
-                           GPtrArray **options,
-                           GError **error)
+uint32_t DBusServer::getNextSession()
 {
-	SyncevoOption *option;
-
-	if (!server || !options) {
-		if (options)
-			*options = NULL;
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "Server and options arguments must be given");
-		return FALSE;
-	}
-
-	boost::shared_ptr<SyncConfig> from;
-	boost::shared_ptr<SyncConfig> config(new SyncConfig (string (server)));
-	/* if config does not exist, create from template */
-	if (!config->exists()) {
-		from = SyncConfig::createServerTemplate( string (server));
-		if (!from.get()) {
-			*options = NULL;
-			*error = g_error_new (SYNCEVO_DBUS_ERROR,
-			                      SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER,
-			                      "No server or template '%s' found", server);
-			return FALSE;
-		}
-		config->copy(*from, NULL);
-	}
-
-	*options = g_ptr_array_new ();
-	option = syncevo_option_new (NULL, g_strdup ("syncURL"), g_strdup(config->getSyncURL()));
-	g_ptr_array_add (*options, option);
-	option = syncevo_option_new (NULL, g_strdup("username"), g_strdup(config->getUsername()));
-	g_ptr_array_add (*options, option);
-
-	/* get template options if template exists */
-	boost::shared_ptr<SyncConfig> templ = SyncConfig::createServerTemplate( string (server));
-	if (templ.get()) {
-		const char *ready;
-
-		option = syncevo_option_new (NULL, g_strdup("fromTemplate"), g_strdup("yes"));
-		g_ptr_array_add (*options, option);
-		option = syncevo_option_new (NULL, g_strdup("webURL"), g_strdup(templ->getWebURL().c_str()));
-		g_ptr_array_add (*options, option);
-		option = syncevo_option_new (NULL, g_strdup("iconURI"), g_strdup(templ->getIconURI().c_str()));
-		g_ptr_array_add (*options, option);
-
-		ready = templ->getConsumerReady() ? "yes" : "no";
-		option = syncevo_option_new (NULL, g_strdup("consumerReady"), g_strdup (ready));
-		g_ptr_array_add (*options, option);
-	}
-
-	list<string> sources = config->getSyncSources();
-	BOOST_FOREACH(const string &name, sources) {
-		gboolean local;
-
-		boost::shared_ptr<SyncSourceConfig> source_config = config->getSyncSourceConfig(name);
-
-		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("sync"), g_strdup (source_config->getSync()));
-		g_ptr_array_add (*options, option);
-		option = syncevo_option_new (g_strdup (name.c_str()), g_strdup ("uri"), g_strdup (source_config->getURI()));
-		g_ptr_array_add (*options, option);
-
-		/* check whether we have support locally */
-		SyncSourceParams params(name, config->getSyncSourceNodes(name), "");
-		auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
-		try {
-			local = FALSE;
-			if (syncSource.get()) {
-				syncSource->open();
-				local = TRUE;
-			}
-		} catch (...) {}
-		option = syncevo_option_new (g_strdup (name.c_str()), 
-		                             g_strdup ("localDB"), 
-		                             g_strdup_printf ("%d", local));
-		g_ptr_array_add (*options, option);
-
-	}
-
-	update_shutdown_timer (obj);
-
-	return TRUE;
+    m_lastSession++;
+    if (!m_lastSession) {
+        m_lastSession++;
+    }
+    return m_lastSession;
 }
 
-
-static gboolean 
-syncevo_set_server_config (SyncevoDBusServer *obj,
-                           char *server,
-                           GPtrArray *options,
-                           GError **error)
+void DBusServer::connect(const Caller_t &caller,
+                         const boost::shared_ptr<Watch> &watch,
+                         const std::map<std::string, std::string> &peer,
+                         bool must_authenticate,
+                         uint32_t session,
+                         DBusObject_t &object)
 {
-	int i;
-	
-	if (!server || !options) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "Server and options parameters must be given");
-		return FALSE;
-	}
+    if (session) {
+        // reconnecting to old connection is not implemented yet
+        throw std::runtime_error("not implemented");
+    }
+    uint32_t new_session = getNextSession();
 
-	if (obj->server) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_GENERIC_ERROR, 
-		                      "GetServers is currently not supported when a sync is in progress");
-		return FALSE;
-	}
+    boost::shared_ptr<Connection> c(new Connection(*this,
+                                                   getConnection(),
+                                                   new_session,
+                                                   peer,
+                                                   must_authenticate));
+    SE_LOG_DEBUG(NULL, NULL, "connecting D-Bus client %s with '%s'",
+                 caller.c_str(),
+                 c->m_description.c_str());
+        
+    boost::shared_ptr<Client> client = addClient(getConnection(),
+                                                 caller,
+                                                 watch);
+    client->attach(c);
+    c->activate();
 
-	boost::shared_ptr<SyncConfig> from(new SyncConfig (string (server)));
-	/* if config does not exist, create from template */
-	if (!from->exists()) {
-		from = SyncConfig::createServerTemplate( string (server));
-		if (!from.get()) {
-			from = SyncConfig::createServerTemplate( string ("default"));
-		}
-	}
-	boost::shared_ptr<SyncConfig> config(new SyncConfig(string (server)));
-	config->copy(*from, NULL);
-	
-	for (i = 0; i < (int)options->len; i++) {
-		const char *ns, *key, *value;
-		SyncevoOption *option = (SyncevoOption*)g_ptr_array_index (options, i);
-
-		syncevo_option_get (option, &ns, &key, &value);
-
-		if ((!ns || strlen (ns) == 0) && key) {
-			if (strcmp (key, "syncURL") == 0) {
-				config->setSyncURL (string (value));
-			} else if (strcmp (key, "username") == 0) {
-				config->setUsername (string (value));
-			} else if (strcmp (key, "password") == 0) {
-				config->setPassword (string (value));
-			} else if (strcmp (key, "webURL") == 0) {
-				config->setWebURL (string (value));
-			} else if (strcmp (key, "iconURI") == 0) {
-				config->setIconURI (string (value));
-			}
-		} else if (ns && key) {
-			boost::shared_ptr<SyncSourceConfig> source_config = config->getSyncSourceConfig(ns);
-			if (strcmp (key, "sync") == 0) {
-				source_config->setSync (string (value));
-			} else if (strcmp (key, "uri") == 0) {
-				source_config->setURI (string (value));
-			}
-		}
-	}
-	config->flush();
-
-	update_shutdown_timer (obj);
-
-	return TRUE;
+    object = c->getPath();
 }
 
-static gboolean 
-syncevo_remove_server_config (SyncevoDBusServer *obj,
-                              char *server,
-                              GError **error)
+void DBusServer::startSession(const Caller_t &caller,
+                              const boost::shared_ptr<Watch> &watch,
+                              const std::string &server,
+                              DBusObject_t &object)
 {
-	if (!server) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "Server argument must be given");
-		return FALSE;
-	}
-
-	if (obj->server) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_GENERIC_ERROR, 
-		                      "RemoveServerConfig is not supported when a sync is in progress");
-		return FALSE;
-	}
-
-	boost::shared_ptr<SyncConfig> config(new SyncConfig (string (server)));
-	if (!config->exists()) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER,
-		                      "No server '%s' found", server);
-		return FALSE;
-	}
-	config->remove();
-
-	update_shutdown_timer (obj);
-
-	return TRUE;
+    boost::shared_ptr<Client> client = addClient(getConnection(),
+                                                 caller,
+                                                 watch);
+    uint32_t new_session = getNextSession();   
+    boost::shared_ptr<Session> session(new Session(*this,
+                                                   new_session));
+    client->attach(session);
+    session->activate();
+    enqueue(session);
+    object = session->getPath();
 }
 
-static gboolean 
-syncevo_get_sync_reports (SyncevoDBusServer *obj, 
-                          char *server, 
-                          int count,
-                          GPtrArray **reports,
-                          GError **error)
+DBusServer::DBusServer(const DBusConnectionPtr &conn) :
+    DBusObjectHelper(conn.get(), "/org/syncevolution/Server", "org.syncevolution.Server"),
+    m_lastSession(time(NULL)),
+    m_activeSession(NULL),
+    sessionChanged(*this, "SessionChanged")
+{}
+
+DBusServer::~DBusServer()
 {
-	if (!server) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "Server argument must be given");
-		return FALSE;
-	}
-
-	if (!reports) {
-		*error = g_error_new (SYNCEVO_DBUS_ERROR,
-		                      SYNCEVO_DBUS_ERROR_MISSING_ARGS, 
-		                      "reports argument must be given");
-		return FALSE;
-	}
-
-	SyncContext client (string (server), false);
-	vector<string> dirs;
-	*reports = g_ptr_array_new ();
-
-	client.getSessions (dirs);
-	int start_from = dirs.size () - count;
-	int index = 0;
-
-	BOOST_FOREACH (const string &dir, dirs) {
-		if (index < start_from) {
-			index++;
-		} else {
-			SyncevoReportArray * session_report;
-			GPtrArray *source_reports;
-			SyncReport report;
-
-			client.readSessionInfo (dir, report);
-			source_reports = g_ptr_array_new ();
-
-			for (SyncReport::iterator it = report.begin(); it != report.end(); ++it) {
-				SyncevoReport *source_report;
-
-				SyncSourceReport srcrep = it->second;
-				source_report = syncevo_report_new (g_strdup (it->first.c_str ()));
-
-				syncevo_report_set_io (source_report,
-				                       srcrep.getItemStat (SyncSourceReport::ITEM_LOCAL, 
-				                                           SyncSourceReport::ITEM_ANY, 
-				                                           SyncSourceReport::ITEM_SENT_BYTES),
-				                       srcrep.getItemStat (SyncSourceReport::ITEM_LOCAL, 
-				                                           SyncSourceReport::ITEM_ANY, 
-				                                           SyncSourceReport::ITEM_RECEIVED_BYTES));
-				syncevo_report_set_local (source_report, 
-				                          srcrep.getItemStat (SyncSourceReport::ITEM_LOCAL, 
-				                                              SyncSourceReport::ITEM_ADDED, 
-				                                              SyncSourceReport::ITEM_TOTAL),
-				                          srcrep.getItemStat (SyncSourceReport::ITEM_LOCAL, 
-				                                              SyncSourceReport::ITEM_UPDATED, 
-				                                              SyncSourceReport::ITEM_TOTAL),
-				                          srcrep.getItemStat (SyncSourceReport::ITEM_LOCAL, 
-				                                              SyncSourceReport::ITEM_REMOVED, 
-				                                              SyncSourceReport::ITEM_TOTAL),
-				                          srcrep.getItemStat (SyncSourceReport::ITEM_LOCAL, 
-				                                              SyncSourceReport::ITEM_ANY, 
-				                                              SyncSourceReport::ITEM_REJECT));
-				syncevo_report_set_remote (source_report, 
-				                           srcrep.getItemStat (SyncSourceReport::ITEM_REMOTE, 
-				                                               SyncSourceReport::ITEM_ADDED, 
-				                                               SyncSourceReport::ITEM_TOTAL),
-				                           srcrep.getItemStat (SyncSourceReport::ITEM_REMOTE, 
-				                                               SyncSourceReport::ITEM_UPDATED, 
-				                                               SyncSourceReport::ITEM_TOTAL),
-				                           srcrep.getItemStat (SyncSourceReport::ITEM_REMOTE, 
-				                                               SyncSourceReport::ITEM_REMOVED, 
-				                                               SyncSourceReport::ITEM_TOTAL),
-				                           srcrep.getItemStat (SyncSourceReport::ITEM_REMOTE, 
-				                                               SyncSourceReport::ITEM_ANY, 
-				                                               SyncSourceReport::ITEM_REJECT));
-				syncevo_report_set_conflicts (source_report,
-				                              srcrep.getItemStat (SyncSourceReport::ITEM_REMOTE, 
-				                                                  SyncSourceReport::ITEM_ANY, 
-				                                                  SyncSourceReport::ITEM_CONFLICT_CLIENT_WON),
-				                              srcrep.getItemStat (SyncSourceReport::ITEM_REMOTE, 
-				                                                  SyncSourceReport::ITEM_ANY, 
-				                                                  SyncSourceReport::ITEM_CONFLICT_SERVER_WON),
-				                              srcrep.getItemStat (SyncSourceReport::ITEM_REMOTE, 
-				                                                  SyncSourceReport::ITEM_ANY, 
-				                                                  SyncSourceReport::ITEM_CONFLICT_DUPLICATED));
-				g_ptr_array_add (source_reports, source_report);
-			}
-			session_report = syncevo_report_array_new (report.getEnd (), source_reports);
-			g_ptr_array_add (*reports, session_report);
-		}
-	}
-
-	update_shutdown_timer (obj);
-
-	return TRUE;
+    // make sure all other objects are gone before destructing ourselves
+    m_syncSession.reset();
+    m_workQueue.clear();
+    m_clients.clear();
 }
 
-static void
-syncevo_dbus_server_class_init(SyncevoDBusServerClass *klass)
+void DBusServer::activate()
 {
-	GError *error = NULL;
+    static GDBusMethodTable methods[] = {
+        makeMethodEntry<DBusServer,
+                        const Caller_t &,
+                        const boost::shared_ptr<Watch> &,
+                        const std::map<std::string, std::string> &,
+                        bool,
+                        uint32_t,
+                        DBusObject_t &,
+                        typeof(&DBusServer::connect), &DBusServer::connect
+                        >("Connect"),
+        makeMethodEntry<DBusServer,
+                        const Caller_t &,
+                        const boost::shared_ptr<Watch> &,
+                        const std::string &,
+                        DBusObject_t &,
+                        typeof(&DBusServer::startSession), &DBusServer::startSession
+                        >("StartSession"),
+        {}
+    };
 
-	klass->connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
-	if (klass->connection == NULL)
-	{
-		g_warning("Unable to connect to dbus: %s", error->message);
-		g_error_free (error);
-		return;
-	}
+    static GDBusSignalTable signals[] = {
+        sessionChanged.makeSignalEntry("SessionChanged"),
+        { },
+    };
 
-	signals[PROGRESS] = g_signal_new ("progress",
-	                                  G_TYPE_FROM_CLASS (klass),
-	                                  (GSignalFlags)(G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE),
-	                                  G_STRUCT_OFFSET (SyncevoDBusServerClass, progress),
-	                                  NULL, NULL,
-	                                  syncevo_marshal_VOID__STRING_STRING_INT_INT_INT_INT,
-	                                  G_TYPE_NONE, 
-	                                  6, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT);
-	signals[SERVER_MESSAGE] = g_signal_new ("server-message",
-	                                  G_TYPE_FROM_CLASS (klass),
-	                                  (GSignalFlags)(G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE),
-	                                  G_STRUCT_OFFSET (SyncevoDBusServerClass, server_message),
-	                                  NULL, NULL,
-	                                  syncevo_marshal_VOID__STRING_STRING,
-	                                  G_TYPE_NONE, 
-	                                  2, G_TYPE_STRING, G_TYPE_STRING);
-
-	/* dbus_glib_syncevo_object_info is provided in the generated glue file */
-	dbus_g_object_type_install_info (SYNCEVO_TYPE_DBUS_SERVER, &dbus_glib_syncevo_object_info);
-
-	/* register error domain so clients get proper error names with dbus_g_error_get_name() */
-	dbus_g_error_domain_register (SYNCEVO_DBUS_ERROR, NULL, SYNCEVO_DBUS_ERROR_TYPE);
+    DBusObjectHelper::activate(methods,
+                               signals,
+                               NULL,
+                               this);
 }
 
-static void
-syncevo_dbus_server_init(SyncevoDBusServer *obj)
+/**
+ * look up client by its ID
+ */
+boost::shared_ptr<Client> DBusServer::findClient(const Caller_t &ID)
 {
-	GError *error = NULL;
-	DBusGProxy *proxy;
-	guint request_ret;
-	SyncevoDBusServerClass *klass = SYNCEVO_DBUS_SERVER_GET_CLASS (obj);
-
-	dbus_g_connection_register_g_object (klass->connection,
-	                                     "/org/Moblin/SyncEvolution",
-	                                     G_OBJECT (obj));
-
-	proxy = dbus_g_proxy_new_for_name (klass->connection,
-	                                   DBUS_SERVICE_DBUS,
-	                                   DBUS_PATH_DBUS,
-	                                   DBUS_INTERFACE_DBUS);
-
-	if(!org_freedesktop_DBus_request_name (proxy,
-	                                       "org.Moblin.SyncEvolution",
-	                                       0, &request_ret,
-	                                       &error)) {
-		g_warning("Unable to register service: %s", error->message);
-		g_error_free (error);
-	}
-	g_object_unref (proxy);
-
-	update_shutdown_timer (obj);
+    for(Clients_t::iterator it = m_clients.begin();
+        it != m_clients.end();
+        ++it) {
+        if (it->second->m_ID == ID) {
+            return it->second;
+        }
+    }
+    return boost::shared_ptr<Client>();
 }
+
+boost::shared_ptr<Client> DBusServer::addClient(const DBusConnectionPtr &conn,
+                                                const Caller_t &ID,
+                                                const boost::shared_ptr<Watch> &watch)
+{
+    boost::shared_ptr<Client> client(findClient(ID));
+    if (client) {
+        return client;
+    }
+    client.reset(new Client(ID));
+    // add to our list *before* checking that peer exists, so
+    // that clientGone() can remove it if the check fails
+    m_clients.push_back(std::make_pair(watch, client));
+    watch->setCallback(boost::bind(&DBusServer::clientGone, this, client.get()));
+    return client;
+}
+
+void DBusServer::enqueue(const boost::shared_ptr<Session> &session)
+{
+    WorkQueue_t::iterator it = m_workQueue.end();
+    while (it != m_workQueue.begin()) {
+        --it;
+        if (it->lock()->getPriority() <= session->getPriority()) {
+            ++it;
+            break;
+        }
+    }
+    m_workQueue.insert(it, session);
+
+    checkQueue();
+}
+
+void DBusServer::dequeue(Session *session)
+{
+    if (m_syncSession.get() == session) {
+        // This is the running sync session.
+        // It's not in the work queue and we have to
+        // keep it active, so nothing to do.
+        return;
+    }
+
+    for (WorkQueue_t::iterator it = m_workQueue.begin();
+         it != m_workQueue.end();
+         ++it) {
+        if (it->lock().get() == session) {
+            // remove from queue
+            m_workQueue.erase(it);
+            // session was idle, so nothing else to do
+            return;
+        }
+    }
+
+    if (m_activeSession == session) {
+        // The session is releasing the lock, so someone else might
+        // run now.
+        session->setActive(false);
+        sessionChanged(session->getPath(), false);
+        m_activeSession = NULL;
+        checkQueue();
+        return;
+    }
+}
+
+void DBusServer::checkQueue()
+{
+    if (m_activeSession) {
+        // still busy
+        return;
+    }
+
+    while (!m_workQueue.empty()) {
+        boost::shared_ptr<Session> session = m_workQueue.front().lock();
+        m_workQueue.pop_front();
+        if (session) {
+            // activate the session
+            m_activeSession = session.get();
+            session->setActive(true);
+            sessionChanged(session->getPath(), true);
+            return;
+        }
+    }
+}
+
+/**************************** main *************************/
 
 void niam(int sig)
 {
-	g_main_loop_quit (loop);
+    g_main_loop_quit (loop);
 }
 
 int main()
 {
-	SyncevoDBusServer *server;
+    try {
+        g_type_init();
+        g_thread_init(NULL);
+        g_set_application_name("SyncEvolution");
+        loop = g_main_loop_new (NULL, FALSE);
 
-	signal(SIGTERM, niam);
-	signal(SIGINT, niam);
+        signal(SIGTERM, niam);
+        signal(SIGINT, niam);
 
-	g_type_init ();
-	g_thread_init (NULL);
-	g_set_application_name ("SyncEvolution");
-	dbus_g_thread_init ();
+        LoggerBase::instance().setLevel(LoggerBase::DEBUG);
 
-	server = (SyncevoDBusServer*)g_object_new (SYNCEVO_TYPE_DBUS_SERVER, NULL);
+        DBusErrorCXX err;
+        DBusConnectionPtr conn = g_dbus_setup_bus(DBUS_BUS_SESSION,
+                                                  "org.syncevolution",
+                                                  &err);
+        if (!conn) {
+            err.throwFailure("g_dbus_setup_bus()");
+        }
 
-	loop = g_main_loop_new (NULL, FALSE);
-	g_main_loop_run (loop);
+        DBusServer server(conn);
+        server.activate();
+        g_main_loop_run(loop);
 
-	g_main_loop_unref (loop);
-	g_object_unref (server);
 	return 0;
+    } catch ( const std::exception &ex ) {
+        SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
+    } catch (...) {
+        SE_LOG_ERROR(NULL, NULL, "unknown error");
+    }
+
+    return 1;
 }
