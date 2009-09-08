@@ -1,0 +1,11 @@
+This is a copy of the libgdbus source code:
+http://git.kernel.org/?p=bluetooth/libgdbus.git;a=summary
+
+It is licensed under LGPL v2.1, see upstream COPYING.
+
+The source is included here because there is no stable
+upstream release. Patches added here need to be submitted
+upstream. Likewise, patches applied upstream must be imported.
+
+The build/import-gdbus.sh script automates that process.
+See build/import-foreign-git.sh for details.
