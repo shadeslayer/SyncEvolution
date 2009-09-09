@@ -25,6 +25,7 @@
 #include "gdbus-cxx-bridge.h"
 #include <syncevo/Logging.h>
 #include <syncevo/util.h>
+#include <syncevo/SyncContext.h>
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -57,6 +58,33 @@ public:
 class Session;
 class Connection;
 class Client;
+
+/**
+ * Implements the read-only methods in a Session and the Server.
+ * Only data is the server configuration name, everything else
+ * is created and destroyed inside the methods.
+ */
+class ReadOperations
+{
+public:
+    const std::string m_configName;
+
+    ReadOperations(const std::string &config_name);
+
+    /** the double dictionary used to represent configurations */
+    typedef std::map< std::string, std::map<std::string, std::string> > Config_t;
+
+    /** the array of reports filled by getReports() */
+    typedef std::vector< std::map<std::string, std::string> > Reports_t;
+
+    /** implementation of D-Bus GetConfig() for m_configName as server configuration */
+    void getConfig(bool getTemplate,
+                   Config_t &config);
+
+    /** implementation of D-Bus GetReports() for m_configName as server configuration */
+    void getReports(uint32_t start, uint32_t count,
+                    Reports_t &reports);
+};
 
 /**
  * Implements the main org.syncevolution.Server interface.
@@ -132,6 +160,22 @@ class DBusServer : public DBusObjectHelper
                       const boost::shared_ptr<Watch> &watch,
                       const std::string &server,
                       DBusObject_t &object);
+
+    void getConfig(const std::string &config_name,
+                   bool getTemplate,
+                   ReadOperations::Config_t &config)
+    {
+        ReadOperations ops(config_name);
+        ops.getConfig(getTemplate , config);
+    }
+
+    void getReports(const std::string &config_name,
+                    uint32_t start, uint32_t count,
+                    ReadOperations::Reports_t &reports)
+    {
+        ReadOperations ops(config_name);
+        ops.getReports(start, count, reports);
+    }
 
     EmitSignal2<const DBusObject_t &,
                 bool> sessionChanged;
@@ -260,18 +304,38 @@ public:
  * boost::shared_ptr to track it and ensure that there are references
  * to it as long as the connection is needed.
  */
-class Session : public DBusObjectHelper, public Resource
+class Session : public DBusObjectHelper, public Resource, public ReadOperations
 {
     DBusServer &m_server;
     boost::weak_ptr<Connection> m_connection;
 
+    /**
+     * True while clients are allowed to make calls other than Detach(),
+     * which is always allowed. Some calls are not allowed while this
+     * session runs a sync, which is indicated by a non-NULL m_sync
+     * pointer.
+     */
     bool m_active;
+
+    /**
+     * The SyncEvolution instance which currently prepares or runs a sync.
+     */
+    boost::shared_ptr<SyncContext> m_sync;
+
+    /**
+     * Priority which determines position in queue.
+     * Lower is more important. PRI_DEFAULT is zero.
+     */
     int m_priority;
 
     void close(const Caller_t &caller);
 
+    void setConfig(bool update, bool clear, bool temporary,
+                   const ReadOperations::Config_t &config);
+
 public:
     Session(DBusServer &server,
+            const std::string &config_name,
             uint32_t session);
     ~Session();
 
@@ -372,6 +436,26 @@ public:
     void ready();
 };
 
+/***************** ReadOperations implementation ****************/
+
+ReadOperations::ReadOperations(const std::string &config_name) :
+    m_configName(config_name)
+{}
+
+void ReadOperations::getConfig(bool getTemplate,
+                               Config_t &config)
+{
+    // TODO
+    throw std::runtime_error("not implemented");
+}
+
+void ReadOperations::getReports(uint32_t start, uint32_t count,
+                                Reports_t &reports)
+{
+    // TODO
+    throw std::runtime_error("not implemented");
+}
+
 /***************** Session implementation ***********************/
 
 void Session::close(const Caller_t &caller)
@@ -383,11 +467,27 @@ void Session::close(const Caller_t &caller)
     client->detach(this);
 }
 
+void Session::setConfig(bool update, bool clear, bool temporary,
+                        const ReadOperations::Config_t &config)
+{
+    if (!m_active) {
+        throw std::runtime_error("session is not active, call not allowed at this time");
+    }
+    if (m_sync) {
+        throw std::runtime_error("sync started, cannot change configuration at this time");
+    }
+    // TODO
+    throw std::runtime_error("not implemented yet");
+}
+
+
 Session::Session(DBusServer &server,
+                 const std::string &config_name,
                  uint32_t session) :
     DBusObjectHelper(server.getConnection(),
                      StringPrintf("/org/syncevolution/Session/%u", session),
                      "org.syncevolution.Session"),
+    ReadOperations(config_name),
     m_server(server),
     m_active(false),
     m_priority(PRI_DEFAULT)
@@ -406,6 +506,22 @@ void Session::activate()
                         const Caller_t &,
                         typeof(&Session::close), &Session::close>
                         ("Close"),
+        makeMethodEntry<ReadOperations,
+                        bool,
+                        ReadOperations::Config_t &,
+                        typeof(&ReadOperations::getConfig), &ReadOperations::getConfig>
+                        ("GetConfig"),
+        makeMethodEntry<Session,
+                        bool, bool, bool,
+                        const ReadOperations::Config_t &,
+                        typeof(&Session::setConfig), &Session::setConfig>
+                        ("SetConfig"),
+        makeMethodEntry<ReadOperations,
+                        uint32_t,
+                        uint32_t,
+                        ReadOperations::Reports_t &,
+                        typeof(&ReadOperations::getReports), &ReadOperations::getReports>
+                        ("GetReports"),
         {}
     };
 
@@ -506,6 +622,7 @@ void Connection::process(const Caller_t &caller,
         // For the time being, request a session, then when it
         // is ready, send a dummy reply.
         m_session.reset(new Session(m_server,
+                                    "default",
                                     m_sessionNum));
         m_session->setPriority(Session::PRI_CONNECTION);
         m_session->setConnection(myself);
@@ -704,6 +821,7 @@ void DBusServer::startSession(const Caller_t &caller,
                                                  watch);
     uint32_t new_session = getNextSession();   
     boost::shared_ptr<Session> session(new Session(*this,
+                                                   server,
                                                    new_session));
     client->attach(session);
     session->activate();
@@ -745,6 +863,19 @@ void DBusServer::activate()
                         DBusObject_t &,
                         typeof(&DBusServer::startSession), &DBusServer::startSession
                         >("StartSession"),
+        makeMethodEntry<DBusServer,
+                        const std::string &,
+                        bool,
+                        ReadOperations::Config_t &,
+                        typeof(&DBusServer::getConfig), &DBusServer::getConfig>
+                        ("GetConfig"),
+        makeMethodEntry<DBusServer,
+                        const std::string &,
+                        uint32_t,
+                        uint32_t,
+                        ReadOperations::Reports_t &,
+                        typeof(&DBusServer::getReports), &DBusServer::getReports>
+                        ("GetReports"),
         {}
     };
 
