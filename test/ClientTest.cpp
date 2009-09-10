@@ -395,7 +395,13 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
         }
         prop = nextProp + 1;
     }
-    data.replace(data.find("<<REVISION>>"), strlen("<<REVISION>>"), revision);
+    /** add check for if not found, STL will crash */
+    if(data.find("<<REVISION>>") != std::string::npos) {
+        data.replace(data.find("<<REVISION>>"), strlen("<<REVISION>>"), revision);
+    } else if (data.find("REVISION") != std::string::npos) {  
+        /* change "<<REVISION>>" to "REVISION" for memo */
+        data.replace(data.find("REVISION"), strlen("REVISION"), revision);
+    }
     if (size > 0 && (int)data.size() < size) {
         int additionalBytes = size - (int)data.size();
         int added = 0;
@@ -3683,7 +3689,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "METHOD:PUBLISH\n"
             "BEGIN:VJOURNAL\n"
             "SUMMARY:Summary\n"
-            "DESCRIPTION:Summary\\nBody text<<REVISION>>\n"
+            "DESCRIPTION:Summary\\nBody text REVISION\n"
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";
         config.updateItem =
