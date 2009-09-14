@@ -85,7 +85,7 @@
       </arg>
       <arg type="a{sa{ss}}" name="configuration" direction="out">
         <doc:doc><doc:summary>server (or template) configuration</doc:summary></doc:doc>
-        <doc:doc><doc:description>The dictionary keys are "source/'source name'" for sources and the empty string for the main server configuration. More keys might be added in the future. The values are "configuration dictionaries" which contain keys and values matching those in the SyncEvolution server configuration files. 
+        <doc:doc><doc:description>The dictionary keys are "source/&lt;source name&gt;" for sources and the empty string for the main server configuration. More keys might be added in the future. The values are "configuration dictionaries" which contain keys and values matching those in the SyncEvolution server configuration files. 
               Properties which are not set are also not present in the
               configuration dictionaries. The semantic difference between
               "not set" and "empty" or "set to default" is that unset
