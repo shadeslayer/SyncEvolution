@@ -26,6 +26,7 @@
 #include <syncevo/Logging.h>
 #include <syncevo/util.h>
 #include <syncevo/SyncContext.h>
+#include <syncevo/SoupTransportAgent.h>
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -39,6 +40,7 @@
 #include <memory>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/noncopyable.hpp>
 
 #include <glib-object.h>
 
@@ -97,6 +99,7 @@ public:
  */
 class DBusServer : public DBusObjectHelper
 {
+    GMainLoop *m_loop;
     uint32_t m_lastSession;
     typedef std::list< std::pair< boost::shared_ptr<Watch>, boost::shared_ptr<Client> > > Clients_t;
     Clients_t m_clients;
@@ -181,10 +184,16 @@ class DBusServer : public DBusObjectHelper
                 bool> sessionChanged;
 
 public:
-    DBusServer(const DBusConnectionPtr &conn);
+    DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn);
     ~DBusServer();
 
+    /** access to the GMainLoop reference used by this DBusServer instance */
+    GMainLoop *getLoop() { return m_loop; }
+
+    /** register in D-Bus */
     void activate();
+    /** process D-Bus calls until the server is ready to quit */
+    void run();
 
     /**
      * look up client by its ID
@@ -299,12 +308,84 @@ public:
     }
 };
 
+struct SourceStatus
+{
+    SourceStatus() :
+        m_mode("none"),
+        m_status("idle"),
+        m_error(0)
+    {}
+
+    std::string m_mode;
+    std::string m_status;
+    uint32_t m_error;
+};
+
+template<> struct dbus_traits<SourceStatus> :
+    public dbus_struct_traits<SourceStatus,
+                              dbus_member<SourceStatus, std::string, &SourceStatus::m_mode,
+                              dbus_member<SourceStatus, std::string, &SourceStatus::m_status,
+                              dbus_member_single<SourceStatus, uint32_t, &SourceStatus::m_error> > > >
+{};
+
+struct SourceProgress
+{
+    SourceProgress() :
+        m_phase(""),
+        m_prepareCount(-1), m_prepareTotal(-1),
+        m_sendCount(-1), m_sendTotal(-1),
+        m_receiveCount(-1), m_receiveTotal(-1)
+    {}
+
+    std::string m_phase;
+    int32_t m_prepareCount, m_prepareTotal;
+    int32_t m_sendCount, m_sendTotal;
+    int32_t m_receiveCount, m_receiveTotal;
+};
+
+template<> struct dbus_traits<SourceProgress> :
+    public dbus_struct_traits<SourceProgress,
+                              dbus_member<SourceProgress, std::string, &SourceProgress::m_phase,
+                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_prepareCount,
+                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_prepareTotal,
+                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_sendCount,
+                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_sendTotal,
+                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_receiveCount,
+                              dbus_member_single<SourceProgress, int32_t, &SourceProgress::m_receiveTotal> > > > > > > >
+{};
+
+/**
+ * A running sync engine which keeps answering on D-Bus whenever
+ * possible and updates the Session while the sync runs.
+ */
+class DBusSync : public SyncContext
+{
+    Session &m_session;
+
+public:
+    DBusSync(const std::string &server,
+             Session &session);
+
+    virtual boost::shared_ptr<TransportAgent> createTransportAgent();
+    virtual void displaySyncProgress(sysync::TProgressEventEnum type,
+                                     int32_t extra1, int32_t extra2, int32_t extra3);
+    virtual void displaySourceProgress(sysync::TProgressEventEnum type,
+                                       SyncSource &source,
+                                       int32_t extra1, int32_t extra2, int32_t extra3);
+
+    // TODO: hook up abort and suspend requests,
+    // activate CTRL-C handling
+};
+
 /**
  * Represents and implements the Session interface.  Use
  * boost::shared_ptr to track it and ensure that there are references
  * to it as long as the connection is needed.
  */
-class Session : public DBusObjectHelper, public Resource, public ReadOperations
+class Session : public DBusObjectHelper,
+                public Resource,
+                private ReadOperations,
+                private boost::noncopyable
 {
     DBusServer &m_server;
     boost::weak_ptr<Connection> m_connection;
@@ -320,7 +401,13 @@ class Session : public DBusObjectHelper, public Resource, public ReadOperations
     /**
      * The SyncEvolution instance which currently prepares or runs a sync.
      */
-    boost::shared_ptr<SyncContext> m_sync;
+    boost::shared_ptr<DBusSync> m_sync;
+
+    /** sync was run */
+    bool m_done;
+
+    /** premature sync end requested */
+    bool m_abort, m_suspend;
 
     /**
      * Priority which determines position in queue.
@@ -328,10 +415,49 @@ class Session : public DBusObjectHelper, public Resource, public ReadOperations
      */
     int m_priority;
 
-    void close(const Caller_t &caller);
+    int32_t m_progress;
+    typedef std::map<std::string, SourceStatus> SourceStatuses_t;
+    SourceStatuses_t m_sourceStatus;
+
+    uint32_t m_error;
+    typedef std::map<std::string, SourceProgress> SourceProgresses_t;
+    SourceProgresses_t m_sourceProgress;
+
+    void detach(const Caller_t &caller);
 
     void setConfig(bool update, bool clear, bool temporary,
                    const ReadOperations::Config_t &config);
+
+    typedef std::map<std::string, std::string> SourceModes_t;
+    void sync(const std::string &mode, const SourceModes_t &source_modes);
+    void abort();
+    void suspend();
+    void getStatus(std::string &status,
+                   uint32_t &error,
+                   SourceStatuses_t &sources);
+    void getProgress(int32_t &progress,
+                     SourceProgresses_t &sources);
+
+    /**
+     * Must be called each time that properties changing the
+     * overall status are changed. Ensures that the corresponding
+     * D-Bus signal is sent.
+     *
+     * Doesn't always send the signal immediately, because often it is
+     * likely that more status changes will follow shortly. To ensure
+     * that the "final" status is sent, call with flush=true.
+     *
+     * @param flush      force sending the current status
+     */
+    void fireStatus(bool flush = false);
+    /** like fireStatus() for progress information */
+    void fireProgress(bool flush = false);
+
+    EmitSignal3<const std::string &,
+                uint32_t,
+                const SourceStatuses_t &> emitStatus;
+    EmitSignal2<int32_t,
+                const SourceProgresses_t &> emitProgress;
 
 public:
     Session(DBusServer &server,
@@ -353,16 +479,35 @@ public:
     void setConnection(const boost::weak_ptr<Connection> c) { m_connection = c; }
     boost::weak_ptr<Connection> getConnection() { return m_connection; }
 
+    DBusServer &getServer() { return m_server; }
+
     /**
      * activate D-Bus object, session itself not ready yet
      */
     void activate();
 
     /**
+     * TRUE if the session is ready to take over control
+     */
+    bool readyToRun() { return !m_done && m_sync; }
+
+    /**
+     * transfer control to the session for the duration of the sync,
+     * returns when the sync is done (successfully or unsuccessfully)
+     */
+    void run();
+
+    /**
      * called when the session is ready to run (true) or
      * lost the right to make changes (false)
      */
     void setActive(bool active);
+
+    void syncProgress(sysync::TProgressEventEnum type,
+                      int32_t extra1, int32_t extra2, int32_t extra3);
+    void sourceProgress(sysync::TProgressEventEnum type,
+                        SyncSource &source,
+                        int32_t extra1, int32_t extra2, int32_t extra3);
 };
 
 
@@ -456,9 +601,44 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
     throw std::runtime_error("not implemented");
 }
 
+/***************** DBusSync implementation **********************/
+
+DBusSync::DBusSync(const std::string &server,
+                   Session &session) :
+    SyncContext(server),
+    m_session(session)
+{
+}
+
+boost::shared_ptr<TransportAgent> DBusSync::createTransportAgent()
+{
+    // TODO: check if we have a connection set in the session
+    // and if so, use it
+
+    // no connection, use HTTP via libsoup/GMainLoop
+    GMainLoop *loop = m_session.getServer().getLoop();
+    g_main_loop_ref(loop);
+    return boost::shared_ptr<TransportAgent>(new SoupTransportAgent(loop));
+}
+
+void DBusSync::displaySyncProgress(sysync::TProgressEventEnum type,
+                                   int32_t extra1, int32_t extra2, int32_t extra3)
+{
+    SyncContext::displaySyncProgress(type, extra1, extra2, extra3);
+    m_session.syncProgress(type, extra1, extra2, extra3);
+}
+
+void DBusSync::displaySourceProgress(sysync::TProgressEventEnum type,
+                                     SyncSource &source,
+                                     int32_t extra1, int32_t extra2, int32_t extra3)
+{
+    SyncContext::displaySourceProgress(type, source, extra1, extra2, extra3);
+    m_session.sourceProgress(type, source, extra1, extra2, extra3);
+}
+
 /***************** Session implementation ***********************/
 
-void Session::close(const Caller_t &caller)
+void Session::detach(const Caller_t &caller)
 {
     boost::shared_ptr<Client> client(m_server.findClient(caller));
     if (!client) {
@@ -480,6 +660,110 @@ void Session::setConfig(bool update, bool clear, bool temporary,
     throw std::runtime_error("not implemented yet");
 }
 
+void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
+{
+    if (!m_active) {
+        throw std::runtime_error("session is not active, call not allowed at this time");
+    }
+    if (m_sync) {
+        throw std::runtime_error("sync started, cannot start again");
+    }
+
+    m_sync.reset(new DBusSync(m_configName, *this));
+
+    // TODO: extend EvolutionSyncConfig (base class of EvolutionSyncClient)
+    // so that it can override source settings on a per-source basis.
+    // See setConfigFilter(). The special handling with an array of
+    // active sync sources should be removed entirely and be replaced with
+    // - a default filter for all sources
+    // - one filter per source, applied after the default filter and thus
+    //   overwriting its values
+    // Also TODO: apply the temporary config changes.
+
+    // Update status and progress. From now on, all configured sources
+    // have their default entry (referencing them by name creates the
+    // entry).
+    BOOST_FOREACH(const std::string source,
+                  m_sync->getSyncSources()) {
+        m_sourceStatus[source];
+        m_sourceProgress[source];
+    }
+    fireProgress(true);
+    fireStatus(true);
+
+    // now that we have a DBusSync object, return from the main loop
+    // and once that is done, transfer control to that object
+    g_main_loop_quit(loop);
+}
+
+void Session::abort()
+{
+    if (!m_sync) {
+        throw std::runtime_error("sync not started, cannot abort at this time");
+    }
+    // TODO
+    throw std::runtime_error("not implemented yet");
+}
+
+void Session::suspend()
+{
+    if (!m_sync) {
+        throw std::runtime_error("sync not started, cannot abort at this time");
+    }
+    // TODO
+    throw std::runtime_error("not implemented yet");
+}
+
+void Session::getStatus(std::string &status,
+                        uint32_t &error,
+                        SourceStatuses_t &sources)
+{
+    if (!m_active) {
+        status = m_done ? "done" : "queueing";
+    } else {
+        status = m_abort ? "aborting" :
+            m_suspend ? "suspending" :
+            m_done ? "done" :
+            "running";
+    }
+    // TODO: append ";processing" or ";waiting"
+
+    error = m_error;
+    sources = m_sourceStatus;
+}
+
+void Session::getProgress(int32_t &progress,
+                          SourceProgresses_t &sources)
+{
+    progress = m_progress;
+    sources = m_sourceProgress;
+}
+
+void Session::fireStatus(bool flush)
+{
+    std::string status;
+    uint32_t error;
+    SourceStatuses_t sources;
+
+    /**
+     * TODO: Remember when the last signal was triggered, then only
+     * send it anew after a certain timeout (0.1s?).
+     */
+
+    getStatus(status, error, sources);
+    emitStatus(status, error, sources);
+}
+
+void Session::fireProgress(bool flush)
+{
+    int32_t progress;
+    SourceProgresses_t sources;
+
+    /** TODO: timeout */
+
+    getProgress(progress, sources);
+    emitProgress(progress, sources);
+}
 
 Session::Session(DBusServer &server,
                  const std::string &config_name,
@@ -490,7 +774,14 @@ Session::Session(DBusServer &server,
     ReadOperations(config_name),
     m_server(server),
     m_active(false),
-    m_priority(PRI_DEFAULT)
+    m_done(false),
+    m_abort(false),
+    m_suspend(false),
+    m_priority(PRI_DEFAULT),
+    m_progress(-1),
+    m_error(0),
+    emitStatus(*this, "Status"),
+    emitProgress(*this, "Progress")
 {}
 
 Session::~Session()
@@ -504,8 +795,8 @@ void Session::activate()
     static GDBusMethodTable methods[] = {
         makeMethodEntry<Session,
                         const Caller_t &,
-                        typeof(&Session::close), &Session::close>
-                        ("Close"),
+                        typeof(&Session::detach), &Session::detach>
+                        ("Detach"),
         makeMethodEntry<ReadOperations,
                         bool,
                         ReadOperations::Config_t &,
@@ -522,10 +813,34 @@ void Session::activate()
                         ReadOperations::Reports_t &,
                         typeof(&ReadOperations::getReports), &ReadOperations::getReports>
                         ("GetReports"),
-        {}
+        makeMethodEntry<Session,
+                        const std::string &,
+                        const SourceModes_t &,
+                        typeof(&Session::sync), &Session::sync>
+                        ("Sync"),
+        makeMethodEntry<Session,
+                        typeof(&Session::abort), &Session::abort>
+                        ("Abort"),
+        makeMethodEntry<Session,
+                        typeof(&Session::suspend), &Session::suspend>
+                        ("Suspend"),
+        makeMethodEntry<Session,
+                        std::string &,
+                        uint32_t &,
+                        SourceStatuses_t &,
+                        typeof(&Session::getStatus), &Session::getStatus>
+                        ("GetStatus"),
+        makeMethodEntry<Session,
+                        int32_t &,
+                        SourceProgresses_t &,
+                        typeof(&Session::getProgress), &Session::getProgress>
+                        ("GetProgress"),
+       {}
     };
 
     static GDBusSignalTable signals[] = {
+        emitStatus.makeSignalEntry("Status"),
+        emitProgress.makeSignalEntry("Progress"),
         { },
     };
 
@@ -543,6 +858,36 @@ void Session::setActive(bool active)
         if (c) {
             c->ready();
         }
+    }
+}
+
+void Session::syncProgress(sysync::TProgressEventEnum type,
+                           int32_t extra1, int32_t extra2, int32_t extra3)
+{
+    // TODO: update our progress and status
+}
+
+void Session::sourceProgress(sysync::TProgressEventEnum type,
+                             SyncSource &source,
+                             int32_t extra1, int32_t extra2, int32_t extra3)
+{
+    // TODO: update our progress and status
+}
+
+void Session::run()
+{
+    if (m_sync) {
+        SyncMLStatus status;
+        try {
+            status = m_sync->sync();
+        } catch (...) {
+            status = m_sync->handleException();
+        }
+        if (!m_error) {
+            m_error = status;
+        }
+        m_done = true;
+        fireStatus(true);
     }
 }
 
@@ -829,8 +1174,9 @@ void DBusServer::startSession(const Caller_t &caller,
     object = session->getPath();
 }
 
-DBusServer::DBusServer(const DBusConnectionPtr &conn) :
+DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     DBusObjectHelper(conn.get(), "/org/syncevolution/Server", "org.syncevolution.Server"),
+    m_loop(loop),
     m_lastSession(time(NULL)),
     m_activeSession(NULL),
     sessionChanged(*this, "SessionChanged")
@@ -889,6 +1235,45 @@ void DBusServer::activate()
                                NULL,
                                this);
 }
+
+void DBusServer::run()
+{
+    while (true) {
+        if (!m_activeSession ||
+            !m_activeSession->readyToRun()) {
+            g_main_loop_run(m_loop);
+        }
+        if (m_activeSession &&
+            m_activeSession->readyToRun()) {
+            // this session must be owned by someone, otherwise
+            // it would not be set as active session => find
+            // that shared pointer and get a reference
+            boost::shared_ptr<Session> session;
+            BOOST_FOREACH(const Clients_t::value_type &client_entry,
+                          m_clients) {
+                session = boost::static_pointer_cast<Session, Resource>(client_entry.second->findResource(m_activeSession));
+                if (session) {
+                    break;
+                }
+            }
+            try {
+                m_syncSession.swap(session);
+                m_activeSession->run();
+            } catch (const std::exception &ex) {
+                SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
+            } catch (...) {
+                SE_LOG_ERROR(NULL, NULL, "unknown error");
+            }
+            session.swap(m_syncSession);
+            dequeue(session.get());
+        } else {
+            // the only reasons to get out of the main loop are
+            // running a sync and quitting; no active session, so quit
+            break;
+        }
+    }
+}
+
 
 /**
  * look up client by its ID
@@ -1015,10 +1400,9 @@ int main()
             err.throwFailure("g_dbus_setup_bus()");
         }
 
-        DBusServer server(conn);
+        DBusServer server(loop, conn);
         server.activate();
-        g_main_loop_run(loop);
-
+        server.run();
 	return 0;
     } catch ( const std::exception &ex ) {
         SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
