@@ -1996,6 +1996,11 @@ SyncMLStatus SyncContext::doSync()
     return status;
 }
 
+SyncMLStatus SyncContext::handleException()
+{
+    SyncMLStatus res = Exception::handle();
+    return res;
+}
 
 void SyncContext::status()
 {

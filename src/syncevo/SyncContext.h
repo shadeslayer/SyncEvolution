@@ -143,6 +143,16 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     SyncMLStatus sync(SyncReport *report = NULL);
 
     /**
+     * Convenience function, to be called inside a catch() block of
+     * (or for) the sync.
+     *
+     * Rethrows the exception to determine what it is, then logs it
+     * as an error and returns a suitable error code (usually a general
+     * STATUS_DATASTORE_FAILURE).
+     */
+    SyncMLStatus handleException();
+
+    /**
      * Determines the log directory of the previous sync (either in
      * temp or logdir) and shows changes since then.
      */
