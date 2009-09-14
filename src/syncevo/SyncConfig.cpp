@@ -434,6 +434,10 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
 
     node = m_tree->open(path, ConfigTree::visible);
     configNode.reset(new FilterConfigNode(node, m_sourceFilter));
+    if (m_sourceFilters.find(name) != m_sourceFilters.end()) {
+        configNode =
+            boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(configNode), m_sourceFilters[name]));
+    }
     hiddenNode = m_tree->open(path, ConfigTree::hidden);
     trackingNode = m_tree->open(path, ConfigTree::other, changeId);
 

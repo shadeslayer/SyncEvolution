@@ -31,9 +31,8 @@ using namespace std;
 
 CmdlineSyncClient::CmdlineSyncClient(const string &server,
                                      bool doLogging,
-                                     const set<string> &sources,
                                      bool useKeyring):
-    SyncContext(server, doLogging, sources),
+    SyncContext(server, doLogging),
     m_keyring(useKeyring)
 {
 }

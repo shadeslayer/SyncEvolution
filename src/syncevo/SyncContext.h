@@ -69,7 +69,6 @@ struct SuspendFlags
  */
 class SyncContext : public SyncConfig, public ConfigUserInterface {
     const string m_server;
-    const set<string> m_sources;
     const bool m_doLogging;
     bool m_quiet;
     bool m_dryrun;
@@ -119,11 +118,8 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * @param doLogging  write additional log and datatbase files about the sync
      */
     SyncContext(const string &server,
-                        bool doLogging = false,
-                        const set<string> &sources = set<string>());
+                bool doLogging = false);
     ~SyncContext();
-
-    using SyncConfig::savePassword;
 
     bool getQuiet() { return m_quiet; }
     void setQuiet(bool quiet) { m_quiet = quiet; }
@@ -257,16 +253,6 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * make this non-static
      */
     static SyncSource *findSource(const char *name);
-
-    /**
-     * intercept config filters
-     *
-     * This call removes the "sync" source property and remembers
-     * it separately because it has to be applied to only the active
-     * sync sources; the generic config handling code would apply
-     * it to all sources.
-     */
-    virtual void setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter);
 
     SharedEngine getEngine() { return m_engine; }
     const SharedEngine getEngine() const { return m_engine; }
@@ -521,11 +507,6 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * if none
      */
     std::string findSSLServerCertificate();
-
-    /**
-     * override sync mode of all active sync sources if set
-     */
-    string m_overrideMode;
 
     // total retry duration
     int m_retryDuration;

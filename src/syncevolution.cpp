@@ -79,7 +79,7 @@ class KeyringSyncCmdline : public Cmdline {
      * create a user implemented sync client.
      */
     SyncContext* createSyncClient() {
-        return new CmdlineSyncClient(m_server, true, m_sources, m_keyring);
+        return new CmdlineSyncClient(m_server, true, m_keyring);
     }
 };
 

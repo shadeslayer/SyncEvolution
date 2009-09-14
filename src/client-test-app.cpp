@@ -279,10 +279,9 @@ public:
         class ClientTest : public SyncContext {
         public:
             ClientTest(const string &server,
-                       const set<string> &activeSources,
                        const string &logbase,
                        const SyncOptions &options) :
-                SyncContext(server, false, activeSources),
+                SyncContext(server, false),
                 m_logbase(logbase),
                 m_options(options),
                 m_started(false)
@@ -332,7 +331,7 @@ public:
             const string m_logbase;
             SyncOptions m_options;
             bool m_started;
-        } client(server, activeSources, logbase, options);
+        } client(server, logbase, options);
 
         SyncReport report;
         SyncMLStatus status = client.sync(&report);

@@ -323,8 +323,8 @@ bool Cmdline::run() {
         }
 
         // apply config changes on-the-fly
-        from->setConfigFilter(true, m_syncProps);
-        from->setConfigFilter(false, m_sourceProps);
+        from->setConfigFilter(true, "", m_syncProps);
+        from->setConfigFilter(false, "", m_sourceProps);
 
         // write into the requested configuration, creating it if necessary
         boost::shared_ptr<SyncContext> to(createSyncClient());
@@ -412,17 +412,78 @@ bool Cmdline::run() {
             return true;
         }
     } else {
-        boost::shared_ptr<SyncContext> client;
-        client.reset(createSyncClient());
-        client->setQuiet(m_quiet);
-        client->setDryRun(m_dryrun);
-        client->setConfigFilter(true, m_syncProps);
-        client->setConfigFilter(false, m_sourceProps);
+        std::set<std::string> unmatchedSources;
+        boost::shared_ptr<SyncContext> context;
+        context.reset(createSyncClient());
+        context->setQuiet(m_quiet);
+        context->setDryRun(m_dryrun);
+        context->setConfigFilter(true, "", m_syncProps);
+        if (m_sources.empty()) {
+            if (m_sourceProps.empty()) {
+                // empty source list, empty source filter => run with
+                // existing configuration without filtering it
+            } else {
+                // Special semantic of 'no source selected': apply
+                // filter only to sources which are
+                // *active*. Configuration of inactive sources is left
+                // unchanged. This way we don't activate sync sources
+                // accidentally when the sync mode is modified
+                // temporarily.
+                BOOST_FOREACH(const std::string &source,
+                              context->getSyncSources()) {
+                    boost::shared_ptr<PersistentSyncSourceConfig> source_config =
+                        context->getSyncSourceConfig(source);
+                    if (strcmp(source_config->getSync(), "disabled")) {
+                        context->setConfigFilter(false, source, m_sourceProps);
+                    }
+                }
+            }
+        } else {
+            // apply (possibly empty) source filter to selected sources
+            BOOST_FOREACH(const std::string &source,
+                          m_sources) {
+                boost::shared_ptr<PersistentSyncSourceConfig> source_config =
+                        context->getSyncSourceConfig(source);
+                if (!source_config || !source_config->exists()) {
+                    // invalid source name in m_sources, remember and
+                    // report this below
+                    unmatchedSources.insert(source);
+                } else if (m_sourceProps.find(SyncSourceConfig::m_sourcePropSync.getName()) ==
+                           m_sourceProps.end()) {
+                    // Sync mode is not set, must override the
+                    // "sync=disabled" set below with the original
+                    // sync mode for the source or (if that is also
+                    // "disabled") with "two-way". The latter is part
+                    // of the command line semantic that listing a
+                    // source activates it.
+                    FilterConfigNode::ConfigFilter filter = m_sourceProps;
+                    string sync = source_config->getSync();
+                    filter[SyncSourceConfig::m_sourcePropSync.getName()] =
+                        sync == "disabled" ? "two-way" : sync;
+                    context->setConfigFilter(false, source, filter);
+                } else {
+                    // sync mode is set, can use m_sourceProps
+                    // directly to apply it
+                    context->setConfigFilter(false, source, m_sourceProps);
+                }
+            }
+
+            // temporarily disable the rest
+            FilterConfigNode::ConfigFilter disabled;
+            disabled[SyncSourceConfig::m_sourcePropSync.getName()] = "disabled";
+            context->setConfigFilter(false, "", disabled);
+        }
+
+        // check whether there were any sources specified which do not exist
+        if (unmatchedSources.size()) {
+            context->throwError(string("no such source(s): ") + boost::join(unmatchedSources, " "));
+        }
+
         if (m_status) {
-            client->status();
+            context->status();
         } else if (m_printSessions) {
             vector<string> dirs;
-            client->getSessions(dirs);
+            context->getSessions(dirs);
             bool first = true;
             BOOST_FOREACH(const string &dir, dirs) {
                 if (first) {
@@ -433,7 +494,7 @@ bool Cmdline::run() {
                 cout << dir << endl;
                 if (!m_quiet) {
                     SyncReport report;
-                    client->readSessionInfo(dir, report);
+                    context->readSessionInfo(dir, report);
                     cout << report;
                 }
             }
@@ -448,10 +509,10 @@ bool Cmdline::run() {
                 usage(false, "Sources must be selected explicitly for --restore to prevent accidental restore.");
                 return false;
             }
-            client->restore(m_restore,
-                            m_after ?
-                            SyncContext::DATABASE_AFTER_SYNC :
-                            SyncContext::DATABASE_BEFORE_SYNC);
+            context->restore(m_restore,
+                             m_after ?
+                             SyncContext::DATABASE_AFTER_SYNC :
+                             SyncContext::DATABASE_BEFORE_SYNC);
         } else {
             if (m_dryrun) {
                 SyncContext::throwError("--dry-run not supported for running a synchronization");
@@ -465,7 +526,7 @@ bool Cmdline::run() {
                 return false;
             }
 
-            return ( client->sync() == STATUS_OK);
+            return (context->sync() == STATUS_OK);
         }
     }
 
@@ -811,7 +872,7 @@ void Cmdline::usage(bool full, const string &error, const string &param)
 }
 
 SyncContext* Cmdline::createSyncClient() {
-    return new SyncContext(m_server, true, m_sources);
+    return new SyncContext(m_server, true);
 }
 
 #ifdef ENABLE_UNIT_TESTS

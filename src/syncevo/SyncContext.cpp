@@ -102,11 +102,9 @@ extern "C" void suspend_handler(int sig)
 
 
 SyncContext::SyncContext(const string &server,
-                                         bool doLogging,
-                                         const set<string> &sources) :
+                                         bool doLogging) :
     SyncConfig(server),
     m_server(server),
-    m_sources(sources),
     m_doLogging(doLogging),
     m_quiet(false),
     m_dryrun(false)
@@ -1141,23 +1139,8 @@ SyncSource *SyncContext::findSource(const char *name)
     return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
 }
 
-void SyncContext::setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter)
-{
-    map<string, string>::const_iterator hasSync = filter.find(SyncSourceConfig::m_sourcePropSync.getName());
-
-    if (!sync && hasSync != filter.end()) {
-        m_overrideMode = hasSync->second;
-        FilterConfigNode::ConfigFilter strippedFilter = filter;
-        strippedFilter.erase(SyncSourceConfig::m_sourcePropSync.getName());
-        SyncConfig::setConfigFilter(sync, strippedFilter);
-    } else {
-        SyncConfig::setConfigFilter(sync, filter);
-    }
-}
-
 void SyncContext::initSources(SourceList &sourceList)
 {
-    set<string> unmatchedSources = m_sources;
     list<string> configuredSources = getSyncSources();
     BOOST_FOREACH(const string &name, configuredSources) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
@@ -1165,23 +1148,6 @@ void SyncContext::initSources(SourceList &sourceList)
         // is the source enabled?
         string sync = sc->getSync();
         bool enabled = sync != "disabled";
-        string overrideMode = m_overrideMode;
-
-        // override state?
-        if (m_sources.size()) {
-            if (m_sources.find(sc->getName()) != m_sources.end()) {
-                if (!enabled) {
-                    if (overrideMode.empty()) {
-                        overrideMode = "two-way";
-                    }
-                    enabled = true;
-                }
-                unmatchedSources.erase(sc->getName());
-            } else {
-                enabled = false;
-            }
-        }
-        
         if (enabled) {
             string url = getSyncURL();
             boost::replace_first(url, "https://", "http://"); // do not distinguish between protocol in change tracking
@@ -1189,12 +1155,6 @@ void SyncContext::initSources(SourceList &sourceList)
             SyncSourceParams params(name,
                                     getSyncSourceNodes(name),
                                     changeId);
-            // the sync mode has to be set before instantiating the source
-            // because the client library reads the preferredSyncMode at that time
-            if (!overrideMode.empty()) {
-                params.m_nodes.m_configNode->addFilter(SyncSourceConfig::m_sourcePropSync.getName(),
-                                                       overrideMode);
-            }
             SyncSource *syncSource =
                 SyncSource::createSource(params);
             if (!syncSource) {
@@ -1202,11 +1162,6 @@ void SyncContext::initSources(SourceList &sourceList)
             }
             sourceList.push_back(syncSource);
         }
-    }
-
-    // check whether there were any sources specified which do not exist
-    if (unmatchedSources.size()) {
-        throwError(string("no such source(s): ") + boost::join(unmatchedSources, " "));
     }
 }
 

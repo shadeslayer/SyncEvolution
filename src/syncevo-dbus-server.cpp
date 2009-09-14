@@ -363,7 +363,7 @@ class DBusSync : public SyncContext
     Session &m_session;
 
 public:
-    DBusSync(const std::string &server,
+    DBusSync(const std::string &config,
              Session &session);
 
     virtual boost::shared_ptr<TransportAgent> createTransportAgent();
@@ -374,7 +374,7 @@ public:
                                        int32_t extra1, int32_t extra2, int32_t extra3);
 
     // TODO: hook up abort and suspend requests,
-    // activate CTRL-C handling
+    // activate CTRL-C handling, implement sleep()
 };
 
 /**
@@ -603,9 +603,9 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
 
 /***************** DBusSync implementation **********************/
 
-DBusSync::DBusSync(const std::string &server,
+DBusSync::DBusSync(const std::string &config,
                    Session &session) :
-    SyncContext(server),
+    SyncContext(config),
     m_session(session)
 {
 }

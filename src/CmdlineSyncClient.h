@@ -34,7 +34,6 @@ class CmdlineSyncClient : public SyncContext {
  public:
     CmdlineSyncClient(const string &server,
                       bool doLogging = false,
-                      const set<string> &sources = set<string>(),
                       bool useKeyring = false);
 
     using SyncConfig::savePassword;

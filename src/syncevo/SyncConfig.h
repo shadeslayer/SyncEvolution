@@ -778,12 +778,23 @@ class SyncConfig {
      * Replaces the property filter of either the sync properties or
      * all sources. This can be used to e.g. temporarily override
      * the active sync mode.
+     *
+     * @param sync     true if the filter applies to sync properties,
+     *                 false if it applies to sources
+     * @param source   empty string if filter applies to all sources,
+     *                 otherwise the source name to which it applies
+     * @param filter   key (case insensitive)/value pairs of properties
+     *                 which are to be overridden
      */
-    virtual void setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter) {
+    void setConfigFilter(bool sync,
+                         const std::string &source,
+                         const FilterConfigNode::ConfigFilter &filter) {
         if (sync) {
             m_configNode->setFilter(filter);
-        } else {
+        } else if (source.empty()) {
             m_sourceFilter = filter;
+        } else {
+            m_sourceFilters[source] = filter;
         }
     }
 
@@ -1008,8 +1019,13 @@ private:
     boost::shared_ptr<FilterConfigNode> m_configNode;
     boost::shared_ptr<ConfigNode> m_hiddenNode;
 
-    /** temporary overrides for sync or sync source settings */
+    /**
+     * temporary override for all sync source settings
+     */
     FilterConfigNode::ConfigFilter m_sourceFilter;
+
+    /** temporary override for settings of specific sources */
+    std::map<std::string, FilterConfigNode::ConfigFilter> m_sourceFilters;
 
     mutable ConfigStringCache m_stringCache;
 
