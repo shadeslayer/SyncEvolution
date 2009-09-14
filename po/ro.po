@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2009-08-24 09:22+0000\n"
-"PO-Revision-Date: 2009-08-29 18:31+0200\n"
+"POT-Creation-Date: 2009-09-01 16:13+0000\n"
+"PO-Revision-Date: 2009-09-14 12:56+0200\n"
 "Last-Translator: Cosmin Bordeianu <elloxar@gmail.com>\n"
 "Language-Team: Moblin Romania <live@moblin.ro>\n"
 "MIME-Version: 1.0\n"
@@ -80,7 +80,7 @@ msgstr "Doriți să ștergeți toate datele locale și să le înlocuiți cu dat
 #: ../src/gtk-ui/sync-ui.c:708
 #, c-format
 msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
-msgstr "Doriți să ștergeți toate datele din %s și să le înlocuiți cu datele dvs. locale? Acest lucru nu este, de obicei, recomand."
+msgstr "Doriți să ștergeți toate datele din %s și să le înlocuiți cu datele locale? Acest lucru nu este, de obicei, recomand."
 
 #: ../src/gtk-ui/sync-ui.c:725
 msgid "No, cancel sync"
@@ -287,7 +287,7 @@ msgstr "Nu s-a putut citi fișierul de configurare"
 
 #: ../src/gtk-ui/sync-ui.c:1957
 msgid "No configuration found"
-msgstr "Nu s-a găsit nici o configurare"
+msgstr "Nu s-a găsit nici o configurație"
 
 #: ../src/gtk-ui/sync-ui.c:1959
 msgid "No configuration file found"
@@ -412,11 +412,11 @@ msgstr ""
 
 #: ../src/gtk-ui/ui.glade.h:11
 msgid "Delete all local data and replace it with remote data"
-msgstr "Șterge toate datele locale și înlocuieștele cu date de la distanţă"
+msgstr "Șterge toate datele locale și înlocuiește-le cu date de la distanţă"
 
 #: ../src/gtk-ui/ui.glade.h:12
 msgid "Delete all remote data and replace it with local data"
-msgstr "Șterge toate datele de la distanță și înlocuieștele cu date locale"
+msgstr "Șterge toate datele de la distanță și înlocuiește-le cu date locale"
 
 #: ../src/gtk-ui/ui.glade.h:13
 msgid "Delete this service"
@@ -431,8 +431,8 @@ msgid ""
 "If you don't see your service above but know that your sync provider uses SyncML\n"
 "you can setup a service manually."
 msgstr ""
-"Dacă nu puteți vedea serviciul dvs. mai sus, dar ştiți că furnizorul dvs. de sincronizări utilizează tehnologia SyncML\n"
-"puteţi configura un serviciu manual."
+"Dacă nu vizibil serviciul mai sus, dar se știe că furnizorul de sincronizări utilizează tehnologia SyncML\n"
+"este posibilă configurarea manuală a unui serviciu."
 
 #: ../src/gtk-ui/ui.glade.h:18
 msgid "Merge local and remote data (recommended)"
@@ -488,7 +488,7 @@ msgid ""
 "To sync you'll need a network connection and an account with a sync service.\n"
 "We support the following services: "
 msgstr ""
-"Pentru a sincroniza aveți nevoie de o conexiune la rețea și un cont cu servicii de sincronizare.\n"
+"Pentru a sincroniza, este nevoie de o conexiune la rețea și un cont cu servicii de sincronizare.\n"
 "Noi sprijinim următoarele servicii: "
 
 #: ../src/gtk-ui/ui.glade.h:33
@@ -500,8 +500,8 @@ msgid ""
 "You haven't set up a sync service yet. Sync services let you \n"
 "synchronize your data between your netbook and a web service."
 msgstr ""
-"Nu ați înfiinţat încă nici un serviciu de sincronizare. Serviciile de sincronizare vă permit să \n"
-"sincronizați datele dvs. între netbookul dvs. şi un serviciu de web."
+"Nu este înfiinţat nici un serviciu de sincronizare. Serviciile de sincronizare permit \n"
+"sincronizarea datelor între netbook şi un serviciu web."
 
 #: ../src/gtk-ui/sync.desktop.in.h:2
 msgid "Up to date"
