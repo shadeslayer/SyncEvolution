@@ -390,6 +390,11 @@ class Session : public DBusObjectHelper,
     DBusServer &m_server;
     boost::weak_ptr<Connection> m_connection;
 
+    /** temporary config changes */
+    FilterConfigNode::ConfigFilter m_syncFilter;
+    FilterConfigNode::ConfigFilter m_sourceFilter;
+    std::map<std::string, FilterConfigNode::ConfigFilter> m_sourceFilters;
+
     /**
      * True while clients are allowed to make calls other than Detach(),
      * which is always allowed. Some calls are not allowed while this
@@ -671,14 +676,24 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
 
     m_sync.reset(new DBusSync(m_configName, *this));
 
-    // TODO: extend EvolutionSyncConfig (base class of EvolutionSyncClient)
-    // so that it can override source settings on a per-source basis.
-    // See setConfigFilter(). The special handling with an array of
-    // active sync sources should be removed entirely and be replaced with
-    // - a default filter for all sources
-    // - one filter per source, applied after the default filter and thus
-    //   overwriting its values
-    // Also TODO: apply the temporary config changes.
+    // Apply temporary config filters. The parameters of this function
+    // override the source filters, if set.
+    m_sync->setConfigFilter(true, "", m_syncFilter);
+    FilterConfigNode::ConfigFilter filter;
+    filter = m_sourceFilter;
+    if (!mode.empty()) {
+        filter[SyncSourceConfig::m_sourcePropSync.getName()] = mode;
+    }
+    m_sync->setConfigFilter(false, "", filter);
+    BOOST_FOREACH(const std::string &source,
+                  m_sync->getSyncSources()) {
+        filter = m_sourceFilters[source];
+        SourceModes_t::const_iterator it = source_modes.find(source);
+        if (it != source_modes.end()) {
+            filter[SyncSourceConfig::m_sourcePropSync.getName()] = it->second;
+        }
+        m_sync->setConfigFilter(false, source, filter);
+    }
 
     // Update status and progress. From now on, all configured sources
     // have their default entry (referencing them by name creates the

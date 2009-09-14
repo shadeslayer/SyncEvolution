@@ -1,6 +1,11 @@
 #! /usr/bin/python
 
-'''Runs a sync. Usage: dbus-server-sync <server>'''
+'''Runs a sync.
+Usage: dbus-server-sync <server> <mode> <source modes>
+<server> - configuration name
+<mode> - "", "two-way", "disabled", ...
+<source modes> - "{}" or Python hash (like {"addressbook": "refresh-from-server"})
+'''
 
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
@@ -42,12 +47,12 @@ session = dbus.Interface(bus.get_object('org.syncevolution',
                                         sessionpath),
                          'org.syncevolution.Session')
 
-# print 'session created:', session.getStatus(), session.getProgress()
+print 'session created:', session.GetStatus(), session.GetProgress()
 # wait for session ready
 loop.run()
-# print 'session ready:', session.getStatus(), session.getProgress()
-session.Sync("", {})
-# print 'sync started:', session.getStatus(), session.getProgress()
+print 'session ready:', session.GetStatus(), session.GetProgress()
+session.Sync(sys.argv[2], eval(sys.argv[3]))
+print 'sync started:', session.GetStatus(), session.GetProgress()
 # wait for session done
 loop.run()
-# print 'done:', session.getStatus(), session.getProgress()
+print 'done:', session.GetStatus(), session.GetProgress()
