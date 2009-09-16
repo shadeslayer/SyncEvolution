@@ -4,9 +4,14 @@ applications_generated = $(applications_in_files:.desktop.in=.desktop)
 applications_DATA = $(GUI_DESKTOP_FILES)
 @INTLTOOL_DESKTOP_RULE@
 
-# would be nicer to have different descriptions and names...
-sync-gtk.desktop sync-moblin.desktop: sync-%.desktop: sync.desktop
-	sed -e 's/Exec=sync-ui/Exec=sync-ui-$*/' $< >$@
+# When installing both the plain GTK and the Moblin-themed version,
+# the Moblin version uses the normal "Sync - Up to date" name/comment
+# and the GTK version uses "Sync (GTK)" as name with the same
+# comment. This is a somewhat arbitrary choice, with the rationale
+# being that a Moblin user is less likely to care about the
+# distinction while a GTK user might understand what "(GTK)" means.
+sync-moblin.desktop: sync.desktop
+	cp $< $@
 
 gladedir = $(datadir)/syncevolution/
 glade_DATA = \
@@ -72,6 +77,7 @@ BUILT_SOURCES = \
 endif
 CLEANFILES = $(BUILT_SOURCES) \
 	ui.xml \
+	sync-moblin.desktop \
         $(applications_generated)
 
 %-bindings.h: stamp-%-bindings.h

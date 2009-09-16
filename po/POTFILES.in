@@ -1,3 +1,4 @@
 src/gtk-ui/sync-ui.c
 src/gtk-ui/ui.glade
 src/gtk-ui/sync.desktop.in
+src/gtk-ui/sync-gtk.desktop.in
