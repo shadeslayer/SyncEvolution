@@ -1717,7 +1717,6 @@ SyncMLStatus EvolutionSyncClient::doSync()
     bool aborting = false;
     int suspending = 0; 
     m_retries = 0;
-    bool resend = false;
     sysync::uInt16 previousStepCmd = stepCmd;
     do {
         try {
@@ -1845,14 +1844,17 @@ SyncMLStatus EvolutionSyncClient::doSync()
                 // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
                 // sent or have it copied into caller's buffer using
                 // ReadSyncMLBuffer(), then send it to the server
-                if(!resend) {
-                    sendBuffer = m_engine.GetSyncMLBuffer(session, true);
-                }else {
-                    SE_LOG_INFO (NULL, NULL, "EvolutionSyncClient: resend previous request #%d", m_retries);
-                }
+                sendBuffer = m_engine.GetSyncMLBuffer(session, true);
                 agent->send(sendBuffer.get(), sendBuffer.size());
                 stepCmd = sysync::STEPCMD_SENTDATA; // we have sent the data
-                resend = false;
+                break;
+            }
+            case sysync::STEPCMD_RESENDDATA: {
+                SE_LOG_INFO (NULL, NULL, "EvolutionSyncClient: resend previous request #%d", m_retries);
+                /* We are resending previous message, just read from the
+                 * previous buffer */
+                agent->send(sendBuffer.get(), sendBuffer.size());
+                stepCmd = sysync::STEPCMD_SENTDATA; // we have sent the data
                 break;
             }
             case sysync::STEPCMD_NEEDDATA:
@@ -1860,16 +1862,29 @@ SyncMLStatus EvolutionSyncClient::doSync()
                 case TransportAgent::ACTIVE:
                     stepCmd = sysync::STEPCMD_SENTDATA; // still sending the data?!
                     break;
-                case TransportAgent::TIME_OUT:
+                /* If this is a network error, it usually failed quickly, retry
+                 * immediately has likely no effect. Manually sleep here to wait a while
+                 * before retry.
+                 * Sleep will return non-zero value for sigint
+                 */
                 case TransportAgent::FAILED:
+                    if(sleep (m_timeout)) {
+                        if(checkForSuspend()) {
+                            stepCmd = sysync::STEPCMD_SUSPEND;
+                        } else {
+                            stepCmd = sysync::STEPCMD_ABORT;
+                        }
+                        break;
+                    }
+                case TransportAgent::TIME_OUT: {
                     if(m_retries++ >= m_retryCount){
                         SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries",m_retryCount);
                         stepCmd = sysync::STEPCMD_ABORT;
                     }else {
                         stepCmd = sysync::STEPCMD_RESENDDATA;
-                        resend = true;
                     }
                     break;
+                    }
                 case TransportAgent::GOT_REPLY: {
                     const char *reply;
                     size_t replylen;
@@ -1896,8 +1911,18 @@ SyncMLStatus EvolutionSyncClient::doSync()
                             SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries",m_retryCount);
                             stepCmd = sysync::STEPCMD_ABORT;
                         }else {
-                            stepCmd = sysync::STEPCMD_RESENDDATA;
-                            resend = true;
+                            /* This is a network failure, lets wait a while
+                             * before retry
+                             */
+                            if (sleep (m_timeout)){
+                                if(checkForSuspend()) {
+                                    stepCmd = sysync::STEPCMD_SUSPEND;
+                                } else {
+                                    stepCmd = sysync::STEPCMD_ABORT;
+                                }
+                            } else {
+                                stepCmd  = sysync::STEPCMD_RESENDDATA;
+                            }
                         }
                     }
                     break;
