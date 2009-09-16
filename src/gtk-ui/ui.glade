@@ -345,7 +345,7 @@
                               <widget class="GtkLabel" id="label11">
                                 <property name="visible">True</property>
                                 <property name="xalign">0</property>
-                                <property name="label" translatable="yes">You haven't set up a sync service yet. Sync services let you 
+                                <property name="label" translatable="yes">You haven't selected a sync service yet. Sync services let you 
 synchronize your data between your netbook and a web service.</property>
                               </widget>
                               <packing>
@@ -361,7 +361,7 @@ synchronize your data between your netbook and a web service.</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="label" translatable="yes">Setup sync service</property>
+                                    <property name="label" translatable="yes">Select sync service</property>
                                     <property name="response_id">0</property>
                                   </widget>
                                   <packing>
