@@ -1313,12 +1313,15 @@ get_report_summary (int local_changes, int remote_changes, int local_rejects, in
                                              remote_changes),
                                    remote_changes);
     } else if (remote_changes == 0) {
-        changes = g_strdup_printf (ngettext ("Last time: Received one change.",
-                                             "Last time: Received %d changes.",
+        // This is about changes made to the local data. Not all of these
+        // changes were requested by the remote server, so "applied"
+        // is a better word than "received" (bug #5185).
+        changes = g_strdup_printf (ngettext ("Last time: Applied one change.",
+                                             "Last time: Applied %d changes.",
                                              local_changes),
                                    local_changes);
     } else {
-        changes = g_strdup_printf (_("Last time: Received %d changes and sent %d changes."),
+        changes = g_strdup_printf (_("Last time: Applied %d changes and sent %d changes."),
                                    local_changes, remote_changes);
     }
 
