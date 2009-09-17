@@ -23,8 +23,16 @@
 #include "config.h"
 #include "sync-ui.h"
 
-#ifdef ENABLE_UNIQUE
+static void
+set_app_name_and_icon ()
+{
+    /* TRANSLATORS: this is the application name that may be used by e.g.
+       the windowmanager */
+    g_set_application_name (_("Sync"));
+    gtk_window_set_default_icon_name ("sync");
+}
 
+#ifdef ENABLE_UNIQUE
 #include <unique/unique.h>
 
 enum
@@ -81,6 +89,8 @@ main (int argc, char *argv[])
     } else {
         GtkWidget *main_win;
 
+        set_app_name_and_icon ();
+
         main_win = sync_ui_create_main_window ();
         if (main_win) {
             /* UniqueApp watches the main window so it can terminate 
@@ -108,6 +118,8 @@ main (int argc, char *argv[])
     bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
+
+    set_app_name_and_icon ();
 
     sync_ui_create_main_window ();
     gtk_main ();
