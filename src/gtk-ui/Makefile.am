@@ -17,6 +17,9 @@ gladedir = $(datadir)/syncevolution/
 glade_DATA = \
 	ui.xml
 
+icondir = $(datadir)/icons/hicolor/48x48/apps
+dist_icon_DATA = sync.png
+
 themercdir = $(datadir)/syncevolution/
 themerc_DATA = \
 	close.png close_hover.png settings.png settings_hover.png \
