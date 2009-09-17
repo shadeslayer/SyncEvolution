@@ -110,11 +110,16 @@ class DBusServer : public DBusObjectHelper
      * only one session may make such modifications at a time. A
      * plain pointer which is reset by the session's deconstructor.
      *
-     * A weak pointer did not work because it does not provide access
+     * A weak pointer alone did not work because it does not provide access
      * to the underlying pointer after the last corresponding shared
      * pointer is gone (which triggers the deconstructing of the session).
      */
     Session *m_activeSession;
+
+    /**
+     * The weak pointer that corresponds to m_activeSession.
+     */
+    boost::weak_ptr<Session> m_activeSessionRef;
 
     /**
      * The running sync session. Having a separate reference to it
@@ -1261,17 +1266,13 @@ void DBusServer::run()
         if (m_activeSession &&
             m_activeSession->readyToRun()) {
             // this session must be owned by someone, otherwise
-            // it would not be set as active session => find
-            // that shared pointer and get a reference
-            boost::shared_ptr<Session> session;
-            BOOST_FOREACH(const Clients_t::value_type &client_entry,
-                          m_clients) {
-                session = boost::static_pointer_cast<Session, Resource>(client_entry.second->findResource(m_activeSession));
-                if (session) {
-                    break;
-                }
+            // it would not be set as active session
+            boost::shared_ptr<Session> session = m_activeSessionRef.lock();
+            if (!session) {
+                throw runtime_error("internal error: session no longer available");
             }
             try {
+                // ensure that the session doesn't go away
                 m_syncSession.swap(session);
                 m_activeSession->run();
             } catch (const std::exception &ex) {
@@ -1362,6 +1363,7 @@ void DBusServer::dequeue(Session *session)
         session->setActive(false);
         sessionChanged(session->getPath(), false);
         m_activeSession = NULL;
+        m_activeSessionRef.reset();
         checkQueue();
         return;
     }
@@ -1380,6 +1382,7 @@ void DBusServer::checkQueue()
         if (session) {
             // activate the session
             m_activeSession = session.get();
+            m_activeSessionRef = session;
             session->setActive(true);
             sessionChanged(session->getPath(), true);
             return;
