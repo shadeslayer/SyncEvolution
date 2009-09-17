@@ -51,15 +51,23 @@ class SharedBuffer : public boost::shared_array<char>
         m_size(0)
         {}
 
+    /** transfers ownership */
     explicit SharedBuffer(char *p, size_t size):
     boost::shared_array<char>(p),
         m_size(size)
         {}
 
+    /** transfers ownership with custom destructor */
     template <class D> SharedBuffer(char *p, size_t size, const D &d) :
     boost::shared_array<char>(p, d),
         m_size(size)
         {}
+
+    /** copies memory */
+    explicit SharedBuffer(const char *p, size_t size):
+    boost::shared_array<char>(new char [size]),
+        m_size(size)
+        { memcpy(get(), p, size); }
 
     size_t size() { return m_size; }
 };
