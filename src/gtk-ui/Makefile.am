@@ -1,5 +1,5 @@
 applicationsdir = $(datadir)/applications
-applications_in_files = sync.desktop.in
+applications_in_files = sync.desktop.in sync-gtk.desktop.in
 applications_generated = $(applications_in_files:.desktop.in=.desktop)
 applications_DATA = $(GUI_DESKTOP_FILES)
 @INTLTOOL_DESKTOP_RULE@
