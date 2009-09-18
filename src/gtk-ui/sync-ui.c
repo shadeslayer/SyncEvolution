@@ -163,6 +163,7 @@ typedef struct app_data {
 
     GtkWidget *service_settings_frame;
     GtkWidget *service_link;
+    GtkWidget *service_description_label;
     GtkWidget *service_name_label;
     GtkWidget *service_name_entry;
     GtkWidget *username_entry;
@@ -1049,7 +1050,9 @@ init_ui (app_data *data)
     builder = gtk_builder_new ();
     gtk_builder_add_from_file (builder, GLADEDIR "ui.xml", &error);
     if (error) {
-        g_printerr ("Failed to load user interface from %s\n", GLADEDIR "ui.xml");
+        g_printerr ("Failed to load user interface from %s: %s\n",
+                    GLADEDIR "ui.xml",
+                    error->message);
         g_error_free (error);
         g_object_unref (builder);
         return FALSE;
@@ -1092,6 +1095,7 @@ init_ui (app_data *data)
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
     data->service_link = GTK_WIDGET (gtk_builder_get_object (builder, "service_link"));
+    data->service_description_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_description_label"));
     data->service_name_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_label"));
     data->service_name_entry = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_entry"));
     data->server_settings_expander = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_expander"));
@@ -1480,6 +1484,23 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
     g_ptr_array_free (options, TRUE);
 }
 
+const char*
+get_service_description (const char *service)
+{
+    if (strcmp (service, "ScheduleWorld") == 0) {
+        return _("ScheduleWorld enables you to keep your contacts, events, "
+                 "tasks, and notes in sync.");
+    }else if (strcmp (service, "Google") == 0) {
+        return _("Google Sync can backup and synchronize your Address Book "
+                 "with your Gmail contacts.");
+    }else if (strcmp (service, "Funambol") == 0) {
+        return _("Backup your contacts and calendar. Sync with a single"
+                 "click, anytime, anywhere.");
+    }
+
+    return "";
+}
+
 static void
 show_settings_window (app_data *data, server_config *config)
 {
@@ -1505,6 +1526,9 @@ show_settings_window (app_data *data, server_config *config)
         gtk_widget_show (data->service_name_label);
         gtk_widget_show (data->service_name_entry);
     }
+
+    gtk_label_set_text (GTK_LABEL (data->service_description_label),
+                        get_service_description (config->name));
 
     if (config->web_url) {
         gtk_link_button_set_uri (GTK_LINK_BUTTON (data->service_link), 
@@ -1550,7 +1574,9 @@ show_settings_window (app_data *data, server_config *config)
     gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
                       0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
 
-    entry = gtk_entry_new_with_max_length (100);
+    entry = gtk_entry_new ();
+    gtk_entry_set_max_length (GTK_ENTRY (entry), 99);
+    gtk_entry_set_width_chars (GTK_ENTRY (entry), 80);
     gtk_entry_set_text (GTK_ENTRY (entry), 
                         config->base_url ? config->base_url : "");
     g_object_set_data (G_OBJECT (entry), "value", &config->base_url);
@@ -1573,7 +1599,9 @@ show_settings_window (app_data *data, server_config *config)
         gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
                           0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
 
-        entry = gtk_entry_new_with_max_length (100);
+        entry = gtk_entry_new ();
+        gtk_entry_set_max_length (GTK_ENTRY (entry), 99);
+        gtk_entry_set_width_chars (GTK_ENTRY (entry), 80);
         gtk_entry_set_text (GTK_ENTRY (entry), 
                             source->uri ? source->uri : "");
         g_object_set_data (G_OBJECT (entry), "value", &source->uri);
