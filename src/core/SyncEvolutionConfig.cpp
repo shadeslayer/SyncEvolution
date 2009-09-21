@@ -676,7 +676,11 @@ void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
     /* If password is from ui or environment variable, set them in the config node on fly
      * Previous impl use temp string to store them, this is not good for expansion in the backend */
     if(!passwordSave.empty()) {
-        globalConfigNode.addFilter(getName(), passwordSave);
+        if(sourceConfigNode.get() == NULL) {
+            globalConfigNode.addFilter(getName(), passwordSave);
+        } else {
+            sourceConfigNode->addFilter(getName(), passwordSave);
+        }
     }
 }
 void PasswordConfigProperty::savePassword(ConfigUserInterface &ui,
