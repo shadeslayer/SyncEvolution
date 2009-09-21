@@ -341,6 +341,19 @@ a list of valid values.
   Suppresses most of the normal output during a synchronization. The
   log file still contains all the information.
 
+--keyring|-k
+  Save or retrieve passwords from the GNOME keyring when modifying the
+  configuration or running a synchronization. Note that using this option
+  applies to *all* passwords in a configuration, so setting a single
+  password as follows moves the other passwords into the keyring, if
+  they were not stored there already:
+     --keyring --configure --sync-property proxyPassword=foo
+
+  When passwords were stored in the keyring, their value is set to "-"
+  in the configuration. This means that when running a synchronization
+  without the --keyring argument, the password has to be entered
+  interactively.
+
 --help|-h
   Prints usage information.
 

@@ -23,6 +23,7 @@
 #include "SyncEvolutionConfig.h"
 #include "FilterConfigNode.h"
 class SyncSource;
+class EvolutionSyncClient;
 
 #include <set>
 using namespace std;
@@ -48,7 +49,7 @@ public:
 
     bool run();
 
-private:
+protected:
     class Bool { 
     public:
         Bool(bool val = false) : m_value(val) {}
@@ -75,6 +76,7 @@ private:
     Bool m_printConfig;
     Bool m_printSessions;
     Bool m_dontrun;
+    Bool m_keyring;
     FilterConfigNode::ConfigFilter m_syncProps, m_sourceProps;
     const ConfigPropertyRegistry &m_validSyncProps;
     const ConfigPropertyRegistry &m_validSourceProps;
@@ -135,6 +137,14 @@ private:
     void usage(bool full,
                const string &error = string(""),
                const string &param = string(""));
+
+    /**
+     * This is a factory method used to delay sync client creation to its
+     * subclass. The motivation is to let user implement their own 
+     * clients to avoid dependency.
+     * @return the created sync client
+     */
+    virtual EvolutionSyncClient* createSyncClient();
 
     friend class SyncEvolutionCmdlineTest;
 };

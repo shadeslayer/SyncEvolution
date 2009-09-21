@@ -84,15 +84,17 @@ libstdc++.a :
 
 syncevolution_SOURCES = \
 	syncevolution.cpp \
+	CmdlineSyncClient.h \
+	CmdlineSyncClient.cpp \
 	$(CORE_SOURCES)
 nodist_syncevolution_SOURCES = ../test/test.cpp
 
 # SYNCEVOLUTION_LDADD will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
 # if linking statically against them, empty otherwise;
 # either way this does not lead to a dependency on those libs - done explicitly
-syncevolution_LDADD = $(CORE_LDADD)
+syncevolution_LDADD = $(CORE_LDADD) $(KEYRING_LIBS)
 syncevolution_LDFLAGS = $(CORE_LD_FLAGS)
-syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
+syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS)
 syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) # $(SYNTHESIS_DEP)
 
 # rule which is only relevant when compiling Synthesis in subdirectory

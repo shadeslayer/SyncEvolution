@@ -148,6 +148,9 @@ bool SyncEvolutionCmdline::parse()
             m_usage = true;
         } else if(boost::iequals(m_argv[opt], "--version")) {
             m_version = true;
+        } else if(boost::iequals(m_argv[opt], "--keyring")||
+                boost::iequals(m_argv[opt], "-k")) {
+            m_keyring = true;
         } else {
             usage(false, string(m_argv[opt]) + ": unknown parameter");
             return false;
@@ -252,6 +255,14 @@ bool SyncEvolutionCmdline::run() {
         if (m_dryrun) {
             EvolutionSyncClient::throwError("--dry-run not supported for configuration changes");
         }
+        if (m_keyring) {
+#ifndef USE_GNOME_KEYRING
+            m_err << "Error: this syncevolution binary was compiled without support for storing "
+                     "passwords in a keyring. Either store passwords in your configuration "
+                     "files or enter them interactively on each program run." << endl;
+            return false;
+#endif
+        }
 
         bool fromScratch = false;
 
@@ -311,7 +322,7 @@ bool SyncEvolutionCmdline::run() {
         from->setConfigFilter(false, m_sourceProps);
 
         // write into the requested configuration, creating it if necessary
-        boost::shared_ptr<EvolutionSyncConfig> to(new EvolutionSyncConfig(m_server));
+        boost::shared_ptr<EvolutionSyncClient> to(createSyncClient());
         to->copy(*from, !fromScratch && !m_sources.empty() ? &m_sources : NULL);
 
         // Sources are active now according to the server default.
@@ -373,6 +384,8 @@ bool SyncEvolutionCmdline::run() {
                 EvolutionSyncClient::throwError(string("no such source(s): ") + boost::join(sources, " "));
             }
         }
+        // give a change to do something before flushing configs to files
+        to->preFlush(*to);
 
         // done, now write it
         to->flush();
@@ -394,16 +407,17 @@ bool SyncEvolutionCmdline::run() {
             return true;
         }
     } else {
-        EvolutionSyncClient client(m_server, true, m_sources);
-        client.setQuiet(m_quiet);
-        client.setDryRun(m_dryrun);
-        client.setConfigFilter(true, m_syncProps);
-        client.setConfigFilter(false, m_sourceProps);
+        boost::shared_ptr<EvolutionSyncClient> client;
+        client.reset(createSyncClient());
+        client->setQuiet(m_quiet);
+        client->setDryRun(m_dryrun);
+        client->setConfigFilter(true, m_syncProps);
+        client->setConfigFilter(false, m_sourceProps);
         if (m_status) {
-            client.status();
+            client->status();
         } else if (m_printSessions) {
             vector<string> dirs;
-            client.getSessions(dirs);
+            client->getSessions(dirs);
             bool first = true;
             BOOST_FOREACH(const string &dir, dirs) {
                 if (first) {
@@ -414,7 +428,7 @@ bool SyncEvolutionCmdline::run() {
                 cout << dir << endl;
                 if (!m_quiet) {
                     SyncReport report;
-                    client.readSessionInfo(dir, report);
+                    client->readSessionInfo(dir, report);
                     cout << report;
                 }
             }
@@ -429,10 +443,10 @@ bool SyncEvolutionCmdline::run() {
                 usage(false, "Sources must be selected explicitly for --restore to prevent accidental restore.");
                 return false;
             }
-            client.restore(m_restore,
-                           m_after ?
-                           EvolutionSyncClient::DATABASE_AFTER_SYNC :
-                           EvolutionSyncClient::DATABASE_BEFORE_SYNC);
+            client->restore(m_restore,
+                            m_after ?
+                            EvolutionSyncClient::DATABASE_AFTER_SYNC :
+                            EvolutionSyncClient::DATABASE_BEFORE_SYNC);
         } else {
             if (m_dryrun) {
                 EvolutionSyncClient::throwError("--dry-run not supported for running a synchronization");
@@ -446,7 +460,7 @@ bool SyncEvolutionCmdline::run() {
                 return false;
             }
 
-            return ( client.sync() == STATUS_OK);
+            return ( client->sync() == STATUS_OK);
         }
     }
 
@@ -761,6 +775,19 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "  Suppresses most of the normal output during a synchronization. The" << endl <<
             "  log file still contains all the information." << endl <<
             "" << endl <<
+            "--keyring|-k" << endl <<
+            "  Save or retrieve passwords from the GNOME keyring when modifying the" << endl <<
+            "  configuration or running a synchronization. Note that using this option" << endl <<
+            "  applies to *all* passwords in a configuration, so setting a single" << endl <<
+            "  password as follows moves the other passwords into the keyring, if" << endl <<
+            "  they were not stored there already:" << endl <<
+            "     --keyring --configure --sync-property proxyPassword=foo" << endl <<
+            "" << endl <<
+            "  When passwords were stored in the keyring, their value is set to '-'" << endl <<
+            "  in the configuration. This means that when running a synchronization" << endl <<
+            "  without the --keyring argument, the password has to be entered" << endl <<
+            "  interactively." << endl <<
+            "" << endl <<
             "--help|-h" << endl <<
             "  Prints usage information." << endl <<
             "" << endl <<
@@ -775,6 +802,10 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
         out << "INFO: use '" << param << (param[param.size() - 1] == '=' ? "" : " ") <<
             "?' to get a list of valid parameters" << endl;
     }
+}
+
+EvolutionSyncClient* SyncEvolutionCmdline::createSyncClient() {
+    return new EvolutionSyncClient(m_server, true, m_sources);
 }
 
 #ifdef ENABLE_UNIT_TESTS

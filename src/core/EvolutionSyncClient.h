@@ -125,6 +125,8 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
                         const set<string> &sources = set<string>());
     ~EvolutionSyncClient();
 
+    using EvolutionSyncConfig::savePassword;
+
     bool getQuiet() { return m_quiet; }
     void setQuiet(bool quiet) { m_quiet = quiet; }
 
@@ -378,12 +380,24 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * The default implementation uses stdin/stdout to communicate
      * with the user.
      *
-     * @param descr     A simple string explaining what the password is needed for,
-     *                  e.g. "SyncML server". Has to be unique and understandable
-     *                  by the user.
+     * @param passwordName the name of the password in the config file
+     * @param descr        A simple string explaining what the password is needed for,
+     *                     e.g. "SyncML server". Has to be unique and understandable
+     *                     by the user.
+     * @param key          the key used to retrieve password
      * @return entered password
      */
-    virtual string askPassword(const string &descr);
+    virtual string askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key);
+
+    /**
+     * A helper function which is used for user interface to save
+     * a certain password with a specific mechanism. 
+     * Currently possibly syncml server. May throw errors.
+     * The default implementation do nothing.
+     */
+    virtual bool savePassword(const string &passwordName, const string &password, const ConfigPasswordKey &key) { 
+        return false; 
+    }
 
     /**
      * Callback for derived classes: called after initializing the
@@ -479,7 +493,6 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     /**
      * the code common to init() and status():
      * populate source list with active sources and open
-     * them for reading without changing their state yet
      */
     void initSources(SourceList &sourceList);
 

@@ -363,6 +363,30 @@ bool EvolutionSyncConfig::exists() const
     return m_configNode->exists();
 }
 
+void EvolutionSyncConfig::preFlush(ConfigUserInterface &ui)
+{
+    /* Iterator over all sync global and source properties 
+     * one by one and check whether they need to save password */
+
+    /* save password in the global config node */
+    ConfigPropertyRegistry& registry = getRegistry();
+    BOOST_FOREACH(const ConfigProperty *prop, registry) {
+        prop->savePassword(ui, m_server, *m_configNode);
+    }
+
+    /** grep each source and save their password */
+    list<string> configuredSources = getSyncSources();
+    BOOST_FOREACH(const string &sourceName, configuredSources) {
+        //boost::shared_ptr<SyncSourceConfig> sc = getSyncSourceConfig(sourceName);
+        ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
+        SyncSourceNodes sourceNodes = getSyncSourceNodes(sourceName);
+
+        BOOST_FOREACH(const ConfigProperty *prop, registry) {
+            prop->savePassword(ui, m_server,*m_configNode,sourceName,sourceNodes.m_configNode);
+        }
+    }
+}
+
 void EvolutionSyncConfig::flush()
 {
     m_tree->flush();
@@ -438,7 +462,8 @@ static PasswordConfigProperty syncPropPassword("password",
                                                "  plain text: password = <insert your password here>\n"
                                                "         ask: password = -\n"
                                                "env variable: password = ${<name of environment variable>}\n",
-                                               "your SyncML server password");
+                                               "your SyncML server password",
+                                               "SyncML server");
 static BoolConfigProperty syncPropUseProxy("useProxy",
                                            "set to T to choose an HTTP proxy explicitly; otherwise the default\n"
                                            "proxy settings of the underlying HTTP transport mechanism are used");
@@ -446,9 +471,11 @@ static ConfigProperty syncPropProxyHost("proxyHost",
                                         "proxy URL (http://<host>:<port>)");
 static ConfigProperty syncPropProxyUsername("proxyUsername",
                                             "authentication for proxy: username");
-static PasswordConfigProperty syncPropProxyPassword("proxyPassword",
-                                                    "proxy password, can be specified in different ways,\n"
-                                                    "see SyncML server password for details\n");
+static ProxyPasswordConfigProperty syncPropProxyPassword("proxyPassword",
+                                                         "proxy password, can be specified in different ways,\n"
+                                                         "see SyncML server password for details\n",
+                                                         "",
+                                                         "proxy");
 static StringConfigProperty syncPropClientAuthType("clientAuthType",
                                                    "- empty or \"md5\" for secure method (recommended)\n"
                                                    "- \"basic\" for insecure method\n"
@@ -458,6 +485,7 @@ static StringConfigProperty syncPropClientAuthType("clientAuthType",
                                                    "Later it remembers the method that was supported by\n"
                                                    "the server and uses that.",
                                                    "md5",
+                                                   "",
                                                    Values() +
                                                    (Aliases("basic") + "syncml:auth-basic") +
                                                    (Aliases("md5") + "syncml:auth-md5" + ""));
@@ -607,18 +635,30 @@ const char *EvolutionSyncConfig::getPassword() const {
     return m_stringCache.storeString(syncPropPassword.getName(), password);
 }
 void EvolutionSyncConfig::checkPassword(ConfigUserInterface &ui) {
-    syncPropPassword.checkPassword(*m_configNode, ui, "SyncML server", m_cachedPassword);
+    syncPropPassword.checkPassword(ui, m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
+}
+void EvolutionSyncConfig::savePassword(ConfigUserInterface &ui) {
+    syncPropPassword.savePassword(ui,m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
 }
 
-void PasswordConfigProperty::checkPassword(ConfigNode &node,
-                                           ConfigUserInterface &ui,
-                                           const string &descr,
-                                           string &cachedPassword)
+void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
+                                           const string &serverName,
+                                           FilterConfigNode &globalConfigNode,
+                                           const string &sourceName,
+                                           const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const
 {
-    string password = getProperty(node);
+    string password, passwordSave;
+    /* if no source config node, then it should only be password in the global config node */
+    if(sourceConfigNode.get() == NULL) {
+        password = getProperty(globalConfigNode);
+    } else {
+        password = getProperty(*sourceConfigNode);
+    }
 
+    string descr = getDescr(serverName,globalConfigNode,sourceName,sourceConfigNode);
     if (password == "-") {
-        password = ui.askPassword(descr);
+        ConfigPasswordKey key = getPasswordKey(descr,serverName,globalConfigNode,sourceName,sourceConfigNode);
+        passwordSave = ui.askPassword(getName(),descr, key);
     } else if(boost::starts_with(password, "${") &&
               boost::ends_with(password, "}")) {
         string envname = password.substr(2, password.size() - 3);
@@ -630,10 +670,47 @@ void PasswordConfigProperty::checkPassword(ConfigNode &node,
                                             descr +
                                             "' password is not set");
         } else {
-            password = envval;
+            passwordSave = envval;
         }
     }
-    cachedPassword = password;
+    /* If password is from ui or environment variable, set them in the config node on fly
+     * Previous impl use temp string to store them, this is not good for expansion in the backend */
+    if(!passwordSave.empty()) {
+        globalConfigNode.addFilter(getName(), passwordSave);
+    }
+}
+void PasswordConfigProperty::savePassword(ConfigUserInterface &ui,
+                                          const string &serverName,
+                                          FilterConfigNode &globalConfigNode,
+                                          const string &sourceName,
+                                          const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const
+{
+    /** here we don't invoke askPassword for this function has different logic from it */
+    string password;
+    if(sourceConfigNode.get() == NULL) {
+        password = getProperty(globalConfigNode);
+    } else {
+        password = getProperty(*sourceConfigNode);
+    }
+    /** if it has been stored or it has no value, do nothing */
+    if(password == "-" || password == "") {
+        return;
+    } else if(boost::starts_with(password, "${") &&
+              boost::ends_with(password, "}")) {
+        /** we delay this calculation of environment variable for 
+         * it might be changed in the sync time. */
+        return;
+    }
+    string descr = getDescr(serverName,globalConfigNode,sourceName,sourceConfigNode);
+    ConfigPasswordKey key = getPasswordKey(descr,serverName,globalConfigNode,sourceName,sourceConfigNode);
+    if(ui.savePassword(getName(), password, key)) {
+        string value = "-";
+        if(sourceConfigNode.get() == NULL) {
+            setProperty(globalConfigNode, value);
+        } else {
+            setProperty(*sourceConfigNode,value);
+        }
+    }
 }
 
 string PasswordConfigProperty::getCachedProperty(ConfigNode &node,
@@ -649,6 +726,57 @@ string PasswordConfigProperty::getCachedProperty(ConfigNode &node,
     return password;
 }
 
+/**
+ * remove some unnecessary parts of server URL.
+ * internal use.
+ */
+static void purifyServer(string &server)
+{
+    /** here we use server sync url without protocol prefix and
+     * user account name as the key in the keyring */
+    size_t start = server.find("://");
+    /** we don't reserve protocol prefix for it may change*/
+    if(start != server.npos) {
+        server = server.substr(start + 3);
+    }
+}
+
+ConfigPasswordKey PasswordConfigProperty::getPasswordKey(const string &descr,
+                                                         const string &serverName,
+                                                         FilterConfigNode &globalConfigNode,
+                                                         const string &sourceName,
+                                                         const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const 
+{
+    ConfigPasswordKey key;
+    key.server = syncPropSyncURL.getProperty(globalConfigNode);
+    purifyServer(key.server);
+    key.user   = syncPropUsername.getProperty(globalConfigNode);
+    return key;
+}
+void ProxyPasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
+                                           const string &serverName,
+                                           FilterConfigNode &globalConfigNode,
+                                           const string &sourceName,
+                                           const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const
+{
+    /* if useProxy is set 'true', then check proxypassword */
+    if(syncPropUseProxy.getProperty(globalConfigNode)) {
+        PasswordConfigProperty::checkPassword(ui, serverName, globalConfigNode, sourceName, sourceConfigNode);
+    }
+}
+
+ConfigPasswordKey ProxyPasswordConfigProperty::getPasswordKey(const string &descr,
+                                                              const string &serverName,
+                                                              FilterConfigNode &globalConfigNode,
+                                                              const string &sourceName,
+                                                              const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const
+{
+    ConfigPasswordKey key;
+    key.server = syncPropProxyHost.getProperty(globalConfigNode);
+    key.user   = syncPropProxyUsername.getProperty(globalConfigNode);
+    return key;
+}
+
 void EvolutionSyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*m_configNode, value, temporarily); }
 bool EvolutionSyncConfig::getUseProxy() const { return syncPropUseProxy.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*m_configNode, value, temporarily); }
@@ -661,7 +789,10 @@ const char *EvolutionSyncConfig::getProxyPassword() const {
     return m_stringCache.storeString(syncPropProxyPassword.getName(), password);
 }
 void EvolutionSyncConfig::checkProxyPassword(ConfigUserInterface &ui) {
-    syncPropProxyPassword.checkPassword(*m_configNode, ui, "proxy", m_cachedProxyPassword);
+    syncPropProxyPassword.checkPassword(ui, m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
+}
+void EvolutionSyncConfig::saveProxyPassword(ConfigUserInterface &ui) {
+    syncPropProxyPassword.savePassword(ui, m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
 }
 void EvolutionSyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cachedProxyPassword = ""; syncPropProxyPassword.setProperty(*m_configNode, value, temporarily); }
 const char *EvolutionSyncConfig::getSyncURL() const { return m_stringCache.getProperty(*m_configNode, syncPropSyncURL); }
@@ -813,6 +944,7 @@ StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
                                            "  one-way-from-server = transmit changes from server\n"
                                            "  none (or disabled)  = synchronization disabled",
                                            "two-way",
+                                           "",
                                            Values() +
                                            (Aliases("two-way")) +
                                            (Aliases("slow")) +
@@ -859,6 +991,7 @@ public:
                              "\"addressbook\" is unambiguous although there are multiple\n"
                              "address book backends.\n",
                              "select backend",
+                             "",
                              Values() +
                              (Aliases("calendar") + "events") +
                              (Aliases("calendar:text/calendar") + "text/calendar") +
@@ -955,7 +1088,7 @@ static ConfigProperty sourcePropUser("evolutionuser",
                                      "Warning: setting evolutionuser/password in cases where it is not\n"
                                      "needed, as for example with local Evolution calendars and addressbooks,\n"
                                      "can cause the Evolution backend to hang.");
-static PasswordConfigProperty sourcePropPassword("evolutionpassword", "");
+static EvolutionPasswordConfigProperty sourcePropPassword("evolutionpassword", "","", "backend");
 
 static ULongConfigProperty sourcePropLast("last",
                                           "used by the SyncML library internally; do not modify");
@@ -989,8 +1122,15 @@ const char *SyncSourceConfig::getPassword() const {
     string password = sourcePropPassword.getCachedProperty(*m_nodes.m_configNode, m_cachedPassword);
     return m_stringCache.storeString(sourcePropPassword.getName(), password);
 }
-void SyncSourceConfig::checkPassword(ConfigUserInterface &ui) {
-    sourcePropPassword.checkPassword(*m_nodes.m_configNode, ui, m_name + " backend", m_cachedPassword);
+void SyncSourceConfig::checkPassword(ConfigUserInterface &ui, 
+                                     const string &serverName, 
+                                     FilterConfigNode& globalConfigNode) {
+    sourcePropPassword.checkPassword(ui, serverName, globalConfigNode, m_name, m_nodes.m_configNode);
+}
+void SyncSourceConfig::savePassword(ConfigUserInterface &ui, 
+                                    const string &serverName, 
+                                    FilterConfigNode& globalConfigNode) {
+    sourcePropPassword.savePassword(ui, serverName, globalConfigNode, m_name, m_nodes.m_configNode);
 }
 void SyncSourceConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; sourcePropPassword.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *SyncSourceConfig::getURI() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropURI); }
@@ -1023,3 +1163,19 @@ SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
 }
 SourceType SyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
 void SyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*m_nodes.m_configNode, value, temporarily); }
+
+ConfigPasswordKey EvolutionPasswordConfigProperty::getPasswordKey(const string &descr,
+                                                                  const string &serverName,
+                                                                  FilterConfigNode &globalConfigNode,
+                                                                  const string &sourceName,
+                                                                  const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const
+{
+    ConfigPasswordKey key;
+    key.user = sourcePropUser.getProperty(*sourceConfigNode);
+    key.object = serverName;
+    key.object += " ";
+    key.object += sourceName;
+    key.object += " backend";
+    return key;
+}
+

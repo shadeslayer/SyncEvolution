@@ -40,6 +40,7 @@ using namespace std;
 class SyncSourceConfig;
 class PersistentSyncSourceConfig;
 class ConfigTree;
+class ConfigUserInterface;
 struct SyncSourceNodes;
 struct ConstSyncSourceNodes;
 
@@ -58,18 +59,21 @@ struct ConstSyncSourceNodes;
  */
 class ConfigProperty {
  public:
-    ConfigProperty(const string &name, const string &comment, const string &def = string("")) :
+    ConfigProperty(const string &name, const string &comment,
+                   const string &def = string(""), const string &descr = string("")) :
         m_obligatory(false),
         m_hidden(false),
         m_name(name),
         m_comment(boost::trim_right_copy(comment)),
-        m_defValue(def)
+            m_defValue(def),
+        m_descr(descr)
         {}
     virtual ~ConfigProperty() {}
     
     virtual string getName() const { return m_name; }
     virtual string getComment() const { return m_comment; }
     virtual string getDefValue() const { return m_defValue; }
+    virtual string getDescr() const { return m_descr; }
 
     /**
      * Check whether the given value is okay.
@@ -78,6 +82,46 @@ class ConfigProperty {
      * @return true if value is okay
      */
     virtual bool checkValue(const string &value, string &error) const { return true; }
+
+    /**
+     * Only useful when a config property wants to check itself whether to retrieve password
+     * Check the password and cache the result in the filter node on the fly if a property needs.
+     * sourceName and sourceConfigNode might be not set by caller. They only affect
+     * when checking password for syncsourceconfig 
+     * @param ui user interface
+     * @param serverName server name
+     * @param globalConfigNode the sync global config node for a server
+     * @param sourceName the source name used for source config properties
+     * @param sourceConfigNode the config node for the source
+     */
+    virtual void checkPassword(ConfigUserInterface &ui,
+                               const string &serverName,
+                               FilterConfigNode &globalConfigNode,
+                               const string &sourceName = string(),
+                               const boost::shared_ptr<FilterConfigNode> &sourceConfigNode = boost::shared_ptr<FilterConfigNode>()) const {}
+
+    /**
+     * Try to save password if a config property wants.
+     * It firstly check password and then invoke ui's savePassword
+     * function to save the password if necessary
+     */
+    virtual void savePassword(ConfigUserInterface &ui,
+                              const string &serverName,
+                              FilterConfigNode &globalConfigNode,
+                              const string &sourceName = string(),
+                              const boost::shared_ptr<FilterConfigNode> &sourceConfigNode = boost::shared_ptr<FilterConfigNode>()) const {}
+
+    /**
+     * This is used to generate description dynamically according to the context information
+     * Defalut implmenentation is to return value set in the constructor.
+     * Derived classes can override this function. Used by 'checkPassword' and 'savePassword'
+     * to generate description for user interface.
+     */
+    virtual const string getDescr(const string &serverName,
+                                  FilterConfigNode &globalConfigNode,
+                                  const string &sourceName = string(),
+                                  const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<ConfigNode>()) const { return m_descr; }
+
 
     /** split \n separated comment into lines without \n, appending them to commentLines */
     static void splitComment(const string &comment, list<string> &commentLines);
@@ -141,7 +185,7 @@ class ConfigProperty {
  private:
     bool m_obligatory;
     bool m_hidden;
-    const string m_name, m_comment, m_defValue;
+    const string m_name, m_comment, m_defValue, m_descr;
 };
 
 template<class T> class InitList : public list<T> {
@@ -176,8 +220,9 @@ class StringConfigProperty : public ConfigProperty {
  public:
     StringConfigProperty(const string &name, const string &comment,
                          const string &def = string(""),
+                         const string &descr = string(""),
                          const Values &values = Values()) :
-    ConfigProperty(name, comment, def),
+    ConfigProperty(name, comment, def, descr),
         m_values(values)
         {}
 
@@ -259,8 +304,8 @@ class StringConfigProperty : public ConfigProperty {
  */
 template<class T> class TypedConfigProperty : public ConfigProperty {
  public:
-    TypedConfigProperty(const string &name, const string &comment, const string &defValue = string("0")) :
-    ConfigProperty(name, comment, defValue)
+    TypedConfigProperty(const string &name, const string &comment, const string &defValue = string("0"), const string &descr = string("")) :
+    ConfigProperty(name, comment, defValue, descr)
         {}
 
     /**
@@ -325,6 +370,32 @@ typedef TypedConfigProperty<long> LongConfigProperty;
 typedef TypedConfigProperty<unsigned long> ULongConfigProperty;
 
 /**
+ * This struct wraps keys for storing passwords
+ * in configuration system. Some fields might be empty
+ * for some passwords. Each field might have different 
+ * meaning for each password. Fields using depends on
+ * what user actually wants.
+ */
+struct ConfigPasswordKey {
+ public:
+    ConfigPasswordKey() : port(0) {}
+
+    /** the user for the password */
+    string user;
+    /** the server for the password */
+    string server;
+    /** the domain name */
+    string domain;
+    /** the remote object */
+    string object;
+    /** the network protocol */
+    string protocol;
+    /** the authentication type */
+    string authtype;
+    /** the network port */
+    unsigned int port;
+};
+/**
  * This interface has to be provided by the user of the config
  * to let the config code interact with the user.
  */
@@ -336,28 +407,66 @@ class ConfigUserInterface {
      * A helper function which interactively asks the user for
      * a certain password. May throw errors.
      *
-     * @param descr     A simple string explaining what the password is needed for,
-     *                  e.g. "SyncML server". This string alone has to be enough
-     *                  for the user to know what the password is for, i.e. the
-     *                  string has to be unique.
+     * @param passwordName the name of the password in the config file, such as 'proxyPassword'
+     * @param descr        A simple string explaining what the password is needed for,
+     *                     e.g. "SyncML server". This string alone has to be enough
+     *                     for the user to know what the password is for, i.e. the
+     *                     string has to be unique.
+     * @param key          the key used to retrieve password. Using this instead of ConfigNode is
+     *                     to make user interface independent on Configuration Tree
      * @return entered password
      */
-    virtual string askPassword(const string &descr) = 0;
+    virtual string askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key) = 0;
+
+    /**
+     * A helper function which is used for user interface to save
+     * a certain password. Currently possibly syncml server. May
+     * throw errors.
+     * @param passwordName the name of the password in the config file, such as 'proxyPassword'
+     * @param password     password to be saved
+     * @param key          the key used to store password
+     * @return true if ui saves the password and false if not
+     */
+    virtual bool savePassword(const string &passwordName, const string &password, const ConfigPasswordKey &key) = 0;
 };
 
 class PasswordConfigProperty : public ConfigProperty {
  public:
-    PasswordConfigProperty(const string &name, const string &comment, const string &def = string("")) :
-       ConfigProperty(name, comment, def)
+    PasswordConfigProperty(const string &name, const string &comment, const string &def = string(""),const string &descr = string("")) :
+       ConfigProperty(name, comment, def, descr)
            {}
 
     /**
      * Check the password and cache the result.
      */
-    virtual void checkPassword(ConfigNode &node,
-                               ConfigUserInterface &ui,
-                               const string &descr,
-                               string &cachedPassword);
+    virtual void checkPassword(ConfigUserInterface &ui,
+                               const string &serverName,
+                               FilterConfigNode &globalConfigNode,
+                               const string &sourceName,
+                               const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const;
+
+    /**
+     * It firstly check password and then invoke ui's savePassword
+     * function to save the password if necessary
+     */
+    virtual void savePassword(ConfigUserInterface &ui,
+                              const string &serverName,
+                              FilterConfigNode &globalConfigNode,
+                              const string &sourceName,
+                              const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const;
+
+    /**
+     * Get password key for storing or retrieving passwords
+     * The default implemention is for 'password' in global config.
+     * @param descr decription for password
+     * @param globalConfigNode the global config node 
+     * @param sourceConfigNode the source config node. It might be empty
+     */
+    virtual ConfigPasswordKey getPasswordKey(const string &descr,
+                                             const string &serverName,
+                                             FilterConfigNode &globalConfigNode,
+                                             const string &sourceName = string(),
+                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<ConfigNode>()) const; 
 
     /**
      * return the cached value if necessary and possible
@@ -367,13 +476,64 @@ class PasswordConfigProperty : public ConfigProperty {
 };
 
 /**
+ * A derived ConfigProperty class for the property "proxyPassword"
+ */
+class ProxyPasswordConfigProperty : public PasswordConfigProperty {
+ public:
+    ProxyPasswordConfigProperty(const string &name, const string &comment, const string &def = string(""), const string &descr = string("")) :
+        PasswordConfigProperty(name,comment,def,descr)
+    {}
+    /**
+     * re-implement this function for it is necessary to do a check 
+     * before retrieving proxy password
+     */
+    virtual void checkPassword(ConfigUserInterface &ui,
+                               const string &serverName,
+                               FilterConfigNode &globalConfigNode,
+                               const string &sourceName,
+                               const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const;
+    virtual ConfigPasswordKey getPasswordKey(const string &descr,
+                                             const string &serverName,
+                                             FilterConfigNode &globalConfigNode,
+                                             const string &sourceName = string(),
+                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<ConfigNode>()) const; 
+};
+
+/**
+ * A derived ConfigProperty class for the property "evolutionpassword"
+ */
+class EvolutionPasswordConfigProperty : public PasswordConfigProperty {
+ public:
+    EvolutionPasswordConfigProperty(const string &name, 
+                                    const string &comment, 
+                                    const string &def = string(""),
+                                    const string &descr = string("")): 
+                                    PasswordConfigProperty(name,comment,def,descr)
+    {}
+    virtual ConfigPasswordKey getPasswordKey(const string &descr,
+                                             const string &serverName,
+                                             FilterConfigNode &globalConfigNode,
+                                             const string &sourceName = string(),
+                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<ConfigNode>()) const; 
+    virtual const string getDescr(const string &serverName,
+                                  FilterConfigNode &globalConfigNode,
+                                  const string &sourceName,
+                                  const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const {
+        string descr = sourceName;
+        descr += " ";
+        descr += ConfigProperty::getDescr();
+        return descr;
+    }
+};
+
+/**
  * Instead of reading and writing strings, this class interprets the content
  * as boolean with T/F or 1/0 (default format).
  */
 class BoolConfigProperty : public StringConfigProperty {
  public:
-    BoolConfigProperty(const string &name, const string &comment, const string &defValue = string("F")) :
-    StringConfigProperty(name, comment, defValue,
+    BoolConfigProperty(const string &name, const string &comment, const string &defValue = string("F"),const string &descr = string("")) :
+    StringConfigProperty(name, comment, defValue,descr,
                          Values() + (Aliases("1") + "T" + "TRUE") + (Aliases("0") + "F" + "FALSE"))
         {}
 
@@ -518,7 +678,13 @@ class EvolutionSyncConfig {
     /** true if the main configuration file already exists */
     bool exists() const;
 
-    /** write changes */
+    /**
+     * Do something before doing flush to files. This is particularly
+     * useful when user interface wants to do preparation jobs, such
+     * as savePassword and others.
+     */
+    virtual void preFlush(ConfigUserInterface &ui); 
+
     void flush();
 
     /**
@@ -696,6 +862,14 @@ class EvolutionSyncConfig {
      */
     virtual void checkPassword(ConfigUserInterface &ui);
 
+    /**
+     * Look at the password setting and if it needs special mechanism to
+     * save password, this function is used to store specified password
+     * in the config tree.
+     * @param ui the ui pointer
+     */
+    virtual void savePassword(ConfigUserInterface &ui); 
+
     virtual bool getUseProxy() const;
     virtual void setUseProxy(bool value, bool temporarily = false);
     virtual const char*  getProxyHost() const;
@@ -705,6 +879,7 @@ class EvolutionSyncConfig {
     virtual void setProxyUsername(const string &value, bool temporarily = false);
     virtual const char* getProxyPassword() const;
     virtual void checkProxyPassword(ConfigUserInterface &ui);
+    virtual void saveProxyPassword(ConfigUserInterface &ui);
     virtual void setProxyPassword(const string &value, bool temporarily = false);
     virtual const char*  getSyncURL() const;
     virtual void setSyncURL(const string &value, bool temporarily = false);
@@ -745,6 +920,8 @@ class EvolutionSyncConfig {
     virtual const char*  getHwv() const { return "unknown"; }
     virtual const char*  getSwv() const;
     virtual const char*  getDevType() const;
+
+    FilterConfigNode& getConfigNode() { return *m_configNode; }
 
     /**@}*/
 
@@ -864,8 +1041,13 @@ class SyncSourceConfig {
     const char *getPassword() const;
     virtual void setPassword(const string &value, bool temporarily = false);
 
-    /** same as EvolutionSyncConfig::checkPassword() */
-    virtual void checkPassword(ConfigUserInterface &ui);
+    /** same as EvolutionSyncConfig::checkPassword() but with
+     * an extra argument globalConfigNode for source config property
+     * may need global config node to check password */
+    virtual void checkPassword(ConfigUserInterface &ui, const string &serverName, FilterConfigNode& globalConfigNode);
+
+    /** same as EvolutionSyncConfig::savePassword() */
+    virtual void savePassword(ConfigUserInterface &ui, const string &serverName, FilterConfigNode& globalConfigNode);
 
     virtual const char *getDatabaseID() const;
     virtual void setDatabaseID(const string &value, bool temporarily = false);
@@ -961,6 +1143,8 @@ class SyncSourceConfig {
      */
     /**@{*/
     virtual const char*  getName() const { return m_name.c_str(); }
+
+    virtual SyncSourceNodes& getSyncSourceNodes() { return m_nodes; }
     /**@}*/
 
  private:

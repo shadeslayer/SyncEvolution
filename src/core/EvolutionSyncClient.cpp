@@ -777,7 +777,7 @@ void unref(SourceList *sourceList)
     delete sourceList;
 }
 
-string EvolutionSyncClient::askPassword(const string &descr)
+string EvolutionSyncClient::askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key)
 {
     char buffer[256];
 
@@ -1537,12 +1537,19 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
             startLoopThread();
 
             // ask for passwords now
-            checkPassword(*this);
-            if (getUseProxy()) {
-                checkProxyPassword(*this);
+            /* iterator over all sync and source properties instead of checking
+             * some specified passwords.
+             */
+            ConfigPropertyRegistry& registry = EvolutionSyncConfig::getRegistry();
+            BOOST_FOREACH(const ConfigProperty *prop, registry) {
+                prop->checkPassword(*this, m_server, getConfigNode());
             }
             BOOST_FOREACH(SyncSource *source, sourceList) {
-                source->checkPassword(*this);
+                ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
+                BOOST_FOREACH(const ConfigProperty *prop, registry) {
+                    prop->checkPassword(*this, m_server, getConfigNode(),
+                                        source->getName(), source->getSyncSourceNodes().m_configNode);
+                }
             }
 
             // open each source - failing now is still safe
@@ -1974,7 +1981,11 @@ void EvolutionSyncClient::status()
     SourceList sourceList(*this, false);
     initSources(sourceList);
     BOOST_FOREACH(SyncSource *source, sourceList) {
-        source->checkPassword(*this);
+        ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
+        BOOST_FOREACH(const ConfigProperty *prop, registry) {
+            prop->checkPassword(*this, m_server, getConfigNode(),
+                                source->getName(), source->getSyncSourceNodes().m_configNode);
+        }
     }
     BOOST_FOREACH(SyncSource *source, sourceList) {
         source->open();
@@ -2023,7 +2034,11 @@ void EvolutionSyncClient::checkStatus(SyncReport &report)
     SourceList sourceList(*this, false);
     initSources(sourceList);
     BOOST_FOREACH(SyncSource *source, sourceList) {
-        source->checkPassword(*this);
+        ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
+        BOOST_FOREACH(const ConfigProperty *prop, registry) {
+            prop->checkPassword(*this, m_server, getConfigNode(),
+                                source->getName(), source->getSyncSourceNodes().m_configNode);
+        }
     }
     BOOST_FOREACH(SyncSource *source, sourceList) {
         source->open();
@@ -2081,7 +2096,11 @@ void EvolutionSyncClient::restore(const string &dirname, RestoreDatabase databas
     LoggerBase::instance().setLevel(Logger::INFO);
     initSources(sourceList);
     BOOST_FOREACH(SyncSource *source, sourceList) {
-        source->checkPassword(*this);
+        ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
+        BOOST_FOREACH(const ConfigProperty *prop, registry) {
+            prop->checkPassword(*this, m_server, getConfigNode(),
+                                source->getName(), source->getSyncSourceNodes().m_configNode);
+        }
     }
 
     string datadump = database == DATABASE_BEFORE_SYNC ? "before" : "after";

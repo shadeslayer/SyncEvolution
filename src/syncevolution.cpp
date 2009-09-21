@@ -33,6 +33,7 @@ using namespace std;
 #include "EvolutionSyncSource.h"
 #include "EvolutionSyncClient.h"
 #include "LogRedirect.h"
+#include "CmdlineSyncClient.h"
 
 #if defined(ENABLE_MAEMO) && defined (ENABLE_EBOOK)
 
@@ -60,6 +61,25 @@ extern "C" EContact *e_contact_new_from_vcard(const char *vcard)
     return impl ? impl(vcard) : NULL;
 }
 #endif
+
+/**
+ * This is a class derived from SyncEvolutionCmdline. The purpose
+ * is to implement the factory method 'createSyncClient' to create
+ * new implemented 'CmdlineSyncClient' objects.
+ */
+class KeyringSyncCmdline : public SyncEvolutionCmdline {
+ public:
+    KeyringSyncCmdline(int argc, const char * const * argv, ostream &out, ostream &err):
+        SyncEvolutionCmdline(argc, argv, out, err) 
+    {}
+    /**
+     * create a user implemented sync client.
+     */
+    EvolutionSyncClient* createSyncClient() {
+        return new CmdlineSyncClient(m_server, true, m_sources, m_keyring);
+    }
+};
+
 
 int main( int argc, char **argv )
 {
@@ -115,7 +135,7 @@ int main( int argc, char **argv )
          * libs, therefore it would get suppressed (logged at
          * level DEVELOPER, while output is at most INFO)
          */
-        SyncEvolutionCmdline cmdline(argc, argv, cout, cout);
+        KeyringSyncCmdline cmdline(argc, argv, cout, cout);
         if (cmdline.parse() &&
             cmdline.run()) {
             return 0;
