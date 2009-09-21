@@ -498,18 +498,22 @@ static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "enables or disables the detailed (and sometimes slow) comparison\n"
                                                "of database content before and after a sync session",
                                                "1");
-static IntConfigProperty syncPropResendTimeout("ResendTimeout",
-                                          "The time that the client waits before it assumes that\n"
-                                          "a message was lost and sends its own message again.\n"
-                                          "In addition, this timeout is used as a delay between\n"
-                                          "a temporary network error and resending the failed message."
-                                          ,"60");
-static IntConfigProperty syncPropResendRetries("ResendRetries",
-                                          "How many times the client will resend a message.\n"
-                                          "When the maximum number of retries is exceeded,\n"
-                                          "the current session is automatically aborted without\n"
+static IntConfigProperty syncPropRetryDuration("RetryDuration",
+                                          "The total amount of time in which the client tries\n"
+                                          "tries to get a response from the server.\n"
+                                          "During this time, the client will resend messages\n"
+                                          "in regular intervals (RetryInterval) if no response\n"
+                                          "is received or the message couldn't be delivered due\n"
+                                          "to transport problems. When this time is exceeded\n"
+                                          "without a response, the synchronization aborts without\n"
                                           "sending further messages to the server."
-                                          ,"3");
+                                          ,"300");
+static IntConfigProperty syncPropRetryInterval("RetryInterval",
+                                          "The time between the start of message sending and\n"
+                                          "the start of the retransmission. If the interval has\n"
+                                          "already passed when a message send returns, the\n"
+                                          "message is resent immediately.\n"
+                                          ,"60");
 static ConfigProperty syncPropSSLServerCertificates("SSLServerCertificates",
                                                     "A string specifying the location of the certificates\n"
                                                     "used to authenticate the server. When empty, the\n"
@@ -572,8 +576,8 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
         registry.push_back(&syncPropProxyUsername);
         registry.push_back(&syncPropProxyPassword);
         registry.push_back(&syncPropClientAuthType);
-        registry.push_back(&syncPropResendTimeout);
-        registry.push_back(&syncPropResendRetries);
+        registry.push_back(&syncPropRetryDuration);
+        registry.push_back(&syncPropRetryInterval);
         registry.push_back(&syncPropDevID);
         syncPropDevID.setObligatory(true);
         registry.push_back(&syncPropWBXML);
@@ -680,10 +684,10 @@ int EvolutionSyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getPr
 void EvolutionSyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*m_configNode, value, temporarily); }
 int EvolutionSyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
-int EvolutionSyncConfig::getResendTimeout() const {return syncPropResendTimeout.getProperty(*m_configNode);}
-void EvolutionSyncConfig::setResendTimeout(int value, bool temporarily) {syncPropResendTimeout.setProperty(*m_configNode, value, temporarily);}
-int EvolutionSyncConfig::getResendRetries() const {return syncPropResendRetries.getProperty(*m_configNode);}
-void EvolutionSyncConfig::setResendRetries(int value, bool temporarily) {return syncPropResendRetries.setProperty(*m_configNode,value,temporarily);}
+int EvolutionSyncConfig::getRetryDuration() const {return syncPropRetryDuration.getProperty(*m_configNode);}
+void EvolutionSyncConfig::setRetryDuration(int value, bool temporarily) {syncPropRetryDuration.setProperty(*m_configNode, value, temporarily);}
+int EvolutionSyncConfig::getRetryInterval() const {return syncPropRetryInterval.getProperty(*m_configNode);}
+void EvolutionSyncConfig::setRetryInterval(int value, bool temporarily) {return syncPropRetryInterval.setProperty(*m_configNode,value,temporarily);}
 bool EvolutionSyncConfig::getPrintChanges() const { return syncPropPrintChanges.getProperty(*m_configNode); }
 void EvolutionSyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*m_configNode, value, temporarily); }
 std::string EvolutionSyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*m_configNode); }

@@ -721,10 +721,10 @@ class EvolutionSyncConfig {
     virtual void setSSLVerifyServer(bool value, bool temporarily = false);
     virtual bool getSSLVerifyHost() const;
     virtual void setSSLVerifyHost(bool value, bool temporarily = false);
-    virtual int getResendTimeout() const;
-    virtual void setResendTimeout(int value, bool temporarily = false);
-    virtual int getResendRetries() const;
-    virtual void setResendRetries(int value, bool temporarily = false);
+    virtual int getRetryInterval() const;
+    virtual void setRetryInterval(int value, bool temporarily = false);
+    virtual int getRetryDuration() const;
+    virtual void setRetryDuration(int value, bool temporarily = false);
     virtual bool  getCompression() const;
     virtual void setCompression(bool value, bool temporarily = false);
     virtual unsigned int getResponseTimeout() const { return 0; }

@@ -160,6 +160,13 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     void restore(const string &dirname, RestoreDatabase database);
 
     /**
+     * Sleep the sync session in interval seconds, blocks until the interval
+     * is expired or a user suspend/abort request is signaled (CTRL+C)
+     * returns time left to sleep if the method is interrupted by CTRL+C.
+     */
+    virtual int sleep (int interval);
+
+    /**
      * fills vector with absolute path to information about previous
      * sync sessions, oldest one first
      */
@@ -499,9 +506,12 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      */
     string m_overrideMode;
 
+    // total retry duration
+    int m_retryDuration;
+    // message resend interval
+    int m_retryInterval;
+    // Current retry count
     int m_retries;
-    int m_timeout;
-    int m_retryCount;
 
 public:
     static bool transport_cb (void *data);

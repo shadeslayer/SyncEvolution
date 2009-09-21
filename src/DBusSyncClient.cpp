@@ -107,3 +107,18 @@ bool DBusSyncClient::checkForSuspend()
 {
 	return m_check_for_suspend (m_userdata);
 }
+
+int DBusSyncClient::sleep (int intervals)
+{
+    time_t start = time(NULL);
+    while (true) {
+        g_main_context_iteration(NULL, true);
+        time_t now = time(NULL);
+        if (m_check_for_suspend(m_userdata)) {
+            return  (intervals - now + start);
+        } 
+        if (intervals - now + start <=0) {
+            return intervals - now +start;
+        }
+    }
+}

@@ -1217,7 +1217,7 @@ bool EvolutionSyncClient::processTransportCb()
 {
     //Always return true to continue, we will detect the retry count at
     //the higher level together with transport error scenarios.
-    SE_LOG_INFO(NULL, NULL, "Transport timeout after %d seconds timeout", m_timeout);
+    SE_LOG_INFO(NULL, NULL, "Transport timeout after %d seconds", m_retryInterval);
     return true;
 }
 
@@ -1677,8 +1677,8 @@ SyncMLStatus EvolutionSyncClient::doSync()
     } catch (NoSuchKey error) {
     }
 
-    m_timeout = getResendTimeout();
-    m_retryCount = getResendRetries();
+    m_retryInterval = getRetryInterval();
+    m_retryDuration = getRetryDuration();
     // run an HTTP client sync session
     boost::shared_ptr<TransportAgent> agent(createTransportAgent());
     if (getUseProxy()) {
@@ -1717,6 +1717,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
     bool aborting = false;
     int suspending = 0; 
     m_retries = 0;
+    time_t sendStart, resendStart;
     sysync::uInt16 previousStepCmd = stepCmd;
     do {
         try {
@@ -1839,8 +1840,9 @@ SyncMLStatus EvolutionSyncClient::doSync()
                 agent->setContentType(s);
                 sessionKey.reset();
                 
+                sendStart = resendStart = time (NULL);
                 //register transport callback
-                agent->setCallback (transport_cb, this, m_timeout);
+                agent->setCallback (transport_cb, this, m_retryInterval);
                 // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
                 // sent or have it copied into caller's buffer using
                 // ReadSyncMLBuffer(), then send it to the server
@@ -1851,6 +1853,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
             }
             case sysync::STEPCMD_RESENDDATA: {
                 SE_LOG_INFO (NULL, NULL, "EvolutionSyncClient: resend previous request #%d", m_retries);
+                resendStart = time(NULL);
                 /* We are resending previous message, just read from the
                  * previous buffer */
                 agent->send(sendBuffer.get(), sendBuffer.size());
@@ -1862,25 +1865,13 @@ SyncMLStatus EvolutionSyncClient::doSync()
                 case TransportAgent::ACTIVE:
                     stepCmd = sysync::STEPCMD_SENTDATA; // still sending the data?!
                     break;
-                /* If this is a network error, it usually failed quickly, retry
-                 * immediately has likely no effect. Manually sleep here to wait a while
-                 * before retry.
-                 * Sleep will return non-zero value for sigint
-                 */
-                case TransportAgent::FAILED:
-                    if(sleep (m_timeout)) {
-                        if(checkForSuspend()) {
-                            stepCmd = sysync::STEPCMD_SUSPEND;
-                        } else {
-                            stepCmd = sysync::STEPCMD_ABORT;
-                        }
-                        break;
-                    }
+               
                 case TransportAgent::TIME_OUT: {
-                    if(m_retries++ >= m_retryCount){
-                        SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries",m_retryCount);
+                    if(time(NULL) - sendStart > m_retryDuration){
+                        SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries within %d duration",m_retries, m_retryDuration);
                         stepCmd = sysync::STEPCMD_ABORT;
                     }else {
+                        m_retries ++;
                         stepCmd = sysync::STEPCMD_RESENDDATA;
                     }
                     break;
@@ -1902,28 +1893,39 @@ SyncMLStatus EvolutionSyncClient::doSync()
                                                    reply,
                                                    replylen);
                         stepCmd = sysync::STEPCMD_GOTDATA; // we have received response data
+                        break;
                     } else {
                         SE_LOG_DEBUG(NULL, NULL, "unexpected content type '%s' in reply, %d bytes:\n%.*s",
                                      contentType.c_str(), (int)replylen, (int)replylen, reply);
                         SE_LOG_ERROR(NULL, NULL, "unexpected reply from server; might be a temporary problem, try again later");
-
-                        if(m_retries++ >= m_retryCount){
-                            SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries",m_retryCount);
-                            stepCmd = sysync::STEPCMD_ABORT;
-                        }else {
-                            /* This is a network failure, lets wait a while
-                             * before retry
-                             */
-                            if (sleep (m_timeout)){
+                      } //fall through to network failure case
+                }
+                /* If this is a network error, it usually failed quickly, retry
+                 * immediately has likely no effect. Manually sleep here to wait a while
+                 * before retry. Sleep time will be calculated so that the
+                 * message sending interval equals m_retryInterval.
+                 */
+                case TransportAgent::FAILED: {
+                    int curTime = time(NULL);
+                    if( curTime - sendStart > m_retryDuration) {
+                        SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries within %d duration",m_retries, m_retryDuration);
+                        stepCmd = sysync::STEPCMD_ABORT;
+                    } else {
+                        // retry send
+                        int leftTime = m_retryInterval - (curTime - resendStart);
+                        if(leftTime >0 ) {
+                            if (sleep (leftTime) > 0) {
                                 if(checkForSuspend()) {
                                     stepCmd = sysync::STEPCMD_SUSPEND;
                                 } else {
                                     stepCmd = sysync::STEPCMD_ABORT;
                                 }
-                            } else {
-                                stepCmd  = sysync::STEPCMD_RESENDDATA;
-                            }
-                        }
+                                break;
+                            } 
+                        } 
+
+                        m_retries ++;
+                        stepCmd = sysync::STEPCMD_RESENDDATA;
                     }
                     break;
                 }
@@ -2055,6 +2057,16 @@ void EvolutionSyncClient::checkSourceChanges(SourceList &sourceList, SyncReport 
         }
     }
     changes.setEnd(time(NULL));
+}
+
+int EvolutionSyncClient::sleep (int intervals) 
+{
+    while ( (intervals = ::sleep (intervals)) > 0) {
+        if (checkForSuspend() || checkForAbort ()) {
+            break;
+        }
+    }
+    return intervals;
 }
 
 void EvolutionSyncClient::restore(const string &dirname, RestoreDatabase database)

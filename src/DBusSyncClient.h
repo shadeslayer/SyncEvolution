@@ -67,6 +67,8 @@ protected:
 
 	virtual bool checkForSuspend();
 
+    virtual int sleep (int intervals);
+
 private:
 	map<string, int> m_source_map;
 	gpointer m_userdata;
