@@ -1217,7 +1217,9 @@ bool EvolutionSyncClient::processTransportCb()
 {
     //Always return true to continue, we will detect the retry count at
     //the higher level together with transport error scenarios.
-    SE_LOG_INFO(NULL, NULL, "Transport timeout after %d seconds", m_retryInterval);
+    SE_LOG_INFO(NULL, NULL, "Transport timeout after %d:%02dmin",
+                m_retryInterval / 60,
+                m_retryInterval % 60);
     return true;
 }
 
@@ -1686,6 +1688,8 @@ SyncMLStatus EvolutionSyncClient::doSync()
 
     m_retryInterval = getRetryInterval();
     m_retryDuration = getRetryDuration();
+    m_retries = 0;
+
     // run an HTTP client sync session
     boost::shared_ptr<TransportAgent> agent(createTransportAgent());
     if (getUseProxy()) {
@@ -1723,7 +1727,6 @@ SyncMLStatus EvolutionSyncClient::doSync()
     // parameter STEPCMD_ABORT -> abort session as soon as possible.
     bool aborting = false;
     int suspending = 0; 
-    m_retries = 0;
     time_t sendStart, resendStart;
     sysync::uInt16 previousStepCmd = stepCmd;
     do {
@@ -1874,8 +1877,13 @@ SyncMLStatus EvolutionSyncClient::doSync()
                     break;
                
                 case TransportAgent::TIME_OUT: {
-                    if(time(NULL) - sendStart > m_retryDuration){
-                        SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries within %d duration",m_retries, m_retryDuration);
+                    time_t duration = time(NULL) - sendStart;
+                    if(duration > m_retryDuration){
+                        SE_LOG_INFO(NULL, NULL,
+                                    "Transport giving up after %d retries and %ld:%02ldmin",
+                                    m_retries,
+                                    (long)(duration / 60),
+                                    (long)(duration % 60));
                         stepCmd = sysync::STEPCMD_ABORT;
                     }else {
                         m_retries ++;
@@ -1913,9 +1921,14 @@ SyncMLStatus EvolutionSyncClient::doSync()
                  * message sending interval equals m_retryInterval.
                  */
                 case TransportAgent::FAILED: {
-                    int curTime = time(NULL);
-                    if( curTime - sendStart > m_retryDuration) {
-                        SE_LOG_INFO(NULL, NULL, "Transport give up after %d retries within %d duration",m_retries, m_retryDuration);
+                    time_t curTime = time(NULL);
+                    time_t duration = curTime - sendStart;
+                    if(duration > m_retryDuration) {
+                        SE_LOG_INFO(NULL, NULL,
+                                    "Transport giving up after %d retries and %ld:%02ldmin",
+                                    m_retries,
+                                    (long)(duration / 60),
+                                    (long)(duration % 60));
                         stepCmd = sysync::STEPCMD_ABORT;
                     } else {
                         // retry send
