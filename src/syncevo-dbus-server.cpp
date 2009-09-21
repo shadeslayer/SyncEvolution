@@ -782,8 +782,72 @@ void ReadOperations::getConfig(bool getTemplate,
 void ReadOperations::getReports(uint32_t start, uint32_t count,
                                 Reports_t &reports)
 {
-    // TODO
-    throw std::runtime_error("not implemented");
+    if(m_configName.empty()) {
+        throw std::runtime_error("Template name must be given");
+    }
+    SyncContext client(m_configName, false);
+    std::vector<string> dirs;
+    client.getSessions(dirs);
+
+    uint32_t index = 0;
+    /** add this table to send custormized reports to client */
+    static int statTable[SyncSourceReport::ITEM_LOCATION_MAX]
+                        [SyncSourceReport::ITEM_STATE_MAX]
+                        [SyncSourceReport::ITEM_RESULT_MAX] = 
+                                  {{{1, 0, 0, 0, 0, 0, 0, 0}, 
+                                   {1, 0, 0, 0, 0, 0, 0, 0}, 
+                                   {1, 0, 0, 0, 0, 0, 0, 0}, 
+                                   {0, 1, 0, 0, 0, 0, 1, 1}}, 
+                                  {{1, 0, 0, 0, 0, 0, 0, 0}, 
+                                   {1, 0, 0, 0, 0, 0, 0, 0}, 
+                                   {1, 0, 0, 0, 0, 0, 0, 0}, 
+                                   {0, 1, 0, 1, 1, 1, 0, 0}} };
+    /** separator when joining strings as key */
+    static char sep = '-';
+    BOOST_FOREACH( const string &dir, dirs) {
+        /** if start plus count is bigger than actual size, then return actual - size reports */
+        if(index >= start && index < start + count) {
+            std::map<string, string> aReport;
+            SyncReport report;
+            client.readSessionInfo(dir,report);
+            for (SyncReport::iterator it = report.begin(); it != report.end(); ++it) {
+                const string &sourceName = it->first;
+                SyncSourceReport sourceReport = it->second;
+                for(uint32_t i = 0; i < SyncSourceReport::ITEM_LOCATION_MAX; i++) {
+                    string locStr = SyncSourceReport::LocationToString((SyncSourceReport::ItemLocation)i);
+                    for(uint32_t j = 0; j < SyncSourceReport::ITEM_STATE_MAX; j++) {
+                        string stateStr = SyncSourceReport::StateToString((SyncSourceReport::ItemState)j);
+                        for(uint32_t k = 0; k < SyncSourceReport::ITEM_RESULT_MAX; k++) {
+                            if(statTable[i][j][k] == 0) {
+                                continue;
+                            }
+                            string resultStr = SyncSourceReport::ResultToString((SyncSourceReport::ItemResult)k);
+                            int stat = sourceReport.getItemStat((SyncSourceReport::ItemLocation)i, 
+                                                                (SyncSourceReport::ItemState)j, 
+                                                                (SyncSourceReport::ItemResult)k);
+                            /** generate key */
+                            string key = "source";
+                            key += sep;
+                            key += sourceName;
+                            key += sep;
+                            key += "stat";
+                            key += sep;
+                            key += locStr;
+                            key += sep;
+                            key += stateStr;
+                            key += sep;
+                            key += resultStr;
+                            stringstream value;
+                            value << stat;
+                            aReport.insert(pair<string, string>(key, value.str()));
+                        }
+                    }
+                }
+            }
+            reports.push_back(aReport);
+        }
+        index++;
+    }
 }
 
 /***************** DBusSync implementation **********************/

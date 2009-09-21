@@ -88,6 +88,14 @@ elif sys.argv[2] == "--config":
     session.SetConfig(update, temporary, dict)
     session.Sync("", {})
 elif sys.argv[2] == "--reports":
-    dict = session.GetReports(0, 10)
+    reports = session.GetReports(0, 10)
+    i = len(reports)
+    j = 0
+    while j < i:
+        print 'Report ', j, ':'
+        dict = reports.pop()
+        for key, value in dict.items():
+            print '\t[',key,'] = ' ,value
+        j = j+1
     print ''
 
