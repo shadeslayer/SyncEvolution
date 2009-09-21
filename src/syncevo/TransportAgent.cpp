@@ -26,6 +26,7 @@ SE_BEGIN_CXX
 const char * const TransportAgent::m_contentTypeSyncML = "application/vnd.syncml+xml";
 const char * const TransportAgent::m_contentTypeSyncWBXML = "application/vnd.syncml+wbxml";
 const char * const TransportAgent::m_contentTypeURLEncoded = "application/x-www-form-urlencoded";
+const char * const TransportAgent::m_contentTypeServerAlertedNotificationDS = "application/vnd.syncml.ds.notification";
 
 void HTTPTransportAgent::setConfig(SyncConfig &config)
 {

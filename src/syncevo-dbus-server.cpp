@@ -1110,6 +1110,26 @@ void Connection::process(const Caller_t &caller,
             // type used for testing, payload is config name
             config.assign(reinterpret_cast<const char *>(message.second),
                           message.first);
+        } else if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
+            // TODO: extract server ID and match it against a server configuration.
+            // At the moment, always pick "default" as configuration name.
+            // sysync::SanPackage san;
+            // san.PassSan(message.second, message.first);
+            // san.GetHeader();
+            // std::string serverID = san.fServerID;
+            config = "default";
+
+            // TODO: extract number of sources
+            int numSources = 0;
+            if (!numSources) {
+                // Synchronize all known sources with the selected mode.
+            } else {
+                // TODO: check what the server wants us to synchronize.
+                // Create the necessary local configuration temporarily,
+                // using heuristics if necessary.
+            }
+
+            // TODO: use the session ID set by the server if non-null
         } else {
             throw runtime_error("message type not supported for starting a sync");
         }

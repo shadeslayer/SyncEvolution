@@ -157,6 +157,9 @@ class TransportAgent
 
     /** normal HTTP URL encoded */
     static const char * const m_contentTypeURLEncoded;
+
+    /** binary Server Alerted Notification (SAN) for data sync */
+    static const char * const m_contentTypeServerAlertedNotificationDS;
 };
 
 class HTTPTransportAgent : public TransportAgent
