@@ -1722,7 +1722,15 @@ SyncMLStatus SyncContext::doSync()
                 }
             }
 
-            m_engine.SessionStep(session, stepCmd, &progressInfo);
+            if (stepCmd == sysync::STEPCMD_NEEDDATA) {
+                // Engine already notified. Don't call it twice
+                // with this state, because it doesn't know how
+                // to handle this. Skip the SessionStep() call
+                // and wait for response.
+            } else {
+                m_engine.SessionStep(session, stepCmd, &progressInfo);
+            }
+
             //During suspention we actually insert a STEPCMD_SUSPEND cmd
             //Should restore to the original step here
             if(suspending == 1)
@@ -1824,7 +1832,8 @@ SyncMLStatus SyncContext::doSync()
             case sysync::STEPCMD_NEEDDATA:
                 switch (agent->wait()) {
                 case TransportAgent::ACTIVE:
-                    stepCmd = sysync::STEPCMD_SENTDATA; // still sending the data?!
+                    // Still sending the data?! Don't change anything,
+                    // skip SessionStep() above.
                     break;
                
                 case TransportAgent::TIME_OUT: {
