@@ -27,6 +27,7 @@
 #include <syncevo/util.h>
 #include <syncevo/SyncContext.h>
 #include <syncevo/SoupTransportAgent.h>
+#include <syncevo/SyncSource.h>
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -476,7 +477,7 @@ class Session : public DBusObjectHelper,
 
     void detach(const Caller_t &caller);
 
-    void setConfig(bool update, bool clear, bool temporary,
+    void setConfig(bool update, bool temporary,
                    const ReadOperations::Config_t &config);
 
     void getStatus(std::string &status,
@@ -725,8 +726,57 @@ ReadOperations::ReadOperations(const std::string &config_name) :
 void ReadOperations::getConfig(bool getTemplate,
                                Config_t &config)
 {
-    // TODO
-    throw std::runtime_error("not implemented");
+    if(m_configName.empty()) {
+        throw std::runtime_error("Template name must be given");
+    }
+    map<string, string> localConfigs;
+    boost::shared_ptr<SyncConfig> syncConfig;
+    /** get server template */
+    if(getTemplate) {
+        syncConfig = SyncConfig::createServerTemplate(m_configName);
+        if(!syncConfig.get()) {
+            throw std::runtime_error("No template '" + m_configName + "' found");
+        }
+    } else { ///< get a matching server configuration
+        boost::shared_ptr<SyncConfig> from;
+        syncConfig.reset(new SyncConfig(m_configName));
+        /* if config does not exist, create from template */
+        if (!syncConfig->exists()) {
+            from = SyncConfig::createServerTemplate(m_configName);
+            if(!from.get()) {
+                throw runtime_error("No server or template '" + m_configName + "' found");
+            }
+            syncConfig->copy(*from, NULL);
+        }
+    }
+
+    /** get sync properties and their values */
+    ConfigPropertyRegistry &syncRegistry = SyncConfig::getRegistry();
+    BOOST_FOREACH(const ConfigProperty *prop, syncRegistry) {
+        bool isDefault = false;
+        string value = prop->getProperty(syncConfig->getConfigNode(), &isDefault);
+        if(!isDefault) {
+            localConfigs.insert(pair<string, string>(prop->getName(), value));
+        }
+    }
+
+    config.insert(pair<string,map<string, string> >("", localConfigs));
+
+    /* get configurations from sources */
+    list<string> sources = syncConfig->getSyncSources();
+    BOOST_FOREACH(const string &name, sources) {
+        localConfigs.clear();
+        SyncSourceNodes sourceNodes = syncConfig->getSyncSourceNodes(name);
+        ConfigPropertyRegistry &sourceRegistry = SyncSourceConfig::getRegistry();
+        BOOST_FOREACH(const ConfigProperty *prop, sourceRegistry) {
+            bool isDefault = false;
+            string value = prop->getProperty(*sourceNodes.m_configNode, &isDefault);
+            if(!isDefault) {
+                localConfigs.insert(pair<string, string>(prop->getName(), value));
+            }
+        }
+        config.insert(pair<string, map<string, string> >( "source/" + name, localConfigs));
+    }
 }
 
 void ReadOperations::getReports(uint32_t start, uint32_t count,
@@ -788,7 +838,28 @@ void Session::detach(const Caller_t &caller)
     client->detach(this);
 }
 
-void Session::setConfig(bool update, bool clear, bool temporary,
+static void setSyncFilters(const ReadOperations::Config_t &config,FilterConfigNode::ConfigFilter &syncFilter,std::map<std::string, FilterConfigNode::ConfigFilter> &sourceFilters)
+{
+    ReadOperations::Config_t::const_iterator it;
+    for (it = config.begin(); it != config.end(); it++) {
+        map<string, string>::const_iterator sit;
+        if(it->first.empty()) {
+            for (sit = it->second.begin(); sit != it->second.end(); sit++) {
+                syncFilter.insert(*sit);
+            }
+        } else {
+            string name = it->first;
+            if(name.find("source/") == 0) {
+                name = name.substr(7); ///> 7 is the length of "source/"
+                FilterConfigNode::ConfigFilter &sourceFilter = sourceFilters[name];
+                for (sit = it->second.begin(); sit != it->second.end(); sit++) {
+                    sourceFilter.insert(*sit);
+                }
+            }
+        }
+    }
+}
+void Session::setConfig(bool update, bool temporary,
                         const ReadOperations::Config_t &config)
 {
     if (!m_active) {
@@ -797,8 +868,58 @@ void Session::setConfig(bool update, bool clear, bool temporary,
     if (m_sync) {
         throw std::runtime_error("sync started, cannot change configuration at this time");
     }
-    // TODO
-    throw std::runtime_error("not implemented yet");
+    if(m_configName.empty()) {
+        throw std::runtime_error("Template name must be given");
+    }
+    if (!update && temporary) {
+        throw std::runtime_error("Clearing existing configuration and temporary configuration changes which only affects the duration of the session are mutually exclusive");
+    }
+
+    /** check whether we need remove the entire configuration */
+    if(!update) {
+        boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(m_configName));
+        if(syncConfig.get()) {
+            syncConfig->remove();
+        }
+        if(config.empty()) {
+            return;
+        }
+    }
+    if(temporary) {
+        setSyncFilters(config, m_syncFilter, m_sourceFilters);
+    } else {
+        FilterConfigNode::ConfigFilter syncFilter;
+        std::map<std::string, FilterConfigNode::ConfigFilter> sourceFilters;
+        setSyncFilters(config, syncFilter, sourceFilters);
+        /* need to save configurations */
+        boost::shared_ptr<SyncConfig> from(new SyncConfig(m_configName));
+        /* if it is clear mode and config does not exist, create from template */
+        if(update && !from->exists()) {
+            from = SyncConfig::createServerTemplate(m_configName);
+            if (!from.get()) {
+                from = SyncConfig::createServerTemplate(string("default"));
+            }
+        }
+        /** generate new sources in the config map */
+        for (ReadOperations::Config_t::const_iterator it = config.begin(); it != config.end(); ++it) {
+            string sourceName = it->first;
+            if(sourceName.find("source/") == 0) {
+                sourceName = sourceName.substr(7); ///> 7 is the length of "source/"
+                from->getSyncSourceNodes(sourceName);
+            }
+        }
+        /* apply user settings */
+        from->setConfigFilter(true, "", syncFilter);
+        map<string, FilterConfigNode::ConfigFilter>::iterator it;
+        for ( it = sourceFilters.begin(); it != sourceFilters.end(); it++ ) {
+            from->setConfigFilter(false, it->first, it->second);
+        }
+        boost::shared_ptr<DBusSync> syncConfig(new DBusSync(m_configName, *this));
+        syncConfig->copy(*from, NULL);
+
+        syncConfig->preFlush(*syncConfig);
+        syncConfig->flush();
+    }
 }
 
 void Session::initServer(SharedBuffer data, const std::string &messageType)
@@ -969,7 +1090,7 @@ void Session::activate()
                         typeof(&ReadOperations::getConfig), &ReadOperations::getConfig>
                         ("GetConfig"),
         makeMethodEntry<Session,
-                        bool, bool, bool,
+                        bool, bool,
                         const ReadOperations::Config_t &,
                         typeof(&Session::setConfig), &Session::setConfig>
                         ("SetConfig"),

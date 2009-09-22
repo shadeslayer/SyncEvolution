@@ -418,6 +418,7 @@ void HashFileConfigNode::setProperty(const string &property,
     /** we don't support property comments here. Also, we ignore comment*/
     if (defValue &&
         *defValue == newvalue) {
+        removeProperty(property);
         return;
     }
     map<string, string>::iterator it = m_props.find(property);
