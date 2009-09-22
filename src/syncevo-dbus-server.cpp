@@ -153,11 +153,11 @@ class DBusServer : public DBusObjectHelper
      */
     uint32_t getNextSession();
 
-    /**
-     * Implements org.syncevolution.Server.Connect.
-     * Needs a Result object so that it can create the
-     * watch on the connecting client.
-     */
+    void attachClient(const Caller_t &caller,
+                      const boost::shared_ptr<Watch> &watch);
+
+    void detachClient(const Caller_t &caller);
+
     void connect(const Caller_t &caller,
                  const boost::shared_ptr<Watch> &watch,
                  const std::map<std::string, std::string> &peer,
@@ -186,8 +186,16 @@ class DBusServer : public DBusObjectHelper
         ops.getReports(start, count, reports);
     }
 
+    void checkPresence(const std::string &server,
+                       std::string &status,
+                       std::vector<std::string> &transports);
+
     EmitSignal2<const DBusObject_t &,
                 bool> sessionChanged;
+
+    EmitSignal3<const std::string &,
+                const std::string &,
+                const std::string &> presence;
 
 public:
     DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn);
@@ -1461,6 +1469,16 @@ uint32_t DBusServer::getNextSession()
     return m_lastSession;
 }
 
+void DBusServer::attachClient(const Caller_t &caller,
+                              const boost::shared_ptr<Watch> &watch)
+{
+    // TODO: implement idle detection and automatic shutdown of the server
+}
+
+void DBusServer::detachClient(const Caller_t &caller)
+{
+}
+
 void DBusServer::connect(const Caller_t &caller,
                          const boost::shared_ptr<Watch> &watch,
                          const std::map<std::string, std::string> &peer,
@@ -1510,12 +1528,20 @@ void DBusServer::startSession(const Caller_t &caller,
     object = session->getPath();
 }
 
+void DBusServer::checkPresence(const std::string &server,
+                               std::string &status,
+                               std::vector<std::string> &transports)
+{
+    // TODO: implement this, right now always return status = "" = available
+}
+
 DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     DBusObjectHelper(conn.get(), "/org/syncevolution/Server", "org.syncevolution.Server"),
     m_loop(loop),
     m_lastSession(time(NULL)),
     m_activeSession(NULL),
-    sessionChanged(*this, "SessionChanged")
+    sessionChanged(*this, "SessionChanged"),
+    presence(*this, "Presence")
 {}
 
 DBusServer::~DBusServer()
@@ -1529,6 +1555,15 @@ DBusServer::~DBusServer()
 void DBusServer::activate()
 {
     static GDBusMethodTable methods[] = {
+        makeMethodEntry<DBusServer,
+                        const Caller_t &,
+                        const boost::shared_ptr<Watch> &,
+                        typeof(&DBusServer::attachClient), &DBusServer::attachClient>
+                        ("Attach"),
+        makeMethodEntry<DBusServer,
+                        const Caller_t &,
+                        typeof(&DBusServer::detachClient), &DBusServer::detachClient>
+                        ("Detach"),
         makeMethodEntry<DBusServer,
                         const Caller_t &,
                         const boost::shared_ptr<Watch> &,
@@ -1558,11 +1593,18 @@ void DBusServer::activate()
                         ReadOperations::Reports_t &,
                         typeof(&DBusServer::getReports), &DBusServer::getReports>
                         ("GetReports"),
+        makeMethodEntry<DBusServer,
+                        const std::string &,
+                        std::string &,
+                        std::vector<std::string> &,
+                        typeof(&DBusServer::checkPresence), &DBusServer::checkPresence>
+                        ("CheckPresence"),
         {}
     };
 
     static GDBusSignalTable signals[] = {
         sessionChanged.makeSignalEntry("SessionChanged"),
+        presence.makeSignalEntry("Presence"),
         { },
     };
 
