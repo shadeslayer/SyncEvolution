@@ -1727,7 +1727,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
     // parameter STEPCMD_ABORT -> abort session as soon as possible.
     bool aborting = false;
     int suspending = 0; 
-    time_t sendStart, resendStart;
+    time_t sendStart = 0, resendStart = 0;
     sysync::uInt16 previousStepCmd = stepCmd;
     do {
         try {
