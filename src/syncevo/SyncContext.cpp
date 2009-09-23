@@ -833,7 +833,9 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
     case sysync::PEV_PREPARING:
         /* preparing (e.g. preflight in some clients), extra1=progress, extra2=total */
         /* extra2 might be zero */
-        if (extra2) {
+        if (source.getFinalSyncMode() == SYNC_NONE) {
+            // not active, suppress output
+        } else if (extra2) {
             SE_LOG_INFO(NULL, NULL, "%s: preparing %d/%d",
                         source.getName(), extra1, extra2);
         } else {
@@ -910,7 +912,8 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
     case sysync::PEV_ITEMRECEIVED:
         /* item received, extra1=current item count,
            extra2=number of expected changes (if >= 0) */
-        if (extra2 > 0) {
+        if (source.getFinalSyncMode() == SYNC_NONE) {
+        } else if (extra2 > 0) {
             SE_LOG_INFO(NULL, NULL, "%s: received %d/%d",
                         source.getName(), extra1, extra2);
         } else {
@@ -921,7 +924,8 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
     case sysync::PEV_ITEMSENT:
         /* item sent,     extra1=current item count,
            extra2=number of expected items to be sent (if >=0) */
-        if (extra2 > 0) {
+        if (source.getFinalSyncMode() == SYNC_NONE) {
+        } else if (extra2 > 0) {
             SE_LOG_INFO(NULL, NULL, "%s: sent %d/%d",
                      source.getName(), extra1, extra2);
         } else {
@@ -933,21 +937,28 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         /* item locally processed,               extra1=# added, 
            extra2=# updated,
            extra3=# deleted */
-        SE_LOG_INFO(NULL, NULL, "%s: added %d, updated %d, removed %d",
-                 source.getName(), extra1, extra2, extra3);
+        if (source.getFinalSyncMode() == SYNC_NONE) {
+        } else if (source.getFinalSyncMode() != SYNC_NONE) {
+            SE_LOG_INFO(NULL, NULL, "%s: added %d, updated %d, removed %d",
+                        source.getName(), extra1, extra2, extra3);
+        }
         break;
     case sysync::PEV_SYNCEND:
         /* sync finished, probably with error in extra1 (0=ok),
            syncmode in extra2 (0=normal, 1=slow, 2=first time), 
            extra3=1 for resumed session) */
-        SE_LOG_INFO(NULL, NULL, "%s: %s%s sync done %s",
-                 source.getName(),
-                 extra3 ? "resumed " : "",
-                 extra2 == 0 ? "normal" :
-                 extra2 == 1 ? "slow" :
-                 extra2 == 2 ? "first time" :
-                 "unknown",
-                 extra1 ? "unsuccessfully" : "successfully");
+        if (source.getFinalSyncMode() == SYNC_NONE) {
+            SE_LOG_INFO(NULL, NULL, "%s: inactive", source.getName());
+        } else {
+            SE_LOG_INFO(NULL, NULL, "%s: %s%s sync done %s",
+                        source.getName(),
+                        extra3 ? "resumed " : "",
+                        extra2 == 0 ? "normal" :
+                        extra2 == 1 ? "slow" :
+                        extra2 == 2 ? "first time" :
+                        "unknown",
+                        extra1 ? "unsuccessfully" : "successfully");
+        }
         switch (extra1) {
         case 401:
             // TODO: reset cached password
@@ -1163,6 +1174,27 @@ void SyncContext::initSources(SourceList &sourceList)
                 throwError(name + ": type unknown" );
             }
             sourceList.push_back(syncSource);
+        } else {
+            // the Synthesis engine is never going to see this source,
+            // therefore we have to mark it as 100% complete and
+            // "done"
+            class DummySyncSource source(name);
+            source.recordFinalSyncMode(SYNC_NONE);
+            displaySourceProgress(sysync::PEV_PREPARING,
+                                  source,
+                                  0, 0, 0);
+            displaySourceProgress(sysync::PEV_ITEMPROCESSED,
+                                  source,
+                                  0, 0, 0);
+            displaySourceProgress(sysync::PEV_ITEMRECEIVED,
+                                  source,
+                                  0, 0, 0);
+            displaySourceProgress(sysync::PEV_ITEMSENT,
+                                  source,
+                                  0, 0, 0);
+            displaySourceProgress(sysync::PEV_SYNCEND,
+                                  source,
+                                  0, 0, 0);
         }
     }
 }

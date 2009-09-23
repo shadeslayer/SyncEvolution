@@ -960,6 +960,25 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
 };
 
 /**
+ * A SyncSource with no pure virtual functions.
+ */
+class DummySyncSource : public SyncSource
+{
+ public:
+    DummySyncSource(const SyncSourceParams &params) :
+       SyncSource(params) {}
+
+    DummySyncSource(const std::string &name) :
+       SyncSource(SyncSourceParams(name, SyncSourceNodes(), "")) {}
+
+    virtual Databases getDatabases() { return Databases(); }
+    virtual void open() {}
+    virtual void close() {}
+    virtual void getSynthesisInfo(SynthesisInfo &info,
+                                  XMLConfigFragments &fragments) {}
+};
+
+/**
  * Hooks up the Synthesis DB Interface start sync (BeginDataRead) and
  * end sync (EndDataWrite) calls with virtual methods. Ensures that
  * sleepSinceModification() is called.

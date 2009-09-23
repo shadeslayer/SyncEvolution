@@ -1053,6 +1053,8 @@ private:
  * to accesss properties.
  */
 struct SyncSourceNodes {
+    SyncSourceNodes() {}
+
     /**
      * @param configNode    node for user-visible properties
      * @param hiddenNode    node for internal properties (may be the same as
