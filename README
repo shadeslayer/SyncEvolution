@@ -352,7 +352,8 @@ a list of valid values.
   When passwords were stored in the keyring, their value is set to "-"
   in the configuration. This means that when running a synchronization
   without the --keyring argument, the password has to be entered
-  interactively.
+  interactively. The --print-config output always shows "-" instead of
+  retrieving the password from the keyring.
 
 --help|-h
   Prints usage information.

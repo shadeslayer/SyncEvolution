@@ -786,7 +786,8 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "  When passwords were stored in the keyring, their value is set to '-'" << endl <<
             "  in the configuration. This means that when running a synchronization" << endl <<
             "  without the --keyring argument, the password has to be entered" << endl <<
-            "  interactively." << endl <<
+            "  interactively. The --print-config output always shows '-' instead of" << endl <<
+            "  retrieving the password from the keyring." << endl <<
             "" << endl <<
             "--help|-h" << endl <<
             "  Prints usage information." << endl <<
