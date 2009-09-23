@@ -440,7 +440,7 @@ msgid ""
 "SyncML\n"
 "you can setup a service manually."
 msgstr ""
-"如果您没有在上边看见您的服务,但知道您的服务提供者使用了SyncML\n"
+"如果您没有在上边看见您的服务,但知道您的服务提供者使用了SyncML接口\n"
 "那么您可以手动设置服务"
 
 #: ../src/gtk-ui/ui.glade.h:18
@@ -512,6 +512,9 @@ msgstr "同步数据"
 #: ../src/gtk-ui/sync-gtk.desktop.in.h:1
 msgid "Sync (GTK)"
 msgstr "同步 (GTK)"
+
+#~ msgid "Dummy string: This is not supposed to be seen at all."
+#~ msgstr "测试：这个应该被自动comment out"
 
 #~ msgid "Bring your data with you"
 #~ msgstr "让您的数据随身携带"
