@@ -148,10 +148,11 @@ class DBusServer : public DBusObjectHelper
     void clientGone(Client *c);
 
     /**
-     * Returns new session number. Checks for overflow, but not
-     * currently for active sessions.
+     * Returns new unique session ID. Implemented with a running
+     * counter. Checks for overflow, but not currently for active
+     * sessions.
      */
-    uint32_t getNextSession();
+    std::string getNextSession();
 
     void attachClient(const Caller_t &caller,
                       const boost::shared_ptr<Watch> &watch);
@@ -162,7 +163,7 @@ class DBusServer : public DBusObjectHelper
                  const boost::shared_ptr<Watch> &watch,
                  const std::map<std::string, std::string> &peer,
                  bool must_authenticate,
-                 uint32_t session,
+                 const std::string &session,
                  DBusObject_t &object);
 
     void startSession(const Caller_t &caller,
@@ -502,7 +503,7 @@ class Session : public DBusObjectHelper,
 public:
     Session(DBusServer &server,
             const std::string &config_name,
-            uint32_t session);
+            const std::string &session);
     ~Session();
 
     enum {
@@ -600,7 +601,7 @@ class Connection : public DBusObjectHelper, public Resource
     } m_state;
     std::string m_failure;
 
-    const uint32_t m_sessionNum;
+    const std::string m_sessionID;
     boost::shared_ptr<Session> m_session;
 
     /**
@@ -638,7 +639,7 @@ class Connection : public DBusObjectHelper, public Resource
                 const std::string &,
                 const std::map<std::string, std::string> &,
                 bool,
-                uint32_t> reply;
+                const std::string &> reply;
 
     friend class DBusTransportAgent;
 
@@ -647,7 +648,7 @@ public:
 
     Connection(DBusServer &server,
                const DBusConnectionPtr &conn,
-               uint32_t session_num,
+               const std::string &session_num,
                const std::map<std::string, std::string> &peer,
                bool must_authenticate);
 
@@ -910,9 +911,9 @@ void Session::fireProgress(bool flush)
 
 Session::Session(DBusServer &server,
                  const std::string &config_name,
-                 uint32_t session) :
+                 const std::string &session) :
     DBusObjectHelper(server.getConnection(),
-                     StringPrintf("/org/syncevolution/Session/%u", session),
+                     std::string("/org/syncevolution/Session/") + session,
                      "org.syncevolution.Session"),
     ReadOperations(config_name),
     m_server(server),
@@ -1146,7 +1147,7 @@ void Connection::process(const Caller_t &caller,
         m_state = PROCESSING;
         m_session.reset(new Session(m_server,
                                     config,
-                                    m_sessionNum));
+                                    m_sessionID));
         m_session->setPriority(Session::PRI_CONNECTION);
         m_session->setConnection(myself);
         // this will be reset only when the connection shuts down okay
@@ -1223,18 +1224,18 @@ void Connection::shutdown()
 }
 
 Connection::Connection(DBusServer &server,
-           const DBusConnectionPtr &conn,
-           uint32_t session_num,
-           const std::map<std::string, std::string> &peer,
-           bool must_authenticate) :
+                       const DBusConnectionPtr &conn,
+                       const std::string &sessionID,
+                       const std::map<std::string, std::string> &peer,
+                       bool must_authenticate) :
     DBusObjectHelper(conn.get(),
-                     StringPrintf("/org/syncevolution/Connection/%u", session_num),
+                     std::string("/org/syncevolution/Connection/") + sessionID,
                      "org.syncevolution.Connection"),
     m_server(server),
     m_peer(peer),
     m_mustAuthenticate(must_authenticate),
     m_state(SETUP),
-    m_sessionNum(session_num),
+    m_sessionID(sessionID),
     m_loop(NULL),
     abort(*this, "Abort"),
     reply(*this, "Reply"),
@@ -1344,7 +1345,7 @@ void DBusTransportAgent::send(const char *data, size_t len)
     std::map<std::string, std::string> meta;
     meta["URL"] = m_url;
     connection->reply(std::make_pair(len, reinterpret_cast<const uint8_t *>(data)),
-                      m_type, meta, false, connection->m_sessionNum);
+                      m_type, meta, false, connection->m_sessionID);
 }
 
 void DBusTransportAgent::shutdown()
@@ -1360,7 +1361,7 @@ void DBusTransportAgent::shutdown()
     connection->m_state = Connection::FINAL;
     connection->reply(std::pair<size_t, const uint8_t *>(0, 0),
                       "", std::map<std::string, std::string>(),
-                      true, connection->m_sessionNum);
+                      true, connection->m_sessionID);
 }
 
 void DBusTransportAgent::doWait(boost::shared_ptr<Connection> &connection)
@@ -1460,13 +1461,13 @@ void DBusServer::clientGone(Client *c)
     SE_LOG_DEBUG(NULL, NULL, "unknown client has disconnected?!");
 }
 
-uint32_t DBusServer::getNextSession()
+std::string DBusServer::getNextSession()
 {
     m_lastSession++;
     if (!m_lastSession) {
         m_lastSession++;
     }
-    return m_lastSession;
+    return StringPrintf("%u", m_lastSession);
 }
 
 void DBusServer::attachClient(const Caller_t &caller,
@@ -1483,14 +1484,14 @@ void DBusServer::connect(const Caller_t &caller,
                          const boost::shared_ptr<Watch> &watch,
                          const std::map<std::string, std::string> &peer,
                          bool must_authenticate,
-                         uint32_t session,
+                         const std::string &session,
                          DBusObject_t &object)
 {
-    if (session) {
+    if (!session.empty()) {
         // reconnecting to old connection is not implemented yet
         throw std::runtime_error("not implemented");
     }
-    uint32_t new_session = getNextSession();
+    std::string new_session = getNextSession();
 
     boost::shared_ptr<Connection> c(new Connection(*this,
                                                    getConnection(),
@@ -1518,7 +1519,7 @@ void DBusServer::startSession(const Caller_t &caller,
     boost::shared_ptr<Client> client = addClient(getConnection(),
                                                  caller,
                                                  watch);
-    uint32_t new_session = getNextSession();   
+    std::string new_session = getNextSession();   
     boost::shared_ptr<Session> session(new Session(*this,
                                                    server,
                                                    new_session));
@@ -1569,7 +1570,7 @@ void DBusServer::activate()
                         const boost::shared_ptr<Watch> &,
                         const std::map<std::string, std::string> &,
                         bool,
-                        uint32_t,
+                        const std::string &,
                         DBusObject_t &,
                         typeof(&DBusServer::connect), &DBusServer::connect
                         >("Connect"),
