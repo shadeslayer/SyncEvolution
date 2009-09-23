@@ -322,10 +322,13 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         /* Google support only addressbook sync via syncml */
         source = config->getSyncSourceConfig("calendar");
         source->setSync("none");
+        source->setURI("");
         source = config->getSyncSourceConfig("todo");
         source->setSync("none");
+        source->setURI("");
         source = config->getSyncSourceConfig("memo");
         source->setSync("none");
+        source->setURI("");
     } else if (boost::iequals(server, "zyb")) {
         config->setSyncURL("http://sync.zyb.com");
         config->setWebURL("http://www.zyb.com");
