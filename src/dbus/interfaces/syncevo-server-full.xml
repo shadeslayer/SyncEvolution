@@ -321,5 +321,119 @@
       </arg>
     </signal>
 
+    <signal name="InfoRequest">
+      <doc:doc>
+        <doc:description>
+          <doc:para>
+            Emitted whenever the server needs information that only a
+            client can provide. Because the server does not know whether
+            clients are monitoring it (attaching to the server is
+            optional) and/or which of the attached clients are able to
+            handle the request, it broadcasts the request.
+          </doc:para>
+
+          <doc:para>
+            Clients react by calling InfoResponse.  The flow is this:
+            information needed, InfoRequest("request"),
+            InfoResponse("working") + dialog is opened (if necessary),
+            InfoRequest("waiting"), information becomes available,
+            InfoResponse("response"), InfoRequest("done").
+          </doc:para>
+
+          <doc:para>
+            Clients should work on those requests that they support,
+            unless another client was faster (InfoRequest("waiting")).
+            Because there is a race condition, multiple dialogs might
+            be opened. The user only has to enter data in one of them.
+            A client can close his dialog upon InfoRequest("done")
+            and/or InfoRequest("waiting") with a 'handler' parameter
+            which is some other client. If the server does not get a
+            InfoResponse("working") soon enough (in the range of
+            minutes, not seconds), it has to assume that no client can
+            provide the information and fall back to some default or
+            abort.
+          </doc:para>
+        </doc:description>
+      </doc:doc>
+
+      <arg type="s" name="id">
+        <doc:doc><doc:summary>unique ID for the request</doc:summary></doc:doc>
+      </arg>
+      <arg type="o" name="session">
+        <doc:doc><doc:summary>the Session which is affected, may be empty</doc:summary></doc:doc>
+      </arg>
+      <arg type="s" name="state">
+        <doc:doc>
+          <doc:summary>
+            "request" for a new request,
+            "waiting" for one which is being serviced by some client,
+            "done" for a request which was resolved or timed out
+          </doc:summary>
+        </doc:doc>
+      </arg>
+      <arg type="o" name="handler">
+        <doc:doc>
+          <doc:summary>
+            for state="waiting": the client which first replied
+            with InfoResponse("working")
+          </doc:summary>
+        </doc:doc>
+      </arg>
+      <arg type="s" name="type">
+        <doc:doc>
+          <doc:summary>
+            Determines which information is needed. Currently only
+            "password" for interactive password requests is defined.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+
+      <arg type="a{ss}" name="parameters">
+        <doc:doc>
+          <doc:summary>
+            Auxiliary parameters which depend on the type.
+
+            For "password" the following keys are used:
+            "name" - name of the password property in the config.
+            "description" - unique English description of the required password.
+            Content is determined by the individual password property, so this
+            may change. Currently used are "SyncML Server", "proxy",
+            "'source name' backend" (with 'source name' replaced by the same
+            names also used for the corresponding config entry).
+            "user", "server", "domain", "object", "protocol", "authtype", "port" -
+            optional keys as they would be used in the GNOME keyring.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </signal>
+
+    <method name="InfoResponse">
+      <doc:doc><doc:description>reply for a specific InfoRequest</doc:description></doc:doc>
+
+      <arg type="s" name="id">
+        <doc:doc><doc:summary>unique ID sent by InfoRequest</doc:summary></doc:doc>
+      </arg>
+      <arg type="s" name="state">
+        <doc:doc>
+          <doc:summary>
+            "working" to indicate that a response will be sent later,
+            "response" for the actual reply
+          </doc:summary>
+        </doc:doc>
+      </arg>
+
+      <arg type="a{ss}" name="response">
+        <doc:doc>
+          <doc:summary>
+            Response values, valid in state="response", depend on type.
+
+            For "password" the following keys are used:
+            "password" - the password text, optional, do not set the key if the
+            user cancelled the request
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </method>
+
   </interface>
 </node>
