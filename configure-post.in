@@ -72,7 +72,7 @@ fi
 
 dnl --enable-developer-mode
 if test "$enable_developer_mode" == "yes"; then
-backendsearchdir=backends/
+backendsearchdir="`pwd`/src/backends/"
 else
 backendsearchdir='$(libdir)'/syncevolution/backends/
 fi
