@@ -120,7 +120,7 @@ class ConfigProperty {
     virtual const string getDescr(const string &serverName,
                                   FilterConfigNode &globalConfigNode,
                                   const string &sourceName = string(),
-                                  const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<ConfigNode>()) const { return m_descr; }
+                                  const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<FilterConfigNode>()) const { return m_descr; }
 
 
     /** split \n separated comment into lines without \n, appending them to commentLines */
@@ -466,7 +466,7 @@ class PasswordConfigProperty : public ConfigProperty {
                                              const string &serverName,
                                              FilterConfigNode &globalConfigNode,
                                              const string &sourceName = string(),
-                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<ConfigNode>()) const; 
+                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<FilterConfigNode>()) const; 
 
     /**
      * return the cached value if necessary and possible
@@ -496,7 +496,7 @@ class ProxyPasswordConfigProperty : public PasswordConfigProperty {
                                              const string &serverName,
                                              FilterConfigNode &globalConfigNode,
                                              const string &sourceName = string(),
-                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<ConfigNode>()) const; 
+                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<FilterConfigNode>()) const; 
 };
 
 /**
@@ -514,7 +514,7 @@ class EvolutionPasswordConfigProperty : public PasswordConfigProperty {
                                              const string &serverName,
                                              FilterConfigNode &globalConfigNode,
                                              const string &sourceName = string(),
-                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<ConfigNode>()) const; 
+                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<FilterConfigNode>()) const; 
     virtual const string getDescr(const string &serverName,
                                   FilterConfigNode &globalConfigNode,
                                   const string &sourceName,
