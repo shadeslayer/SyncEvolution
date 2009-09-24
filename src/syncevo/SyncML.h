@@ -29,15 +29,22 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
+/** alert Codes used at the synchronization initialization */
 enum SyncMode {
+    /** unset or disabled */
     SYNC_NONE,
-    SYNC_TWO_WAY,
-    SYNC_SLOW,
-    SYNC_ONE_WAY_FROM_CLIENT,
-    SYNC_REFRESH_FROM_CLIENT,
-    SYNC_ONE_WAY_FROM_SERVER,
-    SYNC_REFRESH_FROM_SERVER,
-    SYNC_MODE_MAX
+
+    SYNC_FIRST = 200,
+    SYNC_TWO_WAY = 200,
+    SYNC_SLOW = 201,
+    SYNC_ONE_WAY_FROM_CLIENT = 202,
+    SYNC_REFRESH_FROM_CLIENT = 203,
+    SYNC_ONE_WAY_FROM_SERVER = 204,
+    SYNC_REFRESH_FROM_SERVER = 205,
+    SYNC_LAST = 205,
+
+    /** error situation (in contrast to SYNC_NONE) */
+    SYNC_INVALID = 255
 };
 
 /**

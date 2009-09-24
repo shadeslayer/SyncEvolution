@@ -76,7 +76,7 @@ SyncMode StringToSyncMode(const std::string &mode)
     } else if (boost::iequals(mode, "disabled") || boost::iequals(mode, "SYNC_NONE")) {
         return SYNC_NONE;
     } else {
-        return SYNC_MODE_MAX;
+        return SYNC_INVALID;
     }
 }
 
