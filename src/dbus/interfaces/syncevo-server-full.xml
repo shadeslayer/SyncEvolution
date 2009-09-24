@@ -31,6 +31,16 @@
         handle that or use Session.GetStatus() to check whether the
         session is still "queueing".
       </doc:para>
+
+      <doc:para>
+        Method calls may fail with the following errors:
+        "org.syncevolution.Exception" - catch-all error condition.
+        "org.syncevolution.NoSuchConfig" - server configuration name is invalid
+        "org.syncevolution.NoSuchSource" - source name is invalid
+        "org.syncevolution.InvalidCall" - a call is (perhaps no longer) allowed
+        or suitable in the current situation, like Detach() when the client
+        is not attached.
+      </doc:para>
     </doc:doc>
 
     <method name="Attach">
