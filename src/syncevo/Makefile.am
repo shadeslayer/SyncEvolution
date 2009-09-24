@@ -13,7 +13,7 @@ SYNCEVOLUTION_LDADD += $(CPPUNIT_LDFLAGS)
 endif
 
 if ENABLE_MODULES
-pkglib_LTLIBRARIES = libsyncevolution.la
+lib_LTLIBRARIES = libsyncevolution.la
 else
 noinst_LTLIBRARIES = libsyncevolution.la
 endif
