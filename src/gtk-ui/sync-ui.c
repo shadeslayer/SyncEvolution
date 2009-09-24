@@ -1494,8 +1494,11 @@ get_service_description (const char *service)
         return _("Google Sync can backup and synchronize your Address Book "
                  "with your Gmail contacts.");
     }else if (strcmp (service, "Funambol") == 0) {
+        /* TRANSLATORS: Please include the word "demo" (or the equivalent in
+           your language): Funambol is going to be a 90 day demo service
+           in the future */
         return _("Backup your contacts and calendar. Sync with a single"
-                 "click, anytime, anywhere.");
+                 "click, anytime, anywhere (DEMO).");
     }
 
     return "";
