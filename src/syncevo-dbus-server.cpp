@@ -29,6 +29,8 @@
 #include <syncevo/SoupTransportAgent.h>
 #include <syncevo/SyncSource.h>
 
+#include <synthesis/san.h>
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -647,6 +649,11 @@ class Connection : public DBusObjectHelper, public Resource
         FAILED          /**< in a failed state, no further operation possible */
     } m_state;
     std::string m_failure;
+
+    /** first parameter for Session::sync() */
+    std::string m_syncMode;
+    /** second parameter for Session::sync() */
+    Session::SourceModes_t m_sourceModes;
 
     const std::string m_sessionID;
     boost::shared_ptr<Session> m_session;
@@ -1441,22 +1448,111 @@ void Connection::process(const Caller_t &caller,
                 config.assign(reinterpret_cast<const char *>(message.second),
                               message.first);
             } else if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
-                // TODO: extract server ID and match it against a server configuration.
-                // At the moment, always pick "default" as configuration name.
-                // sysync::SanPackage san;
-                // san.PassSan(message.second, message.first);
-                // san.GetHeader();
-                // std::string serverID = san.fServerID;
-                config = "default";
+            	sysync::SanPackage san;
+            	if (san.PassSan(const_cast<uint8_t *>(message.second), message.first)) {
+                    // We are very tolerant regarding the content of the message.
+                    // If it doesn't parse, try to do something useful anyway.
+                    config = "default";
+                    SE_LOG_DEBUG(NULL, NULL, "SAN parsing failed, falling back to 'default' config");
+            	} else {
+                    // Extract server ID and match it against a server
+                    // configuration.  Multiple different peers might use the
+                    // same serverID ("PC Suite"), so check properties of the
+                    // of our configs first before going back to the name itself.
+                    std::string serverID = san.fServerID;
+                    SyncConfig::ServerList servers = SyncConfig::getServers();
+                    BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,
+                    	          servers) {
+                    	SyncContext context(server.first);
+                    	if (context.getSyncURL() == serverID) {
+                    	    config = serverID;
+                    	    break;
+                    	}
 
-                // TODO: extract number of sources
-                int numSources = 0;
-                if (!numSources) {
-                    // Synchronize all known sources with the selected mode.
-                } else {
-                    // TODO: check what the server wants us to synchronize.
-                    // Create the necessary local configuration temporarily,
-                    // using heuristics if necessary.
+                    	// TODO: for other transports match against
+                    	// transport specific properties, like Bluetooth MAC
+                        // address
+                    }
+                    if (config.empty()) {
+                        BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,
+                                      servers) {
+                            if (server.first == serverID) {
+                                config = serverID;
+                                break;
+                            }
+                        }
+                    }
+
+                    // pick "default" as configuration name if none matched
+                    if (config.empty()) {
+                        config = "default";
+                        SE_LOG_DEBUG(NULL, NULL, "SAN Server ID '%s' unknown, falling back to 'default' config", serverID.c_str());
+                    }
+
+                    // TODO: create a suitable configuration automatically?!
+
+                    SE_LOG_DEBUG(NULL, NULL, "SAN sync with config %s", config.c_str());
+
+                    // extract number of sources
+                    int numSources = san.fNSync;
+                    int syncType;
+                    uint32_t contentType;
+                    std::string serverURI;
+                    if (!numSources) {
+                        SE_LOG_DEBUG(NULL, NULL, "SAN message with no sources");
+                        // Synchronize all known sources with the selected mode.
+                        if (san.GetNthSync(0, syncType, contentType, serverURI)) {
+                            SE_LOG_DEBUG(NULL, NULL, "SAN invalid header, using default modes");
+                        } else if (syncType < SYNC_FIRST || syncType > SYNC_LAST) {
+                            SE_LOG_DEBUG(NULL, NULL, "SAN invalid sync type %d, using default modes", syncType);
+                        } else {
+                            m_syncMode = PrettyPrintSyncMode(SyncMode(syncType), true);
+                            SE_LOG_DEBUG(NULL, NULL, "SAN sync mode for all configured sources: %s", m_syncMode.c_str());
+                        }
+                    } else {
+                        const SyncContext context(config);
+                        std::list<std::string> sources = context.getSyncSources();
+
+                        // check what the server wants us to synchronize
+                        // and only synchronize that
+                        m_syncMode = "disabled";
+                        for (int sync = 1; sync <= numSources; sync++) {
+                            if (san.GetNthSync(sync, syncType, contentType, serverURI)) {
+                                SE_LOG_DEBUG(NULL, NULL, "SAN invalid sync entry #%d", sync);
+                            } else if (syncType < SYNC_FIRST || syncType > SYNC_LAST) {
+                                SE_LOG_DEBUG(NULL, NULL, "SAN invalid sync type %d for entry #%d, ignoring entry", syncType, sync);
+                            } else {
+                                std::string syncMode = PrettyPrintSyncMode(SyncMode(syncType), true);
+                                bool found = false;
+                                BOOST_FOREACH(const std::string &source, sources) {
+                                    boost::shared_ptr<const PersistentSyncSourceConfig> sourceConfig(context.getSyncSourceConfig(source));
+                                    // prefix match because the local
+                                    // configuration might contain
+                                    // additional parameters (like date
+                                    // range selection for events)
+                                    if (boost::starts_with(sourceConfig->getURI(), serverURI)) {
+                                        SE_LOG_DEBUG(NULL, NULL,
+                                                     "SAN entry #%d = source %s with mode %s",
+                                                     sync, source.c_str(), syncMode.c_str());
+                                        m_sourceModes[source] = syncMode;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    SE_LOG_DEBUG(NULL, NULL,
+                                                 "SAN entry #%d with mode %s ignored because Server URI %s is unknown",
+                                                 sync, syncMode.c_str(), serverURI.c_str());
+                                }
+                            }
+                        }
+
+                        if (m_sourceModes.empty()) {
+                            SE_LOG_DEBUG(NULL, NULL,
+                                         "SAN message with no known entries, falling back to default");
+                            m_syncMode = "";
+                        }
+                    }
                 }
 
                 // TODO: use the session ID set by the server if non-null
@@ -1650,7 +1746,7 @@ void Connection::activate()
 void Connection::ready()
 {
     // proceed with sync now that our session is ready
-    m_session->sync("", Session::SourceModes_t());
+    m_session->sync(m_syncMode, m_sourceModes);
 }
 
 /****************** DBusTransportAgent implementation **************/
