@@ -1,3 +1,7 @@
+SyncEvolution 0.9 -> 0.9.1, ??.??.????
+======================================
+Synthesis SyncML Engine version: see src/synthesis/ChangeLog
+
 Mobical is now officially supported. Mobical uses vCard 2.1
 and vCalendar 1.0 as data formats, with the result that many
 properties used in Evolution are not supported by the server.
@@ -10,8 +14,40 @@ Mobical always initiates a slow sync when it has no data left on the
 server. This avoids surprises when the user has wiped out all data on
 the server in order to reset it, because during a slow sync the items
 on the client are preserved. But this also means that it is not
-possible to remove all items on a device unless they are manually
-removed on the device.
+possible to remove all items on a device remotely. They have to 
+be manually removed on the device itself.
+
+It is now possible to compile database backends outside of
+SyncEvolution, install them and have SyncEvolution use them
+automatically like any other backend. The backend API has been
+enhanced considerably. Backend developers now have access to a modular
+set of utility classes that can be mixed into a specific
+implementation.
+
+Other changes in detail:
+
+* The logging of added and updated items was enhanced. Events,
+  tasks and memos are logged with a short description instead of
+  just the local ID. The description for contacts was improved.
+
+* The sync UI allowed to enable calendar and task synchronization
+  with Google although Google does not support that (MB#5871).
+  In new installations this is prevented now by clearing the URI
+  for those data categories.
+
+* SyncEvolution command line uses the GNOME keyring when
+  the new --keyring option is given.
+
+* Some sync UI enhancements (show only one window at a time,
+  describe sync services, avoid crash with very long input
+  in some of the text boxes (MB#5219), set application icon,
+  improved some strings).
+
+* Resend messages to cope with intermittent loss of network
+  connectivity (MB#3427).
+
+* Improved checks which logs in the logdir belong to the current
+  server (MB#5215).
 
 
 SyncEvolution 0.8.1 -> 0.9, 12.08.2009
