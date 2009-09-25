@@ -116,7 +116,7 @@ class UUID : public string {
  */
 class ReadDir {
  public:
-    ReadDir(const string &path);
+    ReadDir(const string &path, bool throwError = true);
 
     typedef vector<string>::const_iterator const_iterator;
     typedef vector<string>::iterator iterator;

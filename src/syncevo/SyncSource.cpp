@@ -22,8 +22,6 @@
 # define _GNU_SOURCE 1
 #endif
 #include <dlfcn.h>
-#include <sys/types.h>
-#include <dirent.h>
 
 #include "SyncSource.h"
 #include "EvolutionSyncClient.h"
@@ -235,52 +233,48 @@ static class ScannedModules {
 public:
     ScannedModules() {
 #ifdef ENABLE_MODULES
-        DIR *dir = opendir (SYNCEVO_BACKEND);
-        if(!dir) {
-            info<<"Backend directory open failed"<<endl;
-            return;
+        list<pair <string, boost::shared_ptr<ReadDir> > > dirs;
+        /* If enviroment variable SYNCEVOLUTION_BACKEND_DIR is set, will search
+        backends from this path instead. */
+        string backend_dir (SYNCEVO_BACKEND);
+        char *backend_env = getenv("SYNCEVOLUTION_BACKEND_DIR");
+        if (backend_env && strlen(backend_env)){
+            backend_dir = backend_env;
         }
-        struct dirent *entry;
-        list<pair <string,DIR *> > dirs;
-        DIR *subdir = NULL;
-        string dirpath (SYNCEVO_BACKEND);
-        // possible extension: scan directories for matching module names instead of hard-coding known names
-
+        boost::shared_ptr<ReadDir> dir (new ReadDir (backend_dir, false));
+        string dirpath (backend_dir);
+        // scan directories for matching module names
         do {
             info<<"Scanning backend libraries in " <<dirpath <<endl;
-            while ((entry = readdir(dir))!=NULL){
+            BOOST_FOREACH (const string &entry, *dir) {
                 void *dlhandle;
-                if (!strcmp (entry->d_name, ".") || !strcmp(entry->d_name, "..")){
-                    continue;
-                } else if (entry->d_type == DT_DIR) {
+                if (isDir (dirpath + '/' + entry)) {
                     /* This is a 2-level dir, this corresponds to loading
                      * backends from current building directory. The library
                      * should reside in .libs sub directory.*/
-                    string path = dirpath + entry->d_name +"/.libs/";
-                    subdir = opendir (path.c_str());
-                    if (subdir) {
+                    string path = dirpath + '/' + entry +"/.libs";
+                    if (isDir (path)) {
+                        boost::shared_ptr<ReadDir> subdir (new ReadDir (path, false));
                         dirs.push_back (make_pair(path, subdir));
                     }
                     continue;
                 }
-                char *p = strrchr(entry->d_name, 's');
-                if (p && *(p+1)=='o' && *(p+2)=='\0'){
+                if (entry.rfind(".so") == entry.length()-3){
 
                     // Open the shared object so that backend can register
                     // itself. We keep that pointer, so never close the
                     // module!
-                    string fullpath = dirpath + entry->d_name;
+                    string fullpath = dirpath + '/' + entry;
                     dlhandle = dlopen(fullpath.c_str(), RTLD_NOW|RTLD_GLOBAL);
                     // remember which modules were found and which were not
                     if (dlhandle) {
-                        debug<<"Loading backend library "<<entry->d_name<<endl;
-                        m_available.push_back(entry->d_name);
+                        debug<<"Loading backend library "<<entry<<endl;
+                        m_available.push_back(entry);
                     } else {
-                        debug<<"Loading backend library "<<entry->d_name<<"failed "<< dlerror()<<endl;
+                        debug<<"Loading backend library "<<entry<<"failed "<< dlerror()<<endl;
                     }
                 }
             }
-            closedir (dir);
             if (!dirs.empty()){
                 dirpath = dirs.front().first;
                 dir = dirs.front().second;

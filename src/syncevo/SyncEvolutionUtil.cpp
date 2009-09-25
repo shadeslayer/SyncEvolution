@@ -166,7 +166,7 @@ UUID::UUID()
 }
 
 
-ReadDir::ReadDir(const string &path) : m_path(path)
+ReadDir::ReadDir(const string &path, bool throwError) : m_path(path)
 {
     DIR *dir = NULL;
 
@@ -191,7 +191,9 @@ ReadDir::ReadDir(const string &path) : m_path(path)
         if (dir) {
             closedir(dir);
         }
-        throw;
+        if(throwError) {
+            throw;
+        }
     }
 
     closedir(dir);
