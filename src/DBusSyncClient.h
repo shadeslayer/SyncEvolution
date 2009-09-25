@@ -54,7 +54,7 @@ protected:
 
 	virtual bool getPrintChanges() const;
 
-	virtual string askPassword(const string &descr);
+	virtual string askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key);
 
 	virtual void displayServerMessage(const string &message);
 

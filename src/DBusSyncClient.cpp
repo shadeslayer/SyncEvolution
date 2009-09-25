@@ -59,11 +59,10 @@ bool DBusSyncClient::getPrintChanges() const
 	return false;
 }
 
-string DBusSyncClient::askPassword(const string &descr)
+string DBusSyncClient::askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key)
 {
 	string retval;
 	char *password = NULL;
-
 	if (!m_need_password)
 		throwError(string("Password query not supported"));
 
