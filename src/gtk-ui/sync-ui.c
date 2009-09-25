@@ -1487,6 +1487,9 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
 const char*
 get_service_description (const char *service)
 {
+    if (!service)
+        return "";
+
     if (strcmp (service, "ScheduleWorld") == 0) {
         return _("ScheduleWorld enables you to keep your contacts, events, "
                  "tasks, and notes in sync.");
