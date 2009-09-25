@@ -107,7 +107,14 @@ bool CmdlineSyncClient::savePassword(const string &passwordName,
                                                          &itemId);
         /* if set operation is failed */
         if(result != GNOME_KEYRING_RESULT_OK) {
+#ifdef GNOME_KEYRING_220
             EvolutionSyncClient::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. " + gnome_keyring_result_to_message(result));
+#else
+            /** if gnome-keyring version is below 2.20, it doesn't support 'gnome_keyring_result_to_message'. */
+            stringstream value;
+            value << (int)result;
+            EvolutionSyncClient::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. The gnome-keyring error code is " + value.str() + ".");
+#endif
         } 
         return true;
     }

@@ -258,6 +258,10 @@ fi
 PKG_CHECK_MODULES(KEYRING, [gnome-keyring-1], HAVE_KEYRING=yes, HAVE_KEYRING=no)
 if test $HAVE_KEYRING == "yes"; then
     AC_DEFINE(USE_GNOME_KEYRING, 1, [define if gnome keyring should be used in dbus service])
+    PKG_CHECK_MODULES([KEYRING_2_20], [gnome-keyring-1 >= 2.20 ], KEYRING220=yes, KEYRING220=no)
+    if test $KEYRING220 == "yes"; then
+        AC_DEFINE(GNOME_KEYRING_220, 1, [define if gnome keyring version is above 2.20])
+    fi
 fi
 
 if test $enable_dbus_service == "yes"; then
