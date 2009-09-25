@@ -486,6 +486,18 @@ class Session : public DBusObjectHelper,
     void getProgress(int32_t &progress,
                      SourceProgresses_t &sources);
 
+    void getConfig(bool getTemplate,
+                   ReadOperations::Config_t &config)
+    {
+        ReadOperations::getConfig(getTemplate , config);
+    }
+
+    void getReports(uint32_t start, uint32_t count,
+                    ReadOperations::Reports_t &reports)
+    {
+        ReadOperations::getReports(start, count, reports);
+    }
+
     /**
      * Must be called each time that properties changing the
      * overall status are changed. Ensures that the corresponding
@@ -1148,21 +1160,21 @@ void Session::activate()
                         const Caller_t &,
                         typeof(&Session::detach), &Session::detach>
                         ("Detach"),
-        makeMethodEntry<ReadOperations,
+        makeMethodEntry<Session,
                         bool,
                         ReadOperations::Config_t &,
-                        typeof(&ReadOperations::getConfig), &ReadOperations::getConfig>
+                        typeof(&Session::getConfig), &Session::getConfig>
                         ("GetConfig"),
         makeMethodEntry<Session,
                         bool, bool,
                         const ReadOperations::Config_t &,
                         typeof(&Session::setConfig), &Session::setConfig>
                         ("SetConfig"),
-        makeMethodEntry<ReadOperations,
+        makeMethodEntry<Session,
                         uint32_t,
                         uint32_t,
                         ReadOperations::Reports_t &,
-                        typeof(&ReadOperations::getReports), &ReadOperations::getReports>
+                        typeof(&Session::getReports), &Session::getReports>
                         ("GetReports"),
         makeMethodEntry<Session,
                         const std::string &,
