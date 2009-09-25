@@ -1932,18 +1932,28 @@ SyncMLStatus EvolutionSyncClient::doSync()
                                     (long)(duration % 60));
                         stepCmd = sysync::STEPCMD_ABORT;
                     } else {
+                        // Send might have failed because of abort or
+                        // suspend request.
+                        if (checkForSuspend()) {
+                            stepCmd = sysync::STEPCMD_SUSPEND;
+                            break;
+                        } else if (checkForAbort()) {
+                            stepCmd = sysync::STEPCMD_ABORT;
+                            break;
+                        }
+
                         // retry send
                         int leftTime = m_retryInterval - (curTime - resendStart);
-                        if(leftTime >0 ) {
+                        if (leftTime >0 ) {
                             if (sleep (leftTime) > 0) {
-                                if(checkForSuspend()) {
+                                if (checkForSuspend()) {
                                     stepCmd = sysync::STEPCMD_SUSPEND;
                                 } else {
                                     stepCmd = sysync::STEPCMD_ABORT;
                                 }
                                 break;
                             } 
-                        } 
+                        }
 
                         m_retries ++;
                         stepCmd = sysync::STEPCMD_RESENDDATA;
