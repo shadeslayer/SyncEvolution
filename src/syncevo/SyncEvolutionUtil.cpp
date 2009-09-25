@@ -191,8 +191,10 @@ ReadDir::ReadDir(const string &path, bool throwError) : m_path(path)
         if (dir) {
             closedir(dir);
         }
-        if(throwError) {
+        if (throwError) {
             throw;
+        } else {
+            return;
         }
     }
 
