@@ -55,6 +55,7 @@ public:
 
 /** shorthand, primarily useful for BOOST_FOREACH macro */
 typedef pair<string, string> StringPair;
+typedef map<string, string> StringMap;
 
 /**
  * remove multiple slashes in a row and dots directly after a slash if not followed by filename,
