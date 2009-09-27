@@ -98,4 +98,27 @@ elif sys.argv[2] == "--reports":
             print '\t[',key,'] = ' ,value
         j = j+1
     print ''
-
+elif sys.argv[2] == "--checksource":
+    i = 3;
+    length = len(sys.argv)
+    print 'CheckSource:'
+    while i < length:
+        try:
+            session.CheckSource(sys.argv[i])
+        except dbus.exceptions.DBusException, x:
+            print '\t[', sys.argv[i], ']: failed, ', x
+            i = i + 1
+            continue
+        print '\t[', sys.argv[i], ']: ok'
+        i = i + 1
+elif sys.argv[2] == "--getdatabases":
+    i = 3;
+    length = len(sys.argv)
+    print 'GetDatabases:'
+    while i < length:
+        r = session.GetDatabases(sys.argv[i])
+        print '\t[', sys.argv[i],']'
+        for item in r:
+            print '\t\t','name =', item[0], ', uri = ', item[1], ', default =', item[2]
+        i = i + 1
+    print ''

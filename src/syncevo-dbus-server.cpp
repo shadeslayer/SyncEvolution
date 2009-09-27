@@ -81,6 +81,10 @@ public:
     /** the array of reports filled by getReports() */
     typedef std::vector< StringMap > Reports_t;
 
+    /** the array of databases used by getDatabases() */
+    typedef SyncSource::Database SourceDatabase;
+    typedef SyncSource::Databases SourceDatabases_t;
+
     /** implementation of D-Bus GetConfig() for m_configName as server configuration */
     void getConfig(bool getTemplate,
                    Config_t &config);
@@ -88,7 +92,22 @@ public:
     /** implementation of D-Bus GetReports() for m_configName as server configuration */
     void getReports(uint32_t start, uint32_t count,
                     Reports_t &reports);
+
+    void checkSource(const string &sourceName);
+
+    void getDatabases(const string &sourceName, SourceDatabases_t &databases);
 };
+
+/**
+ * dbus_traits for SourceDatabase. Put it here for 
+ * avoiding polluting gxx-dbus-bridge.h
+ */
+template<> struct dbus_traits<ReadOperations::SourceDatabase> :
+    public dbus_struct_traits<ReadOperations::SourceDatabase,
+                              dbus_member<ReadOperations::SourceDatabase, std::string, &ReadOperations::SourceDatabase::m_name,
+                              dbus_member<ReadOperations::SourceDatabase, std::string, &ReadOperations::SourceDatabase::m_uri,
+                              dbus_member_single<ReadOperations::SourceDatabase, bool, &ReadOperations::SourceDatabase::m_isDefault> > > >{}; 
+
 
 /**
  * Implements the main org.syncevolution.Server interface.
@@ -497,6 +516,14 @@ class Session : public DBusObjectHelper,
     {
         ReadOperations::getReports(start, count, reports);
     }
+    void checkSource(const string &sourceName) 
+    {
+        ReadOperations::checkSource(sourceName);
+    }
+    void getDatabases(const string &sourceName, ReadOperations::SourceDatabases_t &databases)
+    {
+        ReadOperations::getDatabases(sourceName, databases);
+    }
 
     /**
      * Must be called each time that properties changing the
@@ -862,6 +889,63 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
     }
 }
 
+void ReadOperations::checkSource(const std::string &sourceName)
+{
+    if(m_configName.empty()) {
+        throw std::runtime_error("Template or server name must be given");
+    }
+    boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
+    if(!config->exists()) {
+        // TODO: it is an error if the config does not exist!
+        config = SyncConfig::createServerTemplate(m_configName);
+        if(!config.get()) {
+            throw runtime_error("No server or template '" + m_configName + "' found");
+        }
+    }
+    list<std::string> sourceNames = config->getSyncSources();
+    list<std::string>::iterator it;
+    for(it = sourceNames.begin(); it != sourceNames.end(); ++it) {
+        if(*it == sourceName) {
+            break;
+        }
+    }
+    if(it == sourceNames.end()) {
+        throw runtime_error("'" + m_configName + "' has no " + sourceName + " source");
+    }
+    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
+    auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
+    try {
+        if (syncSource.get()) {
+            syncSource->open();
+        }
+    } catch (...) {
+        throw runtime_error("The source '" + sourceName + "' configuration is not correct");
+    }
+}
+void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &databases)
+{
+    if(m_configName.empty()) {
+        throw std::runtime_error("Template or server name must be given");
+    }
+    boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
+    if(!config->exists()) {
+        // TODO: it is an error if the config does not exist!
+        config = SyncConfig::createServerTemplate(m_configName);
+        if(!config.get()) {
+            throw std::runtime_error("No server or template '" + m_configName + "' found");
+        }
+    }
+    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
+    const SourceRegistry &registry(SyncSource::getSourceRegistry());
+    BOOST_FOREACH(const RegisterSyncSource *sourceInfo, registry) {
+        SyncSource *source = sourceInfo->m_create(params);
+        if(source && (source != RegisterSyncSource::InactiveSource)) {
+            auto_ptr<SyncSource> autoSource(source);
+            databases = autoSource->getDatabases();
+        }
+    }
+}
+
 /***************** DBusSync implementation **********************/
 
 DBusSync::DBusSync(const std::string &config,
@@ -1198,6 +1282,15 @@ void Session::activate()
                         SourceProgresses_t &,
                         typeof(&Session::getProgress), &Session::getProgress>
                         ("GetProgress"),
+        makeMethodEntry<Session,
+                        const std::string &,
+                        typeof(&Session::checkSource), &Session::checkSource>
+                        ("CheckSource"),
+        makeMethodEntry<Session,
+                        const std::string &,
+                        ReadOperations::SourceDatabases_t &,
+                        typeof(&Session::getDatabases), &Session::getDatabases>
+                        ("GetDatabases"),
        {}
     };
 
