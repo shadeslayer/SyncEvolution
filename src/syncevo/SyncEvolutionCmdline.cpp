@@ -179,7 +179,7 @@ bool SyncEvolutionCmdline::run() {
     } else if (m_version) {
         printf("SyncEvolution %s\n", VERSION);
         printf("%s", EDSAbiWrapperInfo());
-        printf("%s", SyncSourceBackendsInfo());
+        printf("%s", SyncSource::backendsInfo().c_str());
     } else if (m_printServers || boost::trim_copy(m_server) == "?") {
         dumpServers("Configured servers:",
                     EvolutionSyncConfig::getServers());

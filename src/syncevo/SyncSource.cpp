@@ -289,11 +289,11 @@ public:
     std::ostringstream debug, info;
 } scannedModules;
 
-const char* SyncSourceBackendsInfo() {
-    return scannedModules.info.str().c_str();
+string SyncSource::backendsInfo() {
+    return scannedModules.info.str();
 }
-const char* SyncSourceBackendsDebug() {
-    return scannedModules.debug.str().c_str();
+string SyncSource::backendsDebug() {
+    return scannedModules.debug.str();
 }
 
 SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error)

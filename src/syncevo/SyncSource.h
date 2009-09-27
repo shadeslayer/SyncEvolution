@@ -917,6 +917,16 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
     static SyncSource *createTestingSource(const string &name, const string &type, bool error,
                                            const char *prefix = getenv("CLIENT_TEST_EVOLUTION_PREFIX"));
 
+    /**
+     * Some information about available backends.
+     * Multiple lines, formatted for users of the
+     * command line.
+     */
+    static string backendsInfo();
+    /**
+     * Debug information about backends.
+     */
+    static string backendsDebug();
 
     /* implementation of SyncSourceBase */
     virtual const char * getName() const { return SyncSourceConfig::getName(); }
@@ -1426,9 +1436,4 @@ class TestingSyncSource : public SyncSource,
     }
 };
 
-//global function to convey the information for dynamic loaded modules
-//cannot log at the load time because the logger may still have not been
-//initialized.
-const char* SyncSourceBackendsInfo();
-const char* SyncSourceBackendsDebug();
 #endif // INCL_SYNCSOURCE
