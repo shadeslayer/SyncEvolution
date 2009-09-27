@@ -76,6 +76,10 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionSQLiteContactsTest);
 
 #endif // ENABLE_UNIT_TESTS
 
+/*Client-Test requries the backends is an instance of TestingSyncSource
+ * which in turn requires backends support serialized access for the data
+ * which is not supported by SQLiteContactSource.*/
+#if 0
 #ifdef ENABLE_INTEGRATION_TESTS
 namespace {
 #if 0
@@ -95,5 +99,6 @@ public:
 
 }
 #endif // ENABLE_INTEGRATION_TESTS
+#endif 
 
 #endif // ENABLE_SQLITE

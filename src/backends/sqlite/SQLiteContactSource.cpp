@@ -19,20 +19,19 @@
  */
 
 #include "config.h"
-#include <syncevo/SyncSource.h>
+#include <syncevo/Logging.h>
+#include <syncevo/SynthesisEngine.h>
 
+#include <synthesis/SDK_util.h>
 #ifdef ENABLE_SQLITE
 
 #include "SQLiteContactSource.h"
 
-#include <syncevo/Logging.h>
-#include "vocl/VConverter.h"
 
 #include <algorithm>
 #include <cctype>
 #include <sstream>
 
-using namespace vocl;
 
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -77,16 +76,17 @@ enum {
 void SQLiteContactSource::open()
 {
     static const SQLiteUtil::Mapping mapping[LAST_COL + 1] = {
-        { "Last", "ABPerson" },
-        { "Middle", "ABPerson" },
-        { "First", "ABPerson" },
-        { "Prefix", "ABPerson" },
-        { "Suffix", "ABPerson" },
-        { "FirstSort", "ABPerson" },
-        { "LastSort", "ABPerson" },
-        { "Organization", "ABPerson" },
-        { "Department", "ABPerson" },
-        { "Unit", "ABPerson" },
+        { "Last", "ABPerson", "N_LAST"},
+        { "Middle", "ABPerson", "N_MIDDLE"},
+        { "First", "ABPerson", "N_FIRST" },
+        { "Prefix", "ABPerson", "N_PREFIX" },
+        { "Suffix", "ABPerson", "N_SUFFIX" },
+        { "FirstSort", "ABPerson", "" },
+        { "LastSort", "ABPerson", "" },
+        { "Organization", "ABPerson", "ORG_NAME" },
+        { "Department", "ABPerson", "ORG_DIVISION" },
+        { "Unit", "ABPerson", "ORG_OFFICE" },
+        //{"Team", "ABPerson", "ORG_TEAM" }
         { "Note", "ABPerson", "NOTE" },
         { "Birthday", "ABPerson", "BDAY" },
         { "JobTitle", "ABPerson", "ROLE" },
@@ -95,22 +95,22 @@ void SQLiteContactSource::open()
         { "CompositeNameFallback", "ABPerson", "FN" },
         { "Categories", "ABPerson", "CATEGORIES" },
 
-        { "AIM", "ABPerson", "X-AIM" },
-        { "Groupwise", "ABPerson", "X-GROUPWISE" },
-        { "ICQ", "ABPerson", "X-ICQ" },
-        { "Yahoo", "ABPerson", "X-YAHOO" },
+        { "AIM", "ABPerson", "AIM_HANDLE" },
+        { "Groupwise", "ABPerson", "GROUPWISE_HANDLE" },
+        { "ICQ", "ABPerson", "ICQ_HANDLE" },
+        { "Yahoo", "ABPerson", "YAHOO_HANDLE" },
 
-        { "FileAs", "ABPerson", "X-EVOLUTION-FILE-AS" },
-        { "Anniversary", "ABPerson", "X-EVOLUTION-ANNIVERSARY" },
+        { "FileAs", "ABPerson", "FILE-AS" },
+        { "Anniversary", "ABPerson", "ANNIVERSARY" },
 
-        { "Assistant", "ABPerson", "X-EVOLUTION-ASSISTANT" },
-        { "Manager", "ABPerson", "X-EVOLUTION-MANAGER" },
-        { "Spouse", "ABPerson", "X-EVOLUTION-SPOUSE" },
+        { "Assistant", "ABPerson", "ASSISTANT" },
+        { "Manager", "ABPerson", "MANAGER" },
+        { "Spouse", "ABPerson", "SPOUSE" },
 
     
-        { "URL", "ABPerson", "URL" },
-        { "BlogURL", "ABPerson", "X-EVOLUTION-BLOG-URL" },
-        { "VideoURL", "ABPerson", "X-EVOLUTION-VIDEO-URL" },
+        { "URL", "ABPerson", "WEB" },
+        { "BlogURL", "ABPerson", "BLOGURL" },
+        { "VideoURL", "ABPerson", "VIDEOURL" },
 
         { NULL }
     };
@@ -166,6 +166,40 @@ void SQLiteContactSource::close()
     m_sqlite.close();
 }
 
+void SQLiteContactSource::getSynthesisInfo(SynthesisInfo &info, XMLConfigFragments &fragment)
+{
+    SourceType sourceType = getSourceType();
+    string type;
+    if (!sourceType.m_format.empty()) {
+        type = sourceType.m_format;
+    }
+    info.m_native = "vCard21";
+    info.m_fieldlist = "contacts";
+    info.m_datatypes =
+        "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n"
+        "        <use datatype='vCard30' mode='rw'/>\n";
+
+    if (type == "text/x-vcard:2.1" || type == "text/x-vcard") {
+        info.m_datatypes =
+            "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n";
+        if (!sourceType.m_forceFormat) {
+            info.m_datatypes +=
+                "        <use datatype='vCard30' mode='rw'/>\n";
+        }
+    } else if (type == "text/vcard:3.0" || type == "text/vcard") {
+        info.m_datatypes =
+            "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
+        if (!sourceType.m_forceFormat) {
+            info.m_datatypes +=
+                "        <use datatype='vCard21' mode='rw'/>\n";
+        }
+    } else {
+        throwError(string("configured MIME type not supported: ") + type);
+    }
+ 
+}
+
+
 SQLiteContactSource::Databases SQLiteContactSource::getDatabases()
 {
     Databases result;
@@ -185,136 +219,69 @@ void SQLiteContactSource::listAllItems(RevisionMap_t &revisions)
     }
 }
 
-SyncItem *SQLiteContactSource::createItem(const string &uid, const char *type)
+sysync::TSyError SQLiteContactSource::readItemAsKey(sysync::cItemID aID, sysync::KeyH aItemKey)
 {
-    logItem(uid, "extracting from database", true);
+    string uid = aID->item;
 
     sqliteptr contact(m_sqlite.prepareSQL("SELECT * FROM ABPerson WHERE ROWID = '%s';", uid.c_str()));
     if (m_sqlite.checkSQL(sqlite3_step(contact)) != SQLITE_ROW) {
-        throw runtime_error(string(getName()) + ": contact not found: " + uid);
+        throwError("contact not found: " + uid);
     }
 
-    VObject vobj;
-    string tmp;
-
-    vobj.addProperty("BEGIN", "VCARD");
-    vobj.addProperty("VERSION", "2.1");
-    vobj.setVersion("2.1");
-
-    tmp = m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_LAST).colindex);
-    tmp += VObject::SEMICOLON_REPLACEMENT;
-    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_MIDDLE).colindex);
-    tmp += VObject::SEMICOLON_REPLACEMENT;
-    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_FIRST).colindex);
-    tmp += VObject::SEMICOLON_REPLACEMENT;
-    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_PREFIX).colindex);
-    tmp += VObject::SEMICOLON_REPLACEMENT;
-    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_SUFFIX).colindex);
-    if (tmp.size() > 4) {
-        vobj.addProperty("N", tmp.c_str());
+    for (int i = 0; i<LAST_COL; i++) {
+        SQLiteUtil::Mapping map = m_sqlite.getMapping(i);
+        string field = map.fieldname;
+        if(!field.empty()) {
+            string value = m_sqlite.getTextColumn(contact, map.colindex);
+            sysync::TSyError res = getSynthesisAPI()->setValue(aItemKey, field, value.c_str(), value.size());
+            if (res != sysync::LOCERR_OK) {
+                SE_LOG_WARNING (NULL, NULL, "SQLite backend: set field %s value %s failed", field.c_str(), value.c_str());
+            }
+        }
     }
-
-    tmp = m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_ORGANIZATION).colindex);
-    tmp += VObject::SEMICOLON_REPLACEMENT;
-    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_DEPARTMENT).colindex);
-    tmp += VObject::SEMICOLON_REPLACEMENT;
-    tmp += m_sqlite.getTextColumn(contact, m_sqlite.getMapping(PERSON_UNIT).colindex);
-    if (tmp.size() > 2) {
-        vobj.addProperty("ORG", tmp.c_str());
-    }
- 
-    m_sqlite.rowToVObject(contact, vobj);
-    vobj.addProperty("END", "VCARD");
-    vobj.fromNativeEncoding();
-
-    arrayptr<char> finalstr(vobj.toString(), "VOCL string");
-    SE_LOG_DEBUG(this, NULL, "%s", (char *)finalstr);
-
-    cxxptr<SyncItem> item( new SyncItem( uid.c_str() ) );
-    item->setData( (char *)finalstr, strlen(finalstr) );
-    item->setDataType( getMimeType() );
-    item->setModificationTime( 0 );
-
-    return item.release();
+    return sysync::LOCERR_OK;
 }
 
-TrackingSyncSource::InsertItemResult SQLiteContactSource::insertItem(const string &uid, const SyncItem &item)
+sysync::TSyError SQLiteContactSource::insertItemAsKey(sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID newID)
 {
+    string uid = aID ? aID->item :"";
     string newuid = uid;
     string creationTime;
-    std::auto_ptr<VObject> vobj(VConverter::parse((char *)((SyncItem &)item).getData()));
-    if (vobj.get() == 0) {
-        throwError(string("parsing contact ") + ((SyncItem &)item).getKey());
-    }
-    vobj->toNativeEncoding();
+    string first, last;
 
     int numparams = 0;
     stringstream cols;
     stringstream values;
-    VProperty *prop;
 
-    // parse up to three fields of ORG
-    prop = vobj->getProperty("ORG");
-    string organization, department, unit;
-    if (prop && prop->getValue()) {
-        string fn = prop->getValue();
-        size_t sep1 = fn.find(VObject::SEMICOLON_REPLACEMENT);
-        size_t sep2 = sep1 == fn.npos ? fn.npos : fn.find(VObject::SEMICOLON_REPLACEMENT, sep1 + 1);
-
-        organization = fn.substr(0, sep1);
-        if (sep1 != fn.npos) {
-            department = fn.substr(sep1 + 1, (sep2 == fn.npos) ? fn.npos : sep2 - sep1 - 1);
-        }
-        if (sep2 != fn.npos) {
-            unit = fn.substr(sep2 + 1);
+    std::list<string> insValues;
+    for (int i = 0; i<LAST_COL; i++) {
+        SQLiteUtil::Mapping map = m_sqlite.getMapping(i);
+        string field = map.fieldname;
+        SharedBuffer data;
+        if (!field.empty() && !getSynthesisAPI()->getValue (aItemKey, field, data)) {
+            insValues.push_back (string (data.get()));
+            cols << m_sqlite.getMapping(i).colname << ", ";
+            values <<"?, ";
+            numparams ++;
+            if (field == "N_FIRST") {
+                first = insValues.back();
+            } else if (field == "N_LAST") {
+                last = insValues.back();
+            }
         }
     }
-    cols << m_sqlite.getMapping(PERSON_ORGANIZATION).colname << ", " <<
-        m_sqlite.getMapping(PERSON_DEPARTMENT).colname << ", " <<
-        m_sqlite.getMapping(PERSON_UNIT).colname << ", ";
-    values << "?, ?, ?, ";
-    numparams += 3;
-
-    // parse the name, insert empty fields if not found
-    prop = vobj->getProperty("N");
-    string first, middle, last, prefix, suffix, firstsort, lastsort;
-    if (prop && prop->getValue()) {
-        string fn = prop->getValue();
-        size_t sep1 = fn.find(VObject::SEMICOLON_REPLACEMENT);
-        size_t sep2 = sep1 == fn.npos ? fn.npos : fn.find(VObject::SEMICOLON_REPLACEMENT, sep1 + 1);
-        size_t sep3 = sep2 == fn.npos ? fn.npos : fn.find(VObject::SEMICOLON_REPLACEMENT, sep2 + 1);
-        size_t sep4 = sep3 == fn.npos ? fn.npos : fn.find(VObject::SEMICOLON_REPLACEMENT, sep3 + 1);
-
-        last = fn.substr(0, sep1);
-        if (sep1 != fn.npos) {
-            middle = fn.substr(sep1 + 1, (sep2 == fn.npos) ? fn.npos : sep2 - sep1 - 1);
-        }
-        if (sep2 != fn.npos) {
-            first = fn.substr(sep2 + 1, (sep3 == fn.npos) ? fn.npos : sep3 - sep2 - 1);
-        }
-        if (sep3 != fn.npos) {
-            prefix = fn.substr(sep3 + 1, (sep4 == fn.npos) ? fn.npos : sep4 - sep3 - 1);
-        }
-        if (sep4 != fn.npos) {
-            suffix = fn.substr(sep4 + 1);
-        }
-    }
-    cols << m_sqlite.getMapping(PERSON_FIRST).colname << ", " <<
-        m_sqlite.getMapping(PERSON_MIDDLE).colname << ", " <<
-        m_sqlite.getMapping(PERSON_LAST).colname << ", " <<
-        m_sqlite.getMapping(PERSON_PREFIX).colname << ", " <<
-        m_sqlite.getMapping(PERSON_SUFFIX).colname << ", " <<
-        m_sqlite.getMapping(PERSON_LASTSORT).colname << ", " <<
-        m_sqlite.getMapping(PERSON_FIRSTSORT).colname;
-    values << "?, ?, ?, ?, ?, ?, ?";
-    numparams += 7;
-
 
     // synthesize sort keys: upper case with specific order of first/last name
-    firstsort = first + " " + last;
+    string firstsort = first + " " + last;
     boost::to_upper(firstsort);
-    lastsort = last + " " + first;
+    string lastsort = last + " " + first;
     boost::to_upper(lastsort);
+
+    cols << "FirstSort, LastSort";
+    values << "?, ?";
+    numparams += 2;
+    insValues.push_back(firstsort);
+    insValues.push_back(lastsort);
 
     // optional fixed UID, potentially fixed creation time
     if (uid.size()) {
@@ -336,24 +303,14 @@ TrackingSyncSource::InsertItemResult SQLiteContactSource::insertItem(const strin
 
     string cols_str = cols.str();
     string values_str = values.str();
-    sqliteptr insert(m_sqlite.vObjectToRow(*vobj,
-                                                    "ABPerson",
-                                                    numparams,
-                                                    cols.str(),
-                                                    values.str()));
+
+    sqliteptr insert(m_sqlite.prepareSQL("INSERT INTO ABPerson( %s ) VALUES( %s );", cols.str().c_str(), values.str().c_str()));
 
     // now bind parameter values in the same order as the columns specification above
     int param = 1;
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, organization.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, department.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, unit.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, first.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, middle.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, last.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, prefix.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, suffix.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, lastsort.c_str(), -1, SQLITE_TRANSIENT));
-    m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, firstsort.c_str(), -1, SQLITE_TRANSIENT));
+    BOOST_FOREACH (string &value, insValues) {
+        m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, value.c_str(), -1, SQLITE_TRANSIENT));
+    }
     if (uid.size()) {
         m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, uid.c_str(), -1, SQLITE_TRANSIENT));
         m_sqlite.checkSQL(sqlite3_bind_text(insert, param++, creationTime.c_str(), -1, SQLITE_TRANSIENT));
@@ -369,13 +326,14 @@ TrackingSyncSource::InsertItemResult SQLiteContactSource::insertItem(const strin
         // figure out which UID was assigned to the new contact
         newuid = m_sqlite.findColumn("SQLITE_SEQUENCE", "NAME", "ABPerson", "SEQ", "");
     }
-    return InsertItemResult(newuid,
-                            m_sqlite.time2str(modificationTime),
-                            false);
+    newID->item = StrAlloc(newuid.c_str());
+
+    updateRevision(*m_trackingNode, uid, newuid, m_sqlite.time2str(modificationTime));
+    return sysync::LOCERR_OK;
 }
 
 
-void SQLiteContactSource::deleteItem(const string &uid)
+void SQLiteContactSource::deleteItem(const string& uid)
 {
     sqliteptr del;
 
@@ -383,49 +341,28 @@ void SQLiteContactSource::deleteItem(const string &uid)
                                 "ABPerson.ROWID = ?;"));
     m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_step(del));
+    deleteRevision(*m_trackingNode, uid);
 }
 
-void SQLiteContactSource::logItem(const string &uid, const string &info, bool debug)
+
+void SQLiteContactSource::beginSync(const std::string &lastToken, const std::string &resumeToken)
 {
-    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
-        SE_LOG(this, NULL, debug ? Logger::DEBUG : Logger::INFO,
-               "%s %s",
-               m_sqlite.findColumn("ABPerson",
-                                   "ROWID",
-                                   uid.c_str(),
-                                   "FirstSort",
-                                   uid.c_str()).c_str(),
-               info.c_str());
-    }
+    detectChanges(*m_trackingNode);
 }
 
-void SQLiteContactSource::logItem(const SyncItem &item, const string &info, bool debug)
+
+std::string SQLiteContactSource::endSync(bool success)
 {
-    if (!item.getData()) {
-        logItem(string(item.getKey()), info, debug);
-        return;
+    if (success) {
+        m_trackingNode->flush();
+    } else {
+        // The Synthesis docs say that we should rollback in case of
+        // failure. Cannot do that for data, so lets at least keep
+        // the revision map unchanged.
     }
 
-    if (getLevel() >= (debug ? Logger::DEBUG : Logger::INFO)) {
-        string data = (const char *)item.getData();
-
-        // avoid pulling in a full vcard parser by just searching for a specific property,
-        // FN in this case
-        string name = "???";
-        string prop = "\nFN:";
-        size_t start = data.find(prop);
-        if (start != data.npos) {
-            start += prop.size();
-            size_t end = data.find("\n", start);
-            if (end != data.npos) {
-                name = data.substr(start, end - start);
-            }
-        }
-        SE_LOG(this, NULL, debug ? Logger::DEBUG : Logger::INFO,
-               "%s %s",
-               name.c_str(),
-               info.c_str());
-    }
+    // no token handling at the moment (not needed for clients)
+    return "";
 }
 
 #endif /* ENABLE_SQLITE */

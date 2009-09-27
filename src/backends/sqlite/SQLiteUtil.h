@@ -23,14 +23,10 @@
 #ifdef ENABLE_SQLITE
 
 #include <sqlite3.h>
-#include "EvolutionSmartPtr.h"
+#include <syncevo/EvolutionSmartPtr.h>
 
 #include <string>
 using namespace std;
-
-namespace vocl {
-    class VObject;
-}
 
 class SQLiteUnref {
  public:
@@ -54,7 +50,7 @@ class SQLiteUtil
     struct Mapping {
         const char *colname;        /**< column name in SQL table */
         const char *tablename;      /**< name of the SQL table which has this column */
-        const char *propname;       /**< optional: vcard/vcalendar property which corresponds to this */
+        const char *fieldname;       /**< synthesis internal field name, no corresponding synthesis field if empty*/
         int colindex;               /**< determined dynamically in open(): index of the column, -1 if not present */
     };
 
@@ -126,22 +122,6 @@ class SQLiteUtil
 
     /** convert time to string */
     static string time2str(syncml_time_t t);
-
-    /** copies all columns which directly map to a property into the vobj */
-    void rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj);
-
-    /**
-     * Creates a SQL INSERT INTO <tablename> ( <cols> ) VALUES ( <values> )
-     * statement and binds all rows/values that map directly from the vobj.
-     *
-     * @param numparams      number of ? placeholders in values; the caller has
-     *                       to bind those before executing the statement
-     */
-    sqlite3_stmt *vObjectToRow(vocl::VObject &vobj,
-                               const string &tablename,
-                               int numparams,
-                               const string &cols,
-                               const string &values);
 
  private:
     /* copy of open() parameters */

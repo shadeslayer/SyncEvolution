@@ -20,7 +20,7 @@
 #ifndef INCL_EVOLUTION_PREFIX_CONFIG_NODE
 # define INCL_EVOLUTION_PREFIX_CONFIG_NODE
 
-#include <ConfigNode.h>
+#include <syncevo/ConfigNode.h>
 #include <boost/shared_ptr.hpp>
 
 #include <map>

@@ -22,11 +22,11 @@
 #ifdef ENABLE_SQLITE
 
 #include "SQLiteUtil.h"
-#include "base/util/StringBuffer.h"
-#include "vocl/VConverter.h"
+#include <syncevo/SyncEvolutionUtil.h>
 
 #include <stdarg.h>
 #include <sstream>
+#include <cstring>
 
 void SQLiteUtil::throwError(const string &operation)
 {
@@ -51,14 +51,12 @@ sqlite3_stmt *SQLiteUtil::prepareSQLWrapper(const char *sql, const char **nextsq
 
 sqlite3_stmt *SQLiteUtil::prepareSQL(const char *sqlfmt, ...)
 {
-    StringBuffer sql;
     va_list ap;
    
     va_start(ap, sqlfmt);
-    sql.vsprintf(sqlfmt, ap);
+    string s = StringPrintfV (sqlfmt, ap);
     va_end(ap);
-
-    return prepareSQLWrapper(sql.c_str());
+    return prepareSQLWrapper(s.c_str());
 }
 
 
@@ -105,84 +103,6 @@ string SQLiteUtil::time2str(SQLiteUtil::syncml_time_t t)
     char buffer[128];
     sprintf(buffer, "%lu", t);
     return buffer;
-}
-
-void SQLiteUtil::rowToVObject(sqlite3_stmt *stmt, vocl::VObject &vobj)
-{
-    const unsigned char *text;
-    const char *tablename;
-    int i;
-
-    for (i = 0; m_mapping[i].colname; i++) {
-        if (m_mapping[i].colindex < 0 ||
-            !m_mapping[i].propname) {
-            continue;
-        }
-        tablename = sqlite3_column_table_name(stmt, m_mapping[i].colindex);
-        if (!tablename || strcasecmp(tablename, m_mapping[i].tablename)) {
-            continue;
-        }
-        text = sqlite3_column_text(stmt, m_mapping[i].colindex);
-        if (text) {
-            vobj.addProperty(m_mapping[i].propname, (const char *)text);
-        }
-    }
-}
-
-sqlite3_stmt *SQLiteUtil::vObjectToRow(vocl::VObject &vobj,
-                                       const string &tablename,
-                                       int numparams,
-                                       const string &cols,
-                                       const string &values)
-{
-    stringstream cols_stream;
-    stringstream values_stream;
-    int i;
-
-    cols_stream << cols;
-    values_stream << values;
-
-    // figure out which columns we will fill
-    for (i = 0; m_mapping[i].colname; i++) {
-        if (m_mapping[i].colindex < 0 ||
-            !m_mapping[i].propname ||
-            tablename != m_mapping[i].tablename) {
-            continue;
-        }
-        
-        vocl::VProperty *vprop = vobj.getProperty(m_mapping[i].propname);
-        if (vprop) {
-            if (cols.size()) {
-                cols_stream << ", ";
-                values_stream << ", ";
-            }
-            cols_stream << m_mapping[i].colname;
-            values_stream << "?";
-        }
-    }
-
-    // create statement
-    sqliteptr insert(prepareSQL("INSERT INTO ABPerson( %s ) "
-                                         "VALUES( %s );",
-                                         cols_stream.str().c_str(),
-                                         values_stream.str().c_str()));
-    // now bind our parameters
-    int param = numparams + 1;
-    for (i = 0; m_mapping[i].colname; i++) {
-        if (m_mapping[i].colindex < 0 ||
-            !m_mapping[i].propname ||
-            tablename != m_mapping[i].tablename) {
-            continue;
-        }
-        
-        vocl::VProperty *vprop = vobj.getProperty(m_mapping[i].propname);
-        if (vprop) {
-            const char *text = vprop->getValue();
-            checkSQL(sqlite3_bind_text(insert, param++, text ? text : "", -1, SQLITE_TRANSIENT));
-        }
-    }
-
-    return insert.release();
 }
 
 void SQLiteUtil::open(const string &name,

@@ -251,7 +251,7 @@ std::string StringPrintfV(const char *format, va_list ap)
 {
     va_list aq;
 
-    char *buffer = NULL;
+    char *buffer = NULL, *nbuffer = NULL;
     ssize_t size = 0;
     ssize_t realsize = 255;
     do {
@@ -259,14 +259,15 @@ std::string StringPrintfV(const char *format, va_list ap)
         va_copy(aq, ap);
 
         if (size < realsize) {
-            buffer = (char *)realloc(buffer, realsize + 1);
-            if (!buffer) {
+            nbuffer = (char *)realloc(buffer, realsize + 1);
+            if (!nbuffer) {
                 if (buffer) {
                     free(buffer);
                 }
                 return "";
             }
             size = realsize;
+            buffer = nbuffer;
         }
 
         realsize = vsnprintf(buffer, size + 1, format, aq);
