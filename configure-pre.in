@@ -30,6 +30,15 @@ AC_ARG_WITH(synthesis-src,
                            SYNTHESISSRC_REPO otherwise.]),
             [SYNTHESISSRC="$withval"], [SYNTHESISSRC="$SYNTHESISSRC_DEF"; REVISION="SYNTHESISSRC_REVISION"])
 
+AC_ARG_WITH(syncml-engines,
+            AS_HELP_STRING([--with-syncml-engines=client|server|both],
+                           [Determines which kind of support for SyncML is compiled and linked into SyncEvolution. Default is both. Currently has no effect.]),
+            [SYNCML_ENGINES="$withval"], SYNCML_ENGINES=both)
+
+case $SYNCML_ENGINES in both|client) AC_DEFINE(ENABLE_SYNCML_CLIENT, 1, [SyncML client support available]);; esac
+case $SYNCML_ENGINES in both|server) AC_DEFINE(ENABLE_SYNCML_SERVER, 1, [SyncML server support available]);; esac
+case $SYNCML_ENGINES in both|server|client) true;; *) AC_ERROR([Invalid value for --with-syncml-engines: $SYNCML_ENGINES]);; esac
+
 AC_ARG_WITH(synthesis-username,
             AS_HELP_STRING([--with-synthesis-username=<svn username>],
                            [username to use when checking out --with-synthesis-src sources from Subversion, default 'guest']),
@@ -107,13 +116,6 @@ if test $enable_static_cxx == "yes"; then
         CORE_LDADD_DEP=libstdc++.a
 fi
 AC_SUBST(CORE_LDADD_DEP)
-
-# preserve src/synthesis by default,
-# always
-CLEAN_SYNTHESIS_SRC=
-SYNTHESIS_LIB=$PWD/src/build-synthesis/src/libsynthesissdk.la
-
-AC_SUBST(CLEAN_CLIENT_SRC)
 
 # Check for transport layer.
 # Both curl and libsoup can be enabled and disabled explicitly.
@@ -411,8 +413,14 @@ elif test "$SYNTHESISSRC" != "none" && test -d $srcdir/src/synthesis; then
          /*) SYNTHESIS_SRC="$srcdir/src/synthesis";;
          *) SYNTHESIS_SRC="$PWD/$srcdir/src/synthesis";;
     esac
-else
+elif test "$enable_shared" = "no"; then
+    # link against engine
     PKG_CHECK_MODULES(SYNTHESIS, "synthesis")
+    SYNTHESIS_ENGINE="$SYNTHESIS_LIBS -lsynthesis"
+else
+    # link against SDK alone, except in client-test
+    PKG_CHECK_MODULES(SYNTHESIS, "synthesis-sdk")
+    SYNTHESIS_ENGINE="`echo $SYNTHESIS_LIBS | sed -e 's/-lsynthesisstubs/-lsynthesis/'`"
 fi
 
 if test $SYNTHESIS_SRC != "no-synthesis-source"; then
@@ -424,10 +432,20 @@ if test $SYNTHESIS_SRC != "no-synthesis-source"; then
     # use local copy of the sources, with dependencies
     # to trigger building the synthesis library
     SYNTHESIS_SUBDIR=$PWD/src/build-synthesis
-    SYNTHESIS_DEP=$PWD/src/build-synthesis/src/libsynthesissdk.la
-
     SYNTHESIS_CFLAGS="-I$SYNTHESIS_SUBDIR/src"
-    SYNTHESIS_LIBS="-L$SYNTHESIS_SUBDIR/src -lsynthesissdk -lsynthesis"
+    SYNTHESIS_LIBS="$SYNTHESIS_SUBDIR/src/libsynthesissdk.la"
+
+    if test "$enable_shared" = "no"; then
+        # link against the engines that were enabled
+        case $SYNCML_ENGINES in both|client|server) SYNTHESIS_LIBS="$SYNTHESIS_LIBS $SYNTHESIS_SUBDIR/src/libsynthesis.la";; esac
+        AC_DEFINE(ENABLE_SYNCML_LINKED, 1, [SyncML engines are linked directly])
+    else
+        SYNTHESIS_LIBS="$SYNTHESIS_LIBS $SYNTHESIS_SUBDIR/src/libsynthesisstubs.la"
+    fi
+    SYNTHESIS_DEP=$SYNTHESIS_LIBS
+
+    # for linking client-test
+    SYNTHESIS_ENGINE="$SYNTHESIS_SUBDIR/src/libsynthesis.la"
 
     AC_MSG_NOTICE( [configuring the Synthesis library] )
     if (set -x; mkdir -p $SYNTHESIS_SUBDIR && cd $SYNTHESIS_SUBDIR && eval "\$SHELL \"\$SYNTHESIS_CONFIGURE\" $ac_configure_args \"--srcdir=\$SYNTHESIS_SRC\" " ); then true; else
@@ -440,6 +458,7 @@ AC_SUBST(SYNTHESIS_LIBS)
 AC_SUBST(SYNTHESIS)
 AC_SUBST(SYNTHESIS_SUBDIR)
 AC_SUBST(SYNTHESIS_DEP)
+AC_SUBST(SYNTHESIS_ENGINE)
 AC_SUBST(SYNTHESIS_LIB)
 AC_SUBST(SYNTHESISSRC)
 

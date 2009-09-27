@@ -66,10 +66,11 @@ public:
 };
 
 
-SharedSession SharedEngine::OpenSession()
+SharedSession SharedEngine::OpenSession(const string &aSessionID)
 {
     sysync::SessionH sessionH = NULL;
-    sysync::TSyError err = m_engine->OpenSession(sessionH);
+    sysync::TSyError err = m_engine->OpenSession(sessionH, 0,
+                                                 aSessionID.empty() ? NULL : aSessionID.c_str());
     if (err) {
         throw BadSynthesisResult("opening session failed", static_cast<sysync::TSyErrorEnum>(err));
     }

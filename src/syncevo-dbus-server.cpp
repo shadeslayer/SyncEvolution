@@ -75,10 +75,10 @@ public:
     ReadOperations(const std::string &config_name);
 
     /** the double dictionary used to represent configurations */
-    typedef std::map< std::string, std::map<std::string, std::string> > Config_t;
+    typedef std::map< std::string, StringMap > Config_t;
 
     /** the array of reports filled by getReports() */
-    typedef std::vector< std::map<std::string, std::string> > Reports_t;
+    typedef std::vector< StringMap > Reports_t;
 
     /** implementation of D-Bus GetConfig() for m_configName as server configuration */
     void getConfig(bool getTemplate,
@@ -161,7 +161,7 @@ class DBusServer : public DBusObjectHelper
 
     void connect(const Caller_t &caller,
                  const boost::shared_ptr<Watch> &watch,
-                 const std::map<std::string, std::string> &peer,
+                 const StringMap &peer,
                  bool must_authenticate,
                  const std::string &session,
                  DBusObject_t &object);
@@ -426,6 +426,12 @@ class Session : public DBusObjectHelper,
                 private boost::noncopyable
 {
     DBusServer &m_server;
+    const std::string m_sessionID;
+
+    bool m_serverMode;
+    SharedBuffer m_initialMessage;
+    string m_initialMessageType;
+
     boost::weak_ptr<Connection> m_connection;
     std::string m_connectionError;
     bool m_useConnection;
@@ -517,6 +523,7 @@ public:
     void setPriority(int priority) { m_priority = priority; }
     int getPriority() const { return m_priority; }
 
+    void initServer(SharedBuffer data, const std::string &messageType);
     void setConnection(const boost::shared_ptr<Connection> c) { m_connection = c; m_useConnection = c; }
     boost::weak_ptr<Connection> getConnection() { return m_connection; }
     bool useConnection() { return m_useConnection; }
@@ -567,7 +574,7 @@ public:
                         SyncSource &source,
                         int32_t extra1, int32_t extra2, int32_t extra3);
 
-    typedef std::map<std::string, std::string> SourceModes_t;
+    typedef StringMap SourceModes_t;
     void sync(const std::string &mode, const SourceModes_t &source_modes);
     void abort();
     void suspend();
@@ -589,7 +596,7 @@ public:
 class Connection : public DBusObjectHelper, public Resource
 {
     DBusServer &m_server;
-    std::map<std::string, std::string> m_peer;
+    StringMap m_peer;
     bool m_mustAuthenticate;
     enum {
         SETUP,          /**< ready for first message */
@@ -626,7 +633,7 @@ class Connection : public DBusObjectHelper, public Resource
     /**
      * returns "<description> (<ID> via <transport> <transport_description>)"
      */
-    static std::string buildDescription(const std::map<std::string, std::string> &peer);
+    static std::string buildDescription(const StringMap &peer);
 
     void process(const Caller_t &caller,
                  const std::pair<size_t, const uint8_t *> &message,
@@ -637,7 +644,7 @@ class Connection : public DBusObjectHelper, public Resource
     EmitSignal0 abort;
     EmitSignal5<const std::pair<size_t, const uint8_t *> &,
                 const std::string &,
-                const std::map<std::string, std::string> &,
+                const StringMap &,
                 bool,
                 const std::string &> reply;
 
@@ -649,7 +656,7 @@ public:
     Connection(DBusServer &server,
                const DBusConnectionPtr &conn,
                const std::string &session_num,
-               const std::map<std::string, std::string> &peer,
+               const StringMap &peer,
                bool must_authenticate);
 
     ~Connection();
@@ -794,6 +801,13 @@ void Session::setConfig(bool update, bool clear, bool temporary,
     throw std::runtime_error("not implemented yet");
 }
 
+void Session::initServer(SharedBuffer data, const std::string &messageType)
+{
+    m_serverMode = true;
+    m_initialMessage = data;
+    m_initialMessageType = messageType;
+}
+
 void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
 {
     if (!m_active) {
@@ -804,6 +818,11 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
     }
 
     m_sync.reset(new DBusSync(m_configName, *this));
+    if (m_serverMode) {
+        m_sync->initServer(m_sessionID,
+                           m_initialMessage,
+                           m_initialMessageType);
+    }
 
     // Apply temporary config filters. The parameters of this function
     // override the source filters, if set.
@@ -917,6 +936,8 @@ Session::Session(DBusServer &server,
                      "org.syncevolution.Session"),
     ReadOperations(config_name),
     m_server(server),
+    m_sessionID(session),
+    m_serverMode(false),
     m_useConnection(false),
     m_active(false),
     m_done(false),
@@ -1055,9 +1076,9 @@ void Connection::failed(const std::string &reason)
     m_state = FAILED;
 }
 
-std::string Connection::buildDescription(const std::map<std::string, std::string> &peer)
+std::string Connection::buildDescription(const StringMap &peer)
 {
-    std::map<std::string, std::string>::const_iterator
+    StringMap::const_iterator
         desc = peer.find("description"),
         id = peer.find("id"),
         trans = peer.find("transport"),
@@ -1113,6 +1134,7 @@ void Connection::process(const Caller_t &caller,
     switch (m_state) {
     case SETUP: {
         std::string config;
+        bool serverMode = false;
         // check message type, determine whether we act
         // as client or server, choose config
         if (message_type == "HTTP Config") {
@@ -1139,6 +1161,14 @@ void Connection::process(const Caller_t &caller,
             }
 
             // TODO: use the session ID set by the server if non-null
+        } else if (message_type == TransportAgent::m_contentTypeSyncML ||
+                   message_type == TransportAgent::m_contentTypeSyncWBXML) {
+            // run a new SyncML session as server
+            serverMode = true;
+            if (m_peer.find("config") == m_peer.end()) {
+                throw runtime_error("must choose config in Server.Connect()");
+            }
+            config = m_peer["config"];
         } else {
             throw runtime_error("message type not supported for starting a sync");
         }
@@ -1148,6 +1178,11 @@ void Connection::process(const Caller_t &caller,
         m_session.reset(new Session(m_server,
                                     config,
                                     m_sessionID));
+        if (serverMode) {
+            m_session->initServer(SharedBuffer(reinterpret_cast<const char *>(message.second),
+                                               message.first),
+                                  message_type);
+        }
         m_session->setPriority(Session::PRI_CONNECTION);
         m_session->setConnection(myself);
         // this will be reset only when the connection shuts down okay
@@ -1172,8 +1207,15 @@ void Connection::process(const Caller_t &caller,
         }
         break;
     case FINAL:
-    case DONE:
+        if (m_loop) {
+            g_main_loop_quit(m_loop);
+            m_loop = NULL;
+        }
+        m_state = FAILED;
+        m_session->setConnectionError("connection closed unexpectedly due to incoming message while expecing Close()");
         throw std::runtime_error("protocol error: final reply sent, no further message processing possible");
+    case DONE:
+        throw std::runtime_error("protocol error: connection closed, no further message processing possible");
         break;
     case FAILED:
         throw std::runtime_error(m_failure);
@@ -1226,7 +1268,7 @@ void Connection::shutdown()
 Connection::Connection(DBusServer &server,
                        const DBusConnectionPtr &conn,
                        const std::string &sessionID,
-                       const std::map<std::string, std::string> &peer,
+                       const StringMap &peer,
                        bool must_authenticate) :
     DBusObjectHelper(conn.get(),
                      std::string("/org/syncevolution/Connection/") + sessionID,
@@ -1342,7 +1384,7 @@ void DBusTransportAgent::send(const char *data, size_t len)
     connection->m_incomingMsg = SharedBuffer();
 
     // TODO: turn D-Bus exceptions into transport exceptions
-    std::map<std::string, std::string> meta;
+    StringMap meta;
     meta["URL"] = m_url;
     connection->reply(std::make_pair(len, reinterpret_cast<const uint8_t *>(data)),
                       m_type, meta, false, connection->m_sessionID);
@@ -1360,7 +1402,7 @@ void DBusTransportAgent::shutdown()
     // send final, empty message and wait for close
     connection->m_state = Connection::FINAL;
     connection->reply(std::pair<size_t, const uint8_t *>(0, 0),
-                      "", std::map<std::string, std::string>(),
+                      "", StringMap(),
                       true, connection->m_sessionID);
 }
 
@@ -1482,7 +1524,7 @@ void DBusServer::detachClient(const Caller_t &caller)
 
 void DBusServer::connect(const Caller_t &caller,
                          const boost::shared_ptr<Watch> &watch,
-                         const std::map<std::string, std::string> &peer,
+                         const StringMap &peer,
                          bool must_authenticate,
                          const std::string &session,
                          DBusObject_t &object)
@@ -1523,6 +1565,7 @@ void DBusServer::startSession(const Caller_t &caller,
     boost::shared_ptr<Session> session(new Session(*this,
                                                    server,
                                                    new_session));
+    // TODO: how do we decide whether this is a client or server session?
     client->attach(session);
     session->activate();
     enqueue(session);
@@ -1568,7 +1611,7 @@ void DBusServer::activate()
         makeMethodEntry<DBusServer,
                         const Caller_t &,
                         const boost::shared_ptr<Watch> &,
-                        const std::map<std::string, std::string> &,
+                        const StringMap &,
                         bool,
                         const std::string &,
                         DBusObject_t &,

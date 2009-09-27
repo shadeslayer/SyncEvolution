@@ -199,7 +199,7 @@ CLIENT_LIB_TEST_FILES += $(TEST_FILES_GENERATED)
 client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
 client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS)
 client_test_LDFLAGS = `cppunit-config --libs` `nm synccevo/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'` $(CORE_LD_FLAGS)
-client_test_LDADD = $(CORE_LDADD) 
+client_test_LDADD = $(CORE_LDADD) $(SYNTHESIS_ENGINE)
 # These dependencies are intentionally a bit too broad:
 # they ensure that all files are in place to *run* client-test.
 

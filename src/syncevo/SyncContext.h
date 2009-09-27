@@ -73,6 +73,11 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     bool m_quiet;
     bool m_dryrun;
 
+    bool m_serverMode;
+    std::string m_sessionID;
+    SharedBuffer m_initialMessage;
+    string m_initialMessageType;
+
     /**
      * flags for suspend and abort
      */
@@ -128,6 +133,19 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     void setDryRun(bool dryrun) { m_dryrun = dryrun; }
 
     static SuspendFlags& getSuspendFlags() {return s_flags;}
+
+    /**
+     * Initializes the session so that it runs as SyncML server once
+     * sync() is called. For this to work the first client message
+     * must be available already.
+     *
+     * @param sessionID    session ID to be used by server
+     * @param data         content of initial message sent by the client
+     * @param messageType  content type set by the client
+     */
+    void initServer(const std::string &sessionID,
+                    SharedBuffer data,
+                    const std::string &messageType);
 
     /**
      * Executes the sync, throws an exception in case of failure.
@@ -500,6 +518,13 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * sets up Synthesis session and executes it
      */
     SyncMLStatus doSync();
+
+    /**
+     * directory for Synthesis client binfiles or
+     * Synthesis server textdb files, unique for each
+     * peer
+     */
+    string getSynthesisDatadir() { return getRootPath() + "/.synthesis"; }
 
     // total retry duration
     int m_retryDuration;

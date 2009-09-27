@@ -30,10 +30,14 @@ For doing development work the recommended configure line is:
              CXXFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
              --enable-unit-tests \
              --enable-libcurl \
+             --disable-shared \
              --enable-developer-mode
 
 Enabling libcurl explicitly ensures that it gets built even when not
 the default.
+
+--disable-shared results in easier to debug executables (no shell
+wrapper scripts, all symbols available before the program runs).
 
 Backend libraries are dynamically scannned and loaded into syncevolution, the
 library path defaults to $prefix/syncevolution/backends. When developer-mode is

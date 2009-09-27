@@ -93,7 +93,7 @@ class SharedEngine {
     void Disconnect();
 
     void InitEngineXML(const string &aConfigXML);
-    SharedSession OpenSession();
+    SharedSession OpenSession(const string &aSessionID);
     SharedKey OpenSessionKey(SharedSession &aSessionH);
 
     void SessionStep(const SharedSession &aSessionH,
