@@ -1290,14 +1290,14 @@ static void substTag(string &xml, const string &tagname, const string &replaceme
 
 static void substTag(string &xml, const string &tagname, const char *replacement, bool replaceElement = false)
 {
-    substTag(xml, tagname, std::string(replacement));
+    substTag(xml, tagname, std::string(replacement), replaceElement);
 }
 
 template <class T> void substTag(string &xml, const string &tagname, const T replacement, bool replaceElement = false)
 {
     stringstream str;
     str << replacement;
-    substTag(xml, tagname, str.str());
+    substTag(xml, tagname, str.str(), replaceElement);
 }
 
 void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
