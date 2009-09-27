@@ -1885,7 +1885,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                                     m_retries,
                                     (long)(duration / 60),
                                     (long)(duration % 60));
-                        stepCmd = sysync::STEPCMD_ABORT;
+                        SE_THROW_EXCEPTION(TransportException, "timeout, retry period exceeded");
                     }else {
                         m_retries ++;
                         stepCmd = sysync::STEPCMD_RESENDDATA;
@@ -1930,7 +1930,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                                     m_retries,
                                     (long)(duration / 60),
                                     (long)(duration % 60));
-                        stepCmd = sysync::STEPCMD_ABORT;
+                        SE_THROW_EXCEPTION(TransportException, "transport failed, retry period exceeded");
                     } else {
                         // Send might have failed because of abort or
                         // suspend request.
