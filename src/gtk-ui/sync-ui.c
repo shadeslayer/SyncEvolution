@@ -606,11 +606,8 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
         server->base_url = tmp;
     }
 
-    /* don't show the transient window: if user has saved a server
-     * he probably wants to main window */
-    gtk_window_present (GTK_WINDOW (data->sync_win));
-    gtk_widget_hide (data->services_win);
-    gtk_widget_hide (data->service_settings_win);
+    gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
+    gtk_widget_hide (GTK_WIDGET (data->services_win));
 
     if (data->current_service && data->current_service != server) {
         server_config_free (data->current_service);
@@ -936,25 +933,6 @@ sync_type_toggled_cb (GObject *radio, app_data *data)
     }
 }
 
-static gboolean
-window_hide_on_delete (GtkWindow *win, app_data *data)
-{
-    GtkWindow *trans;
-
-    trans = gtk_window_get_transient_for (win);
-    if (trans) {
-        gtk_window_present (trans);
-    }
-
-    return gtk_widget_hide_on_delete (GTK_WIDGET (win));
-}
-
-
-static void
-back_clicked_cb (GtkWidget *btn, app_data *data)
-{
-    window_hide_on_delete (GTK_WINDOW (data->services_win), data);
-}
 
 #ifdef USE_MOBLIN_UX
 /* truly stupid, but glade doesn't allow custom containers.
@@ -1028,10 +1006,10 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
 static gboolean
 key_press_cb (GtkWidget *widget,
               GdkEventKey *event,
-              app_data *data)
+              gpointer user_data)
 {
-    if (event->keyval == GDK_Escape && GTK_IS_WINDOW (widget)) {
-        window_hide_on_delete (GTK_WINDOW (widget), data);
+    if (event->keyval == GDK_Escape) {
+        gtk_widget_hide (widget);
         return TRUE;
     }
     return FALSE;
@@ -1136,15 +1114,15 @@ init_ui (app_data *data)
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
     g_signal_connect (data->services_win, "delete-event",
-                      G_CALLBACK (window_hide_on_delete), data);
+                      G_CALLBACK (gtk_widget_hide_on_delete), NULL);
     g_signal_connect (data->services_win, "key-press-event",
-                      G_CALLBACK (key_press_cb), data);
+                      G_CALLBACK (key_press_cb), NULL);
     g_signal_connect (data->service_settings_win, "delete-event",
-                      G_CALLBACK (window_hide_on_delete), data);
+                      G_CALLBACK (gtk_widget_hide_on_delete), NULL);
     g_signal_connect (data->service_settings_win, "key-press-event",
-                      G_CALLBACK (key_press_cb), data);
-    g_signal_connect (data->back_btn, "clicked",
-                      G_CALLBACK (back_clicked_cb), data);
+                      G_CALLBACK (key_press_cb), NULL);
+    g_signal_connect_swapped (data->back_btn, "clicked",
+                      G_CALLBACK (gtk_widget_hide), data->services_win);
     g_signal_connect (data->delete_service_btn, "clicked",
                       G_CALLBACK (delete_service_clicked_cb), data);
     g_signal_connect (data->stop_using_service_btn, "clicked",
@@ -1620,8 +1598,6 @@ show_settings_window (app_data *data, server_config *config)
     /* TODO should free old server config... make sure do not free currently used config */
     g_object_set_data (G_OBJECT (data->service_settings_win), "server", config);
 
-    gtk_widget_hide (data->sync_win);
-    gtk_widget_hide (data->services_win);
     gtk_window_present (GTK_WINDOW (data->service_settings_win));
 }
 
@@ -1860,6 +1836,7 @@ get_templates_cb (SyncevoService *service,
                                        temps_data);
 }
 
+
 static void show_services_window (app_data *data)
 {
     gtk_container_foreach (GTK_CONTAINER (data->services_table),
@@ -1872,9 +1849,6 @@ static void show_services_window (app_data *data)
     syncevo_service_get_templates_async (data->service,
                                          (SyncevoGetTemplatesCb)get_templates_cb,
                                          data);
-
-    gtk_widget_hide (data->sync_win);
-    gtk_widget_hide (data->service_settings_win);
     gtk_window_present (GTK_WINDOW (data->services_win));
 }
 
