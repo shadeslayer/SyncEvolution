@@ -245,7 +245,7 @@ public:
         string dirpath (backend_dir);
         // scan directories for matching module names
         do {
-            info<<"Scanning backend libraries in " <<dirpath <<endl;
+            debug<<"Scanning backend libraries in " <<dirpath <<endl;
             BOOST_FOREACH (const string &entry, *dir) {
                 void *dlhandle;
                 if (isDir (dirpath + '/' + entry)) {
@@ -265,10 +265,12 @@ public:
                     // itself. We keep that pointer, so never close the
                     // module!
                     string fullpath = dirpath + '/' + entry;
+                    fullpath = normalizePath(fullpath);
                     dlhandle = dlopen(fullpath.c_str(), RTLD_NOW|RTLD_GLOBAL);
                     // remember which modules were found and which were not
                     if (dlhandle) {
                         debug<<"Loading backend library "<<entry<<endl;
+                        info<<"Loading backend library "<<fullpath<<endl;
                         m_available.push_back(entry);
                     } else {
                         debug<<"Loading backend library "<<entry<<"failed "<< dlerror()<<endl;
