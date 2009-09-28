@@ -26,7 +26,7 @@ based test report.
 """
 
 space="  "
-def check (resultdir, serverlist,resulturi, srcdir, shellprefix):
+def check (resultdir, serverlist,resulturi, srcdir, shellprefix, backenddir):
     '''Entrypoint, resutldir is the test result directory to be generated,
     resulturi is the http uri, it will only process corresponding server's
     test results list in severlist'''
@@ -40,7 +40,7 @@ def check (resultdir, serverlist,resulturi, srcdir, shellprefix):
     else:
         indents,cont = step1(resultdir+"/output.txt",result,indents,resultdir,resulturi, shellprefix, srcdir)
         if (cont):
-            step2(resultdir,result,servers,indents,srcdir,shellprefix)
+            step2(resultdir,result,servers,indents,srcdir,shellprefix,backenddir)
     result.write('''</nightly-test>\n''')
     result.close()
 
@@ -127,7 +127,7 @@ def step1(input, result, indents, dir, resulturi, shellprefix, srcdir):
     indent = indents[-1]
     return (indents, cont)
 
-def step2(resultdir, result, servers, indents, srcdir, shellprefix):
+def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
     '''Step2 of the result checking, for each server listed in
     servers, tranverse the corresponding result folder, process
     each log file to decide the status of the testcase'''
@@ -150,7 +150,8 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix):
     templates=[]
     oldpath = os.getcwd()
     os.chdir (srcdir)
-    fout,fin=popen2.popen2(shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs ./client-test -h |grep 'Client::Sync::vcard21'|grep -v 'Retry' |grep -v 'Suspend' | grep -v 'Resend'")
+    print 'in client-test -h'
+    fout,fin=popen2.popen2(shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" ./client-test -h |grep 'Client::Sync::vcard21'|grep -v 'Retry' |grep -v 'Suspend' | grep -v 'Resend'")
     sys.stdout.flush()
     os.chdir(oldpath)
     for line in fout:
@@ -199,6 +200,13 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix):
                     result.write('<'+template+'/>')
                 result.write('</template>\n')
             result.write(indent+'<'+server+' path="' +rserver+'" ')
+            #valgrind check resutls
+            outputlog = resultdir+'/'+rserver+'/output.txt'
+            checkcmd = "grep 'valgrindcheck' %s |grep -o '\./client-test Client::Sync:.*$' " % (outputlog)
+            fout,fin=popen2.popen2(checkcmd)
+            s = fout.read()
+            if(s):
+                result.write('result="'+s.partition('return code ')[2].partition(')')[0]+'" ')
             result.write('parameter="'+params[server]+'">\n')
             logs = glob.glob(resultdir+'/'+rserver+'/*.log')
             logdic ={}
@@ -250,7 +258,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix):
     indents = indents[-1]
 
 if(__name__ == "__main__"):
-    if (len(sys.argv)!=6):
-        print "usage: python resultchecker.py resultdir servers resulturi srcdir shellprefix"
+    if (len(sys.argv)!=7):
+        print "usage: python resultchecker.py resultdir servers resulturi srcdir shellprefix backenddir"
     else:
-        check(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+        check(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])

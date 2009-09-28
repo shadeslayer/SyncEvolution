@@ -422,7 +422,8 @@ class SyncEvolutionTest(Action):
         try:
             if context.setupcmd:
                 context.runCommand("%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name))
-            basecmd = "CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s env LD_LIBRARY_PATH=build-synthesis/src/.libs ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
+            backendir = os.path.join(context.tmpdir, "install/usr/lib/syncevolution/backends")
+            basecmd = "CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNCEVOLUTION_BACKEND_DIR=%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s env LD_LIBRARY_PATH=build-synthesis/src/.libs ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, self.serverlogs, context.workdir, self.runner, self.testPrefix);
             context.runCommand("%s testclean" % context.make)
             if self.tests:
                 tests = []
@@ -525,7 +526,7 @@ parser.add_option("", "--mailhost",
                   type="string", dest="mailhost", default="localhost",
                   help="SMTP mail server to be used for outgoing mail")
 parser.add_option("", "--subject",
-                  type="string", dest="subject", default="SyncML Tests " + time.strftime("%Y-%m-%d"),
+                  type="string", dest="subject", default="SyncML Tests " + time.strftime("%Y-%m-%d-%H-%M"),
                   help="subject of result email (default is \"SyncML Tests <date>\"")
 parser.add_option("", "--evosvn",
                   action="append", type="string", dest="evosvn", default=[],
@@ -803,7 +804,7 @@ googletest = SyncEvolutionTest("google", compile,
                                "", options.shell,
                                [ "Client::Sync" ],
                                [ "vcard21" ],
-                               "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_XML=0 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_FAILURES=Client::Sync::vcard21::testRefreshFromClientSync,Client::Sync::vcard21::testRefreshFromClientSemantic,Client::Sync::vcard21::testRefreshStatus,Client::Sync::vcard21::testOneWayFromClient,Client::Sync::vcard21::testItemsXML CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend CLIENT_TEST_DELAY=5 CLIENT_TEST_COMPARE_LOG=T",
+                               "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_XML=0 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,Client::Sync::vcard21::testRefreshFromClientSync,Client::Sync::vcard21::testRefreshFromClientSemantic,Client::Sync::vcard21::testRefreshStatus,Client::Sync::vcard21::testOneWayFromClient,Client::Sync::vcard21::testItemsXML CLIENT_TEST_DELAY=5 CLIENT_TEST_COMPARE_LOG=T",
                                testPrefix=options.testprefix)
 context.add(googletest)
 
