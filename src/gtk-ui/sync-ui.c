@@ -131,7 +131,7 @@ const float sync_weight_receive = 0.25;
 
 typedef struct app_data {
     GtkWidget *sync_win;
-    GtkWidget *services_win;
+    GtkWidget *services_win; /* will be NULL when USE_MOBLIN_UX is set*/
     GtkWidget *service_settings_win;
 
     GtkWidget *server_box;
@@ -192,7 +192,9 @@ typedef struct app_data {
 
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
-static void show_services_window (app_data *data);
+static void show_main_view (app_data *data);
+static void show_services_list (app_data *data);
+static void update_services_list (app_data *data);
 static void show_settings_window (app_data *data, server_config *config);
 static void ensure_default_sources_exist(server_config *server);
 static void add_server_option (SyncevoOption *option, server_config *server);
@@ -207,7 +209,7 @@ remove_child (GtkWidget *widget, GtkContainer *container)
 static void 
 change_service_clicked_cb (GtkButton *btn, app_data *data)
 {
-    show_services_window (data);
+    show_services_list (data);
 }
 
 static void 
@@ -216,7 +218,7 @@ edit_service_clicked_cb (GtkButton *btn, app_data *data)
     g_assert (data);
 
     data->current_service->changed = FALSE;
-    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
+    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win),
                                   GTK_WINDOW (data->sync_win));
     show_settings_window (data, data->current_service);
 }
@@ -482,8 +484,8 @@ remove_server_config_cb (SyncevoService *service,
         g_error_free (error);
     } else {
         /* update list if visible */
-        if (GTK_WIDGET_VISIBLE (data->data->services_win))
-            show_services_window (data->data);
+        if (GTK_WIDGET_VISIBLE (data->data->services_table))
+            update_services_list (data->data);
 
         if (data->data->current_service && data->data->current_service->name &&
             strcmp (data->data->current_service->name, data->config->name) == 0)
@@ -501,8 +503,7 @@ stop_using_service_clicked_cb (GtkButton *btn, app_data *data)
     server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
     g_assert (server);
 
-    gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
-    gtk_widget_hide (GTK_WIDGET (data->services_win));
+    show_main_view (data);
 
     save_gconf_settings (data, NULL);
 }
@@ -606,8 +607,9 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
         server->base_url = tmp;
     }
 
-    gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
-    gtk_widget_hide (GTK_WIDGET (data->services_win));
+    /* don't show the transient window: if user has saved a server
+     * he probably wants to main window */
+    show_main_view (data);
 
     if (data->current_service && data->current_service != server) {
         server_config_free (data->current_service);
@@ -933,11 +935,45 @@ sync_type_toggled_cb (GObject *radio, app_data *data)
     }
 }
 
+static gboolean
+window_hide_on_delete (GtkWindow *win, app_data *data)
+{
+    GtkWindow *trans;
+
+    trans = gtk_window_get_transient_for (win);
+    if (trans) {
+        gtk_window_present (trans);
+    }
+
+    return gtk_widget_hide_on_delete (GTK_WIDGET (win));
+}
+
+/* keypress handler for the transient windows (service list & service settings) */
+static gboolean
+key_press_cb (GtkWidget *widget,
+              GdkEventKey *event,
+              app_data *data)
+{
+    if (event->keyval == GDK_Escape && GTK_IS_WINDOW (widget)) {
+        window_hide_on_delete (GTK_WINDOW (widget), data);
+        return TRUE;
+    }
+    return FALSE;
+}
 
 #ifdef USE_MOBLIN_UX
+static void
+settings_visibility_changed_cb (GtkWidget *window, app_data *data)
+{
+    if (mux_window_get_settings_visible (MUX_WINDOW (window))) {
+        update_services_list (data);
+    }
+}
+
 /* truly stupid, but glade doesn't allow custom containers.
    Now glade file has dummy containers that will be replaced here.
    The dummy should be a gtkbin and it's parent should be a box with just one child */ 
+
 static GtkWidget*
 switch_dummy_to_mux_frame (GtkWidget *dummy)
 {
@@ -983,11 +1019,39 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
     title = gtk_window_get_title (GTK_WINDOW (dummy));
     if (title && strlen (title) > 0)
         gtk_window_set_title (GTK_WINDOW (window), title);
+    gtk_window_set_modal (GTK_WINDOW (window),
+                          gtk_window_get_modal (GTK_WINDOW (dummy)));
+
     mux_window_set_decorations (MUX_WINDOW (window), MUX_DECOR_CLOSE);
     gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (dummy)), window);
 
     return window;
 }
+
+static void
+switch_main_and_settings_to_mux_window (app_data *data,
+                                        GtkWidget *main, GtkWidget *settings)
+{
+    GtkWidget *mux_main;
+    GtkWidget *tmp;
+
+    mux_main = switch_dummy_to_mux_window (main);
+    mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_SETTINGS|MUX_DECOR_CLOSE);
+    g_signal_connect (mux_main, "settings-visibility-changed",
+                      G_CALLBACK (settings_visibility_changed_cb), data);
+
+    tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (settings)));
+    gtk_container_remove (GTK_CONTAINER (settings), tmp);
+    mux_window_set_settings_widget (MUX_WINDOW (mux_main), tmp);
+    mux_window_set_settings_title (MUX_WINDOW (mux_main), 
+                                   gtk_window_get_title (GTK_WINDOW (settings)));
+    g_object_unref (tmp);
+
+    data->sync_win = mux_main;
+    data->services_win = NULL;
+}
+
+
 #else
 
 /* return the placeholders themselves when not using Moblin UX */
@@ -1000,20 +1064,20 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
 {
     return dummy;
 }
-#endif
-
-/* keypress handler for the transient windows (service list & service settings) */
-static gboolean
-key_press_cb (GtkWidget *widget,
-              GdkEventKey *event,
-              gpointer user_data)
+static void
+switch_main_and_settings_to_mux_window (app_data *data,
+                                        GtkWidget *main, GtkWidget *settings)
 {
-    if (event->keyval == GDK_Escape) {
-        gtk_widget_hide (widget);
-        return TRUE;
-    }
-    return FALSE;
+    data->sync_win = main;
+    data->services_win = settings;
+    gtk_window_set_transient_for (GTK_WINDOW (data->services_win),
+                                  GTK_WINDOW (data->sync_win));
+    g_signal_connect (data->services_win, "delete-event",
+                      G_CALLBACK (window_hide_on_delete), data);
+    g_signal_connect (data->services_win, "key-press-event",
+                      G_CALLBACK (key_press_cb), data);
 }
+#endif
 
 static gboolean
 init_ui (app_data *data)
@@ -1100,11 +1164,13 @@ init_ui (app_data *data)
 
     /* No (documented) way to add own widgets to gtkbuilder it seems...
        swap the all dummy widgets with Muxwidgets */
-    data->sync_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "sync_win")));
-    data->services_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "services_win")));
-    gtk_window_set_transient_for (GTK_WINDOW (data->services_win), 
-                                  GTK_WINDOW (data->sync_win));
+    switch_main_and_settings_to_mux_window (data,
+                                            GTK_WIDGET (gtk_builder_get_object (builder, "sync_win")),
+                                            GTK_WIDGET (gtk_builder_get_object (builder, "services_win")));
+
     data->service_settings_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_win")));
+    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win),
+                                  GTK_WINDOW (data->sync_win));
 
     data->main_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
     data->log_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
@@ -1113,16 +1179,12 @@ init_ui (app_data *data)
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
-    g_signal_connect (data->services_win, "delete-event",
-                      G_CALLBACK (gtk_widget_hide_on_delete), NULL);
-    g_signal_connect (data->services_win, "key-press-event",
-                      G_CALLBACK (key_press_cb), NULL);
     g_signal_connect (data->service_settings_win, "delete-event",
                       G_CALLBACK (gtk_widget_hide_on_delete), NULL);
     g_signal_connect (data->service_settings_win, "key-press-event",
-                      G_CALLBACK (key_press_cb), NULL);
+                      G_CALLBACK (key_press_cb), data);
     g_signal_connect_swapped (data->back_btn, "clicked",
-                      G_CALLBACK (gtk_widget_hide), data->services_win);
+                      G_CALLBACK (show_main_view), data);
     g_signal_connect (data->delete_service_btn, "clicked",
                       G_CALLBACK (delete_service_clicked_cb), data);
     g_signal_connect (data->stop_using_service_btn, "clicked",
@@ -1625,8 +1687,9 @@ setup_service_clicked (GtkButton *btn, app_data *data)
     serv_data->config = g_slice_new0 (server_config);
     serv_data->config->name = g_strdup (name);
 
-    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
-                                  GTK_WINDOW (data->services_win));
+    if (data->services_win)
+        gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win),
+                                      GTK_WINDOW (data->services_win));
 
     syncevo_service_get_server_config_async (data->service, 
                                              (char*)serv_data->config->name,
@@ -1663,8 +1726,9 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
     option = syncevo_option_new ("calendar", "uri", NULL);
     g_ptr_array_add (serv_data->options_override, option);
 
-    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
-                                  GTK_WINDOW (data->services_win));
+    if (data->services_win)
+        gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win),
+                                      GTK_WINDOW (data->services_win));
 
     syncevo_service_get_server_config_async (data->service, 
                                              "default",
@@ -1836,8 +1900,8 @@ get_templates_cb (SyncevoService *service,
                                        temps_data);
 }
 
-
-static void show_services_window (app_data *data)
+static void
+update_services_list (app_data *data)
 {
     gtk_container_foreach (GTK_CONTAINER (data->services_table),
                            (GtkCallback)remove_child,
@@ -1849,7 +1913,35 @@ static void show_services_window (app_data *data)
     syncevo_service_get_templates_async (data->service,
                                          (SyncevoGetTemplatesCb)get_templates_cb,
                                          data);
+}
+
+static void
+show_services_list (app_data *data)
+{
+    update_services_list (data);
+
+    gtk_widget_hide (data->service_settings_win);
+
+#ifdef USE_MOBLIN_UX
+    mux_window_set_settings_visible (MUX_WINDOW (data->sync_win), TRUE);
+    gtk_window_present (GTK_WINDOW (data->sync_win));
+#else
+    gtk_widget_hide (data->sync_win);
     gtk_window_present (GTK_WINDOW (data->services_win));
+    update_services_list (data);
+#endif
+}
+
+static void
+show_main_view (app_data *data)
+{
+#ifdef USE_MOBLIN_UX
+    mux_window_set_settings_visible (MUX_WINDOW (data->sync_win), FALSE);
+#else
+    gtk_widget_hide (data->services_win);
+#endif
+    gtk_widget_hide (data->service_settings_win);
+    gtk_window_present (GTK_WINDOW (data->sync_win));
 }
 
 static void
