@@ -2,7 +2,7 @@ Introduction
 ------------
 
 SyncEvolution synchronizes personal information management (PIM) data
-like contacts, calenders, tasks and memos via the SyncML information
+like contacts, calendars, tasks and memos via the SyncML information
 synchronization standard. It supports all of these for GNOME's
 Evolution and contacts for the system address book of the Nokia
 Internet Tablets, Mac OS X and (at one point, but not anymore) the
@@ -80,7 +80,7 @@ To install SyncEvolution, just unpack an archive with a precompiled
 binary for your platform in a directory of your choice or install one
 of the packages. Then create a configuration as described below under
 "Configuration". No special environment variables are needed, although
-one might want to add the directory with contains the "syncevolution"
+one might want to add the directory which contains the "syncevolution"
 binary to the shell's PATH variable.
 
 When a binary packages is not available for the target system
@@ -91,7 +91,7 @@ Although all of the features are covered by unit testing and
 have been verified to work, it is highly recommended that you
 make a backup of your
    $HOME/.evolution/addressbook
-   $HOME/.evolution/calender
+   $HOME/.evolution/calendar
    $HOME/.evolution/tasks
    $HOME/.evolution/memos
 directories before running SyncEvolution for the first time with
@@ -144,7 +144,7 @@ their configuration file are synchronized.
 Otherwise only the ones mentioned on the command line are active. It
 is possible to configure sources without activating their
 synchronization: if the synchronization mode of a source is set to
-"none", the source will be ignore. Explicitely listing such a source
+"none", the source will be ignored. Explicitly listing such a source
 will synchronize it in "two-way" mode once.
 
 Progress and error messages are written into a log file that is
@@ -156,9 +156,8 @@ summary of how the local data was modified.  This is done with the
 "synccompare" utility script described in the "Exchanging Data"
 section.
 
-When the "logdir" option is enabled (highly recommended if one
-has the space, but not the default because a persistent directory
-must be chosen), then the same comparison is also done before the
+When the "logdir" option is enabled (since v0.9 done by default for
+new configurations), then the same comparison is also done before the
 synchronization starts.
 
 In case of a severe error the synchronization run is aborted
@@ -210,9 +209,9 @@ Depends on access to database dumps from the last run, so using the
    syncevolution --print-sessions [--quiet] <server>
 
 These commands print information about existing configurations. When
-printing a configuration a short version without commands can be
+printing a configuration a short version without comments can be
 selected with --quiet. When sources are listed, only their
-configuration is show. "Sync" instead or in combination with sources
+configuration is shown. "Sync" instead or in combination with sources
 lists only the main server configuration.
 
 With --print-session information about previous synchronization sessions
@@ -269,7 +268,7 @@ a list of valid values.
   When setting a --template, then the reference configuration for
   that server is printed instead of an existing configuration.
 
--–configure|-c
+--configure|-c
   Modify the configuration files for the selected server. If no such
   configuration exists, then a new one is created using one of the
   template configurations (see --template option). When creating
@@ -282,7 +281,7 @@ a list of valid values.
 
 --run|-r
   To prevent accidental sync runs when a configuration change was
-  intented, but the "--configure" option was used, "--run" must be
+  intended, but the "--configure" option was not used, "--run" must be
   specified explicitly when sync or source properties are selected
   on the command line and they are meant to be used during a sync
   session triggered by the invocation.
@@ -313,7 +312,7 @@ a list of valid values.
 --source-property|-z <property>=<value>
 --source-property|-z ?
 --source-property|-z <property>=?
-  Same as --sync-option, but applies to the configuration of all active
+  Same as --sync-property, but applies to the configuration of all active
   sources. "--sync <mode>" is a shortcut for "--source-property sync=<mode>".
 
   When combined with "--configure", the configuration of all sources is
@@ -399,7 +398,7 @@ The configuration file of a certain <server> is stored in
    $XDG_CONFIG_HOME/syncevolution/<server>/config.ini
 with " $HOME/.config" as fallback if XDG_CONFIG_HOME is not
 set. Each data source is configured in
-   $XDG_CONFIG_HOME/syncevolution/sources/<source>/config.ini
+   $XDG_CONFIG_HOME/syncevolution/<server>/sources/<source>/config.ini
 
 The configuration of older SyncEvolution releases in the
 following directory is also still supported:
@@ -497,10 +496,10 @@ can create the following files during a synchronization:
   automatic comparison of the before/after state with
   "synccompare"
 
-If the source configuration option "logdir" is set, then
+If the server configuration option "logdir" is set, then
 a new directory will be created for each synchronization
 in that directory, using the format
-  SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>[-<seq>]
+  <server>-<yyyy>-<mm>-<dd>-<hh>-<mm>[-<seq>]
 with the various fields filled in with the time when the
 synchronization started. The sequence suffix will only be
 used when necessary to make the name unique. By default,
@@ -512,24 +511,26 @@ This is done by setting the "maxlogdirs" limit to something
 different than the empty string and 0. If a limit is set,
 then SyncEvolution will only keep that many log directories
 and start removing the oldest ones when it reaches the limit.
-This cleanup is only done after a successful synchronization
-and is limited to directories starting with the
-  SyncEvolution-<server>
-prefix, so it is safe to put other files or directories
-into the configured log directory.
+*** TODO: Update this text. The old naming convention does not apply anymore. ***
+* This cleanup is only done after a successful synchronization
+* and is limited to directories starting with the
+*   SyncEvolution-<server>
+* prefix, so it is safe to put other files or directories
+* into the configured log directory.
 
-If that option is not set (as in the example configurations),
-then the directory will be created as
-  $TMPDIR/SyncEvolution-<username>-<server>
-with access allowed for the user only. Files from a
-previous synchronization will be overwritten. This is
-a lot less useful because the data will usually
-be lost during the next reboot and each synchronization run
-overwrites the data of the previous one.
+*** TODO: Remove or update this paragraph. ***
+* If that option is not set (as in the example configurations),
+* then the directory will be created as
+*   $TMPDIR/SyncEvolution-<username>-<server>
+* with access allowed for the user only. Files from a
+* previous synchronization will be overwritten. This is
+* a lot less useful because the data will usually
+* be lost during the next reboot and each synchronization run
+* overwrites the data of the previous one.
 
 To avoid writing any additional log file or database dumps during
 a synchronization the "logdir" can be set to "none". To reduce
-the verbosity of the log set "logLevel". If not set or 0, then
+the verbosity of the log set "loglevel". If not set or 0, then
 the verbosity is set to 3 = DEBUG when writing to a log file and
 2 = INFO when writing to the console directly.
 
@@ -562,7 +563,7 @@ for calendars. Tasks (aka todos) are not supported directly.
 
 WARNING: up to and including Funambol 7.0 there are known data
 conversion issues for calendars because Evolution uses iCalendar 2.0
-and Funambol vCalendar 1.0. See the following blog post for
+and Funambol uses vCalendar 1.0. See the following blog post for
 details:
 http://www.estamos.de/blog/2008/08/12/a-look-at-funambol-70-the-state-of-the-onion/
 
@@ -590,7 +591,7 @@ To check which data is preserved, one can use this procedure
 (described for contacts, but works the same way for calendars and
 tasks):
 1. synchronize the address book with the server
-2. create an new address book in Evolution and view it in Evolution
+2. create a new address book in Evolution and view it in Evolution
    once (the second step is necessary in at least Evolution 2.0.4
    to make the new address book usable in SyncEvolution)
 3. add a configuration for that second address book and the
@@ -610,7 +611,7 @@ is augmented by the script so that the context of each change
 is always the complete item that was modified. Lines or items
 following a ">" on the right side were added, those on the
 left side followed by a "<" were removed, and those with
-a "!" between text on the left and right side were modified.
+a "|" between text on the left and right side were modified.
 
 The automatic unit testing (see HACKING) contains a "testItems"
 test which verifies the copying of special entries using the
@@ -634,7 +635,7 @@ incremental synchronization.
 
 If an item is saved, removed locally, and reimported, then this is
 usually reported to a peer as "one item removed, one added" because
-the information available to SyncEvolution are not sufficient to
+the information available to SyncEvolution is not sufficient to
 determine that this is in fact the same item. One exception are
 iCalendar 2.0 items with their globally unique ID: the modification
 above will be reported to the server as "one item updated".
@@ -645,7 +646,7 @@ to detect changes. This cannot be avoided without creating additional
 overhead for normal synchronizations.
 
 SyncEvolution reports "item changes" (the number of added, removed and
-updated items) as well as and data changes. These data changes are
+updated items) as well as data changes. These data changes are
 calculated by comparing database dumps. Because this data comparison
 ignores information about which data belongs to which item, it is able
 to detect that re-adding an item that was removed earlier does not
@@ -679,7 +680,7 @@ in the first place by synchronizing before making changes.
 Known Problems + Support
 ------------------------
 
-Please visit http://www.estamos.de/projects/SyncML/ for up-to-date
+Please visit http://syncevolution.org/ for up-to-date
 information about known problems and links to places where further
 help can be found.
 
@@ -728,7 +729,7 @@ Optional packages for GUI:
 
 libunique = ensure that GTK GUI only runs once per user
 
-The build system is the normal autotools system.  See INSTALL for
+The build system is the normal autotools system. See INSTALL for
 general instructions how to use that and "./configure --help" for
 SyncEvolution specific options.
 
