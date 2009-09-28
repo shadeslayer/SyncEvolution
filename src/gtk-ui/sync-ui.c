@@ -43,6 +43,7 @@
 #include "sync-ui.h"
 
 #ifdef USE_MOBLIN_UX
+#include <nbtk/nbtk-gtk.h>
 #include "mux-frame.h"
 #include "mux-window.h"
 #endif
@@ -95,8 +96,8 @@ typedef struct app_data {
     GtkWidget *sources_box;
 
     GtkWidget *new_service_btn;
-    GtkWidget *services_table;
-    GtkWidget *manual_services_table;
+    GtkWidget *services_box;
+    GtkWidget *manual_services_box;
     GtkWidget *manual_services_scrolled;
     GtkWidget *back_btn;
 
@@ -977,8 +978,8 @@ init_ui (app_data *data)
     g_signal_connect (data->new_service_btn, "clicked",
                       G_CALLBACK (setup_new_service_clicked), data);
 
-    data->services_table = GTK_WIDGET (gtk_builder_get_object (builder, "services_table"));
-    data->manual_services_table = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_table"));
+    data->services_box = GTK_WIDGET (gtk_builder_get_object (builder, "services_box"));
+    data->manual_services_box = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_box"));
     data->manual_services_scrolled = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_scrolled"));
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
@@ -1104,11 +1105,9 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
     }
 
     image = gtk_image_new_from_pixbuf (pixbuf);
+    gtk_widget_set_size_request (image, icon_size, icon_size);
     g_object_unref (pixbuf);
-    gtk_container_foreach (GTK_CONTAINER (icon_box),
-                           (GtkCallback)remove_child,
-                           icon_box);
-    gtk_box_pack_start_defaults (icon_box, image);
+    gtk_box_pack_start (icon_box, image, FALSE, FALSE, 0);
     gtk_widget_show (image);
 }
 
@@ -1487,49 +1486,73 @@ enum ServerCols {
 
 /*
 static void
-add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *data)
+add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
 {
-    GtkWidget *label, *box, *link, *btn;
+    GtkWidget *label, *tmp_box, *expander, *link, *button, *hbox, *vbox;
     const char *name, *url, *icon;
-    
+    char *str;
+
     syncevo_server_get (server, &name, &url, &icon, NULL);
-    
-    box = gtk_hbox_new (FALSE, 0);
-    gtk_widget_set_size_request (box, SYNC_UI_LIST_ICON_SIZE, SYNC_UI_LIST_ICON_SIZE);
-    gtk_table_attach (table, box, COL_ICON, COL_ICON + 1, row, row+1,
-                      GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
-    load_icon (icon, GTK_BOX (box), SYNC_UI_LIST_ICON_SIZE);
+
+    hbox = gtk_hbox_new (FALSE, 8);
+    gtk_widget_set_size_request (hbox, -1, SYNC_UI_LIST_ICON_SIZE + 6);
+
+#ifdef USE_MOBLIN_UX
+    expander = nbtk_gtk_expander_new ();
+    nbtk_gtk_expander_set_label_widget (NBTK_GTK_EXPANDER (expander), hbox);
+#else
+    // GtkExpander doesn't like interactive widgets in the label,
+    // using a box here
+    expander = gtk_hbox_new (FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (expander), hbox, TRUE, TRUE, 0);
+#endif
+
+    load_icon (icon, GTK_BOX (hbox), SYNC_UI_LIST_ICON_SIZE);
+
+    tmp_box = gtk_hbox_new (FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), tmp_box, FALSE, FALSE, 0);
+
+    tmp_box = gtk_hbox_new (FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), tmp_box, FALSE, FALSE, 0);
 
     label = gtk_label_new (name);
     if (data->current_service && data->current_service->name &&
         strcmp (name, data->current_service->name) == 0) {
-        char *str = g_strdup_printf ("<b>%s</b>", name);
-        gtk_label_set_markup (GTK_LABEL (label), str);
-        g_free (str);
+        str = g_strdup_printf ("<b>%s</b>", name);
+    } else {
+        str = g_strdup_printf ("%s", name);
     }
-
-    gtk_widget_set_size_request (label, SYNC_UI_LIST_BTN_WIDTH, -1);
-    gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-    gtk_table_attach (table, label, COL_NAME, COL_NAME + 1, row, row+1,
-                      GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
-
-    box = gtk_hbox_new (FALSE, 0);
-    gtk_table_attach (table, box, COL_LINK, COL_LINK + 1, row, row+1,
-                      GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
     if (url && strlen (url) > 0) {
+        char *tmp = g_strdup_printf ("%s -",str);
+        g_free (str);
+        str = tmp;
+    }
+    gtk_label_set_markup (GTK_LABEL (label), str);
+    g_free (str);
+
+    gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+    gtk_box_pack_start (GTK_BOX (tmp_box), label, FALSE, FALSE, 0);
+
+    if (url && strlen (url) > 0) {
+        vbox = gtk_vbox_new (FALSE, 0);
+        gtk_box_pack_start (GTK_BOX (tmp_box), vbox, FALSE, FALSE, 0);
+
         link = gtk_link_button_new_with_label (url, _("Launch website"));
-        gtk_box_pack_start (GTK_BOX (box), link, FALSE, FALSE, 0);
+        gtk_box_pack_start (GTK_BOX (vbox), link, TRUE, FALSE, 0);
     }
 
-    btn = gtk_button_new_with_label (_("Setup and use"));
-    gtk_widget_set_size_request (btn, SYNC_UI_LIST_BTN_WIDTH, -1);
-    g_signal_connect (btn, "clicked",
-                      G_CALLBACK (setup_service_clicked), data);
-    gtk_table_attach (table, btn, COL_BUTTON, COL_BUTTON + 1, row, row+1,
-                      GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
+    vbox = gtk_vbox_new (FALSE, 0);
+    gtk_box_pack_end (GTK_BOX (hbox), vbox, FALSE, FALSE, 32);
 
-    g_object_set_data_full (G_OBJECT (btn), "server", server, 
+    button = gtk_button_new_with_label (_("Setup now"));
+    gtk_box_pack_start (GTK_BOX (vbox), button, TRUE, FALSE, 0);
+    gtk_widget_set_size_request (button, SYNC_UI_LIST_BTN_WIDTH, -1);
+    g_signal_connect (button, "clicked",
+                      G_CALLBACK (setup_service_clicked), data);
+    g_object_set_data_full (G_OBJECT (button), "server", server, 
                             (GDestroyNotify)syncevo_server_free);
+
+    gtk_box_pack_start (box, expander, FALSE, FALSE, 0);
 }
 */
 
@@ -1561,19 +1584,15 @@ server_array_contains (GPtrArray *array, SyncevoServer *server)
 static void
 update_services_list (app_data *data)
 {
-    gtk_container_foreach (GTK_CONTAINER (data->services_table),
+    gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)remove_child,
-                           data->services_table);
-    gtk_container_foreach (GTK_CONTAINER (data->manual_services_table),
-                           (GtkCallback)remove_child,
-                           data->manual_services_table);
+                           data->services_box);
 
 /*
     syncevo_service_get_templates_async (data->service,
                                          (SyncevoGetTemplatesCb)get_templates_cb,
                                          data);
 */
-    gtk_window_present (GTK_WINDOW (data->services_win));
 }
 
 static void
@@ -1929,8 +1948,6 @@ start_session_cb (SyncevoServer *server,
 static void
 show_services_list (app_data *data)
 {
-    update_services_list (data);
-
     gtk_widget_hide (data->service_settings_win);
 
 #ifdef USE_MOBLIN_UX

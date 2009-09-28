@@ -808,57 +808,11 @@ We support the following services: </property>
                                 <property name="visible">True</property>
                                 <property name="resize_mode">queue</property>
                                 <child>
-                                  <widget class="GtkVBox" id="vbox1">
+                                  <widget class="GtkVBox" id="services_box">
                                     <property name="visible">True</property>
                                     <property name="orientation">vertical</property>
                                     <child>
-                                      <widget class="GtkTable" id="services_table">
-                                        <property name="visible">True</property>
-                                        <property name="n_rows">4</property>
-                                        <property name="n_columns">3</property>
-                                        <property name="row_spacing">2</property>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="padding">4</property>
-                                        <property name="position">0</property>
-                                      </packing>
+                                      <placeholder/>
                                     </child>
                                     <child>
                                       <placeholder/>
@@ -942,57 +896,11 @@ you can setup a service manually.</property>
                                 <property name="visible">True</property>
                                 <property name="resize_mode">queue</property>
                                 <child>
-                                  <widget class="GtkVBox" id="vbox11">
+                                  <widget class="GtkVBox" id="manual_services_box">
                                     <property name="visible">True</property>
                                     <property name="orientation">vertical</property>
                                     <child>
-                                      <widget class="GtkTable" id="manual_services_table">
-                                        <property name="visible">True</property>
-                                        <property name="n_rows">4</property>
-                                        <property name="n_columns">3</property>
-                                        <property name="row_spacing">2</property>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
-                                        </child>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="padding">4</property>
-                                        <property name="position">0</property>
-                                      </packing>
+                                      <placeholder/>
                                     </child>
                                     <child>
                                       <placeholder/>
