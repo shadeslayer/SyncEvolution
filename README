@@ -511,26 +511,14 @@ This is done by setting the "maxlogdirs" limit to something
 different than the empty string and 0. If a limit is set,
 then SyncEvolution will only keep that many log directories
 and start removing the oldest ones when it reaches the limit.
-*** TODO: Update this text. The old naming convention does not apply anymore. ***
-* This cleanup is only done after a successful synchronization
-* and is limited to directories starting with the
-*   SyncEvolution-<server>
-* prefix, so it is safe to put other files or directories
-* into the configured log directory.
-
-*** TODO: Remove or update this paragraph. ***
-* If that option is not set (as in the example configurations),
-* then the directory will be created as
-*   $TMPDIR/SyncEvolution-<username>-<server>
-* with access allowed for the user only. Files from a
-* previous synchronization will be overwritten. This is
-* a lot less useful because the data will usually
-* be lost during the next reboot and each synchronization run
-* overwrites the data of the previous one.
+This cleanup is only done after a successful synchronization
+and is limited to directories that match the pattern for
+SyncEvolution log directory names, so it is safe to put other
+files or directories into the configured log directory.
 
 To avoid writing any additional log file or database dumps during
 a synchronization the "logdir" can be set to "none". To reduce
-the verbosity of the log set "loglevel". If not set or 0, then
+the verbosity of the log, set "loglevel". If not set or 0, then
 the verbosity is set to 3 = DEBUG when writing to a log file and
 2 = INFO when writing to the console directly.
 
@@ -561,11 +549,12 @@ for contacts and
   uri = cal
 for calendars. Tasks (aka todos) are not supported directly.
 
-WARNING: up to and including Funambol 7.0 there are known data
-conversion issues for calendars because Evolution uses iCalendar 2.0
-and Funambol uses vCalendar 1.0. See the following blog post for
-details:
-http://www.estamos.de/blog/2008/08/12/a-look-at-funambol-70-the-state-of-the-onion/
+At some point the Funambol server started supporting iCalendar 2.0 for
+calendars. This is the more capable (and recommended!) format, but the
+server does not suggest it as "preferred". Therefore the client's
+configuration must use the exclamation qualifier to pick the
+2.0 format (part of the current template):
+  type = calendar:text/calendar!
 
 
 Exchanging Data
