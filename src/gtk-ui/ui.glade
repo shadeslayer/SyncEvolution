@@ -737,7 +737,7 @@ service</property>
   </widget>
   <widget class="GtkWindow" id="services_win">
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">Sync</property>
+    <property name="title" translatable="yes">Sync settings</property>
     <property name="modal">True</property>
     <property name="default_width">800</property>
     <property name="default_height">550</property>
