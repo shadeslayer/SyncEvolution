@@ -698,7 +698,7 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "  Prints a list of all previous log directories. Unless --quiet is used, each" << endl <<
             "  file name is followed by the original sync report." << endl <<
             "" << endl <<
-            "-–configure|-c" << endl <<
+            "--configure|-c" << endl <<
             "  Modify the configuration files for the selected server. If no such" << endl <<
             "  configuration exists, then a new one is created using one of the" << endl <<
             "  template configurations (see --template option). When creating" << endl <<
@@ -753,7 +753,7 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "--source-property|-z <property>=<value>" << endl <<
             "--source-property|-z ?" << endl <<
             "--source-property|-z <property>=?" << endl <<
-            "  Same as --sync-option, but applies to the configuration of all active" << endl <<
+            "  Same as --sync-property, but applies to the configuration of all active" << endl <<
             "  sources. \"--sync <mode>\" is a shortcut for \"--source-option sync=<mode>\"." << endl <<
             "" << endl <<
             "--template|-l <server name>|default|?" << endl <<
