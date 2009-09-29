@@ -28,6 +28,7 @@ using namespace std;
 
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/foreach.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -147,6 +148,8 @@ class ConfigNode {
     }
 
 
+    typedef map<string, string> PropsType;
+
     /**
      * Extract all list of all currently defined properties
      * and their values. Does not include values which were
@@ -156,8 +159,18 @@ class ConfigNode {
      * @retval props    to be filled with key/value pairs; guaranteed
      *                  to be empty before the call
      */
-    virtual void readProperties(map<string, string> &props) const = 0;
-    typedef map<string, string> PropsType;
+    virtual void readProperties(PropsType &props) const = 0;
+
+    /**
+     * Add the given properties. To replace the content of the
+     * node, call clear() first.
+     */
+    virtual void writeProperties(const PropsType &props)
+    {
+        BOOST_FOREACH(const PropsType::value_type &entry, props) {
+            setProperty(entry.first, entry.second);
+        }
+    }
 
     /**
      * Remove a certain property.
@@ -165,6 +178,11 @@ class ConfigNode {
      * @param property    the name of the property which is to be removed
      */
     virtual void removeProperty(const string &property) = 0;
+
+    /**
+     * Remove all properties.
+     */
+    virtual void clear() = 0;
 
     /**
      * Node exists in backend storage.

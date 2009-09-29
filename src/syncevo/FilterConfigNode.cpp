@@ -103,6 +103,12 @@ void FilterConfigNode::removeProperty(const string &property)
     m_node->removeProperty(property);
 }
 
+void FilterConfigNode::clear()
+{
+    m_filter.clear();
+    m_node->clear();
+}
+
 void FilterConfigNode::flush()
 {
     if (!m_node.get()) {

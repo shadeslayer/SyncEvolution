@@ -323,6 +323,12 @@ void FileConfigNode::setProperty(const string &property,
     m_modified = true;
 }
 
+void FileConfigNode::clear()
+{
+    m_lines.clear();
+    m_modified = true;
+}
+
 HashFileConfigNode::HashFileConfigNode(const string &path, const string &fileName, bool readonly) :
     FileBaseConfigNode(path,fileName,readonly)
 {
@@ -372,6 +378,14 @@ void HashFileConfigNode::readProperties(map<string, string> &props) const {
     }
 }
 
+void HashFileConfigNode::writeProperties(const map<string, string> &props) {
+    if (!props.empty()) {
+        m_props.insert(props.begin(), props.end());
+        m_modified = true;
+    }
+}
+
+
 string HashFileConfigNode::readProperty(const string &property) const {
     std::map<std::string, std::string>::const_iterator it = m_props.find(property);
     if (it != m_props.end()) {
@@ -385,6 +399,14 @@ void HashFileConfigNode::removeProperty(const string &property){
     map<string, string>::iterator it = m_props.find(property);
     if(it != m_props.end()) {
         m_props.erase(it);
+        m_modified = true;
+    }
+}
+
+void HashFileConfigNode::clear()
+{
+    if (!m_props.empty()) {
+        m_props.clear();
         m_modified = true;
     }
 }

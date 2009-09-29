@@ -84,6 +84,7 @@ class SafeConfigNode : public ConfigNode {
     virtual void readProperties(map<string, string> &props) const;
     virtual void removeProperty(const string &property);
     virtual bool exists() const { return m_readOnlyNode->exists(); }
+    virtual void clear() { m_node->clear(); }
 
  private:
     boost::shared_ptr<ConfigNode> m_node;

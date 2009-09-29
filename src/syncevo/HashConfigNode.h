@@ -45,8 +45,10 @@ class HashConfigNode : public ConfigNode {
                              const string &comment = "",
                              const string *defValue = NULL) { m_props[property] = value; }
     virtual void readProperties(std::map<std::string, std::string> &props) const { props = m_props; }
+    virtual void writeProperties(const PropsType &props) { m_props.insert(props.begin(), props.end()); }
     virtual void removeProperty(const std::string &property) { m_props.erase(property); }
     virtual bool exists() const { return true; }
+    virtual void clear() { m_props.clear(); }
 };
 
 
