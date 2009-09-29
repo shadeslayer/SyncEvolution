@@ -203,6 +203,9 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
     // instances.
     config->setDevID(string("sc-pim-") + UUID());
 
+    config->setUsername("your SyncML server account name");
+    config->setPassword("your SyncML server password");
+
     // create sync source configs and set non-default values
     config->setSourceDefaults("addressbook", false);
     config->setSourceDefaults("calendar", false);
@@ -466,7 +469,7 @@ static ConfigProperty syncPropDevID("deviceId",
                                     "myFUNAMBOL also requires that the string starts with sc-pim-");
 static ConfigProperty syncPropUsername("username",
                                        "user name used for authorization with the SyncML server",
-                                       "your SyncML server account name");
+                                       "");
 static PasswordConfigProperty syncPropPassword("password",
                                                "password used for authorization with the SyncML server;\n"
                                                "in addition to specifying it directly as plain text, it can\n"
@@ -475,7 +478,7 @@ static PasswordConfigProperty syncPropPassword("password",
                                                "  plain text: password = <insert your password here>\n"
                                                "         ask: password = -\n"
                                                "env variable: password = ${<name of environment variable>}\n",
-                                               "your SyncML server password",
+                                               "",
                                                "SyncML server");
 static BoolConfigProperty syncPropUseProxy("useProxy",
                                            "set to T to choose an HTTP proxy explicitly; otherwise the default\n"
