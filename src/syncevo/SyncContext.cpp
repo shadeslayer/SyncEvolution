@@ -1303,14 +1303,13 @@ void SyncContext::getConfigXML(string &xml, string &configname)
     substTag(xml,
              "clientorserver",
              m_serverMode ?
-             // TODO: authentication handling.
-             //
-             // Not required: <plugin_sessionauth>no, <requested/requiredauth>none
-             // Specific password: <plugin_sessionauth>no, <simpleauthuser/passwd>
+             // TODO: do session auth inside SynthesisDBPlugin to
+             // avoid setting the username/password in the XML config
+             // TODO: also do device admin inside SynthesisDBPlugin
              string(
              "  <server type='plugin'>\n"
              "    <plugin_module>[SDK_textdb]</plugin_module>\n"
-             "    <plugin_sessionauth>yes</plugin_sessionauth>\n"
+             "    <plugin_sessionauth>no</plugin_sessionauth>\n"
              "    <plugin_deviceadmin>yes</plugin_deviceadmin>\n"
              "    <plugin_params>\n"
              "       <datafilepath>") + getSynthesisDatadir() + "</datafilepath>\n"
@@ -1458,13 +1457,29 @@ void SyncContext::getConfigXML(string &xml, string &configname)
     substTag(xml, "maxmsgsize", std::max(getMaxMsgSize(), 10000ul));
     substTag(xml, "maxobjsize", std::max(getMaxObjSize(), 1024u));
     if (m_serverMode) {
-        substTag(xml, "defaultauth",
-                 "<requestedauth>md5</requestedauth>\n"
-                 "<requiredauth>md5</requiredauth>\n"
-                 "<autononce>yes</autononce>\n"
-                 "<simpleauthuser>test</simpleauthuser>\n"
-                 "<simpleauthpw>test</simpleauthpw>\n",
-                 true);
+        const char *user = getUsername();
+        const char *password = getPassword();
+
+        // TODO: avoid authentication check if requested
+        if (user[0] || password[0]) {
+            // require authentication with the configured password
+            substTag(xml, "defaultauth",
+                     StringPrintf("<requestedauth>md5</requestedauth>\n"
+                                  "<requiredauth>md5</requiredauth>\n"
+                                  "<autononce>yes</autononce>\n"
+                                  "<simpleauthuser>%s</simpleauthuser>\n"
+                                  "<simpleauthpw>%s</simpleauthpw>\n",
+                                  user, password),
+                     true);
+        } else {
+            // TODO: no authentication required - currently doesn't work,
+            // see remark about doing authentication inside SynthesisDBPlugin
+            substTag(xml, "defaultauth",
+                     "<requestedauth>none</requestedauth>\n"
+                     "<requiredauth>none</requiredauth>\n"
+                     "<autononce>yes</autononce>\n",
+                     true);
+        }
     } else {
         substTag(xml, "defaultauth", getClientAuthType());
     }
@@ -1631,6 +1646,9 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
 
             // open each source - failing now is still safe
             BOOST_FOREACH(SyncSource *source, sourceList) {
+                if (m_serverMode) {
+                    source->enableServerMode();
+                }
                 source->open();
             }
 

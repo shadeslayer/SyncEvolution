@@ -74,6 +74,8 @@ static bool rm_filter(const string &path, bool isDir)
             boost::ends_with(path, "/config.txt~") ||
             boost::ends_with(path, "/.other.ini") ||
             boost::ends_with(path, "/.other.ini~") ||
+            boost::ends_with(path, "/.server.ini") ||
+            boost::ends_with(path, "/.server.ini~") ||
             boost::ends_with(path, "/.internal.ini") ||
             boost::ends_with(path, "/.internal.ini~") ||
             path.find("/.synthesis/") != path.npos;
@@ -116,7 +118,8 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
             filename += ".ini";
         }
     } else {
-        filename = m_oldLayout ? "config.txt" :
+        filename = type == server ? ".server.ini" :
+            m_oldLayout ? "config.txt" :
             type == hidden ? ".internal.ini" :
             "config.ini";
     }
@@ -125,7 +128,7 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
     NodeCache_t::iterator found = m_nodes.find(fullname);
     if (found != m_nodes.end()) {
         return found->second;
-    } else if(type != other){
+    } else if(type != other && type != server) {
         boost::shared_ptr<ConfigNode> node(new FileConfigNode(fullpath, filename, m_readonly));
         return m_nodes[fullname] = node;
     } else {

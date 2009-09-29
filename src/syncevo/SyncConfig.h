@@ -1060,39 +1060,48 @@ struct SyncSourceNodes {
      * @param hiddenNode    node for internal properties (may be the same as
      *                      configNode in old config layouts!)
      * @param trackingNode  node for tracking changes (always different than the
-     *                      other two nodes)
+     *                      other nodes)
+     * @param serverNode    node for tracking items in a server (always different
+     *                      than the other nodes)
      */
     SyncSourceNodes(const boost::shared_ptr<FilterConfigNode> &configNode,
                     const boost::shared_ptr<ConfigNode> &hiddenNode,
-                    const boost::shared_ptr<ConfigNode> &trackingNode) : 
+                    const boost::shared_ptr<ConfigNode> &trackingNode,
+                    const boost::shared_ptr<ConfigNode> &serverNode) :
     m_configNode(configNode),
         m_hiddenNode(hiddenNode),
-        m_trackingNode(trackingNode)
+        m_trackingNode(trackingNode),
+        m_serverNode(serverNode)
     {}
 
     const boost::shared_ptr<FilterConfigNode> m_configNode;
     const boost::shared_ptr<ConfigNode> m_hiddenNode;
     const boost::shared_ptr<ConfigNode> m_trackingNode;
+    const boost::shared_ptr<ConfigNode> m_serverNode;
 };
 
 struct ConstSyncSourceNodes {
     ConstSyncSourceNodes(const boost::shared_ptr<const FilterConfigNode> &configNode,
                          const boost::shared_ptr<const ConfigNode> &hiddenNode,
-                         const boost::shared_ptr<const ConfigNode> &trackingNode) : 
+                         const boost::shared_ptr<const ConfigNode> &trackingNode,
+                         const boost::shared_ptr<const ConfigNode> &serverNode) :
     m_configNode(configNode),
         m_hiddenNode(hiddenNode),
-        m_trackingNode(trackingNode)
+        m_trackingNode(trackingNode),
+        m_serverNode(serverNode)
     {}
 
     ConstSyncSourceNodes(const SyncSourceNodes &other) :
     m_configNode(other.m_configNode),
         m_hiddenNode(other.m_hiddenNode),
-        m_trackingNode(other.m_trackingNode)
+        m_trackingNode(other.m_trackingNode),
+        m_serverNode(other.m_serverNode)
     {}
 
     const boost::shared_ptr<const FilterConfigNode> m_configNode;
     const boost::shared_ptr<const ConfigNode> m_hiddenNode;
     const boost::shared_ptr<const ConfigNode> m_trackingNode;
+    const boost::shared_ptr<const ConfigNode> m_serverNode;
 };
 
 struct SourceType {

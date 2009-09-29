@@ -63,7 +63,9 @@ using namespace std;
  *   (beware, such a hash might change as the textual representation
  *    changes even though the item is unchanged)
  */
-class TrackingSyncSource : public TestingSyncSource, virtual public SyncSourceRevisions
+class TrackingSyncSource : public TestingSyncSource,
+    virtual public SyncSourceRevisions,
+    virtual public SyncSourceAdmin
 {
   public:
     /**
@@ -190,6 +192,8 @@ class TrackingSyncSource : public TestingSyncSource, virtual public SyncSourceRe
     virtual void readItem(const std::string &luid, std::string &item);
     virtual InsertItemResult insertItemRaw(const std::string &luid, const std::string &item);
     virtual void readItemRaw(const std::string &luid, std::string &item);
+    virtual void enableServerMode();
+    virtual bool serverModeEnabled() const;
 
     boost::shared_ptr<ConfigNode> m_trackingNode;
 };

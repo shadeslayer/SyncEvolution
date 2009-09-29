@@ -656,6 +656,12 @@ class SyncSourceBase : public Logger {
      */
     virtual SDKInterface *getSynthesisAPI() const = 0;
 
+    /**
+     * Prepare the sync source for usage inside a SyncML server.  To
+     * be called directly after creating the source, if at all.
+     */
+    virtual void enableServerMode() = 0;
+    virtual bool serverModeEnabled() const = 0;
 
  protected:
     struct SynthesisInfo {
@@ -862,6 +868,41 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
         typedef sysync::TSyError (DeleteItem_t)(sysync::cItemID aID);
         boost::function<DeleteItem_t> m_deleteItem;
         /**@}*/
+
+
+        /**
+         * Synthesis administration callbacks. For documentation see the
+         * Synthesis API specification (PDF and/or sync_dbapi.h).
+         *
+         * Implementing this is *optional* in clients. In the Synthesis client
+         * engine, the "binfiles" module provides these calls without SyncEvolution
+         * doing anything.
+         *
+         * In the Synthesis server engine, the
+         * SyncSource::enableServerMode() call must install an
+         * implementation, like the one from SyncSourceAdmin.
+         */
+        /**@{*/
+        typedef sysync::TSyError (LoadAdminData_t)(const char *aLocDB,
+                                                   const char *aRemDB,
+                                                   char **adminData);
+        boost::function<LoadAdminData_t> m_loadAdminData;
+
+        typedef sysync::TSyError (SaveAdminData_t)(const char *adminData);
+        boost::function<SaveAdminData_t> m_saveAdminData;
+
+        typedef bool (ReadNextMapItem_t)(sysync::MapID mID, bool aFirst);
+        boost::function<ReadNextMapItem_t> m_readNextMapItem;
+
+        typedef sysync::TSyError (InsertMapItem_t)(sysync::cMapID mID);
+        boost::function<InsertMapItem_t> m_insertMapItem;
+
+        typedef sysync::TSyError (UpdateMapItem_t)(sysync::cMapID mID);
+        boost::function<UpdateMapItem_t> m_updateMapItem;
+
+        typedef sysync::TSyError (DeleteMapItem_t)(sysync::cMapID mID);
+        boost::function<DeleteMapItem_t> m_deleteMapItem;
+        /**@}*/
     };
     const Operations &getOperations() { return m_operations; }
         
@@ -976,6 +1017,8 @@ class DummySyncSource : public SyncSource
     virtual void close() {}
     virtual void getSynthesisInfo(SynthesisInfo &info,
                                   XMLConfigFragments &fragments) {}
+    virtual void enableServerMode() {}
+    virtual bool serverModeEnabled() const { return false; }
 };
 
 /**
@@ -1423,6 +1466,46 @@ class SyncSourceLogging : public virtual SyncSourceBase
                                 const boost::function<SyncSource::Operations::DeleteItem_t> &parent);
 };
 
+/**
+ * Implements Load/SaveAdminData and MapItem handling in a SyncML
+ * server. Uses a single property for the admin data in the "internal"
+ * node and a complete node for the map items.
+ */
+class SyncSourceAdmin : public virtual SyncSourceBase
+{
+    boost::shared_ptr<ConfigNode> m_configNode;
+    std::string m_adminPropertyName;
+    boost::shared_ptr<ConfigNode> m_mappingNode;
+
+    StringMap m_mapping;
+    StringMap::const_iterator m_mappingIterator;
+
+    sysync::TSyError loadAdminData(const char *aLocDB,
+                                   const char *aRemDB,
+                                   char **adminData);
+    sysync::TSyError saveAdminData(const char *adminData);
+    bool readNextMapItem(sysync::MapID mID, bool aFirst);
+    sysync::TSyError insertMapItem(sysync::cMapID mID);
+    sysync::TSyError updateMapItem(sysync::cMapID mID);
+    sysync::TSyError deleteMapItem(sysync::cMapID mID);
+    void flush();
+
+    void resetMap();
+    void mapid2entry(sysync::cMapID mID, string &key, string &value);
+    void entry2mapid(const string &key, const string &value, sysync::MapID mID);
+
+ public:
+    /** flexible initialization */
+    void init(SyncSource::Operations &ops,
+              const boost::shared_ptr<ConfigNode> &config,
+              const std::string adminPropertyName,
+              const boost::shared_ptr<ConfigNode> &mapping);
+
+    /**
+     * simpler initialization, using the default placement of data
+     */
+    void init(SyncSource::Operations &ops, SyncSourceNodes &nodes);
+};
 
 /**
  * This is an interface definition that is expected by the client-test

@@ -26,6 +26,7 @@
 #include <syncevo/SyncSource.h>
 #include <syncevo/SyncContext.h>
 #include <syncevo/util.h>
+#include <syncevo/SafeConfigNode.h>
 
 #include <syncevo/SynthesisEngine.h>
 #include <synthesis/SDK_util.h>
@@ -33,6 +34,9 @@
 
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <ctype.h>
 #include <errno.h>
@@ -88,7 +92,9 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
 
     xmlstream <<
         "      <plugin_module>SyncEvolution</plugin_module>\n"
-        "      <plugin_datastoreadmin>no</plugin_datastoreadmin>\n"
+        "      <plugin_datastoreadmin>" <<
+        (serverModeEnabled() ? "yes" : "no") <<
+        "</plugin_datastoreadmin>\n"
         "\n"
         "      <!-- General datastore settings for all DB types -->\n"
         "\n"
@@ -853,5 +859,152 @@ void SyncSourceLogging::init(const std::list<std::string> &fields,
                                    this, _1, ops.m_deleteItem);
 }
 
+sysync::TSyError SyncSourceAdmin::loadAdminData(const char *aLocDB,
+                                                const char *aRemDB,
+                                                char **adminData)
+{
+    std::string data = m_configNode->readProperty(m_adminPropertyName);
+    *adminData = StrAlloc(SafeConfigNode::unescape(data).c_str());
+    resetMap();
+    return sysync::LOCERR_OK;
+}
+
+sysync::TSyError SyncSourceAdmin::saveAdminData(const char *adminData)
+{
+    m_configNode->setProperty(m_adminPropertyName,
+                              SafeConfigNode::escape(adminData, false, false));
+
+    // Flush here, because some calls to saveAdminData() happend
+    // after SyncSourceAdmin::flush() (= session end).
+    m_configNode->flush();
+    return sysync::LOCERR_OK;
+}
+
+bool SyncSourceAdmin::readNextMapItem(sysync::MapID mID, bool aFirst)
+{
+    if (aFirst) {
+        resetMap();
+    }
+    if (m_mappingIterator != m_mapping.end()) {
+        entry2mapid(m_mappingIterator->first, m_mappingIterator->second, mID);
+        ++m_mappingIterator;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+sysync::TSyError SyncSourceAdmin::insertMapItem(sysync::cMapID mID)
+{
+    string key, value;
+    mapid2entry(mID, key, value);
+
+    StringMap::iterator it = m_mapping.find(key);
+    if (it != m_mapping.end()) {
+        // error, exists already
+        return sysync::DB_Forbidden;
+    } else {
+        m_mapping[key] = value;
+        return sysync::LOCERR_OK;
+    }
+}
+
+sysync::TSyError SyncSourceAdmin::updateMapItem(sysync::cMapID mID)
+{
+    string key, value;
+    mapid2entry(mID, key, value);
+
+    StringMap::iterator it = m_mapping.find(key);
+    if (it == m_mapping.end()) {
+        // error, does not exist
+        return sysync::DB_Forbidden;
+    } else {
+        m_mapping[key] = value;
+        return sysync::LOCERR_OK;
+    }
+}
+
+sysync::TSyError SyncSourceAdmin::deleteMapItem(sysync::cMapID mID)
+{
+    string key, value;
+    mapid2entry(mID, key, value);
+
+    StringMap::iterator it = m_mapping.find(key);
+    if (it == m_mapping.end()) {
+        // error, does not exist
+        return sysync::DB_Forbidden;
+    } else {
+        m_mapping.erase(it);
+        return sysync::LOCERR_OK;
+    }
+}
+
+void SyncSourceAdmin::flush()
+{
+    m_configNode->flush();
+    m_mappingNode->clear();
+    m_mappingNode->writeProperties(m_mapping);
+    m_mappingNode->flush();
+}
+
+void SyncSourceAdmin::resetMap()
+{
+    m_mapping.clear();
+    m_mappingNode->readProperties(m_mapping);
+    m_mappingIterator = m_mapping.begin();
+}
+
+
+void SyncSourceAdmin::mapid2entry(sysync::cMapID mID, string &key, string &value)
+{
+    key = SafeConfigNode::escape(mID->localID ? mID->localID : "", true, false);
+    value = StringPrintf("%s %x %x",
+                         SafeConfigNode::escape(mID->remoteID ? mID->remoteID : "", true, false).c_str(),
+                         mID->flags, mID->ident);
+}
+
+void SyncSourceAdmin::entry2mapid(const string &key, const string &value, sysync::MapID mID)
+{
+    mID->localID = StrAlloc(SafeConfigNode::unescape(key).c_str());
+    std::vector< std::string > tokens;
+    boost::split(tokens, value, boost::is_any_of(" "));
+    mID->remoteID = tokens.size() > 0 ? StrAlloc(tokens[0].c_str()) : NULL;
+    mID->flags = tokens.size() > 1 ? strtol(tokens[1].c_str(), NULL, 16) : 0;
+    mID->ident = tokens.size() > 2 ? strtol(tokens[2].c_str(), NULL, 16) : 0;
+}
+
+void SyncSourceAdmin::init(SyncSource::Operations &ops,
+                           const boost::shared_ptr<ConfigNode> &config,
+                           const std::string adminPropertyName,
+                           const boost::shared_ptr<ConfigNode> &mapping)
+{
+    m_configNode = config;
+    m_adminPropertyName = adminPropertyName;
+    m_mappingNode = mapping;
+
+    ops.m_loadAdminData = boost::bind(&SyncSourceAdmin::loadAdminData,
+                                      this, _1, _2, _3);
+    ops.m_saveAdminData = boost::bind(&SyncSourceAdmin::saveAdminData,
+                                      this, _1);
+    ops.m_readNextMapItem = boost::bind(&SyncSourceAdmin::readNextMapItem,
+                                        this, _1, _2);
+    ops.m_insertMapItem = boost::bind(&SyncSourceAdmin::insertMapItem,
+                                      this, _1);
+    ops.m_updateMapItem = boost::bind(&SyncSourceAdmin::updateMapItem,
+                                      this, _1);
+    ops.m_deleteMapItem = boost::bind(&SyncSourceAdmin::deleteMapItem,
+                                      this, _1);
+    ops.m_endSession.push_back(boost::bind(&SyncSourceAdmin::flush,
+                                           this));
+}
+
+void SyncSourceAdmin::init(SyncSource::Operations &ops, SyncSourceNodes &nodes)
+{
+    init(ops,
+         nodes.m_hiddenNode,
+         "adminData",
+         nodes.m_serverNode);
+}
 
 SE_END_CXX
+

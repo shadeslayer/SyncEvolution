@@ -94,4 +94,15 @@ void TrackingSyncSource::deleteItem(const std::string &luid)
     deleteRevision(*m_trackingNode, luid);
 }
 
+void TrackingSyncSource::enableServerMode()
+{
+    SyncSourceAdmin::init(m_operations,
+                          getSyncSourceNodes());
+}
+
+bool TrackingSyncSource::serverModeEnabled() const
+{
+    return m_operations.m_loadAdminData;
+}
+
 SE_END_CXX

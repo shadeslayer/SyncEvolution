@@ -195,7 +195,8 @@ bool Cmdline::run() {
         boost::shared_ptr<FilterConfigNode> configNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> hiddenNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> trackingNode(new VolatileConfigNode());
-        SyncSourceNodes nodes(configNode, hiddenNode, trackingNode);
+        boost::shared_ptr<FilterConfigNode> serverNode(new VolatileConfigNode());
+        SyncSourceNodes nodes(configNode, hiddenNode, trackingNode, serverNode);
         SyncSourceParams params("list", nodes, "");
         
         BOOST_FOREACH(const RegisterSyncSource *source, registry) {

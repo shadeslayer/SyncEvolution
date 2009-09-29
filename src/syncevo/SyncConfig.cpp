@@ -426,6 +426,7 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
 {
     boost::shared_ptr<FilterConfigNode> configNode;
     boost::shared_ptr<ConfigNode> hiddenNode,
+        serverNode,
         trackingNode;
 
     boost::shared_ptr<ConfigNode> node;
@@ -443,8 +444,9 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
     }
     hiddenNode = m_tree->open(path, ConfigTree::hidden);
     trackingNode = m_tree->open(path, ConfigTree::other, changeId);
+    serverNode = m_tree->open(path, ConfigTree::server, changeId);
 
-    return SyncSourceNodes(configNode, hiddenNode, trackingNode);
+    return SyncSourceNodes(configNode, hiddenNode, trackingNode, serverNode);
 }
 
 ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
@@ -952,6 +954,7 @@ void SyncConfig::copy(const SyncConfig &other,
             copyProperties(*fromNodes.m_configNode, *toNodes.m_configNode, false, SyncSourceConfig::getRegistry());
             copyProperties(*fromNodes.m_hiddenNode, *toNodes.m_hiddenNode, true, SyncSourceConfig::getRegistry());
             copyProperties(*fromNodes.m_trackingNode, *toNodes.m_trackingNode);
+            copyProperties(*fromNodes.m_serverNode, *toNodes.m_serverNode);
         }
     }
 }

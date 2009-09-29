@@ -98,6 +98,8 @@ CVersion SyncEvolution_Module_Version(CContext mContext)
 extern "C"
 TSyError SyncEvolution_Module_Capabilities( CContext mContext, appCharP *mCapabilities )
 {
+    SyncSource *source  = MoC(mContext);
+
     std::stringstream s;
     s << MyPlatform() << "\n"
       << DLL_Info << "\n"
@@ -108,6 +110,11 @@ TSyError SyncEvolution_Module_Capabilities( CContext mContext, appCharP *mCapabi
       << Plugin_DS_Data_Key << ":yes\n"
       << CA_ItemAsKey << ":yes\n"
       << Plugin_DS_Blob << ":no\n";
+
+    if (source->getOperations().m_loadAdminData) {
+        s << Plugin_DS_Admin << ":yes\n";
+    }
+
     *mCapabilities= StrAlloc(s.str().c_str());
     DEBUG_DB(MoC(mContext)->getSynthesisAPI(), MyDB, Mo_Ca, "'%s'", *mCapabilities);
     return LOCERR_OK;
@@ -446,12 +453,20 @@ extern "C"
 TSyError SyncEvolution_LoadAdminData( CContext aContext, cAppCharP aLocDB,
                                       cAppCharP aRemDB, appCharP *adminData )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_LA, "%s '%s' '%s'",
-            source->getName(), aLocDB, aRemDB );
-  *adminData= NULL;
-  return DB_Forbidden; /* not yet implemented */
+    SyncSource *source = DBC( aContext );
+    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_LA, "%s '%s' '%s'",
+              source->getName(), aLocDB, aRemDB );
+
+    TSyError res = DB_Forbidden;
+    try {
+        if (source->getOperations().m_loadAdminData) {
+            res = source->getOperations().m_loadAdminData(aLocDB, aRemDB, adminData);
+        }
+    } catch (...) {
+        res = source->handleException();
+    }
+
+    return res;
 } /* LoadAdminData */
 
 
@@ -459,10 +474,19 @@ TSyError SyncEvolution_LoadAdminData( CContext aContext, cAppCharP aLocDB,
 extern "C"
 TSyError SyncEvolution_SaveAdminData( CContext aContext, cAppCharP adminData )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_SA, "%s '%s'", source->getName(), adminData );
-  return DB_Forbidden; /* not yet implemented */
+    SyncSource *source = DBC( aContext );
+    SE_LOG_DEBUG(NULL, NULL, "%s: save admin data '%s'", source->getName(), adminData);
+
+    TSyError res = DB_Forbidden;
+    try {
+        if (source->getOperations().m_saveAdminData) {
+            res = source->getOperations().m_saveAdminData(adminData);
+        }
+    } catch (...) {
+        res = source->handleException();
+    }
+
+    return res;
 } /* SaveAdminData */
 
 
@@ -470,10 +494,19 @@ TSyError SyncEvolution_SaveAdminData( CContext aContext, cAppCharP adminData )
 extern "C"
 bool SyncEvolution_ReadNextMapItem( CContext aContext, MapID mID, bool aFirst )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_RM, "%s %08X first=%d (EOF)", source->getName(), mID, aFirst );
-  return false; /* not yet implemented */
+    SyncSource *source = DBC( aContext );
+    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_RM, "%s %08X first=%d (EOF)", source->getName(), mID, aFirst );
+
+    bool res = false;
+    try {
+        if (source->getOperations().m_readNextMapItem) {
+            res = source->getOperations().m_readNextMapItem(mID, aFirst);
+        }
+    } catch (...) {
+        res = source->handleException();
+    }
+
+    return res;
 } /* ReadNextMapItem */
 
 
@@ -481,11 +514,20 @@ bool SyncEvolution_ReadNextMapItem( CContext aContext, MapID mID, bool aFirst )
 extern "C"
 TSyError SyncEvolution_InsertMapItem( CContext aContext, cMapID mID )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_IM, "%s %08X: '%s' '%s' %04X %d", 
-                                  source->getName(), mID, mID->localID, mID->remoteID, mID->flags, mID->ident );
-  return DB_Forbidden; /* not yet implemented */
+    SyncSource *source = DBC( aContext );
+    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_IM, "%s %08X: '%s' '%s' %04X %d", 
+              source->getName(), mID, mID->localID, mID->remoteID, mID->flags, mID->ident );
+
+    TSyError res = DB_Forbidden;
+    try {
+        if (source->getOperations().m_insertMapItem) {
+            res = source->getOperations().m_insertMapItem(mID);
+        }
+    } catch (...) {
+        res = source->handleException();
+    }
+
+    return res;
 } /* InsertMapItem */
 
 
@@ -493,11 +535,20 @@ TSyError SyncEvolution_InsertMapItem( CContext aContext, cMapID mID )
 extern "C"
 TSyError SyncEvolution_UpdateMapItem( CContext aContext, cMapID mID )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_UM, "%s %08X: '%s' '%s' %04X %d", 
-                                  source->getName(), mID, mID->localID, mID->remoteID, mID->flags, mID->ident );
-  return DB_Forbidden; /* not yet implemented */
+    SyncSource *source = DBC( aContext );
+    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_UM, "%s %08X: '%s' '%s' %04X %d", 
+              source->getName(), mID, mID->localID, mID->remoteID, mID->flags, mID->ident );
+
+    TSyError res = DB_Forbidden;
+    try {
+        if (source->getOperations().m_updateMapItem) {
+            res = source->getOperations().m_updateMapItem(mID);
+        }
+    } catch (...) {
+        res = source->handleException();
+    }
+
+    return res;
 } /* UpdateMapItem */
 
 
@@ -505,11 +556,20 @@ TSyError SyncEvolution_UpdateMapItem( CContext aContext, cMapID mID )
 extern "C"
 TSyError SyncEvolution_DeleteMapItem( CContext aContext, cMapID mID )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_DM, "%s %08X: '%s' '%s' %04X %d",
-                                  source->getName(), mID, mID->localID, mID->remoteID, mID->flags, mID->ident );
-  return DB_Forbidden; /* not yet implemented */
+    SyncSource *source = DBC( aContext );
+    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_DM, "%s %08X: '%s' '%s' %04X %d",
+              source->getName(), mID, mID->localID, mID->remoteID, mID->flags, mID->ident );
+    
+    TSyError res = DB_Forbidden;
+    try {
+        if (source->getOperations().m_deleteMapItem) {
+            res = source->getOperations().m_deleteMapItem(mID);
+        }
+    } catch (...) {
+        res = source->handleException();
+    }
+
+    return res;
 } /* DeleteMapItem */
 
 

@@ -84,7 +84,8 @@ class ConfigTree {
     enum PropertyType {
         visible,   /**< visible configuration properties */
         hidden,    /**< hidden read/write properties */
-        other      /**< additional node selected via otherID */
+        other,     /**< additional node selected via otherID */
+        server,    /**< yet another additional node, similar to other */
     };
 
     /**
@@ -94,8 +95,8 @@ class ConfigTree {
      *
      * @param path      a relative path with / as separator
      * @param type      selects which fork of that path is to be opened
-     *                  (visible, hidden, change tracking)
-     * @param otherId   an additional string to be attached to the other
+     *                  (visible, hidden, change tracking, server)
+     * @param otherId   an additional string to be attached to the 'other' or 'server'
      *                  node's name (allows having multiple different such
      *                  nodes); an empty string is allowed
      */
