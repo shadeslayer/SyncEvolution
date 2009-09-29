@@ -50,7 +50,9 @@ bin_PROGRAMS = $(GUI_PROGRAMS)
 
 sync_ui_SOURCES = \
 	main.c sync-ui.c sync-ui.h sync-ui-config.c sync-ui-config.h \
-	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h
+	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h \
+	sync-config-widget.c sync-config-widget.h
+
 nodist_sync_ui_SOURCES = sync-ui-marshal.c sync-ui-marshal.h
 sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) $(top_builddir)/src/dbus/libsyncevo-dbus.la
 sync_ui_CFLAGS = $(GUI_CFLAGS) \

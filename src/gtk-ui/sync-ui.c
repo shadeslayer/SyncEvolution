@@ -60,8 +60,9 @@
 #include "sync-ui-config.h"
 #include "sync-ui.h"
 
+#include <sync-config-widget.h>
+
 #ifdef USE_MOBLIN_UX
-#include <nbtk/nbtk-gtk.h>
 #include "mux-frame.h"
 #include "mux-window.h"
 #endif
@@ -72,8 +73,6 @@ static gboolean support_canceling = FALSE;
 #define SYNC_UI_SERVER_KEY SYNC_UI_GCONF_DIR"/server"
 
 #define SYNC_UI_ICON_SIZE 48
-#define SYNC_UI_LIST_ICON_SIZE 32
-#define SYNC_UI_LIST_BTN_WIDTH 150
 
 #define STRING_VARIANT_HASHTABLE (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, G_TYPE_VALUE))
 
@@ -129,11 +128,9 @@ const float sync_weight_receive = 0.25;
 #define SYNC_PROGRESS_SEND ((sync_progress_sync_end - sync_progress_sync_start) * sync_weight_send)
 #define SYNC_PROGRESS_RECEIVE ((sync_progress_sync_end - sync_progress_sync_start) * sync_weight_receive)
 
-
 typedef struct app_data {
     GtkWidget *sync_win;
     GtkWidget *services_win; /* will be NULL when USE_MOBLIN_UX is set*/
-    GtkWidget *service_settings_win;
 
     GtkWidget *server_box;
     GtkWidget *server_failure_box;
@@ -162,19 +159,6 @@ typedef struct app_data {
     GtkWidget *manual_services_scrolled;
     GtkWidget *back_btn;
 
-    GtkWidget *service_settings_frame;
-    GtkWidget *service_link;
-    GtkWidget *service_description_label;
-    GtkWidget *service_name_label;
-    GtkWidget *service_name_entry;
-    GtkWidget *username_entry;
-    GtkWidget *password_entry;
-    GtkWidget *server_settings_expander;
-    GtkWidget *server_settings_table;
-    GtkWidget *reset_server_btn;
-    GtkWidget *stop_using_service_btn;
-    GtkWidget *delete_service_btn;
-
     gboolean online;
 
     gboolean syncing;
@@ -189,6 +173,7 @@ typedef struct app_data {
     SyncevoService *service;
 
     server_config *current_service;
+    gboolean open_current;
 } app_data;
 
 static void set_sync_progress (app_data *data, float progress, char *status);
@@ -196,9 +181,6 @@ static void set_app_state (app_data *data, app_state state);
 static void show_main_view (app_data *data);
 static void show_services_list (app_data *data);
 static void update_services_list (app_data *data);
-static void show_settings_window (app_data *data, server_config *config);
-static void ensure_default_sources_exist(server_config *server);
-static void add_server_option (SyncevoOption *option, server_config *server);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
 
 static void
@@ -216,20 +198,10 @@ change_service_clicked_cb (GtkButton *btn, app_data *data)
 static void 
 edit_service_clicked_cb (GtkButton *btn, app_data *data)
 {
-    g_assert (data);
-
-    data->current_service->changed = FALSE;
-    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win),
-                                  GTK_WINDOW (data->sync_win));
-    show_settings_window (data, data->current_service);
+    data->open_current = TRUE;
+    show_services_list (data);
 }
 
-static void
-update_server_config (GtkWidget *widget, server_config *config)
-{
-    if (GTK_IS_ENTRY (widget))
-        server_config_update_from_entry (config, GTK_ENTRY (widget));
-}
 
 static void
 show_error_dialog (GtkWindow *parent, const char* message)
@@ -255,7 +227,7 @@ clear_error_info (app_data *data)
     gtk_widget_hide (data->errors_box);
 }
 
-static char*
+char*
 get_pretty_source_name (const char *source_name)
 {
     if (strcmp (source_name, "addressbook") == 0) {
@@ -338,333 +310,6 @@ set_server_config_cb (SyncevoService *service, GError *error, app_data *data)
         return;
     }
     save_gconf_settings (data, data->current_service->name);
-}
-
-
-/* temporary data structure for syncevo_service_get_template_config_async and
- * syncevo_service_get_server_config_async. server is the server that 
- * the method was called for. options_override are options that should 
- * be overridden on the config we get. */
-typedef struct server_data {
-    server_config *config;
-    GPtrArray *options_override;
-    app_data *data;
-} server_data;
-
-static server_data*
-server_data_new (const char *name, app_data *data)
-{
-    server_data *serv_data;
-
-    serv_data = g_slice_new0 (server_data);
-    serv_data->data = data;
-    serv_data->config = g_slice_new0 (server_config);
-    serv_data->config->name = g_strdup (name);
-
-    return serv_data;
-}
-
-static void
-server_data_free (server_data *data, gboolean free_config)
-{
-    if (!data)
-        return;
-
-    if (free_config && data->config) {
-        server_config_free (data->config);
-    }
-    if (data->options_override) {
-        g_ptr_array_foreach (data->options_override, (GFunc)syncevo_option_free, NULL);
-        g_ptr_array_free (data->options_override, TRUE);
-    }
-    g_slice_free (server_data, data);
-}
-
-static void
-find_password_for_settings_cb (GnomeKeyringResult result, GList *list, server_data *data)
-{
-    switch (result) {
-    case GNOME_KEYRING_RESULT_NO_MATCH:
-        g_warning ("no password found in keyring");
-        break;
-    case GNOME_KEYRING_RESULT_OK:
-        if (list && list->data) {
-            GnomeKeyringNetworkPasswordData *key_data;
-            key_data = (GnomeKeyringNetworkPasswordData*)list->data;
-            data->config->password = g_strdup (key_data->password);
-        }
-        break;
-    default:
-        g_warning ("getting password from GNOME keyring failed: %s",
-                   gnome_keyring_result_to_message (result));
-        break;
-    }
-    show_settings_window (data->data, data->config);
-
-    /* dialog should free server config */
-    server_data_free (data, FALSE);
-    return;
-}
-
-
-/* called when service is reset or service settings are opened 
- * (for a new or existing service )*/
-static void
-get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, server_data *data)
-{
-    gboolean getting_password = FALSE;
-
-    if (error) {
-        show_error_dialog (GTK_WINDOW (data->data->sync_win),
-                           _("Failed to get service configuration from SyncEvolution"));
-        g_warning ("Failed to get service configuration from SyncEvolution: %s",
-                   error->message);
-        g_error_free (error);
-        server_data_free (data, TRUE);
-    } else {
-        char *server_address;
-
-        g_ptr_array_foreach (options, (GFunc)add_server_option, data->config);
-        if (data->options_override)
-            g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, data->config);
-
-        ensure_default_sources_exist (data->config);
-        
-        data->config->changed = TRUE;
-
-        /* get password from keyring if we have an url */
-        if (data->config->base_url) {
-            server_address = strstr (data->config->base_url, "://");
-            if (server_address)
-                server_address = server_address + 3;
-
-            if (!server_address) {
-                g_warning ("Server configuration has suspect URL '%s'",
-                           data->config->base_url);
-            } else {
-                gnome_keyring_find_network_password (data->config->username,
-                                                     NULL,
-                                                     server_address,
-                                                     NULL,
-                                                     NULL,
-                                                     NULL,
-                                                     0,
-                                                     (GnomeKeyringOperationGetListCallback)find_password_for_settings_cb,
-                                                     data,
-                                                     NULL);
-                getting_password = TRUE;
-            }
-        }
-
-        if (!getting_password) {
-            show_settings_window (data->data, data->config);
-
-            /* dialog should free server config */
-            server_data_free (data, FALSE);
-        }
-
-        if (options) {
-            g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
-            g_ptr_array_free (options, TRUE);
-        }
-    }
-}
-
-static void
-remove_server_config_cb (SyncevoService *service, 
-                         GError *error, 
-                         server_data *data)
-{
-    g_assert (data);
-
-    if (error) {
-        show_error_dialog (GTK_WINDOW (data->data->sync_win),
-                           _("Failed to remove service configuration from SyncEvolution"));
-        g_warning ("Failed to remove service configuration from SyncEvolution: %s", 
-                   error->message);
-        g_error_free (error);
-    } else {
-        /* update list if visible */
-        if (GTK_WIDGET_VISIBLE (data->data->services_box))
-            update_services_list (data->data);
-
-        if (data->data->current_service && data->data->current_service->name &&
-            strcmp (data->data->current_service->name, data->config->name) == 0)
-            save_gconf_settings (data->data, NULL);
-    }
-
-    server_data_free (data, TRUE);
-}
-
-static void
-stop_using_service_clicked_cb (GtkButton *btn, app_data *data)
-{
-    server_config *server;
-
-    server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
-    g_assert (server);
-
-    show_main_view (data);
-
-    save_gconf_settings (data, NULL);
-}
-
-static void
-delete_service_clicked_cb (GtkButton *btn, app_data *data)
-{
-    server_config *server;
-    server_data* serv_data;
-
-    server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
-    g_assert (server);
-
-    gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
-
-    serv_data = server_data_new (server->name, data);
-
-    syncevo_service_remove_server_config_async (data->service,
-                                                server->name, 
-                                                (SyncevoRemoveServerConfigCb)remove_server_config_cb,
-                                                serv_data);
-}
-
-static void
-reset_service_clicked_cb (GtkButton *btn, app_data *data)
-{
-    server_config *server;
-    server_data* serv_data;
-    SyncevoOption *option;
-
-    server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
-    g_assert (server);
-
-    serv_data = server_data_new (server->name, data);
-    serv_data->options_override = g_ptr_array_new ();
-
-    option = syncevo_option_new (NULL, g_strdup ("username"), g_strdup (server->username));
-    g_ptr_array_add (serv_data->options_override, option);
-
-    syncevo_service_get_template_config_async (data->service, 
-                                               server->name, 
-                                               (SyncevoGetTemplateConfigCb)get_server_config_for_template_cb,
-                                               serv_data);
-}
-
-static void
-add_to_acl_cb (GnomeKeyringResult result)
-{
-    if (result != GNOME_KEYRING_RESULT_OK)
-        g_warning ("Adding server to GNOME keyring access control list failed: %s",
-                   gnome_keyring_result_to_message (result));
-}
-
-static void
-set_password_cb (GnomeKeyringResult result, guint32 id, app_data *data)
-{
-    if (result != GNOME_KEYRING_RESULT_OK) {
-        g_warning ("setting password in GNOME keyring failed: %s",
-                   gnome_keyring_result_to_message (result));
-        return;
-    }
-
-    /* add the server to access control list */
-    /* TODO: name and path must match the ones syncevo-dbus-server really has,
-     * so this call should be in the dbus-wrapper library */
-    gnome_keyring_item_grant_access_rights (NULL, 
-                                            "SyncEvolution",
-                                            LIBEXECDIR "/syncevo-dbus-server",
-                                            id,
-                                            GNOME_KEYRING_ACCESS_READ,
-                                            (GnomeKeyringOperationDoneCallback)add_to_acl_cb,
-                                            NULL, NULL);
-}
-
-static void
-service_save_clicked_cb (GtkButton *btn, app_data *data)
-{
-    GPtrArray *options;
-    server_config *server;
-
-    server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
-    g_assert (server);
-
-    server_config_update_from_entry (server, GTK_ENTRY (data->service_name_entry));
-    server_config_update_from_entry (server, GTK_ENTRY (data->username_entry));
-    server_config_update_from_entry (server, GTK_ENTRY (data->password_entry));
-
-    gtk_container_foreach (GTK_CONTAINER (data->server_settings_table), 
-                           (GtkCallback)update_server_config, server);
-
-    if (!server->name || strlen (server->name) == 0 ||
-        !server->base_url || strlen (server->base_url) == 0) {
-        show_error_dialog (GTK_WINDOW (data->service_settings_win), 
-                           _("Service must have a name and server URL"));
-        return;
-    }
-    /* make a wild guess if no scheme in url */
-    if (strstr (server->base_url, "://") == NULL) {
-        char *tmp = g_strdup_printf ("http://%s", server->base_url);
-        g_free (server->base_url);
-        server->base_url = tmp;
-    }
-
-    /* don't show the transient window: if user has saved a server
-     * he probably wants to main window */
-    show_main_view (data);
-
-    if (data->current_service && data->current_service != server) {
-        server_config_free (data->current_service);
-    }
-    data->current_service = server;
-
-    if (server->auth_changed) {
-        char *server_address;
-        char *password;
-        char *username;
-
-        server_address = strstr (server->base_url, "://");
-        if (server_address)
-            server_address = server_address + 3;
-
-        password = server->password;
-        if (!password)
-            password = "";
-
-        username = server->username;
-        if (!username)
-            username = "";
-
-        gnome_keyring_set_network_password (NULL, /* default keyring */
-                                            username,
-                                            NULL,
-                                            server_address,
-                                            NULL,
-                                            NULL,
-                                            NULL,
-                                            0,
-                                            password,
-                                            (GnomeKeyringOperationGetIntCallback)set_password_cb,
-                                            data, NULL);
-    }
-
-    if (!server->changed) {
-        /* no need to save first, set the gconf key right away */
-        save_gconf_settings (data, data->current_service->name);
-    } else {
-        /* save the server, let callback change current server gconf key */
-        options = server_config_get_option_array (server);
-        syncevo_service_set_server_config_async (data->service, 
-                                                 server->name,
-                                                 options,
-                                                 (SyncevoSetServerConfigCb)set_server_config_cb, 
-                                                 data);
-        g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
-        g_ptr_array_free (options, TRUE);
-    }
-
-    server->auth_changed = FALSE;
-    server->password_changed = FALSE;
-    server->changed = FALSE;
 }
 
 static void
@@ -936,32 +581,6 @@ sync_type_toggled_cb (GObject *radio, app_data *data)
     }
 }
 
-static gboolean
-window_hide_on_delete (GtkWindow *win, app_data *data)
-{
-    GtkWindow *trans;
-
-    trans = gtk_window_get_transient_for (win);
-    if (trans) {
-        gtk_window_present (trans);
-    }
-
-    return gtk_widget_hide_on_delete (GTK_WIDGET (win));
-}
-
-/* keypress handler for the transient windows (service list & service settings) */
-static gboolean
-key_press_cb (GtkWidget *widget,
-              GdkEventKey *event,
-              app_data *data)
-{
-    if (event->keyval == GDK_Escape && GTK_IS_WINDOW (widget)) {
-        window_hide_on_delete (GTK_WINDOW (widget), data);
-        return TRUE;
-    }
-    return FALSE;
-}
-
 #ifdef USE_MOBLIN_UX
 static void
 settings_visibility_changed_cb (GtkWidget *window, app_data *data)
@@ -1074,9 +693,7 @@ switch_main_and_settings_to_mux_window (app_data *data,
     gtk_window_set_transient_for (GTK_WINDOW (data->services_win),
                                   GTK_WINDOW (data->sync_win));
     g_signal_connect (data->services_win, "delete-event",
-                      G_CALLBACK (window_hide_on_delete), data);
-    g_signal_connect (data->services_win, "key-press-event",
-                      G_CALLBACK (key_press_cb), data);
+                      G_CALLBACK (gtk_widget_hide_on_delete), NULL);
 }
 #endif
 
@@ -1086,7 +703,7 @@ init_ui (app_data *data)
     GtkBuilder *builder;
     GError *error = NULL;
     GObject *radio;
-    GtkWidget *frame, *service_save_btn, *setup_service_btn , *image;
+    GtkWidget *frame, *setup_service_btn , *image;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -1137,19 +754,6 @@ init_ui (app_data *data)
     data->manual_services_scrolled = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_scrolled"));
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
-    data->service_link = GTK_WIDGET (gtk_builder_get_object (builder, "service_link"));
-    data->service_description_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_description_label"));
-    data->service_name_label = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_label"));
-    data->service_name_entry = GTK_WIDGET (gtk_builder_get_object (builder, "service_name_entry"));
-    data->server_settings_expander = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_expander"));
-    data->username_entry = GTK_WIDGET (gtk_builder_get_object (builder, "username_entry"));
-    data->password_entry = GTK_WIDGET (gtk_builder_get_object (builder, "password_entry"));
-    data->server_settings_table = GTK_WIDGET (gtk_builder_get_object (builder, "server_settings_table"));
-    data->reset_server_btn = GTK_WIDGET (gtk_builder_get_object (builder, "reset_server_btn"));
-    data->delete_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "delete_service_btn"));
-    data->stop_using_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "stop_using_service_btn"));
-    service_save_btn = GTK_WIDGET (gtk_builder_get_object (builder, "service_save_btn"));
-
     radio = gtk_builder_get_object (builder, "two_way_radio");
     g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNC_TWO_WAY));
     g_signal_connect (radio, "toggled",
@@ -1169,31 +773,14 @@ init_ui (app_data *data)
                                             GTK_WIDGET (gtk_builder_get_object (builder, "sync_win")),
                                             GTK_WIDGET (gtk_builder_get_object (builder, "services_win")));
 
-    data->service_settings_win = switch_dummy_to_mux_window (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_win")));
-    gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win),
-                                  GTK_WINDOW (data->sync_win));
-
     data->main_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
     data->log_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
     frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
-    data->service_settings_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "service_settings_frame")));
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
-    g_signal_connect (data->service_settings_win, "delete-event",
-                      G_CALLBACK (gtk_widget_hide_on_delete), NULL);
-    g_signal_connect (data->service_settings_win, "key-press-event",
-                      G_CALLBACK (key_press_cb), data);
     g_signal_connect_swapped (data->back_btn, "clicked",
                       G_CALLBACK (show_main_view), data);
-    g_signal_connect (data->delete_service_btn, "clicked",
-                      G_CALLBACK (delete_service_clicked_cb), data);
-    g_signal_connect (data->stop_using_service_btn, "clicked",
-                      G_CALLBACK (stop_using_service_clicked_cb), data);
-    g_signal_connect (data->reset_server_btn, "clicked",
-                      G_CALLBACK (reset_service_clicked_cb), data);
-    g_signal_connect (service_save_btn, "clicked",
-                      G_CALLBACK (service_save_clicked_cb), data);
     g_signal_connect (data->change_service_btn, "clicked",
                       G_CALLBACK (change_service_clicked_cb), data);
     g_signal_connect (setup_service_btn, "clicked",
@@ -1205,12 +792,6 @@ init_ui (app_data *data)
 
     g_object_unref (builder);
     return TRUE;
-}
-
-static void
-add_server_option (SyncevoOption *option, server_config *server)
-{
-    server_config_update_from_option (server, option);
 }
 
 static void
@@ -1492,7 +1073,7 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
     }
 
     g_ptr_array_foreach (options, (GFunc)add_server_option, data->current_service);
-    ensure_default_sources_exist (data->current_service);
+    server_config_ensure_default_sources_exist (data->current_service);
     
     update_service_ui (data);
     set_app_state (data, SYNC_UI_STATE_SERVER_OK);
@@ -1526,296 +1107,54 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
     g_ptr_array_free (options, TRUE);
 }
 
-const char*
-get_service_description (const char *service)
+static GtkWidget*
+add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
 {
-    if (!service)
-        return "";
-
-    if (strcmp (service, "ScheduleWorld") == 0) {
-        return _("ScheduleWorld enables you to keep your contacts, events, "
-                 "tasks, and notes in sync.");
-    }else if (strcmp (service, "Google") == 0) {
-        return _("Google Sync can backup and synchronize your Address Book "
-                 "with your Gmail contacts.");
-    }else if (strcmp (service, "Funambol") == 0) {
-        /* TRANSLATORS: Please include the word "demo" (or the equivalent in
-           your language): Funambol is going to be a 90 day demo service
-           in the future */
-        return _("Backup your contacts and calendar. Sync with a single"
-                 "click, anytime, anywhere (DEMO).");
-    }
-
-    return "";
-}
-
-static void
-show_settings_window (app_data *data, server_config *config)
-{
-    GList *l;
-    GtkWidget *label, *entry;
-    int i = 0;
-
-    gtk_container_foreach (GTK_CONTAINER (data->server_settings_table),
-                           (GtkCallback)remove_child,
-                           data->server_settings_table);
-    gtk_table_resize (GTK_TABLE (data->server_settings_table), 
-                      2, g_list_length (config->source_configs) + 1);
-
-    gtk_entry_set_text (GTK_ENTRY (data->service_name_entry), 
-                        config->name ? config->name : "");
-    g_object_set_data (G_OBJECT (data->service_name_entry), "value", &config->name);
-    if (config->name) {
-        gtk_frame_set_label (GTK_FRAME (data->service_settings_frame), config->name);
-        gtk_widget_hide (data->service_name_label);
-        gtk_widget_hide (data->service_name_entry);
-    } else {
-        gtk_frame_set_label (GTK_FRAME (data->service_settings_frame), _("New service"));
-        gtk_widget_show (data->service_name_label);
-        gtk_widget_show (data->service_name_entry);
-    }
-
-    gtk_label_set_text (GTK_LABEL (data->service_description_label),
-                        get_service_description (config->name));
-
-    if (config->web_url) {
-        gtk_link_button_set_uri (GTK_LINK_BUTTON (data->service_link), 
-                                 config->web_url);
-        gtk_widget_show (data->service_link);
-    } else {
-        gtk_widget_hide (data->service_link);
-    }
-
-    gtk_expander_set_expanded (GTK_EXPANDER (data->server_settings_expander), 
-                               !config->from_template);
-    if (config->from_template) {
-        gtk_widget_show (GTK_WIDGET (data->reset_server_btn));
-        gtk_widget_hide (GTK_WIDGET (data->delete_service_btn));
-    } else {
-        gtk_widget_hide (GTK_WIDGET (data->reset_server_btn));
-        if (config->name) {
-            gtk_widget_show (GTK_WIDGET (data->delete_service_btn));
-        } else {
-            gtk_widget_hide (GTK_WIDGET (data->delete_service_btn));
-        }
-    }
-
-    if (data->current_service && data->current_service->name && config->name &&
-        strcmp (data->current_service->name, config->name) == 0)
-        gtk_widget_show (data->stop_using_service_btn);
-    else 
-        gtk_widget_hide (data->stop_using_service_btn);
-
-    gtk_entry_set_text (GTK_ENTRY (data->username_entry), 
-                        (config->username &&
-                         strcmp(config->username, "your SyncML server account name")) ?
-                        config->username :
-                        "");
-    g_object_set_data (G_OBJECT (data->username_entry), "value", &config->username);
-
-    gtk_entry_set_text (GTK_ENTRY (data->password_entry),
-                        config->password ? config->password : "");
-    g_object_set_data (G_OBJECT (data->password_entry), "value", &config->password);
-
-    label = gtk_label_new (_("Server URL"));
-    gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
-    gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
-                      0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
-
-    entry = gtk_entry_new ();
-    gtk_entry_set_max_length (GTK_ENTRY (entry), 99);
-    gtk_entry_set_width_chars (GTK_ENTRY (entry), 80);
-    gtk_entry_set_text (GTK_ENTRY (entry), 
-                        config->base_url ? config->base_url : "");
-    g_object_set_data (G_OBJECT (entry), "value", &config->base_url);
-    gtk_table_attach_defaults (GTK_TABLE (data->server_settings_table), entry,
-                               1, 2, i, i + 1);
-
-    for (l = config->source_configs; l; l = l->next) {
-        source_config *source = (source_config*)l->data;
-        char *str;
-        char *name;
-        i++;
-
-        name = get_pretty_source_name (source->name);
-        /* TRANSLATORS: placeholder is a source name in settings window */
-        str = g_strdup_printf (_("%s URI"), name);
-        label = gtk_label_new (str);
-        g_free (str);
-        g_free (name);
-        gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
-        gtk_table_attach (GTK_TABLE (data->server_settings_table), label,
-                          0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
-
-        entry = gtk_entry_new ();
-        gtk_entry_set_max_length (GTK_ENTRY (entry), 99);
-        gtk_entry_set_width_chars (GTK_ENTRY (entry), 80);
-        gtk_entry_set_text (GTK_ENTRY (entry), 
-                            source->uri ? source->uri : "");
-        g_object_set_data (G_OBJECT (entry), "value", &source->uri);
-        g_object_set_data (G_OBJECT (entry), "enabled", &source->enabled);
-        gtk_table_attach_defaults (GTK_TABLE (data->server_settings_table), entry,
-                                   1, 2, i, i + 1);
-    }
-    gtk_widget_show_all (data->server_settings_table);
-
-    /* TODO should free old server config... make sure do not free currently used config */
-    g_object_set_data (G_OBJECT (data->service_settings_win), "server", config);
-
-    gtk_window_present (GTK_WINDOW (data->service_settings_win));
-}
-
-static void
-ensure_default_sources_exist(server_config *server)
-{
-    server_config_get_source_config (server, "addressbook");
-    server_config_get_source_config (server, "calendar");
-    /* server_config_get_source_config (server, "memo"); */
-    server_config_get_source_config (server, "todo");
-}
-
-static void
-setup_service_clicked (GtkButton *btn, app_data *data)
-{
-    SyncevoServer *server;
-    server_data *serv_data;
+    GtkWidget *item;
     const char *name;
+    gboolean current = FALSE;
 
-    server = g_object_get_data (G_OBJECT (btn), "server");
     syncevo_server_get (server, &name, NULL, NULL, NULL);
+    if (data->current_service && data->current_service->name &&
+        name && strcmp (name, data->current_service->name) == 0) {
+        current = TRUE;
+    }
 
-    serv_data = g_slice_new0 (server_data);
-    serv_data->data = data;
-    serv_data->config = g_slice_new0 (server_config);
-    serv_data->config->name = g_strdup (name);
+    item = sync_config_widget_new (server, current, data->service);
+    gtk_widget_show (item);
+    gtk_box_pack_start (box, item, FALSE, FALSE, 0);
 
-    if (data->services_win)
-        gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win),
-                                      GTK_WINDOW (data->services_win));
+    if (current) {
+        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (item), data->open_current);
+        data->open_current = FALSE;
+    }
+    return item;
+}
 
-    syncevo_service_get_server_config_async (data->service, 
-                                             (char*)serv_data->config->name,
-                                             (SyncevoGetServerConfigCb)get_server_config_for_template_cb,
-                                             serv_data);
+static void
+unexpand_config_widget (GtkWidget *w)
+{
+    if (SYNC_IS_CONFIG_WIDGET (w)) {
+        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (w), FALSE);
+    }
 }
 
 static void
 setup_new_service_clicked (GtkButton *btn, app_data *data)
 {
-    server_data *serv_data;
-    SyncevoOption *option;
-    
-    serv_data = server_data_new (NULL, data);
+    GtkWidget *config_widget;
+    SyncevoServer *server;
 
-    /* syncevolution defaults are not empty, override ... */
-    serv_data->options_override = g_ptr_array_new ();
-    option = syncevo_option_new (NULL, "username", NULL);
-    g_ptr_array_add (serv_data->options_override, option);
-    option = syncevo_option_new (NULL, "password", NULL);
-    g_ptr_array_add (serv_data->options_override, option);
-    option = syncevo_option_new (NULL, "syncURL", NULL);
-    g_ptr_array_add (serv_data->options_override, option);
-    option = syncevo_option_new (NULL, "webURL", NULL);
-    g_ptr_array_add (serv_data->options_override, option);
-    option = syncevo_option_new (NULL, "fromTemplate", "no");
-    g_ptr_array_add (serv_data->options_override, option);
-    option = syncevo_option_new ("memo", "uri", NULL);
-    g_ptr_array_add (serv_data->options_override, option);
-    option = syncevo_option_new ("todo", "uri", NULL);
-    g_ptr_array_add (serv_data->options_override, option);
-    option = syncevo_option_new ("addressbook", "uri", NULL);
-    g_ptr_array_add (serv_data->options_override, option);
-    option = syncevo_option_new ("calendar", "uri", NULL);
-    g_ptr_array_add (serv_data->options_override, option);
+    server = syncevo_server_new (NULL, NULL, NULL, TRUE);
+    config_widget = add_server_to_box (GTK_BOX (data->services_box), server, data);
 
-    if (data->services_win)
-        gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win),
-                                      GTK_WINDOW (data->services_win));
-
-    syncevo_service_get_server_config_async (data->service, 
-                                             "default",
-                                             (SyncevoGetServerConfigCb)get_server_config_for_template_cb,
-                                             serv_data);
+    gtk_container_foreach (GTK_CONTAINER (data->services_box),
+                           (GtkCallback)unexpand_config_widget,
+                           NULL);
+    sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (config_widget), TRUE);
+    g_debug ("ok");
 }
 
-enum ServerCols {
-    COL_ICON = 0,
-    COL_NAME,
-    COL_LINK,
-    COL_BUTTON,
-
-    NR_SERVER_COLS
-};
-
-static void
-add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
-{
-    GtkWidget *label, *tmp_box, *expander, *link, *button, *hbox, *vbox;
-    const char *name, *url, *icon;
-    char *str;
-
-    syncevo_server_get (server, &name, &url, &icon, NULL);
-
-    hbox = gtk_hbox_new (FALSE, 8);
-    gtk_widget_set_size_request (hbox, -1, SYNC_UI_LIST_ICON_SIZE + 6);
-
-#ifdef USE_MOBLIN_UX
-    expander = nbtk_gtk_expander_new ();
-    nbtk_gtk_expander_set_label_widget (NBTK_GTK_EXPANDER (expander), hbox);
-#else
-    /* GtkExpander doesn't like interactive widgets in the label,
-     * using a box here */
-    expander = gtk_hbox_new (FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (expander), hbox, TRUE, TRUE, 0);
-#endif
-
-    load_icon (icon, GTK_BOX (hbox), SYNC_UI_LIST_ICON_SIZE);
-
-    tmp_box = gtk_hbox_new (FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (hbox), tmp_box, FALSE, FALSE, 0);
-
-    tmp_box = gtk_hbox_new (FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (hbox), tmp_box, FALSE, FALSE, 0);
-
-    label = gtk_label_new (name);
-    if (data->current_service && data->current_service->name &&
-        strcmp (name, data->current_service->name) == 0) {
-        str = g_strdup_printf ("<b>%s</b>", name);
-    } else {
-        str = g_strdup_printf ("%s", name);
-    }
-    if (url && strlen (url) > 0) {
-        char *tmp = g_strdup_printf ("%s -",str);
-        g_free (str);
-        str = tmp;
-    }
-    gtk_label_set_markup (GTK_LABEL (label), str);
-    g_free (str);
-
-    gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-    gtk_box_pack_start (GTK_BOX (tmp_box), label, FALSE, FALSE, 0);
-
-    if (url && strlen (url) > 0) {
-        vbox = gtk_vbox_new (FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (tmp_box), vbox, FALSE, FALSE, 0);
-
-        link = gtk_link_button_new_with_label (url, _("Launch website"));
-        gtk_box_pack_start (GTK_BOX (vbox), link, TRUE, FALSE, 0);
-    }
-
-    vbox = gtk_vbox_new (FALSE, 0);
-    gtk_box_pack_end (GTK_BOX (hbox), vbox, FALSE, FALSE, 32);
-
-    button = gtk_button_new_with_label (_("Setup now"));
-    gtk_box_pack_start (GTK_BOX (vbox), button, TRUE, FALSE, 0);
-    gtk_widget_set_size_request (button, SYNC_UI_LIST_BTN_WIDTH, -1);
-    g_signal_connect (button, "clicked",
-                      G_CALLBACK (setup_service_clicked), data);
-    g_object_set_data_full (G_OBJECT (button), "server", server, 
-                            (GDestroyNotify)syncevo_server_free);
-
-    gtk_box_pack_start (box, expander, FALSE, FALSE, 0);
-}
 
 typedef struct templates_data {
     app_data *data;
@@ -1939,13 +1278,9 @@ update_services_list (app_data *data)
 static void
 show_services_list (app_data *data)
 {
-    gtk_widget_hide (data->service_settings_win);
-
 #ifdef USE_MOBLIN_UX
     mux_window_set_settings_visible (MUX_WINDOW (data->sync_win), TRUE);
-    gtk_window_present (GTK_WINDOW (data->sync_win));
 #else
-    gtk_widget_hide (data->sync_win);
     gtk_window_present (GTK_WINDOW (data->services_win));
     update_services_list (data);
 #endif
@@ -1959,7 +1294,6 @@ show_main_view (app_data *data)
 #else
     gtk_widget_hide (data->services_win);
 #endif
-    gtk_widget_hide (data->service_settings_win);
     gtk_window_present (GTK_WINDOW (data->sync_win));
 }
 
