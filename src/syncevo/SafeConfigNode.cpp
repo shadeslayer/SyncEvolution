@@ -80,7 +80,7 @@ void SafeConfigNode::flush()
     m_node->flush();
 }
 
-string SafeConfigNode::escape(const string &str) const
+string SafeConfigNode::escape(const string &str, bool allSpaces, bool strictMode)
 {
     string res;
     char buffer[4];
@@ -88,12 +88,13 @@ string SafeConfigNode::escape(const string &str) const
     res.reserve(str.size() * 3);
 
     BOOST_FOREACH(char c, str) {
-        if(m_strictMode ?
+        if(strictMode ?
            (isalnum(c) ||
             c == '-' ||
             c == '_') :
-           !((isLeadingSpace && isspace(c)) ||
+           !(((isLeadingSpace || allSpaces) && isspace(c)) ||
              c == '=' ||
+             c == '\r' ||
              c == '\n')) {
             res += c;
             if (!isspace(c)) {
@@ -107,7 +108,7 @@ string SafeConfigNode::escape(const string &str) const
     }
 
     // also encode trailing space?
-    if (!m_strictMode) {
+    if (!strictMode || allSpaces) {
         size_t numspaces = 0;
         ssize_t off = res.size() - 1;
         while (off >= 0 && isspace(res[off])) {
@@ -125,7 +126,7 @@ string SafeConfigNode::escape(const string &str) const
     return res;
 }
 
-string SafeConfigNode::unescape(const string &str) const
+string SafeConfigNode::unescape(const string &str)
 {
     string res;
     size_t curr;
