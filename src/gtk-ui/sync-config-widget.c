@@ -587,13 +587,22 @@ update_label (SyncConfigWidget *self)
             } else {
                 str = g_strdup_printf ("%s", name);
             }
-            if (url && strlen (url) > 0) {
+
+            if (self->config && self->config->from_template) {
+                /* TRANSLATORS: title in service list, the placeholder 
+                   is the name of the service */
+                char *tmp = g_strdup_printf (_("%s (manually setup)"), str);
+                g_free (str);
+                str = tmp;
+            } else if (url && strlen (url) > 0) {
                 char *tmp = g_strdup_printf ("%s -",str);
                 g_free (str);
                 str = tmp;
             }
         } else {
-            str = g_strdup ("Server name");
+            /* TRANSLATORS: title in service list for new services
+               (there will be a entry to the right of the title) */
+            str = g_strdup (_("Server name"));
         }
         gtk_label_set_markup (GTK_LABEL (self->label), str);
         g_free (str);
@@ -905,13 +914,13 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (tmp_box);
     gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 8);
 
-    self->use_button = gtk_button_new_with_label ("Save and use");
+    self->use_button = gtk_button_new_with_label (_("Save and use"));
     gtk_widget_show (self->use_button);
     gtk_box_pack_end (GTK_BOX (tmp_box), self->use_button, FALSE, FALSE, 8);
     g_signal_connect (self->use_button, "clicked",
                       G_CALLBACK (use_clicked_cb), self);
 
-    self->stop_button = gtk_button_new_with_label ("Stop using service");
+    self->stop_button = gtk_button_new_with_label (_("Stop using service"));
     gtk_box_pack_end (GTK_BOX (tmp_box), self->stop_button, FALSE, FALSE, 8);
     g_signal_connect (self->stop_button, "clicked",
                       G_CALLBACK (stop_clicked_cb), self);
