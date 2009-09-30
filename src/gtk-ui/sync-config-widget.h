@@ -46,6 +46,9 @@ typedef struct {
     server_config *config;
     GPtrArray *options_override;
 
+    gboolean changed;
+    gboolean auth_changed;
+
     /* label */
     GtkWidget *image;
     GtkWidget *label;
@@ -63,6 +66,7 @@ typedef struct {
     GtkWidget *expander;
     GtkWidget *server_settings_table;
     GtkWidget *reset_delete_button;
+    GtkWidget *stop_button;
     GtkWidget *use_button;
     GList *uri_entries;
 } SyncConfigWidget;
@@ -85,6 +89,7 @@ GtkWidget *sync_config_widget_new (SyncevoServer *server, gboolean current, Sync
 void sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expanded);
 
 gboolean sync_config_widget_get_current (SyncConfigWidget *widget);
+void sync_config_widget_set_current (SyncConfigWidget *self, gboolean current);
 
 G_END_DECLS
 

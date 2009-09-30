@@ -5,7 +5,6 @@
 
 #include "sync-ui.h"
 #include "sync-config-widget.h"
-#include "sync-config-widget-moblin.h"
 
 
 #ifdef USE_MOBLIN_UX
@@ -23,7 +22,30 @@ enum
   PROP_DBUS_SERVICE,
 };
 
+enum {
+	SIGNAL_REMOVED,
+	SIGNAL_EXPANDED,
+	LAST_SIGNAL
+};
+static guint32 signals[LAST_SIGNAL] = {0, };
+
 static void get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, SyncConfigWidget *self);
+
+static void
+show_error_dialog (SyncConfigWidget *self, const char* message)
+{
+    GtkWindow *window = GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (self)));
+
+    GtkWidget *w;
+    w = gtk_message_dialog_new (window,
+                                GTK_DIALOG_MODAL,
+                                GTK_MESSAGE_ERROR,
+                                GTK_BUTTONS_OK,
+                                "%s",
+                                message);
+    gtk_dialog_run (GTK_DIALOG (w));
+    gtk_widget_destroy (w);
+}
 
 static void
 remove_child (GtkWidget *widget, GtkContainer *container)
@@ -31,16 +53,27 @@ remove_child (GtkWidget *widget, GtkContainer *container)
     gtk_container_remove (container, widget);
 }
 
-static void
-sync_config_widget_close_expander (SyncConfigWidget *self)
+const char*
+get_service_description (const char *service)
 {
-    gtk_widget_show (self->button);
+    if (!service)
+        return "";
 
-#ifdef USE_MOBLIN_UX
-    nbtk_gtk_expander_set_expanded (NBTK_GTK_EXPANDER (self), FALSE);
-#else
-    gtk_widget_hide (self->expando_box_for_gtk);
-#endif
+    if (strcmp (service, "ScheduleWorld") == 0) {
+        return _("ScheduleWorld enables you to keep your contacts, events, "
+                 "tasks, and notes in sync.");
+    }else if (strcmp (service, "Google") == 0) {
+        return _("Google Sync can backup and synchronize your Address Book "
+                 "with your Gmail contacts.");
+    }else if (strcmp (service, "Funambol") == 0) {
+        /* TRANSLATORS: Please include the word "demo" (or the equivalent in
+           your language): Funambol is going to be a 90 day demo service
+           in the future */
+        return _("Backup your contacts and calendar. Sync with a single"
+                 "click, anytime, anywhere (DEMO).");
+    }
+
+    return "";
 }
 
 static void
@@ -53,6 +86,91 @@ remove_server_config_cb (SyncevoService *service,
                    error->message);
         g_error_free (error);
     }
+}
+
+static gboolean
+update_value (char **str, GtkWidget *entry)
+{
+    const char *new_str;
+
+    new_str = gtk_entry_get_text (GTK_ENTRY (entry));
+
+    if ((*str == NULL && strlen (new_str) != 0) ||
+        (*str != NULL && strcmp (*str, new_str) != 0)) {
+
+        g_free (*str);
+        *str = g_strdup (new_str);
+
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static void
+stop_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
+{
+    sync_config_widget_set_current (self, FALSE);
+}
+
+static void
+use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
+{
+    server_config *config;
+    GList *l, *entry;
+
+    if (!self->server || !self->dbus_service) {
+        return;
+    }
+
+    config = self->config;
+
+    /* compare config and stuff in entries... */
+    if (update_value (&config->name, self->entry))
+        self->changed = TRUE;
+
+    if (update_value (&config->username, self->username_entry))
+        self->changed = self->auth_changed = TRUE;
+
+    if (update_value (&config->password, self->password_entry))
+        self->changed = self->auth_changed = TRUE;
+
+    if (update_value (&config->base_url, self->baseurl_entry))
+        self->changed = self->auth_changed = TRUE;
+
+    entry = self->uri_entries;
+    for (l = self->config->source_configs; l && entry; l = l->next) {
+
+        char *uri = ((source_config*)l->data)->uri;
+
+        if (update_value (&uri, GTK_WIDGET (entry->data))) {
+            self->changed = TRUE;
+        }
+
+        entry = entry->next;
+    }
+
+    if (!config->name || strlen (config->name) == 0 ||
+        !config->base_url || strlen (config->base_url) == 0) {
+        show_error_dialog (self, 
+                           _("Service must have a name and server URL"));
+        /* TODO should save the info on change status ...*/
+        return;
+    }
+
+    /* make a wild guess if no scheme in url */
+    if (strstr (config->base_url, "://") == NULL) {
+        char *tmp = g_strdup_printf ("http://%s", config->base_url);
+        g_free (config->base_url);
+        config->base_url = tmp;
+    }
+
+    /* TODO save password in keyring if auth_changed */
+
+    /* TODO save config if changed */
+    /* TODO save gconf -> triggers current service change -> triggers list update */
+
+    sync_config_widget_set_current (self, TRUE);
+    
 }
 
 static void
@@ -77,8 +195,7 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
                                                     (SyncevoRemoveServerConfigCb)remove_server_config_cb,
                                                     self);
         
-        /* TODO let main know so it can remove me and
-           save_gconf_settings(appdata, NULL) if I'm current */
+        g_signal_emit (self, signals[SIGNAL_REMOVED], 0);
     }
     
 }
@@ -101,18 +218,16 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                         self->config->name ? self->config->name : "");
 
     if (self->config->name) {
-        gtk_widget_show (self->label);
         gtk_widget_hide (self->entry);
     } else {
         gtk_widget_show (self->entry);
-        gtk_widget_hide (self->label);
     }
 
     gtk_label_set_text (GTK_LABEL (self->description_label),
                         get_service_description (self->config->name));
 
     gtk_expander_set_expanded (GTK_EXPANDER (self->expander), 
-                               !self->config->from_template);
+                               !self->config->name);
 
     if (self->config->from_template) {
         gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
@@ -128,11 +243,9 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     }
 
     if (self->current) {
-        gtk_button_set_label (GTK_BUTTON (self->use_button),
-                              _("Stop using service"));
+        gtk_widget_show (self->stop_button);
     } else { 
-        gtk_button_set_label (GTK_BUTTON (self->use_button),
-                              _("Save and use"));
+        gtk_widget_hide (self->stop_button);
     }
 
     if (self->config->username &&
@@ -152,13 +265,14 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     gtk_table_attach (GTK_TABLE (self->server_settings_table), label,
                       0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
 
-    entry = gtk_entry_new ();
-    gtk_entry_set_max_length (GTK_ENTRY (entry), 99);
-    gtk_entry_set_width_chars (GTK_ENTRY (entry), 80);
-    gtk_entry_set_text (GTK_ENTRY (entry), 
+    self->baseurl_entry = gtk_entry_new ();
+    gtk_entry_set_max_length (GTK_ENTRY (self->baseurl_entry), 99);
+    gtk_entry_set_width_chars (GTK_ENTRY (self->baseurl_entry), 80);
+    gtk_entry_set_text (GTK_ENTRY (self->baseurl_entry), 
                         self->config->base_url ? self->config->base_url : "");
-    gtk_widget_show (entry);
-    gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table), entry,
+    gtk_widget_show (self->baseurl_entry);
+    gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table),
+                               self->baseurl_entry,
                                1, 2, i, i + 1);
 
     g_list_free (self->uri_entries);
@@ -192,6 +306,8 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                                    1, 2, i, i + 1);
     }
 
+    /* hack for widgets added with "add new service" */
+    gtk_widget_grab_focus (GTK_WIDGET (self));
 }
 
 static void
@@ -216,7 +332,7 @@ sync_config_widget_set_config (SyncConfigWidget *self,
         g_ptr_array_foreach (options_override, (GFunc)add_server_option, self->config);
 
     server_config_ensure_default_sources_exist (self->config);
-        
+
     self->config->changed = TRUE;
 }
 
@@ -254,8 +370,7 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
     } else {
         char *server_address;
         
-        sync_config_widget_set_config (self,
-                                              options, self->options_override);
+        sync_config_widget_set_config (self, options, self->options_override);
         sync_config_widget_update_expander (self);
 
         /* get password from keyring if we have an url */
@@ -303,6 +418,36 @@ fetch_server_config (SyncConfigWidget *self)
     }
 
     syncevo_server_get (self->server, &name, NULL, NULL, NULL);
+    if (!name) {
+        /* get a fresh template */
+        name = "default";
+        SyncevoOption *option;
+
+        self->options_override = g_ptr_array_new ();
+        /* syncevolution defaults are not empty, override ... */
+        self->options_override = g_ptr_array_new ();
+        option = syncevo_option_new (NULL, "username", NULL);
+        g_ptr_array_add (self->options_override, option);
+        option = syncevo_option_new (NULL, "password", NULL);
+        g_ptr_array_add (self->options_override, option);
+        option = syncevo_option_new (NULL, "syncURL", NULL);
+        g_ptr_array_add (self->options_override, option);
+        option = syncevo_option_new (NULL, "webURL", NULL);
+        g_ptr_array_add (self->options_override, option);
+        option = syncevo_option_new (NULL, "fromTemplate", "no");
+        g_ptr_array_add (self->options_override, option);
+        option = syncevo_option_new ("memo", "uri", NULL);
+        g_ptr_array_add (self->options_override, option);
+        option = syncevo_option_new ("todo", "uri", NULL);
+        g_ptr_array_add (self->options_override, option);
+        option = syncevo_option_new ("addressbook", "uri", NULL);
+        g_ptr_array_add (self->options_override, option);
+        option = syncevo_option_new ("calendar", "uri", NULL);
+        g_ptr_array_add (self->options_override, option);
+        
+    }
+
+
     syncevo_service_get_server_config_async (self->dbus_service, 
                                              (char*)name,
                                              (SyncevoGetServerConfigCb)get_server_config_for_template_cb,
@@ -312,13 +457,7 @@ fetch_server_config (SyncConfigWidget *self)
 static void
 setup_service_clicked (GtkButton *btn, SyncConfigWidget *self)
 {
-#ifdef USE_MOBLIN_UX
-    nbtk_gtk_expander_set_expanded (NBTK_GTK_EXPANDER (self), TRUE);
-#else
-    gtk_widget_show (self->expando_box_for_gtk);
-#endif
-
-    gtk_widget_hide (self->button);
+    sync_config_widget_set_expanded (self, TRUE);
 }
 
 static GdkPixbuf*
@@ -359,15 +498,19 @@ update_label (SyncConfigWidget *self)
         char *str;
         syncevo_server_get (self->server, &name, &url, NULL, NULL);
 
-        if (self->current) {
-            str = g_strdup_printf ("<b>%s</b>", name);
+        if (name) {
+            if (self->current) {
+                str = g_strdup_printf ("<b>%s</b>", name);
+            } else {
+                str = g_strdup_printf ("%s", name);
+            }
+            if (url && strlen (url) > 0) {
+                char *tmp = g_strdup_printf ("%s -",str);
+                g_free (str);
+                str = tmp;
+            }
         } else {
-            str = g_strdup_printf ("%s", name);
-        }
-        if (url && strlen (url) > 0) {
-            char *tmp = g_strdup_printf ("%s -",str);
-            g_free (str);
-            str = tmp;
+            str = g_strdup ("Server name");
         }
         gtk_label_set_markup (GTK_LABEL (self->label), str);
         g_free (str);
@@ -388,9 +531,11 @@ void
 sync_config_widget_set_current (SyncConfigWidget *self,
                                        gboolean current)
 {
-    self->current = current;
-
-    update_label (self);
+    if (self->current != current) {
+        self->current = current;
+        update_label (self);
+        g_object_notify (G_OBJECT (self), "current");
+    }
 }
 
 void
@@ -518,6 +663,25 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
                                   SYNCEVO_TYPE_SERVICE,
                                   G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_DBUS_SERVICE, pspec);
+
+    signals[SIGNAL_REMOVED] = 
+            g_signal_new ("removed",
+                          G_TYPE_FROM_CLASS (klass),
+                          G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                          G_STRUCT_OFFSET (SyncConfigWidgetClass, removed),
+                          NULL, NULL,
+                          g_cclosure_marshal_VOID__VOID,
+                          G_TYPE_NONE, 
+                          0);
+    signals[SIGNAL_EXPANDED] = 
+            g_signal_new ("expanded",
+                          G_TYPE_FROM_CLASS (klass),
+                          G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                          G_STRUCT_OFFSET (SyncConfigWidgetClass, expanded),
+                          NULL, NULL,
+                          g_cclosure_marshal_VOID__VOID,
+                          G_TYPE_NONE, 
+                          0);
 }
 
 static void
@@ -547,7 +711,7 @@ sync_config_widget_init (SyncConfigWidget *self)
 
     self->entry = gtk_entry_new ();
     gtk_widget_set_no_show_all (self->entry, TRUE);
-    gtk_box_pack_start (GTK_BOX (tmp_box), self->entry, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (tmp_box), self->entry, FALSE, FALSE, 4);
 
     vbox = gtk_vbox_new (FALSE, 0);
     gtk_widget_show (vbox);
@@ -659,9 +823,22 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (tmp_box);
     gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 8);
 
-    self->use_button = gtk_button_new ();
+    self->use_button = gtk_button_new_with_label ("Save and use");
     gtk_widget_show (self->use_button);
     gtk_box_pack_end (GTK_BOX (tmp_box), self->use_button, FALSE, FALSE, 8);
+    g_signal_connect (self->use_button, "clicked",
+                      G_CALLBACK (use_clicked_cb), self);
+
+    self->stop_button = gtk_button_new ();
+    gtk_box_pack_end (GTK_BOX (tmp_box), self->stop_button, FALSE, FALSE, 8);
+    g_signal_connect (self->stop_button, "clicked",
+                      G_CALLBACK (stop_clicked_cb), self);
+
+    self->stop_button = gtk_button_new ();
+    gtk_widget_show (self->use_button);
+    gtk_box_pack_end (GTK_BOX (tmp_box), self->use_button, FALSE, FALSE, 8);
+    g_signal_connect (self->use_button, "clicked",
+                      G_CALLBACK (use_clicked_cb), self);
 
     self->reset_delete_button = gtk_button_new ();
     gtk_widget_show (self->reset_delete_button);
@@ -676,10 +853,37 @@ sync_config_widget_new (SyncevoServer *server,
                         gboolean current,
                         SyncevoService *dbus_service)
 {
-  return g_object_new (SYNC_TYPE_CONFIG_WIDGET_MOBLIN,
+  return g_object_new (SYNC_TYPE_CONFIG_WIDGET,
                        "server", server,
                        "current", current,
                        "dbus_service", dbus_service,
                        NULL);
 }
 
+void
+sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expanded)
+{
+    if (expanded) {
+        gtk_widget_hide (widget->button);
+#ifdef USE_MOBLIN_UX
+        nbtk_gtk_expander_set_expanded (NBTK_GTK_EXPANDER (widget), TRUE);
+#else
+        gtk_widget_show (widget->expando_box_for_gtk);
+#endif
+        g_signal_emit (widget, signals[SIGNAL_EXPANDED], 0);
+    } else {
+        gtk_widget_show (widget->button);
+#ifdef USE_MOBLIN_UX
+        nbtk_gtk_expander_set_expanded (NBTK_GTK_EXPANDER (widget), FALSE);
+#else
+        gtk_widget_hide (widget->expando_box_for_gtk);
+#endif
+    }
+
+}
+
+gboolean
+sync_config_widget_get_current (SyncConfigWidget *widget)
+{
+    return widget->current;
+}
