@@ -19,6 +19,7 @@ enum
 
   PROP_SERVER,
   PROP_CURRENT,
+  PROP_UNSET,
   PROP_DBUS_SERVICE,
 };
 
@@ -283,6 +284,18 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     
 }
 
+static void 
+update_use_button (SyncConfigWidget *self)
+{
+    if (self->unset || self->current) {
+        gtk_button_set_label (GTK_BUTTON (self->use_button),
+                              _("Save and use"));
+    } else { 
+        gtk_button_set_label (GTK_BUTTON (self->use_button),
+                              _("Save and replace\ncurrent service"));
+    }
+}
+
 static void
 sync_config_widget_update_expander (SyncConfigWidget *self)
 {
@@ -299,7 +312,6 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
 
     gtk_entry_set_text (GTK_ENTRY (self->entry),
                         self->config->name ? self->config->name : "");
-
     if (self->config->name) {
         gtk_widget_hide (self->entry);
     } else {
@@ -331,6 +343,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     } else { 
         gtk_widget_hide (self->stop_button);
     }
+    update_use_button (self);
 
     if (self->config->username &&
         strcmp (self->config->username, "your SyncML server account name")) {
@@ -398,8 +411,8 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
 
 static void
 sync_config_widget_set_config (SyncConfigWidget *self,
-                                      GPtrArray *options,
-                                      GPtrArray *options_override)
+                               GPtrArray *options,
+                               GPtrArray *options_override)
 {
     const char *name = NULL;
 
@@ -594,6 +607,7 @@ update_label (SyncConfigWidget *self)
     if (self->server) {
         const char *name, *url;
         char *str;
+
         syncevo_server_get (self->server, &name, &url, NULL, NULL);
 
         if (name) {
@@ -645,8 +659,17 @@ sync_config_widget_set_dbus_service (SyncConfigWidget *self,
 }
 
 void
+sync_config_widget_set_unset (SyncConfigWidget *self,
+                              gboolean unset)
+{
+    self->unset = unset;
+
+    update_use_button (self);
+}
+
+void
 sync_config_widget_set_current (SyncConfigWidget *self,
-                                       gboolean current)
+                                gboolean current)
 {
     if (self->current != current) {
         self->current = current;
@@ -710,6 +733,9 @@ sync_config_widget_set_property (GObject      *object,
     case PROP_CURRENT:
         sync_config_widget_set_current (self, g_value_get_boolean (value));
         break;
+    case PROP_UNSET:
+        sync_config_widget_set_unset (self, g_value_get_boolean (value));
+        break;
     case PROP_DBUS_SERVICE:
         sync_config_widget_set_dbus_service (self, g_value_get_object (value));
         break;
@@ -732,6 +758,8 @@ sync_config_widget_get_property (GObject    *object,
         g_value_set_pointer (value, self->server);
     case PROP_CURRENT:
         g_value_set_boolean (value, self->current);
+    case PROP_UNSET:
+        g_value_set_boolean (value, self->unset);
     case PROP_DBUS_SERVICE:
         g_value_set_object (value, self->dbus_service);
 
@@ -772,6 +800,13 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
                                   FALSE,
                                   G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_CURRENT, pspec);
+
+    pspec = g_param_spec_boolean ("unset",
+                                  "Unset",
+                                  "Whether there curently used server at all",
+                                  TRUE,
+                                  G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_UNSET, pspec);
 
     pspec = g_param_spec_object ("dbus-service",
                                  "DBus service",
@@ -948,7 +983,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 8);
 
     /* TRANSLATORS: button labels  */
-    self->use_button = gtk_button_new_with_label (_("Save and use"));
+    self->use_button = gtk_button_new ();
     gtk_widget_show (self->use_button);
     gtk_box_pack_end (GTK_BOX (tmp_box), self->use_button, FALSE, FALSE, 8);
     g_signal_connect (self->use_button, "clicked",
@@ -970,11 +1005,13 @@ sync_config_widget_init (SyncConfigWidget *self)
 GtkWidget*
 sync_config_widget_new (SyncevoServer *server,
                         gboolean current,
+                        gboolean unset,
                         SyncevoService *dbus_service)
 {
   return g_object_new (SYNC_TYPE_CONFIG_WIDGET,
                        "server", server,
                        "current", current,
+                       "unset", unset,
                        "dbus_service", dbus_service,
                        NULL);
 }

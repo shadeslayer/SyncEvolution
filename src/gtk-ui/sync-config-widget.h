@@ -40,13 +40,13 @@ typedef struct {
 #endif
 
     SyncevoService *dbus_service;
-    gboolean current;
+    gboolean current; /* is this currently used config */
+    gboolean unset; /* is there a current config at all */
 
     SyncevoServer *server;
     server_config *config;
     GPtrArray *options_override;
 
-    gboolean changed;
     gboolean auth_changed;
 
     /* label */
@@ -84,7 +84,10 @@ typedef struct {
 
 GType sync_config_widget_get_type (void);
 
-GtkWidget *sync_config_widget_new (SyncevoServer *server, gboolean current, SyncevoService *dbus_service);
+GtkWidget *sync_config_widget_new (SyncevoServer *server,
+                                   gboolean current,
+                                   gboolean unset,
+                                   SyncevoService *dbus_service);
 
 void sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expanded);
 

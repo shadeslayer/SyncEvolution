@@ -1169,14 +1169,18 @@ add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
     GtkWidget *item;
     const char *name;
     gboolean current = FALSE;
+    gboolean unset = FALSE;
 
     syncevo_server_get (server, &name, NULL, NULL, NULL);
+
     if (data->current_service && data->current_service->name &&
         name && strcmp (name, data->current_service->name) == 0) {
         current = TRUE;
     }
 
-    item = sync_config_widget_new (server, current, data->service);
+    unset = !data->current_service;
+
+    item = sync_config_widget_new (server, current, unset, data->service);
     g_signal_connect (item, "changed",
                       G_CALLBACK (config_widget_changed_cb), data);
     g_signal_connect (item, "expanded",
