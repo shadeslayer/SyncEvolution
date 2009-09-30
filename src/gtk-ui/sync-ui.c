@@ -155,8 +155,6 @@ typedef struct app_data {
 
     GtkWidget *new_service_btn;
     GtkWidget *services_box;
-    GtkWidget *manual_services_box;
-    GtkWidget *manual_services_scrolled;
     GtkWidget *back_btn;
 
     gboolean online;
@@ -703,7 +701,7 @@ init_ui (app_data *data)
     GtkBuilder *builder;
     GError *error = NULL;
     GObject *radio;
-    GtkWidget *frame, *setup_service_btn , *image;
+    GtkWidget *frame, *setup_service_btn , *image, *scrolled_window;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -749,9 +747,11 @@ init_ui (app_data *data)
     g_signal_connect (data->new_service_btn, "clicked",
                       G_CALLBACK (setup_new_service_clicked), data);
 
+    scrolled_window = GTK_WIDGET (gtk_builder_get_object (builder, "scrolledwindow"));
     data->services_box = GTK_WIDGET (gtk_builder_get_object (builder, "services_box"));
-    data->manual_services_box = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_box"));
-    data->manual_services_scrolled = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_scrolled"));
+    gtk_container_set_focus_vadjustment
+            (GTK_CONTAINER (data->services_box),
+             gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scrolled_window)));
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
     radio = gtk_builder_get_object (builder, "two_way_radio");
@@ -1107,6 +1107,30 @@ get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error
     g_ptr_array_free (options, TRUE);
 }
 
+static void
+unexpand_config_widget (GtkWidget *w, GtkWidget *exception)
+{
+    if (SYNC_IS_CONFIG_WIDGET (w) && exception && exception != w) {
+        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (w), FALSE);
+    }
+}
+
+static void
+config_widget_removed_cb (GtkWidget *widget, app_data *data)
+{
+    if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
+        save_gconf_settings (data, NULL);
+    }
+    gtk_container_remove (GTK_CONTAINER (data->services_box), widget);
+}
+
+static void
+config_widget_expanded_cb (GtkWidget *widget, app_data *data)
+{
+    gtk_container_foreach (GTK_CONTAINER (data->services_box),
+                           (GtkCallback)unexpand_config_widget,
+                           widget);
+}
 static GtkWidget*
 add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
 {
@@ -1121,6 +1145,10 @@ add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
     }
 
     item = sync_config_widget_new (server, current, data->service);
+    g_signal_connect (item, "removed",
+                      G_CALLBACK (config_widget_removed_cb), data);
+    g_signal_connect (item, "expanded",
+                      G_CALLBACK (config_widget_expanded_cb), data);
     gtk_widget_show (item);
     gtk_box_pack_start (box, item, FALSE, FALSE, 0);
 
@@ -1132,27 +1160,19 @@ add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
 }
 
 static void
-unexpand_config_widget (GtkWidget *w)
-{
-    if (SYNC_IS_CONFIG_WIDGET (w)) {
-        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (w), FALSE);
-    }
-}
-
-static void
 setup_new_service_clicked (GtkButton *btn, app_data *data)
 {
     GtkWidget *config_widget;
     SyncevoServer *server;
 
-    server = syncevo_server_new (NULL, NULL, NULL, TRUE);
-    config_widget = add_server_to_box (GTK_BOX (data->services_box), server, data);
-
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)unexpand_config_widget,
                            NULL);
+
+    server = syncevo_server_new (NULL, NULL, NULL, TRUE);
+    config_widget = add_server_to_box (GTK_BOX (data->services_box), server, data);
+
     sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (config_widget), TRUE);
-    g_debug ("ok");
 }
 
 
@@ -1185,11 +1205,10 @@ get_servers_cb (SyncevoService *service,
                 GError *error, 
                 templates_data *templ_data)
 {
-    int i, k = 0;
+    int i;
     app_data *data = templ_data->data;
 
     if (error) {
-        show_main_view (data);
         show_error_dialog (GTK_WINDOW (data->sync_win), 
                            _("Failed to get list of manually setup services from SyncEvolution"));
         g_warning ("Failed to get list of manually setup services from SyncEvolution: %s", 
@@ -1203,16 +1222,9 @@ get_servers_cb (SyncevoService *service,
         
         /* make sure server is not added as template already */
         if (!server_array_contains (templ_data->templates, server)) {
-            k++;
-            add_server_to_box (GTK_BOX (data->manual_services_box),
+            add_server_to_box (GTK_BOX (data->services_box),
                                server, data);
         }
-    }
-    
-    if (k > 0) {
-        gtk_widget_show_all (data->manual_services_scrolled);
-    } else {
-        gtk_widget_hide (data->manual_services_scrolled);
     }
 
     /* the SyncevoServers in arrays are freed when the table gets freed */
@@ -1267,9 +1279,6 @@ update_services_list (app_data *data)
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)remove_child,
                            data->services_box);
-    gtk_container_foreach (GTK_CONTAINER (data->manual_services_box),
-                           (GtkCallback)remove_child,
-                           data->manual_services_box);
     syncevo_service_get_templates_async (data->service,
                                          (SyncevoGetTemplatesCb)get_templates_cb,
                                          data);

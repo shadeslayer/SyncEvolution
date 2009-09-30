@@ -59,6 +59,7 @@ typedef struct {
     GtkWidget *name_entry;
     GtkWidget *username_entry;
     GtkWidget *password_entry;
+    GtkWidget *baseurl_entry;
     GtkWidget *expander;
     GtkWidget *server_settings_table;
     GtkWidget *reset_delete_button;
@@ -72,14 +73,18 @@ typedef struct {
 #else
     GtkVBoxClass parent_class;
 #endif
+
+    void (*removed) (SyncConfigWidget *widget);
+    void (*expanded) (SyncConfigWidget *widget);
 } SyncConfigWidgetClass;
 
 GType sync_config_widget_get_type (void);
 
 GtkWidget *sync_config_widget_new (SyncevoServer *server, gboolean current, SyncevoService *dbus_service);
 
-void
-sync_config_widget_set_expanded (SyncConfigWidget *self, gboolean expanded);
+void sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expanded);
+
+gboolean sync_config_widget_get_current (SyncConfigWidget *widget);
 
 G_END_DECLS
 
