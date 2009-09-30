@@ -622,6 +622,17 @@ update_label (SyncConfigWidget *self)
     }
 }
 
+#ifdef USE_MOBLIN_UX
+static void
+widget_expanded_cb (SyncConfigWidget *self)
+{
+    if (nbtk_gtk_expander_get_expanded (NBTK_GTK_EXPANDER (self))) {
+        gtk_widget_hide (self->button);
+    } else {
+        gtk_widget_show (self->button);
+    }
+}
+#endif
 
 void
 sync_config_widget_set_dbus_service (SyncConfigWidget *self,
@@ -844,6 +855,8 @@ sync_config_widget_init (SyncConfigWidget *self)
 #ifdef USE_MOBLIN_UX
     nbtk_gtk_expander_set_label_widget (NBTK_GTK_EXPANDER (self), hbox);
     nbtk_gtk_expander_set_has_indicator (NBTK_GTK_EXPANDER (self), FALSE);
+    g_signal_connect (self, "notify::expanded",
+                      G_CALLBACK (widget_expanded_cb), self);
 
     hbox = gtk_hbox_new (FALSE, 0);
     gtk_widget_show (hbox);
