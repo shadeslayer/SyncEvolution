@@ -29,7 +29,7 @@
 #define SYNC_UI_LIST_BTN_WIDTH 150
 
 
-char* get_pretty_source_name (const char *source_name);
+const char* get_pretty_source_name (const char *source_name);
 
 
 GtkWidget* sync_ui_create_main_window ();

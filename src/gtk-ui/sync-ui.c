@@ -93,8 +93,6 @@ typedef struct app_data {
 
     GtkWidget *new_service_btn;
     GtkWidget *services_box;
-    GtkWidget *manual_services_box;
-    GtkWidget *manual_services_scrolled;
     GtkWidget *back_btn;
 
     gboolean online;
@@ -172,7 +170,7 @@ clear_error_info (app_data *data)
     gtk_widget_hide (data->errors_box);
 }
 
-static char*
+const char*
 get_pretty_source_name (const char *source_name)
 {
     if (strcmp (source_name, "addressbook") == 0) {
@@ -627,7 +625,7 @@ init_ui (app_data *data)
     GtkBuilder *builder;
     GError *error = NULL;
     GObject *radio;
-    GtkWidget *frame, *setup_service_btn , *image;
+    GtkWidget *frame, *setup_service_btn , *image, *scrolled_window;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -673,9 +671,11 @@ init_ui (app_data *data)
     g_signal_connect (data->new_service_btn, "clicked",
                       G_CALLBACK (setup_new_service_clicked), data);
 
+    scrolled_window = GTK_WIDGET (gtk_builder_get_object (builder, "scrolledwindow"));
     data->services_box = GTK_WIDGET (gtk_builder_get_object (builder, "services_box"));
-    data->manual_services_box = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_box"));
-    data->manual_services_scrolled = GTK_WIDGET (gtk_builder_get_object (builder, "manual_services_scrolled"));
+    gtk_container_set_focus_vadjustment
+            (GTK_CONTAINER (data->services_box),
+             gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scrolled_window)));
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
     radio = gtk_builder_get_object (builder, "two_way_radio");
@@ -768,7 +768,7 @@ static void
 update_service_source_ui (const char *name, source_config *conf, app_data *data)
 {
     GtkWidget *check, *hbox, *box, *lbl;
-    char *pretty_name;
+    const char *pretty_name;
     const char *source_uri, *sync;
     gboolean enabled;
 
@@ -908,10 +908,35 @@ find_password_cb (GnomeKeyringResult result, GList *list, app_data *data)
     return;
 }
 
+static void
+unexpand_config_widget (GtkWidget *w, GtkWidget *exception)
+{
+    if (SYNC_IS_CONFIG_WIDGET (w) && exception && exception != w) {
+        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (w), FALSE);
+    }
+}
+
+static void
+config_widget_removed_cb (GtkWidget *widget, app_data *data)
+{
+    if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
+        save_gconf_settings (data, NULL);
+    }
+    gtk_container_remove (GTK_CONTAINER (data->services_box), widget);
+}
+
+static void
+config_widget_expanded_cb (GtkWidget *widget, app_data *data)
+{
+    gtk_container_foreach (GTK_CONTAINER (data->services_box),
+                           (GtkCallback)unexpand_config_widget,
+                           widget);
+}
+
 static GtkWidget*
 add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
 {
-    GtkWidget *item;
+    GtkWidget *item = NULL;
     const char *name;
     gboolean current = FALSE;
 
@@ -923,6 +948,10 @@ add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
      }
 
     item = sync_config_widget_new (server, current, data->service);
+    g_signal_connect (item, "removed",
+                      G_CALLBACK (config_widget_removed_cb), data);
+    g_signal_connect (item, "expanded",
+                      G_CALLBACK (config_widget_expanded_cb), data);
     gtk_widget_show (item);
     gtk_box_pack_start (box, item, FALSE, FALSE, 0);
 
@@ -930,33 +959,25 @@ add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
         sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (item), data->op
         data->open_current = FALSE;
     }
-    return item;
 */
+    return item;
 }
 
-static void
-unexpand_config_widget (GtkWidget *w)
-{
-    if (SYNC_IS_CONFIG_WIDGET (w)) {
-        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (w), FALSE);
-    }
-}
- 
 static void
 setup_new_service_clicked (GtkButton *btn, app_data *data)
 {
 /*
     GtkWidget *config_widget;
     SyncevoServer *server;
-    server = syncevo_server_new (NULL, NULL, NULL, TRUE);
-    config_widget = add_server_to_box (GTK_BOX (data->services_box),
-                                       server,
-                                       data);
+
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)unexpand_config_widget,
                            NULL);
-    sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (config_widget),
-                                     TRUE);
+
+    server = syncevo_server_new (NULL, NULL, NULL, TRUE);
+    config_widget = add_server_to_box (GTK_BOX (data->services_box), server, data);
+
+    sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (config_widget), TRUE);
 */
 }
 
@@ -988,10 +1009,6 @@ server_array_contains (GPtrArray *array, SyncevoServer *server)
 static void
 update_services_list (app_data *data)
 {
-    gtk_container_foreach (GTK_CONTAINER (data->services_box),
-                           (GtkCallback)remove_child,
-                           data->services_box);
-
 /*
     syncevo_service_get_templates_async (data->service,
                                          (SyncevoGetTemplatesCb)get_templates_cb,

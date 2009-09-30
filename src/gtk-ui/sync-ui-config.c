@@ -313,7 +313,9 @@ server_data_free (server_data *data, gboolean free_config)
         server_config_free (data->config);
     }
     if (data->options_override) {
+/*
         g_ptr_array_foreach (data->options_override, (GFunc)syncevo_option_free, NULL);
+*/
         g_ptr_array_free (data->options_override, TRUE);
     }
     g_slice_free (server_data, data);
@@ -326,10 +328,4 @@ server_config_ensure_default_sources_exist (server_config *server)
     server_config_get_source_config (server, "calendar");
     /* server_config_get_source_config (server, "memo"); */
     server_config_get_source_config (server, "todo");
-}
-
-void
-add_server_option (SyncevoOption *option, server_config *server)
-{
-    server_config_update_from_option (server, option);
 }
