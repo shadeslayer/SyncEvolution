@@ -280,7 +280,7 @@ add_error_info (app_data *data, const char *message, const char *external_reason
 }
 
 static void
-save_gconf_settings (app_data *data, char *service_name)
+save_gconf_settings (app_data *data, const char *service_name)
 {
     GConfClient* client;
     GError *err = NULL;
@@ -1116,12 +1116,16 @@ unexpand_config_widget (GtkWidget *w, GtkWidget *exception)
 }
 
 static void
-config_widget_removed_cb (GtkWidget *widget, app_data *data)
+config_widget_changed_cb (GtkWidget *widget, app_data *data)
 {
     if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
+        
+        save_gconf_settings (data, sync_config_widget_get_name SYNC_CONFIG_WIDGET (widget));
+    } else {
+        /* stop using current service */
         save_gconf_settings (data, NULL);
     }
-    gtk_container_remove (GTK_CONTAINER (data->services_box), widget);
+    update_services_list (data);
 }
 
 static void
@@ -1131,6 +1135,7 @@ config_widget_expanded_cb (GtkWidget *widget, app_data *data)
                            (GtkCallback)unexpand_config_widget,
                            widget);
 }
+
 static GtkWidget*
 add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
 {
@@ -1145,8 +1150,8 @@ add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
     }
 
     item = sync_config_widget_new (server, current, data->service);
-    g_signal_connect (item, "removed",
-                      G_CALLBACK (config_widget_removed_cb), data);
+    g_signal_connect (item, "changed",
+                      G_CALLBACK (config_widget_changed_cb), data);
     g_signal_connect (item, "expanded",
                       G_CALLBACK (config_widget_expanded_cb), data);
     gtk_widget_show (item);

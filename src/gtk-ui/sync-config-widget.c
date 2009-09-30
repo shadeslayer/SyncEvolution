@@ -23,7 +23,7 @@ enum
 };
 
 enum {
-	SIGNAL_REMOVED,
+	SIGNAL_CHANGED,
 	SIGNAL_EXPANDED,
 	LAST_SIGNAL
 };
@@ -79,13 +79,14 @@ get_service_description (const char *service)
 static void
 remove_server_config_cb (SyncevoService *service, 
                          GError *error, 
-                         gpointer data)
+                         SyncConfigWidget *self)
 {
     if (error) {
         g_warning ("Failed to remove service configuration from SyncEvolution: %s", 
                    error->message);
         g_error_free (error);
     }
+    g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
 }
 
 static gboolean
@@ -110,11 +111,91 @@ static void
 stop_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
     sync_config_widget_set_current (self, FALSE);
+    g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
+}
+
+static void
+add_to_acl_cb (GnomeKeyringResult result)
+{
+    if (result != GNOME_KEYRING_RESULT_OK)
+        g_warning ("Adding server to GNOME keyring access control list failed: %s",
+                   gnome_keyring_result_to_message (result));
+}
+
+static void
+set_password_cb (GnomeKeyringResult result, guint32 id, gpointer data)
+{
+    if (result != GNOME_KEYRING_RESULT_OK) {
+        g_warning ("setting password in GNOME keyring failed: %s",
+                   gnome_keyring_result_to_message (result));
+        return;
+    }
+
+    /* add the server to access control list */
+    /* TODO: name and path must match the ones syncevo-dbus-server really has,
+     * so this call should be in the dbus-wrapper library */
+    gnome_keyring_item_grant_access_rights (NULL, 
+                                            "SyncEvolution",
+                                            LIBEXECDIR "/syncevo-dbus-server",
+                                            id,
+                                            GNOME_KEYRING_ACCESS_READ,
+                                            (GnomeKeyringOperationDoneCallback)add_to_acl_cb,
+                                            NULL, NULL);
+}
+
+static void
+save_password (const server_config *config)
+{
+    char *server_address;
+    char *password;
+    char *username;
+
+    server_address = strstr (config->base_url, "://");
+    if (server_address)
+        server_address = server_address + 3;
+
+    password = config->password;
+    if (!password)
+        password = "";
+
+    username = config->username;
+    if (!username)
+        username = "";
+
+    gnome_keyring_set_network_password (NULL, /* default keyring */
+                                        username,
+                                        NULL,
+                                        server_address,
+                                        NULL,
+                                        NULL,
+                                        NULL,
+                                        0,
+                                        password,
+                                        (GnomeKeyringOperationGetIntCallback)set_password_cb,
+                                        NULL,
+                                        NULL);
+}
+
+static void
+set_server_config_cb (SyncevoService *service, GError *error, SyncConfigWidget *self)
+{
+    if (error) {
+        show_error_dialog (self,
+                           _("Failed to save service configuration to SyncEvolution"));
+        g_warning ("Failed to save service configuration to SyncEvolution: %s",
+                   error->message);
+        g_error_free (error);
+        return;
+    }
+
+    sync_config_widget_set_current (self, TRUE);
+    g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
 }
 
 static void
 use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
+    GPtrArray *options;
     server_config *config;
     GList *l, *entry;
 
@@ -125,26 +206,23 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     config = self->config;
 
     /* compare config and stuff in entries... */
-    if (update_value (&config->name, self->entry))
-        self->changed = TRUE;
+    update_value (&config->name, self->entry);
 
     if (update_value (&config->username, self->username_entry))
-        self->changed = self->auth_changed = TRUE;
+        self->auth_changed = TRUE;
 
     if (update_value (&config->password, self->password_entry))
-        self->changed = self->auth_changed = TRUE;
+        self->auth_changed = TRUE;
 
     if (update_value (&config->base_url, self->baseurl_entry))
-        self->changed = self->auth_changed = TRUE;
+        self->auth_changed = TRUE;
 
     entry = self->uri_entries;
     for (l = self->config->source_configs; l && entry; l = l->next) {
 
         char *uri = ((source_config*)l->data)->uri;
 
-        if (update_value (&uri, GTK_WIDGET (entry->data))) {
-            self->changed = TRUE;
-        }
+        update_value (&uri, GTK_WIDGET (entry->data));
 
         entry = entry->next;
     }
@@ -153,7 +231,6 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         !config->base_url || strlen (config->base_url) == 0) {
         show_error_dialog (self, 
                            _("Service must have a name and server URL"));
-        /* TODO should save the info on change status ...*/
         return;
     }
 
@@ -164,13 +241,18 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         config->base_url = tmp;
     }
 
-    /* TODO save password in keyring if auth_changed */
+    if (self->auth_changed)
+        save_password (self->config);
 
-    /* TODO save config if changed */
-    /* TODO save gconf -> triggers current service change -> triggers list update */
-
-    sync_config_widget_set_current (self, TRUE);
-    
+    /* save the server, let callback change current server gconf key */
+    options = server_config_get_option_array (self->config);
+    syncevo_service_set_server_config_async (self->dbus_service, 
+                                             config->name,
+                                             options,
+                                             (SyncevoSetServerConfigCb)set_server_config_cb, 
+                                             self);
+    g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
+    g_ptr_array_free (options, TRUE);
 }
 
 static void
@@ -195,7 +277,6 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
                                                     (SyncevoRemoveServerConfigCb)remove_server_config_cb,
                                                     self);
         
-        g_signal_emit (self, signals[SIGNAL_REMOVED], 0);
     }
     
 }
@@ -534,7 +615,6 @@ sync_config_widget_set_current (SyncConfigWidget *self,
     if (self->current != current) {
         self->current = current;
         update_label (self);
-        g_object_notify (G_OBJECT (self), "current");
     }
 }
 
@@ -664,11 +744,11 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
                                   G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_DBUS_SERVICE, pspec);
 
-    signals[SIGNAL_REMOVED] = 
-            g_signal_new ("removed",
+    signals[SIGNAL_CHANGED] = 
+            g_signal_new ("changed",
                           G_TYPE_FROM_CLASS (klass),
                           G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
-                          G_STRUCT_OFFSET (SyncConfigWidgetClass, removed),
+                          G_STRUCT_OFFSET (SyncConfigWidgetClass, changed),
                           NULL, NULL,
                           g_cclosure_marshal_VOID__VOID,
                           G_TYPE_NONE, 
@@ -829,16 +909,10 @@ sync_config_widget_init (SyncConfigWidget *self)
     g_signal_connect (self->use_button, "clicked",
                       G_CALLBACK (use_clicked_cb), self);
 
-    self->stop_button = gtk_button_new ();
+    self->stop_button = gtk_button_new_with_label ("Stop using service");
     gtk_box_pack_end (GTK_BOX (tmp_box), self->stop_button, FALSE, FALSE, 8);
     g_signal_connect (self->stop_button, "clicked",
                       G_CALLBACK (stop_clicked_cb), self);
-
-    self->stop_button = gtk_button_new ();
-    gtk_widget_show (self->use_button);
-    gtk_box_pack_end (GTK_BOX (tmp_box), self->use_button, FALSE, FALSE, 8);
-    g_signal_connect (self->use_button, "clicked",
-                      G_CALLBACK (use_clicked_cb), self);
 
     self->reset_delete_button = gtk_button_new ();
     gtk_widget_show (self->reset_delete_button);
@@ -886,4 +960,13 @@ gboolean
 sync_config_widget_get_current (SyncConfigWidget *widget)
 {
     return widget->current;
+}
+
+const char*
+sync_config_widget_get_name (SyncConfigWidget *widget)
+{
+    if (!widget->config)
+        return NULL;
+
+    return widget->config->name;
 }

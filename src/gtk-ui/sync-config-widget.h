@@ -78,7 +78,7 @@ typedef struct {
     GtkVBoxClass parent_class;
 #endif
 
-    void (*removed) (SyncConfigWidget *widget);
+    void (*changed) (SyncConfigWidget *widget);
     void (*expanded) (SyncConfigWidget *widget);
 } SyncConfigWidgetClass;
 
@@ -91,6 +91,7 @@ void sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expande
 gboolean sync_config_widget_get_current (SyncConfigWidget *widget);
 void sync_config_widget_set_current (SyncConfigWidget *self, gboolean current);
 
+const char *sync_config_widget_get_name (SyncConfigWidget *widget);
 G_END_DECLS
 
 
