@@ -313,6 +313,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                                !self->config->name);
 
     if (self->config->from_template) {
+        /* TRANSLATORS: button labels */
         gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
                               _("Reset service"));
     } else {
@@ -342,6 +343,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     gtk_entry_set_text (GTK_ENTRY (self->password_entry),
                         self->config->password ? self->config->password : "");
 
+    /* TRANSLATORS: label of a entry  */
     label = gtk_label_new (_("Server URL"));
     gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
     gtk_widget_show (label);
@@ -368,7 +370,8 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
         i++;
 
         name = get_pretty_source_name (source->name);
-        /* TRANSLATORS: placeholder is a source name in settings window */
+        /* TRANSLATORS: label for an entry. Placeholder is a source 
+           name in settings window */
         str = g_strdup_printf (_("%s URI"), name);
         label = gtk_label_new (str);
         g_free (str);
@@ -459,7 +462,7 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
         /* get password from keyring if we have an url */
         if (self->config->base_url) {
             server_address = strstr (self->config->base_url, "://");
-            if (server_address)
+            if (server_address) 
                 server_address = server_address + 3;
 
             if (!server_address) {
@@ -543,6 +546,17 @@ setup_service_clicked (GtkButton *btn, SyncConfigWidget *self)
     sync_config_widget_set_expanded (self, TRUE);
 }
 
+static void
+server_settings_expand_cb (GtkExpander *expander, SyncConfigWidget *self)
+{
+    if (gtk_expander_get_expanded (expander)) {
+        /* TRANSLATORS: this is the epander label for server settings */
+        gtk_expander_set_label (expander, _("Hide server settings"));
+    } else {
+        gtk_expander_set_label (expander, _("Show server settings"));
+    }
+}
+
 static GdkPixbuf*
 load_icon (const char *uri, guint icon_size)
 {
@@ -588,7 +602,7 @@ update_label (SyncConfigWidget *self)
                 str = g_strdup_printf ("%s", name);
             }
             if (self->config && !self->config->from_template) {
-                /* TRANSLATORS: title in service list, the placeholder 
+                /* TRANSLATORS: servoce title in service list, the placeholder 
                    is the name of the service */
                 char *tmp = g_strdup_printf (_("%s - manually setup"), str);
                 g_free (str);
@@ -807,6 +821,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (vbox);
     gtk_box_pack_start (GTK_BOX (tmp_box), vbox, FALSE, FALSE, 0);
 
+    /* TRANSLATORS: linkbutton label */
     self->link = gtk_link_button_new_with_label ("", _("Launch website"));
     gtk_widget_set_no_show_all (self->link, TRUE);
     gtk_box_pack_start (GTK_BOX (vbox), self->link, TRUE, FALSE, 0);
@@ -815,6 +830,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (vbox);
     gtk_box_pack_end (GTK_BOX (hbox), vbox, FALSE, FALSE, 32);
 
+    /* TRANSLATORS: button label  */
     self->button = gtk_button_new_with_label (_("Setup now"));
     gtk_widget_set_size_request (self->button, SYNC_UI_LIST_BTN_WIDTH, -1);
 
@@ -864,6 +880,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (table);
     gtk_box_pack_start (GTK_BOX (tmp_box), table, FALSE, FALSE, 0);
 
+    /* TRANSLATORS: labels of entries  */
     label = gtk_label_new (_("Username"));
     gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
     gtk_widget_show (label);
@@ -894,9 +911,12 @@ sync_config_widget_init (SyncConfigWidget *self)
                                1, 2,
                                1, 2);
 
-    self->expander = gtk_expander_new (_("Show server settings"));
+    self->expander = gtk_expander_new ("");
     gtk_widget_show (self->expander);
     gtk_box_pack_start (GTK_BOX (vbox), self->expander, FALSE, FALSE, 0);
+    g_signal_connect (self->expander, "notify::expanded",
+                      G_CALLBACK (server_settings_expand_cb), self);
+    server_settings_expand_cb (GTK_EXPANDER (self->expander), self);
 
     tmp_box = gtk_hbox_new (FALSE, 0);
     gtk_widget_show (tmp_box);
@@ -913,6 +933,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (tmp_box);
     gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 8);
 
+    /* TRANSLATORS: button labels  */
     self->use_button = gtk_button_new_with_label (_("Save and use"));
     gtk_widget_show (self->use_button);
     gtk_box_pack_end (GTK_BOX (tmp_box), self->use_button, FALSE, FALSE, 8);
