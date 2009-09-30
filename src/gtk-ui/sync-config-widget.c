@@ -468,7 +468,8 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
             if (!server_address) {
                 g_warning ("Server configuration has suspect URL '%s'",
                            self->config->base_url);
-            } else {
+            } else if (self->config->username &&
+                       strlen (self->config->username) > 0) {
                 gnome_keyring_find_network_password (self->config->username,
                                                      NULL,
                                                      server_address,

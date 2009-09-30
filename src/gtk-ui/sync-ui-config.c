@@ -88,7 +88,13 @@ server_config_update_from_option (server_config *server, SyncevoOption *option)
             server->base_url = g_strdup (value);
         } else if (strcmp (key, "username") == 0) {
             g_free (server->username);
-            server->username = g_strdup (value);
+            /* skip the informative username */
+            if (value &&
+                strcmp (value, "your SyncML server account name") == 0) {
+                server->username = g_strdup ("");
+            } else {
+                server->username = g_strdup (value);
+            }
         } else if (strcmp (key, "webURL") == 0) {
             if (server->web_url)
             g_free (server->web_url);
