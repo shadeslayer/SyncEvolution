@@ -30,6 +30,7 @@ enum {
 static guint32 signals[LAST_SIGNAL] = {0, };
 
 static void get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, SyncConfigWidget *self);
+static void update_label (SyncConfigWidget *self);
 
 static void
 show_error_dialog (SyncConfigWidget *self, const char* message)
@@ -188,7 +189,6 @@ set_server_config_cb (SyncevoService *service, GError *error, SyncConfigWidget *
         return;
     }
 
-g_debug ("emit change");
     sync_config_widget_set_current (self, TRUE);
     g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
 
@@ -416,7 +416,7 @@ sync_config_widget_set_config (SyncConfigWidget *self,
 
     server_config_ensure_default_sources_exist (self->config);
 
-    self->config->changed = TRUE;
+    update_label (self);
 }
 
 static void
@@ -587,11 +587,10 @@ update_label (SyncConfigWidget *self)
             } else {
                 str = g_strdup_printf ("%s", name);
             }
-
-            if (self->config && self->config->from_template) {
+            if (self->config && !self->config->from_template) {
                 /* TRANSLATORS: title in service list, the placeholder 
                    is the name of the service */
-                char *tmp = g_strdup_printf (_("%s (manually setup)"), str);
+                char *tmp = g_strdup_printf (_("%s - manually setup"), str);
                 g_free (str);
                 str = tmp;
             } else if (url && strlen (url) > 0) {
