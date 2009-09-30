@@ -1069,6 +1069,9 @@ void Connection::failed(const std::string &reason)
 {
     if (m_failure.empty()) {
         m_failure = reason;
+        if (m_session) {
+            m_session->setConnectionError(reason);
+        }
     }
     if (m_state != FAILED) {
         abort();
@@ -1131,99 +1134,106 @@ void Connection::process(const Caller_t &caller,
         throw runtime_error("client does not own connection");
     }
 
-    switch (m_state) {
-    case SETUP: {
-        std::string config;
-        bool serverMode = false;
-        // check message type, determine whether we act
-        // as client or server, choose config
-        if (message_type == "HTTP Config") {
-            // type used for testing, payload is config name
-            config.assign(reinterpret_cast<const char *>(message.second),
-                          message.first);
-        } else if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
-            // TODO: extract server ID and match it against a server configuration.
-            // At the moment, always pick "default" as configuration name.
-            // sysync::SanPackage san;
-            // san.PassSan(message.second, message.first);
-            // san.GetHeader();
-            // std::string serverID = san.fServerID;
-            config = "default";
+    // any kind of error from now on terminates the connection
+    try {
+        switch (m_state) {
+        case SETUP: {
+            std::string config;
+            bool serverMode = false;
+            // check message type, determine whether we act
+            // as client or server, choose config
+            if (message_type == "HTTP Config") {
+                // type used for testing, payload is config name
+                config.assign(reinterpret_cast<const char *>(message.second),
+                              message.first);
+            } else if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
+                // TODO: extract server ID and match it against a server configuration.
+                // At the moment, always pick "default" as configuration name.
+                // sysync::SanPackage san;
+                // san.PassSan(message.second, message.first);
+                // san.GetHeader();
+                // std::string serverID = san.fServerID;
+                config = "default";
 
-            // TODO: extract number of sources
-            int numSources = 0;
-            if (!numSources) {
-                // Synchronize all known sources with the selected mode.
+                // TODO: extract number of sources
+                int numSources = 0;
+                if (!numSources) {
+                    // Synchronize all known sources with the selected mode.
+                } else {
+                    // TODO: check what the server wants us to synchronize.
+                    // Create the necessary local configuration temporarily,
+                    // using heuristics if necessary.
+                }
+
+                // TODO: use the session ID set by the server if non-null
+            } else if (message_type == TransportAgent::m_contentTypeSyncML ||
+                       message_type == TransportAgent::m_contentTypeSyncWBXML) {
+                // run a new SyncML session as server
+                serverMode = true;
+                if (m_peer.find("config") == m_peer.end()) {
+                    throw runtime_error("must choose config in Server.Connect()");
+                }
+                config = m_peer["config"];
             } else {
-                // TODO: check what the server wants us to synchronize.
-                // Create the necessary local configuration temporarily,
-                // using heuristics if necessary.
+                throw runtime_error("message type not supported for starting a sync");
             }
 
-            // TODO: use the session ID set by the server if non-null
-        } else if (message_type == TransportAgent::m_contentTypeSyncML ||
-                   message_type == TransportAgent::m_contentTypeSyncWBXML) {
-            // run a new SyncML session as server
-            serverMode = true;
-            if (m_peer.find("config") == m_peer.end()) {
-                throw runtime_error("must choose config in Server.Connect()");
+            // run session as client (server not supported yet)
+            m_state = PROCESSING;
+            m_session.reset(new Session(m_server,
+                                        config,
+                                        m_sessionID));
+            if (serverMode) {
+                m_session->initServer(SharedBuffer(reinterpret_cast<const char *>(message.second),
+                                                   message.first),
+                                      message_type);
             }
-            config = m_peer["config"];
-        } else {
-            throw runtime_error("message type not supported for starting a sync");
+            m_session->setPriority(Session::PRI_CONNECTION);
+            m_session->setConnection(myself);
+            // this will be reset only when the connection shuts down okay
+            // or overwritten with the error given to us in
+            // Connection::close()
+            m_session->setConnectionError("closed prematurely");
+            m_server.enqueue(m_session);
+            break;
         }
-
-        // run session as client (server not supported yet)
-        m_state = PROCESSING;
-        m_session.reset(new Session(m_server,
-                                    config,
-                                    m_sessionID));
-        if (serverMode) {
-            m_session->initServer(SharedBuffer(reinterpret_cast<const char *>(message.second),
-                                               message.first),
-                                  message_type);
+        case PROCESSING:
+            throw std::runtime_error("protocol error: already processing a message");
+            break;        
+        case WAITING:
+            m_incomingMsg = SharedBuffer(reinterpret_cast<const char *>(message.second),
+                                         message.first);
+            m_incomingMsgType = message_type;
+            m_state = PROCESSING;
+            // get out of DBusTransportAgent::wait()
+            if (m_loop) {
+                g_main_loop_quit(m_loop);
+                m_loop = NULL;
+            }
+            break;
+        case FINAL:
+            if (m_loop) {
+                g_main_loop_quit(m_loop);
+                m_loop = NULL;
+            }
+            throw std::runtime_error("protocol error: final reply sent, no further message processing possible");
+        case DONE:
+            throw std::runtime_error("protocol error: connection closed, no further message processing possible");
+            break;
+        case FAILED:
+            throw std::runtime_error(m_failure);
+            break;
+        default:
+            throw std::runtime_error("protocol error: unknown internal state");
+            break;
         }
-        m_session->setPriority(Session::PRI_CONNECTION);
-        m_session->setConnection(myself);
-        // this will be reset only when the connection shuts down okay
-        // or overwritten with the error given to us in
-        // Connection::close()
-        m_session->setConnectionError("closed prematurely");
-        m_server.enqueue(m_session);
-        break;
+    } catch (const std::exception &error) {
+        failed(error.what());
+        throw;
+    } catch (...) {
+        failed("unknown exception in Connection::process");
+        throw;
     }
-    case PROCESSING:
-        throw std::runtime_error("protocol error: already processing a message");
-        break;        
-    case WAITING:
-        m_incomingMsg = SharedBuffer(reinterpret_cast<const char *>(message.second),
-                                     message.first);
-        m_incomingMsgType = message_type;
-        m_state = PROCESSING;
-        // get out of DBusTransportAgent::wait()
-        if (m_loop) {
-            g_main_loop_quit(m_loop);
-            m_loop = NULL;
-        }
-        break;
-    case FINAL:
-        if (m_loop) {
-            g_main_loop_quit(m_loop);
-            m_loop = NULL;
-        }
-        m_state = FAILED;
-        m_session->setConnectionError("connection closed unexpectedly due to incoming message while expecing Close()");
-        throw std::runtime_error("protocol error: final reply sent, no further message processing possible");
-    case DONE:
-        throw std::runtime_error("protocol error: connection closed, no further message processing possible");
-        break;
-    case FAILED:
-        throw std::runtime_error(m_failure);
-        break;
-    default:
-        throw std::runtime_error("protocol error: unknown internal state");
-        break;
-    }            
 }
 
 void Connection::close(const Caller_t &caller,
@@ -1246,11 +1256,15 @@ void Connection::close(const Caller_t &caller,
         std::string err = error.empty() ?
             "connection closed unexpectedly" :
             error;
-        m_session->setConnectionError(err);
+        if (m_session) {
+            m_session->setConnectionError(err);
+        }
         failed(err);
     } else {
         m_state = DONE;
-        m_session->setConnectionError("");
+        if (m_session) {
+            m_session->setConnectionError("");
+        }
     }
 
     // remove reference to us from client, will destruct *this*
@@ -1262,7 +1276,7 @@ void Connection::shutdown()
 {
     // trigger removal of this connection by removing all
     // references to it
-    m_session->getServer().detach(this);
+    m_server.detach(this);
 }
 
 Connection::Connection(DBusServer &server,
