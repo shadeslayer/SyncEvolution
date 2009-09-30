@@ -180,6 +180,7 @@ static void show_main_view (app_data *data);
 static void show_services_list (app_data *data);
 static void update_services_list (app_data *data);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
+static void get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error, app_data *data);
 
 static void
 remove_child (GtkWidget *widget, GtkContainer *container)
@@ -280,12 +281,39 @@ add_error_info (app_data *data, const char *message, const char *external_reason
 }
 
 static void
+reload_config (app_data *data, const char *server)
+{
+    server_config_free (data->current_service);
+
+    if (!server || strlen (server) == 0) {
+        data->current_service = NULL; 
+        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
+    } else {
+        data->synced_this_session = FALSE;
+        data->current_service = g_slice_new0 (server_config);
+        data->current_service->name = g_strdup (server);
+        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
+        syncevo_service_get_server_config_async (data->service, 
+                                                 (char*)server,
+                                                 (SyncevoGetServerConfigCb)get_server_config_cb,
+                                                 data);
+    }
+}
+
+
+static void
 save_gconf_settings (app_data *data, const char *service_name)
 {
     GConfClient* client;
     GError *err = NULL;
 
     client = gconf_client_get_default ();
+    if (service_name && data->current_service &&
+        strcmp (service_name, data->current_service->name) == 0) {
+        /* need to reload because there will be no gconf change event */
+        reload_config (data, service_name);
+    }
+
     if (!gconf_client_set_string (client, SYNC_UI_SERVER_KEY, 
                                   service_name ? service_name : "", 
                                   &err)) {
@@ -1119,7 +1147,6 @@ static void
 config_widget_changed_cb (GtkWidget *widget, app_data *data)
 {
     if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
-        
         save_gconf_settings (data, sync_config_widget_get_name SYNC_CONFIG_WIDGET (widget));
     } else {
         /* stop using current service */
@@ -1325,23 +1352,9 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
     }
 
     /*TODO: avoid the rest if server did not actually change */
-
     gtk_widget_hide (data->progress);
 
-    server_config_free (data->current_service);
-    if (!server || strlen (server) == 0) {
-        data->current_service = NULL; 
-        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
-    } else {
-        data->synced_this_session = FALSE;
-        data->current_service = g_slice_new0 (server_config);
-        data->current_service->name = server;
-        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
-        syncevo_service_get_server_config_async (data->service, 
-                                                 server,
-                                                 (SyncevoGetServerConfigCb)get_server_config_cb,
-                                                 data);
-    }
+    reload_config (data, server);
 }
 
 static void

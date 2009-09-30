@@ -150,10 +150,6 @@ server_config_get_option_array (server_config *server)
     for (l = server->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
 
-        /* sources may have been added as place holders */
-        if (!source->uri)
-            continue;
-
         option = syncevo_option_new (source->name, g_strdup ("uri"), g_strdup (source->uri));
         g_ptr_array_add (options, option);
 

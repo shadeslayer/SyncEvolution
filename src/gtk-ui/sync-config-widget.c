@@ -188,8 +188,10 @@ set_server_config_cb (SyncevoService *service, GError *error, SyncConfigWidget *
         return;
     }
 
+g_debug ("emit change");
     sync_config_widget_set_current (self, TRUE);
     g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
+
 }
 
 static void
@@ -219,11 +221,11 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 
     entry = self->uri_entries;
     for (l = self->config->source_configs; l && entry; l = l->next) {
+        source_config *source = (source_config*)l->data;
 
-        char *uri = ((source_config*)l->data)->uri;
-
-        update_value (&uri, GTK_WIDGET (entry->data));
-
+        update_value (&source->uri, GTK_WIDGET (entry->data));
+        if (!source->uri)
+            source->enabled = FALSE;
         entry = entry->next;
     }
 
