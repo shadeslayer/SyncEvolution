@@ -754,7 +754,7 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
             "--source-property|-z ?" << endl <<
             "--source-property|-z <property>=?" << endl <<
             "  Same as --sync-property, but applies to the configuration of all active" << endl <<
-            "  sources. \"--sync <mode>\" is a shortcut for \"--source-option sync=<mode>\"." << endl <<
+            "  sources. \"--sync <mode>\" is a shortcut for \"--source-property sync=<mode>\"." << endl <<
             "" << endl <<
             "--template|-l <server name>|default|?" << endl <<
             "  Can be used to select from one of the built-in default configurations" << endl <<
