@@ -111,7 +111,7 @@ int DBusSyncClient::sleep (int intervals)
 {
     time_t start = time(NULL);
     while (true) {
-        g_main_context_iteration(NULL, true);
+        g_main_context_iteration(NULL, FALSE);
         time_t now = time(NULL);
         if (m_check_for_suspend(m_userdata)) {
             return  (intervals - now + start);
