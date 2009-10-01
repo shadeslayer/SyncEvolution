@@ -1,365 +1,409 @@
+#: ../src/gtk-ui/sync-ui.c:764
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2009-07-22 09:19+0000\n"
+"POT-Creation-Date: 2009-10-01 19:27+0000\n"
 "PO-Revision-Date: \n"
-"Last-Translator: GLSKOR_Sook <hyang-sookx.sohn@intel.com>\n"
+"Last-Translator: GLSKOR_SunKim <sunx.kim@intel.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n!=1; \n"
+"Plural-Forms: nplurals=2; plural=n!=1;\n"
 "X-Poedit-Language: Korean\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
-#: ../src/gtk-ui/sync-ui.c:258
+#. TRANSLATORS: this is the application name that may be used by e.g.
+#. the windowmanager
+#: ../src/gtk-ui/main.c:31 ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/sync.desktop.in.h:1
+msgid "Sync"
+msgstr "동기화"
+
+#: ../src/gtk-ui/sync-ui.c:259
 msgid "Addressbook"
 msgstr "주소록"
 
-#: ../src/gtk-ui/sync-ui.c:260
+#: ../src/gtk-ui/sync-ui.c:261
 msgid "Calendar"
 msgstr "캘린더"
 
-#: ../src/gtk-ui/sync-ui.c:262
+#: ../src/gtk-ui/sync-ui.c:263
 msgid "Todo"
 msgstr "할일"
 
-#: ../src/gtk-ui/sync-ui.c:264
+#: ../src/gtk-ui/sync-ui.c:265
 msgid "Memo"
 msgstr "메모"
 
-#: ../src/gtk-ui/sync-ui.c:319
+#: ../src/gtk-ui/sync-ui.c:320
 msgid "Failed to save current service in GConf configuration system"
 msgstr "GConf 구성 시스템의 현재 서비스를 저장하는데 실패했습니다."
 
-#: ../src/gtk-ui/sync-ui.c:330
+#: ../src/gtk-ui/sync-ui.c:331
 msgid "Failed to save service configuration to SyncEvolution"
 msgstr "서비스 구성을 SyncEvolution에 저장하는데 실패했습니다."
 
-#: ../src/gtk-ui/sync-ui.c:415
+#: ../src/gtk-ui/sync-ui.c:416
 msgid "Failed to get service configuration from SyncEvolution"
 msgstr "SyncEvolution으로 부터 구성 서비스를 불러오기를 실패했습니다."
 
-#: ../src/gtk-ui/sync-ui.c:478
+#: ../src/gtk-ui/sync-ui.c:479
 msgid "Failed to remove service configuration from SyncEvolution"
 msgstr "SyncEvolution으로 부터 구성 시스템을 제거하는데 실패했습니다."
 
-#: ../src/gtk-ui/sync-ui.c:598
+#: ../src/gtk-ui/sync-ui.c:599
 msgid "Service must have a name and server URL"
 msgstr "서비스는 반듯이 이름 및 서버 URL이 있어야 합니다."
 
 #. sync is no longer in progress for some reason
-#: ../src/gtk-ui/sync-ui.c:674
+#: ../src/gtk-ui/sync-ui.c:675
 msgid "Failed to cancel: sync was no longer in progress"
 msgstr "취소 실패: 동기화는 더이상 진행되지 않습니다."
 
-#: ../src/gtk-ui/sync-ui.c:678
+#: ../src/gtk-ui/sync-ui.c:679
 msgid "Failed to cancel sync"
 msgstr "동기화 취소 실패"
 
-#: ../src/gtk-ui/sync-ui.c:682
+#: ../src/gtk-ui/sync-ui.c:683
 msgid "Canceling sync"
 msgstr "동기화 취소 중 "
 
-#: ../src/gtk-ui/sync-ui.c:696
+#: ../src/gtk-ui/sync-ui.c:697
 msgid "Trying to cancel sync"
 msgstr "동기화 취소 시도"
 
-#: ../src/gtk-ui/sync-ui.c:703
+#: ../src/gtk-ui/sync-ui.c:704
 #, c-format
-msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
-msgstr "모든 로컬 데이터을 삭제하고 %s로 부터의 데이터로 바꾸시겠습니까? 항상 권하지는 않습니다"
+msgid ""
+"Do you want to delete all local data and replace it with data from %s? This "
+"is not usually advised."
+msgstr ""
+"모든 로컬 데이터을 삭제하고 %s로 부터의 데이터로 바꾸시겠습니까? 항상 권하지"
+"는 않습니다"
 
-#: ../src/gtk-ui/sync-ui.c:708
+#: ../src/gtk-ui/sync-ui.c:709
 #, c-format
-msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
-msgstr "%s에 있는 모든 데이터를 삭네하고 당신의 로컬 데이터로 바꾸시겠습니까? 항상 권하지는 않습니다."
+msgid ""
+"Do you want to delete all data in %s and replace it with your local data? "
+"This is not usually advised."
+msgstr ""
+"%s에 있는 모든 데이터를 삭네하고 당신의 로컬 데이터로 바꾸시겠습니까? 항상 권"
+"하지는 않습니다."
 
-#: ../src/gtk-ui/sync-ui.c:725
+#: ../src/gtk-ui/sync-ui.c:726
 msgid "No, cancel sync"
 msgstr "주소록"
 
-#: ../src/gtk-ui/sync-ui.c:726
+#: ../src/gtk-ui/sync-ui.c:727
 msgid "Yes, delete and replace"
 msgstr "예, 삭제하시고 변경하십시오"
 
-#: ../src/gtk-ui/sync-ui.c:748
+#: ../src/gtk-ui/sync-ui.c:749
 msgid "No sources are enabled, not syncing"
 msgstr "사용 가능한 소스가 없습니다. 동기화 되지 않았습니다."
 
-#: ../src/gtk-ui/sync-ui.c:765
+#: ../src/gtk-ui/sync-ui.c:766
 msgid "A sync is already in progress"
 msgstr "동기화가 이미 진행중 입니다."
 
-#: ../src/gtk-ui/sync-ui.c:767
+#: ../src/gtk-ui/sync-ui.c:768
 msgid "Failed to start sync"
 msgstr "동기화를 시작하는데 실패했습니다."
 
-#: ../src/gtk-ui/sync-ui.c:772
+#: ../src/gtk-ui/sync-ui.c:773
 msgid "Starting sync"
 msgstr "동기화 시작 "
 
-#: ../src/gtk-ui/sync-ui.c:797
+#: ../src/gtk-ui/sync-ui.c:798
 msgid "Last synced just seconds ago"
 msgstr "일 초전 마지막 동기화"
 
-#: ../src/gtk-ui/sync-ui.c:800
+#: ../src/gtk-ui/sync-ui.c:801
 msgid "Last synced a minute ago"
 msgstr "일 분전 마지막 동기화"
 
-#: ../src/gtk-ui/sync-ui.c:803
+#: ../src/gtk-ui/sync-ui.c:804
 #, c-format
 msgid "Last synced %ld minutes ago"
 msgstr "%ld 분전 마지막 동기화"
 
-#: ../src/gtk-ui/sync-ui.c:806
+#: ../src/gtk-ui/sync-ui.c:807
 msgid "Last synced an hour ago"
 msgstr "한 시간전 마지막 동기화"
 
-#: ../src/gtk-ui/sync-ui.c:809
+#: ../src/gtk-ui/sync-ui.c:810
 #, c-format
 msgid "Last synced %ld hours ago"
 msgstr "%ld 시간전 마지막 동기화"
 
-#: ../src/gtk-ui/sync-ui.c:812
+#: ../src/gtk-ui/sync-ui.c:813
 msgid "Last synced a day ago"
 msgstr "하루전 마지막 동기화"
 
-#: ../src/gtk-ui/sync-ui.c:815
+#: ../src/gtk-ui/sync-ui.c:816
 #, c-format
 msgid "Last synced %ld days ago"
 msgstr "%ld 일 전 마지막 동기화"
 
-#: ../src/gtk-ui/sync-ui.c:900
+#: ../src/gtk-ui/sync-ui.c:901
 msgid "Sync again"
 msgstr "다시 동기화 시도"
 
-#: ../src/gtk-ui/sync-ui.c:902
-#: ../src/gtk-ui/ui.glade.h:29
+#: ../src/gtk-ui/sync-ui.c:903 ../src/gtk-ui/ui.glade.h:29
 msgid "Sync now"
 msgstr "지금 동기화 시도"
 
-#: ../src/gtk-ui/sync-ui.c:911
+#: ../src/gtk-ui/sync-ui.c:912
 msgid "Syncing"
 msgstr "동기화 시도중"
 
-#: ../src/gtk-ui/sync-ui.c:917
+#: ../src/gtk-ui/sync-ui.c:918
 msgid "Cancel sync"
 msgstr "동기화 취소"
 
 #. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
-#: ../src/gtk-ui/sync-ui.c:1261
+#: ../src/gtk-ui/sync-ui.c:1265
 #, c-format
 msgid "%s (not supported by this service)"
 msgstr "%s (이 서비스에 의해 지원되지 않습니다)"
 
-#: ../src/gtk-ui/sync-ui.c:1294
+#: ../src/gtk-ui/sync-ui.c:1298
 #, c-format
 msgid "There was one remote rejection."
 msgid_plural "There were %d remote rejections."
 msgstr[0] "한건의 원격 거부가 있었습니다."
 msgstr[1] "%d건의 원격 거부가 있었습니다"
 
-#: ../src/gtk-ui/sync-ui.c:1299
+#: ../src/gtk-ui/sync-ui.c:1303
 #, c-format
 msgid "There was one local rejection."
 msgid_plural "There were %d local rejections."
 msgstr[0] "한건의 로컬 거부가 있었습니다."
 msgstr[1] "%d건의 로컬 거부가 있었습니다."
 
-#: ../src/gtk-ui/sync-ui.c:1304
+#: ../src/gtk-ui/sync-ui.c:1308
 #, c-format
 msgid "There were %d local rejections and %d remote rejections."
 msgstr "%d 로컬 거부와 %d 원격 거부가 있었습니다. "
 
-#: ../src/gtk-ui/sync-ui.c:1309
+#: ../src/gtk-ui/sync-ui.c:1313
 #, c-format
 msgid "Last time: No changes."
 msgstr "지난 시간: 변동 사항 없음."
 
-#: ../src/gtk-ui/sync-ui.c:1311
+#: ../src/gtk-ui/sync-ui.c:1315
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %d changes."
 msgstr[0] "지난 시간: 한건의 변경 사항을 보냈습니다."
 msgstr[1] "지난 시간: %d 건의 변경 사항을 보냈습니다."
 
-#: ../src/gtk-ui/sync-ui.c:1316
+#. This is about changes made to the local data. Not all of these
+#. changes were requested by the remote server, so "applied"
+#. is a better word than "received" (bug #5185).
+#: ../src/gtk-ui/sync-ui.c:1323
 #, c-format
-msgid "Last time: Received one change."
-msgid_plural "Last time: Received %d changes."
-msgstr[0] "지난 시간: 한건의 변경 사항을 받았습니다."
-msgstr[1] "지난 시간: %d건의 변경 사항을 받았습니다."
+msgid "Last time: Applied one change."
+msgid_plural "Last time: Applied %d changes."
+msgstr[0] "지난 시간 : 적용된 한건의 변동 사항"
+msgstr[1] "지난 시간: 적용된 %d건의 변동 사항"
 
-#: ../src/gtk-ui/sync-ui.c:1321
+#: ../src/gtk-ui/sync-ui.c:1328
 #, c-format
-msgid "Last time: Received %d changes and sent %d changes."
-msgstr "지난 시간: %d 변동 사항 접수 및 %d 변동 사항 보냄."
+msgid "Last time: Applied %d changes and sent %d changes."
+msgstr "지난 시간: 적용된 %d 변동 사항 및 보내진 %d 변동 사항."
 
-#: ../src/gtk-ui/sync-ui.c:1413
+#: ../src/gtk-ui/sync-ui.c:1420
 msgid "Failed to get server configuration from SyncEvolution"
 msgstr "SyncEvolution으로 부터 서버 구성 기능을 불러오기를 실패했습니다."
 
-#: ../src/gtk-ui/sync-ui.c:1479
+#: ../src/gtk-ui/sync-ui.c:1472
+msgid ""
+"ScheduleWorld enables you to keep your contacts, events, tasks, and notes in "
+"sync."
+msgstr ""
+"scheduleworld에서 귀사의 연락처, 이벤트, 작업 및 동기화 노트를 보존할 수 있습"
+"니다.  "
+
+#: ../src/gtk-ui/sync-ui.c:1475
+msgid ""
+"Google Sync can backup and synchronize your Address Book with your Gmail "
+"contacts."
+msgstr ""
+"Google Sync에서 귀하의 Gmail 연락망의 연락처 기록을 백업하거나 동기화할 수 있"
+"습니다. "
+
+#. TRANSLATORS: Please include the word "demo" (or the equivalent in
+#. your language): Funambol is going to be a 90 day demo service
+#. in the future
+#: ../src/gtk-ui/sync-ui.c:1481
+msgid ""
+"Backup your contacts and calendar. Sync with a singleclick, anytime, "
+"anywhere (DEMO)."
+msgstr ""
+"귀하의 연락처 및 캘린더를 백업할 수 있습니다.  한번의 클릭으로 언제 어디서나 "
+"동기화 가능(DEMO).  "
+
+#: ../src/gtk-ui/sync-ui.c:1509
 msgid "New service"
 msgstr "새로운 서비스"
 
-#: ../src/gtk-ui/sync-ui.c:1520
+#: ../src/gtk-ui/sync-ui.c:1556
 msgid "Server URL"
 msgstr "서버 URL"
 
 #. TRANSLATORS: placeholder is a source name in settings window
-#: ../src/gtk-ui/sync-ui.c:1540
+#: ../src/gtk-ui/sync-ui.c:1578
 #, c-format
 msgid "%s URI"
 msgstr "%s URI"
 
-#: ../src/gtk-ui/sync-ui.c:1675
-#: ../src/gtk-ui/ui.glade.h:17
+#: ../src/gtk-ui/sync-ui.c:1715 ../src/gtk-ui/ui.glade.h:17
 msgid "Launch website"
 msgstr "웹사이트 시작"
 
-#: ../src/gtk-ui/sync-ui.c:1679
+#: ../src/gtk-ui/sync-ui.c:1719
 msgid "Setup and use"
 msgstr "설치 대체 사용"
 
-#: ../src/gtk-ui/sync-ui.c:1725
+#: ../src/gtk-ui/sync-ui.c:1765
 msgid "Failed to get list of manually setup services from SyncEvolution"
-msgstr "SyncEvolution으로 부터 수동 설치 서비스 목록을 불러오기를 실패했습니다."
+msgstr ""
+"SyncEvolution으로 부터 수동 설치 서비스 목록을 불러오기를 실패했습니다."
 
-#: ../src/gtk-ui/sync-ui.c:1766
+#: ../src/gtk-ui/sync-ui.c:1806
 msgid "Failed to get list of supported services from SyncEvolution"
 msgstr "SyncEvolution으로 부터 지원 서비스 목록을 불러오기를 실패했습니다."
 
 #. TODO: this is a hack... SyncEnd should be a signal of it's own,
 #. not just hacked on top of the syncevolution error codes
-#: ../src/gtk-ui/sync-ui.c:1927
+#: ../src/gtk-ui/sync-ui.c:1967
 msgid "Service configuration not found"
 msgstr "서비스 구성 요소를 찾을 수 없습니다."
 
-#: ../src/gtk-ui/sync-ui.c:1933
+#: ../src/gtk-ui/sync-ui.c:1973
 msgid "Not authorized"
 msgstr "권한이 없습니다"
 
-#: ../src/gtk-ui/sync-ui.c:1935
+#: ../src/gtk-ui/sync-ui.c:1975
 msgid "Forbidden"
 msgstr "금지"
 
-#: ../src/gtk-ui/sync-ui.c:1937
+#: ../src/gtk-ui/sync-ui.c:1977
 msgid "Not found"
 msgstr "찾을 수 없음"
 
-#: ../src/gtk-ui/sync-ui.c:1939
+#: ../src/gtk-ui/sync-ui.c:1979
 msgid "Fatal database error"
 msgstr "심각한 데이터베이스 오류"
 
-#: ../src/gtk-ui/sync-ui.c:1941
+#: ../src/gtk-ui/sync-ui.c:1981
 msgid "Database error"
 msgstr "데이터베이스 오류"
 
-#: ../src/gtk-ui/sync-ui.c:1943
+#: ../src/gtk-ui/sync-ui.c:1983
 msgid "No space left"
 msgstr "남은 공간이 없음"
 
 #. TODO identify problem item somehow ?
-#: ../src/gtk-ui/sync-ui.c:1946
+#: ../src/gtk-ui/sync-ui.c:1986
 msgid "Failed to process SyncML"
 msgstr "SyncML 프로세스 실패"
 
-#: ../src/gtk-ui/sync-ui.c:1948
+#: ../src/gtk-ui/sync-ui.c:1988
 msgid "Server authorization failed"
 msgstr "서버 권한 부여 실패"
 
-#: ../src/gtk-ui/sync-ui.c:1950
+#: ../src/gtk-ui/sync-ui.c:1990
 msgid "Failed to parse configuration file"
 msgstr "구성 파일 구문 분석 실패"
 
-#: ../src/gtk-ui/sync-ui.c:1952
+#: ../src/gtk-ui/sync-ui.c:1992
 msgid "Failed to read configuration file"
 msgstr "구성요소 파일 읽기 실패"
 
-#: ../src/gtk-ui/sync-ui.c:1954
+#: ../src/gtk-ui/sync-ui.c:1994
 msgid "No configuration found"
 msgstr "구성요소를 찾을수 없습니다."
 
-#: ../src/gtk-ui/sync-ui.c:1956
+#: ../src/gtk-ui/sync-ui.c:1996
 msgid "No configuration file found"
 msgstr "구성요소 파일을 찾지 못했습니다."
 
-#: ../src/gtk-ui/sync-ui.c:1958
+#: ../src/gtk-ui/sync-ui.c:1998
 msgid "Server sent bad content"
 msgstr "서버가 안좋은 컨텐츠를 보냈습니다."
 
-#: ../src/gtk-ui/sync-ui.c:1960
+#: ../src/gtk-ui/sync-ui.c:2000
 msgid "Transport failure (no connection?)"
 msgstr "전송 실패(연결 없음?)"
 
-#: ../src/gtk-ui/sync-ui.c:1962
+#: ../src/gtk-ui/sync-ui.c:2002
 msgid "Connection timed out"
 msgstr "연결 시간 초과"
 
-#: ../src/gtk-ui/sync-ui.c:1964
+#: ../src/gtk-ui/sync-ui.c:2004
 msgid "Connection certificate has expired"
 msgstr "연결 인증이 만료되었습니다. "
 
-#: ../src/gtk-ui/sync-ui.c:1966
+#: ../src/gtk-ui/sync-ui.c:2006
 msgid "Connection certificate is invalid"
 msgstr "연결 인증이 유효하지 않습니다."
 
-#: ../src/gtk-ui/sync-ui.c:1969
+#: ../src/gtk-ui/sync-ui.c:2009
 msgid "Connection failed"
 msgstr "연결 실패"
 
-#: ../src/gtk-ui/sync-ui.c:1971
+#: ../src/gtk-ui/sync-ui.c:2011
 msgid "URL is bad"
 msgstr "잘못된 URL 입니다."
 
-#: ../src/gtk-ui/sync-ui.c:1973
+#: ../src/gtk-ui/sync-ui.c:2013
 msgid "Server not found"
 msgstr "서버를 찾을 수 없음."
 
-#: ../src/gtk-ui/sync-ui.c:1975
+#: ../src/gtk-ui/sync-ui.c:2015
 #, c-format
 msgid "Error %d"
 msgstr "오류 %d"
 
-#: ../src/gtk-ui/sync-ui.c:1985
+#: ../src/gtk-ui/sync-ui.c:2025
 msgid "Sync D-Bus service exited unexpectedly"
 msgstr "갑자기 동기화 D 버스 서비스 종료 "
 
-#: ../src/gtk-ui/sync-ui.c:1988
-#: ../src/gtk-ui/sync-ui.c:2039
+#: ../src/gtk-ui/sync-ui.c:2028 ../src/gtk-ui/sync-ui.c:2079
 msgid "Sync Failed"
 msgstr "동기화 실패"
 
-#: ../src/gtk-ui/sync-ui.c:2031
+#: ../src/gtk-ui/sync-ui.c:2071
 msgid "Sync complete"
 msgstr "동기화 완료"
 
-#: ../src/gtk-ui/sync-ui.c:2036
+#: ../src/gtk-ui/sync-ui.c:2076
 msgid "Sync canceled"
 msgstr "동기화 취소"
 
 #. NOTE extra1 can be error here
-#: ../src/gtk-ui/sync-ui.c:2054
+#: ../src/gtk-ui/sync-ui.c:2094
 msgid "Ending sync"
 msgstr "동기화 종료"
 
 #. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
-#: ../src/gtk-ui/sync-ui.c:2078
+#: ../src/gtk-ui/sync-ui.c:2118
 #, c-format
 msgid "Preparing '%s'"
 msgstr " '%s' 준비하는 중"
 
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:2090
+#: ../src/gtk-ui/sync-ui.c:2130
 #, c-format
 msgid "Sending '%s'"
 msgstr "'%s' 보내는 중"
 
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:2102
+#: ../src/gtk-ui/sync-ui.c:2142
 #, c-format
 msgid "Receiving '%s'"
 msgstr "'%s' 받는중"
@@ -422,10 +466,12 @@ msgstr "서비스 설정 편집"
 
 #: ../src/gtk-ui/ui.glade.h:15
 msgid ""
-"If you don't see your service above but know that your sync provider uses SyncML\n"
+"If you don't see your service above but know that your sync provider uses "
+"SyncML\n"
 "you can setup a service manually."
 msgstr ""
-"만약 당신의 서비스가 보이지는 않지만 당신의 동기화 제공자가 SyncML을 사용하는것을 알고 있다면\n"
+"만약 당신의 서비스가 보이지는 않지만 당신의 동기화 제공자가 SyncML을 사용하는"
+"것을 알고 있다면\n"
 "서비스를 수동으로 설정할 수 있습니다."
 
 #: ../src/gtk-ui/ui.glade.h:18
@@ -445,16 +491,16 @@ msgid "Save and use this service"
 msgstr "저장하고 이 서비스를 사용하세요."
 
 #: ../src/gtk-ui/ui.glade.h:22
+msgid "Select sync service"
+msgstr "동기화 서비스를 선택하십시오."
+
+#: ../src/gtk-ui/ui.glade.h:23
 msgid "Server settings"
 msgstr "서버 설정"
 
-#: ../src/gtk-ui/ui.glade.h:23
+#: ../src/gtk-ui/ui.glade.h:24
 msgid "Service name"
 msgstr "서비스 이름"
-
-#: ../src/gtk-ui/ui.glade.h:24
-msgid "Setup sync service"
-msgstr "동기화 서비스를 설정할 수 없습니다."
 
 #: ../src/gtk-ui/ui.glade.h:25
 msgid ""
@@ -468,18 +514,15 @@ msgstr ""
 msgid "Stop using this service"
 msgstr "이 서비스의 사용을 중단 하십시오."
 
-#: ../src/gtk-ui/ui.glade.h:28
-#: ../src/gtk-ui/sync.desktop.in.h:1
-msgid "Sync"
-msgstr "동기화"
-
 #: ../src/gtk-ui/ui.glade.h:30
-msgid "Synchronization is not available (D-Bus service does not answer), sorry."
+msgid ""
+"Synchronization is not available (D-Bus service does not answer), sorry."
 msgstr "동기화가 가능하지 않습니다(D-Bus 서비스는 응답이 없습니다),죄송합니다."
 
 #: ../src/gtk-ui/ui.glade.h:31
 msgid ""
-"To sync you'll need a network connection and an account with a sync service.\n"
+"To sync you'll need a network connection and an account with a sync "
+"service.\n"
 "We support the following services: "
 msgstr ""
 "동기화를 하려면 네트워크 연결과 계정 서비스가 필요합니다.\n"
@@ -491,16 +534,37 @@ msgstr "사용자 이름"
 
 #: ../src/gtk-ui/ui.glade.h:34
 msgid ""
-"You haven't set up a sync service yet. Sync services let you \n"
+"You haven't selected a sync service yet. Sync services let you \n"
 "synchronize your data between your netbook and a web service."
 msgstr ""
-"당신은 동기화 서비스를 아직 설치하지 않았습니다. 동기화 서비스는\n"
-"당신의 넷북과 웹 서비스 사이의 데이터를 동기화 시켜줍니다.  "
+"동기화 서비스를 아직 선택하지 않았습니다. 동기화 서비스는\n"
+"넷북과 웹 서비스 사이의 데이터를 동기화 시켜줍니다.  "
 
-#: ../src/gtk-ui/sync.desktop.in.h:2
+#: ../src/gtk-ui/sync.desktop.in.h:2 ../src/gtk-ui/sync-gtk.desktop.in.h:2
 msgid "Up to date"
 msgstr "최신의"
 
-msgid "Bring your data with you"
-msgstr "귀하의 데이타를 가져오십시오."
+#: ../src/gtk-ui/sync-gtk.desktop.in.h:1
+msgid "Sync (GTK)"
+msgstr "Sync (GTK)"
 
+#~ msgid "Last time: Received one change."
+#~ msgid_plural "Last time: Received %d changes."
+#~ msgstr[0] "지난 시간: 한건의 변경 사항을 받았습니다."
+#~ msgstr[1] "지난 시간: %d건의 변경 사항을 받았습니다."
+
+#~ msgid "Last time: Received %d changes and sent %d changes."
+#~ msgstr "지난 시간: %d 변동 사항 접수 및 %d 변동 사항 보냄."
+
+#~ msgid "Setup sync service"
+#~ msgstr "동기화 서비스를 설정할 수 없습니다."
+
+#~ msgid ""
+#~ "You haven't set up a sync service yet. Sync services let you \n"
+#~ "synchronize your data between your netbook and a web service."
+#~ msgstr ""
+#~ "당신은 동기화 서비스를 아직 설치하지 않았습니다. 동기화 서비스는\n"
+#~ "당신의 넷북과 웹 서비스 사이의 데이터를 동기화 시켜줍니다.  "
+
+#~ msgid "Bring your data with you"
+#~ msgstr "귀하의 데이타를 가져오십시오."
