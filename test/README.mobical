@@ -1,6 +1,11 @@
 This document is used to show interoperability test information with Mobical server.
 http://bugzilla.moblin.org/show_bug.cgi?id=3009
 
+* Password: beware that the Mobical SyncML password is *not* the same
+  as the one for their web site. Log into mobical.net, the go to
+  "my accounts >> configure new device >> manual settings" to find
+  the SyncML credentials.
+
 * The Mobical Server's device information 
   mobical Data Synchronization Server v.7.1.1
     Man=Tactel AB

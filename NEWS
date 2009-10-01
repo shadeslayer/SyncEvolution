@@ -10,6 +10,11 @@ when events are in time zones different from the one selected
 locally and on the server, no support for meetings). For details
 see README.mobical.
 
+*** Beware *** that the Mobical SyncML password is *not* the same as
+the one for their web site. Log into mobical.net, the go to "my accounts
+>> configure new device >> manual settings" to find the SyncML
+credentials.
+
 Mobical always initiates a slow sync when it has no data left on the
 server. This avoids surprises when the user has wiped out all data on
 the server in order to reset it, because during a slow sync the items
@@ -23,6 +28,11 @@ automatically like any other backend. The backend API has been
 enhanced considerably. Backend developers now have access to a modular
 set of utility classes that can be mixed into a specific
 implementation.
+
+The sqlite demo backend can be enabled and compiled again with
+--enable-sqlite. It demonstrates how to map directly from the
+Synthesis field list to some internal format (an SQLite database
+schema in this case).
 
 Other changes in detail:
 
