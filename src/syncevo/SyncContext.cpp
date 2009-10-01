@@ -1207,6 +1207,10 @@ bool SyncContext::transport_cb (void *udata)
 
 bool SyncContext::processTransportCb()
 {
+    // TODO: distinguish between client and server. In the server
+    // we have to implement a much higher time out and then disconnect
+    // an unresponsive client.
+
     //Always return true to continue, we will detect the retry count at
     //the higher level together with transport error scenarios.
     SE_LOG_INFO(NULL, NULL, "Transport timeout after %d:%02dmin",
@@ -1655,6 +1659,9 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             // give derived class also a chance to update the configs
             prepare(sourceList);
 
+            // TODO: in server mode don't dump all databases. Wait until
+            // the client is logged in successfully and we know which
+            // sources it needs.
             // ready to go: dump initial databases and prepare for final report
             sourceList.syncPrepare();
 
@@ -1825,6 +1832,10 @@ SyncMLStatus SyncContext::doSync()
                              "contenttype",
                              m_initialMessageType);
         m_initialMessage.reset();
+
+        // TODO: set "sendrespuri" session key to control
+        // whether the generated messages contain a respURI
+        // (not needed for OBEX)
     }
 
     // Sync main loop: runs until SessionStep() signals end or error.

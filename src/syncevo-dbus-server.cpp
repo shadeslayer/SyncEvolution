@@ -1519,6 +1519,9 @@ void DBusServer::clientGone(Client *c)
 
 std::string DBusServer::getNextSession()
 {
+    // TODO: make the session ID more random. This protects to
+    // some extend against injecting unwanted messages into the
+    // communication.
     m_lastSession++;
     if (!m_lastSession) {
         m_lastSession++;
