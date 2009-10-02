@@ -1,0 +1,28 @@
+This is a demo backend. It uses a database schema that is similar to
+the one used on the iPhone, but it is not as complete.
+
+To compile this backend as part of SyncEvolution, configure with
+--enable-sqlite.
+
+To compile it against a binary distribution of SyncEvolution, make
+sure that the SyncEvolution, Synthesis and sqlite developer files are
+installed and that pkg-config can find syncevolution.pc, synthesis.pc
+and sqlite.pc. Set your PKG_CONFIG_PATH if necessary.
+
+Then the source files can be compiled as follows:
+   g++ -fpic -DPIC -DENABLE_SQLITE -shared -I. \
+       `pkg-config --cflags --libs syncevolution`
+       `pkg-config --cflags --libs sqlite`
+       *.cpp  \
+       -o /tmp/syncsqlite.so
+
+Install /tmp/syncsqlite.so by moving it into the
+"lib/syncevolution/backends" directory of the SyncEvolution
+installation.
+
+It then should show up as additional choice for the "type" property:
+   syncevolution --source-property type=?
+
+   ...
+   SQLite Address Book = addressbook = contacts = sqlite-contacts
+      vCard 2.1 (default) = text/x-vcard

@@ -18,15 +18,17 @@
  * 02110-1301  USA
  */
 
-#include "config.h"
-#include <syncevo/Logging.h>
-#include <syncevo/SynthesisEngine.h>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #include <synthesis/SDK_util.h>
 #ifdef ENABLE_SQLITE
 
 #include "SQLiteContactSource.h"
 
+#include <syncevo/SynthesisEngine.h>
+#include <synthesis/sync_dbapi.h>
 
 #include <algorithm>
 #include <cctype>

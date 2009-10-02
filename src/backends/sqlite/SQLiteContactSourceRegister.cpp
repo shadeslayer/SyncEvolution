@@ -19,7 +19,11 @@
  */
 
 #include "SQLiteContactSource.h"
-#include "test.h"
+
+#ifdef ENABLE_UNIT_TESTS
+# include <cppunit/extensions/TestFactoryRegistry.h>
+# include <cppunit/extensions/HelperMacros.h>
+#endif
 
 static SyncSource *createSource(const SyncSourceParams &params)
 {
