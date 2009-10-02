@@ -121,3 +121,8 @@ SyncEvolutionXML.c: $(srcdir)/../syncclient_sample_config.xml
 #dist-hook:
 #	cp -r $(srcdir)/boost $(distdir)
 #	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
+
+# make sure that the installed development files are usable
+installcheck-local: $(srcdir)/installcheck-local.sh
+	env PKG_CONFIG_PATH=$(pkgconfigdir):$$PKG_CONFIG_PATH $< "$(libsyncevolution_includedir)"
+EXTRA_DIST += installcheck-local.sh
