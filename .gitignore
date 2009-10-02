@@ -16,6 +16,7 @@ missing
 Makefile.in
 src/Makefile.am
 po/Makefile.in.in
+po/LINGUAS
 mkinstalldirs
 intltool-*.in
 .gitignore

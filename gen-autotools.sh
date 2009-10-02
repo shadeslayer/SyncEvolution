@@ -34,3 +34,6 @@ sed -e "s;@BACKEND_REGISTRIES@;`echo src/backends/*/*Register.cpp | sed -e s%src
 
 sed -e "s;@CONFIG_SUBS@;$SUBS;" \
     Makefile-gen.am >Makefile.am
+
+# create LINGUAS file: every .po is included
+(cd po && ls -1 *.po | sort -u | sed -e 's/.po$//' > LINGUAS)
