@@ -20,7 +20,7 @@ CLEANFILES =
 
 TEST_README_FILES = $(wildcard $(srcdir)/test/README.*)
 
-DEV_FILE_PATTERN = $(1)/usr/etc $(1)/usr/include $(1)/usr/lib/*.so $(1)/usr/lib/*.a $(1)/usr/lib/*.la $(1)/usr/lib/*/*.la $(1)/usr/lib/pkgconfig
+DEV_FILE_PATTERN = $(1)$(2)/etc $(1)$(2)/include $(1)$(2)/lib/*.so $(1)$(2)/lib/*.a $(1)$(2)/lib/*.la $(1)$(2)/lib/*/*.la $(1)$(2)/lib/pkgconfig
 
 # binary distribution as .tar.gz
 if COND_DBUS
@@ -31,7 +31,8 @@ distbin : README NEWS COPYING $(TEST_README_FILES) INSTALL-tar-gz all
 	@ [ "$(prefix)" == "/usr" ] || (echo "please reconfigure with --prefix=/usr"; exit 1 )
 	rm -rf $(distdir)
 	$(MAKE) DESTDIR=`pwd`/$(distdir) install
-	rm -rf $(call DEV_FILE_PATTERN, $(distdir))
+	rm -rf $(call DEV_FILE_PATTERN,$(distdir),/usr)
+	for i in `find $(distdir) -type d | sort -r`; do rmdir $$i 2>/dev/null || true; done
 	mkdir -p $(distdir)/usr/share/doc/syncevolution
 	cp $(srcdir)/INSTALL-tar-gz $(distdir)/INSTALL
 	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)/usr/share/doc/syncevolution
@@ -44,7 +45,9 @@ distbin : README NEWS COPYING all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 ) 
 	rm -rf $(distdir)
 	$(MAKE) prefix=`pwd`/$(distdir) install
-	rm -rf $(call DEV_FILE_PATTERN, $(distdir))
+	echo removing developer files and empty directories
+	rm -rf $(call DEV_FILE_PATTERN,$(distdir),/)
+	for i in `find $(distdir) -type d | sort -r`; do rmdir $$i 2>/dev/null || true; done
 	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
