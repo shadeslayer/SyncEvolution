@@ -41,6 +41,9 @@
 CPPUNIT_REGISTRY_ADD_TO_DEFAULT("SyncEvolution");
 #endif
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 string normalizePath(const string &path)
 {
     string res;
@@ -347,3 +350,5 @@ std::string SubstEnvironment(const std::string &str)
 
     return res.str();
 }
+
+SE_END_CXX

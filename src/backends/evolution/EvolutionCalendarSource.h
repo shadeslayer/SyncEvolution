@@ -27,6 +27,9 @@
 
 #include <boost/noncopyable.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 #ifdef ENABLE_ECAL
 
 /**
@@ -206,4 +209,6 @@ typedef int ECalSourceType;
 
 #endif // ENABLE_ECAL
 
+
+SE_END_CXX
 #endif // INCL_EVOLUTIONSYNCSOURCE

@@ -22,6 +22,9 @@
 
 #include <stdlib.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 int main(int argc, char **argv)
 {
     // Check that we catch stderr message generated
@@ -31,8 +34,8 @@ int main(int argc, char **argv)
     // appears in abort-redirect.log instead of
     // stderr. A core file should be written normally.
 
-    SyncEvolution::LogRedirect redirect;
-    SyncEvolution::LoggerStdout out(fopen("abort-redirect.log", "w"));
+    LogRedirect redirect;
+    LoggerStdout out(fopen("abort-redirect.log", "w"));
     out.pushLogger(&out);
 
     // write without explicit flushing
@@ -51,3 +54,5 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
+SE_END_CXX

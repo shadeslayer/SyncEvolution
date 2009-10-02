@@ -26,6 +26,9 @@
 #include <ostream>
 #include <string.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 enum SyncMode {
     SYNC_NONE,
     SYNC_TWO_WAY,
@@ -261,4 +264,6 @@ ConfigNode &operator << (ConfigNode &node, const SyncReport &report);
 /** read report from a ConfigNode */
 ConfigNode &operator >> (ConfigNode &node, SyncReport &report);
 
+
+SE_END_CXX
 #endif // INCL_SYNCML

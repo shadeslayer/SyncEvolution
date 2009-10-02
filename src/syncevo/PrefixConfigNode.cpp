@@ -23,6 +23,9 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 PrefixConfigNode::PrefixConfigNode(const string prefix,
                                    const boost::shared_ptr<ConfigNode> &node) :
     m_prefix(prefix),
@@ -81,3 +84,5 @@ void PrefixConfigNode::flush()
     }
     m_node->flush();
 }
+
+SE_END_CXX

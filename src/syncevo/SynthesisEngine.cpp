@@ -22,6 +22,9 @@
 
 #include <synthesis/SDK_util.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 void SharedEngine::Connect(const string &aEngineName,
                            sysync::CVersion aPrgVersion,
                            sysync::uInt16 aDebugFlags)
@@ -207,7 +210,7 @@ void SharedEngine::SetInt32Value(const SharedKey &aKeyH, const string &aValName,
     }
 }
 
-void SharedEngine::doDebug(SyncEvolution::Logger::Level level,
+void SharedEngine::doDebug(Logger::Level level,
                            const char *prefix,
                            const char *file,
                            int line,
@@ -217,8 +220,8 @@ void SharedEngine::doDebug(SyncEvolution::Logger::Level level,
 {
     std::string str = StringPrintfV(format, args);
     SySyncDebugPuts(m_engine->fCI, file, line, function,
-                    level <= SyncEvolution::Logger::ERROR ? DBG_ERROR :
-                    level <= SyncEvolution::Logger::INFO ? DBG_HOT :
+                    level <= Logger::ERROR ? DBG_ERROR :
+                    level <= Logger::INFO ? DBG_HOT :
                     0, prefix,
                     str.c_str());
 }
@@ -262,3 +265,5 @@ sysync::TSyError SDKInterface::getValue(sysync::KeyH aItemKey,
 
     return res;
 }
+
+SE_END_CXX

@@ -24,6 +24,7 @@
 #include "SyncSource.h"
 #include "EvolutionSyncClient.h"
 #include "SyncEvolutionUtil.h"
+#include "test.h"
 
 #include <unistd.h>
 #include <errno.h>
@@ -40,6 +41,9 @@ using namespace std;
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 
 SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, const char * const * argv, ostream &out, ostream &err) :
     m_argc(argc),
@@ -811,7 +815,6 @@ EvolutionSyncClient* SyncEvolutionCmdline::createSyncClient() {
 }
 
 #ifdef ENABLE_UNIT_TESTS
-#include "test.h"
 
 /** simple line-by-line diff */
 static string diffStrings(const string &lhs, const string &rhs)
@@ -1985,3 +1988,5 @@ private:
 SYNCEVOLUTION_TEST_SUITE_REGISTRATION(SyncEvolutionCmdlineTest);
 
 #endif // ENABLE_UNIT_TESTS
+
+SE_END_CXX

@@ -50,6 +50,9 @@
 
 #include <string>
 #include <stdexcept>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
 void simplifyFilename(string &filename)
@@ -101,8 +104,8 @@ public:
     }
 
     ~ClientListener() {
-        if (&SyncEvolution::LoggerBase::instance() == m_logger.get()) {
-            SyncEvolution::LoggerBase::popLogger();
+        if (&LoggerBase::instance() == m_logger.get()) {
+            LoggerBase::popLogger();
         }
     }
 
@@ -125,9 +128,9 @@ public:
         cerr << m_currentTest;
         string logfile = m_currentTest + ".log";
         simplifyFilename(logfile);
-        m_logger.reset(new SyncEvolution::LoggerStdout(logfile));
-        m_logger->setLevel(SyncEvolution::Logger::DEBUG);
-        SyncEvolution::LoggerBase::pushLogger(m_logger.get());
+        m_logger.reset(new LoggerStdout(logfile));
+        m_logger->setLevel(Logger::DEBUG);
+        LoggerBase::pushLogger(m_logger.get());
         SE_LOG_DEBUG(NULL, NULL, "*** starting %s ***", m_currentTest.c_str());
         m_failures.reset();
         m_testFailed = false;
@@ -172,7 +175,7 @@ public:
         if (!failure.empty()) {
             SE_LOG_DEBUG(NULL, NULL, "%s", failure.c_str());
         }
-        SyncEvolution::LoggerBase::popLogger();
+        LoggerBase::popLogger();
         m_logger.reset();
 
         string logfile = m_currentTest + ".log";
@@ -201,7 +204,7 @@ private:
     bool m_failed, m_testFailed;
     string m_currentTest;
     int m_alarmSeconds;
-    auto_ptr<SyncEvolution::LoggerStdout> m_logger;
+    auto_ptr<LoggerStdout> m_logger;
     CppUnit::TestResultCollector m_failures;
 
     static void alarmTriggered(int signal) {
@@ -226,6 +229,7 @@ static void printTests(CppUnit::Test *test, int indention)
     }
 }
 
+extern "C"
 int main(int argc, char* argv[])
 {
   // Get the top level suite from the registry
@@ -281,3 +285,5 @@ int main(int argc, char* argv[])
 
 /** @} */
 /** @endcond */
+
+SE_END_CXX

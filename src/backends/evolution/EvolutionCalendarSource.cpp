@@ -39,6 +39,9 @@ using namespace std;
 
 #include <boost/foreach.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 static const string
 EVOLUTION_CALENDAR_PRODID("PRODID:-//ACME//NONSGML SyncEvolution//EN"),
 EVOLUTION_CALENDAR_VERSION("VERSION:2.0");
@@ -744,6 +747,8 @@ string EvolutionCalendarSource::icalTime2Str(const icaltimetype &tt)
         return timestr.get();
     }
 }
+
+SE_END_CXX
 
 #endif /* ENABLE_ECAL */
 

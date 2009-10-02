@@ -35,9 +35,12 @@ using namespace std;
 #include "LogRedirect.h"
 #include "CmdlineSyncClient.h"
 
-#if defined(ENABLE_MAEMO) && defined (ENABLE_EBOOK)
-
 #include <dlfcn.h>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
+#if defined(ENABLE_MAEMO) && defined (ENABLE_EBOOK)
 
 // really override the symbol, even if redefined by EDSAbiWrapper
 #undef e_contact_new_from_vcard
@@ -80,7 +83,7 @@ class KeyringSyncCmdline : public SyncEvolutionCmdline {
     }
 };
 
-
+extern "C"
 int main( int argc, char **argv )
 {
 #ifdef ENABLE_MAEMO
@@ -99,7 +102,7 @@ int main( int argc, char **argv )
     // stdout is printed normally. Deconstructing it when
     // leaving main() does one final processing of pending
     // output.
-    SyncEvolution::LogRedirect redirect(false);
+    LogRedirect redirect(false);
 
 #if defined(HAVE_GLIB)
     // this is required when using glib directly or indirectly
@@ -150,3 +153,5 @@ int main( int argc, char **argv )
 
     return 1;
 }
+
+SE_END_CXX

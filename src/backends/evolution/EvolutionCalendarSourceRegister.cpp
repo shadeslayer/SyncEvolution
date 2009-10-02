@@ -24,6 +24,9 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 static SyncSource *createSource(const SyncSourceParams &params)
 {
     SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
@@ -339,3 +342,5 @@ public:
 #endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_ECAL
+
+SE_END_CXX

@@ -27,6 +27,9 @@
 
 #include <AddressBook/ABAddressBookC.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /**
  * a smart pointer for CoreFoundation object references
  *
@@ -188,4 +191,6 @@ class AddressBookSource : public TrackingSyncSource
 
 #endif // ENABLE_EBOOK
 
+
+SE_END_CXX
 #endif // INCL_ADDRESSBOOKSOURCE

@@ -24,6 +24,9 @@
 
 #include <string>
 #include <map>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
 /**
@@ -64,4 +67,6 @@ class FileConfigTree : public ConfigTree {
     NodeCache_t m_nodes;
 };
 
+
+SE_END_CXX
 #endif

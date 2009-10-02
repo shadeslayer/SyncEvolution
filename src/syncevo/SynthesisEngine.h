@@ -38,6 +38,9 @@
 #include <boost/scoped_array.hpp>
 #include <stdexcept>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 typedef boost::shared_ptr<sysync::SessionType> SharedSession;
 typedef boost::shared_ptr<sysync::KeyType> SharedKey;
 class SharedBuffer : public boost::shared_array<char>
@@ -101,7 +104,7 @@ class SharedEngine {
     sysync::sInt32 GetInt32Value(const SharedKey &aKeyH, const string &aValName);
     void SetInt32Value(const SharedKey &aKeyH, const string &aValName, sysync::sInt32 aValue);
 
-    void doDebug(SyncEvolution::Logger::Level level,
+    void doDebug(Logger::Level level,
                  const char *prefix,
                  const char *file,
                  int line,
@@ -154,4 +157,6 @@ struct SDKInterface : public sysync::SDK_InterfaceType
                               SharedBuffer &data);
 };
 
+
+SE_END_CXX
 #endif // INCL_SYNTHESISENGINE

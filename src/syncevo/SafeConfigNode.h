@@ -27,6 +27,9 @@
 #include <utility>
 #include <vector>
 #include <string>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
 /**
@@ -84,4 +87,6 @@ class SafeConfigNode : public ConfigNode {
     string unescape(const string &str) const;
 };
 
+
+SE_END_CXX
 #endif

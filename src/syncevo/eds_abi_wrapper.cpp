@@ -26,6 +26,8 @@
 #include <dlfcn.h>
 #include <stdarg.h>
 
+#include "syncevo/declarations.h"
+
 namespace {
 
 std::string lookupDebug, lookupInfo;
@@ -280,3 +282,4 @@ extern "C" void EDSAbiWrapperInit()
 
 extern "C" const char *EDSAbiWrapperInfo() { return lookupInfo.c_str(); }
 extern "C" const char *EDSAbiWrapperDebug() { return lookupDebug.c_str(); }
+

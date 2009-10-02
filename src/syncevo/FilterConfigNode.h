@@ -31,6 +31,9 @@
 #include <utility>
 #include <vector>
 #include <string>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
 /**
@@ -86,4 +89,6 @@ class FilterConfigNode : public ConfigNode {
     boost::shared_ptr<const ConfigNode> m_readOnlyNode;
 };
 
+
+SE_END_CXX
 #endif

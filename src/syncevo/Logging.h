@@ -23,7 +23,8 @@
 
 #include <stdarg.h>
 
-namespace SyncEvolution {
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 
 /**
  * Abstract interface for logging in SyncEvolution.  Can be
@@ -176,7 +177,7 @@ class LoggerBase : public Logger
 #define SE_LOG(_level, _instance, _prefix, _format, _args...) \
     do { \
         if (_instance) { \
-            static_cast<SyncEvolution::Logger *>(_instance)->message(_level, \
+            static_cast<Logger *>(_instance)->message(_level, \
                                                                      _prefix, \
                                                                      __FILE__, \
                                                                      __LINE__, \
@@ -184,7 +185,7 @@ class LoggerBase : public Logger
                                                                      _format, \
                                                                      ##_args); \
         } else { \
-            SyncEvolution::LoggerBase::instance().message(_level, \
+            LoggerBase::instance().message(_level, \
                                                           _prefix, \
                                                           __FILE__, \
                                                           __LINE__, \
@@ -194,12 +195,11 @@ class LoggerBase : public Logger
         } \
     } while(false)
 
-#define SE_LOG_ERROR(_instance, _prefix, _format, _args...) SE_LOG(SyncEvolution::Logger::ERROR, _instance, _prefix, _format, ##_args)
-#define SE_LOG_WARNING(_instance, _prefix, _format, _args...) SE_LOG(SyncEvolution::Logger::WARNING, _instance, _prefix, _format, ##_args)
-#define SE_LOG_INFO(_instance, _prefix, _format, _args...) SE_LOG(SyncEvolution::Logger::INFO, _instance, _prefix, _format, ##_args)
-#define SE_LOG_DEV(_instance, _prefix, _format, _args...) SE_LOG(SyncEvolution::Logger::DEV, _instance, _prefix, _format, ##_args)
-#define SE_LOG_DEBUG(_instance, _prefix, _format, _args...) SE_LOG(SyncEvolution::Logger::DEBUG, _instance, _prefix, _format, ##_args)
+#define SE_LOG_ERROR(_instance, _prefix, _format, _args...) SE_LOG(Logger::ERROR, _instance, _prefix, _format, ##_args)
+#define SE_LOG_WARNING(_instance, _prefix, _format, _args...) SE_LOG(Logger::WARNING, _instance, _prefix, _format, ##_args)
+#define SE_LOG_INFO(_instance, _prefix, _format, _args...) SE_LOG(Logger::INFO, _instance, _prefix, _format, ##_args)
+#define SE_LOG_DEV(_instance, _prefix, _format, _args...) SE_LOG(Logger::DEV, _instance, _prefix, _format, ##_args)
+#define SE_LOG_DEBUG(_instance, _prefix, _format, _args...) SE_LOG(Logger::DEBUG, _instance, _prefix, _format, ##_args)
  
-} // namespace
-
+SE_END_CXX
 #endif // INCL_LOGGING

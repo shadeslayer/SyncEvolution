@@ -24,6 +24,9 @@
 #include <map>
 #include <list>
 #include <string>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
 class ConfigNode;
@@ -106,4 +109,6 @@ class ConfigTree {
     virtual list<string> getChildren(const string &path) = 0;
 };
 
+
+SE_END_CXX
 #endif

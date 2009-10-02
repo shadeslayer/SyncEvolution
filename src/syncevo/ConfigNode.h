@@ -29,6 +29,9 @@ using namespace std;
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /**
  * This class corresponds to the Funambol C++ client
  * DeviceManagementNode, but offers a slightly different API.  See
@@ -169,4 +172,6 @@ class ConfigNode {
     virtual bool exists() const = 0;
 };
 
+
+SE_END_CXX
 #endif

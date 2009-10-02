@@ -39,6 +39,9 @@ using namespace std;
 #include <boost/algorithm/string/join.hpp>
 #include <boost/foreach.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 class unrefEBookChanges {
  public:
     /** free list of EBookChange instances */
@@ -392,6 +395,8 @@ const char *EvolutionContactSource::getMimeVersion() const
         break;
     }
 }
+
+SE_END_CXX
 
 #endif /* ENABLE_EBOOK */
 

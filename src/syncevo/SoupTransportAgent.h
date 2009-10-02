@@ -29,7 +29,9 @@
 #include <libsoup/soup.h>
 #include <glib/gmain.h>
 
-namespace SyncEvolution {
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 
 class GLibUnref {
  public:
@@ -108,7 +110,7 @@ class SoupTransportAgent : public TransportAgent
                                SoupMessage *msg);
 };
 
-} // namespace SyncEvolution
+SE_END_CXX
 
 #endif // ENABLE_LIBSOUP
 #endif // INCL_TRANSPORTAGENT

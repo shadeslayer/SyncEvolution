@@ -40,6 +40,9 @@
 #include <fstream>
 #include <iostream>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 void SyncSourceBase::throwError(const string &action, int error)
 {
     throwError(action + ": " + strerror(error));
@@ -850,3 +853,5 @@ void SyncSourceLogging::init(const std::list<std::string> &fields,
                                    this, _1, ops.m_deleteItem);
 }
 
+
+SE_END_CXX

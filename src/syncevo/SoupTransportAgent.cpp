@@ -30,7 +30,8 @@
 #include <libsoup/soup-gnome-features.h>
 #endif
 
-namespace SyncEvolution {
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 
 SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
     m_session(soup_session_async_new()),
@@ -272,6 +273,8 @@ gboolean SoupTransportAgent::TimeoutCallback(gpointer transport)
     SoupTransportAgent * sTransport = static_cast<SoupTransportAgent *>(transport);
     return sTransport->processCallback();
 }
-} // namespace SyncEvolution
+
+SE_END_CXX
 
 #endif // ENABLE_LIBSOUP
+

@@ -23,6 +23,9 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/join.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 FilterConfigNode::FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
                                    const ConfigFilter &filter) :
     m_filter(filter),
@@ -117,3 +120,5 @@ FilterConfigNode::ConfigFilter::operator string () const {
     sort(res.begin(), res.end());
     return boost::join(res, "\n");
 }
+
+SE_END_CXX

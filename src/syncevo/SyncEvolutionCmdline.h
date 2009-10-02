@@ -22,14 +22,17 @@
 
 #include "SyncEvolutionConfig.h"
 #include "FilterConfigNode.h"
-class SyncSource;
-class EvolutionSyncClient;
 
 #include <set>
 using namespace std;
 
 #include <boost/shared_ptr.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
+class SyncSource;
+class EvolutionSyncClient;
 class SyncEvolutionCmdlineTest;
 
 class SyncEvolutionCmdline {
@@ -149,4 +152,6 @@ protected:
     friend class SyncEvolutionCmdlineTest;
 };
 
+
+SE_END_CXX
 #endif // INCL_SYNC_EVOLUTION_CMDLINE

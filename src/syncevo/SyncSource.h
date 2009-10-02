@@ -24,12 +24,14 @@
 #include <syncevo/SyncEvolutionConfig.h>
 #include <syncevo/Logging.h>
 #include <syncevo/SyncML.h>
-using namespace SyncEvolution;
 
 #include <synthesis/sync_declarations.h>
 #include <synthesis/syerror.h>
 
 #include <boost/function.hpp>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 
 class SyncSource;
 class SDKInterface;
@@ -1436,4 +1438,6 @@ class TestingSyncSource : public SyncSource,
     }
 };
 
+
+SE_END_CXX
 #endif // INCL_SYNCSOURCE

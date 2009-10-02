@@ -24,7 +24,9 @@
 #include <syncevo/TrackingSyncSource.h>
 #include <syncevo/eds_abi_wrapper.h>
 
-using namespace SyncEvolution;
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 
 /**
  * The base class for all Evolution backends.
@@ -75,4 +77,6 @@ class EvolutionSyncSource : public TrackingSyncSource
 #endif
 };
 
+
+SE_END_CXX
 #endif // INCL_EVOLUTIONSYNCSOURCE

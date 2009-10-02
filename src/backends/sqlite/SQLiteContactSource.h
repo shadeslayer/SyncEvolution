@@ -27,6 +27,9 @@
 
 #include <boost/bind.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 #ifdef ENABLE_SQLITE
 
 /**
@@ -101,4 +104,6 @@ class SQLiteContactSource : public SyncSource,
 };
 
 #endif // ENABLE_SQLITE
+
+SE_END_CXX
 #endif // INCL_SQLITECONTACTSOURCE

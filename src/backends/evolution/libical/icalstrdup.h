@@ -88,5 +88,4 @@ extern char *ical_strdup(const char *x);
 }
 #endif /* __cplusplus */
 
-
 #endif /* ICALSTRDUP_H */

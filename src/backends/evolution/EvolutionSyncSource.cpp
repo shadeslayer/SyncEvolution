@@ -20,6 +20,9 @@
 
 #include "EvolutionSyncSource.h"
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 #ifdef HAVE_EDS
 
 ESource *EvolutionSyncSource::findSource( ESourceList *list, const string &id )
@@ -56,3 +59,5 @@ void EvolutionSyncSource::throwError(const string &action, GError *gerror)
     throwError(action + gerrorstr);
 }
 #endif // HAVE_EDS
+
+SE_END_CXX

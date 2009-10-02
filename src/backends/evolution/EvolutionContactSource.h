@@ -31,6 +31,9 @@
 
 #include <set>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /**
  * Implements access to Evolution address books.
  */
@@ -124,6 +127,7 @@ class EvolutionContactSource : public EvolutionSyncSource,
     } m_uniqueProperties;
 };
 
-#endif // ENABLE_EBOOK
+SE_END_CXX
 
+#endif // ENABLE_EBOOK
 #endif // INCL_EVOLUTIONCONTACTSOURCE

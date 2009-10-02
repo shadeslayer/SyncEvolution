@@ -23,6 +23,9 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /**
  * constants missing from AddressBook framework on iPhone: use strings
  * as found in SQLite database on iPhone
@@ -139,5 +142,7 @@ public:
 #endif
     }
 } constants;
+
+SE_END_CXX
 
 #endif // ENABLE_ADDRESSBOOK

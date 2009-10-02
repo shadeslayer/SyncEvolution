@@ -32,6 +32,9 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 class SkipTest : public CppUnit::TestCase {
 public:
     SkipTest(const std::string &name) :
@@ -64,4 +67,8 @@ CppUnit::Test *FilterTest(CppUnit::Test *test)
     }
 }
 
-#endif
+SE_END_CXX
+
+#endif // defined(ENABLE_INTEGRATION_TESTS) || defined(ENABLE_UNIT_TESTS)
+
+

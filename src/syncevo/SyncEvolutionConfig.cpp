@@ -36,6 +36,9 @@
 #include <unistd.h>
 #include "config.h"
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source);
 static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source);
 
@@ -1186,3 +1189,5 @@ ConfigPasswordKey EvolutionPasswordConfigProperty::getPasswordKey(const string &
     return key;
 }
 
+
+SE_END_CXX

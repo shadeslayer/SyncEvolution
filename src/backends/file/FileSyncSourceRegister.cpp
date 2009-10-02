@@ -21,6 +21,9 @@
 #include "FileSyncSource.h"
 #include "test.h"
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 static SyncSource *createSource(const SyncSourceParams &params)
 {
     SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
@@ -171,3 +174,5 @@ public:
 #endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_FILE
+
+SE_END_CXX

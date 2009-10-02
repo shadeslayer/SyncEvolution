@@ -29,11 +29,6 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 
-class EvolutionSyncClient;
-class EvolutionSyncSource;
-class TransportWrapper;
-class TestingSyncSource;
-
 #include <SyncML.h>
 #include <TransportAgent.h>
 #include <SyncSource.h>
@@ -45,6 +40,14 @@ class TestingSyncSource;
 #include <cppunit/TestSuite.h>
 #include <cppunit/TestAssert.h>
 #include <cppunit/TestFixture.h>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
+class EvolutionSyncClient;
+class EvolutionSyncSource;
+class TransportWrapper;
+class TestingSyncSource;
 
 /**
  * This class encapsulates logging and checking of a SyncReport.
@@ -122,7 +125,7 @@ struct SyncOptions {
      */
     Callback_t m_startCallback;
 
-    boost::shared_ptr<SyncEvolution::TransportAgent> m_transport;
+    boost::shared_ptr<TransportAgent> m_transport;
 
     SyncOptions(SyncMode syncMode = SYNC_NONE,
                 const CheckSyncReport &checkReport = CheckSyncReport(),
@@ -131,8 +134,8 @@ struct SyncOptions {
                 bool loSupport = false,
                 bool isWBXML = defaultWBXML(),
                 Callback_t startCallback = EmptyCallback,
-                boost::shared_ptr<SyncEvolution::TransportAgent> transport =
-                boost::shared_ptr<SyncEvolution::TransportAgent>()) :
+                boost::shared_ptr<TransportAgent> transport =
+                boost::shared_ptr<TransportAgent>()) :
         m_syncMode(syncMode),
         m_checkReport(checkReport),
         m_maxMsgSize(maxMsgSize),
@@ -152,7 +155,7 @@ struct SyncOptions {
     SyncOptions &setLOSupport(bool loSupport) { m_loSupport = loSupport; return *this; }
     SyncOptions &setWBXML(bool isWBXML) { m_isWBXML = isWBXML; return *this; }
     SyncOptions &setStartCallback(const Callback_t &callback) { m_startCallback = callback; return *this; }
-    SyncOptions &setTransportAgent(const boost::shared_ptr<SyncEvolution::TransportAgent> transport)
+    SyncOptions &setTransportAgent(const boost::shared_ptr<TransportAgent> transport)
                                   {m_transport = transport; return *this;}
 
     static bool EmptyCallback(EvolutionSyncClient &,
@@ -715,17 +718,17 @@ protected:
  * We use UserSuspendInjector to emulate a user suspend after receving
  * a response.
  */
-class TransportWrapper : public SyncEvolution::TransportAgent {
+class TransportWrapper : public TransportAgent {
 protected:
     int m_interruptAtMessage, m_messageCount;
-    boost::shared_ptr<SyncEvolution::TransportAgent> m_wrappedAgent;
+    boost::shared_ptr<TransportAgent> m_wrappedAgent;
     Status m_status;
     SyncOptions *m_options;
 public:
     TransportWrapper() {
         m_messageCount = 0;
         m_interruptAtMessage = -1;
-        m_wrappedAgent = boost::shared_ptr<SyncEvolution::TransportAgent>();
+        m_wrappedAgent = boost::shared_ptr<TransportAgent>();
         m_status = INACTIVE;
         m_options = NULL;
     }
@@ -743,7 +746,7 @@ public:
                         bool verifyHost) { m_wrappedAgent->setSSL(cacerts, verifyServer, verifyHost); }
     virtual void setContentType(const std::string &type) { m_wrappedAgent->setContentType(type); }
     virtual void setUserAgent(const::string &agent) { m_wrappedAgent->setUserAgent(agent); }
-    virtual void setAgent(boost::shared_ptr<SyncEvolution::TransportAgent> agent) {m_wrappedAgent = agent;}
+    virtual void setAgent(boost::shared_ptr<TransportAgent> agent) {m_wrappedAgent = agent;}
     virtual void setSyncOptions(SyncOptions *options) {m_options = options;}
     virtual void setInterruptAtMessage (int interrupt) {m_interruptAtMessage = interrupt;}
     virtual void cancel() { m_wrappedAgent->cancel(); }
@@ -806,6 +809,8 @@ public:
 
 #define ADD_TEST_TO_SUITE(_suite, _class, _function) \
     _suite->addTest(FilterTest(new CppUnit::TestCaller<_class>(_suite->getName() + "::" #_function, &_class::_function, *this)))
+
+SE_END_CXX
 
 #endif // ENABLE_INTEGRATION_TESTS
 #endif // INCL_TESTSYNCCLIENT

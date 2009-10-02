@@ -23,6 +23,9 @@
 #include "FilterConfigNode.h"
 #include "FileConfigNode.h"
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /**
  * This class can store properties while in memory, but will never
  * save them persistently. Implemented by instantiating a FileConfigNode
@@ -38,4 +41,6 @@ class VolatileConfigNode : public FilterConfigNode {
     virtual void flush() {}
 };
 
+
+SE_END_CXX
 #endif

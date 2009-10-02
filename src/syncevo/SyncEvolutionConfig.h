@@ -30,6 +30,9 @@
 #include <string>
 #include <sstream>
 #include <set>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
 /**
@@ -1170,4 +1173,6 @@ class PersistentSyncSourceConfig : public SyncSourceConfig {
 
 /**@}*/
 
+
+SE_END_CXX
 #endif

@@ -34,7 +34,6 @@
 #include "TransportAgent.h"
 #include "CurlTransportAgent.h"
 #include "SoupTransportAgent.h"
-using namespace SyncEvolution;
 
 #include <list>
 #include <memory>
@@ -59,9 +58,14 @@ using namespace std;
 #include <signal.h>
 #include <dirent.h>
 #include <errno.h>
+#include <pthread.h>
+#include <signal.h>
 
 #include "synthesis/enginemodulebridge.h"
 #include "synthesis/SDK_util.h"
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 
 SourceList *EvolutionSyncClient::m_sourceListPtr;
 
@@ -1097,8 +1101,6 @@ void EvolutionSyncClient::fatalError(void *object, const char *error)
 #endif
 
 #ifdef RUN_GLIB_LOOP
-#include <pthread.h>
-#include <signal.h>
 static void *mainLoopThread(void *)
 {
     // The test framework uses SIGALRM for timeouts.
@@ -2194,3 +2196,5 @@ std::string EvolutionSyncClient::findSSLServerCertificate()
 
     return "";
 }
+
+SE_END_CXX

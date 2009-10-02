@@ -26,6 +26,9 @@
 #include <syncevo/EvolutionSmartPtr.h>
 
 #include <string>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
 class SQLiteUnref {
@@ -132,6 +135,8 @@ class SQLiteUtil
     /** current database */
     eptr<sqlite3, sqlite3, SQLiteUnref> m_db;
 };
+
+SE_END_CXX
 
 #endif // ENABLE_SQLITE
 #endif // INCL_SQLITESYNCSOURCE

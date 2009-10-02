@@ -24,6 +24,9 @@
 
 #include <boost/bind.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 TrackingSyncSource::TrackingSyncSource(const SyncSourceParams &params,
                                        int granularitySeconds) :
     TestingSyncSource(params),
@@ -90,3 +93,5 @@ void TrackingSyncSource::deleteItem(const std::string &luid)
     removeItem(luid);
     deleteRevision(*m_trackingNode, luid);
 }
+
+SE_END_CXX

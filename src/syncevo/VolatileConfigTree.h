@@ -20,7 +20,10 @@
 #ifndef INCL_EVOLUTION_VOLATILE_CONFIG_TREE
 # define INCL_EVOLUTION_VOLATILE_CONFIG_TREE
 
-# include "FileConfigTree.h"
+#include "FileConfigTree.h"
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 
 /**
  * This class can store properties while in memory, but will never
@@ -36,4 +39,6 @@ class VolatileConfigTree : public FileConfigTree {
     virtual void flush() {}
 };
 
+
+SE_END_CXX
 #endif

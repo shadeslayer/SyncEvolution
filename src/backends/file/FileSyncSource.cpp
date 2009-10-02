@@ -42,6 +42,9 @@
 #include <sstream>
 #include <fstream>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 FileSyncSource::FileSyncSource(const SyncSourceParams &params,
                                const string &dataformat) :
     TrackingSyncSource(params),
@@ -220,6 +223,8 @@ string FileSyncSource::createFilename(const string &entry)
     string filename = m_basedir + "/" + entry;
     return filename;
 }
+
+SE_END_CXX
 
 #endif /* ENABLE_FILE */
 

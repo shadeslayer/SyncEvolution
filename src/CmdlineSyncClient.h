@@ -22,6 +22,9 @@
 
 #include "EvolutionSyncClient.h"
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /**
  * a command line sync client for the purpose of
  * supporting a mechanism to save and retrieve password
@@ -50,4 +53,6 @@ class CmdlineSyncClient : public EvolutionSyncClient {
     bool m_keyring;
 };
 
+
+SE_END_CXX
 #endif // INCL_CMDLINESYNCCLIENT

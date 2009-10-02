@@ -118,6 +118,9 @@ enum {
 
 #include <CoreFoundation/CoreFoundation.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 using namespace vocl;
 
 /** converts a CFString to std::string in UTF-8 - does not free input, throws exception if conversion impossible */
@@ -1465,5 +1468,7 @@ void AddressBookSource::logItem(const SyncItem &item, const string &info, bool d
         SE_LOG(debug ? Logger::DEBUG : Logger::INFO, this, NULL, "%s", line.c_str() );
     }
 }
+
+SE_END_CXX
 
 #endif /* ENABLE_ADDRESSBOOK */

@@ -49,7 +49,12 @@
 #include <iostream>
 #include <algorithm>
 
+#include <fcntl.h>
+
 #include <boost/bind.hpp>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 
 /**
  * Using this pointer automates the open()/beginSync()/endSync()/close()
@@ -3223,11 +3228,6 @@ bool ClientTest::compare(ClientTest &client, const char *fileA, const char *file
     return success;
 }
 
-
-#ifndef WIN32
-#include <fcntl.h>
-#endif
-
 void ClientTest::postSync(int res, const std::string &logname)
 {
 #ifdef WIN32
@@ -3810,3 +3810,5 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
 /** @} */
 /** @endcond */
 #endif // ENABLE_INTEGRATION_TESTS
+
+SE_END_CXX

@@ -22,6 +22,9 @@
 
 #include <boost/foreach.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 SafeConfigNode::SafeConfigNode(const boost::shared_ptr<ConfigNode> &node) :
     m_node(node),
     m_readOnlyNode(node),
@@ -143,3 +146,5 @@ string SafeConfigNode::unescape(const string &str) const
 
     return res;
 }
+
+SE_END_CXX

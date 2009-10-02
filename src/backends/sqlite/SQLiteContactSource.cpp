@@ -37,6 +37,9 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 enum {
     PERSON_LAST,
     PERSON_MIDDLE,
@@ -366,6 +369,8 @@ std::string SQLiteContactSource::endSync(bool success)
     // no token handling at the moment (not needed for clients)
     return "";
 }
+
+SE_END_CXX
 
 #endif /* ENABLE_SQLITE */
 

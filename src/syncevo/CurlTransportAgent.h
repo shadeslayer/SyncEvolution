@@ -27,7 +27,9 @@
 #include "TransportAgent.h"
 #include <curl/curl.h>
 
-namespace SyncEvolution {
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 
 /**
  * message send/receive with curl
@@ -115,8 +117,8 @@ class CurlTransportAgent : public TransportAgent
     static CURL *easyInit();
 };
 
-} // namespace SyncEvolution
 
+SE_END_CXX
 
 #endif // ENABLE_LIBCURL
 #endif // INCL_TRANSPORTAGENT

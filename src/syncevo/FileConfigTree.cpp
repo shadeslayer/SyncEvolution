@@ -33,6 +33,9 @@
 #include <fcntl.h>
 #include <dirent.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 FileConfigTree::FileConfigTree(const string &root,
                                bool oldLayout) :
     m_root(root),
@@ -184,3 +187,5 @@ list<string> FileConfigTree::getChildren(const string &path)
 
     return res;
 }
+
+SE_END_CXX

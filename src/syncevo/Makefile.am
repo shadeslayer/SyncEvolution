@@ -81,7 +81,9 @@ SYNCEVOLUTION_SOURCES  = \
 	TrackingSyncSource.cpp
 
 libsyncevolution_includedir= $(includedir)/syncevo
-libsyncevolution_include_HEADERS= TrackingSyncSource.h  \
+libsyncevolution_include_HEADERS = \
+	declarations.h \
+	TrackingSyncSource.h  \
 								  FilterConfigNode.h \
 								  PrefixConfigNode.h \
 								  SafeConfigNode.h \

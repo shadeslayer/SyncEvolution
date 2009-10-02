@@ -22,7 +22,9 @@
 #include <string.h>
 #include <errno.h>
 
-namespace SyncEvolution {
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 
 LoggerStdout::LoggerStdout(FILE *file) :
     m_file(file),
@@ -83,4 +85,4 @@ void LoggerStdout::messagev(Level level,
              format, args);
 }
 
-}
+SE_END_CXX

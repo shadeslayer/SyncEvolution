@@ -34,10 +34,10 @@ using namespace std;
 
 #include <boost/smart_ptr.hpp>
 
-namespace SyncEvolution {
-    class TransportAgent;
-}
-using namespace SyncEvolution;
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
+class TransportAgent;
 class SourceList;
 class SyncSource;
 
@@ -528,4 +528,6 @@ public:
     static bool transport_cb (void *data);
     bool processTransportCb();
 };
+
+SE_END_CXX
 #endif // INCL_EVOLUTIONSYNCCLIENT

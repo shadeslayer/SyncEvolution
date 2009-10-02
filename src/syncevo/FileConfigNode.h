@@ -24,6 +24,9 @@
 
 #include <string>
 #include <list>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
 /**
@@ -132,4 +135,6 @@ class HashFileConfigNode: public FileBaseConfigNode {
     virtual void removeProperty(const string &property);
 };
 
+
+SE_END_CXX
 #endif

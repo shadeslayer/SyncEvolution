@@ -21,6 +21,7 @@
 #include <config.h>
 #include "LogRedirect.h"
 #include "Logging.h"
+#include "test.h"
 #include "SyncEvolutionUtil.h"
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -40,7 +41,9 @@
 # include <glib.h>
 #endif
 
-namespace SyncEvolution {
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 
 LogRedirect *LogRedirect::m_redirect;
 
@@ -333,10 +336,8 @@ void LogRedirect::process() throw()
     m_processing = false;
 }
 
-} // namespace SyncEvolution
 
 #ifdef ENABLE_UNIT_TESTS
-#include "test.h"
 
 class LogRedirectTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(LogRedirectTest);
@@ -353,15 +354,15 @@ class LogRedirectTest : public CppUnit::TestFixture {
      * redirect stdout/stderr, then intercept the log messages and
      * store them for inspection
      */
-    class LogBuffer : public SyncEvolution::LoggerBase
+    class LogBuffer : public LoggerBase
     {
     public:
         std::stringstream m_streams[DEBUG + 1];
-        SyncEvolution::LogRedirect *m_redirect;
+        LogRedirect *m_redirect;
 
         LogBuffer(bool both = true)
         {
-            m_redirect = new SyncEvolution::LogRedirect(both);
+            m_redirect = new LogRedirect(both);
             pushLogger(this);
         }
         ~LogBuffer()
@@ -392,7 +393,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(simpleMessage), write(STDOUT_FILENO, simpleMessage, strlen(simpleMessage)));
         buffer.m_redirect->process();
 
-        CPPUNIT_ASSERT_EQUAL(buffer.m_streams[SyncEvolution::Logger::INFO].str(), std::string(simpleMessage));
+        CPPUNIT_ASSERT_EQUAL(buffer.m_streams[Logger::INFO].str(), std::string(simpleMessage));
     }
 
     void largeChunk()
@@ -404,8 +405,8 @@ public:
         CPPUNIT_ASSERT_EQUAL((ssize_t)large.size(), write(STDOUT_FILENO, large.c_str(), large.size()));
         buffer.m_redirect->process();
 
-        CPPUNIT_ASSERT_EQUAL(large.size(), buffer.m_streams[SyncEvolution::Logger::INFO].str().size());
-        CPPUNIT_ASSERT_EQUAL(large, buffer.m_streams[SyncEvolution::Logger::INFO].str());
+        CPPUNIT_ASSERT_EQUAL(large.size(), buffer.m_streams[Logger::INFO].str().size());
+        CPPUNIT_ASSERT_EQUAL(large, buffer.m_streams[Logger::INFO].str());
     }
 
     void streams()
@@ -418,8 +419,8 @@ public:
         CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(errorMessage), write(STDERR_FILENO, errorMessage, strlen(errorMessage)));
         buffer.m_redirect->process();
 
-        CPPUNIT_ASSERT_EQUAL(std::string(simpleMessage), buffer.m_streams[SyncEvolution::Logger::INFO].str());
-        CPPUNIT_ASSERT_EQUAL(std::string(errorMessage), buffer.m_streams[SyncEvolution::Logger::DEV].str());
+        CPPUNIT_ASSERT_EQUAL(std::string(simpleMessage), buffer.m_streams[Logger::INFO].str());
+        CPPUNIT_ASSERT_EQUAL(std::string(errorMessage), buffer.m_streams[Logger::DEV].str());
     }
 
     void overload()
@@ -433,7 +434,7 @@ public:
         }
         buffer.m_redirect->process();
 
-        CPPUNIT_ASSERT(buffer.m_streams[SyncEvolution::Logger::INFO].str().size() > large.size());
+        CPPUNIT_ASSERT(buffer.m_streams[Logger::INFO].str().size() > large.size());
     }
 
 #ifdef HAVE_GLIB
@@ -469,8 +470,8 @@ public:
 
             buffer.m_redirect->process();
 
-            std::string debug = buffer.m_streams[SyncEvolution::Logger::DEBUG].str();
-            std::string dev = buffer.m_streams[SyncEvolution::Logger::DEV].str();
+            std::string debug = buffer.m_streams[Logger::DEBUG].str();
+            std::string dev = buffer.m_streams[Logger::DEV].str();
             CPPUNIT_ASSERT(debug.find("test warning") != debug.npos);
             CPPUNIT_ASSERT(dev.find("normal message stderr") != dev.npos);
         } catch(...) {
@@ -493,3 +494,5 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(LogRedirectTest);
 
 #endif // ENABLE_UNIT_TESTS
 
+
+SE_END_CXX

@@ -25,7 +25,9 @@
 #include <stdio.h>
 #include <string>
 
-namespace SyncEvolution {
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 
 /**
  * A logger which writes to stdout or a file.
@@ -70,6 +72,5 @@ class LoggerStdout : public LoggerBase
                           va_list args);
 };
 
-} // namespace
-
+SE_END_CXX
 #endif // INCL_LOGSTDOUT

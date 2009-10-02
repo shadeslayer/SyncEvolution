@@ -32,6 +32,8 @@
 # include <config.h>
 #endif
 
+#include "syncevo/declarations.h"
+
 // These defines are set in config.h when using the autotools
 // mechanism and by the project setup on Windows. They control whether
 // tests inside the libraries source code (ENABLE_UNIT_TESTS) or of
@@ -43,13 +45,7 @@
 # include <cppunit/extensions/HelperMacros.h>
 # include <string>
 
-// use this macros instead of the plain CPPUNIT_ one to ensure
-// that the autotools Makefile and Visual Studio helper script can find
-// all tests and link them into the test binary
-#define FUNAMBOL_TEST_SUITE_REGISTRATION( ATestFixtureType ) \
-    CPPUNIT_TEST_SUITE_REGISTRATION( ATestFixtureType ); \
-    extern "C" { int funambolAutoRegisterRegistry ## ATestFixtureType = 12345; }
-
+SE_BEGIN_CXX
 
 // until a better solution is found use the helper function from TestMain.cpp
 // to get the name of the currently running test; beware, will contain colons
@@ -72,7 +68,10 @@ extern void simplifyFilename(std::string &filename);
  */
 CppUnit::Test *FilterTest(CppUnit::Test *test);
 
+SE_END_CXX
+
 #endif // ENABLE_UNIT_TESTS
 
 /** @endcond */
+
 #endif // INCL_TEST_H

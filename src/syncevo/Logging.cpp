@@ -23,7 +23,8 @@
 
 #include <vector>
 
-namespace SyncEvolution {
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 
 static LoggerStdout DefaultLogger;
 
@@ -77,5 +78,4 @@ const char *Logger::levelToStr(Level level)
     }
 }
 
-
-}
+SE_END_CXX

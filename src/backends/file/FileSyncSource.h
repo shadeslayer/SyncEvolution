@@ -27,6 +27,9 @@
 #include <memory>
 #include <boost/noncopyable.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /**
  * Stores each SyncML item as a separate file in a directory.  The
  * directory has to be specified via the database name, using
@@ -101,6 +104,8 @@ class FileSyncSource : public TrackingSyncSource, private boost::noncopyable
      */
     string createFilename(const string &entry);
 };
+
+SE_END_CXX
 
 #endif // ENABLE_FILE
 #endif // INCL_FILESYNCSOURCE

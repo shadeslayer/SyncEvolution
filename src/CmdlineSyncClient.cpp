@@ -24,6 +24,9 @@ extern "C" {
 }
 #endif
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 using namespace std;
 
 CmdlineSyncClient::CmdlineSyncClient(const string &server,
@@ -129,3 +132,5 @@ bool CmdlineSyncClient::savePassword(const string &passwordName,
 #endif
     return false;
 }
+
+SE_END_CXX

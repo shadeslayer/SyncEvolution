@@ -39,6 +39,9 @@ using namespace std;
 #include <boost/scoped_array.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 template<class T> class EvolutionUnrefFree {
  public:
     static void unref(T *pointer) { free(pointer); }
@@ -174,4 +177,6 @@ template <class T> class arrayptr : public eptr<T, T, ArrayUnref<T> > {
     };
 };
 
+
+SE_END_CXX
 #endif

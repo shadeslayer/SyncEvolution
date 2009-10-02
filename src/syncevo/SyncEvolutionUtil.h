@@ -34,11 +34,12 @@
 #include <string>
 #include <utility>
 #include <exception>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
-namespace SyncEvolution {
-    class Logger;
-}
+class Logger;
 
 /** case-insensitive less than for assoziative containers */
 template <class T> class Nocase : public std::binary_function<T, T, bool> {
@@ -200,8 +201,8 @@ class SyncEvolutionException : public std::runtime_error
      *
      * @param logger    the class which does the logging
      */
-    static SyncMLStatus handle(SyncMLStatus *status = NULL, SyncEvolution::Logger *logger = NULL);
-    static SyncMLStatus handle(SyncEvolution::Logger *logger) { return handle(NULL, logger); }
+    static SyncMLStatus handle(SyncMLStatus *status = NULL, Logger *logger = NULL);
+    static SyncMLStatus handle(Logger *logger) { return handle(NULL, logger); }
 };
 
 /**
@@ -224,4 +225,6 @@ inline string getHome() {
 #define SE_THROW_EXCEPTION(_class,  _what) \
     throw _class(__FILE__, __LINE__, _what)
 
+
+SE_END_CXX
 #endif // INCL_SYNCEVOLUTION_UTIL

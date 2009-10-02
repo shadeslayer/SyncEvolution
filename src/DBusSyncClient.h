@@ -36,6 +36,8 @@
 #include <set>
 #include <map>
 
+using namespace SyncEvo;
+
 class DBusSyncClient : public EvolutionSyncClient {
 
 public:
@@ -89,6 +91,5 @@ private:
 		return sources;
 	}
 };
-
 
 #endif

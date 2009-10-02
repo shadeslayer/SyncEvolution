@@ -22,6 +22,9 @@
 
 #include "LogStdout.h"
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /**
  * Intercepts all text written to stdout or stderr and passes it
  * through the currently active logger, which may or may not be
@@ -75,7 +78,6 @@
  * variable SYNCEVOLUTION_DEBUG is set (regardless of its value).
  */
 
-namespace SyncEvolution {
 
 class LogRedirect : public LoggerStdout
 {
@@ -116,6 +118,5 @@ class LogRedirect : public LoggerStdout
                           va_list args);
 };
 
-} // namespace
-
+SE_END_CXX
 #endif // INCL_LOGREDIRECT

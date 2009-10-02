@@ -26,7 +26,9 @@
 #include <ctime>
 #include "SyncEvolutionUtil.h"
 
-namespace SyncEvolution {
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 
 CurlTransportAgent::CurlTransportAgent() :
     m_easyHandle(easyInit()),
@@ -302,6 +304,7 @@ int CurlTransportAgent::processCallback()
     return 0;
 }
 
-} // namespace SyncEvolution
+SE_END_CXX
 
 #endif // ENABLE_LIBCURL
+

@@ -31,6 +31,9 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)
 {
     switch (mode) {
@@ -587,3 +590,5 @@ ConfigNode &operator >> (ConfigNode &node, SyncReport &report)
 
     return node;
 }
+
+SE_END_CXX

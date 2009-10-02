@@ -40,6 +40,9 @@
 #include "SyncEvolutionUtil.h"
 #include "VolatileConfigNode.h"
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /*
  * always provide this test class, even if not used:
  * that way the test scripts can unconditionally
@@ -439,3 +442,5 @@ private:
     TestEvolution testClient;
     
 } testEvolution;
+
+SE_END_CXX

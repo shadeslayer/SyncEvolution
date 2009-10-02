@@ -137,6 +137,9 @@ CLIENT_TEST_SERVER=funambol CLIENT_TEST_SOURCES=vcard30,ical20 ./client-test
 #endif
 #include <sys/stat.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 #ifdef ENABLE_INTEGRATION_TESTS
 
 class TestFileSource : public ClientTest {
@@ -347,3 +350,5 @@ private:
 /** @} */
 /** @endcond */
 #endif // ENABLE_INTEGRATION_TESTS
+
+SE_END_CXX

@@ -30,6 +30,9 @@
 #include <sstream>
 #include <cstring>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 void SQLiteUtil::throwError(const string &operation)
 {
     string descr = m_name + ": '" + m_fileid + "': " + operation + " failed";
@@ -193,4 +196,7 @@ void SQLiteUtil::close()
 }
 
 
+SE_END_CXX
+
 #endif /* ENABLE_SQLITE */
+

@@ -36,6 +36,9 @@ using namespace sysync;
 
 #include <sstream>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 #define BuildNumber  0  /* User defined build number, can be 0..255 */
 #define MyDB   "SyncEvolution" /* example debug name */
 #define MY_ID       42  /* example datastore context */
@@ -859,3 +862,5 @@ TSyError SyncEvolution_DeleteContext( CContext aContext )
   source->popSynthesisAPI();
   return LOCERR_OK;
 }
+
+SE_END_CXX

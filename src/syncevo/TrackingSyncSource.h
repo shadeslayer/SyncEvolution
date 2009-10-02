@@ -27,6 +27,9 @@
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <map>
+
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
 using namespace std;
 
 /**
@@ -191,4 +194,6 @@ class TrackingSyncSource : public TestingSyncSource, virtual public SyncSourceRe
     boost::shared_ptr<ConfigNode> m_trackingNode;
 };
 
+
+SE_END_CXX
 #endif // INCL_TRACKINGSYNCSOURCE

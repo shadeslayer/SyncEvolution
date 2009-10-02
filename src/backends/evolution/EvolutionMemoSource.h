@@ -23,6 +23,9 @@
 #include <config.h>
 #include <EvolutionCalendarSource.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 #ifdef ENABLE_ECAL
 
 /**
@@ -51,4 +54,6 @@ class EvolutionMemoSource : public EvolutionCalendarSource
 
 #endif // ENABLE_ECAL
 
+
+SE_END_CXX
 #endif // INCL_EVOLUTIONMEMOSOURCE

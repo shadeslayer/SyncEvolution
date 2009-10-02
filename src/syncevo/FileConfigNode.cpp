@@ -30,6 +30,9 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /** @TODO: replace stdio.h with streams */
 
 boost::shared_ptr<ConfigNode> ConfigNode::createFileNode(const string &filename)
@@ -409,3 +412,5 @@ void HashFileConfigNode::setProperty(const string &property,
     }
 }
 
+
+SE_END_CXX

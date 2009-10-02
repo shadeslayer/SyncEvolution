@@ -10,6 +10,9 @@
 #include <string>
 #include <map>
 
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 /**
  * Implements a ConfigNode with an in-memory hash table.
  */
@@ -46,4 +49,6 @@ class HashConfigNode : public ConfigNode {
     virtual bool exists() const { return true; }
 };
 
+
+SE_END_CXX
 #endif

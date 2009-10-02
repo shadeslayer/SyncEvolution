@@ -23,7 +23,9 @@
 #include <string>
 #include "SyncEvolutionUtil.h"
 
-namespace SyncEvolution {
+#include "syncevo/declarations.h"
+SE_BEGIN_CXX
+
 
 /**
  * Abstract API for a message send/receive agent.
@@ -173,6 +175,7 @@ class TransportException : public SyncEvolutionException
     ~TransportException() throw() {}
 };
 
-} // namespace SyncEvolution
 
+
+SE_END_CXX
 #endif // INCL_TRANSPORTAGENT
