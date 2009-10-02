@@ -12,11 +12,7 @@ SYNCEVOLUTION_CXXFLAGS += $(CPPUNIT_CXXFLAGS)
 SYNCEVOLUTION_LDADD += $(CPPUNIT_LDFLAGS)
 endif
 
-if ENABLE_MODULES
 lib_LTLIBRARIES = libsyncevolution.la
-else
-noinst_LTLIBRARIES = libsyncevolution.la
-endif
 
 SYNCEVOLUTION_SOURCES  = \
 	ConfigTree.h \
@@ -109,6 +105,12 @@ libsyncevolution_la_SOURCES = $(SYNCEVOLUTION_SOURCES)
 libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ $(SYNTHESIS_LIBS) $(TRANSPORT_LIBS) @LIBS@ $(SYNCEVOLUTION_LDADD)
 libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
 libsyncevolution_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEMPLATE_DIR=\""$(sysconfdir)/default/syncevolution"\" -DLIBDIR=\""$(libdir)"\"
+
+if ENABLE_MODULES
+libsyncevolution_la_LDFLAGS =
+else
+libsyncevolution_la_LDFLAGS = -static
+endif
 
 SyncEvolutionXML.c: $(srcdir)/../syncclient_sample_config.xml
 	echo "const char *SyncEvolutionXML =" > $@
