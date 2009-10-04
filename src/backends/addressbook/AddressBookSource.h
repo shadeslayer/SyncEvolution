@@ -189,8 +189,7 @@ class AddressBookSource : public TrackingSyncSource
     bool m_asVCard30;
 };
 
-#endif // ENABLE_EBOOK
-
-
 SE_END_CXX
+
+#endif // ENABLE_EBOOK
 #endif // INCL_ADDRESSBOOKSOURCE
