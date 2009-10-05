@@ -38,7 +38,7 @@
 #include <boost/scoped_array.hpp>
 #include <stdexcept>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 typedef boost::shared_ptr<sysync::SessionType> SharedSession;

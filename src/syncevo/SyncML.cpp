@@ -18,9 +18,9 @@
  * 02110-1301  USA
  */
 
-#include "SyncML.h"
-#include "ConfigNode.h"
-#include "SyncEvolutionUtil.h"
+#include <syncevo/SyncML.h>
+#include <syncevo/ConfigNode.h>
+#include <syncevo/util.h>
 #include <sstream>
 #include <iomanip>
 #include <vector>
@@ -31,7 +31,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)

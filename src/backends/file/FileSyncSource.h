@@ -27,7 +27,7 @@
 #include <memory>
 #include <boost/noncopyable.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

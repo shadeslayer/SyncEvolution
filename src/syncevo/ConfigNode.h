@@ -29,7 +29,7 @@ using namespace std;
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

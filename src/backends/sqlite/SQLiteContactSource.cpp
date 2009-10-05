@@ -37,7 +37,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 enum {
@@ -375,5 +375,5 @@ SE_END_CXX
 #endif /* ENABLE_SQLITE */
 
 #ifdef ENABLE_MODULES
-# include "SQLiteContactSourceRegister.cpp"
+# include <syncevo/SQLiteContactSourceRegister.cpp>
 #endif

@@ -19,7 +19,7 @@
 
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <unistd.h>
@@ -983,7 +983,7 @@ syncevo_get_sync_reports (SyncevoDBusServer *obj,
 		return FALSE;
 	}
 
-	EvolutionSyncClient client (string (server), false);
+	SyncContext client (string (server), false);
 	vector<string> dirs;
 	*reports = g_ptr_array_new ();
 

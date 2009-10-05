@@ -20,14 +20,14 @@
 #ifndef INCL_ADDRESSBOOKSOURCE
 #define INCL_ADDRESSBOOKSOURCE
 
-#include <config.h>
+#include "config.h"
 #include <syncevo/TrackingSyncSource.h>
 
 #ifdef ENABLE_ADDRESSBOOK
 
 #include <AddressBook/ABAddressBookC.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

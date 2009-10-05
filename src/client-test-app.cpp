@@ -18,7 +18,7 @@
  * 02110-1301  USA
  */
 
-#include <config.h>
+#include "config.h"
 
 #include <ClientTest.h>
 
@@ -35,12 +35,12 @@
 # include <execinfo.h>
 #endif
 
-#include "EvolutionSyncClient.h"
+#include <syncevo/SyncContext.h>
 #include "EvolutionSyncSource.h"
-#include "SyncEvolutionUtil.h"
-#include "VolatileConfigNode.h"
+#include <syncevo/util.h>
+#include <syncevo/VolatileConfigNode.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /*
@@ -276,13 +276,13 @@ public:
         server += "_";
         server += m_clientID;
         
-        class ClientTest : public EvolutionSyncClient {
+        class ClientTest : public SyncContext {
         public:
             ClientTest(const string &server,
                        const set<string> &activeSources,
                        const string &logbase,
                        const SyncOptions &options) :
-                EvolutionSyncClient(server, false, activeSources),
+                SyncContext(server, false, activeSources),
                 m_logbase(logbase),
                 m_options(options),
                 m_started(false)
@@ -295,12 +295,12 @@ public:
                 setMaxObjSize(m_options.m_maxObjSize, true);
                 setMaxMsgSize(m_options.m_maxMsgSize, true);
                 setWBXML(m_options.m_isWBXML, true);
-                EvolutionSyncClient::prepare();
+                SyncContext::prepare();
             }
             virtual void prepare(const std::vector<SyncSource *> &sources) {
                 SyncModes modes(m_options.m_syncMode);
                 setSyncModes(sources, modes);
-                EvolutionSyncClient::prepare(sources);
+                SyncContext::prepare(sources);
             }
 
             virtual void displaySyncProgress(sysync::TProgressEventEnum type,
@@ -320,7 +320,7 @@ public:
             virtual boost::shared_ptr<TransportAgent> createTransportAgent()
             {
                 boost::shared_ptr<TransportAgent>wrapper = m_options.m_transport;
-                boost::shared_ptr<TransportAgent>agent =EvolutionSyncClient::createTransportAgent();
+                boost::shared_ptr<TransportAgent>agent =SyncContext::createTransportAgent();
                 if (!wrapper.get())
                     return agent;
                 dynamic_cast<TransportWrapper*>(wrapper.get())->setAgent(agent);

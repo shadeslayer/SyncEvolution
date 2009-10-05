@@ -20,28 +20,28 @@
 #ifndef INCL_SYNC_EVOLUTION_CMDLINE
 # define INCL_SYNC_EVOLUTION_CMDLINE
 
-#include "SyncEvolutionConfig.h"
-#include "FilterConfigNode.h"
+#include <syncevo/SyncConfig.h>
+#include <syncevo/FilterConfigNode.h>
 
 #include <set>
 using namespace std;
 
 #include <boost/shared_ptr.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class SyncSource;
-class EvolutionSyncClient;
-class SyncEvolutionCmdlineTest;
+class SyncContext;
+class CmdlineTest;
 
-class SyncEvolutionCmdline {
+class Cmdline {
 public:
     /**
      * @param out      stdout stream for normal messages
      * @param err      stderr stream for error messages
      */
-    SyncEvolutionCmdline(int argc, const char * const *argv, ostream &out, ostream &err);
+    Cmdline(int argc, const char * const *argv, ostream &out, ostream &err);
 
     /**
      * parse the command line options
@@ -147,9 +147,9 @@ protected:
      * clients to avoid dependency.
      * @return the created sync client
      */
-    virtual EvolutionSyncClient* createSyncClient();
+    virtual SyncContext* createSyncClient();
 
-    friend class SyncEvolutionCmdlineTest;
+    friend class CmdlineTest;
 };
 
 

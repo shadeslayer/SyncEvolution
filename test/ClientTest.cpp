@@ -24,7 +24,7 @@
 /** @{ */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
 #ifdef ENABLE_INTEGRATION_TESTS
@@ -34,8 +34,8 @@
 #include <SyncSource.h>
 #include <TransportAgent.h>
 #include <Logging.h>
-#include <SyncEvolutionUtil.h>
-#include <EvolutionSyncClient.h>
+#include <syncevo/util.h>
+#include <syncevo/SyncContext.h>
 #include <VolatileConfigNode.h>
 
 #include <synthesis/dataconversion.h>
@@ -53,7 +53,7 @@
 
 #include <boost/bind.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**
@@ -2237,7 +2237,7 @@ void SyncTests::testConversion() {
 }
 
 bool SyncTests::doConversionCallback(bool *success,
-                                     EvolutionSyncClient &syncClient,
+                                     SyncContext &syncClient,
                                      SyncOptions &options) {
     *success = false;
 

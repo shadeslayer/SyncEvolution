@@ -109,7 +109,7 @@ enum {
 # define PersonCreateWrapper(_addressbook) ABPersonCreate()
 # define PersonSetImageDataWrapper(_person, _dataref) ABPersonSetImageData(_person, _dataref)
 #endif
-#include <syncevo/EvolutionSyncClient.h>
+#include <syncevo/SyncContext.h>
 #include "AddressBookSource.h"
 
 #include <syncevo/Logging.h>
@@ -118,7 +118,7 @@ enum {
 
 #include <CoreFoundation/CoreFoundation.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 using namespace vocl;
@@ -139,7 +139,7 @@ static string CFString2Std(CFStringRef cfstring)
         }
         len *= 2;
     }
-    EvolutionSyncClient::throwError("converting CF string failed");
+    SyncContext::throwError("converting CF string failed");
     return "";
 }
 
@@ -293,7 +293,7 @@ public:
             arrayptr<char> decoded((char *)b64_decode(len, photo->getValue()), "photo");
             ref<CFDataRef> data(CFDataCreate(NULL, (UInt8 *)(char *)decoded, len));
             if (!PersonSetImageDataWrapper(m_person, data)) {
-                EvolutionSyncClient::throwError("cannot set photo data");
+                SyncContext::throwError("cannot set photo data");
             }
         }
     }
@@ -392,7 +392,7 @@ private:
     VObject m_vobj;
 
     void throwError(const string &error) {
-        EvolutionSyncClient::throwError(string("vCard<->Addressbook conversion: ") + error);
+        SyncContext::throwError(string("vCard<->Addressbook conversion: ") + error);
     }
 
     /** intermediate storage for strings gathered from either vcard or person */

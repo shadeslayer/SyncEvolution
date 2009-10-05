@@ -20,9 +20,9 @@
 #ifndef INCL_LOGREDIRECT
 #define INCL_LOGREDIRECT
 
-#include "LogStdout.h"
+#include <syncevo/LogStdout.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

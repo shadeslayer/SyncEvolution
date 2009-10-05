@@ -25,7 +25,7 @@
 # include <cppunit/extensions/HelperMacros.h>
 #endif
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 static SyncSource *createSource(const SyncSourceParams &params)

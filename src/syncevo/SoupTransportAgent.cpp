@@ -17,8 +17,8 @@
  * 02110-1301  USA
  */
 
-#include "SoupTransportAgent.h"
-#include "EvolutionSyncClient.h"
+#include <syncevo/SoupTransportAgent.h>
+#include <syncevo/SyncContext.h>
 
 #ifdef ENABLE_LIBSOUP
 
@@ -30,7 +30,7 @@
 #include <libsoup/soup-gnome-features.h>
 #endif
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
@@ -244,7 +244,7 @@ void SoupTransportAgent::HandleSessionCallback(SoupSession *session,
 
 gboolean SoupTransportAgent::AbortCallback(gpointer transport)
 {
-    SuspendFlags& s_flags = EvolutionSyncClient::getSuspendFlags();
+    SuspendFlags& s_flags = SyncContext::getSuspendFlags();
 
     if (s_flags.state == SuspendFlags::CLIENT_ABORT)
     {

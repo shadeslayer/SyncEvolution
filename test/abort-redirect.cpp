@@ -17,12 +17,12 @@
  * 02110-1301  USA
  */
 
-#include "LogRedirect.h"
-#include "LogStdout.h"
+#include <syncevo/LogRedirect.h>
+#include <syncevo/LogStdout.h>
 
 #include <stdlib.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 int main(int argc, char **argv)

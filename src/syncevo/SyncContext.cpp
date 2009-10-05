@@ -23,17 +23,17 @@
 #endif
 #include <dlfcn.h>
 
-#include "EvolutionSyncClient.h"
-#include "SyncSource.h"
-#include "SyncEvolutionUtil.h"
+#include <syncevo/SyncContext.h>
+#include <syncevo/SyncSource.h>
+#include <syncevo/util.h>
 
-#include "SafeConfigNode.h"
-#include "FileConfigNode.h"
+#include <syncevo/SafeConfigNode.h>
+#include <syncevo/FileConfigNode.h>
 
-#include "LogStdout.h"
-#include "TransportAgent.h"
-#include "CurlTransportAgent.h"
-#include "SoupTransportAgent.h"
+#include <syncevo/LogStdout.h>
+#include <syncevo/TransportAgent.h>
+#include <syncevo/CurlTransportAgent.h>
+#include <syncevo/SoupTransportAgent.h>
 
 #include <list>
 #include <memory>
@@ -61,21 +61,21 @@ using namespace std;
 #include <pthread.h>
 #include <signal.h>
 
-#include "synthesis/enginemodulebridge.h"
-#include "synthesis/SDK_util.h"
+#include <synthesis/enginemodulebridge.h>
+#include <synthesis/SDK_util.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-SourceList *EvolutionSyncClient::m_sourceListPtr;
+SourceList *SyncContext::m_sourceListPtr;
 
-SuspendFlags EvolutionSyncClient::s_flags;
+SuspendFlags SyncContext::s_flags;
 
 extern "C" void suspend_handler(int sig)
 {
   time_t current;
   time (&current);
-  SuspendFlags& s_flags = EvolutionSyncClient::getSuspendFlags();
+  SuspendFlags& s_flags = SyncContext::getSuspendFlags();
   //first time suspend or already aborted
   if (s_flags.state == SuspendFlags::CLIENT_NORMAL)
   {
@@ -101,7 +101,7 @@ extern "C" void suspend_handler(int sig)
 }
 
 
-EvolutionSyncClient::EvolutionSyncClient(const string &server,
+SyncContext::SyncContext(const string &server,
                                          bool doLogging,
                                          const set<string> &sources) :
     EvolutionSyncConfig(server),
@@ -113,7 +113,7 @@ EvolutionSyncClient::EvolutionSyncClient(const string &server,
 {
 }
 
-EvolutionSyncClient::~EvolutionSyncClient()
+SyncContext::~SyncContext()
 {
 }
 
@@ -122,7 +122,7 @@ EvolutionSyncClient::~EvolutionSyncClient()
 // for redirecting output at the start and end of sync (even
 // in case of exceptions thrown!)
 class LogDir : public LoggerBase {
-    EvolutionSyncClient &m_client;
+    SyncContext &m_client;
     Logger &m_parentLogger;  /**< the logger which was active before we started to intercept messages */
     string m_logdir;         /**< configured backup root dir */
     int m_maxlogdirs;        /**< number of backup dirs to preserve, 0 if unlimited */
@@ -163,7 +163,7 @@ class LogDir : public LoggerBase {
     }
 
 public:
-    LogDir(EvolutionSyncClient &client) : m_client(client), m_parentLogger(LoggerBase::instance()), m_info(NULL), m_readonly(false), m_report(NULL)
+    LogDir(SyncContext &client) : m_client(client), m_parentLogger(LoggerBase::instance()), m_info(NULL), m_readonly(false), m_report(NULL)
     {
         // Set default log directory. This will be overwritten with a user-specified
         // location later on, if one was selected by the user. SyncEvolution >= 0.9 alpha
@@ -304,7 +304,7 @@ public:
                 if (mkdir(m_path.c_str(), S_IRWXU) &&
                     errno != EEXIST) {
                     SE_LOG_DEBUG(NULL, NULL, "%s: %s", m_path.c_str(), strerror(errno));
-                    EvolutionSyncClient::throwError(m_path, errno);
+                    SyncContext::throwError(m_path, errno);
                 }
             }
             m_logfile = m_path + "/" + "sysynclib_linux.html";
@@ -564,14 +564,14 @@ public:
         string dir = databaseName(source, suffix);
         boost::shared_ptr<ConfigNode> node = ConfigNode::createFileNode(dir + ".ini");
         if (!node->exists()) {
-            EvolutionSyncClient::throwError(dir + ": no such database backup found");
+            SyncContext::throwError(dir + ": no such database backup found");
         }
         if (source.getOperations().m_restoreData) {
             source.getOperations().m_restoreData(dir, *node, dryrun, report);
         }
     }
 
-    SourceList(EvolutionSyncClient &client, bool doLogging) :
+    SourceList(SyncContext &client, bool doLogging) :
         m_logdir(client),
         m_prepared(false),
         m_doLogging(doLogging),
@@ -781,7 +781,7 @@ void unref(SourceList *sourceList)
     delete sourceList;
 }
 
-string EvolutionSyncClient::askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key)
+string SyncContext::askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key)
 {
     char buffer[256];
 
@@ -801,7 +801,7 @@ string EvolutionSyncClient::askPassword(const string &passwordName, const string
     }
 }
 
-boost::shared_ptr<TransportAgent> EvolutionSyncClient::createTransportAgent()
+boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent()
 {
 #ifdef ENABLE_LIBSOUP
     boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent());
@@ -809,23 +809,23 @@ boost::shared_ptr<TransportAgent> EvolutionSyncClient::createTransportAgent()
     boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
 #else
     boost::shared_ptr<TransportAgent> agent;
-    throw std::string("libsyncevolution was compiled without default transport, client must implement EvolutionSyncClient::createTransportAgent()");
+    throw std::string("libsyncevolution was compiled without default transport, client must implement SyncContext::createTransportAgent()");
 #endif
     return agent;
 }
 
-void EvolutionSyncClient::displayServerMessage(const string &message)
+void SyncContext::displayServerMessage(const string &message)
 {
     SE_LOG_INFO(NULL, NULL, "message from server: %s", message.c_str());
 }
 
-void EvolutionSyncClient::displaySyncProgress(sysync::TProgressEventEnum type,
+void SyncContext::displaySyncProgress(sysync::TProgressEventEnum type,
                                               int32_t extra1, int32_t extra2, int32_t extra3)
 {
     
 }
 
-void EvolutionSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
+void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
                                                 SyncSource &source,
                                                 int32_t extra1, int32_t extra2, int32_t extra3)
 {
@@ -1061,7 +1061,7 @@ void EvolutionSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
     }
 }
 
-void EvolutionSyncClient::throwError(const string &error)
+void SyncContext::throwError(const string &error)
 {
 #ifdef IPHONE
     /*
@@ -1076,12 +1076,12 @@ void EvolutionSyncClient::throwError(const string &error)
 #endif
 }
 
-void EvolutionSyncClient::throwError(const string &action, int error)
+void SyncContext::throwError(const string &action, int error)
 {
     throwError(action + ": " + strerror(error));
 }
 
-void EvolutionSyncClient::fatalError(void *object, const char *error)
+void SyncContext::fatalError(void *object, const char *error)
 {
     SE_LOG_ERROR(NULL, NULL, "%s", error);
     if (m_sourceListPtr) {
@@ -1123,7 +1123,7 @@ static void *mainLoopThread(void *)
 }
 #endif
 
-void EvolutionSyncClient::startLoopThread()
+void SyncContext::startLoopThread()
 {
 #ifdef RUN_GLIB_LOOP
     // when using Evolution we must have a running main loop,
@@ -1136,12 +1136,12 @@ void EvolutionSyncClient::startLoopThread()
 #endif
 }
 
-SyncSource *EvolutionSyncClient::findSource(const char *name)
+SyncSource *SyncContext::findSource(const char *name)
 {
     return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
 }
 
-void EvolutionSyncClient::setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter)
+void SyncContext::setConfigFilter(bool sync, const FilterConfigNode::ConfigFilter &filter)
 {
     map<string, string>::const_iterator hasSync = filter.find(SyncSourceConfig::m_sourcePropSync.getName());
 
@@ -1155,7 +1155,7 @@ void EvolutionSyncClient::setConfigFilter(bool sync, const FilterConfigNode::Con
     }
 }
 
-void EvolutionSyncClient::initSources(SourceList &sourceList)
+void SyncContext::initSources(SourceList &sourceList)
 {
     set<string> unmatchedSources = m_sources;
     list<string> configuredSources = getSyncSources();
@@ -1210,12 +1210,12 @@ void EvolutionSyncClient::initSources(SourceList &sourceList)
     }
 }
 
-bool EvolutionSyncClient::transport_cb (void *udata)
+bool SyncContext::transport_cb (void *udata)
 {
-    return static_cast <EvolutionSyncClient *> (udata) -> processTransportCb();
+    return static_cast <SyncContext *> (udata) -> processTransportCb();
 }
 
-bool EvolutionSyncClient::processTransportCb()
+bool SyncContext::processTransportCb()
 {
     //Always return true to continue, we will detect the retry count at
     //the higher level together with transport error scenarios.
@@ -1230,7 +1230,7 @@ extern "C" {
     extern const char *SyncEvolutionXML;
 }
 
-void EvolutionSyncClient::setSyncModes(const std::vector<SyncSource *> &sources,
+void SyncContext::setSyncModes(const std::vector<SyncSource *> &sources,
                                        const SyncModes &modes)
 {
     BOOST_FOREACH(SyncSource *source, sources) {
@@ -1242,7 +1242,7 @@ void EvolutionSyncClient::setSyncModes(const std::vector<SyncSource *> &sources,
     }
 }
 
-void EvolutionSyncClient::getConfigTemplateXML(string &xml, string &configname)
+void SyncContext::getConfigTemplateXML(string &xml, string &configname)
 {
     try {
         configname = "syncclient_sample_config.xml";
@@ -1302,7 +1302,7 @@ template <class T> void substTag(string &xml, const string &tagname, const T rep
     substTag(xml, tagname, str.str(), replaceElement);
 }
 
-void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
+void SyncContext::getConfigXML(string &xml, string &configname)
 {
     getConfigTemplateXML(xml, configname);
 
@@ -1319,7 +1319,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
 
         debug <<
             "  <debug>\n"
-            // logpath is a config variable set by EvolutionSyncClient::doSync()
+            // logpath is a config variable set by SyncContext::doSync()
             "    <logpath>$(logpath)</logpath>\n"
             "    <logflushmode>flush</logflushmode>\n"
             "    <logformat>html</logformat>\n"
@@ -1423,7 +1423,7 @@ void EvolutionSyncClient::getConfigXML(string &xml, string &configname)
     substTag(xml, "configdate", getConfigDate().c_str());
 }
 
-SharedEngine EvolutionSyncClient::createEngine()
+SharedEngine SyncContext::createEngine()
 {
     SharedEngine engine(new sysync::TEngineModuleBridge);
 
@@ -1458,7 +1458,7 @@ namespace {
     }
 }
 
-SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
+SyncMLStatus SyncContext::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
 
@@ -1600,7 +1600,7 @@ SyncMLStatus EvolutionSyncClient::sync(SyncReport *report)
     return status;
 }
 
-SyncMLStatus EvolutionSyncClient::doSync()
+SyncMLStatus SyncContext::doSync()
 {
     struct sigaction new_action, old_action;
     new_action.sa_handler= suspend_handler;
@@ -1865,7 +1865,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
                 break;
             }
             case sysync::STEPCMD_RESENDDATA: {
-                SE_LOG_INFO (NULL, NULL, "EvolutionSyncClient: resend previous request #%d", m_retries);
+                SE_LOG_INFO (NULL, NULL, "SyncContext: resend previous request #%d", m_retries);
                 resendStart = time(NULL);
                 /* We are resending previous message, just read from the
                  * previous buffer */
@@ -1997,7 +1997,7 @@ SyncMLStatus EvolutionSyncClient::doSync()
 }
 
 
-void EvolutionSyncClient::status()
+void SyncContext::status()
 {
     if (!exists()) {
         SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
@@ -2050,7 +2050,7 @@ void EvolutionSyncClient::status()
     }
 }
 
-void EvolutionSyncClient::checkStatus(SyncReport &report)
+void SyncContext::checkStatus(SyncReport &report)
 {
     if (!exists()) {
         SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
@@ -2086,7 +2086,7 @@ static void logRestoreReport(const SyncReport &report, bool dryrun)
     }
 }
 
-void EvolutionSyncClient::checkSourceChanges(SourceList &sourceList, SyncReport &changes)
+void SyncContext::checkSourceChanges(SourceList &sourceList, SyncReport &changes)
 {
     changes.setStart(time(NULL));
     BOOST_FOREACH(SyncSource *source, sourceList) {
@@ -2100,7 +2100,7 @@ void EvolutionSyncClient::checkSourceChanges(SourceList &sourceList, SyncReport 
     changes.setEnd(time(NULL));
 }
 
-int EvolutionSyncClient::sleep (int intervals) 
+int SyncContext::sleep (int intervals) 
 {
     while ( (intervals = ::sleep (intervals)) > 0) {
         if (checkForSuspend() || checkForAbort ()) {
@@ -2110,7 +2110,7 @@ int EvolutionSyncClient::sleep (int intervals)
     return intervals;
 }
 
-void EvolutionSyncClient::restore(const string &dirname, RestoreDatabase database)
+void SyncContext::restore(const string &dirname, RestoreDatabase database)
 {
     if (!exists()) {
         SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
@@ -2170,20 +2170,20 @@ void EvolutionSyncClient::restore(const string &dirname, RestoreDatabase databas
     logRestoreReport(report, m_dryrun);
 }
 
-void EvolutionSyncClient::getSessions(vector<string> &dirs)
+void SyncContext::getSessions(vector<string> &dirs)
 {
     LogDir logging(*this);
     logging.previousLogdirs(getLogDir(), dirs);
 }
 
-void EvolutionSyncClient::readSessionInfo(const string &dir, SyncReport &report)
+void SyncContext::readSessionInfo(const string &dir, SyncReport &report)
 {
     LogDir logging(*this);
     logging.openLogdir(dir);
     logging.readReport(report);
 }
 
-std::string EvolutionSyncClient::findSSLServerCertificate()
+std::string SyncContext::findSSLServerCertificate()
 {
     std::string paths = getSSLServerCertificates();
     std::vector< std::string > files;

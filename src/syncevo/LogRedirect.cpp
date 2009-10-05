@@ -18,11 +18,11 @@
  * 02110-1301  USA
  */
 
-#include <config.h>
-#include "LogRedirect.h"
-#include "Logging.h"
+#include "config.h"
+#include <syncevo/LogRedirect.h>
+#include <syncevo/Logging.h>
 #include "test.h"
-#include "SyncEvolutionUtil.h"
+#include <syncevo/util.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -42,7 +42,7 @@
 #endif
 
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 LogRedirect *LogRedirect::m_redirect;

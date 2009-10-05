@@ -18,10 +18,10 @@
  * 02110-1301  USA
  */
 
-#include "FileConfigNode.h"
-#include "SafeConfigNode.h"
-#include "EvolutionSyncClient.h"
-#include "SyncEvolutionUtil.h"
+#include <syncevo/FileConfigNode.h>
+#include <syncevo/SafeConfigNode.h>
+#include <syncevo/SyncContext.h>
+#include <syncevo/util.h>
 
 #include <boost/scoped_array.hpp>
 #include <boost/foreach.hpp>
@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /** @TODO: replace stdio.h with streams */
@@ -85,10 +85,10 @@ void FileBaseConfigNode::flush()
         }
         if (failed ||
             rename(tmpFilename.c_str(), filename.c_str())) {
-            EvolutionSyncClient::throwError(tmpFilename, errno);
+            SyncContext::throwError(tmpFilename, errno);
         }
     } else {
-        EvolutionSyncClient::throwError(tmpFilename, errno);
+        SyncContext::throwError(tmpFilename, errno);
     }
 
     m_modified = false;

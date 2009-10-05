@@ -40,7 +40,7 @@
 #define INCL_EDS_ABI_WRAPPER
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #ifdef HAVE_EDS

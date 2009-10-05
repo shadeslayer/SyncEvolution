@@ -21,7 +21,7 @@
 #ifndef INCL_SYNCSOURCE
 #define INCL_SYNCSOURCE
 
-#include <syncevo/SyncEvolutionConfig.h>
+#include <syncevo/SyncConfig.h>
 #include <syncevo/Logging.h>
 #include <syncevo/SyncML.h>
 
@@ -30,7 +30,7 @@
 
 #include <boost/function.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class SyncSource;
@@ -596,7 +596,7 @@ class SyncSourceBase : public Logger {
      *
      * Sync sources which want to have those items included in the
      * sync statistics should count *all* deleted items using these
-     * methods. EvolutionSyncClient will use this number for
+     * methods. SyncContext will use this number for
      * refresh-from-server syncs.
      */
     /**@{*/
@@ -617,7 +617,7 @@ class SyncSourceBase : public Logger {
      * negotiated via the peer's capabilities, with the type defined
      * in the configuration being the preferred one of the data store.
      *
-     * See EvolutionSyncClient::getConfigXML() for details about
+     * See SyncContext::getConfigXML() for details about
      * predefined <datatype> entries that can be referenced here.
      *
      * @retval xml         put content of <datastore>...</datastore> here
@@ -639,7 +639,7 @@ class SyncSourceBase : public Logger {
      * Logging utility code.
      *
      * Every sync source adds "<name>" as prefix to its output.
-     * All calls are redirected into EvolutionSyncClient logger.
+     * All calls are redirected into SyncContext logger.
      */
     virtual void messagev(Level level,
                           const char *prefix,

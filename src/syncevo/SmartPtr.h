@@ -22,9 +22,9 @@
 # define INCL_EVOLUTION_SMART_POINTER
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
-#include "eds_abi_wrapper.h"
+#include <syncevo/eds_abi_wrapper.h>
 
 #ifdef HAVE_GLIB
 # include <glib-object.h>
@@ -39,7 +39,7 @@ using namespace std;
 #include <boost/scoped_array.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 template<class T> class EvolutionUnrefFree {

@@ -20,9 +20,9 @@
 #ifndef INCL_CMDLINESYNCCLIENT
 #define INCL_CMDLINESYNCCLIENT
 
-#include "EvolutionSyncClient.h"
+#include <syncevo/SyncContext.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**
@@ -30,7 +30,7 @@ SE_BEGIN_CXX
  * supporting a mechanism to save and retrieve password
  * in keyring.
  */
-class CmdlineSyncClient : public EvolutionSyncClient {
+class CmdlineSyncClient : public SyncContext {
  public:
     CmdlineSyncClient(const string &server,
                       bool doLogging = false,

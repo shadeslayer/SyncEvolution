@@ -18,12 +18,12 @@
  * 02110-1301  USA
  */
 
-#include "Logging.h"
-#include "LogStdout.h"
+#include <syncevo/Logging.h>
+#include <syncevo/LogStdout.h>
 
 #include <vector>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 static LoggerStdout DefaultLogger;

@@ -20,12 +20,12 @@
 #ifndef INCL_EVOLUTION_FILE_CONFIG_NODE
 # define INCL_EVOLUTION_FILE_CONFIG_NODE
 
-#include "ConfigNode.h"
+#include <syncevo/ConfigNode.h>
 
 #include <string>
 #include <list>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
 

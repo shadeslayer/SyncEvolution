@@ -20,16 +20,16 @@
 #ifndef INCL_SOUPTRANSPORTAGENT
 #define INCL_SOUPTRANSPORTAGENT
 
-#include <config.h>
+#include "config.h"
 
 #ifdef ENABLE_LIBSOUP
 
-#include "TransportAgent.h"
-#include "EvolutionSmartPtr.h"
+#include <syncevo/TransportAgent.h>
+#include <syncevo/SmartPtr.h>
 #include <libsoup/soup.h>
 #include <glib/gmain.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 

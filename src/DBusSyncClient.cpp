@@ -18,7 +18,7 @@
  */
 
 #include "DBusSyncClient.h"
-#include "SyncSource.h"
+#include <syncevo/SyncSource.h>
 
 
 DBusSyncClient::DBusSyncClient(const string &server,
@@ -28,7 +28,7 @@ DBusSyncClient::DBusSyncClient(const string &server,
                                char* (*need_password) (const char *username, const char *server_url, gpointer data),
                                gboolean (*check_for_suspend)(gpointer data),
                                gpointer userdata) : 
-	EvolutionSyncClient(server, true, getSyncSources (source_map)),
+	SyncContext(server, true, getSyncSources (source_map)),
 	m_source_map (source_map),
 	m_userdata (userdata),
 	m_progress (progress),
@@ -81,7 +81,7 @@ void DBusSyncClient::displaySyncProgress(sysync::TProgressEventEnum type,
                                          int32_t extra1, int32_t extra2, int32_t extra3)
 {
 	m_progress (NULL, type, extra1, extra2, extra3, m_userdata);
-	EvolutionSyncClient::displaySyncProgress(type, extra1, extra2, extra3);
+	SyncContext::displaySyncProgress(type, extra1, extra2, extra3);
 }
 
 void DBusSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
@@ -99,7 +99,7 @@ void DBusSyncClient::displaySourceProgress(sysync::TProgressEventEnum type,
                     source.getNumDeleted() :
                     extra3,
                     m_userdata);
-	EvolutionSyncClient::displaySourceProgress(type, source, extra1, extra2, extra3);
+	SyncContext::displaySourceProgress(type, source, extra1, extra2, extra3);
 }
 
 bool DBusSyncClient::checkForSuspend()

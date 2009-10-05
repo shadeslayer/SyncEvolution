@@ -21,13 +21,13 @@
 #ifndef INCL_EVOLUTIONCALENDARSOURCE
 #define INCL_EVOLUTIONCALENDARSOURCE
 
-#include <config.h>
+#include "config.h"
 #include "EvolutionSyncSource.h"
-#include <syncevo/EvolutionSmartPtr.h>
+#include <syncevo/SmartPtr.h>
 
 #include <boost/noncopyable.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 #ifdef ENABLE_ECAL

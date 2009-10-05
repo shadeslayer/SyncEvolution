@@ -17,13 +17,13 @@
  * 02110-1301  USA
  */
 
-#include "PrefixConfigNode.h"
-#include "EvolutionSyncClient.h"
+#include <syncevo/PrefixConfigNode.h>
+#include <syncevo/SyncContext.h>
 
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 PrefixConfigNode::PrefixConfigNode(const string prefix,
@@ -80,7 +80,7 @@ void PrefixConfigNode::removeProperty(const string &property)
 void PrefixConfigNode::flush()
 {
     if (!m_node.get()) {
-        EvolutionSyncClient::throwError(getName() + ": read-only, flushing not allowed");
+        SyncContext::throwError(getName() + ": read-only, flushing not allowed");
     }
     m_node->flush();
 }

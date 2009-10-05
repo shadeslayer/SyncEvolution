@@ -27,7 +27,7 @@
 
 #include <boost/bind.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 #ifdef ENABLE_SQLITE

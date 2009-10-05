@@ -5,12 +5,12 @@
 #ifndef INCL_EVOLUTION_HASH_CONFIG_NODE
 # define INCL_EVOLUTION_HASH_CONFIG_NODE
 
-#include "ConfigNode.h"
+#include <syncevo/ConfigNode.h>
 
 #include <string>
 #include <map>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

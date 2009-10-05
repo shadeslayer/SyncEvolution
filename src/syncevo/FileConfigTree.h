@@ -25,7 +25,7 @@
 #include <string>
 #include <map>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
 

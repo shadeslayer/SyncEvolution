@@ -20,13 +20,13 @@
 
 #include "config.h"
 
-#include "SyncEvolutionConfig.h"
-#include "SyncSource.h"
-#include "EvolutionSyncClient.h"
-#include "FileConfigTree.h"
-#include "VolatileConfigTree.h"
-#include "VolatileConfigNode.h"
-#include "synthesis/timeutil.h"
+#include <syncevo/SyncConfig.h>
+#include <syncevo/SyncSource.h>
+#include <syncevo/SyncContext.h>
+#include <syncevo/FileConfigTree.h>
+#include <syncevo/VolatileConfigTree.h>
+#include <syncevo/VolatileConfigNode.h>
+#include <synthesis/timeutil.h>
 
 #include <boost/foreach.hpp>
 #include <iterator>
@@ -36,7 +36,7 @@
 #include <unistd.h>
 #include "config.h"
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source);
@@ -60,7 +60,7 @@ void ConfigProperty::splitComment(const string &comment, list<string> &commentLi
 
 void ConfigProperty::throwValueError(const ConfigNode &node, const string &name, const string &value, const string &error) const
 {
-    EvolutionSyncClient::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
+    SyncContext::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
 EvolutionSyncConfig::EvolutionSyncConfig() :
@@ -670,7 +670,7 @@ void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
         string envname = password.substr(2, password.size() - 3);
         const char *envval = getenv(envname.c_str());
         if (!envval) {
-            EvolutionSyncClient::throwError(string("the environment variable '") +
+            SyncContext::throwError(string("the environment variable '") +
                                             envname +
                                             "' for the '" +
                                             descr +

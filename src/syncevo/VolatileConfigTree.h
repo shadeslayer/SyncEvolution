@@ -20,8 +20,8 @@
 #ifndef INCL_EVOLUTION_VOLATILE_CONFIG_TREE
 # define INCL_EVOLUTION_VOLATILE_CONFIG_TREE
 
-#include "FileConfigTree.h"
-#include "syncevo/declarations.h"
+#include <syncevo/FileConfigTree.h>
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 

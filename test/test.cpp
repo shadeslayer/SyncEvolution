@@ -18,7 +18,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
 #if defined(ENABLE_INTEGRATION_TESTS) || defined(ENABLE_UNIT_TESTS)
@@ -32,7 +32,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class SkipTest : public CppUnit::TestCase {

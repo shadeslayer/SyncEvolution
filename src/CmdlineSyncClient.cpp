@@ -24,7 +24,7 @@ extern "C" {
 }
 #endif
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 using namespace std;
@@ -33,7 +33,7 @@ CmdlineSyncClient::CmdlineSyncClient(const string &server,
                                      bool doLogging,
                                      const set<string> &sources,
                                      bool useKeyring):
-    EvolutionSyncClient(server, doLogging, sources),
+    SyncContext(server, doLogging, sources),
     m_keyring(useKeyring)
 {
 }
@@ -83,7 +83,7 @@ string CmdlineSyncClient::askPassword(const string &passwordName,
 #endif
     /** if not built with gnome_keyring support, directly ask user to
      * input password */
-    password = EvolutionSyncClient::askPassword(passwordName, descr, key);
+    password = SyncContext::askPassword(passwordName, descr, key);
     return password;
 }
 
@@ -111,12 +111,12 @@ bool CmdlineSyncClient::savePassword(const string &passwordName,
         /* if set operation is failed */
         if(result != GNOME_KEYRING_RESULT_OK) {
 #ifdef GNOME_KEYRING_220
-            EvolutionSyncClient::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. " + gnome_keyring_result_to_message(result));
+            SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. " + gnome_keyring_result_to_message(result));
 #else
             /** if gnome-keyring version is below 2.20, it doesn't support 'gnome_keyring_result_to_message'. */
             stringstream value;
             value << (int)result;
-            EvolutionSyncClient::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. The gnome-keyring error code is " + value.str() + ".");
+            SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. The gnome-keyring error code is " + value.str() + ".");
 #endif
         } 
         return true;
@@ -124,7 +124,7 @@ bool CmdlineSyncClient::savePassword(const string &passwordName,
 #else
     /* if no keyring support, raise the error */
     if(m_keyring) {
-        EvolutionSyncClient::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. " +
+        SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. " +
                 "This syncevolution binary was compiled without support for storing "
                 "passwords in a keyring. Either store passwords in your configuration "
                 "files or enter them interactively on each program run.\n");

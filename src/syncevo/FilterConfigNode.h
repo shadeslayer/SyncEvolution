@@ -25,14 +25,14 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include <syncevo/SyncEvolutionUtil.h>
+#include <syncevo/util.h>
 
 #include <map>
 #include <utility>
 #include <vector>
 #include <string>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
 

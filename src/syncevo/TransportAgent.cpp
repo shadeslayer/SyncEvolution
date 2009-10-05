@@ -17,9 +17,9 @@
  * 02110-1301  USA
  */
 
-#include "TransportAgent.h"
+#include <syncevo/TransportAgent.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 static const char * const TransportAgent::m_contentTypeSyncML = "application/vnd.syncml+xml";

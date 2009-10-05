@@ -31,7 +31,7 @@
 #include <sstream>
 #include <set>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
 
@@ -602,7 +602,7 @@ class ConfigStringCache {
  * exists, then it is used. Otherwise the new layout is used.
  *
  * This class can be instantiated on its own and then provides access
- * to properties actually stored in files. EvolutionSyncClient
+ * to properties actually stored in files. SyncContext
  * inherits from this class so that a derived client has the chance to
  * override every single property (although it doesn't have to).
  * Likewise SyncSource is derived from
@@ -695,7 +695,7 @@ class EvolutionSyncConfig {
      * valid afterwards, but empty and cannot be flushed.
      *
      * Does *not* remove logs associated with the configuration.
-     * For that use the logdir handling in EvolutionSyncClient
+     * For that use the logdir handling in SyncContext
      * before removing the configuration.
      *
      * The config directory is removed if it is empty.
@@ -744,7 +744,7 @@ class EvolutionSyncConfig {
      * the SyncManger uses the AbstractSyncSourceConfig. In
      * SyncEvolution those are implemented by the
      * SyncSource's actually instantiated by
-     * EvolutionSyncClient. Those are complete whereas
+     * SyncContext. Those are complete whereas
      * PersistentSyncSourceConfig only provides access to a
      * subset of the properties.
      *
@@ -802,7 +802,7 @@ class EvolutionSyncConfig {
     /**
      * @name Settings specific to SyncEvolution
      *
-     * See the property definitions in SyncEvolutionConfig.cpp
+     * See the property definitions in SyncConfig.cpp
      * for the user-visible explanations of
      * these settings.
      */
@@ -1063,7 +1063,7 @@ class SyncSourceConfig {
      *
      * @return the pair of <backend> and the (possibly empty)
      *         <format> specified in the "type" property; see
-     *         sourcePropSourceType in SyncEvolutionConfig.cpp
+     *         sourcePropSourceType in SyncConfig.cpp
      *         for details
      */
     static SourceType getSourceType(const SyncSourceNodes &nodes);

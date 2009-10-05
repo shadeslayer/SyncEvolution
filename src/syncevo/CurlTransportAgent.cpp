@@ -17,16 +17,16 @@
  * 02110-1301  USA
  */
 
-#include "CurlTransportAgent.h"
-#include "EvolutionSyncClient.h"
+#include <syncevo/CurlTransportAgent.h>
+#include <syncevo/SyncContext.h>
 
 #ifdef ENABLE_LIBCURL
 
 #include <algorithm>
 #include <ctime>
-#include "SyncEvolutionUtil.h"
+#include <syncevo/util.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 
@@ -276,7 +276,7 @@ void CurlTransportAgent::checkCurl(CURLcode code, bool exception)
 int CurlTransportAgent::progressCallback(void* transport, double, double, double, double)
 {
     CurlTransportAgent *agent = static_cast<CurlTransportAgent *> (transport);
-    SuspendFlags& s_flags = EvolutionSyncClient::getSuspendFlags();
+    SuspendFlags& s_flags = SyncContext::getSuspendFlags();
     //abort transfer
     if (s_flags.state == SuspendFlags::CLIENT_ABORT){
         agent->setAborting (true);
