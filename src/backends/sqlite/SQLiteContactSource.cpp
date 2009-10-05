@@ -375,5 +375,5 @@ SE_END_CXX
 #endif /* ENABLE_SQLITE */
 
 #ifdef ENABLE_MODULES
-# include <syncevo/SQLiteContactSourceRegister.cpp>
+# include "SQLiteContactSourceRegister.cpp"
 #endif

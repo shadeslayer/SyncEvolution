@@ -753,5 +753,5 @@ SE_END_CXX
 #endif /* ENABLE_ECAL */
 
 #ifdef ENABLE_MODULES
-# include <syncevo/EvolutionCalendarSourceRegister.cpp>
+# include "EvolutionCalendarSourceRegister.cpp"
 #endif

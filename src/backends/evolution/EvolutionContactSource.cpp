@@ -401,5 +401,5 @@ SE_END_CXX
 #endif /* ENABLE_EBOOK */
 
 #ifdef ENABLE_MODULES
-# include <syncevo/EvolutionContactSourceRegister.cpp>
+# include "EvolutionContactSourceRegister.cpp"
 #endif

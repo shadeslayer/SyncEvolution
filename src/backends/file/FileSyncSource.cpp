@@ -229,5 +229,5 @@ SE_END_CXX
 #endif /* ENABLE_FILE */
 
 #ifdef ENABLE_MODULES
-# include <syncevo/FileSyncSourceRegister.cpp>
+# include "FileSyncSourceRegister.cpp"
 #endif
