@@ -208,6 +208,20 @@ AC_DEFINE_UNQUOTED(SYNCEVOLUTION_SSL_SERVER_CERTIFICATES, "$CA_CERTIFICATES", [d
 AC_SUBST(TRANSPORT_LIBS)
 AC_SUBST(TRANSPORT_CFLAGS)
 
+AC_ARG_ENABLE(ssl-certificate-check,
+              AC_HELP_STRING([--disable-ssl-certificate-check],
+                             [Disable SSL certificate checking in all server
+                              *templates*.  Users can still choose to enable or
+                              disable it in their configuration. This is necessary on
+                              platforms where the transport library has problems
+                              verifying the server's certificate (libsoup + Google,
+                              http://bugzilla.moblin.org/show_bug.cgi?id=4551)]),
+             enable_ssl_certificate_check="$enableval",
+             enable_ssl_certificate_check="yes")
+if test "$enable_ssl_certificate_check" = "yes"; then
+   AC_DEFINE(ENABLE_SSL_CERTIFICATE_CHECK, 1, [enable SSL certificate check in server templates])
+fi
+
 # for dbus interface file mangling
 AC_PATH_PROG(XSLT, xsltproc)
 

@@ -314,11 +314,13 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         config->setClientAuthType("syncml:auth-basic");
         config->setWBXML(true);
         config->setConsumerReady(true);
+#ifndef ENABLE_SSL_CERTIFICATE_CHECK
         // temporarily (?) disabled certificate checking because
         // libsoup/gnutls do not accept the Verisign certificate
         // (GNOME Bugzilla #589323)
         config->setSSLVerifyServer(false);
         config->setSSLVerifyHost(false);
+#endif
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("contacts");
         source->setSourceType("addressbook:text/x-vcard");
