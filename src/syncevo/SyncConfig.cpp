@@ -534,7 +534,7 @@ static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "enables or disables the detailed (and sometimes slow) comparison\n"
                                                "of database content before and after a sync session",
                                                "1");
-static IntConfigProperty syncPropRetryDuration("RetryDuration",
+static UIntConfigProperty syncPropRetryDuration("RetryDuration",
                                           "The total amount of time in which the client tries\n"
                                           "tries to get a response from the server.\n"
                                           "During this time, the client will resend messages\n"
@@ -544,7 +544,7 @@ static IntConfigProperty syncPropRetryDuration("RetryDuration",
                                           "without a response, the synchronization aborts without\n"
                                           "sending further messages to the server."
                                           ,"300");
-static IntConfigProperty syncPropRetryInterval("RetryInterval",
+static UIntConfigProperty syncPropRetryInterval("RetryInterval",
                                           "The time between the start of message sending and\n"
                                           "the start of the retransmission. If the interval has\n"
                                           "already passed when a message send returns, the\n"
