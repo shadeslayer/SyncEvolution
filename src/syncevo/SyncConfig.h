@@ -31,6 +31,10 @@
 #include <sstream>
 #include <set>
 
+#include <stdlib.h>
+#include <limits.h>
+#include <errno.h>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
@@ -367,10 +371,73 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
     }
 };
 
-typedef TypedConfigProperty<int> IntConfigProperty;
-typedef TypedConfigProperty<unsigned int> UIntConfigProperty;
-typedef TypedConfigProperty<long> LongConfigProperty;
-typedef TypedConfigProperty<unsigned long> ULongConfigProperty;
+/**
+ * The "in >> res" check in TypedConfigProperty::checkValue
+ * is to loose. For example, the standard library accepts
+ * -1 for an unsigned type.
+ *
+ * This class accepts a function pointer to strtoul() or
+ * strtol() and uses that function to do strict value checking.
+ *
+ * @param T       type to be converted to and from (like int)
+ * @param Tmin    minimum value of T for range checking
+ * @param Tmax    maximum value of T for range checking
+ * @param C       intermediate type for conversion  (like long)
+ * @param Cmin    minimum value of C for range checking
+ * @param Cmax    maximum value of C for range checking
+ * @param strto   conversion function
+ */
+template <class T, T Tmin, T Tmax,
+    class C, C Cmin, C Cmax,
+    C (*strto)(const char *, char **, int)>
+class ScalarConfigProperty : public TypedConfigProperty<T>
+{
+ public:
+    ScalarConfigProperty(const string &name, const string &comment, const string &defValue = string("0"), const string &descr = string("")) :
+    TypedConfigProperty<T>(name, comment, defValue, descr)
+        {}
+
+    virtual bool checkValue(const string &value, string &error) const {
+        errno = 0;
+        const char *nptr = value.c_str();
+        char *endptr;
+        // use base 10 because not specifying a base 
+        // would interpret 077 as octal value, which
+        // could be confusing for users
+        C val = strto(nptr, &endptr, 10);
+        if ((errno == ERANGE && (val == Cmin || val == Cmax))) {
+            error = "range error";
+            return false;
+        }
+        if (errno != 0 && val == 0) {
+            error = "cannot parse";
+            return false;
+        }
+        if (endptr == nptr) {
+            error = "decimal value expected";
+            return false;
+        }
+        while (isspace(*endptr)) {
+            endptr++;
+        }
+        if (*endptr != '\0') {
+            error = "unexpected trailing non-whitespace characters: ";
+            error += endptr;
+            return false;
+        }
+        if (val > Tmax || val < Tmin) {
+            error = "range error";
+            return false;
+        }
+
+        return true;
+    }
+};
+
+typedef ScalarConfigProperty<int, INT_MIN, INT_MAX, long, LONG_MIN, LONG_MAX, strtol> IntConfigProperty;
+typedef ScalarConfigProperty<unsigned int, 0, UINT_MAX, unsigned long, 0, ULONG_MAX, strtoul> UIntConfigProperty;
+typedef ScalarConfigProperty<long, LONG_MIN, LONG_MAX, long, LONG_MIN, LONG_MAX, strtol> LongConfigProperty;
+typedef ScalarConfigProperty<unsigned long, 0, ULONG_MAX, unsigned long, 0, ULONG_MAX, strtoul> ULongConfigProperty;
 
 /**
  * This struct wraps keys for storing passwords
