@@ -54,6 +54,18 @@
       if(cell_phones == 1) {
         TEL_FLAGS[wanted] = 0x10;
       }
+
+      // Google sends TYPE=WORK and TYPE=HOME when it means
+      // normal VOICE phone numbers. Add that flag when
+      // importing into Evolution, because Evolution does not
+      // display the numbers without VOICE.
+      i = 0;
+      while(i < SIZE(TEL_FLAGS)) {
+        if(TEL_FLAGS[i] == 1 || TEL_FLAGS[i] == 2) {
+          TEL_FLAGS[i] = TEL_FLAGS[i] | 8;
+        }
+        i = i + 1;
+      }
     ]]></macro>
 
 
