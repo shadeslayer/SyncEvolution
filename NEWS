@@ -1,4 +1,4 @@
-SyncEvolution 0.9 -> 0.9.1, ??.??.????
+SyncEvolution 0.9 -> 0.9.1, 06.10.2009
 ======================================
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog
 
@@ -36,8 +36,8 @@ schema in this case).
 Other changes:
 
 * Resend messages to cope with intermittent loss of network
-  connectivity (MB#3427). See the new "ResendDuration" and
-  "ResendDelay" configuration properties for details.
+  connectivity (Moblin Bugzilla #3427). See the new "ResendDuration"
+  and "ResendDelay" configuration properties for details.
 
 * The logging of added and updated items was enhanced. Events,
   tasks and memos are logged with a short description instead of
@@ -47,6 +47,10 @@ Other changes:
   with Google although Google does not support that (MB#5871).
   In new installations this is prevented now by clearing the URI
   for those data categories.
+
+* Importing work and home phone numbers from Google into desktop
+  Evolution works better, because SyncEvolution now adds the "VOICE"
+  flag expected by Evolution (MB#6501).
 
 * SyncEvolution command line uses the GNOME keyring when
   the new --keyring option is given.
@@ -67,6 +71,9 @@ Other changes:
 
 * Improved checks which logs in the logdir belong to the current
   server (MB#5215).
+
+* Improved sanity checking of integer configuration parameters
+  (MB#6500).
 
 Known issue:
 
