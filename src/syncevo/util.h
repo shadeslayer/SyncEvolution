@@ -177,17 +177,17 @@ std::string StringPrintfV(const char *format, va_list ap);
  *
  * @TODO add function name
  */
-class SyncEvolutionException : public std::runtime_error
+class Exception : public std::runtime_error
 {
  public:
-    SyncEvolutionException(const std::string &file,
+    Exception(const std::string &file,
                            int line,
                            const std::string &what) :
     std::runtime_error(what),
         m_file(file),
         m_line(line)
         {}
-    ~SyncEvolutionException() throw() {}
+    ~Exception() throw() {}
     const std::string m_file;
     const int m_line;
 
@@ -217,9 +217,9 @@ inline string getHome() {
     return homestr ? homestr : ".";
 }
 
-/** throw a SyncEvolutionException */
+/** throw a normal SyncEvolution Exception, including source information */
 #define SE_THROW(_what) \
-    SE_THROW_EXCEPTION(SyncEvolutionException, _what)
+    SE_THROW_EXCEPTION(Exception, _what)
 
 /** throw a class which accepts file, line, what parameters */
 #define SE_THROW_EXCEPTION(_class,  _what) \

@@ -37,7 +37,7 @@ class CmdlineSyncClient : public SyncContext {
                       const set<string> &sources = set<string>(),
                       bool useKeyring = false);
 
-    using EvolutionSyncConfig::savePassword;
+    using SyncConfig::savePassword;
 
     /**
      * These 2 functions are from ConfigUserInterface and implement it

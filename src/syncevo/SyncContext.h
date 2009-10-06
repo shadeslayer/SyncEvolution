@@ -67,7 +67,7 @@ struct SuspendFlags
  * implementation of those uses stdin/out.
  *
  */
-class SyncContext : public EvolutionSyncConfig, public ConfigUserInterface {
+class SyncContext : public SyncConfig, public ConfigUserInterface {
     const string m_server;
     const set<string> m_sources;
     const bool m_doLogging;
@@ -123,7 +123,7 @@ class SyncContext : public EvolutionSyncConfig, public ConfigUserInterface {
                         const set<string> &sources = set<string>());
     ~SyncContext();
 
-    using EvolutionSyncConfig::savePassword;
+    using SyncConfig::savePassword;
 
     bool getQuiet() { return m_quiet; }
     void setQuiet(bool quiet) { m_quiet = quiet; }

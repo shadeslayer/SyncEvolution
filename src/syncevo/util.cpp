@@ -286,7 +286,7 @@ std::string StringPrintfV(const char *format, va_list ap)
     return res;
 }
 
-SyncMLStatus SyncEvolutionException::handle(SyncMLStatus *status, Logger *logger)
+SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger)
 {
     SyncMLStatus new_status = STATUS_FATAL;
 
@@ -297,7 +297,7 @@ SyncMLStatus SyncEvolutionException::handle(SyncMLStatus *status, Logger *logger
                      ex.m_file.c_str(), ex.m_line);
         SE_LOG_ERROR(logger, NULL, "%s", ex.what());
         new_status = SyncMLStatus(sysync::LOCERR_TRANSPFAIL);
-    } catch (const SyncEvolutionException &ex) {
+    } catch (const Exception &ex) {
         SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
         SE_LOG_ERROR(logger, NULL, "%s", ex.what());

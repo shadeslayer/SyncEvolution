@@ -697,7 +697,7 @@ class ConfigStringCache {
  * uses a FileConfigTree instance. Other implementations would be
  * possible.
  */
-class EvolutionSyncConfig {
+class SyncConfig {
  public:
     /**
      * Opens the configuration for a specific server,
@@ -710,14 +710,14 @@ class EvolutionSyncConfig {
      *               searching for it; always uses the
      *               current layout in that tree
      */
-    EvolutionSyncConfig(const string &server,
+    SyncConfig(const string &server,
                         boost::shared_ptr<ConfigTree> tree = boost::shared_ptr<ConfigTree>());
 
     /**
      * Creates a temporary configuration.
      * Can be copied around, but not flushed.
      */
-    EvolutionSyncConfig();
+    SyncConfig();
 
    /** absolute directory name of the configuration root */
     string getRootPath() const;
@@ -743,7 +743,7 @@ class EvolutionSyncConfig {
      *
      * @return NULL if no such template
      */
-    static boost::shared_ptr<EvolutionSyncConfig> createServerTemplate(const string &server);
+    static boost::shared_ptr<SyncConfig> createServerTemplate(const string &server);
 
     /** true if the main configuration file already exists */
     bool exists() const;
@@ -801,7 +801,7 @@ class EvolutionSyncConfig {
             return m_configNode;
         }
     }
-    virtual boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<EvolutionSyncConfig *>(this)->getProperties(hidden); }
+    virtual boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<SyncConfig *>(this)->getProperties(hidden); }
 
 
     /**
@@ -819,7 +819,7 @@ class EvolutionSyncConfig {
      */
     virtual boost::shared_ptr<PersistentSyncSourceConfig> getSyncSourceConfig(const string &name);
     virtual boost::shared_ptr<const PersistentSyncSourceConfig> getSyncSourceConfig(const string &name) const {
-        return const_cast<EvolutionSyncConfig *>(this)->getSyncSourceConfig(name);
+        return const_cast<SyncConfig *>(this)->getSyncSourceConfig(name);
     }
 
     /**
@@ -863,7 +863,7 @@ class EvolutionSyncConfig {
      * @param sourceFilter   if NULL, then copy all sources; if not NULL,
      *                       then only copy sources listed here
      */
-    void copy(const EvolutionSyncConfig &other,
+    void copy(const SyncConfig &other,
               const set<string> *sourceFilter);
 
     /**
@@ -1111,12 +1111,12 @@ class SyncSourceConfig {
     const char *getPassword() const;
     virtual void setPassword(const string &value, bool temporarily = false);
 
-    /** same as EvolutionSyncConfig::checkPassword() but with
+    /** same as SyncConfig::checkPassword() but with
      * an extra argument globalConfigNode for source config property
      * may need global config node to check password */
     virtual void checkPassword(ConfigUserInterface &ui, const string &serverName, FilterConfigNode& globalConfigNode);
 
-    /** same as EvolutionSyncConfig::savePassword() */
+    /** same as SyncConfig::savePassword() */
     virtual void savePassword(ConfigUserInterface &ui, const string &serverName, FilterConfigNode& globalConfigNode);
 
     virtual const char *getDatabaseID() const;

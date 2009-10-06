@@ -714,7 +714,7 @@ string EvolutionCalendarSource::getItemModTime(ECalComponent *ecomp)
 {
     struct icaltimetype *modTime;
     e_cal_component_get_last_modified(ecomp, &modTime);
-    eptr<struct icaltimetype, struct icaltimetype, EvolutionUnrefFree<struct icaltimetype> > modTimePtr(modTime);
+    eptr<struct icaltimetype, struct icaltimetype, UnrefFree<struct icaltimetype> > modTimePtr(modTime);
     if (!modTimePtr) {
         return "";
     } else {

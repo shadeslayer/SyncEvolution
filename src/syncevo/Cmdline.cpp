@@ -50,7 +50,7 @@ Cmdline::Cmdline(int argc, const char * const * argv, ostream &out, ostream &err
     m_argv(argv),
     m_out(out),
     m_err(err),
-    m_validSyncProps(EvolutionSyncConfig::getRegistry()),
+    m_validSyncProps(SyncConfig::getRegistry()),
     m_validSourceProps(SyncSourceConfig::getRegistry())
 {}
 
@@ -100,7 +100,7 @@ bool Cmdline::parse()
             m_configure = true;
             if (boost::trim_copy(m_template) == "?") {
                 dumpServers("Available configuration templates:",
-                            EvolutionSyncConfig::getServerTemplates());
+                            SyncConfig::getServerTemplates());
                 m_dontrun = true;
             }
         } else if(boost::iequals(m_argv[opt], "--print-servers")) {
@@ -186,7 +186,7 @@ bool Cmdline::run() {
         printf("%s", SyncSource::backendsInfo().c_str());
     } else if (m_printServers || boost::trim_copy(m_server) == "?") {
         dumpServers("Configured servers:",
-                    EvolutionSyncConfig::getServers());
+                    SyncConfig::getServers());
     } else if (m_dontrun) {
         // user asked for information
     } else if (m_argc == 1) {
@@ -213,20 +213,20 @@ bool Cmdline::run() {
 
         usage(false);
     } else if (m_printConfig) {
-        boost::shared_ptr<EvolutionSyncConfig> config;
+        boost::shared_ptr<SyncConfig> config;
 
         if (m_template.empty()) {
             if (m_server.empty()) {
                 m_err << "ERROR: --print-config requires either a --template or a server name." << endl;
                 return false;
             }
-            config.reset(new EvolutionSyncConfig(m_server));
+            config.reset(new SyncConfig(m_server));
             if (!config->exists()) {
                 m_err << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
                 return false;
             }
         } else {
-            config = EvolutionSyncConfig::createServerTemplate(m_template);
+            config = SyncConfig::createServerTemplate(m_template);
             if (!config.get()) {
                 m_err << "ERROR: no configuration template for '" << m_template << "' available." << endl;
                 return false;
@@ -274,9 +274,9 @@ bool Cmdline::run() {
         // Both config changes and migration are implemented as copying from
         // another config (template resp. old one). Migration also moves
         // the old config.
-        boost::shared_ptr<EvolutionSyncConfig> from;
+        boost::shared_ptr<SyncConfig> from;
         if (m_migrate) {
-            from.reset(new EvolutionSyncConfig(m_server));
+            from.reset(new SyncConfig(m_server));
             if (!from->exists()) {
                 m_err << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
                 return false;
@@ -305,18 +305,18 @@ bool Cmdline::run() {
                 counter++;
             }
 
-            from.reset(new EvolutionSyncConfig(m_server + suffix));
+            from.reset(new SyncConfig(m_server + suffix));
         } else {
-            from.reset(new EvolutionSyncConfig(m_server));
+            from.reset(new SyncConfig(m_server));
             if (!from->exists()) {
                 // creating from scratch, look for template
                 fromScratch = true;
                 string configTemplate = m_template.empty() ? m_server : m_template;
-                from = EvolutionSyncConfig::createServerTemplate(configTemplate);
+                from = SyncConfig::createServerTemplate(configTemplate);
                 if (!from.get()) {
                     m_err << "ERROR: no configuration template for '" << configTemplate << "' available." << endl;
                     dumpServers("Available configuration templates:",
-                                EvolutionSyncConfig::getServerTemplates());
+                                SyncConfig::getServerTemplates());
                     return false;
                 }
             }
@@ -406,8 +406,8 @@ bool Cmdline::run() {
             usage(true, "too many parameters for --remove");
             return false;
         } else {
-            boost::shared_ptr<EvolutionSyncConfig> config;
-            config.reset(new EvolutionSyncConfig(m_server));
+            boost::shared_ptr<SyncConfig> config;
+            config.reset(new SyncConfig(m_server));
             config->remove();
             return true;
         }
@@ -606,10 +606,10 @@ void Cmdline::listSources(SyncSource &syncSource, const string &header)
 }
 
 void Cmdline::dumpServers(const string &preamble,
-                                       const EvolutionSyncConfig::ServerList &servers)
+                                       const SyncConfig::ServerList &servers)
 {
     m_out << preamble << endl;
-    BOOST_FOREACH(const EvolutionSyncConfig::ServerList::value_type &server,servers) {
+    BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,servers) {
         m_out << "   "  << server.first << " = " << server.second << endl;
     }
     if (!servers.size()) {

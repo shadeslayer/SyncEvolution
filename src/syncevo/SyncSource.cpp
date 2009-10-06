@@ -55,7 +55,7 @@ void SyncSourceBase::throwError(const string &failure)
 
 SyncMLStatus SyncSourceBase::handleException()
 {
-    SyncMLStatus res = SyncEvolutionException::handle(this);
+    SyncMLStatus res = Exception::handle(this);
     return res == STATUS_FATAL ?
         STATUS_DATASTORE_FAILURE :
         res;
@@ -334,7 +334,7 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error)
 SyncSource *SyncSource::createTestingSource(const string &name, const string &type, bool error,
                                             const char *prefix)
 {
-    EvolutionSyncConfig config("testing");
+    SyncConfig config("testing");
     SyncSourceNodes nodes = config.getSyncSourceNodes(name);
     SyncSourceParams params(name, nodes, "");
     PersistentSyncSourceConfig sourceconfig(name, nodes);

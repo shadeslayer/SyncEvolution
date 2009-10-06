@@ -42,12 +42,12 @@ using namespace std;
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-template<class T> class EvolutionUnrefFree {
+template<class T> class UnrefFree {
  public:
     static void unref(T *pointer) { free(pointer); }
 };
 
-class EvolutionUnref {
+class Unref {
  public:
     /**
      * C character string - beware, Funambol C++ client library strings must
@@ -84,7 +84,7 @@ class EvolutionUnref {
  * trying to store a NULL pointer raises an exception,
  * unreferencing valid objects is done automatically
  */
-template<class T, class base = T, class R = EvolutionUnref > class eptr {
+template<class T, class base = T, class R = Unref > class eptr {
  protected:
     T *m_pointer;
     

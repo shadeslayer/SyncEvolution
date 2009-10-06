@@ -63,7 +63,7 @@ void ConfigProperty::throwValueError(const ConfigNode &node, const string &name,
     SyncContext::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
-EvolutionSyncConfig::EvolutionSyncConfig() :
+SyncConfig::SyncConfig() :
     m_oldLayout(false)
 {
     m_tree.reset(new VolatileConfigTree());
@@ -71,7 +71,7 @@ EvolutionSyncConfig::EvolutionSyncConfig() :
     m_hiddenNode = m_configNode;
 }
 
-EvolutionSyncConfig::EvolutionSyncConfig(const string &server,
+SyncConfig::SyncConfig(const string &server,
                                          boost::shared_ptr<ConfigTree> tree) :
     m_server(server),
     m_oldLayout(false)
@@ -102,25 +102,25 @@ EvolutionSyncConfig::EvolutionSyncConfig(const string &server,
     m_hiddenNode = m_tree->open(path, ConfigTree::hidden);
 }
 
-string EvolutionSyncConfig::getRootPath() const
+string SyncConfig::getRootPath() const
 {
     return m_tree->getRootPath();
 }
 
-static void addServers(const string &root, EvolutionSyncConfig::ServerList &res) {
+static void addServers(const string &root, SyncConfig::ServerList &res) {
     FileConfigTree tree(root, false);
     list<string> servers = tree.getChildren("");
     BOOST_FOREACH(const string &server, servers) {
         // sanity check: only list server directories which actually
         // contain a configuration
-        EvolutionSyncConfig config(server);
+        SyncConfig config(server);
         if (config.exists()) {
             res.push_back(pair<string, string>(server, root + "/" + server));
         }
     }
 }
 
-EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServers()
+SyncConfig::ServerList SyncConfig::getServers()
 {
     ServerList res;
 
@@ -130,7 +130,7 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServers()
     return res;
 }
 
-EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
+SyncConfig::ServerList SyncConfig::getServerTemplates()
 {
     class TmpList : public ServerList {
     public:
@@ -151,7 +151,7 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
         ReadDir dir(templateDir);
         BOOST_FOREACH(const string &entry, dir) {
             if (isDir(templateDir + "/" + entry)) {
-                boost::shared_ptr<EvolutionSyncConfig> config = EvolutionSyncConfig::createServerTemplate(entry);
+                boost::shared_ptr<SyncConfig> config = SyncConfig::createServerTemplate(entry);
                 string comment = config->getWebURL();
                 if (comment.empty()) {
                     comment = templateDir + "/" + entry;
@@ -174,7 +174,7 @@ EvolutionSyncConfig::ServerList EvolutionSyncConfig::getServerTemplates()
     return result;
 }
 
-boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate(const string &server)
+boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &server)
 {
     // case insensitive search for read-only file template config
     string templateConfig(TEMPLATE_DIR);
@@ -193,7 +193,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     }
     boost::shared_ptr<FileConfigTree> tree(new FileConfigTree(templateConfig, false));
     tree->setReadOnly(true);
-    boost::shared_ptr<EvolutionSyncConfig> config(new EvolutionSyncConfig(server, tree));
+    boost::shared_ptr<SyncConfig> config(new SyncConfig(server, tree));
     boost::shared_ptr<PersistentSyncSourceConfig> source;
 
     config->setDefaults(false);
@@ -367,12 +367,12 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     return config;
 }
 
-bool EvolutionSyncConfig::exists() const
+bool SyncConfig::exists() const
 {
     return m_configNode->exists();
 }
 
-void EvolutionSyncConfig::preFlush(ConfigUserInterface &ui)
+void SyncConfig::preFlush(ConfigUserInterface &ui)
 {
     /* Iterator over all sync global and source properties 
      * one by one and check whether they need to save password */
@@ -396,29 +396,29 @@ void EvolutionSyncConfig::preFlush(ConfigUserInterface &ui)
     }
 }
 
-void EvolutionSyncConfig::flush()
+void SyncConfig::flush()
 {
     m_tree->flush();
 }
 
-void EvolutionSyncConfig::remove()
+void SyncConfig::remove()
 {
     m_tree->remove();
     m_tree.reset(new VolatileConfigTree());
 }
 
-boost::shared_ptr<PersistentSyncSourceConfig> EvolutionSyncConfig::getSyncSourceConfig(const string &name)
+boost::shared_ptr<PersistentSyncSourceConfig> SyncConfig::getSyncSourceConfig(const string &name)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
     return boost::shared_ptr<PersistentSyncSourceConfig>(new PersistentSyncSourceConfig(name, nodes));
 }
 
-list<string> EvolutionSyncConfig::getSyncSources() const
+list<string> SyncConfig::getSyncSources() const
 {
     return m_tree->getChildren(m_oldLayout ? "spds/sources" : "sources");
 }
 
-SyncSourceNodes EvolutionSyncConfig::getSyncSourceNodes(const string &name,
+SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
                                                         const string &changeId)
 {
     boost::shared_ptr<FilterConfigNode> configNode;
@@ -440,10 +440,10 @@ SyncSourceNodes EvolutionSyncConfig::getSyncSourceNodes(const string &name,
     return SyncSourceNodes(configNode, hiddenNode, trackingNode);
 }
 
-ConstSyncSourceNodes EvolutionSyncConfig::getSyncSourceNodes(const string &name,
+ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
                                                              const string &changeId) const
 {
-    return const_cast<EvolutionSyncConfig *>(this)->getSyncSourceNodes(name, changeId);
+    return const_cast<SyncConfig *>(this)->getSyncSourceNodes(name, changeId);
 }
 
 
@@ -592,7 +592,7 @@ static ULongConfigProperty syncPropHashCode("HashCode", "used by the SyncML libr
 
 static ConfigProperty syncPropConfigDate("ConfigDate", "used by the SyncML library internally; do not modify");
 
-ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
+ConfigPropertyRegistry &SyncConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
     static bool initialized;
@@ -637,16 +637,16 @@ ConfigPropertyRegistry &EvolutionSyncConfig::getRegistry()
     return registry;
 }
 
-const char *EvolutionSyncConfig::getUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropUsername); }
-void EvolutionSyncConfig::setUsername(const string &value, bool temporarily) { syncPropUsername.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getPassword() const {
+const char *SyncConfig::getUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropUsername); }
+void SyncConfig::setUsername(const string &value, bool temporarily) { syncPropUsername.setProperty(*m_configNode, value, temporarily); }
+const char *SyncConfig::getPassword() const {
     string password = syncPropPassword.getCachedProperty(*m_configNode, m_cachedPassword);
     return m_stringCache.storeString(syncPropPassword.getName(), password);
 }
-void EvolutionSyncConfig::checkPassword(ConfigUserInterface &ui) {
+void SyncConfig::checkPassword(ConfigUserInterface &ui) {
     syncPropPassword.checkPassword(ui, m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
 }
-void EvolutionSyncConfig::savePassword(ConfigUserInterface &ui) {
+void SyncConfig::savePassword(ConfigUserInterface &ui) {
     syncPropPassword.savePassword(ui,m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
 }
 
@@ -790,60 +790,60 @@ ConfigPasswordKey ProxyPasswordConfigProperty::getPasswordKey(const string &desc
     return key;
 }
 
-void EvolutionSyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*m_configNode, value, temporarily); }
-bool EvolutionSyncConfig::getUseProxy() const { return syncPropUseProxy.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getProxyHost() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyHost); }
-void EvolutionSyncConfig::setProxyHost(const string &value, bool temporarily) { syncPropProxyHost.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getProxyUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyUsername); }
-void EvolutionSyncConfig::setProxyUsername(const string &value, bool temporarily) { syncPropProxyUsername.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getProxyPassword() const {
+void SyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*m_configNode, value, temporarily); }
+bool SyncConfig::getUseProxy() const { return syncPropUseProxy.getProperty(*m_configNode); }
+void SyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*m_configNode, value, temporarily); }
+const char *SyncConfig::getProxyHost() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyHost); }
+void SyncConfig::setProxyHost(const string &value, bool temporarily) { syncPropProxyHost.setProperty(*m_configNode, value, temporarily); }
+const char *SyncConfig::getProxyUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyUsername); }
+void SyncConfig::setProxyUsername(const string &value, bool temporarily) { syncPropProxyUsername.setProperty(*m_configNode, value, temporarily); }
+const char *SyncConfig::getProxyPassword() const {
     string password = syncPropProxyPassword.getCachedProperty(*m_configNode, m_cachedProxyPassword);
     return m_stringCache.storeString(syncPropProxyPassword.getName(), password);
 }
-void EvolutionSyncConfig::checkProxyPassword(ConfigUserInterface &ui) {
+void SyncConfig::checkProxyPassword(ConfigUserInterface &ui) {
     syncPropProxyPassword.checkPassword(ui, m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
 }
-void EvolutionSyncConfig::saveProxyPassword(ConfigUserInterface &ui) {
+void SyncConfig::saveProxyPassword(ConfigUserInterface &ui) {
     syncPropProxyPassword.savePassword(ui, m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
 }
-void EvolutionSyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cachedProxyPassword = ""; syncPropProxyPassword.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getSyncURL() const { return m_stringCache.getProperty(*m_configNode, syncPropSyncURL); }
-void EvolutionSyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getClientAuthType() const { return m_stringCache.getProperty(*m_configNode, syncPropClientAuthType); }
-void EvolutionSyncConfig::setClientAuthType(const string &value, bool temporarily) { syncPropClientAuthType.setProperty(*m_configNode, value, temporarily); }
-unsigned long  EvolutionSyncConfig::getMaxMsgSize() const { return syncPropMaxMsgSize.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setMaxMsgSize(unsigned long value, bool temporarily) { syncPropMaxMsgSize.setProperty(*m_configNode, value, temporarily); }
-unsigned int  EvolutionSyncConfig::getMaxObjSize() const { return syncPropMaxObjSize.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setMaxObjSize(unsigned int value, bool temporarily) { syncPropMaxObjSize.setProperty(*m_configNode, value, temporarily); }
-bool EvolutionSyncConfig::getCompression() const { return syncPropCompression.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setCompression(bool value, bool temporarily) { syncPropCompression.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getDevID() const { return m_stringCache.getProperty(*m_configNode, syncPropDevID); }
-void EvolutionSyncConfig::setDevID(const string &value, bool temporarily) { syncPropDevID.setProperty(*m_configNode, value, temporarily); }
-bool EvolutionSyncConfig::getWBXML() const { return syncPropWBXML.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setWBXML(bool value, bool temporarily) { syncPropWBXML.setProperty(*m_configNode, value, temporarily); }
-const char *EvolutionSyncConfig::getLogDir() const { return m_stringCache.getProperty(*m_configNode, syncPropLogDir); }
-void EvolutionSyncConfig::setLogDir(const string &value, bool temporarily) { syncPropLogDir.setProperty(*m_configNode, value, temporarily); }
-int EvolutionSyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*m_configNode, value, temporarily); }
-int EvolutionSyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
-int EvolutionSyncConfig::getRetryDuration() const {return syncPropRetryDuration.getProperty(*m_configNode);}
-void EvolutionSyncConfig::setRetryDuration(int value, bool temporarily) {syncPropRetryDuration.setProperty(*m_configNode, value, temporarily);}
-int EvolutionSyncConfig::getRetryInterval() const {return syncPropRetryInterval.getProperty(*m_configNode);}
-void EvolutionSyncConfig::setRetryInterval(int value, bool temporarily) {return syncPropRetryInterval.setProperty(*m_configNode,value,temporarily);}
-bool EvolutionSyncConfig::getPrintChanges() const { return syncPropPrintChanges.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*m_configNode, value, temporarily); }
-std::string EvolutionSyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*m_configNode, url, temporarily); }
-std::string EvolutionSyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*m_configNode); }
-bool EvolutionSyncConfig::getConsumerReady() const { return syncPropConsumerReady.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setConsumerReady(bool ready) { return syncPropConsumerReady.setProperty(*m_configNode, ready); }
-void EvolutionSyncConfig::setIconURI(const std::string &uri, bool temporarily) { syncPropIconURI.setProperty(*m_configNode, uri, temporarily); }
-unsigned long EvolutionSyncConfig::getHashCode() const { return syncPropHashCode.getProperty(*m_hiddenNode); }
-void EvolutionSyncConfig::setHashCode(unsigned long code) { syncPropHashCode.setProperty(*m_hiddenNode, code); }
-std::string EvolutionSyncConfig::getConfigDate() const { return syncPropConfigDate.getProperty(*m_hiddenNode); }
-void EvolutionSyncConfig::setConfigDate() { 
+void SyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cachedProxyPassword = ""; syncPropProxyPassword.setProperty(*m_configNode, value, temporarily); }
+const char *SyncConfig::getSyncURL() const { return m_stringCache.getProperty(*m_configNode, syncPropSyncURL); }
+void SyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*m_configNode, value, temporarily); }
+const char *SyncConfig::getClientAuthType() const { return m_stringCache.getProperty(*m_configNode, syncPropClientAuthType); }
+void SyncConfig::setClientAuthType(const string &value, bool temporarily) { syncPropClientAuthType.setProperty(*m_configNode, value, temporarily); }
+unsigned long  SyncConfig::getMaxMsgSize() const { return syncPropMaxMsgSize.getProperty(*m_configNode); }
+void SyncConfig::setMaxMsgSize(unsigned long value, bool temporarily) { syncPropMaxMsgSize.setProperty(*m_configNode, value, temporarily); }
+unsigned int  SyncConfig::getMaxObjSize() const { return syncPropMaxObjSize.getProperty(*m_configNode); }
+void SyncConfig::setMaxObjSize(unsigned int value, bool temporarily) { syncPropMaxObjSize.setProperty(*m_configNode, value, temporarily); }
+bool SyncConfig::getCompression() const { return syncPropCompression.getProperty(*m_configNode); }
+void SyncConfig::setCompression(bool value, bool temporarily) { syncPropCompression.setProperty(*m_configNode, value, temporarily); }
+const char *SyncConfig::getDevID() const { return m_stringCache.getProperty(*m_configNode, syncPropDevID); }
+void SyncConfig::setDevID(const string &value, bool temporarily) { syncPropDevID.setProperty(*m_configNode, value, temporarily); }
+bool SyncConfig::getWBXML() const { return syncPropWBXML.getProperty(*m_configNode); }
+void SyncConfig::setWBXML(bool value, bool temporarily) { syncPropWBXML.setProperty(*m_configNode, value, temporarily); }
+const char *SyncConfig::getLogDir() const { return m_stringCache.getProperty(*m_configNode, syncPropLogDir); }
+void SyncConfig::setLogDir(const string &value, bool temporarily) { syncPropLogDir.setProperty(*m_configNode, value, temporarily); }
+int SyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getProperty(*m_configNode); }
+void SyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*m_configNode, value, temporarily); }
+int SyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
+void SyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
+int SyncConfig::getRetryDuration() const {return syncPropRetryDuration.getProperty(*m_configNode);}
+void SyncConfig::setRetryDuration(int value, bool temporarily) {syncPropRetryDuration.setProperty(*m_configNode, value, temporarily);}
+int SyncConfig::getRetryInterval() const {return syncPropRetryInterval.getProperty(*m_configNode);}
+void SyncConfig::setRetryInterval(int value, bool temporarily) {return syncPropRetryInterval.setProperty(*m_configNode,value,temporarily);}
+bool SyncConfig::getPrintChanges() const { return syncPropPrintChanges.getProperty(*m_configNode); }
+void SyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*m_configNode, value, temporarily); }
+std::string SyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*m_configNode); }
+void SyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*m_configNode, url, temporarily); }
+std::string SyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*m_configNode); }
+bool SyncConfig::getConsumerReady() const { return syncPropConsumerReady.getProperty(*m_configNode); }
+void SyncConfig::setConsumerReady(bool ready) { return syncPropConsumerReady.setProperty(*m_configNode, ready); }
+void SyncConfig::setIconURI(const std::string &uri, bool temporarily) { syncPropIconURI.setProperty(*m_configNode, uri, temporarily); }
+unsigned long SyncConfig::getHashCode() const { return syncPropHashCode.getProperty(*m_hiddenNode); }
+void SyncConfig::setHashCode(unsigned long code) { syncPropHashCode.setProperty(*m_hiddenNode, code); }
+std::string SyncConfig::getConfigDate() const { return syncPropConfigDate.getProperty(*m_hiddenNode); }
+void SyncConfig::setConfigDate() { 
     /* Set current timestamp as configdate */
     char buffer[17]; 
     time_t ts = time(NULL);
@@ -851,12 +851,12 @@ void EvolutionSyncConfig::setConfigDate() {
     const std::string date(buffer);
     syncPropConfigDate.setProperty(*m_hiddenNode, date);
 }
-const char* EvolutionSyncConfig::getSSLServerCertificates() const { return m_stringCache.getProperty(*m_configNode, syncPropSSLServerCertificates); }
-void EvolutionSyncConfig::setSSLServerCertificates(const string &value, bool temporarily) { syncPropSSLServerCertificates.setProperty(*m_configNode, value, temporarily); }
-bool EvolutionSyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setSSLVerifyServer(bool value, bool temporarily) { syncPropSSLVerifyServer.setProperty(*m_configNode, value, temporarily); }
-bool EvolutionSyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHost.getProperty(*m_configNode); }
-void EvolutionSyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncPropSSLVerifyHost.setProperty(*m_configNode, value, temporarily); }
+const char* SyncConfig::getSSLServerCertificates() const { return m_stringCache.getProperty(*m_configNode, syncPropSSLServerCertificates); }
+void SyncConfig::setSSLServerCertificates(const string &value, bool temporarily) { syncPropSSLServerCertificates.setProperty(*m_configNode, value, temporarily); }
+bool SyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.getProperty(*m_configNode); }
+void SyncConfig::setSSLVerifyServer(bool value, bool temporarily) { syncPropSSLVerifyServer.setProperty(*m_configNode, value, temporarily); }
+bool SyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHost.getProperty(*m_configNode); }
+void SyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncPropSSLVerifyHost.setProperty(*m_configNode, value, temporarily); }
 
 static void setDefaultProps(const ConfigPropertyRegistry &registry,
                             boost::shared_ptr<FilterConfigNode> node,
@@ -873,12 +873,12 @@ static void setDefaultProps(const ConfigPropertyRegistry &registry,
     }    
 }
 
-void EvolutionSyncConfig::setDefaults(bool force)
+void SyncConfig::setDefaults(bool force)
 {
     setDefaultProps(getRegistry(), m_configNode, force);
 }
 
-void EvolutionSyncConfig::setSourceDefaults(const string &name, bool force)
+void SyncConfig::setSourceDefaults(const string &name, bool force)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
     setDefaultProps(SyncSourceConfig::getRegistry(),
@@ -912,7 +912,7 @@ static void copyProperties(const ConfigNode &fromProps,
     }
 }
 
-void EvolutionSyncConfig::copy(const EvolutionSyncConfig &other,
+void SyncConfig::copy(const SyncConfig &other,
                                const set<string> *sourceFilter)
 {
     static const bool visibility[2] = { false, true };
@@ -935,8 +935,8 @@ void EvolutionSyncConfig::copy(const EvolutionSyncConfig &other,
     }
 }
 
-const char *EvolutionSyncConfig::getSwv() const { return VERSION; }
-const char *EvolutionSyncConfig::getDevType() const { return DEVICE_TYPE; }
+const char *SyncConfig::getSwv() const { return VERSION; }
+const char *SyncConfig::getDevType() const { return DEVICE_TYPE; }
 
                      
 SyncSourceConfig::SyncSourceConfig(const string &name, const SyncSourceNodes &nodes) :

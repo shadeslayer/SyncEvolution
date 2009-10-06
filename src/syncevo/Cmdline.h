@@ -122,7 +122,7 @@ protected:
     void listSources(SyncSource &syncSource, const string &header);
 
     void dumpServers(const string &preamble,
-                     const EvolutionSyncConfig::ServerList &servers);
+                     const SyncConfig::ServerList &servers);
 
     void dumpProperties(const ConfigNode &configuredProps,
                         const ConfigPropertyRegistry &allProps);

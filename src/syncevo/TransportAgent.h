@@ -165,13 +165,13 @@ class TransportAgent
 
 };
 
-class TransportException : public SyncEvolutionException
+class TransportException : public Exception
 {
  public:
     TransportException(const std::string &file,
                        int line,
                        const std::string &what) :
-    SyncEvolutionException(file, line, what) {}
+    Exception(file, line, what) {}
     ~TransportException() throw() {}
 };
 

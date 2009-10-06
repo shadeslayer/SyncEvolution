@@ -104,7 +104,7 @@ extern "C" void suspend_handler(int sig)
 SyncContext::SyncContext(const string &server,
                                          bool doLogging,
                                          const set<string> &sources) :
-    EvolutionSyncConfig(server),
+    SyncConfig(server),
     m_server(server),
     m_sources(sources),
     m_doLogging(doLogging),
@@ -213,7 +213,7 @@ public:
             previousLogdirs(path, dirs);
             return dirs.empty() ? "" : dirs.back();
         } catch (...) {
-            SyncEvolutionException::handle();
+            Exception::handle();
             return "";
         }
     }
@@ -674,7 +674,7 @@ public:
                 try {
                     dumpDatabases("after", &SyncSourceReport::m_backupAfter);
                 } catch (...) {
-                    SyncEvolutionException::handle();
+                    Exception::handle();
                     m_prepared = false;
                 }
                 if (report) {
@@ -1149,9 +1149,9 @@ void SyncContext::setConfigFilter(bool sync, const FilterConfigNode::ConfigFilte
         m_overrideMode = hasSync->second;
         FilterConfigNode::ConfigFilter strippedFilter = filter;
         strippedFilter.erase(SyncSourceConfig::m_sourcePropSync.getName());
-        EvolutionSyncConfig::setConfigFilter(sync, strippedFilter);
+        SyncConfig::setConfigFilter(sync, strippedFilter);
     } else {
-        EvolutionSyncConfig::setConfigFilter(sync, filter);
+        SyncConfig::setConfigFilter(sync, filter);
     }
 }
 
@@ -1250,7 +1250,7 @@ void SyncContext::getConfigTemplateXML(string &xml, string &configname)
             return;
         }
     } catch (...) {
-        SyncEvolutionException::handle();
+        Exception::handle();
     }
 
     /**
@@ -1533,7 +1533,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             // request all config properties once: throwing exceptions
             // now is okay, whereas later it would lead to leaks in the
             // not exception safe client library
-            EvolutionSyncConfig dummy;
+            SyncConfig dummy;
             set<string> activeSources = sourceList.getSources();
             dummy.copy(*this, &activeSources);
 
@@ -1545,7 +1545,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             /* iterator over all sync and source properties instead of checking
              * some specified passwords.
              */
-            ConfigPropertyRegistry& registry = EvolutionSyncConfig::getRegistry();
+            ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
             BOOST_FOREACH(const ConfigProperty *prop, registry) {
                 prop->checkPassword(*this, m_server, getConfigNode());
             }
@@ -1572,11 +1572,11 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             status = doSync();
         } catch (...) {
             // handle the exception here while the engine (and logging!) is still alive
-            SyncEvolutionException::handle(&status);
+            Exception::handle(&status);
             goto report;
         }
     } catch (...) {
-        SyncEvolutionException::handle(&status);
+        Exception::handle(&status);
     }
 
  report:
@@ -1593,7 +1593,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
         }
         sourceList.syncDone(status, report);
     } catch(...) {
-        SyncEvolutionException::handle(&status);
+        Exception::handle(&status);
     }
 
     m_sourceListPtr = NULL;
@@ -1983,11 +1983,11 @@ SyncMLStatus SyncContext::doSync()
                             static_cast<int>(result.result()));
                 stepCmd = sysync::STEPCMD_DONE;
             } else {
-                SyncEvolutionException::handle(&status);
+                Exception::handle(&status);
                 stepCmd = sysync::STEPCMD_ABORT;
             }
         } catch (...) {
-            SyncEvolutionException::handle(&status);
+            Exception::handle(&status);
             stepCmd = sysync::STEPCMD_ABORT;
         }
     } while (stepCmd != sysync::STEPCMD_DONE && stepCmd != sysync::STEPCMD_ERROR);
@@ -2040,7 +2040,7 @@ void SyncContext::status()
             sourceList.dumpDatabases("current", NULL);
             sourceList.dumpLocalChanges(sourceList.getPrevLogdir(), "after", "current");
         } catch(...) {
-            SyncEvolutionException::handle();
+            Exception::handle();
         }
     } else {
         cout << "Previous log directory not found.\n";

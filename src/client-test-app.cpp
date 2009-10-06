@@ -192,13 +192,13 @@ public:
         // get configuration and set obligatory fields
         LoggerBase::instance().setLevel(Logger::DEBUG);
         std::string root = std::string("evolution/") + server + "_" + id;
-        EvolutionSyncConfig config(string(server) + "_" + id);
-        boost::shared_ptr<EvolutionSyncConfig> from = boost::shared_ptr<EvolutionSyncConfig> ();
+        SyncConfig config(string(server) + "_" + id);
+        boost::shared_ptr<SyncConfig> from = boost::shared_ptr<SyncConfig> ();
 
         if (!config.exists()) {
             // no configuration yet
             config.setDefaults();
-            from = EvolutionSyncConfig::createServerTemplate(server);
+            from = SyncConfig::createServerTemplate(server);
             if(from) {
                 set<string> filter;
                 config.copy(*from, &filter);
@@ -367,7 +367,7 @@ private:
         changeID += isSourceA ? "1" : "2";
         string database = evClient.getDatabaseName(name);
 
-        EvolutionSyncConfig config("client-test-changes");
+        SyncConfig config("client-test-changes");
         SyncSourceNodes nodes = config.getSyncSourceNodes(name,
                                                           string("_") + ((TestEvolution &)client).m_clientID +
                                                           "_" + (isSourceA ? "A" : "B"));
