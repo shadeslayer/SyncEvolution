@@ -300,6 +300,7 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
     } else if (boost::iequals(server, "memotoo")) {
         config->setSyncURL("http://sync.memotoo.com/syncML");
         config->setWebURL("http://www.memotoo.com");
+        config->setConsumerReady(true);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("con");
         source = config->getSyncSourceConfig("calendar");
