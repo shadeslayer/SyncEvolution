@@ -2,25 +2,24 @@ SyncEvolution 0.9 -> 0.9.1, ??.??.????
 ======================================
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog
 
-Mobical is now officially supported. Mobical uses vCard 2.1
-and vCalendar 1.0 as data formats, with the result that many
-properties used in Evolution are not supported by the server.
-In particular calendar support is very limited (known issues
-when events are in time zones different from the one selected
-locally and on the server, no support for meetings). For details
-see README.mobical.
+Mobical and Memotoo are now officially supported.
+
+Memotoo uses vCard 2.1 with several Evolution specific extensions. It
+uses iCalendar 2.0, however, without actually supporting the advanced
+features of it. Times are converted to UTC and meeting information are
+lost.
+
+Mobical uses vCard 2.1 and vCalendar 1.0 as data formats, with the
+result that many properties used in Evolution are not supported by the
+server.  In particular calendar support is very limited (known issues
+when events are in time zones different from the one selected locally
+and on the server, no support for meetings). For details see
+README.mobical.
 
 *** Beware *** that the Mobical SyncML password is *not* the same as
 the one for their web site. Log into mobical.net, the go to "my accounts
 >> configure new device >> manual settings" to find the SyncML
 credentials.
-
-Mobical always initiates a slow sync when it has no data left on the
-server. This avoids surprises when the user has wiped out all data on
-the server in order to reset it, because during a slow sync the items
-on the client are preserved. But this also means that it is not
-possible to remove all items on a device remotely. They have to 
-be manually removed on the device itself.
 
 It is now possible to compile database backends outside of
 SyncEvolution, install them and have SyncEvolution use them
@@ -34,7 +33,11 @@ The sqlite demo backend can be enabled and compiled again with
 Synthesis field list to some internal format (an SQLite database
 schema in this case).
 
-Other changes in detail:
+Other changes:
+
+* Resend messages to cope with intermittent loss of network
+  connectivity (MB#3427). See the new "ResendDuration" and
+  "ResendDelay" configuration properties for details.
 
 * The logging of added and updated items was enhanced. Events,
   tasks and memos are logged with a short description instead of
@@ -48,16 +51,29 @@ Other changes in detail:
 * SyncEvolution command line uses the GNOME keyring when
   the new --keyring option is given.
 
-* Some sync UI enhancements (show only one window at a time,
-  describe sync services, avoid crash with very long input
-  in some of the text boxes (MB#5219), set application icon,
-  improved some strings).
+* SSL certificate checking with Google is enabled by default
+  and enabled in Moblin, because libsoup in that distro has
+  the necessary fix. Without that fix, all connection attempts
+  fail. The binaries on syncevolution.org are compiled with
+  --disable-ssl-certificate-check, so users who want the
+  additional security must enable it.
 
-* Resend messages to cope with intermittent loss of network
-  connectivity (MB#3427).
+* syncevolution.org binaries should be compatible with a wider
+  range of Evolution releases again (MB#6552).
+
+* Some sync UI enhancements (describe sync services, avoid crash
+  with very long input in some of the text boxes (MB#5219), set
+  application icon, improved some strings).
 
 * Improved checks which logs in the logdir belong to the current
   server (MB#5215).
+
+Known issue:
+
+* Mobical and Memotoo do not have a description in the GUI yet.
+
+* ZYB.com is not supported because of a known anchor handling
+  problem in the server (MB#2424).
 
 
 SyncEvolution 0.8.1 -> 0.9, 12.08.2009
