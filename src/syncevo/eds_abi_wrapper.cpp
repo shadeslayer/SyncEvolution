@@ -226,6 +226,7 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.e_cal_new_from_uri, "e_cal_new_from_uri",
                 &EDSAbiWrapperSingleton.e_cal_new_system_calendar, "e_cal_new_system_calendar",
                 &EDSAbiWrapperSingleton.e_cal_new_system_tasks, "e_cal_new_system_tasks",
+                &EDSAbiWrapperSingleton.e_cal_get_uri, "e_cal_get_uri",
                 &EDSAbiWrapperSingleton.e_cal_open, "e_cal_open",
                 &EDSAbiWrapperSingleton.e_cal_remove_object, "e_cal_remove_object",
                 &EDSAbiWrapperSingleton.e_cal_remove_object_with_mod, "e_cal_remove_object_with_mod",

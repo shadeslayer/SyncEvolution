@@ -127,6 +127,7 @@ struct EDSAbiWrapper {
     ECal *(*e_cal_new_from_uri) (const gchar *uri, ECalSourceType type);
     ECal *(*e_cal_new_system_calendar) (void);
     ECal *(*e_cal_new_system_tasks) (void);
+    const gchar *(*e_cal_get_uri)(ECal *);
     gboolean (*e_cal_open) (ECal *ecal, gboolean only_if_exists, GError **error);
     gboolean (*e_cal_remove_object) (ECal *ecal, const char *uid, GError **error);
     gboolean (*e_cal_remove_object_with_mod) (ECal *ecal, const char *uid, const char *rid, CalObjModType mod, GError **error);
@@ -230,6 +231,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define e_cal_new_from_uri EDSAbiWrapperSingleton.e_cal_new_from_uri
 #   define e_cal_new_system_calendar EDSAbiWrapperSingleton.e_cal_new_system_calendar
 #   define e_cal_new_system_tasks EDSAbiWrapperSingleton.e_cal_new_system_tasks
+#   define e_cal_get_uri EDSAbiWrapperSingleton.e_cal_get_uri
 #   define e_cal_open EDSAbiWrapperSingleton.e_cal_open
 #   define e_cal_remove_object EDSAbiWrapperSingleton.e_cal_remove_object
 #   define e_cal_remove_object_with_mod EDSAbiWrapperSingleton.e_cal_remove_object_with_mod
