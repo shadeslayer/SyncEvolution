@@ -17,12 +17,12 @@
  * 02110-1301  USA
  */
 
-#include "SafeConfigNode.h"
-#include "EvolutionSyncClient.h"
+#include <syncevo/SafeConfigNode.h>
+#include <syncevo/SyncContext.h>
 
 #include <boost/foreach.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 SafeConfigNode::SafeConfigNode(const boost::shared_ptr<ConfigNode> &node) :
@@ -75,7 +75,7 @@ void SafeConfigNode::removeProperty(const string &property)
 void SafeConfigNode::flush()
 {
     if (!m_node.get()) {
-        EvolutionSyncClient::throwError(getName() + ": read-only, flushing not allowed");
+        SyncContext::throwError(getName() + ": read-only, flushing not allowed");
     }
     m_node->flush();
 }

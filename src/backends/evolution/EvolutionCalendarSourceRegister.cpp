@@ -24,7 +24,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 static SyncSource *createSource(const SyncSourceParams &params)

@@ -24,7 +24,7 @@
 #include <syncevo/TrackingSyncSource.h>
 #include <syncevo/eds_abi_wrapper.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 

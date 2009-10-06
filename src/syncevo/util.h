@@ -35,7 +35,7 @@
 #include <utility>
 #include <exception>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
 
@@ -145,7 +145,7 @@ class ReadDir {
  *
  * Use it like this:
  * @verbatim
-   #include <config.h>
+   #include "config.h"
    #ifdef ENABLE_UNIT_TESTS
    # include "test.h"
    class Foo : public CppUnit::TestFixture {

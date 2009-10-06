@@ -23,11 +23,11 @@
 #endif
 #include <dlfcn.h>
 
-#include "SyncSource.h"
-#include "EvolutionSyncClient.h"
-#include "SyncEvolutionUtil.h"
+#include <syncevo/SyncSource.h>
+#include <syncevo/SyncContext.h>
+#include <syncevo/util.h>
 
-#include "SynthesisEngine.h"
+#include <syncevo/SynthesisEngine.h>
 #include <synthesis/SDK_util.h>
 #include <synthesis/sync_dbapidef.h>
 
@@ -40,7 +40,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 void SyncSourceBase::throwError(const string &action, int error)
@@ -50,7 +50,7 @@ void SyncSourceBase::throwError(const string &action, int error)
 
 void SyncSourceBase::throwError(const string &failure)
 {
-    EvolutionSyncClient::throwError(string(getName()) + ": " + failure);
+    SyncContext::throwError(string(getName()) + ": " + failure);
 }
 
 SyncMLStatus SyncSourceBase::handleException()
@@ -311,7 +311,7 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error)
         SyncSource *source = sourceInfos->m_create(params);
         if (source) {
             if (source == RegisterSyncSource::InactiveSource) {
-                EvolutionSyncClient::throwError(params.m_name + ": access to " + sourceInfos->m_shortDescr +
+                SyncContext::throwError(params.m_name + ": access to " + sourceInfos->m_shortDescr +
                                                 " not enabled, therefore type = " + sourceTypeString + " not supported");
             }
             return source;
@@ -325,7 +325,7 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error)
             problem += boost::join(scannedModules.m_available, ", ");
             problem += ")";
         }
-        EvolutionSyncClient::throwError(problem);
+        SyncContext::throwError(problem);
     }
 
     return NULL;

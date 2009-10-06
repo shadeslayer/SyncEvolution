@@ -23,7 +23,7 @@
 
 #include <stdarg.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

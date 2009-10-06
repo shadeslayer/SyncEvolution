@@ -18,13 +18,13 @@
  * 02110-1301  USA
  */
 
-#include "TrackingSyncSource.h"
-#include "SafeConfigNode.h"
-#include "PrefixConfigNode.h"
+#include <syncevo/TrackingSyncSource.h>
+#include <syncevo/SafeConfigNode.h>
+#include <syncevo/PrefixConfigNode.h>
 
 #include <boost/bind.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 TrackingSyncSource::TrackingSyncSource(const SyncSourceParams &params,

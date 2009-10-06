@@ -18,11 +18,11 @@
  * 02110-1301  USA
  */
 
-#include "LogStdout.h"
+#include <syncevo/LogStdout.h>
 #include <string.h>
 #include <errno.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 

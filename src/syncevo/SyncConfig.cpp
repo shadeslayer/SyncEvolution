@@ -20,13 +20,13 @@
 
 #include "config.h"
 
-#include "SyncEvolutionConfig.h"
-#include "SyncSource.h"
-#include "EvolutionSyncClient.h"
-#include "FileConfigTree.h"
-#include "VolatileConfigTree.h"
-#include "VolatileConfigNode.h"
-#include "synthesis/timeutil.h"
+#include <syncevo/SyncConfig.h>
+#include <syncevo/SyncSource.h>
+#include <syncevo/SyncContext.h>
+#include <syncevo/FileConfigTree.h>
+#include <syncevo/VolatileConfigTree.h>
+#include <syncevo/VolatileConfigNode.h>
+#include <synthesis/timeutil.h>
 
 #include <boost/foreach.hpp>
 #include <iterator>
@@ -36,7 +36,7 @@
 #include <unistd.h>
 #include "config.h"
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source);
@@ -60,7 +60,7 @@ void ConfigProperty::splitComment(const string &comment, list<string> &commentLi
 
 void ConfigProperty::throwValueError(const ConfigNode &node, const string &name, const string &value, const string &error) const
 {
-    EvolutionSyncClient::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
+    SyncContext::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
 EvolutionSyncConfig::EvolutionSyncConfig() :
@@ -314,11 +314,13 @@ boost::shared_ptr<EvolutionSyncConfig> EvolutionSyncConfig::createServerTemplate
         config->setClientAuthType("syncml:auth-basic");
         config->setWBXML(true);
         config->setConsumerReady(true);
+#ifndef ENABLE_SSL_CERTIFICATE_CHECK
         // temporarily (?) disabled certificate checking because
         // libsoup/gnutls do not accept the Verisign certificate
         // (GNOME Bugzilla #589323)
         config->setSSLVerifyServer(false);
         config->setSSLVerifyHost(false);
+#endif
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("contacts");
         source->setSourceType("addressbook:text/x-vcard");
@@ -532,7 +534,7 @@ static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "enables or disables the detailed (and sometimes slow) comparison\n"
                                                "of database content before and after a sync session",
                                                "1");
-static IntConfigProperty syncPropRetryDuration("RetryDuration",
+static UIntConfigProperty syncPropRetryDuration("RetryDuration",
                                           "The total amount of time in which the client tries\n"
                                           "tries to get a response from the server.\n"
                                           "During this time, the client will resend messages\n"
@@ -542,7 +544,7 @@ static IntConfigProperty syncPropRetryDuration("RetryDuration",
                                           "without a response, the synchronization aborts without\n"
                                           "sending further messages to the server."
                                           ,"300");
-static IntConfigProperty syncPropRetryInterval("RetryInterval",
+static UIntConfigProperty syncPropRetryInterval("RetryInterval",
                                           "The time between the start of message sending and\n"
                                           "the start of the retransmission. If the interval has\n"
                                           "already passed when a message send returns, the\n"
@@ -670,7 +672,7 @@ void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
         string envname = password.substr(2, password.size() - 3);
         const char *envval = getenv(envname.c_str());
         if (!envval) {
-            EvolutionSyncClient::throwError(string("the environment variable '") +
+            SyncContext::throwError(string("the environment variable '") +
                                             envname +
                                             "' for the '" +
                                             descr +

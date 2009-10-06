@@ -29,7 +29,7 @@ using namespace std;
 
 #include <syncevo/Logging.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 void EvolutionMemoSource::readItem(const string &luid, std::string &item, bool raw)

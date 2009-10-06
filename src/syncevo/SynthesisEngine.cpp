@@ -17,12 +17,12 @@
  * 02110-1301  USA
  */
 
-#include "SynthesisEngine.h"
-#include "SyncEvolutionUtil.h"
+#include <syncevo/SynthesisEngine.h>
+#include <syncevo/util.h>
 
 #include <synthesis/SDK_util.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 void SharedEngine::Connect(const string &aEngineName,

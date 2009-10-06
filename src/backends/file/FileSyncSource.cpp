@@ -37,12 +37,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <syncevo/SyncEvolutionUtil.h>
+#include <syncevo/util.h>
 
 #include <sstream>
 #include <fstream>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 FileSyncSource::FileSyncSource(const SyncSourceParams &params,

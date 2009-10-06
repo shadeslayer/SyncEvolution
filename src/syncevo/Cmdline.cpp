@@ -18,12 +18,12 @@
  * 02110-1301  USA
  */
 
-#include "SyncEvolutionCmdline.h"
-#include "FilterConfigNode.h"
-#include "VolatileConfigNode.h"
-#include "SyncSource.h"
-#include "EvolutionSyncClient.h"
-#include "SyncEvolutionUtil.h"
+#include <syncevo/Cmdline.h>
+#include <syncevo/FilterConfigNode.h>
+#include <syncevo/VolatileConfigNode.h>
+#include <syncevo/SyncSource.h>
+#include <syncevo/SyncContext.h>
+#include <syncevo/util.h>
 #include "test.h"
 
 #include <unistd.h>
@@ -42,10 +42,10 @@ using namespace std;
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, const char * const * argv, ostream &out, ostream &err) :
+Cmdline::Cmdline(int argc, const char * const * argv, ostream &out, ostream &err) :
     m_argc(argc),
     m_argv(argv),
     m_out(out),
@@ -54,7 +54,7 @@ SyncEvolutionCmdline::SyncEvolutionCmdline(int argc, const char * const * argv, 
     m_validSourceProps(SyncSourceConfig::getRegistry())
 {}
 
-bool SyncEvolutionCmdline::parse()
+bool Cmdline::parse()
 {
     int opt = 1;
     while (opt < m_argc) {
@@ -172,7 +172,7 @@ bool SyncEvolutionCmdline::parse()
     return true;
 }
 
-bool SyncEvolutionCmdline::run() {
+bool Cmdline::run() {
     // --dry-run is only supported by some operations.
     // Be very strict about it and make sure it is off in all
     // potentially harmful operations, otherwise users might
@@ -258,7 +258,7 @@ bool SyncEvolutionCmdline::run() {
         return false;
     } else if (m_configure || m_migrate) {
         if (m_dryrun) {
-            EvolutionSyncClient::throwError("--dry-run not supported for configuration changes");
+            SyncContext::throwError("--dry-run not supported for configuration changes");
         }
         if (m_keyring) {
 #ifndef USE_GNOME_KEYRING
@@ -327,7 +327,7 @@ bool SyncEvolutionCmdline::run() {
         from->setConfigFilter(false, m_sourceProps);
 
         // write into the requested configuration, creating it if necessary
-        boost::shared_ptr<EvolutionSyncClient> to(createSyncClient());
+        boost::shared_ptr<SyncContext> to(createSyncClient());
         to->copy(*from, !fromScratch && !m_sources.empty() ? &m_sources : NULL);
 
         // Sources are active now according to the server default.
@@ -374,7 +374,7 @@ bool SyncEvolutionCmdline::run() {
                     // abort if the user explicitly asked for the sync source
                     // and it cannot be enabled, otherwise disable it silently
                     if (selected) {
-                        EvolutionSyncClient::throwError(source + ": " + disable);
+                        SyncContext::throwError(source + ": " + disable);
                     }
                     sourceConfig->setSync("disabled");
                 } else if (selected) {
@@ -386,7 +386,7 @@ bool SyncEvolutionCmdline::run() {
             }
 
             if (!sources.empty()) {
-                EvolutionSyncClient::throwError(string("no such source(s): ") + boost::join(sources, " "));
+                SyncContext::throwError(string("no such source(s): ") + boost::join(sources, " "));
             }
         }
         // give a change to do something before flushing configs to files
@@ -396,7 +396,7 @@ bool SyncEvolutionCmdline::run() {
         to->flush();
     } else if (m_remove) {
         if (m_dryrun) {
-            EvolutionSyncClient::throwError("--dry-run not supported for removing configurations");
+            SyncContext::throwError("--dry-run not supported for removing configurations");
         }
 
         // extra sanity check
@@ -412,7 +412,7 @@ bool SyncEvolutionCmdline::run() {
             return true;
         }
     } else {
-        boost::shared_ptr<EvolutionSyncClient> client;
+        boost::shared_ptr<SyncContext> client;
         client.reset(createSyncClient());
         client->setQuiet(m_quiet);
         client->setDryRun(m_dryrun);
@@ -450,11 +450,11 @@ bool SyncEvolutionCmdline::run() {
             }
             client->restore(m_restore,
                             m_after ?
-                            EvolutionSyncClient::DATABASE_AFTER_SYNC :
-                            EvolutionSyncClient::DATABASE_BEFORE_SYNC);
+                            SyncContext::DATABASE_AFTER_SYNC :
+                            SyncContext::DATABASE_BEFORE_SYNC);
         } else {
             if (m_dryrun) {
-                EvolutionSyncClient::throwError("--dry-run not supported for running a synchronization");
+                SyncContext::throwError("--dry-run not supported for running a synchronization");
             }
 
             // safety catch: if props are given, then --run
@@ -472,7 +472,7 @@ bool SyncEvolutionCmdline::run() {
     return true;
 }
 
-string SyncEvolutionCmdline::cmdOpt(const char *opt, const char *param)
+string Cmdline::cmdOpt(const char *opt, const char *param)
 {
     string res = "'";
     res += opt;
@@ -484,7 +484,7 @@ string SyncEvolutionCmdline::cmdOpt(const char *opt, const char *param)
     return res;
 }
 
-bool SyncEvolutionCmdline::parseProp(const ConfigPropertyRegistry &validProps,
+bool Cmdline::parseProp(const ConfigPropertyRegistry &validProps,
                                      FilterConfigNode::ConfigFilter &props,
                                      const char *opt,
                                      const char *param,
@@ -541,7 +541,7 @@ bool SyncEvolutionCmdline::parseProp(const ConfigPropertyRegistry &validProps,
     }
 }
 
-bool SyncEvolutionCmdline::listPropValues(const ConfigPropertyRegistry &validProps,
+bool Cmdline::listPropValues(const ConfigPropertyRegistry &validProps,
                                           const string &propName,
                                           const string &opt)
 {
@@ -566,7 +566,7 @@ bool SyncEvolutionCmdline::listPropValues(const ConfigPropertyRegistry &validPro
     }
 }
 
-bool SyncEvolutionCmdline::listProperties(const ConfigPropertyRegistry &validProps,
+bool Cmdline::listProperties(const ConfigPropertyRegistry &validProps,
                                           const string &opt)
 {
     // The first of several related properties has a comment.
@@ -591,7 +591,7 @@ bool SyncEvolutionCmdline::listProperties(const ConfigPropertyRegistry &validPro
     return true;
 }
 
-void SyncEvolutionCmdline::listSources(SyncSource &syncSource, const string &header)
+void Cmdline::listSources(SyncSource &syncSource, const string &header)
 {
     m_out << header << ":\n";
     SyncSource::Databases databases = syncSource.getDatabases();
@@ -605,7 +605,7 @@ void SyncEvolutionCmdline::listSources(SyncSource &syncSource, const string &hea
     }
 }
 
-void SyncEvolutionCmdline::dumpServers(const string &preamble,
+void Cmdline::dumpServers(const string &preamble,
                                        const EvolutionSyncConfig::ServerList &servers)
 {
     m_out << preamble << endl;
@@ -617,7 +617,7 @@ void SyncEvolutionCmdline::dumpServers(const string &preamble,
     }
 }
 
-void SyncEvolutionCmdline::dumpProperties(const ConfigNode &configuredProps,
+void Cmdline::dumpProperties(const ConfigNode &configuredProps,
                                           const ConfigPropertyRegistry &allProps)
 {
     BOOST_FOREACH(const ConfigProperty *prop, allProps) {
@@ -640,7 +640,7 @@ void SyncEvolutionCmdline::dumpProperties(const ConfigNode &configuredProps,
     }
 }
 
-void SyncEvolutionCmdline::dumpComment(ostream &stream,
+void Cmdline::dumpComment(ostream &stream,
                                        const string &prefix,
                                        const string &comment)
 {
@@ -651,7 +651,7 @@ void SyncEvolutionCmdline::dumpComment(ostream &stream,
     }
 }
 
-void SyncEvolutionCmdline::usage(bool full, const string &error, const string &param)
+void Cmdline::usage(bool full, const string &error, const string &param)
 {
     ostream &out(error.empty() ? m_out : m_err);
 
@@ -810,8 +810,8 @@ void SyncEvolutionCmdline::usage(bool full, const string &error, const string &p
     }
 }
 
-EvolutionSyncClient* SyncEvolutionCmdline::createSyncClient() {
-    return new EvolutionSyncClient(m_server, true, m_sources);
+SyncContext* Cmdline::createSyncClient() {
+    return new SyncContext(m_server, true, m_sources);
 }
 
 #ifdef ENABLE_UNIT_TESTS
@@ -1002,8 +1002,8 @@ static string internalToIni(const string &config)
  * The root of the hierarchy is not part of the representation
  * itself.
  */
-class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
-    CPPUNIT_TEST_SUITE(SyncEvolutionCmdlineTest);
+class CmdlineTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(CmdlineTest);
     CPPUNIT_TEST(testFramework);
     CPPUNIT_TEST(testSetupScheduleWorld);
     CPPUNIT_TEST(testSetupDefault);
@@ -1021,8 +1021,8 @@ class SyncEvolutionCmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE_END();
     
 public:
-    SyncEvolutionCmdlineTest() :
-        m_testDir("SyncEvolutionCmdlineTest"),
+    CmdlineTest() :
+        m_testDir("CmdlineTest"),
         m_scheduleWorldConfig(".internal.ini:# HashCode = 0\n"
                               ".internal.ini:# ConfigDate = \n"
                               "config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
@@ -1268,9 +1268,9 @@ protected:
         TestCmdline cmdline("--print-servers", NULL);
         cmdline.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Configured servers:\n"
-                                  "   scheduleworld = SyncEvolutionCmdlineTest/syncevolution/scheduleworld\n"
-                                  "   synthesis = SyncEvolutionCmdlineTest/syncevolution/synthesis\n"
-                                  "   funambol = SyncEvolutionCmdlineTest/syncevolution/funambol\n",
+                                  "   scheduleworld = CmdlineTest/syncevolution/scheduleworld\n"
+                                  "   synthesis = CmdlineTest/syncevolution/synthesis\n"
+                                  "   funambol = CmdlineTest/syncevolution/funambol\n",
                                   cmdline.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
     }
@@ -1734,7 +1734,7 @@ private:
                 m_argv[index + 1] = m_argvstr[index].c_str();
             }
 
-            m_cmdline.set(new SyncEvolutionCmdline(m_argvstr.size() + 1, m_argv.get(), m_out, m_err), "cmdline");
+            m_cmdline.set(new Cmdline(m_argvstr.size() + 1, m_argv.get(), m_out, m_err), "cmdline");
         }
 
         void doit() {
@@ -1748,7 +1748,7 @@ private:
         }
 
         ostringstream m_out, m_err;
-        cxxptr<SyncEvolutionCmdline> m_cmdline;
+        cxxptr<Cmdline> m_cmdline;
 
     private:
         vector<string> m_argvstr;
@@ -1985,7 +1985,7 @@ private:
     }
 };
 
-SYNCEVOLUTION_TEST_SUITE_REGISTRATION(SyncEvolutionCmdlineTest);
+SYNCEVOLUTION_TEST_SUITE_REGISTRATION(CmdlineTest);
 
 #endif // ENABLE_UNIT_TESTS
 

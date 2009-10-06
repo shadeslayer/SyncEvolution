@@ -20,9 +20,9 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "FileConfigTree.h"
-#include "FileConfigNode.h"
-#include "SyncEvolutionUtil.h"
+#include <syncevo/FileConfigTree.h>
+#include <syncevo/FileConfigNode.h>
+#include <syncevo/util.h>
 
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -33,7 +33,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 FileConfigTree::FileConfigTree(const string &root,

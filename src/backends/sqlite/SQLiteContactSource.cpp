@@ -37,7 +37,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 enum {

@@ -17,13 +17,13 @@
  * 02110-1301  USA
  */
 
-#include "FilterConfigNode.h"
-#include "EvolutionSyncClient.h"
+#include <syncevo/FilterConfigNode.h>
+#include <syncevo/SyncContext.h>
 
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/join.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 FilterConfigNode::FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
@@ -71,7 +71,7 @@ void FilterConfigNode::setProperty(const string &property,
     ConfigFilter::iterator it = m_filter.find(property);
 
     if (!m_node.get()) {
-        EvolutionSyncClient::throwError(getName() + ": read-only, setting properties not allowed");
+        SyncContext::throwError(getName() + ": read-only, setting properties not allowed");
     }
 
     if (it != m_filter.end()) {
@@ -94,7 +94,7 @@ void FilterConfigNode::removeProperty(const string &property)
     ConfigFilter::iterator it = m_filter.find(property);
 
     if (!m_node.get()) {
-        EvolutionSyncClient::throwError(getName() + ": read-only, removing properties not allowed");
+        SyncContext::throwError(getName() + ": read-only, removing properties not allowed");
     }
 
     if (it != m_filter.end()) {
@@ -106,7 +106,7 @@ void FilterConfigNode::removeProperty(const string &property)
 void FilterConfigNode::flush()
 {
     if (!m_node.get()) {
-        EvolutionSyncClient::throwError(getName() + ": read-only, flushing not allowed");
+        SyncContext::throwError(getName() + ": read-only, flushing not allowed");
     }
     m_node->flush();
 }

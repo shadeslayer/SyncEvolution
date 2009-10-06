@@ -20,7 +20,7 @@
 
 #include "EvolutionSyncSource.h"
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 #ifdef HAVE_EDS

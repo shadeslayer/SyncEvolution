@@ -21,8 +21,8 @@
 #ifndef INCL_EVOLUTIONSYNCCLIENT
 #define INCL_EVOLUTIONSYNCCLIENT
 
-#include <syncevo/EvolutionSmartPtr.h>
-#include <syncevo/SyncEvolutionConfig.h>
+#include <syncevo/SmartPtr.h>
+#include <syncevo/SyncConfig.h>
 #include <syncevo/SyncML.h>
 #include <syncevo/SynthesisEngine.h>
 
@@ -34,7 +34,7 @@ using namespace std;
 
 #include <boost/smart_ptr.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class TransportAgent;
@@ -67,7 +67,7 @@ struct SuspendFlags
  * implementation of those uses stdin/out.
  *
  */
-class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterface {
+class SyncContext : public EvolutionSyncConfig, public ConfigUserInterface {
     const string m_server;
     const set<string> m_sources;
     const bool m_doLogging;
@@ -87,7 +87,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
 
     /**
      * Connection to the Synthesis engine. Always valid in a
-     * constructed EvolutionSyncClient. Use getEngine() to reference
+     * constructed SyncContext. Use getEngine() to reference
      * it.
      */
     SharedEngine m_engine;
@@ -98,13 +98,13 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     SharedSession m_session;
 
     /**
-     * installs session in EvolutionSyncClient and removes it again
+     * installs session in SyncContext and removes it again
      * when going out of scope
      */
     class SessionSentinel {
-        EvolutionSyncClient &m_client;
+        SyncContext &m_client;
     public:
-        SessionSentinel(EvolutionSyncClient &client, SharedSession &session) :
+        SessionSentinel(SyncContext &client, SharedSession &session) :
         m_client(client) {
             m_client.m_session = session;
         }
@@ -118,10 +118,10 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * @param server     identifies the server config to be used
      * @param doLogging  write additional log and datatbase files about the sync
      */
-    EvolutionSyncClient(const string &server,
+    SyncContext(const string &server,
                         bool doLogging = false,
                         const set<string> &sources = set<string>());
-    ~EvolutionSyncClient();
+    ~SyncContext();
 
     using EvolutionSyncConfig::savePassword;
 
@@ -180,7 +180,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     /**
      * fills report with information about local changes
      *
-     * Only sync sources selected in the EvolutionSyncClient
+     * Only sync sources selected in the SyncContext
      * constructor are checked. The local item changes will be set in
      * the SyncReport's ITEM_LOCAL ITEM_ADDED/UPDATED/REMOVED.
      *
@@ -231,7 +231,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * the thread is that it seems to interfere with gconf startup
      * when added to the main() function of syncevolution. Therefore
      * it is started by SyncSource::beginSync() (for unit
-     * testing of sync sources) and EvolutionSyncClient::sync() (for
+     * testing of sync sources) and SyncContext::sync() (for
      * normal operation).
      */
     static void startLoopThread();
@@ -243,7 +243,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
      * session. Called by Synthesis DB plugin to find active
      * sources.
      *
-     * @TODO: roll SourceList into EvolutionSyncClient and
+     * @TODO: roll SourceList into SyncContext and
      * make this non-static
      */
     static SyncSource *findSource(const char *name);
@@ -280,11 +280,11 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     /** sentinel class which creates, installs and removes a new
         Synthesis engine for the duration of its own life time */
     class SwapEngine {
-        EvolutionSyncClient &m_client;
+        SyncContext &m_client;
         SharedEngine m_oldengine;
 
     public:
-        SwapEngine(EvolutionSyncClient &client) :
+        SwapEngine(SyncContext &client) :
         m_client(client) {
             SharedEngine syncengine(m_client.createEngine());
             m_oldengine = m_client.swapEngine(syncengine);
@@ -445,7 +445,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     /**
      * display general sync session progress
      *
-     * @param type    PEV_*, see "synthesis/engine_defs.h"
+     * @param type    PEV_*, see <synthesis/engine_defs.h>
      * @param extra1  extra information depending on type
      * @param extra2  extra information depending on type
      * @param extra3  extra information depending on type
@@ -456,7 +456,7 @@ class EvolutionSyncClient : public EvolutionSyncConfig, public ConfigUserInterfa
     /**
      * display sync source specific progress
      *
-     * @param type    PEV_*, see "synthesis/engine_defs.h"
+     * @param type    PEV_*, see <synthesis/engine_defs.h>
      * @param source  source which is the target of the event
      * @param extra1  extra information depending on type
      * @param extra2  extra information depending on type

@@ -24,13 +24,13 @@
 #ifdef ENABLE_SQLITE
 
 #include "SQLiteUtil.h"
-#include <syncevo/SyncEvolutionUtil.h>
+#include <syncevo/util.h>
 
 #include <stdarg.h>
 #include <sstream>
 #include <cstring>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 void SQLiteUtil::throwError(const string &operation)

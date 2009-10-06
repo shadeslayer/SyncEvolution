@@ -29,10 +29,10 @@
 /** @cond DEV */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 
 // These defines are set in config.h when using the autotools
 // mechanism and by the project setup on Windows. They control whether

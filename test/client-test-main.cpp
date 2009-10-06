@@ -24,7 +24,7 @@
 /** @{ */
 
 #ifdef HAVE_CONFIG_H
-# include <config.h>
+# include "config.h"
 #endif
 
 #include "test.h"
@@ -51,7 +51,7 @@
 #include <string>
 #include <stdexcept>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
 

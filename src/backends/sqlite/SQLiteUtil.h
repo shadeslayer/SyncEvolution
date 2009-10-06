@@ -23,11 +23,11 @@
 #ifdef ENABLE_SQLITE
 
 #include <sqlite3.h>
-#include <syncevo/EvolutionSmartPtr.h>
+#include <syncevo/SmartPtr.h>
 
 #include <string>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
 

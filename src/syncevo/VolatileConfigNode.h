@@ -20,10 +20,10 @@
 #ifndef INCL_EVOLUTION_VOLATILE_CONFIG_NODE
 # define INCL_EVOLUTION_VOLATILE_CONFIG_NODE
 
-#include "FilterConfigNode.h"
-#include "FileConfigNode.h"
+#include <syncevo/FilterConfigNode.h>
+#include <syncevo/FileConfigNode.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

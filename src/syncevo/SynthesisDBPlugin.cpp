@@ -25,18 +25,18 @@
  * 02110-1301  USA
  */
 
-#include "synthesis/sync_include.h"   /* include general SDK definitions */
-#include "synthesis/sync_dbapidef.h"  /* include the interface file and utilities */
-#include "synthesis/SDK_util.h"       /* include SDK utilities */
+#include <synthesis/sync_include.h>   /* include general SDK definitions */
+#include <synthesis/sync_dbapidef.h>  /* include the interface file and utilities */
+#include <synthesis/SDK_util.h>       /* include SDK utilities */
 
 using namespace sysync;
 
-#include "EvolutionSyncClient.h"
-#include "SyncSource.h"
+#include <syncevo/SyncContext.h>
+#include <syncevo/SyncSource.h>
 
 #include <sstream>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 #define BuildNumber  0  /* User defined build number, can be 0..255 */
@@ -62,7 +62,7 @@ TSyError SyncEvolution_Module_CreateContext( CContext *mContext, cAppCharP   mod
                                              DB_Callback mCB )
 {
     TSyError err = LOCERR_WRONGUSAGE;
-    SyncSource *source = EvolutionSyncClient::findSource(mContextName);
+    SyncSource *source = SyncContext::findSource(mContextName);
     if (source) {
         source->pushSynthesisAPI(mCB);
         *mContext = (CContext)source;
@@ -407,7 +407,7 @@ TSyError SyncEvolution_CreateContext( CContext *aContext, cAppCharP aContextName
                                       cAppCharP sUsrKey )
 {
     TSyError err = LOCERR_WRONGUSAGE;
-    SyncSource *source = EvolutionSyncClient::findSource(aContextName);
+    SyncSource *source = SyncContext::findSource(aContextName);
     if (source) {
         source->pushSynthesisAPI(aCB);
         *aContext = (CContext)source;

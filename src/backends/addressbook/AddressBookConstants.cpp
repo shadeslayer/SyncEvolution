@@ -17,13 +17,13 @@
  * 02110-1301  USA
  */
 
-#include <config.h>
+#include "config.h"
 
 #ifdef ENABLE_ADDRESSBOOK
 
 #include <CoreFoundation/CoreFoundation.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

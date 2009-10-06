@@ -20,14 +20,14 @@
 #ifndef INCL_CURLTRANSPORTAGENT
 #define INCL_CURLTRANSPORTAGENT
 
-#include <config.h>
+#include "config.h"
 
 #ifdef ENABLE_LIBCURL
 
-#include "TransportAgent.h"
+#include <syncevo/TransportAgent.h>
 #include <curl/curl.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 

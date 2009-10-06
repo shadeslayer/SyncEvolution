@@ -29,9 +29,9 @@ using namespace std;
 
 #ifdef ENABLE_EBOOK
 
-#include <syncevo/EvolutionSyncClient.h>
+#include <syncevo/SyncContext.h>
 #include "EvolutionContactSource.h"
-#include <syncevo/SyncEvolutionUtil.h>
+#include <syncevo/util.h>
 
 #include <syncevo/Logging.h>
 
@@ -39,7 +39,7 @@ using namespace std;
 #include <boost/algorithm/string/join.hpp>
 #include <boost/foreach.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class unrefEBookChanges {
@@ -78,7 +78,7 @@ EvolutionSyncSource::Databases EvolutionContactSource::getDatabases()
     ESourceList *sources = NULL;
 
     if (!e_book_get_addressbooks(&sources, NULL)) {
-        EvolutionSyncClient::throwError("unable to access address books");
+        SyncContext::throwError("unable to access address books");
     }
 
     Databases result;
@@ -189,7 +189,7 @@ void EvolutionContactSource::open()
 
     g_signal_connect_after(m_addressbook,
                            "backend-died",
-                           G_CALLBACK(EvolutionSyncClient::fatalError),
+                           G_CALLBACK(SyncContext::fatalError),
                            (void *)"Evolution Data Server has died unexpectedly, contacts no longer available.");
 }
 

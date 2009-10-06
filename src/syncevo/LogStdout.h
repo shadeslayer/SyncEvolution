@@ -21,11 +21,11 @@
 #ifndef INCL_LOGSTDOUT
 #define INCL_LOGSTDOUT
 
-#include "Logging.h"
+#include <syncevo/Logging.h>
 #include <stdio.h>
 #include <string>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 

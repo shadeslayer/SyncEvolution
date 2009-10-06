@@ -19,10 +19,10 @@
  */
 
 #include "config.h"
-#include "SyncEvolutionUtil.h"
-#include "EvolutionSyncClient.h"
-#include "TransportAgent.h"
-#include "Logging.h"
+#include <syncevo/util.h>
+#include <syncevo/SyncContext.h>
+#include <syncevo/TransportAgent.h>
+#include <syncevo/Logging.h>
 
 #include <synthesis/syerror.h>
 
@@ -41,7 +41,7 @@
 CPPUNIT_REGISTRY_ADD_TO_DEFAULT("SyncEvolution");
 #endif
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 string normalizePath(const string &path)
@@ -87,7 +87,7 @@ void mkdir_p(const string &path)
                        nextdir ? (R_OK|X_OK) : (R_OK|X_OK|W_OK)) &&
                 (errno != ENOENT ||
                  mkdir(dirs.get(), 0700))) {
-                EvolutionSyncClient::throwError(string(dirs.get()), errno);
+                SyncContext::throwError(string(dirs.get()), errno);
             }
         }
         if (nextdir) {
@@ -105,7 +105,7 @@ void rm_r(const string &path, boost::function<bool (const string &,
         if (errno == ENOENT) {
             return;
         } else {
-            EvolutionSyncClient::throwError(path, errno);
+            SyncContext::throwError(path, errno);
         }
     }
 
@@ -114,7 +114,7 @@ void rm_r(const string &path, boost::function<bool (const string &,
             !unlink(path.c_str())) {
             return;
         } else {
-            EvolutionSyncClient::throwError(path, errno);
+            SyncContext::throwError(path, errno);
         }
     }
 
@@ -124,7 +124,7 @@ void rm_r(const string &path, boost::function<bool (const string &,
     }
     if (filter(path, true) &&
         rmdir(path.c_str())) {
-        EvolutionSyncClient::throwError(path, errno);
+        SyncContext::throwError(path, errno);
     }
 }
 
@@ -135,7 +135,7 @@ bool isDir(const string &path)
         closedir(dir);
         return true;
     } else if (errno != ENOTDIR && errno != ENOENT) {
-        EvolutionSyncClient::throwError(path, errno);
+        SyncContext::throwError(path, errno);
     }
 
     return false;
@@ -176,7 +176,7 @@ ReadDir::ReadDir(const string &path, bool throwError) : m_path(path)
     try {
         dir = opendir(path.c_str());
         if (!dir) {
-            EvolutionSyncClient::throwError(path, errno);
+            SyncContext::throwError(path, errno);
         }
         errno = 0;
         struct dirent *entry = readdir(dir);
@@ -188,7 +188,7 @@ ReadDir::ReadDir(const string &path, bool throwError) : m_path(path)
             entry = readdir(dir);
         }
         if (errno) {
-            EvolutionSyncClient::throwError(path, errno);
+            SyncContext::throwError(path, errno);
         }
     } catch(...) {
         if (dir) {

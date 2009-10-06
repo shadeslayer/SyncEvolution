@@ -18,7 +18,7 @@
  * 02110-1301  USA
  */
 
-#include <config.h>
+#include "config.h"
 #include <stddef.h>
 #include <iostream>
 #include <memory>
@@ -29,15 +29,15 @@ using namespace std;
 #include <glib-object.h>
 #endif
 
-#include "SyncEvolutionCmdline.h"
+#include <syncevo/Cmdline.h>
 #include "EvolutionSyncSource.h"
-#include "EvolutionSyncClient.h"
-#include "LogRedirect.h"
+#include <syncevo/SyncContext.h>
+#include <syncevo/LogRedirect.h>
 #include "CmdlineSyncClient.h"
 
 #include <dlfcn.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 #if defined(ENABLE_MAEMO) && defined (ENABLE_EBOOK)
@@ -66,19 +66,19 @@ extern "C" EContact *e_contact_new_from_vcard(const char *vcard)
 #endif
 
 /**
- * This is a class derived from SyncEvolutionCmdline. The purpose
+ * This is a class derived from Cmdline. The purpose
  * is to implement the factory method 'createSyncClient' to create
  * new implemented 'CmdlineSyncClient' objects.
  */
-class KeyringSyncCmdline : public SyncEvolutionCmdline {
+class KeyringSyncCmdline : public Cmdline {
  public:
     KeyringSyncCmdline(int argc, const char * const * argv, ostream &out, ostream &err):
-        SyncEvolutionCmdline(argc, argv, out, err) 
+        Cmdline(argc, argv, out, err) 
     {}
     /**
      * create a user implemented sync client.
      */
-    EvolutionSyncClient* createSyncClient() {
+    SyncContext* createSyncClient() {
         return new CmdlineSyncClient(m_server, true, m_sources, m_keyring);
     }
 };

@@ -17,7 +17,7 @@
  * 02110-1301  USA
  */
 
-/* This is an implementation of EvolutionSyncClient
+/* This is an implementation of SyncContext
  * that is a DBus service. Internally it uses a 
  * SyncevoDBusServer GObject to handle the DBus side
  * of things.
@@ -27,10 +27,10 @@
 #ifndef INCL_DBUSSYNCCLIENT
 #define INCL_DBUSSYNCCLIENT
 
-#include <config.h>
+#include "config.h"
 
 #include <synthesis/sync_declarations.h>
-#include "EvolutionSyncClient.h"
+#include <syncevo/SyncContext.h>
 
 #include <string>
 #include <set>
@@ -38,7 +38,7 @@
 
 using namespace SyncEvo;
 
-class DBusSyncClient : public EvolutionSyncClient {
+class DBusSyncClient : public SyncContext {
 
 public:
 	DBusSyncClient(const string &server,

@@ -20,10 +20,10 @@
 #ifndef INCL_EVOLUTIONMEMOSOURCE
 #define INCL_EVOLUTIONMEMOSOURCE
 
-#include <config.h>
+#include "config.h"
 #include <EvolutionCalendarSource.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 #ifdef ENABLE_ECAL

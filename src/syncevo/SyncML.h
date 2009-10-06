@@ -26,7 +26,7 @@
 #include <ostream>
 #include <string.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 enum SyncMode {

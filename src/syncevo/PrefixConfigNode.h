@@ -28,7 +28,7 @@
 #include <vector>
 #include <string>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
 

@@ -41,10 +41,10 @@
 #include <cppunit/TestAssert.h>
 #include <cppunit/TestFixture.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-class EvolutionSyncClient;
+class SyncContext;
 class EvolutionSyncSource;
 class TransportWrapper;
 class TestingSyncSource;
@@ -116,7 +116,7 @@ struct SyncOptions {
     
     bool m_isAborted;
 
-    typedef boost::function<bool (EvolutionSyncClient &,
+    typedef boost::function<bool (SyncContext &,
                                   SyncOptions &)> Callback_t;
     /**
      * Callback to be invoked after setting up local sources, but
@@ -158,7 +158,7 @@ struct SyncOptions {
     SyncOptions &setTransportAgent(const boost::shared_ptr<TransportAgent> transport)
                                   {m_transport = transport; return *this;}
 
-    static bool EmptyCallback(EvolutionSyncClient &,
+    static bool EmptyCallback(SyncContext &,
                               SyncOptions &) { return false; }
 
     /** if CLIENT_TEST_XML=1, then XML, otherwise WBXML */
@@ -638,7 +638,7 @@ protected:
     virtual void testOneWayFromServer();
     virtual void testOneWayFromClient();
     bool doConversionCallback(bool *success,
-                              EvolutionSyncClient &client,
+                              SyncContext &client,
                               SyncOptions &options);
     virtual void testConversion();
     virtual void testItems();

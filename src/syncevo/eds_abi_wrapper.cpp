@@ -18,15 +18,15 @@
  */
 
 #define EDS_ABI_WRAPPER_NO_REDEFINE 1
-#include "eds_abi_wrapper.h"
-#include "EvolutionSyncClient.h"
+#include <syncevo/eds_abi_wrapper.h>
+#include <syncevo/SyncContext.h>
 
 #include <string>
 #include <sstream>
 #include <dlfcn.h>
 #include <stdarg.h>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 
 namespace {
 

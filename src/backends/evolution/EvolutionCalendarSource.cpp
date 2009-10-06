@@ -28,8 +28,8 @@ using namespace std;
 // include first, it sets HANDLE_LIBICAL_MEMORY for us
 #include "libical/icalstrdup.h"
 
-#include <syncevo/EvolutionSyncClient.h>
-#include <syncevo/EvolutionSmartPtr.h>
+#include <syncevo/SyncContext.h>
+#include <syncevo/SmartPtr.h>
 #include <syncevo/Logging.h>
 
 #include "EvolutionCalendarSource.h"
@@ -39,7 +39,7 @@ using namespace std;
 
 #include <boost/foreach.hpp>
 
-#include "syncevo/declarations.h"
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 static const string
@@ -106,7 +106,7 @@ EvolutionCalendarSource::EvolutionCalendarSource(ECalSourceType type,
         m_newSystem = NULL /* e_cal_new_system_memos */;
         break;
      default:
-        EvolutionSyncClient::throwError("internal error, invalid calendar type");
+        SyncContext::throwError("internal error, invalid calendar type");
         break;
     }
 }
@@ -205,7 +205,7 @@ void EvolutionCalendarSource::open()
 
     g_signal_connect_after(m_calendar,
                            "backend-died",
-                           G_CALLBACK(EvolutionSyncClient::fatalError),
+                           G_CALLBACK(SyncContext::fatalError),
                            (void *)"Evolution Data Server has died unexpectedly, database no longer available.");
 }
 

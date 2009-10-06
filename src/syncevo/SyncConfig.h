@@ -31,7 +31,11 @@
 #include <sstream>
 #include <set>
 
-#include "syncevo/declarations.h"
+#include <stdlib.h>
+#include <limits.h>
+#include <errno.h>
+
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
 
@@ -367,10 +371,73 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
     }
 };
 
-typedef TypedConfigProperty<int> IntConfigProperty;
-typedef TypedConfigProperty<unsigned int> UIntConfigProperty;
-typedef TypedConfigProperty<long> LongConfigProperty;
-typedef TypedConfigProperty<unsigned long> ULongConfigProperty;
+/**
+ * The "in >> res" check in TypedConfigProperty::checkValue
+ * is to loose. For example, the standard library accepts
+ * -1 for an unsigned type.
+ *
+ * This class accepts a function pointer to strtoul() or
+ * strtol() and uses that function to do strict value checking.
+ *
+ * @param T       type to be converted to and from (like int)
+ * @param Tmin    minimum value of T for range checking
+ * @param Tmax    maximum value of T for range checking
+ * @param C       intermediate type for conversion  (like long)
+ * @param Cmin    minimum value of C for range checking
+ * @param Cmax    maximum value of C for range checking
+ * @param strto   conversion function
+ */
+template <class T, T Tmin, T Tmax,
+    class C, C Cmin, C Cmax,
+    C (*strto)(const char *, char **, int)>
+class ScalarConfigProperty : public TypedConfigProperty<T>
+{
+ public:
+    ScalarConfigProperty(const string &name, const string &comment, const string &defValue = string("0"), const string &descr = string("")) :
+    TypedConfigProperty<T>(name, comment, defValue, descr)
+        {}
+
+    virtual bool checkValue(const string &value, string &error) const {
+        errno = 0;
+        const char *nptr = value.c_str();
+        char *endptr;
+        // use base 10 because not specifying a base 
+        // would interpret 077 as octal value, which
+        // could be confusing for users
+        C val = strto(nptr, &endptr, 10);
+        if ((errno == ERANGE && (val == Cmin || val == Cmax))) {
+            error = "range error";
+            return false;
+        }
+        if (errno != 0 && val == 0) {
+            error = "cannot parse";
+            return false;
+        }
+        if (endptr == nptr) {
+            error = "decimal value expected";
+            return false;
+        }
+        while (isspace(*endptr)) {
+            endptr++;
+        }
+        if (*endptr != '\0') {
+            error = "unexpected trailing non-whitespace characters: ";
+            error += endptr;
+            return false;
+        }
+        if (val > Tmax || val < Tmin) {
+            error = "range error";
+            return false;
+        }
+
+        return true;
+    }
+};
+
+typedef ScalarConfigProperty<int, INT_MIN, INT_MAX, long, LONG_MIN, LONG_MAX, strtol> IntConfigProperty;
+typedef ScalarConfigProperty<unsigned int, 0, UINT_MAX, unsigned long, 0, ULONG_MAX, strtoul> UIntConfigProperty;
+typedef ScalarConfigProperty<long, LONG_MIN, LONG_MAX, long, LONG_MIN, LONG_MAX, strtol> LongConfigProperty;
+typedef ScalarConfigProperty<unsigned long, 0, ULONG_MAX, unsigned long, 0, ULONG_MAX, strtoul> ULongConfigProperty;
 
 /**
  * This struct wraps keys for storing passwords
@@ -602,7 +669,7 @@ class ConfigStringCache {
  * exists, then it is used. Otherwise the new layout is used.
  *
  * This class can be instantiated on its own and then provides access
- * to properties actually stored in files. EvolutionSyncClient
+ * to properties actually stored in files. SyncContext
  * inherits from this class so that a derived client has the chance to
  * override every single property (although it doesn't have to).
  * Likewise SyncSource is derived from
@@ -695,7 +762,7 @@ class EvolutionSyncConfig {
      * valid afterwards, but empty and cannot be flushed.
      *
      * Does *not* remove logs associated with the configuration.
-     * For that use the logdir handling in EvolutionSyncClient
+     * For that use the logdir handling in SyncContext
      * before removing the configuration.
      *
      * The config directory is removed if it is empty.
@@ -744,7 +811,7 @@ class EvolutionSyncConfig {
      * the SyncManger uses the AbstractSyncSourceConfig. In
      * SyncEvolution those are implemented by the
      * SyncSource's actually instantiated by
-     * EvolutionSyncClient. Those are complete whereas
+     * SyncContext. Those are complete whereas
      * PersistentSyncSourceConfig only provides access to a
      * subset of the properties.
      *
@@ -802,7 +869,7 @@ class EvolutionSyncConfig {
     /**
      * @name Settings specific to SyncEvolution
      *
-     * See the property definitions in SyncEvolutionConfig.cpp
+     * See the property definitions in SyncConfig.cpp
      * for the user-visible explanations of
      * these settings.
      */
@@ -1063,7 +1130,7 @@ class SyncSourceConfig {
      *
      * @return the pair of <backend> and the (possibly empty)
      *         <format> specified in the "type" property; see
-     *         sourcePropSourceType in SyncEvolutionConfig.cpp
+     *         sourcePropSourceType in SyncConfig.cpp
      *         for details
      */
     static SourceType getSourceType(const SyncSourceNodes &nodes);

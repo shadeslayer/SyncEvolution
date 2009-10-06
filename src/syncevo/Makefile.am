@@ -20,7 +20,7 @@ SYNCEVOLUTION_SOURCES  = \
 	HashConfigNode.h \
 	VolatileConfigNode.h \
 	VolatileConfigTree.h \
-        EvolutionSmartPtr.h \
+        SmartPtr.h \
 	eds_abi_wrapper.h \
 	eds_abi_wrapper.cpp \
 	\
@@ -44,11 +44,11 @@ SYNCEVOLUTION_SOURCES  = \
 	SoupTransportAgent.h \
 	SoupTransportAgent.cpp \
 	\
-	SyncEvolutionUtil.cpp \
-	SyncEvolutionUtil.h \
+	util.cpp \
+	util.h \
         \
-	SyncEvolutionCmdline.cpp \
-        SyncEvolutionCmdline.h \
+	Cmdline.cpp \
+        Cmdline.h \
 	\
         SyncSource.h \
         SyncSource.cpp \
@@ -56,11 +56,11 @@ SYNCEVOLUTION_SOURCES  = \
 	SynthesisDBPlugin.cpp \
 	\
 	SyncEvolutionXML.c \
-        EvolutionSyncClient.h \
-	EvolutionSyncClient.cpp \
+        SyncContext.h \
+	SyncContext.cpp \
 	\
-	SyncEvolutionConfig.h \
-	SyncEvolutionConfig.cpp \
+	SyncConfig.h \
+	SyncConfig.cpp \
 	\
 	FilterConfigNode.h \
 	FilterConfigNode.cpp \
@@ -87,15 +87,15 @@ libsyncevolution_include_HEADERS = \
 								  FilterConfigNode.h \
 								  PrefixConfigNode.h \
 								  SafeConfigNode.h \
-								  SyncEvolutionConfig.h \
+								  SyncConfig.h \
 								  SyncSource.h \
-								  SyncEvolutionUtil.h \
-								  EvolutionSyncClient.h \
+								  util.h \
+								  SyncContext.h \
 								  SynthesisEngine.h \
 								  Logging.h \
 								  SyncML.h \
 								  eds_abi_wrapper.h \
-								  EvolutionSmartPtr.h \
+								  SmartPtr.h \
 								  ConfigNode.h 
 
 pkgconfigdir=$(libdir)/pkgconfig
