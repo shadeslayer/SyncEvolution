@@ -1038,6 +1038,10 @@ void Session::setConfig(bool update, bool temporary,
     /** check whether we need remove the entire configuration */
     if(!update) {
         boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(m_configName));
+        // TODO: this code here needs to be changed. It throws away
+        // everything from the config (including meta information
+        // which cannot be recreated) even if the provides properties
+        // and thus wants to keep the configurtion.
         if(syncConfig.get()) {
             syncConfig->remove();
         }
