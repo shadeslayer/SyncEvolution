@@ -18,12 +18,26 @@
  */
 
 #include <syncevo/TransportAgent.h>
+#include <syncevo/SyncConfig.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-static const char * const TransportAgent::m_contentTypeSyncML = "application/vnd.syncml+xml";
-static const char * const TransportAgent::m_contentTypeSyncWBXML = "application/vnd.syncml+wbxml";
-static const char * const TransportAgent::m_contentTypeURLEncoded = "application/x-www-form-urlencoded";
+const char * const TransportAgent::m_contentTypeSyncML = "application/vnd.syncml+xml";
+const char * const TransportAgent::m_contentTypeSyncWBXML = "application/vnd.syncml+wbxml";
+const char * const TransportAgent::m_contentTypeURLEncoded = "application/x-www-form-urlencoded";
+
+void HTTPTransportAgent::setConfig(SyncConfig &config)
+{
+    if (config.getUseProxy()) {
+        setProxy(config.getProxyHost());
+        setProxyAuth(config.getProxyUsername(),
+                     config.getProxyPassword());
+    }
+    setUserAgent(config.getUserAgent());
+    setSSL(config.findSSLServerCertificate(),
+           config.getSSLVerifyServer(),
+           config.getSSLVerifyHost());
+}
 
 SE_END_CXX

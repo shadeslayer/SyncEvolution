@@ -806,9 +806,11 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent()
 #elif defined(ENABLE_LIBCURL)
     boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
 #else
-    boost::shared_ptr<TransportAgent> agent;
+    boost::shared_ptr<HTTPTransportAgent> agent;
     throw std::string("libsyncevolution was compiled without default transport, client must implement SyncContext::createTransportAgent()");
 #endif
+
+    agent->setConfig(*this);
     return agent;
 }
 
@@ -1650,15 +1652,6 @@ SyncMLStatus SyncContext::doSync()
 
     // run an HTTP client sync session
     boost::shared_ptr<TransportAgent> agent(createTransportAgent());
-    if (getUseProxy()) {
-        agent->setProxy(getProxyHost());
-        agent->setProxyAuth(getProxyUsername(),
-                            getProxyPassword());
-    }
-    agent->setUserAgent(getUserAgent());
-    agent->setSSL(findSSLServerCertificate(),
-                  getSSLVerifyServer(),
-                  getSSLVerifyHost());
 
     // Close all keys so that engine can flush the modified config.
     // Otherwise the session reads the unmodified values from the
@@ -1947,6 +1940,18 @@ SyncMLStatus SyncContext::doSync()
         }
     } while (stepCmd != sysync::STEPCMD_DONE && stepCmd != sysync::STEPCMD_ERROR);
 
+    // If we get here without error, then close down connection normally.
+    // Otherwise destruct the agent without further communication.
+    if (!status) {
+        try {
+            agent->shutdown();
+            while (agent->wait(true) == TransportAgent::ACTIVE) {
+            }
+        } catch (...) {
+            status = handleException();
+        }
+    }
+
     sigaction (SIGINT, &old_action, NULL);
     return status;
 }
@@ -2141,20 +2146,6 @@ void SyncContext::readSessionInfo(const string &dir, SyncReport &report)
     LogDir logging(*this);
     logging.openLogdir(dir);
     logging.readReport(report);
-}
-
-std::string SyncContext::findSSLServerCertificate()
-{
-    std::string paths = getSSLServerCertificates();
-    std::vector< std::string > files;
-    boost::split(files, paths, boost::is_any_of(":"));
-    BOOST_FOREACH(std::string file, files) {
-        if (!file.empty() && !access(file.c_str(), R_OK)) {
-            return file;
-        }
-    }
-
-    return "";
 }
 
 SE_END_CXX

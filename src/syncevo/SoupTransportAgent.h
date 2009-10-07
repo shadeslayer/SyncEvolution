@@ -47,7 +47,7 @@ class GLibUnref {
  * An asynchronous soup session is used and the main loop
  * is invoked in the wait() method to make progress.
  */
-class SoupTransportAgent : public TransportAgent
+class SoupTransportAgent : public HTTPTransportAgent
 {
  public:
     /**
@@ -66,9 +66,10 @@ class SoupTransportAgent : public TransportAgent
                         bool verifyHost);
     virtual void setContentType(const std::string &type);
     virtual void setUserAgent(const std::string &agent);
+    virtual void shutdown() { m_status = CLOSED; }
     virtual void send(const char *data, size_t len);
     virtual void cancel();
-    virtual Status wait();
+    virtual Status wait(bool noReply = false);
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
     virtual void setCallback (TransportCallback cb, void *udata, int interval);
     gboolean processCallback();

@@ -37,7 +37,7 @@ SE_BEGIN_CXX
  * The simple curl API is used, so sending blocks until the
  * reply is ready.
  */
-class CurlTransportAgent : public TransportAgent
+class CurlTransportAgent : public HTTPTransportAgent
 {
  public:
     CurlTransportAgent();
@@ -51,9 +51,10 @@ class CurlTransportAgent : public TransportAgent
                         bool verifyHost);
     virtual void setContentType(const std::string &type);
     virtual void setUserAgent(const std::string &agent);
+    virtual void shutdown();
     virtual void send(const char *data, size_t len);
     virtual void cancel();
-    virtual Status wait();
+    virtual Status wait(bool noReply = false);
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
     virtual void setCallback (TransportCallback cb, void * udata, int interval);
     int processCallback();

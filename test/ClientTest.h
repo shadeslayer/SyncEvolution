@@ -738,25 +738,20 @@ public:
     virtual int getMessageCount() { return m_messageCount; }
 
     virtual void setURL(const std::string &url) { m_wrappedAgent->setURL(url); }
-    virtual void setProxy(const std::string &proxy) { m_wrappedAgent->setProxy(proxy); }
-    virtual void setProxyAuth(const std::string &user,
-                              const std::string &password) { m_wrappedAgent->setProxyAuth(user, password); }
-    virtual void setSSL(const std::string &cacerts,
-                        bool verifyServer,
-                        bool verifyHost) { m_wrappedAgent->setSSL(cacerts, verifyServer, verifyHost); }
     virtual void setContentType(const std::string &type) { m_wrappedAgent->setContentType(type); }
-    virtual void setUserAgent(const::string &agent) { m_wrappedAgent->setUserAgent(agent); }
     virtual void setAgent(boost::shared_ptr<TransportAgent> agent) {m_wrappedAgent = agent;}
     virtual void setSyncOptions(SyncOptions *options) {m_options = options;}
     virtual void setInterruptAtMessage (int interrupt) {m_interruptAtMessage = interrupt;}
     virtual void cancel() { m_wrappedAgent->cancel(); }
+    virtual void shutdown() { m_wrappedAgent->shutdown(); }
+
     virtual void reset() {
         m_messageCount = 0;
         m_interruptAtMessage = -1;
         m_status = INACTIVE;
         m_options = NULL;
     }
-    virtual Status wait() { return m_status; }
+    virtual Status wait(bool noReply = false) { return m_status; }
     virtual void setCallback (TransportCallback cb, void *udata, int interval) 
     { return m_wrappedAgent->setCallback(cb, udata, interval);}
 };

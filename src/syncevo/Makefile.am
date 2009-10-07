@@ -38,6 +38,7 @@ SYNCEVOLUTION_SOURCES  = \
 	LogRedirect.cpp \
 	\
 	TransportAgent.h \
+	TransportAgent.cpp \
 	CurlTransportAgent.h \
 	CurlTransportAgent.cpp \
 	\

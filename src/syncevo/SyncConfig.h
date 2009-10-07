@@ -972,6 +972,14 @@ class SyncConfig {
     virtual void setMaxObjSize(unsigned int value, bool temporarily = false);
     virtual unsigned long getReadBufferSize() const { return 0; }
     virtual const char* getSSLServerCertificates() const;
+
+    /**
+     * iterate over files mentioned in getSSLServerCertificates()
+     * and return name of first one which is found, empty string
+     * if none
+     */
+    std::string findSSLServerCertificate();
+
     virtual void setSSLServerCertificates(const string &value, bool temporarily = false);
     virtual bool getSSLVerifyServer() const;
     virtual void setSSLVerifyServer(bool value, bool temporarily = false);

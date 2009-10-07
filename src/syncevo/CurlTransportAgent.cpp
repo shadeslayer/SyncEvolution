@@ -150,6 +150,10 @@ void CurlTransportAgent::setCallback (TransportCallback cb, void *udata, int int
     m_cbInterval = interval;
 }
 
+void CurlTransportAgent::shutdown()
+{
+}
+
 void CurlTransportAgent::send(const char *data, size_t len)
 {
     CURLcode code;
@@ -200,7 +204,7 @@ void CurlTransportAgent::cancel()
     /* nothing to do */
 }
 
-TransportAgent::Status CurlTransportAgent::wait()
+TransportAgent::Status CurlTransportAgent::wait(bool noReply)
 {
     return m_status;
 }

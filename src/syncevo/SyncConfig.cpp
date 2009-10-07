@@ -862,6 +862,20 @@ void SyncConfig::setSSLVerifyServer(bool value, bool temporarily) { syncPropSSLV
 bool SyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHost.getProperty(*m_configNode); }
 void SyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncPropSSLVerifyHost.setProperty(*m_configNode, value, temporarily); }
 
+std::string SyncConfig::findSSLServerCertificate()
+{
+    std::string paths = getSSLServerCertificates();
+    std::vector< std::string > files;
+    boost::split(files, paths, boost::is_any_of(":"));
+    BOOST_FOREACH(std::string file, files) {
+        if (!file.empty() && !access(file.c_str(), R_OK)) {
+            return file;
+        }
+    }
+
+    return "";
+}
+
 static void setDefaultProps(const ConfigPropertyRegistry &registry,
                             boost::shared_ptr<FilterConfigNode> node,
                             bool force)

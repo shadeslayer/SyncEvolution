@@ -501,13 +501,6 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      */
     SyncMLStatus doSync();
 
-    /**
-     * iterate over files mentioned in getSSLServerCertificates()
-     * and return name of first one which is found, empty string
-     * if none
-     */
-    std::string findSSLServerCertificate();
-
     // total retry duration
     int m_retryDuration;
     // message resend interval
