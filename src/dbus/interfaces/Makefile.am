@@ -1,7 +1,10 @@
 %.xml: %-full.xml
 	$(XSLT) -o $@ $(srcdir)/spec-strip-docs.xsl $<
 
-BUILT_SOURCES = syncevo.xml syncevo-dbus-glue.h syncevo-marshal.c syncevo-marshal.h syncevo-bindings.h
+%-doc.xml: %-full.xml
+	$(XSLT) -o $@ $(srcdir)/spec-to-docbook.xsl $<
+
+BUILT_SOURCES = syncevo.xml syncevo-dbus-glue.h syncevo-marshal.c syncevo-marshal.h syncevo-bindings.h syncevo-server-doc.xml syncevo-connection-doc.xml syncevo-session-doc.xml
 
 noinst_DATA = syncevo.xml
 CLEANFILES = $(noinst_DATA) $(BUILT_SOURCES) stamp-syncevo-dbus-glue.h

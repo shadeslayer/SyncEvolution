@@ -1,0 +1,325 @@
+<?xml version="1.0"?>
+<node name="/" xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
+  <interface name="org.syncevolution.Server">
+    <doc:doc>
+      <doc:para>
+        Server is the entry object for SyncEvolution client API. It
+        can be used to query information and to start and monitor
+        sessions.
+      </doc:para>
+
+      <doc:para>
+        Sessions are required to modify the state of SyncEvolution and
+        to synchronize data. They are implemented by additional
+        objects, which exist as long as they are needed (= have
+        clients) or are executing (for example, running a sync
+        session).
+      </doc:para>
+
+      <doc:para>
+        A session must be active before it can be used. If there are
+        multiple conflicting session requests, they will be queued and
+        started one after the other. At the moment, SyncEvolution
+        will only run one session at a time, although the API would
+        allow concurrent sessions.
+      </doc:para>
+
+      <doc:para>
+        To be notified when a session is ready for use, subscribe to
+        the SessionChanged signal before asking for a session. It
+        may fire before the request to create a session returns. Either
+        handle that or use Session.GetStatus() to check whether the
+        session is still "queueing".
+      </doc:para>
+    </doc:doc>
+
+    <method name="Attach">
+      <doc:doc>
+        <doc:description>
+          With no client attached, the server will shut down after a
+          certain period of inactivity. Attaching to the server
+          prevents that. Attaching is not necessary to invoke methods.
+          The main purpose is to keep the server running while clients
+          are around and listen for signals, in particular the
+          Presence signal.
+        </doc:description>
+      </doc:doc>
+    </method>
+
+    <method name="Detach">
+      <doc:doc>
+        <doc:description>
+          Detaches an attached client. A client which disconnects
+          from D-Bus is automatically detached from the server.
+        </doc:description>
+      </doc:doc>
+    </method>
+
+    <method name ="GetConfigs">
+      <doc:doc><doc:description>Get an array of all configured servers (or templates)</doc:description></doc:doc>
+      <arg type="b" name="template" direction="in">
+        <doc:doc><doc:summary>if TRUE, will return template names, otherwise will return configured servers</doc:summary></doc:doc>
+      </arg>
+      <arg type="as" name="servers" direction="out">
+        <doc:doc><doc:summary>array of configured server (or template) names</doc:summary></doc:doc>
+      </arg>
+    </method>
+
+    <method name="GetConfig">
+      <doc:doc><doc:description>Get the configuration of a specific server (or template)</doc:description></doc:doc>
+      <arg type="s" name="server" direction="in">
+        <doc:doc><doc:summary>server name</doc:summary></doc:doc>
+      </arg>
+      <arg type="b" name="template" direction="in">
+        <doc:doc><doc:summary>if TRUE, will return a matching template configuration, otherwise will return a matching server configuration</doc:summary></doc:doc>
+      </arg>
+      <arg type="a{sa{ss}}" name="configuration" direction="out">
+        <doc:doc><doc:summary>server (or template) configuration</doc:summary></doc:doc>
+        <doc:doc><doc:description>The dictionary keys are "source/'source name'" for sources and the empty string for the main server configuration. More keys might be added in the future. The values are "configuration dictionaries" which contain keys and values matching those in the SyncEvolution server configuration files. 
+              Properties which are not set are also not present in the
+              configuration dictionaries. The semantic difference between
+              "not set" and "empty" or "set to default" is that unset
+              values will always use the default value, even after that
+              changed during a software update. Properties that are set
+              always use the chosen value.
+
+              Note that property keys are case insensitive. The D-Bus
+              interface specification would allow to send two
+              properties whose keys only differ in case to the
+              server. The result is undefined.
+            </doc:description>
+          </doc:doc>
+      </arg>
+    </method>
+
+    <method name="CheckPresence">
+      <doc:doc><doc:description>Checks whether a sync with a particular server can start.</doc:description></doc:doc>
+      <arg type="s" name="server" direction="in">
+        <doc:doc><doc:summary>server name</doc:summary></doc:doc>
+      </arg>
+      <arg type="s" name="status" direction="out">
+        <doc:doc>
+          <doc:summary>
+            See Presence signal for details.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+      <arg type="as" name="transports" direction="out">
+        <doc:doc>
+          <doc:summary>
+            All currently available transports. See Presence signal for details.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </method>      
+
+    <method name="GetReports">
+      <doc:doc><doc:description>Get synchronization reports for a specific server</doc:description></doc:doc>
+      <arg type="s" name="server" direction="in">
+        <doc:doc><doc:summary>server name</doc:summary></doc:doc>
+      </arg>
+      <arg type="u" name="start" direction="in">
+        <doc:doc><doc:summary>index of the first (newest) report that will be returned; reports are number starting with zero for the newest</doc:summary></doc:doc>
+      </arg>
+      <arg type="u" name="count" direction="in">
+        <doc:doc><doc:summary>maximum number of returned reports</doc:summary></doc:doc>
+      </arg>
+      <arg type="aa{ss}" name="reports" direction="out">
+        <doc:doc><doc:summary>synchronization reports</doc:summary></doc:doc>
+        <doc:doc><doc:description>The array contains report dictionaries. TODO: Document the keys used in the dictionaries in the array. This should be done by whoever implements this in the server.</doc:description></doc:doc>
+      </arg>
+    </method>
+
+    <method name="StartSession">
+      <doc:doc><doc:description>Start a session. The object is created instantly but will not be ready for method calls until status changes from "queueing" to "idle". The Detach() method can be called before that.</doc:description></doc:doc>
+      <arg type="s" name="server" direction="in">
+        <doc:doc><doc:summary>server name</doc:summary></doc:doc>
+      </arg>
+      <arg type="o" name="session" direction="out">
+        <doc:doc><doc:summary>session D-Bus object path</doc:summary></doc:doc>
+      </arg>
+    </method>
+
+    <method name="Connect">
+      <doc:doc>
+        <doc:description>
+          <doc:para>
+            Establishes a connection between SyncEvolution and a peer
+            (SyncML client or server). That peer might contact
+            SyncEvolution via D-Bus directly (local sync) or via a
+            SyncEvolution server stub that acts as gateway between a
+            peer that is connected to the stub via some other
+            transport mechanism (remote sync). For SyncEvolution this
+            difference is almost completely transparent.
+          </doc:para>
+
+          <doc:para>
+            In contrast to connections established by SyncEvolution
+            itself, the peer has to send the first message and
+            SyncEvolution replies. If the first message is a normal
+            SyncML message, then SyncEvolution acts as SyncML server.
+            Alternatively, a Notification message can be sent to
+            request that SyncEvolution initiates a SyncML session as
+            client.
+          </doc:para>
+
+          <doc:para>
+            In the later case, SyncEvolution may or may not use the
+            connection established by Connect(), depending on the
+            content of that first message.
+          </doc:para>
+
+          <doc:para>
+            The result of Connect() is an object that implements the
+            org.syncevolution.Connection interface. It has to be used
+            for sending at least one message to start the sync. If
+            SyncEvolution needs to abort the connection, it will issue
+            the Close-signal and remove the object. A peer needs to
+            subscribe to that signal before starting to wait for a
+            reply. In addition, the client should also watch out for
+            SyncEvolution quitting unexpectedly.
+          </doc:para>
+
+          <doc:para>
+            SyncEvolution supports re-establishing a connection that was
+            interrupted. This only works when the peer is a SyncML
+            client, supports resending messages, and the non-D-Bus
+            message transport supports sending the session number as
+            part of the meta information.
+          </doc:para>
+        </doc:description>
+      </doc:doc>
+      <arg type="a{ss}" name="peer" direction="in">
+        <doc:doc>
+          <doc:summary>
+            Various information about the peer who initiated the
+            connection. All of it is optional unless explicitly
+            specified otherwise. Short, single line strings are
+            preferred.
+
+            "description" - a description of the peer in a format and
+            language that is understood by the user.
+
+            "id" - a unique ID for this particular peer, in a format
+            that is specific to the transport. The ID only has to be
+            unique among peers using that transport at the current
+            point in time.
+
+            "transport" - a string identifying the entity which talks
+            directly to SyncEvolution (peer or transport stub). If
+            available, this should be a D-Bus interface name, like
+            "org.openobex.obexd". The main purpose right now is for
+            informing the user and debugging.  Later it might also be
+            used to call methods in that interface or for choosing a
+            local configuration for the peer based on its ID.
+
+            "transport_description" - could be used to describe the
+            version of the transport entity.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+      <arg type="b" name="must_authenticate" direction="in">
+        <doc:doc>
+          <doc:summary>
+            <doc:para>
+              If false, then the peer is trusted and shall be given
+              access to SyncEvolution without further checks by
+              SyncEvolution itself. This is useful for peers which
+              already run as local user processes with same access
+              rights to the data as SyncEvolution or for transports that
+              authenticate and authorize access via their own
+              mechanisms.
+            </doc:para>
+
+            <doc:para>
+              If true, then a SyncML client peer must provide valid
+              credentials as part of the SyncML session. For a server,
+              a valid configuration must exist. SyncEvolution searches
+              for such a configuration by matching the sync URL in
+              the Notification with sync URLs in the configurations.
+            </doc:para>
+          </doc:summary>
+        </doc:doc>
+      </arg>
+      <arg type="s" name="session" direction="in">
+        <doc:doc>
+          <doc:summary>
+            If this is a reconnect for an older session,
+            then pass the session ID here. Otherwise
+            pass an empty string. New session IDs are created in
+            response to the initial message, see Reply signal.
+          </doc:summary>
+        </doc:doc>
+      </arg>      
+      <arg type="o" name="connection" direction="out">
+        <doc:doc>
+          <doc:summary>
+            The connection object created by SyncEvolution in response
+            to this connection request. Implements the
+            org.syncevolution.Connection interface.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </method>
+
+    <method name="GetSessions">
+      <doc:doc><doc:description>Get currently existing sessions. This includes active and queueing sessions.</doc:description></doc:doc>
+      <arg type="ao" name="sessions" direction="out">
+        <doc:doc><doc:summary>array of session D-Bus object paths</doc:summary></doc:doc>
+      </arg>
+    </method>
+
+    <signal name="SessionChanged">
+      <doc:doc><doc:description>Session start or end</doc:description></doc:doc>
+      <arg type="o" name="session">
+        <doc:doc><doc:summary>session D-Bus object path</doc:summary></doc:doc>
+      </arg>
+      <arg type="b" name="started">
+        <doc:doc><doc:summary>TRUE if session was started and is active now (= ready for use), FALSE if it ended</doc:summary></doc:doc>
+      </arg>
+    </signal>
+
+    <signal name="Presence">
+      <doc:doc>
+        <doc:description>
+          Indicates whether a server can be reached right now.  This
+          signal can be used by GUIs to prevent starting a sync when
+          it is known to fail, for example because the network is
+          currently down.
+
+          At the moment, the SyncEvolution server can only monitor
+          network connectivity, which is a cheap local operation and
+          thus done unconditionally while the server runs (see
+          Attach()). Detecting the presence of non-HTTP-based peers
+          might be more costly. Additional APIs might be added to turn
+          that on only when needed. The CheckPresence() method will
+          always force a check.
+        </doc:description>
+      </doc:doc>
+      <arg type="s" name="server">
+        <doc:doc><doc:summary>name of the server configuration</doc:summary></doc:doc>
+      </arg>
+      <arg type="s" name="status">
+        <doc:doc>
+          <doc:summary>
+            "no transport" - the transport necessary to reach the server is not working.
+            "not present" - the server is known to be down or unreachable.
+            "" - the server might be usable. Syncs can still fail.
+            Other non-empty strings might be added in the future. They always
+            indicate a condition which prevents syncing.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+      <arg type="s" name="transport">
+        <doc:doc>
+          <doc:summary>
+            If the server can be reached via multiple transports, this
+            is the one which triggered the signal. Content of the
+            string to be decided...
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </signal>
+
+  </interface>
+</node>

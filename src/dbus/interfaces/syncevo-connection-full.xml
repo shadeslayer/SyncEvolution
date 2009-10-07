@@ -1,0 +1,144 @@
+<?xml version="1.0"?>
+<node name="/" xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
+  <interface name="org.syncevolution.Connection">
+    <doc:doc>
+      <doc:para>
+        The SyncEvolution connection object can be used to exchange
+        messages.
+      </doc:para>
+    </doc:doc>
+
+    <method name="Process">
+      <doc:doc>
+        <doc:summary>
+          Pass data to SyncEvolution. The response is returned
+          via the Reply-signal, so subscribe to that first.
+        </doc:summary>
+      </doc:doc>
+
+      <arg type="ay" name="message" direction="in">
+        <doc:doc>
+          <doc:summary>
+            The data to be processed. Empty messages are invalid
+            and will trigger an error.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+
+      <arg type="s" name="message_type" direction="in">
+        <doc:doc>
+          <doc:summary>
+            The MIME type of the
+            message. "application/vnd.syncml.ds.notification",
+            "application/vnd.syncml+xml" and
+            "application/vnd.syncml+wbxml" are currently supported.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </method>
+
+    <method name="Close">
+      <doc:doc>
+        <doc:summary>
+          Indicates that the connection object is no longer needed.
+        </doc:summary>
+      </doc:doc>
+
+      <arg type="b" name="normal" direction="in">
+        <doc:doc>
+          <doc:summary>
+            TRUE if the connection is being closed after successfully
+            delivering the final response. FALSE if an error is
+            encountered that cannot be handled by the peer or its
+            transport. SyncEvolution cannot rely on getting a close(FALSE)
+            call in all cases. If its caller disappears from the bus
+            it must assume that there was a fatal error and close the
+            connection.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+
+      <arg type="s" name="error" direction="in">
+        <doc:doc>
+          <doc:summary>
+            A description which explains the error, may be empty.
+            Used for debugging.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </method>
+
+    <signal name="Reply">
+      <arg type="ay" name="reply">
+        <doc:doc>
+          <doc:summary>
+            The data to be returned to the peer. An empty reply is
+            possible as response to the last message; it must not be
+            delivered. Instead, final will be true and the connection
+            needs to be closed.
+
+            It is possible that a non-empty reply is sent without the
+            final flag, immediately followed by an empty reply which
+            has the flag set. As described above, the empty reply must
+            be ignored and close() must be called once the non-empty
+            reply is delivered.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+
+      <arg type="s" name="reply_type">
+        <doc:doc>
+          <doc:summary>
+            The MIME type of the reply. The same types as for the
+            message are supported.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+
+      <arg type="a{ss}" name="meta">
+        <doc:doc>
+          <doc:summary>
+            Transport specific meta information. Currently defined:
+            "URL" - the URL for an HTTP POST.
+          </doc:summary>
+        </doc:doc>
+      </arg>      
+
+      <arg type="b" name="final">
+        <doc:doc>
+          <doc:summary>
+            True if this is the last reply. No further messages are
+            expected and the session should be closed once the reply
+            was delivered successfully.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+
+      <arg type="s" name="session">
+        <doc:doc>
+          <doc:summary>
+            The first message in a new connection triggers the
+            creation of a new, random session ID which is returned
+            together with the response. The caller is responsible for
+            ensuring that only messages belonging to this session are
+            passed to future process() calls.
+
+            In practice the session ID does not change after the
+            first message, but this is not guaranteed and the caller
+            should always use the most recent value.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </signal>
+
+    <signal name="Abort">
+      <doc:doc>
+        <doc:summary>
+          Sent when the server has to shut down the connection.  All
+          further operations on it will fail.  Resuming the connection
+          may or may not work in such a case.
+        </doc:summary>
+      </doc:doc>
+    </signal>
+  </interface>
+</node>

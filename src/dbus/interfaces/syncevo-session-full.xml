@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<node name="/" xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
+  <interface name="org.syncevolution.Session">
+    <doc:doc><doc:description>
+      <doc:para>A Session object is used to do do syncs and to modify the server configurations. Clients can create a Session with Server.StartSession() and detach from it with Session.Detach().</doc:para>
+      <doc:para>Commands (other than Detach()) cannot be used before the status changes to "idle" (see GetStatus() and StatusChanged).</doc:para>
+    </doc:description></doc:doc>
+
+    <method name="GetConfig">
+      <doc:doc><doc:description>Get the configuration of the server</doc:description></doc:doc>
+      <arg type="a{sa{ss}}" name="configuration" direction="out">
+        <doc:doc><doc:summary>server configuration</doc:summary></doc:doc>
+        <doc:doc><doc:description>See Server.GetConfig() for dictionary description.</doc:description></doc:doc>
+      </arg>
+    </method>
+
+    <method name="SetConfig">
+      <doc:doc><doc:description>Set the configuration of the server</doc:description></doc:doc>
+      <arg type="b" name="update" direction="in">
+        <doc:doc><doc:summary>TRUE if existing configuration should be updated. FALSE if existing configuration should be cleared.
+            "Cleared" in this context means that all existing
+            properties are removed before setting those passed as
+            argument. Configuration entries (the user-visible part as
+            well as the related meta information, plus the containing
+            directory if it is empty) which are not referenced by a
+            key in the configuration are removed. Setting a completely
+            empty configuration with "update=FALSE" can thus be used
+            to remove the entire
+            configuration.
+        </doc:summary></doc:doc>
+      </arg>
+      <arg type="b" name="temporary" direction="in">
+        <doc:doc><doc:summary>TRUE if configuration changes should only be used for the duration of the session.
+            This is useful to run a single sync session with different settings,
+            for example with an increased logging level. "update=FALSE" and
+            "temporary=TRUE" are mutually exclusive. Temporary config changes
+            do not affect getting or setting permanent configurations.
+        </doc:summary></doc:doc>
+      </arg>
+      <arg type="a{sa{ss}}" name="configuration" direction="in">
+        <doc:doc><doc:summary>server configuration</doc:summary></doc:doc>
+        <doc:doc><doc:description>See Server.GetConfig() for dictionary description.</doc:description></doc:doc>
+      </arg>
+    </method>
+
+    <method name="GetReports">
+      <doc:doc><doc:description>Get synchronization reports for the server</doc:description></doc:doc>
+      <arg type="u" name="start" direction="in">
+        <doc:doc><doc:summary>index of the first (newest) report that will be returned</doc:summary></doc:doc>
+      </arg>
+      <arg type="u" name="count" direction="in">
+        <doc:doc><doc:summary>maximum number of returned reports</doc:summary></doc:doc>
+      </arg>
+      <arg type="aa{ss}" name="reports" direction="out">
+        <doc:doc><doc:summary>synchronization reports</doc:summary></doc:doc>
+        <doc:doc><doc:description>See Server.GetReports() for array description.</doc:description></doc:doc>
+      </arg>
+    </method>
+
+    <method name="Sync">
+      <doc:doc><doc:description>Start synchronization. The synchronization mode selection for sources works like this: Primarily, use mode from "sources" array. If the source was not found or its mode was empty, use the mode parameter. If mode parameter is empty, use the mode in configuration.
+          Examples:
+          * sync all with mode from config
+          Sync (NULL, ())
+          * refresh all from server
+          Sync ("refresh-from-server", ())
+          * force slow sync for calendar, use mode from config for others
+          Sync (NULL, (("calendar", "slow")))
+          * sync only calendar and addressbook, with mode from config
+          Sync ("none", (("calendar", NULL), ("addressbook", NULL)))
+      </doc:description></doc:doc>
+      <arg type="s" name="mode" direction="in">
+        <doc:doc><doc:summary>synchronization mode</doc:summary></doc:doc>
+        <doc:doc><doc:description>Valid values are all synchronization modes used in syncevolution server configuration files and the empty string.</doc:description></doc:doc>
+      </arg>
+      <arg type="a{ss}" name="sources" direction="in">
+        <doc:doc><doc:summary>synchronization source modes</doc:summary></doc:doc>
+        <doc:doc><doc:description>Source modes to override the 'mode' variable for specific sources. The dictionary key is source name, value is synchronization mode. Valid synchronization modes are all synchronization modes used in syncevolution server configuration files and the empty string.</doc:description></doc:doc>
+      </arg>
+    </method>
+
+    <method name="Abort">
+      <doc:doc><doc:description>Abort synchronization. See Status-signal for results.</doc:description></doc:doc>
+    </method>
+
+    <method name="Suspend">
+      <doc:doc><doc:description>Suspend synchronization. See Status-signal for results.</doc:description></doc:doc>
+    </method>
+
+    <method name="Detach">
+      <doc:doc><doc:description>Detach from the session.</doc:description></doc:doc>
+    </method>
+
+    <method name="CheckPresence">
+      <doc:doc><doc:description>Checks whether a sync with the current server can start.</doc:description></doc:doc>
+      <arg type="s" name="status">
+        <doc:doc>
+          <doc:summary>
+            See org.syncevolution.Server Presence signal for details.
+          </doc:summary>
+        </doc:doc>
+      </arg>
+    </method>
+
+    <method name="GetStatus">
+      <doc:doc><doc:description>Get session status. Individual source statuses are relevant and provided only when status is neither "queuing" nor "idle".</doc:description></doc:doc>
+      <arg type="s" name="status" direction="out">
+        <doc:doc><doc:summary>Session status</doc:summary></doc:doc>
+        <doc:doc><doc:description>Valid values include strings starting with "queueing", "idle" (ready to execute commands), "running", "aborting", "suspending", "done" (a sync was executed, individual source statuses for that sync are available, session is now inactive and cannot execute new commands). The strings may contain additional specifiers separated by a semicolons: "running;processing", "suspending;waiting". There may be several specifiers: "running;waiting;foo"</doc:description></doc:doc>
+      </arg>
+      <arg type="u" name="error" direction="out">
+        <doc:doc><doc:summary>Error code for current or last action (zero for no error).</doc:summary></doc:doc>
+      </arg>
+      <arg type="a{s(ssu)}" name="sources" direction="out">
+        <doc:doc><doc:summary>Synchronization source status dictionary</doc:summary></doc:doc>
+        <doc:doc><doc:description>Dictionary key is source name. The value structs contain synchronization mode, source status and error code. Valid values for status are the same as for status parameter above. "done" represents a synced source when the whole sync is not done yet.</doc:description></doc:doc>
+      </arg>
+    </method>
+
+    <method name="GetProgress">
+      <doc:doc><doc:description>Get synchronization progress</doc:description></doc:doc>
+      <arg type="i" name="progress" direction="out">
+        <doc:doc><doc:summary>Rough estimate of current progress 0-100.</doc:summary></doc:doc>
+      </arg>
+      <arg type="a{s(siiiiii)}" name="sources" direction="out">
+        <doc:doc><doc:summary>Synchronization source progress dictionary</doc:summary></doc:doc>
+        <doc:doc><doc:description>Dictionary key is source name. The value structs contain phase (can be one of "", "preparing", "sending", "receiving"), prepare count, prepare total, send count, send total, receive count and receive total. -1 is used for unknown. Normally only the 'counts' increase but there are cases where the total will increase as well.</doc:description></doc:doc>
+      </arg>
+    </method>
+
+    <signal name="StatusChanged">
+      <doc:doc><doc:description>Session status change. See GetStatus() for argument descriptions.</doc:description></doc:doc>
+      <arg type="s" name="status"/>
+      <arg type="u" name="error"/>
+      <arg type="a{s(ssu)}" name="sources"/>
+    </signal> 
+
+    <signal name="ProgressChanged">
+      <doc:doc><doc:description>Synchronization progress change. See GetProgress() for argument descriptions.</doc:description></doc:doc>
+      <arg type="i" name="progress"/>
+      <arg type="a{s(siiiiii)}" name="sources"/>
+    </signal>
+
+  </interface>
+</node>
