@@ -43,6 +43,8 @@
 #include <map>
 #include <memory>
 #include <iostream>
+#include <limits>
+#include <cmath>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -377,6 +379,12 @@ struct SourceStatus
         m_status("idle"),
         m_error(0)
     {}
+    void set(const std::string &mode, const std::string &status, uint32_t error)
+    {
+        m_mode = mode;
+        m_status = status;
+        m_error = error;
+    }
 
     std::string m_mode;
     std::string m_status;
@@ -499,6 +507,154 @@ class Timer {
 };
 
 /**
+ * Hold progress info and try to estimate current progress
+ */
+class ProgressData {
+public:
+    /**
+     * big steps, each step contains many operations, such as
+     * data prepare, message send/receive.
+     * The partitions of these steps are based on profiling data
+     * for many usage scenarios and different sync modes
+     */
+    enum ProgressStep {
+        /** an invalid step */
+        PRO_SYNC_INVALID = 0,
+        /** 
+         * sync prepare step: do some preparations and checkings, 
+         * such as source preparation, engine preparation
+         */
+        PRO_SYNC_PREPARE,
+        /** 
+         * session init step: transport connection set up, 
+         * start a session, authentication and dev info generation
+         * normally it needs one time syncML messages send-receive.
+         * Sometimes it may need messages send/receive many times to 
+         * handle authentication
+         */
+        PRO_SYNC_INIT,
+        /** 
+         * prepare sync data and send data, also receive data from server.
+         * Also may need send/receive messages more than one time if too 
+         * much data.
+         * assume 5 items to be sent by default
+         */
+        PRO_SYNC_DATA,
+        /** 
+         * item receive handling, send client's status to server and 
+         * close the session 
+         * assume 5 items to be received by default
+         */
+        PRO_SYNC_UNINIT,
+        /** number of sync steps */
+        PRO_SYNC_TOTAL
+    };
+    /**
+     * internal mode to represent whether it is possible that data is sent to 
+     * server or received from server. This could help remove some incorrect
+     * hypothesis. For example, if only to client, then it is no data item 
+     * sending to server. 
+     */
+    enum InternalMode {
+        INTERNAL_NONE = 0,
+        INTERNAL_ONLY_TO_CLIENT = 1,
+        INTERNAL_ONLY_TO_SERVER = 1 << 1,
+        INTERNAL_TWO_WAY = 1 + (1 << 1)
+    };
+
+    /**
+     * treat a one-time send-receive without data items
+     * as an internal standard unit.
+     * below are ratios of other operations compared to one 
+     * standard unit.
+     * These ratios might be dynamicall changed in the future.
+     */
+    /** PRO_SYNC_PREPARE step ratio to standard unit */
+    static const float PRO_SYNC_PREPARE_RATIO = 0.2;
+    /** data prepare for data items to standard unit. All are combined by profiling data */
+    static const float DATA_PREPARE_RATIO = 0.10;
+    /** one data item send's ratio to standard unit */
+    static const float ONEITEM_SEND_RATIO = 0.05;
+    /** one data item receive&parse's ratio to standard unit */
+    static const float ONEITEM_RECEIVE_RATIO = 0.05;
+    /** connection setup to standard unit */
+    static const float CONN_SETUP_RATIO = 0.5;
+    /** assume the number of data items */
+    static const int DEFAULT_ITEMS = 5;
+    /** default times of message send/receive in each step */
+    static const int MSG_SEND_RECEIVE_TIMES = 1;
+
+    ProgressData(int32_t &progress);
+
+    /**
+     * change the big step 
+     */
+    void setStep(ProgressStep step); 
+
+    /**
+     * calc progress when a message is sent
+     */
+    void sendStart();
+
+    /**
+     * calc progress when a message is received from server 
+     */
+    void receiveEnd();
+
+    /** 
+     * re-calc progress proportions according to syncmode hint
+     * typically, if only refresh-from-client, then
+     * client won't receive data items.
+     */
+    void addSyncMode(SyncMode mode);
+
+    /**
+     * calc progress when data prepare for sending 
+     */
+    void itemPrepare();
+
+    /**
+     * calc progress when a data item is received
+     */
+    void itemReceive(const string &source, int count, int total);
+
+private:
+
+    /** update progress data */
+    void updateProg(float ratio);
+
+    /** dynamically adapt the proportion of each step by their current units */
+    void recalc();
+
+    /** internally check sync mode */
+    void checkInternalMode();
+
+    /** get total units of current step and remaining steps */
+    float getRemainTotalUnits();
+
+    /** get default units of given step */
+    static float getDefaultUnits(ProgressStep step);
+
+private:
+    /** a reference of progress percentage */
+    int32_t &m_progress;
+    /** current big step */
+    ProgressStep m_step;
+    /** count of message send/receive in current step. Cleared in the start of a new step */
+    int m_sendCounts;
+    /** internal sync mode combinations */ 
+    int m_internalMode;
+    /** proportions when each step is end */
+    float m_syncProp[PRO_SYNC_TOTAL];
+    /** remaining units of each step according to current step */
+    float m_syncUnits[PRO_SYNC_TOTAL];
+    /** proportion of a standard unit, may changes dynamically */
+    float m_propOfUnit;
+    /** current sync source */
+    string m_source;
+};
+
+/**
  * Represents and implements the Session interface.  Use
  * boost::shared_ptr to track it and ensure that there are references
  * to it as long as the connection is needed.
@@ -559,6 +715,10 @@ class Session : public DBusObjectHelper,
     int m_priority;
 
     int32_t m_progress;
+
+    /** progress data, holding progress calculation related info */
+    ProgressData m_progData;
+
     typedef std::map<std::string, SourceStatus> SourceStatuses_t;
     SourceStatuses_t m_sourceStatus;
 
@@ -1346,7 +1506,8 @@ Session::Session(DBusServer &server,
     m_active(false),
     m_syncStatus(SYNC_IDLE),
     m_priority(PRI_DEFAULT),
-    m_progress(-1),
+    m_progress(0),
+    m_progData(m_progress),
     m_error(0),
     m_statusTimer(100),
     m_progressTimer(50),
@@ -1389,19 +1550,108 @@ void Session::setActive(bool active)
 void Session::syncProgress(sysync::TProgressEventEnum type,
                            int32_t extra1, int32_t extra2, int32_t extra3)
 {
+    switch(type) {
+    case sysync::PEV_SESSIONSTART:
+        /** clear existing status */
+        m_syncStatus = SYNC_RUNNING;
+        m_error = 0;
+        fireStatus(true);
+        m_progData.setStep(ProgressData::PRO_SYNC_INIT);
+        fireProgress(true);
+        break;
+    case sysync::PEV_SESSIONEND:
+        m_syncStatus = SYNC_DONE;
+        m_error = extra1;
+        fireStatus(true);
+        m_progData.setStep(ProgressData::PRO_SYNC_INVALID);
+        fireProgress(true);
+        break;
+    case sysync::PEV_SENDSTART:
+        m_progData.sendStart();
+        break;
+    case sysync::PEV_SENDEND:
+    case sysync::PEV_RECVSTART:
+    case sysync::PEV_RECVEND:
+        m_progData.receiveEnd();
+        fireProgress();
+        break;
+    case sysync::PEV_DISPLAY100:
+    case sysync::PEV_SUSPENDCHECK:
+    case sysync::PEV_DELETING:
+        break;
+    case sysync::PEV_SUSPENDING:
+        m_syncStatus = SYNC_SUSPEND;
+        fireStatus(true);
+        break;
+    default:
+        ;
+    }
 }
 
 void Session::sourceProgress(sysync::TProgressEventEnum type,
                              SyncSource &source,
                              int32_t extra1, int32_t extra2, int32_t extra3)
 {
-    // TODO: update our progress and status
+    SourceProgress &progress = m_sourceProgress[source.getName()];
+    SourceStatus &status = m_sourceStatus[source.getName()];
+    switch(type) {
+    case sysync::PEV_SYNCSTART:
+        if(source.getFinalSyncMode() != SYNC_NONE) {
+            m_progData.setStep(ProgressData::PRO_SYNC_UNINIT);
+            fireProgress();
+        }
+        break;
+    case sysync::PEV_SYNCEND:
+        if(source.getFinalSyncMode() != SYNC_NONE) {
+            status.set(PrettyPrintSyncMode(source.getFinalSyncMode()), "done", extra1);
+            fireStatus(true);
+        }
+        break;
+    case sysync::PEV_PREPARING:
+        if(source.getFinalSyncMode() != SYNC_NONE) {
+            progress.m_phase        = "preparing";
+            progress.m_prepareCount = extra1;
+            progress.m_prepareTotal = extra2;
+            m_progData.itemPrepare();
+            fireProgress(true);
+        }
+        break;
+    case sysync::PEV_ITEMSENT:
+        if(source.getFinalSyncMode() != SYNC_NONE) {
+            progress.m_phase     = "sending";
+            progress.m_sendCount = extra1;
+            progress.m_sendTotal = extra2;
+            fireProgress(true);
+        }
+        break;
+    case sysync::PEV_ITEMRECEIVED:
+        if(source.getFinalSyncMode() != SYNC_NONE) {
+            progress.m_phase        = "receiving";
+            progress.m_receiveCount = extra1;
+            progress.m_receiveTotal = extra2;
+            m_progData.itemReceive(source.getName(), extra1, extra2);
+            fireProgress(true);
+        }
+        break;
+    case sysync::PEV_ALERTED:
+        if(source.getFinalSyncMode() != SYNC_NONE) {
+            status.set(PrettyPrintSyncMode(source.getFinalSyncMode()), "running", 0);
+            fireStatus(true);
+            m_progData.setStep(ProgressData::PRO_SYNC_DATA);
+            m_progData.addSyncMode(source.getFinalSyncMode());
+            fireProgress();
+        }
+        break;
+    default:
+        ;
+    }
 }
 
 void Session::run()
 {
     if (m_sync) {
         SyncMLStatus status;
+        m_progData.setStep(ProgressData::PRO_SYNC_PREPARE);
         try {
             status = m_sync->sync();
         } catch (...) {
@@ -1419,6 +1669,199 @@ void Session::run()
             c->shutdown();
         }
     }
+}
+
+/************************ ProgressData implementation *****************/
+ProgressData::ProgressData(int32_t &progress) 
+    : m_progress(progress),
+    m_step(PRO_SYNC_INVALID),
+    m_sendCounts(0),
+    m_internalMode(INTERNAL_NONE)
+{
+    /**
+     * init default units of each step 
+     */
+    float totalUnits = 0.0;
+    for(int i = 0; i < PRO_SYNC_TOTAL; i++) {
+        float units = getDefaultUnits((ProgressStep)i);
+        m_syncUnits[i] = units;
+        totalUnits += units;
+    }
+    m_propOfUnit = 1.0 / totalUnits;
+
+    /** 
+     * init default sync step proportions. each step stores proportions of
+     * its previous steps and itself.
+     */
+    m_syncProp[0] = 0;
+    for(int i = 1; i < PRO_SYNC_TOTAL - 1; i++) {
+        m_syncProp[i] = m_syncProp[i - 1] + m_syncUnits[i] / totalUnits;
+    }
+    m_syncProp[PRO_SYNC_TOTAL - 1] = 1.0;
+}
+
+void ProgressData::setStep(ProgressStep step) 
+{
+    if(m_step != step) {
+        /** if state is changed, progress is set as the end of current step*/
+        m_progress = 100.0 * m_syncProp[(int)m_step];
+        m_step = step; ///< change to new state
+        m_sendCounts = 0; ///< clear send/receive counts 
+        m_source = ""; ///< clear source
+    }
+}
+
+void ProgressData::sendStart()
+{
+    checkInternalMode();
+    m_sendCounts++;
+
+    /* self adapts. If a new send and not default, we need re-calculate proportions */
+    if(m_sendCounts > MSG_SEND_RECEIVE_TIMES) {
+        m_syncUnits[(int)m_step] += 1;
+        recalc();
+    }
+    /** 
+     * If in the send operation of PRO_SYNC_UNINIT, it often takes extra time
+     * to send message due to items handling 
+     */
+    if(m_step == PRO_SYNC_UNINIT && m_syncUnits[(int)m_step] != MSG_SEND_RECEIVE_TIMES) {
+        updateProg(DATA_PREPARE_RATIO);
+    }
+}
+
+void ProgressData::receiveEnd()
+{
+    /** 
+     * often receiveEnd is the last operation of each step by default.
+     * If more send/receive, then we need expand proportion of current 
+     * step and re-calc them
+     */
+    updateProg(m_syncUnits[(int)m_step]);
+}
+
+void ProgressData::addSyncMode(SyncMode mode)
+{
+    switch(mode) {
+        case SYNC_TWO_WAY:
+        case SYNC_SLOW:
+            m_internalMode |= INTERNAL_TWO_WAY;
+            break;
+        case SYNC_ONE_WAY_FROM_CLIENT:
+        case SYNC_REFRESH_FROM_CLIENT:
+            m_internalMode |= INTERNAL_ONLY_TO_CLIENT;
+            break;
+        case SYNC_ONE_WAY_FROM_SERVER:
+        case SYNC_REFRESH_FROM_SERVER:
+            m_internalMode |= INTERNAL_ONLY_TO_SERVER;
+            break;
+        default:
+            ;
+    };
+}
+
+void ProgressData::itemPrepare()
+{
+    checkInternalMode();
+    /**
+     * only the first PEV_ITEMPREPARE event takes some time
+     * due to data access, other events don't according to
+     * profiling data
+     */
+    if(m_source.empty()) {
+        m_source = "source"; ///< use this to check whether itemPrepare occurs
+        updateProg(DATA_PREPARE_RATIO);
+    }
+}
+
+void ProgressData::itemReceive(const string &source, int count, int total)
+{
+    /** 
+     * source is used to check whether a new source is received
+     * If the first source, we compare its total number and default number
+     * then re-calc sync units
+     */
+    if(m_source.empty()) {
+        m_source = source;
+        if(total != 0) {
+            m_syncUnits[PRO_SYNC_UNINIT] += ONEITEM_RECEIVE_RATIO * (total - DEFAULT_ITEMS);
+            recalc();
+        }
+    /** if another new source, add them into sync units */
+    } else if(m_source != source){
+        m_source = source;
+        if(total != 0) {
+            m_syncUnits[PRO_SYNC_UNINIT] += ONEITEM_RECEIVE_RATIO * total;
+            recalc();
+        }
+    } 
+    updateProg(ONEITEM_RECEIVE_RATIO);
+}
+
+void ProgressData::updateProg(float ratio)
+{
+    m_progress += m_propOfUnit * 100 * ratio;
+    m_syncUnits[(int)m_step] -= ratio;
+}
+
+/** dynamically adapt the proportion of each step by their current units */
+void ProgressData::recalc()
+{
+    float units = getRemainTotalUnits();
+    if(std::abs(units) < std::numeric_limits<float>::epsilon()) {
+        m_propOfUnit = 0.0;
+    } else {
+        m_propOfUnit = ( 100.0 - m_progress ) / (100.0 * units);
+    }
+    if(m_step != PRO_SYNC_TOTAL -1 ) {
+        m_syncProp[(int)m_step] = m_progress / 100.0 + m_syncUnits[(int)m_step] * m_propOfUnit;
+        for(int i = ((int)m_step) + 1; i < PRO_SYNC_TOTAL - 1; i++) {
+            m_syncProp[i] = m_syncProp[i - 1] + m_syncUnits[i] * m_propOfUnit;
+        }
+    }
+}
+
+void ProgressData::checkInternalMode() 
+{
+    if(!m_internalMode) {
+        return;
+    } else if(m_internalMode & INTERNAL_TWO_WAY) {
+        // don't adjust
+    } else if(m_internalMode & INTERNAL_ONLY_TO_CLIENT) {
+        // only to client, remove units of prepare and send
+        m_syncUnits[PRO_SYNC_DATA] -= (ONEITEM_RECEIVE_RATIO * DEFAULT_ITEMS + DATA_PREPARE_RATIO);
+        recalc();
+    } else if(m_internalMode & INTERNAL_ONLY_TO_SERVER) {
+        // only to server, remove units of receive
+        m_syncUnits[PRO_SYNC_UNINIT] -= (ONEITEM_RECEIVE_RATIO * DEFAULT_ITEMS + DATA_PREPARE_RATIO);
+        recalc();
+    }
+    m_internalMode = INTERNAL_NONE;
+}
+
+float ProgressData::getRemainTotalUnits()
+{
+    float total = 0.0;
+    for(int i = (int)m_step; i < PRO_SYNC_TOTAL; i++) {
+        total += m_syncUnits[i];
+    }
+    return total;
+}
+
+float ProgressData::getDefaultUnits(ProgressStep step)
+{
+    switch(step) {
+        case PRO_SYNC_PREPARE:
+            return PRO_SYNC_PREPARE_RATIO;
+        case PRO_SYNC_INIT:
+            return CONN_SETUP_RATIO + MSG_SEND_RECEIVE_TIMES;
+        case PRO_SYNC_DATA:
+            return ONEITEM_SEND_RATIO * DEFAULT_ITEMS + DATA_PREPARE_RATIO + MSG_SEND_RECEIVE_TIMES;
+        case PRO_SYNC_UNINIT:
+            return ONEITEM_RECEIVE_RATIO * DEFAULT_ITEMS + DATA_PREPARE_RATIO + MSG_SEND_RECEIVE_TIMES;
+        default:
+            return 0;
+    };
 }
 
 /************************ Connection implementation *****************/
