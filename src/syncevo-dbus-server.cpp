@@ -887,11 +887,7 @@ void ReadOperations::checkSource(const std::string &sourceName)
     }
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
     if(!config->exists()) {
-        // TODO: it is an error if the config does not exist!
-        config = SyncConfig::createServerTemplate(m_configName);
-        if(!config.get()) {
-            throw runtime_error("No server or template '" + m_configName + "' found");
-        }
+        throw std::runtime_error("No server '" + m_configName + "' found");
     }
     list<std::string> sourceNames = config->getSyncSources();
     list<std::string>::iterator it;
@@ -920,11 +916,7 @@ void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &d
     }
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
     if(!config->exists()) {
-        // TODO: it is an error if the config does not exist!
-        config = SyncConfig::createServerTemplate(m_configName);
-        if(!config.get()) {
-            throw std::runtime_error("No server or template '" + m_configName + "' found");
-        }
+        throw std::runtime_error("No server '" + m_configName + "' found");
     }
     SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
     const SourceRegistry &registry(SyncSource::getSourceRegistry());
