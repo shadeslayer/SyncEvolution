@@ -873,6 +873,22 @@ class SyncConfig {
     void setSourceDefaults(const string &name, bool force = true);
 
     /**
+     * remove sync source configuration. And remove the directory
+     * if it has no other files 
+     */
+    void removeSyncSource(const string &name);
+
+    /**
+     * clear existing visible properties in config.ini
+     */
+    void clearSyncSourceProperties(const string &name);
+
+    /**
+     * clear all global sync properties
+     */
+    void clearSyncProperties();
+
+    /**
      * Copy all registered properties (hidden and visible) and the
      * tracking node into the current config. This is done by reading
      * all properties from the source config, which implies the unset

@@ -885,7 +885,8 @@ std::string SyncConfig::findSSLServerCertificate()
 
 static void setDefaultProps(const ConfigPropertyRegistry &registry,
                             boost::shared_ptr<FilterConfigNode> node,
-                            bool force)
+                            bool force,
+                            bool useObligatory = true)
 {
     BOOST_FOREACH(const ConfigProperty *prop, registry) {
         bool isDefault;
@@ -893,7 +894,11 @@ static void setDefaultProps(const ConfigPropertyRegistry &registry,
         
         if (!prop->isHidden() &&
             (force || isDefault)) {
-            prop->setDefaultProperty(*node, prop->isObligatory());
+            if(useObligatory) {
+                prop->setDefaultProperty(*node, prop->isObligatory());
+            } else {
+                prop->setDefaultProperty(*node, false);
+            }
         }
     }    
 }
@@ -908,6 +913,25 @@ void SyncConfig::setSourceDefaults(const string &name, bool force)
     SyncSourceNodes nodes = getSyncSourceNodes(name);
     setDefaultProps(SyncSourceConfig::getRegistry(),
                     nodes.m_configNode, force);
+}
+
+void SyncConfig::removeSyncSource(const string &name)
+{
+    string pathName = m_oldLayout ? "spds/sources/" : "sources/";
+    pathName += name;
+    m_tree->removeSubtree(pathName);
+}
+
+void SyncConfig::clearSyncSourceProperties(const string &name)
+{
+    SyncSourceNodes nodes = getSyncSourceNodes(name);
+    setDefaultProps(SyncSourceConfig::getRegistry(),
+                    nodes.m_configNode, true, false);
+}
+
+void SyncConfig::clearSyncProperties()
+{
+    setDefaultProps(getRegistry(), m_configNode, true, false);
 }
 
 static void copyProperties(const ConfigNode &fromProps,

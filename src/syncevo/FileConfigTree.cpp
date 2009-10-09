@@ -93,6 +93,33 @@ void FileConfigTree::reset()
     m_nodes.clear();
 }
 
+void FileConfigTree::removeSubtree(const string &name) 
+{
+    string fullpath = getRootPath() + "/" + name;
+    clearNodes(fullpath);
+    rm_r(fullpath, rm_filter);
+}
+
+void FileConfigTree::clearNodes(const string &fullpath) 
+{
+    NodeCache_t::iterator it;
+    it = m_nodes.begin();
+    while (it != m_nodes.end()) {
+        const string &key = it->first;
+        if (boost::starts_with(key, fullpath)){
+            /* 'it = m_nodes.erase(it);' doesn't make sense
+             * because 'map::erase' returns 'void' in gcc. But other 
+             * containers like list, vector could work! :( 
+             * Below is STL recommended usage. 
+             */
+            NodeCache_t::iterator erased = it++;
+            m_nodes.erase(erased);
+        } else {
+            ++it;
+        }
+    }
+}
+
 boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
                                                    ConfigTree::PropertyType type,
                                                    const string &otherId)

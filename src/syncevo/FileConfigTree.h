@@ -56,6 +56,14 @@ class FileConfigTree : public ConfigTree {
                                                PropertyType type,
                                                const string &otherId = string(""));
     list<string> getChildren(const string &path);
+    virtual void removeSubtree(const string &path);
+
+ private:
+    /**
+     * remove all nodes from the node cache which are located at 'fullpath' 
+     * or are contained inside it
+     */
+    void clearNodes(const string &fullpath);
 
  private:
     const string m_root;

@@ -108,6 +108,12 @@ class ConfigTree {
      * returns names of all existing nodes beneath the given path
      */
     virtual list<string> getChildren(const string &path) = 0;
+
+    /**
+     * remove config nodes beneath the given path. If no other
+     * files, the directory will be removed too.
+     */
+    virtual void removeSubtree(const string &path) = 0;
 };
 
 

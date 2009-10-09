@@ -1027,18 +1027,12 @@ void Session::setConfig(bool update, bool temporary,
     }
 
     /** check whether we need remove the entire configuration */
-    if(!update) {
+    if(!update && config.empty()) {
         boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(getConfigName()));
-        // TODO: this code here needs to be changed. It throws away
-        // everything from the config (including meta information
-        // which cannot be recreated) even if the provides properties
-        // and thus wants to keep the configurtion.
         if(syncConfig.get()) {
             syncConfig->remove();
         }
-        if(config.empty()) {
-            return;
-        }
+        return;
     }
     if(temporary) {
         setSyncFilters(config, m_syncFilter, m_sourceFilters);
@@ -1048,12 +1042,26 @@ void Session::setConfig(bool update, bool temporary,
         setSyncFilters(config, syncFilter, sourceFilters);
         /* need to save configurations */
         boost::shared_ptr<SyncConfig> from(new SyncConfig(getConfigName()));
-        /* if it is clear mode and config does not exist, create from template */
+        /* if it is not clear mode and config does not exist, an error throws */
         if(update && !from->exists()) {
-            from = SyncConfig::createServerTemplate(getConfigName());
-            if (!from.get()) {
-                from = SyncConfig::createServerTemplate(string("default"));
+            throw runtime_error("The server '" + getConfigName() + "' doesn't exist" );
+        }
+        if(!update) {
+            list<string> sources = from->getSyncSources();
+            list<string>::iterator it;
+            for(it = sources.begin(); it != sources.end(); ++it) {
+                string source = "source/";
+                source += *it;
+                ReadOperations::Config_t::const_iterator configIt = config.find(source);
+                if(configIt == config.end()) {
+                    /** if no config for this source, we remove it */
+                    from->removeSyncSource(*it);
+                } else {
+                    /** just clear visiable properties, remove them and their values */
+                    from->clearSyncSourceProperties(*it);
+                }
             }
+            from->clearSyncProperties();
         }
         /** generate new sources in the config map */
         for (ReadOperations::Config_t::const_iterator it = config.begin(); it != config.end(); ++it) {
