@@ -675,7 +675,7 @@ class SyncEvolutionDist(AutotoolsBuild):
         cd(self.builddir)
         if self.packagesuffix:
             context.runCommand("%s %s BINSUFFIX=%s deb" % (self.runner, context.make, self.packagesuffix))
-	    put, get = os.popen4("dpkg-architecture -qDEB_HOST_ARCH")
+	    put, get = os.popen4("%s %s dpkg-architecture -qDEB_HOST_ARCH" % (self.runner, context.make))
 	    for arch in get.readlines():
 	           if "i386" in arch:
 		   	context.runCommand("%s %s BINSUFFIX=%s PKGARCH=lpia deb" % (self.runner, context.make, self.packagesuffix))
