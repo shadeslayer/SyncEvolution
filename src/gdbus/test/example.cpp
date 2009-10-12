@@ -186,6 +186,13 @@ public:
         m_object.add(this, &Test::array, "Array");
         m_object.add(this, &Test::error, "Error");
         m_object.add(&hello_global, "Global");
+        m_object.add(&DBusTest::hello_static, "Static");
+        // The hello_const() method cannot be registered
+        // because there is no matching MakeMethodEntry<>
+        // specialization for it or DBusObjectHelper::add()
+        // fails to determine the right function type,
+        // depending how one wants to interpret the problem.
+        // m_object.add2(this, &DBusTest::hello_const, "Const");
 
         m_object.add(signal);
 
@@ -199,6 +206,8 @@ public:
     EmitSignal3<int32_t, const std::string &, const std::map<int32_t, int32_t> &>signal;
 
     void hello() {}
+    static void hello_static() {}
+    void hello_const() const {}
 
     void activate()
     {
