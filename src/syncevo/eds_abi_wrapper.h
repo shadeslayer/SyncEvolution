@@ -141,6 +141,8 @@ struct EDSAbiWrapper {
     icalproperty* (*icalcomponent_get_next_property) (icalcomponent* component, icalproperty_kind kind);
     struct icaltimetype (*icalcomponent_get_recurrenceid) (icalcomponent* comp);
     icaltimezone* (*icalcomponent_get_timezone) (icalcomponent* comp, const char *tzid);
+    const char* (*icalcomponent_get_location) (icalcomponent* comp);
+    const char* (*icalcomponent_get_summary) (icalcomponent* comp);
     const char* (*icalcomponent_get_uid) (icalcomponent* comp);
     icalcomponent_kind (*icalcomponent_isa) (const icalcomponent* component);
     icalcomponent* (*icalcomponent_new_clone) (icalcomponent* component);
@@ -245,6 +247,8 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalcomponent_get_next_property EDSAbiWrapperSingleton.icalcomponent_get_next_property
 #   define icalcomponent_get_recurrenceid EDSAbiWrapperSingleton.icalcomponent_get_recurrenceid
 #   define icalcomponent_get_timezone EDSAbiWrapperSingleton.icalcomponent_get_timezone
+#   define icalcomponent_get_location EDSAbiWrapperSingleton.icalcomponent_get_location
+#   define icalcomponent_get_summary EDSAbiWrapperSingleton.icalcomponent_get_summary
 #   define icalcomponent_get_uid EDSAbiWrapperSingleton.icalcomponent_get_uid
 #   define icalcomponent_isa EDSAbiWrapperSingleton.icalcomponent_isa
 #   define icalcomponent_new_clone EDSAbiWrapperSingleton.icalcomponent_new_clone
