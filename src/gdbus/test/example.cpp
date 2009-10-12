@@ -39,11 +39,13 @@ struct args {
     std::map<std::string, std::string> c;
 };
 
+static void hello_global() {}
+
 class Test {
-    typedef Result1<const std::string&> string_result;
+    typedef boost::shared_ptr< Result1<const std::string&> > string_result;
     struct async
     {
-        async(const boost::shared_ptr<Watch> &watch, Watch *watch2, string_result *result):
+        async(const boost::shared_ptr<Watch> &watch, Watch *watch2, const string_result &result):
             m_watch(watch),
             m_watch2(watch2),
             m_result(result)
@@ -51,18 +53,18 @@ class Test {
         ~async()
         {
             delete m_watch2;
-            delete m_result;
         }
 
         boost::shared_ptr<Watch> m_watch;
         Watch *m_watch2;
-        string_result *m_result;
+        string_result m_result;
     };
         
 
     static gboolean method_idle(gpointer data)
     {
         std::auto_ptr<async> mydata(static_cast<async *>(data));
+        std::cout << "replying to method_async" << std::endl;
         mydata->m_result->done("Hello World, asynchronous and delayed");
         return false;
     }
@@ -73,6 +75,12 @@ class Test {
     }
 
 public:
+
+    static void hello_static() {}
+    void hello_const() const {}
+    static void hello_world(const char *msg) { puts(msg); }
+    void hello_base() {}
+
     void method(std::string &text)
     {
         text = "Hello World";
@@ -81,11 +89,11 @@ public:
     void method_async(const Caller_t &caller,
                       const boost::shared_ptr<Watch> &watch,
                       int32_t secs,
-                      string_result *r)
+                      const string_result &r)
     {
         watch->setCallback(boost::bind(disconnect, "watch1", caller));
         Watch *watch2 = r->createWatch(boost::bind(disconnect, "watch2", caller));
-        std::cout << "method_async called by " << caller << std::endl;
+        std::cout << "method_async called by " << caller << " delay " << secs << std::endl;
         g_timeout_add_seconds(secs, method_idle, new async(watch, watch2, r));
     }
 
@@ -99,15 +107,15 @@ public:
         return arg * 3;
     }
 
-    void method10(int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5,
-                  int32_t a6, int32_t a7, int32_t a8, int32_t a9, int32_t a10)
+    void method8_simple(int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5,
+                        int32_t a6, int32_t a7, int32_t a8)
     {
     }
 
-    void method10_async(Result10<int32_t, int32_t, int32_t, int32_t, int32_t,
-                        int32_t, int32_t, int32_t, int32_t, int32_t> *r)
+    void method9_async(Result9<int32_t, int32_t, int32_t, int32_t, int32_t,
+                               int32_t, int32_t, int32_t, int32_t> *r)
     {
-        r->done(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        r->done(1, 2, 3, 4, 5, 6, 7, 8, 9);
         delete r;
     }
 
@@ -165,7 +173,24 @@ public:
         // same path!
         m_secondary(conn, m_object.getPath(), "org.example.Secondary"),
         signal(m_object, "Signal")
-    {}
+    {
+        m_object.add(this, &Test::method8_simple, "Method8Simple");
+        // m_object.add(this, &Test::method10_async, "Method10Async", G_DBUS_METHOD_FLAG_ASYNC);
+        // m_object.add(this, &Test::method9, "Method9");
+        m_object.add(this, &Test::method2, "Method2");
+        m_object.add(this, &Test::method3, "Method3");
+        m_object.add(this, &Test::method, "Test");
+        m_object.add(this, &Test::method_async, "TestAsync");
+        m_object.add(this, &Test::argtest, "ArgTest");
+        m_object.add(this, &Test::hash, "Hash");
+        m_object.add(this, &Test::array, "Array");
+        m_object.add(this, &Test::error, "Error");
+        m_object.add(&hello_global, "Global");
+
+        m_object.add(signal);
+
+        m_secondary.add(this, &DBusTest::hello, "Hello");
+    }
 
     ~DBusTest()
     {
@@ -177,68 +202,8 @@ public:
 
     void activate()
     {
-        static GDBusMethodTable methods[] = {
-            makeMethodEntry<Test,
-                            int32_t, int32_t, int32_t, int32_t, int32_t,
-                            int32_t, int32_t, int32_t, int32_t, int32_t,
-                            typeof(&Test::method10), &Test::method10>("Method10"),
-            makeMethodEntry<Test,
-                            int32_t, int32_t, int32_t, int32_t, int32_t,
-                            int32_t, int32_t, int32_t, int32_t, int32_t,
-                            typeof(&Test::method10_async), &Test::method10_async>
-                            ("Method10Async", G_DBUS_METHOD_FLAG_ASYNC),
-            makeMethodEntry<Test,
-                            int32_t, int32_t, int32_t, int32_t, int32_t,
-                            int32_t, int32_t, int32_t, int32_t, int32_t,
-                            &Test::method9>("Method9"),
-
-            makeMethodEntry<Test, int32_t, int32_t &,
-                            typeof(&Test::method2), &Test::method2>("Method2"),
-            makeMethodEntry<Test, int32_t, int32_t,
-                            &Test::method3>("Method3"),
-            makeMethodEntry<Test, std::string &,
-                            typeof(&Test::method), &Test::method>("Test"),
-            makeMethodEntry<Test, const Caller_t &, const boost::shared_ptr<Watch> &,
-                            int32_t, std::string &,
-                            typeof(&Test::method_async), &Test::method_async>
-                            ("TestAsync", G_DBUS_METHOD_FLAG_ASYNC),
-            makeMethodEntry<Test,
-                            const args &,
-                            args &,
-                            typeof(&Test::argtest), &Test::argtest>
-                            ("ArgTest"),
-            makeMethodEntry<Test,
-                            const std::map<int8_t, int32_t> &,
-                            std::map<int16_t, int32_t> &,
-                            typeof(&Test::hash), &Test::hash>
-                            ("Hash"),
-            makeMethodEntry<Test,
-                            const std::vector<int32_t> &,
-                            std::vector<int32_t> &,
-                            typeof(&Test::array), &Test::array>
-                            ("Array"),
-            makeMethodEntry<Test, typeof(&Test::error), &Test::error>("Error"),
-            { },
-        };
-
-        static GDBusSignalTable signals[] = {
-            signal.makeSignalEntry("Signal"),
-            { },
-        };
-
-        m_object.activate(methods,
-                          signals,
-                          NULL,
-                          this);
-
-        static GDBusMethodTable secondary_methods[] = {
-            makeMethodEntry<DBusTest, typeof(&DBusTest::hello), &DBusTest::hello>("Hello"),
-            {}
-        };
-        m_secondary.activate(secondary_methods,
-                             NULL,
-                             NULL,
-                             this);
+        m_secondary.activate();
+        m_object.activate();
     }
 
     void deactivate()

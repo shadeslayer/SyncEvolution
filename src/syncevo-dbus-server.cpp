@@ -228,8 +228,6 @@ public:
     /** access to the GMainLoop reference used by this DBusServer instance */
     GMainLoop *getLoop() { return m_loop; }
 
-    /** register in D-Bus */
-    void activate();
     /** process D-Bus calls until the server is ready to quit */
     void run();
 
@@ -590,11 +588,6 @@ public:
     DBusServer &getServer() { return m_server; }
 
     /**
-     * activate D-Bus object, session itself not ready yet
-     */
-    void activate();
-
-    /**
      * TRUE if the session is ready to take over control
      */
     bool readyToRun() { return !m_done && m_sync; }
@@ -708,8 +701,6 @@ public:
                bool must_authenticate);
 
     ~Connection();
-
-    void activate();
 
     /** session requested by us is ready to run a sync */
     void ready();
@@ -1241,82 +1232,27 @@ Session::Session(DBusServer &server,
     m_error(0),
     emitStatus(*this, "Status"),
     emitProgress(*this, "Progress")
-{}
+{
+    add(this, &Session::detach, "Detach");
+    add(this, &Session::getConfig, "GetConfig");
+    add(this, &Session::setConfig, "SetConfig");
+    add(this, &Session::getReports, "GetReports");
+    add(this, &Session::sync, "Sync");
+    add(this, &Session::abort, "Abort");
+    add(this, &Session::suspend, "Suspend");
+    add(this, &Session::getStatus, "GetStatus");
+    add(this, &Session::getProgress, "GetProgress");
+    add(this, &Session::checkSource, "CheckSource");
+    add(this, &Session::getDatabases, "GetDatabases");
+    add(emitStatus);
+    add(emitProgress);
+}
 
 Session::~Session()
 {
     m_server.dequeue(this);
 }
     
-
-void Session::activate()
-{
-    static GDBusMethodTable methods[] = {
-        makeMethodEntry<Session,
-                        const Caller_t &,
-                        typeof(&Session::detach), &Session::detach>
-                        ("Detach"),
-        makeMethodEntry<Session,
-                        bool,
-                        ReadOperations::Config_t &,
-                        typeof(&Session::getConfig), &Session::getConfig>
-                        ("GetConfig"),
-        makeMethodEntry<Session,
-                        bool, bool,
-                        const ReadOperations::Config_t &,
-                        typeof(&Session::setConfig), &Session::setConfig>
-                        ("SetConfig"),
-        makeMethodEntry<Session,
-                        uint32_t,
-                        uint32_t,
-                        ReadOperations::Reports_t &,
-                        typeof(&Session::getReports), &Session::getReports>
-                        ("GetReports"),
-        makeMethodEntry<Session,
-                        const std::string &,
-                        const SourceModes_t &,
-                        typeof(&Session::sync), &Session::sync>
-                        ("Sync"),
-        makeMethodEntry<Session,
-                        typeof(&Session::abort), &Session::abort>
-                        ("Abort"),
-        makeMethodEntry<Session,
-                        typeof(&Session::suspend), &Session::suspend>
-                        ("Suspend"),
-        makeMethodEntry<Session,
-                        std::string &,
-                        uint32_t &,
-                        SourceStatuses_t &,
-                        typeof(&Session::getStatus), &Session::getStatus>
-                        ("GetStatus"),
-        makeMethodEntry<Session,
-                        int32_t &,
-                        SourceProgresses_t &,
-                        typeof(&Session::getProgress), &Session::getProgress>
-                        ("GetProgress"),
-        makeMethodEntry<Session,
-                        const std::string &,
-                        typeof(&Session::checkSource), &Session::checkSource>
-                        ("CheckSource"),
-        makeMethodEntry<Session,
-                        const std::string &,
-                        ReadOperations::SourceDatabases_t &,
-                        typeof(&Session::getDatabases), &Session::getDatabases>
-                        ("GetDatabases"),
-       {}
-    };
-
-    static GDBusSignalTable signals[] = {
-        emitStatus.makeSignalEntry("Status"),
-        emitProgress.makeSignalEntry("Progress"),
-        { },
-    };
-
-    DBusObjectHelper::activate(methods,
-                               signals,
-                               NULL,
-                               this);
-}
 
 void Session::setActive(bool active)
 {
@@ -1687,7 +1623,12 @@ Connection::Connection(DBusServer &server,
     abort(*this, "Abort"),
     reply(*this, "Reply"),
     m_description(buildDescription(peer))
-{}
+{
+    add(this, &Connection::process, "Process");
+    add(this, &Connection::close, "Close");
+    add(abort);
+    add(reply);
+}
 
 Connection::~Connection()
 {
@@ -1712,36 +1653,6 @@ Connection::~Connection()
         // destructing
         Exception::handle();
     }
-}
-
-void Connection::activate()
-{
-    static GDBusMethodTable methods[] = {
-        makeMethodEntry<Connection,
-                        const Caller_t &,
-                        const std::pair<size_t, const uint8_t *> &,
-                        const std::string &,
-                        typeof(&Connection::process), &Connection::process>
-                        ("Process"),
-        makeMethodEntry<Connection,
-                        const Caller_t &,
-                        bool,
-                        const std::string &,
-                        typeof(&Connection::close), &Connection::close>
-                        ("Close"),
-        {}
-    };
-
-    static GDBusSignalTable signals[] = {
-        abort.makeSignalEntry("Abort"),
-        reply.makeSignalEntry("Reply"),
-        { },
-    };
-
-    DBusObjectHelper::activate(methods,
-                               signals,
-                               NULL,
-                               this);
 }
 
 void Connection::ready()
@@ -1994,7 +1905,17 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     m_activeSession(NULL),
     sessionChanged(*this, "SessionChanged"),
     presence(*this, "Presence")
-{}
+{
+    add(this, &DBusServer::attachClient, "Attach");
+    add(this, &DBusServer::detachClient, "Detach");
+    add(this, &DBusServer::connect, "Connect");
+    add(this, &DBusServer::startSession, "StartSession");
+    add(this, &DBusServer::getConfig, "GetConfig");
+    add(this, &DBusServer::getReports, "GetReports");
+    add(this, &DBusServer::checkPresence, "CheckPresence");
+    add(sessionChanged);
+    add(presence);
+}
 
 DBusServer::~DBusServer()
 {
@@ -2002,68 +1923,6 @@ DBusServer::~DBusServer()
     m_syncSession.reset();
     m_workQueue.clear();
     m_clients.clear();
-}
-
-void DBusServer::activate()
-{
-    static GDBusMethodTable methods[] = {
-        makeMethodEntry<DBusServer,
-                        const Caller_t &,
-                        const boost::shared_ptr<Watch> &,
-                        typeof(&DBusServer::attachClient), &DBusServer::attachClient>
-                        ("Attach"),
-        makeMethodEntry<DBusServer,
-                        const Caller_t &,
-                        typeof(&DBusServer::detachClient), &DBusServer::detachClient>
-                        ("Detach"),
-        makeMethodEntry<DBusServer,
-                        const Caller_t &,
-                        const boost::shared_ptr<Watch> &,
-                        const StringMap &,
-                        bool,
-                        const std::string &,
-                        DBusObject_t &,
-                        typeof(&DBusServer::connect), &DBusServer::connect
-                        >("Connect"),
-        makeMethodEntry<DBusServer,
-                        const Caller_t &,
-                        const boost::shared_ptr<Watch> &,
-                        const std::string &,
-                        DBusObject_t &,
-                        typeof(&DBusServer::startSession), &DBusServer::startSession
-                        >("StartSession"),
-        makeMethodEntry<DBusServer,
-                        const std::string &,
-                        bool,
-                        ReadOperations::Config_t &,
-                        typeof(&DBusServer::getConfig), &DBusServer::getConfig>
-                        ("GetConfig"),
-        makeMethodEntry<DBusServer,
-                        const std::string &,
-                        uint32_t,
-                        uint32_t,
-                        ReadOperations::Reports_t &,
-                        typeof(&DBusServer::getReports), &DBusServer::getReports>
-                        ("GetReports"),
-        makeMethodEntry<DBusServer,
-                        const std::string &,
-                        std::string &,
-                        std::vector<std::string> &,
-                        typeof(&DBusServer::checkPresence), &DBusServer::checkPresence>
-                        ("CheckPresence"),
-        {}
-    };
-
-    static GDBusSignalTable signals[] = {
-        sessionChanged.makeSignalEntry("SessionChanged"),
-        presence.makeSignalEntry("Presence"),
-        { },
-    };
-
-    DBusObjectHelper::activate(methods,
-                               signals,
-                               NULL,
-                               this);
 }
 
 void DBusServer::run()

@@ -151,6 +151,208 @@ class DBusObject_t : public std::string
  */
 template<class C> struct dbus_traits {};
 
+struct dbus_traits_base
+{
+    /**
+     * A C++ method or function can handle a call asynchronously by
+     * asking to be passed a "boost::shared_ptr<Result*>" parameter.
+     * The dbus_traits for those parameters have "asynchronous" set to
+     * true, which skips all processing after calling the method.
+     */
+    static const bool asynchronous = false;
+};
+
+/**
+ * Append a varying number of parameters as result to the
+ * message. Types can be anything that has a dbus_traits, including
+ * types which are normally recognized as input parameters in D-Bus
+ * method calls.
+ */
+template <class A1, class A2, class A3, class A4, class A5,
+    class A6, class A7, class A8, class A9, class A10>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1,
+                    A2 a2,
+                    A3 a3,
+                    A4 a4,
+                    A5 a5,
+                    A6 a6,
+                    A7 a7,
+                    A8 a8,
+                    A9 a9,
+                    A10 a10)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+    dbus_traits<A2>::append_retval(iter, a2);
+    dbus_traits<A3>::append_retval(iter, a3);
+    dbus_traits<A4>::append_retval(iter, a4);
+    dbus_traits<A5>::append_retval(iter, a5);
+    dbus_traits<A6>::append_retval(iter, a6);
+    dbus_traits<A7>::append_retval(iter, a7);
+    dbus_traits<A8>::append_retval(iter, a8);
+    dbus_traits<A9>::append_retval(iter, a9);
+    dbus_traits<A10>::append_retval(iter, a10);
+}
+
+template <class A1, class A2, class A3, class A4, class A5,
+    class A6, class A7, class A8, class A9>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1,
+                    A2 a2,
+                    A3 a3,
+                    A4 a4,
+                    A5 a5,
+                    A6 a6,
+                    A7 a7,
+                    A8 a8,
+                    A9 a9)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+    dbus_traits<A2>::append_retval(iter, a2);
+    dbus_traits<A3>::append_retval(iter, a3);
+    dbus_traits<A4>::append_retval(iter, a4);
+    dbus_traits<A5>::append_retval(iter, a5);
+    dbus_traits<A6>::append_retval(iter, a6);
+    dbus_traits<A7>::append_retval(iter, a7);
+    dbus_traits<A8>::append_retval(iter, a8);
+    dbus_traits<A9>::append_retval(iter, a9);
+}
+
+template <class A1, class A2, class A3, class A4, class A5,
+    class A6, class A7, class A8>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1,
+                    A2 a2,
+                    A3 a3,
+                    A4 a4,
+                    A5 a5,
+                    A6 a6,
+                    A7 a7,
+                    A8 a8)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+    dbus_traits<A2>::append_retval(iter, a2);
+    dbus_traits<A3>::append_retval(iter, a3);
+    dbus_traits<A4>::append_retval(iter, a4);
+    dbus_traits<A5>::append_retval(iter, a5);
+    dbus_traits<A6>::append_retval(iter, a6);
+    dbus_traits<A7>::append_retval(iter, a7);
+    dbus_traits<A8>::append_retval(iter, a8);
+}
+
+template <class A1, class A2, class A3, class A4, class A5,
+    class A6, class A7>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1,
+                    A2 a2,
+                    A3 a3,
+                    A4 a4,
+                    A5 a5,
+                    A6 a6,
+                    A7 a7)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+    dbus_traits<A2>::append_retval(iter, a2);
+    dbus_traits<A3>::append_retval(iter, a3);
+    dbus_traits<A4>::append_retval(iter, a4);
+    dbus_traits<A5>::append_retval(iter, a5);
+    dbus_traits<A6>::append_retval(iter, a6);
+    dbus_traits<A7>::append_retval(iter, a7);
+}
+
+template <class A1, class A2, class A3, class A4, class A5,
+    class A6>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1,
+                    A2 a2,
+                    A3 a3,
+                    A4 a4,
+                    A5 a5,
+                    A6 a6)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+    dbus_traits<A2>::append_retval(iter, a2);
+    dbus_traits<A3>::append_retval(iter, a3);
+    dbus_traits<A4>::append_retval(iter, a4);
+    dbus_traits<A5>::append_retval(iter, a5);
+    dbus_traits<A6>::append_retval(iter, a6);
+}
+
+template <class A1, class A2, class A3, class A4, class A5>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1,
+                    A2 a2,
+                    A3 a3,
+                    A4 a4,
+                    A5 a5)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+    dbus_traits<A2>::append_retval(iter, a2);
+    dbus_traits<A3>::append_retval(iter, a3);
+    dbus_traits<A4>::append_retval(iter, a4);
+    dbus_traits<A5>::append_retval(iter, a5);
+}
+
+template <class A1, class A2, class A3, class A4>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1,
+                    A2 a2,
+                    A3 a3,
+                    A4 a4)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+    dbus_traits<A2>::append_retval(iter, a2);
+    dbus_traits<A3>::append_retval(iter, a3);
+    dbus_traits<A4>::append_retval(iter, a4);
+}
+
+template <class A1, class A2, class A3>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1,
+                    A2 a2,
+                    A3 a3)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+    dbus_traits<A2>::append_retval(iter, a2);
+    dbus_traits<A3>::append_retval(iter, a3);
+}
+
+template <class A1, class A2>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1,
+                    A2 a2)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+    dbus_traits<A2>::append_retval(iter, a2);
+}
+
+template <class A1>
+void append_retvals(DBusMessagePtr &msg,
+                    A1 a1)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(msg.get(), &iter);
+    dbus_traits<A1>::append_retval(iter, a1);
+}
+
 /**
  * interface expected by EmitSignal
  */
@@ -190,11 +392,10 @@ class EmitSignal0
         }
     }
 
-    static GDBusSignalTable makeSignalEntry(const std::string &signal,
-                                            GDBusSignalFlags flags = (GDBusSignalFlags)0)
+    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
         GDBusSignalTable entry;
-        entry.name = strdup(signal.c_str());
+        entry.name = m_signal.c_str();
         std::string buffer;
         entry.signature = strdup(buffer.c_str());
         entry.flags = flags;
@@ -223,20 +424,17 @@ class EmitSignal1
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(msg.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
+        append_retvals(msg, a1);
 
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
 
-    static GDBusSignalTable makeSignalEntry(const std::string &signal,
-                                            GDBusSignalFlags flags = (GDBusSignalFlags)0)
+    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
         GDBusSignalTable entry;
-        entry.name = strdup(signal.c_str());
+        entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
         entry.signature = strdup(buffer.c_str());
@@ -266,21 +464,17 @@ class EmitSignal2
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(msg.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
+        append_retvals(msg, a1, a2);
 
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
 
-    static GDBusSignalTable makeSignalEntry(const std::string &signal,
-                                            GDBusSignalFlags flags = (GDBusSignalFlags)0)
+    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
         GDBusSignalTable entry;
-        entry.name = strdup(signal.c_str());
+        entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
         buffer += dbus_traits<A2>::getSignature();
@@ -311,22 +505,16 @@ class EmitSignal3
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(msg.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-
+        append_retvals(msg, a1, a2, a3);
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
 
-    static GDBusSignalTable makeSignalEntry(const std::string &signal,
-                                            GDBusSignalFlags flags = (GDBusSignalFlags)0)
+    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
         GDBusSignalTable entry;
-        entry.name = strdup(signal.c_str());
+        entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
         buffer += dbus_traits<A2>::getSignature();
@@ -358,23 +546,16 @@ class EmitSignal4
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(msg.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-        dbus_traits<A4>::append_retval(iter, a4);
-
+        append_retvals(msg, a1, a2, a3, a4);
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
 
-    static GDBusSignalTable makeSignalEntry(const std::string &signal,
-                                            GDBusSignalFlags flags = (GDBusSignalFlags)0)
+    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
         GDBusSignalTable entry;
-        entry.name = strdup(signal.c_str());
+        entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
         buffer += dbus_traits<A2>::getSignature();
@@ -407,24 +588,16 @@ class EmitSignal5
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(msg.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-        dbus_traits<A4>::append_retval(iter, a4);
-        dbus_traits<A5>::append_retval(iter, a5);
-
+        append_retvals(msg, a1, a2, a3, a4, a5);
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
 
-    static GDBusSignalTable makeSignalEntry(const std::string &signal,
-                                            GDBusSignalFlags flags = (GDBusSignalFlags)0)
+    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
         GDBusSignalTable entry;
-        entry.name = strdup(signal.c_str());
+        entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
         buffer += dbus_traits<A2>::getSignature();
@@ -437,6 +610,70 @@ class EmitSignal5
     }
 };
 
+template <class M>
+struct MakeMethodEntry
+{
+    // There is no generic implementation of this method.
+    // If you get an error about it missing, then write
+    // a specialization for your type M (the method pointer).
+    //
+    // static GDBusMethodTable make(const char *name,
+    //                              GDBusMethodFlags flags)
+};
+
+/**
+ * Storage for method/signal/property arrays.
+ * Always contains at least one empty element
+ * at the end or is NULL.
+ */
+template <class T> class DBusVector {
+    size_t m_entries;
+    size_t m_size;
+    T *m_elements;
+
+    static void destroy(GDBusMethodTable &entry) {
+        free(const_cast<char *>(entry.name));
+        free(const_cast<char *>(entry.signature));
+        free(const_cast<char *>(entry.reply));
+        if (entry.destroy) {
+            entry.destroy(&entry);
+        }
+    }
+
+    static void destroy(GDBusSignalTable &entry) {
+        free(const_cast<char *>(entry.signature));
+        // if (entry.destroy) {
+        // entry.destroy(&entry);
+        // }
+    }
+
+ public:
+    DBusVector() : m_entries(0), m_size(0), m_elements(NULL) {}
+    ~DBusVector() {
+        if (m_elements) {
+            for (size_t i = 0; i < m_entries; i++) {
+                destroy(m_elements[i]);
+            }
+            free(m_elements);
+        }
+    }
+
+    T *get() { return m_elements; }
+    void push_back(const T &element) {
+        if (m_entries + 1 >= m_size) {
+            size_t newSize = m_size ? m_size * 2 : 16;
+            m_elements = static_cast<T *>(realloc(m_elements, newSize * sizeof(T)));
+            if (!m_elements) {
+                throw std::bad_alloc();
+            }
+            m_size = newSize;
+        }
+        m_elements[m_entries] = element;
+        m_entries++;
+        memset(m_elements + m_entries, 0, sizeof(T));
+    }
+};
+
 /**
  * utility class for registering an interface
  */
@@ -446,6 +683,8 @@ class DBusObjectHelper : public DBusObject
     std::string m_path;
     std::string m_interface;
     bool m_activated;
+    DBusVector<GDBusMethodTable> m_methods;
+    DBusVector<GDBusSignalTable> m_signals;
 
  public:
     DBusObjectHelper(DBusConnection *conn,
@@ -467,12 +706,47 @@ class DBusObjectHelper : public DBusObject
     virtual const char *getPath() const { return m_path.c_str(); }
     virtual const char *getInterface() const { return m_interface.c_str(); }
 
+    /**
+     * binds a member to the this pointer of its instance
+     * and invokes it when the specified method is called
+     */
+    template <class A1, class C, class M> void add(A1 instance, M C::*method,
+                                                   const char *name, GDBusMethodFlags flags = G_DBUS_METHOD_FLAG_NONE) {
+        typedef MakeMethodEntry< boost::function<M> > entry_type;
+        m_methods.push_back(entry_type::make(name, flags, entry_type::boostptr(method, instance)));
+    }
+
+
+    /**
+     * binds a plain function pointer with no additional arguments and
+     * invokes it when the specified method is called
+     */
+    template <class M> void add(M *function,
+                                const char *name, GDBusMethodFlags flags = G_DBUS_METHOD_FLAG_NONE) {
+        m_methods.push_back(MakeMethodEntry< boost::function<M> >::make(name, flags, function));
+    }
+
+    /**
+     * add an existing signal entry
+     */
+    template <class S> void add(const S &s) {
+        m_signals.push_back(s.makeSignalEntry());
+    }
+
     void activate(GDBusMethodTable *methods,
                   GDBusSignalTable *signals,
                   GDBusPropertyTable *properties,
                   void *user_data) {
         if (!g_dbus_register_interface(getConnection(), getPath(), getInterface(),
                                        methods, signals, properties, user_data, NULL)) {
+            throw std::runtime_error(std::string("g_dbus_register_interface() failed for ") + getPath() + " " + getInterface());
+        }
+        m_activated = true;
+    }
+
+    void activate() {
+        if (!g_dbus_register_interface(getConnection(), getPath(), getInterface(),
+                                       m_methods.get(), m_signals.get(), NULL, NULL, NULL)) {
             throw std::runtime_error(std::string("g_dbus_register_interface() failed for ") + getPath() + " " + getInterface());
         }
         m_activated = true;
@@ -498,12 +772,17 @@ class DBusObjectHelper : public DBusObject
  * from the D-Bus message and can be skipped when
  * encoding the reply
  */
-template<class host, int dbus> struct basic_marshal
+template<class host, int dbus> struct basic_marshal : public dbus_traits_base
 {
+    typedef host host_type;
+    typedef host arg_type;
+    static const int dbus_type = dbus;
+
     /**
      * copy value from D-Bus iterator into variable
      */
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host &value)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, host &value)
     {
         if (dbus_message_iter_get_arg_type(&iter) != dbus) {
             throw std::runtime_error("invalid argument");
@@ -516,7 +795,7 @@ template<class host, int dbus> struct basic_marshal
      * copy value from return value into D-Bus iterator,
      * empty here because plain types are no return values
      */
-    static void append(DBusMessageIter &iter, const host &value)
+    static void append(DBusMessageIter &iter, arg_type value)
     {
         // nothing to do
     }
@@ -525,16 +804,12 @@ template<class host, int dbus> struct basic_marshal
      * utility function to be used by derived classes which
      * need to copy a variable of this underlying type
      */
-    static void append_retval(DBusMessageIter &iter, const host &value)
+    static void append_retval(DBusMessageIter &iter, arg_type value)
     {
         if (!dbus_message_iter_append_basic(&iter, dbus, &value)) {
             throw std::runtime_error("out of memory");
         }
     }
-
-    typedef host host_type;
-    typedef host arg_type;
-    static const int dbus_type = dbus;
 };
 
 template<> struct dbus_traits<uint8_t> :
@@ -564,7 +839,8 @@ template<> struct dbus_traits<int8_t> : dbus_traits<uint8_t>
     typedef int8_t host_type;
     typedef int8_t arg_type;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &value)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, host_type &value)
     {
         dbus_traits<uint8_t>::get(conn, msg, iter, reinterpret_cast<uint8_t &>(value));
     }
@@ -599,14 +875,15 @@ template<> struct dbus_traits<uint32_t> :
     static std::string getReply() { return ""; }
 };
 
-template<> struct dbus_traits<bool>
+template<> struct dbus_traits<bool> : public dbus_traits_base
 {
     static std::string getType() { return "b"; }
     static std::string getSignature() {return getType(); }
     static std::string getReply() { return ""; }
     static const int dbus = DBUS_TYPE_BOOLEAN;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, bool &value)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, bool &value)
     {
         if (dbus_message_iter_get_arg_type(&iter) != dbus) {
             throw std::runtime_error("invalid argument");
@@ -631,14 +908,15 @@ template<> struct dbus_traits<bool>
     typedef bool arg_type;
 };
 
-template<> struct dbus_traits<std::string>
+template<> struct dbus_traits<std::string> : public dbus_traits_base
 {
     static std::string getType() { return "s"; }
     static std::string getSignature() {return getType(); }
     static std::string getReply() { return ""; }
     static const int dbus = DBUS_TYPE_STRING;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, std::string &value)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, std::string &value)
     {
         if (dbus_message_iter_get_arg_type(&iter) != dbus) {
             throw std::runtime_error("invalid argument");
@@ -663,14 +941,15 @@ template<> struct dbus_traits<std::string>
     typedef const std::string &arg_type;
 };
 
-template <> struct dbus_traits<DBusObject_t>
+template <> struct dbus_traits<DBusObject_t> : public dbus_traits_base
 {
     static std::string getType() { return "o"; }
     static std::string getSignature() {return getType(); }
     static std::string getReply() { return ""; }
     static const int dbus = DBUS_TYPE_OBJECT_PATH;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, DBusObject_t &value)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, DBusObject_t &value)
     {
         if (dbus_message_iter_get_arg_type(&iter) != dbus) {
             throw std::runtime_error("invalid argument");
@@ -699,13 +978,14 @@ template <> struct dbus_traits<DBusObject_t>
  * pseudo-parameter: not part of D-Bus signature,
  * but rather extracted from message attributes
  */
-template <> struct dbus_traits<Caller_t>
+template <> struct dbus_traits<Caller_t> : public dbus_traits_base
 {
     static std::string getType() { return ""; }
     static std::string getSignature() { return ""; }
     static std::string getReply() { return ""; }
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, Caller_t &value)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, Caller_t &value)
     {
         const char *peer = dbus_message_get_sender(msg);
         if (!peer) {
@@ -727,7 +1007,7 @@ template <> struct dbus_traits<Caller_t>
  * other words, for method calls, asynchronous replys and
  * signals, but not for return values.
  */
-template<class V> struct dbus_traits< std::pair<size_t, const V *> >
+template<class V> struct dbus_traits< std::pair<size_t, const V *> > : public dbus_traits_base
 {
     static std::string getContainedType()
     {
@@ -743,7 +1023,8 @@ template<class V> struct dbus_traits< std::pair<size_t, const V *> >
     typedef std::pair<size_t, const V *> host_type;
     typedef const host_type &arg_type;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &array)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, host_type &array)
     {
         if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_ARRAY) {
             throw std::runtime_error("invalid argument");
@@ -778,7 +1059,7 @@ template<class V> struct dbus_traits< std::pair<size_t, const V *> >
 /**
  * a std::map - treat it like a D-Bus dict
  */
-template<class K, class V> struct dbus_traits< std::map<K, V> >
+template<class K, class V> struct dbus_traits< std::map<K, V> > : public dbus_traits_base
 {
     static std::string getContainedType()
     {
@@ -797,7 +1078,8 @@ template<class K, class V> struct dbus_traits< std::map<K, V> >
     typedef std::map<K, V> host_type;
     typedef const std::map<K, V> &arg_type;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &dict)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, host_type &dict)
     {
         if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_ARRAY) {
             throw std::runtime_error("invalid argument");
@@ -853,7 +1135,7 @@ template<class K, class V> struct dbus_traits< std::map<K, V> >
  * a std::vector - maps to D-Bus array, but with inefficient marshaling
  * because we cannot get a base pointer for the whole array
  */
-template<class V> struct dbus_traits< std::vector<V> >
+template<class V> struct dbus_traits< std::vector<V> > : public dbus_traits_base
 {
     static std::string getContainedType()
     {
@@ -869,7 +1151,8 @@ template<class V> struct dbus_traits< std::vector<V> >
     typedef std::vector<V> host_type;
     typedef const std::vector<V> &arg_type;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &array)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, host_type &array)
     {
         if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_ARRAY) {
             throw std::runtime_error("invalid argument");
@@ -915,7 +1198,8 @@ template<class K, class V, V K::*m> struct dbus_member_single
     }
     typedef V host_type;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, K &val)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, K &val)
     {
         dbus_traits<V>::get(conn, msg, iter, val.*m);
     }
@@ -938,7 +1222,8 @@ template<class K, class V, V K::*m, class M> struct dbus_member
     }
     typedef V host_type;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, K &val)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, K &val)
     {
         dbus_traits<V>::get(conn, msg, iter, val.*m);
         M::get(conn, msg, iter, val);
@@ -959,7 +1244,7 @@ template<class K, class V, V K::*m, class M> struct dbus_member
  *                                                            dbus_member<foo, int, &foo::a,
  *                                                            dbus_member_single<foo, std::string, &foo::b> > > {};
  */
-template<class K, class M> struct dbus_struct_traits
+template<class K, class M> struct dbus_struct_traits : public dbus_traits_base
 {
     static std::string getContainedType()
     {
@@ -976,8 +1261,10 @@ template<class K, class M> struct dbus_struct_traits
     typedef K host_type;
     typedef const K &arg_type;
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, host_type &val)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, host_type &val)
     {
+        
         if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRUCT) {
             throw std::runtime_error("invalid argument");
         }
@@ -1023,7 +1310,8 @@ template<class C> struct dbus_traits<C &> : public dbus_traits<C>
     /**
      * skip when extracting input arguments
      */
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, C &value) {}
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, C &value) {}
     static std::string getSignature() { return ""; }
 
     /**
@@ -1137,13 +1425,14 @@ class DBusWatch : public Watch
  * pseudo-parameter: not part of D-Bus signature,
  * but rather extracted from message attributes
  */
-template <> struct dbus_traits< boost::shared_ptr<Watch> >
+template <> struct dbus_traits< boost::shared_ptr<Watch> >  : public dbus_traits_base
 {
     static std::string getType() { return ""; }
     static std::string getSignature() { return ""; }
     static std::string getReply() { return ""; }
 
-    static void get(DBusConnection *conn, DBusMessage *msg, DBusMessageIter &iter, boost::shared_ptr<Watch> &value)
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, boost::shared_ptr<Watch> &value)
     {
         boost::shared_ptr<DBusWatch> watch(new DBusWatch(conn));
         watch->activate(dbus_message_get_sender(msg));
@@ -1155,7 +1444,6 @@ template <> struct dbus_traits< boost::shared_ptr<Watch> >
     typedef boost::shared_ptr<Watch> host_type;
     typedef const boost::shared_ptr<Watch> &arg_type;
 };
-
 
 /**
  * base class for D-Bus results,
@@ -1208,11 +1496,13 @@ class DBusResult0 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() { return ""; }
+    static void append(DBusMessageIter &iter) {}
 };
 
 template <typename A1>
@@ -1232,14 +1522,16 @@ class DBusResult1 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-
+        append_retvals(reply, a1);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() { return dbus_traits<A1>::getSignature(); }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous;
 };
 
 template <typename A1, typename A2>
@@ -1259,15 +1551,20 @@ class DBusResult2 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-
+        append_retvals(reply, a1, a2);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() {
+        return dbus_traits<A1>::getSignature() +
+            DBusResult1<A2>::getSignature();
+    }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous ||
+        DBusResult1<A2>::asynchronous;
 };
 
 template <typename A1, typename A2, typename A3>
@@ -1287,16 +1584,20 @@ class DBusResult3 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-
+        append_retvals(reply, a1, a2, a3);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() {
+        return dbus_traits<A1>::getSignature() +
+            DBusResult2<A2, A3>::getSignature();
+    }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous ||
+        DBusResult2<A2, A3>::asynchronous;
 };
 
 template <typename A1, typename A2, typename A3, typename A4>
@@ -1316,17 +1617,20 @@ class DBusResult4 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-        dbus_traits<A4>::append_retval(iter, a4);
-
+        append_retvals(reply, a1, a2, a3, a4);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() {
+        return dbus_traits<A1>::getSignature() +
+            DBusResult3<A2, A3, A4>::getSignature();
+    }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous ||
+        DBusResult3<A2, A3, A4>::asynchronous;
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5>
@@ -1346,18 +1650,20 @@ class DBusResult5 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-        dbus_traits<A4>::append_retval(iter, a4);
-        dbus_traits<A5>::append_retval(iter, a5);
-
+        append_retvals(reply, a1, a2, a3, a4, a5);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() {
+        return dbus_traits<A1>::getSignature() +
+            DBusResult4<A2, A3, A4, A5>::getSignature();
+    }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous ||
+        DBusResult4<A2, A3, A4, A5>::asynchronous;
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5,
@@ -1378,19 +1684,20 @@ class DBusResult6 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-        dbus_traits<A4>::append_retval(iter, a4);
-        dbus_traits<A5>::append_retval(iter, a5);
-        dbus_traits<A6>::append_retval(iter, a6);
-
+        append_retvals(reply, a1, a2, a3, a4, a5, a6);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() {
+        return dbus_traits<A1>::getSignature() +
+            DBusResult5<A2, A3, A4, A5, A6>::getSignature();
+    }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous ||
+        DBusResult5<A2, A3, A4, A5, A6>::asynchronous;
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5,
@@ -1411,20 +1718,20 @@ class DBusResult7 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-        dbus_traits<A4>::append_retval(iter, a4);
-        dbus_traits<A5>::append_retval(iter, a5);
-        dbus_traits<A6>::append_retval(iter, a6);
-        dbus_traits<A7>::append_retval(iter, a7);
-
+        append_retvals(reply, a1, a2, a3, a4, a5, a6, a7);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() {
+        return dbus_traits<A1>::getSignature() +
+            DBusResult6<A2, A3, A4, A5, A6, A7>::getSignature();
+    }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous ||
+        DBusResult6<A2, A3, A4, A5, A6, A7>::asynchronous;
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5,
@@ -1445,21 +1752,20 @@ class DBusResult8 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-        dbus_traits<A4>::append_retval(iter, a4);
-        dbus_traits<A5>::append_retval(iter, a5);
-        dbus_traits<A6>::append_retval(iter, a6);
-        dbus_traits<A7>::append_retval(iter, a7);
-        dbus_traits<A8>::append_retval(iter, a8);
-
+        append_retvals(reply, a1, a2, a3, a4, a5, a6, a7, a8);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() {
+        return dbus_traits<A1>::getSignature() +
+            DBusResult7<A2, A3, A4, A5, A6, A7, A8>::getSignature();
+    }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous ||
+        DBusResult7<A2, A3, A4, A5, A6, A7, A8>::asynchronous;
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5,
@@ -1480,22 +1786,20 @@ class DBusResult9 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-        dbus_traits<A4>::append_retval(iter, a4);
-        dbus_traits<A5>::append_retval(iter, a5);
-        dbus_traits<A6>::append_retval(iter, a6);
-        dbus_traits<A7>::append_retval(iter, a7);
-        dbus_traits<A8>::append_retval(iter, a8);
-        dbus_traits<A9>::append_retval(iter, a9);
-
+        append_retvals(reply, a1, a2, a3, a4, a5, a6, a7, a8, a9);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() {
+        return dbus_traits<A1>::getSignature() +
+            DBusResult8<A2, A3, A4, A5, A6, A7, A8, A9>::getSignature();
+    }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous ||
+        DBusResult8<A2, A3, A4, A5, A6, A7, A8, A9>::asynchronous;
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5,
@@ -1516,3745 +1820,2004 @@ class DBusResult10 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply.get(), &iter);
-        dbus_traits<A1>::append_retval(iter, a1);
-        dbus_traits<A2>::append_retval(iter, a2);
-        dbus_traits<A3>::append_retval(iter, a3);
-        dbus_traits<A4>::append_retval(iter, a4);
-        dbus_traits<A5>::append_retval(iter, a5);
-        dbus_traits<A6>::append_retval(iter, a6);
-        dbus_traits<A7>::append_retval(iter, a7);
-        dbus_traits<A8>::append_retval(iter, a8);
-
-        dbus_traits<A9>::append_retval(iter, a9);
-        dbus_traits<A10>::append_retval(iter, a10);
-
+        append_retvals(reply, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
+
+    static std::string getSignature() {
+        return dbus_traits<A1>::getSignature() +
+            DBusResult9<A2, A3, A4, A5, A6, A7, A8, A9, A10>::getSignature();
+    }
+
+    static const bool asynchronous =
+        dbus_traits<A1>::asynchronous ||
+        DBusResult9<A2, A3, A4, A5, A6, A7, A8, A9, A10>::asynchronous;
 };
+
+/**
+ * A parameter which points towards one of our Result* structures.
+ * All of the types contained in it count towards the Reply signature.
+ * The requested Result type itself is constructed here.
+ *
+ * @param R      Result0, Result1<type>, ...
+ * @param DBusR  the class implementing R
+ */
+template <class R, class DBusR> struct dbus_traits_result
+{
+    static std::string getType() { return DBusR::getSignature(); }
+    static std::string getSignature() { return ""; }
+    static std::string getReply() { return getType(); }
+
+    typedef boost::shared_ptr<R> host_type;
+    typedef boost::shared_ptr<R> &arg_type;
+    static const bool asynchronous = true;
+
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, host_type &value)
+    {
+        value.reset(new DBusR(conn, msg));
+    }
+
+    static void append(DBusMessageIter &iter, const host_type &value) {}
+    static void append_retval(DBusMessageIter &iter, const host_type &value) {}
+};
+
+template <>
+struct dbus_traits< boost::shared_ptr<Result0> > :
+    public dbus_traits_result<Result0, DBusResult0>
+{};
+template <class A1>
+struct dbus_traits< boost::shared_ptr< Result1<A1> > >:
+    public dbus_traits_result< Result1<A1>, DBusResult1<A1> >
+{};
+template <class A1, class A2>
+struct dbus_traits< boost::shared_ptr< Result2<A1, A2> > >:
+    public dbus_traits_result< Result2<A1, A2>, DBusResult2<A1, A2> >
+{};
+template <class A1, class A2, class A3>
+    struct dbus_traits< boost::shared_ptr< Result3<A1, A2, A3> > >:
+    public dbus_traits_result< Result3<A1, A2, A3>, DBusResult3<A1, A2, A3> >
+{};
+template <class A1, class A2, class A3, class A4>
+    struct dbus_traits< boost::shared_ptr< Result4<A1, A2, A3, A4> > >:
+    public dbus_traits_result< Result4<A1, A2, A3, A4>, DBusResult4<A1, A2, A3, A4> >
+{};
+template <class A1, class A2, class A3, class A4, class A5>
+    struct dbus_traits< boost::shared_ptr< Result5<A1, A2, A3, A4, A5> > >:
+    public dbus_traits_result< Result5<A1, A2, A3, A4, A5>, DBusResult5<A1, A2, A3, A4, A5> >
+{};
+template <class A1, class A2, class A3, class A4, class A5, class A6>
+    struct dbus_traits< boost::shared_ptr< Result6<A1, A2, A3, A4, A5, A6> > >:
+    public dbus_traits_result< Result6<A1, A2, A3, A4, A5, A6>, DBusResult6<A1, A2, A3, A4, A5, A6> >
+{};
+template <class A1, class A2, class A3, class A4, class A5, class A6, class A7>
+    struct dbus_traits< boost::shared_ptr< Result7<A1, A2, A3, A4, A5, A6, A7> > >:
+    public dbus_traits_result< Result7<A1, A2, A3, A4, A5, A6, A7>, DBusResult7<A1, A2, A3, A4, A5, A6, A7> >
+{};
+template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
+    struct dbus_traits< boost::shared_ptr< Result8<A1, A2, A3, A4, A5, A6, A7, A8> > >:
+    public dbus_traits_result< Result8<A1, A2, A3, A4, A5, A6, A7, A8>, DBusResult8<A1, A2, A3, A4, A5, A6, A7, A8> >
+{};
+template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
+    struct dbus_traits< boost::shared_ptr< Result9<A1, A2, A3, A4, A5, A6, A7, A8, A9> > >:
+    public dbus_traits_result< Result9<A1, A2, A3, A4, A5, A6, A7, A8, A9>, DBusResult9<A1, A2, A3, A4, A5, A6, A7, A8, A9> >
+{};
+template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9, class A10>
+    struct dbus_traits< boost::shared_ptr< Result10<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10> > >:
+    public dbus_traits_result< Result10<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10>, DBusResult10<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10> >
+{};
+
 
 #if 0
 /**
- * Method call with two parameters and one return code. All other
- * calls are variations of this, so this one is fully documented
- * to explain all tricks used in these templates. The actual
- * code without comments is below.
+ * Call with two parameters and one return code. All other calls are
+ * variations of this, so this one is fully documented to explain all
+ * tricks used in these templates. The actual code without comments is
+ * below.
  */
-template <class I, class R, class A1, class A2, R (I::*m)(A1, A2)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class R, class A1, class A2>
+struct MakeMethodEntry< boost::function<R (A1, A2)> >
 {
-    // all exceptions must be caught and translated into
-    // a suitable D-Bus reply
-    try {
-        // Argument types might may be references or pointers.
-        // To instantiate a variable we need the underlying
-        // datatype, which is provided by the dbus_traits.
-        // "typename" is necessary to tell the compiler
-        // that host_type really is a type.
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
+    typedef boost::function<R (A1, A2)> M;
 
-        // Extract all parameters. Because we don't now
-        // whether a parameter is an argument or a return
-        // value, we call get() for each of them and let
-        // the corresponding dbus_traits decide that. Traits
-        // for types which are plain types or const references
-        // have a non-empty get(), whereas references are treated
-        // as return values and have an empty get().
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
+    // Any type a Result parameter? This can be computed at compile time.
+    static const bool asynchronous = dbus_traits< DBusResult2<A1, A2> >::asynchronous;
 
-        // The data pointer given to g_dbus_register_interface()
-        // must have been a pointer to an object of our interface
-        // class. m is a method pointer passed in as template parameter.
-        // Combining the two allows us to call the right method.
-        // The compiler knows the exact method prototype and thus
-        // can handle call-by-value and call-by-reference correctly.
-        r = (static_cast<I *>(data)->*m)(a1, a2);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        // all exceptions must be caught and translated into
+        // a suitable D-Bus reply
+        try {
+            // Argument types might may be references or pointers.
+            // To instantiate a variable we need the underlying
+            // datatype, which is provided by the dbus_traits.
+            // "typename" is necessary to tell the compiler
+            // that host_type really is a type.
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
 
-        // Now prepare the reply. As with extracting parameters,
-        // append() is empty for those parameters where nothing
-        // has to be done.
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        // We know that the return value has to be appended,
-        // even though the trait would not normally do that
-        // because it is a plain type => call utility function
-        // directly.
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        return reply;
-    } catch (...) {
-        // let handleException rethrow the exception
-        // to determine its type
-        return handleException(msg);
+            // Extract all parameters. Because we don't now
+            // whether a parameter is an argument or a return
+            // value, we call get() for each of them and let
+            // the corresponding dbus_traits decide that. Traits
+            // for types which are plain types or const references
+            // have a non-empty get(), whereas references are treated
+            // as return values and have an empty get().
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+
+            // The data pointer is a pointer to a boost function,
+            // as set up for us by make(). The compiler knows the
+            // exact method prototype and thus can handle
+            // call-by-value and call-by-reference correctly.
+            r = (*static_cast<M *>(data))(a1, a2);
+
+            // No reply necessary? If any of the types is asking for
+            // a Result handle, then the reply will be sent later.
+            if (asynchronous) {
+                return NULL;
+            }
+
+            // Now prepare the reply. As with extracting parameters,
+            // append() is empty for those parameters where nothing
+            // has to be done.
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            // We know that the return value has to be appended,
+            // even though the trait would not normally do that
+            // because it is a plain type => call utility function
+            // directly.
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            return reply;
+        } catch (...) {
+            // let handleException rethrow the exception
+            // to determine its type
+            return handleException(msg);
+        }
     }
-}
-/**
- * Creates a GDBusMethodTable entry.
- * The strings inside the entry are allocated
- * with strdup(). For technical reasons the return type
- * and parameter types have to be listed explicitly.
- * The name passed to the function is the D-Bus method name.
- * Valid flags are G_DBUS_METHOD_FLAG_DEPRECATED,
- * G_DBUS_METHOD_FLAG_NOREPLY (no reply message is sent),
- * G_DBUS_METHOD_FLAG_ASYNC (reply will be sent via
- * callback, method must accept Result parameter).
- */
-template <class I, class R1, class A1, class A2, R1 (I::*m)(A1, A2)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    // same trick as before: only argument types
-    // are added to the signature
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    // now the same for reply types
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    // this is the function template above
-    entry.function = methodFunction<I, A1, A2, m>;
-    entry.flags = flags;
-    return entry;
-}
+
+    /**
+     * The boost function doesn't have a virtual destructor.
+     * Therefore we have to cast down to the right type M
+     * before deleting it. The rest of the allocated data
+     * is freed by GDBusVector.
+     */
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    /**
+     * Creates a GDBusMethodTable entry.
+     * The strings inside the entry are allocated
+     * with strdup(), to be freed by GDBusVector::destroy().
+     */
+    GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        // same trick as before: only argument types
+        // are added to the signature
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        // now the same for reply types
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        // these are the function templates above
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        // make sure that methodFunction has access to the boost function
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 #endif // 0
 
 /** ===> 10 parameters */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1, class A2, class A3, class A4, class A5,
+          class A6, class A7, class A8, class A9, class A10>
+struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
-        typename dbus_traits<A9>::host_type a9;
-        typename dbus_traits<A10>::host_type a10;
+    typedef void (Mptr)(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-        dbus_traits<A9>::get(conn, msg, iter, a9);
-        dbus_traits<A10>::get(conn, msg, iter, a10);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        dbus_traits<A6>::append(iter, a6);
-        dbus_traits<A7>::append(iter, a7);
-        dbus_traits<A8>::append(iter, a8);
-        dbus_traits<A9>::append(iter, a9);
-        dbus_traits<A10>::append(iter, a10);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M bind(Mptr C::*method, I instance) {
+        // this fails because bind() only supports up to 9 parameters, including
+        // the initial this pointer
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6, _7, _8, _9 /* _10 */);
     }
-}
+
+    static const bool asynchronous = dbus_traits< DBusResult10<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10> >::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
+            typename dbus_traits<A7>::host_type a7;
+            typename dbus_traits<A8>::host_type a8;
+            typename dbus_traits<A9>::host_type a9;
+            typename dbus_traits<A10>::host_type a10;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+            dbus_traits<A6>::get(conn, msg, iter, a6);
+            dbus_traits<A7>::get(conn, msg, iter, a7);
+            dbus_traits<A8>::get(conn, msg, iter, a8);
+            dbus_traits<A9>::get(conn, msg, iter, a9);
+            dbus_traits<A10>::get(conn, msg, iter, a10);
+
+            (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            dbus_traits<A6>::append(iter, a6);
+            dbus_traits<A7>::append(iter, a7);
+            dbus_traits<A8>::append(iter, a8);
+            dbus_traits<A9>::append(iter, a9);
+            dbus_traits<A10>::append(iter, a10);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        buffer += dbus_traits<A7>::getSignature();
+        buffer += dbus_traits<A8>::getSignature();
+        buffer += dbus_traits<A9>::getSignature();
+        buffer += dbus_traits<A10>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        buffer += dbus_traits<A6>::getReply();
+        buffer += dbus_traits<A7>::getReply();
+        buffer += dbus_traits<A8>::getReply();
+        buffer += dbus_traits<A9>::getReply();
+        buffer += dbus_traits<A10>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 9 arguments, 1 return value */
-template <class I, class R,
+template <class R,
           class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          R (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8, A9)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+          class A6, class A7, class A8, class A9>
+struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8, A9)> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
-        typename dbus_traits<A9>::host_type a9;
+    typedef R (Mptr)(A1, A2, A3, A4, A5, A6, A7, A8, A9);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-        dbus_traits<A9>::get(conn, msg, iter, a9);
-
-        r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        dbus_traits<A6>::append(iter, a6);
-        dbus_traits<A7>::append(iter, a7);
-        dbus_traits<A8>::append(iter, a8);
-        dbus_traits<A9>::append(iter, a9);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        // this fails because bind() only supports up to 9 parameters, including
+        // the initial this pointer
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6, _7, _8, _9);
     }
-}
 
-/** 10 arguments, 0 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8, A9,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
-        typename dbus_traits<A9>::host_type a9;
-        typename dbus_traits<A10>::host_type a10;
+    static const bool asynchronous = DBusResult9<A1, A2, A3, A4, A5, A6, A7, A8, A9>::asynchronous;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-        dbus_traits<A9>::get(conn, msg, iter, a9);
-        dbus_traits<A10>::get(conn, msg, iter, a10);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
+            typename dbus_traits<A7>::host_type a7;
+            typename dbus_traits<A8>::host_type a8;
+            typename dbus_traits<A9>::host_type a9;
 
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10,
-                                     new DBusResult0(conn, msg));
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+            dbus_traits<A6>::get(conn, msg, iter, a6);
+            dbus_traits<A7>::get(conn, msg, iter, a7);
+            dbus_traits<A8>::get(conn, msg, iter, a8);
+            dbus_traits<A9>::get(conn, msg, iter, a9);
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8, a9);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            dbus_traits<A6>::append(iter, a6);
+            dbus_traits<A7>::append(iter, a7);
+            dbus_traits<A8>::append(iter, a8);
+            dbus_traits<A9>::append(iter, a9);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
-/** 9 arguments, 1 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8, A9,
-                       Result1<typename dbus_traits<A10>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
-        typename dbus_traits<A9>::host_type a9;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-        dbus_traits<A9>::get(conn, msg, iter, a9);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9,
-                                     new DBusResult1<typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
 
-/** 8 arguments, 2 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8,
-                       Result2<typename dbus_traits<A9>::arg_type,
-                               typename dbus_traits<A10>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8,
-                                     new DBusResult2<typename dbus_traits<A9>::arg_type,
-                                                     typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        buffer += dbus_traits<A7>::getSignature();
+        buffer += dbus_traits<A8>::getSignature();
+        buffer += dbus_traits<A9>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        buffer += dbus_traits<A6>::getReply();
+        buffer += dbus_traits<A7>::getReply();
+        buffer += dbus_traits<A8>::getReply();
+        buffer += dbus_traits<A9>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
     }
-}
-
-/** 7 arguments, 3 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7,
-                       Result3<typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type,
-                               typename dbus_traits<A10>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7,
-                                     new DBusResult3<typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type,
-                                                     typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 6 arguments, 4 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2, A3, A4, A5, A6,
-                       Result4<typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type,
-                               typename dbus_traits<A10>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
-                                     new DBusResult4<typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type,
-                                                     typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 5 arguments, 5 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2, A3, A4, A5,
-                       Result5<typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type,
-                               typename dbus_traits<A10>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
-                                     new DBusResult5<typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type,
-                                                     typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 4 arguments, 6 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2, A3, A4,
-                       Result6<typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type,
-                               typename dbus_traits<A10>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
-                                     new DBusResult6<typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type,
-                                                     typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 3 arguments, 7 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2, A3,
-                       Result7<typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type,
-                               typename dbus_traits<A10>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3,
-                                     new DBusResult7<typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type,
-                                                     typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 2 arguments, 8 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1, A2,
-                       Result8<typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type,
-                               typename dbus_traits<A10>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-
-        (static_cast<I *>(data)->*m)(a1, a2,
-                                     new DBusResult8<typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type,
-                                                     typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 1 arguments, 9 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(A1,
-                       Result9<typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type,
-                               typename dbus_traits<A10>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult9<typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type,
-                                                     typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 0 arguments, 10 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          void (I::*m)(Result10<typename dbus_traits<A1>::arg_type,
-                                typename dbus_traits<A2>::arg_type,
-                                typename dbus_traits<A3>::arg_type,
-                                typename dbus_traits<A4>::arg_type,
-                                typename dbus_traits<A5>::arg_type,
-                                typename dbus_traits<A6>::arg_type,
-                                typename dbus_traits<A7>::arg_type,
-                                typename dbus_traits<A8>::arg_type,
-                                typename dbus_traits<A9>::arg_type,
-                                typename dbus_traits<A10>::arg_type>
-                                *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult10<typename dbus_traits<A1>::arg_type,
-                                                      typename dbus_traits<A2>::arg_type,
-                                                      typename dbus_traits<A3>::arg_type,
-                                                      typename dbus_traits<A4>::arg_type,
-                                                      typename dbus_traits<A5>::arg_type,
-                                                      typename dbus_traits<A6>::arg_type,
-                                                      typename dbus_traits<A7>::arg_type,
-                                                      typename dbus_traits<A8>::arg_type,
-                                                      typename dbus_traits<A9>::arg_type,
-                                                      typename dbus_traits<A10>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
+};
 
 /** ===> 9 parameters */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8, A9)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1, class A2, class A3, class A4, class A5,
+          class A6, class A7, class A8, class A9>
+struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
-        typename dbus_traits<A9>::host_type a9;
+    typedef void (Mptr)(A1, A2, A3, A4, A5, A6, A7, A8, A9);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-        dbus_traits<A9>::get(conn, msg, iter, a9);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        dbus_traits<A6>::append(iter, a6);
-        dbus_traits<A7>::append(iter, a7);
-        dbus_traits<A8>::append(iter, a8);
-        dbus_traits<A9>::append(iter, a9);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6, _7, _8, _9);
     }
-}
+
+    static const bool asynchronous = DBusResult9<A1, A2, A3, A4, A5, A6, A7, A8, A9>::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
+            typename dbus_traits<A7>::host_type a7;
+            typename dbus_traits<A8>::host_type a8;
+            typename dbus_traits<A9>::host_type a9;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+            dbus_traits<A6>::get(conn, msg, iter, a6);
+            dbus_traits<A7>::get(conn, msg, iter, a7);
+            dbus_traits<A8>::get(conn, msg, iter, a8);
+            dbus_traits<A9>::get(conn, msg, iter, a9);
+
+            (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8, a9);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            dbus_traits<A6>::append(iter, a6);
+            dbus_traits<A7>::append(iter, a7);
+            dbus_traits<A8>::append(iter, a8);
+            dbus_traits<A9>::append(iter, a9);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        buffer += dbus_traits<A7>::getSignature();
+        buffer += dbus_traits<A8>::getSignature();
+        buffer += dbus_traits<A9>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        buffer += dbus_traits<A6>::getReply();
+        buffer += dbus_traits<A7>::getReply();
+        buffer += dbus_traits<A8>::getReply();
+        buffer += dbus_traits<A9>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 8 arguments, 1 return value */
-template <class I, class R,
+template <class R,
           class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          R (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+          class A6, class A7, class A8>
+struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8)> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
+    typedef R (Mptr)(A1, A2, A3, A4, A5, A6, A7, A8);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-
-        r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        dbus_traits<A6>::append(iter, a6);
-        dbus_traits<A7>::append(iter, a7);
-        dbus_traits<A8>::append(iter, a8);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6, _7, _8);
     }
-}
 
-/** 9 arguments, 0 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8, A9,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
-        typename dbus_traits<A9>::host_type a9;
+    static const bool asynchronous = DBusResult8<A1, A2, A3, A4, A5, A6, A7, A8>::asynchronous;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-        dbus_traits<A9>::get(conn, msg, iter, a9);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
+            typename dbus_traits<A7>::host_type a7;
+            typename dbus_traits<A8>::host_type a8;
 
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8, a9,
-                                     new DBusResult0(conn, msg));
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+            dbus_traits<A6>::get(conn, msg, iter, a6);
+            dbus_traits<A7>::get(conn, msg, iter, a7);
+            dbus_traits<A8>::get(conn, msg, iter, a8);
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            dbus_traits<A6>::append(iter, a6);
+            dbus_traits<A7>::append(iter, a7);
+            dbus_traits<A8>::append(iter, a8);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
-/** 8 arguments, 1 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8,
-                       Result1<typename dbus_traits<A9>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8,
-                                     new DBusResult1<typename dbus_traits<A9>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
 
-/** 7 arguments, 2 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7,
-                       Result2<typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7,
-                                     new DBusResult2<typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        buffer += dbus_traits<A7>::getSignature();
+        buffer += dbus_traits<A8>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        buffer += dbus_traits<A6>::getReply();
+        buffer += dbus_traits<A7>::getReply();
+        buffer += dbus_traits<A8>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
     }
-}
-
-/** 7 arguments, 3 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1, A2, A3, A4, A5, A6,
-                       Result3<typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
-                                     new DBusResult3<typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 5 arguments, 4 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1, A2, A3, A4, A5,
-                       Result4<typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
-                                     new DBusResult4<typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 4 arguments, 5 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1, A2, A3, A4,
-                       Result5<typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
-                                     new DBusResult5<typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 3 arguments, 6 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1, A2, A3,
-                       Result6<typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3,
-                                     new DBusResult6<typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 2 arguments, 7 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1, A2,
-                       Result7<typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-
-        (static_cast<I *>(data)->*m)(a1, a2,
-                                     new DBusResult7<typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 1 argument, 8 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(A1,
-                       Result8<typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult8<typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 0 argument, 9 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          void (I::*m)(Result9<typename dbus_traits<A1>::arg_type,
-                               typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type,
-                               typename dbus_traits<A9>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult9<typename dbus_traits<A1>::arg_type,
-                                                     typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type,
-                                                     typename dbus_traits<A9>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
+};
 
 /** ===> 8 parameters */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1, class A2, class A3, class A4, class A5,
+          class A6, class A7, class A8>
+struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
+    typedef void (Mptr)(A1, A2, A3, A4, A5, A6, A7, A8);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        dbus_traits<A6>::append(iter, a6);
-        dbus_traits<A7>::append(iter, a7);
-        dbus_traits<A8>::append(iter, a8);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6, _7, _8);
     }
-}
+
+    static const bool asynchronous = DBusResult8<A1, A2, A3, A4, A5, A6, A7, A8>::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
+            typename dbus_traits<A7>::host_type a7;
+            typename dbus_traits<A8>::host_type a8;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+            dbus_traits<A6>::get(conn, msg, iter, a6);
+            dbus_traits<A7>::get(conn, msg, iter, a7);
+            dbus_traits<A8>::get(conn, msg, iter, a8);
+
+            (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            dbus_traits<A6>::append(iter, a6);
+            dbus_traits<A7>::append(iter, a7);
+            dbus_traits<A8>::append(iter, a8);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        buffer += dbus_traits<A7>::getSignature();
+        buffer += dbus_traits<A8>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        buffer += dbus_traits<A6>::getReply();
+        buffer += dbus_traits<A7>::getReply();
+        buffer += dbus_traits<A8>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 7 arguments, 1 return value */
-template <class I, class R,
+template <class R,
           class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          R (I::*m)(A1, A2, A3, A4, A5, A6, A7)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+          class A6, class A7>
+struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7)> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
+    typedef R (Mptr)(A1, A2, A3, A4, A5, A6, A7);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-
-        r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        dbus_traits<A6>::append(iter, a6);
-        dbus_traits<A7>::append(iter, a7);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6, _7);
     }
-}
 
-/** 8 arguments, 0 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-        typename dbus_traits<A8>::host_type a8;
+    static const bool asynchronous = DBusResult7<A1, A2, A3, A4, A5, A6, A7>::asynchronous;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-        dbus_traits<A8>::get(conn, msg, iter, a8);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
+            typename dbus_traits<A7>::host_type a7;
 
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7, a8,
-                                     new DBusResult0(conn, msg));
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+            dbus_traits<A6>::get(conn, msg, iter, a6);
+            dbus_traits<A7>::get(conn, msg, iter, a7);
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            dbus_traits<A6>::append(iter, a6);
+            dbus_traits<A7>::append(iter, a7);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
-/** 7 arguments, 1 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7,
-                       Result1<typename dbus_traits<A8>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7,
-                                     new DBusResult1<typename dbus_traits<A8>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
 
-/** 6 arguments, 2 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(A1, A2, A3, A4, A5, A6,
-                       Result2<typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
-                                     new DBusResult2<typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        buffer += dbus_traits<A7>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        buffer += dbus_traits<A6>::getReply();
+        buffer += dbus_traits<A7>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
     }
-}
-
-/** 6 arguments, 3 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(A1, A2, A3, A4, A5,
-                       Result3<typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
-                                     new DBusResult3<typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 4 arguments, 4 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(A1, A2, A3, A4,
-                       Result4<typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
-                                     new DBusResult4<typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 3 arguments, 5 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(A1, A2, A3,
-                       Result5<typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3,
-                                     new DBusResult5<typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 2 arguments, 6 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(A1, A2,
-                       Result6<typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-
-        (static_cast<I *>(data)->*m)(a1, a2,
-                                     new DBusResult6<typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 1 arguments, 7 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(A1,
-                       Result7<typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult7<typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 0 arguments, 8 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          void (I::*m)(Result8<typename dbus_traits<A1>::arg_type,
-                               typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type,
-                               typename dbus_traits<A8>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult8<typename dbus_traits<A1>::arg_type,
-                                                     typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type,
-                                                     typename dbus_traits<A8>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
+};
 
 /** ===> 7 parameters */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1, class A2, class A3, class A4, class A5,
+          class A6, class A7>
+struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
+    typedef void (Mptr)(A1, A2, A3, A4, A5, A6, A7);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        dbus_traits<A6>::append(iter, a6);
-        dbus_traits<A7>::append(iter, a7);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6, _7);
     }
-}
+
+    static const bool asynchronous = DBusResult7<A1, A2, A3, A4, A5, A6, A7>::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
+            typename dbus_traits<A7>::host_type a7;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+            dbus_traits<A6>::get(conn, msg, iter, a6);
+            dbus_traits<A7>::get(conn, msg, iter, a7);
+
+            (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            dbus_traits<A6>::append(iter, a6);
+            dbus_traits<A7>::append(iter, a7);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        buffer += dbus_traits<A7>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        buffer += dbus_traits<A6>::getReply();
+        buffer += dbus_traits<A7>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 6 arguments, 1 return value */
-template <class I, class R,
+template <class R,
           class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          R (I::*m)(A1, A2, A3, A4, A5, A6)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+          class A6>
+struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6)> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
+    typedef R (Mptr)(A1, A2, A3, A4, A5, A6);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-
-        r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        dbus_traits<A6>::append(iter, a6);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6);
     }
-}
 
-/** 7 arguments, 0 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          void (I::*m)(A1, A2, A3, A4, A5, A6, A7,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-        typename dbus_traits<A7>::host_type a7;
+    static const bool asynchronous = DBusResult6<A1, A2, A3, A4, A5, A6>::asynchronous;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-        dbus_traits<A7>::get(conn, msg, iter, a7);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
 
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6, a7,
-                                     new DBusResult0(conn, msg));
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+            dbus_traits<A6>::get(conn, msg, iter, a6);
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            dbus_traits<A6>::append(iter, a6);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
-/** 6 arguments, 1 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          void (I::*m)(A1, A2, A3, A4, A5, A6,
-                       Result1<typename dbus_traits<A7>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
-                                     new DBusResult1<typename dbus_traits<A7>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
 
-/** 5 arguments, 2 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          void (I::*m)(A1, A2, A3, A4, A5,
-                       Result2<typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
- 
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
-                                     new DBusResult2<typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        buffer += dbus_traits<A6>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
     }
-}
-
-/** 4 arguments, 3 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          void (I::*m)(A1, A2, A3, A4,
-                       Result3<typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
-                                     new DBusResult3<typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 3 arguments, 4 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          void (I::*m)(A1, A2, A3,
-                       Result4<typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3,
-                                     new DBusResult4<typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 2 arguments, 5 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          void (I::*m)(A1, A2,
-                       Result5<typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-
-        (static_cast<I *>(data)->*m)(a1, a2,
-                                     new DBusResult5<typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 1 argument, 6 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          void (I::*m)(A1,
-                       Result6<typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult6<typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 0 argument, 7 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          void (I::*m)(Result7<typename dbus_traits<A1>::arg_type,
-                               typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type,
-                               typename dbus_traits<A7>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult7<typename dbus_traits<A1>::arg_type,
-                                                     typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type,
-                                                     typename dbus_traits<A7>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
+};
 
 /** ===> 6 parameters */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          void (I::*m)(A1, A2, A3, A4, A5, A6)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1, class A2, class A3, class A4, class A5,
+          class A6>
+struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
+    typedef void (Mptr)(A1, A2, A3, A4, A5, A6);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        dbus_traits<A6>::append(iter, a6);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6);
     }
-}
+
+    static const bool asynchronous = DBusResult6<A1, A2, A3, A4, A5, A6>::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+            dbus_traits<A6>::get(conn, msg, iter, a6);
+
+            (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            dbus_traits<A6>::append(iter, a6);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        buffer += dbus_traits<A6>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 5 arguments, 1 return value */
-template <class I, class R,
-          class A1, class A2, class A3, class A4, class A5,
-          R (I::*m)(A1, A2, A3, A4, A5)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class R,
+          class A1, class A2, class A3, class A4, class A5>
+struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5)> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
+    typedef R (Mptr)(A1, A2, A3, A4, A5);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-
-        r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4, _5);
     }
-}
 
-/** 6 arguments, 0 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          void (I::*m)(A1, A2, A3, A4, A5, A6,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
+    static const bool asynchronous = DBusResult5<A1, A2, A3, A4, A5>::asynchronous;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-        dbus_traits<A6>::get(conn, msg, iter, a6);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
 
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5, a6,
-                                     new DBusResult0(conn, msg));
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
-/** 5 arguments, 1 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          void (I::*m)(A1, A2, A3, A4, A5,
-                       Result1<typename dbus_traits<A6>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
-                                     new DBusResult1<typename dbus_traits<A6>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
 
-/** 4 arguments, 2 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          void (I::*m)(A1, A2, A3, A4,
-                       Result2<typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
- 
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
-                                     new DBusResult2<typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
     }
-}
-
-/** 3 arguments, 3 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          void (I::*m)(A1, A2, A3,
-                       Result3<typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3,
-                                     new DBusResult3<typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 2 arguments, 4 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          void (I::*m)(A1, A2,
-                       Result4<typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-
-        (static_cast<I *>(data)->*m)(a1, a2,
-                                     new DBusResult4<typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 1 argument, 5 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          void (I::*m)(A1,
-                       Result5<typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult5<typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 0 arguments, 6 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          void (I::*m)(Result6<typename dbus_traits<A1>::arg_type,
-                               typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type,
-                               typename dbus_traits<A6>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult6<typename dbus_traits<A1>::arg_type,
-                                                     typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type,
-                                                     typename dbus_traits<A6>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
+};
 
 /** ===> 5 parameters */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          void (I::*m)(A1, A2, A3, A4, A5)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1, class A2, class A3, class A4, class A5>
+struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
+    typedef void (Mptr)(A1, A2, A3, A4, A5);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        dbus_traits<A5>::append(iter, a5);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6, _7, _8);
     }
-}
+
+    static const bool asynchronous = DBusResult5<A1, A2, A3, A4, A5>::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+            dbus_traits<A5>::get(conn, msg, iter, a5);
+
+            (*static_cast<M *>(data))(a1, a2, a3, a4, a5);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            dbus_traits<A5>::append(iter, a5);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        buffer += dbus_traits<A5>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 4 arguments, 1 return value */
-template <class I, class R,
-          class A1, class A2, class A3, class A4,
-          R (I::*m)(A1, A2, A3, A4)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class R,
+          class A1, class A2, class A3, class A4>
+struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4)> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
+    typedef R (Mptr)(A1, A2, A3, A4);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-
-        r = (static_cast<I *>(data)->*m)(a1, a2, a3, a4);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4);
     }
-}
 
-/** 5 arguments, 0 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          void (I::*m)(A1, A2, A3, A4, A5,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
+    static const bool asynchronous = DBusResult4<A1, A2, A3, A4>::asynchronous;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-        dbus_traits<A5>::get(conn, msg, iter, a5);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
 
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4, a5,
-                                     new DBusResult0(conn, msg));
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            r = (*static_cast<M *>(data))(a1, a2, a3, a4);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
-/** 4 arguments, 1 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          void (I::*m)(A1, A2, A3, A4,
-                       Result1<typename dbus_traits<A5>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
-                                     new DBusResult1<typename dbus_traits<A5>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
 
-/** 3 arguments, 2 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          void (I::*m)(A1, A2, A3,
-                       Result2<typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
- 
-        (static_cast<I *>(data)->*m)(a1, a2, a3,
-                                     new DBusResult2<typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
     }
-}
-
-/** 2 arguments, 3 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          void (I::*m)(A1, A2,
-                       Result3<typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-
-        (static_cast<I *>(data)->*m)(a1, a2,
-                                     new DBusResult3<typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 1 argument, 4 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          void (I::*m)(A1,
-                       Result4<typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult4<typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 0 arguments, 5 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          void (I::*m)(Result5<typename dbus_traits<A1>::arg_type,
-                               typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type,
-                               typename dbus_traits<A5>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult5<typename dbus_traits<A1>::arg_type,
-                                                     typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type,
-                                                     typename dbus_traits<A5>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
+};
 
 /** ===> 4 parameters */
-template <class I,
-          class A1, class A2, class A3, class A4,
-          void (I::*m)(A1, A2, A3, A4)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1, class A2, class A3, class A4>
+struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
+    typedef void (Mptr)(A1, A2, A3, A4);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        dbus_traits<A4>::append(iter, a4);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3, _4);
     }
-}
+
+    static const bool asynchronous = DBusResult4<A1, A2, A3, A4>::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+            dbus_traits<A4>::get(conn, msg, iter, a4);
+
+            (*static_cast<M *>(data))(a1, a2, a3, a4);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            dbus_traits<A4>::append(iter, a4);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        buffer += dbus_traits<A4>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 3 arguments, 1 return value */
-template <class I, class R,
-          class A1, class A2, class A3,
-          R (I::*m)(A1, A2, A3)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class R,
+          class A1, class A2, class A3>
+struct MakeMethodEntry< boost::function<R (A1, A2, A3)> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
+    typedef R (Mptr)(A1, A2, A3);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-
-        r = (static_cast<I *>(data)->*m)(a1, a2, a3);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3);
     }
-}
 
-/** 4 arguments, 0 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4,
-          void (I::*m)(A1, A2, A3, A4,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
+    static const bool asynchronous = DBusResult3<A1, A2, A3>::asynchronous;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-        dbus_traits<A4>::get(conn, msg, iter, a4);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
 
-        (static_cast<I *>(data)->*m)(a1, a2, a3, a4,
-                                     new DBusResult0(conn, msg));
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            r = (*static_cast<M *>(data))(a1, a2, a3);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
-/** 3 arguments, 1 asynchronous result */
-template <class I,
-          class A1, class A2, class A3, class A4,
-          void (I::*m)(A1, A2, A3,
-                       Result1<typename dbus_traits<A4>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3,
-                                     new DBusResult1<typename dbus_traits<A4>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
 
-/** 2 arguments, 2 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4,
-          void (I::*m)(A1, A2,
-                       Result2<typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
- 
-        (static_cast<I *>(data)->*m)(a1, a2,
-                                     new DBusResult2<typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
     }
-}
-
-/** 1 argument, 3 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4,
-          void (I::*m)(A1,
-                       Result3<typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult3<typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
-
-/** 0 arguments, 4 asynchronous results */
-template <class I,
-          class A1, class A2, class A3, class A4,
-          void (I::*m)(Result4<typename dbus_traits<A1>::arg_type,
-                               typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type,
-                               typename dbus_traits<A4>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult4<typename dbus_traits<A1>::arg_type,
-                                                     typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type,
-                                                     typename dbus_traits<A4>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
+};
 
 /** ===> 3 parameters */
-template <class I,
-          class A1, class A2, class A3,
-          void (I::*m)(A1, A2, A3)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1, class A2, class A3>
+struct MakeMethodEntry< boost::function<void (A1, A2, A3)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
+    typedef void (Mptr)(A1, A2, A3);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
-
-        (static_cast<I *>(data)->*m)(a1, a2, a3);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        dbus_traits<A3>::append(iter, a3);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2, _3);
     }
-}
+
+    static const bool asynchronous = DBusResult3<A1, A2, A3>::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+            dbus_traits<A3>::get(conn, msg, iter, a3);
+
+            (*static_cast<M *>(data))(a1, a2, a3);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            dbus_traits<A3>::append(iter, a3);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        buffer += dbus_traits<A3>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 2 arguments, 1 return value */
-template <class I, class R,
-          class A1, class A2,
-          R (I::*m)(A1, A2)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class R,
+          class A1, class A2>
+struct MakeMethodEntry< boost::function<R (A1, A2)> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
+    typedef R (Mptr)(A1, A2);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-
-        r = (static_cast<I *>(data)->*m)(a1, a2);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2);
     }
-}
 
-/** 3 arguments, 0 asynchronous result */
-template <class I,
-          class A1, class A2, class A3,
-          void (I::*m)(A1, A2, A3,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
+    static const bool asynchronous = DBusResult2<A1, A2>::asynchronous;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-        dbus_traits<A3>::get(conn, msg, iter, a3);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
 
-        (static_cast<I *>(data)->*m)(a1, a2, a3,
-                                     new DBusResult0(conn, msg));
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            r = (*static_cast<M *>(data))(a1, a2);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
-/** 2 arguments, 1 asynchronous result */
-template <class I,
-          class A1, class A2, class A3,
-          void (I::*m)(A1, A2,
-                       Result1<typename dbus_traits<A3>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-
-        (static_cast<I *>(data)->*m)(a1, a2,
-                                     new DBusResult1<typename dbus_traits<A3>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
 
-/** 1 argument, 2 asynchronous results */
-template <class I,
-          class A1, class A2, class A3,
-          void (I::*m)(A1,
-                       Result2<typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
- 
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult2<typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
     }
-}
-
-/** 0 arguments, 3 asynchronous results */
-template <class I,
-          class A1, class A2, class A3,
-          void (I::*m)(Result3<typename dbus_traits<A1>::arg_type,
-                               typename dbus_traits<A2>::arg_type,
-                               typename dbus_traits<A3>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult3<typename dbus_traits<A1>::arg_type,
-                                                     typename dbus_traits<A2>::arg_type,
-                                                     typename dbus_traits<A3>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
-    }
-}
+};
 
 /** ===> 2 parameters */
-template <class I,
-          class A1, class A2,
-          void (I::*m)(A1, A2)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1, class A2>
+struct MakeMethodEntry< boost::function<void (A1, A2)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
+    typedef void (Mptr)(A1, A2);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
-
-        (static_cast<I *>(data)->*m)(a1, a2);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        dbus_traits<A2>::append(iter, a2);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1, _2);
     }
-}
+
+    static const bool asynchronous = DBusResult2<A1, A2>::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+            dbus_traits<A2>::get(conn, msg, iter, a2);
+
+            (*static_cast<M *>(data))(a1, a2);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            dbus_traits<A2>::append(iter, a2);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        buffer += dbus_traits<A2>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 1 argument, 1 return value */
-template <class I, class R,
-          class A1,
-          R (I::*m)(A1)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class R,
+          class A1>
+struct MakeMethodEntry< boost::function<R (A1)> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
-        typename dbus_traits<A1>::host_type a1;
+    typedef R (Mptr)(A1);
+    typedef boost::function<Mptr> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        r = (static_cast<I *>(data)->*m)(a1);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        dbus_traits<A1>::append(iter, a1);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1);
     }
-}
 
-/** 2 arguments, 0 asynchronous result */
-template <class I,
-          class A1, class A2,
-          void (I::*m)(A1, A2,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
+    static const bool asynchronous = DBusResult1<A1>::asynchronous;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-        dbus_traits<A2>::get(conn, msg, iter, a2);
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
+            typename dbus_traits<A1>::host_type a1;
 
-        (static_cast<I *>(data)->*m)(a1, a2,
-                                     new DBusResult0(conn, msg));
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            r = (*static_cast<M *>(data))(a1);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<A1>::append(iter, a1);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
-/** 1 argument, 1 asynchronous result */
-template <class I,
-          class A1, class A2,
-          void (I::*m)(A1,
-                       Result1<typename dbus_traits<A2>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
-
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult1<typename dbus_traits<A2>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
 
-/** 0 argument, 2 asynchronous results */
-template <class I,
-          class A1, class A2,
-          void (I::*m)(Result2<typename dbus_traits<A1>::arg_type,
-                               typename dbus_traits<A2>::arg_type>
-                               *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult2<typename dbus_traits<A1>::arg_type,
-                                                     typename dbus_traits<A2>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        buffer += dbus_traits<A1>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
     }
-}
+};
 
 /** ===> 1 parameter */
-template <class I,
-          class A1,
-          void (I::*m)(A1)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class A1>
+struct MakeMethodEntry< boost::function<void (A1)> >
 {
-    try {
-        typename dbus_traits<A1>::host_type a1;
+    typedef void (Mptr)(A1);
+    typedef boost::function<void (A1)> M;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
-
-        (static_cast<I *>(data)->*m)(a1);
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<A1>::append(iter, a1);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance, _1);
     }
-}
+
+    static const bool asynchronous = DBusResult1<A1>::asynchronous;
+
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<A1>::host_type a1;
+
+            DBusMessageIter iter;
+            dbus_message_iter_init(msg, &iter);
+            dbus_traits<A1>::get(conn, msg, iter, a1);
+
+            (*static_cast<M *>(data))(a1);
+
+            if (asynchronous) {
+                return NULL;
+            }
+
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<A1>::append(iter, a1);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
+    }
+
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<A1>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+                                       (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** 0 arguments, 1 return value */
-template <class I, class R,
-          R (I::*m)()>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <class R>
+struct MakeMethodEntry< boost::function<R ()> >
 {
-    try {
-        typename dbus_traits<R>::host_type r;
+    typedef R (Mptr)();
+    typedef boost::function<Mptr> M;
 
-        r = (static_cast<I *>(data)->*m)();
-
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        DBusMessageIter iter;
-        dbus_message_iter_init_append(reply, &iter);
-        dbus_traits<R>::append_retval(iter, r);
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance);
     }
-}
 
-/** 1 argument, 0 asynchronous result */
-template <class I,
-          class A1,
-          void (I::*m)(A1,
-                       Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        typename dbus_traits<A1>::host_type a1;
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            typename dbus_traits<R>::host_type r;
 
-        DBusMessageIter iter;
-        dbus_message_iter_init(msg, &iter);
-        dbus_traits<A1>::get(conn, msg, iter, a1);
+            r = (*static_cast<M *>(data))();
 
-        (static_cast<I *>(data)->*m)(a1,
-                                     new DBusResult0(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            DBusMessageIter iter;
+            dbus_message_iter_init_append(reply, &iter);
+            dbus_traits<R>::append_retval(iter, r);
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
-
-/** 0 arguments, 1 asynchronous result */
-template <class I,
-          class A1,
-          void (I::*m)(Result1<typename dbus_traits<A1>::arg_type> *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult1<typename dbus_traits<A1>::arg_type>(conn, msg));
-
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
     }
-}
+
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        buffer += dbus_traits<R>::getReply();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA);
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 /** ===> 0 parameter */
-template <class I,
-          void (I::*m)()>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
+template <>
+struct MakeMethodEntry< boost::function<void ()> >
 {
-    try {
-        (static_cast<I *>(data)->*m)();
+    typedef void (Mptr)();
+    typedef boost::function<Mptr> M;
 
-        DBusMessage *reply = dbus_message_new_method_return(msg);
-        if (!reply)
-            return NULL;
-        return reply;
-    } catch (...) {
-        return handleException(msg);
+    template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
+        return boost::bind(method, instance);
     }
-}
 
-/** 0 argument, 0 asynchronous result */
-template <class I,
-          void (I::*m)(Result0 *)>
-DBusMessage *methodFunction(DBusConnection *conn,
-                            DBusMessage *msg, void *data)
-{
-    try {
-        (static_cast<I *>(data)->*m)(new DBusResult0(conn, msg));
+    static DBusMessage *methodFunction(DBusConnection *conn,
+                                       DBusMessage *msg, void *data)
+    {
+        try {
+            (*static_cast<M *>(data))();
 
-        return NULL;
-    } catch (...) {
-        return handleException(msg);
+            DBusMessage *reply = dbus_message_new_method_return(msg);
+            if (!reply)
+                return NULL;
+            return reply;
+        } catch (...) {
+            return handleException(msg);
+        }
     }
-}
 
+    static void destroyFunction(void *user_data)
+    {
+        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        delete static_cast<M *>(entry->method_data);
+    }
 
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9, class A10,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    buffer += dbus_traits<A6>::getSignature();
-    buffer += dbus_traits<A7>::getSignature();
-    buffer += dbus_traits<A8>::getSignature();
-    buffer += dbus_traits<A9>::getSignature();
-    buffer += dbus_traits<A10>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    buffer += dbus_traits<A6>::getReply();
-    buffer += dbus_traits<A7>::getReply();
-    buffer += dbus_traits<A8>::getReply();
-    buffer += dbus_traits<A9>::getReply();
-    buffer += dbus_traits<A10>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          R (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8, A9)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    buffer += dbus_traits<A6>::getSignature();
-    buffer += dbus_traits<A7>::getSignature();
-    buffer += dbus_traits<A8>::getSignature();
-    buffer += dbus_traits<A9>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    buffer += dbus_traits<A6>::getReply();
-    buffer += dbus_traits<A7>::getReply();
-    buffer += dbus_traits<A8>::getReply();
-    buffer += dbus_traits<A9>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, A1, A2, A3, A4, A5, A6, A7, A8, A9, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8, class A9,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    buffer += dbus_traits<A6>::getSignature();
-    buffer += dbus_traits<A7>::getSignature();
-    buffer += dbus_traits<A8>::getSignature();
-    buffer += dbus_traits<A9>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    buffer += dbus_traits<A6>::getReply();
-    buffer += dbus_traits<A7>::getReply();
-    buffer += dbus_traits<A8>::getReply();
-    buffer += dbus_traits<A9>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, A2, A3, A4, A5, A6, A7, A8, A9, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          R (I::*m)(A1, A2, A3, A4, A5, A6, A7, A8)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    buffer += dbus_traits<A6>::getSignature();
-    buffer += dbus_traits<A7>::getSignature();
-    buffer += dbus_traits<A8>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    buffer += dbus_traits<A6>::getReply();
-    buffer += dbus_traits<A7>::getReply();
-    buffer += dbus_traits<A8>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, A1, A2, A3, A4, A5, A6, A7, A8, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7, class A8,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    buffer += dbus_traits<A6>::getSignature();
-    buffer += dbus_traits<A7>::getSignature();
-    buffer += dbus_traits<A8>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    buffer += dbus_traits<A6>::getReply();
-    buffer += dbus_traits<A7>::getReply();
-    buffer += dbus_traits<A8>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, A2, A3, A4, A5, A6, A7, A8, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          R (I::*m)(A1, A2, A3, A4, A5, A6, A7)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    buffer += dbus_traits<A6>::getSignature();
-    buffer += dbus_traits<A7>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    buffer += dbus_traits<A6>::getReply();
-    buffer += dbus_traits<A7>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, A1, A2, A3, A4, A5, A6, A7, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6, class A7,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    buffer += dbus_traits<A6>::getSignature();
-    buffer += dbus_traits<A7>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    buffer += dbus_traits<A6>::getReply();
-    buffer += dbus_traits<A7>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, A2, A3, A4, A5, A6, A7, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          R (I::*m)(A1, A2, A3, A4, A5, A6)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    buffer += dbus_traits<A6>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    buffer += dbus_traits<A6>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, A1, A2, A3, A4, A5, A6, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class A6,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    buffer += dbus_traits<A6>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    buffer += dbus_traits<A6>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, A2, A3, A4, A5, A6, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          class A1, class A2, class A3, class A4, class A5,
-          R (I::*m)(A1, A2, A3, A4, A5)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, A1, A2, A3, A4, A5, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class A1, class A2, class A3, class A4, class A5,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    buffer += dbus_traits<A5>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    buffer += dbus_traits<A5>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, A2, A3, A4, A5, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          class A1, class A2, class A3, class A4,
-          R (I::*m)(A1, A2, A3, A4)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, A1, A2, A3, A4, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class A1, class A2, class A3, class A4,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    buffer += dbus_traits<A4>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    buffer += dbus_traits<A4>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, A2, A3, A4, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          class A1, class A2, class A3,
-          R (I::*m)(A1, A2, A3)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, A1, A2, A3, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class A1, class A2, class A3,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    buffer += dbus_traits<A3>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    buffer += dbus_traits<A3>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, A2, A3, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          class A1, class A2,
-          R (I::*m)(A1, A2)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, A1, A2, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class A1, class A2,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    buffer += dbus_traits<A2>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    buffer += dbus_traits<A2>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, A2, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          class A1,
-          R (I::*m)(A1)>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    buffer += dbus_traits<A1>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, A1, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class A1,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    buffer += dbus_traits<A1>::getSignature();
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<A1>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, A1, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I, class R,
-          R (I::*m)()>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    buffer += dbus_traits<R>::getReply();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, R, m>;
-    entry.flags = flags;
-    return entry;
-}
-
-template <class I,
-          class M, M m>
-GDBusMethodTable makeMethodEntry(const char *name, GDBusMethodFlags flags = GDBusMethodFlags(0))
-{
-    GDBusMethodTable entry;
-    entry.name = strdup(name);
-    std::string buffer;
-    entry.signature = strdup(buffer.c_str());
-    buffer.clear();
-    entry.reply = strdup(buffer.c_str());
-    entry.function = methodFunction<I, m>;
-    entry.flags = flags;
-    return entry;
-}
+    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    {
+        GDBusMethodTable entry;
+        entry.name = strdup(name);
+        std::string buffer;
+        entry.signature = strdup(buffer.c_str());
+        buffer.clear();
+        entry.reply = strdup(buffer.c_str());
+        entry.function = methodFunction;
+        entry.destroy = destroyFunction;
+        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA);
+        entry.method_data = new M(m);
+        return entry;
+    }
+};
 
 #endif // INCL_GDBUS_CXX_BRIDGE
