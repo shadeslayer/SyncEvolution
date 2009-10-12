@@ -112,6 +112,10 @@ typedef dbus_bool_t (* GDBusPropertySetFunction) (DBusConnection *connection,
  * @G_DBUS_METHOD_FLAG_DEPRECATED: annotate deprecated methods
  * @G_DBUS_METHOD_FLAG_NOREPLY: annotate methods with no reply
  * @G_DBUS_METHOD_FLAG_ASYNC: annotate asynchronous methods
+ * @G_DBUS_METHOD_FLAG_METHOD_DATA: the method is passed the
+ *                                  GDBusMethodTable method_data pointer
+ *                                  instead of the g_dbus_register_interface()
+ *                                  user_data pointer
  *
  * Method flags
  */
@@ -120,6 +124,7 @@ typedef enum {
 	G_DBUS_METHOD_FLAG_DEPRECATED = (1 << 0),
 	G_DBUS_METHOD_FLAG_NOREPLY    = (1 << 1),
 	G_DBUS_METHOD_FLAG_ASYNC      = (1 << 2),
+	G_DBUS_METHOD_FLAG_METHOD_DATA = (1 << 3),
 } GDBusMethodFlags;
 
 /**
@@ -151,6 +156,11 @@ typedef enum {
  * @reply: reply signature
  * @function: method function
  * @flags: method flags
+ * @method_data: passed as GDBusMethodFunction user_data if
+ *               G_DBUS_METHOD_FLAG_METHOD_DATA is set
+ * @destroy: destructor function for method table; not called
+ *           by gdbus itself, because it never frees GDBusMethodTable
+ *           entries, but useful in upper layers
  *
  * Method table
  */
@@ -160,6 +170,8 @@ typedef struct {
 	const char *reply;
 	GDBusMethodFunction function;
 	GDBusMethodFlags flags;
+	void *method_data;
+	GDBusDestroyFunction destroy;
 } GDBusMethodTable;
 
 /**

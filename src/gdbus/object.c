@@ -615,7 +615,11 @@ static DBusHandlerResult handle_message(DBusConnection *connection,
 			continue;
 
 		reply = method->function(connection,
-						message, interface->user_data);
+						message,
+						(method->flags & 
+						 G_DBUS_METHOD_FLAG_METHOD_DATA) ?
+						method->method_data :
+						interface->user_data);
 
 		if (method->flags & G_DBUS_METHOD_FLAG_NOREPLY) {
 			if (reply != NULL)
