@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <sys/time.h>
 
 #include <list>
 #include <map>
@@ -440,6 +441,56 @@ public:
 };
 
 /**
+ * A timer helper to check whether now is timeout according to
+ * user's setting. Timeout is calculated in milliseconds
+ */ 
+class Timer {
+    timeval m_startTime;  ///< start time
+    unsigned long m_timeoutMs; ///< timeout in milliseconds, set by user
+
+    /**
+     * calculate duration between now and start time
+     * return value is in milliseconds
+     */
+    unsigned long duration(const timeval &minuend, const timeval &subtrahend)
+    {
+        unsigned long result = 0;
+        if(minuend.tv_sec > subtrahend.tv_sec || 
+                (minuend.tv_sec == subtrahend.tv_sec && minuend.tv_usec > subtrahend.tv_usec)) {
+            result = minuend.tv_sec - subtrahend.tv_sec;
+            result *= 1000;
+            result += (minuend.tv_usec - subtrahend.tv_usec) / 1000;
+        }
+        return result;
+    }
+
+ public:
+    /**
+     * constructor
+     * @param timeoutMs timeout in milliseconds
+     */
+    Timer(unsigned long timeoutMs) : m_timeoutMs(timeoutMs)
+    {
+        reset();
+    }
+
+    /**
+     * reset the timer and mark start time as current time
+     */
+    void reset() { gettimeofday(&m_startTime, NULL); }
+
+    /**
+     * check whether it is timeout
+     */
+    bool timeout() 
+    {
+        timeval now;
+        gettimeofday(&now, NULL);
+        return duration(now, m_startTime) >= m_timeoutMs;
+    }
+};
+
+/**
  * Represents and implements the Session interface.  Use
  * boost::shared_ptr to track it and ensure that there are references
  * to it as long as the connection is needed.
@@ -497,6 +548,10 @@ class Session : public DBusObjectHelper,
     uint32_t m_error;
     typedef std::map<std::string, SourceProgress> SourceProgresses_t;
     SourceProgresses_t m_sourceProgress;
+
+    /** timer for fire status/progress usages */
+    Timer m_statusTimer;
+    Timer m_progressTimer;
 
     void detach(const Caller_t &caller);
 
@@ -1185,10 +1240,11 @@ void Session::fireStatus(bool flush)
     uint32_t error;
     SourceStatuses_t sources;
 
-    /**
-     * TODO: Remember when the last signal was triggered, then only
-     * send it anew after a certain timeout (0.1s?).
-     */
+    /** not force flushing and not timeout, return */
+    if(!flush && !m_statusTimer.timeout()) {
+        return;
+    }
+    m_statusTimer.reset();
 
     getStatus(status, error, sources);
     emitStatus(status, error, sources);
@@ -1199,7 +1255,11 @@ void Session::fireProgress(bool flush)
     int32_t progress;
     SourceProgresses_t sources;
 
-    /** TODO: timeout */
+    /** not force flushing and not timeout, return */
+    if(!flush && !m_progressTimer.timeout()) {
+        return;
+    }
+    m_progressTimer.reset();
 
     getProgress(progress, sources);
     emitProgress(progress, sources);
@@ -1223,6 +1283,8 @@ Session::Session(DBusServer &server,
     m_priority(PRI_DEFAULT),
     m_progress(-1),
     m_error(0),
+    m_progressTimer(50),
+    m_statusTimer(100),
     emitStatus(*this, "StatusChanged"),
     emitProgress(*this, "ProgressChanged")
 {
