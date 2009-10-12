@@ -599,6 +599,7 @@ for prebuilt in options.prebuilt:
         context.add(SyncEvolutionTest("evolution-prebuilt-" + os.path.basename(prebuilt), pre,
                                       "", options.shell,
                                       [ "Client::Source", "SyncEvolution" ],
+                                      [],
                                       testPrefix=options.testprefix))
 
 class SyncEvolutionCheckout(GitCheckout):
