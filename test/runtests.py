@@ -527,8 +527,9 @@ parser.add_option("", "--mailhost",
                   type="string", dest="mailhost", default="localhost",
                   help="SMTP mail server to be used for outgoing mail")
 parser.add_option("", "--subject",
-                  type="string", dest="subject", default="SyncML Tests " + time.strftime("%Y-%m-%d-%H-%M"),
-                  help="subject of result email (default is \"SyncML Tests <date>\"")
+                  type="string", dest="subject", default="SyncML Tests " + time.strftime("%Y-%m-%d %H-%M"),
+                  help="subject of result email (default is \"SyncML Tests <date> <time>\"")
+
 parser.add_option("", "--evosvn",
                   action="append", type="string", dest="evosvn", default=[],
                   help="<name>=<path>: compiles Evolution from source under a short name, using Paul Smith's Makefile and config as found in <path>")
