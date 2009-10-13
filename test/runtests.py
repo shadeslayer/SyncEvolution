@@ -707,14 +707,6 @@ scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       testPrefix=options.testprefix)
 context.add(scheduleworldtest)
 
-memotootest = SyncEvolutionTest("memotoo", compile,
-                                "", options.shell,
-                                [ "Client::Sync" ],
-                                [ "vcard21" ],
-                                "CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_FAILURES= CLIENT_TEST_DELAY=15",
-                                testPrefix=options.testprefix)
-context.add(memotootest)
-
 egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    "", options.shell,
                                    [ "Client::Sync::vcard21", "Client::Sync::ical20::testCopy", "Client::Sync::ical20::testUpdate", "Client::Sync::ical20::testDelete", \
@@ -817,6 +809,14 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                             "CLIENT_TEST_NOCHECK_SYNCMODE=1 CLIENT_TEST_MAX_ITEMSIZE=2048 CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,Client::Sync::vcard21::testRefreshFromClientSync,Client::Sync::vcard21::testSlowSyncSemantic,Client::Sync::vcard21::testRefreshStatus,Client::Sync::vcard21::testDelete,Client::Sync::vcard21::testItemsXML,Client::Sync::vcard21::testOneWayFromServer,Client::Sync::ical20::testRefreshFromClientSync,Client::Sync::ical20::testSlowSyncSemantic,Client::Sync::ical20::testRefreshStatus,Client::Sync::ical20::testDelete,Client::Sync::ical20::testItemsXML,Client::Sync::ical20::testOneWayFromServer,Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::itodo20::testRefreshFromClientSync,Client::Sync::itodo20::testSlowSyncSemantic,Client::Sync::itodo20::testRefreshStatus,Client::Sync::itodo20::testDelete,Client::Sync::itodo20::testItemsXML,Client::Sync::itodo20::testOneWayFromServer,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::testRefreshFromClientSync,Client::Sync::text::testSlowSyncSemantic,Client::Sync::text::testRefreshStatus,Client::Sync::text::testDelete,Client::Sync::text::testItemsXML,Client::Sync::text::testOneWayFromServer,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard21_ical20_itodo20_text::testRefreshFromClientSync,Client::Sync::vcard21_ical20_itodo20_text::testSlowSyncSemantic,Client::Sync::vcard21_ical20_itodo20_text::testRefreshStatus,Client::Sync::vcard21_ical20_itodo20_text::testDelete,Client::Sync::vcard21_ical20_itodo20_text::testItemsXML,Client::Sync::vcard21_ical20_itodo20_text::testOneWayFromServer,Client::Sync::vcard21_ical20_itodo20_text::Retry,Client::Sync::vcard21_ical20_itodo20_text::Suspend,Client::Sync::text_itodo20_ical20_vcard21::testRefreshFromClientSync,Client::Sync::text_itodo20_ical20_vcard21::testSlowSyncSemantic,Client::Sync::text_itodo20_ical20_vcard21::testRefreshStatus,Client::Sync::text_itodo20_ical20_vcard21::testDelete,Client::Sync::text_itodo20_ical20_vcard21::testItemsXML,Client::Sync::text_itodo20_ical20_vcard21::testOneWayFromServer,Client::Sync::text_itodo20_ical20_vcard21::Retry,Client::Sync::text_itodo20_ical20_vcard21::Suspend CLIENT_TEST_DELAY=5 CLIENT_TEST_COMPARE_LOG=T",
                             testPrefix=options.testprefix)
 context.add(mobicaltest)
+
+memotootest = SyncEvolutionTest("memotoo", compile,
+                            "", options.shell,
+                            [ "Client::Sync" ],
+                            [ "vcard21","ical20","itodo20","text" ],
+                            "CLIENT_TEST_NOCHECK_SYNCMODE=1 CLIENT_TEST_NUM_ITEMS=10 CLIENT_TEST_SKIP=Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,Client::Sync::vcard21::testRefreshFromClientSync,Client::Sync::vcard21::testRefreshFromClientSemantic,Client::Sync::vcard21::testRefreshStatus,Client::Sync::vcard21::testOneWayFromServer,Client::Sync::ical20::testRefreshFromClientSync,Client::Sync::ical20::testRefreshFromClientSemantic,Client::Sync::ical20::testRefreshStatus,Client::Sync::ical20::testOneWayFromServer,Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,Client::Sync::itodo20::testRefreshFromClientSync,Client::Sync::itodo20::testRefreshFromClientSemantic,Client::Sync::itodo20::testRefreshStatus,Client::Sync::itodo20::testOneWayFromServer,Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,Client::Sync::text::testRefreshFromClientSync,Client::Sync::text::testRefreshFromClientSemantic,Client::Sync::text::testRefreshStatus,Client::Sync::text::testOneWayFromServer,Client::Sync::text::Retry,Client::Sync::text::Suspend,Client::Sync::vcard21_ical20_itodo20_text::testRefreshFromClientSync,Client::Sync::vcard21_ical20_itodo20_text::testRefreshFromClientSemantic,Client::Sync::vcard21_ical20_itodo20_text::testRefreshStatus,Client::Sync::vcard21_ical20_itodo20_text::testOneWayFromServer,Client::Sync::vcard21_ical20_itodo20_text::Retry,Client::Sync::vcard21_ical20_itodo20_text::Suspend,Client::Sync::text_itodo20_ical20_vcard21::testRefreshFromClientSync,Client::Sync::text_itodo20_ical20_vcard21::testRefreshFromClientSemantic,Client::Sync::text_itodo20_ical20_vcard21::testRefreshStatus,Client::Sync::text_itodo20_ical20_vcard21::testOneWayFromServer,Client::Sync::text_itodo20_ical20_vcard21::Retry,Client::Sync::text_itodo20_ical20_vcard21::Suspend CLIENT_TEST_DELAY=5 CLIENT_TEST_COMPARE_LOG=T CLIENT_TEST_RESEND_TIMEOUT=5 CLIENT_TEST_INTERRUPT_AT=1",
+                            testPrefix=options.testprefix)
+context.add(memotootest)
 
 if options.list:
     for action in context.todo:
