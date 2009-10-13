@@ -408,6 +408,9 @@ bool Cmdline::run() {
         } else {
             boost::shared_ptr<SyncConfig> config;
             config.reset(new SyncConfig(m_server));
+            if (!config->exists()) {
+                SyncContext::throwError(string("no such configuration: ") + m_server);
+            }
             config->remove();
             return true;
         }
