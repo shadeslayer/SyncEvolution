@@ -205,16 +205,16 @@ msgstr[1] "Terakhir kali: Dikirim %d perubahan."
 #. changes were requested by the remote server, so "applied"
 #. is a better word than "received" (bug #5185).
 #: ../src/gtk-ui/sync-ui.c:1323
-#, fuzzy, c-format
+#, c-format
 msgid "Last time: Applied one change."
 msgid_plural "Last time: Applied %d changes."
-msgstr[0] "Terakhir kali: Diterima satu perubahan."
-msgstr[1] "Terakhir kali: Diterima %d perubahan."
+msgstr[0] "Terakhir kali: Diterapkan satu perubahan."
+msgstr[1] "Terakhir kali: Diterapkan %d perubahan."
 
 #: ../src/gtk-ui/sync-ui.c:1328
-#, fuzzy, c-format
+#, c-format
 msgid "Last time: Applied %d changes and sent %d changes."
-msgstr "Terakhir kali: Diterima %d perubahan dan dikirim %d perubahan."
+msgstr "Terakhir kali: Diterapkan %d perubahan dan dikirim %d perubahan."
 
 #: ../src/gtk-ui/sync-ui.c:1420
 msgid "Failed to get server configuration from SyncEvolution"
@@ -225,12 +225,16 @@ msgid ""
 "ScheduleWorld enables you to keep your contacts, events, tasks, and notes in "
 "sync."
 msgstr ""
+"ScheduleWorld memungkinkan Anda menjaga kontak, peristiwa, tugas, dan "
+"catatan Anda tetap selaras."
 
 #: ../src/gtk-ui/sync-ui.c:1475
 msgid ""
 "Google Sync can backup and synchronize your Address Book with your Gmail "
 "contacts."
 msgstr ""
+"Google Sync dapat membuat cadangan dan menyelaraskan Buku Alamat Anda dengan "
+"kontak Gmail Anda."
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
@@ -240,6 +244,8 @@ msgid ""
 "Backup your contacts and calendar. Sync with a singleclick, anytime, "
 "anywhere (DEMO)."
 msgstr ""
+"Buat cadangan kontak dan kalender Anda. Selaraskan dengan satu klik, "
+"kapanpun, dari manapun (DEMO)."
 
 #: ../src/gtk-ui/sync-ui.c:1509
 msgid "New service"
@@ -486,9 +492,8 @@ msgid "Save and use this service"
 msgstr "Simpan dan pakai layanan ini"
 
 #: ../src/gtk-ui/ui.glade.h:22
-#, fuzzy
 msgid "Select sync service"
-msgstr "Persiapkan layanan penyelarasan"
+msgstr "Pilih layanan penyelarasan"
 
 #: ../src/gtk-ui/ui.glade.h:23
 msgid "Server settings"
@@ -529,13 +534,12 @@ msgid "Username"
 msgstr "Nama pengguna"
 
 #: ../src/gtk-ui/ui.glade.h:34
-#, fuzzy
 msgid ""
 "You haven't selected a sync service yet. Sync services let you \n"
 "synchronize your data between your netbook and a web service."
 msgstr ""
-"Anda belum menyiapkan suatu layanan sync. Layanan sync memungkinkan Anda\n"
-"menyelarasan data Anda antara netbook Anda dan suatu layanan web."
+"Anda belum memilih suatu layanan sync. Layanan sync memungkinkan Anda\n"
+"menyelaraskan data antara netbook Anda dan suatu layanan web."
 
 #: ../src/gtk-ui/sync.desktop.in.h:2 ../src/gtk-ui/sync-gtk.desktop.in.h:2
 msgid "Up to date"
@@ -543,4 +547,4 @@ msgstr "Terkini"
 
 #: ../src/gtk-ui/sync-gtk.desktop.in.h:1
 msgid "Sync (GTK)"
-msgstr ""
+msgstr "Sync (GTK)"
