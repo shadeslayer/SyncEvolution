@@ -17,16 +17,18 @@ and on the server, no support for meetings). For details see
 README.mobical.
 
 *** Beware *** that the Mobical SyncML password is *not* the same as
-the one for their web site. Log into mobical.net, the go to "my accounts
+the one for their web site. Log into mobical.net, then go to "my accounts
 >> configure new device >> manual settings" to find the SyncML
 credentials.
 
 It is now possible to compile database backends outside of
 SyncEvolution, install them and have SyncEvolution use them
 automatically like any other backend. The backend API has been
-enhanced considerably. Backend developers now have access to a modular
-set of utility classes that can be mixed into a specific
-implementation.
+enhanced considerably. For example, backend developers have
+access to a modular set of utility classes that can be mixed
+into a specific implementation. Backends can access the internal
+Synthesis representation directly and therefore no longer need
+their own vCard/vCalendar/iCalendar parser.
 
 The sqlite demo backend can be enabled and compiled again with
 --enable-sqlite. It demonstrates how to map directly from the
@@ -45,7 +47,7 @@ Other changes:
 
 * The sync UI allowed to enable calendar and task synchronization
   with Google although Google does not support that (MB#5871).
-  In new installations this is prevented now by clearing the URI
+  In new installations this is prevented by clearing the URI
   for those data categories.
 
 * Importing work and home phone numbers from Google into desktop
