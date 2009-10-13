@@ -537,11 +537,20 @@ class Session : public DBusObjectHelper,
      */
     boost::shared_ptr<DBusSync> m_sync;
 
-    /** sync was run */
-    bool m_done;
+    /**
+     * the sync status for session
+     */
+    enum SyncStatus {
+        SYNC_IDLE = 0, ///< session is initiated but sync not started
+        SYNC_RUNNING, ///< sync is running
+        SYNC_ABORT, ///< sync is aborting
+        SYNC_SUSPEND, ///< sync is suspending
+        SYNC_DONE, ///< sync is done
+        SYNC_ILLEGAL 
+    };
 
-    /** premature sync end requested */
-    bool m_abort, m_suspend;
+    /** current sync status */
+    SyncStatus m_syncStatus;
 
     /**
      * Priority which determines position in queue.
@@ -593,6 +602,8 @@ class Session : public DBusObjectHelper,
     EmitSignal2<int32_t,
                 const SourceProgresses_t &> emitProgress;
 
+    static string syncStatusToString(SyncStatus state);
+
 public:
     Session(DBusServer &server,
             const std::string &config_name,
@@ -637,7 +648,7 @@ public:
     /**
      * TRUE if the session is ready to take over control
      */
-    bool readyToRun() { return !m_done && m_sync; }
+    bool readyToRun() { return (m_syncStatus != SYNC_DONE) && m_sync; }
 
     /**
      * transfer control to the session for the duration of the sync,
@@ -662,8 +673,8 @@ public:
     void abort();
     void suspend();
 
-    bool isSuspend() { return m_suspend; }
-    bool isAbort() { return m_abort; }
+    bool isSuspend() { return m_syncStatus == SYNC_ABORT; }
+    bool isAbort() { return m_syncStatus == SYNC_SUSPEND; }
 };
 
 
@@ -1190,6 +1201,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
     }
 
     m_sync.reset(new DBusSync(getConfigName(), *this));
+    m_syncStatus = SYNC_RUNNING;
     if (m_serverMode) {
         m_sync->initServer(m_sessionID,
                            m_initialMessage,
@@ -1236,9 +1248,7 @@ void Session::abort()
     if (!m_sync) {
         throw std::runtime_error("sync not started, cannot abort at this time");
     }
-    m_suspend = false;
-    m_done = false;
-    m_abort = true;
+    m_syncStatus = SYNC_ABORT;
     fireStatus(true);
 }
 
@@ -1247,9 +1257,7 @@ void Session::suspend()
     if (!m_sync) {
         throw std::runtime_error("sync not started, cannot suspend at this time");
     }
-    m_abort = false;
-    m_done = false;
-    m_suspend = true;
+    m_syncStatus = SYNC_SUSPEND;
     fireStatus(true);
 }
 
@@ -1258,13 +1266,10 @@ void Session::getStatus(std::string &status,
                         SourceStatuses_t &sources)
 {
     if (!m_active) {
-        status = m_done ? "done" : "queueing";
+        status = (m_syncStatus == SYNC_DONE) ? 
+                 syncStatusToString(m_syncStatus) : "queueing";
     } else {
-        status = m_abort ? "aborting" :
-            m_suspend ? "suspending" :
-            m_done ? "done" :
-            m_sync ? "running" :
-            "idle";
+        status = syncStatusToString(m_syncStatus);
     }
     // TODO: append ";processing" or ";waiting"
 
@@ -1309,6 +1314,23 @@ void Session::fireProgress(bool flush)
     getProgress(progress, sources);
     emitProgress(progress, sources);
 }
+string Session::syncStatusToString(SyncStatus state)
+{
+    switch(state) {
+    case SYNC_IDLE:
+        return "idle";
+    case SYNC_RUNNING:
+        return "running";
+    case SYNC_ABORT:
+        return "aborting";
+    case SYNC_SUSPEND:
+        return "suspending";
+    case SYNC_DONE:
+        return "done";
+    default:
+        return "";
+    };
+}
 
 Session::Session(DBusServer &server,
                  const std::string &config_name,
@@ -1322,9 +1344,7 @@ Session::Session(DBusServer &server,
     m_serverMode(false),
     m_useConnection(false),
     m_active(false),
-    m_done(false),
-    m_abort(false),
-    m_suspend(false),
+    m_syncStatus(SYNC_IDLE),
     m_priority(PRI_DEFAULT),
     m_progress(-1),
     m_error(0),
@@ -1369,7 +1389,6 @@ void Session::setActive(bool active)
 void Session::syncProgress(sysync::TProgressEventEnum type,
                            int32_t extra1, int32_t extra2, int32_t extra3)
 {
-    // TODO: update our progress and status
 }
 
 void Session::sourceProgress(sysync::TProgressEventEnum type,
@@ -1391,7 +1410,7 @@ void Session::run()
         if (!m_error) {
             m_error = status;
         }
-        m_done = true;
+        m_syncStatus = SYNC_DONE;
         fireStatus(true);
 
         // if there is a connection, then it is no longer needed
