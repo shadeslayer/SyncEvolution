@@ -426,7 +426,8 @@ get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, 
             g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, data->config);
 
         ensure_default_sources_exist (data->config);
-        
+        server_config_disable_unsupported_sources (data->config);
+
         data->config->changed = TRUE;
 
         /* get password from keyring if we have an url */

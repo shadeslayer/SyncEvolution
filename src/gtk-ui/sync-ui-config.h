@@ -69,6 +69,7 @@ void server_config_update_from_option (server_config *server, SyncevoOption *opt
 void server_config_update_from_entry (server_config *server, GtkEntry *entry);
 GPtrArray* server_config_get_option_array (server_config *server);
 GPtrArray* server_config_get_source_array (server_config *server, SyncMode mode);
+void server_config_disable_unsupported_sources (server_config *server);
 source_config* server_config_get_source_config (server_config *server, const char *name);
 
 #endif
