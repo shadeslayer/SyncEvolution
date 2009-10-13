@@ -536,20 +536,22 @@ static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "of database content before and after a sync session",
                                                "1");
 static UIntConfigProperty syncPropRetryDuration("RetryDuration",
-                                          "The total amount of time in which the client tries\n"
+                                          "The total amount of time in seconds in which the client\n"
                                           "tries to get a response from the server.\n"
                                           "During this time, the client will resend messages\n"
                                           "in regular intervals (RetryInterval) if no response\n"
-                                          "is received or the message couldn't be delivered due\n"
+                                          "is received or the message could not be delivered due\n"
                                           "to transport problems. When this time is exceeded\n"
                                           "without a response, the synchronization aborts without\n"
                                           "sending further messages to the server."
                                           ,"300");
 static UIntConfigProperty syncPropRetryInterval("RetryInterval",
-                                          "The time between the start of message sending and\n"
-                                          "the start of the retransmission. If the interval has\n"
+                                          "The number of seconds between the start of message sending\n"
+                                          "and the start of the retransmission. If the interval has\n"
                                           "already passed when a message send returns, the\n"
-                                          "message is resent immediately.\n"
+                                          "message is resent immediately. Resending without\n"
+                                          "any delay will never succeed and therefore specifying 0\n"
+                                          "disables retries."
                                           ,"60");
 static ConfigProperty syncPropSSLServerCertificates("SSLServerCertificates",
                                                     "A string specifying the location of the certificates\n"
