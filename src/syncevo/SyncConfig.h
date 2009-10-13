@@ -429,6 +429,18 @@ class ScalarConfigProperty : public TypedConfigProperty<T>
             error = "range error";
             return false;
         }
+        if (Tmin == 0) {
+            // check that we didn't accidentally accept a negative value,
+            // strtoul() does that
+            const char *start = nptr;
+            while (*start && isspace(*start)) {
+                start++;
+            }
+            if (*start == '-') {
+                error = "range error";
+                return false;
+            }
+        }
 
         return true;
     }
