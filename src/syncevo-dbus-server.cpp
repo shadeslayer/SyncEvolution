@@ -41,6 +41,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -2215,7 +2216,7 @@ void niam(int sig)
     g_main_loop_quit (loop);
 }
 
-int main()
+int main(int argc, char **argv)
 {
     try {
         g_type_init();
@@ -2238,6 +2239,8 @@ int main()
 
         DBusServer server(loop, conn);
         server.activate();
+
+        std::cout << argv[0] << " ready to run\n" << std::flush;
         server.run();
 	return 0;
     } catch ( const std::exception &ex ) {
