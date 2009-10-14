@@ -1171,7 +1171,8 @@ void Session::getStatus(std::string &status,
         status = m_abort ? "aborting" :
             m_suspend ? "suspending" :
             m_done ? "done" :
-            "running";
+            m_sync ? "running" :
+            "idle";
     }
     // TODO: append ";processing" or ";waiting"
 
