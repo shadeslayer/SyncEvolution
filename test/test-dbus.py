@@ -18,7 +18,7 @@ bus = dbus.SessionBus()
 
 debugger = "" # "gdb"
 server = ["syncevo-dbus-server"]
-monitor = ["dbus-monitor", "--profile"]
+monitor = ["dbus-monitor"]
 xdg_root = "test-dbus"
 
 class TestDBusServer(unittest.TestCase):
