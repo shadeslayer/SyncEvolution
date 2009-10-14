@@ -88,6 +88,9 @@ public:
     typedef SyncSource::Database SourceDatabase;
     typedef SyncSource::Databases SourceDatabases_t;
 
+    /** implementation of D-Bus GetConfigs() */
+    static void getConfigs(bool getTemplates, std::vector<std::string> &configNames);
+
     /** implementation of D-Bus GetConfig() for m_configName as server configuration */
     void getConfig(bool getTemplate,
                    Config_t &config);
@@ -443,11 +446,11 @@ public:
  */
 class Session : public DBusObjectHelper,
                 public Resource,
-                private ReadOperations,
                 private boost::noncopyable
 {
     DBusServer &m_server;
     const std::string m_sessionID;
+    ReadOperations m_operations;
 
     bool m_serverMode;
     SharedBuffer m_initialMessage;
@@ -505,26 +508,6 @@ class Session : public DBusObjectHelper,
                    SourceStatuses_t &sources);
     void getProgress(int32_t &progress,
                      SourceProgresses_t &sources);
-
-    void getConfig(bool getTemplate,
-                   ReadOperations::Config_t &config)
-    {
-        ReadOperations::getConfig(getTemplate , config);
-    }
-
-    void getReports(uint32_t start, uint32_t count,
-                    ReadOperations::Reports_t &reports)
-    {
-        ReadOperations::getReports(start, count, reports);
-    }
-    void checkSource(const string &sourceName) 
-    {
-        ReadOperations::checkSource(sourceName);
-    }
-    void getDatabases(const string &sourceName, ReadOperations::SourceDatabases_t &databases)
-    {
-        ReadOperations::getDatabases(sourceName, databases);
-    }
 
     /**
      * Must be called each time that properties changing the
@@ -586,6 +569,7 @@ public:
 
 
     DBusServer &getServer() { return m_server; }
+    std::string getConfigName() { return m_operations.m_configName; }
 
     /**
      * TRUE if the session is ready to take over control
@@ -760,6 +744,14 @@ class DBusTransportAgent : public TransportAgent
 ReadOperations::ReadOperations(const std::string &config_name) :
     m_configName(config_name)
 {}
+
+void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &configNames)
+{
+    // TODO: add real implementation
+    if (getTemplates) {
+        configNames.push_back("google");
+    }
+}
 
 void ReadOperations::getConfig(bool getTemplate,
                                Config_t &config)
@@ -1027,7 +1019,7 @@ void Session::setConfig(bool update, bool temporary,
     if (m_sync) {
         throw std::runtime_error("sync started, cannot change configuration at this time");
     }
-    if(m_configName.empty()) {
+    if (getConfigName().empty()) {
         throw std::runtime_error("Template name must be given");
     }
     if (!update && temporary) {
@@ -1036,7 +1028,7 @@ void Session::setConfig(bool update, bool temporary,
 
     /** check whether we need remove the entire configuration */
     if(!update) {
-        boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(m_configName));
+        boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(getConfigName()));
         // TODO: this code here needs to be changed. It throws away
         // everything from the config (including meta information
         // which cannot be recreated) even if the provides properties
@@ -1055,10 +1047,10 @@ void Session::setConfig(bool update, bool temporary,
         std::map<std::string, FilterConfigNode::ConfigFilter> sourceFilters;
         setSyncFilters(config, syncFilter, sourceFilters);
         /* need to save configurations */
-        boost::shared_ptr<SyncConfig> from(new SyncConfig(m_configName));
+        boost::shared_ptr<SyncConfig> from(new SyncConfig(getConfigName()));
         /* if it is clear mode and config does not exist, create from template */
         if(update && !from->exists()) {
-            from = SyncConfig::createServerTemplate(m_configName);
+            from = SyncConfig::createServerTemplate(getConfigName());
             if (!from.get()) {
                 from = SyncConfig::createServerTemplate(string("default"));
             }
@@ -1077,7 +1069,7 @@ void Session::setConfig(bool update, bool temporary,
         for ( it = sourceFilters.begin(); it != sourceFilters.end(); it++ ) {
             from->setConfigFilter(false, it->first, it->second);
         }
-        boost::shared_ptr<DBusSync> syncConfig(new DBusSync(m_configName, *this));
+        boost::shared_ptr<DBusSync> syncConfig(new DBusSync(getConfigName(), *this));
         syncConfig->copy(*from, NULL);
 
         syncConfig->preFlush(*syncConfig);
@@ -1101,7 +1093,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
         throw std::runtime_error("sync started, cannot start again");
     }
 
-    m_sync.reset(new DBusSync(m_configName, *this));
+    m_sync.reset(new DBusSync(getConfigName(), *this));
     if (m_serverMode) {
         m_sync->initServer(m_sessionID,
                            m_initialMessage,
@@ -1219,9 +1211,9 @@ Session::Session(DBusServer &server,
     DBusObjectHelper(server.getConnection(),
                      std::string("/org/syncevolution/Session/") + session,
                      "org.syncevolution.Session"),
-    ReadOperations(config_name),
     m_server(server),
     m_sessionID(session),
+    m_operations(config_name),
     m_serverMode(false),
     m_useConnection(false),
     m_active(false),
@@ -1235,16 +1227,17 @@ Session::Session(DBusServer &server,
     emitProgress(*this, "ProgressChanged")
 {
     add(this, &Session::detach, "Detach");
-    add(this, &Session::getConfig, "GetConfig");
+    add(&ReadOperations::getConfigs, "GetConfigs");
+    add(&m_operations, &ReadOperations::getConfig, "GetConfig");
     add(this, &Session::setConfig, "SetConfig");
-    add(this, &Session::getReports, "GetReports");
+    add(&m_operations, &ReadOperations::getReports, "GetReports");
+    add(&m_operations, &ReadOperations::checkSource, "CheckSource");
+    add(&m_operations, &ReadOperations::getDatabases, "GetDatabases");
     add(this, &Session::sync, "Sync");
     add(this, &Session::abort, "Abort");
     add(this, &Session::suspend, "Suspend");
     add(this, &Session::getStatus, "GetStatus");
     add(this, &Session::getProgress, "GetProgress");
-    add(this, &Session::checkSource, "CheckSource");
-    add(this, &Session::getDatabases, "GetDatabases");
     add(emitStatus);
     add(emitProgress);
 }
@@ -1911,6 +1904,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     add(this, &DBusServer::detachClient, "Detach");
     add(this, &DBusServer::connect, "Connect");
     add(this, &DBusServer::startSession, "StartSession");
+    add(&ReadOperations::getConfigs, "GetConfigs");
     add(this, &DBusServer::getConfig, "GetConfig");
     add(this, &DBusServer::getReports, "GetReports");
     add(this, &DBusServer::checkPresence, "CheckPresence");
