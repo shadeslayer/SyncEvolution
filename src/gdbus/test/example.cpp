@@ -156,13 +156,19 @@ public:
     }
 };
 
+class Test2
+{
+public:
+    void test2() {}
+};
+
 template<> struct dbus_traits<args> :
     public dbus_struct_traits<args, dbus_member<args, int, &args::a,
                                     dbus_member<args, std::string, &args::b,
                                     dbus_member_single<args, std::map<std::string, std::string>, &args::c> > > >
 {};
 
-class DBusTest : public Test
+class DBusTest : public Test, private Test2
 {
     DBusObjectHelper m_object;
     DBusObjectHelper m_secondary;
@@ -187,6 +193,7 @@ public:
         m_object.add(this, &Test::error, "Error");
         m_object.add(&hello_global, "Global");
         m_object.add(&DBusTest::hello_static, "Static");
+        m_object.add(static_cast<Test2 *>(this), &Test2::test2, "Private");
         // The hello_const() method cannot be registered
         // because there is no matching MakeMethodEntry<>
         // specialization for it or DBusObjectHelper::add()
