@@ -1231,8 +1231,8 @@ Session::Session(DBusServer &server,
     m_priority(PRI_DEFAULT),
     m_progress(-1),
     m_error(0),
-    emitStatus(*this, "Status"),
-    emitProgress(*this, "Progress")
+    emitStatus(*this, "StatusChanged"),
+    emitProgress(*this, "ProgressChanged")
 {
     add(this, &Session::detach, "Detach");
     add(this, &Session::getConfig, "GetConfig");
