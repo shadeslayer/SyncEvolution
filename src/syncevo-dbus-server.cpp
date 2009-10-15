@@ -436,8 +436,16 @@ public:
                                        SyncSource &source,
                                        int32_t extra1, int32_t extra2, int32_t extra3);
 
-    // TODO: hook up abort and suspend requests,
-    // activate CTRL-C handling, implement sleep()
+    /**
+     * implement checkForSuspend and checkForAbort.
+     * They will check whether dbus clients suspend
+     * or abort the session. But it won't check whether
+     * dbus server receives suspend or abort 
+     * by CTRL-C since dbus server often runs as a daemon
+     */
+    virtual bool checkForSuspend(); 
+    virtual bool checkForAbort();
+    virtual int sleep(int intervals);
 };
 
 /**
@@ -653,6 +661,9 @@ public:
     void sync(const std::string &mode, const SourceModes_t &source_modes);
     void abort();
     void suspend();
+
+    bool isSuspend() { return m_suspend; }
+    bool isAbort() { return m_abort; }
 };
 
 
@@ -1025,6 +1036,31 @@ void DBusSync::displaySourceProgress(sysync::TProgressEventEnum type,
     m_session.sourceProgress(type, source, extra1, extra2, extra3);
 }
 
+bool DBusSync::checkForSuspend()
+{
+    return m_session.isSuspend();
+}
+
+bool DBusSync::checkForAbort()
+{
+    return m_session.isAbort();
+}
+
+int DBusSync::sleep(int intervals)
+{
+    time_t start = time(NULL);
+    while (true) {
+        g_main_context_iteration(NULL, false);
+        time_t now = time(NULL);
+        if (checkForSuspend() || checkForAbort()) {
+            return  (intervals - now + start);
+        } 
+        if (intervals - now + start <= 0) {
+            return intervals - now +start;
+        }
+    }
+}
+
 /***************** Session implementation ***********************/
 
 void Session::detach(const Caller_t &caller)
@@ -1195,17 +1231,21 @@ void Session::abort()
     if (!m_sync) {
         throw std::runtime_error("sync not started, cannot abort at this time");
     }
-    // TODO
-    throw std::runtime_error("not implemented yet");
+    m_suspend = false;
+    m_done = false;
+    m_abort = true;
+    fireStatus(true);
 }
 
 void Session::suspend()
 {
     if (!m_sync) {
-        throw std::runtime_error("sync not started, cannot abort at this time");
+        throw std::runtime_error("sync not started, cannot suspend at this time");
     }
-    // TODO
-    throw std::runtime_error("not implemented yet");
+    m_abort = false;
+    m_done = false;
+    m_suspend = true;
+    fireStatus(true);
 }
 
 void Session::getStatus(std::string &status,
