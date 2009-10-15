@@ -1,4 +1,4 @@
-   <macro name="VCARD_INCOMING_SCRIPT_EVOLUTION"><![CDATA[
+   <macro name="VCARD_BEFOREWRITE_SCRIPT_EVOLUTION"><![CDATA[
      // a wordaround for cellphone in evolution. for incoming contacts, if there is only one CELL,
      // strip the HOME or WORK flag from it. Evolution then should show it. */
      INTEGER i, wanted, cell_phones;
