@@ -686,14 +686,14 @@ class SyncSourceBase : public Logger {
          * This value is currently only used by sync sources which
          * set m_profile.
          */
-        std::string m_incomingScript;
+        std::string m_beforeWriteScript;
 
         /**
-         * Same as m_incomingScript, but used directly after
+         * Same as m_beforeWriteScript, but used directly after
          * converting a string into fields with PARSETEXTWITHPROFILE()
          * in <afterreadscript>.
          */
-        std::string m_outgoingScript;
+        std::string m_afterReadScript;
     };
 
     /**

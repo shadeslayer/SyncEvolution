@@ -131,18 +131,18 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
             "           string itemdata;\n"
             "        ]]></initscript>\n"
             "        <beforewritescript><![CDATA[\n";
-        if(!info.m_incomingScript.empty()) {
+        if(!info.m_beforeWriteScript.empty()) {
             xmlstream << 
-                "           " << info.m_incomingScript << "\n";
+                "           " << info.m_beforeWriteScript << "\n";
         }
         xmlstream <<
             "           itemdata = MAKETEXTWITHPROFILE(" << info.m_profile << ", \"EVOLUTION\");\n"
             "        ]]></beforewritescript>\n"
             "        <afterreadscript><![CDATA[\n"
             "           PARSETEXTWITHPROFILE(itemdata, " << info.m_profile << ", \"EVOLUTION\");\n";
-        if(!info.m_outgoingScript.empty()) {
+        if(!info.m_afterReadScript.empty()) {
             xmlstream << 
-                "           " << info.m_outgoingScript<< "\n";
+                "           " << info.m_afterReadScript<< "\n";
         }
         xmlstream <<
             "        ]]></afterreadscript>\n"
