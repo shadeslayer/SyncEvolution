@@ -1,0 +1,30 @@
+   <macro name="VCALENDAR_20TO10_PRIORITY_CONVERSION"><![CDATA[
+     //vCalendar10 has different interpretation from iCalendar20 in 'priority'.
+     //see mappings:  
+     //  Category      vCalendar1.0     iCalendar2.0
+     //   undefined         0               0
+     //   high              1             1 ~ 4
+     //   normal            2               5
+     //   low               3             6 ~ bigger
+     if(PRIORITY<5 && PRIORITY>0) {
+       PRIORITY=1;
+     }else if(PRIORITY==5){
+       PRIORITY=2;
+     }else if(PRIORITY>5){
+       PRIORITY=3;
+     } // 0 is undefined and remains unchanged
+   ]]></macro>
+   <macro name="VCALENDAR_10TO20_PRIORITY_CONVERSION"><![CDATA[
+     if(PRIORITY==2) {
+       PRIORITY=5;
+     }else if(PRIORITY==3){
+       PRIORITY=7;
+     } //others remain unchanged
+   ]]></macro>
+   <macro name="VCALENDAR10_BEFOREWRITE_SCRIPT"><![CDATA[
+     $VCALENDAR_20TO10_PRIORITY_CONVERSION;
+   ]]></macro>
+   <macro name="VCALENDAR10_AFTERREAD_SCRIPT"><![CDATA[
+     $VCALENDAR_10TO20_PRIORITY_CONVERSION;
+   ]]></macro>
+

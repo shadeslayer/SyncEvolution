@@ -95,6 +95,9 @@
         if (ITEMDATATYPE()=="vCalendar10" && ALLDAYCOUNT(DUE,DUE,TRUE,TRUE)>0) {
           DUE = DATEONLY(DUE);
         }
+        if (ITEMDATATYPE()=="vCalendar10") {
+          $VCALENDAR_10TO20_PRIORITY_CONVERSION;
+        }
       }
       // a workaround for funambol: adding 'action' for 'alarm'
       if (ITEMDATATYPE()=="iCalendar20") {
@@ -124,8 +127,11 @@
         }
       }
       else {
-        // VTODO
-        // - Nothing special so far
+        // VTODO 
+        // interal representation is iCalendar20
+        if (ITEMDATATYPE()=="vCalendar10") {
+          $VCALENDAR_20TO10_PRIORITY_CONVERSION;
+        }
       }
       // make sure we have at least a summary
       if (SUMMARY==EMPTY) SUMMARY=SUBSTR(DESCRIPTION,0,32); // derive from description
