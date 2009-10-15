@@ -44,8 +44,9 @@ int main(int argc, char **argv)
 }
 EOF
     # header must be usable stand-alone
-    $CXX `pkg-config --cflags syncevolution | sed -e "s;\(-[IL]\);\1$2;g"` $TMPFILE_CXX -c -o $TMPFILE_O
+    $CXX "-I$2" $TMPFILE_CXX -c -o $TMPFILE_O
 done
 
-# link once to check that the lib is found
-$CXX -v $TMPFILE_O -o $TMPFILE `pkg-config --libs syncevolution | sed -e "s;\(-[IL]\);\1$2;g"` 
+# link once to check that the libs are found
+pkg-config --libs syncevolution
+env LD_LIBRARY_PATH=$3:$LD_LIBRARY_PATH $CXX -v $TMPFILE_O -o $TMPFILE "-L$3" `pkg-config --libs syncevolution`
