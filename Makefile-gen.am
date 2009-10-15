@@ -30,7 +30,8 @@ distbin : README NEWS COPYING $(TEST_README_FILES) INSTALL-tar-gz all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 )
 	@ [ "$(prefix)" == "/usr" ] || (echo "please reconfigure with --prefix=/usr"; exit 1 )
 	rm -rf $(distdir)
-	$(MAKE) DESTDIR=`pwd`/$(distdir) install installcheck
+	$(MAKE) DESTDIR=`pwd`/$(distdir) install
+	$(MAKE) DESTDIR=`pwd`/$(distdir) installcheck
 	rm -rf $(call DEV_FILE_PATTERN,$(distdir),/usr)
 	for i in `find $(distdir) -type d | sort -r`; do rmdir $$i 2>/dev/null || true; done
 	mkdir -p $(distdir)/usr/share/doc/syncevolution
@@ -124,7 +125,8 @@ deb rpm : dist/$(distdir) dist/debian/control doc-pak description-pak
 .PHONY: dist/$(distdir) clean_dist
 dist/$(distdir): all
 	rm -rf $@
-	$(MAKE) install installcheck DESTDIR=`pwd`/$@
+	$(MAKE) install DESTDIR=`pwd`/$@
+	$(MAKE) installcheck DESTDIR=`pwd`/$@
 	rm -rf $(call DEV_FILE_PATTERN, $@)
 clean-local: clean_dist
 clean_dist:
