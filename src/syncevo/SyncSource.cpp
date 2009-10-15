@@ -488,7 +488,7 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
             info.m_datatypes +=
                 "        <use datatype='vCard21' mode='rw'/>\n";
         }
-    } else if (type == "text/x-vcalendar:2.0" || type == "text/x-vcalendar") {
+    } else if (type == "text/x-vcalendar:1.0" || type == "text/x-vcalendar") {
         info.m_datatypes =
             "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n";
         if (!sourceType.m_forceFormat) {
