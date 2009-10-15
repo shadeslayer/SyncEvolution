@@ -76,7 +76,6 @@ vCard21
      X-ANNIVERSARY, X-SPOUSE, X-EVOLUTION-BLOG-URL, X-EVOLUTION-VIDEO-URL, X-GROUPWISE, X-ICQ, 
      X-YAHOO, X-ASSISTANT
   -- The parameter 'X-EVOLUTION-URI-SLOT'of properties like 'TEL' and 'EMAIL' is lost
-  -- 'PHOTO' is compressed by server but still be correct 
   -- 'FN' is not reserved and is replaced by server's composition of 'N' 
   -- 'NOTE' length is less than 4000
   -- vcard must have one of 'tel', 'email', or 'url','addr', otherwise, this vcard will 
