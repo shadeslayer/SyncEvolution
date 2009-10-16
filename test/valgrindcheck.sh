@@ -24,7 +24,7 @@ killvalgrind () {
     for i in `ps x | grep " valgrind " | sed -e 's/^ *//' | cut -f1 -d " "`; do kill $1 $i; done
 }
 
-( set -x; env GLIBCXX_FORCE_NEW=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind $VALGRIND_ARGS --leak-check=yes --trace-children=no --quiet --gen-suppressions=all --log-file=$LOGFILE "$@" )
+( set -x; env GLIBCXX_FORCE_NEW=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind $VALGRIND_ARGS --quiet --gen-suppressions=all --log-file=$LOGFILE "$@" )
 RET=$?
 
 # give other valgrind instances some time to settle down, then kill them
