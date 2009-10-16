@@ -712,18 +712,26 @@ scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "Client::Sync::vcard30_ical20_itodo20_text::testManyItems,"
                                       "Client::Sync::text_itodo20_ical20_vcard30::testManyItems CLIENT_TEST_SKIP=Client::Sync::ical20::Retry,"
                                       "Client::Sync::ical20::Suspend,"
+                                      "Client::Sync::ical20::Resend,"
                                       "Client::Sync::vcard30::Retry,"
                                       "Client::Sync::vcard30::Suspend,"
+                                      "Client::Sync::vcard30::Resend,"
                                       "Client::Sync::itodo20::Retry,"
                                       "Client::Sync::itodo20::Suspend,"
+                                      "Client::Sync::itodo20::Resend,"
                                       "Client::Sync::text::Retry,"
                                       "Client::Sync::text::Suspend,"
+                                      "Client::Sync::text::Resend,"
                                       "Client::Sync::vcard30_ical20_itodo20_text::Retry,"
                                       "Client::Sync::vcard30_ical20_itodo20_text::Suspend,"
+                                      "Client::Sync::vcard30_ical20_itodo20_text::Resend,"
                                       "Client::Sync::text_itodo20_ical20_vcard30::Retry,"
-                                      "Client::Sync::text_itodo20_ical20_vcard30::Suspend "
+                                      "Client::Sync::text_itodo20_ical20_vcard30::Suspend,"
+                                      "Client::Sync::text_itodo20_ical20_vcard30::Resend "
                                       "CLIENT_TEST_DELAY=5 "
-                                      "CLIENT_TEST_COMPARE_LOG=T",
+                                      "CLIENT_TEST_COMPARE_LOG=T "
+                                      "CLIENT_TEST_RESEND_TIMEOUT=5 "
+                                      "CLIENT_TEST_INTERRUPT_AT=1",
                                       testPrefix=options.testprefix)
 context.add(scheduleworldtest)
 
@@ -738,8 +746,9 @@ egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                      "Client::Sync::vcard21_ical20::testDelete",
                                      "Client::Sync::ical20_vcard21::testCopy",
                                      "Client::Sync::ical20_vcard21::testUpdate",
-                                     "Client::Sync::ical20_vcard21::testDelete" ],
-                                   [ "vcard21", "ical20" ],
+                                     "Client::Sync::ical20_vcard21::testDelete"  ],
+                                   [ "vcard21",
+                                     "ical20" ],
                                    # ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus - refresh-from-client not supported by server
                                    # ContactSync::testOneWayFromClient - not supported by server?
                                    # ContactSync::testItems - loses a lot of information
@@ -778,17 +787,23 @@ class SynthesisTest(SyncEvolutionTest):
                                    "CLIENT_TEST_SKIP="
                                    "Client::Sync::ical20::Retry,"
                                    "Client::Sync::ical20::Suspend,"
+                                   "Client::Sync::ical20::Resend,"
                                    "Client::Sync::vcard21::Retry,"
                                    "Client::Sync::vcard21::Suspend,"
+                                   "Client::Sync::vcard21::Resend,"
                                    "Client::Sync::itodo20::Retry,"
                                    "Client::Sync::itodo20::Suspend,"
+                                   "Client::Sync::itodo20::Resend,"
                                    "Client::Sync::text::Retry,"
                                    "Client::Sync::text::Suspend,"
+                                   "Client::Sync::text::Resend,"
                                    "Client::Sync::vcard21_text::Retry,"
-                                   "Client::Sync::vcard21_text::Suspend "
+                                   "Client::Sync::vcard21_text::Suspend,"
+                                   "Client::Sync::vcard21_text::Resend "
                                    "CLIENT_TEST_NUM_ITEMS=20 "
                                    "CLIENT_TEST_DELAY=2 "
-                                   "CLIENT_TEST_COMPARE_LOG=T",
+                                   "CLIENT_TEST_COMPARE_LOG=T "
+                                   "CLIENT_TEST_RESEND_TIMEOUT=5",
                                    serverName="synthesis",
                                    testPrefix=testPrefix)
         self.synthesisdir = synthesisdir
@@ -826,21 +841,29 @@ class FunambolTest(SyncEvolutionTest):
                                    "CLIENT_TEST_SKIP="
                                    "Client::Sync::ical20::Retry,"
                                    "Client::Sync::ical20::Suspend,"
+                                   "Client::Sync::ical20::Resend,"
                                    "Client::Sync::vcard21::Retry,"
                                    "Client::Sync::vcard21::Suspend,"
+                                   "Client::Sync::vcard21::Resend,"
                                    "Client::Sync::itodo20::Retry,"
                                    "Client::Sync::itodo20::Suspend,"
+                                   "Client::Sync::itodo20::Resend,"
                                    "Client::Sync::text::Retry,"
                                    "Client::Sync::text::Suspend,"
+                                   "Client::Sync::text::Resend,"
                                    "Client::Sync::vcard21_ical20_itodo20_text::Retry,"
                                    "Client::Sync::vcard21_ical20_itodo20_text::Suspend,"
+                                   "Client::Sync::vcard21_ical20_itodo20_text::Resend,"
                                    "Client::Sync::text_itodo20_ical20_vcard21::Retry,"
-                                   "Client::Sync::text_itodo20_ical20_vcard21::Suspend "
+                                   "Client::Sync::text_itodo20_ical20_vcard21::Suspend,"
+                                   "Client::Sync::text_itodo20_ical20_vcard21::Resend "
                                    "CLIENT_TEST_XML=1 "
                                    "CLIENT_TEST_MAX_ITEMSIZE=2048 "
                                    "CLIENT_TEST_DELAY=10 "
                                    "CLIENT_TEST_FAILURES= "
-                                   "CLIENT_TEST_COMPARE_LOG=T",
+                                   "CLIENT_TEST_COMPARE_LOG=T "
+                                   "CLIENT_TEST_RESEND_TIMEOUT=5 "
+                                   "CLIENT_TEST_INTERRUPT_AT=1",
                                    lineFilter=lambda x: x.replace('dogfood.funambol.com','<host hidden>'),
                                    serverName="funambol",
                                    testPrefix=testPrefix)
@@ -870,7 +893,8 @@ zybtest = SyncEvolutionTest("zyb", compile,
                             "CLIENT_TEST_NUM_ITEMS=10 "
                             "CLIENT_TEST_SKIP="
                             "Client::Sync::vcard21::Retry,"
-                            "Client::Sync::vcard21::Suspend "
+                            "Client::Sync::vcard21::Suspend,"
+                            "Client::Sync::vcard21::Resend "
                             "CLIENT_TEST_DELAY=5 "
                             "CLIENT_TEST_COMPARE_LOG=T",
                             testPrefix=options.testprefix)
@@ -909,6 +933,7 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "CLIENT_TEST_SKIP="
                                 "Client::Sync::vcard21::Retry,"
                                 "Client::Sync::vcard21::Suspend,"
+                                "Client::Sync::vcard21::Resend,"
                                 "Client::Sync::vcard21::testRefreshFromClientSync,"
                                 "Client::Sync::vcard21::testSlowSyncSemantic,"
                                 "Client::Sync::vcard21::testRefreshStatus,"
@@ -923,6 +948,7 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "Client::Sync::ical20::testOneWayFromServer,"
                                 "Client::Sync::ical20::Retry,"
                                 "Client::Sync::ical20::Suspend,"
+                                "Client::Sync::ical20::Resend,"
                                 "Client::Sync::itodo20::testRefreshFromClientSync,"
                                 "Client::Sync::itodo20::testSlowSyncSemantic,"
                                 "Client::Sync::itodo20::testRefreshStatus,"
@@ -931,6 +957,7 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "Client::Sync::itodo20::testOneWayFromServer,"
                                 "Client::Sync::itodo20::Retry,"
                                 "Client::Sync::itodo20::Suspend,"
+                                "Client::Sync::itodo20::Resend,"
                                 "Client::Sync::text::testRefreshFromClientSync,"
                                 "Client::Sync::text::testSlowSyncSemantic,"
                                 "Client::Sync::text::testRefreshStatus,"
@@ -939,6 +966,7 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "Client::Sync::text::testOneWayFromServer,"
                                 "Client::Sync::text::Retry,"
                                 "Client::Sync::text::Suspend,"
+                                "Client::Sync::text::Resend,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::testRefreshFromClientSync,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::testSlowSyncSemantic,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::testRefreshStatus,"
@@ -947,6 +975,7 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "Client::Sync::vcard21_ical20_itodo20_text::testOneWayFromServer,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::Retry,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::Suspend,"
+                                "Client::Sync::vcard21_ical20_itodo20_text::Resend,"
                                 "Client::Sync::text_itodo20_ical20_vcard21::testRefreshFromClientSync,"
                                 "Client::Sync::text_itodo20_ical20_vcard21::testSlowSyncSemantic,"
                                 "Client::Sync::text_itodo20_ical20_vcard21::testRefreshStatus,"
@@ -954,9 +983,12 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "Client::Sync::text_itodo20_ical20_vcard21::testItemsXML,"
                                 "Client::Sync::text_itodo20_ical20_vcard21::testOneWayFromServer,"
                                 "Client::Sync::text_itodo20_ical20_vcard21::Retry,"
-                                "Client::Sync::text_itodo20_ical20_vcard21::Suspend "
+                                "Client::Sync::text_itodo20_ical20_vcard21::Suspend,"
+                                "Client::Sync::text_itodo20_ical20_vcard21::Resend "
                                 "CLIENT_TEST_DELAY=5 "
-                                "CLIENT_TEST_COMPARE_LOG=T",
+                                "CLIENT_TEST_COMPARE_LOG=T "
+                                "CLIENT_TEST_RESEND_TIMEOUT=5 "
+                                "CLIENT_TEST_INTERRUPT_AT=1",
                                 testPrefix=options.testprefix)
 context.add(mobicaltest)
 
