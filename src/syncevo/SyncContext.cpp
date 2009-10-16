@@ -90,7 +90,7 @@ extern "C" void suspend_handler(int sig)
               < s_flags.ABORT_INTERVAL) 
       {
           s_flags.state = SuspendFlags::CLIENT_ABORT;
-          SE_LOG_INFO(NULL, NULL, "Aboring sync as requested via CTRL-C ...");
+          SE_LOG_INFO(NULL, NULL, "Aborting sync as requested via CTRL-C ...");
       }
       else
       {
