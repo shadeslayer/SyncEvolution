@@ -1448,6 +1448,7 @@ void SyncTests::addTests() {
                     ADD_TEST(SyncTests, testDelete);
                     ADD_TEST(SyncTests, testAddUpdate);
                     ADD_TEST(SyncTests, testManyItems);
+                    ADD_TEST(SyncTests, testManyDeletes);
                     ADD_TEST(SyncTests, testSlowSyncSemantic);
                     ADD_TEST(SyncTests, testComplexRefreshFromServerSemantic);
 
@@ -2376,14 +2377,20 @@ void SyncTests::testManyItems() {
     // import artificial data: make them large to generate some
     // real traffic and test buffer handling
     source_it it;
+    int num_items = -1;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->insertManyItems(it->second->createSourceA, 0, it->second->config.numItems, 2000);
+        if (num_items == -1) {
+            num_items = it->second->config.numItems;
+        } else {
+            CPPUNIT_ASSERT_EQUAL(num_items, it->second->config.numItems);
+        }
+        it->second->insertManyItems(it->second->createSourceA, 0, num_items, 2000);
     }
 
     // send data to server
     doSync("send",
            SyncOptions(SYNC_TWO_WAY,
-                       CheckSyncReport(0,0,0, -1,0,0, true, SYNC_TWO_WAY),
+                       CheckSyncReport(0,0,0, num_items,0,0, true, SYNC_TWO_WAY),
                        64 * 1024, 64 * 1024, true));
 
     // ensure that client has the same data, ignoring data conversion
@@ -2401,6 +2408,64 @@ void SyncTests::testManyItems() {
 
     // compare
     compareDatabases();
+}
+
+/**
+ * Tell server to delete plenty of items.
+ */
+void SyncTests::testManyDeletes() {
+    // clean server and client A
+    deleteAll();
+
+    // import artificial data: make them small, we just want
+    // many of them
+    source_it it;
+    int num_items = -1;
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        if (num_items == -1) {
+            num_items = it->second->config.numItems;
+        } else {
+            CPPUNIT_ASSERT_EQUAL(num_items, it->second->config.numItems);
+        }
+        it->second->insertManyItems(it->second->createSourceA, 0, num_items, 100);
+    }
+
+    // send data to server
+    doSync("send",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, num_items,0,0, true, SYNC_TWO_WAY),
+                       64 * 1024, 64 * 1024, true));
+
+    // ensure that client has the same data, ignoring data conversion
+    // issues (those are covered by testItems())
+    refreshClient();
+
+    // also copy to second client
+    accessClientB->refreshClient();
+
+    // slow sync now should not change anything
+    doSync("twinning",
+           SyncOptions(SYNC_SLOW,
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW),
+                       64 * 1024, 64 * 1024, true));
+
+    // compare
+    compareDatabases();
+
+    // delete everything locally
+    BOOST_FOREACH(source_array_t::value_type &source_pair, sources)  {
+        source_pair.second->deleteAll(source_pair.second->createSourceA);
+    }
+    doSync("delete-server",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,0,num_items, true, SYNC_TWO_WAY),
+                       10 * 1024));
+
+    // update second client
+    accessClientB->doSync("delete-client",
+                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                                      CheckSyncReport(0,0,num_items, 0,0,0, true, SYNC_REFRESH_FROM_SERVER),
+                                      10 & 1024));
 }
 
 /**

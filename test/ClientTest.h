@@ -655,6 +655,7 @@ protected:
     }
 
     virtual void testManyItems();
+    virtual void testManyDeletes();
     virtual void testSlowSyncSemantic();
     virtual void testComplexRefreshFromServerSemantic();
 
