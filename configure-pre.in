@@ -12,7 +12,7 @@ AM_CONFIG_HEADER(config.h)
 AC_LIBTOOL_DLOPEN
 
 dnl default device type (see AC_DEFINE below)
-DEVICE_TYPE=desktop
+DEVICE_TYPE=workstation
 
 AC_ARG_WITH(synthesis-src,
             AS_HELP_STRING([--with-synthesis-src=<base directory|svn URL|git URL>],
