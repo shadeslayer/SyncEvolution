@@ -202,7 +202,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
             result.write(indent+'<'+server+' path="' +rserver+'" ')
             #valgrind check resutls
             outputlog = resultdir+'/'+rserver+'/output.txt'
-            checkcmd = "grep 'valgrindcheck' %s |grep -o '\./client-test Client::Sync:.*$' " % (outputlog)
+            checkcmd = "grep --binary-files=text 'valgrindcheck' %s |grep -o '\./client-test Client::Sync:.*$'|grep 'return code' " % (outputlog)
             fout,fin=popen2.popen2(checkcmd)
             s = fout.read()
             if(s):

@@ -179,7 +179,7 @@ class Context:
         sys.stdout.flush()
         result = os.system(cmd)
         if result != 0:
-            raise Exception("%s: failed (return code %d)" % (cmd, result))
+            raise Exception("%s: failed (return code %d)" % (cmd, result>>8))
 
     def add(self, action):
         """Add an action for later execution. Order is important, fifo..."""
