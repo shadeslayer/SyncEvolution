@@ -27,15 +27,13 @@ killvalgrind () {
 ( set -x; env GLIBCXX_FORCE_NEW=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind $VALGRIND_ARGS --leak-check=yes --trace-children=no --quiet --gen-suppressions=all --log-file=$LOGFILE "$@" )
 RET=$?
 
-if [ $RET == 0 ]; then
-    # give other valgrind instances some time to settle down, then kill them
-    sleep 1
-    killvalgrind -15
-    sleep 5
-    killvalgrind -9
-    if grep '^==[0-9][0-9]*==' $LOGFILE >/dev/null; then
-        RET=1
-    fi
+# give other valgrind instances some time to settle down, then kill them
+sleep 1
+killvalgrind -15
+sleep 5
+killvalgrind -9
+if grep '^==[0-9][0-9]*==' $LOGFILE >/dev/null; then
+    RET=100
 fi
 
 exit $RET

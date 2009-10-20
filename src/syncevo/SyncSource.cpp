@@ -137,18 +137,18 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
             "           string itemdata;\n"
             "        ]]></initscript>\n"
             "        <beforewritescript><![CDATA[\n";
-        if(!info.m_incomingScript.empty()) {
+        if(!info.m_beforeWriteScript.empty()) {
             xmlstream << 
-                "           " << info.m_incomingScript << "\n";
+                "           " << info.m_beforeWriteScript << "\n";
         }
         xmlstream <<
             "           itemdata = MAKETEXTWITHPROFILE(" << info.m_profile << ", \"EVOLUTION\");\n"
             "        ]]></beforewritescript>\n"
             "        <afterreadscript><![CDATA[\n"
             "           PARSETEXTWITHPROFILE(itemdata, " << info.m_profile << ", \"EVOLUTION\");\n";
-        if(!info.m_outgoingScript.empty()) {
+        if(!info.m_afterReadScript.empty()) {
             xmlstream << 
-                "           " << info.m_outgoingScript<< "\n";
+                "           " << info.m_afterReadScript<< "\n";
         }
         xmlstream <<
             "        ]]></afterreadscript>\n"
@@ -453,6 +453,14 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
         info.m_datatypes =
             "        <use datatype='vCalendar10' mode='rw' preferred='yes'/>\n"
             "        <use datatype='iCalendar20' mode='rw'/>\n";
+        /**
+         * here are two default implementations. If user wants to reset it,
+         * just implement its own getSynthesisInfo. If user wants to use this default
+         * implementations and its new scripts, it is possible to append its implementations
+         * to info.m_afterReadScript and info.m_beforeWriteScript.
+         */
+        info.m_afterReadScript = "$VCALENDAR10_AFTERREAD_SCRIPT;\n";
+        info.m_beforeWriteScript = "$VCALENDAR10_BEFOREWRITE_SCRIPT;\n";
     } else if (type == "text/calendar") {
         info.m_native = "iCalendar20";
         info.m_fieldlist = "calendar";
@@ -486,7 +494,7 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
             info.m_datatypes +=
                 "        <use datatype='vCard21' mode='rw'/>\n";
         }
-    } else if (type == "text/x-vcalendar:2.0" || type == "text/x-vcalendar") {
+    } else if (type == "text/x-vcalendar:1.0" || type == "text/x-vcalendar") {
         info.m_datatypes =
             "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n";
         if (!sourceType.m_forceFormat) {

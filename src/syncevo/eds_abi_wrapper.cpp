@@ -240,6 +240,8 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.icalcomponent_get_next_property, "icalcomponent_get_next_property",
                 &EDSAbiWrapperSingleton.icalcomponent_get_recurrenceid, "icalcomponent_get_recurrenceid",
                 &EDSAbiWrapperSingleton.icalcomponent_get_timezone, "icalcomponent_get_timezone",
+                &EDSAbiWrapperSingleton.icalcomponent_get_location, "icalcomponent_get_location",
+                &EDSAbiWrapperSingleton.icalcomponent_get_summary, "icalcomponent_get_summary",
                 &EDSAbiWrapperSingleton.icalcomponent_get_uid, "icalcomponent_get_uid",
                 &EDSAbiWrapperSingleton.icalcomponent_isa, "icalcomponent_isa",
                 &EDSAbiWrapperSingleton.icalcomponent_new_clone, "icalcomponent_new_clone",

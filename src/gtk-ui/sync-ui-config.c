@@ -185,6 +185,22 @@ server_config_get_source_array (server_config *server, SyncMode mode)
     return sources;
 }
 
+void
+server_config_disable_unsupported_sources (server_config *server)
+{
+    GList *l;
+
+    for (l = server->source_configs; l; l = l->next) {
+        source_config* config = (source_config*)l->data;
+
+        if (!config->supported_locally) {
+            config->enabled = FALSE;
+        }
+    }
+}
+
+
+
 static int
 source_config_compare (source_config *a, source_config *b)
 {

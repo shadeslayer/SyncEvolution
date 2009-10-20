@@ -31,6 +31,7 @@ distbin : README NEWS COPYING $(TEST_README_FILES) INSTALL-tar-gz all
 	@ [ "$(prefix)" == "/usr" ] || (echo "please reconfigure with --prefix=/usr"; exit 1 )
 	rm -rf $(distdir)
 	$(MAKE) DESTDIR=`pwd`/$(distdir) install
+	$(MAKE) DESTDIR=`pwd`/$(distdir) installcheck
 	rm -rf $(call DEV_FILE_PATTERN,$(distdir),/usr)
 	for i in `find $(distdir) -type d | sort -r`; do rmdir $$i 2>/dev/null || true; done
 	mkdir -p $(distdir)/usr/share/doc/syncevolution
@@ -125,6 +126,7 @@ deb rpm : dist/$(distdir) dist/debian/control doc-pak description-pak
 dist/$(distdir): all
 	rm -rf $@
 	$(MAKE) install DESTDIR=`pwd`/$@
+	$(MAKE) installcheck DESTDIR=`pwd`/$@
 	rm -rf $(call DEV_FILE_PATTERN, $@)
 clean-local: clean_dist
 clean_dist:
@@ -192,3 +194,14 @@ dist-hook:
 	else \
 		echo A git checkout is required to generate a ChangeLog >&2; \
 	fi
+
+if ENABLE_EVOLUTION_COMPATIBILITY
+installcheck-local:
+	for i in `find . -name *.so`; do \
+		if ldd $$i | grep -e libecal -e libebook -e libedata -e libical; then \
+			echo "$$i should not depend on EDS or libical"; \
+			objdump -T -C $$i | grep -v :: | grep -e ical -e " e_"; \
+			exit 1; \
+		fi \
+	done
+endif

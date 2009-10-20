@@ -89,6 +89,7 @@
                     <xsl:with-param name="unit-cases" select="$source/sync/template/*"/>
                     <xsl:with-param name="servers" select="$source/sync/*[name(.)!='template']"/>
                     <xsl:with-param name="cmp-result" select="$cmp-result/sync"/>
+                    <xsl:with-param name="log-path" select="$log-path"/>
                 </xsl:call-template>
 
                 <xsl:call-template name="generate-source-summary">
@@ -218,6 +219,7 @@
         <xsl:param name="unit-cases"/>
         <xsl:param name="servers"/>
         <xsl:param name="cmp-result"/>
+        <xsl:param name="log-path"/>
 
         <h3> Servers Interoperability Test Summary </h3>
         <table border="2">
@@ -231,6 +233,7 @@
                 <th width="60">Passrate</th>
                 <th width="60">Improved</th>
                 <th width="60">Regression</th>
+                <th width="60">Valgrind</th>
             </tr>
 
             <xsl:for-each select="$servers">
@@ -242,6 +245,8 @@
                 <xsl:variable name="status" select="$cmp-result/*[name(.)=name($item)]/@summary"/>
                 <xsl:variable name="real-regression" select="$cmp-result/*[name(.)=name($item)]/*/*[.=$regression]"/>
                 <xsl:variable name="real-improved" select="$cmp-result/*[name(.)=name($item)]/*/*[.=$improved]"/>
+                <xsl:variable name="valgrind" select="$item/@result"/>
+                <xsl:variable name="path" select="concat($log-path,'/', $item/@path)"/>
                 <tr>
                     <td> <!-- server name -->
                         <a href="#{name($item)}">
@@ -302,6 +307,19 @@
                             <xsl:otherwise>
                                 0
                             </xsl:otherwise>
+                        </xsl:choose>
+                    </td>
+                    <td>
+			<xsl:choose>
+			    <xsl:when test="$valgrind=100">
+                                <xsl:attribute name="bgcolor">
+				  gray
+                                </xsl:attribute>
+				<a href="{$path}/output.txt">
+				  failed
+				</a>
+                            </xsl:when>
+                            <xsl:otherwise>ok</xsl:otherwise>
                         </xsl:choose>
                     </td>
                 </tr>

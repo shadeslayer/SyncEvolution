@@ -128,5 +128,5 @@ SyncEvolutionXML.c: $(srcdir)/../syncclient_sample_config.xml
 
 # make sure that the installed development files are usable
 installcheck-local: $(srcdir)/installcheck-local.sh
-	env PKG_CONFIG_PATH=$(pkgconfigdir):$$PKG_CONFIG_PATH $< "$(libsyncevolution_includedir)"
+	env PKG_CONFIG_PATH=$(DESTDIR)/$(pkgconfigdir):$$PKG_CONFIG_PATH $< "$(DESTDIR)/$(libsyncevolution_includedir)" "$(DESTDIR)/$(includedir)" "$(DESTDIR)/$(libdir)"
 EXTRA_DIST += installcheck-local.sh

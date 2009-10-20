@@ -90,7 +90,7 @@ extern "C" void suspend_handler(int sig)
               < s_flags.ABORT_INTERVAL) 
       {
           s_flags.state = SuspendFlags::CLIENT_ABORT;
-          SE_LOG_INFO(NULL, NULL, "Aboring sync as requested via CTRL-C ...");
+          SE_LOG_INFO(NULL, NULL, "Aborting sync as requested via CTRL-C ...");
       }
       else
       {
@@ -1982,7 +1982,9 @@ SyncMLStatus SyncContext::doSync()
                 
                 sendStart = resendStart = time (NULL);
                 //register transport callback
-                agent->setCallback (transport_cb, this, m_retryInterval);
+                if (m_retryInterval) {
+                    agent->setCallback (transport_cb, this, m_retryInterval);
+                }
                 // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
                 // sent or have it copied into caller's buffer using
                 // ReadSyncMLBuffer(), then send it to the server
@@ -2060,7 +2062,7 @@ SyncMLStatus SyncContext::doSync()
                 case TransportAgent::FAILED: {
                     time_t curTime = time(NULL);
                     time_t duration = curTime - sendStart;
-                    if(duration > m_retryDuration) {
+                    if (!m_retryInterval || duration > m_retryDuration) {
                         SE_LOG_INFO(NULL, NULL,
                                     "Transport giving up after %d retries and %ld:%02ldmin",
                                     m_retries,

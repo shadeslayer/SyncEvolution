@@ -1,5 +1,51 @@
-SyncEvolution 0.9 -> 0.9.1, 06.10.2009
-======================================
+SyncEvolution 0.9.1 beta 1 -> 0.9.1 beta 2, 19.10.2009
+======================================================
+Synthesis SyncML Engine version: see src/synthesis/ChangeLog
+
+Several fixes:
+
+* Receiving photos from Mobical failed because Mobical
+  does not quite follow the vCard 2.1 (Moblin Bugzilla #6668).
+  Sending photos worked, but added a few bytes of garbage
+  at the end of each photo (typically ignored when showing).
+  Parser was made more tolerant by Synthesis and encoder bug
+  was fixed.
+
+* Task priorities used by Mobical and Evolution did not match:
+  vCalendar 1.0 uses 1-3, iCalendar 2.0 uses 1-9 (MB #6664).
+  SyncEvolution now translates between the two ranges, with
+  some information getting lost when talking to a peer which
+  only supports the smaller range.
+
+* The workaround for detecting an endless stream of Alert 222
+  messages (caused by misbehavior of certain servers when
+  a specific message has to be resent) aborted certain
+  valid (albeit somewhat pathologic) sync sessions. Improved
+  the heuristic so that it still catches the real loop without
+  aborting in that other case.
+
+* sync-ui: now disables sources which are not supported when
+  setting up a configuration, like memos on Moblin (MB #6672).
+  Previously the source was enabled, which prevented using
+  using the configuration as-is on the command line.
+
+* .rpms on syncevolution.org no longer specify a dependency
+  on certain Perl features. This depencency was a problem on
+  Mandriva. Unwanted hard dependencies on libecal in syncevolution.org
+  binaries are avoided for real this time (MB#6552).
+
+* Trying to remove a non-existent configuration via the command
+  line now raises an error, to catch typos (MB #6673).
+
+* Message resend options: added sanity checks to catch negative
+  values, clarified that duration is given in seconds, 0s resend
+  interval disables resending (MB #6500).
+
+* Spelling fix: "aboring" => "aborting"
+
+
+SyncEvolution 0.9 -> 0.9.1 beta 1, 06.10.2009
+=============================================
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog
 
 Mobical and Memotoo are now officially supported.
@@ -17,16 +63,18 @@ and on the server, no support for meetings). For details see
 README.mobical.
 
 *** Beware *** that the Mobical SyncML password is *not* the same as
-the one for their web site. Log into mobical.net, the go to "my accounts
+the one for their web site. Log into mobical.net, then go to "my accounts
 >> configure new device >> manual settings" to find the SyncML
 credentials.
 
 It is now possible to compile database backends outside of
 SyncEvolution, install them and have SyncEvolution use them
 automatically like any other backend. The backend API has been
-enhanced considerably. Backend developers now have access to a modular
-set of utility classes that can be mixed into a specific
-implementation.
+enhanced considerably. For example, backend developers have
+access to a modular set of utility classes that can be mixed
+into a specific implementation. Backends can access the internal
+Synthesis representation directly and therefore no longer need
+their own vCard/vCalendar/iCalendar parser.
 
 The sqlite demo backend can be enabled and compiled again with
 --enable-sqlite. It demonstrates how to map directly from the
@@ -45,7 +93,7 @@ Other changes:
 
 * The sync UI allowed to enable calendar and task synchronization
   with Google although Google does not support that (MB#5871).
-  In new installations this is prevented now by clearing the URI
+  In new installations this is prevented by clearing the URI
   for those data categories.
 
 * Importing work and home phone numbers from Google into desktop

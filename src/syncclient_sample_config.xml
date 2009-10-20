@@ -37,7 +37,7 @@
         return "syuid" + NUMFORMAT(RANDOM(1000000),6,"0") + "." + (string)MILLISECONDS(NOW());
       }
     ]]></function>
-    <macro name="VCARD_INCOMING_SCRIPT_EVOLUTION"><![CDATA[
+    <macro name="VCARD_BEFOREWRITE_SCRIPT_EVOLUTION"><![CDATA[
       // a wordaround for cellphone in evolution. for incoming contacts, if there is only one CELL,
       // strip the HOME or WORK flag from it. Evolution then should show it. */
       INTEGER i, wanted, cell_phones;
@@ -67,10 +67,38 @@
         i = i + 1;
       }
     ]]></macro>
-
+    <macro name="VCALENDAR_20TO10_PRIORITY_CONVERSION"><![CDATA[
+      //vCalendar10 has different interpretation from iCalendar20 in 'priority'.
+      //see mappings:  
+      //  Category      vCalendar1.0     iCalendar2.0
+      //   undefined         0               0
+      //   high              1             1 ~ 4
+      //   normal            2               5
+      //   low               3             6 ~ bigger
+      if(PRIORITY<5 && PRIORITY>0) {
+        PRIORITY=1;
+      }else if(PRIORITY==5){
+        PRIORITY=2;
+      }else if(PRIORITY>5){
+        PRIORITY=3;
+      } // 0 is undefined and remains unchanged
+    ]]></macro>
+    <macro name="VCALENDAR_10TO20_PRIORITY_CONVERSION"><![CDATA[
+      if(PRIORITY==2) {
+        PRIORITY=5;
+      }else if(PRIORITY==3){
+        PRIORITY=7;
+      } //others remain unchanged
+    ]]></macro>
+    <macro name="VCALENDAR10_BEFOREWRITE_SCRIPT"><![CDATA[
+      $VCALENDAR_20TO10_PRIORITY_CONVERSION;
+    ]]></macro>
+    <macro name="VCALENDAR10_AFTERREAD_SCRIPT"><![CDATA[
+      $VCALENDAR_10TO20_PRIORITY_CONVERSION;
+    ]]></macro>
 
 		<!-- define script macros for scripts that are used by both vCalendar 1.0 and iCalendar 2.0 -->
-    
+
     <macro name="VCALENDAR_INCOMING_SCRIPT"><![CDATA[
       STRING MATCHES[];
       STRING CAT,CN,EM;
@@ -159,6 +187,9 @@
         if (ITEMDATATYPE()=="vCalendar10" && ALLDAYCOUNT(DUE,DUE,TRUE,TRUE)>0) {
         	DUE = DATEONLY(DUE);
         }
+        if (ITEMDATATYPE()=="vCalendar10") {
+          $VCALENDAR_10TO20_PRIORITY_CONVERSION;
+        }
       }
       // a workaround for funambol: adding 'action' for 'alarm'
       if (ITEMDATATYPE()=="iCalendar20") {
@@ -188,8 +219,11 @@
         }
       }
       else {
-        // VTODO
-        // - Nothing special so far
+        // VTODO 
+        // interal representation is iCalendar20
+        if (ITEMDATATYPE()=="vCalendar10") {
+          $VCALENDAR_20TO10_PRIORITY_CONVERSION;
+        }
       }
       // make sure we have at least a summary
       if (SUMMARY==EMPTY) SUMMARY=SUBSTR(DESCRIPTION,0,32); // derive from description

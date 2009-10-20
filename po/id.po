@@ -1,366 +1,410 @@
+#: ../src/gtk-ui/sync-ui.c:764
 msgid ""
 msgstr ""
 "Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2009-08-26 09:22+0000\n"
+"POT-Creation-Date: 2009-10-01 19:27+0000\n"
+"PO-Revision-Date: \n"
 "Last-Translator: Andika Triwidada <andika@gmail.com>\n"
+"Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Poedit-Language: Indonesian\n"
 "X-Poedit-Country: INDONESIA\n"
 "X-Poedit-SourceCharset: utf-8\n"
-"PO-Revision-Date: \n"
-"Language-Team: \n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\\n\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: ../src/gtk-ui/sync-ui.c:258
+#. TRANSLATORS: this is the application name that may be used by e.g.
+#. the windowmanager
+#: ../src/gtk-ui/main.c:31 ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/sync.desktop.in.h:1
+msgid "Sync"
+msgstr "Selaraskan"
+
+#: ../src/gtk-ui/sync-ui.c:259
 msgid "Addressbook"
 msgstr "Buku Alamat"
 
-#: ../src/gtk-ui/sync-ui.c:260
+#: ../src/gtk-ui/sync-ui.c:261
 msgid "Calendar"
 msgstr "Kalender"
 
-#: ../src/gtk-ui/sync-ui.c:262
+#: ../src/gtk-ui/sync-ui.c:263
 msgid "Todo"
 msgstr "Todo"
 
-#: ../src/gtk-ui/sync-ui.c:264
+#: ../src/gtk-ui/sync-ui.c:265
 msgid "Memo"
 msgstr "Memo"
 
-#: ../src/gtk-ui/sync-ui.c:319
+#: ../src/gtk-ui/sync-ui.c:320
 msgid "Failed to save current service in GConf configuration system"
 msgstr "Gagal menyimpan layanan kini ke sistem konfigurasi GConf"
 
-#: ../src/gtk-ui/sync-ui.c:330
+#: ../src/gtk-ui/sync-ui.c:331
 msgid "Failed to save service configuration to SyncEvolution"
 msgstr "Gagal menyimpan konfigurasi layanan ke SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:415
+#: ../src/gtk-ui/sync-ui.c:416
 msgid "Failed to get service configuration from SyncEvolution"
 msgstr "Gagal mendapat konfigurasi layanan dari SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:478
+#: ../src/gtk-ui/sync-ui.c:479
 msgid "Failed to remove service configuration from SyncEvolution"
 msgstr "Gagal menghapus konfigurasi layanan dari SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:598
+#: ../src/gtk-ui/sync-ui.c:599
 msgid "Service must have a name and server URL"
 msgstr "Layanan mesti punya URL server dan nama"
 
 #. sync is no longer in progress for some reason
-#: ../src/gtk-ui/sync-ui.c:674
+#: ../src/gtk-ui/sync-ui.c:675
 msgid "Failed to cancel: sync was no longer in progress"
 msgstr "Gagal membatalkan: sync tak lagi sedang berlangsung"
 
-#: ../src/gtk-ui/sync-ui.c:678
+#: ../src/gtk-ui/sync-ui.c:679
 msgid "Failed to cancel sync"
 msgstr "Gagal membatalkan sync"
 
-#: ../src/gtk-ui/sync-ui.c:682
+#: ../src/gtk-ui/sync-ui.c:683
 msgid "Canceling sync"
 msgstr "Membatalkan sync"
 
-#: ../src/gtk-ui/sync-ui.c:696
+#: ../src/gtk-ui/sync-ui.c:697
 msgid "Trying to cancel sync"
 msgstr "Mencoba membatalkan sync"
 
-#: ../src/gtk-ui/sync-ui.c:703
+#: ../src/gtk-ui/sync-ui.c:704
 #, c-format
-msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
-msgstr "Apakah Anda ingin menghapus semua data lokal dan menggantinya dengan data dari %s? Ini biasanya tak disarankan."
+msgid ""
+"Do you want to delete all local data and replace it with data from %s? This "
+"is not usually advised."
+msgstr ""
+"Apakah Anda ingin menghapus semua data lokal dan menggantinya dengan data "
+"dari %s? Ini biasanya tak disarankan."
 
-#: ../src/gtk-ui/sync-ui.c:708
+#: ../src/gtk-ui/sync-ui.c:709
 #, c-format
-msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
-msgstr "Apakah Anda ingin menghapus semua data di %s dan menggantinya dengan data lokal Anda? Biasanya ini tak disarankan."
+msgid ""
+"Do you want to delete all data in %s and replace it with your local data? "
+"This is not usually advised."
+msgstr ""
+"Apakah Anda ingin menghapus semua data di %s dan menggantinya dengan data "
+"lokal Anda? Biasanya ini tak disarankan."
 
-#: ../src/gtk-ui/sync-ui.c:725
+#: ../src/gtk-ui/sync-ui.c:726
 msgid "No, cancel sync"
 msgstr "Tidak, batalkan sync"
 
-#: ../src/gtk-ui/sync-ui.c:726
+#: ../src/gtk-ui/sync-ui.c:727
 msgid "Yes, delete and replace"
 msgstr "Ya, hapus dan gantikan"
 
-#: ../src/gtk-ui/sync-ui.c:748
+#: ../src/gtk-ui/sync-ui.c:749
 msgid "No sources are enabled, not syncing"
 msgstr "Tak ada sumber yang diaktifkan, tak menyelaraskan"
 
-#: ../src/gtk-ui/sync-ui.c:765
+#: ../src/gtk-ui/sync-ui.c:766
 msgid "A sync is already in progress"
 msgstr "Syns sedang berlangsung"
 
-#: ../src/gtk-ui/sync-ui.c:767
+#: ../src/gtk-ui/sync-ui.c:768
 msgid "Failed to start sync"
 msgstr "Gagal memulai sync"
 
-#: ../src/gtk-ui/sync-ui.c:772
+#: ../src/gtk-ui/sync-ui.c:773
 msgid "Starting sync"
 msgstr "Memulai sync"
 
-#: ../src/gtk-ui/sync-ui.c:797
+#: ../src/gtk-ui/sync-ui.c:798
 msgid "Last synced just seconds ago"
 msgstr "Diselaraskan terakhir beberapa detik yang lalu"
 
-#: ../src/gtk-ui/sync-ui.c:800
+#: ../src/gtk-ui/sync-ui.c:801
 msgid "Last synced a minute ago"
 msgstr "Diselaraskan terakhir semenit yang lalu"
 
-#: ../src/gtk-ui/sync-ui.c:803
+#: ../src/gtk-ui/sync-ui.c:804
 #, c-format
 msgid "Last synced %ld minutes ago"
 msgstr "Diselaraskan terakhir %ld menit yang lalu"
 
-#: ../src/gtk-ui/sync-ui.c:806
+#: ../src/gtk-ui/sync-ui.c:807
 msgid "Last synced an hour ago"
 msgstr "Diselaraskan terakhir sejam yang lalu"
 
-#: ../src/gtk-ui/sync-ui.c:809
+#: ../src/gtk-ui/sync-ui.c:810
 #, c-format
 msgid "Last synced %ld hours ago"
 msgstr "Diselaraskan terakhir %ld jam yang lalu"
 
-#: ../src/gtk-ui/sync-ui.c:812
+#: ../src/gtk-ui/sync-ui.c:813
 msgid "Last synced a day ago"
 msgstr "Diselaraskan terakhir sehari yang lalu"
 
-#: ../src/gtk-ui/sync-ui.c:815
+#: ../src/gtk-ui/sync-ui.c:816
 #, c-format
 msgid "Last synced %ld days ago"
 msgstr "Diselaraskan terakhir %ld hari yang lalu"
 
-#: ../src/gtk-ui/sync-ui.c:900
+#: ../src/gtk-ui/sync-ui.c:901
 msgid "Sync again"
 msgstr "Sync lagi"
 
-#: ../src/gtk-ui/sync-ui.c:902
-#: ../src/gtk-ui/ui.glade.h:29
+#: ../src/gtk-ui/sync-ui.c:903 ../src/gtk-ui/ui.glade.h:29
 msgid "Sync now"
 msgstr "Sync sekarang"
 
-#: ../src/gtk-ui/sync-ui.c:911
+#: ../src/gtk-ui/sync-ui.c:912
 msgid "Syncing"
 msgstr "Menyelaraskan"
 
-#: ../src/gtk-ui/sync-ui.c:917
+#: ../src/gtk-ui/sync-ui.c:918
 msgid "Cancel sync"
 msgstr "Batalkan sync"
 
 #. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
-#: ../src/gtk-ui/sync-ui.c:1261
+#: ../src/gtk-ui/sync-ui.c:1265
 #, c-format
 msgid "%s (not supported by this service)"
 msgstr "%s (tak didukung oleh layanan ini)"
 
-#: ../src/gtk-ui/sync-ui.c:1294
+#: ../src/gtk-ui/sync-ui.c:1298
 #, c-format
 msgid "There was one remote rejection."
 msgid_plural "There were %d remote rejections."
 msgstr[0] "Ada satu penolakan remote."
 msgstr[1] "Ada %d penolakan remote."
 
-#: ../src/gtk-ui/sync-ui.c:1299
+#: ../src/gtk-ui/sync-ui.c:1303
 #, c-format
 msgid "There was one local rejection."
 msgid_plural "There were %d local rejections."
 msgstr[0] "Ada satu penolakan lokal."
 msgstr[1] "Ada %d penolakan lokal."
 
-#: ../src/gtk-ui/sync-ui.c:1304
+#: ../src/gtk-ui/sync-ui.c:1308
 #, c-format
 msgid "There were %d local rejections and %d remote rejections."
 msgstr "Ada %d penolakan lokal dan %d penolakan "
 
-#: ../src/gtk-ui/sync-ui.c:1309
+#: ../src/gtk-ui/sync-ui.c:1313
 #, c-format
 msgid "Last time: No changes."
 msgstr "Terakhir kali: Tak ada perubahan."
 
-#: ../src/gtk-ui/sync-ui.c:1311
+#: ../src/gtk-ui/sync-ui.c:1315
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %d changes."
 msgstr[0] "Terakhir kali: Dikirim satu perubahan."
 msgstr[1] "Terakhir kali: Dikirim %d perubahan."
 
-#: ../src/gtk-ui/sync-ui.c:1316
+#. This is about changes made to the local data. Not all of these
+#. changes were requested by the remote server, so "applied"
+#. is a better word than "received" (bug #5185).
+#: ../src/gtk-ui/sync-ui.c:1323
 #, c-format
-msgid "Last time: Received one change."
-msgid_plural "Last time: Received %d changes."
-msgstr[0] "Terakhir kali: Diterima satu perubahan."
-msgstr[1] "Terakhir kali: Diterima %d perubahan."
+msgid "Last time: Applied one change."
+msgid_plural "Last time: Applied %d changes."
+msgstr[0] "Terakhir kali: Diterapkan satu perubahan."
+msgstr[1] "Terakhir kali: Diterapkan %d perubahan."
 
-#: ../src/gtk-ui/sync-ui.c:1321
+#: ../src/gtk-ui/sync-ui.c:1328
 #, c-format
-msgid "Last time: Received %d changes and sent %d changes."
-msgstr "Terakhir kali: Diterima %d perubahan dan dikirim %d perubahan."
+msgid "Last time: Applied %d changes and sent %d changes."
+msgstr "Terakhir kali: Diterapkan %d perubahan dan dikirim %d perubahan."
 
-#: ../src/gtk-ui/sync-ui.c:1413
+#: ../src/gtk-ui/sync-ui.c:1420
 msgid "Failed to get server configuration from SyncEvolution"
 msgstr "Gagal mendapat konfigurasi server dari SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:1479
+#: ../src/gtk-ui/sync-ui.c:1472
+msgid ""
+"ScheduleWorld enables you to keep your contacts, events, tasks, and notes in "
+"sync."
+msgstr ""
+"ScheduleWorld memungkinkan Anda menjaga kontak, peristiwa, tugas, dan "
+"catatan Anda tetap selaras."
+
+#: ../src/gtk-ui/sync-ui.c:1475
+msgid ""
+"Google Sync can backup and synchronize your Address Book with your Gmail "
+"contacts."
+msgstr ""
+"Google Sync dapat membuat cadangan dan menyelaraskan Buku Alamat Anda dengan "
+"kontak Gmail Anda."
+
+#. TRANSLATORS: Please include the word "demo" (or the equivalent in
+#. your language): Funambol is going to be a 90 day demo service
+#. in the future
+#: ../src/gtk-ui/sync-ui.c:1481
+msgid ""
+"Backup your contacts and calendar. Sync with a singleclick, anytime, "
+"anywhere (DEMO)."
+msgstr ""
+"Buat cadangan kontak dan kalender Anda. Selaraskan dengan satu klik, "
+"kapanpun, dari manapun (DEMO)."
+
+#: ../src/gtk-ui/sync-ui.c:1509
 msgid "New service"
 msgstr "Layanan baru"
 
-#: ../src/gtk-ui/sync-ui.c:1523
+#: ../src/gtk-ui/sync-ui.c:1556
 msgid "Server URL"
 msgstr "URL Server"
 
 #. TRANSLATORS: placeholder is a source name in settings window
-#: ../src/gtk-ui/sync-ui.c:1543
+#: ../src/gtk-ui/sync-ui.c:1578
 #, c-format
 msgid "%s URI"
 msgstr "%s URI"
 
-#: ../src/gtk-ui/sync-ui.c:1678
-#: ../src/gtk-ui/ui.glade.h:17
+#: ../src/gtk-ui/sync-ui.c:1715 ../src/gtk-ui/ui.glade.h:17
 msgid "Launch website"
 msgstr "Luncurkan situs web"
 
-#: ../src/gtk-ui/sync-ui.c:1682
+#: ../src/gtk-ui/sync-ui.c:1719
 msgid "Setup and use"
 msgstr "Persiapkan dan gunakan"
 
-#: ../src/gtk-ui/sync-ui.c:1728
+#: ../src/gtk-ui/sync-ui.c:1765
 msgid "Failed to get list of manually setup services from SyncEvolution"
-msgstr "Gagal mendapat daftar layanan yang disiapkan secara manual dari SyncEvolution"
+msgstr ""
+"Gagal mendapat daftar layanan yang disiapkan secara manual dari SyncEvolution"
 
-#: ../src/gtk-ui/sync-ui.c:1769
+#: ../src/gtk-ui/sync-ui.c:1806
 msgid "Failed to get list of supported services from SyncEvolution"
 msgstr "Gagal mendapat daftar layanan yang didukung dari SyncEvolution"
 
 #. TODO: this is a hack... SyncEnd should be a signal of it's own,
 #. not just hacked on top of the syncevolution error codes
-#: ../src/gtk-ui/sync-ui.c:1930
+#: ../src/gtk-ui/sync-ui.c:1967
 msgid "Service configuration not found"
 msgstr "Konfigurasi layanan tak ditemukan"
 
-#: ../src/gtk-ui/sync-ui.c:1936
+#: ../src/gtk-ui/sync-ui.c:1973
 msgid "Not authorized"
 msgstr "Tidak diijinkan"
 
-#: ../src/gtk-ui/sync-ui.c:1938
+#: ../src/gtk-ui/sync-ui.c:1975
 msgid "Forbidden"
 msgstr "Terlarang"
 
-#: ../src/gtk-ui/sync-ui.c:1940
+#: ../src/gtk-ui/sync-ui.c:1977
 msgid "Not found"
 msgstr "Tidak ketemu"
 
-#: ../src/gtk-ui/sync-ui.c:1942
+#: ../src/gtk-ui/sync-ui.c:1979
 msgid "Fatal database error"
 msgstr "Galat basis data fatal"
 
-#: ../src/gtk-ui/sync-ui.c:1944
+#: ../src/gtk-ui/sync-ui.c:1981
 msgid "Database error"
 msgstr "Galat basis data"
 
-#: ../src/gtk-ui/sync-ui.c:1946
+#: ../src/gtk-ui/sync-ui.c:1983
 msgid "No space left"
 msgstr "Tidak ada ruang tersisa"
 
 #. TODO identify problem item somehow ?
-#: ../src/gtk-ui/sync-ui.c:1949
+#: ../src/gtk-ui/sync-ui.c:1986
 msgid "Failed to process SyncML"
 msgstr "Gagal memroses SyncML"
 
-#: ../src/gtk-ui/sync-ui.c:1951
+#: ../src/gtk-ui/sync-ui.c:1988
 msgid "Server authorization failed"
 msgstr "Otorisasi server gagal"
 
-#: ../src/gtk-ui/sync-ui.c:1953
+#: ../src/gtk-ui/sync-ui.c:1990
 msgid "Failed to parse configuration file"
 msgstr "Gagal mengurai berkas konfigurasi"
 
-#: ../src/gtk-ui/sync-ui.c:1955
+#: ../src/gtk-ui/sync-ui.c:1992
 msgid "Failed to read configuration file"
 msgstr "Gagal membaca berkas konfigurasi"
 
-#: ../src/gtk-ui/sync-ui.c:1957
+#: ../src/gtk-ui/sync-ui.c:1994
 msgid "No configuration found"
 msgstr "Konfigurasi tak ditemukan"
 
-#: ../src/gtk-ui/sync-ui.c:1959
+#: ../src/gtk-ui/sync-ui.c:1996
 msgid "No configuration file found"
 msgstr "Berkas konfigurasi tak ditemukan"
 
-#: ../src/gtk-ui/sync-ui.c:1961
+#: ../src/gtk-ui/sync-ui.c:1998
 msgid "Server sent bad content"
 msgstr "Server mengirim muatan cacat"
 
-#: ../src/gtk-ui/sync-ui.c:1963
+#: ../src/gtk-ui/sync-ui.c:2000
 msgid "Transport failure (no connection?)"
 msgstr "Kegagalan transport (tiada koneksi?)"
 
-#: ../src/gtk-ui/sync-ui.c:1965
+#: ../src/gtk-ui/sync-ui.c:2002
 msgid "Connection timed out"
 msgstr "Koneksi time out"
 
-#: ../src/gtk-ui/sync-ui.c:1967
+#: ../src/gtk-ui/sync-ui.c:2004
 msgid "Connection certificate has expired"
 msgstr "Sertifikat server sudah kadaluwarsa"
 
-#: ../src/gtk-ui/sync-ui.c:1969
+#: ../src/gtk-ui/sync-ui.c:2006
 msgid "Connection certificate is invalid"
 msgstr "Sertifikat koneksi tak valid"
 
-#: ../src/gtk-ui/sync-ui.c:1972
+#: ../src/gtk-ui/sync-ui.c:2009
 msgid "Connection failed"
 msgstr "Koneksi gagal"
 
-#: ../src/gtk-ui/sync-ui.c:1974
+#: ../src/gtk-ui/sync-ui.c:2011
 msgid "URL is bad"
 msgstr "URL cacat"
 
-#: ../src/gtk-ui/sync-ui.c:1976
+#: ../src/gtk-ui/sync-ui.c:2013
 msgid "Server not found"
 msgstr "Server tak ditemukan"
 
-#: ../src/gtk-ui/sync-ui.c:1978
+#: ../src/gtk-ui/sync-ui.c:2015
 #, c-format
 msgid "Error %d"
 msgstr "Galat %d"
 
-#: ../src/gtk-ui/sync-ui.c:1988
+#: ../src/gtk-ui/sync-ui.c:2025
 msgid "Sync D-Bus service exited unexpectedly"
 msgstr "Layanan D-Bus Sync keluar tak disangka-sangka"
 
-#: ../src/gtk-ui/sync-ui.c:1991
-#: ../src/gtk-ui/sync-ui.c:2042
+#: ../src/gtk-ui/sync-ui.c:2028 ../src/gtk-ui/sync-ui.c:2079
 msgid "Sync Failed"
 msgstr "Sync Gagal"
 
-#: ../src/gtk-ui/sync-ui.c:2034
+#: ../src/gtk-ui/sync-ui.c:2071
 msgid "Sync complete"
 msgstr "Sync komplit"
 
-#: ../src/gtk-ui/sync-ui.c:2039
+#: ../src/gtk-ui/sync-ui.c:2076
 msgid "Sync canceled"
 msgstr "Sync dibatalkan"
 
 #. NOTE extra1 can be error here
-#: ../src/gtk-ui/sync-ui.c:2057
+#: ../src/gtk-ui/sync-ui.c:2094
 msgid "Ending sync"
 msgstr "Mengakhiri sync"
 
 #. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
-#: ../src/gtk-ui/sync-ui.c:2081
+#: ../src/gtk-ui/sync-ui.c:2118
 #, c-format
 msgid "Preparing '%s'"
 msgstr "Menyiapkan '%s'"
 
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:2093
+#: ../src/gtk-ui/sync-ui.c:2130
 #, c-format
 msgid "Sending '%s'"
 msgstr "Mengirim '%s'"
 
 #. TRANSLATORS: placeholder is a source name in a progress text
-#: ../src/gtk-ui/sync-ui.c:2105
+#: ../src/gtk-ui/sync-ui.c:2142
 #, c-format
 msgid "Receiving '%s'"
 msgstr "Menerima '%s'"
@@ -423,10 +467,12 @@ msgstr "Edit pengaturan layanan"
 
 #: ../src/gtk-ui/ui.glade.h:15
 msgid ""
-"If you don't see your service above but know that your sync provider uses SyncML\n"
+"If you don't see your service above but know that your sync provider uses "
+"SyncML\n"
 "you can setup a service manually."
 msgstr ""
-"Bila Anda tak melihat layanan Anda di atas tapi tahu bahwa penyedia sync Anda memakai SyncML\n"
+"Bila Anda tak melihat layanan Anda di atas tapi tahu bahwa penyedia sync "
+"Anda memakai SyncML\n"
 "Anda dapat mempersiapkan suatu layanan secara manual."
 
 #: ../src/gtk-ui/ui.glade.h:18
@@ -446,16 +492,16 @@ msgid "Save and use this service"
 msgstr "Simpan dan pakai layanan ini"
 
 #: ../src/gtk-ui/ui.glade.h:22
+msgid "Select sync service"
+msgstr "Pilih layanan penyelarasan"
+
+#: ../src/gtk-ui/ui.glade.h:23
 msgid "Server settings"
 msgstr "Pengaturan server"
 
-#: ../src/gtk-ui/ui.glade.h:23
+#: ../src/gtk-ui/ui.glade.h:24
 msgid "Service name"
 msgstr "Nama layanan"
-
-#: ../src/gtk-ui/ui.glade.h:24
-msgid "Setup sync service"
-msgstr "Persiapkan layanan penyelarasan"
 
 #: ../src/gtk-ui/ui.glade.h:25
 msgid ""
@@ -469,18 +515,15 @@ msgstr ""
 msgid "Stop using this service"
 msgstr "Berhenti pakai layanan ini"
 
-#: ../src/gtk-ui/ui.glade.h:28
-#: ../src/gtk-ui/sync.desktop.in.h:1
-msgid "Sync"
-msgstr "Selaraskan"
-
 #: ../src/gtk-ui/ui.glade.h:30
-msgid "Synchronization is not available (D-Bus service does not answer), sorry."
+msgid ""
+"Synchronization is not available (D-Bus service does not answer), sorry."
 msgstr "Penyelarasan tak tersedia (layanan D-Bus tak menjawab), maaf."
 
 #: ../src/gtk-ui/ui.glade.h:31
 msgid ""
-"To sync you'll need a network connection and an account with a sync service.\n"
+"To sync you'll need a network connection and an account with a sync "
+"service.\n"
 "We support the following services: "
 msgstr ""
 "Untuk sync Anda perlu koneksi jaringan dan sebuah akun dari layanan sync.\n"
@@ -492,13 +535,16 @@ msgstr "Nama pengguna"
 
 #: ../src/gtk-ui/ui.glade.h:34
 msgid ""
-"You haven't set up a sync service yet. Sync services let you \n"
+"You haven't selected a sync service yet. Sync services let you \n"
 "synchronize your data between your netbook and a web service."
 msgstr ""
-"Anda belum menyiapkan suatu layanan sync. Layanan sync memungkinkan Anda\n"
-"menyelarasan data Anda antara netbook Anda dan suatu layanan web."
+"Anda belum memilih suatu layanan sync. Layanan sync memungkinkan Anda\n"
+"menyelaraskan data antara netbook Anda dan suatu layanan web."
 
-#: ../src/gtk-ui/sync.desktop.in.h:2
+#: ../src/gtk-ui/sync.desktop.in.h:2 ../src/gtk-ui/sync-gtk.desktop.in.h:2
 msgid "Up to date"
 msgstr "Terkini"
 
+#: ../src/gtk-ui/sync-gtk.desktop.in.h:1
+msgid "Sync (GTK)"
+msgstr "Sync (GTK)"
