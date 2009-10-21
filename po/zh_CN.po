@@ -207,13 +207,13 @@ msgstr[1] "最近一次: 发送了%d个更改"
 #, c-format
 msgid "Last time: Applied one change."
 msgid_plural "Last time: Applied %d changes."
-msgstr[0] "最近一次: 收到了一个更改"
-msgstr[1] "最近一次: 收到了%d个更改"
+msgstr[0] "最近一次: 应用了一个更改"
+msgstr[1] "最近一次: 应用了%d个更改"
 
 #: ../src/gtk-ui/sync-ui.c:1329
 #, c-format
 msgid "Last time: Applied %d changes and sent %d changes."
-msgstr "最近一次: 收到了%d个更改并发送了%d个更改"
+msgstr "最近一次: 应用了%d个更改并发送了%d个更改"
 
 #: ../src/gtk-ui/sync-ui.c:1421
 msgid "Failed to get server configuration from SyncEvolution"
