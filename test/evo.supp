@@ -3763,3 +3763,625 @@
    fun:_Z41__static_initialization_and_destruction_0ii
 }
 
+# ==30592== 1,794 (178 direct, 1,616 indirect) bytes in 4 blocks are definitely lost in loss record 26 of 43
+# ==30592==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==30592==    by 0x662D742: g_malloc (gmem.c:131)
+# ==30592==    by 0x66453DD: g_strdup (gstrfuncs.c:102)
+# ==30592==    by 0x410874: add_initial_locales (in /usr/lib/bonobo-activation/bonobo-activation-server)
+# ==30592==    by 0x4113DE: main (in /usr/lib/bonobo-activation/bonobo-activation-server)
+{
+   bonobo server I
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_strdup
+   fun:add_initial_locales
+   fun:main
+}
+
+# ==30592==
+# ==30592==
+# ==30592== 32,519 (2,104 direct, 30,415 indirect) bytes in 67 blocks are definitely lost in loss record 40 of 43
+# ==30592==    at 0x4C216F4: calloc (vg_replace_malloc.c:397)
+# ==30592==    by 0x662D6E9: g_malloc0 (gmem.c:151)
+# ==30592==    by 0x5501978: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==30592==    by 0x5501E54: ORBit_POA_new_from (in /usr/lib/libORBit-2.so.0.1.0)
+# ==30592==    by 0x4E56231: bonobo_poa_new_from (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==30592==    by 0x4E56347: bonobo_poa_get_threadedv (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==30592==    by 0x4E5651C: bonobo_poa_get_threaded (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==30592==    by 0x411B4B: main (in /usr/lib/bonobo-activation/bonobo-activation-server)
+{
+   bonobo server II
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:ORBit_POA_new_from
+   fun:bonobo_poa_new_from
+   fun:bonobo_poa_get_threadedv
+   fun:bonobo_poa_get_threaded
+   fun:main
+}
+
+# ==30565== Thread 3:
+# ==30565== Invalid free() / delete / delete[]
+# ==30565==    at 0x4C2261F: free (vg_replace_malloc.c:323)
+# ==30565==    by 0x5BAB1AA: (within /lib/libc-2.9.so)
+# ==30565==    by 0x5BAAD41: (within /lib/libc-2.9.so)
+# ==30565==    by 0x4A1E560: _vgnU_freeres (vg_preloaded.c:60)
+# ==30565==    by 0xFFFFFFFE: ???
+# ==30565==  Address 0x402cd10 is not stack'd, malloc'd or (recently) free'd
+{
+   libc I
+   Memcheck:Free
+   fun:free
+   obj:/lib/libc-2.9.so
+   obj:/lib/libc-2.9.so
+   fun:_vgnU_freeres
+   obj:*
+}
+
+# ==30565==
+# ==30565== Thread 1:
+# ==30565==
+# ==30565== 6,564 bytes in 144 blocks are definitely lost in loss record 48 of 72
+# ==30565==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==30565==    by 0x5B1FA21: strdup (in /lib/libc-2.9.so)
+# ==30565==    by 0xD9E080C: icalparameter_new_from_value_string (in /usr/lib/libical.so.0.43.0)
+# ==30565==    by 0xD9F6AF0: icalparser_add_line (in /usr/lib/libical.so.0.43.0)
+# ==30565==    by 0xD9F7088: icalparser_parse (in /usr/lib/libical.so.0.43.0)
+# ==30565==    by 0xD9F7230: icalparser_parse_string (in /usr/lib/libical.so.0.43.0)
+# ==30565==    by 0xA2CB224: SyncEvo::EvolutionCalendarSource::insertItem(std::string const&, std::string const&, bool) (EvolutionCalendarSource.cpp:287)
+# ==30565==    by 0x511AF67: SyncEvo::TrackingSyncSource::insertItem(std::string const&, std::string const&) (TrackingSyncSource.cpp:69)
+# ==30565==    by 0x50D9B8C: SyncEvo::SyncSourceSerialize::insertItemAsKey(sysync::KeyType*, sysync::ItemIDType const*, sysync::ItemIDType*) (SyncSource.cpp:531)
+# ==30565==    by 0x50D6165: SyncEvo::SyncSourceLogging::insertItemAsKey(sysync::KeyType*, sysync::ItemIDType*, boost::function<unsigned short ()(sysync::KeyType*, sysync::ItemIDType*), std::allocator<void> > const&) (function_template.hpp:825)
+# ==30565==    by 0x50E3064: SyncEvolution_InsertItemAsKey (function_template.hpp:825)
+# ==30565==    by 0x5EE86C2: sysync::TDB_Api::InsertItemAsKey(sysync::KeyType*, char const*, sysync::TDB_Api_ItemID&) (dbapi.cpp:1874)
+# ==30565==    by 0x5EE54B5: sysync::TPluginApiDS::apiAddItem(sysync::TMultiFieldItem&, std::string&) (pluginapids.cpp:1354)
+# ==30565==    by 0x5E358D1: sysync::TCustomImplDS::createItem(sysync::TSyncItem*, std::string&, bool&) (customimplds.cpp:3219)
+# ==30565==    by 0x5E6F8C0: sysync::TBinfileImplDS::implProcessItem(sysync::TSyncItem*, sysync::TStatusCommand&) (binfileimplds.cpp:1779)
+# ==30565==    by 0x5EB0EC9: sysync::TStdLogicDS::logicProcessRemoteItem(sysync::TSyncItem*, sysync::TStatusCommand&, bool&, std::string*) (stdlogicds.cpp:1222)
+# ==30565==    by 0x5E7FB6D: sysync::TLocalEngineDS::engProcessRemoteItemAsClient(sysync::TSyncItem*, sysync::TStatusCommand&) (localengineds.cpp:5932)
+# ==30565==    by 0x5E7FFC8: sysync::TLocalEngineDS::engProcessSyncOpItem(sysync::TSyncOperation, sml_item_s*, sml_metinf_metinf_s*, sysync::TStatusCommand&) (localengineds.cpp:4790)
+# ==30565==    by 0x5E856D9: sysync::TSyncSession::processSyncOpItem(sysync::TSyncOperation, sml_item_s*, sml_metinf_metinf_s*, sysync::TLocalEngineDS*, sysync::TStatusCommand&, bool&) (syncsession.cpp:3643)
+# ==30565==    by 0x5E6B501: sysync::TSyncOpCommand::execute() (synccommand.cpp:2561)
+# ==30565==    by 0x5E8AC64: sysync::TSyncSession::process(sysync::TSmlCommand*) (syncsession.cpp:2352)
+# ==30565==    by 0x5E29548: sysync::TSyncAppBase::AddCmd(void*, sml_generic_s*) (syncappbase.cpp:2071)
+# ==30565==    by 0x7818D0E: smlProcessData (mgrcmddispatcher.c:484)
+# ==30565==    by 0x5E3796A: sysync::TSyncClient::processingStep(unsigned short&, sysync::TEngineProgressType*) (syncclient.cpp:541)
+# ==30565==    by 0x5E5CB9D: sysync::TClientEngineInterface::SessionStep(sysync::SessionType*, unsigned short&, sysync::TEngineProgressType*) (syncclientbase.cpp:274)
+# ==30565==    by 0x50C0AA7: SyncEvo::SharedEngine::SessionStep(boost::shared_ptr<sysync::SessionType> const&, unsigned short&, sysync::TEngineProgressType*) (SynthesisEngine.cpp:95)
+# ==30565==    by 0x50E8BC5: SyncEvo::SyncContext::doSync() (SyncContext.cpp:1777)
+# ==30565==    by 0x50EC228: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:1572)
+# ==30565==    by 0x43AC59: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==30565==    by 0x44F871: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+{
+   icalparameter new from value string
+   Memcheck:Leak
+   fun:malloc
+   fun:strdup
+   fun:icalparameter_new_from_value_string
+   fun:icalparser_add_line
+   fun:icalparser_parse
+   fun:icalparser_parse_string
+   fun:_ZN7SyncEvo23EvolutionCalendarSource10insertItemERKSsS2_b
+   fun:_ZN7SyncEvo18TrackingSyncSource10insertItemERKSsS2_
+   fun:_ZN7SyncEvo19SyncSourceSerialize15insertItemAsKeyEPN6sysync7KeyTypeEPKNS1_10ItemIDTypeEPS4_
+   fun:_ZN7SyncEvo17SyncSourceLogging15insertItemAsKeyEPN6sysync7KeyTypeEPNS1_10ItemIDTypeERKN5boost8functionIFtS3_S5_ESaIvEEE
+   fun:SyncEvolution_InsertItemAsKey
+   fun:_ZN6sysync7TDB_Api15InsertItemAsKeyEPNS_7KeyTypeEPKcRNS_14TDB_Api_ItemIDE
+   fun:_ZN6sysync12TPluginApiDS10apiAddItemERNS_15TMultiFieldItemERSs
+   fun:_ZN6sysync13TCustomImplDS10createItemEPNS_9TSyncItemERSsRb
+   fun:_ZN6sysync14TBinfileImplDS15implProcessItemEPNS_9TSyncItemERNS_14TStatusCommandE
+   fun:_ZN6sysync11TStdLogicDS22logicProcessRemoteItemEPNS_9TSyncItemERNS_14TStatusCommandERbPSs
+   fun:_ZN6sysync14TLocalEngineDS28engProcessRemoteItemAsClientEPNS_9TSyncItemERNS_14TStatusCommandE
+   fun:_ZN6sysync14TLocalEngineDS20engProcessSyncOpItemENS_14TSyncOperationEP10sml_item_sP19sml_metinf_metinf_sRNS_14TStatusCommandE
+   fun:_ZN6sysync12TSyncSession17processSyncOpItemENS_14TSyncOperationEP10sml_item_sP19sml_metinf_metinf_sPNS_14TLocalEngineDSERNS_14TStatusCommandERb
+   fun:_ZN6sysync14TSyncOpCommand7executeEv
+   fun:_ZN6sysync12TSyncSession7processEPNS_11TSmlCommandE
+   fun:_ZN6sysync12TSyncAppBase6AddCmdEPvP13sml_generic_s
+   fun:smlProcessData
+   fun:_ZN6sysync11TSyncClient14processingStepERtPNS_19TEngineProgressTypeE
+}
+
+# ==17808==
+# ==17808==
+# ==17808== 32,519 (2,104 direct, 30,415 indirect) bytes in 67 blocks are definitely lost in loss==17813==
+# ==17813== Thread 1:
+# ==17813==
+# ==17813== 49 bytes in 1 blocks are definitely lost in loss record 14 of 76
+# ==17813==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==17813==    by 0x7A729E5: poptGetNextOpt (in /lib/libpopt.so.0.0.0)
+# ==17813==    by 0x78634A7: gnome_program_parse_args (in /usr/lib/libgnome-2.so.0.2600.0)
+# ==17813==    by 0x78645C2: (within /usr/lib/libgnome-2.so.0.2600.0)
+# ==17813==    by 0x786484C: gnome_program_initv (in /usr/lib/libgnome-2.so.0.2600.0)
+# ==17813==    by 0x7864943: gnome_program_init (in /usr/lib/libgnome-2.so.0.2600.0)
+# ==17813==    by 0x403E24: main (server.c:366)
+{
+   gnome poptGetNextopt
+   Memcheck:Leak
+   fun:malloc
+   fun:poptGetNextOpt
+   fun:gnome_program_parse_args
+   obj:/usr/lib/libgnome-2.so.0.2600.0
+   fun:gnome_program_initv
+   fun:gnome_program_init
+   fun:main
+}
+
+# ==17813== 6,032 bytes in 1,508 blocks are definitely lost in loss record 55 of 76
+# ==17813==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==17813==    by 0x7612A24: __os_umalloc (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75DAE24: __db_retcopy (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75DAF70: __db_ret (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75BE317: __dbc_get (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75C6EF3: __dbc_get_pp (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0xEDC4029: e_book_backend_file_get_contact_list (e-book-backend-file.c:458)
+# ==17813==    by 0x526F212: _e_book_backend_get_contact_list (e-book-backend-sync.c:442)
+# ==17813==    by 0x8B204EF: ORBit_small_invoke_adaptor (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30809: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30E39: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B195CE: giop_thread_queue_process (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B19E87: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x9D1FAD6: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==17813==    by 0x9D1E573: g_thread_create_proxy (gthread.c:635)
+# ==17813==    by 0xA7CDFA9: start_thread (in /lib/libpthread-2.9.so)
+# ==17813==    by 0xAAB029C: clone (in /lib/libc-2.9.so)
+{
+   ebook get contact list
+   Memcheck:Leak
+   fun:malloc
+   fun:__os_umalloc
+   fun:__db_retcopy
+   fun:__db_ret
+   fun:__dbc_get
+   fun:__dbc_get_pp
+   fun:e_book_backend_file_get_contact_list
+   fun:_e_book_backend_get_contact_list
+   fun:ORBit_small_invoke_adaptor
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:giop_thread_queue_process
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_thread_pool_thread_proxy
+   fun:g_thread_create_proxy
+   fun:start_thread
+   fun:clone
+}
+
+# ==17813== 7,800 bytes in 78 blocks are possibly lost in loss record 57 of 76
+# ==17813==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==17813==    by 0x4C23AA7: realloc (vg_replace_malloc.c:429)
+# ==17813==    by 0x8B1BC47: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B1CC48: giop_connection_handle_input (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B39E57: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x9CF4F79: g_main_context_dispatch (gmain.c:1814)
+# ==17813==    by 0x9CF863F: g_main_context_iterate (gmain.c:2448)
+# ==17813==    by 0x9CF8B0C: g_main_loop_run (gmain.c:2656)
+# ==17813==    by 0x8B381CF: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x9D1E573: g_thread_create_proxy (gthread.c:635)
+# ==17813==    by 0xA7CDFA9: start_thread (in /lib/libpthread-2.9.so)
+# ==17813==    by 0xAAB029C: clone (in /lib/libc-2.9.so)
+{
+   giop_connection_handle_input II
+   Memcheck:Leak
+   fun:malloc
+   fun:realloc
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:giop_connection_handle_input
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_main_context_dispatch
+   fun:g_main_context_iterate
+   fun:g_main_loop_run
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_thread_create_proxy
+   fun:start_thread
+   fun:clone
+}
+
+# ==17813== 1,962,124 (95,624 direct, 1,866,500 indirect) bytes in 1,687 blocks are definitely lost in loss record 62 of 76
+# ==17813==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==17813==    by 0x9CFD742: g_malloc (gmem.c:131)
+# ==17813==    by 0x9D13707: g_slice_alloc (gslice.c:824)
+# ==17813==    by 0x9D13A35: g_slice_alloc0 (gslice.c:833)
+# ==17813==    by 0x96617AF: g_type_create_instance (gtype.c:1654)
+# ==17813==    by 0x964645A: g_object_constructor (gobject.c:1338)
+# ==17813==    by 0x8690E14: (within /usr/lib/libbonobo-2.so.0.0.0)
+# ==17813==    by 0x9646AA2: g_object_newv (gobject.c:1215)
+# ==17813==    by 0x96474DA: g_object_new_valist (gobject.c:1319)
+# ==17813==    by 0x964772B: g_object_new (gobject.c:1060)
+# ==17813==    by 0x527473F: e_data_book_new (e-data-book.c:943)
+# ==17813==    by 0x52722EA: impl_GNOME_Evolution_Addressbook_BookFactory_getBook (e-data-book-factory.c:351)
+# ==17813==    by 0x52670B6: _ORBIT_skel_small_GNOME_Evolution_Addressbook_BookFactory_getBook (Evolution-DataServer-Addressbook-common.c:180)
+# ==17813==    by 0x8B204EF: ORBit_small_invoke_adaptor (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30809: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30E39: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B195CE: giop_thread_queue_process (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B19E87: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x9D1FAD6: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==17813==    by 0x9D1E573: g_thread_create_proxy (gthread.c:635)
+# ==17813==    by 0xA7CDFA9: start_thread (in /lib/libpthread-2.9.so)
+# ==17813==    by 0xAAB029C: clone (in /lib/libc-2.9.so)
+{
+   gnome edata book new
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_slice_alloc
+   fun:g_slice_alloc0
+   fun:g_type_create_instance
+   fun:g_object_constructor
+   obj:/usr/lib/libbonobo-2.so.0.0.0
+   fun:g_object_newv
+   fun:g_object_new_valist
+   fun:g_object_new
+   fun:e_data_book_new
+   fun:impl_GNOME_Evolution_Addressbook_BookFactory_getBook
+   fun:_ORBIT_skel_small_GNOME_Evolution_Addressbook_BookFactory_getBook
+   fun:ORBit_small_invoke_adaptor
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:giop_thread_queue_process
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_thread_pool_thread_proxy
+   fun:g_thread_create_proxy
+   fun:start_thread
+   fun:clone
+}
+
+# ==17813== 450,999 (12,320 direct, 438,679 indirect) bytes in 385 blocks are definitely lost in loss record 65 of 76
+# ==17813==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==17813==    by 0x4C23AA7: realloc (vg_replace_malloc.c:429)
+# ==17813==    by 0x9CFD66D: g_realloc (gmem.c:170)
+# ==17813==    by 0x96427CB: g_object_weak_ref (gobject.c:1983)
+# ==17813==    by 0x707D9C8: e_cal_backend_add_client (e-cal-backend.c:394)
+# ==17813==    by 0x708872C: impl_CalFactory_getCal (e-data-cal-factory.c:230)
+# ==17813==    by 0x7077979: _ORBIT_skel_small_GNOME_Evolution_Calendar_CalFactory_getCal (Evolution-DataServer-Calendar-common.c:244)
+# ==17813==    by 0x8B204EF: ORBit_small_invoke_adaptor (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30809: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30E39: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B195CE: giop_thread_queue_process (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B19E87: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x9D1FAD6: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==17813==    by 0x9D1E573: g_thread_create_proxy (gthread.c:635)
+# ==17813==    by 0xA7CDFA9: start_thread (in /lib/libpthread-2.9.so)
+# ==17813==    by 0xAAB029C: clone (in /lib/libc-2.9.so)
+{
+   ecal backend add client
+   Memcheck:Leak
+   fun:malloc
+   fun:realloc
+   fun:g_realloc
+   fun:g_object_weak_ref
+   fun:e_cal_backend_add_client
+   fun:impl_CalFactory_getCal
+   fun:_ORBIT_skel_small_GNOME_Evolution_Calendar_CalFactory_getCal
+   fun:ORBit_small_invoke_adaptor
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:giop_thread_queue_process
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_thread_pool_thread_proxy
+   fun:g_thread_create_proxy
+   fun:start_thread
+   fun:clone
+}
+
+# ==17813== 175,504 bytes in 43 blocks are definitely lost in loss record 71 of 76
+# ==17813==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==17813==    by 0x76127D7: __os_malloc (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75E352E: __env_alloc (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x760219F: __memp_alloc (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x7604450: __memp_fget (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75497ED: __ham_get_meta (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x754A9C3: __ham_open (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75CFD72: __db_open (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75C86C6: __db_open_pp (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0xEDC579F: e_book_backend_file_load_source (e-book-backend-file.c:1201)
+# ==17813==    by 0x52716C5: e_book_backend_load_source (e-book-backend.c:74)
+# ==17813==    by 0x5271FE0: e_book_backend_open (e-book-backend.c:129)
+# ==17813==    by 0x8B204EF: ORBit_small_invoke_adaptor (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30809: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30E39: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B195CE: giop_thread_queue_process (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B19E87: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x9D1FAD6: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==17813==    by 0x9D1E573: g_thread_create_proxy (gthread.c:635)
+# ==17813==    by 0xA7CDFA9: start_thread (in /lib/libpthread-2.9.so)
+# ==17813==    by 0xAAB029C: clone (in /lib/libc-2.9.so)
+{
+   ebook backend open I
+   Memcheck:Leak
+   fun:malloc
+   fun:__os_malloc
+   fun:__env_alloc
+   fun:__memp_alloc
+   fun:__memp_fget
+   fun:__ham_get_meta
+   fun:__ham_open
+   fun:__db_open
+   fun:__db_open_pp
+   fun:e_book_backend_file_load_source
+   fun:e_book_backend_load_source
+   fun:e_book_backend_open
+   fun:ORBit_small_invoke_adaptor
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:giop_thread_queue_process
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_thread_pool_thread_proxy
+   fun:g_thread_create_proxy
+   fun:start_thread
+   fun:clone
+}
+
+# ==17813==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==17813==    by 0x76127D7: __os_malloc (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75E352E: __env_alloc (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x760CD1A: __memp_init (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x760D66D: __memp_open (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0x75E926F: __env_open (in /usr/lib/libdb-4.7.so)
+# ==17813==    by 0xEDC585F: e_book_backend_file_load_source (e-book-backend-file.c:1113)
+# ==17813==    by 0x52716C5: e_book_backend_load_source (e-book-backend.c:74)
+# ==17813==    by 0x5271FE0: e_book_backend_open (e-book-backend.c:129)
+# ==17813==    by 0x8B204EF: ORBit_small_invoke_adaptor (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30809: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B30E39: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B195CE: giop_thread_queue_process (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B19E87: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x9D1FAD6: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==17813==    by 0x9D1E573: g_thread_create_proxy (gthread.c:635)
+# ==17813==    by 0xA7CDFA9: start_thread (in /lib/libpthread-2.9.so)
+# ==17813==    by 0xAAB029C: clone (in /lib/libc-2.9.so)
+{
+   eook backend open II
+   Memcheck:Leak
+   fun:malloc
+   fun:__os_malloc
+   fun:__env_alloc
+   fun:__memp_init
+   fun:__memp_open
+   fun:__env_open
+   fun:e_book_backend_file_load_source
+   fun:e_book_backend_load_source
+   fun:e_book_backend_open
+   fun:ORBit_small_invoke_adaptor
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:giop_thread_queue_process
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_thread_pool_thread_proxy
+   fun:g_thread_create_proxy
+   fun:start_thread
+   fun:clone
+}
+
+# ==17813== 49,700,435 (24,021,928 direct, 25,678,507 indirect) bytes in 150,579 blocks are definitely lost in loss record 76 of 76
+# ==17813==    at 0x4C216F4: calloc (vg_replace_malloc.c:397)
+# ==17813==    by 0x9CFD6E9: g_malloc0 (gmem.c:151)
+# ==17813==    by 0x8B1B567: giop_recv_buffer_use_buf (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B1CD84: giop_connection_handle_input (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x8B39E57: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x9CF4F79: g_main_context_dispatch (gmain.c:1814)
+# ==17813==    by 0x9CF863F: g_main_context_iterate (gmain.c:2448)
+# ==17813==    by 0x9CF8B0C: g_main_loop_run (gmain.c:2656)
+# ==17813==    by 0x8B381CF: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17813==    by 0x9D1E573: g_thread_create_proxy (gthread.c:635)
+# ==17813==    by 0xA7CDFA9: start_thread (in /lib/libpthread-2.9.so)
+# ==17813==    by 0xAAB029C: clone (in /lib/libc-2.9.so)
+{
+   giop connection handle input III
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:giop_recv_buffer_use_buf
+   fun:giop_connection_handle_input
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_main_context_dispatch
+   fun:g_main_context_iterate
+   fun:g_main_loop_run
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_thread_create_proxy
+   fun:start_thread
+   fun:clone
+}
+
+# ==17786== 4,144 bytes in 95 blocks are possibly lost in loss record 44 of 65
+# ==17786==    at 0x4C216F4: calloc (vg_replace_malloc.c:397)
+# ==17786==    by 0x6EAF6E9: g_malloc0 (gmem.c:151)
+# ==17786==    by 0x91EB67E: ORBit_alloc_tcval (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17786==    by 0x91F9F10: ORBit_adaptor_setup (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17786==    by 0x91F6AA7: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17786==    by 0x91F6E54: ORBit_POA_new_from (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17786==    by 0xAD65231: bonobo_poa_new_from (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==17786==    by 0xAD65347: bonobo_poa_get_threadedv (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==17786==    by 0xAD6551C: bonobo_poa_get_threaded (in /usr/lib/libbonobo-2.so.0.0.0)
+# ==17786==    by 0xBA2A3CF: e_book_listener_new (e-book-listener.c:411)
+# ==17786==    by 0xBA2E3DE: e_book_new (e-book.c:3334)
+# ==17786==    by 0xBA2E7BE: e_book_new_from_uri (e-book.c:3877)
+# ==17786==    by 0xA6F792C: SyncEvo::EvolutionContactSource::open() (EvolutionContactSource.cpp:141)
+# ==17786==    by 0x5648DE: SyncEvo::TestingSyncSourcePtr::TestingSyncSourcePtr(SyncEvo::TestingSyncSource*) (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==17786==    by 0x4B6E52: SyncEvo::LocalTests::insert(SyncEvo::CreateSource, char const*, bool) (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==17786==    by 0x44D846: SyncEvo::LocalTests::testSimpleInsert() (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==17786==    by 0x4813E9: SyncEvo::SyncTests::testDeleteAllRefresh() (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==17786==    by 0x55A86D: CppUnit::TestCaller<SyncEvo::SyncTests>::runTest() (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==17786==    by 0x4E52406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E447D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E4E278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E4DFBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E59D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E5209C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E529FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E52925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E529FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E52925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E59B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==17786==    by 0x4E5C121: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+{
+   ebook new VI
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:ORBit_alloc_tcval
+   fun:ORBit_adaptor_setup
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:ORBit_POA_new_from
+   fun:bonobo_poa_new_from
+   fun:bonobo_poa_get_threadedv
+   fun:bonobo_poa_get_threaded
+   fun:e_book_listener_new
+   fun:e_book_new
+   fun:e_book_new_from_uri
+   fun:_ZN7SyncEvo22EvolutionContactSource4openEv
+   fun:_ZN7SyncEvo20TestingSyncSourcePtrC1EPNS_17TestingSyncSourceE
+   fun:_ZN7SyncEvo10LocalTests6insertENS_12CreateSourceEPKcb
+   fun:_ZN7SyncEvo10LocalTests16testSimpleInsertEv
+   fun:_ZN7SyncEvo9SyncTests20testDeleteAllRefreshEv
+   fun:_ZN7CppUnit10TestCallerIN7SyncEvo9SyncTestsEE7runTestEv
+   fun:_ZNK7CppUnit21TestCaseMethodFunctorclEv
+   fun:_ZN7CppUnit16DefaultProtector7protectERKNS_7FunctorERKNS_16ProtectorContextE
+   fun:_ZNK7CppUnit14ProtectorChain14ProtectFunctorclEv
+   fun:_ZN7CppUnit14ProtectorChain7protectERKNS_7FunctorERKNS_16ProtectorContextE
+   fun:_ZN7CppUnit10TestResult7protectERKNS_7FunctorEPNS_4TestERKSs
+   fun:_ZN7CppUnit8TestCase3runEPNS_10TestResultE
+}
+
+# ==28783== 6,326 bytes in 166 blocks are possibly lost in loss record 46 of 72
+# ==28783==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==28783==    by 0x6EAF742: g_malloc (gmem.c:131)
+# ==28783==    by 0x91EB8AC: ORBit_alloc_string (in /usr/lib/libORBit-2.so.0.1.0)
+# ==28783==    by 0x91EB59C: CORBA_string_dup (in /usr/lib/libORBit-2.so.0.1.0)
+# ==28783==    by 0xAFBF14F: Bonobo_ActivationProperty_copy (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==28783==    by 0xAFBF1DA: CORBA_sequence_Bonobo_ActivationProperty_copy (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==28783==    by 0xAFBF2EA: Bonobo_ServerInfoList_duplicate (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==28783==    by 0xAFBD54F: bonobo_activation_query (in /usr/lib/libbonobo-activation.so.4.0.0)
+# ==28783==    by 0xBA2E31E: e_book_new (e-book.c:3259)
+# ==28783==    by 0xBA2E7BE: e_book_new_from_uri (e-book.c:3877)
+# ==28783==    by 0xA6F792C: SyncEvo::EvolutionContactSource::open() (EvolutionContactSource.cpp:141)
+# ==28783==    by 0x5648DE: SyncEvo::TestingSyncSourcePtr::TestingSyncSourcePtr(SyncEvo::TestingSyncSource*) (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==28783==    by 0x4B6E52: SyncEvo::LocalTests::insert(SyncEvo::CreateSource, char const*, bool) (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==28783==    by 0x44D846: SyncEvo::LocalTests::testSimpleInsert() (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==28783==    by 0x4813E9: SyncEvo::SyncTests::testDeleteAllRefresh() (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==28783==    by 0x55A86D: CppUnit::TestCaller<SyncEvo::SyncTests>::runTest() (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+# ==28783==    by 0x4E52406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E447D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E4E278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E4DFBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E59D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E5209C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E529FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E52925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E529FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E52925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E59B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E5C121: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x4E5F13A: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==28783==    by 0x567669: main (in /work/runtests/head-evolution-testing/build/src/.libs/lt-client-test)
+{
+   ebook new VII
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:ORBit_alloc_string
+   fun:CORBA_string_dup
+   fun:Bonobo_ActivationProperty_copy
+   fun:CORBA_sequence_Bonobo_ActivationProperty_copy
+   fun:Bonobo_ServerInfoList_duplicate
+   fun:bonobo_activation_query
+   fun:e_book_new
+   fun:e_book_new_from_uri
+   fun:_ZN7SyncEvo22EvolutionContactSource4openEv
+   fun:_ZN7SyncEvo20TestingSyncSourcePtrC1EPNS_17TestingSyncSourceE
+   fun:_ZN7SyncEvo10LocalTests6insertENS_12CreateSourceEPKcb
+   fun:_ZN7SyncEvo10LocalTests16testSimpleInsertEv
+   fun:_ZN7SyncEvo9SyncTests20testDeleteAllRefreshEv
+   fun:_ZN7CppUnit10TestCallerIN7SyncEvo9SyncTestsEE7runTestEv
+   fun:_ZNK7CppUnit21TestCaseMethodFunctorclEv
+   fun:_ZN7CppUnit16DefaultProtector7protectERKNS_7FunctorERKNS_16ProtectorContextE
+   fun:_ZNK7CppUnit14ProtectorChain14ProtectFunctorclEv
+   fun:_ZN7CppUnit14ProtectorChain7protectERKNS_7FunctorERKNS_16ProtectorContextE
+   fun:_ZN7CppUnit10TestResult7protectERKNS_7FunctorEPNS_4TestERKSs
+   fun:_ZN7CppUnit8TestCase3runEPNS_10TestResultE
+   fun:_ZN7CppUnit13TestComposite15doRunChildTestsEPNS_10TestResultE
+   fun:_ZN7CppUnit13TestComposite3runEPNS_10TestResultE
+}
+
+# ==17187== 207,274 bytes in 11 blocks are possibly lost in loss record 70 of 71
+# ==17187==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==17187==    by 0x76127D7: __os_malloc (in /usr/lib/libdb-4.7.so)
+# ==17187==    by 0x75E352E: __env_alloc (in /usr/lib/libdb-4.7.so)
+# ==17187==    by 0x75EBB48: __env_attach (in /usr/lib/libdb-4.7.so)
+# ==17187==    by 0x75E8DD2: __env_open (in /usr/lib/libdb-4.7.so)
+# ==17187==    by 0xEDC585F: e_book_backend_file_load_source (e-book-backend-file.c:1113)
+# ==17187==    by 0x52716C5: e_book_backend_load_source (e-book-backend.c:74)
+# ==17187==    by 0x5271FE0: e_book_backend_open (e-book-backend.c:129)
+# ==17187==    by 0x8B204EF: ORBit_small_invoke_adaptor (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17187==    by 0x8B30809: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17187==    by 0x8B30E39: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17187==    by 0x8B195CE: giop_thread_queue_process (in /usr/lib/libORBit-2.so.0.1.0)
+# ==17187==    by 0x8B19E87: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==17187==    by 0x9D1FAD6: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==17187==    by 0x9D1E573: g_thread_create_proxy (gthread.c:635)
+# ==17187==    by 0xA7CDFA9: start_thread (in /lib/libpthread-2.9.so)
+# ==17187==    by 0xAAB029C: clone (in /lib/libc-2.9.so)
+{
+   ebook backend open III
+   Memcheck:Leak
+   fun:malloc
+   fun:__os_malloc
+   fun:__env_alloc
+   fun:__env_attach
+   fun:__env_open
+   fun:e_book_backend_file_load_source
+   fun:e_book_backend_load_source
+   fun:e_book_backend_open
+   fun:ORBit_small_invoke_adaptor
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:giop_thread_queue_process
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_thread_pool_thread_proxy
+   fun:g_thread_create_proxy
+   fun:start_thread
+   fun:clone
+}
+
+# ==4974== 3,897,786 (169,592 direct, 3,728,194 indirect) bytes in 2,953 blocks are definitely lost in loss record 70 of 78
+# ==4974==    at 0x4C2391E: malloc (vg_replace_malloc.c:207)
+# ==4974==    by 0x9CFD742: g_malloc (gmem.c:131)
+# ==4974==    by 0x9D13707: g_slice_alloc (gslice.c:824)
+# ==4974==    by 0x9CE105B: g_datalist_id_set_data_full (gdataset.c:292)
+# ==4974==    by 0x5271A13: e_book_backend_add_client (e-book-backend.c:576)
+# ==4974==    by 0x52722F8: impl_GNOME_Evolution_Addressbook_BookFactory_getBook (e-data-book-factory.c:353)
+# ==4974==    by 0x52670B6: _ORBIT_skel_small_GNOME_Evolution_Addressbook_BookFactory_getBook (Evolution-DataServer-Addressbook-common.c:180)
+# ==4974==    by 0x8B204EF: ORBit_small_invoke_adaptor (in /usr/lib/libORBit-2.so.0.1.0)
+# ==4974==    by 0x8B30809: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==4974==    by 0x8B30E39: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==4974==    by 0x8B195CE: giop_thread_queue_process (in /usr/lib/libORBit-2.so.0.1.0)
+# ==4974==    by 0x8B19E87: (within /usr/lib/libORBit-2.so.0.1.0)
+# ==4974==    by 0x9D1FAD6: g_thread_pool_thread_proxy (gthreadpool.c:265)
+# ==4974==    by 0x9D1E573: g_thread_create_proxy (gthread.c:635)
+# ==4974==    by 0xA7CDFA9: start_thread (in /lib/libpthread-2.9.so)
+# ==4974==    by 0xAAB029C: clone (in /lib/libc-2.9.so)
+{
+   ebook backend add client II
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_slice_alloc
+   fun:g_datalist_id_set_data_full
+   fun:e_book_backend_add_client
+   fun:impl_GNOME_Evolution_Addressbook_BookFactory_getBook
+   fun:_ORBIT_skel_small_GNOME_Evolution_Addressbook_BookFactory_getBook
+   fun:ORBit_small_invoke_adaptor
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:giop_thread_queue_process
+   obj:/usr/lib/libORBit-2.so.0.1.0
+   fun:g_thread_pool_thread_proxy
+   fun:g_thread_create_proxy
+   fun:start_thread
+   fun:clone
+}
+
+
