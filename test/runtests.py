@@ -369,10 +369,15 @@ class GitCheckout(Action):
 
     def execute(self):
         if os.access(self.basedir, os.F_OK):
-            cmd = "cd %s && git fetch %s && git checkout %s && git pull" % (self.basedir, self.url, self.revision)
+            cmd = "cd %s && git fetch %s" % (self.basedir, self.url)
         else:
-            cmd = "git clone %s %s && cd %s && git checkout %s" % (self.url, self.basedir, self.basedir, self.revision)
+            cmd = "git clone %s %s" % (self.url, self.basedir)
         context.runCommand(cmd)
+        context.runCommand("cd %(dir)s && "
+                           "((git tag -l | grep -w -q %(rev)s) && git checkout %(rev)s ||"
+                           "((git branch -l | grep -w -q %(rev)s) && git checkout %(rev)s || git checkout -b %(rev)s origin/%(rev)s) && git merge origin/%(rev)s)" %
+                           {"dir": self.basedir,
+                            "rev": self.revision})
         os.chdir(self.basedir)
         if os.access("autogen.sh", os.F_OK):
             context.runCommand("%s ./autogen.sh" % (self.runner))
