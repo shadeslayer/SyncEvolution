@@ -259,8 +259,8 @@ class Context:
         # run testresult checker 
         #calculate the src dir where client-test can be located
         srcdir = os.path.join(self.tmpdir,"build/src")
-        backendir = os.path.join(self.tmpdir, "install/usr/lib/syncevolution/backends")
-        os.system ("resultchecker.py " +self.resultdir+" "+",".join(run_servers)+" "+self.uri +" "+srcdir + " '" + options.shell + " " + options.testprefix +" '"+" '" +backendir +"'");
+        backenddir = os.path.join(self.tmpdir, "install/usr/lib/syncevolution/backends")
+        os.system ("resultchecker.py " +self.resultdir+" "+",".join(run_servers)+" "+self.uri +" "+srcdir + " '" + options.shell + " " + options.testprefix +" '"+" '" +backenddir +"'");
         # transform to html
         os.system ("xsltproc -o " + self.resultdir + "/cmp_result.xml --stringparam cmp_file " + self.lastresultdir +"/nightly.xml "+self.datadir +"/compare.xsl "+ self.resultdir+"/nightly.xml")
         os.system ("xsltproc -o " + self.resultdir + "/nightly.html --stringparam cmp_result_file " + self.resultdir + "/cmp_result.xml " + self.datadir +"/generate-html.xsl "+ self.resultdir+"/nightly.xml")
@@ -423,8 +423,11 @@ class SyncEvolutionTest(Action):
         try:
             if context.setupcmd:
                 context.runCommand("%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name))
-            backendir = os.path.join(context.tmpdir, "install/usr/lib/syncevolution/backends")
-            basecmd = "CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNCEVOLUTION_BACKEND_DIR=%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s env LD_LIBRARY_PATH=build-synthesis/src/.libs ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, backendir, self.serverlogs, context.workdir, self.runner, self.testPrefix);
+            backenddir = os.path.join(context.tmpdir, "install/usr/lib/syncevolution/backends")
+            if not os.access(backenddir, os.F_OK):
+                # try relative to client-test inside the current directory
+                backenddir = "backends"
+            basecmd = "CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNCEVOLUTION_BACKEND_DIR=%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s %s env LD_LIBRARY_PATH=build-synthesis/src/.libs ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, backenddir, self.serverlogs, context.workdir, self.runner, self.testPrefix);
             context.runCommand("%s testclean" % context.make)
             if self.tests:
                 tests = []
