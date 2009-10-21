@@ -122,3 +122,15 @@ elif sys.argv[2] == "--getdatabases":
             print '\t\t','name =', item[0], ', uri = ', item[1], ', default =', item[2]
         i = i + 1
     print ''
+elif sys.argv[2] == "--getconfigs":
+    i = 3
+    length = len(sys.argv)
+    r = {}
+    if length == 3:
+        r = session.GetConfigs(1)
+        print ' Available configuration templates:'
+    else:
+        r = session.GetConfigs(0)
+        print ' Configured servers:'
+    for item in r:
+        print '\t', item
