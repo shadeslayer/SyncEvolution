@@ -813,9 +813,14 @@ ReadOperations::ReadOperations(const std::string &config_name) :
 
 void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &configNames)
 {
-    // TODO: add real implementation
+    SyncConfig::ServerList list;
     if (getTemplates) {
-        configNames.push_back("google");
+        list = SyncConfig::getServerTemplates();
+    } else {
+        list = SyncConfig::getServers();
+    }
+    BOOST_FOREACH(const SyncConfig::ServerList::value_type &server, list) {
+        configNames.push_back(server.first);
     }
 }
 
