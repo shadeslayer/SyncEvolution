@@ -69,10 +69,8 @@ TSyError SyncEvolution_Module_CreateContext( CContext *mContext, cAppCharP   mod
         err = LOCERR_OK;
     }
 
-    DEBUG_DB(mCB, MyDB,  Mo_CC, "'%s%s%s' (%s) => %d",
-             moduleName, subName[0] ? "/" : "", subName, 
-             mContextName,
-             err);
+    SE_LOG_DEBUG(NULL, NULL, "CreateContext %s/%s/%s => %d",
+                 moduleName, subName, mContextName, err);
     return err;
 }
 
@@ -87,7 +85,7 @@ CVersion SyncEvolution_Module_Version(CContext mContext)
     CVersion v = Plugin_Version(BuildNumber);
   
     if (mContext) {
-        DEBUG_DB(MoC(mContext)->getSynthesisAPI(), MyDB,Mo_Ve, "%08X", v);
+        SE_LOG_DEBUG(NULL, NULL, "Module_Version = %08lx", (long)v);
     }
     return v;
 }
@@ -116,7 +114,7 @@ TSyError SyncEvolution_Module_Capabilities( CContext mContext, appCharP *mCapabi
     }
 
     *mCapabilities= StrAlloc(s.str().c_str());
-    DEBUG_DB(MoC(mContext)->getSynthesisAPI(), MyDB, Mo_Ca, "'%s'", *mCapabilities);
+    SE_LOG_DEBUG(NULL, NULL, "Module_Capabilities:\n%s", *mCapabilities);
     return LOCERR_OK;
 } /* Module_Capabilities */
 
@@ -127,9 +125,8 @@ TSyError SyncEvolution_Module_PluginParams( CContext mContext,
                                             cAppCharP mConfigParams, CVersion engineVersion )
 {
     SyncSource *source  = MoC(mContext);
-    DEBUG_DB(source->getSynthesisAPI(), MyDB, Mo_PP, " Engine=%08X", engineVersion);
-    DEBUG_DB(source->getSynthesisAPI(), MyDB, Mo_PP, "'%s'",         mConfigParams );
-  
+    SE_LOG_DEBUG(source, NULL, "Module_PluginParams\n Engine=%08lX\n %s",
+                 (long)engineVersion, mConfigParams);
     /*return LOCERR_CFGPARSE;*/ /* if there are unsupported params */
     return LOCERR_OK;
 } /* Module_PluginParams */
@@ -140,8 +137,6 @@ TSyError SyncEvolution_Module_PluginParams( CContext mContext,
 extern "C"
 void SyncEvolution_Module_DisposeObj( CContext mContext, void* memory )
 {
-    DEBUG_Exotic_DB(MoC(mContext)->getSynthesisAPI(), MyDB, Mo_DO,
-                    "free at %08X '%s'", memory, memory);
     StrDispose(memory);
 }
 
@@ -149,7 +144,7 @@ extern "C"
 TSyError SyncEvolution_Module_DeleteContext( CContext mContext )
 {
     SyncSource  *source = MoC(mContext);
-    DEBUG_DB(source->getSynthesisAPI(), MyDB, Mo_DC, "'%s'", source->getName());
+    SE_LOG_DEBUG(NULL, NULL, "Module_DeleteContext %s", source->getName());
     source->popSynthesisAPI();
     return LOCERR_OK;
 }
@@ -186,11 +181,11 @@ TSyError SyncEvolution_Session_CreateContext( CContext *sContext, cAppCharP sess
   if (sc==NULL) return DB_Full;
 
   /**** CAN BE ADAPTED BY USER ****/
-            sc->fID= 333; /* as an example */
-            sc->fCB= sCB;
-            sc->fPMode= Password_ClrText_IN;        /* take this mode ... */
-         /* sc->fPMode= Password_ClrText_OUT; */    /* ... or this        */
-  DEBUG_DB( sc->fCB, MyDB,Se_CC, "%d '%s'", sc->fID,sessionName );
+  sc->fID= 333; /* as an example */
+  sc->fCB= sCB;
+  sc->fPMode= Password_ClrText_IN;        /* take this mode ... */
+  /* sc->fPMode= Password_ClrText_OUT; */    /* ... or this        */
+  SE_LOG_DEBUG(NULL, NULL, "Session_CreateContext %s", sessionName);
   
   *sContext= (CContext)sc; /* return the created context structure */
   return LOCERR_OK;
@@ -205,11 +200,11 @@ TSyError SyncEvolution_Session_AdaptItem( CContext sContext, appCharP *sItemData
                                           appCharP *sLocalVars, 
                                           uInt32  sIdentifier ) 
 { 
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SessionContext* sc= SeC( sContext );
-  DEBUG_DB      ( sc->fCB, MyDB,"Session_AdaptItem", "'%s' '%s' '%s' id=%d", 
-                                *sItemData1,*sItemData2,*sLocalVars, sIdentifier );
-  return LOCERR_OK;
+    /**** CAN BE ADAPTED BY USER ****/ 
+    // SessionContext* sc= SeC( sContext );
+    SE_LOG_DEBUG(NULL, NULL, "Session_AdaptItem '%s' '%s' '%s' id=%d", 
+                 *sItemData1,*sItemData2,*sLocalVars, sIdentifier);
+    return LOCERR_OK;
 } /* Session_AdaptItem */
 
 
@@ -225,7 +220,8 @@ TSyError SyncEvolution_Session_CheckDevice( CContext sContext,
   
   *sDevKey= StrAlloc( aDeviceID  );
   *nonce  = StrAlloc( "xyz_last" );
-  DEBUG_DB( sc->fCB, MyDB,Se_CD, "%d dev='%s' nonce='%s'", sc->fID, *sDevKey,*nonce );
+  SE_LOG_DEBUG(NULL, NULL, "Session_CheckDevice %d dev='%s' nonce='%s'",
+               sc->fID, *sDevKey, *nonce);
   return LOCERR_OK;
 } /* Session_CheckDevice */
 
@@ -239,7 +235,7 @@ TSyError SyncEvolution_Session_GetNonce( CContext sContext, appCharP *nonce )
 {
   /**** CAN BE ADAPTED BY USER ****/
   SessionContext* sc= SeC( sContext );
-  DEBUG_DB      ( sc->fCB, MyDB,Se_GN, "%d (not supported)", sc->fID );
+  SE_LOG_DEBUG(NULL, NULL, "Session_GetNonce %d (not supported)", sc->fID);
   *nonce= NULL;
   return DB_NotFound;
 } /* Session_GetNonce */
@@ -254,8 +250,9 @@ TSyError SyncEvolution_Session_SaveNonce( CContext sContext, cAppCharP nonce )
 {
   /**** CAN BE ADAPTED BY USER ****/
   SessionContext* sc= SeC( sContext );
-  DEBUG_DB      ( sc->fCB, MyDB,Se_SN, "%d nonce='%s'", sc->fID, nonce );
-  return LOCERR_OK;
+  SE_LOG_DEBUG(NULL, NULL, "Session_SaveNonce %d nonce='%s'",
+               sc->fID, nonce);
+  return LOCERR_NOTIMP;
 } /* Session_SaveNonce */
 
 
@@ -266,8 +263,9 @@ TSyError SyncEvolution_Session_SaveDeviceInfo( CContext sContext, cAppCharP aDev
 {
   /**** CAN BE ADAPTED BY USER ****/
   SessionContext* sc= SeC( sContext );
-  DEBUG_DB      ( sc->fCB, MyDB,Se_SD, "%d info='%s'", sc->fID, aDeviceInfo );
-  return LOCERR_OK;
+  SE_LOG_DEBUG(NULL, NULL, "Session_SaveDeviceInfo %d info='%s'",
+               sc->fID, aDeviceInfo );
+  return LOCERR_NOTIMP;
 } /* Session_SaveDeviceInfo */
 
 
@@ -278,7 +276,7 @@ TSyError SyncEvolution_Session_GetDBTime( CContext sContext, appCharP *currentDB
 { 
   /**** CAN BE ADAPTED BY USER ****/
   SessionContext* sc= SeC( sContext );
-  DEBUG_DB      ( sc->fCB, MyDB,Se_GT, "%d", sc->fID );
+  SE_LOG_DEBUG(NULL, NULL, "Session_GetDBTime %d", sc->fID);
   *currentDBTime= NULL;
   return DB_NotFound;
 } /* Session_GetDBTime */
@@ -295,8 +293,9 @@ sInt32 SyncEvolution_Session_PasswordMode( CContext sContext )
 {
   /**** CAN BE ADAPTED BY USER ****/
   SessionContext* sc= SeC( sContext );
-  DEBUG_DB      ( sc->fCB, MyDB,Se_PM, "%d mode=%d", sc->fID, sc->fPMode );
-  return          sc->fPMode;
+  SE_LOG_DEBUG(NULL, NULL, "Session_PasswordMode %d mode=%d",
+               sc->fID, sc->fPMode);
+  return sc->fPMode;
 } /* Session_PasswordMode */
 
 
@@ -320,10 +319,13 @@ TSyError SyncEvolution_Session_Login( CContext sContext, cAppCharP sUsername, ap
                                            *sUsrKey  = StrAlloc( "1234" ); err= LOCERR_OK; }
   } /* if */
 
-  if (err) { DEBUG_DB( sc->fCB, MyDB,Se_LI, "%d usr='%s' err=%d",
-                                             sc->fID,sUsername, err ); }
-  else       DEBUG_DB( sc->fCB, MyDB,Se_LI, "%d usr='%s' pwd='%s' => key='%s'", 
-                                             sc->fID,sUsername,*sPassword, *sUsrKey );
+  if (err) {
+      SE_LOG_DEBUG(NULL, NULL, "Session_Login %d usr='%s' err=%d",
+                   sc->fID,sUsername, err);
+  } else {
+      SE_LOG_DEBUG(NULL, NULL, "Session_Login %d usr='%s' pwd='%s' => key='%s'",
+                   sc->fID,sUsername,*sPassword, *sUsrKey);
+  }
   return err;
 } /* Session_Login */
 
@@ -335,7 +337,7 @@ TSyError SyncEvolution_Session_Logout( CContext sContext )
 {
   /**** CAN BE ADAPTED BY USER ****/ 
   SessionContext* sc= SeC( sContext );
-  DEBUG_DB      ( sc->fCB, MyDB,Se_LO, "%d",sc->fID );
+  SE_LOG_DEBUG(NULL, NULL, "Session_Logout %d",sc->fID);
   return LOCERR_OK;
 } /* Session_Logout */
 
@@ -344,10 +346,6 @@ TSyError SyncEvolution_Session_Logout( CContext sContext )
 extern "C"
 void SyncEvolution_Session_DisposeObj( CContext sContext, void* memory )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SessionContext*  sc= SeC( sContext );
-  DEBUG_Exotic_DB( sc->fCB, MyDB,Se_DO, "%d free at %08X '%s'",
-                   sc->fID, memory,memory );
   StrDispose              ( memory );
 } /* Session_DisposeObj */
 
@@ -357,9 +355,6 @@ void SyncEvolution_Session_DisposeObj( CContext sContext, void* memory )
 extern "C"
 void SyncEvolution_Session_ThreadMayChangeNow( CContext sContext )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SessionContext*  sc= SeC( sContext );
-  DEBUG_Exotic_DB( sc->fCB, MyDB,Se_TC, "%d",sc->fID );
 } /* Session_ThreadMayChangeNow */
 
 
@@ -370,10 +365,6 @@ void SyncEvolution_Session_ThreadMayChangeNow( CContext sContext )
 extern "C"
 void SyncEvolution_Session_DispItems( CContext sContext, bool allFields, cAppCharP specificItem )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SessionContext* sc= SeC( sContext );
-  DEBUG_DB      ( sc->fCB, MyDB,Se_DI, "%d %d '%s'",
-                  sc->fID, allFields,specificItem );
 } /* Session_DispItems */
 
 
@@ -384,7 +375,7 @@ TSyError SyncEvolution_Session_DeleteContext( CContext sContext )
 { 
   /**** CAN BE ADAPTED BY USER ****/ 
   SessionContext* sc= SeC( sContext );
-  DEBUG_DB      ( sc->fCB, MyDB,Se_DC, "%d",sc->fID );
+  SE_LOG_DEBUG(NULL, NULL, "Session_DeleteContext %d", sc->fID);
 
   delete sc;
 
@@ -420,8 +411,8 @@ TSyError SyncEvolution_CreateContext( CContext *aContext, cAppCharP aContextName
         *aContext = (CContext)source;
         err = LOCERR_OK;
     }
-    DEBUG_DB( aCB, MyDB,Da_CC, "'%s' dev='%s' usr='%s'",
-              aContextName, sDevKey, sUsrKey ); 
+    SE_LOG_DEBUG(source, NULL, "'%s' dev='%s' usr='%s' err=%d",
+                 aContextName, sDevKey, sUsrKey, err);
     return err;
 }
 
@@ -431,7 +422,7 @@ extern "C"
 uInt32 SyncEvolution_ContextSupport( CContext aContext, cAppCharP aContextRules ) 
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_CS, "%s '%s'", source->getName(),aContextRules );
+    SE_LOG_DEBUG(source, NULL, "ContextSupport %s", aContextRules);
     return 0;
 }
 
@@ -442,7 +433,7 @@ uInt32 SyncEvolution_FilterSupport( CContext aContext, cAppCharP aFilterRules )
 {
   /**** CAN BE ADAPTED BY USER ****/ 
   SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_FS, "%s '%s'", source->getName(),aFilterRules );
+  SE_LOG_DEBUG(source, NULL, "FilterSupport %s", aFilterRules);
   return 0;
 } /* FilterSupport */
 
@@ -454,9 +445,6 @@ TSyError SyncEvolution_LoadAdminData( CContext aContext, cAppCharP aLocDB,
                                       cAppCharP aRemDB, appCharP *adminData )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_LA, "%s '%s' '%s'",
-              source->getName(), aLocDB, aRemDB );
-
     TSyError res = DB_Forbidden;
     try {
         if (source->getOperations().m_loadAdminData) {
@@ -466,6 +454,8 @@ TSyError SyncEvolution_LoadAdminData( CContext aContext, cAppCharP aLocDB,
         res = source->handleException();
     }
 
+    SE_LOG_DEBUG(source, NULL, "LoadAdminData '%s' '%s', res=%d",
+                 aLocDB, aRemDB, res);
     return res;
 } /* LoadAdminData */
 
@@ -475,8 +465,6 @@ extern "C"
 TSyError SyncEvolution_SaveAdminData( CContext aContext, cAppCharP adminData )
 {
     SyncSource *source = DBC( aContext );
-    SE_LOG_DEBUG(NULL, NULL, "%s: save admin data '%s'", source->getName(), adminData);
-
     TSyError res = DB_Forbidden;
     try {
         if (source->getOperations().m_saveAdminData) {
@@ -486,6 +474,7 @@ TSyError SyncEvolution_SaveAdminData( CContext aContext, cAppCharP adminData )
         res = source->handleException();
     }
 
+    SE_LOG_DEBUG(source, NULL, "SaveAdminData '%s' res=%d", adminData, res);
     return res;
 } /* SaveAdminData */
 
@@ -495,8 +484,6 @@ extern "C"
 bool SyncEvolution_ReadNextMapItem( CContext aContext, MapID mID, bool aFirst )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_RM, "%s %08X first=%d (EOF)", source->getName(), mID, aFirst );
-
     bool res = false;
     try {
         if (source->getOperations().m_readNextMapItem) {
@@ -506,6 +493,8 @@ bool SyncEvolution_ReadNextMapItem( CContext aContext, MapID mID, bool aFirst )
         res = source->handleException();
     }
 
+    SE_LOG_DEBUG(source, NULL, "ReadNextMapItem %08lX first=%s res=%d",
+                 (long)mID, aFirst ? "yes" : "no", res);
     return res;
 } /* ReadNextMapItem */
 
@@ -515,9 +504,6 @@ extern "C"
 TSyError SyncEvolution_InsertMapItem( CContext aContext, cMapID mID )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_IM, "%s %08X: '%s' '%s' %04X %d", 
-              source->getName(), mID, mID->localID, mID->remoteID, mID->flags, mID->ident );
-
     TSyError res = DB_Forbidden;
     try {
         if (source->getOperations().m_insertMapItem) {
@@ -527,6 +513,8 @@ TSyError SyncEvolution_InsertMapItem( CContext aContext, cMapID mID )
         res = source->handleException();
     }
 
+    SE_LOG_DEBUG(source, NULL, "'%s' '%s' %04X %d, res=%d", 
+                 mID->localID, mID->remoteID, mID->flags, mID->ident, res);
     return res;
 } /* InsertMapItem */
 
@@ -536,9 +524,6 @@ extern "C"
 TSyError SyncEvolution_UpdateMapItem( CContext aContext, cMapID mID )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_UM, "%s %08X: '%s' '%s' %04X %d", 
-              source->getName(), mID, mID->localID, mID->remoteID, mID->flags, mID->ident );
-
     TSyError res = DB_Forbidden;
     try {
         if (source->getOperations().m_updateMapItem) {
@@ -547,6 +532,9 @@ TSyError SyncEvolution_UpdateMapItem( CContext aContext, cMapID mID )
     } catch (...) {
         res = source->handleException();
     }
+
+    SE_LOG_DEBUG(source, "UpdateMapItem '%s' '%s' %04X %d, res=%d", 
+                 mID->localID, mID->remoteID, mID->flags, mID->ident, res);
 
     return res;
 } /* UpdateMapItem */
@@ -557,9 +545,6 @@ extern "C"
 TSyError SyncEvolution_DeleteMapItem( CContext aContext, cMapID mID )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_DM, "%s %08X: '%s' '%s' %04X %d",
-              source->getName(), mID, mID->localID, mID->remoteID, mID->flags, mID->ident );
-    
     TSyError res = DB_Forbidden;
     try {
         if (source->getOperations().m_deleteMapItem) {
@@ -569,6 +554,8 @@ TSyError SyncEvolution_DeleteMapItem( CContext aContext, cMapID mID )
         res = source->handleException();
     }
 
+    SE_LOG_DEBUG(source, NULL, "DeleteMapItem '%s' '%s' %04X %d res=%d",
+                 mID->localID, mID->remoteID, mID->flags, mID->ident, res);
     return res;
 } /* DeleteMapItem */
 
@@ -579,9 +566,6 @@ TSyError SyncEvolution_DeleteMapItem( CContext aContext, cMapID mID )
 extern "C"
 void SyncEvolution_DisposeObj( CContext aContext, void* memory )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_Exotic_DB( source->getSynthesisAPI(), MyDB,Da_DO, "%s free at %08X", source->getName(),memory );
   free( memory );
 } /* DisposeObj */
 
@@ -590,10 +574,6 @@ void SyncEvolution_DisposeObj( CContext aContext, void* memory )
 extern "C"
 void SyncEvolution_ThreadMayChangeNow( CContext aContext )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  /* can be implemented empty, if no action is required */
-  SyncSource *source = DBC( aContext );
-  DEBUG_Exotic_DB( source->getSynthesisAPI(), MyDB,Da_TC, "%s", source->getName() );
 } /* ThreadMayChangeNow */
 
 
@@ -601,10 +581,6 @@ void SyncEvolution_ThreadMayChangeNow( CContext aContext )
 extern "C"
 void SyncEvolution_WriteLogData( CContext aContext, cAppCharP logData )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB, Da_WL, "%s (BEGIN)\n%s", source->getName(), logData );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB, Da_WL, "%s (END)",       source->getName() );
 } /* WriteLogData */
 
 
@@ -615,9 +591,6 @@ void SyncEvolution_WriteLogData( CContext aContext, cAppCharP logData )
 extern "C"
 void SyncEvolution_DispItems( CContext aContext, bool allFields, cAppCharP specificItem )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_DI, "%s %d '%s'", source->getName(),allFields,specificItem );
 } /* DispItems */
 
 
@@ -631,8 +604,8 @@ TSyError SyncEvolution_AdaptItem( CContext aContext, appCharP *aItemData1,
 { 
   /**** CAN BE ADAPTED BY USER ****/ 
   SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,"AdaptItem", "'%s' '%s' '%s' id=%d", 
-                          *aItemData1,*aItemData2,*aLocalVars, aIdentifier );
+  SE_LOG_DEBUG(source, NULL, "AdaptItem '%s' '%s' '%s' id=%d", 
+               *aItemData1, *aItemData2, *aLocalVars, aIdentifier);
   return LOCERR_OK;
 } /* AdaptItem */
 
@@ -647,9 +620,6 @@ TSyError SyncEvolution_StartDataRead( CContext aContext, cAppCharP   lastToken,
                                       cAppCharP resumeToken )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_SR, "%s last='%s' resume='%s'",
-              source->getName(), lastToken,resumeToken );
-
     TSyError res = LOCERR_OK;
     try {
         if (source->getOperations().m_startDataRead) {
@@ -663,6 +633,8 @@ TSyError SyncEvolution_StartDataRead( CContext aContext, cAppCharP   lastToken,
         res = source->handleException();
     }
 
+    SE_LOG_DEBUG(source, NULL, "StartDataRead last='%s' resume='%s' res=%d",
+                 lastToken, resumeToken, res);
     return res;
 }
 
@@ -685,8 +657,8 @@ TSyError SyncEvolution_ReadNextItemAsKey( CContext aContext, ItemID aID, KeyH aI
         }
     }
 
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_RNK, "%s aStatus=%d aItemKey=%08X aID=(%s,%s)",
-              source->getName(), *aStatus, aItemKey, aID->item, aID->parent );
+    SE_LOG_DEBUG(source, NULL, "ReadNextItemAsKey aStatus=%d aID=(%s,%s) res=%d",
+                 *aStatus, aID->item, aID->parent, res);
     return res;
 }
 
@@ -694,9 +666,6 @@ extern "C"
 TSyError SyncEvolution_ReadItemAsKey( CContext aContext, cItemID aID, KeyH aItemKey )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_RIK, "%s aItemKey=%08X aID=(%s,%s)",
-              source->getName(), aItemKey,  aID->item,aID->parent );
-
     TSyError res = LOCERR_OK;
     if (source->getOperations().m_readItemAsKey) {
         try {
@@ -706,6 +675,8 @@ TSyError SyncEvolution_ReadItemAsKey( CContext aContext, cItemID aID, KeyH aItem
         }
     }
 
+    SE_LOG_DEBUG(source, NULL, "ReadItemAsKey aID=(%s,%s) res=%d",
+                 aID->item, aID->parent, res);
     return res;
 }
 
@@ -718,6 +689,7 @@ TSyError SyncEvolution_ReadBlob( CContext aContext, cItemID  aID,  cAppCharP  aB
 {
   /**** CAN BE ADAPTED BY USER ****/ 
   SyncSource *source = DBC( aContext );
+  TSyError res = LOCERR_OK;
   const int sz= sizeof(int);
   
   int* ip = (int*)malloc( sz ); /* example BLOB structure for test (=4 bytes) */ 
@@ -727,12 +699,10 @@ TSyError SyncEvolution_ReadBlob( CContext aContext, cItemID  aID,  cAppCharP  aB
   *aTotSize= *aBlkSize;
   *aLast   = true;
 
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_RB, "%s aID=(%s,%s) aBlobID=(%s)",
-                                  source->getName(), aID->item,aID->parent, aBlobID );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,"",    "aBlkPtr=%08X aBlkSize=%d aTotSize=%d aFirst=%s aLast=%s", 
-                                 *aBlkPtr, *aBlkSize, *aTotSize,
-                                  aFirst?"true":"false", *aLast?"true":"false" );
-  return LOCERR_OK;
+  SE_LOG_DEBUG(source, NULL, "ReadBlob aID=(%s,%s) aBlobID=(%s) aBlkPtr=%08X aBlkSize=%d aTotSize=%d aFirst=%s aLast=%s res=%d",
+               aID->item,aID->parent, aBlobID, aBlkPtr, *aBlkSize, *aTotSize,
+               aFirst? "true" : "false", *aLast ? "true" : "false", res);
+  return res;
 } /* ReadBlob */
 #endif
 
@@ -741,8 +711,6 @@ extern "C"
 TSyError SyncEvolution_EndDataRead( CContext aContext )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_ER, "%s", source->getName() );
-
     TSyError res = LOCERR_OK;
     if (source->getOperations().m_endDataRead) {
         try {
@@ -752,6 +720,7 @@ TSyError SyncEvolution_EndDataRead( CContext aContext )
         }
     }
 
+    SE_LOG_DEBUG(source, NULL, "EndDataRead res=%d", res);
     return res;
 }
 
@@ -763,7 +732,7 @@ extern "C"
 TSyError SyncEvolution_StartDataWrite( CContext aContext )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_SW, "%s", source->getName() );
+    SE_LOG_DEBUG(source, NULL, "StartDataWrite");
     return LOCERR_OK;
 }
 
@@ -772,8 +741,6 @@ TSyError SyncEvolution_InsertItemAsKey( CContext aContext, KeyH aItemKey, ItemID
 {
     /**** CAN BE ADAPTED BY USER ****/
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_IIK, "%s %08X\n", source->getName(), aItemKey );
-
     TSyError res = LOCERR_OK;
     if (source->getOperations().m_insertItemAsKey) {
         try {
@@ -783,6 +750,7 @@ TSyError SyncEvolution_InsertItemAsKey( CContext aContext, KeyH aItemKey, ItemID
         }
     }
 
+    SE_LOG_DEBUG(source, NULL, "InsertItemAsKey res=%d\n", res);
     return res;
 }
 
@@ -792,10 +760,6 @@ TSyError SyncEvolution_UpdateItemAsKey( CContext aContext, KeyH aItemKey, cItemI
                                         ItemID updID )
 {
     SyncSource *source = DBC( aContext );
-  
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_UI, "%s aID=(%s,%s)",
-              source->getName(), aID->item,aID->parent );
-
     TSyError res = LOCERR_OK;
     if (source->getOperations().m_updateItemAsKey) {
         try {
@@ -805,6 +769,9 @@ TSyError SyncEvolution_UpdateItemAsKey( CContext aContext, KeyH aItemKey, cItemI
         }
     }
 
+  
+    SE_LOG_DEBUG(source, NULL, "aID=(%s,%s) res=%d",
+                 aID->item,aID->parent, res);
     return res;
 }
 
@@ -814,9 +781,8 @@ extern "C"
 TSyError SyncEvolution_MoveItem( CContext aContext, cItemID aID, cAppCharP newParID )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_MvI, "%s aID=(%s,%s) => (%s,%s)",
-              source->getName(), aID->item,aID->parent,
-              aID->item,newParID );
+    SE_LOG_DEBUG(source, NULL, "MoveItem aID=(%s,%s) => (%s,%s)",
+                 aID->item,aID->parent, aID->item,newParID);
     return LOCERR_NOTIMP;
 }
 
@@ -826,8 +792,6 @@ extern "C"
 TSyError SyncEvolution_DeleteItem( CContext aContext, cItemID aID )
 {
     SyncSource *source = DBC( aContext );
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_DeI, "%s aID=(%s,%s)", source->getName(),aID->item,aID->parent );
-
     TSyError res = LOCERR_OK;
     if (source->getOperations().m_deleteItem) {
         try {
@@ -837,6 +801,8 @@ TSyError SyncEvolution_DeleteItem( CContext aContext, cItemID aID )
         }
     }
 
+    SE_LOG_DEBUG(source, NULL, "DeleteItem aID=(%s,%s) res=%d",
+                 aID->item, aID->parent, res);
     return res;
 }
 
@@ -845,6 +811,8 @@ TSyError SyncEvolution_DeleteItem( CContext aContext, cItemID aID )
 extern "C"
 TSyError SyncEvolution_FinalizeLocalID( CContext aContext, cItemID aID, ItemID updID )
 {
+    SyncSource *source = DBC( aContext );
+    SE_LOG_DEBUG(source, NULL, "FinalizeLocalID not implemented");
     return LOCERR_NOTIMP;
 }
 
@@ -853,6 +821,8 @@ TSyError SyncEvolution_FinalizeLocalID( CContext aContext, cItemID aID, ItemID u
 extern "C"
 TSyError SyncEvolution_DeleteSyncSet( CContext aContext )
 {
+    SyncSource *source = DBC( aContext );
+    SE_LOG_DEBUG(source, NULL, "DeleteSyncSet not implemented");
     return LOCERR_NOTIMP;
 }
 
@@ -864,25 +834,25 @@ TSyError SyncEvolution_WriteBlob( CContext aContext, cItemID aID,  cAppCharP aBl
                                   uInt32 aTotSize,
                                   bool aFirst,    bool aLast )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_WB, "%s aID=(%s,%s) aBlobID=(%s)",
-                                  source->getName(), aID->item,aID->parent, aBlobID );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,"",    "aBlkPtr=%08X aBlkSize=%d aTotSize=%d aFirst=%s aLast=%s", 
-                                  aBlkPtr, aBlkSize, aTotSize, 
-                                  aFirst?"true":"false", aLast ?"true":"false" );
-  return LOCERR_OK;
+    SyncSource *source = DBC( aContext );
+    TSyError res = LOCERR_NOTIMP;
+  
+    SE_LOG_DEBUG(source, NULL, "WriteBlob aID=(%s,%s) aBlobID=(%s) aBlkPtr=%08X aBlkSize=%d aTotSize=%d aFirst=%s aLast=%s res=%d",
+                 aID->item,aID->parent, aBlobID, aBlkPtr, aBlkSize, aTotSize, 
+                 aFirst ? "true" : "false", aLast ? "true" : "false", res);
+    return res;
 } /* WriteBlob */
 
 
 extern "C"
 TSyError SyncEvolution_DeleteBlob( CContext aContext, cItemID aID, cAppCharP aBlobID )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_DB, "%s aID=(%s,%s) aBlobID=(%s)",
-                                  source->getName(), aID->item,aID->parent, aBlobID );
-  return LOCERR_OK;
+    SyncSource *source = DBC( aContext );
+    TSyError res = LOCERR_NOTIMP;
+
+    SE_LOG_DEBUG(source "DeleteBlob aID=(%s,%s) aBlobID=(%s) res=%d",
+                 aID->item,aID->parent, aBlobID, res);
+    return res;
 } /* DeleteBlob */
 
 #endif
@@ -905,12 +875,10 @@ TSyError SyncEvolution_EndDataWrite( CContext aContext, bool success, appCharP *
         res = source->handleException();
     }
 
-    DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_EW, "%s %s '%s'", 
-              source->getName(), success ? "COMMIT":"ROLLBACK", *newToken );
+    SE_LOG_DEBUG(source, NULL, "EndDataWrite %s '%s' res=%d", 
+                 success ? "COMMIT":"ROLLBACK", *newToken, res);
     return res;
 }
-
-
 
 /* ----------------------------------- */
 extern "C"
@@ -918,7 +886,7 @@ TSyError SyncEvolution_DeleteContext( CContext aContext )
 {
   /**** CAN BE ADAPTED BY USER ****/ 
   SyncSource *source = DBC( aContext );
-  DEBUG_DB( source->getSynthesisAPI(), MyDB,Da_DC, "%s", source->getName() );
+  SE_LOG_DEBUG(source, NULL, "DeleteContext");
   source->popSynthesisAPI();
   return LOCERR_OK;
 }
