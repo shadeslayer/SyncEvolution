@@ -907,6 +907,7 @@ sysync::TSyError SyncSourceAdmin::insertMapItem(sysync::cMapID mID)
     string key, value;
     mapid2entry(mID, key, value);
 
+#if 0
     StringMap::iterator it = m_mapping.find(key);
     if (it != m_mapping.end()) {
         // error, exists already
@@ -915,6 +916,10 @@ sysync::TSyError SyncSourceAdmin::insertMapItem(sysync::cMapID mID)
         m_mapping[key] = value;
         return sysync::LOCERR_OK;
     }
+#else
+    m_mapping[key] = value;
+    return sysync::LOCERR_OK;
+#endif
 }
 
 sysync::TSyError SyncSourceAdmin::updateMapItem(sysync::cMapID mID)
