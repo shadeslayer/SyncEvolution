@@ -21,7 +21,7 @@
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <!-- This program is used to generate html to represent nightly test results by combining today's test results and comparison info -->
     <!-- TODO: Add more checkings to avoid generate un-welformed html files -->
-    <!--xsl:strip-space elements="*"/-->
+    <xsl:strip-space elements="*"/>
     <xsl:param name="cmp_result_file" select="''"/> <!-- comparsion result file, necessary -->
 	<xsl:output method="html" indent="yes" encoding="UTF-8"/>
     
@@ -95,6 +95,7 @@
                 <xsl:call-template name="generate-source-summary">
                     <xsl:with-param name="source" select="$source/source"/>
                     <xsl:with-param name="cmp-result" select="$cmp-result/source"/>
+                    <xsl:with-param name="log-path" select="$log-path"/>
                 </xsl:call-template>
 
                 <h2> Client-test Detail</h2>
@@ -122,13 +123,21 @@
         <xsl:param name="cmp-result"/>
         <xsl:param name="log-path"/> <!-- log file path -->
 
-        <xsl:call-template name="generate-desc-and-table">
-            <xsl:with-param name="source" select="$source"/>
-            <xsl:with-param name="cmp-result" select="$cmp-result"/>
-            <xsl:with-param name="log-path" select="concat($log-path,'/',string($source/@path), '/')"/>
-            <xsl:with-param name="desc-size" select="'3'"/>
-            <xsl:with-param name="description" select="'Client::Source Test Results'"/>
-        </xsl:call-template>
+        <h3>Client::Source Test Results</h3>
+        <xsl:for-each select="$source/*">
+            <xsl:variable name="onesource" select="."/>
+            <xsl:variable name="cmp-result" select="$cmp-result/*[name(.)=name($onesource)]"/>
+            <h3>
+                <a name="{name($onesource)}" href="{concat($log-path,'/',string($onesource/@path))}">
+                    <xsl:value-of select="name($onesource)"/>
+                </a>
+            </h3>
+            <xsl:call-template name="generate-desc-and-table">
+                <xsl:with-param name="source" select="$onesource"/>
+                <xsl:with-param name="cmp-result" select="$cmp-result"/>
+                <xsl:with-param name="log-path" select="concat($log-path,'/',string($onesource/@path), '/')"/>
+            </xsl:call-template>
+        </xsl:for-each>
     </xsl:template>
 
     <xsl:template name="generate-client-test-sync">
@@ -186,7 +195,6 @@
             </xsl:when>
             <xsl:otherwise>
                 <xsl:text> No platform information!</xsl:text>
-                <br/>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
@@ -199,14 +207,12 @@
         <xsl:comment>
             Generate preparation information in a table
         </xsl:comment>
+        <h1><font color="Olive"> Preparation Results </font> </h1>
         <xsl:call-template name="generate-table-info">
             <xsl:with-param name="source" select="$source"/>
             <xsl:with-param name="cmp-result" select="$cmp-result"/>
             <xsl:with-param name="log-path" select="concat($log-path,'/')"/>
             <xsl:with-param name="log-name" select="'output.txt'"/>
-            <xsl:with-param name="desc-size" select="'1'"/>
-            <xsl:with-param name="description" select="'Preparation Results'"/>
-            <xsl:with-param name="desc-color" select="'olive'"/>
         </xsl:call-template>
     </xsl:template>
     <xsl:template name="check-prepare">
@@ -234,6 +240,7 @@
                 <th width="60">Improved</th>
                 <th width="60">Regression</th>
                 <th width="60">Valgrind</th>
+                <th width="60">Status</th>
             </tr>
 
             <xsl:for-each select="$servers">
@@ -246,6 +253,9 @@
                 <xsl:variable name="real-regression" select="$cmp-result/*[name(.)=name($item)]/*/*[.=$regression]"/>
                 <xsl:variable name="real-improved" select="$cmp-result/*[name(.)=name($item)]/*/*[.=$improved]"/>
                 <xsl:variable name="valgrind" select="$item/@result"/>
+                <xsl:variable name="valgrind-cmp" select="$cmp-result/*[name(.)=name($item)]/@result"/>
+                <xsl:variable name="retcode" select="$item/@result"/>
+                <xsl:variable name="retcode-cmp" select="$cmp-result/*[name(.)=name($item)]/@retcode"/>
                 <xsl:variable name="path" select="concat($log-path,'/', $item/@path)"/>
                 <tr>
                     <td> <!-- server name -->
@@ -310,16 +320,37 @@
                         </xsl:choose>
                     </td>
                     <td>
-			<xsl:choose>
-			    <xsl:when test="$valgrind=100">
+                        <xsl:choose>
+                            <xsl:when test="$valgrind=100">
                                 <xsl:attribute name="bgcolor">
-				  gray
+                                    <xsl:call-template name="generate-color">
+                                        <xsl:with-param name="status" select="$valgrind-cmp"/>
+                                        <xsl:with-param name="source" select="'failed'"/>
+                                    </xsl:call-template>
                                 </xsl:attribute>
-				<a href="{$path}/output.txt">
-				  failed
-				</a>
+                                <a href="{$path}/output.txt">
+                                    failed
+                                </a>
                             </xsl:when>
                             <xsl:otherwise>ok</xsl:otherwise>
+                        </xsl:choose>
+                    </td>
+                    <td>
+                        <xsl:choose>
+                            <xsl:when test="not($retcode) or $retcode=0">
+                                ok
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="bgcolor">
+                                    <xsl:call-template name="generate-color">
+                                        <xsl:with-param name="status" select="$retcode-cmp"/>
+                                        <xsl:with-param name="source" select="'failed'"/>
+                                    </xsl:call-template>
+                                </xsl:attribute>
+                                <a href="{$path}/output.txt">
+                                    failed
+                                </a>
+                            </xsl:otherwise>
                         </xsl:choose>
                     </td>
                 </tr>
@@ -328,14 +359,65 @@
         </table>
     </xsl:template>
 
+    <xsl:template name="count-all-cases">
+        <xsl:param name="source"/>
+        <xsl:call-template name="count-biggest-cases">
+            <xsl:with-param name="source" select="$source/*[position()=1]"/>
+        </xsl:call-template>
+    </xsl:template>
+
+    <xsl:template name="count-biggest-cases">
+        <xsl:param name="source"/>
+        <xsl:choose>
+            <xsl:when test="$source">
+                <xsl:variable name="current">
+                    <xsl:call-template name="count-one-source-cases">
+                        <xsl:with-param name="source" select="$source/*[position()=1]"/>
+                    </xsl:call-template>
+                </xsl:variable>
+                <xsl:variable name="next-ones">
+                    <xsl:call-template name="count-biggest-cases">
+                        <xsl:with-param name="source" select="$source/following-sibling::*[position()=1]"/>
+                    </xsl:call-template>
+                </xsl:variable>
+                <xsl:choose>
+                    <xsl:when test="number(current) &lt; number(next-ones)">
+                        <xsl:value-of select="$next-ones"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="$current"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <xsl:otherwise>0</xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
+    <xsl:template name="count-one-source-cases">
+        <xsl:param name="source"/>
+        <xsl:choose>
+            <xsl:when test="$source">
+                <xsl:variable name="current" select="count($source/*)"/>
+                <xsl:variable name="next-ones">
+                    <xsl:call-template name="count-one-source-cases">
+                        <xsl:with-param name="source" select="$source/following-sibling::*[position()=1]"/>
+                    </xsl:call-template>
+                </xsl:variable>
+                <xsl:value-of select="$current+number($next-ones)"/>
+            </xsl:when>
+            <xsl:otherwise>0</xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
     <xsl:template name="generate-source-summary">
         <xsl:param name="source"/>
         <xsl:param name="cmp-result"/>
+        <xsl:param name="log-path"/>
 
         <h3> Client Source Test Summary </h3>
         <table border="2">
             <tr>
-                <th width="60">Source</th>
+                <th width="60">Sources</th>
                 <th width="60">Total Cases</th>
                 <th width="60">Passed</th>
                 <th width="60">Failed</th>
@@ -343,14 +425,26 @@
                 <th width="60">Passrate</th>
                 <th width="60">Improved</th>
                 <th width="60">Regression</th>
+                <th width="60">Valgrind</th>
+                <th width="60">Status</th>
             </tr>
+            <xsl:variable name="total">
+                <xsl:call-template name="count-all-cases">
+                    <xsl:with-param name="source" select="$source"/>
+                </xsl:call-template>
+            </xsl:variable>
 
             <xsl:for-each select="$source/*">
                 <xsl:variable name="item" select="."/>
                 <xsl:variable name="all" select="count($item/*)"/>
-                <xsl:variable name="passed" select="count($item/*[.='okay'])"/>
-                <xsl:variable name="failed" select="count($item/*[.='failed'])"/>
+                <xsl:variable name="passed" select="count($item/*/*[.='okay'])"/>
+                <xsl:variable name="failed" select="count($item/*/*[.='failed'])"/>
                 <xsl:variable name="status" select="$cmp-result/*[name(.)=name($item)]/@summary"/>
+                <xsl:variable name="valgrind" select="$item/@result"/>
+                <xsl:variable name="valgrind-cmp" select="$cmp-result/*[name(.)=name($item)]/@result"/>
+                <xsl:variable name="retcode" select="$item/@result"/>
+                <xsl:variable name="retcode-cmp" select="$cmp-result/*[name(.)=name($item)]/@retcode"/>
+                <xsl:variable name="path" select="concat($log-path, '/', $item/@path)"/>
                 <tr>
                     <td> <!-- server name -->
                         <a href="#{name($item)}">
@@ -358,19 +452,20 @@
                         </a>
                     </td>
                     <td> 
-                        <xsl:value-of select="$all"/>
+                        <xsl:value-of select="$total"/>
                     </td>
                     <td> 
                         <xsl:value-of select="$passed"/>
                     </td>
                     <td> 
-                        <xsl:value-of select="$failed"/>
+                        <xsl:value-of select="$total - $passed"/>
                     </td>
                     <td>
-                        <xsl:value-of select="$all - $passed - $failed"/>
+                        <!--xsl:value-of select="$total - $passed - $failed"/-->
+                        0
                     </td>
                     <td>
-                        <xsl:variable name="passrate" select="$passed div ($passed+$failed) * 100"/>
+                        <xsl:variable name="passrate" select="$passed div ($total) * 100"/>
                         <!--xsl:value-of select="concat(substring-before(string($passrate),'.'),'.', su)"/-->
                         <xsl:value-of select="substring(string($passrate),1,5)"/>
                         <xsl:value-of select="'%'"/>
@@ -405,6 +500,40 @@
                             </xsl:otherwise>
                         </xsl:choose>
                     </td>
+                    <td>
+                        <xsl:choose>
+                            <xsl:when test="$valgrind=100">
+                                <xsl:attribute name="bgcolor">
+                                    <xsl:call-template name="generate-color">
+                                        <xsl:with-param name="status" select="$valgrind-cmp"/>
+                                        <xsl:with-param name="source" select="'failed'"/>
+                                    </xsl:call-template>
+                                </xsl:attribute>
+                                <a href="{$path}/output.txt">
+                                    failed
+                                </a>
+                            </xsl:when>
+                            <xsl:otherwise>ok</xsl:otherwise>
+                        </xsl:choose>
+                    </td>
+                    <td>
+                        <xsl:choose>
+                            <xsl:when test="not($retcode) or $retcode=0">
+                                ok
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="bgcolor">
+                                    <xsl:call-template name="generate-color">
+                                        <xsl:with-param name="status" select="$retcode-cmp"/>
+                                        <xsl:with-param name="source" select="'failed'"/>
+                                    </xsl:call-template>
+                                </xsl:attribute>
+                                <a href="{$path}/output.txt">
+                                    failed
+                                </a>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </td>
                 </tr>
             </xsl:for-each>
         </table>
@@ -423,7 +552,7 @@
             This is used to generate a table for each server test results for all PIMs
         </xsl:comment>
         <xsl:element name="h{$desc-size}"> 
-            <a name="{name($source)}">
+            <a name="{name($source)}" href="{$log-path}">
                 <xsl:value-of select="$description"/> 
             </a>
         </xsl:element>
@@ -510,34 +639,34 @@
         <xsl:param name="source"/>
         <xsl:param name="cmp-result"/>
         <xsl:param name="log-path"/> <!-- log file path -->
-        <xsl:param name="desc-size" select="'3'"/>
-        <xsl:param name="description" select="''"/>
         <xsl:variable name="list" select="$source/*"/>
 
-        <xsl:element name="h{$desc-size}"> 
-            <xsl:value-of select="$description"/> 
-        </xsl:element>
-        <!--xsl:element name="h{$desc-size - 1}"> 
-            Test parameters:
-            <xsl:value-of select="$source/@parameter"/> 
-        </xsl:element-->
-        
         <xsl:choose>
             <xsl:when test="count($list)">
-                <xsl:for-each select="$list">
-                    <xsl:variable name="item" select="."/>
-                    <xsl:variable name="cmp-item" select="$cmp-result/*[name(.)=name($item)]"/>
-                    <xsl:call-template name="generate-table-info">
-                        <xsl:with-param name="source" select="$item"/>
-                        <xsl:with-param name="cmp-result" select="$cmp-item"/>
-                        <xsl:with-param name="log-path" select="concat($log-path,$item/@prefix,name($item))"/>
-                        <xsl:with-param name="description" select="name($item)"/>
-                    </xsl:call-template>
-                    <br/>
-                </xsl:for-each>
+                <table>
+                    <xsl:for-each select="$list">
+                        <xsl:sort select="count(*)"/>
+                        <xsl:variable name="item" select="."/>
+                        <xsl:variable name="cmp-item" select="$cmp-result/*[name(.)=name($item)]"/>
+                        <xsl:if test="(position() mod 3)=1">
+                            <xsl:text disable-output-escaping="yes">&lt;tr&gt;</xsl:text>
+                        </xsl:if>
+                        <td>
+                            <xsl:call-template name="generate-table-info">
+                                <xsl:with-param name="source" select="$item"/>
+                                <xsl:with-param name="cmp-result" select="$cmp-item"/>
+                                <xsl:with-param name="log-path" select="concat($log-path,$item/@prefix,name($item))"/>
+                                <xsl:with-param name="description" select="name($item)"/>
+                            </xsl:call-template>
+                        </td>
+                        <xsl:if test="(position() mod 3)=0">
+                            <xsl:text disable-output-escaping="yes">&lt;/tr&gt;</xsl:text>
+                        </xsl:if>
+                    </xsl:for-each>
+                </table>
             </xsl:when>
-            <xsl:otherwise>No <xsl:value-of select="$description"/> results!
-                <br/>
+            <xsl:otherwise>
+                No results!
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
@@ -555,16 +684,11 @@
             Generate a table for a list of unit test cases
         </xsl:comment>
         <xsl:variable name="list" select="$source/*"/>
-        <xsl:element name="h{$desc-size}">
-            <a name="{name($source)}">
-                <font color="{$desc-color}"> <xsl:value-of select="$description"/> </font>
-            </a>
-        </xsl:element>
         <xsl:choose>
             <xsl:when test="count($list)">
                 <table border="2">
                     <tr>
-                        <th>Item</th>
+                        <th><xsl:value-of select="name($source)"/></th>
                         <th>Value</th>
                     </tr>
                     <xsl:for-each select="$source/*">
@@ -661,8 +785,7 @@
     </xsl:template>
 
     <xsl:template name="generate-html-notes">
-        Notes:
-        <br/>
+        <h3>Notes:</h3>
         <font color="red">Red</font>: regression 
         <font color="green">Green</font>: improvement 
         <font color="gray">Gray</font>: failed but not regression

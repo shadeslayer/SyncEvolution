@@ -106,12 +106,43 @@
             </xsl:choose>
         </xsl:element>
     </xsl:template>
-
     <xsl:template name="cmp-client-test-source">
         <xsl:param name="source"/>
         <xsl:param name="target"/>
         <xsl:if test="$source">
             <xsl:element name="{name($source)}">
+                <xsl:for-each select="$source/*">
+                    <xsl:variable name="item" select="."/>
+                    <xsl:call-template name="cmp-client-test-one-source">
+                        <xsl:with-param name="source" select="$item"/>
+                        <xsl:with-param name="target" select="$target/*[name(.)=name($item)]"/>
+                    </xsl:call-template>
+                </xsl:for-each>
+            </xsl:element>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template name="cmp-client-test-one-source">
+        <xsl:param name="source"/>
+        <xsl:param name="target"/>
+        <xsl:if test="$source">
+            <xsl:variable name="source-result" select="$source/@result"/>
+            <xsl:variable name="target-result" select="$target/@result"/>
+            <xsl:variable name="okays" select="$source/*/*[.='okay']"/>
+            <xsl:variable name="old-okays" select="$target/*/*[.='okay']"/>
+            <xsl:variable name="status" select="count($okays) - count($old-okays)"/>
+            <xsl:element name="{name($source)}">
+                <xsl:attribute name="summary">
+                    <xsl:value-of select="$status"/>
+                </xsl:attribute>
+                <xsl:call-template name="cmp-valgrind-result">
+                    <xsl:with-param name="source-result" select="$source-result"/>
+                    <xsl:with-param name="target-result" select="$target-result"/>
+                </xsl:call-template>
+                <xsl:call-template name="cmp-returncode-result">
+                    <xsl:with-param name="source-result" select="$source-result"/>
+                    <xsl:with-param name="target-result" select="$target-result"/>
+                </xsl:call-template>
                 <xsl:call-template name="cmp-list-of-lists-of-units">
                     <xsl:with-param name="source" select="$source"/>
                     <xsl:with-param name="target" select="$target"/>
@@ -138,6 +169,14 @@
                         <xsl:attribute name="summary">
                             <xsl:value-of select="$status"/>
                         </xsl:attribute>
+                        <xsl:call-template name="cmp-valgrind-result">
+                            <xsl:with-param name="source-result" select="$server/@result"/>
+                            <xsl:with-param name="target-result" select="$target-server/@result"/>
+                        </xsl:call-template>
+                        <xsl:call-template name="cmp-returncode-result">
+                            <xsl:with-param name="source-result" select="$server/@result"/>
+                            <xsl:with-param name="target-result" select="$target-server/@result"/>
+                        </xsl:call-template>
                         <xsl:call-template name="cmp-list-of-lists-of-units">
                             <xsl:with-param name="source" select="$server"/>
                             <xsl:with-param name="target" select="$target-server"/>
@@ -216,6 +255,59 @@
                 </xsl:choose>
             </xsl:element>
         </xsl:for-each>
+    </xsl:template>
+    <xsl:template name="cmp-returncode-result">
+        <xsl:param name="source-result"/>
+        <xsl:param name="target-result"/>
+        <xsl:attribute name="retcode">
+            <xsl:choose>
+                <xsl:when test="string($source-result)=string($target-result)">
+                    <xsl:value-of select="$equal"/>
+                </xsl:when>
+                <xsl:when test="$source-result='0' and not($target-result)">
+                    <xsl:value-of select="$equal"/>
+                </xsl:when>
+                <xsl:when test="not($source-result) and $target-result='0'">
+                    <xsl:value-of select="$equal"/>
+                </xsl:when>
+                <xsl:when test="(not($source-result) or ($source-result='0'))">
+                    <xsl:value-of select="$improved"/>
+                </xsl:when>
+                <xsl:when test="(not($target-result) or ($target-result='0'))">
+                    <xsl:value-of select="$regression"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="$equal"/>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:attribute>
+    </xsl:template>
+
+    <xsl:template name="cmp-valgrind-result">
+        <xsl:param name="source-result"/>
+        <xsl:param name="target-result"/>
+        <xsl:attribute name="result">
+            <xsl:choose>
+                <xsl:when test="string($source-result)=string($target-result)">
+                    <xsl:value-of select="$equal"/>
+                </xsl:when>
+                <xsl:when test="$source-result='0' and not($target-result)">
+                    <xsl:value-of select="$equal"/>
+                </xsl:when>
+                <xsl:when test="not($source-result) and $target-result='0'">
+                    <xsl:value-of select="$equal"/>
+                </xsl:when>
+                <xsl:when test="$source-result='100' and (not($target-result) or ($target-result='0'))">
+                    <xsl:value-of select="$regression"/>
+                </xsl:when>
+                <xsl:when test="(not($source-result) or $source-result='0') and $source-result='100'">
+                    <xsl:value-of select="$improved"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="$equal"/>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:attribute>
     </xsl:template>
 
 </xsl:stylesheet>
