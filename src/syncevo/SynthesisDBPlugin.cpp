@@ -52,7 +52,7 @@ static SyncSource *MoC(CContext mContext) { return (SyncSource *)mContext; }
 /**
  * looks up datasource and uses pointer to it as context
  *
- * @param mContextName   name of previously instantiated SyncSource
+ * @param mContextName   name of previously instantiated SyncSource, "" when used as session module
  * @retval mContext      the corresponding SyncSource
  */
 extern "C"
@@ -62,11 +62,16 @@ TSyError SyncEvolution_Module_CreateContext( CContext *mContext, cAppCharP   mod
                                              DB_Callback mCB )
 {
     TSyError err = LOCERR_WRONGUSAGE;
-    SyncSource *source = SyncContext::findSource(mContextName);
-    if (source) {
-        source->pushSynthesisAPI(mCB);
-        *mContext = (CContext)source;
+    if (!mContextName[0]) {
+        *mContext = NULL;
         err = LOCERR_OK;
+    } else {
+        SyncSource *source = SyncContext::findSource(mContextName);
+        if (source) {
+            source->pushSynthesisAPI(mCB);
+            *mContext = (CContext)source;
+            err = LOCERR_OK;
+        }
     }
 
     SE_LOG_DEBUG(NULL, NULL, "CreateContext %s/%s/%s => %d",
@@ -109,7 +114,7 @@ TSyError SyncEvolution_Module_Capabilities( CContext mContext, appCharP *mCapabi
       << CA_ItemAsKey << ":yes\n"
       << Plugin_DS_Blob << ":no\n";
 
-    if (source->getOperations().m_loadAdminData) {
+    if (source && source->getOperations().m_loadAdminData) {
         s << Plugin_DS_Admin << ":yes\n";
     }
 
@@ -144,51 +149,32 @@ extern "C"
 TSyError SyncEvolution_Module_DeleteContext( CContext mContext )
 {
     SyncSource  *source = MoC(mContext);
-    SE_LOG_DEBUG(NULL, NULL, "Module_DeleteContext %s", source->getName());
-    source->popSynthesisAPI();
+    SE_LOG_DEBUG(NULL, NULL, "Module_DeleteContext %s",
+                 source ? source->getName() : "'session'");
+    if (source) {
+        source->popSynthesisAPI();
+    }
     return LOCERR_OK;
 }
 
 
-
-
-/* ---------------------- session handling --------------------- */
-/* this is an example, how a context could be structured */
-class SessionContext {
-public:
-    SessionContext() { fCB= NULL; }
-    
-    int         fID; /* a reference number. */
-    DB_Callback fCB; /* callback structure  */
-    int      fPMode; /* The login password mode */
-};
-
-/* <sContext> will be casted to the SessionContext* structure */
-static SessionContext* SeC( CContext sContext ) { return (SessionContext*)sContext; }
+/* <sContext> will be casted to the SyncContext* structure */
+static SyncContext* SeC( CContext sContext ) { return (SyncContext*)sContext; }
 
 
 
-/* Create a context for a new session */ 
+/* Create a context for a new session. Maps to the existing SyncContext. */ 
 extern "C"
 TSyError SyncEvolution_Session_CreateContext( CContext *sContext, cAppCharP sessionName, DB_Callback sCB )
 { 
-  SessionContext* sc;
-  
-/*return DB_Error;*/ /* added for test */
-  
-  sc= new SessionContext;
-
-  if (sc==NULL) return DB_Full;
-
-  /**** CAN BE ADAPTED BY USER ****/
-  sc->fID= 333; /* as an example */
-  sc->fCB= sCB;
-  sc->fPMode= Password_ClrText_IN;        /* take this mode ... */
-  /* sc->fPMode= Password_ClrText_OUT; */    /* ... or this        */
-  SE_LOG_DEBUG(NULL, NULL, "Session_CreateContext %s", sessionName);
-  
-  *sContext= (CContext)sc; /* return the created context structure */
-  return LOCERR_OK;
+    *sContext = (CContext)SyncContext::findContext(sessionName);
+    SE_LOG_DEBUG(NULL, NULL, "Session_CreateContext '%s' %s", 
+                 sessionName, *sContext ? "found" : "not found");
+    if (*sContext) {
+        return LOCERR_OK;
+    } else {
+        return DB_NotFound;
+    }
 } /* Session_CreateContext */
 
 
@@ -201,7 +187,7 @@ TSyError SyncEvolution_Session_AdaptItem( CContext sContext, appCharP *sItemData
                                           uInt32  sIdentifier ) 
 { 
     /**** CAN BE ADAPTED BY USER ****/ 
-    // SessionContext* sc= SeC( sContext );
+    // SyncContext* sc= SeC( sContext );
     SE_LOG_DEBUG(NULL, NULL, "Session_AdaptItem '%s' '%s' '%s' id=%d", 
                  *sItemData1,*sItemData2,*sLocalVars, sIdentifier);
     return LOCERR_OK;
@@ -215,14 +201,25 @@ TSyError SyncEvolution_Session_CheckDevice( CContext sContext,
                                             cAppCharP aDeviceID, appCharP *sDevKey,
                                             appCharP *nonce )
 {
-  /**** CAN BE ADAPTED BY USER ****/
-  SessionContext* sc= SeC( sContext );
-  
-  *sDevKey= StrAlloc( aDeviceID  );
-  *nonce  = StrAlloc( "xyz_last" );
-  SE_LOG_DEBUG(NULL, NULL, "Session_CheckDevice %d dev='%s' nonce='%s'",
-               sc->fID, *sDevKey, *nonce);
-  return LOCERR_OK;
+    SyncContext *sc = SeC(sContext);
+    TSyError res = LOCERR_OK;
+
+    string id = sc->getRemoteDevID();
+    if (id.empty()) {
+        sc->setRemoteDevID(aDeviceID);
+        sc->flush();
+    } else if (id != aDeviceID) {
+        // We are using the wrong configuration?! Refuse to continue.
+        SE_LOG_ERROR(NULL, NULL, "remote device ID '%s' in config does not match the one from the peer '%s' - incorrect configuration?!",
+                     id.c_str(), aDeviceID);
+        res = DB_Forbidden;
+    }
+
+    *sDevKey= StrAlloc(aDeviceID);
+    *nonce = StrAlloc(sc->getNonce().c_str());
+    SE_LOG_DEBUG(NULL, NULL, "Session_CheckDevice dev='%s' nonce='%s' res=%d",
+                 *sDevKey, *nonce, res);
+    return res;
 } /* Session_CheckDevice */
 
 
@@ -233,11 +230,7 @@ TSyError SyncEvolution_Session_CheckDevice( CContext sContext,
 extern "C"
 TSyError SyncEvolution_Session_GetNonce( CContext sContext, appCharP *nonce )
 {
-  /**** CAN BE ADAPTED BY USER ****/
-  SessionContext* sc= SeC( sContext );
-  SE_LOG_DEBUG(NULL, NULL, "Session_GetNonce %d (not supported)", sc->fID);
-  *nonce= NULL;
-  return DB_NotFound;
+    return DB_NotFound;
 } /* Session_GetNonce */
 
  
@@ -248,11 +241,12 @@ TSyError SyncEvolution_Session_GetNonce( CContext sContext, appCharP *nonce )
 extern "C"
 TSyError SyncEvolution_Session_SaveNonce( CContext sContext, cAppCharP nonce )
 {
-  /**** CAN BE ADAPTED BY USER ****/
-  SessionContext* sc= SeC( sContext );
-  SE_LOG_DEBUG(NULL, NULL, "Session_SaveNonce %d nonce='%s'",
-               sc->fID, nonce);
-  return LOCERR_NOTIMP;
+    SyncContext *sc = SeC(sContext);
+    SE_LOG_DEBUG(NULL, NULL, "Session_SaveNonce nonce='%s'",
+                 nonce);
+    sc->setNonce(nonce);
+    sc->flush();
+    return LOCERR_OK;
 } /* Session_SaveNonce */
 
 
@@ -261,11 +255,12 @@ TSyError SyncEvolution_Session_SaveNonce( CContext sContext, cAppCharP nonce )
 extern "C"
 TSyError SyncEvolution_Session_SaveDeviceInfo( CContext sContext, cAppCharP aDeviceInfo )
 {
-  /**** CAN BE ADAPTED BY USER ****/
-  SessionContext* sc= SeC( sContext );
-  SE_LOG_DEBUG(NULL, NULL, "Session_SaveDeviceInfo %d info='%s'",
-               sc->fID, aDeviceInfo );
-  return LOCERR_NOTIMP;
+    SyncContext *sc = SeC(sContext);
+    SE_LOG_DEBUG(NULL, NULL, "Session_SaveDeviceInfo info='%s'",
+                 aDeviceInfo );
+    sc->setAdminData(aDeviceInfo);
+    sc->flush();
+    return LOCERR_OK;
 } /* Session_SaveDeviceInfo */
 
 
@@ -274,11 +269,7 @@ TSyError SyncEvolution_Session_SaveDeviceInfo( CContext sContext, cAppCharP aDev
 extern "C"
 TSyError SyncEvolution_Session_GetDBTime( CContext sContext, appCharP *currentDBTime )
 { 
-  /**** CAN BE ADAPTED BY USER ****/
-  SessionContext* sc= SeC( sContext );
-  SE_LOG_DEBUG(NULL, NULL, "Session_GetDBTime %d", sc->fID);
-  *currentDBTime= NULL;
-  return DB_NotFound;
+    return DB_NotFound;
 } /* Session_GetDBTime */
 
 
@@ -291,11 +282,7 @@ TSyError SyncEvolution_Session_GetDBTime( CContext sContext, appCharP *currentDB
 extern "C"
 sInt32 SyncEvolution_Session_PasswordMode( CContext sContext )
 {
-  /**** CAN BE ADAPTED BY USER ****/
-  SessionContext* sc= SeC( sContext );
-  SE_LOG_DEBUG(NULL, NULL, "Session_PasswordMode %d mode=%d",
-               sc->fID, sc->fPMode);
-  return sc->fPMode;
+    return Password_ClrText_OUT;
 } /* Session_PasswordMode */
 
 
@@ -305,28 +292,23 @@ extern "C"
 TSyError SyncEvolution_Session_Login( CContext sContext, cAppCharP sUsername, appCharP *sPassword,
                                       appCharP *sUsrKey )
 { 
-  /**** CAN BE ADAPTED BY USER ****/
-  SessionContext* sc= SeC( sContext );
-  TSyError       err= DB_Forbidden; /* default */
-  
-  /* different modes, choose one for the plugin */
-  if (sc->fPMode==Password_ClrText_IN) {
-    if (strcmp(  sUsername,"super" )==0 &&
-        strcmp( *sPassword,"user"  )==0) { *sUsrKey  = StrAlloc( "1234" ); err= LOCERR_OK; }
-  }
-  else {       /* Password will be returned */
-    if (strcmp(  sUsername,"super" )==0) { *sPassword= StrAlloc( "user" );
-                                           *sUsrKey  = StrAlloc( "1234" ); err= LOCERR_OK; }
-  } /* if */
+    SyncContext *sc = SeC(sContext);
+    TSyError res = DB_Forbidden;
 
-  if (err) {
-      SE_LOG_DEBUG(NULL, NULL, "Session_Login %d usr='%s' err=%d",
-                   sc->fID,sUsername, err);
-  } else {
-      SE_LOG_DEBUG(NULL, NULL, "Session_Login %d usr='%s' pwd='%s' => key='%s'",
-                   sc->fID,sUsername,*sPassword, *sUsrKey);
-  }
-  return err;
+    string user = sc->getUsername();
+    string password = sc->getPassword();
+
+    if (user.empty() && password.empty()) {
+        // nothing to check, accept peer
+        res = LOCERR_OK;
+    } else if (user == sUsername) {
+        *sPassword=StrAlloc(password.c_str());
+        res = LOCERR_OK;
+    }
+
+    SE_LOG_DEBUG(NULL, NULL, "Session_Login usr='%s' expected user='%s' res=%d",
+                 sUsername, user.c_str(), res);
+    return res;
 } /* Session_Login */
 
 
@@ -335,10 +317,7 @@ TSyError SyncEvolution_Session_Login( CContext sContext, cAppCharP sUsername, ap
 extern "C"
 TSyError SyncEvolution_Session_Logout( CContext sContext )
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SessionContext* sc= SeC( sContext );
-  SE_LOG_DEBUG(NULL, NULL, "Session_Logout %d",sc->fID);
-  return LOCERR_OK;
+    return LOCERR_OK;
 } /* Session_Logout */
 
 
@@ -373,13 +352,7 @@ void SyncEvolution_Session_DispItems( CContext sContext, bool allFields, cAppCha
 extern "C"
 TSyError SyncEvolution_Session_DeleteContext( CContext sContext ) 
 { 
-  /**** CAN BE ADAPTED BY USER ****/ 
-  SessionContext* sc= SeC( sContext );
-  SE_LOG_DEBUG(NULL, NULL, "Session_DeleteContext %d", sc->fID);
-
-  delete sc;
-
-  return LOCERR_OK;
+    return LOCERR_OK;
 } /* Session_DeleteContext */
 
 

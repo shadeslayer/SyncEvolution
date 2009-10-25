@@ -90,6 +90,12 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     static SourceList *m_sourceListPtr;
 
     /**
+     * a pointer to the active SyncContext instance if one exists;
+     * set by sync()
+     */
+    static SyncContext *m_activeContext;
+
+    /**
      * Connection to the Synthesis engine. Always valid in a
      * constructed SyncContext. Use getEngine() to reference
      * it.
@@ -271,6 +277,16 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * make this non-static
      */
     static SyncSource *findSource(const char *name);
+
+    /**
+     * Find the active sync context for the given session.
+     *
+     * @param sessionName      chosen by SyncEvolution and passed to
+     *                         Synthesis engine, which calls us back
+     *                         with it in SyncEvolution_Session_CreateContext()
+     * @return context or NULL if not found
+     */
+    static SyncContext *findContext(const char *sessionName);
 
     SharedEngine getEngine() { return m_engine; }
     const SharedEngine getEngine() const { return m_engine; }

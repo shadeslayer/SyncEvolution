@@ -1015,7 +1015,7 @@ void SyncSourceAdmin::init(SyncSource::Operations &ops, SyncSourceNodes &nodes)
 {
     init(ops,
          nodes.m_hiddenNode,
-         "adminData",
+         SourceAdminDataName,
          nodes.m_serverNode);
 }
 

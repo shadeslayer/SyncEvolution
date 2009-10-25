@@ -21,6 +21,7 @@
 # define INCL_SYNC_EVOLUTION_CONFIG
 
 #include <syncevo/FilterConfigNode.h>
+#include <syncevo/SafeConfigNode.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -50,6 +51,9 @@ class ConfigTree;
 class ConfigUserInterface;
 struct SyncSourceNodes;
 struct ConstSyncSourceNodes;
+
+/** name of the per-source admin data property */
+extern const char *const SourceAdminDataName;
 
 /**
  * A property has a name and a comment. Derived classes might have
@@ -635,6 +639,28 @@ class BoolConfigProperty : public StringConfigProperty {
 };
 
 /**
+ * A property for arbitrary strings. Users are not expected to edit
+ * these, so they are marked "internal" by default.
+ */
+class SafeConfigProperty : public ConfigProperty {
+ public:
+    SafeConfigProperty(const string &name, const string &comment) :
+    ConfigProperty(name, comment)
+    {
+        setHidden(true);
+    }
+
+    void setProperty(ConfigNode &node, const string &value) {
+        ConfigProperty::setProperty(node, SafeConfigNode::escape(value, true, false));
+    }
+    string getProperty(ConfigNode &node) {
+        string res = ConfigProperty::getProperty(node);
+        res = SafeConfigNode::unescape(res);
+        return res;
+    }
+};
+
+/**
  * A registry for all properties which might be saved in the same ConfigNode.
  * Currently the same as a simple list. Someone else owns the instances.
  */
@@ -1022,6 +1048,28 @@ class SyncConfig {
     virtual unsigned int getResponseTimeout() const { return 0; }
     virtual const char*  getDevID() const;
     virtual void setDevID(const string &value, bool temporarily = false);
+
+    /**
+     * The Device ID of our peer. Typically only relevant when the
+     * peer is a client. Servers don't have a Device ID, just some
+     * unique way of contacting them.
+     */
+    virtual string getRemoteDevID() const;
+    virtual void setRemoteDevID(const string &value);
+
+    /**
+     * The opaque nonce value stored for a peer, required for MD5
+     * authentication. Only used when acting as server.
+     */
+    virtual string getNonce() const;
+    virtual void setNonce(const string &value);
+
+    /**
+     * The opaque per-peer admin data managed by the Synthesis
+     * engine. Only used when acting as server.
+     */
+    virtual string getAdminData() const;
+    virtual void setAdminData(const string &value);
 
     /**
      * Specifies whether WBXML is to be used (default).

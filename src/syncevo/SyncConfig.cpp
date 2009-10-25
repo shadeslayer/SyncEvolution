@@ -39,6 +39,8 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
+const char *const SourceAdminDataName = "adminData";
+
 static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source);
 static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source);
 
@@ -603,6 +605,13 @@ static ULongConfigProperty syncPropHashCode("HashCode", "used by the SyncML libr
 
 static ConfigProperty syncPropConfigDate("ConfigDate", "used by the SyncML library internally; do not modify");
 
+static SafeConfigProperty syncPropRemoteDevID("remoteDeviceId",
+                                              "ID of our peer, empty if unknown; do not edit, used internally");
+static SafeConfigProperty syncPropNonce("lastNonce",
+                                        "MD5 nonce of our peer, empty if not set yet; do not edit, used internally");
+static SafeConfigProperty syncPropAdminData("adminData",
+                                            "Synthesis per-peer admin data; do not edit, used internally");
+
 ConfigPropertyRegistry &SyncConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
@@ -642,6 +651,12 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         syncPropHashCode.setHidden(true);
         registry.push_back(&syncPropConfigDate);
         syncPropConfigDate.setHidden(true);
+        registry.push_back(&syncPropRemoteDevID);
+        syncPropRemoteDevID.setHidden(true);
+        registry.push_back(&syncPropNonce);
+        syncPropNonce.setHidden(true);
+        registry.push_back(&syncPropAdminData);
+        syncPropAdminData.setHidden(true);
         initialized = true;
     }
 
@@ -868,6 +883,12 @@ bool SyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.get
 void SyncConfig::setSSLVerifyServer(bool value, bool temporarily) { syncPropSSLVerifyServer.setProperty(*m_configNode, value, temporarily); }
 bool SyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHost.getProperty(*m_configNode); }
 void SyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncPropSSLVerifyHost.setProperty(*m_configNode, value, temporarily); }
+string SyncConfig::getRemoteDevID() const { return syncPropRemoteDevID.getProperty(*m_hiddenNode); }
+void SyncConfig::setRemoteDevID(const string &value) { syncPropRemoteDevID.setProperty(*m_hiddenNode, value); }
+string SyncConfig::getNonce() const { return syncPropNonce.getProperty(*m_hiddenNode); }
+void SyncConfig::setNonce(const string &value) { syncPropNonce.setProperty(*m_hiddenNode, value); }
+string SyncConfig::getAdminData() const { return syncPropAdminData.getProperty(*m_hiddenNode); }
+void SyncConfig::setAdminData(const string &value) { syncPropAdminData.setProperty(*m_hiddenNode, value); }
 
 std::string SyncConfig::findSSLServerCertificate()
 {
@@ -1156,6 +1177,9 @@ static EvolutionPasswordConfigProperty sourcePropPassword("evolutionpassword", "
 static ULongConfigProperty sourcePropLast("last",
                                           "used by the SyncML library internally; do not modify");
 
+static ConfigProperty sourceAdminData(SourceAdminDataName,
+                                      "used by the Synthesis library internally; do not modify");
+
 ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
@@ -1171,6 +1195,7 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
         registry.push_back(&sourcePropPassword);
         registry.push_back(&sourcePropLast);
         sourcePropLast.setHidden(true);
+        registry.push_back(&sourceAdminData);
         initialized = true;
     }
 

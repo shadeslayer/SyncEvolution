@@ -68,7 +68,7 @@ using namespace std;
 SE_BEGIN_CXX
 
 SourceList *SyncContext::m_sourceListPtr;
-
+SyncContext *SyncContext::m_activeContext;
 SuspendFlags SyncContext::s_flags;
 
 extern "C" void suspend_handler(int sig)
@@ -1153,6 +1153,11 @@ SyncSource *SyncContext::findSource(const char *name)
     return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
 }
 
+SyncContext *SyncContext::findContext(const char *sessionName)
+{
+    return m_activeContext;
+}
+
 void SyncContext::initSources(SourceList &sourceList)
 {
     list<string> configuredSources = getSyncSources();
@@ -1307,17 +1312,10 @@ void SyncContext::getConfigXML(string &xml, string &configname)
     substTag(xml,
              "clientorserver",
              m_serverMode ?
-             // TODO: do session auth inside SynthesisDBPlugin to
-             // avoid setting the username/password in the XML config
-             // TODO: also do device admin inside SynthesisDBPlugin
-             string(
              "  <server type='plugin'>\n"
-             "    <plugin_module>[SDK_textdb]</plugin_module>\n"
-             "    <plugin_sessionauth>no</plugin_sessionauth>\n"
+             "    <plugin_module>SyncEvolution</plugin_module>\n"
+             "    <plugin_sessionauth>yes</plugin_sessionauth>\n"
              "    <plugin_deviceadmin>yes</plugin_deviceadmin>\n"
-             "    <plugin_params>\n"
-             "       <datafilepath>") + getSynthesisDatadir() + "</datafilepath>\n"
-             "    </plugin_params>\n"
              "\n"
              "    <sessioninitscript><![CDATA[\n"
              "      // these variables are possibly modified by rule scripts\n"
@@ -1468,16 +1466,12 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         if (user[0] || password[0]) {
             // require authentication with the configured password
             substTag(xml, "defaultauth",
-                     StringPrintf("<requestedauth>md5</requestedauth>\n"
-                                  "<requiredauth>md5</requiredauth>\n"
-                                  "<autononce>yes</autononce>\n"
-                                  "<simpleauthuser>%s</simpleauthuser>\n"
-                                  "<simpleauthpw>%s</simpleauthpw>\n",
-                                  user, password),
+                     "<requestedauth>md5</requestedauth>\n"
+                     "<requiredauth>md5</requiredauth>\n"
+                     "<autononce>yes</autononce>\n",
                      true);
         } else {
-            // TODO: no authentication required - currently doesn't work,
-            // see remark about doing authentication inside SynthesisDBPlugin
+            // no authentication required
             substTag(xml, "defaultauth",
                      "<requestedauth>none</requestedauth>\n"
                      "<requiredauth>none</requiredauth>\n"
@@ -1563,27 +1557,29 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
     sourceList.setLogLevel(m_quiet ? SourceList::LOGGING_QUIET :
                            getPrintChanges() ? SourceList::LOGGING_FULL :
                            SourceList::LOGGING_SUMMARY);
-    m_sourceListPtr = &sourceList;
-
-    if (getenv("SYNCEVOLUTION_GNUTLS_DEBUG")) {
-        // Enable libgnutls debugging without creating a hard dependency on it,
-        // because we don't call it directly and might not even be linked against
-        // it. Therefore check for the relevant symbols via dlsym().
-        void (*set_log_level)(int);
-        void (*set_log_function)(void (*func)(int level, const char *str));
-
-        set_log_level = (typeof(set_log_level))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_level");
-        set_log_function = (typeof(set_log_function))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_function");
-
-        if (set_log_level && set_log_function) {
-            set_log_level(atoi(getenv("SYNCEVOLUTION_GNUTLS_DEBUG")));
-            set_log_function(GnutlsLogFunction);
-        } else {
-            SE_LOG_ERROR(NULL, NULL, "SYNCEVOLUTION_GNUTLS_DEBUG debugging not possible, log functions not found");
-        }
-    }
 
     try {
+        m_sourceListPtr = &sourceList;
+        m_activeContext = this;
+
+        if (getenv("SYNCEVOLUTION_GNUTLS_DEBUG")) {
+            // Enable libgnutls debugging without creating a hard dependency on it,
+            // because we don't call it directly and might not even be linked against
+            // it. Therefore check for the relevant symbols via dlsym().
+            void (*set_log_level)(int);
+            void (*set_log_function)(void (*func)(int level, const char *str));
+
+            set_log_level = (typeof(set_log_level))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_level");
+            set_log_function = (typeof(set_log_function))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_function");
+
+            if (set_log_level && set_log_function) {
+                set_log_level(atoi(getenv("SYNCEVOLUTION_GNUTLS_DEBUG")));
+                set_log_function(GnutlsLogFunction);
+            } else {
+                SE_LOG_ERROR(NULL, NULL, "SYNCEVOLUTION_GNUTLS_DEBUG debugging not possible, log functions not found");
+            }
+        }
+
         SyncReport buffer;
         if (!report) {
             report = &buffer;
@@ -1701,6 +1697,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
     }
 
     m_sourceListPtr = NULL;
+    m_activeContext = NULL;
     return status;
 }
 
