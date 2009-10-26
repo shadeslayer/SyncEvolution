@@ -1,3 +1,132 @@
+SyncEvolution 0.9 -> 0.9.1, 26.10.2009
+======================================
+Synthesis SyncML Engine version: see src/synthesis/ChangeLog
+
+Mobical and Memotoo are now officially supported.
+
+Memotoo uses vCard 2.1 with several Evolution specific extensions. It
+uses iCalendar 2.0, however, without actually supporting the advanced
+features of it. Times are converted to UTC and meeting information are
+lost.
+
+Mobical uses vCard 2.1 and vCalendar 1.0 as data formats, with the
+result that many properties used in Evolution are not supported by the
+server.  In particular calendar support is very limited (known issues
+when events are in time zones different from the one selected locally
+and on the server, no support for meetings). For details see
+README.mobical.
+
+*** Beware *** that the Mobical SyncML password is *not* the same as
+the one for their web site. Log into mobical.net, then go to "my accounts
+>> configure new device >> manual settings" to find the SyncML
+credentials.
+
+It is now possible to compile database backends outside of
+SyncEvolution, install them and have SyncEvolution use them
+automatically like any other backend. The backend API has been
+enhanced considerably. For example, backend developers have
+access to a modular set of utility classes that can be mixed
+into a specific implementation. Backends can access the internal
+Synthesis representation directly and therefore no longer need
+their own vCard/vCalendar/iCalendar parser.
+
+The sqlite demo backend can be enabled and compiled again with
+--enable-sqlite. It demonstrates how to map directly from the
+Synthesis field list to some internal format (an SQLite database
+schema in this case).
+
+Other changes:
+
+* Resend messages to cope with intermittent loss of network
+  connectivity (Moblin Bugzilla #3427). See the new "ResendDuration"
+  and "ResendDelay" configuration properties for details.
+
+* SyncEvolution command line uses the GNOME keyring when
+  the new --keyring option is given.
+
+* The logging of added and updated items was enhanced. Events,
+  tasks and memos are logged with a short description instead of
+  just the local ID. The description for contacts was improved.
+
+* Receiving photos from Mobical failed because Mobical
+  does not quite follow the vCard 2.1 (Moblin Bugzilla #6668).
+  Sending photos worked, but added a few bytes of garbage
+  at the end of each photo (typically ignored when showing).
+  Parser was made more tolerant by Synthesis and encoder bug
+  was fixed.
+
+* Task priorities used by Mobical and Evolution did not match:
+  vCalendar 1.0 uses 1-3, iCalendar 2.0 uses 1-9 (MB #6664).
+  SyncEvolution now translates between the two ranges, with
+  some information getting lost when talking to a peer which
+  only supports the smaller range.
+
+* Importing work and home phone numbers from Google into desktop
+  Evolution works better, because SyncEvolution now adds the "VOICE"
+  flag expected by Evolution (MB#6501).
+
+* SSL certificate checking with Google is enabled by default
+  and enabled in Moblin, because libsoup in that distro has
+  the necessary fix. Without that fix, all connection attempts
+  fail. The binaries on syncevolution.org are compiled with
+  --disable-ssl-certificate-check, so users who want the
+  additional security must enable it.
+
+* .rpms on syncevolution.org no longer specify a dependency
+  on certain Perl features. This depencency was a problem on
+  Mandriva. Unwanted hard dependencies on libecal in syncevolution.org
+  binaries are avoided for real this time (MB#6552).
+
+* Some sync-UI enhancements (describe sync services, avoid crash
+  with very long input in some of the text boxes (MB#5219), set
+  application icon, improved some strings).
+
+* sync-UI: now disables sources which are not supported when
+  setting up a configuration, like memos on Moblin (MB #6672).
+  Previously the source was enabled, which prevented using
+  using the configuration as-is on the command line.
+
+* The sync UI allowed to enable calendar and task synchronization
+  with Google although Google does not support that (MB#5871).
+  In new installations this is prevented by clearing the URI
+  for those data categories.
+
+* Trying to remove a non-existent configuration via the command
+  line now raises an error, to catch typos (MB #6673).
+
+* Improved checks which logs in the logdir belong to the current
+  server (MB#5215).
+
+* Improved sanity checking of integer configuration parameters
+  (MB#6500).
+
+* Spelling fix: "aboring" => "aborting"
+
+
+Known issue:
+
+* Mobical and Memotoo do not have a description in the GUI yet.
+
+* ZYB.com is not supported because of a known anchor handling
+  problem in the server (MB#2424).
+
+
+Upgrading from 0.9:
+
+* nothing to do, upgrading and downgrading should work seamlessly
+
+
+SyncEvolution 0.9.1 beta 2 -> 0.9.1, 26.10.2009
+===============================================
+Synthesis SyncML Engine version: see src/synthesis/ChangeLog
+
+Minor changes:
+
+* spelling fixes in NEWS file (--source-type => --source-property)
+* update to zh_CN
+* improved autotools compilation of libsynthesis
+
+
 SyncEvolution 0.9.1 beta 1 -> 0.9.1 beta 2, 19.10.2009
 ======================================================
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog
@@ -215,11 +344,11 @@ The following servers are now supported:
   To enable that support in an existing configuration so that it
   exchanges items in the more suitable iCalendar 2.0 format, use:
 
-  syncevolution --configure --source-type sync=two-way \
+  syncevolution --configure --source-property sync=two-way \
                 funambol calendar todo
-  syncevolution --configure --source-type type='calendar:text/calendar!' \
+  syncevolution --configure --source-property type='calendar:text/calendar!' \
                 funambol calendar
-  syncevolution --configure --source-type type='todo:text/calendar!' \
+  syncevolution --configure --source-property type='todo:text/calendar!' \
                 funambol todo
 
   Without the exclamation mark, format auto-negotiation would pick the
@@ -430,9 +559,9 @@ UPGRADING
 
 When enabling calendar and todo synchronization with Funambol
 in an existing configuration, set the type so that iCalendar 2.0 is used:
-  syncevolution --configure --source-type sync=two-way funambol calendar todo
-  syncevolution --configure --source-type type='calendar:text/calendar!' funambol calendar
-  syncevolution --configure --source-type type='todo:text/calendar!' funambol todo
+  syncevolution --configure --source-property sync=two-way funambol calendar todo
+  syncevolution --configure --source-property type='calendar:text/calendar!' funambol calendar
+  syncevolution --configure --source-property type='todo:text/calendar!' funambol todo
 
 When creating a configuration anew, this is not necessary because the
 configuration template contains those types.
