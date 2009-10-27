@@ -144,61 +144,73 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 if(t.startswith(':')):
                     t=t.partition(':')[2]
                 params[server]=t
-    '''generate a template which lists all test cases we supply, this helps 
-    generate a comparable table and track potential uncontentional skipping
-    of test cases'''
-    templates=[]
-    oldpath = os.getcwd()
-    os.chdir (srcdir)
-    print 'in client-test -h'
-    fout,fin=popen2.popen2(shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" ./client-test -h |grep 'Client::Sync::vcard21'|grep -v 'Retry' |grep -v 'Suspend' | grep -v 'Resend'")
-    sys.stdout.flush()
-    os.chdir(oldpath)
-    for line in fout:
-        l = line.partition('Client::Sync::vcard21::')[2].rpartition('\n')[0]
-        if(l!=''):
-            templates.append(l);
+    
     indent =indents[-1]+space
     indents.append(indent)
     '''start of testcase results '''
     result.write(indent+'''<client-test>\n''')
     runservers = os.listdir(resultdir)
-    ''' This is a hack, because we have'syncevolution' and 'evolution' as
-    test names, change the name to avoid miss match'''
-    if 'evolution' in servers:
-        servers.remove('evolution')
-        servers.insert(0,'-evolution')
-        params['source']=params['evolution']
-    if 'synthesis' in servers:
-        servers.remove('synthesis')
-        servers.append('-synthesis')
-    syncprinted = False;
+    #list source test servers statically, we have no idea how to differenciate
+    #automatically whether the server is a source test or sync test.
+    sourceServers = ['evolution', 'evolution-prebuilt-build']
+    sourceServersRun = 0
+    haveSource = False
+    #Only process servers listed in the input parameter and in the sourceServer
+    #list and have a result folder
+    for server in servers:
+        matched = False
+        for rserver in runservers:
+            for source in sourceServers:
+                if (rserver.find('-')!=-1 and server == rserver.split('-')[1] and server == source):
+                    matched = True
+                    break
+        if(matched):
+            #put the servers at the front of the servers list, so that we will
+            #process test first
+            servers.remove(server)
+            servers.insert (0, server);
+            sourceServersRun = sourceServersRun+1;
+            haveSource = True
+
+    #process source tests first 
+    if (haveSource) :
+        indent +=space
+        indents.append(indent)
+        result.write(indent+'''<source>\n''')
+
+    haveSync = False
     for server in servers:
         matched = False
 	'''Only process servers listed in the input parametr'''
         for rserver in runservers:
-            if(rserver.find(server) != -1):
+            if(rserver.find('-')!= -1 and rserver.split('-')[1] == server):
                 matched = True
                 break;
         if(matched):
-            indent +=space
-            indents.append(indent)
-            if(server == '-evolution'):
-                server='source'
-            elif (server == '-synthesis'):
-                server='synthesis'
-	        '''This is another hacking. Local source test is treated the same as 
-	        server test while we want to treat them differenly in the test
-	        report. Put all server test results under anohter tag 'sync' '''
-            elif not syncprinted:
-                syncprinted = True
-                result.write(indent+'<sync>\n')
+            sourceServersRun = sourceServersRun -1;
+            if (sourceServersRun == -1):
+                haveSync = True
+                '''generate a template which lists all test cases we supply, this helps 
+                generate a comparable table and track potential uncontentional skipping
+                of test cases'''
+                templates=[]
+                oldpath = os.getcwd()
+                os.chdir (srcdir)
+                fout,fin=popen2.popen2(shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" ./client-test -h |grep 'Client::Sync::vcard21'|grep -v 'Retry' |grep -v 'Suspend' | grep -v 'Resend'")
+                os.chdir(oldpath)
+                for line in fout:
+                    l = line.partition('Client::Sync::vcard21::')[2].rpartition('\n')[0]
+                    if(l!=''):
+                        templates.append(l);
                 indent +=space
                 indents.append(indent)
-                result.write(indent+'<template>')
+                result.write(indent+'<sync>\n')
+                result.write(indent+space+'<template>')
                 for template in templates:
-                    result.write('<'+template+'/>')
+                    result.write(indent+space+'<'+template+'/>')
                 result.write('</template>\n')
+            indent +=space
+            indents.append(indent)
             result.write(indent+'<'+server+' path="' +rserver+'" ')
             #valgrind check resutls
             outputlog = resultdir+'/'+rserver+'/output.txt'
@@ -214,7 +226,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
             for log in logs:
                 if(log.endswith('____compare.log')):
                     continue
-                if(len(log.split('_')) > 2):
+                if(len(log.split('_')) > 3):
                     format = log.rpartition('_')[0].partition('_')[2].partition('_')[2]
                     prefix = log.rpartition(format)[0].rpartition('/')[-1]
                 else:
@@ -249,7 +261,13 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
             result.write(indent+'</'+server+'>\n')
             indents.pop()
             indent = indents[-1]
-    if(syncprinted):
+            if(sourceServersRun == 0):
+                #all source servers have been processed, end the source tag and
+                #start the sync tags
+                result.write(indent+'''</source>\n''')
+                indents.pop()
+                indent = indents[-1]
+    if(haveSync):
         result.write(indent+'</sync>\n')
         indents.pop()
         indent=indents[-1]
