@@ -82,8 +82,13 @@ def step1(input, result, indents, dir, resulturi, shellprefix, srcdir):
     result.write(indent+'''<libraryinfo>\n''')
     libs = ['libsoup-2.4', 'evolution-data-server-1.2', 'glib-2.0','dbus-glib-1']
     s=''
-    oldpath = os.getcwd()
-    os.chdir(srcdir)
+    #change to a dir so that schroot will change to an available directory, without this
+    #schroot will fail which in turn causes the following cmd has no chance to run
+    oldpath = os.getcwd()  
+    tmpdir = srcdir
+    while (os.path.exists(tmpdir) == False):
+        tmpdir = os.path.dirname(tmpdir)
+    os.chdir(tmpdir)
     for lib in libs:
         fout,fin=popen2.popen2(shellprefix+' pkg-config --modversion '+lib +' |grep -v pkg-config')
         s = s + lib +': '+fout.read() +'  '
@@ -161,7 +166,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
         matched = False
         for rserver in runservers:
             for source in sourceServers:
-                if (rserver.find('-')!=-1 and server == rserver.split('-')[1] and server == source):
+                if (rserver.find('-')!=-1 and server == rserver.partition('-')[2] and server == source):
                     matched = True
                     break
         if(matched):
@@ -183,7 +188,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
         matched = False
 	'''Only process servers listed in the input parametr'''
         for rserver in runservers:
-            if(rserver.find('-')!= -1 and rserver.split('-')[1] == server):
+            if(rserver.find('-')!= -1 and rserver.partition('-')[2] == server):
                 matched = True
                 break;
         if(matched):
