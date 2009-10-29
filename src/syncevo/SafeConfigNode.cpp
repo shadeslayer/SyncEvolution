@@ -94,6 +94,7 @@ string SafeConfigNode::escape(const string &str, bool allSpaces, bool strictMode
             c == '_') :
            !(((isLeadingSpace || allSpaces) && isspace(c)) ||
              c == '=' ||
+             c == '!' ||
              c == '\r' ||
              c == '\n')) {
             res += c;
