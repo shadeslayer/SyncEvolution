@@ -12,6 +12,7 @@ Server configurations must be kept in sync in three different places:
 - here (if a server is installed as files)
 - in SyncEvolutionConfig.cpp's EvolutionSyncConfig::createServerTemplate()
 - in SyncEvolutionCmdline.cpp's test server configs
+- in test/test-dbus.py testGetConfigsTemplates()
 
 Note that server icons must come with a suitable license that allows
 redistribution. TODO: verify the license of ScheduleWorld and 
