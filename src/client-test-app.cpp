@@ -267,11 +267,6 @@ public:
                                 const std::string &logbase,
                                 const SyncOptions &options)
     {
-        set<string> activeSources;
-        for(int i = 0; sources[i] >= 0; i++) {
-            activeSources.insert(m_source2Config[sources[i]]);
-        }
-
         string server = getenv("CLIENT_TEST_SERVER") ? getenv("CLIENT_TEST_SERVER") : "funambol";
         server += "_";
         server += m_clientID;
@@ -295,11 +290,6 @@ public:
                 setMaxMsgSize(m_options.m_maxMsgSize, true);
                 setWBXML(m_options.m_isWBXML, true);
                 SyncContext::prepare();
-            }
-            virtual void prepare(const std::vector<SyncSource *> &sources) {
-                SyncModes modes(m_options.m_syncMode);
-                setSyncModes(sources, modes);
-                SyncContext::prepare(sources);
             }
 
             virtual void displaySyncProgress(sysync::TProgressEventEnum type,
@@ -332,6 +322,17 @@ public:
             SyncOptions m_options;
             bool m_started;
         } client(server, logbase, options);
+
+        // configure active sources with the desired sync mode,
+        // disable the rest
+        FilterConfigNode::ConfigFilter filter;
+        filter[SyncSourceConfig::m_sourcePropSync.getName()] = "none";
+        client.setConfigFilter(false, "", filter);
+        filter[SyncSourceConfig::m_sourcePropSync.getName()] =
+            PrettyPrintSyncMode(options.m_syncMode);
+        for(int i = 0; sources[i] >= 0; i++) {
+            client.setConfigFilter(false, m_source2Config[sources[i]], filter);
+        }
 
         SyncReport report;
         SyncMLStatus status = client.sync(&report);
