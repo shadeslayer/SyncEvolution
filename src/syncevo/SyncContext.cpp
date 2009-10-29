@@ -1605,7 +1605,14 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
         SwapEngine swapengine(*this);
         string xml, configname;
         getConfigXML(xml, configname);
-        m_engine.InitEngineXML(xml.c_str());
+        try {
+            m_engine.InitEngineXML(xml.c_str());
+        } catch (const BadSynthesisResult &ex) {
+            SE_LOG_ERROR(NULL, NULL,
+                         "internal error, invalid XML configuration (without datastores):\n%s",
+                         xml.c_str());
+            throw;
+        }
 
         try {
             // dump some summary information at the beginning of the log
@@ -1710,7 +1717,14 @@ SyncMLStatus SyncContext::doSync()
     // re-init engine with all sources configured
     string xml, configname;
     getConfigXML(xml, configname);
-    m_engine.InitEngineXML(xml.c_str());
+    try {
+        m_engine.InitEngineXML(xml.c_str());
+    } catch (const BadSynthesisResult &ex) {
+        SE_LOG_ERROR(NULL, NULL,
+                     "internal error, invalid XML configuration (with datastores):\n%s",
+                     xml.c_str());
+        throw;
+    }
     SE_LOG_DEV(NULL, NULL, "Full XML configuration:\n%s", xml.c_str());
 
     SharedKey targets;
