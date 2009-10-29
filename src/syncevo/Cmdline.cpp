@@ -1252,6 +1252,7 @@ protected:
                                   "   Google = http://m.google.com/sync\n"
                                   "   Memotoo = http://www.memotoo.com\n"
                                   "   Mobical = http://www.mobical.net\n"
+                                  "   Oracle = http://www.oracle.com/technology/products/beehive/index.html\n"
                                   "   ScheduleWorld = http://sync.scheduleworld.com\n"
                                   "   Synthesis = http://www.synthesis.ch\n"
                                   "   ZYB = http://www.zyb.com\n",

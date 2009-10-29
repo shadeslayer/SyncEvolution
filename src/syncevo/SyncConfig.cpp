@@ -169,6 +169,7 @@ SyncConfig::ServerList SyncConfig::getServerTemplates()
     result.addDefaultTemplate("Google", "http://m.google.com/sync");
     result.addDefaultTemplate("ZYB", "http://www.zyb.com");
     result.addDefaultTemplate("Mobical", "http://www.mobical.net");
+    result.addDefaultTemplate("Oracle", "http://www.oracle.com/technology/products/beehive/index.html");
 
     result.sort();
     return result;
@@ -360,6 +361,17 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
         source->setURI("task");
         source = config->getSyncSourceConfig("memo");
         source->setURI("pnote");
+    } else if (boost::iequals(server, "oracle")) {
+        config->setSyncURL("https://your.company/mobilesync/server");
+        config->setWebURL("http://www.oracle.com/technology/products/beehive/");
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("./contacts");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("./calendar/events");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("./calendar/tasks");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("./notes");
     } else {
         config.reset();
     }
