@@ -164,7 +164,14 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
     def testGetConfigsTemplates(self):
         """read templates"""
         configs = self.server.GetConfigs(True, utf8_strings=True)
-        self.failUnlessEqual(configs, ["google"])
+        configs.sort()
+        self.failUnlessEqual(configs, ["Funambol",
+                                       "Google",
+                                       "Memotoo",
+                                       "Mobical",
+                                       "ScheduleWorld",
+                                       "Synthesis",
+                                       "ZYB"])
 
     def testGetConfigScheduleWorld(self):
         """read ScheduleWorld template"""
