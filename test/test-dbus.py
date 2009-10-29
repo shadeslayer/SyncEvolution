@@ -79,6 +79,7 @@ class DBusUtil:
             while True:
                 check = subprocess.Popen("ps x | grep %s | grep -w -v -e %s -e grep -e ps" % \
                                              (server[0], debugger),
+                                         env=env,
                                          shell=True,
                                          stdout=subprocess.PIPE)
                 out, err = check.communicate()
