@@ -1348,8 +1348,8 @@ Session::Session(DBusServer &server,
     m_priority(PRI_DEFAULT),
     m_progress(-1),
     m_error(0),
-    m_progressTimer(50),
     m_statusTimer(100),
+    m_progressTimer(50),
     emitStatus(*this, "StatusChanged"),
     emitProgress(*this, "ProgressChanged")
 {
