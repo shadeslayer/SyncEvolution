@@ -1217,12 +1217,12 @@ void DBusSync::displaySourceProgress(sysync::TProgressEventEnum type,
 
 bool DBusSync::checkForSuspend()
 {
-    return m_session.isSuspend();
+    return m_session.isSuspend() || SyncContext::checkForSuspend();
 }
 
 bool DBusSync::checkForAbort()
 {
-    return m_session.isAbort();
+    return m_session.isAbort() || SyncContext::checkForAbort();
 }
 
 int DBusSync::sleep(int intervals)
@@ -2555,6 +2555,12 @@ void DBusServer::run()
         } else {
             // the only reasons to get out of the main loop are
             // running a sync and quitting; no active session, so quit
+            break;
+        }
+        /** check whether receiving CTRL-C/SIGINT/SIGTERM and aborting syncevo-dbus-server */
+        SuspendFlags flags = SyncContext::getSuspendFlags();
+        if(flags.state == SuspendFlags::CLIENT_SUSPEND || 
+           flags.state == SuspendFlags::CLIENT_ABORT ) {
             break;
         }
     }

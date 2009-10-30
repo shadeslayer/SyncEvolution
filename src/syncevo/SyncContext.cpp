@@ -100,6 +100,15 @@ extern "C" void suspend_handler(int sig)
   }
 }
 
+/**
+ * a handler used for signal 'SIGTERM'
+ */
+extern "C" void term_handler(int sig)
+{
+    SuspendFlags& s_flags = SyncContext::getSuspendFlags();
+    s_flags.state = SuspendFlags::CLIENT_ABORT;
+    SE_LOG_INFO(NULL, NULL, "Aborting sync immediately via SIGTERM ...");
+}
 
 SyncContext::SyncContext(const string &server,
                                          bool doLogging) :
@@ -1767,6 +1776,14 @@ SyncMLStatus SyncContext::doSync()
     sigemptyset (&new_action.sa_mask);
     new_action.sa_flags = 0;
     sigaction (SIGINT, &new_action, &old_action);
+
+    /** set SIGTERM */
+    struct sigaction new_term_action, old_term_action;
+    new_term_action.sa_handler= term_handler;
+    sigemptyset (&new_term_action.sa_mask);
+    new_term_action.sa_flags = 0;
+    sigaction (SIGTERM, &new_term_action, &old_term_action);
+
     SyncMLStatus status = STATUS_OK;
     std::string s;
 
@@ -2204,6 +2221,7 @@ SyncMLStatus SyncContext::doSync()
     }
 
     sigaction (SIGINT, &old_action, NULL);
+    sigaction (SIGTERM, &old_term_action, NULL);
     return status;
 }
 
