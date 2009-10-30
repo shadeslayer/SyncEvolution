@@ -54,6 +54,7 @@
 using namespace SyncEvo;
 
 static GMainLoop *loop = NULL;
+static bool shutdownRequested = false;
 
 /**
  * Anything that can be owned by a client, like a connection
@@ -437,6 +438,7 @@ public:
              Session &session);
     ~DBusSync() {}
 
+protected:
     virtual boost::shared_ptr<TransportAgent> createTransportAgent();
     virtual void displaySyncProgress(sysync::TProgressEventEnum type,
                                      int32_t extra1, int32_t extra2, int32_t extra3);
@@ -445,11 +447,11 @@ public:
                                        int32_t extra1, int32_t extra2, int32_t extra3);
 
     /**
-     * implement checkForSuspend and checkForAbort.
+     * Implement checkForSuspend and checkForAbort.
      * They will check whether dbus clients suspend
-     * or abort the session. But it won't check whether
-     * dbus server receives suspend or abort 
-     * by CTRL-C since dbus server often runs as a daemon
+     * or abort the session in addition to checking
+     * whether suspend/abort were requested via
+     * signals, using SyncContext's signal handling.
      */
     virtual bool checkForSuspend(); 
     virtual bool checkForAbort();
@@ -834,8 +836,8 @@ public:
     void abort();
     void suspend();
 
-    bool isSuspend() { return m_syncStatus == SYNC_ABORT; }
-    bool isAbort() { return m_syncStatus == SYNC_SUSPEND; }
+    bool isSuspend() { return m_syncStatus == SYNC_SUSPEND; }
+    bool isAbort() { return m_syncStatus == SYNC_ABORT; }
 };
 
 
@@ -879,6 +881,12 @@ class Connection : public DBusObjectHelper, public Resource
      * NULL if not waiting
      */
     GMainLoop *m_loop;
+
+    /**
+     * get our peer session out of the DBusTransportAgent,
+     * if it is currently waiting for us (indicated via m_loop)
+     */
+    void wakeupSession();
 
     /**
      * buffer for received data, waiting here for engine to ask
@@ -1414,6 +1422,9 @@ void Session::abort()
     }
     m_syncStatus = SYNC_ABORT;
     fireStatus(true);
+
+    // state change, return to caller so that it can react
+    g_main_loop_quit(m_server.getLoop());
 }
 
 void Session::suspend()
@@ -1423,6 +1434,7 @@ void Session::suspend()
     }
     m_syncStatus = SYNC_SUSPEND;
     fireStatus(true);
+    g_main_loop_quit(m_server.getLoop());
 }
 
 void Session::getStatus(std::string &status,
@@ -1919,6 +1931,14 @@ std::string Connection::buildDescription(const StringMap &peer)
     return buffer;
 }
 
+void Connection::wakeupSession()
+{
+    if (m_loop) {
+        g_main_loop_quit(m_loop);
+        m_loop = NULL;
+    }
+}
+
 void Connection::process(const Caller_t &caller,
              const std::pair<size_t, const uint8_t *> &message,
              const std::string &message_type)
@@ -2129,16 +2149,10 @@ void Connection::process(const Caller_t &caller,
             m_incomingMsgType = message_type;
             m_state = PROCESSING;
             // get out of DBusTransportAgent::wait()
-            if (m_loop) {
-                g_main_loop_quit(m_loop);
-                m_loop = NULL;
-            }
+            wakeupSession();
             break;
         case FINAL:
-            if (m_loop) {
-                g_main_loop_quit(m_loop);
-                m_loop = NULL;
-            }
+            wakeupSession();
             throw std::runtime_error("protocol error: final reply sent, no further message processing possible");
         case DONE:
             throw std::runtime_error("protocol error: connection closed, no further message processing possible");
@@ -2239,10 +2253,7 @@ Connection::~Connection()
             abort();
         }
         // DBusTransportAgent waiting? Wake it up.
-        if (m_loop) {
-            g_main_loop_quit(m_loop);
-            m_loop = NULL;
-        }
+        wakeupSession();
         m_session.use_count();
         m_session.reset();
     } catch (...) {
@@ -2528,7 +2539,7 @@ DBusServer::~DBusServer()
 
 void DBusServer::run()
 {
-    while (true) {
+    while (!shutdownRequested) {
         if (!m_activeSession ||
             !m_activeSession->readyToRun()) {
             g_main_loop_run(m_loop);
@@ -2552,16 +2563,6 @@ void DBusServer::run()
             }
             session.swap(m_syncSession);
             dequeue(session.get());
-        } else {
-            // the only reasons to get out of the main loop are
-            // running a sync and quitting; no active session, so quit
-            break;
-        }
-        /** check whether receiving CTRL-C/SIGINT/SIGTERM and aborting syncevo-dbus-server */
-        SuspendFlags flags = SyncContext::getSuspendFlags();
-        if(flags.state == SuspendFlags::CLIENT_SUSPEND || 
-           flags.state == SuspendFlags::CLIENT_ABORT ) {
-            break;
         }
     }
 }
@@ -2679,6 +2680,8 @@ void DBusServer::checkQueue()
 
 void niam(int sig)
 {
+    shutdownRequested = true;
+    SyncContext::handleSignal(sig);
     g_main_loop_quit (loop);
 }
 

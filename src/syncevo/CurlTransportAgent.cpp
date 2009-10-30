@@ -280,7 +280,7 @@ void CurlTransportAgent::checkCurl(CURLcode code, bool exception)
 int CurlTransportAgent::progressCallback(void* transport, double, double, double, double)
 {
     CurlTransportAgent *agent = static_cast<CurlTransportAgent *> (transport);
-    SuspendFlags& s_flags = SyncContext::getSuspendFlags();
+    const SuspendFlags &s_flags = SyncContext::getSuspendFlags();
     //abort transfer
     if (s_flags.state == SuspendFlags::CLIENT_ABORT){
         agent->setAborting (true);

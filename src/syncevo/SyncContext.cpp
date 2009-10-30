@@ -71,43 +71,58 @@ SourceList *SyncContext::m_sourceListPtr;
 SyncContext *SyncContext::m_activeContext;
 SuspendFlags SyncContext::s_flags;
 
-extern "C" void suspend_handler(int sig)
+void SyncContext::handleSignal(int sig)
 {
-  time_t current;
-  time (&current);
-  SuspendFlags& s_flags = SyncContext::getSuspendFlags();
-  //first time suspend or already aborted
-  if (s_flags.state == SuspendFlags::CLIENT_NORMAL)
-  {
-      s_flags.state = SuspendFlags::CLIENT_SUSPEND;
-      s_flags.last_suspend = current;
-      SE_LOG_INFO(NULL, NULL,"Asking server to suspend...\nPress CTRL-C again quickly (within 2s) to stop sync immediately (can cause problems during next sync!)");
-      return;
-  }
-  else 
-  {
-      if (current - s_flags.last_suspend
-              < s_flags.ABORT_INTERVAL) 
-      {
-          s_flags.state = SuspendFlags::CLIENT_ABORT;
-          SE_LOG_INFO(NULL, NULL, "Aborting sync as requested via CTRL-C ...");
-      }
-      else
-      {
-          s_flags.last_suspend = current;
-          SE_LOG_INFO(NULL, NULL, "Suspend in progress...\nPress CTRL-C again quickly (within 2s) to stop sync immediately (can cause problems during next sync!)");
-      }
-  }
+    switch (sig) {
+    case SIGTERM:
+        switch (s_flags.state) {
+        case SuspendFlags::CLIENT_ABORT:
+            s_flags.message = "Already aborting sync as requested earlier ...";
+            break;
+        default:
+            s_flags.state = SuspendFlags::CLIENT_ABORT;
+            s_flags.message = "Aborting sync immediately via SIGTERM ...";
+            break;
+        }
+        break;
+    case SIGINT: {
+        time_t current;
+        time (&current);
+        switch (s_flags.state) {
+        case SuspendFlags::CLIENT_NORMAL:
+            // first time suspend or already aborted
+            s_flags.state = SuspendFlags::CLIENT_SUSPEND;
+            s_flags.message = "Asking server to suspend...\nPress CTRL-C again quickly (within 2s) to stop sync immediately (can cause problems during next sync!)";
+            s_flags.last_suspend = current;
+            break;
+        case SuspendFlags::CLIENT_SUSPEND:
+            // turn into abort?
+            if (current - s_flags.last_suspend
+                < s_flags.ABORT_INTERVAL) {
+                s_flags.state = SuspendFlags::CLIENT_ABORT;
+                s_flags.message = "Aborting sync as requested via CTRL-C ...";
+            } else {
+                s_flags.last_suspend = current;
+                s_flags.message = "Suspend in progress...\nPress CTRL-C again quickly (within 2s) to stop sync immediately (can cause problems during next sync!)";
+            }
+            break;
+        case SuspendFlags::CLIENT_ABORT:
+            s_flags.message = "Already aborting sync as requested earlier ...";
+            break;
+        case SuspendFlags::CLIENT_ILLEGAL:
+            break;
+        break;
+        }
+    }
+    }
 }
 
-/**
- * a handler used for signal 'SIGTERM'
- */
-extern "C" void term_handler(int sig)
+void SyncContext::printSignals()
 {
-    SuspendFlags& s_flags = SyncContext::getSuspendFlags();
-    s_flags.state = SuspendFlags::CLIENT_ABORT;
-    SE_LOG_INFO(NULL, NULL, "Aborting sync immediately via SIGTERM ...");
+    if (s_flags.message) {
+        SE_LOG_INFO(NULL, NULL, "%s", s_flags.message);
+        s_flags.message = NULL;
+    }
 }
 
 SyncContext::SyncContext(const string &server,
@@ -1771,18 +1786,22 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
 
 SyncMLStatus SyncContext::doSync()
 {
+    // install signal handlers only if default behavior
+    // is currently active, restore when we return
     struct sigaction new_action, old_action;
-    new_action.sa_handler= suspend_handler;
-    sigemptyset (&new_action.sa_mask);
-    new_action.sa_flags = 0;
-    sigaction (SIGINT, &new_action, &old_action);
+    memset(&new_action, 0, sizeof(new_action));
+    new_action.sa_handler = handleSignal;
+    sigemptyset(&new_action.sa_mask);
+    sigaction(SIGINT, NULL, &old_action);
+    if (old_action.sa_handler == SIG_DFL) {
+        sigaction(SIGINT, &new_action, NULL);
+    }
 
-    /** set SIGTERM */
-    struct sigaction new_term_action, old_term_action;
-    new_term_action.sa_handler= term_handler;
-    sigemptyset (&new_term_action.sa_mask);
-    new_term_action.sa_flags = 0;
-    sigaction (SIGTERM, &new_term_action, &old_term_action);
+    struct sigaction old_term_action;
+    sigaction(SIGTERM, NULL, &old_term_action);
+    if (old_term_action.sa_handler == SIG_DFL) {
+        sigaction(SIGTERM, &new_action, NULL);
+    }   
 
     SyncMLStatus status = STATUS_OK;
     std::string s;
@@ -2212,8 +2231,8 @@ SyncMLStatus SyncContext::doSync()
         try {
             agent->shutdown();
             // TODO: implement timeout for peers which fail to respond
-            while (agent->wait(true) == TransportAgent::ACTIVE) {
-                // TODO: allow aborting the sync here
+            while (!checkForAbort() &&
+                   agent->wait(true) == TransportAgent::ACTIVE) {
             }
         } catch (...) {
             status = handleException();

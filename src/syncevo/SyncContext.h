@@ -43,6 +43,7 @@ class SyncSource;
 
 struct SuspendFlags
 {
+    /** SIGINT twice within this amount of seconds aborts the sync */
     static const time_t ABORT_INTERVAL = 2; 
     enum CLIENT_STATE
     {
@@ -53,7 +54,16 @@ struct SuspendFlags
     }state;
     time_t last_suspend;
 
-    SuspendFlags():state(CLIENT_NORMAL),last_suspend(0)
+    /**
+     * Simple string to print in SyncContext::printSignals().
+     * Set by SyncContext::handleSignal() when updating the
+     * global state. There's a slight race condition: if
+     * messages are set more quickly than they are printed,
+     * only the last message is printed.
+     */
+    const char *message;
+
+SuspendFlags():state(CLIENT_NORMAL),last_suspend(0),message(NULL)
     {}
 };
 
@@ -159,7 +169,8 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     void setSyncDeviceID(const std::string &deviceID) { m_syncDeviceID = deviceID; }
     std::string getSyncDeviceID() const { return m_syncDeviceID; }
 
-    static SuspendFlags& getSuspendFlags() {return s_flags;}
+    /** read-only access to suspend and abort state */
+    static const SuspendFlags &getSuspendFlags() { return s_flags; }
 
     /**
      * Initializes the session so that it runs as SyncML server once
@@ -338,6 +349,25 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * Handle for active session, may be NULL.
      */
     SharedSession getSession() { return m_session; }
+
+    /**
+     * sync() installs signal handlers for SIGINT and SIGTERM if no
+     * handler was installed already. SIGINT will try to suspend.
+     * Sending the signal again quickly (typically done by pressing
+     * CTRL-C twice) will abort. SIGTERM will abort the running sync
+     * immediately.
+     *
+     * If a handler was installed already, the caller is responsible
+     * for calling this function if this kind of SIGINT/SIGTERM
+     * handling is desired.
+     */
+    static void handleSignal(int signal);
+
+    /**
+     * Once a signal was received, all future calls to sync() will
+     * react to it unless this function is called first.
+     */
+    static void resetSignals() { s_flags = SuspendFlags(); }
 
   protected:
     /** exchange active Synthesis engine */
@@ -547,7 +577,10 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      *
      * @return true if user wants to abort
      */
-    virtual bool checkForAbort() { return (s_flags.state == SuspendFlags::CLIENT_ABORT);}
+    virtual bool checkForAbort() {
+        printSignals();
+        return (s_flags.state == SuspendFlags::CLIENT_ABORT);
+    }
 
     /**
      * Called to find out whether user wants to suspend sync.
@@ -555,7 +588,10 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * Same as checkForAbort(), but the session is finished
      * gracefully so that it can be resumed.
      */
-    virtual bool checkForSuspend() { return (s_flags.state == SuspendFlags::CLIENT_SUSPEND);}
+    virtual bool checkForSuspend() {
+        printSignals();
+        return (s_flags.state == SuspendFlags::CLIENT_SUSPEND);
+    }
 
  private:
     /**
@@ -586,6 +622,14 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * peer
      */
     string getSynthesisDatadir() { return getRootPath() + "/.synthesis"; }
+
+    /**
+     * handleSignals() is called in a signal handler,
+     * which can only call reentrant functions. Our
+     * logging code is not reentrant and thus has
+     * to be called outside of the signal handler.
+     */
+    static void printSignals();
 
     // total retry duration
     int m_retryDuration;

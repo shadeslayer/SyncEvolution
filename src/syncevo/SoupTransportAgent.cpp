@@ -247,7 +247,7 @@ void SoupTransportAgent::HandleSessionCallback(SoupSession *session,
 
 gboolean SoupTransportAgent::AbortCallback(gpointer transport)
 {
-    SuspendFlags& s_flags = SyncContext::getSuspendFlags();
+    const SuspendFlags &s_flags = SyncContext::getSuspendFlags();
 
     if (s_flags.state == SuspendFlags::CLIENT_ABORT)
     {

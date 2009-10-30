@@ -310,10 +310,6 @@ class TestDBusSync(unittest.TestCase, DBusUtil):
         status, error, sources = self.session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "done")
         self.failUnlessEqual(error, 0)
-        # TODO: this shouldn't be necessary, but somehow the
-        # syncevo-dbus-server keeps running unless we give it some time.
-        # Incomplete handling of SIGTERM?! See Bugzilla #7555.
-        time.sleep(5)
 
 class TestConnection(unittest.TestCase, DBusUtil):
     """Tests Server.Connect(). Tests depend on getting one Abort signal to terminate."""
