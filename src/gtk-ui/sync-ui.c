@@ -83,7 +83,7 @@ typedef struct source_progress {
 } source_progress;
 
 typedef enum app_state {
-    SYNC_UI_STATE_CURRENT_STATE = 0, /* so you can call update_app_state with old values */
+    SYNC_UI_STATE_CURRENT_STATE,
     SYNC_UI_STATE_GETTING_SERVER,
     SYNC_UI_STATE_NO_SERVER,
     SYNC_UI_STATE_SERVER_OK,
@@ -166,9 +166,14 @@ typedef struct app_data {
     SyncMode mode;
 
     server_config *current_service;
+    app_state current_state;
 
     SyncevoServer *server;
-    SyncevoSession *session;
+
+    SyncevoSession *session; /* Session that we started */
+    gboolean session_is_active; /* Can we issue commands to session ? */
+
+    SyncevoSession *running_session; /* session that is currently active */
 } app_data;
 
 static void set_sync_progress (app_data *data, float progress, char *status);
@@ -177,6 +182,7 @@ static void show_services_window (app_data *data);
 static void show_settings_window (app_data *data, server_config *config);
 static void ensure_default_sources_exist(server_config *server);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
+static void get_reports_cb (SyncevoSession *session, SyncevoReports *reports, GError *error, app_data *data);
 
 static void
 remove_child (GtkWidget *widget, GtkContainer *container)
@@ -716,15 +722,14 @@ set_sync_progress (app_data *data, float progress, char *status)
 static void
 set_app_state (app_data *data, app_state state)
 {
-    static int current_state = SYNC_UI_STATE_GETTING_SERVER;
 
-    if (current_state == state)
+    if (data->current_state == state)
         return;
 
     if (state != SYNC_UI_STATE_CURRENT_STATE)
-        current_state = state;
+        data->current_state = state;
 
-    switch (current_state) {
+    switch (data->current_state) {
     case SYNC_UI_STATE_GETTING_SERVER:
         clear_error_info (data);
         gtk_widget_show (data->server_box);
@@ -760,6 +765,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
         break;
     case SYNC_UI_STATE_SERVER_OK:
+        /* we have a active, idle session */
         gtk_widget_show (data->server_box);
         gtk_widget_hide (data->server_failure_box);
         gtk_widget_hide (data->no_server_box);
@@ -782,6 +788,8 @@ set_app_state (app_data *data, app_state state)
         break;
         
     case SYNC_UI_STATE_SYNCING:
+        /* we have a active session, and a session is running
+           (the running session may be ours) */
         clear_error_info (data);
         gtk_widget_show (data->progress);
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Syncing"));
@@ -1223,8 +1231,16 @@ update_service_ui (app_data *data)
     syncevo_config_foreach_source (data->current_service->config,
                                    (ConfigFunc)handle_source_config,
                                    data);
-    gtk_widget_show_all (data->sources_box);
 
+    /* Ask for the sync reports now
+     * (if we want to do this earlier, need to make sure the
+     *  source_report_labels hash exists...) */
+    syncevo_session_get_reports (data->session,
+                                 0, 1,
+                                 (SyncevoSessionGetReportsCb)get_reports_cb,
+                                 data);
+
+    gtk_widget_show_all (data->sources_box);
 }
 
 static char*
@@ -1641,8 +1657,201 @@ get_config_for_main_win_cb (SyncevoSession *session,
     }
 }
 
+static void
+set_running_session_status (app_data *data, SyncevoSessionStatus status)
+{
+    switch (status) {
+    case SYNCEVO_STATUS_QUEUEING:
+        g_warning ("Running session is queued, this shouldn't happen...");
+        break;
+    case SYNCEVO_STATUS_IDLE:
+        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+        break;
+    case SYNCEVO_STATUS_RUNNING:
+    case SYNCEVO_STATUS_SUSPENDING:
+    case SYNCEVO_STATUS_ABORTING:
+        set_app_state (data, SYNC_UI_STATE_SYNCING);
+        break;
+    default:
+        g_warning ("unknown session status used");
+    }
+}
+
+static void
+running_session_status_changed_cb (SyncevoSession *session,
+                                   SyncevoSessionStatus status,
+                                   guint error_code,
+                                   SyncevoSourceStatuses *source_statuses,
+                                   app_data *data)
+{
+    set_running_session_status (data, status);
+}
+
+static void
+get_running_session_status_cb (SyncevoSession *session,
+                               SyncevoSessionStatus status,
+                               guint error_code,
+                               SyncevoSourceStatuses *source_statuses,
+                               GError *error,
+                               app_data *data)
+{
+    if (error) {
+        g_warning ("Error in Session.GetStatus: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    set_running_session_status (data, status);
+}
+
+typedef struct source_stats {
+    long local_changes;
+    long remote_changes;
+    long local_rejections;
+    long remote_rejections;
+} source_stats;
+
+static void
+free_source_stats (source_stats *stats)
+{
+    g_slice_free (source_stats, stats);
+}
+
+static void
+get_reports_cb (SyncevoSession *session,
+                SyncevoReports *reports,
+                GError *error,
+                app_data *data)
+{
+    if (error) {
+        g_warning ("Error in Session.GetReports: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    if (syncevo_reports_get_length (reports) > 0) {
+        GHashTableIter iter;
+        GHashTable *sources; /* key is source name, value is a source_stats */
+        const char *key, *val;
+        GHashTable *report = syncevo_reports_index (reports, 0);
+        source_stats *stats;
+
+        sources = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                         g_free, free_source_stats);
+
+        g_hash_table_iter_init (&iter, report);
+        while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&val)) {
+            char **strs;
+
+            strs = g_strsplit (key, "-", 6);
+            if (g_strv_length (strs) != 6) {
+                g_warning ("'%s' not parsable as a sync report item");
+                g_strfreev (strs);
+                continue;
+            }
+
+            stats = g_hash_table_lookup (sources, strs[1]);
+            if (!stats) {
+                stats = g_slice_new0 (source_stats);
+                g_hash_table_insert (sources, g_strdup (strs[1]), stats);
+            }
+
+            if (strcmp (strs[3], "remote") == 0) {
+                if (strcmp (strs[4], "added") == 0 ||
+                    strcmp (strs[4], "updated") == 0 ||
+                    strcmp (strs[4], "removed") == 0) {
+                    stats->remote_changes += strtol (val, NULL, 10);
+                } else if (strcmp (strs[5], "reject") == 0) {
+                    stats->remote_rejections += strtol (val, NULL, 10);
+                }
+
+            }
+            if (strcmp (strs[3], "local") == 0) {
+                if (strcmp (strs[4], "added") == 0 ||
+                    strcmp (strs[4], "updated") == 0 ||
+                    strcmp (strs[4], "removed") == 0) {
+                    stats->local_changes += strtol (val, NULL, 10);
+                } else if (strcmp (strs[5], "reject") == 0) {
+                    stats->local_rejections += strtol (val, NULL, 10);
+                }
+            }
+            g_strfreev (strs);
+            
+        }
+
+        /* sources now has all statistics we want */
+        g_hash_table_iter_init (&iter, sources);
+        while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
+            GtkLabel *lbl;
+
+            /* we should have a report label for the source */
+            lbl =  GTK_LABEL (g_hash_table_lookup (data->source_report_labels,
+                                                   key));
+            if (lbl) {
+                char *msg;
+
+                msg = get_report_summary (stats->local_changes,
+                                          stats->remote_changes,
+                                          stats->local_rejections,
+                                          stats->remote_rejections);
+                gtk_label_set_text (lbl, msg);
+
+                g_free (msg);
+            }
+        }
+
+        g_hash_table_destroy (sources);
+    }
+}
+
+set_active_session (app_data *data, SyncevoSession *session)
+{
+    g_debug ("Our session is active, getting config");
+
+    data->session_is_active = TRUE;
+    syncevo_session_get_config (data->session,
+                                FALSE,
+                                (SyncevoSessionGetConfigCb)get_config_for_main_win_cb,
+                                data);
+}
+
+/* Our session status */
+static void
+status_changed_cb (SyncevoSession *session,
+                   SyncevoSessionStatus status,
+                   guint error_code,
+                   SyncevoSourceStatuses *source_statuses,
+                   app_data *data)
+{
+    if (status = SYNCEVO_STATUS_IDLE) {
+        /* time for business */
+        set_active_session (data, session);
+    }
+}
+
+/* Our session status */
+static void
+get_status_cb (SyncevoSession *session,
+               SyncevoSessionStatus status,
+               guint error_code,
+               SyncevoSourceStatuses *source_statuses,
+               GError *error,
+               app_data *data)
+{
+    if (error) {
+        g_warning ("Error in Session.GetStatus: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    if (status = SYNCEVO_STATUS_IDLE) {
+        /* time for business */
+        set_active_session (data, session);
+    }
+}
+
 start_session_cb (SyncevoServer *server,
-                  SyncevoSession *session,
+                  char *path,
                   GError *error,
                   app_data *data)
 {
@@ -1653,13 +1862,26 @@ start_session_cb (SyncevoServer *server,
         return;
     }
 
-    data->session = session;
+    if (data->running_session &&
+        strcmp (path, syncevo_session_get_path (data->running_session)) == 0) {
+        /* our session is already the active one */
+        data->session = g_object_ref (data->running_session);
+    } else {
+        data->session = syncevo_session_new (path);
+        
+        gtk_label_set_markup (GTK_LABEL (data->server_label), 
+                              _("Waiting for current sync operation to finish"));
+        gtk_widget_show_all (data->sources_box);
+    }
 
-    syncevo_session_get_config (data->session,
-                                FALSE,
-                                (SyncevoSessionGetConfigCb)get_config_for_main_win_cb,
+    /* we want to know about status changes to our session */
+    g_signal_connect (data->session, "status-changed",
+                      G_CALLBACK (status_changed_cb), data);
+    syncevo_session_get_status (data->session,
+                                (SyncevoSessionGetStatusCb)get_status_cb,
                                 data);
 }
+
 static void
 gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *data)
 {
@@ -1686,6 +1908,12 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
         data->current_service = g_slice_new0 (server_config);
         data->current_service->name = server;
 
+        if (data->session) {
+            g_object_unref (data->session);
+            data->session = NULL;
+        }
+        data->session_is_active = FALSE;
+        
         syncevo_server_start_session (data->server,
                                       server,
                                       (SyncevoServerStartSessionCb)start_session_cb,
@@ -1858,6 +2086,60 @@ server_shutdown_cb (SyncevoServer *server,
 }
 
 
+static void
+set_running_session (app_data *data, const char *path)
+{
+    g_assert (path);
+
+    if (data->running_session) {
+        g_object_unref (data->running_session);
+    }
+    if (data->session &&
+        strcmp (path, syncevo_session_get_path (data->session)) == 0) {
+        data->running_session = g_object_ref (data->session);
+    } else {
+        data->running_session = syncevo_session_new (path);
+    }
+
+    g_signal_connect (data->running_session, "status-changed",
+                      G_CALLBACK (running_session_status_changed_cb), data);
+    syncevo_session_get_status (data->running_session,
+                                (SyncevoSessionGetStatusCb)get_running_session_status_cb,
+                                data);
+}
+
+static void
+server_session_changed_cb (SyncevoServer *server,
+                           char *path,
+                           gboolean started,
+                           app_data *data)
+{
+    if (started) {
+        set_running_session (data, path);
+    }
+}
+
+static void
+get_sessions_cb (SyncevoServer *server,
+                 SyncevoSessions *sessions,
+                 GError *error,
+                 app_data *data)
+{
+    const char *path;
+
+    if (error) {
+        g_warning ("Server.GetSessions failed: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    /* assume first one is active */
+    path = syncevo_sessions_index (sessions, 0);
+    set_running_session (data, path);
+
+    syncevo_sessions_free (sessions);
+}
+
 GtkWidget*
 sync_ui_create_main_window ()
 {
@@ -1866,6 +2148,7 @@ sync_ui_create_main_window ()
     data = g_slice_new0 (app_data);
     data->source_report_labels = g_hash_table_new (g_str_hash, g_str_equal);
     data->online = TRUE;
+    data->current_state = SYNC_UI_STATE_GETTING_SERVER;
     if (!init_ui (data)) {
         return NULL;
     }
@@ -1873,8 +2156,13 @@ sync_ui_create_main_window ()
     data->server = syncevo_server_get_default();
     g_signal_connect (data->server, "shutdown", 
                       G_CALLBACK (server_shutdown_cb), data);
+    g_signal_connect (data->server, "session-changed",
+                      G_CALLBACK (server_session_changed_cb), data);
+    syncevo_server_get_sessions (data->server,
+                                 (SyncevoServerGetSessionsCb)get_sessions_cb,
+                                 data);
 
-    /* TODO: use Presence signal an CheckPresence to make sure we 
+    /* TODO: use Presence signal and CheckPresence to make sure we 
      * know if network is down etc. */
     
     init_configuration (data);
