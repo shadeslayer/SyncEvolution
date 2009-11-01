@@ -161,8 +161,6 @@ typedef struct app_data {
     guint last_sync_src_id;
     GList *source_progresses;
 
-    GHashTable *source_report_labels;
-
     SyncMode mode;
 
     server_config *current_service;
@@ -1087,15 +1085,8 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
     gtk_widget_show (image);
 }
 
-
-typedef struct _SourceConfigData {
-    const char *name;
-    app_data *data;
-    GHashTable *source_conf;
-} SourceConfigData;
-
 static void
-update_service_source_ui (app_data *data, const char *name, GHashTable *source_conf)
+update_service_source_ui (const char *name, source_config *conf, app_data *data)
 {
     GtkWidget *check, *hbox, *box, *lbl;
     char *pretty_name;
@@ -1103,8 +1094,8 @@ update_service_source_ui (app_data *data, const char *name, GHashTable *source_c
     gboolean enabled;
 
     pretty_name = get_pretty_source_name (name);
-    source_uri = g_hash_table_lookup (source_conf, "uri");
-    sync = g_hash_table_lookup (source_conf, "sync");
+    source_uri = g_hash_table_lookup (conf->config, "uri");
+    sync = g_hash_table_lookup (conf->config, "sync");
     if (!sync || 
         strcmp (sync, "disabled") == 0 ||
         strcmp (sync, "none") == 0) {
@@ -1149,16 +1140,16 @@ update_service_source_ui (app_data *data, const char *name, GHashTable *source_c
     gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
     gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
 
-    lbl = gtk_label_new (NULL);
-    gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
-    gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
+    conf->label = gtk_label_new (NULL);
+    gtk_misc_set_alignment (GTK_MISC (conf->label), 0.0, 0.5);
+    gtk_box_pack_start_defaults (GTK_BOX (box), conf->label);
 
-    /* this is a bit hacky... maybe the link to the label should be in source_config ? */
-    g_hash_table_insert (data->source_report_labels, g_strdup (name), lbl);
+    source_config_update_label (conf);
 
     g_object_set_data (G_OBJECT (check), "source", (gpointer)name);
     g_signal_connect (check, "toggled",
                       G_CALLBACK (source_check_toggled_cb), data);
+
 
     gtk_widget_show_all (hbox); 
 }
@@ -1166,40 +1157,18 @@ update_service_source_ui (app_data *data, const char *name, GHashTable *source_c
 static void
 check_source_cb (SyncevoSession *session,
                  GError *error,
-                 SourceConfigData *source_data)
+                 source_config *source)
 {
     if (error) {
+        /* TODO make sure this is the right error */
+
         /* source is not supported locally */
+        source->supported_locally = FALSE;
         g_error_free (error);
-        g_slice_free (SourceConfigData, source_data);
         return;
     }
 
-    update_service_source_ui (source_data->data,
-                              source_data->name,
-                              source_data->source_conf);
-
-    g_slice_free (SourceConfigData, source_data);
-}
-
-static void
-handle_source_config (const char *name,
-                      GHashTable *source_conf,
-                      app_data *data)
-{
-    SourceConfigData *source_data;
-
-    g_assert (data && data->session);
-
-    source_data = g_slice_new0 (SourceConfigData);    
-    source_data->data = data;
-    source_data->name = name;
-    source_data->source_conf = source_conf;
-
-    syncevo_session_check_source (data->session,
-                                  name,
-                                  (SyncevoSessionGenericCb)check_source_cb,
-                                  source_data);
+    source->supported_locally = TRUE;
 }
 
 static void
@@ -1213,7 +1182,6 @@ update_service_ui (app_data *data)
     gtk_container_foreach (GTK_CONTAINER (data->sources_box),
                            (GtkCallback)remove_child,
                            data->sources_box);
-    g_hash_table_remove_all (data->source_report_labels);
 
     syncevo_config_get_value (data->current_service->config,
                               NULL, "IconURI", &icon_uri);
@@ -1228,72 +1196,12 @@ update_service_ui (app_data *data)
                    SYNC_UI_ICON_SIZE);
     }
 
-    syncevo_config_foreach_source (data->current_service->config,
-                                   (ConfigFunc)handle_source_config,
-                                   data);
-
-    /* Ask for the sync reports now
-     * (if we want to do this earlier, need to make sure the
-     *  source_report_labels hash exists...) */
-    syncevo_session_get_reports (data->session,
-                                 0, 1,
-                                 (SyncevoSessionGetReportsCb)get_reports_cb,
-                                 data);
+    g_hash_table_foreach (data->current_service->source_configs,
+                          (GHFunc)update_service_source_ui,
+                          data);
 
     gtk_widget_show_all (data->sources_box);
 }
-
-static char*
-get_report_summary (int local_changes, int remote_changes, int local_rejects, int remote_rejects)
-{
-    char *rejects, *changes, *msg;
-
-    if (local_rejects + remote_rejects == 0) {
-        rejects = NULL;
-    } else if (local_rejects == 0) {
-        rejects = g_strdup_printf (ngettext ("There was one remote rejection.", 
-                                             "There were %d remote rejections.",
-                                             remote_rejects),
-                                   remote_rejects);
-    } else if (remote_rejects == 0) {
-        rejects = g_strdup_printf (ngettext ("There was one local rejection.", 
-                                             "There were %d local rejections.",
-                                             local_rejects),
-                                   local_rejects);
-    } else {
-        rejects = g_strdup_printf (_ ("There were %d local rejections and %d remote rejections."),
-                                   local_rejects, remote_rejects);
-    }
-
-    if (local_changes + remote_changes == 0) {
-        changes = g_strdup_printf (_("Last time: No changes."));
-    } else if (local_changes == 0) {
-        changes = g_strdup_printf (ngettext ("Last time: Sent one change.",
-                                             "Last time: Sent %d changes.",
-                                             remote_changes),
-                                   remote_changes);
-    } else if (remote_changes == 0) {
-        // This is about changes made to the local data. Not all of these
-        // changes were requested by the remote server, so "applied"
-        // is a better word than "received" (bug #5185).
-        changes = g_strdup_printf (ngettext ("Last time: Applied one change.",
-                                             "Last time: Applied %d changes.",
-                                             local_changes),
-                                   local_changes);
-    } else {
-        changes = g_strdup_printf (_("Last time: Applied %d changes and sent %d changes."),
-                                   local_changes, remote_changes);
-    }
-
-    if (rejects)
-        msg = g_strdup_printf ("%s\n%s", changes, rejects);
-    else
-        msg = g_strdup (changes);
-    g_free (rejects);
-    g_free (changes);
-    return msg;
-}
-
 
 static void
 find_password_cb (GnomeKeyringResult result, GList *list, app_data *data)
@@ -1649,11 +1557,30 @@ get_config_for_main_win_cb (SyncevoSession *session,
         g_error_free (error);
         return;
     }
-
     
     if (config) {
-        data->current_service->config = config;
+        GHashTableIter iter;
+        char *name;
+        source_config *source;
+
+        server_config_init (data->current_service, config);
+
+        /* get "locally supported" status for all sources */
+        g_hash_table_iter_init (&iter, data->current_service->source_configs);
+        while (g_hash_table_iter_next (&iter, (gpointer)&name, (gpointer)&source)) {
+            syncevo_session_check_source (data->session,
+                                          name,
+                                          (SyncevoSessionGenericCb)check_source_cb,
+                                          source);
+        }
+
+        syncevo_session_get_reports (data->session,
+                                     0, 1,
+                                     (SyncevoSessionGetReportsCb)get_reports_cb,
+                                     data);
+
         update_service_ui (data);
+
     }
 }
 
@@ -1737,7 +1664,7 @@ get_reports_cb (SyncevoSession *session,
         source_stats *stats;
 
         sources = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                         g_free, free_source_stats);
+                                         g_free, (GDestroyNotify)free_source_stats);
 
         g_hash_table_iter_init (&iter, report);
         while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&val)) {
@@ -1782,22 +1709,20 @@ get_reports_cb (SyncevoSession *session,
         /* sources now has all statistics we want */
         g_hash_table_iter_init (&iter, sources);
         while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
-            GtkLabel *lbl;
+            source_config *source_conf;
 
-            /* we should have a report label for the source */
-            lbl =  GTK_LABEL (g_hash_table_lookup (data->source_report_labels,
-                                                   key));
-            if (lbl) {
-                char *msg;
-
-                msg = get_report_summary (stats->local_changes,
-                                          stats->remote_changes,
-                                          stats->local_rejections,
-                                          stats->remote_rejections);
-                gtk_label_set_text (lbl, msg);
-
-                g_free (msg);
+            /* store the statistics in source config source */
+            source_conf = g_hash_table_lookup (data->current_service->source_configs,
+                                               key);
+            if (source_conf) {
+                source_conf->local_changes = stats->local_changes;
+                source_conf->remote_changes = stats->remote_changes;
+                source_conf->local_rejections = stats->local_rejections;
+                source_conf->remote_rejections = stats->remote_rejections;
             }
+
+            /* if ui has been constructed already, we want to update the data */
+            source_config_update_label (source_conf);
         }
 
         g_hash_table_destroy (sources);
@@ -1806,8 +1731,6 @@ get_reports_cb (SyncevoSession *session,
 
 set_active_session (app_data *data, SyncevoSession *session)
 {
-    g_debug ("Our session is active, getting config");
-
     data->session_is_active = TRUE;
     syncevo_session_get_config (data->session,
                                 FALSE,
@@ -1855,6 +1778,7 @@ start_session_cb (SyncevoServer *server,
                   GError *error,
                   app_data *data)
 {
+
     if (error) {
         g_warning ("Error in Server.StartSession: %s", error->message);
         g_error_free (error);
@@ -1954,29 +1878,6 @@ calc_and_update_progress (app_data *data, char *msg)
         count++;
     }
     set_sync_progress (data, sync_progress_sync_start + (progress / count), msg);
-}
-
-static void
-refresh_statistics (app_data *data)
-{
-    GList *list;
-
-    for (list = data->source_progresses; list; list = list->next) {
-        source_progress *p = (source_progress*)list->data;
-        GtkLabel *lbl;
-        
-        lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, p->name));
-        if (lbl) {
-            char *msg;
-            
-            msg = get_report_summary (p->added_local + p->modified_local + p->deleted_local,
-                                      p->added_remote + p->modified_remote + p->deleted_remote,
-                                      p->rejected_local,
-                                      p->rejected_remote);
-            gtk_label_set_text (lbl, msg);
-            g_free (msg);
-    }
-    }
 }
 
 static source_progress*
@@ -2146,7 +2047,6 @@ sync_ui_create_main_window ()
     app_data *data;
 
     data = g_slice_new0 (app_data);
-    data->source_report_labels = g_hash_table_new (g_str_hash, g_str_equal);
     data->online = TRUE;
     data->current_state = SYNC_UI_STATE_GETTING_SERVER;
     if (!init_ui (data)) {
