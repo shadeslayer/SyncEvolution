@@ -46,6 +46,7 @@ typedef enum {
   SYNCEVO_STATUS_RUNNING,
   SYNCEVO_STATUS_ABORTING,
   SYNCEVO_STATUS_SUSPENDING,
+  SYNCEVO_STATUS_DONE,
 } SyncevoSessionStatus;
 
 typedef enum {
@@ -127,7 +128,10 @@ void syncevo_source_progresses_free (SyncevoSourceProgresses *source_progresses)
 
 GHashTable* syncevo_reports_index (SyncevoReports *reports,
                                    guint index);
+guint syncevo_reports_get_length (SyncevoReports *reports);
+
 void syncevo_reports_free (SyncevoReports *reports);
+
 
 const char* syncevo_sessions_index (SyncevoSessions *sessions,
                                     guint index);

@@ -177,9 +177,10 @@ syncevo_session_status_from_string (const char *status_str)
         status = SYNCEVO_STATUS_UNKNOWN;
     } else if (g_str_has_prefix (status_str, "queueing")) {
         status = SYNCEVO_STATUS_QUEUEING;
-    } else if (g_str_has_prefix (status_str, "idle") ||
-               g_str_has_prefix (status_str, "done")) {
+    } else if (g_str_has_prefix (status_str, "idle")) {
         status = SYNCEVO_STATUS_IDLE;
+    } else if (g_str_has_prefix (status_str, "done")) {
+        status = SYNCEVO_STATUS_DONE;
     } else if (g_str_has_prefix (status_str, "running")) {
         status = SYNCEVO_STATUS_RUNNING;
     } else if (g_str_has_prefix (status_str, "aborting")) {
@@ -354,6 +355,12 @@ syncevo_reports_index (SyncevoReports *reports,
     g_return_val_if_fail (reports, NULL);
 
     return (GHashTable*)g_ptr_array_index (reports, index);
+}
+
+guint
+syncevo_reports_get_length (SyncevoReports *reports)
+{
+    return reports->len;
 }
 
 void
