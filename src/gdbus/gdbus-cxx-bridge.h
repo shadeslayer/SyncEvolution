@@ -1324,16 +1324,42 @@ template<class C> struct dbus_traits<C &> : public dbus_traits<C>
     static std::string getReply() { return dbus_traits<C>::getType(); }
 };
 
+/**
+ * dbus-cxx base exception thrown in dbus server 
+ * org.syncevolution.gdbus-cxx.Exception 
+ * This base class only contains interfaces, no data members
+ */
+class DBusCXXException 
+{
+ public:
+    /**
+     * get exception name, used to convert to dbus error name
+     * subclasses should override it
+     */
+    virtual std::string getName() const { return "org.syncevolution.gdbus-cxx.Exception"; }
+
+    /**
+     * get error message
+     */
+    virtual const char* getMessage() const { return "unknown"; }
+};
+
 static DBusMessage *handleException(DBusMessage *msg)
 {
     try {
+#ifdef DBUS_CXX_EXCEPTION_HANDLER
+        return DBUS_CXX_EXCEPTION_HANDLER(msg);
+#else
         throw;
+#endif
     } catch (const dbus_error &ex) {
         return g_dbus_create_error(msg, ex.dbusName().c_str(), "%s", ex.what());
+    } catch (const DBusCXXException &ex) {
+        return g_dbus_create_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
     } catch (const std::runtime_error &ex) {
-        return g_dbus_create_error(msg, "org.syncevolution.Exception", "%s", ex.what());
+        return g_dbus_create_error(msg, "org.syncevolution.gdbus-cxx.Exception", "%s", ex.what());
     } catch (...) {
-        return g_dbus_create_error(msg, "org.syncevolution.Exception", "unknown");
+        return g_dbus_create_error(msg, "org.syncevolution.gdbus-cxx.Exception", "unknown");
     }
 }
 

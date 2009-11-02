@@ -22,7 +22,6 @@
 #include "config.h"
 #endif
 
-#include "gdbus-cxx-bridge.h"
 #include <syncevo/Logging.h>
 #include <syncevo/util.h>
 #include <syncevo/SyncContext.h>
@@ -51,6 +50,11 @@
 
 #include <glib-object.h>
 
+class DBusMessage;
+static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
+#define DBUS_CXX_EXCEPTION_HANDLER SyncEvoHandleException
+#include "gdbus-cxx-bridge.h"
+
 using namespace SyncEvo;
 
 static GMainLoop *loop = NULL;
@@ -69,6 +73,83 @@ class Session;
 class Connection;
 class Client;
 class DBusTransportAgent;
+
+class DBusSyncException : public DBusCXXException, public Exception
+{
+ public:
+    DBusSyncException(const std::string &file,
+                  int line,
+                  const std::string &what) : Exception(file, line, what)
+    {}
+    /**
+     * get exception name, used to convert to dbus error name
+     * subclasses should override it
+     */
+    virtual std::string getName() const { return "org.syncevolution.Exception"; }
+
+    virtual const char* getMessage() const { return Exception::what(); }
+};
+
+/**
+ * exceptions classes deriving from DBusException
+ * org.syncevolution.NoSuchConfig 
+ */
+class NoSuchConfig: public DBusSyncException
+{
+ public:
+    NoSuchConfig(const std::string &file,
+                 int line,
+                 const std::string &error): DBusSyncException(file, line, error)
+    {}
+    virtual std::string getName() const { return "org.syncevolution.NoSuchConfig";}
+};
+
+/**
+ * org.syncevolution.NoSuchSource 
+ */
+class NoSuchSource : public DBusSyncException
+{
+ public:
+    NoSuchSource(const std::string &file,
+                 int line,
+                 const std::string &error): DBusSyncException(file, line, error)
+    {}
+    virtual std::string getName() const { return "org.syncevolution.NoSuchSource";}
+};
+
+/**
+ * org.syncevolution.InvalidCall 
+ */
+class InvalidCall : public DBusSyncException
+{
+ public:
+    InvalidCall(const std::string &file,
+                 int line,
+                 const std::string &error): DBusSyncException(file, line, error)
+    {}
+    virtual std::string getName() const { return "org.syncevolution.InvalidCall";}
+};
+
+/**
+ * implement syncevolution exception handler
+ * to cover its default implementation
+ */
+static DBusMessage* SyncEvoHandleException(DBusMessage *msg)
+{
+    /** give an opportunity to let syncevolution handle exception */
+    Exception::handle();
+    try {
+        throw;
+    } catch (const dbus_error &ex) {
+        return g_dbus_create_error(msg, ex.dbusName().c_str(), "%s", ex.what());
+    } catch (const DBusCXXException &ex) {
+        return g_dbus_create_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
+    } catch (const std::runtime_error &ex) {
+        return g_dbus_create_error(msg, "org.syncevolution.Exception", "%s", ex.what());
+    } catch (...) {
+        return g_dbus_create_error(msg, "org.syncevolution.Exception", "unknown");
+    }
+}
 
 /**
  * Implements the read-only methods in a Session and the Server.
@@ -329,7 +410,7 @@ public:
             }
         }
 
-        throw std::runtime_error("cannot detach from resource that client is not attached to");
+        SE_THROW_EXCEPTION(InvalidCall, "cannot detach from resource that client is not attached to");
     }
     void detach(boost::shared_ptr<Resource> resource)
     {
@@ -1010,7 +1091,7 @@ void ReadOperations::getConfig(bool getTemplate,
                                Config_t &config)
 {
     if(m_configName.empty()) {
-        throw std::runtime_error("Template name must be given");
+        SE_THROW_EXCEPTION(NoSuchConfig, "Template name must be given");
     }
     map<string, string> localConfigs;
     boost::shared_ptr<SyncConfig> syncConfig;
@@ -1018,7 +1099,7 @@ void ReadOperations::getConfig(bool getTemplate,
     if(getTemplate) {
         syncConfig = SyncConfig::createServerTemplate(m_configName);
         if(!syncConfig.get()) {
-            throw std::runtime_error("No template '" + m_configName + "' found");
+            SE_THROW_EXCEPTION(NoSuchConfig, "No template '" + m_configName + "' found");
         }
     } else { ///< get a matching server configuration
         boost::shared_ptr<SyncConfig> from;
@@ -1027,7 +1108,7 @@ void ReadOperations::getConfig(bool getTemplate,
         if (!syncConfig->exists()) {
             from = SyncConfig::createServerTemplate(m_configName);
             if(!from.get()) {
-                throw runtime_error("No server or template '" + m_configName + "' found");
+                SE_THROW_EXCEPTION(NoSuchConfig, "No server or template '" + m_configName + "' found");
             }
             syncConfig->copy(*from, NULL);
         }
@@ -1066,7 +1147,7 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
                                 Reports_t &reports)
 {
     if(m_configName.empty()) {
-        throw std::runtime_error("Template name must be given");
+        SE_THROW_EXCEPTION(NoSuchConfig, "Template name must be given");
     }
     SyncContext client(m_configName, false);
     std::vector<string> dirs;
@@ -1136,11 +1217,11 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
 void ReadOperations::checkSource(const std::string &sourceName)
 {
     if(m_configName.empty()) {
-        throw std::runtime_error("Template or server name must be given");
+        SE_THROW_EXCEPTION(NoSuchConfig, "Template or server name must be given");
     }
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
     if(!config->exists()) {
-        throw std::runtime_error("No server '" + m_configName + "' found");
+        SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
     }
     list<std::string> sourceNames = config->getSyncSources();
     list<std::string>::iterator it;
@@ -1150,7 +1231,7 @@ void ReadOperations::checkSource(const std::string &sourceName)
         }
     }
     if(it == sourceNames.end()) {
-        throw runtime_error("'" + m_configName + "' has no " + sourceName + " source");
+        SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' has no " + sourceName + " source");
     }
     SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
     auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
@@ -1159,17 +1240,17 @@ void ReadOperations::checkSource(const std::string &sourceName)
             syncSource->open();
         }
     } catch (...) {
-        throw runtime_error("The source '" + sourceName + "' configuration is not correct");
+        throw std::runtime_error("The source '" + sourceName + "' configuration is not correct");
     }
 }
 void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &databases)
 {
     if(m_configName.empty()) {
-        throw std::runtime_error("Template or server name must be given");
+        SE_THROW_EXCEPTION(NoSuchConfig, "Template or server name must be given");
     }
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
     if(!config->exists()) {
-        throw std::runtime_error("No server '" + m_configName + "' found");
+        SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
     }
     SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
     const SourceRegistry &registry(SyncSource::getSourceRegistry());
@@ -1284,13 +1365,13 @@ void Session::setConfig(bool update, bool temporary,
                         const ReadOperations::Config_t &config)
 {
     if (!m_active) {
-        throw std::runtime_error("session is not active, call not allowed at this time");
+        SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
     }
     if (m_sync) {
-        throw std::runtime_error("sync started, cannot change configuration at this time");
+        SE_THROW_EXCEPTION(InvalidCall, "sync started, cannot change configuration at this time");
     }
     if (getConfigName().empty()) {
-        throw std::runtime_error("Template name must be given");
+        SE_THROW_EXCEPTION(NoSuchConfig, "Template name must be given");
     }
     if (!update && temporary) {
         throw std::runtime_error("Clearing existing configuration and temporary configuration changes which only affects the duration of the session are mutually exclusive");
@@ -1314,7 +1395,7 @@ void Session::setConfig(bool update, bool temporary,
         boost::shared_ptr<SyncConfig> from(new SyncConfig(getConfigName()));
         /* if it is not clear mode and config does not exist, an error throws */
         if(update && !from->exists()) {
-            throw runtime_error("The server '" + getConfigName() + "' doesn't exist" );
+            SE_THROW_EXCEPTION(NoSuchConfig, "The server '" + getConfigName() + "' doesn't exist" );
         }
         if(!update) {
             list<string> sources = from->getSyncSources();
@@ -1365,10 +1446,10 @@ void Session::initServer(SharedBuffer data, const std::string &messageType)
 void Session::sync(const std::string &mode, const SourceModes_t &source_modes, bool mustAuthenticate)
 {
     if (!m_active) {
-        throw std::runtime_error("session is not active, call not allowed at this time");
+        SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
     }
     if (m_sync) {
-        throw std::runtime_error("sync started, cannot start again");
+        SE_THROW_EXCEPTION(InvalidCall, "sync started, cannot start again");
     }
 
     m_sync.reset(new DBusSync(getConfigName(), *this));
@@ -1418,7 +1499,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes, b
 void Session::abort()
 {
     if (!m_sync) {
-        throw std::runtime_error("sync not started, cannot abort at this time");
+        SE_THROW_EXCEPTION(InvalidCall, "sync not started, cannot abort at this time");
     }
     m_syncStatus = SYNC_ABORT;
     fireStatus(true);
@@ -1430,7 +1511,7 @@ void Session::abort()
 void Session::suspend()
 {
     if (!m_sync) {
-        throw std::runtime_error("sync not started, cannot suspend at this time");
+        SE_THROW_EXCEPTION(InvalidCall, "sync not started, cannot suspend at this time");
     }
     m_syncStatus = SYNC_SUSPEND;
     fireStatus(true);
