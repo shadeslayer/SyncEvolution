@@ -101,7 +101,7 @@ class SyncMLSession:
                                             'transport': 'HTTP',
                                             'config': config,
                                             'URL': url},
-                                           False,
+                                           True,
                                            '')
         self.connection = dbus.Interface(bus.get_object('org.syncevolution',
                                                         self.conpath),
