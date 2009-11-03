@@ -829,7 +829,7 @@ public:
                         int32_t extra1, int32_t extra2, int32_t extra3);
 
     typedef StringMap SourceModes_t;
-    void sync(const std::string &mode, const SourceModes_t &source_modes);
+    void sync(const std::string &mode, const SourceModes_t &source_modes, bool mustAuthenticate);
     void abort();
     void suspend();
 
@@ -1351,7 +1351,7 @@ void Session::initServer(SharedBuffer data, const std::string &messageType)
     m_initialMessageType = messageType;
 }
 
-void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
+void Session::sync(const std::string &mode, const SourceModes_t &source_modes, bool mustAuthenticate)
 {
     if (!m_active) {
         throw std::runtime_error("session is not active, call not allowed at this time");
@@ -1366,6 +1366,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
         m_sync->initServer(m_sessionID,
                            m_initialMessage,
                            m_initialMessageType);
+        m_sync->setMustAuthenticate(mustAuthenticate);
     }
 
     // Apply temporary config filters. The parameters of this function
@@ -2221,7 +2222,7 @@ Connection::~Connection()
 void Connection::ready()
 {
     // proceed with sync now that our session is ready
-    m_session->sync(m_syncMode, m_sourceModes);
+    m_session->sync(m_syncMode, m_sourceModes, m_mustAuthenticate);
 }
 
 /****************** DBusTransportAgent implementation **************/

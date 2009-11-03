@@ -73,6 +73,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     bool m_quiet;
     bool m_dryrun;
 
+    bool m_mustAuthenticate;
     bool m_serverMode;
     std::string m_sessionID;
     SharedBuffer m_initialMessage;
@@ -137,6 +138,10 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
 
     bool getDryRun() { return m_dryrun; }
     void setDryRun(bool dryrun) { m_dryrun = dryrun; }
+
+    /** only for server: does the client have to provide valid credentials? */
+    bool getMustAuthenticate() { return m_mustAuthenticate; }
+    void setMustAuthenticate(bool mustAuthenticate) { m_mustAuthenticate = mustAuthenticate; }
 
     static SuspendFlags& getSuspendFlags() {return s_flags;}
 
