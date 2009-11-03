@@ -53,6 +53,7 @@ SE_BEGIN_CXX
  */
 class SQLiteContactSource : public SyncSource,
     virtual public SyncSourceSession,
+    virtual public SyncSourceAdmin,
     virtual public SyncSourceRevisions,
     virtual public SyncSourceDelete,
     virtual public SyncSourceLogging,
@@ -82,6 +83,8 @@ class SQLiteContactSource : public SyncSource,
     virtual Databases getDatabases();
     virtual const char *getMimeType() const { return "text/x-vcard"; }
     virtual const char *getMimeVersion() const { return "2.1"; }
+    virtual void enableServerMode();
+    virtual bool serverModeEnabled() const;
 
     /* Methods in SyncSource */
     virtual void getSynthesisInfo (SynthesisInfo &info, XMLConfigFragments &fragment);
