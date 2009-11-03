@@ -26,10 +26,13 @@ for sub in src/backends/*/configure-sub.in; do
 done
 cat configure-post.in >>configure.in
 
+TEMPLATE_FILES=`cd src && find default/syncevolution -type f \( -name '*.png' -o -name '*.svg' -o -name '*.ini' \)`
+TEMPLATE_FILES=`echo $TEMPLATE_FILES`
+
 # create Makefile.am files
 sed -e "s;@BACKEND_REGISTRIES@;`echo src/backends/*/*Register.cpp | sed -e s%src/%%g`;" \
     -e "s;@BACKENDS@;$BACKENDS;" \
-    -e "s;@TEMPLATE_FILES@;`cd src && find default/syncevolution -type f \( -name '*.png' -o -name '*.svg' -o -name '*.ini' \) -printf '%p '`;" \
+    -e "s;@TEMPLATE_FILES@;$TEMPLATE_FILES;" \
      src/Makefile-gen.am >src/Makefile.am
 
 sed -e "s;@CONFIG_SUBS@;$SUBS;" \
