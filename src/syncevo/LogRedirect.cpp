@@ -298,13 +298,20 @@ void LogRedirect::process(FDs &fds) throw()
                 }
                 const char *glib_debug_prefix = "** (process:";
                 const char *glib_msg_prefix = "** Message:";
+                prefix = "stderr";
                 if (!strncmp(text, glib_debug_prefix, strlen(glib_debug_prefix)) ||
                     !strncmp(text, glib_msg_prefix, strlen(glib_msg_prefix))) {
                     level = Logger::DEBUG;
                     prefix = "glib";
                 } else {
                     level = Logger::DEV;
-                    prefix = "stderr";
+                }
+
+                // If the text contains the word "error", it probably
+                // is severe enough to show to the user, regardless of
+                // who produced it.
+                if (strcasestr(text, "error")) {
+                    level = Logger::ERROR;
                 }
             }
 
