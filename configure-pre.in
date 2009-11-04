@@ -28,7 +28,9 @@ AC_ARG_WITH(synthesis-src,
                            update that working copy if the directory already exists.
                            Default: bundled source in src/synthesis (in released SyncEvolution sources),
                            SYNTHESISSRC_REPO otherwise.]),
-            [SYNTHESISSRC="$withval"], [SYNTHESISSRC="$SYNTHESISSRC_DEF"; REVISION="SYNTHESISSRC_REVISION"])
+            [SYNTHESISSRC="$withval"
+             test "$SYNTHESISSRC" != "yes" || AC_MSG_ERROR([--with-synthesis-src requires a parameter (base directory, svn URL or git URL)])],
+            [SYNTHESISSRC="$SYNTHESISSRC_DEF"; REVISION="SYNTHESISSRC_REVISION"])
 
 AC_ARG_WITH(synthesis-username,
             AS_HELP_STRING([--with-synthesis-username=<svn username>],
@@ -408,7 +410,7 @@ else
 fi
 
 if test $SYNTHESIS_SRC != "no-synthesis-source"; then
-    ( cd $SYNTHESIS_SRC && ( test -f configure || sh autogen.sh ) ) || AC_MSG_ERROR([no configure script in $SYNTHESIS_SRC])
+    ( cd $SYNTHESIS_SRC && ( test -f configure || sh autogen.sh ) ) || AC_MSG_ERROR([--with-synthesis-src=$SYNTHESIS_SRC: no Synthesis configure script found in that directory])
 
     SYNTHESIS_CONFIGURE="$SYNTHESIS_SRC/configure"
     chmod u+x $SYNTHESIS_SRC/configure $SYNTHESIS_SRC/config.sub $SYNTHESIS_SRC/config.guess
