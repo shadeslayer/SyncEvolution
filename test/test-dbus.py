@@ -29,7 +29,13 @@ import copy
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
-import glib
+# introduced in python-gobject 2.16, not available
+# on all Linux distros => make it optional
+try:
+    import glib
+    have_glib = True
+except ImportError:
+    have_glib = False
 
 DBusGMainLoop(set_as_default=True)
 
@@ -105,12 +111,12 @@ class DBusUtil:
         hasfailed = numerrors + numfailures != len(result.errors) + len(result.failures)
 
         if not debugger:
-            pserver.terminate()
+            os.kill(pserver.pid, signal.SIGTERM)
         serverout, dummy = pserver.communicate()
         if hasfailed:
             # give D-Bus time to settle down
             time.sleep(1)
-        pmonitor.terminate()
+        os.kill(pmonitor.pid, signal.SIGTERM)
         monitorout, dummy = pmonitor.communicate()
         report = "\n\nD-Bus traffic:\n%s\n\nserver output:\n%s\n" % \
             (monitorout, serverout)
@@ -198,6 +204,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
 
     def testSecondSession(self):
         """a second session should not run unless the first one stops"""
+        self.failUnless(have_glib)
         sessionpath = self.server.StartSession("")
         bus.add_signal_receiver(lambda object, ready: loop.quit(),
                                 'SessionChanged',
