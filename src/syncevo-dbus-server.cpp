@@ -2385,14 +2385,14 @@ void DBusServer::clientGone(Client *c)
 
 std::string DBusServer::getNextSession()
 {
-    // TODO: make the session ID more random. This protects to
+    // Make the session ID somewhat random. This protects to
     // some extend against injecting unwanted messages into the
     // communication.
     m_lastSession++;
     if (!m_lastSession) {
         m_lastSession++;
     }
-    return StringPrintf("%u", m_lastSession);
+    return StringPrintf("%u%u", rand(), m_lastSession);
 }
 
 void DBusServer::attachClient(const Caller_t &caller,
@@ -2470,6 +2470,9 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     sessionChanged(*this, "SessionChanged"),
     presence(*this, "Presence")
 {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    srand(tv.tv_usec);
     add(this, &DBusServer::attachClient, "Attach");
     add(this, &DBusServer::detachClient, "Detach");
     add(this, &DBusServer::connect, "Connect");
