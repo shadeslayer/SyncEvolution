@@ -2651,6 +2651,9 @@ int main(int argc, char **argv)
         g_set_application_name("SyncEvolution");
         loop = g_main_loop_new (NULL, FALSE);
 
+        setvbuf(stderr, NULL, _IONBF, 0);
+        setvbuf(stdout, NULL, _IONBF, 0);
+
         signal(SIGTERM, niam);
         signal(SIGINT, niam);
 
