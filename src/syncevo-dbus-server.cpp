@@ -830,6 +830,7 @@ public:
 
     typedef StringMap SourceModes_t;
     void sync(const std::string &mode, const SourceModes_t &source_modes, bool mustAuthenticate);
+    void clientSync(const std::string &mode, const SourceModes_t &source_modes) { sync(mode, source_modes, true); }
     void abort();
     void suspend();
 
@@ -1524,7 +1525,7 @@ Session::Session(DBusServer &server,
     add(&m_operations, &ReadOperations::getReports, "GetReports");
     add(&m_operations, &ReadOperations::checkSource, "CheckSource");
     add(&m_operations, &ReadOperations::getDatabases, "GetDatabases");
-    add(this, &Session::sync, "Sync");
+    add(this, &Session::clientSync, "Sync");
     add(this, &Session::abort, "Abort");
     add(this, &Session::suspend, "Suspend");
     add(this, &Session::getStatus, "GetStatus");
