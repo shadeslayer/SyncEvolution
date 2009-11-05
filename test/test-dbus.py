@@ -67,6 +67,9 @@ class DBusUtil:
         test-dbus/[data|config|cache] which are removed before each
         test."""
 
+        kill = subprocess.Popen("sh -c 'killall -9 syncevo-dbus-server >/dev/null 2>&1'", shell=True)
+        kill.communicate()
+
         env = copy.deepcopy(os.environ)
         if own_xdg:
             shutil.rmtree(xdg_root, True)
@@ -74,8 +77,10 @@ class DBusUtil:
             env["XDG_CONFIG_HOME"] = xdg_root + "/config"
             env["XDG_CACHE_HOME"] = xdg_root + "/cache"
 
+        dbuslog = "dbus.log"
+        syncevolog = "syncevo.log"
         pmonitor = subprocess.Popen(monitor,
-                                    stdout=subprocess.PIPE,
+                                    stdout=open(dbuslog, "w"),
                                     stderr=subprocess.STDOUT)
         if debugger:
             print "\n%s: %s\n" % (self.id(), self.shortDescription())
@@ -97,9 +102,10 @@ class DBusUtil:
         else:
             pserver = subprocess.Popen(server,
                                        env=env,
-                                       stdout=subprocess.PIPE,
+                                       stdout=open(syncevolog, "w"),
                                        stderr=subprocess.STDOUT)
-            pserver.stdout.readline()
+            while os.path.getsize(syncevolog) == 0:
+                time.sleep(1)
 
         numerrors = len(result.errors)
         numfailures = len(result.failures)
@@ -112,12 +118,16 @@ class DBusUtil:
 
         if not debugger:
             os.kill(pserver.pid, signal.SIGTERM)
-        serverout, dummy = pserver.communicate()
+        pserver.communicate()
+        serverout = open(syncevolog).read()
+        if pserver.returncode and pserver.returncode != -15:
+            hasfailed = True
         if hasfailed:
             # give D-Bus time to settle down
             time.sleep(1)
         os.kill(pmonitor.pid, signal.SIGTERM)
-        monitorout, dummy = pmonitor.communicate()
+        pmonitor.communicate()
+        monitorout = open(dbuslog).read()
         report = "\n\nD-Bus traffic:\n%s\n\nserver output:\n%s\n" % \
             (monitorout, serverout)
         if pserver.returncode and pserver.returncode != -15:
