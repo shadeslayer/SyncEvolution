@@ -903,7 +903,9 @@ class Connection : public DBusObjectHelper, public Resource
     void close(const Caller_t &caller,
                bool normal,
                const std::string &error);
-    EmitSignal0 abort;
+    void abort() { if (!m_abortSent) { sendAbort(); m_abortSent = true; } }
+    EmitSignal0 sendAbort;
+    bool m_abortSent;
     EmitSignal5<const std::pair<size_t, const uint8_t *> &,
                 const std::string &,
                 const StringMap &,
@@ -2184,13 +2186,14 @@ Connection::Connection(DBusServer &server,
     m_state(SETUP),
     m_sessionID(sessionID),
     m_loop(NULL),
-    abort(*this, "Abort"),
+    sendAbort(*this, "Abort"),
+    m_abortSent(false),
     reply(*this, "Reply"),
     m_description(buildDescription(peer))
 {
     add(this, &Connection::process, "Process");
     add(this, &Connection::close, "Close");
-    add(abort);
+    add(sendAbort);
     add(reply);
 }
 

@@ -137,6 +137,8 @@
           Sent when the server has to shut down the connection.  All
           further operations on it will fail.  Resuming the connection
           may or may not work in such a case.
+
+          This signal is sent at most once for each connection.
         </doc:summary>
       </doc:doc>
     </signal>
