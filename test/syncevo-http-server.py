@@ -1,8 +1,7 @@
 #! /usr/bin/python
 
-'''Usage: syncevo-http-server.py <URL> <default config> 
-Runs a SyncML HTTP server under the given base URL,
-using one specific configuration.'''
+'''Usage: syncevo-http-server.py <URL>
+Runs a SyncML HTTP server under the given base URL.'''
 
 # use the same glib main loop in D-Bus and twisted
 from dbus.mainloop.glib import DBusGMainLoop
@@ -144,9 +143,8 @@ class SyncMLSession:
 class SyncMLPost(resource.Resource):
     isLeaf = True
 
-    def __init__(self, url, defaultconfig):
+    def __init__(self, url):
         self.url = url
-        self.defaultconfig = defaultconfig
 
     def render_GET(self, request):
         return "<html>SyncEvolution SyncML Server</html>"
@@ -156,7 +154,7 @@ class SyncMLPost(resource.Resource):
         if config:
             config = config[0]
         else:
-            config = self.defaultconfig
+            config = ""
         type = request.getHeader('content-type')
         len = request.getHeader('content-length')
         sessionid = request.args.get('sessionid')
@@ -180,9 +178,8 @@ class SyncMLPost(resource.Resource):
 
 def main():
     url = urlparse.urlparse(sys.argv[1])
-    defaultconfig = sys.argv[2]
     root = resource.Resource()
-    root.putChild(url.path[1:], SyncMLPost(url, defaultconfig))
+    root.putChild(url.path[1:], SyncMLPost(url))
     site = server.Site(root)
     reactor.listenTCP(url.port, site)
     reactor.run()

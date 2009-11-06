@@ -207,6 +207,7 @@ TSyError SyncEvolution_Session_CheckDevice( CContext sContext,
     }
     TSyError res = LOCERR_OK;
 
+    sc->setSyncDeviceID(aDeviceID);
     string id = sc->getRemoteDevID();
     if (id.empty()) {
         sc->setRemoteDevID(aDeviceID);

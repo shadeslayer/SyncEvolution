@@ -78,6 +78,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     std::string m_sessionID;
     SharedBuffer m_initialMessage;
     string m_initialMessageType;
+    string m_syncDeviceID;
 
     /**
      * flags for suspend and abort
@@ -92,9 +93,20 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
 
     /**
      * a pointer to the active SyncContext instance if one exists;
-     * set by sync()
+     * set by sync() and/or SwapContext
      */
     static SyncContext *m_activeContext;
+    class SwapContext {
+        SyncContext *m_oldContext;
+    public:
+        SwapContext(SyncContext *newContext) :
+            m_oldContext(SyncContext::m_activeContext) {
+            SyncContext::m_activeContext = newContext;
+        }
+        ~SwapContext() {
+            SyncContext::m_activeContext = m_oldContext;
+        }
+    };
 
     /**
      * Connection to the Synthesis engine. Always valid in a
@@ -143,6 +155,10 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     bool getMustAuthenticate() { return m_mustAuthenticate; }
     void setMustAuthenticate(bool mustAuthenticate) { m_mustAuthenticate = mustAuthenticate; }
 
+    /** only for server: device ID of peer */
+    void setSyncDeviceID(const std::string &deviceID) { m_syncDeviceID = deviceID; }
+    std::string getSyncDeviceID() const { return m_syncDeviceID; }
+
     static SuspendFlags& getSuspendFlags() {return s_flags;}
 
     /**
@@ -166,6 +182,25 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * @return overall sync status, for individual sources see report
      */
     SyncMLStatus sync(SyncReport *report = NULL);
+
+    /** result of analyzeSyncMLMessage() */
+    struct SyncMLMessageInfo {
+        std::string m_deviceID;
+
+        /** a string representation of the whole structure for debugging */
+        std::string toString() { return std::string("deviceID ") + m_deviceID; }
+    };
+
+    /**
+     * Instead or executing a sync, analyze the initial message
+     * without changing any local data. Returns once the LocURI =
+     * device ID of the client is known.
+     *
+     * @return device ID, empty if not in data
+     */
+    static SyncMLMessageInfo
+        analyzeSyncMLMessage(const char *data, size_t len,
+                             const std::string &messageType);
 
     /**
      * Convenience function, to be called inside a catch() block of
@@ -523,6 +558,11 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     virtual bool checkForSuspend() { return (s_flags.state == SuspendFlags::CLIENT_SUSPEND);}
 
  private:
+    /**
+     * generate XML configuration and (re)initialize engine with it
+     */
+    void initEngine(bool logXML);
+
     /**
      * the code common to init() and status():
      * populate source list with active sources and open

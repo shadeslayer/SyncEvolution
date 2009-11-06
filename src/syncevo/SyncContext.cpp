@@ -1515,7 +1515,10 @@ SharedEngine SyncContext::createEngine()
                    sysync::DBG_PLUGIN_EXOT);
 
     SharedKey configvars = engine.OpenKeyByPath(SharedKey(), "/configvars");
-    string logdir = m_sourceListPtr->getLogdir();
+    string logdir;
+    if (m_sourceListPtr) {
+        logdir = m_sourceListPtr->getLogdir();
+    }
     engine.SetStrValue(configvars, "defout_path",
                        logdir.size() ? logdir : "/dev/null");
     engine.SetStrValue(configvars, "conferrpath", "console");
@@ -1543,6 +1546,72 @@ void SyncContext::initServer(const std::string &sessionID,
     
 }
 
+struct SyncContext::SyncMLMessageInfo
+SyncContext::analyzeSyncMLMessage(const char *data, size_t len,
+                                  const std::string &messageType)
+{
+    SyncContext sync("", false);
+    SwapContext syncSentinel(&sync);
+    SourceList sourceList(sync, false);
+    sourceList.setLogLevel(SourceList::LOGGING_SUMMARY);
+    m_sourceListPtr = &sourceList;
+    sync.initServer("", SharedBuffer(), "");
+    SwapEngine swapengine(sync);
+    sync.initEngine(false);
+
+    sysync::TEngineProgressInfo progressInfo;
+    sysync::uInt16 stepCmd = sysync::STEPCMD_GOTDATA;
+    SharedSession session = sync.m_engine.OpenSession(sync.m_sessionID);
+    SessionSentinel sessionSentinel(sync, session);
+
+    sync.m_engine.WriteSyncMLBuffer(session, data, len);
+    SharedKey sessionKey = sync.m_engine.OpenSessionKey(session);
+    sync.m_engine.SetStrValue(sessionKey,
+                              "contenttype",
+                              messageType);
+
+    // analyze main loop: runs until SessionStep() signals reply or error.
+    // Will call our SynthesisDBPlugin callbacks, most importantly
+    // SyncEvolution_Session_CheckDevice(), which records the device ID
+    // for us.
+    do {
+        sync.m_engine.SessionStep(session, stepCmd, &progressInfo);
+        switch (stepCmd) {
+        case sysync::STEPCMD_OK:
+        case sysync::STEPCMD_PROGRESS:
+            stepCmd = sysync::STEPCMD_STEP;
+            break;
+        default:
+            // whatever it is, cannot proceed
+            break;
+        }
+    } while (stepCmd == sysync::STEPCMD_STEP);
+
+    SyncMLMessageInfo info;
+    info.m_deviceID = sync.getSyncDeviceID();
+    return info;
+}
+
+void SyncContext::initEngine(bool logXML)
+{
+    string xml, configname;
+    getConfigXML(xml, configname);
+    try {
+        m_engine.InitEngineXML(xml.c_str());
+    } catch (const BadSynthesisResult &ex) {
+        SE_LOG_ERROR(NULL, NULL,
+                     "internal error, invalid XML configuration (%s):\n%s",
+                     m_sourceListPtr && !m_sourceListPtr->empty() ?
+                     "with datastores" :
+                     "without datastores",
+                     xml.c_str());
+        throw;
+    }
+    if (logXML) {
+        SE_LOG_DEV(NULL, NULL, "Full XML configuration:\n%s", xml.c_str());
+    }
+}
+
 SyncMLStatus SyncContext::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
@@ -1558,9 +1627,9 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                            getPrintChanges() ? SourceList::LOGGING_FULL :
                            SourceList::LOGGING_SUMMARY);
 
+    SwapContext syncSentinel(this);
     try {
         m_sourceListPtr = &sourceList;
-        m_activeContext = this;
 
         if (getenv("SYNCEVOLUTION_GNUTLS_DEBUG")) {
             // Enable libgnutls debugging without creating a hard dependency on it,
@@ -1599,16 +1668,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
         // create a Synthesis engine, used purely for logging purposes
         // at this time
         SwapEngine swapengine(*this);
-        string xml, configname;
-        getConfigXML(xml, configname);
-        try {
-            m_engine.InitEngineXML(xml.c_str());
-        } catch (const BadSynthesisResult &ex) {
-            SE_LOG_ERROR(NULL, NULL,
-                         "internal error, invalid XML configuration (without datastores):\n%s",
-                         xml.c_str());
-            throw;
-        }
+        initEngine(false);
 
         try {
             // dump some summary information at the beginning of the log
@@ -1697,7 +1757,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
     }
 
     m_sourceListPtr = NULL;
-    m_activeContext = NULL;
     return status;
 }
 
@@ -1713,16 +1772,7 @@ SyncMLStatus SyncContext::doSync()
 
     // re-init engine with all sources configured
     string xml, configname;
-    getConfigXML(xml, configname);
-    try {
-        m_engine.InitEngineXML(xml.c_str());
-    } catch (const BadSynthesisResult &ex) {
-        SE_LOG_ERROR(NULL, NULL,
-                     "internal error, invalid XML configuration (with datastores):\n%s",
-                     xml.c_str());
-        throw;
-    }
-    SE_LOG_DEV(NULL, NULL, "Full XML configuration:\n%s", xml.c_str());
+    initEngine(true);
 
     SharedKey targets;
     SharedKey target;

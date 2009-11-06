@@ -2064,10 +2064,39 @@ void Connection::process(const Caller_t &caller,
                        message_type == TransportAgent::m_contentTypeSyncWBXML) {
                 // run a new SyncML session as server
                 serverMode = true;
-                if (m_peer.find("config") == m_peer.end()) {
-                    throw runtime_error("must choose config in Server.Connect()");
+                if (m_peer.find("config") == m_peer.end() &&
+                    !m_peer["config"].empty()) {
+                    SE_LOG_DEBUG(NULL, NULL, "ignoring pre-chosen config '%s'",
+                                 m_peer["config"].c_str());
                 }
-                config = m_peer["config"];
+
+                // peek into the data to extract the locURI = device ID,
+                // then use it to find the configuration
+                SyncContext::SyncMLMessageInfo info;
+                info = SyncContext::analyzeSyncMLMessage(reinterpret_cast<const char *>(message.second),
+                                                         message.first,
+                                                         message_type);
+                if (info.m_deviceID.empty()) {
+                    // TODO: proper exception
+                    throw runtime_error("could not extract LocURI=deviceID from initial message");
+                }
+                BOOST_FOREACH(const StringPair &entry,
+                              SyncConfig::getServers()) {
+                    SyncConfig peer(entry.first);
+                    if (info.m_deviceID == peer.getRemoteDevID()) {
+                        config = entry.first;
+                        SE_LOG_DEBUG(NULL, NULL, "matched %s against config %s (%s)",
+                                     info.toString().c_str(),
+                                     entry.first.c_str(),
+                                     entry.second.c_str());
+                        break;
+                    }
+                }
+                if (config.empty()) {
+                    // TODO: proper exception
+                    throw runtime_error(string("no configuration found for ") +
+                                        info.toString());
+                }
             } else {
                 throw runtime_error("message type not supported for starting a sync");
             }
