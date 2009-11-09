@@ -2227,7 +2227,7 @@ SyncMLStatus SyncContext::doSync()
 
     // If we get here without error, then close down connection normally.
     // Otherwise destruct the agent without further communication.
-    if (!status) {
+    if (!status && !checkForAbort()) {
         try {
             agent->shutdown();
             // TODO: implement timeout for peers which fail to respond

@@ -343,6 +343,13 @@ public:
     void enqueue(const boost::shared_ptr<Session> &session);
 
     /**
+     * Remove all sessions with this device ID from the
+     * queue. If the active session also has this ID,
+     * the session will be aborted and/or deactivated.
+     */
+    int killSessions(const std::string &peerDeviceID);
+
+    /**
      * Remove a session from the work queue. If it is running a sync,
      * it will keep running and nothing will change. Otherwise, if it
      * is "ready" (= holds a lock on its configuration), then release
@@ -749,6 +756,7 @@ class Session : public DBusObjectHelper,
     DBusServer &m_server;
     const std::string m_sessionID;
     ReadOperations m_operations;
+    std::string m_peerDeviceID;
 
     bool m_serverMode;
     SharedBuffer m_initialMessage;
@@ -849,6 +857,7 @@ class Session : public DBusObjectHelper,
 
 public:
     Session(DBusServer &server,
+            const std::string &peerDeviceID,
             const std::string &config_name,
             const std::string &session);
     ~Session();
@@ -887,6 +896,8 @@ public:
 
     DBusServer &getServer() { return m_server; }
     std::string getConfigName() { return m_operations.m_configName; }
+    std::string getSessionID() const { return m_sessionID; }
+    std::string getPeerDeviceID() const { return m_peerDeviceID; }
 
     /**
      * TRUE if the session is ready to take over control
@@ -1590,6 +1601,7 @@ string Session::syncStatusToString(SyncStatus state)
 }
 
 Session::Session(DBusServer &server,
+                 const std::string &peerDeviceID,
                  const std::string &config_name,
                  const std::string &session) :
     DBusObjectHelper(server.getConnection(),
@@ -1598,6 +1610,7 @@ Session::Session(DBusServer &server,
     m_server(server),
     m_sessionID(session),
     m_operations(config_name),
+    m_peerDeviceID(peerDeviceID),
     m_serverMode(false),
     m_useConnection(false),
     m_active(false),
@@ -2024,9 +2037,10 @@ void Connection::process(const Caller_t &caller,
              const std::pair<size_t, const uint8_t *> &message,
              const std::string &message_type)
 {
-    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s sends %lu bytes, %s",
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s sends %lu bytes via connection %s, %s",
                  caller.c_str(),
                  message.first,
+                 getPath(),
                  message_type.c_str());
 
     boost::shared_ptr<Client> client(m_server.findClient(caller));
@@ -2045,6 +2059,7 @@ void Connection::process(const Caller_t &caller,
         switch (m_state) {
         case SETUP: {
             std::string config;
+            std::string peerDeviceID;
             bool serverMode = false;
             // check message type, determine whether we act
             // as client or server, choose config
@@ -2198,13 +2213,18 @@ void Connection::process(const Caller_t &caller,
                     throw runtime_error(string("no configuration found for ") +
                                         info.toString());
                 }
+
+                // abort previous session of this client
+                m_server.killSessions(info.m_deviceID);
+                peerDeviceID = info.m_deviceID;
             } else {
                 throw runtime_error("message type not supported for starting a sync");
             }
 
-            // run session as client (server not supported yet)
+            // run session as client or server
             m_state = PROCESSING;
             m_session.reset(new Session(m_server,
+                                        peerDeviceID,
                                         config,
                                         m_sessionID));
             if (serverMode) {
@@ -2258,8 +2278,9 @@ void Connection::close(const Caller_t &caller,
                        bool normal,
                        const std::string &error)
 {
-    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s closes %s%s%s",
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s closes connection %s %s%s%s",
                  caller.c_str(),
+                 getPath(),
                  normal ? "normally" : "with error",
                  error.empty() ? "" : ": ",
                  error.c_str());
@@ -2559,8 +2580,9 @@ void DBusServer::connect(const Caller_t &caller,
                                                    new_session,
                                                    peer,
                                                    must_authenticate));
-    SE_LOG_DEBUG(NULL, NULL, "connecting D-Bus client %s with '%s'",
+    SE_LOG_DEBUG(NULL, NULL, "connecting D-Bus client %s with connection %s '%s'",
                  caller.c_str(),
+                 c->getPath(),
                  c->m_description.c_str());
         
     boost::shared_ptr<Client> client = addClient(getConnection(),
@@ -2582,6 +2604,7 @@ void DBusServer::startSession(const Caller_t &caller,
                                                  watch);
     std::string new_session = getNextSession();   
     boost::shared_ptr<Session> session(new Session(*this,
+                                                   "is this a client or server session?",
                                                    server,
                                                    new_session));
     // TODO: how do we decide whether this is a client or server session?
@@ -2713,6 +2736,48 @@ void DBusServer::enqueue(const boost::shared_ptr<Session> &session)
     m_workQueue.insert(it, session);
 
     checkQueue();
+}
+
+int DBusServer::killSessions(const std::string &peerDeviceID)
+{
+    int count = 0;
+
+    WorkQueue_t::iterator it = m_workQueue.begin();
+    while (it != m_workQueue.end()) {
+        boost::shared_ptr<Session> session = it->lock();
+        if (session && session->getPeerDeviceID() == peerDeviceID) {
+            SE_LOG_DEBUG(NULL, NULL, "removing pending session %s because it matches deviceID %s",
+                         session->getSessionID().c_str(),
+                         peerDeviceID.c_str());
+            // remove session and its corresponding connection
+            boost::shared_ptr<Connection> c = session->getConnection().lock();
+            if (c) {
+                c->shutdown();
+            }
+            it = m_workQueue.erase(it);
+            count++;
+        } else {
+            ++it;
+        }
+    }
+
+    if (m_activeSession &&
+        m_activeSession->getPeerDeviceID() == peerDeviceID) {
+        SE_LOG_DEBUG(NULL, NULL, "aborting active session %s because it matches deviceID %s",
+                     m_activeSession->getSessionID().c_str(),
+                     peerDeviceID.c_str());
+        try {
+            // abort, even if not necessary right now
+            m_activeSession->abort();
+        } catch (...) {
+            // TODO: catch only that exception which indicates
+            // incorrect use of the function
+        }
+        dequeue(m_activeSession);
+        count++;
+    }
+
+    return count;
 }
 
 void DBusServer::dequeue(Session *session)

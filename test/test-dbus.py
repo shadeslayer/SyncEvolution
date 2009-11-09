@@ -54,6 +54,7 @@ class DBusUtil:
 
     def __init__(self):
         self.events = []
+        self.quit_events = []
         self.reply = None
 
     def runTest(self, result, own_xdg=True):
@@ -174,6 +175,10 @@ class DBusUtil:
         def status(*args):
             self.events.append(("status", args))
             if args[0] == "done":
+                if sessionpath:
+                    self.quit_events.append("session " + sessionpath + " done")
+                else:
+                    self.quit_events.append("session done")
                 loop.quit()
         bus.add_signal_receiver(progress,
                                 'ProgressChanged',
@@ -195,9 +200,15 @@ class DBusUtil:
         getting an abort"""
         def abort():
             self.events.append(("abort",))
+            self.quit_events.append("connection " + conpath + " aborted")
             loop.quit()
         def reply(*args):
             self.reply = args
+            if args[3]:
+                self.quit_events.append("connection " + conpath + " got final reply")
+            else:
+                self.quit_events.append("connection " + conpath + " got reply")
+
             loop.quit()
         bus.add_signal_receiver(abort,
                                 'Abort',
@@ -359,6 +370,8 @@ class TestConnection(unittest.TestCase, DBusUtil):
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
+        self.quit_events = []
         # TODO: check events
         self.failIfEqual(self.reply, None)
         self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
@@ -366,10 +379,92 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.failIfEqual(self.reply[4], '')
         connection.Close(False, 'good bye')
         loop.run()
-        # TODO: this shouldn't be necessary, but somehow the
-        # syncevo-dbus-server keeps running unless we give it some time.
-        # Incomplete handling of SIGTERM?! See Bugzilla #7555.
-        time.sleep(5)
+        loop.run()
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " aborted",
+                                                "session done"])
+
+    def testStartSyncTwice(self):
+        """send the same SyncML message twice, starting two sessions"""
+        conpath, connection = self.getConnection()
+        connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
+        loop.run()
+        # TODO: check events
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
+        self.failIfEqual(self.reply, None)
+        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
+        self.failUnlessEqual(self.reply[3], False)
+        self.failIfEqual(self.reply[4], '')
+        self.reply = None
+        self.quit_events = []
+
+        # Now start another session with the same client *without*
+        # closing the first one. The server should detect this
+        # and forcefully close the first one.
+        conpath2, connection2 = self.getConnection()
+        connection2.Process(TestConnection.message1, 'application/vnd.syncml+xml')
+
+        # reasons for leaving the loop, in random order:
+        # - abort of first connection
+        # - first session done
+        # - reply for second one
+        loop.run()
+        loop.run()
+        loop.run()
+        self.quit_events.sort()
+        expected = [ "connection " + conpath + " aborted",
+                     "session done",
+                     "connection " + conpath2 + " got reply" ]
+        expected.sort()
+        self.failUnlessEqual(self.quit_events, expected)
+        self.failIfEqual(self.reply, None)
+        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
+        self.failUnlessEqual(self.reply[3], False)
+        self.failIfEqual(self.reply[4], '')
+        self.quit_events = []
+
+        # now quit for good
+        connection2.Close(False, 'good bye')
+        loop.run()
+        loop.run()
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath2 + " aborted",
+                                                "session done"])
+
+    def testKillInactive(self):
+        """block server with client A, then let client B connect twice"""
+        conpath, connection = self.getConnection()
+        connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
+        loop.run()
+        # TODO: check events
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
+        self.failIfEqual(self.reply, None)
+        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
+        self.failUnlessEqual(self.reply[3], False)
+        self.failIfEqual(self.reply[4], '')
+        self.reply = None
+        self.quit_events = []
+
+        # Now start two more sessions with the second client *without*
+        # closing the first one. The server should remove only the
+        # first connection of client B.
+        message1_clientB = TestConnection.message1.replace("sc-api-nat", "sc-pim-ppc")
+        conpath2, connection2 = self.getConnection()
+        connection2.Process(message1_clientB, 'application/vnd.syncml+xml')
+        conpath3, connection3 = self.getConnection()
+        connection3.Process(message1_clientB, 'application/vnd.syncml+xml')
+        loop.run()
+        self.failUnlessEqual(self.quit_events, [ "connection " + conpath2 + " aborted" ])
+        self.quit_events = []
+
+        # now quit for good
+        connection3.Close(False, 'good bye client B')
+        loop.run()
+        self.failUnlessEqual(self.quit_events, [ "connection " + conpath3 + " aborted" ])
+        self.quit_events = []
+        connection.Close(False, 'good bye client A')
+        loop.run()
+        loop.run()
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " aborted",
+                                                "session done"])
 
 if __name__ == '__main__':
     unittest.main()
