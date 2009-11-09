@@ -138,7 +138,8 @@
           further operations on it will fail.  Resuming the connection
           may or may not work in such a case.
 
-          This signal is sent at most once for each connection.
+          This signal is sent at most once for each connection. No
+          reply will be sent on an aborted connection.
         </doc:summary>
       </doc:doc>
     </signal>

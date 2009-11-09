@@ -993,7 +993,7 @@ class Connection : public DBusObjectHelper, public Resource
     void close(const Caller_t &caller,
                bool normal,
                const std::string &error);
-    void abort() { if (!m_abortSent) { sendAbort(); m_abortSent = true; } }
+    void abort();
     EmitSignal0 sendAbort;
     bool m_abortSent;
     EmitSignal5<const std::pair<size_t, const uint8_t *> &,
@@ -2290,6 +2290,15 @@ void Connection::close(const Caller_t &caller,
     client->detach(this);
 }
 
+void Connection::abort()
+{
+    if (!m_abortSent) {
+        sendAbort();
+        m_abortSent = true;
+        m_state = FAILED;
+    }
+}
+
 void Connection::shutdown()
 {
     // trigger removal of this connection by removing all
@@ -2404,11 +2413,13 @@ void DBusTransportAgent::shutdown()
                            "D-Bus peer has disconnected");
     }
 
-    // send final, empty message and wait for close
-    connection->m_state = Connection::FINAL;
-    connection->reply(std::pair<size_t, const uint8_t *>(0, 0),
-                      "", StringMap(),
-                      true, connection->m_sessionID);
+    if (connection->m_state != Connection::FAILED) {
+        // send final, empty message and wait for close
+        connection->m_state = Connection::FINAL;
+        connection->reply(std::pair<size_t, const uint8_t *>(0, 0),
+                          "", StringMap(),
+                          true, connection->m_sessionID);
+    }
 }
 
 void DBusTransportAgent::doWait(boost::shared_ptr<Connection> &connection)
