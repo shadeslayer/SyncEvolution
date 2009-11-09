@@ -71,7 +71,7 @@ class DBusUtil:
         test-dbus/[data|config|cache] which are removed before each
         test."""
 
-        kill = subprocess.Popen("sh -c 'killall -9 syncevo-dbus-server >/dev/null 2>&1'", shell=True)
+        kill = subprocess.Popen("sh -c 'killall -9 syncevo-dbus-server dbus-monitor >/dev/null 2>&1'", shell=True)
         kill.communicate()
 
         env = copy.deepcopy(os.environ)
