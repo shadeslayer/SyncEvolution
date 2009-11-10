@@ -260,6 +260,14 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         config2[""]["deviceId"] = "foo"
         self.failUnlessEqual(config1, config2)
 
+    def testInvalidConfig(self):
+        """check that the right error is reported for invalid config name"""
+        try:
+            config1 = self.server.GetConfig("no-such-config", False, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.Exception: No server or template 'no-such-config' found")
+
 class TestDBusSession(unittest.TestCase, DBusUtil):
     """Tests that work with an active session."""
 
@@ -321,6 +329,26 @@ class TestDBusSync(unittest.TestCase, DBusUtil):
         status, error, sources = self.session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "done")
         self.failUnlessEqual(error, 0)
+
+class TestDBusSyncError(unittest.TestCase, DBusUtil):
+    """Executes a real sync with no corresponding config."""
+
+    def setUp(self):
+        DBusUtil.__init__(self)
+        self.setUpServer()
+        self.setUpSession(config)
+
+    def run(self, result):
+        self.runTest(result, own_xdg=True)
+
+    def testSync(self):
+        self.setUpListeners(self.sessionpath)
+        self.session.Sync("", {})
+        loop.run()
+        # TODO: check recorded events in self.events
+        status, error, sources = self.session.GetStatus(utf8_strings=True)
+        self.failUnlessEqual(status, "done")
+        self.failUnlessEqual(error, 500)
 
 class TestConnection(unittest.TestCase, DBusUtil):
     """Tests Server.Connect(). Tests depend on getting one Abort signal to terminate."""
