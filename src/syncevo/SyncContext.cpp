@@ -1497,6 +1497,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         } else {
             // no authentication required
             substTag(xml, "defaultauth",
+                     "<logininitscript>return TRUE</logininitscript>\n"
                      "<requestedauth>none</requestedauth>\n"
                      "<requiredauth>none</requiredauth>\n"
                      "<autononce>yes</autononce>\n",
