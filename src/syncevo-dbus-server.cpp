@@ -1115,13 +1115,8 @@ void ReadOperations::getConfig(bool getTemplate,
     } else { ///< get a matching server configuration
         boost::shared_ptr<SyncConfig> from;
         syncConfig.reset(new SyncConfig(m_configName));
-        /* if config does not exist, create from template */
         if (!syncConfig->exists()) {
-            from = SyncConfig::createServerTemplate(m_configName);
-            if(!from.get()) {
-                SE_THROW_EXCEPTION(NoSuchConfig, "No server or template '" + m_configName + "' found");
-            }
-            syncConfig->copy(*from, NULL);
+            SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
         }
     }
 

@@ -266,7 +266,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
             config1 = self.server.GetConfig("no-such-config", False, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.Exception: No server or template 'no-such-config' found")
+                                 "org.syncevolution.NoSuchConfig: No server 'no-such-config' found")
 
 class TestDBusSession(unittest.TestCase, DBusUtil):
     """Tests that work with an active session."""
