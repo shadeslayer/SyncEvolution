@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
+#include <stdint.h>
 
 #include <dbus/dbus.h>
 #include <glib.h>
