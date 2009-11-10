@@ -429,7 +429,8 @@ class SyncEvolutionTest(Action):
         context.runCommand("%s testclean" % context.make)
         try:
             if context.setupcmd:
-                context.runCommand("%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name))
+                cmd = "%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name)
+                context.runCommand("%s || sleep 5 && %s" % (cmd, cmd))
             backenddir = os.path.join(context.tmpdir, "install/usr/lib/syncevolution/backends")
             if not os.access(backenddir, os.F_OK):
                 # try relative to client-test inside the current directory
