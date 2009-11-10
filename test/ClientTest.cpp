@@ -2845,7 +2845,6 @@ void SyncTests::doInterruptResume(int changes,
         // by overloading the delete operator.
         int wasInterrupted;
         {
-            wrapper->reset();
             wrapper->setInterruptAtMessage(interruptAtMessage);
             accessClientB->doSync("changesFromB",
                                   SyncOptions(SYNC_TWO_WAY,
@@ -2853,6 +2852,7 @@ void SyncTests::doInterruptResume(int changes,
                                                   -1, -1, false)).setTransportAgent(wrapper));
             wasInterrupted = interruptAtMessage != -1 &&
                 wrapper->getMessageCount() <= interruptAtMessage;
+            wrapper->rewind();
         }
 
         if (interruptAtMessage != -1) {

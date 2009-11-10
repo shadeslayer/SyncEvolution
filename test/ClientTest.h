@@ -746,11 +746,12 @@ public:
     virtual void cancel() { m_wrappedAgent->cancel(); }
     virtual void shutdown() { m_wrappedAgent->shutdown(); }
 
-    virtual void reset() {
+    virtual void rewind() {
         m_messageCount = 0;
         m_interruptAtMessage = -1;
         m_status = INACTIVE;
         m_options = NULL;
+        m_wrappedAgent.reset();
     }
     virtual Status wait(bool noReply = false) { return m_status; }
     virtual void setCallback (TransportCallback cb, void *udata, int interval) 
