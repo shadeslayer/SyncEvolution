@@ -9,6 +9,12 @@ EXTRA_DIST = syncevo-dbus.pc.in
 pkgconfig_DATA = syncevo-dbus.pc
 pkgconfigdir = $(libdir)/pkgconfig
 
+noinst_PROGRAMS = test-syncevo-dbus
+
+test_syncevo_dbus_SOURCES = test.c
+test_syncevo_dbus_LDADD = $(DBUS_GLIB_LIBS) libsyncevo-dbus.la
+test_syncevo_dbus_CFLAGS = $(DBUS_GLIB_CFLAGS)
+
 nodist_libsyncevo_dbus_la_SOURCES = \
 	interfaces/syncevo-marshal.c
 
