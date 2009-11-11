@@ -1491,7 +1491,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             // require authentication with the configured password
             substTag(xml, "defaultauth",
                      "<requestedauth>md5</requestedauth>\n"
-                     "<requiredauth>md5</requiredauth>\n"
+                     "<requiredauth>basic</requiredauth>\n"
                      "<autononce>yes</autononce>\n",
                      true);
         } else {
