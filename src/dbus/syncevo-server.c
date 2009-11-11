@@ -157,7 +157,8 @@ syncevo_server_get_new_proxy (SyncevoServer *server)
                                              DBUS_INTERFACE_SYNCEVO_SERVER,
                                              &error);
     if (priv->proxy == NULL) {
-        g_printerr ("dbus_g_proxy_new_for_name_owner() failed");
+        g_printerr ("dbus_g_proxy_new_for_name_owner() failed: %s\n", error->message);
+        g_error_free (error);
         return FALSE;
     }
 
@@ -425,8 +426,15 @@ start_session_callback (SyncevoServer *syncevo,
                         ServerAsyncData *data)
 {
     if (data->callback) {
+        SyncevoSession *session = NULL;
+
+        if (session_path) {
+            session =  g_object_new (SYNCEVO_TYPE_SESSION,
+                                     "session-path", session_path,
+                                     NULL);
+        }
         (*(SyncevoServerStartSessionCb)data->callback) (data->server,
-                                                        session_path,
+                                                        session,
                                                         error,
                                                         data->userdata);
     }

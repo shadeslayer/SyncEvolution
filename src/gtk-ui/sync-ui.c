@@ -47,8 +47,10 @@
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 #include <gnome-keyring.h>
+#include <dbus/dbus-glib.h>
 
-#include "syncevo-dbus.h"
+#include "syncevo-server.h"
+#include "syncevo-session.h"
 #include "sync-ui-marshal.h"
 
 /* for return value definitions */
@@ -185,9 +187,11 @@ typedef struct app_data {
     GHashTable *source_report_labels;
 
     SyncMode mode;
-    SyncevoService *service;
 
     server_config *current_service;
+
+    SyncevoServer *server;
+    SyncevoSession *session;
 } app_data;
 
 static void set_sync_progress (app_data *data, float progress, char *status);
@@ -195,7 +199,6 @@ static void set_app_state (app_data *data, app_state state);
 static void show_services_window (app_data *data);
 static void show_settings_window (app_data *data, server_config *config);
 static void ensure_default_sources_exist(server_config *server);
-static void add_server_option (SyncevoOption *option, server_config *server);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
 
 static void
@@ -323,21 +326,6 @@ save_gconf_settings (app_data *data, char *service_name)
     }
 }
 
-static void
-set_server_config_cb (SyncevoService *service, GError *error, app_data *data)
-{
-    if (error) {
-        show_error_dialog (GTK_WINDOW (data->sync_win),
-                           _("Failed to save service configuration to SyncEvolution"));
-        g_warning ("Failed to save service configuration to SyncEvolution: %s",
-                   error->message);
-        g_error_free (error);
-        return;
-    }
-    save_gconf_settings (data, data->current_service->name);
-}
-
-
 /* temporary data structure for syncevo_service_get_template_config_async and
  * syncevo_service_get_server_config_async. server is the server that 
  * the method was called for. options_override are options that should 
@@ -371,7 +359,9 @@ server_data_free (server_data *data, gboolean free_config)
         server_config_free (data->config);
     }
     if (data->options_override) {
+/*
         g_ptr_array_foreach (data->options_override, (GFunc)syncevo_option_free, NULL);
+*/
         g_ptr_array_free (data->options_override, TRUE);
     }
     g_slice_free (server_data, data);
@@ -404,95 +394,6 @@ find_password_for_settings_cb (GnomeKeyringResult result, GList *list, server_da
 }
 
 
-/* called when service is reset or service settings are opened 
- * (for a new or existing service )*/
-static void
-get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, server_data *data)
-{
-    gboolean getting_password = FALSE;
-
-    if (error) {
-        show_error_dialog (GTK_WINDOW (data->data->sync_win),
-                           _("Failed to get service configuration from SyncEvolution"));
-        g_warning ("Failed to get service configuration from SyncEvolution: %s",
-                   error->message);
-        g_error_free (error);
-        server_data_free (data, TRUE);
-    } else {
-        char *server_address;
-
-        g_ptr_array_foreach (options, (GFunc)add_server_option, data->config);
-        if (data->options_override)
-            g_ptr_array_foreach (data->options_override, (GFunc)add_server_option, data->config);
-
-        ensure_default_sources_exist (data->config);
-        server_config_disable_unsupported_sources (data->config);
-
-        data->config->changed = TRUE;
-
-        /* get password from keyring if we have an url */
-        if (data->config->base_url) {
-            server_address = strstr (data->config->base_url, "://");
-            if (server_address)
-                server_address = server_address + 3;
-
-            if (!server_address) {
-                g_warning ("Server configuration has suspect URL '%s'",
-                           data->config->base_url);
-            } else {
-                gnome_keyring_find_network_password (data->config->username,
-                                                     NULL,
-                                                     server_address,
-                                                     NULL,
-                                                     NULL,
-                                                     NULL,
-                                                     0,
-                                                     (GnomeKeyringOperationGetListCallback)find_password_for_settings_cb,
-                                                     data,
-                                                     NULL);
-                getting_password = TRUE;
-            }
-        }
-
-        if (!getting_password) {
-            show_settings_window (data->data, data->config);
-
-            /* dialog should free server config */
-            server_data_free (data, FALSE);
-        }
-
-        if (options) {
-            g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
-            g_ptr_array_free (options, TRUE);
-        }
-    }
-}
-
-static void
-remove_server_config_cb (SyncevoService *service, 
-                         GError *error, 
-                         server_data *data)
-{
-    g_assert (data);
-
-    if (error) {
-        show_error_dialog (GTK_WINDOW (data->data->sync_win),
-                           _("Failed to remove service configuration from SyncEvolution"));
-        g_warning ("Failed to remove service configuration from SyncEvolution: %s", 
-                   error->message);
-        g_error_free (error);
-    } else {
-        /* update list if visible */
-        if (GTK_WIDGET_VISIBLE (data->data->services_win))
-            show_services_window (data->data);
-
-        if (data->data->current_service && data->data->current_service->name &&
-            strcmp (data->data->current_service->name, data->config->name) == 0)
-            save_gconf_settings (data->data, NULL);
-    }
-
-    server_data_free (data, TRUE);
-}
 
 static void
 stop_using_service_clicked_cb (GtkButton *btn, app_data *data)
@@ -521,10 +422,12 @@ delete_service_clicked_cb (GtkButton *btn, app_data *data)
 
     serv_data = server_data_new (server->name, data);
 
+/*
     syncevo_service_remove_server_config_async (data->service,
                                                 server->name, 
                                                 (SyncevoRemoveServerConfigCb)remove_server_config_cb,
                                                 serv_data);
+*/
 }
 
 static void
@@ -532,6 +435,7 @@ reset_service_clicked_cb (GtkButton *btn, app_data *data)
 {
     server_config *server;
     server_data* serv_data;
+/*
     SyncevoOption *option;
 
     server = g_object_get_data (G_OBJECT (data->service_settings_win), "server");
@@ -547,6 +451,7 @@ reset_service_clicked_cb (GtkButton *btn, app_data *data)
                                                server->name, 
                                                (SyncevoGetTemplateConfigCb)get_server_config_for_template_cb,
                                                serv_data);
+*/
 }
 
 static void
@@ -600,6 +505,7 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
                            _("Service must have a name and server URL"));
         return;
     }
+
     /* make a wild guess if no scheme in url */
     if (strstr (server->base_url, "://") == NULL) {
         char *tmp = g_strdup_printf ("http://%s", server->base_url);
@@ -650,6 +556,7 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
         save_gconf_settings (data, data->current_service->name);
     } else {
         /* save the server, let callback change current server gconf key */
+/*
         options = server_config_get_option_array (server);
         syncevo_service_set_server_config_async (data->service, 
                                                  server->name,
@@ -658,31 +565,12 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
                                                  data);
         g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
         g_ptr_array_free (options, TRUE);
+*/
     }
 
     server->auth_changed = FALSE;
     server->password_changed = FALSE;
     server->changed = FALSE;
-}
-
-static void
-abort_sync_cb (SyncevoService *service, GError *error, app_data *data)
-{
-    if (error) {
-        if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
-            dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_INVALID_CALL)) {
-
-            /* sync is no longer in progress for some reason */
-            add_error_info (data, _("Failed to cancel: sync was no longer in progress"), error->message);
-            set_sync_progress (data, 1.0 , "");
-            set_app_state (data, SYNC_UI_STATE_SERVER_OK);
-        } else {
-            add_error_info (data, _("Failed to cancel sync"), error->message);
-        }
-        g_error_free (error);
-    } else {
-        set_sync_progress (data, -1.0, _("Canceling sync"));
-    }
 }
 
 static void 
@@ -693,8 +581,10 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
     GError *error = NULL;
 
     if (data->syncing) {
+/*
         syncevo_service_abort_sync_async (data->service, data->current_service->name, 
                                           (SyncevoAbortSyncCb)abort_sync_cb, data);
+*/
         set_sync_progress (data, -1.0, _("Trying to cancel sync"));
     } else {
         char *message = NULL;
@@ -750,10 +640,11 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
             add_error_info (data, _("No sources are enabled, not syncing"), NULL);
             return;
         }
-        syncevo_service_start_sync (data->service, 
+/*      syncevo_service_start_sync (data->service, 
                                     data->current_service->name,
                                     sources,
                                     &error);
+*/
         if (error) {
             if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
                 dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_INVALID_CALL)) {
@@ -1146,12 +1037,6 @@ init_ui (app_data *data)
 }
 
 static void
-add_server_option (SyncevoOption *option, server_config *server)
-{
-    server_config_update_from_option (server, option);
-}
-
-static void
 source_check_toggled_cb (GtkCheckButton *check, app_data *data)
 {
     GPtrArray *options;
@@ -1160,6 +1045,7 @@ source_check_toggled_cb (GtkCheckButton *check, app_data *data)
     enabled = g_object_get_data (G_OBJECT (check), "enabled");
     *enabled = !*enabled;
     
+/*
     options = server_config_get_option_array (data->current_service);
     syncevo_service_set_server_config_async (data->service, 
                                              data->current_service->name,
@@ -1169,6 +1055,7 @@ source_check_toggled_cb (GtkCheckButton *check, app_data *data)
 
     g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
     g_ptr_array_free (options, TRUE);
+*/
 }
 
 static void
@@ -1339,53 +1226,6 @@ get_report_summary (int local_changes, int remote_changes, int local_rejects, in
     return msg;
 }
 
-static void
-update_sync_report_data (SyncevoReport *report, app_data *data)
-{
-    const char *name;
-    GtkLabel *lbl;
-    
-    name = syncevo_report_get_name (report);
-    lbl = GTK_LABEL (g_hash_table_lookup (data->source_report_labels, name));
-    if (lbl) {
-        char *msg;
-        int local_changes, local_adds, local_updates, local_removes, local_rejects;
-        int remote_changes, remote_adds, remote_updates, remote_removes, remote_rejects;
-        
-        syncevo_report_get_local (report, &local_adds, &local_updates, &local_removes, &local_rejects);
-        syncevo_report_get_remote (report, &remote_adds, &remote_updates, &remote_removes, &remote_rejects);
-        local_changes = local_adds + local_updates + local_removes;
-        remote_changes = remote_adds + remote_updates + remote_removes;
-
-        msg = get_report_summary (local_changes, remote_changes, local_rejects, remote_rejects);
-        gtk_label_set_text (lbl, msg);
-        g_free (msg);
-    }
-}
-
-static void
-get_sync_reports_cb (SyncevoService *service, GPtrArray *reports, GError *error, app_data *data)
-{
-    if (error) {
-        g_warning ("Failed to get sync reports from SyncEvolution: %s", error->message);
-        g_error_free (error);
-        return;
-    }
-
-    if (reports->len < 1) {
-        data->last_sync = -1; 
-    } else {
-        GPtrArray *source_reports;
-        SyncevoReportArray *session_report = (SyncevoReportArray*)g_ptr_array_index (reports, 0);
-        syncevo_report_array_get (session_report, &data->last_sync, &source_reports);
-        g_ptr_array_foreach (source_reports, (GFunc)update_sync_report_data, data);
-    }
-    refresh_last_synced_label (data);
-
-    g_ptr_array_foreach (reports, (GFunc)syncevo_report_array_free, NULL);
-    g_ptr_array_free (reports, TRUE);
-
-}
 
 static void
 find_password_cb (GnomeKeyringResult result, GList *list, app_data *data)
@@ -1408,60 +1248,6 @@ find_password_cb (GnomeKeyringResult result, GList *list, app_data *data)
     return;
 }
 
-static void
-get_server_config_cb (SyncevoService *service, GPtrArray *options, GError *error, app_data *data)
-{
-    char *server_address;
-
-    if (error) {
-        /* just warn if current server has disappeared -- probably just command line use */
-        if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
-            dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER)) {
-            add_error_info (data, 
-                            _("Failed to get server configuration from SyncEvolution"), 
-                            error->message);
-            set_app_state (data, SYNC_UI_STATE_NO_SERVER);
-        } else {
-            set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
-        }
-        g_error_free (error);
-        return;
-    }
-
-    g_ptr_array_foreach (options, (GFunc)add_server_option, data->current_service);
-    ensure_default_sources_exist (data->current_service);
-    
-    update_service_ui (data);
-    set_app_state (data, SYNC_UI_STATE_SERVER_OK);
-
-    server_address = strstr (data->current_service->base_url, "://");
-    if (server_address)
-        server_address = server_address + 3;
-
-    if (!server_address) {
-        g_warning ("Server configuration has suspect URL '%s'",
-                   data->current_service->base_url);
-    } else {
-        gnome_keyring_find_network_password (data->current_service->username,
-                                             NULL,
-                                             server_address,
-                                             NULL,
-                                             NULL,
-                                             NULL,
-                                             0,
-                                             (GnomeKeyringOperationGetListCallback)find_password_cb,
-                                             data,
-                                             NULL);
-    }
-
-    /* get last sync report (for last sync time) */
-    syncevo_service_get_sync_reports_async (service, data->current_service->name, 1,
-                                            (SyncevoGetSyncReportsCb)get_sync_reports_cb,
-                                            data);
-
-    g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
-    g_ptr_array_free (options, TRUE);
-}
 
 const char*
 get_service_description (const char *service)
@@ -1628,23 +1414,26 @@ setup_service_clicked (GtkButton *btn, app_data *data)
 
     gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
                                   GTK_WINDOW (data->services_win));
-
+/*
     syncevo_service_get_server_config_async (data->service, 
                                              (char*)serv_data->config->name,
                                              (SyncevoGetServerConfigCb)get_server_config_for_template_cb,
                                              serv_data);
+*/
 }
 
 static void
 setup_new_service_clicked (GtkButton *btn, app_data *data)
 {
     server_data *serv_data;
-    SyncevoOption *option;
+
+/*    SyncevoOption *option; */
     
     serv_data = server_data_new (NULL, data);
 
     /* syncevolution defaults are not empty, override ... */
     serv_data->options_override = g_ptr_array_new ();
+/*
     option = syncevo_option_new (NULL, "username", NULL);
     g_ptr_array_add (serv_data->options_override, option);
     option = syncevo_option_new (NULL, "password", NULL);
@@ -1663,14 +1452,16 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
     g_ptr_array_add (serv_data->options_override, option);
     option = syncevo_option_new ("calendar", "uri", NULL);
     g_ptr_array_add (serv_data->options_override, option);
-
+*/
     gtk_window_set_transient_for (GTK_WINDOW (data->service_settings_win), 
                                   GTK_WINDOW (data->services_win));
 
+/*
     syncevo_service_get_server_config_async (data->service, 
                                              "default",
                                              (SyncevoGetServerConfigCb)get_server_config_for_template_cb,
                                              serv_data);
+*/
 }
 
 enum ServerCols {
@@ -1724,8 +1515,10 @@ add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *
     gtk_table_attach (table, btn, COL_BUTTON, COL_BUTTON + 1, row, row+1,
                       GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
 
+/*
     g_object_set_data_full (G_OBJECT (btn), "server", server, 
                             (GDestroyNotify)syncevo_server_free);
+*/
 }
 
 typedef struct templates_data {
@@ -1751,92 +1544,6 @@ server_array_contains (GPtrArray *array, SyncevoServer *server)
     return FALSE;
 }
 
-static void
-get_servers_cb (SyncevoService *service, 
-                GPtrArray *servers, 
-                GError *error, 
-                templates_data *templ_data)
-{
-    int i, k = 0;
-    app_data *data = templ_data->data;
-
-    if (error) {
-        gtk_widget_hide (data->services_win);
-        show_error_dialog (GTK_WINDOW (data->sync_win), 
-                           _("Failed to get list of manually setup services from SyncEvolution"));
-        g_warning ("Failed to get list of manually setup services from SyncEvolution: %s", 
-                   error->message);
-        g_error_free (error);
-        return;
-    }
-
-    gtk_table_resize (GTK_TABLE (data->manual_services_table), 2, 4);
-    for (i = 0; i < servers->len; i++) {
-        SyncevoServer *server = (SyncevoServer*)g_ptr_array_index (servers, i);
-        
-        /* make sure server is not added as template already */
-        if (!server_array_contains (templ_data->templates, server)) {
-            add_server_to_table (GTK_TABLE (data->manual_services_table), k++,
-                                 server, data);
-        }
-    }
-    
-    if (k > 0) {
-        gtk_widget_show_all (data->manual_services_scrolled);
-    } else {
-        gtk_widget_hide (data->manual_services_scrolled);
-    }
-
-    /* the SyncevoServers in arrays are freed when the table gets freed */
-    g_ptr_array_free (templ_data->templates, TRUE);
-    g_ptr_array_free (servers, TRUE);
-    g_slice_free (templates_data, templ_data);
-}
-
-static void
-get_templates_cb (SyncevoService *service, 
-                  GPtrArray *templates, 
-                  GError *error, 
-                  app_data *data)
-{
-    int i;
-    templates_data *temps_data;
-
-    if (error) {
-        show_error_dialog (GTK_WINDOW (data->sync_win), 
-                           _("Failed to get list of supported services from SyncEvolution"));
-        g_warning ("Failed to get list of supported services from SyncEvolution: %s", 
-                   error->message);
-        g_error_free (error);
-        gtk_widget_hide (data->services_win);
-        return;
-    }
-
-    gtk_table_resize (GTK_TABLE (data->services_table), 
-                      templates->len, 4);
-
-    for (i = 0; i < templates->len; i++) {
-        SyncevoServer *server;
-        gboolean consumer_ready;
-
-        server = (SyncevoServer*)g_ptr_array_index (templates, i);
-        syncevo_server_get (server, NULL, NULL, NULL, &consumer_ready);
-        if (consumer_ready) {
-            add_server_to_table (GTK_TABLE (data->services_table), i, 
-                                 server,
-                                 data);
-        }
-    }
-    gtk_widget_show_all (data->services_table);
-
-    temps_data = g_slice_new0 (templates_data);
-    temps_data->data = data;
-    temps_data->templates = templates;
-    syncevo_service_get_servers_async (data->service,
-                                       (SyncevoGetServerConfigCb)get_servers_cb,
-                                       temps_data);
-}
-
 
 static void show_services_window (app_data *data)
 {
@@ -1847,10 +1554,56 @@ static void show_services_window (app_data *data)
                            (GtkCallback)remove_child,
                            data->manual_services_table);
 
+/*
     syncevo_service_get_templates_async (data->service,
                                          (SyncevoGetTemplatesCb)get_templates_cb,
                                          data);
+*/
     gtk_window_present (GTK_WINDOW (data->services_win));
+}
+
+start_session_cb
+get_server_config_cb (SyncevoServer *server, char *session_path, GError *error, app_data *data)
+{
+    if (error) {
+        set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
+        g_error_free (error);
+        return;
+    }
+
+    g_ptr_array_foreach (options, (GFunc)add_server_option, data->current_service);
+    ensure_default_sources_exist (data->current_service);
+    
+    update_service_ui (data);
+    set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+
+    server_address = strstr (data->current_service->base_url, "://");
+    if (server_address)
+        server_address = server_address + 3;
+
+    if (!server_address) {
+        g_warning ("Server configuration has suspect URL '%s'",
+                   data->current_service->base_url);
+    } else {
+        gnome_keyring_find_network_password (data->current_service->username,
+                                             NULL,
+                                             server_address,
+                                             NULL,
+                                             NULL,
+                                             NULL,
+                                             0,
+                                             (GnomeKeyringOperationGetListCallback)find_password_cb,
+                                             data,
+                                             NULL);
+    }
+
+    /* get last sync report (for last sync time) */
+    syncevo_service_get_sync_reports_async (service, data->current_service->name, 1,
+                                            (SyncevoGetSyncReportsCb)get_sync_reports_cb,
+                                            data);
+
+    g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
+    g_ptr_array_free (options, TRUE);
 }
 
 static void
@@ -1879,10 +1632,11 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
         data->current_service = g_slice_new0 (server_config);
         data->current_service->name = server;
         set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
-        syncevo_service_get_server_config_async (data->service, 
-                                                 server,
-                                                 (SyncevoGetServerConfigCb)get_server_config_cb,
-                                                 data);
+
+        syncevo_server_start_session (data->server,
+                                      server,
+                                      (SyncevoServerStartSessionCb)start_session_cb,
+                                      data);
     }
 }
 
@@ -2018,178 +1772,6 @@ get_error_string_for_code (int error_code)
 }
 
 
-static void
-server_shutdown_cb (SyncevoService *service,
-                    app_data *data)
-{
-    if (data->syncing) {
-        add_error_info (data, _("Sync D-Bus service exited unexpectedly"), NULL);
-
-        gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
-                            _("Sync Failed"));
-        set_sync_progress (data, 1.0 , "");
-        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
-    }
-}
-
-static void
-sync_progress_cb (SyncevoService *service,
-                  char *server,
-                  char *source,
-                  int type,
-                  int extra1, int extra2, int extra3,
-                  app_data *data)
-{
-    static source_progress *source_prog = NULL;
-    char *msg = NULL;
-    char *error = NULL;
-    char *name = NULL;
-    GTimeVal val;
-
-    /* just in case UI was just started and there is another sync in progress */
-    set_app_state (data, SYNC_UI_STATE_SYNCING);
-
-    /* if this is a source event, find the right source_progress */
-    if (source) {
-        source_prog = find_source_progress (data->source_progresses, source);
-    }
-
-    switch(type) {
-    case -1:
-        /* syncevolution finished sync */
-        error = get_error_string_for_code (extra1);
-        if (error)
-            add_error_info (data, error, NULL);
-
-        switch (extra1) {
-        case 0:
-            g_get_current_time (&val);
-            data->last_sync = val.tv_sec;
-            refresh_last_synced_label (data);
-            
-            data->synced_this_session = TRUE;
-            gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
-                                _("Sync complete"));
-            break;
-        case LOCERR_USERABORT:
-        case LOCERR_USERSUSPEND:
-            gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
-                                _("Sync canceled"));
-        default:
-            gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
-                                _("Sync Failed"));
-        }
-        /* get sync report */
-        refresh_statistics (data);
-        set_sync_progress (data, 1.0 , "");
-        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
-
-        break;
-    case PEV_SESSIONSTART:
-        /* double check we're in correct state*/
-        set_app_state (data, SYNC_UI_STATE_SYNCING);
-        set_sync_progress (data, sync_progress_session_start, NULL);
-        break;
-    case PEV_SESSIONEND:
-        /* NOTE extra1 can be error here */
-        set_sync_progress (data, sync_progress_sync_end, _("Ending sync"));
-        break;
-
-    case PEV_ALERTED:
-        source_prog = g_slice_new0 (source_progress);
-        source_prog->name = g_strdup (source);
-        data->source_progresses = g_list_append (data->source_progresses, source_prog);
-        break;
-
-    case PEV_SENDSTART:
-    case PEV_SENDEND:
-    case PEV_RECVSTART:
-    case PEV_RECVEND:
-        /* these would be useful but they have no source so I can't tell how far we are... */
-        break;
- 
-    case PEV_PREPARING:
-        if (source_prog) {
-            source_prog->prepare_current = CLAMP (extra1, 0, extra2);
-            source_prog->prepare_total = extra2;
-        }
-
-        name = get_pretty_source_name (source);
-        /* TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text */
-        msg = g_strdup_printf (_("Preparing '%s'"), name);
-        calc_and_update_progress(data, msg);
-        break;
-
-    case PEV_ITEMSENT:
-        if (source_prog) {
-            source_prog->send_current = CLAMP (extra1, 0, extra2);
-            source_prog->send_total = extra2;
-        }
-
-        name = get_pretty_source_name (source);
-        /* TRANSLATORS: placeholder is a source name in a progress text */
-        msg = g_strdup_printf (_("Sending '%s'"), name);
-        calc_and_update_progress (data, msg);
-        break;
-
-    case PEV_ITEMRECEIVED:
-        if (source_prog) {
-            source_prog->receive_current = CLAMP (extra1, 0, extra2);
-            source_prog->receive_total = extra2;
-        }
-
-        name = get_pretty_source_name (source);
-        /* TRANSLATORS: placeholder is a source name in a progress text */
-        msg = g_strdup_printf (_("Receiving '%s'"), name);
-        calc_and_update_progress (data, msg);
-        break;
-
-    case PEV_SYNCEND:
-        error = get_error_string_for_code (extra1);
-        if (error) {
-            name = get_pretty_source_name (source);
-            msg = g_strdup_printf ("%s: %s", name, error);
-            add_error_info (data, msg, NULL);
-        }
-        break;
-    case PEV_DSSTATS_L:
-        if (!source_prog)
-            return;
-
-        source_prog->added_local = extra1;
-        source_prog->modified_local = extra2;
-        source_prog->deleted_local = extra3;
-        break;
-    case PEV_DSSTATS_R:
-        if (!source_prog)
-            return;
-
-        source_prog->added_remote = extra1;
-        source_prog->modified_remote = extra2;
-        source_prog->deleted_remote = extra3;
-        break;
-    case PEV_DSSTATS_E:
-        if (!source_prog)
-            return;
-
-        source_prog->rejected_local = extra1;
-        source_prog->rejected_remote = extra2;
-        break;
-    case PEV_DSSTATS_D:
-        if (!source_prog)
-            return;
-
-        source_prog->bytes_uploaded = extra1;
-        source_prog->bytes_downloaded = extra2;
-        break;
-    default:
-        ;
-    }
-    g_free (msg);
-    g_free (error);
-    g_free (name);
-}
-
 
 static void
 connman_props_changed (DBusGProxy *proxy, const char *key, GValue *v, app_data *data)
@@ -2254,6 +1836,20 @@ init_connman (app_data *data)
     }
 }
 
+static void
+server_shutdown_cb (SyncevoService *service,
+                    app_data *data)
+{
+    if (data->syncing) {
+        add_error_info (data, _("Syncevolution.Server D-Bus service exited unexpectedly"), NULL);
+
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
+                            _("Sync Failed"));
+        set_sync_progress (data, 1.0 , "");
+        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+    }
+}
+
 GtkWidget*
 sync_ui_create_main_window ()
 {
@@ -2268,11 +1864,10 @@ sync_ui_create_main_window ()
 
     init_connman (data);
 
-    data->service = syncevo_service_get_default();
-    g_signal_connect (data->service, "progress", 
-                      G_CALLBACK (sync_progress_cb), data);
-    g_signal_connect (data->service, "server-shutdown", 
+    data->server = syncevo_server_get_default();
+    g_signal_connect (data->service, "shutdown", 
                       G_CALLBACK (server_shutdown_cb), data);
+
     init_configuration (data);
 
     gtk_window_present (GTK_WINDOW (data->sync_win));

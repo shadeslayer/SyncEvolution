@@ -22,6 +22,7 @@
 
 #include <glib-object.h>
 #include "syncevo-dbus-types.h"
+#include "syncevo-session.h"
 
 G_BEGIN_DECLS 
 
@@ -29,7 +30,7 @@ enum SyncevoServerError{
     SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT = 1,
 };
 
-#define DBUS_SERVICE_SYNCEVO_SERVER "org.syncevolution.Server"
+#define DBUS_SERVICE_SYNCEVO_SERVER "org.syncevolution"
 #define DBUS_PATH_SYNCEVO_SERVER "/org/syncevolution/Server"
 #define DBUS_INTERFACE_SYNCEVO_SERVER "org.syncevolution.Server"
 
@@ -87,7 +88,7 @@ void syncevo_server_get_reports (SyncevoServer *syncevo,
                                  gpointer userdata);
 
 typedef void (*SyncevoServerStartSessionCb) (SyncevoServer *syncevo,
-                                             char *session_path,
+                                             SyncevoSession *session,
                                              GError *error,
                                              gpointer userdata);
 void syncevo_server_start_session (SyncevoServer *syncevo,

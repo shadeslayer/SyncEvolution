@@ -22,8 +22,6 @@
 #include <dbus/dbus-glib.h>
 #include "syncevo-dbus-types.h"
 
-#define SYNCEVO_TYPE_SOURCE_STATUS (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_INVALID))
-#define SYNCEVO_TYPE_SOURCE_PROGRESS (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID))
 
 gboolean
 syncevo_config_get_value (SyncevoConfig *config,

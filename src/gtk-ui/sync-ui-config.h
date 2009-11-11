@@ -21,7 +21,8 @@
 #define SYNC_UI_CONFIG_H
 
 #include <gtk/gtk.h>
-#include "syncevo-dbus.h"
+#include "syncevo-session.h"
+#include "syncevo-server.h"
 
 typedef enum {
     SYNC_NONE,
@@ -65,7 +66,6 @@ typedef struct server_config {
 
 void source_config_free (source_config *source);
 void server_config_free (server_config *server);
-void server_config_update_from_option (server_config *server, SyncevoOption *option);
 void server_config_update_from_entry (server_config *server, GtkEntry *entry);
 GPtrArray* server_config_get_option_array (server_config *server);
 GPtrArray* server_config_get_source_array (server_config *server, SyncMode mode);

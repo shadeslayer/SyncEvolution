@@ -49,7 +49,7 @@ typedef struct _SyncevoSessionClass {
                             SyncevoSourceStatuses *source_statuses);
 
     void (*progress_changed) (SyncevoSession *session,
-                              guint progress,
+                              int progress,
                               SyncevoSourceProgresses *source_progresses);
 
 } SyncevoSessionClass;

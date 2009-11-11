@@ -31,6 +31,11 @@ typedef struct _SessionAsyncData {
 } SessionAsyncData;
 
 enum {
+	PROP_0,
+	PROP_SESSION_PATH,
+};
+
+enum {
     STATUS_CHANGED,
     PROGRESS_CHANGED,
     LAST_SIGNAL
@@ -39,6 +44,7 @@ static guint32 signals[LAST_SIGNAL] = {0, };
 
 typedef struct _SyncevoSessionPrivate {
     DBusGProxy *proxy;
+    char *path;
 } SyncevoSessionPrivate;
 
 #define GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), SYNCEVO_TYPE_SESSION, SyncevoSessionPrivate))
@@ -67,26 +73,106 @@ session_async_data_free (SessionAsyncData *data)
 
 static void
 status_changed_cb (DBusGProxy *proxy,
-                   SyncevoSessionStatus status,
+                   char *status,
                    guint error_code,
                    SyncevoSourceStatuses *source_statuses,
                    SyncevoSession *session)
 {
     g_signal_emit (session, signals[STATUS_CHANGED], 0, 
-                   status,
+                   syncevo_session_status_from_string (status),
                    error_code,
                    source_statuses);
 }
 
 static void
 progress_changed_cb (DBusGProxy *proxy,
-                     guint progress,
+                     int progress,
                      SyncevoSourceProgresses *source_progresses,
                      SyncevoSession *session)
 {
     g_signal_emit (session, signals[PROGRESS_CHANGED], 0, 
                    progress,
                    source_progresses);
+}
+
+static void
+syncevo_session_get_property (GObject *object, guint property_id,
+                              GValue *value, GParamSpec *pspec)
+{
+    SyncevoSession *session = SYNCEVO_SESSION (object);
+    SyncevoSessionPrivate *priv;
+
+    priv = GET_PRIVATE (session);
+
+    switch (property_id) {
+    case PROP_SESSION_PATH:
+        g_value_set_string (value, priv->path);
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    }
+}
+
+static void 
+syncevo_session_set_path (SyncevoSession *session, const char *path)
+{
+    SyncevoSessionPrivate *priv;
+    DBusGConnection *connection;
+    GError *error;
+
+    priv = GET_PRIVATE (session);
+    error = NULL;
+
+    priv->path = g_strdup (path);
+
+    if (!priv->path) {
+        return;
+    }
+
+    connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
+    if (connection == NULL) {
+        g_printerr ("Failed to open connection to bus: %s\n",
+                    error->message);
+        g_error_free (error);
+        priv->proxy = NULL;
+        return;
+    }
+
+
+    priv->proxy = dbus_g_proxy_new_for_name (connection,
+                                             SYNCEVO_SESSION_DBUS_SERVICE,
+                                             priv->path,
+                                             SYNCEVO_SESSION_DBUS_INTERFACE);
+    if (priv->proxy == NULL) {
+        g_printerr ("dbus_g_proxy_new_for_name() failed for path '%s'", priv->path);
+        return;
+    }
+
+    dbus_g_proxy_add_signal (priv->proxy, "StatusChanged",
+                             G_TYPE_STRING, G_TYPE_UINT, SYNCEVO_TYPE_SOURCE_STATUSES, G_TYPE_INVALID);
+    dbus_g_proxy_connect_signal (priv->proxy, "StatusChanged",
+                                 G_CALLBACK (status_changed_cb), session, NULL);
+
+    dbus_g_proxy_add_signal (priv->proxy, "ProgressChanged",
+                             G_TYPE_INT, SYNCEVO_TYPE_SOURCE_PROGRESSES, G_TYPE_INVALID);
+    dbus_g_proxy_connect_signal (priv->proxy, "ProgressChanged",
+                                 G_CALLBACK (progress_changed_cb), session, NULL);
+
+}
+
+static void
+syncevo_session_set_property (GObject *object, guint property_id,
+                              const GValue *value, GParamSpec *pspec)
+{
+    SyncevoSession *session = SYNCEVO_SESSION (object);
+
+    switch (property_id) {
+    case PROP_SESSION_PATH:
+        syncevo_session_set_path (session, g_value_get_string (value));
+        break;
+    default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    }
 }
 
 static void
@@ -112,6 +198,45 @@ dispose (GObject *object)
 }
 
 static void
+syncevo_session_class_init (SyncevoSessionClass *klass)
+{
+    GObjectClass *o_class = (GObjectClass *) klass;
+    GParamSpec *pspec;
+
+    o_class->dispose = dispose;
+    o_class->set_property = syncevo_session_set_property;
+    o_class->get_property = syncevo_session_get_property;
+
+    g_type_class_add_private (klass, sizeof (SyncevoSessionPrivate));
+
+    signals[STATUS_CHANGED] =
+            g_signal_new ("status-changed",
+                          G_TYPE_FROM_CLASS (klass),
+                          G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                          G_STRUCT_OFFSET (SyncevoSessionClass, status_changed),
+                          NULL, NULL,
+                          syncevo_marshal_VOID__STRING_UINT_BOXED,
+                          G_TYPE_NONE, 
+                          3, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_POINTER);
+    signals[PROGRESS_CHANGED] =
+            g_signal_new ("progress-changed",
+                          G_TYPE_FROM_CLASS (klass),
+                          G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                          G_STRUCT_OFFSET (SyncevoSessionClass, progress_changed),
+                          NULL, NULL,
+                          syncevo_marshal_VOID__INT_BOXED,
+                          G_TYPE_NONE, 
+                          2, G_TYPE_INT, G_TYPE_POINTER);
+
+    pspec = g_param_spec_string ("session-path",
+                                 "Session path",
+                                 "The D-Bus path this Syncevolution session uses",
+                                 NULL,
+                                 G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+    g_object_class_install_property (o_class, PROP_SESSION_PATH, pspec);
+}
+
+static void
 syncevo_session_init (SyncevoSession *session)
 {
     SyncevoSessionPrivate *priv;
@@ -125,29 +250,12 @@ syncevo_session_init (SyncevoSession *session)
                                        G_TYPE_BOXED,
                                        G_TYPE_INVALID);
     /* StatusChanged */
-    dbus_g_object_register_marshaller (syncevo_marshal_VOID__INT_INT_BOXED,
+    dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_UINT_BOXED,
                                        G_TYPE_NONE,
-                                       G_TYPE_INT,
-                                       G_TYPE_INT,
+                                       G_TYPE_STRING,
+                                       G_TYPE_UINT,
                                        G_TYPE_BOXED,
                                        G_TYPE_INVALID);
-
-    /*TODO init proxy in the path setter
-    priv->proxy = dbus_g_proxy_new_for_name (connection, 
-                                             SYNCEVO_SESSION_DBUS_SERVICE,
-                                             path, 
-                                             SYNCEVO_SESSION_DBUS_INTERFACE);
-    if (priv->proxy == NULL) {
-        g_printerr ("dbus_g_proxy_new_for_name() failed for path '%s'", path);
-        return;
-    }
-    */
-    
-    /* TODO for all signals  
-    dbus_g_proxy_add_signal 
-    dbus_g_proxy_connect_signal 
-
-    */
 }
 
 
