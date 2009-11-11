@@ -251,7 +251,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                     indents.append(indent)
                     casename = case.rpartition('_')[2].partition('.')[0]
                     result.write(indent+'<'+casename+'>')
-                    match=case.rpartition('/')[2].rpartition('.')[0].replace('_','::')
+                    match=format+'::'+casename
                     match=match+": \*\*\* fail"
                     if(os.system("grep -q '" + match + "' "+case)):
                        result.write('okay')
