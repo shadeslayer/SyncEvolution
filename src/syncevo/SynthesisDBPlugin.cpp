@@ -308,20 +308,14 @@ TSyError SyncEvolution_Session_Login( CContext sContext, cAppCharP sUsername, ap
     }
     TSyError res = DB_Forbidden;
     string user = sc->getUsername();
+    string password = sc->getPassword();
 
-    if (!sc->getMustAuthenticate()) {
-        // nothing to check, accept peer, without even querying what our password is
+    if (user.empty() && password.empty()) {
+        // nothing to check, accept peer
         res = LOCERR_OK;
-    } else {
-        string password = sc->getPassword();
-
-        if (user.empty() && password.empty()) {
-            // nothing to check, accept peer
-            res = LOCERR_OK;
-        } else if (user == sUsername) {
-            *sPassword=StrAlloc(password.c_str());
-            res = LOCERR_OK;
-        }
+    } else if (user == sUsername) {
+        *sPassword=StrAlloc(password.c_str());
+        res = LOCERR_OK;
     }
 
     SE_LOG_DEBUG(NULL, NULL, "Session_Login usr='%s' expected user='%s' res=%d",

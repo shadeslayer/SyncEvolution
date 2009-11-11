@@ -132,7 +132,6 @@ SyncContext::SyncContext(const string &server,
     m_doLogging(doLogging),
     m_quiet(false),
     m_dryrun(false),
-    m_mustAuthenticate(true),
     m_serverMode(false)
 {
 }
@@ -1487,7 +1486,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         const char *user = getUsername();
         const char *password = getPassword();
 
-        if (m_mustAuthenticate && (user[0] || password[0])) {
+        if (user[0] || password[0]) {
             // require authentication with the configured password
             substTag(xml, "defaultauth",
                      "<requestedauth>md5</requestedauth>\n"

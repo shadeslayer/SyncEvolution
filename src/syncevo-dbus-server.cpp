@@ -184,8 +184,10 @@ public:
     void getReports(uint32_t start, uint32_t count,
                     Reports_t &reports);
 
+    /** Session.CheckSource() */
     void checkSource(const string &sourceName);
 
+    /** Session.GetDatabases() */
     void getDatabases(const string &sourceName, SourceDatabases_t &databases);
 };
 
@@ -265,11 +267,14 @@ class DBusServer : public DBusObjectHelper
      */
     std::string getNextSession();
 
+    /** Server.Attach() */
     void attachClient(const Caller_t &caller,
                       const boost::shared_ptr<Watch> &watch);
 
+    /** Server.Detach() */
     void detachClient(const Caller_t &caller);
 
+    /** Server.Connect() */
     void connect(const Caller_t &caller,
                  const boost::shared_ptr<Watch> &watch,
                  const StringMap &peer,
@@ -277,11 +282,13 @@ class DBusServer : public DBusObjectHelper
                  const std::string &session,
                  DBusObject_t &object);
 
+    /** Server.StartSession() */
     void startSession(const Caller_t &caller,
                       const boost::shared_ptr<Watch> &watch,
                       const std::string &server,
                       DBusObject_t &object);
 
+    /** Server.GetConfig() */
     void getConfig(const std::string &config_name,
                    bool getTemplate,
                    ReadOperations::Config_t &config)
@@ -290,6 +297,7 @@ class DBusServer : public DBusObjectHelper
         ops.getConfig(getTemplate , config);
     }
 
+    /** Server.GetReports() */
     void getReports(const std::string &config_name,
                     uint32_t start, uint32_t count,
                     ReadOperations::Reports_t &reports)
@@ -298,13 +306,16 @@ class DBusServer : public DBusObjectHelper
         ops.getReports(start, count, reports);
     }
 
+    /** Server.CheckPresence() */
     void checkPresence(const std::string &server,
                        std::string &status,
                        std::vector<std::string> &transports);
 
+    /** Server.SessionChanged */
     EmitSignal2<const DBusObject_t &,
                 bool> sessionChanged;
 
+    /** Server.PresenceChanged */
     EmitSignal3<const std::string &,
                 const std::string &,
                 const std::string &> presence;
@@ -821,14 +832,18 @@ class Session : public DBusObjectHelper,
     Timer m_statusTimer;
     Timer m_progressTimer;
 
+    /** Session.Detach() */
     void detach(const Caller_t &caller);
 
+    /** Session.SetConfig() */
     void setConfig(bool update, bool temporary,
                    const ReadOperations::Config_t &config);
 
+    /** Session.GetStatus() */
     void getStatus(std::string &status,
                    uint32_t &error,
                    SourceStatuses_t &sources);
+    /** Session.GetProgress() */
     void getProgress(int32_t &progress,
                      SourceProgresses_t &sources);
 
@@ -847,9 +862,11 @@ class Session : public DBusObjectHelper,
     /** like fireStatus() for progress information */
     void fireProgress(bool flush = false);
 
+    /** Session.StatusChanged */
     EmitSignal3<const std::string &,
                 uint32_t,
                 const SourceStatuses_t &> emitStatus;
+    /** Session.ProgressChanged */
     EmitSignal2<int32_t,
                 const SourceProgresses_t &> emitProgress;
 
@@ -923,9 +940,11 @@ public:
                         int32_t extra1, int32_t extra2, int32_t extra3);
 
     typedef StringMap SourceModes_t;
-    void sync(const std::string &mode, const SourceModes_t &source_modes, bool mustAuthenticate);
-    void clientSync(const std::string &mode, const SourceModes_t &source_modes) { sync(mode, source_modes, true); }
+    /** Session.Sync() */
+    void sync(const std::string &mode, const SourceModes_t &source_modes);
+    /** Session.Abort() */
     void abort();
+    /** Session.Suspend() */
     void suspend();
 
     bool isSuspend() { return m_syncStatus == SYNC_SUSPEND; }
@@ -998,15 +1017,20 @@ class Connection : public DBusObjectHelper, public Resource
      */
     static std::string buildDescription(const StringMap &peer);
 
+    /** Connection.Process() */
     void process(const Caller_t &caller,
                  const std::pair<size_t, const uint8_t *> &message,
                  const std::string &message_type);
+    /** Connection.Close() */
     void close(const Caller_t &caller,
                bool normal,
                const std::string &error);
+    /** wrapper around sendAbort */
     void abort();
+    /** Connection.Abort */
     EmitSignal0 sendAbort;
     bool m_abortSent;
+    /** Connection.Reply */
     EmitSignal5<const std::pair<size_t, const uint8_t *> &,
                 const std::string &,
                 const StringMap &,
@@ -1031,6 +1055,9 @@ public:
 
     /** connection is no longer needed, ensure that it gets deleted */
     void shutdown();
+
+    /** peer is not trusted, must authenticate as part of SyncML */
+    bool mustAuthenticate() const { return m_mustAuthenticate; }
 };
 
 /**
@@ -1449,7 +1476,7 @@ void Session::initServer(SharedBuffer data, const std::string &messageType)
     m_initialMessageType = messageType;
 }
 
-void Session::sync(const std::string &mode, const SourceModes_t &source_modes, bool mustAuthenticate)
+void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
 {
     if (!m_active) {
         SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
@@ -1464,7 +1491,12 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes, b
         m_sync->initServer(m_sessionID,
                            m_initialMessage,
                            m_initialMessageType);
-        m_sync->setMustAuthenticate(mustAuthenticate);
+        boost::shared_ptr<Connection> c = m_connection.lock();
+        if (c && !c->mustAuthenticate()) {
+            // unsetting username/password disables checking them
+            m_syncFilter["password"] = "";
+            m_syncFilter["username"] = "";
+        }
     }
 
     // Apply temporary config filters. The parameters of this function
@@ -1626,7 +1658,7 @@ Session::Session(DBusServer &server,
     add(&m_operations, &ReadOperations::getReports, "GetReports");
     add(&m_operations, &ReadOperations::checkSource, "CheckSource");
     add(&m_operations, &ReadOperations::getDatabases, "GetDatabases");
-    add(this, &Session::clientSync, "Sync");
+    add(this, &Session::sync, "Sync");
     add(this, &Session::abort, "Abort");
     add(this, &Session::suspend, "Suspend");
     add(this, &Session::getStatus, "GetStatus");
@@ -2372,7 +2404,7 @@ Connection::~Connection()
 void Connection::ready()
 {
     // proceed with sync now that our session is ready
-    m_session->sync(m_syncMode, m_sourceModes, m_mustAuthenticate);
+    m_session->sync(m_syncMode, m_sourceModes);
 }
 
 /****************** DBusTransportAgent implementation **************/

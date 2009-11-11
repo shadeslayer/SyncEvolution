@@ -353,7 +353,7 @@ class TestDBusSyncError(unittest.TestCase, DBusUtil):
 class TestConnection(unittest.TestCase, DBusUtil):
     """Tests Server.Connect(). Tests depend on getting one Abort signal to terminate."""
 
-    """a real message sent to our own server, DevInf stripped"""
+    """a real message sent to our own server, DevInf stripped, username/password foo/bar"""
     message1 = '''<?xml version="1.0" encoding="UTF-8"?><SyncML xmlns='SYNCML:SYNCML1.2'><SyncHdr><VerDTD>1.2</VerDTD><VerProto>SyncML/1.2</VerProto><SessionID>255</SessionID><MsgID>1</MsgID><Target><LocURI>http://127.0.0.1:9000/syncevolution</LocURI></Target><Source><LocURI>sc-api-nat</LocURI><LocName>test</LocName></Source><Cred><Meta><Format xmlns='syncml:metinf'>b64</Format><Type xmlns='syncml:metinf'>syncml:auth-md5</Type></Meta><Data>kHzMn3RWFGWSKeBpXicppQ==</Data></Cred><Meta><MaxMsgSize xmlns='syncml:metinf'>20000</MaxMsgSize><MaxObjSize xmlns='syncml:metinf'>4000000</MaxObjSize></Meta></SyncHdr><SyncBody><Alert><CmdID>1</CmdID><Data>200</Data><Item><Target><LocURI>addressbook</LocURI></Target><Source><LocURI>./addressbook</LocURI></Source><Meta><Anchor xmlns='syncml:metinf'><Last>20091105T092757Z</Last><Next>20091105T092831Z</Next></Anchor><MaxObjSize xmlns='syncml:metinf'>4000000</MaxObjSize></Meta></Item></Alert><Final/></SyncBody></SyncML>'''
 
     def setUp(self):
@@ -364,10 +364,10 @@ class TestConnection(unittest.TestCase, DBusUtil):
     def run(self, result):
         self.runTest(result, own_xdg=False)
 
-    def getConnection(self):
+    def getConnection(self, must_authenticate=False):
         conpath = self.server.Connect({'description': 'test-dbus.py',
                                        'transport': 'dummy'},
-                                      False,
+                                      must_authenticate,
                                       "")
         self.setUpConnectionListeners(conpath)
         connection = dbus.Interface(bus.get_object('org.syncevolution',
@@ -403,6 +403,56 @@ class TestConnection(unittest.TestCase, DBusUtil):
         # TODO: check events
         self.failIfEqual(self.reply, None)
         self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
+        # credentials should have been accepted because must_authenticate=False
+        # in Connect(); 508 = "refresh required" is normal
+        self.failUnless('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in self.reply[0])
+        self.failIf('<Chal>' in self.reply[0])
+        self.failUnlessEqual(self.reply[3], False)
+        self.failIfEqual(self.reply[4], '')
+        connection.Close(False, 'good bye')
+        loop.run()
+        loop.run()
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " aborted",
+                                                "session done"])
+
+    def testCredentialsWrong(self):
+        """send invalid credentials"""
+        conpath, connection = self.getConnection(must_authenticate=True)
+        connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
+        loop.run()
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
+        self.quit_events = []
+        # TODO: check events
+        self.failIfEqual(self.reply, None)
+        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
+        # credentials should have been rejected because of wrong Nonce
+        self.failUnless('<Chal>' in self.reply[0])
+        self.failUnlessEqual(self.reply[3], False)
+        self.failIfEqual(self.reply[4], '')
+        connection.Close(False, 'good bye')
+        # when the login fails, the server also ends the session
+        loop.run()
+        loop.run()
+        loop.run()
+        self.quit_events.sort()
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " aborted",
+                                                "connection " + conpath + " got final reply",
+                                                "session done"])
+
+    def testCredentialsRight(self):
+        """send correct credentials"""
+        conpath, connection = self.getConnection(must_authenticate=True)
+        plain_auth = TestConnection.message1.replace("<Type xmlns='syncml:metinf'>syncml:auth-md5</Type></Meta><Data>kHzMn3RWFGWSKeBpXicppQ==</Data>",
+                                                     "<Type xmlns='syncml:metinf'>syncml:auth-basic</Type></Meta><Data>dGVzdDp0ZXN0</Data>")
+        connection.Process(plain_auth, 'application/vnd.syncml+xml')
+        loop.run()
+        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
+        self.quit_events = []
+        self.failIfEqual(self.reply, None)
+        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
+        # credentials should have been accepted because with basic auth,
+        # credentials can be replayed; 508 = "refresh required" is normal
+        self.failUnless('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in self.reply[0])
         self.failUnlessEqual(self.reply[3], False)
         self.failIfEqual(self.reply[4], '')
         connection.Close(False, 'good bye')
