@@ -17,72 +17,106 @@
  * 02110-1301  USA
  */
 
-#ifndef __SYNCEVO_DBUS_TYPES_H__
-#define __SYNCEVO_DBUS_TYPES_H__
+#ifndef __SYNCEVO_TYPES_H__
+#define __SYNCEVO_TYPES_H__
 
 #include <glib.h>
-#include <dbus/dbus-glib.h>
 
-#define SYNCEVO_DBUS_ERROR_GENERIC_ERROR "org.Moblin.SyncEvolution.GenericError"
-#define SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER "org.Moblin.SyncEvolution.NoSuchServer"
-#define SYNCEVO_DBUS_ERROR_MISSING_ARGS "org.Moblin.SyncEvolution.MissingArgs"
-#define SYNCEVO_DBUS_ERROR_INVALID_CALL "org.Moblin.SyncEvolution.InvalidCall"
+#define SYNCEVO_DBUS_ERROR_GENERIC_ERROR "org.syncevolution.GenericError"
+#define SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER "org.syncevolution.NoSuchServer"
+#define SYNCEVO_DBUS_ERROR_MISSING_ARGS "org.syncevolution.MissingArgs"
+#define SYNCEVO_DBUS_ERROR_INVALID_CALL "org.syncevolution.InvalidCall"
 
-#define SYNCEVO_SOURCE_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INVALID))
-typedef GValueArray SyncevoSource;
+typedef enum {
+  SYNCEVO_SYNC_UNKNOWN, /* Cannot be used in Sync */
+  SYNCEVO_SYNC_DEFAULT, /* cannot be received in GetStatus*/
+  SYNCEVO_SYNC_NONE,
+  SYNCEVO_SYNC_TWO_WAY,
+  SYNCEVO_SYNC_SLOW,
+  SYNCEVO_SYNC_REFRESH_FROM_CLIENT,
+  SYNCEVO_SYNC_REFRESH_FROM_SERVER,
+  SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT,
+  SYNCEVO_SYNC_ONE_WAY_FROM_SERVER,
+} SyncevoSyncMode;
 
-#define SYNCEVO_OPTION_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID))
-typedef GValueArray SyncevoOption;
+typedef enum {
+  SYNCEVO_STATUS_UNKNOWN,
+  SYNCEVO_STATUS_QUEUEING,
+  SYNCEVO_STATUS_IDLE,
+  SYNCEVO_STATUS_RUNNING,
+  SYNCEVO_STATUS_ABORTING,
+  SYNCEVO_STATUS_SUSPENDING,
+} SyncevoSessionStatus;
 
-#define SYNCEVO_SERVER_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_INVALID))
-typedef GValueArray SyncevoServer;
+typedef enum {
+  SYNCEVO_SOURCE_IDLE,
+  SYNCEVO_SOURCE_RUNNING,
+  SYNCEVO_SOURCE_RUNNING_WAITING,
+  SYNCEVO_SOURCE_RUNNING_PROCESSING,
+  SYNCEVO_SOURCE_DONE,
+} SyncevoSourceStatus;
 
-#define SYNCEVO_REPORT_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID))
-typedef GValueArray SyncevoReport;
+typedef enum {
+  SYNCEVO_PHASE_NONE,
+  SYNCEVO_PHASE_PREPARING,
+  SYNCEVO_PHASE_SENDING,
+  SYNCEVO_PHASE_RECEIVING,
+} SyncevoSourcePhase;
 
-#define SYNCEVO_REPORT_ARRAY_TYPE (dbus_g_type_get_struct ("GValueArray", G_TYPE_INT, dbus_g_type_get_collection ("GPtrArray", SYNCEVO_REPORT_TYPE)))
-typedef GValueArray SyncevoReportArray;
+typedef struct {
+  SyncevoSourcePhase phase;
+  int prepare_current;
+  int prepare_total;
+  int send_current;
+  int send_total;
+  int receive_current;
+  int receive_total;
+} SyncevoSourceProgress;  
 
-SyncevoOption* syncevo_option_new (char *ns, char *key, char *value);
-void syncevo_option_get (SyncevoOption *option, const char **ns, const char **key, const char **value);
-void syncevo_option_free (SyncevoOption *option);
+typedef GHashTable SyncevoConfig;
+typedef GHashTable SyncevoSourceModes;
+typedef GHashTable SyncevoSourceStatuses;
+typedef GHashTable SyncevoSourceProgresses;
+typedef GPtrArray SyncevoReports;
+typedef GPtrArray SyncevoSessions;
 
-SyncevoSource* syncevo_source_new (char *name, int mode);
-void syncevo_source_get (SyncevoSource *source, const char **name, int *mode);
-void syncevo_source_free (SyncevoSource *source);
+gboolean syncevo_config_get_value (SyncevoConfig *config,
+                                   const char *source,
+                                   const char *key,
+                                   char **value);
+void syncevo_config_free (SyncevoConfig *config);
 
-SyncevoServer* syncevo_server_new (char *name, char *url, char *icon, gboolean consumer_ready);
-void syncevo_server_get (SyncevoServer *server, const char **name, const char **url, const char **icon, gboolean *consumer_ready);
-void syncevo_server_free (SyncevoServer *server);
+const char* syncevo_sync_mode_to_string (SyncevoSyncMode mode);
 
+SyncevoSourceModes* syncevo_source_modes_new ();
+void syncevo_source_modes_add (SyncevoSourceModes *source_modes,
+                               char *source,
+                               SyncevoSyncMode mode);
+void syncevo_source_modes_free (SyncevoSourceModes *source_modes);
 
-SyncevoReport* syncevo_report_new (char *source);
+SyncevoSessionStatus syncevo_session_status_from_string (const char *status_str);
 
-void syncevo_report_set_io (SyncevoReport *report, 
-                            int sent_bytes, int received_bytes);
-void syncevo_report_set_local (SyncevoReport *report, 
-                               int adds, int updates, int removes, int rejects);
-void syncevo_report_set_remote (SyncevoReport *report, 
-                                int adds, int updates, int removes, int rejects);
-void syncevo_report_set_conflicts (SyncevoReport *report, 
-                                   int local_won, int remote_won, int duplicated);
-
-const char* syncevo_report_get_name (SyncevoReport *report);
-void syncevo_report_get_io (SyncevoReport *report,
-                            int *bytes_sent, int *bytes_received);
-void syncevo_report_get_local (SyncevoReport *report, 
-                               int *adds, int *updates, int *removes, int *rejects);
-void syncevo_report_get_remote (SyncevoReport *report, 
-                               int *adds, int *updates, int *removes, int *rejects);
-void syncevo_report_get_conflicts (SyncevoReport *report, 
-                                   int *local_won, int *remote_won, int *duplicated);
-
-void syncevo_report_free (SyncevoReport *report);
+gboolean syncevo_source_statuses_get (SyncevoSourceStatuses *source_modes,
+                                      char *source,
+                                      SyncevoSyncMode *mode,
+                                      SyncevoSourceStatus *status,
+                                      guint *error_code);
+void syncevo_source_statuses_free (SyncevoSourceStatuses *source_statuses);
 
 
-SyncevoReportArray* syncevo_report_array_new (int end_time, GPtrArray *reports);
-void syncevo_report_array_get (SyncevoReportArray *array, int *end_time, GPtrArray **reports);
-void syncevo_report_array_free (SyncevoReportArray *array);
+gboolean syncevo_source_progresses_get (SyncevoSourceProgresses *source_progresses,
+                                        char *source,
+                                        SyncevoSourceProgress *source_progress);
 
+void syncevo_source_progresses_free (SyncevoSourceProgresses *source_progresses);
+
+
+GHashTable* syncevo_reports_index (SyncevoReports *reports,
+                                   guint index);
+void syncevo_reports_free (SyncevoReports *reports);
+
+char* syncevo_sessions_index (SyncevoSessions *sessions,
+                              guint index);
+void syncevo_sessions_free (SyncevoSessions *sessions);
 
 #endif
