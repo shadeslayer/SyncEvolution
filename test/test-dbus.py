@@ -310,6 +310,133 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         status, error, sources = session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "idle")
 
+
+class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
+    """Tests that work for GetConfig/SetConfig in Session."""
+
+    def setUp(self):
+        self.setUpServer()
+        # use a long name to avoid conflicts with other configs
+        self.setUpSession("dummy-test-for-config-purpose")
+        # default config
+        self.config = { 
+                         "" : { "syncURL" : "http://my.funambol.com/sync",
+                                "username" : "unknown",
+                                "password" : "secret",
+                                "deviceId" : "foo"
+                              },
+                         "source/addressbook" : { "sync" : "two-way",
+                                                  "type" : "addressbook",
+                                                  "uri" : "card"
+                                                },
+                         "source/calendar"    : { "sync" : "disabled",
+                                                  "type" : "calendar",
+                                                  "uri" : "cal"
+                                                }
+                       }
+        # update config
+        self.updateConfig = { 
+                               "" : { "password" : "nosecret"},
+                               "source/addressbook" : { "sync" : "slow"}
+                            }
+
+    def run(self, result):
+        self.runTest(result)
+
+    def clearAllConfig(self):
+        """ clear config """
+        emptyConfig = {}
+        self.session.SetConfig(False, False, emptyConfig, utf8_strings=True)
+
+    def setupConfig(self):
+        """ create a full config """
+        self.session.SetConfig(False, False, self.config, utf8_strings=True)
+
+    def testSetConfigInvalidParam(self):
+        """ check that the right error is reported when parameters are not correct """
+        try:
+            self.session.SetConfig(False, True, {}, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.Exception: Clearing existing configuration "
+                                 "and temporary configuration changes which only affects the "
+                                 "duration of the session are mutually exclusive")
+
+    def testCreateGetConfig(self):
+        """ create a config, then get the config and do checking """
+        self.setupConfig()
+        """ get config and compare """
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config, self.config)
+
+    def testUpdateConfig(self):
+        """ test SetConfig and update config """
+        self.setupConfig()
+        """ update given config """
+        self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["password"], "nosecret")
+        self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
+
+    def testUpdateConfigTemp(self):
+        """ test SetConfig and GetConfig """
+        self.setupConfig()
+        """ set config temporary """
+        self.session.SetConfig(True, True, self.updateConfig, utf8_strings=True)
+        config = self.session.GetConfig(False, utf8_strings=True)
+        """ no change of any properties """
+        self.failUnlessEqual(config, self.config)
+
+    def testUpdateConfigError(self):
+        """ test the right error is reported when an invalid property value is set """
+        self.setupConfig()
+        config = { 
+                     "source/addressbook" : { "sync" : "invalid-value"}
+                  }
+        try:
+            self.session.SetConfig(True, False, config, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.Exception: test-dbus/config/syncevolution/"
+                                 "dummy-test-for-config-purpose/sources/addressbook/config.ini: "
+                                 "sync = invalid-value: not one of the valid values (two-way, "
+                                 "slow, refresh-from-client = refresh-client, refresh-from-server "
+                                 "= refresh-server = refresh, one-way-from-client = one-way-client, "
+                                 "one-way-from-server = one-way-server = one-way, disabled = none)")
+
+    def testUpdateNoConfig(self):
+        """ test the right error is reported when updating properties for a non-existing server """
+        self.clearAllConfig()
+        try:
+            self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchConfig: The server 'dummy-test-for-config-purpose' doesn't exist")
+        
+    def testClearAllConfig(self):
+        """ first set up config and then clear all configs and also check a non-existing config """
+        self.setupConfig()
+        self.clearAllConfig()
+        try:
+            config = self.session.GetConfig(False, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test-for-config-purpose' found")
+    
+    def testClearConfigSources(self):
+        """ clear sources config """
+        self.setupConfig()
+        config1 = { 
+                     "" : { "syncURL" : "http://my.funambol.com/sync",
+                            "username" : "unknown",
+                            "password" : "secret",
+                            "deviceId" : "foo"
+                          }
+                  }
+        self.session.SetConfig(False, False, config1, utf8_strings=True)
+        config2 = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config2, config1)
+
 class TestDBusSync(unittest.TestCase, DBusUtil):
     """Executes a real sync."""
 
