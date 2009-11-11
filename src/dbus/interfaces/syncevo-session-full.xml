@@ -8,6 +8,9 @@
 
     <method name="GetConfig">
       <doc:doc><doc:description>Get the configuration of the server</doc:description></doc:doc>
+      <arg type="b" name="template" direction="in">
+        <doc:doc><doc:summary>if TRUE, will return a matching template configuration, otherwise will return a matching server configuration</doc:summary></doc:doc>
+      </arg>
       <arg type="a{sa{ss}}" name="configuration" direction="out">
         <doc:doc><doc:summary>server configuration</doc:summary></doc:doc>
         <doc:doc><doc:description>See Server.GetConfig() for dictionary description.</doc:description></doc:doc>

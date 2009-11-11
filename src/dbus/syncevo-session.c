@@ -323,6 +323,7 @@ get_config_error (SessionAsyncData *data)
 
 void
 syncevo_session_get_config (SyncevoSession *session,
+                            gboolean template,
                             SyncevoSessionGetConfigCb callback,
                             gpointer userdata)
 {
@@ -339,9 +340,9 @@ syncevo_session_get_config (SyncevoSession *session,
         }
         return;
     }
-
     org_syncevolution_Session_get_config_async
             (priv->proxy,
+             template,
              (org_syncevolution_Session_get_config_reply) get_config_callback,
              data);
 }

@@ -29,7 +29,7 @@ enum SyncevoSessionError{
     SYNCEVO_SESSION_ERROR_NO_DBUS_OBJECT = 1,
 };
 
-#define SYNCEVO_SESSION_DBUS_SERVICE "org.syncevolution.Session"
+#define SYNCEVO_SESSION_DBUS_SERVICE "org.syncevolution"
 #define SYNCEVO_SESSION_DBUS_INTERFACE "org.syncevolution.Session"
 
 #define SYNCEVO_TYPE_SESSION (syncevo_session_get_type ())
@@ -65,6 +65,7 @@ typedef void (*SyncevoSessionGetConfigCb) (SyncevoSession *session,
                                            GError *error,
                                            gpointer userdata);
 void syncevo_session_get_config (SyncevoSession *session,
+                                 gboolean template,
                                  SyncevoSessionGetConfigCb callback,
                                  gpointer userdata);
 
