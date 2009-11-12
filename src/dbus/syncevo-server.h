@@ -88,7 +88,7 @@ void syncevo_server_get_reports (SyncevoServer *syncevo,
                                  gpointer userdata);
 
 typedef void (*SyncevoServerStartSessionCb) (SyncevoServer *syncevo,
-                                             SyncevoSession *session,
+                                             char *session_path,
                                              GError *error,
                                              gpointer userdata);
 void syncevo_server_start_session (SyncevoServer *syncevo,

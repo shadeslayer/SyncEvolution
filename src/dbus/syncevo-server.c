@@ -116,9 +116,7 @@ dispose (GObject *object)
         dbus_g_proxy_disconnect_signal (priv->proxy, "destroy",
                                         G_CALLBACK (proxy_destroy_cb),
                                         object);
-        org_syncevolution_Server_detach_async (priv->proxy,
-                                               (org_syncevolution_Server_attach_reply)detach_cb,
-                                               NULL);
+        org_syncevolution_Server_detach (priv->proxy, NULL);
 
         g_object_unref (priv->proxy);
         priv->proxy = NULL;
@@ -188,7 +186,7 @@ syncevo_server_get_new_proxy (SyncevoServer *server)
     }
 
     dbus_g_proxy_add_signal (priv->proxy, "SessionChanged",
-                             G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_INVALID);
+                             DBUS_TYPE_G_OBJECT_PATH, G_TYPE_BOOLEAN, G_TYPE_INVALID);
     dbus_g_proxy_connect_signal (priv->proxy, "SessionChanged",
                                  G_CALLBACK (session_changed_cb), server, NULL);
     g_signal_connect (priv->proxy, "destroy",
@@ -212,7 +210,7 @@ syncevo_server_init (SyncevoServer *server)
     /* SessionChanged */
     dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_BOOLEAN,
                                        G_TYPE_NONE,
-                                       G_TYPE_STRING,
+                                       DBUS_TYPE_G_OBJECT_PATH,
                                        G_TYPE_BOOLEAN,
                                        G_TYPE_INVALID);
 
@@ -454,15 +452,8 @@ start_session_callback (SyncevoServer *syncevo,
                         ServerAsyncData *data)
 {
     if (data->callback) {
-        SyncevoSession *session = NULL;
-
-        if (session_path) {
-            session =  g_object_new (SYNCEVO_TYPE_SESSION,
-                                     "session-path", session_path,
-                                     NULL);
-        }
         (*(SyncevoServerStartSessionCb)data->callback) (data->server,
-                                                        session,
+                                                        session_path,
                                                         error,
                                                         data->userdata);
     }

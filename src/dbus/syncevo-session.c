@@ -190,6 +190,8 @@ dispose (GObject *object)
                                         G_CALLBACK (status_changed_cb),
                                         object);
 
+        org_syncevolution_Session_detach (priv->proxy, NULL);
+
         g_object_unref (priv->proxy);
         priv->proxy = NULL;
     }
@@ -665,4 +667,21 @@ syncevo_session_check_source (SyncevoSession *session,
              source,
              (org_syncevolution_Session_check_source_reply) generic_callback,
              data);
+}
+
+const char*
+syncevo_session_get_path (SyncevoSession *session)
+{
+    SyncevoSessionPrivate *priv;
+
+    priv = GET_PRIVATE (session);
+    return priv->path;
+}
+
+SyncevoSession*
+syncevo_session_new (const char *path)
+{
+    return g_object_new (SYNCEVO_TYPE_SESSION,
+                         "session-path", path,
+                         NULL);
 }
