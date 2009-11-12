@@ -268,7 +268,7 @@ TSyError SyncEvolution_Session_SaveDeviceInfo( CContext sContext, cAppCharP aDev
     }
     SE_LOG_DEBUG(NULL, NULL, "Session_SaveDeviceInfo info='%s'",
                  aDeviceInfo );
-    sc->setAdminData(aDeviceInfo);
+    sc->setDeviceData(aDeviceInfo);
     sc->flush();
     return LOCERR_OK;
 } /* Session_SaveDeviceInfo */

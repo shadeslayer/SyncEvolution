@@ -1090,6 +1090,9 @@ public:
         m_testDir("CmdlineTest"),
         m_scheduleWorldConfig(".internal.ini:# HashCode = 0\n"
                               ".internal.ini:# ConfigDate = \n"
+                              ".internal.ini:# remoteDeviceId = \n"
+                              ".internal.ini:# lastNonce = \n"
+                              ".internal.ini:# deviceData = \n"
                               "config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
                               "config.ini:username = your SyncML server account name\n"
                               "config.ini:password = your SyncML server password\n"
@@ -1116,6 +1119,7 @@ public:
                               "config.ini:# IconURI = \n"
                               "config.ini:ConsumerReady = 1\n"
                               "sources/addressbook/.internal.ini:# last = 0\n"
+                              "sources/addressbook/.internal.ini:# adminData = \n"
                               "sources/addressbook/config.ini:sync = two-way\n"
                               "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
                               "sources/addressbook/config.ini:# evolutionsource = \n"
@@ -1123,6 +1127,7 @@ public:
                               "sources/addressbook/config.ini:# evolutionuser = \n"
                               "sources/addressbook/config.ini:# evolutionpassword = \n"
                               "sources/calendar/.internal.ini:# last = 0\n"
+                              "sources/calendar/.internal.ini:# adminData = \n"
                               "sources/calendar/config.ini:sync = two-way\n"
                               "sources/calendar/config.ini:type = calendar\n"
                               "sources/calendar/config.ini:# evolutionsource = \n"
@@ -1130,6 +1135,7 @@ public:
                               "sources/calendar/config.ini:# evolutionuser = \n"
                               "sources/calendar/config.ini:# evolutionpassword = \n"
                               "sources/memo/.internal.ini:# last = 0\n"
+                              "sources/memo/.internal.ini:# adminData = \n"
                               "sources/memo/config.ini:sync = two-way\n"
                               "sources/memo/config.ini:type = memo\n"
                               "sources/memo/config.ini:# evolutionsource = \n"
@@ -1137,6 +1143,7 @@ public:
                               "sources/memo/config.ini:# evolutionuser = \n"
                               "sources/memo/config.ini:# evolutionpassword = \n"
                               "sources/todo/.internal.ini:# last = 0\n"
+                              "sources/todo/.internal.ini:# adminData = \n"
                               "sources/todo/config.ini:sync = two-way\n"
                               "sources/todo/config.ini:type = todo\n"
                               "sources/todo/config.ini:# evolutionsource = \n"
@@ -1602,6 +1609,10 @@ protected:
             "devInfoHash" +
             "HashCode" +
             "ConfigDate" +
+            "deviceData" +
+            "adminData" +
+            "remoteDeviceId" +
+            "lastNonce" +
             "last";
         BOOST_FOREACH(string &prop, props) {
             boost::replace_all(oldConfig,

@@ -611,8 +611,10 @@ static SafeConfigProperty syncPropRemoteDevID("remoteDeviceId",
                                               "ID of our peer, empty if unknown; do not edit, used internally");
 static SafeConfigProperty syncPropNonce("lastNonce",
                                         "MD5 nonce of our peer, empty if not set yet; do not edit, used internally");
-static SafeConfigProperty syncPropAdminData("adminData",
-                                            "Synthesis per-peer admin data; do not edit, used internally");
+
+// used both as source and sync property, internal in both cases
+static SafeConfigProperty syncPropDeviceData("deviceData",
+                                             "information about the peer in a Synthesis internal-format");
 
 ConfigPropertyRegistry &SyncConfig::getRegistry()
 {
@@ -657,8 +659,8 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         syncPropRemoteDevID.setHidden(true);
         registry.push_back(&syncPropNonce);
         syncPropNonce.setHidden(true);
-        registry.push_back(&syncPropAdminData);
-        syncPropAdminData.setHidden(true);
+        registry.push_back(&syncPropDeviceData);
+        syncPropDeviceData.setHidden(true);
         initialized = true;
     }
 
@@ -889,8 +891,8 @@ string SyncConfig::getRemoteDevID() const { return syncPropRemoteDevID.getProper
 void SyncConfig::setRemoteDevID(const string &value) { syncPropRemoteDevID.setProperty(*m_hiddenNode, value); }
 string SyncConfig::getNonce() const { return syncPropNonce.getProperty(*m_hiddenNode); }
 void SyncConfig::setNonce(const string &value) { syncPropNonce.setProperty(*m_hiddenNode, value); }
-string SyncConfig::getAdminData() const { return syncPropAdminData.getProperty(*m_hiddenNode); }
-void SyncConfig::setAdminData(const string &value) { syncPropAdminData.setProperty(*m_hiddenNode, value); }
+string SyncConfig::getDeviceData() const { return syncPropDeviceData.getProperty(*m_hiddenNode); }
+void SyncConfig::setDeviceData(const string &value) { syncPropDeviceData.setProperty(*m_hiddenNode, value); }
 
 std::string SyncConfig::findSSLServerCertificate()
 {
@@ -1179,8 +1181,8 @@ static EvolutionPasswordConfigProperty sourcePropPassword("evolutionpassword", "
 static ULongConfigProperty sourcePropLast("last",
                                           "used by the SyncML library internally; do not modify");
 
-static ConfigProperty sourceAdminData(SourceAdminDataName,
-                                      "used by the Synthesis library internally; do not modify");
+static ConfigProperty sourcePropAdminData(SourceAdminDataName,
+                                          "used by the Synthesis library internally; do not modify");
 
 ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
 {
@@ -1197,7 +1199,8 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
         registry.push_back(&sourcePropPassword);
         registry.push_back(&sourcePropLast);
         sourcePropLast.setHidden(true);
-        registry.push_back(&sourceAdminData);
+        registry.push_back(&sourcePropAdminData);
+        sourcePropAdminData.setHidden(true);
         initialized = true;
     }
 

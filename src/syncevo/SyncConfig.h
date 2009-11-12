@@ -1068,8 +1068,8 @@ class SyncConfig {
      * The opaque per-peer admin data managed by the Synthesis
      * engine. Only used when acting as server.
      */
-    virtual string getAdminData() const;
-    virtual void setAdminData(const string &value);
+    virtual string getDeviceData() const;
+    virtual void setDeviceData(const string &value);
 
     /**
      * Specifies whether WBXML is to be used (default).
