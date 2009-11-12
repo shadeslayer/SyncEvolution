@@ -1333,9 +1333,9 @@ protected:
         TestCmdline cmdline("--print-servers", NULL);
         cmdline.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Configured servers:\n"
+                                  "   funambol = CmdlineTest/syncevolution/funambol\n"
                                   "   scheduleworld = CmdlineTest/syncevolution/scheduleworld\n"
-                                  "   synthesis = CmdlineTest/syncevolution/synthesis\n"
-                                  "   funambol = CmdlineTest/syncevolution/funambol\n",
+                                  "   synthesis = CmdlineTest/syncevolution/synthesis\n",
                                   cmdline.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
     }

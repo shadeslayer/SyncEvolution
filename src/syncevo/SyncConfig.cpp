@@ -129,6 +129,8 @@ SyncConfig::ServerList SyncConfig::getServers()
     addServers(getOldRoot(), res);
     addServers(getNewRoot(), res);
 
+    // sort the list; better than returning it in random order
+    res.sort();
     return res;
 }
 
