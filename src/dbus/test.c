@@ -24,6 +24,9 @@
 #include <synthesis/syerror.h>
 #include <synthesis/engine_defs.h>
 
+gboolean stop = FALSE;
+GMainLoop *loop;
+
 /*
 // This is the old progress callback, here for future reference...
 static void
@@ -175,15 +178,17 @@ progress_cb (SyncevoSession *session,
              int progress,
              SyncevoSourceProgresses *source_progresses)
 {
-    g_print ("\tprogress = %d", progress);
+    g_print ("\tprogress = %d\n", progress);
 }
 
 static void
 start_session_cb (SyncevoServer *server,
-                  SyncevoSession *session,
+                  char *path,
                   GError *error,
                   gpointer userdata)
 {
+    GHashTable *source_modes;
+    SyncevoSession *session;
 
     if (error) {
         g_printerr ("StartSession error: %s\n", error->message);
@@ -191,8 +196,9 @@ start_session_cb (SyncevoServer *server,
         return;
     }
 
-    g_print ("Testing Session...\n");
+    g_print ("\nTesting Session...\n\n");
 
+    session = syncevo_session_new (path);
     syncevo_session_get_config (session,
                                 FALSE,
                                 (SyncevoSessionGetConfigCb)get_config_cb,
@@ -200,11 +206,16 @@ start_session_cb (SyncevoServer *server,
 
     g_signal_connect (session, "progress-changed",
                       progress_cb, NULL);
+
+
+    /* TODO should wait for session status == idle */
+    source_modes = g_hash_table_new (g_str_hash, g_str_equal);
     syncevo_session_sync (session, 
                           SYNCEVO_SYNC_DEFAULT,
-                          NULL,
+                          source_modes,
                           NULL,
                           NULL);
+    g_hash_table_unref (source_modes);
 }
 
 
@@ -227,20 +238,31 @@ get_configs_cb(SyncevoServer *server,
         g_print ("\t%s\n", *name);
     }
     g_print ("\n");
+
+    if (stop) {
+        g_print ("No server given, stopping here.\n");
+        g_main_loop_quit (loop);
+    }
 }
 
+static void 
+session_changed_cb (SyncevoServer *server,
+                    char *path,
+                    gboolean active,
+                    gpointer data) 
+{
+    g_print ("Session %s is now %s\n",
+             path,
+             active ? "active" : "not active");
+}
 
 int main (int argc, char *argv[])
 {
     SyncevoServer *server;
     char *service = NULL;
-    GMainLoop *loop;
 
     g_type_init();
 
-    if (argc > 1) {
-        service = argv[1];
-    }
 
     g_print ("Testing Server...\n");
 
@@ -254,7 +276,14 @@ int main (int argc, char *argv[])
                                 FALSE,
                                 (SyncevoServerGetConfigsCb)get_configs_cb,
                                 NULL);
+    g_signal_connect (server, "session-changed",
+                      G_CALLBACK (session_changed_cb), NULL);
 
+    if (argc < 2) {
+        stop = TRUE;
+    }
+
+    service = argv[1];
     if (service)
         syncevo_server_start_session (server,
                                       service,
