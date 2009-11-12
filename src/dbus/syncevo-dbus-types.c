@@ -177,7 +177,8 @@ syncevo_session_status_from_string (const char *status_str)
         status = SYNCEVO_STATUS_UNKNOWN;
     } else if (g_str_has_prefix (status_str, "queueing")) {
         status = SYNCEVO_STATUS_QUEUEING;
-    } else if (g_str_has_prefix (status_str, "idle")) {
+    } else if (g_str_has_prefix (status_str, "idle") ||
+               g_str_has_prefix (status_str, "done")) {
         status = SYNCEVO_STATUS_IDLE;
     } else if (g_str_has_prefix (status_str, "running")) {
         status = SYNCEVO_STATUS_RUNNING;
@@ -364,13 +365,16 @@ syncevo_reports_free (SyncevoReports *reports)
     g_ptr_array_free (reports, TRUE);
 }
 
-char*
+const char*
 syncevo_sessions_index (SyncevoSessions *sessions,
                         guint index)
 {
     g_return_val_if_fail (sessions, NULL);
 
-    return (char*)g_ptr_array_index (sessions, index);
+    if (index >= sessions->len) {
+        return NULL;
+    }
+    return (const char*)g_ptr_array_index (sessions, index);
 }
 
 void

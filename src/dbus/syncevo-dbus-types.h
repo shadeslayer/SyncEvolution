@@ -129,8 +129,8 @@ GHashTable* syncevo_reports_index (SyncevoReports *reports,
                                    guint index);
 void syncevo_reports_free (SyncevoReports *reports);
 
-char* syncevo_sessions_index (SyncevoSessions *sessions,
-                              guint index);
+const char* syncevo_sessions_index (SyncevoSessions *sessions,
+                                    guint index);
 void syncevo_sessions_free (SyncevoSessions *sessions);
 
 #endif
