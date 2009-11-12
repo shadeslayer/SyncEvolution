@@ -27,7 +27,7 @@ gboolean
 syncevo_config_get_value (SyncevoConfig *config,
                           const char *source,
                           const char *key,
-                          char **value)
+                          const char **value)
 {
     char *name;
     GHashTable *source_config;
@@ -50,6 +50,27 @@ syncevo_config_get_value (SyncevoConfig *config,
     
     return (source_config != NULL);
 }
+
+void syncevo_config_foreach_source (SyncevoConfig *config,
+                                    ConfigFunc func,
+                                    gpointer userdata)
+{
+    GHashTableIter iter;
+    char *key;
+    GHashTable *value;
+
+    g_hash_table_iter_init (&iter, config);
+    while (g_hash_table_iter_next (&iter, (gpointer*)&key, (gpointer*)&value)) {
+
+        if (key && g_str_has_prefix (key, "source/")) {
+            char *name;
+
+            name = key+7;
+            func (name, value, userdata);
+        }
+    }
+}
+
 
 static void
 free_source_config_item (char *key,

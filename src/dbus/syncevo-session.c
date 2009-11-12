@@ -639,3 +639,30 @@ syncevo_session_get_progress (SyncevoSession *session,
              (org_syncevolution_Session_get_progress_reply) get_progress_callback,
              data);
 }
+
+void
+syncevo_session_check_source (SyncevoSession *session,
+                              const char *source,
+                              SyncevoSessionGenericCb callback,
+                              gpointer userdata)
+{
+    SessionAsyncData *data;
+    SyncevoSessionPrivate *priv;
+
+    priv = GET_PRIVATE (session);
+
+    data = session_async_data_new (session, G_CALLBACK (callback), userdata);
+
+    if (!priv->proxy) {
+        if (callback) {
+            g_idle_add ((GSourceFunc)generic_error, data);
+        }
+        return;
+    }
+
+    org_syncevolution_Session_check_source_async
+            (priv->proxy,
+             source,
+             (org_syncevolution_Session_check_source_reply) generic_callback,
+             data);
+}

@@ -119,6 +119,11 @@ void syncevo_session_get_progress (SyncevoSession *session,
                                    SyncevoSessionGetProgressCb callback,
                                    gpointer userdata);
 
+void syncevo_session_check_source (SyncevoSession *session,
+                                   const char *source,
+                                   SyncevoSessionGenericCb callback,
+                                   gpointer userdata);
+
 G_END_DECLS
 
 #endif

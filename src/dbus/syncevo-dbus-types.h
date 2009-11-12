@@ -89,7 +89,15 @@ typedef GPtrArray SyncevoSessions;
 gboolean syncevo_config_get_value (SyncevoConfig *config,
                                    const char *source,
                                    const char *key,
-                                   char **value);
+                                   const char **value);
+
+typedef void (*ConfigFunc) (char *name,
+                            GHashTable *source_configuration,
+                            gpointer user_data);
+
+void syncevo_config_foreach_source (SyncevoConfig *config,
+                                    ConfigFunc func,
+                                    gpointer userdata);
 void syncevo_config_free (SyncevoConfig *config);
 
 const char* syncevo_sync_mode_to_string (SyncevoSyncMode mode);
