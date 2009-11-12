@@ -66,44 +66,65 @@
     </method>
 
     <method name ="GetConfigs">
-      <doc:doc><doc:description>Get an array of all configured servers (or templates)</doc:description></doc:doc>
+      <doc:doc><doc:description>
+        Get an array of all configured servers (or templates)
+      </doc:description></doc:doc>
       <arg type="b" name="template" direction="in">
-        <doc:doc><doc:summary>if TRUE, will return template names, otherwise will return configured servers</doc:summary></doc:doc>
+        <doc:doc><doc:summary>
+          if TRUE, will return template names, otherwise will return 
+          configured servers
+        </doc:summary></doc:doc>
       </arg>
       <arg type="as" name="servers" direction="out">
-        <doc:doc><doc:summary>array of configured server (or template) names</doc:summary></doc:doc>
+        <doc:doc><doc:summary>
+          array of configured server (or template) names
+        </doc:summary></doc:doc>
       </arg>
     </method>
 
     <method name="GetConfig">
-      <doc:doc><doc:description>Get the configuration of a specific server (or template)</doc:description></doc:doc>
+      <doc:doc><doc:description>
+        Get the configuration of a specific server (or template)
+      </doc:description></doc:doc>
       <arg type="s" name="server" direction="in">
         <doc:doc><doc:summary>server name</doc:summary></doc:doc>
       </arg>
       <arg type="b" name="template" direction="in">
-        <doc:doc><doc:summary>if TRUE, will return a matching template configuration, otherwise will return a matching server configuration</doc:summary></doc:doc>
+        <doc:doc><doc:summary>
+          if TRUE, will return a matching template configuration, otherwise
+          will return a matching server configuration
+        </doc:summary></doc:doc>
       </arg>
       <arg type="a{sa{ss}}" name="configuration" direction="out">
-        <doc:doc><doc:summary>server (or template) configuration</doc:summary></doc:doc>
-        <doc:doc><doc:description>The dictionary keys are "source/&lt;source name&gt;" for sources and the empty string for the main server configuration. More keys might be added in the future. The values are "configuration dictionaries" which contain keys and values matching those in the SyncEvolution server configuration files. 
-              Properties which are not set are also not present in the
-              configuration dictionaries. The semantic difference between
-              "not set" and "empty" or "set to default" is that unset
-              values will always use the default value, even after that
-              changed during a software update. Properties that are set
-              always use the chosen value.
+        <doc:doc><doc:summary>
+          server (or template) configuration
+        </doc:summary></doc:doc>
+        <doc:doc><doc:description>
+          The dictionary keys are "source/&lt;source name&gt;" for
+          sources and the empty string for the main server
+          configuration. More keys might be added in the future. The
+          values are "configuration dictionaries" which contain keys
+          and values matching those in the SyncEvolution server 
+          configuration files. 
+          Properties which are not set are also not present in the
+          configuration dictionaries. The semantic difference between
+          "not set" and "empty" or "set to default" is that unset
+          values will always use the default value, even after that
+          changed during a software update. Properties that are set
+          always use the chosen value.
 
-              Note that property keys are case insensitive. The D-Bus
-              interface specification would allow to send two
-              properties whose keys only differ in case to the
-              server. The result is undefined.
-            </doc:description>
-          </doc:doc>
+          Note that property keys are case insensitive. The D-Bus
+          interface specification would allow to send two
+          properties whose keys only differ in case to the
+          server. The result is undefined.
+        </doc:description></doc:doc>
       </arg>
     </method>
 
     <method name="CheckPresence">
-      <doc:doc><doc:description>Checks whether a sync with a particular server can start.</doc:description></doc:doc>
+      <doc:doc><doc:description>
+        Checks whether a sync with a particular server can start.
+      </doc:description></doc:doc>
       <arg type="s" name="server" direction="in">
         <doc:doc><doc:summary>server name</doc:summary></doc:doc>
       </arg>
@@ -124,25 +145,46 @@
     </method>      
 
     <method name="GetReports">
-      <doc:doc><doc:description>Get synchronization reports for a specific server</doc:description></doc:doc>
+      <doc:doc><doc:description>
+        Get synchronization reports for a specific server
+      </doc:description></doc:doc>
       <arg type="s" name="server" direction="in">
         <doc:doc><doc:summary>server name</doc:summary></doc:doc>
       </arg>
       <arg type="u" name="start" direction="in">
-        <doc:doc><doc:summary>index of the first (newest) report that will be returned; reports are number starting with zero for the newest</doc:summary></doc:doc>
+        <doc:doc><doc:summary>
+          index of the first (newest) report that will be returned;
+          reports are number starting with zero for the newest
+        </doc:summary></doc:doc>
       </arg>
       <arg type="u" name="count" direction="in">
-        <doc:doc><doc:summary>maximum number of returned reports</doc:summary></doc:doc>
+        <doc:doc><doc:summary>
+          maximum number of returned reports
+        </doc:summary></doc:doc>
       </arg>
       <arg type="aa{ss}" name="reports" direction="out">
-        <doc:doc><doc:summary>synchronization reports</doc:summary></doc:doc>
-        <doc:doc><doc:description>The array contains report dictionaries. The dictionary keys are generated by joining a list of hardcode strings and report categories. The separator is the charactor "-". The list of strings is: "source", "[source name]", "stat", "[ItemLocation]", "[ItemState]" and "[ItemResult]". The dictionary values are directly converted from numbers in sync reports. The value will be "0" if there is no data in sync reports.
+        <doc:doc><doc:summary>
+          synchronization reports
+        </doc:summary></doc:doc>
+        <doc:doc><doc:description>
+          The array contains report dictionaries. The dictionary keys
+          are generated by joining a list of hardcode strings and
+          report categories. The separator is the charactor "-". The
+          list of strings is: "source", "[source name]", "stat",
+          "[ItemLocation]", "[ItemState]" and "[ItemResult]". The 
+          dictionary values are directly converted from numbers in sync
+          reports. The value will be "0" if there is no data in sync
+          reports.
         </doc:description></doc:doc>
       </arg>
     </method>
 
     <method name="StartSession">
-      <doc:doc><doc:description>Start a session. The object is created instantly but will not be ready for method calls until status changes from "queueing" to "idle". The Detach() method can be called before that.</doc:description></doc:doc>
+      <doc:doc><doc:description>
+        Start a session. The object is created instantly but will not be
+        ready for method calls until status changes from "queueing" to "idle".
+        The Detach() method can be called before that.
+      </doc:description></doc:doc>
       <arg type="s" name="server" direction="in">
         <doc:doc><doc:summary>server name</doc:summary></doc:doc>
       </arg>
@@ -274,9 +316,14 @@
     </method>
 
     <method name="GetSessions">
-      <doc:doc><doc:description>Get currently existing sessions. This includes active and queueing sessions.</doc:description></doc:doc>
+      <doc:doc><doc:description>
+        Get currently existing sessions. This includes active and
+        queueing sessions.
+      </doc:description></doc:doc>
       <arg type="ao" name="sessions" direction="out">
-        <doc:doc><doc:summary>array of session D-Bus object paths</doc:summary></doc:doc>
+        <doc:doc><doc:summary>
+          array of session D-Bus object paths
+        </doc:summary></doc:doc>
       </arg>
     </method>
 
@@ -286,7 +333,10 @@
         <doc:doc><doc:summary>session D-Bus object path</doc:summary></doc:doc>
       </arg>
       <arg type="b" name="started">
-        <doc:doc><doc:summary>TRUE if session was started and is active now (= ready for use), FALSE if it ended</doc:summary></doc:doc>
+        <doc:doc><doc:summary>
+          TRUE if session was started and is active now (= ready for use),
+          FALSE if it ended
+        </doc:summary></doc:doc>
       </arg>
     </signal>
 
@@ -308,7 +358,9 @@
         </doc:description>
       </doc:doc>
       <arg type="s" name="server">
-        <doc:doc><doc:summary>name of the server configuration</doc:summary></doc:doc>
+        <doc:doc><doc:summary>
+          name of the server configuration
+        </doc:summary></doc:doc>
       </arg>
       <arg type="s" name="status">
         <doc:doc>
