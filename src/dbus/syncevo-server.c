@@ -92,6 +92,17 @@ proxy_destroy_cb (DBusGProxy *proxy,
 }
 
 static void
+detach_cb (DBusGProxy *proxy,
+           GError *error,
+           gpointer userdata)
+{
+    if (error) {
+        g_warning ("Server.Detach failed: %s", error->message);
+        g_error_free (error);
+    }
+}
+
+static void
 dispose (GObject *object)
 {
     SyncevoServerPrivate *priv;
@@ -105,12 +116,26 @@ dispose (GObject *object)
         dbus_g_proxy_disconnect_signal (priv->proxy, "destroy",
                                         G_CALLBACK (proxy_destroy_cb),
                                         object);
+        org_syncevolution_Server_detach_async (priv->proxy,
+                                               (org_syncevolution_Server_attach_reply)detach_cb,
+                                               NULL);
 
         g_object_unref (priv->proxy);
         priv->proxy = NULL;
     }
 
     G_OBJECT_CLASS (syncevo_server_parent_class)->dispose (object);
+}
+
+static void
+attach_cb (DBusGProxy *proxy,
+           GError *error,
+           gpointer userdata)
+{
+    if (error) {
+        g_warning ("Server.Attach failed: %s", error->message);
+        g_error_free (error);
+    }
 }
 
 static gboolean
@@ -166,9 +191,12 @@ syncevo_server_get_new_proxy (SyncevoServer *server)
                              G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_INVALID);
     dbus_g_proxy_connect_signal (priv->proxy, "SessionChanged",
                                  G_CALLBACK (session_changed_cb), server, NULL);
-
     g_signal_connect (priv->proxy, "destroy",
                       G_CALLBACK (proxy_destroy_cb), server);
+
+    org_syncevolution_Server_attach_async (priv->proxy,
+                                           (org_syncevolution_Server_attach_reply)attach_cb,
+                                           NULL);
 
     return TRUE;
 }

@@ -58,9 +58,6 @@ static gboolean support_canceling = FALSE;
 
 #define STRING_VARIANT_HASHTABLE (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, G_TYPE_VALUE))
 
-/* for connman state property */
-static DBusGProxy *proxy = NULL;
-
 typedef struct source_progress {
     char* name;
     
@@ -1828,7 +1825,7 @@ get_error_string_for_code (int error_code)
 }
 
 
-
+/*
 static void
 connman_props_changed (DBusGProxy *proxy, const char *key, GValue *v, app_data *data)
 {
@@ -1844,53 +1841,7 @@ connman_props_changed (DBusGProxy *proxy, const char *key, GValue *v, app_data *
         set_app_state (data, SYNC_UI_STATE_CURRENT_STATE);
     }
 }
-
-static void
-init_connman (app_data *data)
-{
-    DBusGConnection *connection;
-    GHashTable *props;
-    GError *error = NULL;
-
-    connection = dbus_g_bus_get (DBUS_BUS_SYSTEM, &error);
-    if (connection == NULL) {
-        g_warning ("Failed to open connection to bus: %s\n",
-                   error->message);
-        g_error_free (error);
-        proxy = NULL;
-        return;
-    }
-
-    proxy = dbus_g_proxy_new_for_name (connection,
-                                       "org.moblin.connman",
-                                       "/",
-                                       "org.moblin.connman.Manager");
-    if (proxy == NULL) {
-        g_printerr ("Failed to get a proxy for Connman");
-        return;
-    }  
-
-    dbus_g_object_register_marshaller (sync_ui_marshal_VOID__STRING_BOXED,
-                                       G_TYPE_NONE,
-                                       G_TYPE_STRING, G_TYPE_BOXED, G_TYPE_INVALID);
-    dbus_g_proxy_add_signal (proxy, "PropertyChanged",
-                             G_TYPE_STRING, G_TYPE_VALUE, NULL);
-    dbus_g_proxy_connect_signal (proxy, "PropertyChanged",
-                                 G_CALLBACK (connman_props_changed), data, NULL);
-
-    /* get initial State value*/
-    if (dbus_g_proxy_call (proxy, "GetProperties", NULL,
-                            G_TYPE_INVALID,
-                            STRING_VARIANT_HASHTABLE, &props, G_TYPE_INVALID)) {
-        GValue *value;
-
-        value = g_hash_table_lookup (props, "State");
-        if (value) {
-            connman_props_changed (proxy, "State", value, data);
-        }
-        g_hash_table_unref (props);
-    }
-}
+*/
 
 static void
 server_shutdown_cb (SyncevoServer *server,
@@ -1919,12 +1870,13 @@ sync_ui_create_main_window ()
         return NULL;
     }
 
-    init_connman (data);
-
     data->server = syncevo_server_get_default();
     g_signal_connect (data->server, "shutdown", 
                       G_CALLBACK (server_shutdown_cb), data);
 
+    /* TODO: use Presence signal an CheckPresence to make sure we 
+     * know if network is down etc. */
+    
     init_configuration (data);
 
     gtk_window_present (GTK_WINDOW (data->sync_win));
