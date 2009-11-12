@@ -44,16 +44,9 @@ typedef struct source_config {
 
 typedef struct server_config {
     char *name;
-    char *base_url;
-    char *web_url;
-    char *icon_uri;
-
-    char *username;
-    char *password;
-
-    GList *source_configs;
+    SyncevoConfig *config;
     
-    /* any field in struct has changed */
+    /* any field in config has changed */
     gboolean changed;
 
     /* a authentication detail (base_url/username/password) has changed */
@@ -70,6 +63,5 @@ void server_config_update_from_entry (server_config *server, GtkEntry *entry);
 GPtrArray* server_config_get_option_array (server_config *server);
 GPtrArray* server_config_get_source_array (server_config *server, SyncMode mode);
 void server_config_disable_unsupported_sources (server_config *server);
-source_config* server_config_get_source_config (server_config *server, const char *name);
 
 #endif

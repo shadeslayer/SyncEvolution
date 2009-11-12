@@ -38,11 +38,8 @@ server_config_free (server_config *server)
         return;
 
     g_free (server->name);
-    g_free (server->base_url);
-    g_free (server->username);
-    g_free (server->password);
-    g_list_foreach (server->source_configs, (GFunc)source_config_free, NULL);
-    g_list_free (server->source_configs);
+    syncevo_config_free (server->config);
+
     g_slice_free (server_config, server);
 }
 
@@ -62,6 +59,7 @@ server_config_update_from_entry (server_config *server, GtkEntry *entry)
 
         server->changed = TRUE;
 
+/*
         if (*str == server->password) {
             server->auth_changed = TRUE;
             server->password_changed = TRUE;
@@ -69,7 +67,7 @@ server_config_update_from_entry (server_config *server, GtkEntry *entry)
                    *str == server->base_url) {
             server->auth_changed = TRUE;
         }
-
+*/
         g_free (*str);
         *str = g_strdup (new_str);
     }
@@ -196,6 +194,7 @@ server_config_disable_unsupported_sources (server_config *server)
 {
     GList *l;
 
+/*
     for (l = server->source_configs; l; l = l->next) {
         source_config* config = (source_config*)l->data;
 
@@ -203,6 +202,8 @@ server_config_disable_unsupported_sources (server_config *server)
             config->enabled = FALSE;
         }
     }
+*/
+
 }
 
 
@@ -214,30 +215,4 @@ source_config_compare (source_config *a, source_config *b)
     g_assert (b && b->name);
 
     return strcmp (a->name, b->name);
-}
-
-source_config*
-server_config_get_source_config (server_config *server, const char *name)
-{
-    GList *l;
-    source_config *source = NULL;
-    
-    g_assert (name);
-    
-    /* return existing source config if found */
-    for (l = server->source_configs; l; l = l->next) {
-        source = (source_config*)l->data;
-        if (strcmp (source->name, name) == 0) {
-            return source; 
-        }
-    }
-    
-    /* create new source config */
-    source = g_slice_new0 (source_config);
-    source->name = g_strdup (name);
-    server->source_configs = g_list_insert_sorted (server->source_configs, 
-                                                   source,
-                                                   (GCompareFunc)source_config_compare);
-
-    return source;
 }

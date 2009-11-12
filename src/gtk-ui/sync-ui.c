@@ -358,7 +358,9 @@ find_password_for_settings_cb (GnomeKeyringResult result, GList *list, server_da
         if (list && list->data) {
             GnomeKeyringNetworkPasswordData *key_data;
             key_data = (GnomeKeyringNetworkPasswordData*)list->data;
+/*
             data->config->password = g_strdup (key_data->password);
+*/
         }
         break;
     default:
@@ -478,21 +480,22 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
 
     gtk_container_foreach (GTK_CONTAINER (data->server_settings_table), 
                            (GtkCallback)update_server_config, server);
-
+/*
     if (!server->name || strlen (server->name) == 0 ||
         !server->base_url || strlen (server->base_url) == 0) {
         show_error_dialog (GTK_WINDOW (data->service_settings_win), 
                            _("Service must have a name and server URL"));
         return;
     }
-
+*/
     /* make a wild guess if no scheme in url */
+/*
     if (strstr (server->base_url, "://") == NULL) {
         char *tmp = g_strdup_printf ("http://%s", server->base_url);
         g_free (server->base_url);
         server->base_url = tmp;
     }
-
+*/
     gtk_widget_hide (GTK_WIDGET (data->service_settings_win));
     gtk_widget_hide (GTK_WIDGET (data->services_win));
 
@@ -506,6 +509,7 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
         char *password;
         char *username;
 
+/*
         server_address = strstr (server->base_url, "://");
         if (server_address)
             server_address = server_address + 3;
@@ -517,7 +521,7 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
         username = server->username;
         if (!username)
             username = "";
-
+*/
         gnome_keyring_set_network_password (NULL, /* default keyring */
                                             username,
                                             NULL,
@@ -1024,10 +1028,11 @@ source_check_toggled_cb (GtkCheckButton *check, app_data *data)
     GPtrArray *options;
     gboolean *enabled;
     
+/*
+    //NOTE there is no "enabled" data now, it's "source" string
     enabled = g_object_get_data (G_OBJECT (check), "enabled");
     *enabled = !*enabled;
     
-/*
     options = server_config_get_option_array (data->current_service);
     syncevo_service_set_server_config_async (data->service, 
                                              data->current_service->name,
@@ -1077,82 +1082,150 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
     gtk_widget_show (image);
 }
 
+
+typedef struct _SourceConfigData {
+    const char *name;
+    app_data *data;
+    GHashTable *source_conf;
+} SourceConfigData;
+
+static void
+update_service_source_ui (app_data *data, const char *name, GHashTable *source_conf)
+{
+    GtkWidget *check, *hbox, *box, *lbl;
+    char *pretty_name;
+    const char *source_uri, *sync;
+    gboolean enabled;
+
+    pretty_name = get_pretty_source_name (name);
+    source_uri = g_hash_table_lookup (source_conf, "uri");
+    sync = g_hash_table_lookup (source_conf, "sync");
+    if (!sync || 
+        strcmp (sync, "disabled") == 0 ||
+        strcmp (sync, "none") == 0) {
+        // consider this source not available at all
+        enabled = FALSE;
+    } else {
+        enabled = TRUE;
+    }
+
+    /* argh, GtkCheckButton won't layout nicely with several labels... 
+       There is no way to align the check with the top row and 
+       get the labels to align and not use way too much vertical space.
+       In this hack the labels are not related to the checkbutton at all,
+       this is definitely not nice but looks better */
+
+    hbox = gtk_hbox_new (FALSE, 0);
+    gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), hbox);
+ 
+    box = gtk_vbox_new (FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), box, FALSE, FALSE, 0);
+    check = gtk_check_button_new ();
+    gtk_box_pack_start (GTK_BOX (box), check, FALSE, FALSE, 0);
+
+    box = gtk_vbox_new (FALSE, 0);
+    gtk_box_pack_start_defaults (GTK_BOX (hbox), box);
+    gtk_container_set_border_width (GTK_CONTAINER (box), 2);
+
+    if (source_uri && strlen (source_uri) > 0) {
+        lbl = gtk_label_new (pretty_name);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), enabled);
+        gtk_widget_set_sensitive (check, TRUE);
+    } else {
+        char *text;
+        /* TRANSLATORS: placeholder is a source name, shown with checkboxes in main window */
+        text = g_strdup_printf (_("%s (not supported by this service)"), pretty_name);
+        lbl = gtk_label_new (text);
+        g_free (text);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), FALSE);
+        gtk_widget_set_sensitive (check, FALSE);
+    }
+    g_free (pretty_name);
+    gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
+    gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
+
+    lbl = gtk_label_new (NULL);
+    gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
+    gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
+
+    /* this is a bit hacky... maybe the link to the label should be in source_config ? */
+    g_hash_table_insert (data->source_report_labels, g_strdup (name), lbl);
+
+    g_object_set_data (G_OBJECT (check), "source", (gpointer)name);
+    g_signal_connect (check, "toggled",
+                      G_CALLBACK (source_check_toggled_cb), data);
+
+    gtk_widget_show_all (hbox); 
+}
+
+static void
+check_source_cb (SyncevoSession *session,
+                 GError *error,
+                 SourceConfigData *source_data)
+{
+    if (error) {
+        /* source is not supported locally */
+        g_error_free (error);
+        g_slice_free (SourceConfigData, source_data);
+        return;
+    }
+
+    update_service_source_ui (source_data->data,
+                              source_data->name,
+                              source_data->source_conf);
+
+    g_slice_free (SourceConfigData, source_data);
+}
+
+static void
+handle_source_config (const char *name,
+                      GHashTable *source_conf,
+                      app_data *data)
+{
+    SourceConfigData *source_data;
+
+    g_assert (data && data->session);
+
+    source_data = g_slice_new0 (SourceConfigData);    
+    source_data->data = data;
+    source_data->name = name;
+    source_data->source_conf = source_conf;
+
+    syncevo_session_check_source (data->session,
+                                  name,
+                                  (SyncevoSessionGenericCb)check_source_cb,
+                                  source_data);
+}
+
 static void
 update_service_ui (app_data *data)
 {
+    const char *icon_uri;
     GList *l;
 
-    g_assert (data->current_service);
+    g_assert (data->current_service && data->current_service->config);
 
     gtk_container_foreach (GTK_CONTAINER (data->sources_box),
                            (GtkCallback)remove_child,
                            data->sources_box);
     g_hash_table_remove_all (data->source_report_labels);
 
-    if (data->current_service->name)
-        gtk_label_set_markup (GTK_LABEL (data->server_label), data->current_service->name);
+    syncevo_config_get_value (data->current_service->config,
+                              NULL, "IconURI", &icon_uri);
 
-    load_icon (data->current_service->icon_uri, 
-               GTK_BOX (data->server_icon_box), 
-               SYNC_UI_ICON_SIZE);
-    
-    for (l = data->current_service->source_configs; l; l = l->next) {
-        source_config *source = (source_config*)l->data;
-        GtkWidget *check, *hbox, *box, *lbl;
-        char *name;
-        
-        if (!source->supported_locally) {
-            /* could also show as insensitive, like with unsupported services... */
-            continue;
-        }
-
-        name = get_pretty_source_name (source->name);
-        
-        /* argh, GtkCheckButton won't layout nicely with several labels... 
-           There is no way to align the check with the top row and 
-           get the labels to align and not use way too much vertical space.
-           In this hack the labels are not related to the checkbutton at all,
-           this is definitely not nice but looks better */
-
-        hbox = gtk_hbox_new (FALSE, 0);
-        gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), hbox);
- 
-        box = gtk_vbox_new (FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (hbox), box, FALSE, FALSE, 0);
-        check = gtk_check_button_new ();
-        gtk_box_pack_start (GTK_BOX (box), check, FALSE, FALSE, 0);
-
-        box = gtk_vbox_new (FALSE, 0);
-        gtk_box_pack_start_defaults (GTK_BOX (hbox), box);
-        gtk_container_set_border_width (GTK_CONTAINER (box), 2);
-        if (source->uri && strlen (source->uri) > 0) {
-            lbl = gtk_label_new (name);
-            gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), source->enabled);
-            gtk_widget_set_sensitive (check, TRUE);
-        } else {
-            char *text;
-            /* TRANSLATORS: placeholder is a source name, shown with checkboxes in main window */
-            text = g_strdup_printf (_("%s (not supported by this service)"), name);
-            lbl = gtk_label_new (text);
-            g_free (text);
-            gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), FALSE);
-            gtk_widget_set_sensitive (check, FALSE);
-        }
-        g_free (name);
-        gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
-        gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
-
-        lbl = gtk_label_new (NULL);
-        gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
-        gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
-        /* this is a bit hacky... maybe the link to the label should be in source_config ? */
-        g_hash_table_insert (data->source_report_labels, source->name, lbl);
-
-        g_object_set_data (G_OBJECT (check), "enabled", &source->enabled);
-        g_signal_connect (check, "toggled",
-                          G_CALLBACK (source_check_toggled_cb), data);
- 
+    if (data->current_service->name){
+        gtk_label_set_markup (GTK_LABEL (data->server_label), 
+                              data->current_service->name);
     }
+    if (icon_uri) {
+        load_icon (icon_uri,
+                   GTK_BOX (data->server_icon_box),
+                   SYNC_UI_ICON_SIZE);
+    }
+
+    syncevo_config_foreach_source (data->current_service->config,
+                                   (ConfigFunc)handle_source_config,
+                                   data);
     gtk_widget_show_all (data->sources_box);
 
 }
@@ -1219,7 +1292,9 @@ find_password_cb (GnomeKeyringResult result, GList *list, app_data *data)
         if (list && list->data) {
             GnomeKeyringNetworkPasswordData *key_data;
             key_data = (GnomeKeyringNetworkPasswordData*)list->data;
+/*
             data->current_service->password = g_strdup (key_data->password);
+*/
         }
         break;
     default:
@@ -1264,6 +1339,7 @@ show_settings_window (app_data *data, server_config *config)
     gtk_container_foreach (GTK_CONTAINER (data->server_settings_table),
                            (GtkCallback)remove_child,
                            data->server_settings_table);
+/*
     gtk_table_resize (GTK_TABLE (data->server_settings_table), 
                       2, g_list_length (config->source_configs) + 1);
 
@@ -1343,7 +1419,7 @@ show_settings_window (app_data *data, server_config *config)
         i++;
 
         name = get_pretty_source_name (source->name);
-        /* TRANSLATORS: placeholder is a source name in settings window */
+        // TRANSLATORS: placeholder is a source name in settings window
         str = g_strdup_printf (_("%s URI"), name);
         label = gtk_label_new (str);
         g_free (str);
@@ -1363,7 +1439,7 @@ show_settings_window (app_data *data, server_config *config)
                                    1, 2, i, i + 1);
     }
     gtk_widget_show_all (data->server_settings_table);
-
+*/
     /* TODO should free old server config... make sure do not free currently used config */
     g_object_set_data (G_OBJECT (data->service_settings_win), "server", config);
 
@@ -1373,10 +1449,12 @@ show_settings_window (app_data *data, server_config *config)
 static void
 ensure_default_sources_exist(server_config *server)
 {
+/*
     server_config_get_source_config (server, "addressbook");
     server_config_get_source_config (server, "calendar");
-    /* server_config_get_source_config (server, "memo"); */
+    // server_config_get_source_config (server, "memo");
     server_config_get_source_config (server, "todo");
+*/
 }
 
 static void
@@ -1548,6 +1626,44 @@ static void show_services_window (app_data *data)
 }
 
 static void
+get_config_for_main_win_cb (SyncevoSession *session,
+                            SyncevoConfig *config,
+                            GError *error,
+                            app_data *data)
+{
+    if (error) {
+        g_warning ("Error in Session.GetConfig: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    
+    if (config) {
+        data->current_service->config = config;
+        update_service_ui (data);
+    }
+}
+
+start_session_cb (SyncevoServer *server,
+                  SyncevoSession *session,
+                  GError *error,
+                  app_data *data)
+{
+    if (error) {
+        g_warning ("Error in Server.StartSession: %s", error->message);
+        g_error_free (error);
+        data->session = NULL;
+        return;
+    }
+
+    data->session = session;
+
+    syncevo_session_get_config (data->session,
+                                FALSE,
+                                (SyncevoSessionGetConfigCb)get_config_for_main_win_cb,
+                                data);
+}
+static void
 gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *data)
 {
     char *server = NULL;
@@ -1560,25 +1676,23 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
         error = NULL;
     }
 
-    /*TODO: avoid the rest if server did not actually change */
-
     gtk_widget_hide (data->progress);
 
     server_config_free (data->current_service);
+    data->current_service = NULL;
+    
     if (!server || strlen (server) == 0) {
-        data->current_service = NULL; 
         set_app_state (data, SYNC_UI_STATE_NO_SERVER);
     } else {
+        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
         data->synced_this_session = FALSE;
         data->current_service = g_slice_new0 (server_config);
         data->current_service->name = server;
-        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
-/*
+
         syncevo_server_start_session (data->server,
                                       server,
                                       (SyncevoServerStartSessionCb)start_session_cb,
                                       data);
-*/
     }
 }
 
