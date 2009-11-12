@@ -171,6 +171,14 @@ get_config_cb (SyncevoSession *session,
 }
 
 static void
+progress_cb (SyncevoSession *session,
+             int progress,
+             SyncevoSourceProgresses *source_progresses)
+{
+    g_print ("\tprogress = %d", progress);
+}
+
+static void
 start_session_cb (SyncevoServer *server,
                   SyncevoSession *session,
                   GError *error,
@@ -189,6 +197,14 @@ start_session_cb (SyncevoServer *server,
                                 FALSE,
                                 (SyncevoSessionGetConfigCb)get_config_cb,
                                 NULL);
+
+    g_signal_connect (session, "progress-changed",
+                      progress_cb, NULL);
+    syncevo_session_sync (session, 
+                          SYNCEVO_SYNC_DEFAULT,
+                          NULL,
+                          NULL,
+                          NULL);
 }
 
 

@@ -75,6 +75,7 @@ server_config_update_from_entry (server_config *server, GtkEntry *entry)
     }
 }
 
+/*
 void
 server_config_update_from_option (server_config *server, SyncevoOption *option)
 {
@@ -110,7 +111,7 @@ server_config_update_from_option (server_config *server, SyncevoOption *option)
         } else if (strcmp (key, "sync") == 0) {
             if (strcmp (value, "disabled") == 0 ||
                  strcmp (value, "none") == 0) {
-                /* consider this source not available at all */
+                // consider this source not available at all
                 source->enabled = FALSE;
             } else {
                 source->enabled = TRUE;
@@ -120,7 +121,9 @@ server_config_update_from_option (server_config *server, SyncevoOption *option)
         }
     }
 }
+*/
 
+/*
 GPtrArray*
 server_config_get_option_array (server_config *server)
 {
@@ -140,8 +143,8 @@ server_config_get_option_array (server_config *server)
     option = syncevo_option_new (NULL, g_strdup ("iconURI"), g_strdup (server->icon_uri));
     g_ptr_array_add (options, option);
 
-    /* if gnome-keyring password was set, set password option to "-"
-     * (meaning 'use AskPassword()'). Otherwise don't touch the password */
+    // if gnome-keyring password was set, set password option to "-"
+    //(meaning 'use AskPassword()'). Otherwise don't touch the password
     if (server->password_changed) {
         option = syncevo_option_new (NULL, g_strdup ("password"), g_strdup ("-"));
         g_ptr_array_add (options, option);
@@ -150,7 +153,7 @@ server_config_get_option_array (server_config *server)
     for (l = server->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
 
-        /* sources may have been added as place holders */
+        // sources may have been added as place holders
         if (!source->uri)
             continue;
 
@@ -164,7 +167,9 @@ server_config_get_option_array (server_config *server)
 
     return options;
 }
+*/
 
+/*
 GPtrArray*
 server_config_get_source_array (server_config *server, SyncMode mode)
 {
@@ -184,6 +189,7 @@ server_config_get_source_array (server_config *server, SyncMode mode)
 
     return sources;
 }
+*/
 
 void
 server_config_disable_unsupported_sources (server_config *server)

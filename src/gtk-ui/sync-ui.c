@@ -17,26 +17,6 @@
  * 02110-1301  USA
  */
 
-/*
- * TODO
- * 
- * * redesign main window? (talk with nick/patrick). Issues:
-      - sync types (other than two-way) should maybe be available somewhere 
-        else than main window?
-      - showing usable statistic
-      - sync errors can flood the ui... need to dicuss with nick.
-        Possible solution: show only a few errors, but have a linkbutton to open a
-        separate error window
- * * get history data from syncevolution
- * * backup/restore ? 
- * * GTK styling missing:
- *    - current implementation of MuxFrame results in a slight flicker on window open
- * * notes on dbus API:
- *    - a more cleaner solution would be to have StartSync return a 
- *      dbus path that could be used to connect to signals related to that specific
- *      sync
- */
-
 
 #include <stdlib.h>
 #include <math.h>
@@ -634,7 +614,9 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
         g_list_free (data->source_progresses);
         data->source_progresses = NULL;
 
+/*
         sources = server_config_get_source_array (data->current_service, data->mode);
+*/
         if (sources->len == 0) {
             g_ptr_array_free (sources, TRUE);
             add_error_info (data, _("No sources are enabled, not syncing"), NULL);
@@ -1400,12 +1382,14 @@ ensure_default_sources_exist(server_config *server)
 static void
 setup_service_clicked (GtkButton *btn, app_data *data)
 {
-    SyncevoServer *server;
     server_data *serv_data;
     const char *name;
 
+/*
+    SyncevoServer *server;
     server = g_object_get_data (G_OBJECT (btn), "server");
     syncevo_server_get (server, &name, NULL, NULL, NULL);
+*/
 
     serv_data = g_slice_new0 (server_data);
     serv_data->data = data;
@@ -1473,6 +1457,7 @@ enum ServerCols {
     NR_SERVER_COLS
 };
 
+/*
 static void
 add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *data)
 {
@@ -1515,17 +1500,17 @@ add_server_to_table (GtkTable *table, int row, SyncevoServer *server, app_data *
     gtk_table_attach (table, btn, COL_BUTTON, COL_BUTTON + 1, row, row+1,
                       GTK_SHRINK|GTK_FILL, GTK_EXPAND|GTK_FILL, 5, 0);
 
-/*
     g_object_set_data_full (G_OBJECT (btn), "server", server, 
                             (GDestroyNotify)syncevo_server_free);
-*/
 }
+*/
 
 typedef struct templates_data {
     app_data *data;
     GPtrArray *templates;
 }templates_data;
 
+/*
 static gboolean
 server_array_contains (GPtrArray *array, SyncevoServer *server)
 {
@@ -1543,7 +1528,7 @@ server_array_contains (GPtrArray *array, SyncevoServer *server)
     }
     return FALSE;
 }
-
+*/
 
 static void show_services_window (app_data *data)
 {
@@ -1560,50 +1545,6 @@ static void show_services_window (app_data *data)
                                          data);
 */
     gtk_window_present (GTK_WINDOW (data->services_win));
-}
-
-start_session_cb
-get_server_config_cb (SyncevoServer *server, char *session_path, GError *error, app_data *data)
-{
-    if (error) {
-        set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
-        g_error_free (error);
-        return;
-    }
-
-    g_ptr_array_foreach (options, (GFunc)add_server_option, data->current_service);
-    ensure_default_sources_exist (data->current_service);
-    
-    update_service_ui (data);
-    set_app_state (data, SYNC_UI_STATE_SERVER_OK);
-
-    server_address = strstr (data->current_service->base_url, "://");
-    if (server_address)
-        server_address = server_address + 3;
-
-    if (!server_address) {
-        g_warning ("Server configuration has suspect URL '%s'",
-                   data->current_service->base_url);
-    } else {
-        gnome_keyring_find_network_password (data->current_service->username,
-                                             NULL,
-                                             server_address,
-                                             NULL,
-                                             NULL,
-                                             NULL,
-                                             0,
-                                             (GnomeKeyringOperationGetListCallback)find_password_cb,
-                                             data,
-                                             NULL);
-    }
-
-    /* get last sync report (for last sync time) */
-    syncevo_service_get_sync_reports_async (service, data->current_service->name, 1,
-                                            (SyncevoGetSyncReportsCb)get_sync_reports_cb,
-                                            data);
-
-    g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
-    g_ptr_array_free (options, TRUE);
 }
 
 static void
@@ -1632,11 +1573,12 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
         data->current_service = g_slice_new0 (server_config);
         data->current_service->name = server;
         set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
-
+/*
         syncevo_server_start_session (data->server,
                                       server,
                                       (SyncevoServerStartSessionCb)start_session_cb,
                                       data);
+*/
     }
 }
 
@@ -1837,7 +1779,7 @@ init_connman (app_data *data)
 }
 
 static void
-server_shutdown_cb (SyncevoService *service,
+server_shutdown_cb (SyncevoServer *server,
                     app_data *data)
 {
     if (data->syncing) {
@@ -1849,6 +1791,7 @@ server_shutdown_cb (SyncevoService *service,
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
     }
 }
+
 
 GtkWidget*
 sync_ui_create_main_window ()
@@ -1865,7 +1808,7 @@ sync_ui_create_main_window ()
     init_connman (data);
 
     data->server = syncevo_server_get_default();
-    g_signal_connect (data->service, "shutdown", 
+    g_signal_connect (data->server, "shutdown", 
                       G_CALLBACK (server_shutdown_cb), data);
 
     init_configuration (data);
