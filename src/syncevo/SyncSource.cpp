@@ -918,6 +918,9 @@ sysync::TSyError SyncSourceAdmin::insertMapItem(sysync::cMapID mID)
     }
 #else
     m_mapping[key] = value;
+    m_mappingNode->clear();
+    m_mappingNode->writeProperties(m_mapping);
+    m_mappingNode->flush();
     return sysync::LOCERR_OK;
 #endif
 }
@@ -933,6 +936,9 @@ sysync::TSyError SyncSourceAdmin::updateMapItem(sysync::cMapID mID)
         return sysync::DB_Forbidden;
     } else {
         m_mapping[key] = value;
+        m_mappingNode->clear();
+        m_mappingNode->writeProperties(m_mapping);
+        m_mappingNode->flush();
         return sysync::LOCERR_OK;
     }
 }
@@ -948,6 +954,9 @@ sysync::TSyError SyncSourceAdmin::deleteMapItem(sysync::cMapID mID)
         return sysync::DB_Forbidden;
     } else {
         m_mapping.erase(it);
+        m_mappingNode->clear();
+        m_mappingNode->writeProperties(m_mapping);
+        m_mappingNode->flush();
         return sysync::LOCERR_OK;
     }
 }
