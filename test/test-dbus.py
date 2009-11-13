@@ -345,6 +345,14 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: Server name must be given")
 
+    def testGetDatabasesEmptyName(self):
+        """Test the error is reported when the server name is empty for GetDatabases"""
+        try:
+            self.session.GetDatabases("", utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchConfig: Server name must be given")
+
 class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     """Tests that work for GetConfig/SetConfig/CheckSource/GetDatabases/GetReports in Session.
        This class is only working in a dummy config. Thus it can't do sync correctly. The purpose
@@ -525,6 +533,41 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                 self.session.CheckSource(source, utf8_strings=True)
         except dbus.DBusException, ex:
             self.fail("check source is failed with exception: " + str(ex))
+
+    def testGetDatabasesNoConfig(self):
+        """ test the right error is reported when the server doesn't exist """
+        # make sure the config doesn't exist """
+        self.clearAllConfig()
+        try:
+            self.session.GetDatabases("", utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test-for-config-purpose' found")
+
+    def testGetDatabasesEmpty(self):
+        """ test the empty is gotten for non-existing source """
+        self.setupConfig()
+        databases = self.session.GetDatabases("never_use_this_source_name", utf8_strings=True)
+        self.failUnlessEqual(databases, [])
+
+    def testGetDatabases(self):
+        """ test the right way to get databases """
+        self.setupConfig()
+
+        # don't know actual databases, so compare results of two different times
+        sources = ['addressbook', 'calendar', 'task', 'memo']
+        databases1 = []
+        for source in sources:
+            databases1.append(self.session.GetDatabases(source, utf8_strings=True))
+        # reverse the list of sources and get databases again
+        sources.reverse()
+        databases2 = []
+        for source in sources:
+            databases2.append(self.session.GetDatabases(source, utf8_strings=True))
+        # sort two arrays
+        databases1.sort()
+        databases2.sort()
+        self.failUnlessEqual(databases1, databases2)
 
 class TestDBusSync(unittest.TestCase, DBusUtil):
     """Executes a real sync."""
