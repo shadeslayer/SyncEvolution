@@ -691,16 +691,13 @@ class BoolConfigProperty : public StringConfigProperty {
 };
 
 /**
- * A property for arbitrary strings. Users are not expected to edit
- * these, so they are marked "internal" by default.
+ * A property for arbitrary strings.
  */
 class SafeConfigProperty : public ConfigProperty {
  public:
     SafeConfigProperty(const string &name, const string &comment) :
     ConfigProperty(name, comment)
-    {
-        setHidden(true);
-    }
+    {}
 
     void setProperty(ConfigNode &node, const string &value) {
         ConfigProperty::setProperty(node, SafeConfigNode::escape(value, true, false));
@@ -1017,6 +1014,9 @@ class SyncConfig {
      * these settings.
      */
     /**@{*/
+
+    virtual string getDefaultPeer() const;
+    virtual void setDefaultPeer(const string &value);
 
     virtual const char *getLogDir() const;
     virtual void setLogDir(const string &value, bool temporarily = false);

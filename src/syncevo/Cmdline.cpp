@@ -1150,6 +1150,7 @@ public:
                               "config.ini:WebURL = http://sync.scheduleworld.com\n"
                               "config.ini:# IconURI = \n"
                               "config.ini:ConsumerReady = 1\n"
+                              "config.ini:# defaultPeer = \n"
                               "sources/addressbook/.internal.ini:# adminData = \n"
                               "sources/addressbook/config.ini:sync = two-way\n"
                               "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
@@ -1580,7 +1581,9 @@ protected:
                               "\n"
                               "IconURI:\n"
                               "\n"
-                              "ConsumerReady:\n");
+                              "ConsumerReady:\n"
+                              "\n"
+                              "defaultPeer:\n");
         string sourceProperties("sync:\n"
                                 "\n"
                                 "type:\n"

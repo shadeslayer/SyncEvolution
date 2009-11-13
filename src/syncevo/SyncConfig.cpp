@@ -753,6 +753,9 @@ static SafeConfigProperty syncPropNonce("lastNonce",
 static SafeConfigProperty syncPropDeviceData("deviceData",
                                              "information about the peer in a Synthesis internal-format");
 
+static SafeConfigProperty syncPropDefaultPeer("defaultPeer",
+                                              "the peer which is used by default in some frontends, like the sync-UI");
+
 ConfigPropertyRegistry &SyncConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
@@ -791,6 +794,7 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropRemoteDevID);
         registry.push_back(&syncPropNonce);
         registry.push_back(&syncPropDeviceData);
+        registry.push_back(&syncPropDefaultPeer);
 
         // obligatory sync properties
         syncPropUsername.setObligatory(true);
@@ -806,7 +810,7 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         syncPropDeviceData.setHidden(true);
 
         // global sync properties
-        // TODO: add "default peer" property
+        syncPropDefaultPeer.setSharing(ConfigProperty::GLOBAL_SHARING);
 
         // peer independent sync properties
         syncPropLogDir.setSharing(ConfigProperty::SOURCE_SET_SHARING);
@@ -1053,6 +1057,8 @@ string SyncConfig::getNonce() const { return syncPropNonce.getProperty(*getNode(
 void SyncConfig::setNonce(const string &value) { syncPropNonce.setProperty(*getNode(syncPropNonce), value); }
 string SyncConfig::getDeviceData() const { return syncPropDeviceData.getProperty(*getNode(syncPropDeviceData)); }
 void SyncConfig::setDeviceData(const string &value) { syncPropDeviceData.setProperty(*getNode(syncPropDeviceData), value); }
+string SyncConfig::getDefaultPeer() const { return syncPropDefaultPeer.getProperty(*getNode(syncPropDefaultPeer)); }
+void SyncConfig::setDefaultPeer(const string &value) { syncPropDefaultPeer.setProperty(*getNode(syncPropDefaultPeer), value); }
 
 std::string SyncConfig::findSSLServerCertificate()
 {
