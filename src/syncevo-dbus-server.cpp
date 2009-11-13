@@ -1250,7 +1250,7 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
 void ReadOperations::checkSource(const std::string &sourceName)
 {
     if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Template or server name must be given");
+        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
     }
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
     if(!config->exists()) {
@@ -1264,7 +1264,7 @@ void ReadOperations::checkSource(const std::string &sourceName)
         }
     }
     if(it == sourceNames.end()) {
-        SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' has no " + sourceName + " source");
+        SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' has no '" + sourceName + "' source");
     }
     SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
     auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
