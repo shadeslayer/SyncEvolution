@@ -2112,7 +2112,7 @@ void Connection::process(const Caller_t &caller,
                     	          servers) {
                     	SyncContext context(server.first);
                     	if (context.getSyncURL() == serverID) {
-                    	    config = serverID;
+                            config = server.first;
                     	    break;
                     	}
 
