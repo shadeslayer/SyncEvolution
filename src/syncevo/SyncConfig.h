@@ -1216,11 +1216,6 @@ class SyncSourceConfig {
             prop.isSet(*m_nodes.m_configNode);
     }
 
-    /**
-     * @name Settings specific to SyncEvolution SyncSources
-     */
-    /**@{*/
-
     virtual const char *getUser() const;
     virtual void setUser(const string &value, bool temporarily = false);
 
@@ -1256,14 +1251,6 @@ class SyncSourceConfig {
     /** set the source type in <backend>[:format] style */
     virtual void setSourceType(const string &value, bool temporarily = false);
 
-
-    /**@}*/
-
-    /**
-     * @name Calls which usually do not have to be implemented by each SyncSource.
-     */
-    /**@{*/
-
     /**
      * Returns the SyncSource URI: used in SyncML to address the data
      * on the server.
@@ -1290,48 +1277,8 @@ class SyncSourceConfig {
     virtual const char*  getSync() const;
     virtual void setSync(const string &value, bool temporarily = false);
     
-    /**
-     * Sets the last sync timestamp. Called by the sync engine at
-     * the end of a sync. The client must save that modified
-     * value; it is needed to decide during the next sync whether
-     * an incremental sync is possible.
-     *
-     * SyncEvolution will reset this value when a SyncSource fails
-     * and thus force a slow sync during the next sync.
-     *
-     * @param timestamp the last sync timestamp
-     */
-    virtual unsigned long getLast() const;
-    virtual void setLast(unsigned long timestamp);
-
-    /**
-     * "des" enables an encryption mode which only the Funambol server
-     * understands. Not configurable in SyncEvolution unless a derived
-     * SyncSource decides otherwise.
-     */
-    virtual const char* getEncryption() const { return ""; }
-
-    /**
-     * Returns an array of CtCap with all the capabilities for this
-     * source.  The capabilities specify which parts of e.g. a vCard
-     * the sync source supports. Not specifying this in detail by
-     * returning an empty array implies that it supports all aspects.
-     * This is the default implementation of this call.
-     *
-     * @TODO: per-source capabilities
-     */
-    // virtual const ArrayList& getCtCaps() const { static const ArrayList dummy; return dummy; }
-
-    /**@}*/
-
-    /**
-     * @name Calls implemented by SyncEvolution.
-     */
-    /**@{*/
     virtual const char*  getName() const { return m_name.c_str(); }
-
     virtual SyncSourceNodes& getSyncSourceNodes() { return m_nodes; }
-    /**@}*/
 
  private:
     string m_name;

@@ -1199,9 +1199,6 @@ static ConfigProperty sourcePropUser("evolutionuser",
                                      "can cause the Evolution backend to hang.");
 static EvolutionPasswordConfigProperty sourcePropPassword("evolutionpassword", "","", "backend");
 
-static ULongConfigProperty sourcePropLast("last",
-                                          "used by the SyncML library internally; do not modify");
-
 static ConfigProperty sourcePropAdminData(SourceAdminDataName,
                                           "used by the Synthesis library internally; do not modify");
 
@@ -1218,8 +1215,6 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
         registry.push_back(&sourcePropURI);
         registry.push_back(&sourcePropUser);
         registry.push_back(&sourcePropPassword);
-        registry.push_back(&sourcePropLast);
-        sourcePropLast.setHidden(true);
         registry.push_back(&sourcePropAdminData);
         sourcePropAdminData.setHidden(true);
         initialized = true;
@@ -1251,8 +1246,6 @@ const char *SyncSourceConfig::getURI() const { return m_stringCache.getProperty(
 void SyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*m_nodes.m_configNode, value, temporarily); }
 const char *SyncSourceConfig::getSync() const { return m_stringCache.getProperty(*m_nodes.m_configNode, m_sourcePropSync); }
 void SyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*m_nodes.m_configNode, value, temporarily); }
-unsigned long SyncSourceConfig::getLast() const { return sourcePropLast.getProperty(*m_nodes.m_hiddenNode); }
-void SyncSourceConfig::setLast(unsigned long timestamp) { sourcePropLast.setProperty(*m_nodes.m_hiddenNode, timestamp); }
 string SyncSourceConfig::getSourceTypeString(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.m_configNode); }
 SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
     string type = getSourceTypeString(nodes);
