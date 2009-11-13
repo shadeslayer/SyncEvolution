@@ -34,6 +34,7 @@
 #include <syncevo/TransportAgent.h>
 #include <syncevo/CurlTransportAgent.h>
 #include <syncevo/SoupTransportAgent.h>
+#include <syncevo/ObexTransportAgent.h>
 
 #include <list>
 #include <memory>
@@ -827,17 +828,29 @@ string SyncContext::askPassword(const string &passwordName, const string &descr,
 
 boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent()
 {
+    std::string url = getSyncURL();
+    if (url.find ("http://") ==0) {
 #ifdef ENABLE_LIBSOUP
-    boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent());
+        boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent());
+        agent->setConfig(*this);
+        return agent;
 #elif defined(ENABLE_LIBCURL)
-    boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
-#else
-    boost::shared_ptr<HTTPTransportAgent> agent;
-    throw std::string("libsyncevolution was compiled without default transport, client must implement SyncContext::createTransportAgent()");
+        boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
+        agent->setConfig(*this);
+        return agent;
 #endif
-
-    agent->setConfig(*this);
-    return agent;
+    } else if (url.find("obex-bt://") ==0) {
+#ifdef ENABLE_BLUETOOTH
+        std::string btUrl = url.substr (strlen ("obex-bt://"), std::string::npos);
+        boost::shared_ptr<ObexTransportAgent> agent(new ObexTransportAgent(ObexTransportAgent::OBEX_BLUETOOTH));
+        agent->setURL (btUrl);
+        agent->connect();
+        return agent;
+#endif
+    } else {
+        boost::shared_ptr<TransportAgent> agent;
+        throw std::string("unsupported transport type is specified in the configuration");
+    }
 }
 
 void SyncContext::displayServerMessage(const string &message)

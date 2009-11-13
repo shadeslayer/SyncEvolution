@@ -98,6 +98,15 @@ libsyncevolution_include_HEADERS = \
 								  eds_abi_wrapper.h \
 								  SmartPtr.h \
 								  ConfigNode.h 
+if ENABLE_OBEX 
+SYNCEVOLUTION_SOURCES += ObexTransportAgent.h ObexTransportAgent.cpp
+SYNCEVOLUTION_LDADD += $(LIBOPENOBEX_LIBS)
+SYNCEVOLUTION_CXXFLAGS += $(LIBOPENOBEX_CFLAGS)
+if ENABLE_BLUETOOTH
+SYNCEVOLUTION_LDADD += $(BLUEZ_LIBS)
+SYNCEVOLUTION_CXXFLAGS += $(BLUEZ_CFLAGS)
+endif
+endif
 
 pkgconfigdir=$(libdir)/pkgconfig
 pkgconfig_DATA=syncevolution.pc

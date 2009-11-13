@@ -461,11 +461,15 @@ ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
 
 
 static ConfigProperty syncPropSyncURL("syncURL",
-                                      "the base URL of the SyncML server which is to be used for SyncML;\n"
-                                      "some examples:\n"
+                                      "Identifies how to contact the peer,\n"
+                                      "best explained with some examples.\n"
+                                      "HTTP(S) SyncML servers:\n"
                                       "- http://my.funambol.com/sync\n"
                                       "- http://sync.scheduleworld.com/funambol/ds\n"
-                                      "- http://www.synthesis.ch/sync\n");
+                                      "- http://www.synthesis.ch/sync\n"
+                                      "OBEX over Bluetooth:\n"
+                                      "- obex-bt://00:0A:94:03:F3:7E+16\n"
+                                      "- obex-bt://00:0A:94:03:F3:7E\n");
 static ConfigProperty syncPropDevID("deviceId",
                                     "The SyncML server gets this string and will use it to keep track of\n"
                                     "changes that still need to be synchronized with this particular\n"

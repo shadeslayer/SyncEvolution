@@ -138,6 +138,22 @@ PKG_CHECK_MODULES(LIBSOUP, libsoup-gnome-2.4,
                   [PKG_CHECK_MODULES(LIBSOUP, libsoup-2.4,
                                      have_libsoup="yes",
                                      have_libsoup="no")])
+
+PKG_CHECK_MODULES(LIBOPENOBEX, openobex, have_obex="yes", have_obex="no")
+if test $have_obex == "yes"; then
+AC_DEFINE(ENABLE_OBEX, 1, [define if openobex library is available])
+    PKG_CHECK_MODULES(BLUEZ, bluez, have_bluez="yes", have_bluez="no")
+    if test $have_bluez == "yes"; then
+    AC_DEFINE(ENABLE_BLUETOOTH, 1, [define if bluez library is available])
+    fi
+fi
+AM_CONDITIONAL([ENABLE_OBEX], [test "$have_obex" = "yes"])
+AM_CONDITIONAL([ENABLE_BLUETOOTH], [test "$have_bluez" = "yes"])
+AC_SUBST(LIBOPENOBEX_CFLAGS)
+AC_SUBST(LIBOPENOBEX_LIBS)
+AC_SUBST(BLUEZ_CFLAGS)
+AC_SUBST(BLUEZ_LIBS)
+
 TRANSPORT=
 TRANSPORT_LIBS=
 TRANSPORT_CFLAGS=
@@ -198,7 +214,8 @@ AC_ARG_ENABLE(libsoup,
 
 if test ! "$TRANSPORT" &&
    test "$libsoup_disabled" != "yes" &&
-   test "$libcurl_disabled" != "yes"; then
+   test "$libcurl_disabled" != "yes" &&
+   test "$have_bluez" != "yes" ; then
    AC_ERROR([no transport library found, configure with --disable-libcurl --disable-libsoup to continue anyway (only useful if users of libsyncevolution provide transport implementation)])
 fi
 
