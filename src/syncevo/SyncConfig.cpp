@@ -26,6 +26,8 @@
 #include <syncevo/FileConfigTree.h>
 #include <syncevo/VolatileConfigTree.h>
 #include <syncevo/VolatileConfigNode.h>
+#include <syncevo/DevNullConfigNode.h>
+#include <syncevo/MultiplexConfigNode.h>
 #include <synthesis/timeutil.h>
 
 #include <boost/foreach.hpp>
@@ -78,19 +80,32 @@ string SyncConfig::normalizePeerString(const string &peer)
 }
 
 SyncConfig::SyncConfig() :
-    // TODO: change default
-    m_layout(HTTP_SERVER_LAYOUT)
+    m_layout(HTTP_SERVER_LAYOUT) // use more compact layout with shorter paths and less source nodes
 {
+    // initialize properties
+    SyncConfig::getRegistry();
+    SyncSourceConfig::getRegistry();
+
+    m_peerPath =
+        m_contextPath = "volatile";
     m_tree.reset(new VolatileConfigTree());
     m_peerNode.reset(new VolatileConfigNode());
-    m_globalNode = m_peerNode;
     m_hiddenPeerNode = m_peerNode;
+    m_globalNode = m_peerNode;
+    m_contextNode = m_peerNode;
+    m_contextHiddenNode = m_peerNode;
+    m_props[false] = m_peerNode;
+    m_props[true] = m_peerNode;
 }
 
 SyncConfig::SyncConfig(const string &peer,
                        boost::shared_ptr<ConfigTree> tree) :
-    m_layout(HTTP_SERVER_LAYOUT)
+    m_layout(SHARED_LAYOUT)
 {
+    // initialize properties
+    SyncConfig::getRegistry();
+    SyncSourceConfig::getRegistry();
+
     string root;
 
     m_peer = normalizePeerString(peer);
@@ -116,25 +131,19 @@ SyncConfig::SyncConfig(const string &peer,
             if (!access((path + "/config.ini").c_str(), F_OK) &&
                 !access((path + "/sources").c_str(), F_OK)) {
                 m_layout = HTTP_SERVER_LAYOUT;
-            } else if (true) {
-                // this branch makes HTTP_SERVER_LAYOUT the default for new
-                // configs, remove this once sufficient tests are in place
-                m_layout = HTTP_SERVER_LAYOUT;
             } else {
                 // check whether config name specifies a context,
                 // otherwise use "default"
                 string::size_type at = m_peerPath.rfind('@');
                 if (at != m_peerPath.npos) {
                     m_contextPath = m_peerPath.substr(at + 1);
-                    m_peerPath = m_contextPath + "/peers/" + m_peerPath.substr(0, at);
+                    m_peerPath.resize(at);
                 } else {
                     m_contextPath = "default";
-                    m_peerPath = string("default/peers/") + m_peerPath;
                 }
-
-                // TODO: "views" without specific peer:
-                // m_peerPath = m_contextPath for "sources",
-                // no m_peerNode
+                if (!m_peerPath.empty()) {
+                    m_peerPath = m_contextPath + "/peers/" + m_peerPath;
+                }
             }
         }
         m_tree.reset(new FileConfigTree(root, m_peerPath,
@@ -154,6 +163,8 @@ SyncConfig::SyncConfig(const string &peer,
         m_hiddenPeerNode =
             m_contextHiddenNode =
             node;
+        m_props[false] = m_peerNode;
+        m_props[true].reset(new FilterConfigNode(m_hiddenPeerNode));
         break;
     case HTTP_SERVER_LAYOUT:
         // properties which are normally considered shared are
@@ -166,6 +177,8 @@ SyncConfig::SyncConfig(const string &peer,
         m_hiddenPeerNode =
             m_contextHiddenNode =
             m_tree->open(path, ConfigTree::hidden);
+        m_props[false] = m_peerNode;
+        m_props[true].reset(new FilterConfigNode(m_hiddenPeerNode));
         break;
     case SHARED_LAYOUT:
         // really use different nodes for everything
@@ -174,14 +187,49 @@ SyncConfig::SyncConfig(const string &peer,
         m_globalNode.reset(new FilterConfigNode(node));
 
         path = m_peerPath;
-        node = m_tree->open(path, ConfigTree::visible);
+        if (path.empty()) {
+            node.reset(new DevNullConfigNode(m_contextPath + " without peer config"));
+        } else {
+            node = m_tree->open(path, ConfigTree::visible);
+        }
         m_peerNode.reset(new FilterConfigNode(node));
-        m_hiddenPeerNode = m_tree->open(path, ConfigTree::hidden);
+        if (path.empty()) {
+            m_hiddenPeerNode = m_peerNode;
+        } else {
+            m_hiddenPeerNode = m_tree->open(path, ConfigTree::hidden);
+        }
 
         path = m_contextPath;
         node = m_tree->open(path, ConfigTree::visible);
         m_contextNode.reset(new FilterConfigNode(node));
         m_contextHiddenNode = m_tree->open(path, ConfigTree::hidden);
+
+        // Instantiate multiplexer with the most specific node name in
+        // the set, the peer node's name. This is slightly inaccurate:
+        // error messages generated for this node in will reference
+        // the wrong config.ini file for shared properties. But
+        // there no shared properties which can trigger such an error
+        // at the moment, so this is good enough for now (MB#8037).
+        boost::shared_ptr<MultiplexConfigNode> mnode;
+        mnode.reset(new MultiplexConfigNode(m_peerNode->getName(),
+                                            getRegistry(),
+                                            false));
+        m_props[false] = mnode;
+        mnode->setNode(false, ConfigProperty::GLOBAL_SHARING,
+                       m_globalNode);
+        mnode->setNode(false, ConfigProperty::SOURCE_SET_SHARING,
+                       m_contextNode);
+        mnode->setNode(false, ConfigProperty::NO_SHARING,
+                       m_peerNode);
+
+        mnode.reset(new MultiplexConfigNode(m_hiddenPeerNode->getName(),
+                                            getRegistry(),
+                                            true));
+        m_props[true] = mnode;
+        mnode->setNode(true, ConfigProperty::SOURCE_SET_SHARING,
+                       m_contextHiddenNode);
+        mnode->setNode(true, ConfigProperty::NO_SHARING,
+                       m_hiddenPeerNode);
         break;
     }
 }
@@ -191,14 +239,30 @@ string SyncConfig::getRootPath() const
     return m_tree->getRootPath();
 }
 
-static void addServers(const string &root, SyncConfig::ServerList &res) {
+void SyncConfig::addPeers(const string &root,
+                          const std::string &configname,
+                          SyncConfig::ServerList &res) {
     FileConfigTree tree(root, "", false);
     list<string> servers = tree.getChildren("");
     BOOST_FOREACH(const string &server, servers) {
         // sanity check: only list server directories which actually
-        // contain a configuration
-        SyncConfig config(server);
-        if (config.exists()) {
+        // contain a configuration. To distinguish between a context
+        // (~/.config/syncevolution/default) and an HTTP server config
+        // (~/.config/syncevolution/scheduleworld), we check for the
+        // "peer" subdirectory that is only in the former.
+        //
+        // Contexts which don't have a peer are therefore incorrectly
+        // listed as a peer. Short of adding a special hidden file
+        // this can't be fixed. This is probably overkill and thus not
+        // done yet.
+        string peerPath = server + "/peers";
+        if (!access((root + "/" + peerPath).c_str(), F_OK)) {
+            // not a real HTTP server, search for peers
+            BOOST_FOREACH(const string &peer, tree.getChildren(peerPath)) {
+                res.push_back(pair<string, string>(normalizePeerString(peer + "@" + server),
+                                                   root + "/" + peerPath + "/" + peer));
+            }
+        } else if (!access((root + "/" + server + "/" + configname).c_str(), F_OK)) {
             res.push_back(pair<string, string>(server, root + "/" + server));
         }
     }
@@ -208,9 +272,8 @@ SyncConfig::ServerList SyncConfig::getServers()
 {
     ServerList res;
 
-    addServers(getOldRoot(), res);
-    addServers(getNewRoot(), res);
-    // TODO: add peers in SHARED_LAYOUT
+    addPeers(getOldRoot(), "config.txt", res);
+    addPeers(getNewRoot(), "config.ini", res);
 
     // sort the list; better than returning it in random order
     res.sort();
@@ -264,6 +327,14 @@ SyncConfig::ServerList SyncConfig::getServerTemplates()
 
 boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &server)
 {
+    if (server.empty()) {
+        // Empty template name => no such template. This check is
+        // necessary because otherwise we end up with SyncConfig(""),
+        // which is a configuration where peer-specific properties
+        // cannot be set, triggering an errror in config->setDevID().
+        return boost::shared_ptr<SyncConfig>();
+    }
+
     // case insensitive search for read-only file template config
     string templateConfig(TEMPLATE_DIR);
     if (isDir(templateConfig)) {
@@ -457,7 +528,9 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
 
 bool SyncConfig::exists() const
 {
-    return m_peerNode->exists();
+    return m_peerPath.empty() ?
+        m_contextNode->exists() :
+        m_peerNode->exists();
 }
 
 void SyncConfig::preFlush(ConfigUserInterface &ui)
@@ -504,11 +577,12 @@ boost::shared_ptr<PersistentSyncSourceConfig> SyncConfig::getSyncSourceConfig(co
 
 list<string> SyncConfig::getSyncSources() const
 {
-    // look into peer directory to find sources configured
-    // for this peer; when no peer, then m_peerPath is
-    // identical to m_contextPath and we return all sources
-    // configured independent of peers
-    return m_tree->getChildren(m_peerPath +
+    // Return *all* sources configured in this context,
+    // not just those configured for the peer. This
+    // is necessary so that sources created for some other peer
+    // show up for the current one, to prevent overwriting
+    // existing properties unintentionally.
+    return m_tree->getChildren(m_contextPath +
                                (m_layout == SYNC4J_LAYOUT ? 
                                 "/spds/sources" :
                                 "/sources"));
@@ -540,39 +614,43 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         peerPath = m_peerPath + "/sources/" + lower;
         break;
     case SHARED_LAYOUT:
-        peerPath = m_peerPath + "/sources/" + lower;
+        if (!m_peerPath.empty()) {
+            peerPath = m_peerPath + "/sources/" + lower;
+        }
         sharedPath = m_contextPath + string("/sources/") + lower;
         break;
     }
 
-    node = m_tree->open(peerPath, ConfigTree::visible);
-    peerNode.reset(new FilterConfigNode(node, m_sourceFilter));
-    SourceFilters_t::const_iterator filter = m_sourceFilters.find(name);
-    if (filter != m_sourceFilters.end()) {
-        peerNode =
-            boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(peerNode), filter->second));
+    if (peerPath.empty()) {
+        node.reset(new DevNullConfigNode(m_contextPath + " without peer configuration"));
+        peerNode.reset(new FilterConfigNode(node));
+        hiddenPeerNode =
+            trackingNode =
+            serverNode = node;
+    } else {
+        node = m_tree->open(peerPath, ConfigTree::visible);
+        peerNode.reset(new FilterConfigNode(node, m_sourceFilter));
+        SourceFilters_t::const_iterator filter = m_sourceFilters.find(name);
+        if (filter != m_sourceFilters.end()) {
+            peerNode =
+                boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(peerNode), filter->second));
+        }
+        hiddenPeerNode = m_tree->open(peerPath, ConfigTree::hidden);
+        trackingNode = m_tree->open(peerPath, ConfigTree::other, changeId);
+        serverNode = m_tree->open(peerPath, ConfigTree::server, changeId);
     }
-    hiddenPeerNode = m_tree->open(peerPath, ConfigTree::hidden);
 
     if (sharedPath.empty()) {
         sharedNode = peerNode;
-    } else if (sharedPath == peerPath) {
-        // No real peer available. Use the existing node for the
-        // shared config and no hidden or visible peer config.
-        // TODO: set valid pointers which throw exception when used.
-        sharedNode.swap(peerNode);
-        hiddenPeerNode.reset();
     } else {
         node = m_tree->open(sharedPath, ConfigTree::visible);
         sharedNode.reset(new FilterConfigNode(node, m_sourceFilter));
+        SourceFilters_t::const_iterator filter = m_sourceFilters.find(name);
         if (filter != m_sourceFilters.end()) {
             sharedNode =
                 boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(sharedNode), filter->second));
         }
     }
-
-    trackingNode = m_tree->open(peerPath, ConfigTree::other, changeId);
-    serverNode = m_tree->open(peerPath, ConfigTree::server, changeId);
 
     return SyncSourceNodes(sharedNode, peerNode, hiddenPeerNode, trackingNode, serverNode);
 }
@@ -1079,7 +1157,11 @@ SyncConfig::getNode(const ConfigProperty &prop)
 {
     switch (prop.getSharing()) {
     case ConfigProperty::GLOBAL_SHARING:
-        return m_globalNode;
+        if (prop.isHidden()) {
+            boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(new DevNullConfigNode("no hidden global properties"))));
+        } else {
+            return m_globalNode;
+        }
         break;
     case ConfigProperty::SOURCE_SET_SHARING:
         if (prop.isHidden()) {
@@ -1097,12 +1179,13 @@ SyncConfig::getNode(const ConfigProperty &prop)
         break;
     }
     // should not be reached
-    return boost::shared_ptr<FilterConfigNode>();
+    return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(new DevNullConfigNode("unknown sharing state of property"))));
 }
 
 static void setDefaultProps(const ConfigPropertyRegistry &registry,
                             boost::shared_ptr<FilterConfigNode> node,
                             bool force,
+                            bool unshared,
                             bool useObligatory = true)
 {
     BOOST_FOREACH(const ConfigProperty *prop, registry) {
@@ -1110,55 +1193,84 @@ static void setDefaultProps(const ConfigPropertyRegistry &registry,
         prop->getProperty(*node, &isDefault);
         
         if (!prop->isHidden() &&
+            (unshared || prop->getSharing() != ConfigProperty::NO_SHARING) &&
             (force || isDefault)) {
-            if(useObligatory) {
+            if (useObligatory) {
                 prop->setDefaultProperty(*node, prop->isObligatory());
             } else {
                 prop->setDefaultProperty(*node, false);
             }
         }
-    }    
+    }
 }
 
 void SyncConfig::setDefaults(bool force)
 {
-    setDefaultProps(getRegistry(), getProperties(), force);
+    setDefaultProps(getRegistry(), getProperties(),
+                    force,
+                    !m_peerPath.empty());
 }
 
 void SyncConfig::setSourceDefaults(const string &name, bool force)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
     setDefaultProps(SyncSourceConfig::getRegistry(),
-                    nodes.getProperties(), force);
+                    nodes.getProperties(),
+                    force,
+                    !m_peerPath.empty());
 }
 
 void SyncConfig::removeSyncSource(const string &name)
 {
-    string pathName = m_layout == SYNC4J_LAYOUT ? "spds/sources/" : "sources/";
-    pathName += name;
-    m_tree->removeSubtree(pathName);
-    // TODO: also remove in peers when using SHARED_LAYOUT
+    string lower = name;
+    boost::to_lower(lower);
+    string pathName;
+
+    if (m_layout == SHARED_LAYOUT) {
+        // removed share source properties...
+        pathName = m_contextPath + "/sources/" + lower;
+        m_tree->removeSubtree(pathName);
+        // ... and the peer-specific ones of *all* peers
+        BOOST_FOREACH(const std::string peer,
+                      m_tree->getChildren("peers")) {
+            m_tree->removeSubtree(string("peers/") + peer + "/sources/" + lower);
+        }
+    } else {
+        // remove the peer-specific ones
+        pathName = m_peerPath +
+            (m_layout == SYNC4J_LAYOUT ? "spds/sources/" : "sources/") +
+            lower;
+        m_tree->removeSubtree(pathName);
+    }
 }
 
 void SyncConfig::clearSyncSourceProperties(const string &name)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
     setDefaultProps(SyncSourceConfig::getRegistry(),
-                    nodes.getProperties(), true, false);
+                    nodes.getProperties(),
+                    true,
+                    !m_peerPath.empty(),
+                    false);
 }
 
 void SyncConfig::clearSyncProperties()
 {
-    setDefaultProps(getRegistry(), getProperties(), true, false);
+    setDefaultProps(getRegistry(), getProperties(),
+                    true,
+                    !m_peerPath.empty(),
+                    false);
 }
 
 static void copyProperties(const ConfigNode &fromProps,
                            ConfigNode &toProps,
                            bool hidden,
+                           bool unshared,
                            const ConfigPropertyRegistry &allProps)
 {
     BOOST_FOREACH(const ConfigProperty *prop, allProps) {
-        if (prop->isHidden() == hidden) {
+        if (prop->isHidden() == hidden &&
+            (unshared || prop->getSharing() != ConfigProperty::NO_SHARING)) {
             string name = prop->getName();
             bool isDefault;
             string value = prop->getProperty(fromProps, &isDefault);
@@ -1188,6 +1300,7 @@ void SyncConfig::copy(const SyncConfig &other,
         copyProperties(*fromSyncProps,
                        *toSyncProps,
                        i,
+                       !m_peerPath.empty(),
                        SyncConfig::getRegistry());
     }
 
@@ -1202,6 +1315,7 @@ void SyncConfig::copy(const SyncConfig &other,
                 copyProperties(*fromNodes.getProperties(i),
                                *toNodes.getProperties(i),
                                i,
+                               !m_peerPath.empty(),
                                SyncSourceConfig::getRegistry());
             }
             copyProperties(*fromNodes.getTrackingNode(),
@@ -1409,10 +1523,13 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
         // conceptually.
 
         // peer independent source properties
-        sourcePropSourceType.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         sourcePropDatabaseID.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         sourcePropUser.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         sourcePropPassword.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+
+        // Save "type" also in the shared nodes, so that the backend
+        // can be selected independently from a specific peer.
+        sourcePropSourceType.setFlags(ConfigProperty::SHARED_AND_UNSHARED);
 
         initialized = true;
     }
@@ -1420,16 +1537,44 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
     return registry;
 }
 
+SyncSourceNodes::SyncSourceNodes(const boost::shared_ptr<FilterConfigNode> &sharedNode,
+                                 const boost::shared_ptr<FilterConfigNode> &peerNode,
+                                 const boost::shared_ptr<ConfigNode> &hiddenPeerNode,
+                                 const boost::shared_ptr<ConfigNode> &trackingNode,
+                                 const boost::shared_ptr<ConfigNode> &serverNode) :
+    m_sharedNode(sharedNode),
+    m_peerNode(peerNode),
+    m_hiddenPeerNode(hiddenPeerNode),
+    m_trackingNode(trackingNode),
+    m_serverNode(serverNode)
+{
+    boost::shared_ptr<MultiplexConfigNode> mnode;
+    mnode.reset(new MultiplexConfigNode(m_peerNode->getName(),
+                                        SyncSourceConfig::getRegistry(),
+                                        false));
+    m_props[false] = mnode;
+    mnode->setNode(false, ConfigProperty::SOURCE_SET_SHARING,
+                   m_sharedNode);
+    mnode->setNode(false, ConfigProperty::NO_SHARING,
+                   m_peerNode);
+    // no multiplexing necessary for hidden peer properties yet
+    m_props[true].reset(new FilterConfigNode(m_hiddenPeerNode));
+}
+
+
 boost::shared_ptr<FilterConfigNode>
 SyncSourceNodes::getNode(const ConfigProperty &prop) const
 {
     switch (prop.getSharing()) {
     case ConfigProperty::GLOBAL_SHARING:
-        // neither needed nor implemented
-        // TODO: return valid pointer to node which cannot be used
+        return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(new DevNullConfigNode("no global source properties"))));
         break;
     case ConfigProperty::SOURCE_SET_SHARING:
-        return m_sharedNode;
+        if (prop.isHidden()) {
+            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(new DevNullConfigNode("no hidden source set properties"))));
+        } else {
+            return m_sharedNode;
+        }
         break;
     case ConfigProperty::NO_SHARING:
         if (prop.isHidden()) {

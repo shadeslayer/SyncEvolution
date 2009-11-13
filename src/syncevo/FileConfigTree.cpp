@@ -87,7 +87,7 @@ static bool rm_filter(const string &path, bool isDir)
 void FileConfigTree::remove()
 {
     reset();
-    rm_r(getRootPath(), rm_filter);
+    rm_r(m_root, rm_filter);
 }
 
 void FileConfigTree::reset()
@@ -97,7 +97,7 @@ void FileConfigTree::reset()
 
 void FileConfigTree::removeSubtree(const string &name) 
 {
-    string fullpath = getRootPath() + "/" + name;
+    string fullpath = m_root + "/" + name;
     clearNodes(fullpath);
     rm_r(fullpath, rm_filter);
 }

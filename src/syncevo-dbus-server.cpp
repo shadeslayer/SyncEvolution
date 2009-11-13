@@ -1149,9 +1149,6 @@ void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &con
 void ReadOperations::getConfig(bool getTemplate,
                                Config_t &config)
 {
-    if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Template or server name must be given");
-    }
     map<string, string> localConfigs;
     boost::shared_ptr<SyncConfig> syncConfig;
     /** get server template */
@@ -1164,7 +1161,7 @@ void ReadOperations::getConfig(bool getTemplate,
         boost::shared_ptr<SyncConfig> from;
         syncConfig.reset(new SyncConfig(m_configName));
         if (!syncConfig->exists()) {
-            SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
+            SE_THROW_EXCEPTION(NoSuchConfig, "No configuration '" + m_configName + "' found");
         }
     }
 
@@ -1201,7 +1198,10 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
                                 Reports_t &reports)
 {
     if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
+        // TODO: an empty config name should return reports for
+        // all peers (MB#8049)
+        SE_THROW_EXCEPTION(NoSuchConfig,
+                           "listing reports without peer name not implemented yet");
     }
     SyncContext client(m_configName, false);
     std::vector<string> dirs;
@@ -1270,13 +1270,7 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
 
 void ReadOperations::checkSource(const std::string &sourceName)
 {
-    if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
-    }
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
-    if(!config->exists()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
-    }
     list<std::string> sourceNames = config->getSyncSources();
     list<std::string>::iterator it;
     for(it = sourceNames.begin(); it != sourceNames.end(); ++it) {
@@ -1299,13 +1293,7 @@ void ReadOperations::checkSource(const std::string &sourceName)
 }
 void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &databases)
 {
-    if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
-    }
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
-    if(!config->exists()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
-    }
     SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
     const SourceRegistry &registry(SyncSource::getSourceRegistry());
     BOOST_FOREACH(const RegisterSyncSource *sourceInfo, registry) {
@@ -1424,9 +1412,6 @@ void Session::setConfig(bool update, bool temporary,
     if (m_sync) {
         SE_THROW_EXCEPTION(InvalidCall, "sync started, cannot change configuration at this time");
     }
-    if (getConfigName().empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
-    }
     if (!update && temporary) {
         throw std::runtime_error("Clearing existing configuration and temporary configuration changes which only affects the duration of the session are mutually exclusive");
     }
@@ -1449,7 +1434,7 @@ void Session::setConfig(bool update, bool temporary,
         boost::shared_ptr<SyncConfig> from(new SyncConfig(getConfigName()));
         /* if it is not clear mode and config does not exist, an error throws */
         if(update && !from->exists()) {
-            SE_THROW_EXCEPTION(NoSuchConfig, "The server '" + getConfigName() + "' doesn't exist" );
+            SE_THROW_EXCEPTION(NoSuchConfig, "The configuration '" + getConfigName() + "' doesn't exist" );
         }
         if(!update) {
             list<string> sources = from->getSyncSources();

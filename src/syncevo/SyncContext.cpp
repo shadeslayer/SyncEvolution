@@ -127,15 +127,26 @@ void SyncContext::printSignals()
     }
 }
 
-SyncContext::SyncContext(const string &server,
-                                         bool doLogging) :
-    SyncConfig(server),
-    m_server(server),
-    m_doLogging(doLogging),
-    m_quiet(false),
-    m_dryrun(false),
-    m_serverMode(false)
+SyncContext::SyncContext()
 {
+    init();
+}
+
+SyncContext::SyncContext(const string &server,
+                         bool doLogging) :
+    SyncConfig(server),
+    m_server(server)
+{
+    init();
+    m_doLogging = doLogging;
+}
+
+void SyncContext::init()
+{
+    m_doLogging = false;
+    m_quiet = false;
+    m_dryrun = false;
+    m_serverMode = false;
 }
 
 SyncContext::~SyncContext()
@@ -1583,7 +1594,7 @@ struct SyncContext::SyncMLMessageInfo
 SyncContext::analyzeSyncMLMessage(const char *data, size_t len,
                                   const std::string &messageType)
 {
-    SyncContext sync("", false);
+    SyncContext sync;
     SwapContext syncSentinel(&sync);
     SourceList sourceList(sync, false);
     sourceList.setLogLevel(SourceList::LOGGING_SUMMARY);

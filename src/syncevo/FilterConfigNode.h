@@ -65,12 +65,12 @@ class FilterConfigNode : public ConfigNode {
     virtual string getName() const { return m_readOnlyNode->getName(); }
 
     /** add another entry to the list of filter properties */
-    void addFilter(const string &property,
-                   const string &value);
+    virtual void addFilter(const string &property,
+                           const string &value);
 
     /** replace current filter list with new one */
-    void setFilter(const ConfigFilter &filter);
-    const ConfigFilter &getFilter() const { return m_filter; }
+    virtual void setFilter(const ConfigFilter &filter);
+    virtual const ConfigFilter &getFilter() const { return m_filter; }
 
     /* ConfigNode API */
     virtual void flush();

@@ -102,6 +102,7 @@ class ConfigProperty {
         m_obligatory(false),
         m_hidden(false),
         m_sharing(NO_SHARING),
+        m_flags(0),
         m_name(name),
         m_comment(boost::trim_right_copy(comment)),
             m_defValue(def),
@@ -187,6 +188,19 @@ class ConfigProperty {
     Sharing getSharing() const { return m_sharing; }
     void setSharing(Sharing sharing) { m_sharing = sharing; }
 
+    /**
+     * special hacks for certain properties
+     */
+    enum Flags {
+        SHARED_AND_UNSHARED = 1<<0   /**< value is stored with
+                                        SOURCE_SET_SHARING and
+                                        NO_SHARING, the later taking
+                                        precedency when reading
+                                        ("type"!) */
+    };
+    void setFlags(int flags) { m_flags = flags; }
+    int getFlags(void) const { return m_flags; }
+
     /** set value unconditionally, even if it is not valid */
     void setProperty(ConfigNode &node, const string &value) const { node.setProperty(getName(), value, getComment()); }
     void setProperty(FilterConfigNode &node, const string &value, bool temporarily = false) const {
@@ -245,6 +259,7 @@ class ConfigProperty {
     bool m_obligatory;
     bool m_hidden;
     Sharing m_sharing;
+    int m_flags;
     const string m_name, m_comment, m_defValue, m_descr;
 };
 
@@ -530,6 +545,7 @@ struct ConfigPasswordKey {
     /** the network port */
     unsigned int port;
 };
+
 /**
  * This interface has to be provided by the user of the config
  * to let the config code interact with the user.
@@ -907,14 +923,7 @@ class SyncConfig {
      * The visible properties are passed through the config filter,
      * which can be modified.
      */
-    boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) {
-        // TODO: adapt this SHARED_LAYOUT
-        if (hidden) {
-            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenPeerNode));
-        } else {
-            return m_peerNode;
-        }
-    }
+    boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) { return m_props[hidden]; }
     boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<SyncConfig *>(this)->getProperties(hidden); }
 
     /**
@@ -926,7 +935,6 @@ class SyncConfig {
     {
         return const_cast<SyncConfig *>(this)->getNode(prop);
     }
-        
 
     /**
      * Returns a wrapper around all properties of the given source
@@ -1188,6 +1196,16 @@ private:
     static string normalizePeerString(const string &peer);
 
     /**
+     * scans for peer configurations
+     * @param root         absolute directory path
+     * @param configname   expected name of config files (config.ini or config.txt)
+     * @retval res         filled with new peer configurations found
+     */
+    static void addPeers(const string &root,
+                         const std::string &configname,
+                         SyncConfig::ServerList &res);
+
+    /**
      * String that identifies the peer, see constructor.
      * This is a normalized string (normalizePeerString()).
      */
@@ -1199,6 +1217,8 @@ private:
      * For example "scheduleworld" for "ScheduleWorld" when
      * using the old config layouts, "default/peers/scheduleworld"
      * in the new layout.
+     *
+     * Empty if configuration view has no peer-specific properties.
      */
     string m_peerPath;
 
@@ -1227,6 +1247,9 @@ private:
     /** access to properties specific to a peer */
     boost::shared_ptr<FilterConfigNode> m_peerNode;
     boost::shared_ptr<ConfigNode> m_hiddenPeerNode;
+
+    /** multiplexer for the other config nodes */
+    boost::shared_ptr<FilterConfigNode> m_props[2];
 
     /**
      * temporary override for all sync source settings
@@ -1276,13 +1299,7 @@ class SyncSourceNodes {
                     const boost::shared_ptr<FilterConfigNode> &peerNode,
                     const boost::shared_ptr<ConfigNode> &hiddenPeerNode,
                     const boost::shared_ptr<ConfigNode> &trackingNode,
-                    const boost::shared_ptr<ConfigNode> &serverNode) :
-    m_sharedNode(sharedNode),
-        m_peerNode(peerNode),
-        m_hiddenPeerNode(hiddenPeerNode),
-        m_trackingNode(trackingNode),
-        m_serverNode(serverNode)
-    {}
+                    const boost::shared_ptr<ConfigNode> &serverNode);
 
     /** true if the peer-specific config node exists */
     bool exists() const { return m_peerNode->exists(); }
@@ -1298,14 +1315,7 @@ class SyncSourceNodes {
      * The visible properties are passed through the config filter,
      * which can be modified.
      */
-    boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) const {
-        // TODO: adapt this SHARED_LAYOUT
-        if (hidden) {
-            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenPeerNode));
-        } else {
-            return m_peerNode;
-        }
-    }
+    boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) const { return m_props[hidden]; }
 
     /** read-write access to SyncML server specific config node */
     boost::shared_ptr<ConfigNode> getServerNode() const { return m_serverNode; }
@@ -1319,6 +1329,9 @@ class SyncSourceNodes {
     const boost::shared_ptr<ConfigNode> m_hiddenPeerNode;
     const boost::shared_ptr<ConfigNode> m_trackingNode;
     const boost::shared_ptr<ConfigNode> m_serverNode;
+
+    /** multiplexer for the other nodes */
+    boost::shared_ptr<FilterConfigNode> m_props[2];
 };
 
 /**
