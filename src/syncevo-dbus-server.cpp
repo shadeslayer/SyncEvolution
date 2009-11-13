@@ -2096,7 +2096,7 @@ void Connection::process(const Caller_t &caller,
                               message.first);
             } else if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
             	sysync::SanPackage san;
-            	if (san.PassSan(const_cast<uint8_t *>(message.second), message.first)) {
+            	if (san.PassSan(const_cast<uint8_t *>(message.second), message.first) || san.GetHeader()) {
                     // We are very tolerant regarding the content of the message.
                     // If it doesn't parse, try to do something useful anyway.
                     config = "default";
