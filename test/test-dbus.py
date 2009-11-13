@@ -337,8 +337,20 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: Server name must be given")
 
-class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
-    """Tests that work for GetConfig/SetConfig in Session."""
+    def testCheckSourceEmptyName(self):
+        """Test the error is reported when the server name is empty for CheckSource"""
+        try:
+            self.session.CheckSource("", utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchConfig: Server name must be given")
+
+class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
+    """Tests that work for GetConfig/SetConfig/CheckSource/GetDatabases/GetReports in Session.
+       This class is only working in a dummy config. Thus it can't do sync correctly. The purpose
+       is to test some cleanup cases and expected errors. Also, some unit tests for some APIs 
+       depend on a clean configuration so they are included here. For those unit tests depending
+       on sync, another class is used """
 
     def setUp(self):
         self.setUpServer()
@@ -358,6 +370,14 @@ class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
                          "source/calendar"    : { "sync" : "disabled",
                                                   "type" : "calendar",
                                                   "uri" : "cal"
+                                                },
+                         "source/todo"        : { "sync" : "two-way",
+                                                  "type" : "todo",
+                                                  "uri" : "task"
+                                                },
+                         "source/memo"        : { "sync" : "two-way",
+                                                  "type" : "memo",
+                                                  "uri" : "text"
                                                 }
                        }
         # update config
@@ -365,6 +385,7 @@ class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
                                "" : { "password" : "nosecret"},
                                "source/addressbook" : { "sync" : "slow"}
                             }
+        self.sources = ['addressbook', 'calendar', 'todo', 'memo']
 
     def run(self, result):
         self.runTest(result)
@@ -463,6 +484,47 @@ class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
         self.session.SetConfig(False, False, config1, utf8_strings=True)
         config2 = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config2, config1)
+
+    def testCheckSourceNoConfig(self):
+        """ test the right error is reported when the server doesn't exist """
+        # make sure the config doesn't exist 
+        self.clearAllConfig();
+        try:
+            self.session.CheckSource("", utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test-for-config-purpose' found")
+
+    def testCheckSourceNoSourceName(self):
+        """ test the right error is reported when the source doesn't exist """
+        self.setupConfig()
+        try:
+            self.session.CheckSource("dummy", utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchSource: 'dummy-test-for-config-purpose' "
+                                 "has no 'dummy' source")
+
+    def testCheckSourceInvalidEvolutionSource(self):
+        """ test the right error is reported when the evolutionsource is invalid """
+        self.setupConfig()
+        config = { "source/memo" : { "evolutionsource" : "impossible-source"} }
+        self.session.SetConfig(True, False, config, utf8_strings=True)
+        try:
+            self.session.CheckSource("memo", utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.Exception: The source 'memo' configuration "
+                                 "is not correct")
+
+    def testCheckSource(self):
+        """ test all are right """
+        self.setupConfig()
+        try:
+            for source in self.sources:
+                self.session.CheckSource(source, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.fail("check source is failed with exception: " + str(ex))
 
 class TestDBusSync(unittest.TestCase, DBusUtil):
     """Executes a real sync."""
