@@ -1107,6 +1107,8 @@ public:
                               "config.ini:# clientAuthType = md5\n"
                               "config.ini:# RetryDuration = 300\n"
                               "config.ini:# RetryInterval = 60\n"
+                              "config.ini:# remoteIdentifier = \n"
+                              "config.ini:# PeerIsClient = 0\n"
                               "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
                               "config.ini:# enableWBXML = 1\n"
                               "config.ini:# maxMsgSize = 20000\n"

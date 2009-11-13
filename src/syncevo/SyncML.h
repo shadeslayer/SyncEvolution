@@ -41,8 +41,15 @@ enum SyncMode {
     SYNC_REFRESH_FROM_CLIENT = 203,
     SYNC_ONE_WAY_FROM_SERVER = 204,
     SYNC_REFRESH_FROM_SERVER = 205,
-    SYNC_LAST = 205,
 
+    /** used by Server Alerted Sync **/
+    SA_SYNC_TWO_WAY = 206,
+    SA_SYNC_ONE_WAY_FROM_CLIENT = 207,
+    SA_SYNC_REFRESH_FROM_CLIENT = 208,
+    SA_SYNC_ONE_WAY_FROM_SERVER = 209,
+    SA_SYNC_REFRESH_FROM_SERVER = 210,
+    
+    SYNC_LAST = 220,
     /** error situation (in contrast to SYNC_NONE) */
     SYNC_INVALID = 255
 };
@@ -57,7 +64,7 @@ std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible = true);
 /**
  * Parse user-visible mode names.
  */
-SyncMode StringToSyncMode(const std::string &str);
+SyncMode StringToSyncMode(const std::string &str, bool serverAlerted = false);
 
 /**
  * result of SyncML operations, same codes as in HTTP and the Synthesis engine

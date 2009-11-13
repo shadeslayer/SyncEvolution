@@ -566,6 +566,13 @@ static UIntConfigProperty syncPropRetryInterval("RetryInterval",
                                           "any delay will never succeed and therefore specifying 0\n"
                                           "disables retries."
                                           ,"60");
+static BoolConfigProperty syncPropPeerIsClient("PeerIsClient",
+                                          "Indicates whether this configuration is about a\n"
+                                          "client peer or server peer.\n",
+                                          "0");
+static ConfigProperty syncPropRemoteIdentifier("remoteIdentifier",
+                                      "the identifier sent to the remote peer for a server initiated sync\n",
+                                      "");
 static ConfigProperty syncPropSSLServerCertificates("SSLServerCertificates",
                                                     "A string specifying the location of the certificates\n"
                                                     "used to authenticate the server. When empty, the\n"
@@ -639,6 +646,8 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropClientAuthType);
         registry.push_back(&syncPropRetryDuration);
         registry.push_back(&syncPropRetryInterval);
+        registry.push_back(&syncPropRemoteIdentifier);
+        registry.push_back(&syncPropPeerIsClient);
         registry.push_back(&syncPropDevID);
         syncPropDevID.setObligatory(true);
         registry.push_back(&syncPropWBXML);
@@ -862,6 +871,14 @@ int SyncConfig::getRetryDuration() const {return syncPropRetryDuration.getProper
 void SyncConfig::setRetryDuration(int value, bool temporarily) {syncPropRetryDuration.setProperty(*m_configNode, value, temporarily);}
 int SyncConfig::getRetryInterval() const {return syncPropRetryInterval.getProperty(*m_configNode);}
 void SyncConfig::setRetryInterval(int value, bool temporarily) {return syncPropRetryInterval.setProperty(*m_configNode,value,temporarily);}
+
+/* used by Server Alerted Sync */
+const char* SyncConfig::getRemoteIdentifier() const {return m_stringCache.getProperty (*m_configNode, syncPropRemoteIdentifier);}
+void SyncConfig::setRemoteIdentifier (const string &value, bool temporarily) { return syncPropRemoteIdentifier.setProperty (*m_configNode, value, temporarily); }
+
+bool SyncConfig::getPeerIsClient() const { return syncPropPeerIsClient.getProperty(*m_configNode); }
+void SyncConfig::setPeerIsClient(bool value, bool temporarily) { syncPropPeerIsClient.setProperty(*m_configNode, value, temporarily); }
+
 bool SyncConfig::getPrintChanges() const { return syncPropPrintChanges.getProperty(*m_configNode); }
 void SyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*m_configNode, value, temporarily); }
 std::string SyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*m_configNode); }

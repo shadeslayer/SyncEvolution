@@ -1049,6 +1049,11 @@ class SyncConfig {
     virtual const char*  getDevID() const;
     virtual void setDevID(const string &value, bool temporarily = false);
 
+    /*Used for Server Alerted Sync*/
+    virtual const char*  getRemoteIdentifier() const;
+    virtual void setRemoteIdentifier (const string &value, bool temporaritly = false);
+    virtual bool getPeerIsClient () const;
+    virtual void setPeerIsClient (bool value, bool temporarily = false);
     /**
      * The Device ID of our peer. Typically only relevant when the
      * peer is a client. Servers don't have a Device ID, just some

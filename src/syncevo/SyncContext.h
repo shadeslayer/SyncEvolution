@@ -89,6 +89,8 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     string m_initialMessageType;
     string m_syncDeviceID;
 
+    
+    boost::shared_ptr<TransportAgent> m_agent;
     /**
      * flags for suspend and abort
      */
@@ -166,6 +168,16 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
 
     /** read-only access to suspend and abort state */
     static const SuspendFlags &getSuspendFlags() { return s_flags; }
+
+    /*
+     * Use initSAN as the first step is sync() if this is a server alerted sync.
+     * Prepare the san package and send the SAN request to the peer in retry
+     * times. Returns false if failed to get a valid client sync request
+     * otherwise put the client sync request into m_initialMessage which will
+     * be used to initalze the server via initServer(), then continue sync() to
+     * start the real sync serssion.
+     */
+    bool initSAN (int retry = 3);
 
     /**
      * Initializes the session so that it runs as SyncML server once

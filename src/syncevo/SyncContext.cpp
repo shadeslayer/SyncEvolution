@@ -63,6 +63,7 @@ using namespace std;
 
 #include <synthesis/enginemodulebridge.h>
 #include <synthesis/SDK_util.h>
+#include <synthesis/san.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -1735,6 +1736,18 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                 }
             }
 
+            if ( getPeerIsClient()) {
+                m_serverMode = true;
+                //This is a server alerted sync !
+                if (! initSAN ()) {
+                    // return a proper error code 
+                    throwError ("Server Alerted Sync init failed");
+                }
+            }
+
+            // reinitializes the engine, only at this time can we decide whether
+            // this is a server session or client session.
+            SwapEngine swapengine(*this);
             // open each source - failing now is still safe
             BOOST_FOREACH(SyncSource *source, sourceList) {
                 if (m_serverMode) {
@@ -1751,8 +1764,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             // sources it needs.
             // ready to go: dump initial databases and prepare for final report
             sourceList.syncPrepare();
-
-            // run sync session
             status = doSync();
         } catch (...) {
             // handle the exception here while the engine (and logging!) is still alive
@@ -1782,6 +1793,80 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
 
     m_sourceListPtr = NULL;
     return status;
+}
+
+bool SyncContext::initSAN(int retries) 
+{
+    sysync::SanPackage san;
+    /* Should be nonce sent by the server in the preceeding sync session */
+    string nonce = "Synthesis";
+    /* SyncML Version 1.2 */
+    uint16_t protoVersion = 12;
+    string uauthb64 = san.B64_H (getUsername(), getPassword());
+    /* Client is expected to conduct the sync in the backgroud */
+    sysync::UI_Mode mode = sysync::UI_not_specified;
+
+    uint16_t sessionId = 0;
+    string serverId = getRemoteIdentifier();
+    san.PreparePackage( uauthb64, nonce, protoVersion, mode, 
+            sysync::Initiator_Server, sessionId, serverId);
+
+    san.CreateEmptyNotificationBody();
+    /* For each source to be notified do the following: */
+    BOOST_FOREACH (string name, m_sourceListPtr->getSources()) {
+        boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
+        string sync = sc->getSync();
+        int mode = StringToSyncMode (sync, true);
+        if (mode <SYNC_FIRST || mode >SYNC_LAST) {
+            SE_LOG_DEV (NULL, NULL, "Ignoring data source %s with an invalid sync mode", name.c_str());
+            continue;
+        }
+        string uri = sc->getURI();
+        //TODO how to define the MIME type? Add another property?
+        if ( san.AddSync(mode, (uInt32) 0, uri.c_str())) {
+            SE_LOG_ERROR(NULL, NULL, "SAN: adding server alerted sync element failed");
+        };
+    }
+
+    /* Generate the SAN Package */
+    char *buffer ;
+    size_t sanSize;
+    if (san.GetPackage((void * &)buffer, sanSize, NULL, (size_t) 0)){
+        SE_LOG_ERROR (NULL, NULL, "SAN package generating faield");
+        return false;
+    }
+
+    /* Create the transport agent */
+    try {
+        m_agent = createTransportAgent();
+        m_agent->setContentType (TransportAgent::m_contentTypeServerAlertedNotificationDS);
+        int retry = 0;
+        while (retry++ < retries) 
+        {
+            SE_LOG_INFO (NULL, NULL, "Server sending SAN %d", retry);
+            m_agent->send(buffer, sanSize);
+            if (m_agent->wait() == TransportAgent::GOT_REPLY){
+                const char *reply;
+                size_t replyLen;
+                string contentType;
+                m_agent->getReply (reply, replyLen, contentType);
+
+                //sanity check for the reply 
+                if (contentType.empty() || 
+                        contentType.find(TransportAgent::m_contentTypeSyncML) != contentType.npos ||
+                        contentType.find(TransportAgent::m_contentTypeSyncWBXML) != contentType.npos) {
+                    SharedBuffer request (reply, replyLen);
+                    //TODO should generate more reasonable sessionId here
+                    string sessionId ="";
+                    initServer (sessionId, request, contentType);
+                    return true;
+                }
+            }
+        }
+    } catch (TransportException e) {
+        SE_LOG_ERROR (NULL, NULL, "TransportException while sending SAN package");
+    }
+    return false;
 }
 
 SyncMLStatus SyncContext::doSync()
@@ -1908,8 +1993,10 @@ SyncMLStatus SyncContext::doSync()
     m_retryDuration = getRetryDuration();
     m_retries = 0;
 
-    // run an HTTP client sync session
-    boost::shared_ptr<TransportAgent> agent(createTransportAgent());
+    //Create the transport agent if not already created
+    if(!m_agent) {
+        m_agent = createTransportAgent();
+    }
 
     sysync::TEngineProgressInfo progressInfo;
     sysync::uInt16 stepCmd = 
@@ -2064,29 +2151,29 @@ SyncMLStatus SyncContext::doSync()
 
                 SharedKey sessionKey = m_engine.OpenSessionKey(session);
                 if (m_serverMode) {
-                    agent->setURL("");
+                    m_agent->setURL("");
                 } else {
                     // use OpenSessionKey() and GetValue() to retrieve "connectURI"
                     // and "contenttype" to be used to send data to the server
                     s = m_engine.GetStrValue(sessionKey,
                                              "connectURI");
-                    agent->setURL(s);
+                    m_agent->setURL(s);
                 }
                 s = m_engine.GetStrValue(sessionKey,
                                          "contenttype");
-                agent->setContentType(s);
+                m_agent->setContentType(s);
                 sessionKey.reset();
                 
                 sendStart = resendStart = time (NULL);
                 //register transport callback
                 if (m_retryInterval) {
-                    agent->setCallback (transport_cb, this, m_retryInterval);
+                    m_agent->setCallback (transport_cb, this, m_retryInterval);
                 }
                 // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
                 // sent or have it copied into caller's buffer using
                 // ReadSyncMLBuffer(), then send it to the server
                 sendBuffer = m_engine.GetSyncMLBuffer(session, true);
-                agent->send(sendBuffer.get(), sendBuffer.size());
+                m_agent->send(sendBuffer.get(), sendBuffer.size());
                 stepCmd = sysync::STEPCMD_SENTDATA; // we have sent the data
                 break;
             }
@@ -2095,12 +2182,12 @@ SyncMLStatus SyncContext::doSync()
                 resendStart = time(NULL);
                 /* We are resending previous message, just read from the
                  * previous buffer */
-                agent->send(sendBuffer.get(), sendBuffer.size());
+                m_agent->send(sendBuffer.get(), sendBuffer.size());
                 stepCmd = sysync::STEPCMD_SENTDATA; // we have sent the data
                 break;
             }
             case sysync::STEPCMD_NEEDDATA:
-                switch (agent->wait()) {
+                switch (m_agent->wait()) {
                 case TransportAgent::ACTIVE:
                     // Still sending the data?! Don't change anything,
                     // skip SessionStep() above.
@@ -2125,7 +2212,7 @@ SyncMLStatus SyncContext::doSync()
                     const char *reply;
                     size_t replylen;
                     string contentType;
-                    agent->getReply(reply, replylen, contentType);
+                    m_agent->getReply(reply, replylen, contentType);
 
                     // sanity check for reply: if known at all, it must be either XML or WBXML
                     if (contentType.empty() ||
@@ -2229,16 +2316,18 @@ SyncMLStatus SyncContext::doSync()
     // Otherwise destruct the agent without further communication.
     if (!status && !checkForAbort()) {
         try {
-            agent->shutdown();
+            m_agent->shutdown();
             // TODO: implement timeout for peers which fail to respond
             while (!checkForAbort() &&
-                   agent->wait(true) == TransportAgent::ACTIVE) {
+                   m_agent->wait(true) == TransportAgent::ACTIVE) {
+                // TODO: allow aborting the sync here
             }
         } catch (...) {
             status = handleException();
         }
     }
 
+    m_agent.reset();
     sigaction (SIGINT, &old_action, NULL);
     sigaction (SIGTERM, &old_term_action, NULL);
     return status;
