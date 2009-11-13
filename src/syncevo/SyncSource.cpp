@@ -95,6 +95,7 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
         "      <plugin_datastoreadmin>" <<
         (serverModeEnabled() ? "yes" : "no") <<
         "</plugin_datastoreadmin>\n"
+        "      <fromremoteonlysupport> yes </fromremoteonlysupport>\n"
         "\n"
         "      <!-- General datastore settings for all DB types -->\n"
         "\n"
