@@ -1172,7 +1172,7 @@ void ReadOperations::getConfig(bool getTemplate,
     ConfigPropertyRegistry &syncRegistry = SyncConfig::getRegistry();
     BOOST_FOREACH(const ConfigProperty *prop, syncRegistry) {
         bool isDefault = false;
-        string value = prop->getProperty(syncConfig->getConfigNode(), &isDefault);
+        string value = prop->getProperty(*syncConfig->getProperties(), &isDefault);
         if(!isDefault) {
             localConfigs.insert(pair<string, string>(prop->getName(), value));
         }
@@ -1188,7 +1188,7 @@ void ReadOperations::getConfig(bool getTemplate,
         ConfigPropertyRegistry &sourceRegistry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, sourceRegistry) {
             bool isDefault = false;
-            string value = prop->getProperty(*sourceNodes.m_configNode, &isDefault);
+            string value = prop->getProperty(*sourceNodes.getProperties(), &isDefault);
             if(!isDefault) {
                 localConfigs.insert(pair<string, string>(prop->getName(), value));
             }
@@ -1287,7 +1287,7 @@ void ReadOperations::checkSource(const std::string &sourceName)
     if(it == sourceNames.end()) {
         SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' has no '" + sourceName + "' source");
     }
-    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
+    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
     auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
     try {
         if (syncSource.get()) {
@@ -1306,7 +1306,7 @@ void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &d
     if(!config->exists()) {
         SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
     }
-    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
+    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
     const SourceRegistry &registry(SyncSource::getSourceRegistry());
     BOOST_FOREACH(const RegisterSyncSource *sourceInfo, registry) {
         SyncSource *source = sourceInfo->m_create(params);

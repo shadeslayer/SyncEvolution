@@ -65,43 +65,125 @@ void ConfigProperty::throwValueError(const ConfigNode &node, const string &name,
     SyncContext::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
-SyncConfig::SyncConfig() :
-    m_oldLayout(false)
+string SyncConfig::normalizePeerString(const string &peer)
 {
-    m_tree.reset(new VolatileConfigTree());
-    m_configNode.reset(new VolatileConfigNode());
-    m_hiddenNode = m_configNode;
+    string normal = peer;
+    boost::to_lower(normal);
+    if (boost::ends_with(normal, "@default")) {
+        normal.resize(normal.size() - strlen("@default"));
+    } else if (boost::ends_with(normal, "@")) {
+        normal.resize(normal.size() - 1);
+    }
+    return normal;
 }
 
-SyncConfig::SyncConfig(const string &server,
-                                         boost::shared_ptr<ConfigTree> tree) :
-    m_server(server),
-    m_oldLayout(false)
+SyncConfig::SyncConfig() :
+    // TODO: change default
+    m_layout(HTTP_SERVER_LAYOUT)
+{
+    m_tree.reset(new VolatileConfigTree());
+    m_peerNode.reset(new VolatileConfigNode());
+    m_globalNode = m_peerNode;
+    m_hiddenPeerNode = m_peerNode;
+}
+
+SyncConfig::SyncConfig(const string &peer,
+                       boost::shared_ptr<ConfigTree> tree) :
+    m_layout(HTTP_SERVER_LAYOUT)
 {
     string root;
+
+    m_peer = normalizePeerString(peer);
+
+    // except for SHARED_LAYOUT (set below),
+    // everything is below the directory called like
+    // the peer
+    m_peerPath =
+        m_contextPath = 
+        m_peer;
 
     if (tree.get() != NULL) {
         m_tree = tree;
     } else {
         // search for configuration in various places...
-        string lower = server;
-        boost::to_lower(lower);
-        string confname;
-        root = getOldRoot() + "/" + lower;
-        confname = root + "/spds/syncml/config.txt";
-        if (!access(confname.c_str(), F_OK)) {
-            m_oldLayout = true;
+        root = getOldRoot();
+        string path = root + "/" + m_peerPath;
+        if (!access((path + "/spds/syncml/config.txt").c_str(), F_OK)) {
+            m_layout = SYNC4J_LAYOUT;
         } else {
-            root = getNewRoot() + "/" + lower;
+            root = getNewRoot();
+            path = root + "/" + m_peerPath;
+            if (!access((path + "/config.ini").c_str(), F_OK) &&
+                !access((path + "/sources").c_str(), F_OK)) {
+                m_layout = HTTP_SERVER_LAYOUT;
+            } else if (true) {
+                // this branch makes HTTP_SERVER_LAYOUT the default for new
+                // configs, remove this once sufficient tests are in place
+                m_layout = HTTP_SERVER_LAYOUT;
+            } else {
+                // check whether config name specifies a context,
+                // otherwise use "default"
+                string::size_type at = m_peerPath.rfind('@');
+                if (at != m_peerPath.npos) {
+                    m_contextPath = m_peerPath.substr(at + 1);
+                    m_peerPath = m_contextPath + "/peers/" + m_peerPath.substr(0, at);
+                } else {
+                    m_contextPath = "default";
+                    m_peerPath = string("default/peers/") + m_peerPath;
+                }
+
+                // TODO: "views" without specific peer:
+                // m_peerPath = m_contextPath for "sources",
+                // no m_peerNode
+            }
         }
-        m_tree.reset(new FileConfigTree(root, m_oldLayout));
+        m_tree.reset(new FileConfigTree(root, m_peerPath,
+                                        m_layout == SYNC4J_LAYOUT));
     }
 
-    string path(m_oldLayout ? "spds/syncml" : "");
+    string path;
     boost::shared_ptr<ConfigNode> node;
-    node = m_tree->open(path, ConfigTree::visible);
-    m_configNode.reset(new FilterConfigNode(node));
-    m_hiddenNode = m_tree->open(path, ConfigTree::hidden);
+    switch (m_layout) {
+    case SYNC4J_LAYOUT:
+        // all properties reside in the same node
+        path = m_peerPath + "/spds/syncml";
+        node = m_tree->open(path, ConfigTree::visible);
+        m_peerNode.reset(new FilterConfigNode(node));
+        m_globalNode =
+            m_contextNode = m_peerNode;
+        m_hiddenPeerNode =
+            m_contextHiddenNode =
+            node;
+        break;
+    case HTTP_SERVER_LAYOUT:
+        // properties which are normally considered shared are
+        // stored in the same nodes as the per-peer properties
+        path = m_peerPath;
+        node = m_tree->open(path, ConfigTree::visible);
+        m_peerNode.reset(new FilterConfigNode(node));
+        m_globalNode =
+            m_contextNode = m_peerNode;
+        m_hiddenPeerNode =
+            m_contextHiddenNode =
+            m_tree->open(path, ConfigTree::hidden);
+        break;
+    case SHARED_LAYOUT:
+        // really use different nodes for everything
+        path = "";
+        node = m_tree->open(path, ConfigTree::visible);
+        m_globalNode.reset(new FilterConfigNode(node));
+
+        path = m_peerPath;
+        node = m_tree->open(path, ConfigTree::visible);
+        m_peerNode.reset(new FilterConfigNode(node));
+        m_hiddenPeerNode = m_tree->open(path, ConfigTree::hidden);
+
+        path = m_contextPath;
+        node = m_tree->open(path, ConfigTree::visible);
+        m_contextNode.reset(new FilterConfigNode(node));
+        m_contextHiddenNode = m_tree->open(path, ConfigTree::hidden);
+        break;
+    }
 }
 
 string SyncConfig::getRootPath() const
@@ -110,7 +192,7 @@ string SyncConfig::getRootPath() const
 }
 
 static void addServers(const string &root, SyncConfig::ServerList &res) {
-    FileConfigTree tree(root, false);
+    FileConfigTree tree(root, "", false);
     list<string> servers = tree.getChildren("");
     BOOST_FOREACH(const string &server, servers) {
         // sanity check: only list server directories which actually
@@ -128,9 +210,11 @@ SyncConfig::ServerList SyncConfig::getServers()
 
     addServers(getOldRoot(), res);
     addServers(getNewRoot(), res);
+    // TODO: add peers in SHARED_LAYOUT
 
     // sort the list; better than returning it in random order
     res.sort();
+
     return res;
 }
 
@@ -195,7 +279,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
         // not found, avoid reading current directory by using one which doesn't exist
         templateConfig = "/dev/null";
     }
-    boost::shared_ptr<FileConfigTree> tree(new FileConfigTree(templateConfig, false));
+    boost::shared_ptr<FileConfigTree> tree(new FileConfigTree(templateConfig, "", false));
     tree->setReadOnly(true);
     boost::shared_ptr<SyncConfig> config(new SyncConfig(server, tree));
     boost::shared_ptr<PersistentSyncSourceConfig> source;
@@ -373,7 +457,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
 
 bool SyncConfig::exists() const
 {
-    return m_configNode->exists();
+    return m_peerNode->exists();
 }
 
 void SyncConfig::preFlush(ConfigUserInterface &ui)
@@ -384,7 +468,7 @@ void SyncConfig::preFlush(ConfigUserInterface &ui)
     /* save password in the global config node */
     ConfigPropertyRegistry& registry = getRegistry();
     BOOST_FOREACH(const ConfigProperty *prop, registry) {
-        prop->savePassword(ui, m_server, *m_configNode);
+        prop->savePassword(ui, m_peer, *getProperties());
     }
 
     /** grep each source and save their password */
@@ -395,7 +479,8 @@ void SyncConfig::preFlush(ConfigUserInterface &ui)
         SyncSourceNodes sourceNodes = getSyncSourceNodes(sourceName);
 
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->savePassword(ui, m_server,*m_configNode,sourceName,sourceNodes.m_configNode);
+            prop->savePassword(ui, m_peer, *getProperties(),
+                               sourceName, sourceNodes.getProperties());
         }
     }
 }
@@ -419,43 +504,84 @@ boost::shared_ptr<PersistentSyncSourceConfig> SyncConfig::getSyncSourceConfig(co
 
 list<string> SyncConfig::getSyncSources() const
 {
-    return m_tree->getChildren(m_oldLayout ? "spds/sources" : "sources");
+    // look into peer directory to find sources configured
+    // for this peer; when no peer, then m_peerPath is
+    // identical to m_contextPath and we return all sources
+    // configured independent of peers
+    return m_tree->getChildren(m_peerPath +
+                               (m_layout == SYNC4J_LAYOUT ? 
+                                "/spds/sources" :
+                                "/sources"));
 }
 
 SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
-                                                        const string &changeId)
+                                               const string &changeId)
 {
-    boost::shared_ptr<FilterConfigNode> configNode;
-    boost::shared_ptr<ConfigNode> hiddenNode,
+    /** shared source properties */
+    boost::shared_ptr<FilterConfigNode> sharedNode;
+    /** per-peer source properties */
+    boost::shared_ptr<FilterConfigNode> peerNode;
+    /** per-peer internal properties and meta data */
+    boost::shared_ptr<ConfigNode> hiddenPeerNode,
         serverNode,
         trackingNode;
 
-    boost::shared_ptr<ConfigNode> node;
-    string path = string(m_oldLayout ? "spds/sources/" : "sources/");
     // store configs lower case even if the UI uses mixed case
     string lower = name;
     boost::to_lower(lower);
-    path += lower;
 
-    node = m_tree->open(path, ConfigTree::visible);
-    configNode.reset(new FilterConfigNode(node, m_sourceFilter));
-    if (m_sourceFilters.find(name) != m_sourceFilters.end()) {
-        configNode =
-            boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(configNode), m_sourceFilters[name]));
+    boost::shared_ptr<ConfigNode> node;
+    string sharedPath, peerPath;
+    switch (m_layout) {
+    case SYNC4J_LAYOUT:
+        peerPath = m_peerPath + "/spds/sources/" + lower;
+        break;
+    case HTTP_SERVER_LAYOUT:
+        peerPath = m_peerPath + "/sources/" + lower;
+        break;
+    case SHARED_LAYOUT:
+        peerPath = m_peerPath + "/sources/" + lower;
+        sharedPath = m_contextPath + string("/sources/") + lower;
+        break;
     }
-    hiddenNode = m_tree->open(path, ConfigTree::hidden);
-    trackingNode = m_tree->open(path, ConfigTree::other, changeId);
-    serverNode = m_tree->open(path, ConfigTree::server, changeId);
 
-    return SyncSourceNodes(configNode, hiddenNode, trackingNode, serverNode);
+    node = m_tree->open(peerPath, ConfigTree::visible);
+    peerNode.reset(new FilterConfigNode(node, m_sourceFilter));
+    SourceFilters_t::const_iterator filter = m_sourceFilters.find(name);
+    if (filter != m_sourceFilters.end()) {
+        peerNode =
+            boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(peerNode), filter->second));
+    }
+    hiddenPeerNode = m_tree->open(peerPath, ConfigTree::hidden);
+
+    if (sharedPath.empty()) {
+        sharedNode = peerNode;
+    } else if (sharedPath == peerPath) {
+        // No real peer available. Use the existing node for the
+        // shared config and no hidden or visible peer config.
+        // TODO: set valid pointers which throw exception when used.
+        sharedNode.swap(peerNode);
+        hiddenPeerNode.reset();
+    } else {
+        node = m_tree->open(sharedPath, ConfigTree::visible);
+        sharedNode.reset(new FilterConfigNode(node, m_sourceFilter));
+        if (filter != m_sourceFilters.end()) {
+            sharedNode =
+                boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(sharedNode), filter->second));
+        }
+    }
+
+    trackingNode = m_tree->open(peerPath, ConfigTree::other, changeId);
+    serverNode = m_tree->open(peerPath, ConfigTree::server, changeId);
+
+    return SyncSourceNodes(sharedNode, peerNode, hiddenPeerNode, trackingNode, serverNode);
 }
 
 ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
-                                                             const string &changeId) const
+                                                    const string &changeId) const
 {
     return const_cast<SyncConfig *>(this)->getSyncSourceNodes(name, changeId);
 }
-
 
 static ConfigProperty syncPropSyncURL("syncURL",
                                       "Identifies how to contact the peer,\n"
@@ -634,11 +760,8 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
 
     if (!initialized) {
         registry.push_back(&syncPropSyncURL);
-        syncPropSyncURL.setObligatory(true);
         registry.push_back(&syncPropUsername);
-        syncPropUsername.setObligatory(true);
         registry.push_back(&syncPropPassword);
-        syncPropPassword.setObligatory(true);
         registry.push_back(&syncPropLogDir);
         registry.push_back(&syncPropLogLevel);
         registry.push_back(&syncPropPrintChanges);
@@ -653,7 +776,6 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropRemoteIdentifier);
         registry.push_back(&syncPropPeerIsClient);
         registry.push_back(&syncPropDevID);
-        syncPropDevID.setObligatory(true);
         registry.push_back(&syncPropWBXML);
         registry.push_back(&syncPropMaxMsgSize);
         registry.push_back(&syncPropMaxObjSize);
@@ -665,32 +787,48 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropIconURI);
         registry.push_back(&syncPropConsumerReady);
         registry.push_back(&syncPropHashCode);
-        syncPropHashCode.setHidden(true);
         registry.push_back(&syncPropConfigDate);
-        syncPropConfigDate.setHidden(true);
         registry.push_back(&syncPropRemoteDevID);
-        syncPropRemoteDevID.setHidden(true);
         registry.push_back(&syncPropNonce);
-        syncPropNonce.setHidden(true);
         registry.push_back(&syncPropDeviceData);
+
+        // obligatory sync properties
+        syncPropUsername.setObligatory(true);
+        syncPropPassword.setObligatory(true);
+        syncPropDevID.setObligatory(true);
+        syncPropSyncURL.setObligatory(true);
+
+        // hidden sync properties
+        syncPropHashCode.setHidden(true);
+        syncPropConfigDate.setHidden(true);
+        syncPropRemoteDevID.setHidden(true);
+        syncPropNonce.setHidden(true);
         syncPropDeviceData.setHidden(true);
+
+        // global sync properties
+        // TODO: add "default peer" property
+
+        // peer independent sync properties
+        syncPropLogDir.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        syncPropMaxLogDirs.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+
         initialized = true;
     }
 
     return registry;
 }
 
-const char *SyncConfig::getUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropUsername); }
-void SyncConfig::setUsername(const string &value, bool temporarily) { syncPropUsername.setProperty(*m_configNode, value, temporarily); }
+const char *SyncConfig::getUsername() const { return m_stringCache.getProperty(*getNode(syncPropUsername), syncPropUsername); }
+void SyncConfig::setUsername(const string &value, bool temporarily) { syncPropUsername.setProperty(*getNode(syncPropUsername), value, temporarily); }
 const char *SyncConfig::getPassword() const {
-    string password = syncPropPassword.getCachedProperty(*m_configNode, m_cachedPassword);
+    string password = syncPropPassword.getCachedProperty(*getNode(syncPropPassword), m_cachedPassword);
     return m_stringCache.storeString(syncPropPassword.getName(), password);
 }
 void SyncConfig::checkPassword(ConfigUserInterface &ui) {
-    syncPropPassword.checkPassword(ui, m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
+    syncPropPassword.checkPassword(ui, m_peer, *getProperties());
 }
 void SyncConfig::savePassword(ConfigUserInterface &ui) {
-    syncPropPassword.savePassword(ui,m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
+    syncPropPassword.savePassword(ui, m_peer, *getProperties());
 }
 
 void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
@@ -769,7 +907,7 @@ void PasswordConfigProperty::savePassword(ConfigUserInterface &ui,
     }
 }
 
-string PasswordConfigProperty::getCachedProperty(ConfigNode &node,
+string PasswordConfigProperty::getCachedProperty(const ConfigNode &node,
                                                  const string &cachedPassword)
 {
     string password;
@@ -816,7 +954,7 @@ void ProxyPasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
                                            const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const
 {
     /* if useProxy is set 'true', then check proxypassword */
-    if(syncPropUseProxy.getProperty(globalConfigNode)) {
+    if(syncPropUseProxy.getPropertyValue(globalConfigNode)) {
         PasswordConfigProperty::checkPassword(ui, serverName, globalConfigNode, sourceName, sourceConfigNode);
     }
 }
@@ -833,87 +971,88 @@ ConfigPasswordKey ProxyPasswordConfigProperty::getPasswordKey(const string &desc
     return key;
 }
 
-void SyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*m_configNode, value, temporarily); }
-bool SyncConfig::getUseProxy() const { return syncPropUseProxy.getProperty(*m_configNode); }
-void SyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*m_configNode, value, temporarily); }
-const char *SyncConfig::getProxyHost() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyHost); }
-void SyncConfig::setProxyHost(const string &value, bool temporarily) { syncPropProxyHost.setProperty(*m_configNode, value, temporarily); }
-const char *SyncConfig::getProxyUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyUsername); }
-void SyncConfig::setProxyUsername(const string &value, bool temporarily) { syncPropProxyUsername.setProperty(*m_configNode, value, temporarily); }
+void SyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*getNode(syncPropPassword), value, temporarily); }
+bool SyncConfig::getUseProxy() const { return syncPropUseProxy.getPropertyValue(*getNode(syncPropUseProxy)); }
+void SyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*getNode(syncPropUseProxy), value, temporarily); }
+const char *SyncConfig::getProxyHost() const { return m_stringCache.getProperty(*getNode(syncPropProxyHost), syncPropProxyHost); }
+void SyncConfig::setProxyHost(const string &value, bool temporarily) { syncPropProxyHost.setProperty(*getNode(syncPropProxyHost), value, temporarily); }
+const char *SyncConfig::getProxyUsername() const { return m_stringCache.getProperty(*getNode(syncPropProxyUsername), syncPropProxyUsername); }
+void SyncConfig::setProxyUsername(const string &value, bool temporarily) { syncPropProxyUsername.setProperty(*getNode(syncPropProxyUsername), value, temporarily); }
 const char *SyncConfig::getProxyPassword() const {
-    string password = syncPropProxyPassword.getCachedProperty(*m_configNode, m_cachedProxyPassword);
+    string password = syncPropProxyPassword.getCachedProperty(*getNode(syncPropProxyPassword), m_cachedProxyPassword);
     return m_stringCache.storeString(syncPropProxyPassword.getName(), password);
 }
 void SyncConfig::checkProxyPassword(ConfigUserInterface &ui) {
-    syncPropProxyPassword.checkPassword(ui, m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
+    syncPropProxyPassword.checkPassword(ui, m_peer, *getNode(syncPropProxyPassword), "", boost::shared_ptr<FilterConfigNode>());
 }
 void SyncConfig::saveProxyPassword(ConfigUserInterface &ui) {
-    syncPropProxyPassword.savePassword(ui, m_server, *m_configNode, "", boost::shared_ptr<FilterConfigNode>());
+    syncPropProxyPassword.savePassword(ui, m_peer, *getNode(syncPropProxyPassword), "", boost::shared_ptr<FilterConfigNode>());
 }
-void SyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cachedProxyPassword = ""; syncPropProxyPassword.setProperty(*m_configNode, value, temporarily); }
-const char *SyncConfig::getSyncURL() const { return m_stringCache.getProperty(*m_configNode, syncPropSyncURL); }
-void SyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*m_configNode, value, temporarily); }
-const char *SyncConfig::getClientAuthType() const { return m_stringCache.getProperty(*m_configNode, syncPropClientAuthType); }
-void SyncConfig::setClientAuthType(const string &value, bool temporarily) { syncPropClientAuthType.setProperty(*m_configNode, value, temporarily); }
-unsigned long  SyncConfig::getMaxMsgSize() const { return syncPropMaxMsgSize.getProperty(*m_configNode); }
-void SyncConfig::setMaxMsgSize(unsigned long value, bool temporarily) { syncPropMaxMsgSize.setProperty(*m_configNode, value, temporarily); }
-unsigned int  SyncConfig::getMaxObjSize() const { return syncPropMaxObjSize.getProperty(*m_configNode); }
-void SyncConfig::setMaxObjSize(unsigned int value, bool temporarily) { syncPropMaxObjSize.setProperty(*m_configNode, value, temporarily); }
-bool SyncConfig::getCompression() const { return syncPropCompression.getProperty(*m_configNode); }
-void SyncConfig::setCompression(bool value, bool temporarily) { syncPropCompression.setProperty(*m_configNode, value, temporarily); }
-const char *SyncConfig::getDevID() const { return m_stringCache.getProperty(*m_configNode, syncPropDevID); }
-void SyncConfig::setDevID(const string &value, bool temporarily) { syncPropDevID.setProperty(*m_configNode, value, temporarily); }
-bool SyncConfig::getWBXML() const { return syncPropWBXML.getProperty(*m_configNode); }
-void SyncConfig::setWBXML(bool value, bool temporarily) { syncPropWBXML.setProperty(*m_configNode, value, temporarily); }
-const char *SyncConfig::getLogDir() const { return m_stringCache.getProperty(*m_configNode, syncPropLogDir); }
-void SyncConfig::setLogDir(const string &value, bool temporarily) { syncPropLogDir.setProperty(*m_configNode, value, temporarily); }
-int SyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getProperty(*m_configNode); }
-void SyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*m_configNode, value, temporarily); }
-int SyncConfig::getLogLevel() const { return syncPropLogLevel.getProperty(*m_configNode); }
-void SyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*m_configNode, value, temporarily); }
-int SyncConfig::getRetryDuration() const {return syncPropRetryDuration.getProperty(*m_configNode);}
-void SyncConfig::setRetryDuration(int value, bool temporarily) {syncPropRetryDuration.setProperty(*m_configNode, value, temporarily);}
-int SyncConfig::getRetryInterval() const {return syncPropRetryInterval.getProperty(*m_configNode);}
-void SyncConfig::setRetryInterval(int value, bool temporarily) {return syncPropRetryInterval.setProperty(*m_configNode,value,temporarily);}
+void SyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cachedProxyPassword = ""; syncPropProxyPassword.setProperty(*getNode(syncPropProxyPassword), value, temporarily); }
+const char *SyncConfig::getSyncURL() const { return m_stringCache.getProperty(*getNode(syncPropSyncURL), syncPropSyncURL); }
+void SyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*getNode(syncPropSyncURL), value, temporarily); }
+const char *SyncConfig::getClientAuthType() const { return m_stringCache.getProperty(*getNode(syncPropClientAuthType), syncPropClientAuthType); }
+void SyncConfig::setClientAuthType(const string &value, bool temporarily) { syncPropClientAuthType.setProperty(*getNode(syncPropClientAuthType), value, temporarily); }
+unsigned long  SyncConfig::getMaxMsgSize() const { return syncPropMaxMsgSize.getPropertyValue(*getNode(syncPropMaxMsgSize)); }
+void SyncConfig::setMaxMsgSize(unsigned long value, bool temporarily) { syncPropMaxMsgSize.setProperty(*getNode(syncPropMaxMsgSize), value, temporarily); }
+unsigned int  SyncConfig::getMaxObjSize() const { return syncPropMaxObjSize.getPropertyValue(*getNode(syncPropMaxObjSize)); }
+void SyncConfig::setMaxObjSize(unsigned int value, bool temporarily) { syncPropMaxObjSize.setProperty(*getNode(syncPropMaxObjSize), value, temporarily); }
+bool SyncConfig::getCompression() const { return syncPropCompression.getPropertyValue(*getNode(syncPropCompression)); }
+void SyncConfig::setCompression(bool value, bool temporarily) { syncPropCompression.setProperty(*getNode(syncPropCompression), value, temporarily); }
+const char *SyncConfig::getDevID() const { return m_stringCache.getProperty(*getNode(syncPropDevID), syncPropDevID); }
+void SyncConfig::setDevID(const string &value, bool temporarily) { syncPropDevID.setProperty(*getNode(syncPropDevID), value, temporarily); }
+bool SyncConfig::getWBXML() const { return syncPropWBXML.getPropertyValue(*getNode(syncPropWBXML)); }
+void SyncConfig::setWBXML(bool value, bool temporarily) { syncPropWBXML.setProperty(*getNode(syncPropWBXML), value, temporarily); }
+const char *SyncConfig::getLogDir() const { return m_stringCache.getProperty(*getNode(syncPropLogDir), syncPropLogDir); }
+void SyncConfig::setLogDir(const string &value, bool temporarily) { syncPropLogDir.setProperty(*getNode(syncPropLogDir), value, temporarily); }
+int SyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getPropertyValue(*getNode(syncPropMaxLogDirs)); }
+void SyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*getNode(syncPropMaxLogDirs), value, temporarily); }
+int SyncConfig::getLogLevel() const { return syncPropLogLevel.getPropertyValue(*getNode(syncPropLogLevel)); }
+void SyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*getNode(syncPropLogLevel), value, temporarily); }
+int SyncConfig::getRetryDuration() const {return syncPropRetryDuration.getPropertyValue(*getNode(syncPropRetryDuration));}
+void SyncConfig::setRetryDuration(int value, bool temporarily) { syncPropRetryDuration.setProperty(*getNode(syncPropRetryDuration), value, temporarily); }
+int SyncConfig::getRetryInterval() const { return syncPropRetryInterval.getPropertyValue(*getNode(syncPropRetryInterval)); }
+void SyncConfig::setRetryInterval(int value, bool temporarily) { return syncPropRetryInterval.setProperty(*getNode(syncPropRetryInterval),value,temporarily); }
 
 /* used by Server Alerted Sync */
-const char* SyncConfig::getRemoteIdentifier() const {return m_stringCache.getProperty (*m_configNode, syncPropRemoteIdentifier);}
-void SyncConfig::setRemoteIdentifier (const string &value, bool temporarily) { return syncPropRemoteIdentifier.setProperty (*m_configNode, value, temporarily); }
+const char* SyncConfig::getRemoteIdentifier() const {return m_stringCache.getProperty (*getNode(syncPropRemoteIdentifier), syncPropRemoteIdentifier);}
+void SyncConfig::setRemoteIdentifier (const string &value, bool temporarily) { return syncPropRemoteIdentifier.setProperty (*getNode(syncPropRemoteIdentifier), value, temporarily); }
 
-bool SyncConfig::getPeerIsClient() const { return syncPropPeerIsClient.getProperty(*m_configNode); }
-void SyncConfig::setPeerIsClient(bool value, bool temporarily) { syncPropPeerIsClient.setProperty(*m_configNode, value, temporarily); }
+bool SyncConfig::getPeerIsClient() const { return syncPropPeerIsClient.getPropertyValue(*getNode(syncPropPeerIsClient)); }
+void SyncConfig::setPeerIsClient(bool value, bool temporarily) { syncPropPeerIsClient.setProperty(*getNode(syncPropPeerIsClient), value, temporarily); }
 
-bool SyncConfig::getPrintChanges() const { return syncPropPrintChanges.getProperty(*m_configNode); }
-void SyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*m_configNode, value, temporarily); }
-std::string SyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*m_configNode); }
-void SyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*m_configNode, url, temporarily); }
-std::string SyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*m_configNode); }
-bool SyncConfig::getConsumerReady() const { return syncPropConsumerReady.getProperty(*m_configNode); }
-void SyncConfig::setConsumerReady(bool ready) { return syncPropConsumerReady.setProperty(*m_configNode, ready); }
-void SyncConfig::setIconURI(const std::string &uri, bool temporarily) { syncPropIconURI.setProperty(*m_configNode, uri, temporarily); }
-unsigned long SyncConfig::getHashCode() const { return syncPropHashCode.getProperty(*m_hiddenNode); }
-void SyncConfig::setHashCode(unsigned long code) { syncPropHashCode.setProperty(*m_hiddenNode, code); }
-std::string SyncConfig::getConfigDate() const { return syncPropConfigDate.getProperty(*m_hiddenNode); }
+bool SyncConfig::getPrintChanges() const { return syncPropPrintChanges.getPropertyValue(*getNode(syncPropPrintChanges)); }
+void SyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*getNode(syncPropPrintChanges), value, temporarily); }
+std::string SyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*getNode(syncPropWebURL)); }
+void SyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*getNode(syncPropWebURL), url, temporarily); }
+std::string SyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*getNode(syncPropIconURI)); }
+bool SyncConfig::getConsumerReady() const { return syncPropConsumerReady.getPropertyValue(*getNode(syncPropConsumerReady)); }
+void SyncConfig::setConsumerReady(bool ready) { return syncPropConsumerReady.setProperty(*getNode(syncPropConsumerReady), ready); }
+void SyncConfig::setIconURI(const std::string &uri, bool temporarily) { syncPropIconURI.setProperty(*getNode(syncPropIconURI), uri, temporarily); }
+unsigned long SyncConfig::getHashCode() const { return syncPropHashCode.getPropertyValue(*getNode(syncPropHashCode)); }
+void SyncConfig::setHashCode(unsigned long code) { syncPropHashCode.setProperty(*getNode(syncPropHashCode), code); }
+std::string SyncConfig::getConfigDate() const { return syncPropConfigDate.getProperty(*getNode(syncPropConfigDate)); }
 void SyncConfig::setConfigDate() { 
     /* Set current timestamp as configdate */
     char buffer[17]; 
     time_t ts = time(NULL);
     strftime(buffer, sizeof(buffer), "%Y%m%dT%H%M%SZ", gmtime(&ts));
     const std::string date(buffer);
-    syncPropConfigDate.setProperty(*m_hiddenNode, date);
+    syncPropConfigDate.setProperty(*getNode(syncPropConfigDate), date);
 }
-const char* SyncConfig::getSSLServerCertificates() const { return m_stringCache.getProperty(*m_configNode, syncPropSSLServerCertificates); }
-void SyncConfig::setSSLServerCertificates(const string &value, bool temporarily) { syncPropSSLServerCertificates.setProperty(*m_configNode, value, temporarily); }
-bool SyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.getProperty(*m_configNode); }
-void SyncConfig::setSSLVerifyServer(bool value, bool temporarily) { syncPropSSLVerifyServer.setProperty(*m_configNode, value, temporarily); }
-bool SyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHost.getProperty(*m_configNode); }
-void SyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncPropSSLVerifyHost.setProperty(*m_configNode, value, temporarily); }
-string SyncConfig::getRemoteDevID() const { return syncPropRemoteDevID.getProperty(*m_hiddenNode); }
-void SyncConfig::setRemoteDevID(const string &value) { syncPropRemoteDevID.setProperty(*m_hiddenNode, value); }
-string SyncConfig::getNonce() const { return syncPropNonce.getProperty(*m_hiddenNode); }
-void SyncConfig::setNonce(const string &value) { syncPropNonce.setProperty(*m_hiddenNode, value); }
-string SyncConfig::getDeviceData() const { return syncPropDeviceData.getProperty(*m_hiddenNode); }
-void SyncConfig::setDeviceData(const string &value) { syncPropDeviceData.setProperty(*m_hiddenNode, value); }
+
+const char* SyncConfig::getSSLServerCertificates() const { return m_stringCache.getProperty(*getNode(syncPropSSLServerCertificates), syncPropSSLServerCertificates); }
+void SyncConfig::setSSLServerCertificates(const string &value, bool temporarily) { syncPropSSLServerCertificates.setProperty(*getNode(syncPropSSLServerCertificates), value, temporarily); }
+bool SyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.getPropertyValue(*getNode(syncPropSSLVerifyServer)); }
+void SyncConfig::setSSLVerifyServer(bool value, bool temporarily) { syncPropSSLVerifyServer.setProperty(*getNode(syncPropSSLVerifyServer), value, temporarily); }
+bool SyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHost.getPropertyValue(*getNode(syncPropSSLVerifyHost)); }
+void SyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncPropSSLVerifyHost.setProperty(*getNode(syncPropSSLVerifyHost), value, temporarily); }
+string SyncConfig::getRemoteDevID() const { return syncPropRemoteDevID.getProperty(*getNode(syncPropRemoteDevID)); }
+void SyncConfig::setRemoteDevID(const string &value) { syncPropRemoteDevID.setProperty(*getNode(syncPropRemoteDevID), value); }
+string SyncConfig::getNonce() const { return syncPropNonce.getProperty(*getNode(syncPropNonce)); }
+void SyncConfig::setNonce(const string &value) { syncPropNonce.setProperty(*getNode(syncPropNonce), value); }
+string SyncConfig::getDeviceData() const { return syncPropDeviceData.getProperty(*getNode(syncPropDeviceData)); }
+void SyncConfig::setDeviceData(const string &value) { syncPropDeviceData.setProperty(*getNode(syncPropDeviceData), value); }
 
 std::string SyncConfig::findSSLServerCertificate()
 {
@@ -927,6 +1066,32 @@ std::string SyncConfig::findSSLServerCertificate()
     }
 
     return "";
+}
+
+boost::shared_ptr<FilterConfigNode>
+SyncConfig::getNode(const ConfigProperty &prop)
+{
+    switch (prop.getSharing()) {
+    case ConfigProperty::GLOBAL_SHARING:
+        return m_globalNode;
+        break;
+    case ConfigProperty::SOURCE_SET_SHARING:
+        if (prop.isHidden()) {
+            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_contextHiddenNode));
+        } else {
+            return m_contextNode;
+        }
+        break;
+    case ConfigProperty::NO_SHARING:
+        if (prop.isHidden()) {
+            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenPeerNode));
+        } else {
+            return m_peerNode;
+        }
+        break;
+    }
+    // should not be reached
+    return boost::shared_ptr<FilterConfigNode>();
 }
 
 static void setDefaultProps(const ConfigPropertyRegistry &registry,
@@ -951,33 +1116,34 @@ static void setDefaultProps(const ConfigPropertyRegistry &registry,
 
 void SyncConfig::setDefaults(bool force)
 {
-    setDefaultProps(getRegistry(), m_configNode, force);
+    setDefaultProps(getRegistry(), getProperties(), force);
 }
 
 void SyncConfig::setSourceDefaults(const string &name, bool force)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
     setDefaultProps(SyncSourceConfig::getRegistry(),
-                    nodes.m_configNode, force);
+                    nodes.getProperties(), force);
 }
 
 void SyncConfig::removeSyncSource(const string &name)
 {
-    string pathName = m_oldLayout ? "spds/sources/" : "sources/";
+    string pathName = m_layout == SYNC4J_LAYOUT ? "spds/sources/" : "sources/";
     pathName += name;
     m_tree->removeSubtree(pathName);
+    // TODO: also remove in peers when using SHARED_LAYOUT
 }
 
 void SyncConfig::clearSyncSourceProperties(const string &name)
 {
     SyncSourceNodes nodes = getSyncSourceNodes(name);
     setDefaultProps(SyncSourceConfig::getRegistry(),
-                    nodes.m_configNode, true, false);
+                    nodes.getProperties(), true, false);
 }
 
 void SyncConfig::clearSyncProperties()
 {
-    setDefaultProps(getRegistry(), m_configNode, true, false);
+    setDefaultProps(getRegistry(), getProperties(), true, false);
 }
 
 static void copyProperties(const ConfigNode &fromProps,
@@ -1010,11 +1176,13 @@ static void copyProperties(const ConfigNode &fromProps,
 void SyncConfig::copy(const SyncConfig &other,
                                const set<string> *sourceFilter)
 {
-    static const bool visibility[2] = { false, true };
     for (int i = 0; i < 2; i++ ) {
-        boost::shared_ptr<const FilterConfigNode> fromSyncProps(other.getProperties(visibility[i]));
-        boost::shared_ptr<FilterConfigNode> toSyncProps(this->getProperties(visibility[i]));
-        copyProperties(*fromSyncProps, *toSyncProps, visibility[i], other.getRegistry());
+        boost::shared_ptr<const FilterConfigNode> fromSyncProps(other.getProperties(i));
+        boost::shared_ptr<FilterConfigNode> toSyncProps(this->getProperties(i));
+        copyProperties(*fromSyncProps,
+                       *toSyncProps,
+                       i,
+                       SyncConfig::getRegistry());
     }
 
     list<string> sources = other.getSyncSources();
@@ -1023,10 +1191,17 @@ void SyncConfig::copy(const SyncConfig &other,
             sourceFilter->find(sourceName) != sourceFilter->end()) {
             ConstSyncSourceNodes fromNodes = other.getSyncSourceNodes(sourceName);
             SyncSourceNodes toNodes = this->getSyncSourceNodes(sourceName);
-            copyProperties(*fromNodes.m_configNode, *toNodes.m_configNode, false, SyncSourceConfig::getRegistry());
-            copyProperties(*fromNodes.m_hiddenNode, *toNodes.m_hiddenNode, true, SyncSourceConfig::getRegistry());
-            copyProperties(*fromNodes.m_trackingNode, *toNodes.m_trackingNode);
-            copyProperties(*fromNodes.m_serverNode, *toNodes.m_serverNode);
+
+            for (int i = 0; i < 2; i++ ) {
+                copyProperties(*fromNodes.getProperties(i),
+                               *toNodes.getProperties(i),
+                               i,
+                               SyncSourceConfig::getRegistry());
+            }
+            copyProperties(*fromNodes.getTrackingNode(),
+                           *toNodes.getTrackingNode());
+            copyProperties(*fromNodes.getServerNode(),
+                           *toNodes.getServerNode());
         }
     }
 }
@@ -1209,44 +1384,81 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
 
     if (!initialized) {
         registry.push_back(&SyncSourceConfig::m_sourcePropSync);
-        SyncSourceConfig::m_sourcePropSync.setObligatory(true);
         registry.push_back(&sourcePropSourceType);
         registry.push_back(&sourcePropDatabaseID);
         registry.push_back(&sourcePropURI);
         registry.push_back(&sourcePropUser);
         registry.push_back(&sourcePropPassword);
         registry.push_back(&sourcePropAdminData);
+
+        // obligatory source properties
+        SyncSourceConfig::m_sourcePropSync.setObligatory(true);
+
+        // hidden source properties - only possible for
+        // non-shared properties (other hidden nodes don't
+        // exist at the moment)
         sourcePropAdminData.setHidden(true);
+
+        // No global source properties. Does not make sense
+        // conceptually.
+
+        // peer independent source properties
+        sourcePropSourceType.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        sourcePropDatabaseID.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        sourcePropUser.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        sourcePropPassword.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+
         initialized = true;
     }
 
     return registry;
 }
 
-const char *SyncSourceConfig::getDatabaseID() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropDatabaseID); }
-void SyncSourceConfig::setDatabaseID(const string &value, bool temporarily) { sourcePropDatabaseID.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *SyncSourceConfig::getUser() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropUser); }
-void SyncSourceConfig::setUser(const string &value, bool temporarily) { sourcePropUser.setProperty(*m_nodes.m_configNode, value, temporarily); }
+boost::shared_ptr<FilterConfigNode>
+SyncSourceNodes::getNode(const ConfigProperty &prop) const
+{
+    switch (prop.getSharing()) {
+    case ConfigProperty::GLOBAL_SHARING:
+        // neither needed nor implemented
+        // TODO: return valid pointer to node which cannot be used
+        break;
+    case ConfigProperty::SOURCE_SET_SHARING:
+        return m_sharedNode;
+        break;
+    case ConfigProperty::NO_SHARING:
+        if (prop.isHidden()) {
+            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenPeerNode));
+        } else {
+            return m_peerNode;
+        }
+    }
+    return boost::shared_ptr<FilterConfigNode>();
+}
+
+const char *SyncSourceConfig::getDatabaseID() const { return m_stringCache.getProperty(*getNode(sourcePropDatabaseID), sourcePropDatabaseID); }
+void SyncSourceConfig::setDatabaseID(const string &value, bool temporarily) { sourcePropDatabaseID.setProperty(*getNode(sourcePropDatabaseID), value, temporarily); }
+const char *SyncSourceConfig::getUser() const { return m_stringCache.getProperty(*getNode(sourcePropUser), sourcePropUser); }
+void SyncSourceConfig::setUser(const string &value, bool temporarily) { sourcePropUser.setProperty(*getNode(sourcePropUser), value, temporarily); }
 const char *SyncSourceConfig::getPassword() const {
-    string password = sourcePropPassword.getCachedProperty(*m_nodes.m_configNode, m_cachedPassword);
+    string password = sourcePropPassword.getCachedProperty(*getNode(sourcePropPassword), m_cachedPassword);
     return m_stringCache.storeString(sourcePropPassword.getName(), password);
 }
 void SyncSourceConfig::checkPassword(ConfigUserInterface &ui, 
                                      const string &serverName, 
                                      FilterConfigNode& globalConfigNode) {
-    sourcePropPassword.checkPassword(ui, serverName, globalConfigNode, m_name, m_nodes.m_configNode);
+    sourcePropPassword.checkPassword(ui, serverName, globalConfigNode, m_name, getNode(sourcePropPassword));
 }
 void SyncSourceConfig::savePassword(ConfigUserInterface &ui, 
                                     const string &serverName, 
                                     FilterConfigNode& globalConfigNode) {
-    sourcePropPassword.savePassword(ui, serverName, globalConfigNode, m_name, m_nodes.m_configNode);
+    sourcePropPassword.savePassword(ui, serverName, globalConfigNode, m_name, getNode(sourcePropPassword));
 }
-void SyncSourceConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; sourcePropPassword.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *SyncSourceConfig::getURI() const { return m_stringCache.getProperty(*m_nodes.m_configNode, sourcePropURI); }
-void SyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*m_nodes.m_configNode, value, temporarily); }
-const char *SyncSourceConfig::getSync() const { return m_stringCache.getProperty(*m_nodes.m_configNode, m_sourcePropSync); }
-void SyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*m_nodes.m_configNode, value, temporarily); }
-string SyncSourceConfig::getSourceTypeString(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.m_configNode); }
+void SyncSourceConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; sourcePropPassword.setProperty(*getNode(sourcePropPassword), value, temporarily); }
+const char *SyncSourceConfig::getURI() const { return m_stringCache.getProperty(*getNode(sourcePropURI), sourcePropURI); }
+void SyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*getNode(sourcePropURI), value, temporarily); }
+const char *SyncSourceConfig::getSync() const { return m_stringCache.getProperty(*getNode(m_sourcePropSync), m_sourcePropSync); }
+void SyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*getNode(m_sourcePropSync), value, temporarily); }
+string SyncSourceConfig::getSourceTypeString(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.getNode(sourcePropSourceType)); }
 SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
     string type = getSourceTypeString(nodes);
     SourceType sourceType;
@@ -1269,7 +1481,7 @@ SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
     return sourceType;
 }
 SourceType SyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
-void SyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*m_nodes.m_configNode, value, temporarily); }
+void SyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*getNode(sourcePropSourceType), value, temporarily); }
 
 ConfigPasswordKey EvolutionPasswordConfigProperty::getPasswordKey(const string &descr,
                                                                   const string &serverName,

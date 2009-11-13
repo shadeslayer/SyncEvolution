@@ -1205,12 +1205,8 @@ void SyncContext::initSources(SourceList &sourceList)
         string sync = sc->getSync();
         bool enabled = sync != "disabled";
         if (enabled) {
-            string url = getSyncURL();
-            boost::replace_first(url, "https://", "http://"); // do not distinguish between protocol in change tracking
-            string changeId = string("sync4jevolution:") + url + "/" + name;
             SyncSourceParams params(name,
-                                    getSyncSourceNodes(name),
-                                    changeId);
+                                    getSyncSourceNodes(name));
             SyncSource *syncSource =
                 SyncSource::createSource(params);
             if (!syncSource) {
@@ -1755,13 +1751,13 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
              */
             ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
             BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                prop->checkPassword(*this, m_server, getConfigNode());
+                prop->checkPassword(*this, m_server, *getProperties());
             }
             BOOST_FOREACH(SyncSource *source, sourceList) {
                 ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
                 BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                    prop->checkPassword(*this, m_server, getConfigNode(),
-                                        source->getName(), source->getSyncSourceNodes().m_configNode);
+                    prop->checkPassword(*this, m_server, *getProperties(),
+                                        source->getName(), source->getProperties());
                 }
             }
 
@@ -2368,8 +2364,8 @@ void SyncContext::status()
     BOOST_FOREACH(SyncSource *source, sourceList) {
         ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*this, m_server, getConfigNode(),
-                                source->getName(), source->getSyncSourceNodes().m_configNode);
+            prop->checkPassword(*this, m_server, *getProperties(),
+                                source->getName(), source->getProperties());
         }
     }
     BOOST_FOREACH(SyncSource *source, sourceList) {
@@ -2421,8 +2417,8 @@ void SyncContext::checkStatus(SyncReport &report)
     BOOST_FOREACH(SyncSource *source, sourceList) {
         ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*this, m_server, getConfigNode(),
-                                source->getName(), source->getSyncSourceNodes().m_configNode);
+            prop->checkPassword(*this, m_server, *getProperties(),
+                                source->getName(), source->getProperties());
         }
     }
     BOOST_FOREACH(SyncSource *source, sourceList) {
@@ -2483,8 +2479,8 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
     BOOST_FOREACH(SyncSource *source, sourceList) {
         ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*this, m_server, getConfigNode(),
-                                source->getName(), source->getSyncSourceNodes().m_configNode);
+            prop->checkPassword(*this, m_server, *getProperties(),
+                                source->getName(), source->getProperties());
         }
     }
 

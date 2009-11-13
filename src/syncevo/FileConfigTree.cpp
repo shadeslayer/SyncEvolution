@@ -37,8 +37,10 @@
 SE_BEGIN_CXX
 
 FileConfigTree::FileConfigTree(const string &root,
+                               const string &peer,
                                bool oldLayout) :
     m_root(root),
+    m_peer(peer),
     m_oldLayout(oldLayout),
     m_readonly(false)
 {
@@ -46,7 +48,7 @@ FileConfigTree::FileConfigTree(const string &root,
 
 string FileConfigTree::getRootPath() const
 {
-    return normalizePath(m_root);
+    return normalizePath(m_root + "/" + m_peer);
 }
 
 void FileConfigTree::flush()

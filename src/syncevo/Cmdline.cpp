@@ -192,12 +192,13 @@ bool Cmdline::run() {
     } else if (m_argc == 1) {
         // no parameters: list databases and short usage
         const SourceRegistry &registry(SyncSource::getSourceRegistry());
+        boost::shared_ptr<FilterConfigNode> sharedNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> configNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> hiddenNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> trackingNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> serverNode(new VolatileConfigNode());
-        SyncSourceNodes nodes(configNode, hiddenNode, trackingNode, serverNode);
-        SyncSourceParams params("list", nodes, "");
+        SyncSourceNodes nodes(sharedNode, configNode, hiddenNode, trackingNode, serverNode);
+        SyncSourceParams params("list", nodes);
         
         BOOST_FOREACH(const RegisterSyncSource *source, registry) {
             BOOST_FOREACH(const Values::value_type &alias, source->m_typeValues) {
@@ -247,8 +248,8 @@ bool Cmdline::run() {
             if (m_sources.empty() ||
                 m_sources.find(name) != m_sources.end()) {
                 m_out << endl << "[" << name << "]" << endl;
-                ConstSyncSourceNodes nodes = config->getSyncSourceNodes(name);
-                boost::shared_ptr<FilterConfigNode> sourceProps(new FilterConfigNode(boost::shared_ptr<const ConfigNode>(nodes.m_configNode)));
+                SyncSourceNodes nodes = config->getSyncSourceNodes(name);
+                boost::shared_ptr<FilterConfigNode> sourceProps = nodes.getProperties();
                 sourceProps->setFilter(m_sourceProps);
                 dumpProperties(*sourceProps, SyncSourceConfig::getRegistry());
             }
@@ -369,7 +370,7 @@ bool Cmdline::run() {
                     }
 
                     // check whether the sync source works
-                    SyncSourceParams params("list", to->getSyncSourceNodes(source), "");
+                    SyncSourceParams params("list", to->getSyncSourceNodes(source));
                     auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
                     if (syncSource.get() == NULL) {
                         disable = "no backend available";

@@ -362,9 +362,7 @@ private:
     
     static TestingSyncSource *createSource(ClientTest &client, int source, bool isSourceA) {
         TestEvolution &evClient((TestEvolution &)client);
-        string changeID = "SyncEvolution Change ID #";
         string name = evClient.m_source2Config[source];
-        changeID += isSourceA ? "1" : "2";
         string database = evClient.getDatabaseName(name);
 
         SyncConfig config("client-test-changes");
@@ -373,13 +371,12 @@ private:
                                                           "_" + (isSourceA ? "A" : "B"));
 
         // always set this property: the name might have changes since last test run
-        nodes.m_configNode->setProperty("evolutionsource", database.c_str());
-        nodes.m_configNode->setProperty("evolutionuser", evClient.m_evoUser.c_str());
-        nodes.m_configNode->setProperty("evolutionpassword", evClient.m_evoPassword.c_str());
+        nodes.getProperties()->setProperty("evolutionsource", database.c_str());
+        nodes.getProperties()->setProperty("evolutionuser", evClient.m_evoUser.c_str());
+        nodes.getProperties()->setProperty("evolutionpassword", evClient.m_evoPassword.c_str());
 
         SyncSourceParams params(name,
-                                nodes,
-                                changeID);
+                                nodes);
 
         const RegisterSyncSourceTest *test = evClient.m_configs[name];
         ClientTestConfig testConfig;

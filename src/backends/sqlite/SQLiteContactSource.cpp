@@ -351,8 +351,7 @@ void SQLiteContactSource::deleteItem(const string& uid)
 
 void SQLiteContactSource::enableServerMode()
 {
-    SyncSourceAdmin::init(m_operations,
-                          getSyncSourceNodes());
+    SyncSourceAdmin::init(m_operations, this);
 }
 
 bool SQLiteContactSource::serverModeEnabled() const
