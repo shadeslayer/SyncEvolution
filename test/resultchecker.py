@@ -234,6 +234,9 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 if(len(log.split('_')) > 3):
                     format = log.rpartition('_')[0].partition('_')[2].partition('_')[2]
                     prefix = log.rpartition(format)[0].rpartition('/')[-1]
+                elif (len(log.split('_')) == 3):
+                    format = log.rpartition('_')[0].partition('_')[2]
+                    prefix = log.rpartition(format)[0].rpartition('/')[-1]
                 else:
                     format = log.partition('_')[0].rpartition('/')[-1]
                     prefix = ''
