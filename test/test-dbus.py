@@ -353,6 +353,14 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: Server name must be given")
 
+    def testGetReportsEmptyName(self):
+        """Test the error is reported when the server name is empty for GetReports"""
+        try:
+            self.session.GetReports(0, 0, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchConfig: Server name must be given")
+
 class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     """Tests that work for GetConfig/SetConfig/CheckSource/GetDatabases/GetReports in Session.
        This class is only working in a dummy config. Thus it can't do sync correctly. The purpose
@@ -569,8 +577,36 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         databases2.sort()
         self.failUnlessEqual(databases1, databases2)
 
-class TestDBusSync(unittest.TestCase, DBusUtil):
-    """Executes a real sync."""
+    def testGetReportsNoConfig(self):
+        """ Test when the given server has no reports. Also covers boundaries """
+        self.clearAllConfig()
+        reports = self.session.GetReports(0, 0, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+        reports = self.session.GetReports(0, 1, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+        reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+        reports = self.session.GetReports(0xFFFFFFFF, 0xFFFFFFFF, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+
+    def testGetReportsNoReports(self):
+        """ Test when the given server has no reports. Also covers boundaries """
+        self.clearAllConfig()
+        self.setupConfig()
+        reports = self.session.GetReports(0, 0, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+        reports = self.session.GetReports(0, 1, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+        reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+        reports = self.session.GetReports(0xFFFFFFFF, 0xFFFFFFFF, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+
+class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
+    """ This class is used to test those unit tests of session APIs, depending on doing sync.
+        Thus we need a real server configuration to confirm sync could be run successfully.
+        Typically we need make sure that at least one sync has been done before testing our
+        desired unit tests. Note that it also covers session.Sync API itself """
 
     def setUp(self):
         DBusUtil.__init__(self)
@@ -580,14 +616,38 @@ class TestDBusSync(unittest.TestCase, DBusUtil):
     def run(self, result):
         self.runTest(result, own_xdg=False)
 
-    def testSync(self):
+    def doSync(self):
         self.setUpListeners(self.sessionpath)
         self.session.Sync("", {})
         loop.run()
+
+    def testSync(self):
+        self.doSync()
         # TODO: check recorded events in self.events
         status, error, sources = self.session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "done")
         self.failUnlessEqual(error, 0)
+
+    def testGetReports(self):
+        """ Test when the given server exists and reports are returned correctly. Also covers boundaries """
+        # one sync, so reports could be generated at least one time """
+        self.doSync()
+
+        reports = self.session.GetReports(0, 0, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+        # GetReports should return one report starting from index 0
+        reports = self.session.GetReports(0, 1, utf8_strings=True)
+        self.assertTrue(len(reports) == 1)
+        # each source contains 13 stat items, so the total number should be multiples of 13 
+        self.assertTrue(len(reports[0]) % 13 == 0)
+
+        # test the returned reports should be less than maximum and greater than 1
+        reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
+        self.assertTrue(len(reports) >= 1)
+        self.assertTrue(len(reports) <= 0xFFFFFFFF)
+
+        reports = self.session.GetReports(0xFFFFFFFF, 0xFFFFFFFF, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
 
 class TestDBusSyncError(unittest.TestCase, DBusUtil):
     """Executes a real sync with no corresponding config."""
