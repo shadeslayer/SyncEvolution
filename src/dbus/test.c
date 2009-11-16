@@ -182,6 +182,20 @@ progress_cb (SyncevoSession *session,
 }
 
 static void
+status_cb (SyncevoSession *session,
+           SyncevoSessionStatus status,
+           guint error_code,
+           SyncevoSourceStatuses *source_statuses,
+           gpointer *data)
+{
+    if (status == SYNCEVO_STATUS_DONE) {
+        g_print ("Session done.");
+        g_object_unref (session);
+        g_main_loop_quit (loop);
+    }
+}
+
+static void
 start_session_cb (SyncevoServer *server,
                   char *path,
                   GError *error,
@@ -206,6 +220,8 @@ start_session_cb (SyncevoServer *server,
 
     g_signal_connect (session, "progress-changed",
                       progress_cb, NULL);
+    g_signal_connect (session, "status-changed",
+                      status_cb, NULL);
 
 
     /* TODO should wait for session status == idle */

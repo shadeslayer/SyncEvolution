@@ -190,6 +190,7 @@ dispose (GObject *object)
                                         G_CALLBACK (status_changed_cb),
                                         object);
 
+        /* TODO: need to do this async... */
         org_syncevolution_Session_detach (priv->proxy, NULL);
 
         g_object_unref (priv->proxy);
@@ -217,9 +218,9 @@ syncevo_session_class_init (SyncevoSessionClass *klass)
                           G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
                           G_STRUCT_OFFSET (SyncevoSessionClass, status_changed),
                           NULL, NULL,
-                          syncevo_marshal_VOID__STRING_UINT_BOXED,
+                          syncevo_marshal_VOID__UINT_UINT_BOXED,
                           G_TYPE_NONE, 
-                          3, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_POINTER);
+                          3, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_POINTER);
     signals[PROGRESS_CHANGED] =
             g_signal_new ("progress-changed",
                           G_TYPE_FROM_CLASS (klass),
@@ -252,7 +253,7 @@ syncevo_session_init (SyncevoSession *session)
                                        G_TYPE_BOXED,
                                        G_TYPE_INVALID);
     /* StatusChanged */
-    dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_UINT_BOXED,
+    dbus_g_object_register_marshaller (syncevo_marshal_VOID__UINT_UINT_BOXED,
                                        G_TYPE_NONE,
                                        G_TYPE_STRING,
                                        G_TYPE_UINT,
