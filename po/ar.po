@@ -1,0 +1,529 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: syncevolution\n"
+"Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
+"POT-Creation-Date: 2009-10-16 11:24+0000\n"
+"PO-Revision-Date: 2009-11-14 01:15+0200\n"
+"Last-Translator: Yousef Abu Al Naser <yousef@itsoftex.com>\n"
+"Language-Team: ITSOFTEX <info@itsoftex.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural= n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+"X-Poedit-Language: Arabic\n"
+
+#. TRANSLATORS: this is the application name that may be used by e.g.
+#. the windowmanager
+#: ../src/gtk-ui/main.c:31
+#: ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/sync.desktop.in.h:1
+msgid "Sync"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:259
+msgid "Addressbook"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:261
+msgid "Calendar"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:263
+msgid "Todo"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:265
+msgid "Memo"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:320
+msgid "Failed to save current service in GConf configuration system"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:331
+msgid "Failed to save service configuration to SyncEvolution"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:416
+msgid "Failed to get service configuration from SyncEvolution"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:480
+msgid "Failed to remove service configuration from SyncEvolution"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:600
+msgid "Service must have a name and server URL"
+msgstr ""
+
+#. sync is no longer in progress for some reason
+#: ../src/gtk-ui/sync-ui.c:676
+msgid "Failed to cancel: sync was no longer in progress"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:680
+msgid "Failed to cancel sync"
+msgstr "فشل في إلغاء التزامن"
+
+#: ../src/gtk-ui/sync-ui.c:684
+msgid "Canceling sync"
+msgstr "جاري إلغاء التزامن"
+
+#: ../src/gtk-ui/sync-ui.c:698
+msgid "Trying to cancel sync"
+msgstr "محاولة إلغاء التزامن"
+
+#: ../src/gtk-ui/sync-ui.c:705
+#, c-format
+msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
+msgstr "هل ترغب بمحي كل البيانات المحلية واستبدالها ببيانات من %s؟ بشكل عام هذا شيء غير محبذ. "
+
+#: ../src/gtk-ui/sync-ui.c:710
+#, c-format
+msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:727
+msgid "No, cancel sync"
+msgstr "كلا, إلغاء التزامن"
+
+#: ../src/gtk-ui/sync-ui.c:728
+msgid "Yes, delete and replace"
+msgstr "نعم، امح واستبدل"
+
+#: ../src/gtk-ui/sync-ui.c:750
+msgid "No sources are enabled, not syncing"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:767
+msgid "A sync is already in progress"
+msgstr "عملية تزامن أخرى جارية"
+
+#: ../src/gtk-ui/sync-ui.c:769
+msgid "Failed to start sync"
+msgstr "فشل في بدء التزامن"
+
+#: ../src/gtk-ui/sync-ui.c:774
+msgid "Starting sync"
+msgstr "بدء التزامن"
+
+#: ../src/gtk-ui/sync-ui.c:799
+msgid "Last synced just seconds ago"
+msgstr "آخر تزامن منذ بضعة ثواني"
+
+#: ../src/gtk-ui/sync-ui.c:802
+msgid "Last synced a minute ago"
+msgstr "آخر تزامن منذ دقيقة"
+
+#: ../src/gtk-ui/sync-ui.c:805
+#, c-format
+msgid "Last synced %ld minutes ago"
+msgstr "آخر تزامن منذ %ld دقائق"
+
+#: ../src/gtk-ui/sync-ui.c:808
+msgid "Last synced an hour ago"
+msgstr "آخر تزامن منذ ساعة"
+
+#: ../src/gtk-ui/sync-ui.c:811
+#, c-format
+msgid "Last synced %ld hours ago"
+msgstr "آخر تزامن منذ %ld ساعات"
+
+#: ../src/gtk-ui/sync-ui.c:814
+msgid "Last synced a day ago"
+msgstr "آخر تزامن منذ يوم"
+
+#: ../src/gtk-ui/sync-ui.c:817
+#, c-format
+msgid "Last synced %ld days ago"
+msgstr "آخر تزامن منذ %ld أيام"
+
+#: ../src/gtk-ui/sync-ui.c:902
+msgid "Sync again"
+msgstr "تزامن مرة أخرى"
+
+#: ../src/gtk-ui/sync-ui.c:904
+#: ../src/gtk-ui/ui.glade.h:29
+msgid "Sync now"
+msgstr "تزامن الآن"
+
+#: ../src/gtk-ui/sync-ui.c:913
+msgid "Syncing"
+msgstr "جاري التزامن"
+
+#: ../src/gtk-ui/sync-ui.c:919
+msgid "Cancel sync"
+msgstr "إلغاء التزامن"
+
+#. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
+#: ../src/gtk-ui/sync-ui.c:1266
+#, c-format
+msgid "%s (not supported by this service)"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1299
+#, c-format
+msgid "There was one remote rejection."
+msgid_plural "There were %d remote rejections."
+msgstr[0] ""
+msgstr[1] ""
+
+#: ../src/gtk-ui/sync-ui.c:1304
+#, c-format
+msgid "There was one local rejection."
+msgid_plural "There were %d local rejections."
+msgstr[0] ""
+msgstr[1] ""
+
+#: ../src/gtk-ui/sync-ui.c:1309
+#, c-format
+msgid "There were %d local rejections and %d remote rejections."
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1314
+#, c-format
+msgid "Last time: No changes."
+msgstr "آخر مرة: بدون تغيير"
+
+#: ../src/gtk-ui/sync-ui.c:1316
+#, c-format
+msgid "Last time: Sent one change."
+msgid_plural "Last time: Sent %d changes."
+msgstr[0] ""
+msgstr[1] ""
+
+#. This is about changes made to the local data. Not all of these
+#. changes were requested by the remote server, so "applied"
+#. is a better word than "received" (bug #5185).
+#: ../src/gtk-ui/sync-ui.c:1324
+#, c-format
+msgid "Last time: Applied one change."
+msgid_plural "Last time: Applied %d changes."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: ../src/gtk-ui/sync-ui.c:1329
+#, c-format
+msgid "Last time: Applied %d changes and sent %d changes."
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1421
+msgid "Failed to get server configuration from SyncEvolution"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1473
+msgid "ScheduleWorld enables you to keep your contacts, events, tasks, and notes in sync."
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1476
+msgid "Google Sync can backup and synchronize your Address Book with your Gmail contacts."
+msgstr ""
+
+#. TRANSLATORS: Please include the word "demo" (or the equivalent in
+#. your language): Funambol is going to be a 90 day demo service
+#. in the future
+#: ../src/gtk-ui/sync-ui.c:1482
+msgid "Backup your contacts and calendar. Sync with a singleclick, anytime, anywhere (DEMO)."
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1510
+msgid "New service"
+msgstr "خدمة جديدة"
+
+#: ../src/gtk-ui/sync-ui.c:1557
+msgid "Server URL"
+msgstr "عنوان الخادم"
+
+#. TRANSLATORS: placeholder is a source name in settings window
+#: ../src/gtk-ui/sync-ui.c:1579
+#, c-format
+msgid "%s URI"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1716
+#: ../src/gtk-ui/ui.glade.h:17
+msgid "Launch website"
+msgstr "فتح الموقع"
+
+#: ../src/gtk-ui/sync-ui.c:1720
+msgid "Setup and use"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1766
+msgid "Failed to get list of manually setup services from SyncEvolution"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1807
+msgid "Failed to get list of supported services from SyncEvolution"
+msgstr ""
+
+#. TODO: this is a hack... SyncEnd should be a signal of it's own,
+#. not just hacked on top of the syncevolution error codes
+#: ../src/gtk-ui/sync-ui.c:1968
+msgid "Service configuration not found"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1974
+msgid "Not authorized"
+msgstr "غير مخوّل"
+
+#: ../src/gtk-ui/sync-ui.c:1976
+msgid "Forbidden"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1978
+msgid "Not found"
+msgstr "غير موجود"
+
+#: ../src/gtk-ui/sync-ui.c:1980
+msgid "Fatal database error"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1982
+msgid "Database error"
+msgstr "مشكلة في قاعدة البيانات"
+
+#: ../src/gtk-ui/sync-ui.c:1984
+msgid "No space left"
+msgstr "لم يبق مكان"
+
+#. TODO identify problem item somehow ?
+#: ../src/gtk-ui/sync-ui.c:1987
+msgid "Failed to process SyncML"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1989
+msgid "Server authorization failed"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1991
+msgid "Failed to parse configuration file"
+msgstr "فشل في تحليل ملف المكونات"
+
+#: ../src/gtk-ui/sync-ui.c:1993
+msgid "Failed to read configuration file"
+msgstr "فشل في قراءة ملف المكونات"
+
+#: ../src/gtk-ui/sync-ui.c:1995
+msgid "No configuration found"
+msgstr "لا يوجد مكوّنات"
+
+#: ../src/gtk-ui/sync-ui.c:1997
+msgid "No configuration file found"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:1999
+msgid "Server sent bad content"
+msgstr "ارسل الخادم مضمون غير صالح"
+
+#: ../src/gtk-ui/sync-ui.c:2001
+msgid "Transport failure (no connection?)"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:2003
+msgid "Connection timed out"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:2005
+msgid "Connection certificate has expired"
+msgstr "انتهت صلاحية رخصة الاتصال"
+
+#: ../src/gtk-ui/sync-ui.c:2007
+msgid "Connection certificate is invalid"
+msgstr "رخصة الاتصال غير صالحة"
+
+#: ../src/gtk-ui/sync-ui.c:2010
+msgid "Connection failed"
+msgstr "فشل في الاتصال"
+
+#: ../src/gtk-ui/sync-ui.c:2012
+msgid "URL is bad"
+msgstr "العنوان خاطئ"
+
+#: ../src/gtk-ui/sync-ui.c:2014
+msgid "Server not found"
+msgstr "لم يتم ايجاد الخادم"
+
+#: ../src/gtk-ui/sync-ui.c:2016
+#, c-format
+msgid "Error %d"
+msgstr "خطأ %d"
+
+#: ../src/gtk-ui/sync-ui.c:2026
+msgid "Sync D-Bus service exited unexpectedly"
+msgstr ""
+
+#: ../src/gtk-ui/sync-ui.c:2029
+#: ../src/gtk-ui/sync-ui.c:2080
+msgid "Sync Failed"
+msgstr "فشل في التزامن"
+
+#: ../src/gtk-ui/sync-ui.c:2072
+msgid "Sync complete"
+msgstr "اكتمل التزامن"
+
+#: ../src/gtk-ui/sync-ui.c:2077
+msgid "Sync canceled"
+msgstr "تم إلغاء التزامن"
+
+#. NOTE extra1 can be error here
+#: ../src/gtk-ui/sync-ui.c:2095
+msgid "Ending sync"
+msgstr "إنهاء التزامن"
+
+#. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
+#: ../src/gtk-ui/sync-ui.c:2119
+#, c-format
+msgid "Preparing '%s'"
+msgstr "تحضير '%s'"
+
+#. TRANSLATORS: placeholder is a source name in a progress text
+#: ../src/gtk-ui/sync-ui.c:2131
+#, c-format
+msgid "Sending '%s'"
+msgstr "ارسال '%s'"
+
+#. TRANSLATORS: placeholder is a source name in a progress text
+#: ../src/gtk-ui/sync-ui.c:2143
+#, c-format
+msgid "Receiving '%s'"
+msgstr "جاري الحصول '%s'"
+
+#: ../src/gtk-ui/ui.glade.h:1
+msgid "<b>Data</b>"
+msgstr "<b>بيانات</b>"
+
+#: ../src/gtk-ui/ui.glade.h:2
+msgid "<b>No sync service in use</b>"
+msgstr ""
+
+#: ../src/gtk-ui/ui.glade.h:3
+msgid "<b>Sync failure</b>"
+msgstr ""
+
+#: ../src/gtk-ui/ui.glade.h:4
+msgid "<b>Type of Sync</b>"
+msgstr ""
+
+#: ../src/gtk-ui/ui.glade.h:5
+msgid "<big>Manual setup</big>"
+msgstr "<big>إعداد يدوي</big>"
+
+#: ../src/gtk-ui/ui.glade.h:6
+msgid "<big>Supported services</big>"
+msgstr "<big>الخدمات المعتمدة</big>"
+
+#: ../src/gtk-ui/ui.glade.h:7
+msgid "Add new service"
+msgstr "اضافة خدمة جديدة"
+
+#: ../src/gtk-ui/ui.glade.h:8
+msgid "Back to sync"
+msgstr "عودة للتزامن"
+
+#: ../src/gtk-ui/ui.glade.h:9
+msgid ""
+"Change sync\n"
+"service"
+msgstr ""
+"تغيير خدمة\n"
+"التزامن"
+
+#: ../src/gtk-ui/ui.glade.h:11
+msgid "Delete all local data and replace it with remote data"
+msgstr "محي كل البيانات المحلية وتبديلها ببيانات عن بعد"
+
+#: ../src/gtk-ui/ui.glade.h:12
+msgid "Delete all remote data and replace it with local data"
+msgstr "محي كل البيانات عن بعد واستبدالها ببيانات محلية"
+
+#: ../src/gtk-ui/ui.glade.h:13
+msgid "Delete this service"
+msgstr "حذف هذه الخدمة"
+
+#: ../src/gtk-ui/ui.glade.h:14
+msgid "Edit service settings"
+msgstr "تحرير إعدادات الخدمة"
+
+#: ../src/gtk-ui/ui.glade.h:15
+msgid ""
+"If you don't see your service above but know that your sync provider uses SyncML\n"
+"you can setup a service manually."
+msgstr ""
+
+#: ../src/gtk-ui/ui.glade.h:18
+msgid "Merge local and remote data (recommended)"
+msgstr ""
+
+#: ../src/gtk-ui/ui.glade.h:19
+msgid "Password"
+msgstr "كلمة السر"
+
+#: ../src/gtk-ui/ui.glade.h:20
+msgid "Reset original server settings"
+msgstr "اعادة إعدادات الخادم الأصلية"
+
+#: ../src/gtk-ui/ui.glade.h:21
+msgid "Save and use this service"
+msgstr "احفظ واستخدم هذه الخدمة"
+
+#: ../src/gtk-ui/ui.glade.h:22
+msgid "Select sync service"
+msgstr "أختر خدمة تزامن"
+
+#: ../src/gtk-ui/ui.glade.h:23
+msgid "Server settings"
+msgstr "اعدادات الخادم"
+
+#: ../src/gtk-ui/ui.glade.h:24
+msgid "Service name"
+msgstr "اسم الخدمة"
+
+#: ../src/gtk-ui/ui.glade.h:25
+msgid ""
+"Sorry, you need an internet\n"
+"connection to sync."
+msgstr ""
+
+#: ../src/gtk-ui/ui.glade.h:27
+msgid "Stop using this service"
+msgstr "توقف عن استخدام هذه الخدمة"
+
+#: ../src/gtk-ui/ui.glade.h:30
+msgid "Synchronization is not available (D-Bus service does not answer), sorry."
+msgstr ""
+
+#: ../src/gtk-ui/ui.glade.h:31
+msgid ""
+"To sync you'll need a network connection and an account with a sync service.\n"
+"We support the following services: "
+msgstr ""
+
+#: ../src/gtk-ui/ui.glade.h:33
+msgid "Username"
+msgstr "اسم المستخدم"
+
+#: ../src/gtk-ui/ui.glade.h:34
+msgid ""
+"You haven't selected a sync service yet. Sync services let you \n"
+"synchronize your data between your netbook and a web service."
+msgstr ""
+
+#: ../src/gtk-ui/sync.desktop.in.h:2
+#: ../src/gtk-ui/sync-gtk.desktop.in.h:2
+msgid "Up to date"
+msgstr "محتلن"
+
+#: ../src/gtk-ui/sync-gtk.desktop.in.h:1
+msgid "Sync (GTK)"
+msgstr "تزامن (جي تي كي)"
+
