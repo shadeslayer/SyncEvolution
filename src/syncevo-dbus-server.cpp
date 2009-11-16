@@ -1129,7 +1129,7 @@ void ReadOperations::getConfig(bool getTemplate,
                                Config_t &config)
 {
     if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Template name must be given");
+        SE_THROW_EXCEPTION(NoSuchConfig, "Template or server name must be given");
     }
     map<string, string> localConfigs;
     boost::shared_ptr<SyncConfig> syncConfig;
