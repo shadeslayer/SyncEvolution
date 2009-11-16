@@ -1404,7 +1404,7 @@ void Session::setConfig(bool update, bool temporary,
         SE_THROW_EXCEPTION(InvalidCall, "sync started, cannot change configuration at this time");
     }
     if (getConfigName().empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Template name must be given");
+        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
     }
     if (!update && temporary) {
         throw std::runtime_error("Clearing existing configuration and temporary configuration changes which only affects the duration of the session are mutually exclusive");
