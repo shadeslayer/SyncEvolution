@@ -92,6 +92,17 @@ void FileConfigTree::remove()
 
 void FileConfigTree::reset()
 {
+    for (NodeCache_t::iterator it = m_nodes.begin();
+         it != m_nodes.end();
+         ++it) {
+        if (it->second.use_count() > 1) {
+            // If the use count is larger than 1, then someone besides
+            // the cache is referencing the node. We cannot force that
+            // other entity to drop the reference, so bail out here.
+            SE_THROW(it->second->getName() +
+                     ": cannot be removed while in use");
+        }
+    }
     m_nodes.clear();
 }
 
@@ -115,6 +126,11 @@ void FileConfigTree::clearNodes(const string &fullpath)
              * Below is STL recommended usage. 
              */
             NodeCache_t::iterator erased = it++;
+            if (erased->second.use_count() > 1) {
+                // same check as in reset()
+                SE_THROW(erased->second->getName() +
+                         ": cannot be removed while in use");
+            }
             m_nodes.erase(erased);
         } else {
             ++it;
