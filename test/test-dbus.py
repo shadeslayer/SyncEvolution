@@ -310,6 +310,32 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         status, error, sources = session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "idle")
 
+class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
+    """Test session APIs that work with an empty server name. Thus, all of session APIs which
+       need this kind of checking are put in this class. """
+
+    def setUp(self):
+        self.setUpServer()
+        self.setUpSession("")
+
+    def run(self, result):
+        self.runTest(result)
+
+    def testGetConfigEmptyName(self):
+        """Test the error is reported when the server name is empty for GetConfig"""
+        try:
+            self.session.GetConfig(True, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchConfig: Template or server name must be given")
+
+    def testSetConfigEmptyName(self):
+        """Test the error is reported when the server name is empty for SetConfig"""
+        try:
+            self.session.SetConfig(True, False, {}, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchConfig: Server name must be given")
 
 class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
     """Tests that work for GetConfig/SetConfig in Session."""
