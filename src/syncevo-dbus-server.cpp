@@ -1180,7 +1180,7 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
                                 Reports_t &reports)
 {
     if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Template name must be given");
+        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
     }
     SyncContext client(m_configName, false);
     std::vector<string> dirs;
