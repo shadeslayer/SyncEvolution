@@ -1506,6 +1506,9 @@ get_config_for_main_win_cb (SyncevoSession *session,
     if (error) {
         g_warning ("Error in Session.GetConfig: %s", error->message);
         g_error_free (error);
+
+        /* TODO: check for known errors */
+        set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
         return;
     }
     
@@ -2058,6 +2061,9 @@ get_sessions_cb (SyncevoServer *server,
     if (error) {
         g_warning ("Server.GetSessions failed: %s", error->message);
         g_error_free (error);
+
+        /* TODO: check for other errors */
+        set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
         return;
     }
 
