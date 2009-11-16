@@ -58,30 +58,6 @@ static gboolean support_canceling = FALSE;
 
 #define STRING_VARIANT_HASHTABLE (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, G_TYPE_VALUE))
 
-typedef struct source_progress {
-    char* name;
-    
-    /* progress */
-    int prepare_current;
-    int prepare_total;
-    int send_current;
-    int send_total;
-    int receive_current;
-    int receive_total;
-    
-    /* statistics */
-    int added_local;
-    int modified_local;
-    int deleted_local;
-    int rejected_local;
-    int added_remote;
-    int modified_remote;
-    int deleted_remote;
-    int rejected_remote;
-    int bytes_uploaded;
-    int bytes_downloaded;
-} source_progress;
-
 typedef enum app_state {
     SYNC_UI_STATE_CURRENT_STATE,
     SYNC_UI_STATE_GETTING_SERVER,
@@ -90,22 +66,6 @@ typedef enum app_state {
     SYNC_UI_STATE_SERVER_FAILURE,
     SYNC_UI_STATE_SYNCING,
 } app_state;
-
-/* absolute progress amounts 0-100 */
-const float sync_progress_clicked = 0.02;
-const float sync_progress_session_start = 0.04;
-const float sync_progress_sync_start = 0.06;    /* prepare/send/receive cycles start here */
-const float sync_progress_sync_end = 0.96;
-
-/* how are prepare/send/receive weighed -- sum should be 100 */
-const float sync_weight_prepare = 0.50;
-const float sync_weight_send = 0.25;
-const float sync_weight_receive = 0.25;
-
-/* non-abolute progress amounts for prepare/send/receive (for all sources) */
-#define SYNC_PROGRESS_PREPARE ((sync_progress_sync_end - sync_progress_sync_start) * sync_weight_prepare)
-#define SYNC_PROGRESS_SEND ((sync_progress_sync_end - sync_progress_sync_start) * sync_weight_send)
-#define SYNC_PROGRESS_RECEIVE ((sync_progress_sync_end - sync_progress_sync_start) * sync_weight_receive)
 
 
 typedef struct app_data {
@@ -159,7 +119,6 @@ typedef struct app_data {
     gboolean synced_this_session;
     int last_sync;
     guint last_sync_src_id;
-    GList *source_progresses;
 
     SyncMode mode;
 
@@ -558,18 +517,47 @@ service_save_clicked_cb (GtkButton *btn, app_data *data)
     server->changed = FALSE;
 }
 
+static void
+abort_sync_cb (SyncevoSession *session,
+               GError *error,
+               app_data *data)
+{
+    if (error) {
+        g_warning ("Session.Abort failed: %s", error->message);
+        g_error_free (error);
+    }
+    /* status change handler takes care of updating UI */
+}
+
+static void
+sync_cb (SyncevoSession *session,
+         GError *error,
+         app_data *data)
+{
+    if (error) {
+        /* TODO: check for the case of sync already happening ? */
+        add_error_info (data, _("Failed to start sync"), error->message);
+        g_error_free (error);
+        return;
+    }
+
+    set_sync_progress (data, 0.0, _("Starting sync"));
+    /* stop updates of "last synced" */
+    if (data->last_sync_src_id > 0)
+        g_source_remove (data->last_sync_src_id);
+    set_app_state (data, SYNC_UI_STATE_SYNCING);
+
+}
 static void 
 sync_clicked_cb (GtkButton *btn, app_data *data)
 {
-    GPtrArray *sources;
-    GList *list;
+    GHashTable *source_modes;
     GError *error = NULL;
 
     if (data->syncing) {
-/*
-        syncevo_service_abort_sync_async (data->service, data->current_service->name, 
-                                          (SyncevoAbortSyncCb)abort_sync_cb, data);
-*/
+        syncevo_session_abort (data->running_session,
+                               (SyncevoSessionGenericCb)abort_sync_cb,
+                               data);
         set_sync_progress (data, -1.0, _("Trying to cancel sync"));
     } else {
         char *message = NULL;
@@ -610,52 +598,14 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
             }
         }
 
-        /* empty source progress list */
-        list = data->source_progresses;
-        for (list = data->source_progresses; list; list = list->next) {
-            g_free (((source_progress*)list->data)->name);
-            g_slice_free (source_progress, list->data);
-        }
-        g_list_free (data->source_progresses);
-        data->source_progresses = NULL;
-
-/*
-        sources = server_config_get_source_array (data->current_service, data->mode);
-*/
-        if (sources->len == 0) {
-            g_ptr_array_free (sources, TRUE);
-            add_error_info (data, _("No sources are enabled, not syncing"), NULL);
-            return;
-        }
-/*      syncevo_service_start_sync (data->service, 
-                                    data->current_service->name,
-                                    sources,
-                                    &error);
-*/
-        if (error) {
-            if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
-                dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_INVALID_CALL)) {
-
-                /* stop updates of "last synced" */
-                if (data->last_sync_src_id > 0)
-                    g_source_remove (data->last_sync_src_id);
-                set_app_state (data, SYNC_UI_STATE_SYNCING);
-                set_sync_progress (data, sync_progress_clicked, _(""));
-                
-                add_error_info (data, _("A sync is already in progress"), error->message);
-            } else {
-                add_error_info (data, _("Failed to start sync"), error->message);
-                g_error_free (error);
-                return;
-            }
-        } else {
-            set_sync_progress (data, sync_progress_clicked, _("Starting sync"));
-            /* stop updates of "last synced" */
-            if (data->last_sync_src_id > 0)
-                g_source_remove (data->last_sync_src_id);
-            set_app_state (data, SYNC_UI_STATE_SYNCING);
-        }
-
+        /* TODO make sure source modes are correct */
+        source_modes = g_hash_table_new (g_str_hash, g_str_equal);
+        syncevo_session_sync (data->session,
+                              SYNCEVO_SYNC_DEFAULT,
+                              source_modes,
+                              (SyncevoSessionGenericCb)sync_cb,
+                              data);
+        g_hash_table_unref (source_modes);
     }
 }
 
@@ -1599,8 +1549,15 @@ set_running_session_status (app_data *data, SyncevoSessionStatus status)
     case SYNCEVO_STATUS_ABORTING:
         set_app_state (data, SYNC_UI_STATE_SYNCING);
         break;
+    case SYNCEVO_STATUS_DONE:
+        gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
+                            _("Sync complete"));
+        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
+        set_sync_progress (data, 1.0, "");
+        
+        break;
     default:
-        g_warning ("unknown session status used");
+        g_warning ("unknown session status  %d used!", status);
     }
 }
 
@@ -1611,6 +1568,7 @@ running_session_status_changed_cb (SyncevoSession *session,
                                    SyncevoSourceStatuses *source_statuses,
                                    app_data *data)
 {
+    g_debug ("running session status changed -> %d", status);
     set_running_session_status (data, status);
 }
 
@@ -1629,6 +1587,44 @@ get_running_session_status_cb (SyncevoSession *session,
     }
 
     set_running_session_status (data, status);
+}
+
+static void
+running_session_progress_changed_cb (SyncevoSession *session,
+                                     int progress,
+                                     SyncevoSourceProgresses *source_progresses,
+                                     app_data *data)
+{
+    SyncevoSourceProgress *s_progress;
+    char *name;
+    char *msg = NULL;
+
+    s_progress = syncevo_source_progresses_get_current (source_progresses);
+    if (!s_progress) {
+        return;
+    }
+
+    name = get_pretty_source_name (s_progress->name);
+
+    switch (s_progress->phase) {
+    case SYNCEVO_PHASE_PREPARING:
+            msg = g_strdup_printf (_("Preparing '%s'"), name);
+            break;
+    case SYNCEVO_PHASE_RECEIVING:
+            msg = g_strdup_printf (_("Receiving '%s'"), name);
+            break;
+    case SYNCEVO_PHASE_SENDING:
+            msg = g_strdup_printf (_("Sending '%s'"), name);
+            break;
+    }
+    g_free (name);
+
+    if (msg) {
+        set_sync_progress (data, ((float)progress) / 100, msg);
+        g_free (msg);
+    }
+
+    syncevo_source_progress_free (s_progress);
 }
 
 typedef struct source_stats {
@@ -1746,9 +1742,29 @@ status_changed_cb (SyncevoSession *session,
                    SyncevoSourceStatuses *source_statuses,
                    app_data *data)
 {
-    if (status = SYNCEVO_STATUS_IDLE) {
+    GTimeVal val;
+
+    g_debug ("active session status changed -> %d", status);
+    switch (status) {
+    case SYNCEVO_STATUS_IDLE:
         /* time for business */
         set_active_session (data, session);
+        break;
+    
+    case SYNCEVO_STATUS_DONE:
+        g_get_current_time (&val);
+        data->last_sync = val.tv_sec;
+        refresh_last_synced_label (data);
+        
+        data->synced_this_session = TRUE;
+
+        /* refresh stats */
+        syncevo_session_get_reports (data->session,
+                                     0, 1,
+                                     (SyncevoSessionGetReportsCb)get_reports_cb,
+                                     data);
+    default:
+        ;
     }
 }
 
@@ -1767,7 +1783,8 @@ get_status_cb (SyncevoSession *session,
         return;
     }
 
-    if (status = SYNCEVO_STATUS_IDLE) {
+    g_debug ("active session status is %d", status);
+    if (status == SYNCEVO_STATUS_IDLE) {
         /* time for business */
         set_active_session (data, session);
     }
@@ -1862,36 +1879,16 @@ init_configuration (app_data *data)
 static void
 calc_and_update_progress (app_data *data, char *msg)
 {
+    
+/*
     float progress;
     GList *list;
     int count = 0;
     
-    progress = 0.0;
-    for (list = data->source_progresses; list; list = list->next) {
-        source_progress *p = (source_progress*)list->data;
-        if (p->prepare_total > 0)
-            progress += SYNC_PROGRESS_PREPARE * p->prepare_current / p->prepare_total;
-        if (p->send_total > 0)
-            progress += SYNC_PROGRESS_SEND * p->send_current / p->send_total;
-        if (p->receive_total > 0)
-            progress += SYNC_PROGRESS_RECEIVE * p->receive_current / p->receive_total;
-        count++;
-    }
+    //update progress from source conf
+    
     set_sync_progress (data, sync_progress_sync_start + (progress / count), msg);
-}
-
-static source_progress*
-find_source_progress (GList *source_progresses, char *name)
-{
-    GList *list;
-
-    /* TODO: it would make more sense if source_progresses was a GHashTable */
-    for (list = source_progresses; list; list = list->next) {
-        if (strcmp (((source_progress*)list->data)->name, name) == 0) {
-            return (source_progress*)list->data;
-        }
-    }
-    return NULL;
+*/
 }
 
 static char*
@@ -1991,7 +1988,6 @@ static void
 set_running_session (app_data *data, const char *path)
 {
     g_assert (path);
-
     if (data->running_session) {
         g_object_unref (data->running_session);
     }
@@ -2002,6 +1998,8 @@ set_running_session (app_data *data, const char *path)
         data->running_session = syncevo_session_new (path);
     }
 
+    g_signal_connect (data->running_session, "progress-changed",
+                      G_CALLBACK (running_session_progress_changed_cb), data);
     g_signal_connect (data->running_session, "status-changed",
                       G_CALLBACK (running_session_status_changed_cb), data);
     syncevo_session_get_status (data->running_session,

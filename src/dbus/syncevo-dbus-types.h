@@ -65,6 +65,7 @@ typedef enum {
 } SyncevoSourcePhase;
 
 typedef struct {
+  char *name;
   SyncevoSourcePhase phase;
   int prepare_current;
   int prepare_total;
@@ -119,11 +120,11 @@ gboolean syncevo_source_statuses_get (SyncevoSourceStatuses *source_modes,
 void syncevo_source_statuses_free (SyncevoSourceStatuses *source_statuses);
 
 
-gboolean syncevo_source_progresses_get (SyncevoSourceProgresses *source_progresses,
-                                        char *source,
-                                        SyncevoSourceProgress *source_progress);
+SyncevoSourceProgress* syncevo_source_progresses_get_current (SyncevoSourceProgresses *source_progresses);
 
 void syncevo_source_progresses_free (SyncevoSourceProgresses *source_progresses);
+
+void syncevo_source_progress_free (SyncevoSourceProgress *progress);
 
 
 GHashTable* syncevo_reports_index (SyncevoReports *reports,

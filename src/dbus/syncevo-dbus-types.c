@@ -264,57 +264,67 @@ syncevo_source_statuses_free (SyncevoSourceStatuses *source_statuses)
     g_hash_table_destroy (source_statuses);
 }
 
-gboolean
-syncevo_source_progresses_get (SyncevoSourceProgresses *source_progresses,
-                               char *source,
-                               SyncevoSourceProgress *source_progress)
+/* The return value contents are only valid as long as the
+ * SyncevoSourceProgresses is. */
+SyncevoSourceProgress*
+syncevo_source_progresses_get_current (SyncevoSourceProgresses *source_progresses)
 {
-    const char *phase_str;
+    const char *phase_str, *name;
+    GHashTableIter iter;
     GValueArray *progress_array;
     GValue *val;
+    SyncevoSourceProgress *progress = NULL;
 
     g_return_val_if_fail (source_progresses, FALSE);
-    g_return_val_if_fail (source, FALSE);
 
-    progress_array = g_hash_table_lookup (source_progresses, source);
-    if (!progress_array) {
-        return FALSE;
+    g_hash_table_iter_init (&iter, source_progresses);
+    while (g_hash_table_iter_next (&iter, (gpointer)&name, (gpointer)&progress_array)) {
+        SyncevoSourcePhase phase;
+        phase_str = g_value_get_string (g_value_array_get_nth (progress_array, 0));
+
+        if (!phase_str) {
+            phase = SYNCEVO_PHASE_NONE;
+        } else if (g_str_has_prefix (phase_str, "preparing")) {
+            phase = SYNCEVO_PHASE_PREPARING;
+        } else if (g_str_has_prefix (phase_str, "sending")) {
+            phase = SYNCEVO_PHASE_SENDING;
+        } else if (g_str_has_prefix (phase_str, "receiving")) {
+            phase = SYNCEVO_PHASE_RECEIVING;
+        } else {
+            phase = SYNCEVO_PHASE_NONE;
+        }
+
+        if (phase == SYNCEVO_PHASE_NONE) {
+            continue;
+        }
+
+        progress = g_slice_new (SyncevoSourceProgress);
+        progress->name = name;
+        progress->phase = phase;
+
+        val = g_value_array_get_nth (progress_array, 1);
+        progress->prepare_current = g_value_get_int (val);
+        val = g_value_array_get_nth (progress_array, 2);
+        progress->prepare_total = g_value_get_int (val);
+        val = g_value_array_get_nth (progress_array, 3);
+        progress->send_current = g_value_get_int (val);
+        val = g_value_array_get_nth (progress_array, 4);
+        progress->send_total = g_value_get_int (val);
+        val = g_value_array_get_nth (progress_array, 5);
+        progress->receive_current = g_value_get_int (val);
+        val = g_value_array_get_nth (progress_array, 6);
+        progress->receive_total = g_value_get_int (val);
+
+        break;
     }
-
-    if (!source_progress) {
-        return TRUE;
-    }
-
-
-    phase_str = g_value_get_string (g_value_array_get_nth (progress_array, 0));
-    if (!phase_str) {
-        source_progress->phase = SYNCEVO_PHASE_NONE;
-    } else if (g_str_has_prefix (phase_str, "preparing")) {
-        source_progress->phase = SYNCEVO_PHASE_PREPARING;
-    } else if (g_str_has_prefix (phase_str, "sending")) {
-        source_progress->phase = SYNCEVO_PHASE_SENDING;
-    } else if (g_str_has_prefix (phase_str, "receiving")) {
-        source_progress->phase = SYNCEVO_PHASE_RECEIVING;
-    } else {
-        source_progress->phase = SYNCEVO_PHASE_NONE;
-    }
-
-    val = g_value_array_get_nth (progress_array, 1);
-    source_progress->prepare_current = g_value_get_int (val);
-    val = g_value_array_get_nth (progress_array, 2);
-    source_progress->prepare_total = g_value_get_int (val);
-    val = g_value_array_get_nth (progress_array, 3);
-    source_progress->send_current = g_value_get_int (val);
-    val = g_value_array_get_nth (progress_array, 4);
-    source_progress->send_total = g_value_get_int (val);
-    val = g_value_array_get_nth (progress_array, 5);
-    source_progress->receive_current = g_value_get_int (val);
-    val = g_value_array_get_nth (progress_array, 6);
-    source_progress->receive_total = g_value_get_int (val);
-
-    return TRUE;
+    return progress;
 }
 
+void
+syncevo_source_progress_free (SyncevoSourceProgress *progress)
+{
+    g_slice_free (SyncevoSourceProgress, progress);
+}
 static void
 free_source_progress_item (char *source,
                            GValueArray *progress_array)
