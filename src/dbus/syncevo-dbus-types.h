@@ -112,11 +112,17 @@ void syncevo_source_modes_free (SyncevoSourceModes *source_modes);
 
 SyncevoSessionStatus syncevo_session_status_from_string (const char *status_str);
 
-gboolean syncevo_source_statuses_get (SyncevoSourceStatuses *source_modes,
-                                      char *source,
-                                      SyncevoSyncMode *mode,
-                                      SyncevoSourceStatus *status,
-                                      guint *error_code);
+
+typedef void (*SourceStatusFunc) (char *name,
+                                  SyncevoSyncMode mode,
+                                  SyncevoSourceStatus status,
+                                  guint error_code,
+                                  gpointer user_data);
+void
+syncevo_source_statuses_foreach (SyncevoSourceStatuses *source_statuses,
+                                 SourceStatusFunc func,
+                                 gpointer data);
+
 void syncevo_source_statuses_free (SyncevoSourceStatuses *source_statuses);
 
 

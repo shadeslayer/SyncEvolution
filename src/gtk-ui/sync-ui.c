@@ -140,6 +140,7 @@ static void show_settings_window (app_data *data, server_config *config);
 static void ensure_default_sources_exist(server_config *server);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
 static void get_reports_cb (SyncevoSession *session, SyncevoReports *reports, GError *error, app_data *data);
+static char* get_error_string_for_code (int error_code);
 
 static void
 remove_child (GtkWidget *widget, GtkContainer *container)
@@ -1562,6 +1563,22 @@ set_running_session_status (app_data *data, SyncevoSessionStatus status)
 }
 
 static void
+update_source_status (char *name,
+                      SyncevoSyncMode mode,
+                      SyncevoSourceStatus status,
+                      guint error_code,
+                      app_data *data)
+{
+    char *error;
+    
+    error = get_error_string_for_code (error_code);
+    if (error) {
+        g_free (error);
+        g_warning (" Source '%s' error: %s", error);
+    }
+}
+
+static void
 running_session_status_changed_cb (SyncevoSession *session,
                                    SyncevoSessionStatus status,
                                    guint error_code,
@@ -1570,6 +1587,10 @@ running_session_status_changed_cb (SyncevoSession *session,
 {
     g_debug ("running session status changed -> %d", status);
     set_running_session_status (data, status);
+
+    syncevo_source_statuses_foreach (source_statuses,
+                                     (SourceStatusFunc)update_source_status,
+                                     data);
 }
 
 static void
@@ -1987,11 +2008,14 @@ server_shutdown_cb (SyncevoServer *server,
 static void
 set_running_session (app_data *data, const char *path)
 {
-    g_assert (path);
     if (data->running_session) {
         g_object_unref (data->running_session);
     }
-    if (data->session &&
+
+    if (!path) {
+        data->running_session = NULL;
+        return;
+    } else if (data->session &&
         strcmp (path, syncevo_session_get_path (data->session)) == 0) {
         data->running_session = g_object_ref (data->session);
     } else {
@@ -2015,6 +2039,11 @@ server_session_changed_cb (SyncevoServer *server,
 {
     if (started) {
         set_running_session (data, path);
+    } else {
+        if (data->running_session &&
+            strcmp (syncevo_session_get_path (data->running_session), path) == 0 ) {
+            set_running_session (data, NULL);
+        }
     }
 }
 
