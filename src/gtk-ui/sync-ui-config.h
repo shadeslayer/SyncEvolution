@@ -78,4 +78,21 @@ void server_config_update_from_entry (server_config *server, GtkEntry *entry);
 GPtrArray* server_config_get_option_array (server_config *server);
 void server_config_disable_unsupported_sources (server_config *server);
 
+void server_config_ensure_default_sources_exist (server_config *server);
+void add_server_option (SyncevoOption *option, server_config *server);
+
+
+/* data structure for syncevo_service_get_template_config_async and
+ * syncevo_service_get_server_config_async. server is the server that
+ * the method was called for. options_override are options that should
+ * be overridden on the config we get.
+ */
+typedef struct server_data {
+    server_config *config;
+    GPtrArray *options_override;
+    gpointer *data;
+} server_data;
+server_data* server_data_new (const char *name, gpointer *data);
+void server_data_free (server_data *data, gboolean free_config);
+
 #endif
