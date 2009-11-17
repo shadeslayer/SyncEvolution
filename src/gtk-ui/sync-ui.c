@@ -31,7 +31,6 @@
 
 #include "syncevo-server.h"
 #include "syncevo-session.h"
-#include "sync-ui-marshal.h"
 
 /* for return value definitions */
 /* TODO: would be nice to have a non-synthesis-dependent API but for now it's like this... */
@@ -1675,7 +1674,7 @@ update_source_status (char *name,
     error = get_error_string_for_code (error_code);
     if (error) {
         g_free (error);
-        g_warning (" Source '%s' error: %s", error);
+        g_warning (" Source '%s' error: %s", name, error);
     }
 }
 
@@ -1730,14 +1729,16 @@ running_session_progress_changed_cb (SyncevoSession *session,
 
     switch (s_progress->phase) {
     case SYNCEVO_PHASE_PREPARING:
-            msg = g_strdup_printf (_("Preparing '%s'"), name);
-            break;
+        msg = g_strdup_printf (_("Preparing '%s'"), name);
+        break;
     case SYNCEVO_PHASE_RECEIVING:
-            msg = g_strdup_printf (_("Receiving '%s'"), name);
-            break;
+        msg = g_strdup_printf (_("Receiving '%s'"), name);
+        break;
     case SYNCEVO_PHASE_SENDING:
-            msg = g_strdup_printf (_("Sending '%s'"), name);
-            break;
+        msg = g_strdup_printf (_("Sending '%s'"), name);
+        break;
+    default:
+        ;
     }
     g_free (name);
 
@@ -1790,7 +1791,7 @@ get_reports_cb (SyncevoSession *session,
 
             strs = g_strsplit (key, "-", 6);
             if (g_strv_length (strs) != 6) {
-                g_warning ("'%s' not parsable as a sync report item");
+                g_warning ("'%s' not parsable as a sync report item", key);
                 g_strfreev (strs);
                 continue;
             }
@@ -1847,6 +1848,7 @@ get_reports_cb (SyncevoSession *session,
     }
 }
 
+static void
 set_active_session (app_data *data, SyncevoSession *session)
 {
     data->session_is_active = TRUE;
@@ -1912,6 +1914,7 @@ get_status_cb (SyncevoSession *session,
     }
 }
 
+static void
 start_session_cb (SyncevoServer *server,
                   char *path,
                   GError *error,
