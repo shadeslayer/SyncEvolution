@@ -849,7 +849,6 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent()
 #endif
     }
 
-    boost::shared_ptr<TransportAgent> agent;
     SE_THROW("unsupported transport type is specified in the configuration");
 }
 
