@@ -22,9 +22,10 @@
 
 #include <config.h>
 
+#ifdef ENABLE_OBEX
+
 #include <syncevo/TransportAgent.h>
 #include <syncevo/Logging.h>
-#include <openobex/obex.h>
 #include <syncevo/declarations.h>
 #include <syncevo/SmartPtr.h>
 
@@ -32,6 +33,8 @@
 #include <bluetooth/sdp.h>
 #include <bluetooth/sdp_lib.h>
 #endif
+#include <openobex/obex.h>
+
 SE_BEGIN_CXX
 
 class Socket {
@@ -188,4 +191,5 @@ class ObexTransportAgent : public TransportAgent
 };
 
 SE_END_CXX
+#endif //ENABLE_OBEX
 #endif

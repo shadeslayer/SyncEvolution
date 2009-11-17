@@ -19,6 +19,7 @@
 
 #include <config.h>
 
+#ifdef ENABLE_OBEX
 #ifdef ENABLE_BLUETOOTH
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/sdp.h>
@@ -776,4 +777,5 @@ obex_object_t* ObexTransportAgent::newCmd(uint8_t cmd) {
     }
 }
 
+#endif //ENABLE_OBEX
 SE_END_CXX
