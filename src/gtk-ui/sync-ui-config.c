@@ -78,7 +78,13 @@ server_config_update_from_option (server_config *server, SyncevoOption *option)
             server->base_url = g_strdup (value);
         } else if (strcmp (key, "username") == 0) {
             g_free (server->username);
-            server->username = g_strdup (value);
+            //skip the informative username
+            if (value &&
+                strcmp (value, "your SyncML server account name") == 0) {
+                server->username = g_strdup ("");
+            } else {
+                server->username = g_strdup (value);
+            }
         } else if (strcmp (key, "webURL") == 0) {
             if (server->web_url)
             g_free (server->web_url);
@@ -141,10 +147,6 @@ server_config_get_option_array (server_config *server)
 
     for (l = server->source_configs; l; l = l->next) {
         source_config *source = (source_config*)l->data;
-
-        // sources may have been added as place holders
-        if (!source->uri)
-            continue;
 
         option = syncevo_option_new (source->name, g_strdup ("uri"), g_strdup (source->uri));
         g_ptr_array_add (options, option);
@@ -319,13 +321,4 @@ server_data_free (server_data *data, gboolean free_config)
         g_ptr_array_free (data->options_override, TRUE);
     }
     g_slice_free (server_data, data);
-}
-
-void
-server_config_ensure_default_sources_exist (server_config *server)
-{
-    server_config_get_source_config (server, "addressbook");
-    server_config_get_source_config (server, "calendar");
-    /* server_config_get_source_config (server, "memo"); */
-    server_config_get_source_config (server, "todo");
 }

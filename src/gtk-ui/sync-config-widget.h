@@ -9,7 +9,7 @@
 #include <gtk/gtk.h>
 #endif
 
-#include "syncevo-session.h"
+#include "syncevo-server.h"
 #include "sync-ui-config.h"
 
 G_BEGIN_DECLS
@@ -38,14 +38,15 @@ typedef struct {
     GtkVBox parent;
     GtkWidget *expando_box_for_gtk;
 #endif
-/*
-    SyncevoService *dbus_service;
-    SyncevoServer *server;
-*/
-    gboolean current;
 
+    gboolean current; /* is this currently used config */
+    gboolean unset; /* is there a current config at all */
+
+    SyncevoServer *server;
     server_config *config;
     GPtrArray *options_override;
+
+    gboolean auth_changed;
 
     /* label */
     GtkWidget *image;
@@ -64,6 +65,7 @@ typedef struct {
     GtkWidget *expander;
     GtkWidget *server_settings_table;
     GtkWidget *reset_delete_button;
+    GtkWidget *stop_button;
     GtkWidget *use_button;
     GList *uri_entries;
 } SyncConfigWidget;
@@ -75,18 +77,22 @@ typedef struct {
     GtkVBoxClass parent_class;
 #endif
 
-    void (*removed) (SyncConfigWidget *widget);
+    void (*changed) (SyncConfigWidget *widget);
     void (*expanded) (SyncConfigWidget *widget);
 } SyncConfigWidgetClass;
 
 GType sync_config_widget_get_type (void);
 
-GtkWidget *sync_config_widget_new (SyncevoServer *server, gboolean current, SyncevoSession *session);
+GtkWidget *sync_config_widget_new (SyncevoServer *server,
+                                   gboolean current,
+                                   gboolean unset);
 
 void sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expanded);
 
 gboolean sync_config_widget_get_current (SyncConfigWidget *widget);
+void sync_config_widget_set_current (SyncConfigWidget *self, gboolean current);
 
+const char *sync_config_widget_get_name (SyncConfigWidget *widget);
 G_END_DECLS
 
 

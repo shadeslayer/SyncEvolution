@@ -122,8 +122,10 @@ static void show_main_view (app_data *data);
 static void show_services_list (app_data *data);
 static void update_services_list (app_data *data);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
-static void get_reports_cb (SyncevoSession *session, SyncevoReports *reports, GError *error, app_data *data);
+static void get_reports_cb (SyncevoSession *session, SyncevoReports *reports, 
+                            GError *error, app_data *data);
 static char* get_error_string_for_code (int error_code);
+
 
 static void
 remove_child (GtkWidget *widget, GtkContainer *container)
@@ -170,7 +172,7 @@ clear_error_info (app_data *data)
     gtk_widget_hide (data->errors_box);
 }
 
-const char*
+char*
 get_pretty_source_name (const char *source_name)
 {
     if (strcmp (source_name, "addressbook") == 0) {
@@ -225,12 +227,41 @@ add_error_info (app_data *data, const char *message, const char *external_reason
 }
 
 static void
-save_gconf_settings (app_data *data, char *service_name)
+reload_config (app_data *data, const char *server)
+{
+    server_config_free (data->current_service);
+
+    if (!server || strlen (server) == 0) {
+        data->current_service = NULL; 
+        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
+    } else {
+        data->synced_this_session = FALSE;
+        data->current_service = g_slice_new0 (server_config);
+        data->current_service->name = g_strdup (server);
+        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
+/*
+        syncevo_service_get_server_config_async (data->service, 
+                                                 (char*)server,
+                                                 (SyncevoGetServerConfigCb)get_server_config_cb,
+                                                 data);
+*/
+    }
+}
+
+
+static void
+save_gconf_settings (app_data *data, const char *service_name)
 {
     GConfClient* client;
     GError *err = NULL;
 
     client = gconf_client_get_default ();
+    if (service_name && data->current_service &&
+        strcmp (service_name, data->current_service->name) == 0) {
+        /* need to reload because there will be no gconf change event */
+        reload_config (data, service_name);
+    }
+
     if (!gconf_client_set_string (client, SYNC_UI_SERVER_KEY, 
                                   service_name ? service_name : "", 
                                   &err)) {
@@ -768,7 +799,7 @@ static void
 update_service_source_ui (const char *name, source_config *conf, app_data *data)
 {
     GtkWidget *check, *hbox, *box, *lbl;
-    const char *pretty_name;
+    char *pretty_name;
     const char *source_uri, *sync;
     gboolean enabled;
 
@@ -816,6 +847,7 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
         gtk_widget_set_sensitive (check, FALSE);
     }
     g_free (pretty_name);
+
     gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
     gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
 
@@ -933,30 +965,47 @@ config_widget_expanded_cb (GtkWidget *widget, app_data *data)
                            widget);
 }
 
+static void
+config_widget_changed_cb (GtkWidget *widget, app_data *data)
+{
+    if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
+        save_gconf_settings (data, sync_config_widget_get_name SYNC_CONFIG_WIDGET (widget));
+    } else {
+        /* stop using current service */
+        save_gconf_settings (data, NULL);
+    }
+    update_services_list (data);
+}
+
 static GtkWidget*
 add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
 {
     GtkWidget *item = NULL;
     const char *name;
     gboolean current = FALSE;
+    gboolean unset = FALSE;
 
 /*
     syncevo_server_get (server, &name, NULL, NULL, NULL);
+
     if (data->current_service && data->current_service->name &&
         name && strcmp (name, data->current_service->name) == 0) {
         current = TRUE;
      }
 
-    item = sync_config_widget_new (server, current, data->service);
-    g_signal_connect (item, "removed",
-                      G_CALLBACK (config_widget_removed_cb), data);
+    unset = !data->current_service;
+
+    item = sync_config_widget_new (server, current, unset, data->service);
+    g_signal_connect (item, "changed",
+                      G_CALLBACK (config_widget_changed_cb), data);
     g_signal_connect (item, "expanded",
                       G_CALLBACK (config_widget_expanded_cb), data);
     gtk_widget_show (item);
     gtk_box_pack_start (box, item, FALSE, FALSE, 0);
 
     if (current) {
-        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (item), data->op
+        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (item),
+                                        data->open_current);
         data->open_current = FALSE;
     }
 */
@@ -1095,8 +1144,8 @@ update_source_status (char *name,
     
     error = get_error_string_for_code (error_code);
     if (error) {
-        g_free (error);
         g_warning (" Source '%s' error: %s", name, error);
+        g_free (error);
     }
 }
 
@@ -1404,8 +1453,6 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
         g_error_free (error);
         error = NULL;
     }
-
-    gtk_widget_hide (data->progress);
 
     server_config_free (data->current_service);
     data->current_service = NULL;
