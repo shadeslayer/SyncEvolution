@@ -274,3 +274,18 @@ source_config_update_label (source_config *source)
     gtk_label_set_text (GTK_LABEL (source->label), msg);
     g_free (msg);
 }
+
+gboolean
+source_config_is_enabled (source_config *source)
+{
+    char *mode;
+
+    mode = g_hash_table_lookup (source->config, "sync");
+
+    if (mode &&
+        (strcmp (mode, "none") == 0 ||
+         strcmp (mode, "disabled") == 0)) {
+        return FALSE;
+    }
+    return TRUE;
+}

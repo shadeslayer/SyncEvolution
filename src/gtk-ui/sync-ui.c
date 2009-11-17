@@ -553,6 +553,8 @@ static void
 sync_clicked_cb (GtkButton *btn, app_data *data)
 {
     GHashTable *source_modes;
+    GHashTableIter iter;
+    source_config *source;
     GError *error = NULL;
 
     if (data->syncing) {
@@ -599,14 +601,27 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
             }
         }
 
-        /* TODO make sure source modes are correct */
-        source_modes = g_hash_table_new (g_str_hash, g_str_equal);
+        /* TODO make sure source modes are correct:
+         * override the sync mode in config with data->mode,
+         * then override all non-supported sources with "none".  */
+        source_modes = syncevo_source_modes_new ();
+
+        g_hash_table_iter_init (&iter, data->current_service->source_configs);
+        while (g_hash_table_iter_next (&iter, NULL, (gpointer)&source)) {
+            if (!source->supported_locally ||
+                !source->enabled) {
+                syncevo_source_modes_add (source_modes,
+                                          source->name,
+                                          SYNC_NONE);
+            }
+        }
+
         syncevo_session_sync (data->session,
-                              SYNCEVO_SYNC_DEFAULT,
+                              data->mode,
                               source_modes,
                               (SyncevoSessionGenericCb)sync_cb,
                               data);
-        g_hash_table_unref (source_modes);
+        syncevo_source_modes_free (source_modes);
     }
 }
 
