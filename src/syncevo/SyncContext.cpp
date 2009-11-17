@@ -847,10 +847,10 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent()
         agent->connect();
         return agent;
 #endif
-    } else {
-        boost::shared_ptr<TransportAgent> agent;
-        throw std::string("unsupported transport type is specified in the configuration");
     }
+
+    boost::shared_ptr<TransportAgent> agent;
+    SE_THROW("unsupported transport type is specified in the configuration");
 }
 
 void SyncContext::displayServerMessage(const string &message)
