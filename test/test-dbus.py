@@ -620,8 +620,10 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         self.setUpListeners(self.sessionpath)
         self.session.Sync("", {})
         loop.run()
+        self.failUnlessEqual(self.quit_events, ["session " + self.sessionpath + " done"])
 
     def testSync(self):
+        '''run a real sync with default server'''
         self.doSync()
         # TODO: check recorded events in self.events
         status, error, sources = self.session.GetStatus(utf8_strings=True)
@@ -650,8 +652,6 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(reports, [])
 
 class TestDBusSyncError(unittest.TestCase, DBusUtil):
-    """Executes a real sync with no corresponding config."""
-
     def setUp(self):
         DBusUtil.__init__(self)
         self.setUpServer()
@@ -660,7 +660,8 @@ class TestDBusSyncError(unittest.TestCase, DBusUtil):
     def run(self, result):
         self.runTest(result, own_xdg=True)
 
-    def testSync(self):
+    def testSyncNoConfig(self):
+        """Executes a real sync with no corresponding config."""
         self.setUpListeners(self.sessionpath)
         self.session.Sync("", {})
         loop.run()
