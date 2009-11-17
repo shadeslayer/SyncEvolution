@@ -344,16 +344,16 @@ class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
         self.runTest(result)
 
     def clearAllConfig(self):
-        """ clear config """
+        """ clear a server config. All should be removed. Used internally. """
         emptyConfig = {}
         self.session.SetConfig(False, False, emptyConfig, utf8_strings=True)
 
     def setupConfig(self):
-        """ create a full config """
+        """ create a server with full config. Used internally. """
         self.session.SetConfig(False, False, self.config, utf8_strings=True)
 
     def testSetConfigInvalidParam(self):
-        """ check that the right error is reported when parameters are not correct """
+        """ test that the right error is reported when parameters are not correct """
         try:
             self.session.SetConfig(False, True, {}, utf8_strings=True)
         except dbus.DBusException, ex:
@@ -363,23 +363,23 @@ class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
                                  "duration of the session are mutually exclusive")
 
     def testCreateGetConfig(self):
-        """ create a config, then get the config and do checking """
+        """ test the config is created successfully. """
         self.setupConfig()
         """ get config and compare """
         config = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config, self.config)
 
     def testUpdateConfig(self):
-        """ test SetConfig and update config """
+        """ test the config is permenantly updated correctly. """
         self.setupConfig()
-        """ update given config """
+        """ update the given config """
         self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
         config = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config[""]["password"], "nosecret")
         self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
 
     def testUpdateConfigTemp(self):
-        """ test SetConfig and GetConfig """
+        """ test the config is just temporary updated but no effect in storage. """
         self.setupConfig()
         """ set config temporary """
         self.session.SetConfig(True, True, self.updateConfig, utf8_strings=True)
@@ -414,6 +414,7 @@ class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
                                  "org.syncevolution.NoSuchConfig: The server 'dummy-test-for-config-purpose' doesn't exist")
         
     def testClearAllConfig(self):
+        """ test all configs of a server are cleared correctly. """
         """ first set up config and then clear all configs and also check a non-existing config """
         self.setupConfig()
         self.clearAllConfig()
@@ -424,7 +425,7 @@ class TestDBusSessionConfig(unittest.TestCase, DBusUtil):
                                  "org.syncevolution.NoSuchConfig: No server 'dummy-test-for-config-purpose' found")
     
     def testClearConfigSources(self):
-        """ clear sources config """
+        """ test sources related configs are cleared correctly. """
         self.setupConfig()
         config1 = { 
                      "" : { "syncURL" : "http://my.funambol.com/sync",
