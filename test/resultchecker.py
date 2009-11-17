@@ -218,12 +218,8 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
             indents.append(indent)
             result.write(indent+'<'+server+' path="' +rserver+'" ')
             #valgrind check resutls
-            outputlog = resultdir+'/'+rserver+'/output.txt'
-            checkcmd = "grep --binary-files=text 'valgrindcheck' %s |grep -o '\./client-test Client::Sync:.*$'|grep 'return code' " % (outputlog)
-            fout,fin=popen2.popen2(checkcmd)
-            s = fout.read()
-            if(s):
-                result.write('result="'+s.partition('return code ')[2].partition(')')[0]+'" ')
+            if(params[server].find('return code ') !=-1):
+                result.write('result="'+params[server].partition('return code ')[2].partition(')')[0]+'" ')
             result.write('parameter="'+params[server]+'">\n')
             logs = glob.glob(resultdir+'/'+rserver+'/*.log')
             logdic ={}
