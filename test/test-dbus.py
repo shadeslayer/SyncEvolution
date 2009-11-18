@@ -212,10 +212,15 @@ class DBusUtil(Timeout):
     """Contains the common run() method for all D-Bus test suites
     and some utility functions."""
 
-    def __init__(self):
-        self.events = []
-        self.quit_events = []
-        self.reply = None
+    # Use class variables because that way it is ensured that there is
+    # only one set of them. Previously instance variables were used,
+    # which had the effect that D-Bus signal handlers from test A
+    # wrote into variables which weren't the ones used by test B.
+    # Unfortunately it is impossible to remove handlers when
+    # completing test A.
+    events = []
+    quit_events = []
+    reply = None
 
     def runTest(self, result, own_xdg=True):
         """Starts the D-Bus server and dbus-monitor before the test
@@ -231,6 +236,10 @@ class DBusUtil(Timeout):
         XDG_CACHE_HOME pointing towards local dirs
         test-dbus/[data|config|cache] which are removed before each
         test."""
+
+        DBusUtil.events = []
+        DBusUtil.quit_events = []
+        DBusUtil.reply = None
 
         kill = subprocess.Popen("sh -c 'killall -9 syncevo-dbus-server dbus-monitor >/dev/null 2>&1'", shell=True)
         kill.communicate()
@@ -295,12 +304,14 @@ class DBusUtil(Timeout):
                 raise Exception(error)
             timeout_handle = self.addTimeout(timeout, timedout, use_glib=False)
         try:
+            self.running = True
             unittest.TestCase.run(self, result)
         except KeyboardInterrupt:
             # somehow this happens when timedout() above raises the exception
             # while inside glib main loop
             result.errors.append((self,
                                   "interrupted by timeout or CTRL-C or Python signal handler problem"))
+        self.running = False
         self.removeTimeout(timeout_handle)
         if debugger:
             print "\ndone, quit gdb now\n"
@@ -338,7 +349,13 @@ class DBusUtil(Timeout):
 
     def setUpSession(self, config):
         self.sessionpath = self.server.StartSession(config)
-        bus.add_signal_receiver(lambda object, ready: loop.quit(),
+
+        def session_ready(object, ready):
+            if self.running and ready:
+                DBusUtil.quit_events.append("session " + object + " ready")
+                loop.quit()
+
+        bus.add_signal_receiver(session_ready,
                                 'SessionChanged',
                                 'org.syncevolution.Server',
                                 'org.syncevolution',
@@ -351,20 +368,27 @@ class DBusUtil(Timeout):
         status, error, sources = self.session.GetStatus(utf8_strings=True)
         if status == "queuing":
             loop.run()
+            self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " ready"])
+            DBusUtil.quit_events = []
 
     def setUpListeners(self, sessionpath):
-        """records progress and status changes in self.events and
+        """records progress and status changes in DBusUtil.events and
         quits the main loop when the session is done"""
+
         def progress(*args):
-            self.events.append(("progress", args))
+            if self.running:
+                DBusUtil.events.append(("progress", args))
+
         def status(*args):
-            self.events.append(("status", args))
-            if args[0] == "done":
-                if sessionpath:
-                    self.quit_events.append("session " + sessionpath + " done")
-                else:
-                    self.quit_events.append("session done")
-                loop.quit()
+            if self.running:
+                DBusUtil.events.append(("status", args))
+                if args[0] == "done":
+                    if sessionpath:
+                        DBusUtil.quit_events.append("session " + sessionpath + " done")
+                    else:
+                        DBusUtil.quit_events.append("session done")
+                    loop.quit()
+
         bus.add_signal_receiver(progress,
                                 'ProgressChanged',
                                 'org.syncevolution.Session',
@@ -383,18 +407,22 @@ class DBusUtil(Timeout):
     def setUpConnectionListeners(self, conpath):
         """records connection signals (abort and reply), quits when
         getting an abort"""
-        def abort():
-            self.events.append(("abort",))
-            self.quit_events.append("connection " + conpath + " aborted")
-            loop.quit()
-        def reply(*args):
-            self.reply = args
-            if args[3]:
-                self.quit_events.append("connection " + conpath + " got final reply")
-            else:
-                self.quit_events.append("connection " + conpath + " got reply")
 
-            loop.quit()
+        def abort():
+            if self.running:
+                DBusUtil.events.append(("abort",))
+                DBusUtil.quit_events.append("connection " + conpath + " aborted")
+                loop.quit()
+
+        def reply(*args):
+            if self.running:
+                DBusUtil.reply = args
+                if args[3]:
+                    DBusUtil.quit_events.append("connection " + conpath + " got final reply")
+                else:
+                    DBusUtil.quit_events.append("connection " + conpath + " got reply")
+                loop.quit()
+
         bus.add_signal_receiver(abort,
                                 'Abort',
                                 'org.syncevolution.Connection',
@@ -470,9 +498,14 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
     @timeout(20)
     def testSecondSession(self):
         """a second session should not run unless the first one stops"""
-        self.failUnless(have_glib)
         sessionpath = self.server.StartSession("")
-        bus.add_signal_receiver(lambda object, ready: loop.quit(),
+
+        def session_ready(object, ready):
+            if self.running:
+                DBusUtil.quit_events.append("session " + object + (ready and " ready" or " done"))
+                loop.quit()
+
+        bus.add_signal_receiver(session_ready,
                                 'SessionChanged',
                                 'org.syncevolution.Server',
                                 'org.syncevolution',
@@ -487,7 +520,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         # use hash so that we can write into it in callback()
         callback_called = {}
         def callback():
-            callback_called[1] = True
+            callback_called[1] = "callback()"
             self.session.Detach()
         t1 = self.addTimeout(2, callback)
         def stop():
@@ -801,7 +834,6 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         desired unit tests. Note that it also covers session.Sync API itself """
 
     def setUp(self):
-        DBusUtil.__init__(self)
         self.setUpServer()
         self.setUpSession(config)
 
@@ -812,13 +844,13 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         self.setUpListeners(self.sessionpath)
         self.session.Sync("", {})
         loop.run()
-        self.failUnlessEqual(self.quit_events, ["session " + self.sessionpath + " done"])
+        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
 
     @timeout(300)
     def testSync(self):
         '''run a real sync with default server'''
         self.doSync()
-        # TODO: check recorded events in self.events
+        # TODO: check recorded events in DBusUtil.events
         status, error, sources = self.session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "done")
         self.failUnlessEqual(error, 0)
@@ -849,7 +881,6 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
 
 class TestDBusSyncError(unittest.TestCase, DBusUtil):
     def setUp(self):
-        DBusUtil.__init__(self)
         self.setUpServer()
         self.setUpSession(config)
 
@@ -861,7 +892,7 @@ class TestDBusSyncError(unittest.TestCase, DBusUtil):
         self.setUpListeners(self.sessionpath)
         self.session.Sync("", {})
         loop.run()
-        # TODO: check recorded events in self.events
+        # TODO: check recorded events in DBusUtil.events
         status, error, sources = self.session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "done")
         self.failUnlessEqual(error, 500)
@@ -873,7 +904,6 @@ class TestConnection(unittest.TestCase, DBusUtil):
     message1 = '''<?xml version="1.0" encoding="UTF-8"?><SyncML xmlns='SYNCML:SYNCML1.2'><SyncHdr><VerDTD>1.2</VerDTD><VerProto>SyncML/1.2</VerProto><SessionID>255</SessionID><MsgID>1</MsgID><Target><LocURI>http://127.0.0.1:9000/syncevolution</LocURI></Target><Source><LocURI>sc-api-nat</LocURI><LocName>test</LocName></Source><Cred><Meta><Format xmlns='syncml:metinf'>b64</Format><Type xmlns='syncml:metinf'>syncml:auth-md5</Type></Meta><Data>kHzMn3RWFGWSKeBpXicppQ==</Data></Cred><Meta><MaxMsgSize xmlns='syncml:metinf'>20000</MaxMsgSize><MaxObjSize xmlns='syncml:metinf'>4000000</MaxObjSize></Meta></SyncHdr><SyncBody><Alert><CmdID>1</CmdID><Data>200</Data><Item><Target><LocURI>addressbook</LocURI></Target><Source><LocURI>./addressbook</LocURI></Source><Meta><Anchor xmlns='syncml:metinf'><Last>20091105T092757Z</Last><Next>20091105T092831Z</Next></Anchor><MaxObjSize xmlns='syncml:metinf'>4000000</MaxObjSize></Meta></Item></Alert><Final/></SyncBody></SyncML>'''
 
     def setUp(self):
-        DBusUtil.__init__(self)
         self.setUpServer()
         self.setUpListeners(None)
 
@@ -896,7 +926,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         conpath, connection = self.getConnection()
         connection.Close(False, 'good bye')
         loop.run()
-        self.failUnlessEqual(self.events, [('abort',)])
+        self.failUnlessEqual(DBusUtil.events, [('abort',)])
 
     def testInvalidConnect(self):
         """get connection, send invalid initial message"""
@@ -907,53 +937,53 @@ class TestConnection(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(str(ex),
                                  'org.syncevolution.Exception: message type not supported for starting a sync')
         loop.run()
-        self.failUnlessEqual(self.events, [('abort',)])
+        self.failUnlessEqual(DBusUtil.events, [('abort',)])
 
     def testStartSync(self):
         """send a valid initial SyncML message"""
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
-        self.quit_events = []
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        DBusUtil.quit_events = []
         # TODO: check events
-        self.failIfEqual(self.reply, None)
-        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
+        self.failIfEqual(DBusUtil.reply, None)
+        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # credentials should have been accepted because must_authenticate=False
         # in Connect(); 508 = "refresh required" is normal
-        self.failUnless('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in self.reply[0])
-        self.failIf('<Chal>' in self.reply[0])
-        self.failUnlessEqual(self.reply[3], False)
-        self.failIfEqual(self.reply[4], '')
+        self.failUnless('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in DBusUtil.reply[0])
+        self.failIf('<Chal>' in DBusUtil.reply[0])
+        self.failUnlessEqual(DBusUtil.reply[3], False)
+        self.failIfEqual(DBusUtil.reply[4], '')
         connection.Close(False, 'good bye')
         loop.run()
         loop.run()
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " aborted",
-                                                "session done"])
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+                                                    "session done"])
 
     def testCredentialsWrong(self):
         """send invalid credentials"""
         conpath, connection = self.getConnection(must_authenticate=True)
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
-        self.quit_events = []
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        DBusUtil.quit_events = []
         # TODO: check events
-        self.failIfEqual(self.reply, None)
-        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
+        self.failIfEqual(DBusUtil.reply, None)
+        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # credentials should have been rejected because of wrong Nonce
-        self.failUnless('<Chal>' in self.reply[0])
-        self.failUnlessEqual(self.reply[3], False)
-        self.failIfEqual(self.reply[4], '')
+        self.failUnless('<Chal>' in DBusUtil.reply[0])
+        self.failUnlessEqual(DBusUtil.reply[3], False)
+        self.failIfEqual(DBusUtil.reply[4], '')
         connection.Close(False, 'good bye')
         # when the login fails, the server also ends the session
         loop.run()
         loop.run()
         loop.run()
-        self.quit_events.sort()
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " aborted",
-                                                "connection " + conpath + " got final reply",
-                                                "session done"])
+        DBusUtil.quit_events.sort()
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+                                                    "connection " + conpath + " got final reply",
+                                                    "session done"])
 
     def testCredentialsRight(self):
         """send correct credentials"""
@@ -962,20 +992,20 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                                      "<Type xmlns='syncml:metinf'>syncml:auth-basic</Type></Meta><Data>dGVzdDp0ZXN0</Data>")
         connection.Process(plain_auth, 'application/vnd.syncml+xml')
         loop.run()
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
-        self.quit_events = []
-        self.failIfEqual(self.reply, None)
-        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        DBusUtil.quit_events = []
+        self.failIfEqual(DBusUtil.reply, None)
+        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # credentials should have been accepted because with basic auth,
         # credentials can be replayed; 508 = "refresh required" is normal
-        self.failUnless('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in self.reply[0])
-        self.failUnlessEqual(self.reply[3], False)
-        self.failIfEqual(self.reply[4], '')
+        self.failUnless('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in DBusUtil.reply[0])
+        self.failUnlessEqual(DBusUtil.reply[3], False)
+        self.failIfEqual(DBusUtil.reply[4], '')
         connection.Close(False, 'good bye')
         loop.run()
         loop.run()
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " aborted",
-                                                "session done"])
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+                                                    "session done"])
 
     def testStartSyncTwice(self):
         """send the same SyncML message twice, starting two sessions"""
@@ -983,13 +1013,13 @@ class TestConnection(unittest.TestCase, DBusUtil):
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
         # TODO: check events
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
-        self.failIfEqual(self.reply, None)
-        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
-        self.failUnlessEqual(self.reply[3], False)
-        self.failIfEqual(self.reply[4], '')
-        self.reply = None
-        self.quit_events = []
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        self.failIfEqual(DBusUtil.reply, None)
+        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.failUnlessEqual(DBusUtil.reply[3], False)
+        self.failIfEqual(DBusUtil.reply[4], '')
+        DBusUtil.reply = None
+        DBusUtil.quit_events = []
 
         # Now start another session with the same client *without*
         # closing the first one. The server should detect this
@@ -1004,24 +1034,24 @@ class TestConnection(unittest.TestCase, DBusUtil):
         loop.run()
         loop.run()
         loop.run()
-        self.quit_events.sort()
+        DBusUtil.quit_events.sort()
         expected = [ "connection " + conpath + " aborted",
                      "session done",
                      "connection " + conpath2 + " got reply" ]
         expected.sort()
-        self.failUnlessEqual(self.quit_events, expected)
-        self.failIfEqual(self.reply, None)
-        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
-        self.failUnlessEqual(self.reply[3], False)
-        self.failIfEqual(self.reply[4], '')
-        self.quit_events = []
+        self.failUnlessEqual(DBusUtil.quit_events, expected)
+        self.failIfEqual(DBusUtil.reply, None)
+        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.failUnlessEqual(DBusUtil.reply[3], False)
+        self.failIfEqual(DBusUtil.reply[4], '')
+        DBusUtil.quit_events = []
 
         # now quit for good
         connection2.Close(False, 'good bye')
         loop.run()
         loop.run()
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath2 + " aborted",
-                                                "session done"])
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath2 + " aborted",
+                                                    "session done"])
 
     def testKillInactive(self):
         """block server with client A, then let client B connect twice"""
@@ -1029,13 +1059,13 @@ class TestConnection(unittest.TestCase, DBusUtil):
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
         # TODO: check events
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " got reply"])
-        self.failIfEqual(self.reply, None)
-        self.failUnlessEqual(self.reply[1], 'application/vnd.syncml+xml')
-        self.failUnlessEqual(self.reply[3], False)
-        self.failIfEqual(self.reply[4], '')
-        self.reply = None
-        self.quit_events = []
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        self.failIfEqual(DBusUtil.reply, None)
+        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.failUnlessEqual(DBusUtil.reply[3], False)
+        self.failIfEqual(DBusUtil.reply[4], '')
+        DBusUtil.reply = None
+        DBusUtil.quit_events = []
 
         # Now start two more sessions with the second client *without*
         # closing the first one. The server should remove only the
@@ -1046,19 +1076,19 @@ class TestConnection(unittest.TestCase, DBusUtil):
         conpath3, connection3 = self.getConnection()
         connection3.Process(message1_clientB, 'application/vnd.syncml+xml')
         loop.run()
-        self.failUnlessEqual(self.quit_events, [ "connection " + conpath2 + " aborted" ])
-        self.quit_events = []
+        self.failUnlessEqual(DBusUtil.quit_events, [ "connection " + conpath2 + " aborted" ])
+        DBusUtil.quit_events = []
 
         # now quit for good
         connection3.Close(False, 'good bye client B')
         loop.run()
-        self.failUnlessEqual(self.quit_events, [ "connection " + conpath3 + " aborted" ])
-        self.quit_events = []
+        self.failUnlessEqual(DBusUtil.quit_events, [ "connection " + conpath3 + " aborted" ])
+        DBusUtil.quit_events = []
         connection.Close(False, 'good bye client A')
         loop.run()
         loop.run()
-        self.failUnlessEqual(self.quit_events, ["connection " + conpath + " aborted",
-                                                "session done"])
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+                                                    "session done"])
 
 if __name__ == '__main__':
     unittest.main()
