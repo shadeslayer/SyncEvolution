@@ -774,7 +774,6 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def testUpdateNoConfig(self):
         """ test the right error is reported when updating properties for a non-existing server """
-        self.clearAllConfig()
         try:
             self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
         except dbus.DBusException, ex:
@@ -808,8 +807,6 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def testCheckSourceNoConfig(self):
         """ test the right error is reported when the server doesn't exist """
-        # make sure the config doesn't exist 
-        self.clearAllConfig();
         try:
             self.session.CheckSource("", utf8_strings=True)
         except dbus.DBusException, ex:
@@ -850,7 +847,6 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testGetDatabasesNoConfig(self):
         """ test the right error is reported when the server doesn't exist """
         # make sure the config doesn't exist """
-        self.clearAllConfig()
         try:
             self.session.GetDatabases("", utf8_strings=True)
         except dbus.DBusException, ex:
@@ -884,7 +880,6 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def testGetReportsNoConfig(self):
         """ Test when the given server has no reports. Also covers boundaries """
-        self.clearAllConfig()
         reports = self.session.GetReports(0, 0, utf8_strings=True)
         self.failUnlessEqual(reports, [])
         reports = self.session.GetReports(0, 1, utf8_strings=True)
@@ -896,7 +891,6 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def testGetReportsNoReports(self):
         """ Test when the given server has no reports. Also covers boundaries """
-        self.clearAllConfig()
         self.setupConfig()
         reports = self.session.GetReports(0, 0, utf8_strings=True)
         self.failUnlessEqual(reports, [])
