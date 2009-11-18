@@ -901,6 +901,81 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         reports = self.session.GetReports(0xFFFFFFFF, 0xFFFFFFFF, utf8_strings=True)
         self.failUnlessEqual(reports, [])
 
+    def testGetReportsByRef(self):
+        """ Test the reports are gotten correctly from reference files. Also covers boundaries """
+        """ This could be extractly compared since the reference files are known """
+        self.setupFiles()
+        report0 = { "source-addressbook-stat-local-any-sent" : "9168",
+                    "source-addressbook-stat-remote-added-total" : "71",
+                    "source-addressbook-stat-remote-updated-total" : "100",
+                    "source-addressbook-stat-local-updated-total" : "632",
+                    "source-addressbook-stat-remote-any-reject" : "100",
+                    "source-addressbook-stat-remote-any-conflict_duplicated" : "5293487",
+                    "source-addressbook-stat-remote-any-conflict_client_won" : "33",
+                    "source-addressbook-stat-local-any-received" : "2",
+                    "source-addressbook-stat-local-removed-total" : "4",
+                    "source-addressbook-stat-remote-any-conflict_server_won" : "38",
+                    "source-addressbook-stat-local-any-reject" : "77",
+                    "source-addressbook-stat-local-added-total" : "84",
+                    "source-addressbook-stat-remote-removed-total" : "66",
+                    "source-calendar-stat-local-any-sent" : "8619",
+                    "source-calendar-stat-remote-added-total": "17",
+                    "source-calendar-stat-remote-updated-total" : "10",
+                    "source-calendar-stat-local-updated-total" : "6",
+                    "source-calendar-stat-remote-any-reject" : "1",
+                    "source-calendar-stat-remote-any-conflict_duplicated" : "5",
+                    "source-calendar-stat-remote-any-conflict_client_won" : "3",
+                    "source-calendar-stat-local-any-received" : "24",
+                    "source-calendar-stat-local-removed-total" : "54",
+                    "source-calendar-stat-remote-any-conflict_server_won" : "38",
+                    "source-calendar-stat-local-any-reject" : "7",
+                    "source-calendar-stat-local-added-total" : "42",
+                    "source-calendar-stat-remote-removed-total" : "6",
+                    "source-memo-stat-local-any-sent" : "8123",
+                    "source-memo-stat-remote-added-total" : "15",
+                    "source-memo-stat-remote-updated-total" : "6",
+                    "source-memo-stat-local-updated-total" : "8",
+                    "source-memo-stat-remote-any-reject" : "16",
+                    "source-memo-stat-remote-any-conflict_duplicated" : "27",
+                    "source-memo-stat-remote-any-conflict_client_won" : "2",
+                    "source-memo-stat-local-any-received" : "3",
+                    "source-memo-stat-local-removed-total" : "4",
+                    "source-memo-stat-remote-any-conflict_server_won" : "8",
+                    "source-memo-stat-local-any-reject" : "40",
+                    "source-memo-stat-local-added-total" : "34",
+                    "source-memo-stat-remote-removed-total" : "5",
+                    "source-todo-stat-local-any-sent" : "619",
+                    "source-todo-stat-remote-added-total" : "71",
+                    "source-todo-stat-remote-updated-total" : "1",
+                    "source-todo-stat-local-updated-total" : "9",
+                    "source-todo-stat-remote-any-reject" : "10",
+                    "source-todo-stat-remote-any-conflict_duplicated" : "15",
+                    "source-todo-stat-remote-any-conflict_client_won" : "7",
+                    "source-todo-stat-local-any-received" : "2",
+                    "source-todo-stat-local-removed-total" : "4",
+                    "source-todo-stat-remote-any-conflict_server_won" : "8",
+                    "source-todo-stat-local-any-reject" : "3",
+                    "source-todo-stat-local-added-total" : "24",
+                    "source-todo-stat-remote-removed-total" : "80" }
+        reports = self.session.GetReports(0, 0, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+        # get only one report
+        reports = self.session.GetReports(0, 1, utf8_strings=True)
+        self.assertTrue(len(reports) == 1)
+        self.failUnlessEqual(reports[0], report0)
+        """ the number of reference sessions is totally 5. Check the returned count
+        when parameter is bigger than 5 """
+        reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
+        self.assertTrue(len(reports) == 5)
+        # start from 2, this could check integer overflow
+        reports2 = self.session.GetReports(2, 0xFFFFFFFF, utf8_strings=True)
+        self.assertTrue(len(reports2) == 3)
+        # the first element of reports2 should be the same as the third element of reports
+        self.failUnlessEqual(reports[2], reports2[0])
+        # indexed from 5, nothing could be gotten
+        reports = self.session.GetReports(5, 0xFFFFFFFF, utf8_strings=True)
+        self.failUnlessEqual(reports, [])
+
 class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
     """ This class is used to test those unit tests of session APIs, depending on doing sync.
         Thus we need a real server configuration to confirm sync could be run successfully.
