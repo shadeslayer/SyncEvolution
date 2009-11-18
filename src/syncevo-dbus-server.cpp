@@ -1224,7 +1224,7 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
     static char sep = '-';
     BOOST_FOREACH( const string &dir, dirs) {
         /** if start plus count is bigger than actual size, then return actual - size reports */
-        if(index >= start && index < start + count) {
+        if(index >= start && index - start < count) {
             std::map<string, string> aReport;
             SyncReport report;
             client.readSessionInfo(dir,report);
