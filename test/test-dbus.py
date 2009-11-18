@@ -25,6 +25,7 @@ import os
 import signal
 import shutil
 import copy
+import heapq
 
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
@@ -48,7 +49,166 @@ monitor = ["dbus-monitor"]
 xdg_root = "test-dbus"
 config = "scheduleworld_1"
 
-class DBusUtil:
+def timeout(seconds):
+    """Function decorator which sets a non-default timeout for a test.
+    The default timeout, enforced by DBusTest.runTest(), are 5 seconds.
+    Use like this:
+        @timeout(10)
+        def testMyTest:
+            ...
+    """
+    def __setTimeout(func):
+        func.timeout = seconds
+        return func
+    return __setTimeout
+
+class Timeout:
+    """Implements global time-delayed callbacks."""
+    alarms = []
+    next_alarm = None
+    previous_handler = None
+    debugTimeout = False
+
+    @classmethod
+    def addTimeout(cls, delay_seconds, callback, use_glib=True):
+        """Call function after a certain delay, specified in seconds.
+        If possible and use_glib=True, then it will only fire inside
+        glib event loop. Otherwise it uses signals. When signals are
+        used it is a bit uncertain what kind of Python code can
+        be executed. It was observed that trying to append to
+        DBusUtil.quit_events before calling loop.quit() caused
+        a KeyboardInterrupt"""
+        if have_glib and use_glib:
+            glib.timeout_add(delay_seconds, callback)
+            # TODO: implement removal of glib timeouts
+            return None
+        else:
+            now = time.time()
+            if cls.debugTimeout:
+                print "addTimeout", now, delay_seconds, callback, use_glib
+            timeout = (now + delay_seconds, callback)
+            heapq.heappush(cls.alarms, timeout)
+            cls.__check_alarms()
+            return timeout
+
+    @classmethod
+    def removeTimeout(cls, timeout):
+        """Remove a timeout returned by a previous addTimeout call.
+        None and timeouts which have already fired are acceptable."""
+        try:
+            cls.alarms.remove(timeout)
+        except ValueError:
+            pass
+        else:
+            heapq.heapify(cls.alarms)
+            cls.__check_alarms()
+
+    @classmethod
+    def __handler(cls, signum, stack):
+        """next_alarm has fired, check for expired timeouts and reinstall"""
+        if cls.debugTimeout:
+            print "fired", time.time()
+        cls.next_alarm = None
+        cls.__check_alarms()
+
+    @classmethod
+    def __check_alarms(cls):
+        now = time.time()
+        while cls.alarms and cls.alarms[0][0] <= now:
+            timeout = heapq.heappop(cls.alarms)
+            if cls.debugTimeout:
+                print "invoking", timeout
+            timeout[1]()
+
+        if cls.alarms:
+            if not cls.next_alarm or \
+                    cls.next_alarm > cls.alarms[0][0]:
+                if cls.previous_handler == None:
+                    cls.previous_handler = signal.signal(signal.SIGALRM, cls.__handler)
+                cls.next_alarm = cls.alarms[0][0]
+                delay = int(cls.next_alarm - now + 0.5)
+                if not delay:
+                    delay = 1
+                if cls.debugTimeout:
+                    print "next alarm", cls.next_alarm, delay
+                signal.alarm(delay)
+        elif cls.next_alarm:
+            if cls.debugTimeout:
+                print "disarming alarm"
+            signal.alarm(0)
+            cls.next_alarm = None
+
+# commented out because running it takes time
+#class TestTimeout(unittest.TestCase):
+class TimeoutTest:
+    """unit test for Timeout mechanism"""
+
+    def testOneTimeout(self):
+        """simple timeout of two seconds"""
+        self.called = False
+        start = time.time()
+        def callback():
+            self.called = True
+        Timeout.addTimeout(2, callback, use_glib=False)
+        time.sleep(10)
+        end = time.time()
+        self.failUnless(self.called)
+        self.failIf(end - start < 2)
+        self.failIf(end - start >= 3)
+
+    def testEmptyTimeout(self):
+        """called immediately because of zero timeout"""
+        self.called = False
+        start = time.time()
+        def callback():
+            self.called = True
+        Timeout.addTimeout(0, callback, use_glib=False)
+        if not self.called:
+            time.sleep(10)
+        end = time.time()
+        self.failUnless(self.called)
+        self.failIf(end - start < 0)
+        self.failIf(end - start >= 1)
+
+    def testTwoTimeouts(self):
+        """two timeouts after 2 and 5 seconds, installed in order"""
+        self.called = False
+        start = time.time()
+        def callback():
+            self.called = True
+        Timeout.addTimeout(2, callback, use_glib=False)
+        Timeout.addTimeout(5, callback, use_glib=False)
+        time.sleep(10)
+        end = time.time()
+        self.failUnless(self.called)
+        self.failIf(end - start < 2)
+        self.failIf(end - start >= 3)
+        time.sleep(10)
+        end = time.time()
+        self.failUnless(self.called)
+        self.failIf(end - start < 5)
+        self.failIf(end - start >= 6)
+
+    def testTwoReversedTimeouts(self):
+        """two timeouts after 2 and 5 seconds, installed in reversed order"""
+        self.called = False
+        start = time.time()
+        def callback():
+            self.called = True
+        Timeout.addTimeout(5, callback, use_glib=False)
+        Timeout.addTimeout(2, callback, use_glib=False)
+        time.sleep(10)
+        end = time.time()
+        self.failUnless(self.called)
+        self.failIf(end - start < 2)
+        self.failIf(end - start >= 3)
+        time.sleep(10)
+        end = time.time()
+        self.failUnless(self.called)
+        self.failIf(end - start < 5)
+        self.failIf(end - start >= 6)
+
+class DBusUtil(Timeout):
     """Contains the common run() method for all D-Bus test suites
     and some utility functions."""
 
@@ -116,7 +276,32 @@ class DBusUtil:
         numfailures = len(result.failures)
         if debugger:
             print "\nrunning\n"
-        unittest.TestCase.run(self, result)
+
+        # Find out what test function we run and look into
+        # the function definition to see whether it comes
+        # with a non-default timeout, otherwise use a 5 second
+        # timeout.
+        test = eval(self.id().replace("__main__.", ""))
+        if "timeout" in dir(test):
+            timeout = test.timeout
+        else:
+            timeout = 5
+        handle = None
+        if timeout and not debugger:
+            def timedout():
+                error = "%s timed out after %d seconds" % (self.id(), timeout)
+                if Timeout.debugTimeout:
+                    print error
+                raise Exception(error)
+            timeout_handle = self.addTimeout(timeout, timedout, use_glib=False)
+        try:
+            unittest.TestCase.run(self, result)
+        except KeyboardInterrupt:
+            # somehow this happens when timedout() above raises the exception
+            # while inside glib main loop
+            result.errors.append((self,
+                                  "interrupted by timeout or CTRL-C or Python signal handler problem"))
+        self.removeTimeout(timeout_handle)
         if debugger:
             print "\ndone, quit gdb now\n"
         hasfailed = numerrors + numfailures != len(result.errors) + len(result.failures)
@@ -282,6 +467,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         """ask for session"""
         pass
 
+    @timeout(20)
     def testSecondSession(self):
         """a second session should not run unless the first one stops"""
         self.failUnless(have_glib)
@@ -303,12 +489,18 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         def callback():
             callback_called[1] = True
             self.session.Detach()
-        glib.timeout_add(2, callback)
-        glib.timeout_add(5, lambda: loop.quit())
+        t1 = self.addTimeout(2, callback)
+        def stop():
+            # somehow this code here generates a KeyboardInterrupt?!
+            # DBusUtil.quit_events.append("testSecondSession timed out")
+            loop.quit()
+        t2 = self.addTimeout(5, stop)
         loop.run()
         self.failUnless(callback_called)
         status, error, sources = session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "idle")
+        self.removeTimeout(t1)
+        self.removeTimeout(t2)
 
 class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
     """Test session APIs that work with an empty server name. Thus, all of session APIs which
@@ -622,6 +814,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         loop.run()
         self.failUnlessEqual(self.quit_events, ["session " + self.sessionpath + " done"])
 
+    @timeout(300)
     def testSync(self):
         '''run a real sync with default server'''
         self.doSync()
@@ -630,6 +823,9 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(status, "done")
         self.failUnlessEqual(error, 0)
 
+    # TODO: don't depend on running a real sync in this test,
+    # then remove timeout
+    @timeout(300)
     def testGetReports(self):
         """ Test when the given server exists and reports are returned correctly. Also covers boundaries """
         # one sync, so reports could be generated at least one time """
