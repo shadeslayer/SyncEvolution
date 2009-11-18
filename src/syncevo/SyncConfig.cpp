@@ -842,7 +842,8 @@ static BoolConfigProperty syncPropPeerIsClient("PeerIsClient",
                                           "client peer or server peer.\n",
                                           "0");
 static ConfigProperty syncPropRemoteIdentifier("remoteIdentifier",
-                                      "the identifier sent to the remote peer for a server initiated sync\n",
+                                      "the identifier sent to the remote peer for a server initiated sync.\n"
+                                      "if not set, deviceId will be used instead\n",
                                       "");
 static ConfigProperty syncPropSSLServerCertificates("SSLServerCertificates",
                                                     "A string specifying the location of the certificates\n"

@@ -1837,6 +1837,9 @@ bool SyncContext::initSAN(int retries)
 
     uint16_t sessionId = 0;
     string serverId = getRemoteIdentifier();
+    if(serverId.empty()) {
+        serverId = getDevID();
+    }
     san.PreparePackage( uauthb64, nonce, protoVersion, mode, 
             sysync::Initiator_Server, sessionId, serverId);
 
