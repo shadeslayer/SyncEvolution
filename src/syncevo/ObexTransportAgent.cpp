@@ -277,7 +277,7 @@ void ObexTransportAgent::shutdown() {
  * Send the request to peer
  */
 void ObexTransportAgent::send(const char *data, size_t len) {
-    SE_LOG_DEV (NULL, NULL, "send is called");
+    SE_LOG_DEV (NULL, NULL, "ObexTransport send is called");
     cxxptr<Socket> sockObj = m_sock;
     cxxptr<Channel> channel = m_channel;
     if(m_connectStatus != CONNECTED) {
@@ -380,7 +380,6 @@ TransportAgent::Status ObexTransportAgent::wait(bool noReply) {
         OBEX_ObjectAddHeader (m_handle->get(), get, OBEX_HDR_CONNECTION, header, sizeof
                 (m_connectId), OBEX_FL_FIT_ONE_PACKET);
         //add header "target"
-        m_contentType = TransportAgent::m_contentTypeSyncML;
         header.bs =  reinterpret_cast <const unsigned char *> (m_contentType.c_str());
         OBEX_ObjectAddHeader (m_handle->get(), get, OBEX_HDR_TYPE, header, m_contentType.size()+1, 0);
 

@@ -1879,12 +1879,15 @@ bool SyncContext::initSAN(int retries)
     /* Create the transport agent */
     try {
         m_agent = createTransportAgent();
-        m_agent->setContentType (TransportAgent::m_contentTypeServerAlertedNotificationDS);
         int retry = 0;
         while (retry++ < retries) 
         {
             SE_LOG_INFO (NULL, NULL, "Server sending SAN %d", retry);
-            m_agent->send(reinterpret_cast<char*> (buffer), sanSize);
+            m_agent->setContentType (TransportAgent::m_contentTypeServerAlertedNotificationDS);
+            m_agent->send(reinterpret_cast <char *> (buffer), sanSize);
+            //change content type
+            m_agent->setContentType (getWBXML() ? TransportAgent::m_contentTypeSyncWBXML :
+                    TransportAgent::m_contentTypeSyncML);
             if (m_agent->wait() == TransportAgent::GOT_REPLY){
                 const char *reply;
                 size_t replyLen;
