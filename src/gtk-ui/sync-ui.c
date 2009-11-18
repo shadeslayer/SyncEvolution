@@ -106,7 +106,8 @@ typedef struct app_data {
 
     server_config *current_service;
     app_state current_state;
-    gboolean open_current;
+    gboolean open_current; /* should the service list open the current 
+                              service when it populates next time*/
 
     SyncevoServer *server;
 
@@ -124,7 +125,25 @@ static void update_services_list (app_data *data);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
 static void get_reports_cb (SyncevoSession *session, SyncevoReports *reports, 
                             GError *error, app_data *data);
+static void start_session_cb (SyncevoServer *server, char *path,
+                              GError *error, app_data *data);
 static char* get_error_string_for_code (int error_code);
+
+void
+show_error_dialog (GtkWidget *widget, const char* message)
+{
+    GtkWindow *window = GTK_WINDOW (gtk_widget_get_toplevel (widget));
+
+    GtkWidget *w;
+    w = gtk_message_dialog_new (window,
+                                GTK_DIALOG_MODAL,
+                                GTK_MESSAGE_ERROR,
+                                GTK_BUTTONS_OK,
+                                "%s",
+                                message);
+    gtk_dialog_run (GTK_DIALOG (w));
+    gtk_widget_destroy (w);
+}
 
 
 static void
@@ -146,20 +165,6 @@ edit_service_clicked_cb (GtkButton *btn, app_data *data)
 
     data->open_current = TRUE;
     show_services_list (data);
-}
-
-static void
-show_error_dialog (GtkWindow *parent, const char* message)
-{
-    GtkWidget *w;
-    w = gtk_message_dialog_new (parent,
-                                GTK_DIALOG_MODAL,
-                                GTK_MESSAGE_ERROR,
-                                GTK_BUTTONS_OK,
-                                "%s",
-                                message);
-    gtk_dialog_run (GTK_DIALOG (w));
-    gtk_widget_destroy (w);
 }
 
 static void
@@ -232,19 +237,24 @@ reload_config (app_data *data, const char *server)
     server_config_free (data->current_service);
 
     if (!server || strlen (server) == 0) {
-        data->current_service = NULL; 
         set_app_state (data, SYNC_UI_STATE_NO_SERVER);
+        data->current_service = NULL;
     } else {
+        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
         data->synced_this_session = FALSE;
         data->current_service = g_slice_new0 (server_config);
         data->current_service->name = g_strdup (server);
-        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
-/*
-        syncevo_service_get_server_config_async (data->service, 
-                                                 (char*)server,
-                                                 (SyncevoGetServerConfigCb)get_server_config_cb,
-                                                 data);
-*/
+
+        if (data->session) {
+            g_object_unref (data->session);
+            data->session = NULL;
+        }
+        data->session_is_active = FALSE;
+
+        syncevo_server_start_session (data->server,
+                                      server,
+                                      (SyncevoServerStartSessionCb)start_session_cb,
+                                      data);
     }
 }
 
@@ -265,7 +275,7 @@ save_gconf_settings (app_data *data, const char *service_name)
     if (!gconf_client_set_string (client, SYNC_UI_SERVER_KEY, 
                                   service_name ? service_name : "", 
                                   &err)) {
-        show_error_dialog (GTK_WINDOW (data->sync_win),
+        show_error_dialog (data->sync_win,
                            _("Failed to save current service in GConf configuration system"));
         g_warning ("Failed to save current service in GConf configuration system: %s", err->message);
         g_error_free (err);
@@ -355,8 +365,7 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
             }
         }
 
-        /* TODO make sure source modes are correct:
-         * override the sync mode in config with data->mode,
+        /* override the sync mode in config with data->mode,
          * then override all non-supported sources with "none".  */
         source_modes = syncevo_source_modes_new ();
 
@@ -911,7 +920,7 @@ update_service_ui (app_data *data)
                           (GHFunc)update_service_source_ui,
                           data);
 
-/* TODO: mnake sure all default sources are visible
+/* TODO: make sure all default sources are visible
  * (iow add missing sources as insensitive) */
 
     gtk_widget_show_all (data->sources_box);
@@ -927,9 +936,7 @@ find_password_cb (GnomeKeyringResult result, GList *list, app_data *data)
         if (list && list->data) {
             GnomeKeyringNetworkPasswordData *key_data;
             key_data = (GnomeKeyringNetworkPasswordData*)list->data;
-/*
             data->current_service->password = g_strdup (key_data->password);
-*/
         }
         break;
     default:
@@ -978,24 +985,19 @@ config_widget_changed_cb (GtkWidget *widget, app_data *data)
 }
 
 static GtkWidget*
-add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
+add_server_to_box (GtkBox *box, const char *name, app_data *data)
 {
     GtkWidget *item = NULL;
-    const char *name;
     gboolean current = FALSE;
-    gboolean unset = FALSE;
-
-/*
-    syncevo_server_get (server, &name, NULL, NULL, NULL);
+    gboolean unset;
 
     if (data->current_service && data->current_service->name &&
         name && strcmp (name, data->current_service->name) == 0) {
         current = TRUE;
      }
-
     unset = !data->current_service;
 
-    item = sync_config_widget_new (server, current, unset, data->service);
+    item = sync_config_widget_new (data->server, name, current, unset);
     g_signal_connect (item, "changed",
                       G_CALLBACK (config_widget_changed_cb), data);
     g_signal_connect (item, "expanded",
@@ -1008,61 +1010,70 @@ add_server_to_box (GtkBox *box, SyncevoServer *server, app_data *data)
                                         data->open_current);
         data->open_current = FALSE;
     }
-*/
+
+/* TODO: only show item if consumer_ready */
+
     return item;
 }
+
 
 static void
 setup_new_service_clicked (GtkButton *btn, app_data *data)
 {
-/*
-    GtkWidget *config_widget;
-    SyncevoServer *server;
+
+    GtkWidget *widget;
 
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)unexpand_config_widget,
                            NULL);
 
-    server = syncevo_server_new (NULL, NULL, NULL, TRUE);
-    config_widget = add_server_to_box (GTK_BOX (data->services_box), server, data);
+    widget = add_server_to_box (GTK_BOX (data->services_box),
+                                NULL,
+                                data);
+    sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (widget), TRUE);
 
-    sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (config_widget), TRUE);
-*/
+    /* TODO: Get "empty config widget" on startup 
+     * so there is no need to wait here... */
 }
 
-typedef struct templates_data {
-    app_data *data;
-    GPtrArray *templates;
-}templates_data;
-
-/*
-static gboolean
-server_array_contains (GPtrArray *array, SyncevoServer *server)
+static void
+get_template_configs_cb (SyncevoServer *server,
+                         char **templates,
+                         GError *error,
+                         app_data *data)
 {
-    int i;
-    const char *name;
+    char **str;
+    GtkWidget *widget;
 
-    syncevo_server_get (server, &name, NULL, NULL, NULL);
-
-    for (i = 0; i < array->len; i++) {
-        const char *n;
-        SyncevoServer *s = (SyncevoServer*)g_ptr_array_index (array, i);
-        syncevo_server_get (s, &n, NULL, NULL, NULL);
-        if (g_ascii_strcasecmp (name, n) == 0)
-            return TRUE;
+    if (error) {
+        show_main_view (data);
+        show_error_dialog (data->sync_win, 
+                           _("Failed to get list of supported services from SyncEvolution"));
+        g_warning ("Failed to get list of supported services from SyncEvolution: %s", 
+                   error->message);
+        g_error_free (error);
+        return;
     }
-    return FALSE;
+
+    for (str = templates; *str; *str++){
+        widget = add_server_to_box (GTK_BOX (data->services_box),
+                                    *str,
+                                    data);
+    }
+    g_strfreev (templates);
 }
-*/
 
 static void
 update_services_list (app_data *data)
 {
-/*
-    syncevo_service_get_templates_async (data->service,
-                                         (SyncevoGetTemplatesCb)get_templates_cb,
-                                         data);
-*/
+    /* NOTE: could get this on ui startup as well for instant action.
+       Downside is stale data.... */
+    syncevo_server_get_configs (data->server,
+                                TRUE,
+                                (SyncevoServerGetConfigsCb)get_template_configs_cb,
+                                data);
+
+    
 }
 
 static void
@@ -1140,11 +1151,12 @@ update_source_status (char *name,
                       guint error_code,
                       app_data *data)
 {
+    /* TODO: show errors in UI -- but not duplicates */
     char *error;
     
     error = get_error_string_for_code (error_code);
     if (error) {
-        g_warning (" Source '%s' error: %s", name, error);
+        g_warning ("Source '%s' error: %s", name, error);
         g_free (error);
     }
 }
@@ -1156,12 +1168,22 @@ running_session_status_changed_cb (SyncevoSession *session,
                                    SyncevoSourceStatuses *source_statuses,
                                    app_data *data)
 {
+    /* TODO: show errors in UI -- but not duplicates */
+
+    char *error;
+    
     g_debug ("running session status changed -> %d", status);
     set_running_session_status (data, status);
 
     syncevo_source_statuses_foreach (source_statuses,
                                      (SourceStatusFunc)update_source_status,
                                      data);
+
+    error = get_error_string_for_code (error_code);
+    if (error) {
+        g_warning ("Error %s", error);
+        g_free (error);
+    }
 }
 
 static void
@@ -1301,7 +1323,7 @@ get_reports_cb (SyncevoSession *session,
         while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
             source_config *source_conf;
 
-            /* store the statistics in source config source */
+            /* store the statistics in source config */
             source_conf = g_hash_table_lookup (data->current_service->source_configs,
                                                key);
             if (source_conf) {
@@ -1311,7 +1333,7 @@ get_reports_cb (SyncevoSession *session,
                 source_conf->remote_rejections = stats->remote_rejections;
             }
 
-            /* if ui has been constructed already, we want to update the data */
+            /* if ui has been constructed already, update it */
             source_config_update_label (source_conf);
         }
 
@@ -1451,31 +1473,10 @@ gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *dat
     if (error) {
         g_warning ("Could not read current server name from gconf: %s", error->message);
         g_error_free (error);
-        error = NULL;
     }
 
-    server_config_free (data->current_service);
-    data->current_service = NULL;
-    
-    if (!server || strlen (server) == 0) {
-        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
-    } else {
-        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
-        data->synced_this_session = FALSE;
-        data->current_service = g_slice_new0 (server_config);
-        data->current_service->name = server;
-
-        if (data->session) {
-            g_object_unref (data->session);
-            data->session = NULL;
-        }
-        data->session_is_active = FALSE;
-        
-        syncevo_server_start_session (data->server,
-                                      server,
-                                      (SyncevoServerStartSessionCb)start_session_cb,
-                                      data);
-    }
+    reload_config (data, server);
+    g_free (server);
 }
 
 static void
@@ -1492,29 +1493,10 @@ init_configuration (app_data *data)
     gconf_change_cb (client, 0, NULL, data);
 }
 
-static void
-calc_and_update_progress (app_data *data, char *msg)
-{
-    
-/*
-    float progress;
-    GList *list;
-    int count = 0;
-    
-    //update progress from source conf
-    
-    set_sync_progress (data, sync_progress_sync_start + (progress / count), msg);
-*/
-}
-
 static char*
 get_error_string_for_code (int error_code)
 {
     switch (error_code) {
-    case -1:
-        /* TODO: this is a hack... SyncEnd should be a signal of it's own,
-           not just hacked on top of the syncevolution error codes */
-        return g_strdup(_("Service configuration not found"));
     case 0:
     case LOCERR_USERABORT:
     case LOCERR_USERSUSPEND:
@@ -1567,7 +1549,8 @@ get_error_string_for_code (int error_code)
 }
 
 
-/*
+/* TODO: should do this based on SyncevoServer Presence now
+
 static void
 connman_props_changed (DBusGProxy *proxy, const char *key, GValue *v, app_data *data)
 {

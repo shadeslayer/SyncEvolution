@@ -18,6 +18,7 @@ enum
   PROP_0,
 
   PROP_SERVER,
+  PROP_NAME,
   PROP_CURRENT,
   PROP_UNSET,
 };
@@ -33,22 +34,6 @@ static guint32 signals[LAST_SIGNAL] = {0, };
 static void get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, SyncConfigWidget *self);
 */
 static void update_label (SyncConfigWidget *self);
-
-static void
-show_error_dialog (SyncConfigWidget *self, const char* message)
-{
-    GtkWindow *window = GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (self)));
-
-    GtkWidget *w;
-    w = gtk_message_dialog_new (window,
-                                GTK_DIALOG_MODAL,
-                                GTK_MESSAGE_ERROR,
-                                GTK_BUTTONS_OK,
-                                "%s",
-                                message);
-    gtk_dialog_run (GTK_DIALOG (w));
-    gtk_widget_destroy (w);
-}
 
 static void
 remove_child (GtkWidget *widget, GtkContainer *container)
@@ -187,7 +172,7 @@ static void
 set_server_config_cb (SyncevoService *service, GError *error, SyncConfigWidget *self)
 {
     if (error) {
-        show_error_dialog (self,
+        show_error_dialog (GTK_WIDGET (self),
                            _("Failed to save service configuration to SyncEvolution"));
         g_warning ("Failed to save service configuration to SyncEvolution: %s",
                    error->message);
@@ -238,7 +223,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     }
     if (!config->name || strlen (config->name) == 0 ||
         !config->base_url || strlen (config->base_url) == 0) {
-        show_error_dialog (self, 
+        show_error_dialog (GTK_WIDGET (self), 
                            _("Service must have a name and server URL"));
         return;
     }
@@ -299,6 +284,10 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 static void 
 update_use_button (SyncConfigWidget *self)
 {
+    if (!self->use_button){ 
+        return;
+    }
+    
     if (self->unset || self->current) {
         gtk_button_set_label (GTK_BUTTON (self->use_button),
                               _("Save and use"));
@@ -582,7 +571,7 @@ load_icon (const char *uri, guint icon_size)
 static void
 update_label (SyncConfigWidget *self)
 {
-    if (self->server) {
+    if (self->server && self->label) {
         const char *name, *url;
         char *str;
 
@@ -691,6 +680,16 @@ sync_config_widget_set_server (SyncConfigWidget *self,
     }
 
 }
+
+static void
+sync_config_widget_set_name (SyncConfigWidget *self,
+                             const char *name)
+{
+    self->name = g_strdup (name);
+
+    /*TODO*/
+}
+
 static void
 sync_config_widget_set_property (GObject      *object,
                                         guint         property_id,
@@ -702,6 +701,9 @@ sync_config_widget_set_property (GObject      *object,
     switch (property_id) {
     case PROP_SERVER:
         sync_config_widget_set_server (self, g_value_get_pointer (value));
+        break;
+    case PROP_NAME:
+        sync_config_widget_set_name (self, g_value_get_string (value));
         break;
     case PROP_CURRENT:
         sync_config_widget_set_current (self, g_value_get_boolean (value));
@@ -725,6 +727,8 @@ sync_config_widget_get_property (GObject    *object,
     switch (property_id) {
     case PROP_SERVER:
         g_value_set_pointer (value, self->server);
+    case PROP_NAME:
+        g_value_set_string (value, self->name);
     case PROP_CURRENT:
         g_value_set_boolean (value, self->current);
     case PROP_UNSET:
@@ -759,6 +763,13 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
                                   "The SyncevoServer struct this widget represents",
                                   G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_SERVER, pspec);
+
+    pspec = g_param_spec_string ("name",
+                                 "Configuration name",
+                                 "The name of the Syncevolution service configuration",
+                                 NULL,
+                                 G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_NAME, pspec);
 
     pspec = g_param_spec_boolean ("current",
                                   "Current",
@@ -963,11 +974,13 @@ sync_config_widget_init (SyncConfigWidget *self)
 
 GtkWidget*
 sync_config_widget_new (SyncevoServer *server,
+                        const char *name,
                         gboolean current,
                         gboolean unset)
 {
   return g_object_new (SYNC_TYPE_CONFIG_WIDGET,
                        "server", server,
+                       "name", name,
                        "current", current,
                        "unset", unset,
                        NULL);

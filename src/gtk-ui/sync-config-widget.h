@@ -43,7 +43,9 @@ typedef struct {
     gboolean unset; /* is there a current config at all */
 
     SyncevoServer *server;
+    char *name;
     server_config *config;
+    
     GPtrArray *options_override;
 
     gboolean auth_changed;
@@ -84,6 +86,7 @@ typedef struct {
 GType sync_config_widget_get_type (void);
 
 GtkWidget *sync_config_widget_new (SyncevoServer *server,
+                                   const char *name,
                                    gboolean current,
                                    gboolean unset);
 

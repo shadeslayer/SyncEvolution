@@ -52,6 +52,7 @@ typedef struct source_config {
 
 typedef struct server_config {
     char *name;
+    char *password;
     /* any field in config has changed */
     gboolean changed;
 
