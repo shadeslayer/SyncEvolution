@@ -30,6 +30,8 @@ import heapq
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
+import sys
+
 # introduced in python-gobject 2.16, not available
 # on all Linux distros => make it optional
 try:
@@ -244,6 +246,9 @@ class DBusUtil(Timeout):
         kill = subprocess.Popen("sh -c 'killall -9 syncevo-dbus-server dbus-monitor >/dev/null 2>&1'", shell=True)
         kill.communicate()
 
+        """own_xdg is saved in self for we use this flag to check whether
+        copying reference directory tree."""
+        self.own_xdg = own_xdg
         env = copy.deepcopy(os.environ)
         if own_xdg:
             shutil.rmtree(xdg_root, True)
@@ -454,6 +459,40 @@ class DBusUtil(Timeout):
                                 conpath,
                                 byte_arrays=True, 
                                 utf8_strings=True)
+
+    def setupFiles(self):
+        """ copy reference directory trees from test/test-dbus to own xdg(xdg_root
+        - destination directory) directory. Thus it won't do copy unless 
+        using own_xdg. Don't pollute user's directories """
+        if not self.own_xdg: 
+            return
+
+        # Get the absolute path of the current python file.
+        scriptpath = os.path.abspath(os.path.expanduser(os.path.expandvars(sys.argv[0])))
+
+        # reference directory 'test-dbus' is in the same directory as the current python file
+        sourcedir = os.path.join(os.path.dirname(scriptpath), 'test-dbus')
+
+        # if xdg_root doesn't exist, create it
+        if not os.access(xdg_root, os.F_OK):
+            os.makedirs(xdg_root)
+
+        """ Directories in test/test-dbus are copied to xdg_root, but
+        maybe with different names, mappings are:
+         test/test-dbus               ./test-dbus
+            sync4j                       .sync4j
+            data                         data
+            config                       config
+            cache                        cache   """
+        pairs = { 'sync4j' : '.sync4j', 'config' : 'config', 'cache' : 'cache', 'data' : 'data'}
+        for src, dest in pairs.items():
+            destpath = os.path.join(xdg_root, dest)
+            # make sure the dest directory does not exist, which is required by shutil.copytree
+            shutil.rmtree(destpath, True)
+            sourcepath = os.path.join(sourcedir, src)
+            # if source exists and could be accessed, then copy them
+            if os.access(sourcepath, os.F_OK):
+                shutil.copytree(sourcepath, destpath)
 
 class TestDBusServer(unittest.TestCase, DBusUtil):
     """Tests for the read-only Server API."""
