@@ -879,7 +879,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(databases1, databases2)
 
     def testGetReportsNoConfig(self):
-        """ Test when the given server has no reports. Also covers boundaries """
+        """ Test nothing is gotten when the given server doesn't exist. Also covers boundaries """
         reports = self.session.GetReports(0, 0, utf8_strings=True)
         self.failUnlessEqual(reports, [])
         reports = self.session.GetReports(0, 1, utf8_strings=True)
