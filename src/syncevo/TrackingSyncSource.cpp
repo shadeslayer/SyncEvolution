@@ -104,4 +104,9 @@ bool TrackingSyncSource::serverModeEnabled() const
     return m_operations.m_loadAdminData;
 }
 
+const char *TrackingSyncSource::getPeerMimeType() const
+{
+    return getMimeType();
+}
+
 SE_END_CXX

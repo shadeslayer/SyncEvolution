@@ -179,6 +179,12 @@ class TrackingSyncSource : public TestingSyncSource,
      */
     virtual const char *getMimeVersion() const = 0;
 
+    /**
+     * Mime type a backend provides by default, this is used to alert the
+     * remote peer in SAN during server alerted sync.
+     */
+    virtual const char *getPeerMimeType() const;
+
     using SyncSource::getName;
 
   private:

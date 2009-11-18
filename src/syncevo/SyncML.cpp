@@ -86,6 +86,22 @@ SyncMode StringToSyncMode(const std::string &mode, bool serverAlerted)
 }
 
 
+ContentType StringToContentType(const std::string &type) {
+    if (boost::iequals (type, "text/x-vcard") || boost::iequals (type, "text/x-vcard:2.1")) {
+        return WSPCTC_XVCARD;
+    } else if (boost::iequals (type, "text/vcard") ||boost::iequals (type, "text/vcard:3.0")) {
+        return WSPCTC_VCARD;
+    } else if (boost::iequals (type, "text/x-vcalendar") ||boost::iequals (type, "text/x-vcalendar:1.0")) {
+        return WSPCTC_XVCALENDAR;
+    } else if (boost::iequals (type, "text/calendar") ||boost::iequals (type, "text/calendar:2.0")) {
+        return WSPCTC_ICALENDAR;
+    } else if (boost::iequals (type, "text/plain") ||boost::iequals (type, "text/plain:1.0")) {
+        return WSPCTC_TEXT_PLAIN;
+    } else {
+        return WSPCTC_UNKNOWN;
+    }
+}
+
 namespace {
     const char * const locNames[] = { "local", "remote", NULL };
     const char * const stateNames[] = { "added", "updated", "removed", "any", NULL };

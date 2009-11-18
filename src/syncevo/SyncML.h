@@ -54,6 +54,16 @@ enum SyncMode {
     SYNC_INVALID = 255
 };
 
+/* According to OMNA WSP Content Type Numbers*/
+enum ContentType {
+    WSPCTC_TEXT_PLAIN = 0x03,
+    WSPCTC_XVCALENDAR = 0x06,
+    WSPCTC_XVCARD = 0x07,
+    WSPCTC_ICALENDAR = 0x0305,
+    WSPCTC_VCARD = 0x0309,
+    WSPCTC_UNKNOWN =0xFFFFFF
+};
+
 /**
  * Return string for sync mode. User-visible strings are the ones used
  * in a sync source config ("two-way", "refresh-from-server", etc.).
@@ -65,6 +75,11 @@ std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible = true);
  * Parse user-visible mode names.
  */
 SyncMode StringToSyncMode(const std::string &str, bool serverAlerted = false);
+
+/*
+ * Parse string based content type to WSPCTC encoded binary code
+ */
+ContentType StringToContentType (const std::string &str);
 
 /**
  * result of SyncML operations, same codes as in HTTP and the Synthesis engine

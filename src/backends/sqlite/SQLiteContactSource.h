@@ -85,6 +85,7 @@ class SQLiteContactSource : public SyncSource,
     virtual const char *getMimeVersion() const { return "2.1"; }
     virtual void enableServerMode();
     virtual bool serverModeEnabled() const;
+    virtual const char *getPeerMimeType() const {return getMimeType(); }
 
     /* Methods in SyncSource */
     virtual void getSynthesisInfo (SynthesisInfo &info, XMLConfigFragments &fragment);

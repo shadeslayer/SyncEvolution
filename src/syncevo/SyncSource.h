@@ -946,6 +946,12 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
      */
     static string backendsDebug();
 
+    /**
+     * Mime type a backend provides by default, this is used to alert the
+     * remote peer in SAN during server alerted sync.
+     */
+    virtual const char *getPeerMimeType() const =0;
+
     /* implementation of SyncSourceBase */
     virtual const char * getName() const { return SyncSourceConfig::getName(); }
     virtual long getNumDeleted() const { return m_numDeleted; }
@@ -994,6 +1000,7 @@ class DummySyncSource : public SyncSource
                                   XMLConfigFragments &fragments) {}
     virtual void enableServerMode() {}
     virtual bool serverModeEnabled() const { return false; }
+    virtual const char *getPeerMimeType() const {return "";} 
 };
 
 /**

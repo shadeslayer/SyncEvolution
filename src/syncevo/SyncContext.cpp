@@ -1828,7 +1828,7 @@ bool SyncContext::initSAN(int retries)
 {
     sysync::SanPackage san;
     /* Should be nonce sent by the server in the preceeding sync session */
-    string nonce = "Synthesis";
+    string nonce = "SyncEvolution";
     /* SyncML Version 1.2 */
     uint16_t protoVersion = 12;
     string uauthb64 = san.B64_H (getUsername(), getPassword());
@@ -1851,8 +1851,19 @@ bool SyncContext::initSAN(int retries)
             continue;
         }
         string uri = sc->getURI();
-        //TODO how to define the MIME type? Add another property?
-        if ( san.AddSync(mode, (uInt32) 0, uri.c_str())) {
+
+        SourceType sourceType = sc->getSourceType();
+        /*If the type is not set by user explictly, let's use backend default
+         * value*/
+        if(sourceType.m_format.empty()) {
+            sourceType.m_format = (*m_sourceListPtr)[name]->getPeerMimeType();
+        }
+        int contentTypeB = StringToContentType (sourceType.m_format);
+        if (contentTypeB == WSPCTC_UNKNOWN) {
+            contentTypeB = 0;
+            SE_LOG_DEBUG (NULL, NULL, "Unknown datasource mimetype, use 0 as default");
+        }
+        if ( san.AddSync(mode, (uInt32) contentTypeB, uri.c_str())) {
             SE_LOG_ERROR(NULL, NULL, "SAN: adding server alerted sync element failed");
         };
     }
