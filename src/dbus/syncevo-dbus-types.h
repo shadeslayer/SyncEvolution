@@ -92,6 +92,10 @@ gboolean syncevo_config_get_value (SyncevoConfig *config,
                                    const char *source,
                                    const char *key,
                                    const char **value);
+gboolean syncevo_config_set_value (SyncevoConfig *config,
+                                   const char *source,
+                                   const char *key,
+                                   const char *value);
 
 typedef void (*ConfigFunc) (char *name,
                             GHashTable *source_configuration,

@@ -927,27 +927,6 @@ update_service_ui (app_data *data)
 }
 
 static void
-find_password_cb (GnomeKeyringResult result, GList *list, app_data *data)
-{
-    switch (result) {
-    case GNOME_KEYRING_RESULT_NO_MATCH:
-        break;
-    case GNOME_KEYRING_RESULT_OK:
-        if (list && list->data) {
-            GnomeKeyringNetworkPasswordData *key_data;
-            key_data = (GnomeKeyringNetworkPasswordData*)list->data;
-            data->current_service->password = g_strdup (key_data->password);
-        }
-        break;
-    default:
-        g_warning ("getting password from GNOME keyring failed: %s",
-                   gnome_keyring_result_to_message (result));
-        break;
-    }
-    return;
-}
-
-static void
 unexpand_config_widget (GtkWidget *w, GtkWidget *exception)
 {
     if (SYNC_IS_CONFIG_WIDGET (w) && exception && exception != w) {
@@ -1028,7 +1007,7 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
                            NULL);
 
     widget = add_server_to_box (GTK_BOX (data->services_box),
-                                NULL,
+                                "default",
                                 data);
     sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (widget), TRUE);
 
@@ -1068,6 +1047,11 @@ update_services_list (app_data *data)
 {
     /* NOTE: could get this on ui startup as well for instant action.
        Downside is stale data.... */
+
+    gtk_container_foreach (GTK_CONTAINER (data->services_box),
+                           (GtkCallback)remove_child,
+                           data->services_box);
+
     syncevo_server_get_configs (data->server,
                                 TRUE,
                                 (SyncevoServerGetConfigsCb)get_template_configs_cb,
@@ -1637,8 +1621,6 @@ get_sessions_cb (SyncevoServer *server,
         g_warning ("Server.GetSessions failed: %s", error->message);
         g_error_free (error);
 
-        /* TODO: check for other errors */
-        set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
         return;
     }
 

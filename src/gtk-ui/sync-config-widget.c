@@ -33,7 +33,7 @@ static guint32 signals[LAST_SIGNAL] = {0, };
 /*
 static void get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, SyncConfigWidget *self);
 */
-static void update_label (SyncConfigWidget *self);
+static void sync_config_widget_update_label (SyncConfigWidget *self);
 
 static void
 remove_child (GtkWidget *widget, GtkContainer *container)
@@ -263,7 +263,7 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         return;
     }
 
-    if (self->config->from_template) {
+    if (self->from_template) {
 /*
         syncevo_service_get_template_config_async (self->dbus_service, 
                                                    (char*)name,
@@ -297,42 +297,81 @@ update_use_button (SyncConfigWidget *self)
     }
 }
 
+
+static void
+init_source (char *name,
+             GHashTable *source_configuration,
+             SyncConfigWidget *self)
+{
+    char *str, *pretty_name;
+    const char *uri;
+    guint row;
+    GtkWidget *label, *entry;
+
+    g_object_get (self->server_settings_table,
+                  "n-rows", &row,
+                  NULL);
+
+    uri = g_hash_table_lookup (source_configuration, "uri");
+    pretty_name = get_pretty_source_name (name);
+
+    /* TRANSLATORS: label for an entry in service configuration.
+     * Placeholder is a source  name in settings window. 
+     * Example: "Addressbook URI" */
+    str = g_strdup_printf (_("%s URI"), pretty_name);
+    label = gtk_label_new (str);
+    g_free (str);
+    g_free (pretty_name);
+
+    gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
+    gtk_widget_show (label);
+    gtk_table_attach (GTK_TABLE (self->server_settings_table), label,
+                      0, 1, row, row + 1, GTK_FILL, GTK_EXPAND, 0, 0);
+
+    entry = gtk_entry_new ();
+    gtk_entry_set_max_length (GTK_ENTRY (entry), 99);
+    gtk_entry_set_width_chars (GTK_ENTRY (entry), 80);
+    gtk_entry_set_text (GTK_ENTRY (entry),
+                        uri ? uri : "");
+    self->uri_entries = g_list_append (self->uri_entries, entry);
+    gtk_widget_show (entry);
+    gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table), entry,
+                               1, 2, row, row + 1);
+}
+
 static void
 sync_config_widget_update_expander (SyncConfigWidget *self)
 {
     GList *l;
     const char *str;
+    const char *username = "";
+    const char *password = "";
+    const char *sync_url = "";
     GtkWidget *label, *entry;
-    guint i = 0;
+    SyncevoConfig *config = self->config->config;
 
     gtk_container_foreach (GTK_CONTAINER (self->server_settings_table),
                            (GtkCallback)remove_child,
                            self->server_settings_table);
     gtk_table_resize (GTK_TABLE (self->server_settings_table), 
-                      2, g_list_length (self->config->source_configs) + 1);
+                      2, 1);
 
     gtk_entry_set_text (GTK_ENTRY (self->entry),
                         self->config->name ? self->config->name : "");
-    if (self->config->name) {
-        gtk_widget_hide (self->entry);
-    } else {
-        gtk_widget_show (self->entry);
-    }
 
     gtk_label_set_text (GTK_LABEL (self->description_label),
                         get_service_description (self->config->name));
 
-    gtk_expander_set_expanded (GTK_EXPANDER (self->expander), 
-                               !self->config->name);
+    /* TODO set expanded status based on user pref? */
 
-    if (self->config->from_template) {
+    if (self->from_template) {
         /* TRANSLATORS: button labels */
         gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
                               _("Reset service"));
     } else {
         gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
                               _("Delete service"));
-        if (self->config->name) {
+        if (self->saved) {
             gtk_widget_show (GTK_WIDGET (self->reset_delete_button));
         } else {
             gtk_widget_hide (GTK_WIDGET (self->reset_delete_button));
@@ -346,118 +385,58 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     }
     update_use_button (self);
 
-/*
-    if (self->config->username &&
-        strcmp (self->config->username, "your SyncML server account name")) {
-        str = self->config->username;
-    } else {
-        str = "";
-    }
-    gtk_entry_set_text (GTK_ENTRY (self->username_entry), str);
+    syncevo_config_get_value (config, NULL, "username", &username);
+    syncevo_config_get_value (config, NULL, "password", &password);
+    syncevo_config_get_value (config, NULL, "syncURL", &sync_url);
 
-    gtk_entry_set_text (GTK_ENTRY (self->password_entry),
-                        self->config->password ? self->config->password : "");
-    // TRANSLATORS: label of a entry
+    gtk_entry_set_text (GTK_ENTRY (self->username_entry), username);
+    if (password && strcmp (password, "-") == 0) {
+        gtk_entry_set_text (GTK_ENTRY (self->password_entry), "");
+    } else {
+        gtk_entry_set_text (GTK_ENTRY (self->password_entry), password);
+    }
+
+    // TRANSLATORS: label of a entry in service configuration
     label = gtk_label_new (_("Server URL"));
     gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
     gtk_widget_show (label);
     gtk_table_attach (GTK_TABLE (self->server_settings_table), label,
-                      0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
+                      0, 1, 0, 1, GTK_FILL, GTK_EXPAND, 0, 0);
 
     self->baseurl_entry = gtk_entry_new ();
     gtk_entry_set_max_length (GTK_ENTRY (self->baseurl_entry), 99);
     gtk_entry_set_width_chars (GTK_ENTRY (self->baseurl_entry), 80);
-    gtk_entry_set_text (GTK_ENTRY (self->baseurl_entry), 
-                        self->config->base_url ? self->config->base_url : "");
+    gtk_entry_set_text (GTK_ENTRY (self->baseurl_entry), sync_url);
     gtk_widget_show (self->baseurl_entry);
+
     gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table),
                                self->baseurl_entry,
-                               1, 2, i, i + 1);
-*/
+                               1, 2, 0, 1);
 
+    /* update source uris */
     g_list_free (self->uri_entries);
     self->uri_entries = NULL;
+    syncevo_config_foreach_source (config,
+                                   (ConfigFunc)init_source,
+                                   self);
 
-    for (l = self->config->source_configs; l; l = l->next) {
-        source_config *source = (source_config*)l->data;
-        char *str;
-        char *name;
-        i++;
-
-        name = get_pretty_source_name (source->name);
-        /* TRANSLATORS: label for an entry. Placeholder is a source 
-           name in settings window */
-        str = g_strdup_printf (_("%s URI"), name);
-        label = gtk_label_new (str);
-        g_free (str);
-        g_free (name);
-        gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
-        gtk_widget_show (label);
-        gtk_table_attach (GTK_TABLE (self->server_settings_table), label,
-                          0, 1, i, i + 1, GTK_FILL, GTK_EXPAND, 0, 0);
-
-        entry = gtk_entry_new ();
-        gtk_entry_set_max_length (GTK_ENTRY (entry), 99);
-        gtk_entry_set_width_chars (GTK_ENTRY (entry), 80);
-/*
-        gtk_entry_set_text (GTK_ENTRY (entry), 
-                            source->uri ? source->uri : "");
-*/
-        self->uri_entries = g_list_append (self->uri_entries, entry);
-        gtk_widget_show (entry);
-        gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table), entry,
-                                   1, 2, i, i + 1);
-    }
-
-    /* hack for widgets added with "add new service" */
-    gtk_widget_grab_focus (GTK_WIDGET (self));
 }
 
 static void
-sync_config_widget_set_config (SyncConfigWidget *self,
-                               GPtrArray *options,
-                               GPtrArray *options_override)
-{
-    const char *name = NULL;
-
-    if (self->config)
-        server_config_free (self->config);
-    self->config = g_slice_new0 (server_config);
-
-    /* take name from original SyncevoServer (from GetConfigs call) */
-/*
-    if (self->server)
-        syncevo_server_get (self->server, &name, NULL, NULL, NULL);
-*/
-    self->config->name = g_strdup (name);
-
-/*
-    if (options)
-        g_ptr_array_foreach (options, (GFunc)add_server_option, self->config);
-    if (options_override)
-        g_ptr_array_foreach (options_override, (GFunc)add_server_option, self->config);
-
-    server_config_ensure_default_sources_exist (self->config);
-*/
-
-    update_label (self);
-}
-
-static void
-find_password_for_settings_cb (GnomeKeyringResult result, GList *list, SyncConfigWidget *self)
+find_password_cb (GnomeKeyringResult result, GList *list, SyncConfigWidget *self)
 {
     switch (result) {
     case GNOME_KEYRING_RESULT_NO_MATCH:
-        g_warning ("no password found in keyring");
         break;
     case GNOME_KEYRING_RESULT_OK:
         if (list && list->data) {
             GnomeKeyringNetworkPasswordData *key_data;
             key_data = (GnomeKeyringNetworkPasswordData*)list->data;
-/*
-            self->config->password = g_strdup (key_data->password);
-*/
-            sync_config_widget_update_expander (self);
+
+            gtk_entry_set_text (GTK_ENTRY (self->password_entry), key_data->password);
+            g_object_set_data_full (self->password_entry,
+                                    "keyring-value", g_strdup (key_data->password),
+                                    g_free);
         }
         break;
     default:
@@ -569,38 +548,31 @@ load_icon (const char *uri, guint icon_size)
 }
 
 static void
-update_label (SyncConfigWidget *self)
+sync_config_widget_update_label (SyncConfigWidget *self)
 {
-    if (self->server && self->label) {
-        const char *name, *url;
+    if (self->config && self->config->name && self->config->config) {
+        const char *url;
         char *str;
 
-/*
-        syncevo_server_get (self->server, &name, &url, NULL, NULL);
-*/
+        syncevo_config_get_value (self->config->config, NULL, "WebURL", &url);
 
-        if (name) {
-            if (self->current) {
-                str = g_strdup_printf ("<b>%s</b>", name);
-            } else {
-                str = g_strdup_printf ("%s", name);
-            }
-            if (self->config && !self->config->from_template) {
-                /* TRANSLATORS: servoce title in service list, the placeholder 
-                   is the name of the service */
-                char *tmp = g_strdup_printf (_("%s - manually setup"), str);
-                g_free (str);
-                str = tmp;
-            } else if (url && strlen (url) > 0) {
-                char *tmp = g_strdup_printf ("%s -",str);
-                g_free (str);
-                str = tmp;
-            }
+        if (self->current) {
+            str = g_strdup_printf ("<b>%s</b>", self->config->name);
         } else {
-            /* TRANSLATORS: title in service list for new services
-               (there will be a entry to the right of the title) */
-            str = g_strdup (_("Server name"));
+            str = g_strdup_printf ("%s", self->config->name);
         }
+        if (!self->from_template) {
+            /* TRANSLATORS: service title for services that are not based on a 
+             * template in service list, the placeholder is the name of the service */
+            char *tmp = g_strdup_printf (_("%s - manually setup"), str);
+            g_free (str);
+            str = tmp;
+        } else if (url && strlen (url) > 0) {
+            char *tmp = g_strdup_printf ("%s -",str);
+            g_free (str);
+            str = tmp;
+        }
+
         gtk_label_set_markup (GTK_LABEL (self->label), str);
         g_free (str);
     }
@@ -633,7 +605,7 @@ sync_config_widget_set_current (SyncConfigWidget *self,
 {
     if (self->current != current) {
         self->current = current;
-        update_label (self);
+        sync_config_widget_update_label (self);
     }
 }
 
@@ -650,44 +622,14 @@ sync_config_widget_set_server (SyncConfigWidget *self,
     }
 
     self->server = g_object_ref (server);
-
-    if (!server) {
-        gtk_image_clear (GTK_IMAGE (self->image));
-        gtk_label_set_markup (GTK_LABEL (self->label), "");
-        gtk_widget_hide (self->link);
-    } else {
-        const char *url, *icon;
-        GdkPixbuf *buf;
-
-/*
-        syncevo_server_get (server, NULL, &url, &icon, NULL);
-*/
-        buf = load_icon (icon, SYNC_UI_LIST_ICON_SIZE);
-        gtk_image_set_from_pixbuf (GTK_IMAGE (self->image), buf);
-        g_object_unref (buf);
-
-        update_label (self);
-
-        if (url && strlen (url) > 0) {
-            gtk_link_button_set_uri (GTK_LINK_BUTTON (self->link), url);
-            gtk_widget_show (self->link);
-        } else {
-            gtk_widget_hide (self->link);
-        }
-/*
-        fetch_server_config (self);
-*/
-    }
-
 }
 
 static void
 sync_config_widget_set_name (SyncConfigWidget *self,
                              const char *name)
 {
-    self->name = g_strdup (name);
-
-    /*TODO*/
+    self->config = g_slice_new0 (server_config);
+    self->config->name = g_strdup (name);
 }
 
 static void
@@ -718,9 +660,9 @@ sync_config_widget_set_property (GObject      *object,
 
 static void
 sync_config_widget_get_property (GObject    *object,
-                                        guint       property_id,
-                                        GValue     *value,
-                                        GParamSpec *pspec)
+                                 guint       property_id,
+                                 GValue     *value,
+                                 GParamSpec *pspec)
 {
     SyncConfigWidget *self = SYNC_CONFIG_WIDGET (object);
 
@@ -728,7 +670,10 @@ sync_config_widget_get_property (GObject    *object,
     case PROP_SERVER:
         g_value_set_pointer (value, self->server);
     case PROP_NAME:
-        g_value_set_string (value, self->name);
+        if (self->config)
+            g_value_set_string (value, self->config->name);
+        else
+            g_value_set_string (value, NULL);
     case PROP_CURRENT:
         g_value_set_boolean (value, self->current);
     case PROP_UNSET:
@@ -749,6 +694,170 @@ sync_config_widget_dispose (GObject *object)
 }
 
 static void
+init_default_config (server_config *config)
+{
+    g_free (config->name);
+    /* TRANSLATORS: title in service list for new services
+       (there will be a entry to the right of the title) */
+    config->name = g_strdup (_(""));
+
+    syncevo_config_set_value (config->config, NULL, "username", "");
+    syncevo_config_set_value (config->config, NULL, "password", "");
+    syncevo_config_set_value (config->config, NULL, "syncURL", "");
+    syncevo_config_set_value (config->config, NULL, "WebURL", "");
+    syncevo_config_set_value (config->config, "memo", "uri", "");
+    syncevo_config_set_value (config->config, "todo", "uri", "");
+    syncevo_config_set_value (config->config, "addressbook", "uri", "");
+    syncevo_config_set_value (config->config, "calendar", "uri", "");
+
+}
+
+static void
+sync_config_widget_real_init (SyncConfigWidget *self,
+                              SyncevoConfig *config,
+                              gboolean saved)
+{
+    const char *url, *icon;
+    GdkPixbuf *buf;
+    server_config_init (self->config, config);
+
+/* TODO find out "from_template" value... it seems I need to do two GetConfig calls
+ * for each service :( */
+    self->from_template = TRUE;
+    self->saved = saved;
+    if (self->config->name &&
+        strcmp (self->config->name, "default") == 0) {
+
+        init_default_config (self->config);
+        gtk_widget_show (self->entry);
+    } else {
+        /**/
+        gtk_widget_hide (self->entry);
+    }
+
+    syncevo_config_get_value (self->config->config, NULL, "syncURL", &url);
+    syncevo_config_get_value (self->config->config, NULL, "IconURI", &icon);
+
+    buf = load_icon (icon, SYNC_UI_LIST_ICON_SIZE);
+    gtk_image_set_from_pixbuf (GTK_IMAGE (self->image), buf);
+    g_object_unref (buf);
+
+    if (url && strlen (url) > 0) {
+        gtk_link_button_set_uri (GTK_LINK_BUTTON (self->link), url);
+        gtk_widget_show (self->link);
+    } else {
+        gtk_widget_hide (self->link);
+    }
+
+    sync_config_widget_update_label (self);
+    sync_config_widget_update_expander (self);
+
+    /* hack for widgets added with "add new service" */
+    gtk_widget_grab_focus (GTK_WIDGET (self));
+}
+
+static void
+get_template_config_cb (SyncevoServer *syncevo,
+                        SyncevoConfig *config,
+                        GError *error,
+                        SyncConfigWidget *self)
+{
+    if (error) {
+        g_error_free (error);
+
+        /* TODO: decide if there are cases where we want to show this in UI */
+        return;
+    }
+
+    sync_config_widget_real_init (self, config, FALSE);
+}
+
+static void
+get_config_cb (SyncevoServer *syncevo,
+               SyncevoConfig *config,
+               GError *error,
+               SyncConfigWidget *self)
+{
+    char *password, *username, *url;
+
+    if (error) {
+        g_error_free (error);
+
+        /* no configuration was found, ask for a template */
+        syncevo_server_get_config (self->server,
+                                   self->config->name,
+                                   TRUE,
+                                   (SyncevoServerGetConfigCb)get_template_config_cb,
+                                   self);
+
+        /* TODO: check that this really is a "no such config" error */
+        /* TODO: decide if there are cases where we want to show this in UI */
+        return;
+    }
+
+    sync_config_widget_real_init (self, config, TRUE);
+
+    /* see if we need a password from keyring */
+    syncevo_config_get_value (config, NULL, "password", &password);
+    syncevo_config_get_value (config, NULL, "username", &username);
+    syncevo_config_get_value (config, NULL, "syncURL", &url);
+
+    if (url && username &&
+        password && strcmp (password, "-") == 0) {
+
+        const char *server_address;
+
+        server_address = strstr (url, "://");
+        if (server_address) 
+            server_address = server_address + 3;
+
+        if (!server_address) {
+            g_warning ("Server configuration has suspect URL '%s',"
+                       " not getting a password from keyring",
+                       url);
+        } else {
+            gnome_keyring_find_network_password (username,
+                                                 NULL,
+                                                 server_address,
+                                                 NULL,
+                                                 NULL,
+                                                 NULL,
+                                                 0,
+                                                 (GnomeKeyringOperationGetListCallback)find_password_cb,
+                                                 self,
+                                                 NULL);
+        }
+    }
+
+}
+
+static GObject *
+sync_config_widget_constructor (GType                  gtype,
+                                guint                  n_properties,
+                                GObjectConstructParam *properties)
+{
+    SyncConfigWidget *self;
+    GObjectClass *parent_class;  
+
+    parent_class = G_OBJECT_CLASS (sync_config_widget_parent_class);
+    self = SYNC_CONFIG_WIDGET (parent_class->constructor (gtype,
+                                                          n_properties,
+                                                          properties));
+
+    if (!self->server) {
+        g_warning ("No SyncevoServer set for SyncConfigWidget");
+    }
+
+    /* try to fetch a already set configuration */
+    syncevo_server_get_config (self->server,
+                               self->config->name,
+                               FALSE,
+                               (SyncevoServerGetConfigCb)get_config_cb,
+                               self);
+    return self;
+}
+
+static void
 sync_config_widget_class_init (SyncConfigWidgetClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
@@ -757,18 +866,19 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
     object_class->set_property = sync_config_widget_set_property;
     object_class->get_property = sync_config_widget_get_property;
     object_class->dispose = sync_config_widget_dispose;
+    object_class->constructor = sync_config_widget_constructor;
 
     pspec = g_param_spec_pointer ("server",
                                   "SyncevoServer",
                                   "The SyncevoServer struct this widget represents",
-                                  G_PARAM_READWRITE);
+                                  G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_SERVER, pspec);
 
     pspec = g_param_spec_string ("name",
                                  "Configuration name",
                                  "The name of the Syncevolution service configuration",
                                  NULL,
-                                 G_PARAM_READWRITE);
+                                 G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_NAME, pspec);
 
     pspec = g_param_spec_boolean ("current",
@@ -780,7 +890,7 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
 
     pspec = g_param_spec_boolean ("unset",
                                   "Unset",
-                                  "Whether there curently used server at all",
+                                  "Whether there is a curently used server at all",
                                   TRUE,
                                   G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_UNSET, pspec);

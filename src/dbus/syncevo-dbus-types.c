@@ -46,9 +46,41 @@ syncevo_config_get_value (SyncevoConfig *config,
 
     if (source_config) {
         *value = (char*)g_hash_table_lookup (source_config, key);
+        return TRUE;
     }
     
-    return (source_config != NULL);
+    return FALSE;
+}
+
+gboolean
+syncevo_config_set_value (SyncevoConfig *config,
+                          const char *source,
+                          const char *key,
+                          const char *value)
+{
+    char *name;
+    GHashTable *source_config;
+
+    g_return_val_if_fail (config, FALSE);
+    g_return_val_if_fail (key, FALSE);
+
+    if (!source || strlen (source) == 0) {
+        name = g_strdup ("");
+    } else {
+        name = g_strdup_printf ("sources/%s", source);
+    }
+
+    source_config = (GHashTable*)g_hash_table_lookup (config, name);
+    if (!source_config) {
+        source_config = g_hash_table_new (g_str_hash, g_str_equal);
+        g_hash_table_insert (config, name, source_config);
+    } else {
+        g_free (name);
+    }
+
+    g_hash_table_insert (source_config, g_strdup (key), g_strdup (value));
+
+    return TRUE;
 }
 
 void syncevo_config_foreach_source (SyncevoConfig *config,

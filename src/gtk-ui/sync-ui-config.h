@@ -61,8 +61,6 @@ typedef struct server_config {
 
     gboolean password_changed;
 
-    gboolean from_template;
-
     GHashTable *source_configs; /* source_config's*/
 
     SyncevoConfig *config;

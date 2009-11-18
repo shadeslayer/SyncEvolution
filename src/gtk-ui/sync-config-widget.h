@@ -41,9 +41,10 @@ typedef struct {
 
     gboolean current; /* is this currently used config */
     gboolean unset; /* is there a current config at all */
+    gboolean saved; /* this service configuration exists on server */
+    gboolean from_template; /* this service configuration has a matching template */
 
     SyncevoServer *server;
-    char *name;
     server_config *config;
     
     GPtrArray *options_override;
