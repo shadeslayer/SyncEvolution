@@ -636,8 +636,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def setUp(self):
         self.setUpServer()
-        # use a long name to avoid conflicts with other configs
-        self.setUpSession("dummy-test-for-config-purpose")
+        # use 'dummy-test' as the server name
+        self.setUpSession("dummy-test")
         # default config
         self.config = { 
                          "" : { "syncURL" : "http://my.funambol.com/sync",
@@ -727,7 +727,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.Exception: test-dbus/config/syncevolution/"
-                                 "dummy-test-for-config-purpose/sources/addressbook/config.ini: "
+                                 "dummy-test/sources/addressbook/config.ini: "
                                  "sync = invalid-value: not one of the valid values (two-way, "
                                  "slow, refresh-from-client = refresh-client, refresh-from-server "
                                  "= refresh-server = refresh, one-way-from-client = one-way-client, "
@@ -740,7 +740,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: The server 'dummy-test-for-config-purpose' doesn't exist")
+                                 "org.syncevolution.NoSuchConfig: The server 'dummy-test' doesn't exist")
         
     def testClearAllConfig(self):
         """ test all configs of a server are cleared correctly. """
@@ -751,7 +751,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             config = self.session.GetConfig(False, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test-for-config-purpose' found")
+                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test' found")
     
     def testClearConfigSources(self):
         """ test sources related configs are cleared correctly. """
@@ -775,7 +775,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.CheckSource("", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test-for-config-purpose' found")
+                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test' found")
 
     def testCheckSourceNoSourceName(self):
         """ test the right error is reported when the source doesn't exist """
@@ -784,7 +784,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.CheckSource("dummy", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchSource: 'dummy-test-for-config-purpose' "
+                                 "org.syncevolution.NoSuchSource: 'dummy-test' "
                                  "has no 'dummy' source")
 
     def testCheckSourceInvalidEvolutionSource(self):
@@ -816,7 +816,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.GetDatabases("", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test-for-config-purpose' found")
+                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test' found")
 
     def testGetDatabasesEmpty(self):
         """ test the empty is gotten for non-existing source """
