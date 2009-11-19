@@ -1127,6 +1127,7 @@ get_config_for_main_win_cb (SyncevoServer *server,
         source_config *source;
 
         server_config_init (data->current_service, config);
+        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
 
         /* get "locally supported" status for all sources */
         g_hash_table_iter_init (&iter, data->current_service->source_configs);
