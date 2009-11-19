@@ -207,9 +207,6 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
     // instances.
     config->setDevID(string("sc-pim-") + UUID());
 
-    config->setUsername("your SyncML server account name");
-    config->setPassword("your SyncML server password");
-
     // create sync source configs and set non-default values
     config->setSourceDefaults("addressbook", false);
     config->setSourceDefaults("calendar", false);

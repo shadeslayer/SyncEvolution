@@ -320,6 +320,20 @@ bool Cmdline::run() {
                                 SyncConfig::getServerTemplates());
                     return false;
                 }
+
+                // Templates no longer contain these strings, because
+                // GUIs would have to localize them. For configs created
+                // via the command line, the extra hint that these
+                // properties need to be set is useful, so set these
+                // strings here. They'll get copied into the new
+                // config only if no other value was given on the
+                // command line.
+                if (!from->getUsername()[0]) {
+                    from->setUsername("your SyncML server account name");
+                }
+                if (!from->getPassword()[0]) {
+                    from->setPassword("your SyncML server password");
+                }
             }
         }
 
@@ -982,6 +996,21 @@ static string filterConfig(const string &buffer)
     return res.str();
 }
 
+static string injectValues(const string &buffer)
+{
+    string res = buffer;
+
+    // username/password not set in templates, only in configs created via
+    // the command line
+    boost::replace_first(res,
+                         "# username = ",
+                         "username = your SyncML server account name");
+    boost::replace_first(res,
+                         "# password = ",
+                         "password = your SyncML server password");
+    return res;
+}
+
 // remove lines indented with spaces
 static string filterIndented(const string &buffer)
 {
@@ -1389,7 +1418,7 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string actual = cmdline.m_out.str();
             removeRandomUUID(actual);
-            string filtered = filterConfig(actual);
+            string filtered = injectValues(filterConfig(actual));
             CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(ScheduleWorldConfig())),
                                       filtered);
             // there should have been comments
@@ -1400,7 +1429,7 @@ protected:
             TestCmdline cmdline("--print-config", "--template", "Default", NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
-            string actual = filterConfig(cmdline.m_out.str());
+            string actual = injectValues(filterConfig(cmdline.m_out.str()));
             removeRandomUUID(actual);
             CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(ScheduleWorldConfig())),
                                       actual);
@@ -1411,7 +1440,7 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(FunambolConfig())),
-                                      filterConfig(cmdline.m_out.str()));
+                                      injectValues(filterConfig(cmdline.m_out.str())));
         }
 
         {
@@ -1428,7 +1457,7 @@ protected:
             boost::replace_all(expected,
                                "sync = two-way",
                                "sync = disabled");
-            string actual = filterConfig(cmdline.m_out.str());
+            string actual = injectValues(filterConfig(cmdline.m_out.str()));
             removeRandomUUID(actual);
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
                                       actual);
@@ -1444,7 +1473,7 @@ protected:
             string actual = cmdline.m_out.str();
             removeRandomUUID(actual);
             CPPUNIT_ASSERT_EQUAL_DIFF(internalToIni(ScheduleWorldConfig()),
-                                      actual);
+                                      injectValues(actual));
         }
         
     }
