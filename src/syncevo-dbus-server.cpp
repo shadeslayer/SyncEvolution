@@ -799,7 +799,8 @@ class Session : public DBusObjectHelper,
      * the sync status for session
      */
     enum SyncStatus {
-        SYNC_IDLE = 0, ///< session is initiated but sync not started
+        SYNC_QUEUEING,    ///< waiting to become ready for use
+        SYNC_IDLE,        ///< ready, session is initiated but sync not started
         SYNC_RUNNING, ///< sync is running
         SYNC_ABORT, ///< sync is aborting
         SYNC_SUSPEND, ///< sync is suspending
@@ -1560,12 +1561,7 @@ void Session::getStatus(std::string &status,
                         uint32_t &error,
                         SourceStatuses_t &sources)
 {
-    if (!m_active) {
-        status = (m_syncStatus == SYNC_DONE) ? 
-                 syncStatusToString(m_syncStatus) : "queueing";
-    } else {
-        status = syncStatusToString(m_syncStatus);
-    }
+    status = syncStatusToString(m_syncStatus);
     // TODO: append ";processing" or ";waiting"
 
     error = m_error;
@@ -1612,6 +1608,8 @@ void Session::fireProgress(bool flush)
 string Session::syncStatusToString(SyncStatus state)
 {
     switch(state) {
+    case SYNC_QUEUEING:
+        return "queueing";
     case SYNC_IDLE:
         return "idle";
     case SYNC_RUNNING:
@@ -1641,7 +1639,7 @@ Session::Session(DBusServer &server,
     m_serverMode(false),
     m_useConnection(false),
     m_active(false),
-    m_syncStatus(SYNC_IDLE),
+    m_syncStatus(SYNC_QUEUEING),
     m_priority(PRI_DEFAULT),
     m_progress(0),
     m_progData(m_progress),
@@ -1677,6 +1675,11 @@ void Session::setActive(bool active)
 {
     m_active = active;
     if (active) {
+        if (m_syncStatus == SYNC_QUEUEING) {
+            m_syncStatus = SYNC_IDLE;
+            fireStatus(true);
+        }
+
         boost::shared_ptr<Connection> c = m_connection.lock();
         if (c) {
             c->ready();

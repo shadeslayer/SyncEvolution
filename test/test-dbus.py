@@ -529,6 +529,22 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
                                 None,
                                 byte_arrays=True,
                                 utf8_strings=True)
+
+        def status(*args):
+            if self.running:
+                DBusUtil.events.append(("status", args))
+                if args[0] == "idle":
+                    DBusUtil.quit_events.append("session " + sessionpath + " idle")
+                    loop.quit()
+
+        bus.add_signal_receiver(status,
+                                'StatusChanged',
+                                'org.syncevolution.Session',
+                                'org.syncevolution',
+                                sessionpath,
+                                byte_arrays=True, 
+                                utf8_strings=True)
+
         session = dbus.Interface(bus.get_object('org.syncevolution',
                                                 sessionpath),
                                  'org.syncevolution.Session')
@@ -543,10 +559,15 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         # session 1 done
         loop.run()
         self.failUnless(callback_called)
-        # session 2 ready
+        # session 2 ready and idle
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done",
-                                                    "session " + sessionpath + " ready"])
+        loop.run()
+        expected = ["session " + self.sessionpath + " done",
+                    "session " + sessionpath + " idle",
+                    "session " + sessionpath + " ready"]
+        expected.sort()
+        DBusUtil.quit_events.sort()
+        self.failUnlessEqual(DBusUtil.quit_events, expected)
         status, error, sources = session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "idle")
         self.removeTimeout(t1)
