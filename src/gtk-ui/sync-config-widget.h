@@ -43,6 +43,7 @@ typedef struct {
     gboolean unset; /* is there a current config at all */
     gboolean configured; /* actual service configuration exists on server */
     gboolean has_template; /* this service configuration has a matching template */
+    gboolean showing;
 
     SyncevoServer *server;
     server_config *config;

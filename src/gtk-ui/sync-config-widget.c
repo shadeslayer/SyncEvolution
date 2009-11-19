@@ -674,7 +674,7 @@ static void
 sync_config_widget_real_init (SyncConfigWidget *self,
                               SyncevoConfig *config)
 {
-    char *url, *icon;
+    char *url, *icon, *ready;
     GdkPixbuf *buf;
     server_config_init (self->config, config);
 
@@ -705,6 +705,9 @@ sync_config_widget_real_init (SyncConfigWidget *self,
     sync_config_widget_update_label (self);
     sync_config_widget_update_expander (self);
 
+    if (self->showing) {
+        gtk_widget_show (GTK_WIDGET (self));
+    }
     /* hack for widgets added with "add new service" */
     gtk_widget_grab_focus (GTK_WIDGET (self));
 }
@@ -788,15 +791,44 @@ sync_config_widget_constructor (GType                  gtype,
 }
 
 static void
+sync_config_widget_show (GtkWidget *widget)
+{
+    char *ready;
+    SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
+
+    self->showing = TRUE;
+    if (self->config && self->config->config) {
+        syncevo_config_get_value (self->config->config,
+                                  NULL, "ConsumerReady", &ready);
+
+        if (ready && strcmp ("1", ready) == 0) {
+            GTK_WIDGET_CLASS (sync_config_widget_parent_class)->show (widget);
+        }
+    }
+}
+
+static void
+sync_config_widget_hide (GtkWidget *widget)
+{
+    SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
+
+    self->showing = FALSE;
+    GTK_WIDGET_CLASS (sync_config_widget_parent_class)->hide (widget);
+}
+
+static void
 sync_config_widget_class_init (SyncConfigWidgetClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
+    GtkWidgetClass *w_class = GTK_WIDGET_CLASS (klass);
     GParamSpec *pspec;
 
     object_class->set_property = sync_config_widget_set_property;
     object_class->get_property = sync_config_widget_get_property;
     object_class->dispose = sync_config_widget_dispose;
     object_class->constructor = sync_config_widget_constructor;
+    w_class->show = sync_config_widget_show;
+    w_class->hide = sync_config_widget_hide;
 
     pspec = g_param_spec_pointer ("server",
                                   "SyncevoServer",
