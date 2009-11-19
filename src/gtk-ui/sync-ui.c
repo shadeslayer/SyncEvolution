@@ -356,7 +356,6 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
             }
         }
 
-g_debug ("Starting session... ");
         syncevo_server_start_session (data->server,
                                       data->current_service->name,
                                       (SyncevoServerStartSessionCb)start_session_cb,
@@ -737,9 +736,6 @@ init_ui (app_data *data)
 static void
 source_check_toggled_cb (GtkCheckButton *check, app_data *data)
 {
-    GPtrArray *options;
-    gboolean *enabled;
-    
 /* TODO: save to syncevolution config
     NOTE the check has source name as data (g_object_set_data)
 */
@@ -870,8 +866,7 @@ check_source_cb (SyncevoSession *session,
 static void
 update_service_ui (app_data *data)
 {
-    const char *icon_uri;
-    GList *l;
+    char *icon_uri;
 
     g_assert (data->current_service && data->current_service->config);
 
@@ -911,15 +906,6 @@ unexpand_config_widget (GtkWidget *w, GtkWidget *exception)
 }
 
 static void
-config_widget_removed_cb (GtkWidget *widget, app_data *data)
-{
-    if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
-        save_gconf_settings (data, NULL);
-    }
-    gtk_container_remove (GTK_CONTAINER (data->services_box), widget);
-}
-
-static void
 config_widget_expanded_cb (GtkWidget *widget, app_data *data)
 {
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
@@ -940,7 +926,11 @@ config_widget_changed_cb (GtkWidget *widget, app_data *data)
 }
 
 static GtkWidget*
-add_server_to_box (GtkBox *box, const char *name, app_data *data)
+add_server_to_box (GtkBox *box,
+                   const char *name,
+                   gboolean configured,
+                   gboolean has_template,
+                   app_data *data)
 {
     GtkWidget *item = NULL;
     gboolean current = FALSE;
@@ -952,7 +942,8 @@ add_server_to_box (GtkBox *box, const char *name, app_data *data)
      }
     unset = !data->current_service;
 
-    item = sync_config_widget_new (data->server, name, current, unset);
+    item = sync_config_widget_new (data->server, name,
+                                   current, unset, configured, has_template);
     g_signal_connect (item, "changed",
                       G_CALLBACK (config_widget_changed_cb), data);
     g_signal_connect (item, "expanded",
@@ -965,8 +956,6 @@ add_server_to_box (GtkBox *box, const char *name, app_data *data)
                                         data->open_current);
         data->open_current = FALSE;
     }
-
-/* TODO: only show item if consumer_ready */
 
     return item;
 }
@@ -984,11 +973,94 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
 
     widget = add_server_to_box (GTK_BOX (data->services_box),
                                 "default",
+                                FALSE, TRUE,
                                 data);
     sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (widget), TRUE);
 
     /* TODO: Get "empty config widget" on startup 
      * so there is no need to wait here... */
+}
+
+
+typedef struct templates_data {
+    app_data *data;
+    char **templates;
+} templates_data;
+
+static void
+get_configs_cb (SyncevoServer *server,
+                char **configs,
+                GError *error,
+                templates_data *templ_data)
+{
+    char **config_iter, **template_iter, **templates;
+    app_data *data;
+    GtkWidget *widget;
+
+    templates = templ_data->templates;
+    data = templ_data->data;
+    g_slice_free (templates_data, templ_data);
+
+    if (error) {
+        show_main_view (data);
+        show_error_dialog (data->sync_win, 
+                           _("Failed to get list of configured services from SyncEvolution"));
+        g_warning ("Server.GetConfigs() failed: %s", error->message);
+        g_strfreev (templates);
+        g_error_free (error);
+        return;
+    }
+
+    for (template_iter = templates; *template_iter; *template_iter++){
+        gboolean found_config = FALSE;
+
+        for (config_iter = configs; *config_iter; *config_iter++) {
+            if (*template_iter && 
+                *config_iter && 
+                g_ascii_strncasecmp (*template_iter,
+                                     *config_iter,
+                                     strlen (*config_iter)) == 0) {
+
+                widget = add_server_to_box (GTK_BOX (data->services_box),
+                                            *config_iter,
+                                            TRUE, TRUE,
+                                            data);
+                found_config = TRUE;
+                break;
+            }
+        }
+        if (!found_config) {
+            widget = add_server_to_box (GTK_BOX (data->services_box),
+                                        *template_iter,
+                                        FALSE, TRUE,
+                                        data);
+        }
+    }
+
+    for (config_iter = configs; *config_iter; *config_iter++) {
+        gboolean found_template = FALSE;
+
+        for (template_iter = templates; *template_iter; *template_iter++) {
+            if (*template_iter && 
+                *config_iter && 
+                g_ascii_strncasecmp (*template_iter,
+                                     *config_iter,
+                                     strlen (*config_iter)) == 0) {
+
+                found_template = TRUE;
+                break;
+            }
+        }
+        if (!found_template) {
+            widget = add_server_to_box (GTK_BOX (data->services_box),
+                                        *config_iter,
+                                        TRUE, FALSE,
+                                        data);
+        }
+    }
+
+    g_strfreev (configs);
+    g_strfreev (templates);
 }
 
 static void
@@ -997,25 +1069,25 @@ get_template_configs_cb (SyncevoServer *server,
                          GError *error,
                          app_data *data)
 {
-    char **str;
-    GtkWidget *widget;
+    templates_data *templ_data;
 
     if (error) {
         show_main_view (data);
         show_error_dialog (data->sync_win, 
                            _("Failed to get list of supported services from SyncEvolution"));
-        g_warning ("Failed to get list of supported services from SyncEvolution: %s", 
-                   error->message);
+        g_warning ("Server.GetConfigs() failed: %s", error->message);
         g_error_free (error);
         return;
     }
 
-    for (str = templates; *str; *str++){
-        widget = add_server_to_box (GTK_BOX (data->services_box),
-                                    *str,
-                                    data);
-    }
-    g_strfreev (templates);
+    templ_data = g_slice_new (templates_data);
+    templ_data->data = data;
+    templ_data->templates = templates;
+
+    syncevo_server_get_configs (data->server,
+                                FALSE,
+                                (SyncevoServerGetConfigsCb)get_configs_cb,
+                                templ_data);
 }
 
 static void
@@ -1032,8 +1104,6 @@ update_services_list (app_data *data)
                                 TRUE,
                                 (SyncevoServerGetConfigsCb)get_template_configs_cb,
                                 data);
-
-    
 }
 
 static void
@@ -1326,7 +1396,6 @@ sync (app_data *data, SyncevoSession *session)
         }
     }
 
-    g_debug ("Syncing...");
     syncevo_session_sync (session,
                           data->mode,
                           source_modes,
@@ -1345,7 +1414,7 @@ status_changed_cb (SyncevoSession *session,
 {
     GTimeVal val;
 
-    g_debug ("active session status changed -> %d", status);
+    g_debug ("sync session status changed -> %d", status);
     switch (status) {
     case SYNCEVO_STATUS_IDLE:
         /* time for business */
@@ -1365,10 +1434,10 @@ status_changed_cb (SyncevoSession *session,
         /* refresh stats -- the service may no longer be the one syncing,
          * but what the heck... */
         syncevo_server_get_reports (data->server,
-                                     data->current_service->name,
-                                     0, 1,
-                                     (SyncevoSessionGetReportsCb)get_reports_cb,
-                                     data);
+                                    data->current_service->name,
+                                    0, 1,
+                                    (SyncevoServerGetReportsCb)get_reports_cb,
+                                    data);
     default:
         ;
     }
@@ -1389,7 +1458,7 @@ get_status_cb (SyncevoSession *session,
         return;
     }
 
-    g_debug ("active session status is %d", status);
+    g_debug ("sync session status is %d", status);
     if (status == SYNCEVO_STATUS_IDLE) {
         /* time for business */
         sync (data, session);
@@ -1428,7 +1497,6 @@ start_session_cb (SyncevoServer *server,
     syncevo_session_get_status (session,
                                 (SyncevoSessionGetStatusCb)get_status_cb,
                                 data);
-g_debug ("Session started");
 }
 
 static void

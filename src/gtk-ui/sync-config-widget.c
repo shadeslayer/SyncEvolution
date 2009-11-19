@@ -20,6 +20,8 @@ enum
   PROP_SERVER,
   PROP_NAME,
   PROP_CURRENT,
+  PROP_HAS_TEMPLATE,
+  PROP_CONFIGURED,
   PROP_UNSET,
 };
 
@@ -219,8 +221,6 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 static void
 reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
-    const char *name;
-
     if (!self->config) {
         return;
     }
@@ -233,13 +233,22 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     
 }
 
-static void 
-update_use_button (SyncConfigWidget *self)
+static void update_buttons (SyncConfigWidget *self)
 {
-    if (!self->use_button){ 
-        return;
+    if (self->has_template) {
+        /* TRANSLATORS: button labels */
+        gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
+                              _("Reset service"));
+    } else {
+        gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
+                              _("Delete service"));
+        if (self->configured) {
+            gtk_widget_show (GTK_WIDGET (self->reset_delete_button));
+        } else {
+            gtk_widget_hide (GTK_WIDGET (self->reset_delete_button));
+        }
     }
-    
+
     if (self->unset || self->current) {
         gtk_button_set_label (GTK_BUTTON (self->use_button),
                               _("Save and use"));
@@ -247,8 +256,13 @@ update_use_button (SyncConfigWidget *self)
         gtk_button_set_label (GTK_BUTTON (self->use_button),
                               _("Save and replace\ncurrent service"));
     }
-}
 
+    if (self->current) {
+        gtk_widget_show (self->stop_button);
+    } else { 
+        gtk_widget_hide (self->stop_button);
+    }
+}
 
 static void
 init_source (char *name,
@@ -314,26 +328,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
 
     /* TODO set expanded status based on user pref? */
 
-    if (self->from_template) {
-        /* TRANSLATORS: button labels */
-        gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
-                              _("Reset service"));
-    } else {
-        gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
-                              _("Delete service"));
-        if (self->saved) {
-            gtk_widget_show (GTK_WIDGET (self->reset_delete_button));
-        } else {
-            gtk_widget_hide (GTK_WIDGET (self->reset_delete_button));
-        }
-    }
-
-    if (self->current) {
-        gtk_widget_show (self->stop_button);
-    } else { 
-        gtk_widget_hide (self->stop_button);
-    }
-    update_use_button (self);
+    update_buttons (self);
 
     syncevo_config_get_value (config, NULL, "username", &username);
     syncevo_config_get_value (config, NULL, "password", &password);
@@ -459,7 +454,7 @@ sync_config_widget_update_label (SyncConfigWidget *self)
         } else {
             str = g_strdup_printf ("%s", self->config->name);
         }
-        if (!self->from_template) {
+        if (!self->has_template) {
             /* TRANSLATORS: service title for services that are not based on a 
              * template in service list, the placeholder is the name of the service */
             char *tmp = g_strdup_printf (_("%s - manually setup"), str);
@@ -494,7 +489,7 @@ sync_config_widget_set_unset (SyncConfigWidget *self,
 {
     self->unset = unset;
 
-    update_use_button (self);
+    update_buttons (self);
 }
 
 void
@@ -570,6 +565,8 @@ sync_config_widget_set_server (SyncConfigWidget *self,
     /* monitor sessions so we can set editing buttons insensitive */
     g_signal_connect (self->server, "session-changed",
                       G_CALLBACK (session_changed_cb), self);
+
+    /* TODO: this is stupid, every widget running the same dbus call*/
     syncevo_server_get_sessions (self->server,
                                  (SyncevoServerGetSessionsCb)get_sessions_cb,
                                  self);
@@ -601,6 +598,12 @@ sync_config_widget_set_property (GObject      *object,
     case PROP_CURRENT:
         sync_config_widget_set_current (self, g_value_get_boolean (value));
         break;
+    case PROP_HAS_TEMPLATE:
+        sync_config_widget_set_has_template (self, g_value_get_boolean (value));
+        break;
+    case PROP_CONFIGURED:
+        sync_config_widget_set_configured (self, g_value_get_boolean (value));
+        break;
     case PROP_UNSET:
         sync_config_widget_set_unset (self, g_value_get_boolean (value));
         break;
@@ -627,6 +630,10 @@ sync_config_widget_get_property (GObject    *object,
             g_value_set_string (value, NULL);
     case PROP_CURRENT:
         g_value_set_boolean (value, self->current);
+    case PROP_HAS_TEMPLATE:
+        g_value_set_boolean (value, self->has_template);
+    case PROP_CONFIGURED:
+        g_value_set_boolean (value, self->configured);
     case PROP_UNSET:
         g_value_set_boolean (value, self->unset);
     default:
@@ -665,17 +672,12 @@ init_default_config (server_config *config)
 
 static void
 sync_config_widget_real_init (SyncConfigWidget *self,
-                              SyncevoConfig *config,
-                              gboolean saved)
+                              SyncevoConfig *config)
 {
     char *url, *icon;
     GdkPixbuf *buf;
     server_config_init (self->config, config);
 
-/* TODO find out "from_template" value... it seems I need to do two GetConfig calls
- * for each service :( */
-    self->from_template = TRUE;
-    self->saved = saved;
     if (self->config->name &&
         strcmp (self->config->name, "default") == 0) {
 
@@ -708,22 +710,6 @@ sync_config_widget_real_init (SyncConfigWidget *self,
 }
 
 static void
-get_template_config_cb (SyncevoServer *syncevo,
-                        SyncevoConfig *config,
-                        GError *error,
-                        SyncConfigWidget *self)
-{
-    if (error) {
-        g_error_free (error);
-
-        /* TODO: decide if there are cases where we want to show this in UI */
-        return;
-    }
-
-    sync_config_widget_real_init (self, config, FALSE);
-}
-
-static void
 get_config_cb (SyncevoServer *syncevo,
                SyncevoConfig *config,
                GError *error,
@@ -732,21 +718,13 @@ get_config_cb (SyncevoServer *syncevo,
     char *password, *username, *url;
 
     if (error) {
+        g_warning ("Server.GetConfig failed: %s", error->message);
         g_error_free (error);
 
-        /* no configuration was found, ask for a template */
-        syncevo_server_get_config (self->server,
-                                   self->config->name,
-                                   TRUE,
-                                   (SyncevoServerGetConfigCb)get_template_config_cb,
-                                   self);
-
-        /* TODO: check that this really is a "no such config" error */
-        /* TODO: decide if there are cases where we want to show this in UI */
+        /* TODO: show in UI */
         return;
     }
-
-    sync_config_widget_real_init (self, config, TRUE);
+    sync_config_widget_real_init (self, config);
 
     self->keyring_password = NULL;
 
@@ -801,10 +779,9 @@ sync_config_widget_constructor (GType                  gtype,
         g_warning ("No SyncevoServer set for SyncConfigWidget");
     }
 
-    /* try to fetch a already set configuration */
     syncevo_server_get_config (self->server,
                                self->config->name,
-                               FALSE,
+                               self->has_template && !self->configured,
                                (SyncevoServerGetConfigCb)get_config_cb,
                                self);
     return G_OBJECT (self);
@@ -836,14 +813,28 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
 
     pspec = g_param_spec_boolean ("current",
                                   "Current",
-                                  "Whether the server is currently used",
+                                  "Whether the service is currently used",
                                   FALSE,
                                   G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_CURRENT, pspec);
 
+    pspec = g_param_spec_boolean ("has-template",
+                                  "has template",
+                                  "Whether the service has a matching template",
+                                  FALSE,
+                                  G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_HAS_TEMPLATE, pspec);
+
+    pspec = g_param_spec_boolean ("configured",
+                                  "Configured",
+                                  "Whether the service has a configuration already",
+                                  FALSE,
+                                  G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_CONFIGURED, pspec);
+
     pspec = g_param_spec_boolean ("unset",
                                   "Unset",
-                                  "Whether there is a curently used server at all",
+                                  "Whether there is a currently used service at all",
                                   TRUE,
                                   G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_UNSET, pspec);
@@ -1039,13 +1030,17 @@ GtkWidget*
 sync_config_widget_new (SyncevoServer *server,
                         const char *name,
                         gboolean current,
-                        gboolean unset)
+                        gboolean unset,
+                        gboolean configured,
+                        gboolean has_template)
 {
   return g_object_new (SYNC_TYPE_CONFIG_WIDGET,
                        "server", server,
                        "name", name,
                        "current", current,
                        "unset", unset,
+                       "configured", configured,
+                       "has-template", has_template,
                        NULL);
 }
 
@@ -1070,6 +1065,38 @@ sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expanded)
     }
 
 }
+
+void
+sync_config_widget_set_has_template (SyncConfigWidget *self, gboolean has_template)
+{
+    if (self->has_template != has_template) {
+        self->has_template = has_template;
+        update_buttons (self);
+        sync_config_widget_update_label (self);
+    }
+}
+
+gboolean
+sync_config_widget_get_has_template (SyncConfigWidget *self)
+{
+    return self->has_template;
+}
+
+void
+sync_config_widget_set_configured (SyncConfigWidget *self, gboolean configured)
+{
+    if (self->configured != configured) {
+        self->configured = configured;
+        update_buttons (self);
+    }
+}
+
+gboolean
+sync_config_widget_get_configured (SyncConfigWidget *self)
+{
+    return self->configured;
+}
+
 
 gboolean
 sync_config_widget_get_current (SyncConfigWidget *widget)

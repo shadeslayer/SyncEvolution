@@ -41,8 +41,8 @@ typedef struct {
 
     gboolean current; /* is this currently used config */
     gboolean unset; /* is there a current config at all */
-    gboolean saved; /* this service configuration exists on server */
-    gboolean from_template; /* this service configuration has a matching template */
+    gboolean configured; /* actual service configuration exists on server */
+    gboolean has_template; /* this service configuration has a matching template */
 
     SyncevoServer *server;
     server_config *config;
@@ -88,12 +88,20 @@ GType sync_config_widget_get_type (void);
 GtkWidget *sync_config_widget_new (SyncevoServer *server,
                                    const char *name,
                                    gboolean current,
-                                   gboolean unset);
+                                   gboolean unset,
+                                   gboolean configured,
+                                   gboolean has_template);
 
 void sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expanded);
 
 gboolean sync_config_widget_get_current (SyncConfigWidget *widget);
 void sync_config_widget_set_current (SyncConfigWidget *self, gboolean current);
+
+void sync_config_widget_set_has_template (SyncConfigWidget *self, gboolean has_template);
+gboolean sync_config_widget_get_has_template (SyncConfigWidget *self);
+
+void sync_config_widget_set_configured (SyncConfigWidget *self, gboolean configured);
+gboolean sync_config_widget_get_configured (SyncConfigWidget *self);
 
 const char *sync_config_widget_get_name (SyncConfigWidget *widget);
 G_END_DECLS
