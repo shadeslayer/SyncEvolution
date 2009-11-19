@@ -347,29 +347,46 @@ class DBusUtil(Timeout):
                                                     '/org/syncevolution/Server'),
                                      'org.syncevolution.Server')
 
-    def setUpSession(self, config):
-        self.sessionpath = self.server.StartSession(config)
+    def createSession(self, config, wait):
+        """Return sessionpath and session object for session using 'config'.
+        A signal handler calls loop.quit() when this session becomes ready.
+        If wait=True, then this call blocks until the session is ready.
+        """
+        sessionpath = self.server.StartSession(config)
 
         def session_ready(object, ready):
             if self.running and ready and object == sessionpath:
                 DBusUtil.quit_events.append("session " + object + " ready")
                 loop.quit()
 
-        bus.add_signal_receiver(session_ready,
-                                'SessionChanged',
-                                'org.syncevolution.Server',
-                                'org.syncevolution',
-                                None,
-                                byte_arrays=True,
-                                utf8_strings=True)
-        self.session = dbus.Interface(bus.get_object('org.syncevolution',
-                                                     self.sessionpath),
-                                      'org.syncevolution.Session')
-        status, error, sources = self.session.GetStatus(utf8_strings=True)
-        if status == "queuing":
+        signal = bus.add_signal_receiver(session_ready,
+                                         'SessionChanged',
+                                         'org.syncevolution.Server',
+                                         'org.syncevolution',
+                                         None,
+                                         byte_arrays=True,
+                                         utf8_strings=True)
+        session = dbus.Interface(bus.get_object('org.syncevolution',
+                                                sessionpath),
+                                 'org.syncevolution.Session')
+        status, error, sources = session.GetStatus(utf8_strings=True)
+        if wait and status == "queuing":
+            # wait for signal
             loop.run()
-            self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " ready"])
-            DBusUtil.quit_events = []
+            self.failUnlessEqual(DBusUtil.quit_events, ["session " + sessionpath + " ready"])
+        elif DBusUtil.quit_events:
+            # signal was processed inside D-Bus call?
+            self.failUnlessEqual(DBusUtil.quit_events, ["session " + sessionpath + " ready"])
+        if wait:
+            # signal no longer needed, remove it because otherwise it
+            # might record unexpected "session ready" events
+            signal.remove()
+        DBusUtil.quit_events = []
+        return (sessionpath, session)
+
+    def setUpSession(self, config):
+        """stores ready session in self.sessionpath and self.session"""
+        self.sessionpath, self.session = self.createSession(config, True)
 
     def setUpListeners(self, sessionpath):
         """records progress and status changes in DBusUtil.events and
@@ -853,6 +870,21 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         status, error, sources = self.session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "done")
         self.failUnlessEqual(error, 0)
+
+    @timeout(300)
+    def testSyncSecondSession(self):
+        '''ask for a second session that becomes ready after a real sync'''
+        sessionpath2, session2 = self.createSession("", False)
+        status, error, sources = session2.GetStatus(utf8_strings=True)
+        self.failUnlessEqual(status, "queueing")
+        self.testSync()
+        # now wait for second session becoming ready
+        loop.run()
+        status, error, sources = session2.GetStatus(utf8_strings=True)
+        self.failUnlessEqual(status, "idle")
+        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done",
+                                                    "session " + sessionpath2 + " ready"])
+        session2.Detach()
 
     # TODO: don't depend on running a real sync in this test,
     # then remove timeout
