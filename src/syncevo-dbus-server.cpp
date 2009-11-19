@@ -1697,7 +1697,6 @@ void Session::syncProgress(sysync::TProgressEventEnum type,
         fireProgress(true);
         break;
     case sysync::PEV_SESSIONEND:
-        m_syncStatus = SYNC_DONE;
         m_error = extra1;
         fireStatus(true);
         m_progData.setStep(ProgressData::PRO_SYNC_INVALID);
@@ -1787,24 +1786,32 @@ void Session::sourceProgress(sysync::TProgressEventEnum type,
 void Session::run()
 {
     if (m_sync) {
-        SyncMLStatus status;
-        m_progData.setStep(ProgressData::PRO_SYNC_PREPARE);
         try {
-            status = m_sync->sync();
+            SyncMLStatus status;
+            m_progData.setStep(ProgressData::PRO_SYNC_PREPARE);
+            try {
+                status = m_sync->sync();
+            } catch (...) {
+                status = m_sync->handleException();
+            }
+            if (!m_error) {
+                m_error = status;
+            }
+
+            // if there is a connection, then it is no longer needed
+            boost::shared_ptr<Connection> c = m_connection.lock();
+            if (c) {
+                c->shutdown();
+            }
         } catch (...) {
-            status = m_sync->handleException();
-        }
-        if (!m_error) {
-            m_error = status;
+            // we must enter SYNC_DONE under all circumstances,
+            // even when failing during connection shutdown
+            m_syncStatus = SYNC_DONE;
+            fireStatus(true);
+            throw;
         }
         m_syncStatus = SYNC_DONE;
         fireStatus(true);
-
-        // if there is a connection, then it is no longer needed
-        boost::shared_ptr<Connection> c = m_connection.lock();
-        if (c) {
-            c->shutdown();
-        }
     }
 }
 
