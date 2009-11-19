@@ -91,7 +91,7 @@ typedef GPtrArray SyncevoSessions;
 gboolean syncevo_config_get_value (SyncevoConfig *config,
                                    const char *source,
                                    const char *key,
-                                   const char **value);
+                                   char **value);
 gboolean syncevo_config_set_value (SyncevoConfig *config,
                                    const char *source,
                                    const char *key,

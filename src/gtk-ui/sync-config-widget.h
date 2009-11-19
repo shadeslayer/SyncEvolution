@@ -47,9 +47,8 @@ typedef struct {
     SyncevoServer *server;
     server_config *config;
     
-    GPtrArray *options_override;
-
-    gboolean auth_changed;
+    char *keyring_password;
+    char *running_session;
 
     /* label */
     GtkWidget *image;
@@ -70,7 +69,7 @@ typedef struct {
     GtkWidget *reset_delete_button;
     GtkWidget *stop_button;
     GtkWidget *use_button;
-    GList *uri_entries;
+    GHashTable *uri_entries;
 } SyncConfigWidget;
 
 typedef struct {

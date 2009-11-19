@@ -64,39 +64,6 @@ get_service_description (const char *service)
     return "";
 }
 
-/*
-static void
-remove_server_config_cb (SyncevoService *service, 
-                         GError *error, 
-                         SyncConfigWidget *self)
-{
-    if (error) {
-        g_warning ("Failed to remove service configuration from SyncEvolution: %s", 
-                   error->message);
-        g_error_free (error);
-    }
-    g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
-}
-*/
-
-static gboolean
-update_value (char **str, GtkWidget *entry)
-{
-    const char *new_str;
-
-    new_str = gtk_entry_get_text (GTK_ENTRY (entry));
-
-    if ((*str == NULL && strlen (new_str) != 0) ||
-        (*str != NULL && strcmp (*str, new_str) != 0)) {
-
-        g_free (*str);
-        *str = g_strdup (new_str);
-
-        return TRUE;
-    }
-    return FALSE;
-}
-
 static void
 stop_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
@@ -133,40 +100,6 @@ set_password_cb (GnomeKeyringResult result, guint32 id, gpointer data)
                                             NULL, NULL);
 }
 
-static void
-save_password (const server_config *config)
-{
-    char *server_address;
-    char *password;
-    char *username;
-
-/*
-    server_address = strstr (config->base_url, "://");
-    if (server_address)
-        server_address = server_address + 3;
-
-    password = config->password;
-    if (!password)
-        password = "";
-
-    username = config->username;
-    if (!username)
-        username = "";
-*/
-    gnome_keyring_set_network_password (NULL, /* default keyring */
-                                        username,
-                                        NULL,
-                                        server_address,
-                                        NULL,
-                                        NULL,
-                                        NULL,
-                                        0,
-                                        password,
-                                        (GnomeKeyringOperationGetIntCallback)set_password_cb,
-                                        NULL,
-                                        NULL);
-}
-
 /*
 static void
 set_server_config_cb (SyncevoService *service, GError *error, SyncConfigWidget *self)
@@ -187,71 +120,100 @@ set_server_config_cb (SyncevoService *service, GError *error, SyncConfigWidget *
 */
 
 static void
-use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
+update_source_config (char *name,
+                      GHashTable *source_configuration,
+                      SyncConfigWidget *self)
 {
-    GPtrArray *options;
-    server_config *config;
-    GList *l, *entry;
+    const char *uri;
+    GtkEntry *entry;
 
-    if (!self->server) {
+    entry = GTK_ENTRY (g_hash_table_lookup (self->uri_entries, name));
+    if (!entry) {
+        g_warning ("No entry found for source %s", name);
         return;
     }
 
-    config = self->config;
+    uri = gtk_entry_get_text (entry);
+    g_hash_table_insert (source_configuration, g_strdup ("uri"), g_strdup (uri));
+}
 
-    /* compare config and stuff in entries... */
-/*
-    update_value (&config->name, self->entry);
+static void
+use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
+{
+    SyncevoConfig *config;
+    const char *username, *password, *sync_url, *name;
+    char *real_url;
+    gboolean keyring_changed = FALSE;
 
-    if (update_value (&config->username, self->username_entry))
-        self->auth_changed = TRUE;
-
-    if (update_value (&config->password, self->password_entry))
-        self->auth_changed = TRUE;
-
-    if (update_value (&config->base_url, self->baseurl_entry))
-        self->auth_changed = TRUE;
-
-    entry = self->uri_entries;
-    for (l = self->config->source_configs; l && entry; l = l->next) {
-        source_config *source = (source_config*)l->data;
-
-        update_value (&source->uri, GTK_WIDGET (entry->data));
-        if (!source->uri)
-            source->enabled = FALSE;
-        entry = entry->next;
+    if (!self->config) {
+        return;
     }
-    if (!config->name || strlen (config->name) == 0 ||
-        !config->base_url || strlen (config->base_url) == 0) {
+
+    config = self->config->config;
+
+    name = gtk_entry_get_text (GTK_ENTRY (self->entry));
+
+    username = gtk_entry_get_text (GTK_ENTRY (self->username_entry));
+    if (syncevo_config_set_value (config, NULL, "username", username)) {
+        keyring_changed = TRUE;
+    }
+
+    sync_url = gtk_entry_get_text (GTK_ENTRY (self->baseurl_entry));
+    if (syncevo_config_set_value (config, NULL, "syncURL", sync_url)) {
+        keyring_changed = TRUE;
+    }
+
+    password = gtk_entry_get_text (GTK_ENTRY (self->password_entry));
+    if (self->keyring_password) {
+        if (strcmp (self->keyring_password, password)) {
+            keyring_changed = TRUE;
+        }
+    } else {
+        keyring_changed = FALSE;
+        syncevo_config_set_value (config, NULL, "password", password);
+    }
+
+
+    if (!name || strlen (name) == 0 ||
+        !sync_url || strlen (sync_url) == 0) {
         show_error_dialog (GTK_WIDGET (self), 
                            _("Service must have a name and server URL"));
         return;
     }
-*/
+
+    syncevo_config_foreach_source (config,
+                                   (ConfigFunc)update_source_config,
+                                   self);
 
     /* make a wild guess if no scheme in url */
-/*
-    if (strstr (config->base_url, "://") == NULL) {
-        char *tmp = g_strdup_printf ("http://%s", config->base_url);
-        g_free (config->base_url);
-        config->base_url = tmp;
+    if (strstr (sync_url, "://") == NULL) {
+        real_url = g_strdup_printf ("http://%s", sync_url);
+    } else {
+        real_url = g_strdup (sync_url);
     }
-*/
 
-    if (self->auth_changed)
-        save_password (self->config);
+    if (keyring_changed) {
+        gnome_keyring_set_network_password (NULL, /* default keyring */
+                                            username,
+                                            NULL,
+                                            real_url,
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            0,
+                                            self->keyring_password,
+                                            (GnomeKeyringOperationGetIntCallback)set_password_cb,
+                                            NULL,
+                                            NULL);
+    }
 
     /* save the server, let callback change current server gconf key */
-/*
-    options = server_config_get_option_array (self->config);
-    syncevo_service_set_server_config_async (self->dbus_service, 
-                                             config->name,
-                                             options,
-                                             (SyncevoSetServerConfigCb)set_server_config_cb, 
-                                             self);
-    g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
-    g_ptr_array_free (options, TRUE);
-*/
+
+    /* TODO:
+     *   StartSession,
+     *   SetConfig
+     *   Detach
+     */
 }
 
 static void
@@ -259,25 +221,15 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
     const char *name;
 
-    if (!self->server) {
+    if (!self->config) {
         return;
     }
 
-    if (self->from_template) {
-/*
-        syncevo_service_get_template_config_async (self->dbus_service, 
-                                                   (char*)name,
-                                                   (SyncevoGetTemplateConfigCb)get_server_config_for_template_cb,
-                                                   self);
-*/
-    } else {
-/*
-        syncevo_service_remove_server_config_async (self->dbus_service,
-                                                   (char*)name,
-                                                    (SyncevoRemoveServerConfigCb)remove_server_config_cb,
-                                                    self);
-*/      
-    }
+    /* TODO:
+     *   StartSession,
+     *   SetConfig
+     *   Detach
+     */
     
 }
 
@@ -333,7 +285,7 @@ init_source (char *name,
     gtk_entry_set_width_chars (GTK_ENTRY (entry), 80);
     gtk_entry_set_text (GTK_ENTRY (entry),
                         uri ? uri : "");
-    self->uri_entries = g_list_append (self->uri_entries, entry);
+    g_hash_table_insert (self->uri_entries, name, entry);
     gtk_widget_show (entry);
     gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table), entry,
                                1, 2, row, row + 1);
@@ -342,12 +294,10 @@ init_source (char *name,
 static void
 sync_config_widget_update_expander (SyncConfigWidget *self)
 {
-    GList *l;
-    const char *str;
-    const char *username = "";
-    const char *password = "";
-    const char *sync_url = "";
-    GtkWidget *label, *entry;
+    char *username = "";
+    char *password = "";
+    char *sync_url = "";
+    GtkWidget *label;
     SyncevoConfig *config = self->config->config;
 
     gtk_container_foreach (GTK_CONTAINER (self->server_settings_table),
@@ -414,8 +364,10 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                                1, 2, 0, 1);
 
     /* update source uris */
-    g_list_free (self->uri_entries);
-    self->uri_entries = NULL;
+    if (self->uri_entries) {
+        g_hash_table_destroy (self->uri_entries);
+    }
+    self->uri_entries = g_hash_table_new (g_str_hash, g_str_equal);
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)init_source,
                                    self);
@@ -434,9 +386,7 @@ find_password_cb (GnomeKeyringResult result, GList *list, SyncConfigWidget *self
             key_data = (GnomeKeyringNetworkPasswordData*)list->data;
 
             gtk_entry_set_text (GTK_ENTRY (self->password_entry), key_data->password);
-            g_object_set_data_full (self->password_entry,
-                                    "keyring-value", g_strdup (key_data->password),
-                                    g_free);
+            self->keyring_password = g_strdup (key_data->password);
         }
         break;
     default:
@@ -447,58 +397,6 @@ find_password_cb (GnomeKeyringResult result, GList *list, SyncConfigWidget *self
 
     return;
 }
-
-/*
-static void
-get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, SyncConfigWidget *self)
-{
-    if (error) {
-        g_warning ("Failed to get service configuration from SyncEvolution: %s",
-                   error->message);
-        g_error_free (error);
-    } else {
-        char *server_address;
-        
-        sync_config_widget_set_config (self, options, self->options_override);
-        sync_config_widget_update_expander (self);
-
-        // get password from keyring if we have an url
-        if (self->config->base_url) {
-            server_address = strstr (self->config->base_url, "://");
-            if (server_address) 
-                server_address = server_address + 3;
-
-            if (!server_address) {
-                g_warning ("Server configuration has suspect URL '%s'",
-                           self->config->base_url);
-            } else if (self->config->username &&
-                       strlen (self->config->username) > 0) {
-                gnome_keyring_find_network_password (self->config->username,
-                                                     NULL,
-                                                     server_address,
-                                                     NULL,
-                                                     NULL,
-                                                     NULL,
-                                                     0,
-                                                     (GnomeKeyringOperationGetListCallback)find_password_for_settings_cb,
-                                                     self,
-                                                     NULL);
-            }
-        }
-
-        if (options) {
-            g_ptr_array_foreach (options, (GFunc)syncevo_option_free, NULL);
-            g_ptr_array_free (options, TRUE);
-        }
-        if (self->options_override) {
-            g_ptr_array_foreach (self->options_override, (GFunc)syncevo_option_free, NULL);
-            g_ptr_array_free (self->options_override, TRUE);
-            self->options_override = NULL;
-        }
-    }
-}
-*/
-
 
 static void
 setup_service_clicked (GtkButton *btn, SyncConfigWidget *self)
@@ -551,7 +449,7 @@ static void
 sync_config_widget_update_label (SyncConfigWidget *self)
 {
     if (self->config && self->config->name && self->config->config) {
-        const char *url;
+        char *url;
         char *str;
 
         syncevo_config_get_value (self->config->config, NULL, "WebURL", &url);
@@ -609,11 +507,57 @@ sync_config_widget_set_current (SyncConfigWidget *self,
     }
 }
 
+static void
+set_session (SyncConfigWidget *self, const char *path)
+{
+    g_free (self->running_session);
+    self->running_session = g_strdup (path);
+
+    gtk_widget_set_sensitive (self->reset_delete_button, !self->running_session);
+    gtk_widget_set_sensitive (self->use_button, !self->running_session);
+
+    /* TODO: maybe add a explanation text somewhere:
+     * "Configuration changes are not possible while a sync is in progress" */
+}
+
+static void
+session_changed_cb (SyncevoServer *server,
+                    char *path,
+                    gboolean started,
+                    SyncConfigWidget *self)
+{
+
+    if (started) {
+        set_session (self, path);
+    } else if (self->running_session &&
+               strcmp (self->running_session, path) == 0 ) {
+        set_session (self, NULL);
+    }
+}
+
+static void
+get_sessions_cb (SyncevoServer *server,
+                 SyncevoSessions *sessions,
+                 GError *error,
+                 SyncConfigWidget *self)
+{
+    if (error) {
+        g_warning ("Server.GetSessions failed: %s", error->message);
+        g_error_free (error);
+
+        return;
+    }
+
+    set_session (self, syncevo_sessions_index (sessions, 0));
+    syncevo_sessions_free (sessions);
+}
+
 void
 sync_config_widget_set_server (SyncConfigWidget *self,
                                SyncevoServer *server)
 {
     if (self->server) {
+        /* TODO disconnect signals ?*/
         g_object_unref (self->server);
         self->server = NULL;
     }
@@ -622,6 +566,13 @@ sync_config_widget_set_server (SyncConfigWidget *self,
     }
 
     self->server = g_object_ref (server);
+
+    /* monitor sessions so we can set editing buttons insensitive */
+    g_signal_connect (self->server, "session-changed",
+                      G_CALLBACK (session_changed_cb), self);
+    syncevo_server_get_sessions (self->server,
+                                 (SyncevoServerGetSessionsCb)get_sessions_cb,
+                                 self);
 }
 
 static void
@@ -717,7 +668,7 @@ sync_config_widget_real_init (SyncConfigWidget *self,
                               SyncevoConfig *config,
                               gboolean saved)
 {
-    const char *url, *icon;
+    char *url, *icon;
     GdkPixbuf *buf;
     server_config_init (self->config, config);
 
@@ -797,6 +748,8 @@ get_config_cb (SyncevoServer *syncevo,
 
     sync_config_widget_real_init (self, config, TRUE);
 
+    self->keyring_password = NULL;
+
     /* see if we need a password from keyring */
     syncevo_config_get_value (config, NULL, "password", &password);
     syncevo_config_get_value (config, NULL, "username", &username);
@@ -854,7 +807,7 @@ sync_config_widget_constructor (GType                  gtype,
                                FALSE,
                                (SyncevoServerGetConfigCb)get_config_cb,
                                self);
-    return self;
+    return G_OBJECT (self);
 }
 
 static void

@@ -27,7 +27,7 @@ gboolean
 syncevo_config_get_value (SyncevoConfig *config,
                           const char *source,
                           const char *key,
-                          const char **value)
+                          char **value)
 {
     char *name;
     GHashTable *source_config;
@@ -58,7 +58,9 @@ syncevo_config_set_value (SyncevoConfig *config,
                           const char *key,
                           const char *value)
 {
+    gboolean changed;
     char *name;
+    char *old_value;
     GHashTable *source_config;
 
     g_return_val_if_fail (config, FALSE);
@@ -78,9 +80,16 @@ syncevo_config_set_value (SyncevoConfig *config,
         g_free (name);
     }
 
-    g_hash_table_insert (source_config, g_strdup (key), g_strdup (value));
+    old_value = g_hash_table_lookup (source_config, key);
+    if ((!old_value && !value) ||
+        (old_value && value && strcmp (old_value, value) == 0)) {
+        changed = FALSE;
+    } else {
+        changed = TRUE;
+        g_hash_table_insert (source_config, g_strdup (key), g_strdup (value));
+    }
 
-    return TRUE;
+    return changed;
 }
 
 void syncevo_config_foreach_source (SyncevoConfig *config,
