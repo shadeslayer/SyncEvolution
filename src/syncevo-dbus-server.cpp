@@ -306,6 +306,23 @@ class DBusServer : public DBusObjectHelper
         ops.getReports(start, count, reports);
     }
 
+    /** Server.CheckSource() */
+    void checkSource(const std::string &configName,
+                     const std::string &sourceName)
+    {
+        ReadOperations ops(configName);
+        ops.checkSource(sourceName);
+    }
+
+    /** Server.GetDatabases() */
+    void getDatabases(const std::string &configName,
+                      const string &sourceName,
+                      ReadOperations::SourceDatabases_t &databases)
+    {
+        ReadOperations ops(configName);
+        ops.getDatabases(sourceName, databases);
+    }
+
     /** Server.CheckPresence() */
     void checkPresence(const std::string &server,
                        std::string &status,
@@ -2676,6 +2693,8 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     add(&ReadOperations::getConfigs, "GetConfigs");
     add(this, &DBusServer::getConfig, "GetConfig");
     add(this, &DBusServer::getReports, "GetReports");
+    add(this, &DBusServer::checkSource, "CheckSource");
+    add(this, &DBusServer::getDatabases, "GetDatabases");
     add(this, &DBusServer::checkPresence, "CheckPresence");
     add(sessionChanged);
     add(presence);
