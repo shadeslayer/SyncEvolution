@@ -772,7 +772,10 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
     image = gtk_image_new_from_pixbuf (pixbuf);
     gtk_widget_set_size_request (image, icon_size, icon_size);
     g_object_unref (pixbuf);
-    gtk_box_pack_start (icon_box, image, FALSE, FALSE, 0);
+    gtk_container_foreach (GTK_CONTAINER(icon_box),
+                           (GtkCallback)remove_child,
+                           icon_box);
+   gtk_box_pack_start (icon_box, image, FALSE, FALSE, 0);
     gtk_widget_show (image);
 }
 
