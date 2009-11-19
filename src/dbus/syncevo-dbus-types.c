@@ -113,32 +113,10 @@ void syncevo_config_foreach_source (SyncevoConfig *config,
 }
 
 
-static void
-free_source_config_item (char *key,
-                         char *value)
-{
-    g_free (key);
-    g_free (value);
-}
-
-static void
-free_source_configs_item (char *source,
-                          GHashTable *source_config)
-{
-    g_free (source);
-    g_hash_table_foreach (source_config, 
-                          (GHFunc)free_source_config_item,
-                          NULL);
-    g_hash_table_destroy (source_config);
-}
-
-
 void
 syncevo_config_free (SyncevoConfig *config)
 {
-    g_hash_table_foreach (config,
-                          (GHFunc)free_source_configs_item,
-                          NULL);
+    /* NOTE: Hashtables gcreated by dbus-glib should free their contents */
     g_hash_table_destroy (config);
 }
 
