@@ -351,7 +351,7 @@ class DBusUtil(Timeout):
         self.sessionpath = self.server.StartSession(config)
 
         def session_ready(object, ready):
-            if self.running and ready:
+            if self.running and ready and object == sessionpath:
                 DBusUtil.quit_events.append("session " + object + " ready")
                 loop.quit()
 
@@ -359,7 +359,7 @@ class DBusUtil(Timeout):
                                 'SessionChanged',
                                 'org.syncevolution.Server',
                                 'org.syncevolution',
-                                self.sessionpath,
+                                None,
                                 byte_arrays=True,
                                 utf8_strings=True)
         self.session = dbus.Interface(bus.get_object('org.syncevolution',
@@ -509,7 +509,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
                                 'SessionChanged',
                                 'org.syncevolution.Server',
                                 'org.syncevolution',
-                                sessionpath,
+                                None,
                                 byte_arrays=True,
                                 utf8_strings=True)
         session = dbus.Interface(bus.get_object('org.syncevolution',
@@ -523,17 +523,16 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
             callback_called[1] = "callback()"
             self.session.Detach()
         t1 = self.addTimeout(2, callback)
-        def stop():
-            # somehow this code here generates a KeyboardInterrupt?!
-            # DBusUtil.quit_events.append("testSecondSession timed out")
-            loop.quit()
-        t2 = self.addTimeout(5, stop)
+        # session 1 done
         loop.run()
         self.failUnless(callback_called)
+        # session 2 ready
+        loop.run()
+        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done",
+                                                    "session " + sessionpath + " ready"])
         status, error, sources = session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "idle")
         self.removeTimeout(t1)
-        self.removeTimeout(t2)
 
 class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
     """Test session APIs that work with an empty server name. Thus, all of session APIs which
