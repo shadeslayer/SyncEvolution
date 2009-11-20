@@ -65,7 +65,6 @@ typedef enum app_state {
     SYNC_UI_STATE_SYNCING,
 } app_state;
 
-
 typedef struct app_data {
     GtkWidget *sync_win;
     GtkWidget *services_win; /* will be NULL when USE_MOBLIN_UX is set*/
@@ -114,6 +113,14 @@ typedef struct app_data {
     SyncevoSession *running_session; /* session that is currently active */
 } app_data;
 
+typedef struct operation_data {
+    app_data *data;
+    enum op {
+        OP_SYNC,
+        OP_SAVE,
+    } operation;
+} operation_data;
+
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
 static void show_main_view (app_data *data);
@@ -123,7 +130,7 @@ static void setup_new_service_clicked (GtkButton *btn, app_data *data);
 static void get_reports_cb (SyncevoServer *server, SyncevoReports *reports, 
                             GError *error, app_data *data);
 static void start_session_cb (SyncevoServer *server, char *path,
-                              GError *error, app_data *data);
+                              GError *error, operation_data *op_data);
 static void get_config_for_main_win_cb (SyncevoServer *server, SyncevoConfig *config,
                                         GError *error, app_data *data);
 static char* get_error_string_for_code (int error_code);
@@ -295,7 +302,6 @@ sync_cb (SyncevoSession *session,
          app_data *data)
 {
     if (error) {
-        /* TODO: check for the case of sync already happening ? */
         add_error_info (data, _("Failed to start sync"), error->message);
         g_error_free (error);
         g_object_unref (session);
@@ -307,11 +313,13 @@ sync_cb (SyncevoSession *session,
     if (data->last_sync_src_id > 0)
         g_source_remove (data->last_sync_src_id);
     set_app_state (data, SYNC_UI_STATE_SYNCING);
-
 }
+
 static void 
 sync_clicked_cb (GtkButton *btn, app_data *data)
 {
+    operation_data *op_data;
+
     if (data->syncing) {
         syncevo_session_abort (data->running_session,
                                (SyncevoSessionGenericCb)abort_sync_cb,
@@ -356,10 +364,13 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
             }
         }
 
+        op_data = g_slice_new (operation_data);
+        op_data->data = data;
+        op_data->operation = OP_SYNC;
         syncevo_server_start_session (data->server,
                                       data->current_service->name,
                                       (SyncevoServerStartSessionCb)start_session_cb,
-                                      data);
+                                      op_data);
     }
 }
 
@@ -736,9 +747,24 @@ init_ui (app_data *data)
 static void
 source_check_toggled_cb (GtkCheckButton *check, app_data *data)
 {
-/* TODO: save to syncevolution config
-    NOTE the check has source name as data (g_object_set_data)
-*/
+    operation_data *op_data;
+    source_config *source;
+    char *value;
+
+    source = (source_config*) g_object_get_data (G_OBJECT (check), "source");
+    g_return_if_fail (source);
+
+    value = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check)) ?
+            g_strdup ("two-way") : g_strdup ("none");
+    g_hash_table_insert (source->config, g_strdup ("sync"), value);
+
+    op_data = g_slice_new (operation_data);
+    op_data->data = data;
+    op_data->operation = OP_SAVE;
+    syncevo_server_start_session (data->server,
+                                  data->current_service->name,
+                                  (SyncevoServerStartSessionCb)start_session_cb,
+                                  op_data);
 }
 
 static void
@@ -841,7 +867,8 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
 
     source_config_update_label (conf);
 
-    g_object_set_data (G_OBJECT (check), "source", (gpointer)name);
+g_debug ("creating check %s",name);
+    g_object_set_data (G_OBJECT (check), "source", (gpointer)conf);
     g_signal_connect (check, "toggled",
                       G_CALLBACK (source_check_toggled_cb), data);
 
@@ -1380,6 +1407,31 @@ get_reports_cb (SyncevoServer *server,
 }
 
 static void
+set_config_cb (SyncevoSession *session,
+               GError *error,
+               app_data *data)
+{
+    if (error) {
+        g_warning ("Error in Session.SetConfig: %s", error->message);
+        g_error_free (error);
+
+        /* TODO show in UI */
+    }
+    g_object_unref (session);
+}
+
+static void
+save_config (app_data *data, SyncevoSession *session)
+{
+    syncevo_session_set_config (session,
+                                TRUE,
+                                FALSE,
+                                data->current_service->config,
+                                (SyncevoSessionGenericCb)set_config_cb,
+                                data);
+}
+
+static void
 sync (app_data *data, SyncevoSession *session)
 {
     GHashTable *source_modes;
@@ -1414,7 +1466,7 @@ status_changed_cb (SyncevoSession *session,
                    SyncevoSessionStatus status,
                    guint error_code,
                    SyncevoSourceStatuses *source_statuses,
-                   app_data *data)
+                   operation_data *op_data)
 {
     GTimeVal val;
 
@@ -1422,50 +1474,75 @@ status_changed_cb (SyncevoSession *session,
     switch (status) {
     case SYNCEVO_STATUS_IDLE:
         /* time for business */
-        sync (data, session);
+        switch (op_data->operation) {
+        case OP_SYNC:
+            sync (op_data->data, session);
+            break;
+        case OP_SAVE:
+            save_config (op_data->data, session);
+            break;
+        default:
+            ;
+        }
         break;
     
     case SYNCEVO_STATUS_DONE:
         g_get_current_time (&val);
-        data->last_sync = val.tv_sec;
-        refresh_last_synced_label (data);
+        op_data->data->last_sync = val.tv_sec;
+        refresh_last_synced_label (op_data->data);
         
-        data->synced_this_session = TRUE;
+        op_data->data->synced_this_session = TRUE;
 
         /* no need for sync session anymore */
         g_object_unref (session);
 
         /* refresh stats -- the service may no longer be the one syncing,
-         * but what the heck... */
-        syncevo_server_get_reports (data->server,
-                                    data->current_service->name,
+         * and we might have only saved config but what the heck... */
+        syncevo_server_get_reports (op_data->data->server,
+                                    op_data->data->current_service->name,
                                     0, 1,
                                     (SyncevoServerGetReportsCb)get_reports_cb,
-                                    data);
+                                    op_data->data);
+
+        g_slice_free (operation_data, op_data);
     default:
         ;
     }
 }
 
-/* Our sync session status */
+/* Our sync (or config-save) session status */
 static void
 get_status_cb (SyncevoSession *session,
                SyncevoSessionStatus status,
                guint error_code,
                SyncevoSourceStatuses *source_statuses,
                GError *error,
-               app_data *data)
+               operation_data *op_data)
 {
     if (error) {
         g_warning ("Error in Session.GetStatus: %s", error->message);
         g_error_free (error);
+        g_object_unref (session);
+        g_slice_free (operation_data, op_data);
+
+        /* TODO show in UI */
         return;
     }
 
     g_debug ("sync session status is %d", status);
     if (status == SYNCEVO_STATUS_IDLE) {
         /* time for business */
-        sync (data, session);
+        
+        switch (op_data->operation) {
+        case OP_SYNC:
+            sync (op_data->data, session);
+            break;
+        case OP_SAVE:
+            save_config (op_data->data, session);
+            break;
+        default:
+            ;
+        }
     }
 }
 
@@ -1473,13 +1550,17 @@ static void
 start_session_cb (SyncevoServer *server,
                   char *path,
                   GError *error,
-                  app_data *data)
+                  operation_data *op_data)
 {
     SyncevoSession *session;
+    app_data *data = op_data->data;
 
     if (error) {
         g_warning ("Error in Server.StartSession: %s", error->message);
         g_error_free (error);
+        g_free (path);
+        g_slice_free (operation_data, op_data);
+
         /* TODO show in UI*/
         return;
     }
@@ -1489,18 +1570,20 @@ start_session_cb (SyncevoServer *server,
     if (data->running_session &&
         strcmp (path, syncevo_session_get_path (data->running_session)) != 0) {
         /* This is a really unfortunate event:
-           Someone got a session when the button hadn't yet changed to Cancel... */
+           Someone got a session and we did not have time to set UI insensitive... */
         gtk_label_set_markup (GTK_LABEL (data->server_label), 
-                              _("Waiting for current operation to finish before syncing..."));
+                              _("Waiting for current operation to finish..."));
         gtk_widget_show_all (data->sources_box);
     }
 
     /* we want to know about status changes to our session */
     g_signal_connect (session, "status-changed",
-                      G_CALLBACK (status_changed_cb), data);
+                      G_CALLBACK (status_changed_cb), op_data);
     syncevo_session_get_status (session,
                                 (SyncevoSessionGetStatusCb)get_status_cb,
-                                data);
+                                op_data);
+
+    g_free (path);
 }
 
 static void
