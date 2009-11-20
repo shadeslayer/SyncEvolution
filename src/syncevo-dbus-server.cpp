@@ -1300,11 +1300,18 @@ void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &d
     const SourceRegistry &registry(SyncSource::getSourceRegistry());
     BOOST_FOREACH(const RegisterSyncSource *sourceInfo, registry) {
         SyncSource *source = sourceInfo->m_create(params);
-        if(source && (source != RegisterSyncSource::InactiveSource)) {
+        if (!source) {
+            continue;
+        } else if (source == RegisterSyncSource::InactiveSource) {
+            SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' backend of source '" + sourceName + "' is not supported");
+        } else {
             auto_ptr<SyncSource> autoSource(source);
             databases = autoSource->getDatabases();
+            return;
         }
     }
+
+    SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' has no '" + sourceName + "' source");
 }
 
 /***************** DBusSync implementation **********************/

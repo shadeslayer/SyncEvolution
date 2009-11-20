@@ -532,6 +532,8 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: No configuration 'no-such-config' found")
+        else:
+            self.fail("no exception thrown")
 
 class TestDBusSession(unittest.TestCase, DBusUtil):
     """Tests that work with an active session."""
@@ -623,12 +625,8 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         self.runTest(result)
 
     def testGetConfigEmptyName(self):
-        """trigger error by getting config for empty server name"""
-        try:
-            config = self.session.GetConfig(False, utf8_strings=True)
-        except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No configuration '' found")
+        """reading empty default config"""
+        config = self.session.GetConfig(False, utf8_strings=True)
 
     def testGetTemplateEmptyName(self):
         """trigger error by getting template for empty server name"""
@@ -637,6 +635,8 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: No template '' found")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSourceEmptyName(self):
         """Test the error is reported when the server name is empty for CheckSource"""
@@ -645,6 +645,8 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: '' has no '' source")
+        else:
+            self.fail("no exception thrown")
 
     def testGetDatabasesEmptyName(self):
         """Test the error is reported when the server name is empty for GetDatabases"""
@@ -652,7 +654,9 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.session.GetDatabases("", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: Configuration name must be given")
+                                 "org.syncevolution.NoSuchSource: '' has no '' source")
+        else:
+            self.fail("no exception thrown")
 
     def testGetReportsEmptyName(self):
         """Test the error is reported when the server name is empty for GetReports"""
@@ -662,6 +666,8 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: listing reports without "
                                  "peer name not implemented yet")
+        else:
+            self.fail("no exception thrown")
 
 class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     """Tests that work for GetConfig/SetConfig/CheckSource/GetDatabases/GetReports in Session.
@@ -726,6 +732,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                  "org.syncevolution.Exception: Clearing existing configuration "
                                  "and temporary configuration changes which only affects the "
                                  "duration of the session are mutually exclusive")
+        else:
+            self.fail("no exception thrown")
 
     def testCreateGetConfig(self):
         """ test the config is created successfully. """
@@ -768,6 +776,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                  "slow, refresh-from-client = refresh-client, refresh-from-server "
                                  "= refresh-server = refresh, one-way-from-client = one-way-client, "
                                  "one-way-from-server = one-way-server = one-way, disabled = none)")
+        else:
+            self.fail("no exception thrown")
 
     def testUpdateNoConfig(self):
         """ test the right error is reported when updating properties for a non-existing server """
@@ -776,7 +786,9 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: The configuration 'dummy-test' doesn't exist")
-        
+        else:
+            self.fail("no exception thrown")
+
     def testClearAllConfig(self):
         """ test all configs of a server are cleared correctly. """
         """ first set up config and then clear all configs and also check a non-existing config """
@@ -787,6 +799,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                 "org.syncevolution.NoSuchConfig: No configuration 'dummy-test' found")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSourceNoConfig(self):
         """ test the right error is reported when the server doesn't exist """
@@ -795,6 +809,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: 'dummy-test' has no '' source")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSourceNoSourceName(self):
         """ test the right error is reported when the source doesn't exist """
@@ -805,6 +821,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: 'dummy-test' "
                                  "has no 'dummy' source")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSourceInvalidEvolutionSource(self):
         """ test the right error is reported when the evolutionsource is invalid """
@@ -817,15 +835,14 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.Exception: The source 'memo' configuration "
                                  "is not correct")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSource(self):
         """ test all are right """
         self.setupConfig()
-        try:
-            for source in self.sources:
-                self.session.CheckSource(source, utf8_strings=True)
-        except dbus.DBusException, ex:
-            self.fail("check source is failed with exception: " + str(ex))
+        for source in self.sources:
+            self.session.CheckSource(source, utf8_strings=True)
 
     def testGetDatabasesNoConfig(self):
         """ test the right error is reported when the server doesn't exist """
@@ -834,20 +851,27 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.GetDatabases("", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No configuration 'dummy-test' found")
+                                 "org.syncevolution.NoSuchSource: 'dummy-test' has no '' source")
+        else:
+            self.fail("no exception thrown")
 
     def testGetDatabasesEmpty(self):
-        """ test the empty is gotten for non-existing source """
+        """ test the right error is reported for non-existing source"""
         self.setupConfig()
-        databases = self.session.GetDatabases("never_use_this_source_name", utf8_strings=True)
-        self.failUnlessEqual(databases, [])
+        try:
+            databases = self.session.GetDatabases("never_use_this_source_name", utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchSource: 'dummy-test' has no 'never_use_this_source_name' source")
+        else:
+            self.fail("no exception thrown")
 
     def testGetDatabases(self):
         """ test the right way to get databases """
         self.setupConfig()
 
         # don't know actual databases, so compare results of two different times
-        sources = ['addressbook', 'calendar', 'task', 'memo']
+        sources = ['addressbook', 'calendar', 'todo', 'memo']
         databases1 = []
         for source in sources:
             databases1.append(self.session.GetDatabases(source, utf8_strings=True))
@@ -1083,6 +1107,8 @@ class TestConnection(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  'org.syncevolution.Exception: message type not supported for starting a sync')
+        else:
+            self.fail("no exception thrown")
         loop.run()
         self.failUnlessEqual(DBusUtil.events, [('abort',)])
 
