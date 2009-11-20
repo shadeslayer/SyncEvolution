@@ -460,26 +460,22 @@ class DBusUtil(Timeout):
                                 byte_arrays=True, 
                                 utf8_strings=True)
 
-    def setupFiles(self):
-        """ copy reference directory trees from test/test-dbus to own xdg(xdg_root
-        - destination directory) directory. Thus it won't do copy unless 
-        using own_xdg. Don't pollute user's directories """
-        if not self.own_xdg: 
-            return
+    def setupFiles(self, snapshot):
+        """ Copy reference directory trees from
+        test/test-dbus/<snapshot> to own xdg_root (=./test-dbus). To
+        be used only in tests which called runTest() with
+        own_xdg=True."""
+        self.failUnless(self.own_xdg)
 
         # Get the absolute path of the current python file.
         scriptpath = os.path.abspath(os.path.expanduser(os.path.expandvars(sys.argv[0])))
 
         # reference directory 'test-dbus' is in the same directory as the current python file
-        sourcedir = os.path.join(os.path.dirname(scriptpath), 'test-dbus')
-
-        # if xdg_root doesn't exist, create it
-        if not os.access(xdg_root, os.F_OK):
-            os.makedirs(xdg_root)
+        sourcedir = os.path.join(os.path.dirname(scriptpath), 'test-dbus', snapshot)
 
         """ Directories in test/test-dbus are copied to xdg_root, but
         maybe with different names, mappings are:
-         test/test-dbus               ./test-dbus
+         test/test-dbus/<snapshot>   ./test-dbus
             sync4j                       .sync4j
             data                         data
             config                       config
@@ -904,7 +900,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testGetReportsByRef(self):
         """ Test the reports are gotten correctly from reference files. Also covers boundaries """
         """ This could be extractly compared since the reference files are known """
-        self.setupFiles()
+        self.setupFiles('reports')
         report0 = { "source-addressbook-stat-local-any-sent" : "9168",
                     "source-addressbook-stat-remote-added-total" : "71",
                     "source-addressbook-stat-remote-updated-total" : "100",
