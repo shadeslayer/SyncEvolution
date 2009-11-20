@@ -808,7 +808,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.CheckSource("", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No configuration 'dummy-test' found")
+                                 "org.syncevolution.NoSuchSource: 'dummy-test' has no '' source")
 
     def testCheckSourceNoSourceName(self):
         """ test the right error is reported when the source doesn't exist """
