@@ -1264,7 +1264,14 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                                     "session done"])
 
 class TestMultipleConfigs(unittest.TestCase, DBusUtil):
-    """ runs with a the server ready, without session """
+    """ sharing of properties between configs
+
+    Creates and tests the configs 'foo', 'bar', 'foo@other_context',
+    '@default' and checks that 'defaultPeer' (global), 'syncURL' (per
+    peer), 'evolutionsource' (per source), 'uri' (per source and peer)
+    are shared correctly.
+
+    Runs with a the server ready, without session."""
 
     def setUp(self):
         self.setUpServer()
@@ -1272,18 +1279,10 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
     def run(self, result):
         self.runTest(result)
 
-    def testSharing(self):
-        """sharing of properties between configs
-
-        Creates and tests the configs 'foo', 'bar',
-        'foo@other_context', '@default' and checks
-        that 'defaultPeer' (global), 'syncURL' (per peer),
-        'evolutionsource' (per source), 'uri' (per source and
-        peer) are shared correctly.
-        """
-        # Updating non-existant configs is an error.
-        # To simplify the testing below, create empty
-        # configs and then update them below.
+    def setupEmpty(self):
+        """Creates empty configs 'foo', 'bar', 'foo@other_context'.
+        Updating non-existant configs is an error. Use this
+        function before trying to update one of these configs."""
         self.setUpSession("foo")
         self.session.SetConfig(False, False, {"" : {}})
         self.session.Detach()
@@ -1293,6 +1292,10 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.setUpSession("foo@other_CONTEXT")
         self.session.SetConfig(False, False, {"": {}})
         self.session.Detach()
+
+    def setupConfigs(self):
+        """Creates polulated configs 'foo', 'bar', 'foo@other_context'."""
+        self.setupEmpty()
 
         # update normal view on "foo"
         self.setUpSession("foo")
@@ -1319,6 +1322,10 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
                                                           "uri": "card" } },
                                utf8_strings=True)
         self.session.Detach()
+
+    def testSharing(self):
+        """set up configs and tests reading them"""
+        self.setupConfigs()
 
         # check how view "foo" has been modified
         self.setUpSession("Foo@deFAULT")
@@ -1351,6 +1358,10 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failIf("source/addressbook" in config)        
         self.session.Detach()
 
+    def testOtherContext(self):
+        """write into independent context"""
+        self.setupConfigs()
+
         # write independent "foo@other_context" config
         self.setUpSession("foo@other_context")
         config = self.session.GetConfig(False, utf8_strings=True)
@@ -1376,7 +1387,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card3")
         self.session.Detach()
 
-        # remove "addressbook" source in "foo"
+    def testSourceRemovalLocal(self):
+        '''remove "addressbook" source in "foo"'''
+        self.setupConfigs()
         self.setUpSession("foo")
         config = self.session.GetConfig(False, utf8_strings=True)
         del config["source/addressbook"]
@@ -1393,7 +1406,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card")
         self.failUnlessEqual(config["source/addressbook"]["sync"], "refresh-from-client")
 
-        # remove "addressbook" everywhere
+    def testSourceRemovalGlobal(self):
+        '''remove "addressbook" everywhere'''
+        self.setupConfigs()
         self.setUpSession("")
         config = self.session.GetConfig(False, utf8_strings=True)
         del config["source/addressbook"]
@@ -1406,7 +1421,10 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config = self.server.GetConfig("bar", False, utf8_strings=True)
         self.failIf("source/addressbook" in config)
 
-        # check listing of peers while removing "bar"
+    def testRemovePeer(self):
+        '''check listing of peers while removing "bar"'''
+        self.setupConfigs()
+        self.testOtherContext()
         self.setUpSession("bar")
         peers = self.session.GetConfigs(False, utf8_strings=True)
         self.failUnlessEqual(peers,
@@ -1431,7 +1449,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Play")
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card30")
 
-        # remove complete config
+    def testRemoveContext(self):
+        '''remove complete config'''
+        self.setupConfigs()
         self.setUpSession("")
         self.session.SetConfig(False, False, {}, utf8_strings=True)
         config = self.session.GetConfig(False, utf8_strings=True)
