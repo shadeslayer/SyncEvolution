@@ -300,7 +300,7 @@ class DBusUtil(Timeout):
             timeout = test.timeout
         else:
             timeout = 5
-        handle = None
+        timeout_handle = None
         if timeout and not debugger:
             def timedout():
                 error = "%s timed out after %d seconds" % (self.id(), timeout)
