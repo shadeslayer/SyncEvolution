@@ -328,6 +328,9 @@ class DBusServer : public DBusObjectHelper
                        std::string &status,
                        std::vector<std::string> &transports);
 
+    /** Server.GetSessions() */
+    void getSessions(std::vector<std::string> &sessions);
+
     /** Server.SessionChanged */
     EmitSignal2<const DBusObject_t &,
                 bool> sessionChanged;
@@ -2675,6 +2678,20 @@ void DBusServer::checkPresence(const std::string &server,
     // TODO: implement this, right now always return status = "" = available
 }
 
+void DBusServer::getSessions(std::vector<std::string> &sessions)
+{
+    sessions.reserve(m_workQueue.size() + 1);
+    if (m_activeSession) {
+        sessions.push_back(m_activeSession->getPath());
+    }
+    BOOST_FOREACH(boost::weak_ptr<Session> &session, m_workQueue) {
+        boost::shared_ptr<Session> s = session.lock();
+        if (s) {
+            sessions.push_back(s->getPath());
+        }
+    }
+}
+
 DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     DBusObjectHelper(conn.get(), "/org/syncevolution/Server", "org.syncevolution.Server"),
     m_loop(loop),
@@ -2696,6 +2713,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     add(this, &DBusServer::checkSource, "CheckSource");
     add(this, &DBusServer::getDatabases, "GetDatabases");
     add(this, &DBusServer::checkPresence, "CheckPresence");
+    add(this, &DBusServer::getSessions, "GetSessions");
     add(sessionChanged);
     add(presence);
 }

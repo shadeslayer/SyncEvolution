@@ -326,7 +326,8 @@
     <method name="GetSessions">
       <doc:doc><doc:description>Get currently existing sessions. This includes active and queueing sessions.</doc:description></doc:doc>
       <arg type="ao" name="sessions" direction="out">
-        <doc:doc><doc:summary>array of session D-Bus object paths</doc:summary></doc:doc>
+        <doc:doc><doc:summary>array of session D-Bus object paths,
+            in the order in which they will run, running ones first</doc:summary></doc:doc>
       </arg>
     </method>
 

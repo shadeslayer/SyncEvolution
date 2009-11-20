@@ -515,7 +515,11 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
     @timeout(20)
     def testSecondSession(self):
         """a second session should not run unless the first one stops"""
+        sessions = self.server.GetSessions()
+        self.failUnlessEqual(sessions, [self.sessionpath])
         sessionpath = self.server.StartSession("")
+        sessions = self.server.GetSessions()
+        self.failUnlessEqual(sessions, [self.sessionpath, sessionpath])
 
         def session_ready(object, ready):
             if self.running:
