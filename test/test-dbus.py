@@ -786,21 +786,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             config = self.session.GetConfig(False, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No configuration 'dummy-test' found")
-    
-    def testClearConfigSources(self):
-        """ test sources related configs are cleared correctly. """
-        self.setupConfig()
-        config1 = { 
-                     "" : { "syncURL" : "http://my.funambol.com/sync",
-                            "username" : "unknown",
-                            "password" : "secret",
-                            "deviceId" : "foo"
-                          }
-                  }
-        self.session.SetConfig(False, False, config1, utf8_strings=True)
-        config2 = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config2, config1)
+                                "org.syncevolution.NoSuchConfig: No configuration 'dummy-test' found")
 
     def testCheckSourceNoConfig(self):
         """ test the right error is reported when the server doesn't exist """
@@ -1287,7 +1273,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.session.SetConfig(True, False,
                                { "" : { "defaultPeer" : "foobar_peer",
                                         "syncURL": "http://scheduleworld" },
+                                 "source/calendar" : { "uri" : "cal3" },
                                  "source/addressbook" : { "evolutionsource": "Personal",
+                                                          "sync" : "two-way",
                                                           "uri": "card3" } },
                                utf8_strings=True)
         self.session.Detach()
@@ -1299,7 +1287,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Personal")
         self.session.SetConfig(True, False,
                                { "" : { "syncURL": "http://funambol" },
+                                 "source/calendar" : { "uri" : "cal" },
                                  "source/addressbook" : { "evolutionsource": "Work",
+                                                          "sync" : "refresh-from-client",
                                                           "uri": "card" } },
                                utf8_strings=True)
         self.session.Detach()
@@ -1360,6 +1350,36 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card3")
         self.session.Detach()
 
+        # remove "addressbook" source in "foo"
+        self.setUpSession("foo")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        del config["source/addressbook"]
+        self.session.SetConfig(False, False, config, utf8_strings=True)
+        self.session.Detach()
+
+        # "addressbook" still exists in "foo" but only with default values
+        config = self.server.GetConfig("foo", False, utf8_strings=True)
+        self.failIf("uri" in config["source/addressbook"])
+        self.failIf("sync" in config["source/addressbook"])
+
+        # "addressbook" unchanged in "bar"
+        config = self.server.GetConfig("bar", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["uri"], "card")
+        self.failUnlessEqual(config["source/addressbook"]["sync"], "refresh-from-client")
+
+        # remove "addressbook" everywhere
+        self.setUpSession("")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        del config["source/addressbook"]
+        self.session.SetConfig(False, False, config, utf8_strings=True)
+        self.session.Detach()
+
+        # "addressbook" gone in "foo" and "bar"
+        config = self.server.GetConfig("foo", False, utf8_strings=True)
+        self.failIf("source/addressbook" in config)
+        config = self.server.GetConfig("bar", False, utf8_strings=True)
+        self.failIf("source/addressbook" in config)
+
         # check listing of peers while removing "bar"
         self.setUpSession("bar")
         peers = self.session.GetConfigs(False, utf8_strings=True)
@@ -1367,28 +1387,32 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
                              [ "bar", "foo", "foo@other_context" ])
         peers2 = self.server.GetConfigs(False, utf8_strings=True)
         self.failUnlessEqual(peers, peers2)
-
-        # remove "foo"
+        # remove "bar"
         self.session.SetConfig(False, False, {}, utf8_strings=True)
-
-        # The other peers should not have been affected, but currently
-        # they are (MB #8059). Decide about this and remove the return.
-        return
-
         peers = self.server.GetConfigs(False, utf8_strings=True)
         self.failUnlessEqual(peers,
                              [ "foo", "foo@other_context" ])
         self.session.Detach()
-        config = self.GetConfig("foo", False, utf8_strings=True)
+
+        # other configs should not have been affected
+        config = self.server.GetConfig("foo", False, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
         self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld")
-        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Work")
-        self.failUnlessEqual(config["source/addressbook"]["uri"], "card3")
-        config = self.GetConfig("foo@other_context", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/calendar"]["uri"], "cal3")
+        config = self.server.GetConfig("foo@other_context", False, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
         self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld2")
         self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Play")
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card30")
+
+        # remove complete config
+        self.setUpSession("")
+        self.session.SetConfig(False, False, {}, utf8_strings=True)
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        peers = self.server.GetConfigs(False, utf8_strings=True)
+        self.failUnlessEqual(peers, ['foo@other_context'])
+        self.session.Detach()
 
 if __name__ == '__main__':
     unittest.main()

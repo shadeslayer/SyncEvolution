@@ -872,14 +872,16 @@ class SyncConfig {
     void flush();
 
     /**
-     * Remove the configuration. The config object itself is still
-     * valid afterwards, but empty and cannot be flushed.
+     * Remove the configuration. Config directories are removed if
+     * empty.
+     *
+     * When the configuration is peer-specific, only the peer's
+     * properties and config nodes are removed. Otherwise the complete
+     * configuration is removed, including all peers.
      *
      * Does *not* remove logs associated with the configuration.
      * For that use the logdir handling in SyncContext
      * before removing the configuration.
-     *
-     * The config directory is removed if it is empty.
      */
     void remove();
 
@@ -982,18 +984,26 @@ class SyncConfig {
     void setSourceDefaults(const string &name, bool force = true);
 
     /**
-     * remove sync source configuration. And remove the directory
-     * if it has no other files 
+     * Remove sync source configuration. And remove the directory
+     * if it has no other files.
+     *
+     * When the configuration is peer-specific, only the peer's
+     * properties are removed. Otherwise the complete source
+     * configuration is removed, including properties stored
+     * for in any of the peers.
      */
     void removeSyncSource(const string &name);
 
     /**
-     * clear existing visible properties in config.ini
+     * clear existing visible source properties selected by the
+     * configuration: with or without peer-specific properties,
+     * depending on the current view
      */
     void clearSyncSourceProperties(const string &name);
 
     /**
-     * clear all global sync properties
+     * clear all global sync properties, with or without
+     * peer-specific properties, depending on the current view
      */
     void clearSyncProperties();
 
@@ -1204,6 +1214,11 @@ private:
     static void addPeers(const string &root,
                          const std::string &configname,
                          SyncConfig::ServerList &res);
+
+    /**
+     * set tree and nodes to VolatileConfigTree/Node
+     */
+    void makeVolatile();
 
     /**
      * String that identifies the peer, see constructor.

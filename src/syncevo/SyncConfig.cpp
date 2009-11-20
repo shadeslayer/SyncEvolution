@@ -88,6 +88,11 @@ SyncConfig::SyncConfig() :
 
     m_peerPath =
         m_contextPath = "volatile";
+    makeVolatile();
+}
+
+void SyncConfig::makeVolatile()
+{
     m_tree.reset(new VolatileConfigTree());
     m_peerNode.reset(new VolatileConfigNode());
     m_hiddenPeerNode = m_peerNode;
@@ -565,8 +570,14 @@ void SyncConfig::flush()
 
 void SyncConfig::remove()
 {
-    m_tree->remove();
-    m_tree.reset(new VolatileConfigTree());
+    boost::shared_ptr<ConfigTree> tree = m_tree;
+
+    // stop using the config nodes, they might get removed now
+    makeVolatile();
+
+    tree->remove(m_peerPath.empty() ?
+                 m_contextPath :
+                 m_peerPath);
 }
 
 boost::shared_ptr<PersistentSyncSourceConfig> SyncConfig::getSyncSourceConfig(const string &name)
@@ -1227,20 +1238,25 @@ void SyncConfig::removeSyncSource(const string &name)
     string pathName;
 
     if (m_layout == SHARED_LAYOUT) {
-        // removed share source properties...
-        pathName = m_contextPath + "/sources/" + lower;
-        m_tree->removeSubtree(pathName);
-        // ... and the peer-specific ones of *all* peers
-        BOOST_FOREACH(const std::string peer,
-                      m_tree->getChildren("peers")) {
-            m_tree->removeSubtree(string("peers/") + peer + "/sources/" + lower);
+        if (m_peerPath.empty()) {
+            // removed shared source properties...
+            pathName = m_contextPath + "/sources/" + lower;
+            m_tree->remove(pathName);
+            // ... and the peer-specific ones of *all* peers
+            BOOST_FOREACH(const std::string peer,
+                          m_tree->getChildren("peers")) {
+                m_tree->remove(string("peers/") + peer + "/sources/" + lower);
+            }
+        } else {
+            // remove only inside the selected peer
+            m_tree->remove(m_peerPath + "/sources/" + lower);
         }
     } else {
         // remove the peer-specific ones
         pathName = m_peerPath +
             (m_layout == SYNC4J_LAYOUT ? "spds/sources/" : "sources/") +
             lower;
-        m_tree->removeSubtree(pathName);
+        m_tree->remove(pathName);
     }
 }
 

@@ -1160,7 +1160,9 @@ void ReadOperations::getConfig(bool getTemplate,
     } else { ///< get a matching server configuration
         boost::shared_ptr<SyncConfig> from;
         syncConfig.reset(new SyncConfig(m_configName));
-        if (!syncConfig->exists()) {
+        // the default configuration can always be opened for reading,
+        // everything else must exist
+        if (!m_configName.empty() && !syncConfig->exists()) {
             SE_THROW_EXCEPTION(NoSuchConfig, "No configuration '" + m_configName + "' found");
         }
     }

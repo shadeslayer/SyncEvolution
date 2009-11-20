@@ -84,10 +84,11 @@ static bool rm_filter(const string &path, bool isDir)
     }
 }
 
-void FileConfigTree::remove()
+void FileConfigTree::remove(const string &path)
 {
-    reset();
-    rm_r(m_root, rm_filter);
+    string fullpath = m_root + "/" + path;
+    clearNodes(fullpath);
+    rm_r(fullpath, rm_filter);
 }
 
 void FileConfigTree::reset()
@@ -104,13 +105,6 @@ void FileConfigTree::reset()
         }
     }
     m_nodes.clear();
-}
-
-void FileConfigTree::removeSubtree(const string &name) 
-{
-    string fullpath = m_root + "/" + name;
-    clearNodes(fullpath);
-    rm_r(fullpath, rm_filter);
 }
 
 void FileConfigTree::clearNodes(const string &fullpath) 

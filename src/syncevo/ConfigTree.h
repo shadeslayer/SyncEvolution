@@ -70,9 +70,14 @@ class ConfigTree {
     /** ensure that all changes are saved persistently */
     virtual void flush() = 0;
 
-    /** remove all configuration nodes and (if based on files)
-        directories created for them, if empty after file removal */
-    virtual void remove() = 0;
+    /**
+     * Remove all configuration nodes below and including a certain
+     * path and (if based on files) directories created for them, if
+     * empty after file removal.
+     *
+     * The nodes must not be in use for this to work.
+     */
+    virtual void remove(const string &path) = 0;
 
     /** a string identifying the root of the configuration - exact meaning varies */
     virtual string getRootPath() const = 0;
@@ -108,12 +113,6 @@ class ConfigTree {
      * returns names of all existing nodes beneath the given path
      */
     virtual list<string> getChildren(const string &path) = 0;
-
-    /**
-     * remove config nodes beneath the given path. If no other
-     * files, the directory will be removed too.
-     */
-    virtual void removeSubtree(const string &path) = 0;
 };
 
 
