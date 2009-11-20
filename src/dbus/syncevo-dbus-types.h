@@ -22,9 +22,9 @@
 
 #include <glib.h>
 
-#define SYNCEVO_DBUS_ERROR_GENERIC_ERROR "org.syncevolution.GenericError"
-#define SYNCEVO_DBUS_ERROR_NO_SUCH_SERVER "org.syncevolution.NoSuchServer"
-#define SYNCEVO_DBUS_ERROR_MISSING_ARGS "org.syncevolution.MissingArgs"
+#define SYNCEVO_DBUS_ERROR_EXCEPTION "org.syncevolution.Exception"
+#define SYNCEVO_DBUS_ERROR_NO_SUCH_CONFIG "org.syncevolution.NoSuchConfig"
+#define SYNCEVO_DBUS_ERROR_NO_SUCN_SOURCE "org.syncevolution.NoSuchsource"
 #define SYNCEVO_DBUS_ERROR_INVALID_CALL "org.syncevolution.InvalidCall"
 
 typedef enum {
