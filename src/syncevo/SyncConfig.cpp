@@ -904,6 +904,7 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         // peer independent sync properties
         syncPropLogDir.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         syncPropMaxLogDirs.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        syncPropDevID.setSharing(ConfigProperty::SOURCE_SET_SHARING);
 
         initialized = true;
     }

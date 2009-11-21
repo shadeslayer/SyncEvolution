@@ -1301,6 +1301,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.setUpSession("foo")
         self.session.SetConfig(True, False,
                                { "" : { "defaultPeer" : "foobar_peer",
+                                        "deviceId" : "shared-device-identifier",
                                         "syncURL": "http://scheduleworld" },
                                  "source/calendar" : { "uri" : "cal3" },
                                  "source/addressbook" : { "evolutionsource": "Personal",
@@ -1313,6 +1314,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.setUpSession("bar")
         config = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
         self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Personal")
         self.session.SetConfig(True, False,
                                { "" : { "syncURL": "http://funambol" },
@@ -1347,6 +1349,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.setUpSession("@DEFAULT")
         config = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
         self.failUnless("source/addressbook" in config)
         self.failIf("uri" in config["source/addressbook"])
         self.session.Detach()
