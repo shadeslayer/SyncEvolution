@@ -31,7 +31,15 @@ using namespace std;
 #include <boost/foreach.hpp>
 
 #include <syncevo/declarations.h>
+#include <syncevo/util.h>
 SE_BEGIN_CXX
+
+/** a case-insensitive string to string mapping */
+class ConfigProps : public map<string, string, Nocase<string> > {
+ public:
+    /** format as <key> = <value> lines */
+    operator string () const;
+};
 
 /**
  * This class corresponds to the Funambol C++ client
@@ -147,8 +155,8 @@ class ConfigNode {
         }
     }
 
-
-    typedef map<string, string> PropsType;
+    // defined here for source code backwards compatibility
+    typedef ConfigProps PropsType;
 
     /**
      * Extract all list of all currently defined properties
@@ -159,15 +167,15 @@ class ConfigNode {
      * @retval props    to be filled with key/value pairs; guaranteed
      *                  to be empty before the call
      */
-    virtual void readProperties(PropsType &props) const = 0;
+    virtual void readProperties(ConfigProps &props) const = 0;
 
     /**
      * Add the given properties. To replace the content of the
      * node, call clear() first.
      */
-    virtual void writeProperties(const PropsType &props)
+    virtual void writeProperties(const ConfigProps &props)
     {
-        BOOST_FOREACH(const PropsType::value_type &entry, props) {
+        BOOST_FOREACH(const ConfigProps::value_type &entry, props) {
             setProperty(entry.first, entry.second);
         }
     }

@@ -80,7 +80,7 @@ void FilterConfigNode::setProperty(const string &property,
     m_node->setProperty(property, value, comment, defValue);
 }
 
-void FilterConfigNode::readProperties(map<string, string> &props) const
+void FilterConfigNode::readProperties(ConfigProps &props) const
 {
     m_readOnlyNode->readProperties(props);
 

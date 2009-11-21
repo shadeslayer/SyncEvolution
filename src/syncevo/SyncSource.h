@@ -1452,8 +1452,8 @@ class SyncSourceAdmin : public virtual SyncSourceBase
     std::string m_adminPropertyName;
     boost::shared_ptr<ConfigNode> m_mappingNode;
 
-    StringMap m_mapping;
-    StringMap::const_iterator m_mappingIterator;
+    ConfigProps m_mapping;
+    ConfigProps::const_iterator m_mappingIterator;
 
     sysync::TSyError loadAdminData(const char *aLocDB,
                                    const char *aRemDB,

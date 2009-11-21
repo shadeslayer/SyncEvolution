@@ -712,7 +712,7 @@ void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode)
     }
 
     // clear information about all items that we recognized as deleted
-    map<string, string> props;
+    ConfigProps props;
     trackingNode.readProperties(props);
 
     BOOST_FOREACH(const StringPair &mapping, props) {

@@ -60,7 +60,7 @@ class PrefixConfigNode : public ConfigNode {
                              const string &value,
                              const string &comment = "",
                              const string *defValue = NULL);
-    virtual void readProperties(map<string, string> &props) const;
+    virtual void readProperties(ConfigProps &props) const;
     virtual void removeProperty(const string &property);
     virtual bool exists() const { return m_readOnlyNode->exists(); }
     virtual void clear() { m_node->clear(); }

@@ -25,8 +25,6 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include <syncevo/util.h>
-
 #include <map>
 #include <utility>
 #include <vector>
@@ -47,12 +45,8 @@ using namespace std;
  */
 class FilterConfigNode : public ConfigNode {
  public:
-    /** a case-insensitive string to string mapping */
-    class ConfigFilter : public map<string, string, Nocase<string> > {
-    public:
-        /** format as <key> = <value> lines */
-        operator string () const;
-    };
+    /** config filters are the same case-insensitive string to string mapping as property sets */
+    typedef ConfigProps ConfigFilter;
 
     /** read-write access to underlying node */
     FilterConfigNode(const boost::shared_ptr<ConfigNode> &node,
@@ -79,7 +73,7 @@ class FilterConfigNode : public ConfigNode {
                              const string &value,
                              const string &comment = "",
                              const string *defValue = NULL);
-    virtual void readProperties(map<string, string> &props) const;
+    virtual void readProperties(ConfigProps &props) const;
     virtual void removeProperty(const string &property);
     virtual bool exists() const { return m_readOnlyNode->exists(); }
     virtual void clear();

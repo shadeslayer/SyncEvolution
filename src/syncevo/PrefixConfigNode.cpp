@@ -57,9 +57,9 @@ void PrefixConfigNode::setProperty(const string &property,
                         defValue);
 }
 
-void PrefixConfigNode::readProperties(map<string, string> &props) const
+void PrefixConfigNode::readProperties(ConfigProps &props) const
 {
-    map<string, string> original;
+    ConfigProps original;
     m_readOnlyNode->readProperties(original);
 
     BOOST_FOREACH(const StringPair &prop, original) {

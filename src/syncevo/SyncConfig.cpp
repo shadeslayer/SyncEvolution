@@ -1318,12 +1318,9 @@ static void copyProperties(const ConfigNode &fromProps,
 static void copyProperties(const ConfigNode &fromProps,
                            ConfigNode &toProps)
 {
-    map<string, string> props;
+    ConfigProps props;
     fromProps.readProperties(props);
-
-    BOOST_FOREACH(const StringPair &prop, props) {
-        toProps.setProperty(prop.first, prop.second);
-    }
+    toProps.writeProperties(props);
 }
 
 void SyncConfig::copy(const SyncConfig &other,
