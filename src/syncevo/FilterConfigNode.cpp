@@ -85,7 +85,8 @@ void FilterConfigNode::readProperties(map<string, string> &props) const
     m_readOnlyNode->readProperties(props);
 
     BOOST_FOREACH(const StringPair &filter, m_filter) {
-        props.insert(filter);
+        // overwrite existing values or add new ones
+        props[filter.first] = filter.second;
     }
 }
 
