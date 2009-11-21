@@ -1463,5 +1463,27 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(peers, ['foo@other_context'])
         self.session.Detach()
 
+    def testTemplates(self):
+        '''templates reuse common properties'''
+        self.setupConfigs()
+
+        # deviceID must be shared and thus be reused in templates
+        self.setUpSession("")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        config[""]["DEVICEID"] = "shared-device-identifier"
+        self.session.SetConfig(True, False, config, utf8_strings=True)
+        config = self.server.GetConfig("", False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
+
+        # get template for default context
+        config = self.server.GetConfig("scheduleworld", True, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
+
+        # now for @other_context - different device ID!
+        config = self.server.GetConfig("scheduleworld@other_context", True, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failIfEqual(config[""]["deviceId"], "shared-device-identifier")
+
 if __name__ == '__main__':
     unittest.main()

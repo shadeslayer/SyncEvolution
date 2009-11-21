@@ -891,6 +891,21 @@ class SyncConfig {
     static ConfigPropertyRegistry &getRegistry();
 
     /**
+     * Normalize a config string:
+     * - lower case
+     * - @default stripped
+     * - empty string replaced with "@default"
+     */
+    static string normalizeConfigString(const string &peer);
+
+    /**
+     * Split a config string (normalized or not) into the peer part
+     * (before final @) and the context (after that @, not including
+     * it), return "default" as context if not specified otherwise.
+     */
+    static void splitConfigString(const string &config, string &peer, string &context);
+
+    /**
      * Replaces the property filter of either the sync properties or
      * all sources. This can be used to e.g. temporarily override
      * the active sync mode.
@@ -1183,13 +1198,6 @@ private:
                                  and peers, with source settings shared by peers,
                                  SyncEvolution >= 1.0 */
     };
-
-    /**
-     * Normalize a peer string:
-     * - lower case
-     * - @default stripped
-     */
-    static string normalizePeerString(const string &peer);
 
     /**
      * scans for peer configurations

@@ -189,6 +189,10 @@ public:
 
     /** Session.GetDatabases() */
     void getDatabases(const string &sourceName, SourceDatabases_t &databases);
+
+private:
+    /** utility method which constructs a SyncConfig which references a local configuration (never a template) */
+    boost::shared_ptr<SyncConfig> getLocalConfig(const std::string &configName);
 };
 
 /**
@@ -1146,6 +1150,28 @@ void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &con
     }
 }
 
+boost::shared_ptr<SyncConfig> ReadOperations::getLocalConfig(const string &configName)
+{
+    string peer, context;
+    SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configName),
+                                  peer, context);
+
+    boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(configName));
+    // the default configuration can always be opened for reading,
+    // everything else must exist
+    if (context != "default" &&
+        !syncConfig->exists()) {
+        SE_THROW_EXCEPTION(NoSuchConfig, "No configuration '" + configName + "' found");
+    }
+
+    // TODO: handle temporary configs (MB #8116)
+    // - if config was set temporarily, it doesn't have to exist on disk =>
+    //   the check above is too strict
+    // - set temporary properties as filters
+
+    return syncConfig;
+}
+
 void ReadOperations::getConfig(bool getTemplate,
                                Config_t &config)
 {
@@ -1153,18 +1179,30 @@ void ReadOperations::getConfig(bool getTemplate,
     boost::shared_ptr<SyncConfig> syncConfig;
     /** get server template */
     if(getTemplate) {
-        syncConfig = SyncConfig::createServerTemplate(m_configName);
+        string peer, context;
+        SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_configName),
+                                      peer, context);
+
+        syncConfig = SyncConfig::createServerTemplate(peer);
         if(!syncConfig.get()) {
             SE_THROW_EXCEPTION(NoSuchConfig, "No template '" + m_configName + "' found");
         }
-    } else { ///< get a matching server configuration
-        boost::shared_ptr<SyncConfig> from;
-        syncConfig.reset(new SyncConfig(m_configName));
-        // the default configuration can always be opened for reading,
-        // everything else must exist
-        if (!m_configName.empty() && !syncConfig->exists()) {
-            SE_THROW_EXCEPTION(NoSuchConfig, "No configuration '" + m_configName + "' found");
+
+        // use the shared properties from the right context as filter
+        // so that the returned template preserves existing properties
+        boost::shared_ptr<SyncConfig> shared = getLocalConfig(string("@") + context);
+
+        ConfigProps props;
+        shared->getProperties()->readProperties(props);
+        syncConfig->setConfigFilter(true, "", props);
+        BOOST_FOREACH(std::string source, shared->getSyncSources()) {
+            SyncSourceNodes nodes = shared->getSyncSourceNodes(source, "");
+            props.clear();
+            nodes.getProperties()->readProperties(props);
+            syncConfig->setConfigFilter(false, source, props);
         }
+    } else {
+        syncConfig = getLocalConfig(m_configName);
     }
 
     /** get sync properties and their values */

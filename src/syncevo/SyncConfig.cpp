@@ -67,7 +67,7 @@ void ConfigProperty::throwValueError(const ConfigNode &node, const string &name,
     SyncContext::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
-string SyncConfig::normalizePeerString(const string &peer)
+string SyncConfig::normalizeConfigString(const string &peer)
 {
     string normal = peer;
     boost::to_lower(normal);
@@ -76,7 +76,22 @@ string SyncConfig::normalizePeerString(const string &peer)
     } else if (boost::ends_with(normal, "@")) {
         normal.resize(normal.size() - 1);
     }
+    if (normal.empty()) {
+        normal = "@default";
+    }
     return normal;
+}
+
+void SyncConfig::splitConfigString(const string &config, string &peer, string &context)
+{
+    string::size_type at = config.rfind('@');
+    if (at != config.npos) {
+        peer = config.substr(0, at);
+        context = config.substr(at + 1);
+    } else {
+        peer = config;
+        context = "default";
+    }    
 }
 
 SyncConfig::SyncConfig() :
@@ -113,7 +128,7 @@ SyncConfig::SyncConfig(const string &peer,
 
     string root;
 
-    m_peer = normalizePeerString(peer);
+    m_peer = normalizeConfigString(peer);
 
     // except for SHARED_LAYOUT (set below),
     // everything is below the directory called like
@@ -139,13 +154,7 @@ SyncConfig::SyncConfig(const string &peer,
             } else {
                 // check whether config name specifies a context,
                 // otherwise use "default"
-                string::size_type at = m_peerPath.rfind('@');
-                if (at != m_peerPath.npos) {
-                    m_contextPath = m_peerPath.substr(at + 1);
-                    m_peerPath.resize(at);
-                } else {
-                    m_contextPath = "default";
-                }
+                splitConfigString(m_peer, m_peerPath, m_contextPath);
                 if (!m_peerPath.empty()) {
                     m_peerPath = m_contextPath + "/peers/" + m_peerPath;
                 }
@@ -264,7 +273,7 @@ void SyncConfig::addPeers(const string &root,
         if (!access((root + "/" + peerPath).c_str(), F_OK)) {
             // not a real HTTP server, search for peers
             BOOST_FOREACH(const string &peer, tree.getChildren(peerPath)) {
-                res.push_back(pair<string, string>(normalizePeerString(peer + "@" + server),
+                res.push_back(pair<string, string>(normalizeConfigString(peer + "@" + server),
                                                    root + "/" + peerPath + "/" + peer));
             }
         } else if (!access((root + "/" + server + "/" + configname).c_str(), F_OK)) {
