@@ -904,21 +904,7 @@ class SyncConfig {
      */
     void setConfigFilter(bool sync,
                          const std::string &source,
-                         const FilterConfigNode::ConfigFilter &filter) {
-        if (sync) {
-            m_peerNode->setFilter(filter);
-            if (m_peerNode != m_contextNode) {
-                m_peerNode->setFilter(filter);
-            }
-            if (m_globalNode != m_contextNode) {
-                m_globalNode->setFilter(filter);
-            }
-        } else if (source.empty()) {
-            m_sourceFilter = filter;
-        } else {
-            m_sourceFilters[source] = filter;
-        }
-    }
+                         const FilterConfigNode::ConfigFilter &filter);
 
     /**
      * Read-write access to all configurable properties of the server.
