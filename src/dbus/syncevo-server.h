@@ -50,6 +50,11 @@ typedef struct _SyncevoServerClass {
                              char *session_path,
                              gboolean started);
 
+    void (*presence_changed) (SyncevoServer *syncevo,
+                              char *configuration,
+                              char *status,
+                              char *transport);
+
     void (*shutdown) (SyncevoServer *syncevo);
 } SyncevoServerClass;
 
@@ -102,6 +107,16 @@ typedef void (*SyncevoServerGetSessionsCb) (SyncevoServer *syncevo,
                                             gpointer userdata);
 void syncevo_server_get_sessions (SyncevoServer *syncevo,
                                   SyncevoServerGetSessionsCb callback,
+                                  gpointer userdata);
+
+typedef void (*SyncevoServerGetPresenceCb) (SyncevoServer *syncevo,
+                                            char *status,
+                                            char *transport,
+                                            GError *error,
+                                            gpointer userdata);
+void syncevo_server_get_presence (SyncevoServer *syncevo,
+                                  const char *config_name,
+                                  SyncevoServerGetPresenceCb callback,
                                   gpointer userdata);
 
 G_END_DECLS

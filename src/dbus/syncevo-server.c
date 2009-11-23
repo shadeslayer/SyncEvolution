@@ -32,6 +32,7 @@ typedef struct _ServerAsyncData {
 
 enum {
     SESSION_CHANGED,
+    PRESENCE_CHANGED,
     SHUTDOWN,
     LAST_SIGNAL
 };
@@ -77,6 +78,17 @@ session_changed_cb (DBusGProxy *proxy,
 }
 
 static void
+presence_cb (DBusGProxy *proxy,
+             char *configuration,
+             char *status,
+             char *transport,
+             SyncevoServer *server)
+{
+    g_signal_emit (server, signals[PRESENCE_CHANGED], 0, 
+                   configuration, status, transport);
+}
+
+static void
 proxy_destroy_cb (DBusGProxy *proxy, 
                   SyncevoServer *server)
 {
@@ -112,6 +124,9 @@ dispose (GObject *object)
     if (priv->proxy) {
         dbus_g_proxy_disconnect_signal (priv->proxy, "SessionChanged",
                                         G_CALLBACK (session_changed_cb),
+                                        object);
+        dbus_g_proxy_disconnect_signal (priv->proxy, "Presence",
+                                        G_CALLBACK (presence_cb),
                                         object);
         dbus_g_proxy_disconnect_signal (priv->proxy, "destroy",
                                         G_CALLBACK (proxy_destroy_cb),
@@ -189,6 +204,10 @@ syncevo_server_get_new_proxy (SyncevoServer *server)
                              DBUS_TYPE_G_OBJECT_PATH, G_TYPE_BOOLEAN, G_TYPE_INVALID);
     dbus_g_proxy_connect_signal (priv->proxy, "SessionChanged",
                                  G_CALLBACK (session_changed_cb), server, NULL);
+    dbus_g_proxy_add_signal (priv->proxy, "Presence",
+                             G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID);
+    dbus_g_proxy_connect_signal (priv->proxy, "Presence",
+                                 G_CALLBACK (presence_cb), server, NULL);
     g_signal_connect (priv->proxy, "destroy",
                       G_CALLBACK (proxy_destroy_cb), server);
 
@@ -213,6 +232,13 @@ syncevo_server_init (SyncevoServer *server)
                                        DBUS_TYPE_G_OBJECT_PATH,
                                        G_TYPE_BOOLEAN,
                                        G_TYPE_INVALID);
+    /* Presence */
+    dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_STRING_STRING,
+                                       G_TYPE_NONE,
+                                       G_TYPE_STRING,
+                                       G_TYPE_STRING,
+                                       G_TYPE_STRING,
+                                       G_TYPE_INVALID);
 
     syncevo_server_get_new_proxy (server);
 }
@@ -233,8 +259,17 @@ syncevo_server_class_init (SyncevoServerClass *klass)
                           G_STRUCT_OFFSET (SyncevoServerClass, session_changed),
                           NULL, NULL,
                           syncevo_marshal_VOID__STRING_BOOLEAN,
-                          G_TYPE_NONE, 
+                          G_TYPE_NONE,
                           2, G_TYPE_STRING, G_TYPE_BOOLEAN);
+    signals[PRESENCE_CHANGED] =
+            g_signal_new ("presence-changed",
+                          G_TYPE_FROM_CLASS (klass),
+                          G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                          G_STRUCT_OFFSET (SyncevoServerClass, presence_changed),
+                          NULL, NULL,
+                          syncevo_marshal_VOID__STRING_STRING_STRING,
+                          G_TYPE_NONE,
+                          3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
     signals[SHUTDOWN] =
             g_signal_new ("shutdown",
                           G_TYPE_FROM_CLASS (klass),
@@ -242,7 +277,7 @@ syncevo_server_class_init (SyncevoServerClass *klass)
                           G_STRUCT_OFFSET (SyncevoServerClass, shutdown),
                           NULL, NULL,
                           g_cclosure_marshal_VOID__VOID,
-                          G_TYPE_NONE, 
+                          G_TYPE_NONE,
                           0);
 }
 
@@ -558,5 +593,69 @@ syncevo_server_get_sessions (SyncevoServer *syncevo,
     org_syncevolution_Server_get_sessions_async
             (priv->proxy,
              (org_syncevolution_Server_get_reports_reply) get_sessions_callback,
+             data);
+}
+
+
+static void
+check_presence_callback (SyncevoServer *syncevo,
+                         char *status,
+                         char *transport,
+                         GError *error,
+                         ServerAsyncData *data)
+{
+    if (data->callback) {
+        (*(SyncevoServerGetPresenceCb)data->callback) (data->server,
+                                                       status,
+                                                       transport,
+                                                       error,
+                                                       data->userdata);
+    }
+    server_async_data_free (data);
+}
+
+static gboolean
+check_presence_error (ServerAsyncData *data)
+{
+    GError *error;
+
+    error = g_error_new_literal (g_quark_from_static_string ("syncevo-server"),
+                                 SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT, 
+                                 "Could not start service");
+    (*(SyncevoServerGetPresenceCb)data->callback) (data->server,
+                                                   NULL,
+                                                   NULL,
+                                                   error,
+                                                   data->userdata);
+    server_async_data_free (data);
+
+    return FALSE;
+}
+
+
+void
+syncevo_server_get_presence (SyncevoServer *syncevo,
+                             const char *config_name,
+                             SyncevoServerGetPresenceCb callback,
+                             gpointer userdata)
+{
+    ServerAsyncData *data;
+    SyncevoServerPrivate *priv;
+
+    priv = GET_PRIVATE (syncevo);
+
+    data = server_async_data_new (syncevo, G_CALLBACK (callback), userdata);
+
+    if (!priv->proxy && !syncevo_server_get_new_proxy (syncevo)) {
+        if (callback) {
+            g_idle_add ((GSourceFunc)check_presence_error, data);
+        }
+        return;
+    }
+
+    org_syncevolution_Server_check_presence_async
+            (priv->proxy,
+             config_name,
+             (org_syncevolution_Server_check_presence_reply) check_presence_callback,
              data);
 }
