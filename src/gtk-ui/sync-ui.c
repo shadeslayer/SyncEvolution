@@ -127,6 +127,8 @@ static void show_main_view (app_data *data);
 static void show_services_list (app_data *data);
 static void update_services_list (app_data *data);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
+static void get_presence_cb (SyncevoServer *server, char *status, char *transport,
+                             GError *error, app_data *data);
 static void get_reports_cb (SyncevoServer *server, SyncevoReports *reports, 
                             GError *error, app_data *data);
 static void start_session_cb (SyncevoServer *server, char *path,
@@ -1171,6 +1173,11 @@ get_config_for_main_win_cb (SyncevoServer *server,
 */
         }
 
+        syncevo_server_get_presence (server,
+                                     data->current_service->name,
+                                     (SyncevoServerGetPresenceCb)get_presence_cb,
+                                     data);
+
         syncevo_server_get_reports (server,
                                     data->current_service->name,
                                     0, 1,
@@ -1693,26 +1700,6 @@ get_error_string_for_code (int error_code)
     }
 }
 
-
-/* TODO: should do this based on SyncevoServer Presence now
-
-static void
-connman_props_changed (DBusGProxy *proxy, const char *key, GValue *v, app_data *data)
-{
-    const char *state;
-    gboolean online;
-
-    if (strcmp (key, "State") != 0)
-        return;
-    state = g_value_get_string (v);
-    online = (strcmp (state, "online") == 0);
-    if (online != data->online) {
-        data->online = online;
-        set_app_state (data, SYNC_UI_STATE_CURRENT_STATE);
-    }
-}
-*/
-
 static void
 server_shutdown_cb (SyncevoServer *server,
                     app_data *data)
@@ -1749,6 +1736,57 @@ set_running_session (app_data *data, const char *path)
     syncevo_session_get_status (data->running_session,
                                 (SyncevoSessionGetStatusCb)get_running_session_status_cb,
                                 data);
+}
+
+static void
+set_online_status (app_data *data, gboolean online)
+{
+   if (online != data->online) {
+        data->online = online;
+
+        if (data->current_state == SYNC_UI_STATE_SERVER_OK) {
+            if (data->online) {
+                gtk_widget_hide (data->no_connection_box);
+            } else {
+                gtk_widget_show (data->no_connection_box);
+            }
+        }
+    }
+}
+
+static void
+get_presence_cb (SyncevoServer *server,
+                 char *status,
+                 char *transport,
+                 GError *error,
+                 app_data *data)
+{
+    if (error) {
+        g_warning ("Server.GetSessions failed: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    if (data->current_service && status) {
+        set_online_status (data, strcmp (status, "") == 0);
+    }
+    g_free (status);
+    g_free (transport);
+}
+ 
+static void
+server_presence_changed_cb (SyncevoServer *server,
+                            char *config_name,
+                            char *status,
+                            char *transport,
+                            app_data *data)
+{
+    if (data->current_service &&
+        config_name && status &&
+        strcmp (data->current_service->name, config_name) == 0) {
+
+        set_online_status (data, strcmp (status, "") == 0);
+    }
 }
 
 static void
@@ -1804,6 +1842,8 @@ sync_ui_create_main_window ()
                       G_CALLBACK (server_shutdown_cb), data);
     g_signal_connect (data->server, "session-changed",
                       G_CALLBACK (server_session_changed_cb), data);
+    g_signal_connect (data->server, "presence_changed",
+                      G_CALLBACK (server_presence_changed_cb), data);
     syncevo_server_get_sessions (data->server,
                                  (SyncevoServerGetSessionsCb)get_sessions_cb,
                                  data);
