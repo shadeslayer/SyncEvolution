@@ -1469,14 +1469,31 @@ public:
                              "automatically unless specified differently.\n"
                              "Sometimes the format must be specified.\n"
                              "\n"
+                             "A special 'virtual' backend combines several other\n"
+                             "data sources and presents them as one set of items\n"
+                             "to the peer. For example, Nokia phones typically\n"
+                             "exchange tasks and events as part of one set of\n"
+                             "calendar items.\n"
+                             "\n"
+                             "Right now such a virtual backend is limited to\n"
+                             "combining one calendar source with events and one\n"
+                             "task source. They have to be specified in the\n"
+                             "'evolutionsource' property, typically as\n"
+                             "'evolutionsource = calendar,todo'.\n"
+                             "\n"
                              "In all cases the format of this configuration is\n"
                              "  <backend>[:format]\n"
                              "\n"
+                             "Different sources combined in one virtual source must\n"
+                             "have a common representation. As with other backends,\n"
+                             "the preferred format can be influenced via the 'format'\n"
+                             "attribute.\n"
                              "Here are some valid examples:\n"
                              "  contacts - synchronize address book with default vCard 2.1 format\n"
                              "  contacts:text/vcard - address book with vCard 3.0 format\n"
                              "  calendar - synchronize events in iCalendar 2.0 format\n"
                              "  calendar:text/x-calendar - prefer legacy vCalendar 1.0 format\n"
+                             "  virtual:text/x-vcalendar - a virtual backend using vCalendar 1.0 format\n"
                              "\n"
                              "Sending and receiving items in the same format as used by the server for\n"
                              "the uri selected below is essential. Normally, SyncEvolution and the server\n"
@@ -1497,6 +1514,7 @@ public:
                              "select backend",
                              "",
                              Values() +
+                             (Aliases("virtual")) +
                              (Aliases("calendar") + "events") +
                              (Aliases("calendar:text/calendar") + "text/calendar") +
                              (Aliases("calendar:text/x-vcalendar") + "text/x-vcalendar") +
@@ -1569,6 +1587,13 @@ static ConfigProperty sourcePropDatabaseID("evolutionsource",
                                            "like for example the system address book.\n"
                                            "Not setting this property selects that default\n"
                                            "data source.\n"
+                                           "If the backend is a virtual data source,\n"
+                                           "this field must contain comma seperated list of\n"
+                                           "sub datasources actually used to store data.\n"
+                                           "If your sub datastore has a comma in name, you\n"
+                                           "must prevent taht comma from being mistaken as the\n"
+                                           "separator by preceding it with a backslash, like this:\n"
+                                           "  evolutionsource=Source1PartA\\,PartB,Source2\\\\Backslash\n"
                                            "\n"
                                            "To get a full list of available data sources,\n"
                                            "run syncevolution without parameters. The name\n"

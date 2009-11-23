@@ -218,6 +218,12 @@ inline string getHome() {
     return homestr ? homestr : ".";
 }
 
+/**
+ * Parse a separator splitted set of strings src, the separator itself is
+ * escaped by a backslash. Spaces around the separator is also stripped.
+ * */
+std::vector<std::string> unescapeJoinedString (const std::string &src, char separator);
+
 /** throw a normal SyncEvolution Exception, including source information */
 #define SE_THROW(_what) \
     SE_THROW_EXCEPTION(Exception, _what)

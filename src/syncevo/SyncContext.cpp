@@ -545,7 +545,9 @@ private:
 
 // this class owns the sync sources and (together with
 // a logdir) handles writing of per-sync files as well
-// as the final report (
+// as the final report 
+// It also handles the virtual syncsources that is a combination of several
+// real syncsources.
 class SourceList : public vector<SyncSource *> {
 public:
     enum LogLevel {
@@ -554,6 +556,7 @@ public:
         LOGGING_FULL      /**< everything */
     };
 
+    std::vector<boost::shared_ptr<VirtualSyncSource> >m_virtualDS; /**All configured virtual datastores*/
 private:
     LogDir m_logdir;     /**< our logging directory */
     bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
@@ -1214,19 +1217,30 @@ void SyncContext::initSources(SourceList &sourceList)
     list<string> configuredSources = getSyncSources();
     BOOST_FOREACH(const string &name, configuredSources) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
-        
+
+        SyncSourceNodes source = getSyncSourceNodes (name);
+        SourceType sourceType = SyncSource::getSourceType(source);
+
         // is the source enabled?
         string sync = sc->getSync();
         bool enabled = sync != "disabled";
         if (enabled) {
-            SyncSourceParams params(name,
-                                    getSyncSourceNodes(name));
-            SyncSource *syncSource =
-                SyncSource::createSource(params);
-            if (!syncSource) {
-                throwError(name + ": type unknown" );
+            if (sourceType.m_backend == "virtual") {
+                //This is a virtual sync source 
+                SyncSourceParams params(name, source);
+                sourceList.m_virtualDS.push_back (
+                        boost::shared_ptr<VirtualSyncSource> (new VirtualSyncSource (params)));
+            } else {
+                string url = getSyncURL();
+                SyncSourceParams params(name,
+                        source);
+                SyncSource *syncSource =
+                    SyncSource::createSource(params);
+                if (!syncSource) {
+                    throwError(name + ": type unknown" );
+                }
+                sourceList.push_back(syncSource);
             }
-            sourceList.push_back(syncSource);
         } else {
             // the Synthesis engine is never going to see this source,
             // therefore we have to mark it as 100% complete and
@@ -1469,6 +1483,59 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 fragment <<
                 "    </datastore>\n\n";
         }
+
+        /*If there is super datastore, add it here*/
+        //TODO generate specific superdatastore contents
+        //Now only works for synthesis built-in events+tasks 
+        BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->m_virtualDS) {
+            std::string evoSyncSource = vSource->getDatabaseID();
+            bool valid = true;
+            std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
+            BOOST_FOREACH (std::string source, mappedSources) {
+                //check whether the mapped source is really available
+                if (! (*m_sourceListPtr)[source]) {
+                    SE_LOG_ERROR (NULL, NULL, 
+                            "Virtual datasource %s referenced a non-existed datasource %s, check your configuration!",
+                            vSource->getName(), source.c_str());
+                    valid = false;
+                    break;
+                }
+                //TODO check the format. Must be the same for the superdatastore and all
+                //sub datastores. If not match, warn user.
+           }
+
+            if (!valid) {
+                continue;
+            }
+
+            if (mappedSources.size() !=2) {
+                vSource->throwError ("virtual data source now only supports events+tasks case");
+            } 
+
+            datastores << "    <superdatastore name= '" << vSource->getName() <<"'> \n";
+            datastores << "      <contains datastore = '" << mappedSources[0] <<"'>\n"
+                << "        <dispatchfilter>F.ISEVENT:=1</dispatchfilter>\n"
+                << "        <guidprefix>e</guidprefix>\n"
+                << "      </contains>\n"
+                <<"\n      <contains datastore = '" << mappedSources[1] <<"'>\n"
+                << "        <dispatchfilter>F.ISEVENT:=0</dispatchfilter>\n"
+                << "        <guidprefix>t</guidprefix>\n"
+                <<"      </contains>\n" ;
+
+            std::string typesupport;
+            typesupport = vSource->getDataTypeSupport();
+            if (typesupport.empty()) {
+                //TODO
+                //If the datatype is not set explictly by user, what should
+                //be do?
+                SE_THROW ("datatype format is not set in virtual datasource configuration");
+            } 
+            datastores << "      <typesupport>\n"
+                << typesupport 
+                << "      </typesupport>\n";
+            datastores <<"\n    </superdatastore>";
+        }
+
         if (datastores.str().empty()) {
             // Add dummy datastore, the engine needs it. sync()
             // checks that we have a valid configuration if it is

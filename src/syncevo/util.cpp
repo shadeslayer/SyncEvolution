@@ -351,4 +351,37 @@ std::string SubstEnvironment(const std::string &str)
     return res.str();
 }
 
+std::vector<std::string> unescapeJoinedString (const std::string& src, char sep)
+{
+    std::vector<std::string> splitStrings;
+    size_t pos1 = 0, pos2 = 0, pos3 = 0;
+    std::string s1, s2;
+    while (pos3 != src.npos) {
+        pos2 = src.find (sep, pos3);
+        s1 = src.substr (pos1, 
+                (pos2 == std::string::npos) ? std::string::npos : pos2-pos1);
+        size_t pos = s1.find_last_not_of ("\\");
+        pos3 = (pos2 == std::string::npos) ?pos2 : pos2+1;
+        // A matching delimiter is a comma with even trailing '\'
+        // characters
+        if (!((s1.length() - ((pos == s1.npos) ? 0: pos-1)) &1 )) {
+            s2="";
+            boost::trim (s1);
+            for (std::string::iterator i = s1.begin(); i != s1.end(); i++) {
+                //unescape characters
+                if (*i == '\\') {
+                    if(++i == s1.end()) {
+                        break;
+                    }
+                }
+                s2+=*i;
+            }
+            splitStrings.push_back (s2);
+            pos1 = pos3;
+        }
+    }
+    return splitStrings;
+}
+
+
 SE_END_CXX
