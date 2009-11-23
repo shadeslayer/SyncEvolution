@@ -1,6 +1,6 @@
 BACKENDS = @BACKENDS@
 
-service_in_files = org.Moblin.SyncEvolution.service.in
+service_in_files = org.syncevolution.service.in
 if COND_DBUS
 servicedir = $(DBUS_SERVICES_DIR)
 service_DATA = $(service_in_files:.service.in=.service)
@@ -47,7 +47,7 @@ nobase_dist_sysconf_DATA = $(TEMPLATE_FILES)
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
 CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES) \
-	org.Moblin.SyncEvolution.service
+	org.syncevolution.service
 
 # synccompare is created by replacing its 'import Algorithm::Diff;'
 # with a simplified copy of Diff.pm.

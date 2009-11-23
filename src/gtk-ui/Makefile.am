@@ -50,8 +50,9 @@ bin_PROGRAMS = $(GUI_PROGRAMS)
 
 sync_ui_SOURCES = \
 	main.c sync-ui.c sync-ui.h sync-ui-config.c sync-ui-config.h \
-	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h
-nodist_sync_ui_SOURCES = sync-ui-marshal.c sync-ui-marshal.h
+	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h \
+	sync-config-widget.c sync-config-widget.h
+
 sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) $(top_builddir)/src/dbus/libsyncevo-dbus.la
 sync_ui_CFLAGS = $(GUI_CFLAGS) \
 	$(DBUS_GLIB_CFLAGS) \
@@ -73,26 +74,7 @@ sync_ui_moblin_LDADD = $(sync_ui_LDADD)
 sync_ui_moblin_CFLAGS = $(sync_ui_CFLAGS)
 sync_ui_moblin_CPPFLAGS = $(sync_ui_CPPFLAGS) -DUSE_MOBLIN_UX
 
-noinst_DATA = sync-ui-marshal.list
-if COND_GUI
-BUILT_SOURCES = \
-	syncevo-bindings.h sync-ui-marshal.c sync-ui-marshal.h
-endif
 CLEANFILES = $(BUILT_SOURCES) \
 	ui.xml \
 	sync-moblin.desktop \
         $(applications_generated)
-
-%-bindings.h: stamp-%-bindings.h
-	@true
-stamp-%-bindings.h: $(top_builddir)/src/dbus/interfaces/%.xml
-	$(DBUS_BINDING_TOOL) --mode=glib-client --prefix=syncevo $< > xgen-$(@F) \
-	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
-	&& rm -f xgen-$(@F) \
-	&& echo timestamp > $(@F)
-
-sync-ui-marshal.h: $(srcdir)/sync-ui-marshal.list $(GLIB_GENMARSHAL)
-	$(GLIB_GENMARSHAL) $< --header --prefix=sync_ui_marshal > $@
-sync-ui-marshal.c: $(srcdir)/sync-ui-marshal.list sync-ui-marshal.h $(GLIB_GENMARSHAL)
-	echo "#include \"sync-ui-marshal.h\"" > $@ \
-	&& $(GLIB_GENMARSHAL) --prefix=sync_ui_marshal $(srcdir)/sync-ui-marshal.list --body >> $@
