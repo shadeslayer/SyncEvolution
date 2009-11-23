@@ -27,6 +27,12 @@
             empty configuration with "update=FALSE" can thus be used
             to remove the entire configuration.
 
+            "Completely empty" means "no entries at all" ({} in Python
+            notation). This is different from a config with no properties
+            set ({"": {}} = sync properties reset to defaults, no sources;
+            {"": {}, "source/addressbook": {}} = same, with address book
+            reset to defaults).
+
             When a specific peer was selected via the configuration
             name, clearing and removing properties is done only
             for the peer-specific properties.
