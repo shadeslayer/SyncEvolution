@@ -331,7 +331,7 @@ case $enable_gui in
 esac
 
 if test $enable_gui != "no"; then
-    gui_modules="glib-2.0 dbus-glib-1 >= 0.60 gtk+-2.0 libglade-2.0 gconf-2.0 gio-2.0 gnome-keyring-1"
+    gui_modules="glib-2.0 dbus-glib-1 >= 0.60 gtk+-2.0 libglade-2.0 gconf-2.0 gio-2.0"
     if test $enable_gui == "moblin"; then
         AC_DEFINE(USE_MOBLIN_UX, 1, [Use Moblin UI widgets])
         gui_modules="$gui_modules nbtk-gtk-1.2"

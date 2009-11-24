@@ -48,7 +48,6 @@ typedef struct {
     SyncevoServer *server;
     server_config *config;
     
-    char *keyring_password;
     char *running_session;
 
     /* label */

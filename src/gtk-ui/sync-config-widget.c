@@ -1,7 +1,6 @@
 #include "config.h"
 
 #include <glib/gi18n.h>
-#include <gnome-keyring.h>
 #include <dbus/dbus-glib.h>
 
 #include "sync-ui.h"
@@ -69,37 +68,6 @@ stop_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
     sync_config_widget_set_current (self, FALSE);
     g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
-}
-
-static void
-add_to_acl_cb (GnomeKeyringResult result)
-{
-    if (result != GNOME_KEYRING_RESULT_OK)
-        g_warning ("Adding server to GNOME keyring access control list failed: %s",
-                   gnome_keyring_result_to_message (result));
-}
-
-static void
-set_password_cb (GnomeKeyringResult result, guint32 id, gpointer data)
-{
-    if (result != GNOME_KEYRING_RESULT_OK) {
-        g_warning ("setting password in GNOME keyring failed: %s",
-                   gnome_keyring_result_to_message (result));
-        return;
-    }
-g_debug ("password changed");
-
-    /* add the server to access control list */
-    /* TODO: name and path must match the ones syncevo-dbus-server really has,
-     * so this call should be in the dbus-wrapper library */
-    /* TODO: check if server already has rights... */
-    gnome_keyring_item_grant_access_rights (NULL, 
-                                            "SyncEvolution",
-                                            LIBEXECDIR "/syncevo-dbus-server",
-                                            id,
-                                            GNOME_KEYRING_ACCESS_READ,
-                                            (GnomeKeyringOperationDoneCallback)add_to_acl_cb,
-                                            NULL, NULL);
 }
 
 static void
@@ -228,7 +196,6 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     save_config_data *data;
     const char *username, *password, *sync_url, *name;
     char *real_url;
-    gboolean keyring_changed = FALSE;
 
     if (!self->config) {
         return;
@@ -239,9 +206,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     name = gtk_entry_get_text (GTK_ENTRY (self->entry));
 
     username = gtk_entry_get_text (GTK_ENTRY (self->username_entry));
-    if (syncevo_config_set_value (config, NULL, "username", username)) {
-        keyring_changed = TRUE;
-    }
+    syncevo_config_set_value (config, NULL, "username", username);
 
     sync_url = gtk_entry_get_text (GTK_ENTRY (self->baseurl_entry));
     /* make a wild guess if no scheme in url */
@@ -250,26 +215,10 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     } else {
         real_url = g_strdup (sync_url);
     }
-    if (syncevo_config_set_value (config, NULL, "syncURL", real_url)) {
-        keyring_changed = TRUE;
-    }
+    syncevo_config_set_value (config, NULL, "syncURL", real_url);
 
     password = gtk_entry_get_text (GTK_ENTRY (self->password_entry));
-    if (self->keyring_password) {
-        if (strcmp (self->keyring_password, password) != 0) {
-g_debug ("password change");
-            keyring_changed = TRUE;
-        }
-    } else {
-        char *old_password;
-        syncevo_config_get_value (config, NULL, "password", &old_password);
-        if (!old_password ||
-            strcmp (old_password, password) != 0) {
-            /* save changed passwords to keyring instead of syncevoluion config */
-            keyring_changed = TRUE;
-            syncevo_config_set_value (config, NULL, "password", g_strdup ("-"));
-        }
-    }
+    syncevo_config_set_value (config, NULL, "password", password);
 
 
     if (!name || strlen (name) == 0 ||
@@ -282,27 +231,6 @@ g_debug ("password change");
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)update_source_config,
                                    self);
-
-
-    if (keyring_changed) {
-        char *address;
-        address = strstr (real_url, "://");
-        if (address)
-            address = address + 3;
-
-        gnome_keyring_set_network_password (NULL, /* default keyring */
-                                            username,
-                                            NULL,
-                                            address,
-                                            NULL,
-                                            NULL,
-                                            NULL,
-                                            0,
-                                            password,
-                                            (GnomeKeyringOperationGetIntCallback)set_password_cb,
-                                            NULL,
-                                            NULL);
-    }
 
     data = g_slice_new (save_config_data);
     data->widget = self;
@@ -508,30 +436,6 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                                    (ConfigFunc)init_source,
                                    self);
 
-}
-
-static void
-find_password_cb (GnomeKeyringResult result, GList *list, SyncConfigWidget *self)
-{
-    switch (result) {
-    case GNOME_KEYRING_RESULT_NO_MATCH:
-        break;
-    case GNOME_KEYRING_RESULT_OK:
-        if (list && list->data) {
-            GnomeKeyringNetworkPasswordData *key_data;
-            key_data = (GnomeKeyringNetworkPasswordData*)list->data;
-
-            gtk_entry_set_text (GTK_ENTRY (self->password_entry), key_data->password);
-            self->keyring_password = g_strdup (key_data->password);
-        }
-        break;
-    default:
-        g_warning ("getting password from GNOME keyring failed: %s",
-                   gnome_keyring_result_to_message (result));
-        break;
-    }
-
-    return;
 }
 
 static void
@@ -863,8 +767,6 @@ get_config_cb (SyncevoServer *syncevo,
                GError *error,
                SyncConfigWidget *self)
 {
-    char *password, *username, *url;
-
     if (error) {
         g_warning ("Server.GetConfig failed: %s", error->message);
         g_error_free (error);
@@ -873,40 +775,6 @@ get_config_cb (SyncevoServer *syncevo,
         return;
     }
     sync_config_widget_real_init (self, config);
-
-    self->keyring_password = NULL;
-
-    /* see if we need a password from keyring */
-    syncevo_config_get_value (config, NULL, "password", &password);
-    syncevo_config_get_value (config, NULL, "username", &username);
-    syncevo_config_get_value (config, NULL, "syncURL", &url);
-
-    if (url && username &&
-        password && strcmp (password, "-") == 0) {
-
-        const char *server_address;
-
-        server_address = strstr (url, "://");
-        if (server_address) 
-            server_address = server_address + 3;
-
-        if (!server_address) {
-            g_warning ("Server configuration has suspect URL '%s',"
-                       " not getting a password from keyring",
-                       url);
-        } else {
-            gnome_keyring_find_network_password (username,
-                                                 NULL,
-                                                 server_address,
-                                                 NULL,
-                                                 NULL,
-                                                 NULL,
-                                                 0,
-                                                 (GnomeKeyringOperationGetListCallback)find_password_cb,
-                                                 self,
-                                                 NULL);
-        }
-    }
 
 }
 

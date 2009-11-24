@@ -26,7 +26,6 @@
 #include <gconf/gconf-client.h>
 #include <glib/gi18n.h>
 #include <gio/gio.h>
-#include <gnome-keyring.h>
 #include <dbus/dbus-glib.h>
 
 #include "syncevo-server.h"
