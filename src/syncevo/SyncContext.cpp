@@ -1757,9 +1757,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                 }
             }
 
-            // reinitializes the engine, only at this time can we decide whether
-            // this is a server session or client session.
-            SwapEngine swapengine(*this);
             // open each source - failing now is still safe
             BOOST_FOREACH(SyncSource *source, sourceList) {
                 if (m_serverMode) {
