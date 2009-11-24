@@ -24,17 +24,6 @@
 #include "syncevo-session.h"
 #include "syncevo-server.h"
 
-typedef enum {
-    SYNC_NONE,
-    SYNC_TWO_WAY,
-    SYNC_SLOW,
-    SYNC_ONE_WAY_FROM_CLIENT,
-    SYNC_REFRESH_FROM_CLIENT,
-    SYNC_ONE_WAY_FROM_SERVER,
-    SYNC_REFRESH_FROM_SERVER,
-    SYNC_MODE_MAX
-}SyncMode;
-
 /* need a separate struct for sources because we need to know local support ... */
 typedef struct source_config {
     char *name;

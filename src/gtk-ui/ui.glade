@@ -190,7 +190,7 @@
                                                         </child>
                                                         <child>
                                                           <widget class="GtkRadioButton" id="one_way_from_remote_radio">
-                                                            <property name="label" translatable="yes">Delete all local data and replace it with remote data</property>
+                                                            <property name="label" translatable="yes">Get remote changes but do not send local changes</property>
                                                             <property name="visible">True</property>
                                                             <property name="can_focus">True</property>
                                                             <property name="receives_default">False</property>
@@ -205,7 +205,7 @@
                                                         </child>
                                                         <child>
                                                           <widget class="GtkRadioButton" id="one_way_from_local_radio">
-                                                            <property name="label" translatable="yes">Delete all remote data and replace it with local data</property>
+                                                            <property name="label" translatable="yes">Send local changes but do not get remote changes</property>
                                                             <property name="visible">True</property>
                                                             <property name="can_focus">True</property>
                                                             <property name="receives_default">False</property>
