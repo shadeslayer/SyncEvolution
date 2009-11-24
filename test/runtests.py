@@ -373,7 +373,7 @@ class GitCheckout(Action):
         else:
             cmd = "git clone %s %s" % (self.url, self.basedir)
         context.runCommand(cmd)
-        context.runCommand("cd %(dir)s && "
+        context.runCommand("set -x; cd %(dir)s && git show-ref &&"
                            "((git tag -l | grep -w -q %(rev)s) && git checkout %(rev)s ||"
                            "((git branch -l | grep -w -q %(rev)s) && git checkout %(rev)s || git checkout -b %(rev)s origin/%(rev)s) && git merge origin/%(rev)s)" %
                            {"dir": self.basedir,
