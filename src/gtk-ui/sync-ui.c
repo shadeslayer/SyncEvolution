@@ -1848,9 +1848,6 @@ sync_ui_create_main_window ()
                                  (SyncevoServerGetSessionsCb)get_sessions_cb,
                                  data);
 
-    /* TODO: use Presence signal and CheckPresence to make sure we 
-     * know if network is down etc. */
-    
     init_configuration (data);
 
     gtk_window_present (GTK_WINDOW (data->sync_win));

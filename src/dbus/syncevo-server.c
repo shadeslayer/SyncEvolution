@@ -66,6 +66,34 @@ server_async_data_free (ServerAsyncData *data)
     g_slice_free (ServerAsyncData, data);
 }
 
+static void
+generic_callback (DBusGProxy *proxy,
+                  GError *error,
+                  ServerAsyncData *data)
+{
+    if (data->callback) {
+        (*(SyncevoServerGenericCb)data->callback) (data->server,
+                                                   error,
+                                                   data->userdata);
+    }
+    server_async_data_free (data);
+}
+
+static gboolean
+generic_error (ServerAsyncData *data)
+{
+    GError *error;
+
+    error = g_error_new_literal (g_quark_from_static_string ("syncevo-server"),
+                                 SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT, 
+                                 "The D-Bus object does not exist");
+    (*(SyncevoServerGenericCb)data->callback) (data->server,
+                                               error,
+                                               data->userdata);
+    server_async_data_free (data);
+
+    return FALSE;
+}
 
 static void
 session_changed_cb (DBusGProxy *proxy,
@@ -657,5 +685,33 @@ syncevo_server_get_presence (SyncevoServer *syncevo,
             (priv->proxy,
              config_name,
              (org_syncevolution_Server_check_presence_reply) check_presence_callback,
+             data);
+}
+
+void syncevo_server_check_source (SyncevoServer *server,
+                                  const char *config,
+                                  const char *source,
+                                  SyncevoServerGenericCb callback,
+                                  gpointer userdata)
+{
+    ServerAsyncData *data;
+    SyncevoServerPrivate *priv;
+
+    priv = GET_PRIVATE (server);
+
+    data = server_async_data_new (server, G_CALLBACK (callback), userdata);
+
+    if (!priv->proxy) {
+        if (callback) {
+            g_idle_add ((GSourceFunc)generic_error, data);
+        }
+        return;
+    }
+
+    org_syncevolution_Server_check_source_async 
+            (priv->proxy,
+             config,
+             source,
+             (org_syncevolution_Server_check_source_reply) generic_callback,
              data);
 }

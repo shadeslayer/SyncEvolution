@@ -62,6 +62,10 @@ GType syncevo_server_get_type (void);
 
 SyncevoServer *syncevo_server_get_default ();
 
+typedef void (*SyncevoServerGenericCb) (SyncevoServer *server,
+                                        GError *error,
+                                        gpointer userdata);
+
 typedef void (*SyncevoServerGetConfigsCb) (SyncevoServer *syncevo,
                                            char **config_names,
                                            GError *error,
@@ -117,6 +121,12 @@ typedef void (*SyncevoServerGetPresenceCb) (SyncevoServer *syncevo,
 void syncevo_server_get_presence (SyncevoServer *syncevo,
                                   const char *config_name,
                                   SyncevoServerGetPresenceCb callback,
+                                  gpointer userdata);
+
+void syncevo_server_check_source (SyncevoServer *server,
+                                  const char *config,
+                                  const char *source,
+                                  SyncevoServerGenericCb callback,
                                   gpointer userdata);
 
 G_END_DECLS
