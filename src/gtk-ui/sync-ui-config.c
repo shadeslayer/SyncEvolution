@@ -191,6 +191,7 @@ add_source_config (char *name,
 
     new_conf = g_slice_new (source_config);
     new_conf->name = name;
+    new_conf->supported_locally = TRUE;
     new_conf->config = syncevo_source_config;
 
     g_hash_table_insert (source_configs, name, new_conf);

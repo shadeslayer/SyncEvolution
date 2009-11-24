@@ -2,6 +2,7 @@
 
 #include <glib/gi18n.h>
 #include <gnome-keyring.h>
+#include <dbus/dbus-glib.h>
 
 #include "sync-ui.h"
 #include "sync-config-widget.h"
@@ -32,9 +33,6 @@ enum {
 };
 static guint32 signals[LAST_SIGNAL] = {0, };
 
-/*
-static void get_server_config_for_template_cb (SyncevoService *service, GPtrArray *options, GError *error, SyncConfigWidget *self);
-*/
 static void sync_config_widget_update_label (SyncConfigWidget *self);
 
 static void
@@ -366,6 +364,41 @@ static void update_buttons (SyncConfigWidget *self)
     }
 }
 
+typedef struct source_row_data {
+    GtkWidget *label;
+    GtkWidget *entry;
+} source_row_data;
+
+static void
+check_source_cb (SyncevoServer *server,
+                 GError *error,
+                 source_row_data *data)
+{
+    gboolean show = TRUE;
+
+    if (error) {
+        if(error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+           dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_SOURCE_UNUSABLE)) {
+
+            show = FALSE;
+        } else if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+                   dbus_g_error_has_name (error,
+                                          SYNCEVO_DBUS_ERROR_NO_SUCH_CONFIG)){
+            /* apparently templates can't be checked... */
+            /* TODO: could use a temporary config to do it... */
+        } else {
+            g_warning ("CheckSource failed: %s", error->message);
+        }
+        g_error_free (error);
+    }
+
+    if (show) {
+        gtk_widget_show (data->label);
+        gtk_widget_show (data->entry);
+    }
+    g_slice_free (source_row_data, data);
+}
+
 static void
 init_source (char *name,
              GHashTable *source_configuration,
@@ -374,7 +407,9 @@ init_source (char *name,
     char *str, *pretty_name;
     const char *uri;
     guint row;
-    GtkWidget *label, *entry;
+    source_row_data *row_data;
+
+    row_data = g_slice_new (source_row_data);
 
     g_object_get (self->server_settings_table,
                   "n-rows", &row,
@@ -387,24 +422,28 @@ init_source (char *name,
      * Placeholder is a source  name in settings window. 
      * Example: "Addressbook URI" */
     str = g_strdup_printf (_("%s URI"), pretty_name);
-    label = gtk_label_new (str);
+    row_data->label = gtk_label_new (str);
     g_free (str);
     g_free (pretty_name);
 
-    gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
-    gtk_widget_show (label);
-    gtk_table_attach (GTK_TABLE (self->server_settings_table), label,
+    gtk_misc_set_alignment (GTK_MISC (row_data->label), 1.0, 0.5);
+    gtk_table_attach (GTK_TABLE (self->server_settings_table), row_data->label,
                       0, 1, row, row + 1, GTK_FILL, GTK_EXPAND, 0, 0);
 
-    entry = gtk_entry_new ();
-    gtk_entry_set_max_length (GTK_ENTRY (entry), 99);
-    gtk_entry_set_width_chars (GTK_ENTRY (entry), 80);
-    gtk_entry_set_text (GTK_ENTRY (entry),
+    row_data->entry = gtk_entry_new ();
+    gtk_entry_set_max_length (GTK_ENTRY (row_data->entry), 99);
+    gtk_entry_set_width_chars (GTK_ENTRY (row_data->entry), 80);
+    gtk_entry_set_text (GTK_ENTRY (row_data->entry),
                         uri ? uri : "");
-    g_hash_table_insert (self->uri_entries, name, entry);
-    gtk_widget_show (entry);
-    gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table), entry,
+    g_hash_table_insert (self->uri_entries, name, row_data->entry);
+    gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table), row_data->entry,
                                1, 2, row, row + 1);
+
+    syncevo_server_check_source (self->server,
+                                 self->config->name,
+                                 name,
+                                 (SyncevoServerGenericCb)check_source_cb,
+                                 row_data);
 }
 
 static void

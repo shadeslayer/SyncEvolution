@@ -810,7 +810,7 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
 static void
 update_service_source_ui (const char *name, source_config *conf, app_data *data)
 {
-    GtkWidget *check, *hbox, *box, *lbl;
+    GtkWidget *check, *box, *lbl;
     char *pretty_name;
     const char *source_uri, *sync;
     gboolean enabled;
@@ -833,16 +833,17 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
        In this hack the labels are not related to the checkbutton at all,
        this is definitely not nice but looks better */
 
-    hbox = gtk_hbox_new (FALSE, 0);
-    gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), hbox);
+    conf->box = gtk_hbox_new (FALSE, 0);
+    gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), conf->box);
+    
  
     box = gtk_vbox_new (FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (hbox), box, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (conf->box), box, FALSE, FALSE, 0);
     check = gtk_check_button_new ();
     gtk_box_pack_start (GTK_BOX (box), check, FALSE, FALSE, 0);
 
     box = gtk_vbox_new (FALSE, 0);
-    gtk_box_pack_start_defaults (GTK_BOX (hbox), box);
+    gtk_box_pack_start_defaults (GTK_BOX (conf->box), box);
     gtk_container_set_border_width (GTK_CONTAINER (box), 2);
 
     if (source_uri && strlen (source_uri) > 0) {
@@ -873,8 +874,9 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
     g_signal_connect (check, "toggled",
                       G_CALLBACK (source_check_toggled_cb), data);
 
-
-    gtk_widget_show_all (hbox); 
+    if (conf->supported_locally) {
+        gtk_widget_show_all (conf->box); 
+    }
 }
 
 static void
@@ -883,15 +885,23 @@ check_source_cb (SyncevoSession *session,
                  source_config *source)
 {
     if (error) {
-        /* TODO make sure this is the right error */
+        if(error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+           dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_SOURCE_UNUSABLE)) {
+            /* source is not supported locally */
+            if (source) {
+                source->supported_locally = FALSE;
+                if (source->box) {
+                    /* widget is already on screen, hide it */
+                    gtk_widget_hide (source->box); 
+                }
+            }
+        } else {
+            g_warning ("CheckSource failed: %s", error->message);
+        }
 
-        /* source is not supported locally */
-        source->supported_locally = FALSE;
         g_error_free (error);
         return;
     }
-
-    source->supported_locally = TRUE;
 }
 
 static void
@@ -1163,13 +1173,12 @@ get_config_for_main_win_cb (SyncevoServer *server,
         /* get "locally supported" status for all sources */
         g_hash_table_iter_init (&iter, data->current_service->source_configs);
         while (g_hash_table_iter_next (&iter, (gpointer)&name, (gpointer)&source)) {
-/*
- TODO: this is not implemented in Server yet...
-            syncevo_session_check_source (data->session,
-                                          name,
-                                          (SyncevoSessionGenericCb)check_source_cb,
-                                          source);
-*/
+
+            syncevo_server_check_source (data->server,
+                                         data->current_service->name,
+                                         name,
+                                         (SyncevoServerGenericCb)check_source_cb,
+                                         source);
         }
 
         syncevo_server_get_presence (server,
@@ -1451,9 +1460,10 @@ sync (app_data *data, SyncevoSession *session)
     while (g_hash_table_iter_next (&iter, NULL, (gpointer)&source)) {
         if (!source->supported_locally ||
             !source_config_is_enabled (source)) {
+
             syncevo_source_modes_add (source_modes,
                                       source->name,
-                                      SYNC_NONE);
+                                      SYNCEVO_SYNC_NONE);
         }
     }
 

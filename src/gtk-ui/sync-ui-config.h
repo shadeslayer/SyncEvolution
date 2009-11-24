@@ -46,6 +46,7 @@ typedef struct source_config {
     long remote_rejections;
 
     GtkWidget *label; /* source report label, after ui has been constructed */
+    GtkWidget *box; /* source box, after ui has been constructed */
 
     GHashTable *config; /* link to a "sub-hashtable" inside server_config->config */
 } source_config;
