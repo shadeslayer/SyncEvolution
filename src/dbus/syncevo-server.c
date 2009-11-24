@@ -33,6 +33,7 @@ typedef struct _ServerAsyncData {
 enum {
     SESSION_CHANGED,
     PRESENCE_CHANGED,
+    INFO_REQUEST,
     SHUTDOWN,
     LAST_SIGNAL
 };
@@ -117,6 +118,19 @@ presence_cb (DBusGProxy *proxy,
 }
 
 static void
+info_request_cb (DBusGProxy *proxy,
+                 char *id,
+                 char *session_path,
+                 char *state,
+                 char *handler_path,
+                 char *type,
+                 SyncevoServer *server)
+{
+    g_signal_emit (server, signals[INFO_REQUEST], 0, 
+                   id, session_path, state, handler_path, type);
+}
+
+static void
 proxy_destroy_cb (DBusGProxy *proxy, 
                   SyncevoServer *server)
 {
@@ -155,6 +169,9 @@ dispose (GObject *object)
                                         object);
         dbus_g_proxy_disconnect_signal (priv->proxy, "Presence",
                                         G_CALLBACK (presence_cb),
+                                        object);
+        dbus_g_proxy_disconnect_signal (priv->proxy, "InfoRequest",
+                                        G_CALLBACK (info_request_cb),
                                         object);
         dbus_g_proxy_disconnect_signal (priv->proxy, "destroy",
                                         G_CALLBACK (proxy_destroy_cb),
@@ -236,6 +253,15 @@ syncevo_server_get_new_proxy (SyncevoServer *server)
                              G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INVALID);
     dbus_g_proxy_connect_signal (priv->proxy, "Presence",
                                  G_CALLBACK (presence_cb), server, NULL);
+    dbus_g_proxy_add_signal (priv->proxy, "InfoRequest",
+                             G_TYPE_STRING,
+                             DBUS_TYPE_G_OBJECT_PATH,
+                             G_TYPE_STRING,
+                             DBUS_TYPE_G_OBJECT_PATH,
+                             G_TYPE_STRING,
+                             G_TYPE_INVALID);
+    dbus_g_proxy_connect_signal (priv->proxy, "InfoRequest",
+                                 G_CALLBACK (info_request_cb), server, NULL);
     g_signal_connect (priv->proxy, "destroy",
                       G_CALLBACK (proxy_destroy_cb), server);
 
@@ -265,6 +291,15 @@ syncevo_server_init (SyncevoServer *server)
                                        G_TYPE_NONE,
                                        G_TYPE_STRING,
                                        G_TYPE_STRING,
+                                       G_TYPE_STRING,
+                                       G_TYPE_INVALID);
+    /* InfoRequest */
+    dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_STRING_STRING_STRING_STRING,
+                                       G_TYPE_NONE,
+                                       G_TYPE_STRING,
+                                       DBUS_TYPE_G_OBJECT_PATH,
+                                       G_TYPE_STRING,
+                                       DBUS_TYPE_G_OBJECT_PATH,
                                        G_TYPE_STRING,
                                        G_TYPE_INVALID);
 
@@ -298,6 +333,15 @@ syncevo_server_class_init (SyncevoServerClass *klass)
                           syncevo_marshal_VOID__STRING_STRING_STRING,
                           G_TYPE_NONE,
                           3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+    signals[INFO_REQUEST] =
+            g_signal_new ("info-request",
+                          G_TYPE_FROM_CLASS (klass),
+                          G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                          G_STRUCT_OFFSET (SyncevoServerClass, info_request),
+                          NULL, NULL,
+                          syncevo_marshal_VOID__STRING_STRING_STRING_STRING_STRING,
+                          G_TYPE_NONE,
+                          5, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
     signals[SHUTDOWN] =
             g_signal_new ("shutdown",
                           G_TYPE_FROM_CLASS (klass),
@@ -713,5 +757,36 @@ void syncevo_server_check_source (SyncevoServer *server,
              config,
              source,
              (org_syncevolution_Server_check_source_reply) generic_callback,
+             data);
+}
+
+void
+syncevo_server_info_response (SyncevoServer *server,
+                              const char *id,
+                              const char *state,
+                              GHashTable *response,
+                              SyncevoServerGenericCb callback,
+                              gpointer userdata)
+{
+    ServerAsyncData *data;
+    SyncevoServerPrivate *priv;
+
+    priv = GET_PRIVATE (server);
+
+    data = server_async_data_new (server, G_CALLBACK (callback), userdata);
+
+    if (!priv->proxy) {
+        if (callback) {
+            g_idle_add ((GSourceFunc)generic_error, data);
+        }
+        return;
+    }
+
+    org_syncevolution_Server_info_response_async
+            (priv->proxy,
+             id,
+             state,
+             response,
+             (org_syncevolution_Server_info_response_reply) generic_callback,
              data);
 }

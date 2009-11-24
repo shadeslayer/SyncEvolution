@@ -1779,7 +1779,20 @@ get_presence_cb (SyncevoServer *server,
     g_free (status);
     g_free (transport);
 }
- 
+
+static void
+info_request_cb (SyncevoServer *syncevo,
+                 char *id,
+                 char *session_path,
+                 char *state,
+                 char *handler_path,
+                 char *type,
+                 app_data *data)
+{
+    /* Implementation waiting for moblin bug #6376*/
+    g_warning ("InfoRequest handler not implemented yet");
+}
+
 static void
 server_presence_changed_cb (SyncevoServer *server,
                             char *config_name,
@@ -1850,6 +1863,8 @@ sync_ui_create_main_window ()
                       G_CALLBACK (server_session_changed_cb), data);
     g_signal_connect (data->server, "presence_changed",
                       G_CALLBACK (server_presence_changed_cb), data);
+    g_signal_connect (data->server, "info-request",
+                      G_CALLBACK (info_request_cb), data);
     syncevo_server_get_sessions (data->server,
                                  (SyncevoServerGetSessionsCb)get_sessions_cb,
                                  data);

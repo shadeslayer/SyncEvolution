@@ -57,6 +57,13 @@ typedef struct _SyncevoServerClass {
                               char *status,
                               char *transport);
 
+    void (*info_request) (SyncevoServer *syncevo,
+                          char *id,
+                          char *session_path,
+                          char *state,
+                          char *handler_path,
+                          char *type);
+
     void (*shutdown) (SyncevoServer *syncevo);
 } SyncevoServerClass;
 
@@ -130,6 +137,13 @@ void syncevo_server_check_source (SyncevoServer *server,
                                   const char *source,
                                   SyncevoServerGenericCb callback,
                                   gpointer userdata);
+
+void syncevo_server_info_response (SyncevoServer *server,
+                                   const char *id,
+                                   const char *state,
+                                   GHashTable *response,
+                                   SyncevoServerGenericCb callback,
+                                   gpointer userdata);
 
 G_END_DECLS
 
