@@ -1116,11 +1116,14 @@ get_config_for_main_win_cb (SyncevoServer *server,
                             app_data *data)
 {
     if (error) {
-        g_warning ("Error in Server.GetConfig: %s", error->message);
+        if(error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+           dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_NO_SUCH_CONFIG)) {
+            set_app_state (data, SYNC_UI_STATE_NO_SERVER);
+        } else {
+            g_warning ("Error in Server.GetConfig: %s", error->message);
+        }
         g_error_free (error);
 
-        /* TODO: check for known errors */
-        set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
         return;
     }
     
