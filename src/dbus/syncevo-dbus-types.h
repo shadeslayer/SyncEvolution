@@ -24,8 +24,9 @@
 
 #define SYNCEVO_DBUS_ERROR_EXCEPTION "org.syncevolution.Exception"
 #define SYNCEVO_DBUS_ERROR_NO_SUCH_CONFIG "org.syncevolution.NoSuchConfig"
-#define SYNCEVO_DBUS_ERROR_NO_SUCN_SOURCE "org.syncevolution.NoSuchsource"
+#define SYNCEVO_DBUS_ERROR_NO_SUCH_SOURCE "org.syncevolution.NoSuchsource"
 #define SYNCEVO_DBUS_ERROR_INVALID_CALL "org.syncevolution.InvalidCall"
+#define SYNCEVO_DBUS_ERROR_SOURCE_UNUSABLE "org.syncevolution.SourceUnusable"
 
 typedef enum {
   SYNCEVO_SYNC_UNKNOWN, /* Cannot be used in Sync */

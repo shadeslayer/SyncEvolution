@@ -84,7 +84,7 @@ generic_error (ServerAsyncData *data)
 {
     GError *error;
 
-    error = g_error_new_literal (g_quark_from_static_string ("syncevo-server"),
+    error = g_error_new_literal (SYNCEVO_SERVER_ERROR_QUARK,
                                  SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT, 
                                  "The D-Bus object does not exist");
     (*(SyncevoServerGenericCb)data->callback) (data->server,
@@ -345,7 +345,7 @@ get_configs_error (ServerAsyncData *data)
 {
     GError *error;
 
-    error = g_error_new_literal (g_quark_from_static_string ("syncevo-server"),
+    error = g_error_new_literal (SYNCEVO_SERVER_ERROR_QUARK,
                                  SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT, 
                                  "Could not start service");
     (*(SyncevoServerGetConfigsCb)data->callback) (data->server,
@@ -404,7 +404,7 @@ get_config_error (ServerAsyncData *data)
 {
     GError *error;
 
-    error = g_error_new_literal (g_quark_from_static_string ("syncevo-server"),
+    error = g_error_new_literal (SYNCEVO_SERVER_ERROR_QUARK,
                                  SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT, 
                                  "Could not start service");
     (*(SyncevoServerGetConfigCb)data->callback) (data->server,
@@ -465,7 +465,7 @@ get_reports_error (ServerAsyncData *data)
 {
     GError *error;
 
-    error = g_error_new_literal (g_quark_from_static_string ("syncevo-server"),
+    error = g_error_new_literal (SYNCEVO_SERVER_ERROR_QUARK,
                                  SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT, 
                                  "Could not start service");
     (*(SyncevoServerGetReportsCb)data->callback) (data->server,
@@ -528,7 +528,7 @@ start_session_error (ServerAsyncData *data)
 {
     GError *error;
 
-    error = g_error_new_literal (g_quark_from_static_string ("syncevo-server"),
+    error = g_error_new_literal (SYNCEVO_SERVER_ERROR_QUARK,
                                  SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT, 
                                  "Could not start service");
     (*(SyncevoServerStartSessionCb)data->callback) (data->server,
@@ -587,7 +587,7 @@ get_sessions_error (ServerAsyncData *data)
 {
     GError *error;
 
-    error = g_error_new_literal (g_quark_from_static_string ("syncevo-server"),
+    error = g_error_new_literal (SYNCEVO_SERVER_ERROR_QUARK,
                                  SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT, 
                                  "Could not start service");
     (*(SyncevoServerGetSessionsCb)data->callback) (data->server,
@@ -647,7 +647,7 @@ check_presence_error (ServerAsyncData *data)
 {
     GError *error;
 
-    error = g_error_new_literal (g_quark_from_static_string ("syncevo-server"),
+    error = g_error_new_literal (SYNCEVO_SERVER_ERROR_QUARK,
                                  SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT, 
                                  "Could not start service");
     (*(SyncevoServerGetPresenceCb)data->callback) (data->server,

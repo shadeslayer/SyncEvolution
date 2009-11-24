@@ -30,6 +30,8 @@ enum SyncevoServerError{
     SYNCEVO_SERVER_ERROR_NO_DBUS_OBJECT = 1,
 };
 
+#define SYNCEVO_SERVER_ERROR_QUARK g_quark_from_static_string ("syncevo-server")
+
 #define DBUS_SERVICE_SYNCEVO_SERVER "org.syncevolution"
 #define DBUS_PATH_SYNCEVO_SERVER "/org/syncevolution/Server"
 #define DBUS_INTERFACE_SYNCEVO_SERVER "org.syncevolution.Server"
