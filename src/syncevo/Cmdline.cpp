@@ -216,6 +216,8 @@ bool Cmdline::run() {
         usage(false);
     } else if (m_printConfig) {
         boost::shared_ptr<SyncConfig> config;
+        ConfigProps syncFilter;
+        SourceFilters_t sourceFilters;
 
         if (m_template.empty()) {
             if (m_server.empty()) {
@@ -227,18 +229,26 @@ bool Cmdline::run() {
                 m_err << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
                 return false;
             }
+
+            syncFilter = m_syncProps;
+            sourceFilters[""] = m_sourceProps;
         } else {
-            config = SyncConfig::createServerTemplate(m_template);
+            string peer, context;
+            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_template), peer, context);
+
+            config = SyncConfig::createServerTemplate(peer);
             if (!config.get()) {
                 m_err << "ERROR: no configuration template for '" << m_template << "' available." << endl;
                 return false;
             }
+
+            getFilters(context, syncFilter, sourceFilters);
         }
 
         if (m_sources.empty() ||
             m_sources.find("main") != m_sources.end()) {
             boost::shared_ptr<FilterConfigNode> syncProps(config->getProperties());
-            syncProps->setFilter(m_syncProps);
+            syncProps->setFilter(syncFilter);
             dumpProperties(*syncProps, config->getRegistry());
         }
 
@@ -250,7 +260,12 @@ bool Cmdline::run() {
                 m_out << endl << "[" << name << "]" << endl;
                 SyncSourceNodes nodes = config->getSyncSourceNodes(name);
                 boost::shared_ptr<FilterConfigNode> sourceProps = nodes.getProperties();
-                sourceProps->setFilter(m_sourceProps);
+                SourceFilters_t::const_iterator it = sourceFilters.find(name);
+                if (it != sourceFilters.end()) {
+                    sourceProps->setFilter(it->second);
+                } else {
+                    sourceProps->setFilter(sourceFilters[""]);
+                }
                 dumpProperties(*sourceProps, SyncSourceConfig::getRegistry());
             }
         }
@@ -272,6 +287,8 @@ bool Cmdline::run() {
         }
 
         bool fromScratch = false;
+        string peer, context;
+        SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_server), peer, context);
 
         // Both config changes and migration are implemented as copying from
         // another config (template resp. old one). Migration also moves
@@ -314,7 +331,8 @@ bool Cmdline::run() {
                 // creating from scratch, look for template
                 fromScratch = true;
                 string configTemplate = m_template.empty() ? m_server : m_template;
-                from = SyncConfig::createServerTemplate(configTemplate);
+                SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configTemplate), peer, context);
+                from = SyncConfig::createServerTemplate(peer);
                 if (!from.get()) {
                     m_err << "ERROR: no configuration template for '" << configTemplate << "' available." << endl;
                     dumpServers("Available configuration templates:",
@@ -338,9 +356,19 @@ bool Cmdline::run() {
             }
         }
 
-        // apply config changes on-the-fly
-        from->setConfigFilter(true, "", m_syncProps);
-        from->setConfigFilter(false, "", m_sourceProps);
+        // Apply config changes on-the-fly. Regardless what we do
+        // (changing an existing config, migrating, creating from
+        // a template), existing shared properties in the desired
+        // context must be preserved unless explicitly overwritten.
+        // Therefore read those, update with command line properties,
+        // then set as filter.
+        ConfigProps syncFilter;
+        SourceFilters_t sourceFilters;
+        getFilters(context, syncFilter, sourceFilters);
+        from->setConfigFilter(true, "", syncFilter);
+        BOOST_FOREACH(const SourceFilters_t::value_type &entry, sourceFilters) {
+            from->setConfigFilter(false, entry.first, entry.second);
+        }
 
         // write into the requested configuration, creating it if necessary
         boost::shared_ptr<SyncContext> to(createSyncClient());
@@ -669,6 +697,39 @@ bool Cmdline::listProperties(const ConfigPropertyRegistry &validProps,
     }
     dumpComment(m_out, "   ", comment);
     return true;
+}
+
+void Cmdline::getFilters(const string &context,
+                         ConfigProps &syncFilter,
+                         map<string, ConfigProps> &sourceFilters)
+{
+    boost::shared_ptr<SyncConfig> shared(new SyncConfig(string("@") + context));
+    if (shared->exists()) {
+        shared->getProperties()->readProperties(syncFilter);
+        BOOST_FOREACH(StringPair entry, m_syncProps) {
+            syncFilter[entry.first] = entry.second;
+        }
+
+        BOOST_FOREACH(std::string source, shared->getSyncSources()) {
+            SyncSourceNodes nodes = shared->getSyncSourceNodes(source, "");
+            ConfigProps &props = sourceFilters[source];
+            nodes.getProperties()->readProperties(props);
+
+            // Special case "type" property: the value in the context
+            // is not preserved. Every new peer must ensure that
+            // its own value is compatible (= same backend) with
+            // the other peers.
+            props.erase("type");
+
+            BOOST_FOREACH(StringPair entry, m_sourceProps) {
+                props[entry.first] = entry.second;
+            }
+        }
+        sourceFilters[""] = m_sourceProps;
+    } else {
+        syncFilter = m_syncProps;
+        sourceFilters[""] = m_sourceProps;
+    }
 }
 
 void Cmdline::listSources(SyncSource &syncSource, const string &header)
@@ -1392,11 +1453,18 @@ protected:
         }
 
         rm_r(peer);
-        TestCmdline cmdline("--configure",
-                            "--sync-property", "deviceID = fixed-devid",
-                            // templates are case-insensitive
-                            "FunamBOL",
-                            NULL);
+        const char * const argv_fixed[] = {
+                "--configure",
+                "--sync-property", "deviceID = fixed-devid",
+                // templates are case-insensitive
+                "FunamBOL",
+                NULL
+        }, * const argv_shared[] = {
+            "--configure",
+            "FunamBOL",
+            NULL
+        };
+        TestCmdline cmdline(shared ? argv_shared : argv_fixed);
         cmdline.doit();
         string res = scanFiles(root, "funambol");
         string expected = FunambolConfig();
@@ -1419,10 +1487,17 @@ protected:
             peer = root;
         }
         rm_r(peer);
-        TestCmdline cmdline("--configure",
-                            "--sync-property", "deviceID = fixed-devid",
-                            "synthesis",
-                            NULL);
+        const char * const argv_fixed[] = {
+                "--configure",
+                "--sync-property", "deviceID = fixed-devid",
+                "synthesis",
+                NULL
+        }, * const argv_shared[] = {
+            "--configure",
+            "synthesis",
+            NULL
+        };
+        TestCmdline cmdline(shared ? argv_shared : argv_fixed);
         cmdline.doit();
         string res = scanFiles(root, "synthesis");
         string expected = SynthesisConfig();
@@ -1508,7 +1583,8 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string actual = cmdline.m_out.str();
-            removeRandomUUID(actual);
+            // deviceId must be the one from Funambol
+            CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
             string filtered = injectValues(filterConfig(actual));
             CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(ScheduleWorldConfig())),
                                       filtered);
@@ -1521,7 +1597,7 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string actual = injectValues(filterConfig(cmdline.m_out.str()));
-            removeRandomUUID(actual);
+            CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
             CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(ScheduleWorldConfig())),
                                       actual);
         }
@@ -1535,8 +1611,10 @@ protected:
         }
 
         {
+            // override context and template properties
             TestCmdline cmdline("--print-config", "--template", "scheduleworld",
                                 "--sync-property", "syncURL=foo",
+                                "--source-property", "evolutionsource=Personal",
                                 "--source-property", "sync=disabled",
                                 NULL);
             cmdline.doit();
@@ -1546,10 +1624,13 @@ protected:
                                  "syncURL = http://sync.scheduleworld.com/funambol/ds",
                                  "syncURL = foo");
             boost::replace_all(expected,
+                               "# evolutionsource = ",
+                               "evolutionsource = Personal");
+            boost::replace_all(expected,
                                "sync = two-way",
                                "sync = disabled");
             string actual = injectValues(filterConfig(cmdline.m_out.str()));
-            removeRandomUUID(actual);
+            CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
                                       actual);
         }
@@ -1562,11 +1643,37 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string actual = cmdline.m_out.str();
-            removeRandomUUID(actual);
+            CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
             CPPUNIT_ASSERT_EQUAL_DIFF(internalToIni(ScheduleWorldConfig()),
                                       injectValues(filterConfig(actual)));
         }
-        
+
+        {
+            // change shared source properties, then check template again
+            TestCmdline cmdline("--configure",
+                                "--source-property", "evolutionsource=Personal",
+                                "funambol",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+        }
+        {
+            TestCmdline cmdline("--print-config", "--quiet",
+                                "--template", "scheduleworld",
+                                "funambol",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            string expected = filterConfig(internalToIni(ScheduleWorldConfig()));
+            // from modified Funambol config
+            boost::replace_all(expected,
+                               "# evolutionsource = ",
+                               "evolutionsource = Personal");
+            string actual = injectValues(filterConfig(cmdline.m_out.str()));
+            CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      actual);
+        }
     }
 
     void testSync() {
@@ -1825,7 +1932,8 @@ protected:
     }
 
     void testListSources() {
-        TestCmdline cmdline(NULL);
+        // pick the varargs constructor; NULL alone is ambiguous
+        TestCmdline cmdline(NULL, NULL);
         cmdline.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
         // exact output varies, do not test
@@ -1929,6 +2037,19 @@ private:
      * out and error stream into stringstream members
      */
     class TestCmdline {
+        void init() {
+            m_argv.reset(new const char *[m_argvstr.size() + 1]);
+            m_argv[0] = "client-test";
+            for (size_t index = 0;
+                 index < m_argvstr.size();
+                 ++index) {
+                m_argv[index + 1] = m_argvstr[index].c_str();
+            }
+
+            m_cmdline.set(new Cmdline(m_argvstr.size() + 1, m_argv.get(), m_out, m_err), "cmdline");
+            
+        }
+
     public:
         TestCmdline(const char *arg, ...) {
             va_list argList;
@@ -1939,16 +2060,14 @@ private:
                 m_argvstr.push_back(curr);
             }
             va_end(argList);
+            init();
+        }
 
-            m_argv.reset(new const char *[m_argvstr.size() + 1]);
-            m_argv[0] = "client-test";
-            for (size_t index = 0;
-                 index < m_argvstr.size();
-                 ++index) {
-                m_argv[index + 1] = m_argvstr[index].c_str();
+        TestCmdline(const char * const argv[]) {
+            for (int i = 0; argv[i]; i++) {
+                m_argvstr.push_back(argv[i]);
             }
-
-            m_cmdline.set(new Cmdline(m_argvstr.size() + 1, m_argv.get(), m_out, m_err), "cmdline");
+            init();
         }
 
         void doit() {

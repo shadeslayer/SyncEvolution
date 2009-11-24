@@ -855,9 +855,10 @@ class SyncConfig {
      * The result can be modified to set filters, but it
      * cannot be flushed.
      *
+     * @param peer   a configuration name, *without* a context (scheduleworld, not scheduleworld@default)
      * @return NULL if no such template
      */
-    static boost::shared_ptr<SyncConfig> createServerTemplate(const string &server);
+    static boost::shared_ptr<SyncConfig> createServerTemplate(const string &peer);
 
     /** true if the main configuration file already exists */
     bool exists() const;
