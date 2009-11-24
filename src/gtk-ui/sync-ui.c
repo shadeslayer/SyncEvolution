@@ -869,7 +869,6 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
 
     source_config_update_label (conf);
 
-g_debug ("creating check %s",name);
     g_object_set_data (G_OBJECT (check), "source", (gpointer)conf);
     g_signal_connect (check, "toggled",
                       G_CALLBACK (source_check_toggled_cb), data);
@@ -1243,8 +1242,7 @@ running_session_status_changed_cb (SyncevoSession *session,
     /* TODO: show errors in UI -- but not duplicates */
 
     char *error;
-    
-    g_debug ("running session status changed -> %d", status);
+
     set_running_session_status (data, status);
 
     syncevo_source_statuses_foreach (source_statuses,
@@ -1477,7 +1475,6 @@ status_changed_cb (SyncevoSession *session,
 {
     GTimeVal val;
 
-    g_debug ("sync session status changed -> %d", status);
     switch (status) {
     case SYNCEVO_STATUS_IDLE:
         /* time for business */
@@ -1536,7 +1533,6 @@ get_status_cb (SyncevoSession *session,
         return;
     }
 
-    g_debug ("sync session status is %d", status);
     if (status == SYNCEVO_STATUS_IDLE) {
         /* time for business */
         
