@@ -438,6 +438,16 @@ bool Cmdline::run() {
 
         // done, now write it
         to->flush();
+
+        // also copy .synthesis dir?
+        if (m_migrate) {
+            string fromDir, toDir;
+            fromDir = from->getRootPath() + "/.synthesis";
+            toDir = to->getRootPath() + "/.synthesis";
+            if (isDir(fromDir)) {
+                cp_r(fromDir, toDir);
+            }
+        }
     } else if (m_remove) {
         if (m_dryrun) {
             SyncContext::throwError("--dry-run not supported for removing configurations");
@@ -1998,9 +2008,10 @@ protected:
         }
 
         {
-            // migrate old config with changes, a second time
+            // migrate old config with changes and .synthesis directory, a second time
             createFiles(oldRoot, oldConfig);
             createFiles(oldRoot,
+                        ".synthesis/dummy-file.bfi:dummy = foobar\n"
                         "spds/sources/addressbook/changes/config.txt:foo = bar\n"
                         "spds/sources/addressbook/changes/config.txt:foo2 = bar2\n",
                         true);
@@ -2021,6 +2032,10 @@ protected:
                                  "peers/scheduleworld/sources/addressbook/.other.ini:foo = bar\n"
                                  "peers/scheduleworld/sources/addressbook/.other.ini:foo2 = bar2\n"
                                  "peers/scheduleworld/sources/addressbook/config.ini");
+            boost::replace_first(expected,
+                                 "peers/scheduleworld/config.ini",
+                                 "peers/scheduleworld/.synthesis/dummy-file.bfi:dummy = foobar\n"
+                                 "peers/scheduleworld/config.ini");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old.1");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
