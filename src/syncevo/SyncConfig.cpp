@@ -67,19 +67,34 @@ void ConfigProperty::throwValueError(const ConfigNode &node, const string &name,
     SyncContext::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
-string SyncConfig::normalizeConfigString(const string &peer)
+string SyncConfig::normalizeConfigString(const string &config)
 {
-    string normal = peer;
+    string normal, context;
+    normalizeConfigString(config, normal, context);
+    return normal;
+}
+
+void SyncConfig::normalizeConfigString(const string &config, string &normal, string &context)
+{
+    context = "";
+    normal = config;
     boost::to_lower(normal);
     if (boost::ends_with(normal, "@default")) {
+        context = "default";
         normal.resize(normal.size() - strlen("@default"));
     } else if (boost::ends_with(normal, "@")) {
         normal.resize(normal.size() - 1);
+    } else {
+        // context specified?
+        size_t at = normal.rfind('@');
+        if (at != normal.npos) {
+            context = normal.substr(at + 1);
+        }
     }
     if (normal.empty()) {
+        // leave context empty, it wasn't set explicitly
         normal = "@default";
     }
-    return normal;
 }
 
 void SyncConfig::splitConfigString(const string &config, string &peer, string &context)
@@ -128,7 +143,23 @@ SyncConfig::SyncConfig(const string &peer,
 
     string root;
 
-    m_peer = normalizeConfigString(peer);
+    string context;
+    normalizeConfigString(peer, m_peer, context);
+    if (context.empty()) {
+        // No explicit context. Pick the first server which matches
+        // when ignoring their context. Peer list is sorted by name,
+        // therefore shorter config names (= without context) are
+        // found first, as intended.
+        BOOST_FOREACH(const StringPair &entry, getServers()) {
+            string entry_peer, entry_context;
+            splitConfigString(entry.first, entry_peer, entry_context);
+            if (m_peer == entry_peer) {
+                // found a matching, existing config, use it
+                m_peer = entry.first;
+                break;
+            }
+        }
+    }
 
     // except for SHARED_LAYOUT (set below),
     // everything is below the directory called like
