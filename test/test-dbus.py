@@ -912,7 +912,16 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         """ Test the reports are gotten correctly from reference files. Also covers boundaries """
         """ This could be extractly compared since the reference files are known """
         self.setupFiles('reports')
-        report0 = { "source-addressbook-stat-local-any-sent" : "9168",
+        report0 = { "start" : "1258519955",
+                    "end" : "1258519964",
+                    "status" : "200",
+                    "source-addressbook-mode" : "slow",
+                    "source-addressbook-first" : "true",
+                    "source-addressbook-resume" : "false",
+                    "source-addressbook-status" : "0",
+                    "source-addressbook-backup-before" : "0",
+                    "source-addressbook-backup-after" : "0",
+                    "source-addressbook-stat-local-any-sent" : "9168",
                     "source-addressbook-stat-remote-added-total" : "71",
                     "source-addressbook-stat-remote-updated-total" : "100",
                     "source-addressbook-stat-local-updated-total" : "632",
@@ -925,6 +934,12 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                     "source-addressbook-stat-local-any-reject" : "77",
                     "source-addressbook-stat-local-added-total" : "84",
                     "source-addressbook-stat-remote-removed-total" : "66",
+                    "source-calendar-mode" : "slow",
+                    "source-calendar-first" : "true",
+                    "source-calendar-resume" : "false",
+                    "source-calendar-status" : "0",
+                    "source-calendar-backup-before" : "17",
+                    "source-calendar-backup-after" : "17",
                     "source-calendar-stat-local-any-sent" : "8619",
                     "source-calendar-stat-remote-added-total": "17",
                     "source-calendar-stat-remote-updated-total" : "10",
@@ -938,6 +953,12 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                     "source-calendar-stat-local-any-reject" : "7",
                     "source-calendar-stat-local-added-total" : "42",
                     "source-calendar-stat-remote-removed-total" : "6",
+                    "source-memo-mode" : "slow",
+                    "source-memo-first" : "true",
+                    "source-memo-resume" : "false",
+                    "source-memo-status" : "0",
+                    "source-memo-backup-before" : "3",
+                    "source-memo-backup-after" : "4",
                     "source-memo-stat-local-any-sent" : "8123",
                     "source-memo-stat-remote-added-total" : "15",
                     "source-memo-stat-remote-updated-total" : "6",
@@ -951,6 +972,12 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                     "source-memo-stat-local-any-reject" : "40",
                     "source-memo-stat-local-added-total" : "34",
                     "source-memo-stat-remote-removed-total" : "5",
+                    "source-todo-mode" : "slow",
+                    "source-todo-first" : "true",
+                    "source-todo-resume" : "false",
+                    "source-todo-status" : "0",
+                    "source-todo-backup-before" : "2",
+                    "source-todo-backup-after" : "2",
                     "source-todo-stat-local-any-sent" : "619",
                     "source-todo-stat-remote-added-total" : "71",
                     "source-todo-stat-remote-updated-total" : "1",
@@ -1039,8 +1066,6 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         # GetReports should return one report starting from index 0
         reports = self.session.GetReports(0, 1, utf8_strings=True)
         self.assertTrue(len(reports) == 1)
-        # each source contains 13 stat items, so the total number should be multiples of 13 
-        self.assertTrue(len(reports[0]) % 13 == 0)
 
         # test the returned reports should be less than maximum and greater than 1
         reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
