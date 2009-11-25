@@ -1440,6 +1440,21 @@ sync (app_data *data, SyncevoSession *session)
     syncevo_source_modes_free (source_modes);
 }
 
+static void
+set_config_for_sync_cb (SyncevoSession *session,
+                        GError *error,
+                        app_data *data)
+{
+    if (error) {
+        g_warning ("Error in Session.SetConfig: %s", error->message);
+        g_error_free (error);
+        /* no matter ,this is not critical... */
+        return;
+    }
+
+    sync (data, session);
+}
+
 /* Our sync session status */
 static void
 status_changed_cb (SyncevoSession *session,
@@ -1455,7 +1470,16 @@ status_changed_cb (SyncevoSession *session,
         /* time for business */
         switch (op_data->operation) {
         case OP_SYNC:
-            sync (op_data->data, session);
+            /* Make sure we don't get change diffs printed out, then sync */
+            syncevo_config_set_value (op_data->data->current_service->config,
+                                      NULL, "printChanges", "0");
+            syncevo_session_set_config (session,
+                                        TRUE,
+                                        TRUE,
+                                        op_data->data->current_service->config,
+                                        (SyncevoSessionGenericCb)set_config_for_sync_cb,
+                                        op_data->data);
+    
             break;
         case OP_SAVE:
             save_config (op_data->data, session);
