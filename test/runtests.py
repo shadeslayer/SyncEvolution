@@ -369,7 +369,7 @@ class GitCheckout(Action):
 
     def execute(self):
         if os.access(self.basedir, os.F_OK):
-            cmd = "cd %s && git fetch %s" % (self.basedir, self.url)
+            cmd = "cd %s && git fetch" % (self.basedir)
         else:
             cmd = "git clone %s %s" % (self.url, self.basedir)
         context.runCommand(cmd)
