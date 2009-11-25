@@ -1846,9 +1846,9 @@ bool SyncContext::initSAN(int retries)
     }
 
     /* Generate the SAN Package */
-    char *buffer ;
+    char *buffer;
     size_t sanSize;
-    if (san.GetPackage((void * &)buffer, sanSize, NULL, (size_t) 0)){
+    if (san.GetPackage(reinterpret_cast<void * &> (buffer), sanSize, NULL, (size_t) 0)){
         SE_LOG_ERROR (NULL, NULL, "SAN package generating faield");
         return false;
     }
