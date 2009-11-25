@@ -1014,10 +1014,10 @@ get_configs_cb (SyncevoServer *server,
         return;
     }
 
-    for (template_iter = templates; *template_iter; *template_iter++){
+    for (template_iter = templates; *template_iter; template_iter++){
         gboolean found_config = FALSE;
 
-        for (config_iter = configs; *config_iter; *config_iter++) {
+        for (config_iter = configs; *config_iter; config_iter++) {
             if (*template_iter && 
                 *config_iter && 
                 g_ascii_strncasecmp (*template_iter,
@@ -1040,10 +1040,10 @@ get_configs_cb (SyncevoServer *server,
         }
     }
 
-    for (config_iter = configs; *config_iter; *config_iter++) {
+    for (config_iter = configs; *config_iter; config_iter++) {
         gboolean found_template = FALSE;
 
-        for (template_iter = templates; *template_iter; *template_iter++) {
+        for (template_iter = templates; *template_iter; template_iter++) {
             if (*template_iter && 
                 *config_iter && 
                 g_ascii_strncasecmp (*template_iter,

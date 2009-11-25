@@ -139,7 +139,7 @@ get_template_configs_cb(SyncevoServer *server,
     }
     g_print ("GetConfigs (template=TRUE):\n");
 
-    for (name = config_names; name && *name; *name++){
+    for (name = config_names; name && *name; name++) {
         g_print ("\t%s\n", *name);
     }
     g_print ("\n");
@@ -219,9 +219,9 @@ start_session_cb (SyncevoServer *server,
                                 NULL);
 
     g_signal_connect (session, "progress-changed",
-                      progress_cb, NULL);
+                      G_CALLBACK (progress_cb), NULL);
     g_signal_connect (session, "status-changed",
-                      status_cb, NULL);
+                      G_CALLBACK (status_cb), NULL);
 
 
     /* TODO should wait for session status == idle */
@@ -250,7 +250,7 @@ get_configs_cb(SyncevoServer *server,
     }
     g_print ("GetConfigs (template=FALSE):\n");
 
-    for (name = config_names; name && *name; *name++){
+    for (name = config_names; name && *name; name++){
         g_print ("\t%s\n", *name);
     }
     g_print ("\n");
