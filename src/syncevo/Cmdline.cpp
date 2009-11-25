@@ -295,10 +295,16 @@ bool Cmdline::run() {
         // the old config.
         boost::shared_ptr<SyncConfig> from;
         if (m_migrate) {
+            string oldContext = context;
             from.reset(new SyncConfig(m_server));
             if (!from->exists()) {
-                m_err << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
-                return false;
+                // for migration into a different context, search for config without context
+                oldContext = "";
+                from.reset(new SyncConfig(peer));
+                if (!from->exists()) {
+                    m_err << "ERROR: server '" << m_server << "' has not been configured yet." << endl;
+                    return false;
+                }
             }
 
             int counter = 0;
@@ -324,7 +330,9 @@ bool Cmdline::run() {
                 counter++;
             }
 
-            from.reset(new SyncConfig(m_server + suffix));
+            from.reset(new SyncConfig(peer + suffix +
+                                      (oldContext.empty() ? "" : "@") +
+                                      oldContext));
         } else {
             from.reset(new SyncConfig(m_server));
             if (!from->exists()) {
@@ -2039,6 +2047,47 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old.1");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
+        }
+
+        {
+            string otherRoot = m_testDir + "/syncevolution/other";
+            rm_r(otherRoot);
+
+            // migrate old config into non-default context
+            createFiles(oldRoot, oldConfig);
+            string createdConfig = scanFiles(oldRoot);
+            {
+                TestCmdline cmdline("--migrate",
+                                    "scheduleworld@other",
+                                    NULL);
+                cmdline.doit();
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            }
+
+            string migratedConfig = scanFiles(otherRoot);
+            string expected = ScheduleWorldConfig();
+            sortConfig(expected);
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
+            string renamedConfig = scanFiles(oldRoot + ".old");
+            CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
+
+            // migrate the migrated config again inside the "other" context
+            {
+                TestCmdline cmdline("--migrate",
+                                    "scheduleworld@other",
+                                    NULL);
+                cmdline.doit();
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            }
+            migratedConfig = scanFiles(otherRoot, "scheduleworld");
+            expected = ScheduleWorldConfig();
+            sortConfig(expected);
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
+            renamedConfig = scanFiles(otherRoot, "scheduleworld.old");
+            boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old/");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
         }
     }
 
