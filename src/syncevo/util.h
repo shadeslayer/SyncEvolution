@@ -78,6 +78,22 @@ inline bool rm_r_all(const string &path, bool isDir) { return true; }
 void rm_r(const string &path, boost::function<bool (const string &,
                                                     bool)> filter = rm_r_all);
 
+/**
+ * copy complete directory hierarchy
+ *
+ * If the source is a directory, then the target
+ * also has to be a directory name. It will be
+ * created if necessary.
+ *
+ * Alternatively, both names may refer to files.
+ * In that case the directory which is going to
+ * contain the target file must exist.
+ *
+ * @param from     source directory or file
+ * @param to       target directory or file (must have same type as from)
+ */
+void cp_r(const string &from, const string &to);
+
 /** true if the path refers to a directory */
 bool isDir(const string &path);
 

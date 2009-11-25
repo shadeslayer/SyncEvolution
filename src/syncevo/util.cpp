@@ -128,6 +128,32 @@ void rm_r(const string &path, boost::function<bool (const string &,
     }
 }
 
+void cp_r(const string &from, const string &to)
+{
+    if (isDir(from)) {
+        mkdir_p(to);
+        ReadDir dir(from);
+        BOOST_FOREACH(const string &entry, dir) {
+            cp_r(from + "/" + entry, to + "/" + entry);
+        }
+    } else {
+        ofstream out;
+        ifstream in;
+        out.open(to.c_str());
+        in.open(from.c_str());
+        char buf[8192];
+        do {
+            in.read(buf, sizeof(buf));
+            out.write(buf, in.gcount());
+        } while(in);
+        in.close();
+        out.close();
+        if (out.bad() || in.bad()) {
+            SE_THROW(string("failed copying ") + from + " to " + to);
+        }
+    }
+}
+
 bool isDir(const string &path)
 {
     DIR *dir = opendir(path.c_str());
