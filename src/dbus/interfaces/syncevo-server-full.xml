@@ -37,6 +37,8 @@
         "org.syncevolution.Exception" - catch-all error condition.
         "org.syncevolution.NoSuchConfig" - server configuration name is invalid
         "org.syncevolution.NoSuchSource" - source name is invalid
+        "org.syncevolution.SourceUnusable" - CheckSource() may return this
+        if source is not usable (for various possible reasons).
         "org.syncevolution.InvalidCall" - a call is (perhaps no longer) allowed
         or suitable in the current situation, like Detach() when the client
         is not attached.
@@ -214,7 +216,7 @@
     <method name="CheckSource">
       <doc:doc>
         <doc:description>Tests whether the source configuration
-          is correct. Raises an exception if not.
+          is correct. Raises the SourceUnusable exception if not.
         </doc:description>
       </doc:doc>
       <arg type="s" name="server" direction="in">
