@@ -2,12 +2,7 @@
 #define _SYNC_CONFIG_WIDGET
 
 #include <glib-object.h>
-
-#ifdef USE_MOBLIN_UX
-#include <nbtk/nbtk-gtk.h>
-#else
 #include <gtk/gtk.h>
-#endif
 
 #include "syncevo-server.h"
 #include "sync-ui-config.h"
@@ -32,18 +27,16 @@ G_BEGIN_DECLS
     (G_TYPE_INSTANCE_GET_CLASS ((obj), SYNC_TYPE_CONFIG_WIDGET, SyncConfigWidgetClass))
 
 typedef struct {
-#ifdef USE_MOBLIN_UX
-    NbtkGtkExpander parent;
-#else
-    GtkVBox parent;
-    GtkWidget *expando_box_for_gtk;
-#endif
+    GtkContainer parent;
+    GtkWidget *expando_box;
+    GtkWidget *label_box;
 
     gboolean current; /* is this currently used config */
     gboolean unset; /* is there a current config at all */
     gboolean configured; /* actual service configuration exists on server */
     gboolean has_template; /* this service configuration has a matching template */
     gboolean showing;
+    gboolean expanded;
 
     SyncevoServer *server;
     server_config *config;
@@ -73,14 +66,9 @@ typedef struct {
 } SyncConfigWidget;
 
 typedef struct {
-#ifdef USE_MOBLIN_UX
-    NbtkGtkExpanderClass parent_class;
-#else
-    GtkVBoxClass parent_class;
-#endif
+    GtkContainerClass parent_class;
 
     void (*changed) (SyncConfigWidget *widget);
-    void (*expanded) (SyncConfigWidget *widget);
 } SyncConfigWidgetClass;
 
 GType sync_config_widget_get_type (void);
@@ -93,6 +81,7 @@ GtkWidget *sync_config_widget_new (SyncevoServer *server,
                                    gboolean has_template);
 
 void sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expanded);
+gboolean sync_config_widget_get_expanded (SyncConfigWidget *widget);
 
 gboolean sync_config_widget_get_current (SyncConfigWidget *widget);
 void sync_config_widget_set_current (SyncConfigWidget *self, gboolean current);

@@ -6,12 +6,10 @@
 #include "sync-ui.h"
 #include "sync-config-widget.h"
 
+#define INDICATOR_SIZE 16
+#define CHILD_PADDING 3
 
-#ifdef USE_MOBLIN_UX
-G_DEFINE_TYPE (SyncConfigWidget, sync_config_widget, NBTK_TYPE_GTK_EXPANDER)
-#else
-G_DEFINE_TYPE (SyncConfigWidget, sync_config_widget, GTK_TYPE_VBOX)
-#endif
+G_DEFINE_TYPE (SyncConfigWidget, sync_config_widget, GTK_TYPE_CONTAINER)
 
 enum
 {
@@ -23,11 +21,11 @@ enum
   PROP_HAS_TEMPLATE,
   PROP_CONFIGURED,
   PROP_UNSET,
+  PROP_EXPANDED,
 };
 
 enum {
 	SIGNAL_CHANGED,
-	SIGNAL_EXPANDED,
 	LAST_SIGNAL
 };
 static guint32 signals[LAST_SIGNAL] = {0, };
@@ -361,8 +359,9 @@ init_source (char *name,
     row_data->entry = gtk_entry_new ();
     gtk_entry_set_max_length (GTK_ENTRY (row_data->entry), 99);
     gtk_entry_set_width_chars (GTK_ENTRY (row_data->entry), 80);
-    gtk_entry_set_text (GTK_ENTRY (row_data->entry),
-                        uri ? uri : "");
+    if (uri) {
+        gtk_entry_set_text (GTK_ENTRY (row_data->entry), uri);
+    }
     g_hash_table_insert (self->uri_entries, name, row_data->entry);
     gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table), row_data->entry,
                                1, 2, row, row + 1);
@@ -389,8 +388,9 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     gtk_table_resize (GTK_TABLE (self->server_settings_table), 
                       2, 1);
 
-    gtk_entry_set_text (GTK_ENTRY (self->entry),
-                        self->config->name ? self->config->name : "");
+    if (self->config->name) {
+        gtk_entry_set_text (GTK_ENTRY (self->entry), self->config->name);
+    }
 
     gtk_label_set_text (GTK_LABEL (self->description_label),
                         get_service_description (self->config->name));
@@ -403,10 +403,10 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     syncevo_config_get_value (config, NULL, "password", &password);
     syncevo_config_get_value (config, NULL, "syncURL", &sync_url);
 
-    gtk_entry_set_text (GTK_ENTRY (self->username_entry), username);
-    if (password && strcmp (password, "-") == 0) {
-        gtk_entry_set_text (GTK_ENTRY (self->password_entry), "");
-    } else {
+    if (username) {
+        gtk_entry_set_text (GTK_ENTRY (self->username_entry), username);
+    }
+    if (password) {
         gtk_entry_set_text (GTK_ENTRY (self->password_entry), password);
     }
 
@@ -420,7 +420,9 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     self->baseurl_entry = gtk_entry_new ();
     gtk_entry_set_max_length (GTK_ENTRY (self->baseurl_entry), 99);
     gtk_entry_set_width_chars (GTK_ENTRY (self->baseurl_entry), 80);
-    gtk_entry_set_text (GTK_ENTRY (self->baseurl_entry), sync_url);
+    if (sync_url) {
+        gtk_entry_set_text (GTK_ENTRY (self->baseurl_entry), sync_url);
+    }
     gtk_widget_show (self->baseurl_entry);
 
     gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table),
@@ -515,18 +517,6 @@ sync_config_widget_update_label (SyncConfigWidget *self)
         g_free (str);
     }
 }
-
-#ifdef USE_MOBLIN_UX
-static void
-widget_expanded_cb (SyncConfigWidget *self)
-{
-    if (nbtk_gtk_expander_get_expanded (NBTK_GTK_EXPANDER (self))) {
-        gtk_widget_hide (self->button);
-    } else {
-        gtk_widget_show (self->button);
-    }
-}
-#endif
 
 void
 sync_config_widget_set_unset (SyncConfigWidget *self,
@@ -656,6 +646,9 @@ sync_config_widget_set_property (GObject      *object,
     case PROP_UNSET:
         sync_config_widget_set_unset (self, g_value_get_boolean (value));
         break;
+    case PROP_EXPANDED:
+        sync_config_widget_set_expanded (self, g_value_get_boolean (value));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
@@ -685,6 +678,8 @@ sync_config_widget_get_property (GObject    *object,
         g_value_set_boolean (value, self->configured);
     case PROP_UNSET:
         g_value_set_boolean (value, self->unset);
+    case PROP_EXPANDED:
+      g_value_set_boolean (value, self->expanded);
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
@@ -778,6 +773,150 @@ get_config_cb (SyncevoServer *syncevo,
 
 }
 
+static gboolean
+sync_config_widget_expose_event (GtkWidget      *widget,
+                                 GdkEventExpose *event)
+{
+    GdkRectangle rect;
+    GtkExpanderStyle style;
+    gint indicator_x, indicator_y;
+    SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
+
+    rect.x = widget->allocation.x;
+    rect.y = widget->allocation.y;
+    rect.height = widget->allocation.height;
+    rect.width = widget->allocation.width;
+
+    gtk_paint_box (widget->style,
+                   widget->window,
+                   widget->state,
+                   GTK_SHADOW_OUT,
+                   &rect,
+                   widget,
+                   NULL,
+                   rect.x,
+                   rect.y,
+                   rect.width,
+                   rect.height);
+
+    if (self->expanded) {
+        gint shadow_x, shadow_y;
+
+        shadow_x = rect.x + widget->style->xthickness;
+        shadow_y = rect.y + 2 * widget->style->ythickness +
+                   MAX (INDICATOR_SIZE, self->label_box->allocation.height);
+
+        gtk_paint_box (widget->style,
+                       widget->window,
+                       widget->state,
+                       GTK_SHADOW_IN,
+                       &rect,
+                       widget,
+                       NULL,
+                       shadow_x,
+                       shadow_y,
+                       rect.width - (shadow_x - rect.x) - widget->style->xthickness,
+                       rect.height - (shadow_y - rect.y) - widget->style->ythickness);
+    }
+
+
+    if (self->expanded) {
+        style = GTK_EXPANDER_EXPANDED;
+    } else {
+        style = GTK_EXPANDER_COLLAPSED;
+    }
+
+    indicator_x = rect.x + widget->style->xthickness + INDICATOR_SIZE / 2;
+    indicator_y = rect.y + (widget->style->ythickness * 2 +
+                            MAX (self->label_box->allocation.height, INDICATOR_SIZE)) / 2;
+
+    gtk_paint_expander (widget->style,
+                        widget->window,
+                        widget->state,
+                        NULL,
+                        widget,
+                        NULL,
+                        indicator_x,
+                        indicator_y,
+                        style);
+
+    gtk_container_propagate_expose (GTK_CONTAINER (self),
+                                    self->label_box, event);
+    gtk_container_propagate_expose (GTK_CONTAINER (self),
+                                    self->expando_box, event);
+    return FALSE;
+}
+
+
+static void
+sync_config_widget_size_allocate (GtkWidget     *widget,
+                                  GtkAllocation *allocation)
+{
+    GtkRequisition req;
+    GtkAllocation alloc;
+    SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
+    gint label_h;
+
+    GTK_WIDGET_CLASS (sync_config_widget_parent_class)->size_allocate (widget,
+                                                                       allocation);
+
+    gtk_widget_size_request (self->label_box, &req);
+
+    alloc.x = allocation->x + widget->style->xthickness;
+    alloc.y = allocation->y + widget->style->ythickness;
+    alloc.width = allocation->width - 2 * widget->style->xthickness;
+    alloc.height = req.height;
+
+    /* make room for indicator */
+    alloc.x += INDICATOR_SIZE + widget->style->xthickness;
+    alloc.width -= INDICATOR_SIZE + widget->style->xthickness;
+
+    gtk_widget_size_allocate (self->label_box, &alloc);
+
+    label_h = MAX (INDICATOR_SIZE, alloc.height);
+
+
+    if (self->expanded) {
+      gtk_widget_size_request (self->expando_box, &req);
+
+      alloc.x = allocation->x + 2 * widget->style->xthickness;
+      alloc.y = allocation->y + widget->style->ythickness +
+                label_h + CHILD_PADDING;
+      alloc.width = allocation->width - 4 * widget->style->xthickness;
+      alloc.height = req.height;
+
+      gtk_widget_size_allocate (self->expando_box, &alloc);
+    }
+
+
+}
+
+static void
+sync_config_widget_size_request (GtkWidget      *widget,
+                                 GtkRequisition *requisition)
+{
+    SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
+    GtkRequisition req;
+
+    requisition->width = widget->style->xthickness * 2;
+    requisition->height = widget->style->ythickness * 2;
+
+    gtk_widget_size_request (self->label_box, &req);
+
+    requisition->width += req.width;
+    requisition->height = MAX (req.height,
+                               INDICATOR_SIZE +
+                               widget->style->ythickness * 2);
+
+    if (self->expanded) {
+
+        gtk_widget_size_request (self->expando_box, &req);
+        requisition->width = MAX (requisition->width,
+                                  req.width + widget->style->xthickness * 4);
+        requisition->height += req.height + 2 * widget->style->ythickness;
+    }
+}
+
 static GObject *
 sync_config_widget_constructor (GType                  gtype,
                                 guint                  n_properties,
@@ -830,18 +969,113 @@ sync_config_widget_hide (GtkWidget *widget)
 }
 
 static void
+sync_config_widget_map (GtkWidget *widget)
+{
+    SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
+
+    if (self->label_box && GTK_WIDGET_VISIBLE (self->expando_box)) {
+        gtk_widget_map (self->label_box);
+    }
+    if (self->expando_box && GTK_WIDGET_VISIBLE (self->expando_box)) {
+        gtk_widget_map (self->expando_box);
+    }
+    GTK_WIDGET_CLASS (sync_config_widget_parent_class)->map (widget);
+}
+
+static void
+sync_config_widget_unmap (GtkWidget *widget)
+{
+    SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
+
+    GTK_WIDGET_CLASS (sync_config_widget_parent_class)->unmap (widget);
+
+    if (self->label_box) {
+        gtk_widget_unmap (self->label_box);
+    }
+    if (self->expando_box) {
+        gtk_widget_unmap (self->expando_box);
+    }
+}
+
+static void
+sync_config_widget_realize (GtkWidget *widget)
+{
+    GTK_WIDGET_CLASS (sync_config_widget_parent_class)->realize (widget);
+}
+
+static void
+sync_config_widget_unrealize (GtkWidget *widget)
+{
+    GTK_WIDGET_CLASS (sync_config_widget_parent_class)->unrealize (widget);
+}
+
+static void
+sync_config_widget_add (GtkContainer *container,
+                        GtkWidget    *widget)
+{
+    g_warning ("Can't add widgets in to SyncConfigWidget!");
+}
+
+static void
+sync_config_widget_remove (GtkContainer *container,
+                           GtkWidget    *widget)
+{
+    SyncConfigWidget *self = SYNC_CONFIG_WIDGET (container);
+
+    
+    if (self->label_box == widget) {
+        gtk_widget_unparent (widget);
+        self->label_box = NULL;
+    }
+    if (self->expando_box == widget) {
+        gtk_widget_unparent (widget);
+        self->expando_box = NULL;
+    }
+}
+
+static void
+sync_config_widget_forall (GtkContainer *container,
+                           gboolean      include_internals,
+                           GtkCallback   callback,
+                           gpointer      callback_data)
+{
+    SyncConfigWidget *self = SYNC_CONFIG_WIDGET (container);
+
+    if (self->label_box) {
+        (* callback) (self->label_box, callback_data);
+    }
+    if (self->expando_box) {
+        (* callback) (self->expando_box, callback_data);
+    }
+}
+
+
+static void
 sync_config_widget_class_init (SyncConfigWidgetClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     GtkWidgetClass *w_class = GTK_WIDGET_CLASS (klass);
+    GtkContainerClass *c_class = GTK_CONTAINER_CLASS (klass);
     GParamSpec *pspec;
 
     object_class->set_property = sync_config_widget_set_property;
     object_class->get_property = sync_config_widget_get_property;
     object_class->dispose = sync_config_widget_dispose;
     object_class->constructor = sync_config_widget_constructor;
+
     w_class->show = sync_config_widget_show;
     w_class->hide = sync_config_widget_hide;
+    w_class->expose_event = sync_config_widget_expose_event;
+    w_class->size_request = sync_config_widget_size_request;
+    w_class->size_allocate = sync_config_widget_size_allocate;
+    w_class->map = sync_config_widget_map;
+    w_class->unmap = sync_config_widget_unmap;
+    w_class->realize = sync_config_widget_realize;
+    w_class->unrealize = sync_config_widget_unrealize;
+
+    c_class->add = sync_config_widget_add;
+    c_class->remove = sync_config_widget_remove;
+    c_class->forall = sync_config_widget_forall;
 
     pspec = g_param_spec_pointer ("server",
                                   "SyncevoServer",
@@ -884,6 +1118,22 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
                                   G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_UNSET, pspec);
 
+    pspec = g_param_spec_boolean ("expanded",
+                                  "Expanded",
+                                  "Whether the expander is open or closed",
+                                  FALSE,
+                                  G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_EXPANDED, pspec);
+
+    pspec = g_param_spec_int ("expander-size",
+                              "Expander Size",
+                              "Size of the expander indicator",
+                              0, G_MAXINT, INDICATOR_SIZE,
+                              G_PARAM_READABLE);
+
+  gtk_widget_class_install_style_property (w_class, pspec);
+
+
     signals[SIGNAL_CHANGED] = 
             g_signal_new ("changed",
                           G_TYPE_FROM_CLASS (klass),
@@ -893,36 +1143,32 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
                           g_cclosure_marshal_VOID__VOID,
                           G_TYPE_NONE, 
                           0);
-    signals[SIGNAL_EXPANDED] = 
-            g_signal_new ("expanded",
-                          G_TYPE_FROM_CLASS (klass),
-                          G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
-                          G_STRUCT_OFFSET (SyncConfigWidgetClass, expanded),
-                          NULL, NULL,
-                          g_cclosure_marshal_VOID__VOID,
-                          G_TYPE_NONE, 
-                          0);
+
 }
 
 static void
 sync_config_widget_init (SyncConfigWidget *self)
 {
-    GtkWidget *tmp_box, *hbox, *vbox, *table, *label;
+    GtkWidget *tmp_box, *vbox, *table, *label;
 
-    hbox = gtk_hbox_new (FALSE, 0);
-    gtk_widget_set_size_request (hbox, -1, SYNC_UI_LIST_ICON_SIZE + 6);
-    gtk_widget_show (hbox);
+    GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
+    GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_CAN_FOCUS);
+
+    self->label_box = gtk_hbox_new (FALSE, 0);
+    gtk_widget_set_size_request (self->label_box, -1, SYNC_UI_LIST_ICON_SIZE + 6);
+    gtk_widget_show (self->label_box);
+    gtk_widget_set_parent (self->label_box, GTK_WIDGET (self));
 
     self->image = gtk_image_new ();
     gtk_widget_set_size_request (self->image, 
                                  SYNC_UI_LIST_ICON_SIZE,
                                  SYNC_UI_LIST_ICON_SIZE);
     gtk_widget_show (self->image);
-    gtk_box_pack_start (GTK_BOX (hbox), self->image, FALSE, FALSE, 8);
+    gtk_box_pack_start (GTK_BOX (self->label_box), self->image, FALSE, FALSE, 8);
 
     tmp_box = gtk_hbox_new (FALSE, 0);
     gtk_widget_show (tmp_box);
-    gtk_box_pack_start (GTK_BOX (hbox), tmp_box, FALSE, FALSE, 8);
+    gtk_box_pack_start (GTK_BOX (self->label_box), tmp_box, FALSE, FALSE, 8);
 
     self->label = gtk_label_new ("");
     gtk_misc_set_alignment (GTK_MISC (self->label), 0.0, 0.5);
@@ -944,40 +1190,26 @@ sync_config_widget_init (SyncConfigWidget *self)
 
     vbox = gtk_vbox_new (FALSE, 0);
     gtk_widget_show (vbox);
-    gtk_box_pack_end (GTK_BOX (hbox), vbox, FALSE, FALSE, 32);
+    gtk_box_pack_end (GTK_BOX (self->label_box), vbox, FALSE, FALSE, 32);
 
     /* TRANSLATORS: button label  */
     self->button = gtk_button_new_with_label (_("Setup now"));
     gtk_widget_set_size_request (self->button, SYNC_UI_LIST_BTN_WIDTH, -1);
-
     g_signal_connect (self->button, "clicked",
                       G_CALLBACK (setup_service_clicked), self);
 
     gtk_widget_show (self->button);
     gtk_box_pack_start (GTK_BOX (vbox), self->button, TRUE, FALSE, 0);
 
-    /* label widget built */
-#ifdef USE_MOBLIN_UX
-    nbtk_gtk_expander_set_label_widget (NBTK_GTK_EXPANDER (self), hbox);
-    nbtk_gtk_expander_set_has_indicator (NBTK_GTK_EXPANDER (self), FALSE);
-    g_signal_connect (self, "notify::expanded",
-                      G_CALLBACK (widget_expanded_cb), self);
+    /* label_box built, now build expando_box */
 
-    hbox = gtk_hbox_new (FALSE, 0);
-    gtk_widget_show (hbox);
-    gtk_container_add (GTK_CONTAINER (self), hbox);
-#else
-    gtk_box_pack_start (GTK_BOX (self), hbox, TRUE, TRUE, 0);
-
-    hbox = gtk_hbox_new (FALSE, 0);
-    gtk_widget_set_no_show_all (hbox, TRUE);
-    gtk_box_pack_start (GTK_BOX (self), hbox, TRUE, TRUE, 8);
-    self->expando_box_for_gtk = hbox;
-#endif
+    self->expando_box = gtk_hbox_new (FALSE, 0);
+    gtk_widget_set_no_show_all (self->expando_box, TRUE);
+    gtk_widget_set_parent (self->expando_box, GTK_WIDGET (self));
 
     vbox = gtk_vbox_new (FALSE, 8);
     gtk_widget_show (vbox);
-    gtk_box_pack_start (GTK_BOX (hbox), vbox, TRUE, TRUE, 16);
+    gtk_box_pack_start (GTK_BOX (self->expando_box), vbox, TRUE, TRUE, 16);
 
     tmp_box = gtk_vbox_new (FALSE, 0);
     gtk_widget_show (tmp_box);
@@ -1090,25 +1322,28 @@ sync_config_widget_new (SyncevoServer *server,
 }
 
 void
-sync_config_widget_set_expanded (SyncConfigWidget *widget, gboolean expanded)
+sync_config_widget_set_expanded (SyncConfigWidget *self, gboolean expanded)
 {
-    if (expanded) {
-        gtk_widget_hide (widget->button);
-#ifdef USE_MOBLIN_UX
-        nbtk_gtk_expander_set_expanded (NBTK_GTK_EXPANDER (widget), TRUE);
-#else
-        gtk_widget_show (widget->expando_box_for_gtk);
-#endif
-        g_signal_emit (widget, signals[SIGNAL_EXPANDED], 0);
-    } else {
-        gtk_widget_show (widget->button);
-#ifdef USE_MOBLIN_UX
-        nbtk_gtk_expander_set_expanded (NBTK_GTK_EXPANDER (widget), FALSE);
-#else
-        gtk_widget_hide (widget->expando_box_for_gtk);
-#endif
-    }
+    g_return_if_fail (SYNC_IS_CONFIG_WIDGET (self));
 
+    if (self->expanded != expanded) {
+
+        self->expanded = expanded;
+        if (self->expanded) {
+            gtk_widget_hide (self->button);
+            gtk_widget_show (self->expando_box);
+        } else {
+            gtk_widget_show (self->button);
+            gtk_widget_hide (self->expando_box);
+        }
+        g_object_notify (G_OBJECT (self), "expanded");
+    }
+}
+
+gboolean
+sync_config_widget_get_expanded (SyncConfigWidget *self)
+{
+    return self->expanded;
 }
 
 void

@@ -909,11 +909,13 @@ unexpand_config_widget (GtkWidget *w, GtkWidget *exception)
 }
 
 static void
-config_widget_expanded_cb (GtkWidget *widget, app_data *data)
+config_widget_expanded_cb (GtkWidget *widget, GParamSpec *pspec, app_data *data)
 {
-    gtk_container_foreach (GTK_CONTAINER (data->services_box),
-                           (GtkCallback)unexpand_config_widget,
-                           widget);
+    if (sync_config_widget_get_expanded (SYNC_CONFIG_WIDGET (widget))) {
+        gtk_container_foreach (GTK_CONTAINER (data->services_box),
+                               (GtkCallback)unexpand_config_widget,
+                               widget);
+    }
 }
 
 static void
@@ -949,7 +951,7 @@ add_server_to_box (GtkBox *box,
                                    current, unset, configured, has_template);
     g_signal_connect (item, "changed",
                       G_CALLBACK (config_widget_changed_cb), data);
-    g_signal_connect (item, "expanded",
+    g_signal_connect (item, "notify::expanded",
                       G_CALLBACK (config_widget_expanded_cb), data);
     gtk_widget_show (item);
     gtk_box_pack_start (box, item, FALSE, FALSE, 0);
