@@ -1649,6 +1649,35 @@ void SyncContext::initEngine(bool logXML)
     }
 }
 
+void SyncContext::preSync() {
+    // create a Synthesis engine, used purely for logging purposes
+    // at this time
+    SwapEngine swapengine(*this);
+    initEngine(false);
+
+    // dump some summary information at the beginning of the log
+    SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername());
+    SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv(), getDevType());
+    SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
+    SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
+    SE_LOG_DEV(NULL, NULL, "%s", SyncSource::backendsDebug().c_str());
+
+    // instantiate backends, but do not open them yet
+    initSources(*m_sourceListPtr);
+    if (m_sourceListPtr->empty()) {
+        throwError("no sources active, check configuration");
+    }
+
+    if ( getPeerIsClient()) {
+        m_serverMode = true;
+        //This is a server alerted sync !
+        if (! initSAN ()) {
+            // return a proper error code 
+            throwError ("Server Alerted Sync init failed");
+        }
+    }
+}
+
 SyncMLStatus SyncContext::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
@@ -1702,25 +1731,13 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                                 report,
                                 "client");
 
-        // create a Synthesis engine, used purely for logging purposes
-        // at this time
-        SwapEngine swapengine(*this);
-        initEngine(false);
-
         try {
-            // dump some summary information at the beginning of the log
-            SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername());
-            SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv(), getDevType());
-            SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
-            SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
-            SE_LOG_DEV(NULL, NULL, "%s", SyncSource::backendsDebug().c_str());
+            preSync();
 
-            // instantiate backends, but do not open them yet
-            initSources(sourceList);
-            if (sourceList.empty()) {
-                throwError("no sources active, check configuration");
-            }
-
+            // initializes the engine, only at this time can we decide whether
+            // this is a server session or client session.
+            SwapEngine swapengine(*this);
+            
             // request all config properties once: throwing exceptions
             // now is okay, whereas later it would lead to leaks in the
             // not exception safe client library
@@ -1745,15 +1762,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                 BOOST_FOREACH(const ConfigProperty *prop, registry) {
                     prop->checkPassword(*this, m_server, getConfigNode(),
                                         source->getName(), source->getSyncSourceNodes().m_configNode);
-                }
-            }
-
-            if ( getPeerIsClient()) {
-                m_serverMode = true;
-                //This is a server alerted sync !
-                if (! initSAN ()) {
-                    // return a proper error code 
-                    throwError ("Server Alerted Sync init failed");
                 }
             }
 
