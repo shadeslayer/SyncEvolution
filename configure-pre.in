@@ -438,8 +438,12 @@ elif test "$enable_shared" = "no"; then
     SYNTHESIS_ENGINE="$SYNTHESIS_LIBS -lsynthesis"
 else
     # link against SDK alone, except in client-test
-    PKG_CHECK_MODULES(SYNTHESIS, "synthesis-sdk")
-    SYNTHESIS_ENGINE="`echo $SYNTHESIS_LIBS | sed -e 's/-lsynthesisstubs/-lsynthesis/'`"
+    #PKG_CHECK_MODULES(SYNTHESIS, "synthesis-sdk")
+    #SYNTHESIS_ENGINE="`echo $SYNTHESIS_LIBS | sed -e 's/-lsynthesisstubs/-lsynthesis/'`"
+
+    # can't use the SDK alone because of sysync::SySyncDebugPuts()
+    PKG_CHECK_MODULES(SYNTHESIS, "synthesis")
+    SYNTHESIS_ENGINE="$SYNTHESIS_LIBS"
 fi
 
 if test $SYNTHESIS_SRC != "no-synthesis-source"; then
@@ -459,7 +463,11 @@ if test $SYNTHESIS_SRC != "no-synthesis-source"; then
         case $SYNCML_ENGINES in both|client|server) SYNTHESIS_LIBS="$SYNTHESIS_LIBS $SYNTHESIS_SUBDIR/src/libsynthesis.la";; esac
         AC_DEFINE(ENABLE_SYNCML_LINKED, 1, [SyncML engines are linked directly])
     else
-        SYNTHESIS_LIBS="$SYNTHESIS_LIBS $SYNTHESIS_SUBDIR/src/libsynthesisstubs.la"
+        # It would be nice if we could avoid linking against libsynthesis.la here.
+        # This doesn't work at the moment because sysync::SySyncDebugPuts()
+        # is called directly by the libsynthesissdk instead of going through
+        # the normal C function pointer lookup.
+        SYNTHESIS_LIBS="$SYNTHESIS_LIBS $SYNTHESIS_SUBDIR/src/libsynthesis.la"
     fi
     SYNTHESIS_DEP=$SYNTHESIS_LIBS
 
