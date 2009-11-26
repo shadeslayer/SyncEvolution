@@ -1853,9 +1853,9 @@ bool SyncContext::initSAN(int retries)
     }
 
     /* Generate the SAN Package */
-    char *buffer;
+    void *buffer;
     size_t sanSize;
-    if (san.GetPackage(reinterpret_cast<void * &> (buffer), sanSize, NULL, (size_t) 0)){
+    if (san.GetPackage(buffer, sanSize)){
         SE_LOG_ERROR (NULL, NULL, "SAN package generating faield");
         return false;
     }
@@ -1868,7 +1868,7 @@ bool SyncContext::initSAN(int retries)
         while (retry++ < retries) 
         {
             SE_LOG_INFO (NULL, NULL, "Server sending SAN %d", retry);
-            m_agent->send(buffer, sanSize);
+            m_agent->send(reinterpret_cast<char*> (buffer), sanSize);
             if (m_agent->wait() == TransportAgent::GOT_REPLY){
                 const char *reply;
                 size_t replyLen;
