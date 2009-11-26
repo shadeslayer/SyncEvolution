@@ -207,6 +207,12 @@ public:
     void getDatabases(const string &sourceName, SourceDatabases_t &databases);
 
 private:
+    /** 
+     * This virtual function is used to let subclass set
+     * filters to config. Only used internally.
+     */
+    virtual void setFilters(SyncConfig &config) {}
+
     /** utility method which constructs a SyncConfig which references a local configuration (never a template) */
     boost::shared_ptr<SyncConfig> getLocalConfig(const std::string &configName);
 };
@@ -802,11 +808,11 @@ private:
  */
 class Session : public DBusObjectHelper,
                 public Resource,
+                private ReadOperations,
                 private boost::noncopyable
 {
     DBusServer &m_server;
     const std::string m_sessionID;
-    ReadOperations m_operations;
     std::string m_peerDeviceID;
 
     bool m_serverMode;
@@ -820,7 +826,11 @@ class Session : public DBusObjectHelper,
     /** temporary config changes */
     FilterConfigNode::ConfigFilter m_syncFilter;
     FilterConfigNode::ConfigFilter m_sourceFilter;
-    std::map<std::string, FilterConfigNode::ConfigFilter> m_sourceFilters;
+    typedef std::map<std::string, FilterConfigNode::ConfigFilter> SourceFilters_t;
+    SourceFilters_t m_sourceFilters;
+
+    /** whether dbus clients set temporary configs */
+    bool m_tempConfig;
 
     /**
      * True while clients are allowed to make calls other than Detach(),
@@ -953,7 +963,7 @@ public:
 
 
     DBusServer &getServer() { return m_server; }
-    std::string getConfigName() { return m_operations.m_configName; }
+    std::string getConfigName() { return m_configName; }
     std::string getSessionID() const { return m_sessionID; }
     std::string getPeerDeviceID() const { return m_peerDeviceID; }
 
@@ -990,6 +1000,10 @@ public:
 
     bool isSuspend() { return m_syncStatus == SYNC_SUSPEND; }
     bool isAbort() { return m_syncStatus == SYNC_ABORT; }
+
+private:
+    /** set m_syncFilter and m_sourceFilters to config */
+    virtual void setFilters(SyncConfig &config);
 };
 
 
@@ -1220,6 +1234,7 @@ void ReadOperations::getConfig(bool getTemplate,
     } else {
         syncConfig = getLocalConfig(m_configName);
     }
+    setFilters(*syncConfig);
 
     /** get sync properties and their values */
     ConfigPropertyRegistry &syncRegistry = SyncConfig::getRegistry();
@@ -1289,6 +1304,8 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
 void ReadOperations::checkSource(const std::string &sourceName)
 {
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
+    setFilters(*config);
+
     list<std::string> sourceNames = config->getSyncSources();
     list<std::string>::iterator it;
     for(it = sourceNames.begin(); it != sourceNames.end(); ++it) {
@@ -1312,6 +1329,8 @@ void ReadOperations::checkSource(const std::string &sourceName)
 void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &databases)
 {
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
+    setFilters(*config);
+
     SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
     const SourceRegistry &registry(SyncSource::getSourceRegistry());
     BOOST_FOREACH(const RegisterSyncSource *sourceInfo, registry) {
@@ -1450,7 +1469,9 @@ void Session::setConfig(bool update, bool temporary,
         return;
     }
     if(temporary) {
+        /* save temporary configs in session filters */
         setSyncFilters(config, m_syncFilter, m_sourceFilters);
+        m_tempConfig = true;
     } else {
         FilterConfigNode::ConfigFilter syncFilter;
         std::map<std::string, FilterConfigNode::ConfigFilter> sourceFilters;
@@ -1661,12 +1682,13 @@ Session::Session(DBusServer &server,
     DBusObjectHelper(server.getConnection(),
                      std::string("/org/syncevolution/Session/") + session,
                      "org.syncevolution.Session"),
+    ReadOperations(config_name),
     m_server(server),
     m_sessionID(session),
-    m_operations(config_name),
     m_peerDeviceID(peerDeviceID),
     m_serverMode(false),
     m_useConnection(false),
+    m_tempConfig(false),
     m_active(false),
     m_syncStatus(SYNC_QUEUEING),
     m_priority(PRI_DEFAULT),
@@ -1680,11 +1702,11 @@ Session::Session(DBusServer &server,
 {
     add(this, &Session::detach, "Detach");
     add(&ReadOperations::getConfigs, "GetConfigs");
-    add(&m_operations, &ReadOperations::getConfig, "GetConfig");
+    add(static_cast<ReadOperations *>(this), &ReadOperations::getConfig, "GetConfig");
     add(this, &Session::setConfig, "SetConfig");
-    add(&m_operations, &ReadOperations::getReports, "GetReports");
-    add(&m_operations, &ReadOperations::checkSource, "CheckSource");
-    add(&m_operations, &ReadOperations::getDatabases, "GetDatabases");
+    add(static_cast<ReadOperations *>(this), &ReadOperations::getReports, "GetReports");
+    add(static_cast<ReadOperations *>(this), &ReadOperations::checkSource, "CheckSource");
+    add(static_cast<ReadOperations *>(this), &ReadOperations::getDatabases, "GetDatabases");
     add(this, &Session::sync, "Sync");
     add(this, &Session::abort, "Abort");
     add(this, &Session::suspend, "Suspend");
@@ -1844,6 +1866,16 @@ void Session::run()
         }
         m_syncStatus = SYNC_DONE;
         fireStatus(true);
+    }
+}
+
+void Session::setFilters(SyncConfig &config)
+{
+    /** apply temporary configs to config */
+    config.setConfigFilter(true, "", m_syncFilter);
+    // set all sources in the filter to config
+    BOOST_FOREACH(const SourceFilters_t::value_type &value, m_sourceFilters) {
+        config.setConfigFilter(false, value.first, value.second);
     }
 }
 

@@ -768,9 +768,23 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.setupConfig()
         """ set config temporary """
         self.session.SetConfig(True, True, self.updateConfig, utf8_strings=True)
+        self.session.Detach()
+        """ creat a new session to lose the temporary configs """
+        self.setUpSession("dummy-test")
         config = self.session.GetConfig(False, utf8_strings=True)
         """ no change of any properties """
         self.failUnlessEqual(config, self.config)
+
+    def testGetConfigUpdateConfigTemp(self):
+        """ test the config is temporary updated and in effect for GetConfig in the current session. """
+        self.setupConfig()
+        """ set config temporary """
+        self.session.SetConfig(True, True, self.updateConfig, utf8_strings=True)
+        """ GetConfig is affected """
+        config = self.session.GetConfig(False, utf8_strings=True)
+        """ no change of any properties """
+        self.failUnlessEqual(config[""]["password"], "nosecret")
+        self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
 
     def testUpdateConfigError(self):
         """ test the right error is reported when an invalid property value is set """
@@ -855,6 +869,13 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         for source in self.sources:
             self.session.CheckSource(source, utf8_strings=True)
 
+    def testCheckSourceUpdateConfigTemp(self):
+        """ test the config is temporary updated and in effect for GetDatabases in the current session. """
+        self.setupConfig()
+        tempConfig = {"source/temp" : { "type" : "calendar"}}
+        self.session.SetConfig(True, True, tempConfig, utf8_strings=True)
+        databases2 = self.session.CheckSource("temp", utf8_strings=True)
+
     def testGetDatabasesNoConfig(self):
         """ test the right error is reported when the server doesn't exist """
         # make sure the config doesn't exist """
@@ -895,6 +916,15 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         databases1.sort()
         databases2.sort()
         self.failUnlessEqual(databases1, databases2)
+
+    def testGetDatabasesUpdateConfigTemp(self):
+        """ test the config is temporary updated and in effect for GetDatabases in the current session. """
+        self.setupConfig()
+        databases1 = self.session.GetDatabases("calendar", utf8_strings=True)
+        tempConfig = {"source/temp" : { "type" : "calendar"}}
+        self.session.SetConfig(True, True, tempConfig, utf8_strings=True)
+        databases2 = self.session.GetDatabases("temp", utf8_strings=True)
+        self.failUnlessEqual(databases2, databases1)
 
     def testGetReportsNoConfig(self):
         """ Test nothing is gotten when the given server doesn't exist. Also covers boundaries """
