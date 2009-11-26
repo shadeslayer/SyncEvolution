@@ -880,7 +880,8 @@ static SafeConfigProperty syncPropNonce("lastNonce",
 
 // used both as source and sync property, internal in both cases
 static SafeConfigProperty syncPropDeviceData("deviceData",
-                                             "information about the peer in a Synthesis internal-format");
+                                             "information about the peer in the format described in the\n"
+                                             "Synthesis SDK manual under 'Session_SaveDeviceInfo'");
 
 static SafeConfigProperty syncPropDefaultPeer("defaultPeer",
                                               "the peer which is used by default in some frontends, like the sync-UI");
