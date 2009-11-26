@@ -28,8 +28,25 @@
             directory if it is empty) which are not referenced by a
             key in the configuration are removed. Setting a completely
             empty configuration with "update=FALSE" can thus be used
-            to remove the entire
-            configuration.
+            to remove the entire configuration.
+
+            "Completely empty" means "no entries at all" ({} in Python
+            notation). This is different from a config with no properties
+            set ({"": {}} = sync properties reset to defaults, no sources;
+            {"": {}, "source/addressbook": {}} = same, with address book
+            reset to defaults).
+
+            When a specific peer was selected via the configuration
+            name, clearing and removing properties is done only
+            for the peer-specific properties.
+
+            When no specific peer was selected, setting an empty
+            configuration with "update=FALSE" removes all source
+            settings and all peers. This allows starting from scratch;
+            setting a non-empty configuration with "update=FALSE"
+            will replace the peer-independent source properties with
+            those that are sent in the new configuration and remove
+            the sources which are not listed, also in all peers.
         </doc:summary></doc:doc>
       </arg>
       <arg type="b" name="temporary" direction="in">

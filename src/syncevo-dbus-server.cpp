@@ -203,6 +203,10 @@ public:
 
     /** Session.GetDatabases() */
     void getDatabases(const string &sourceName, SourceDatabases_t &databases);
+
+private:
+    /** utility method which constructs a SyncConfig which references a local configuration (never a template) */
+    boost::shared_ptr<SyncConfig> getLocalConfig(const std::string &configName);
 };
 
 /**
@@ -1160,33 +1164,66 @@ void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &con
     }
 }
 
+boost::shared_ptr<SyncConfig> ReadOperations::getLocalConfig(const string &configName)
+{
+    string peer, context;
+    SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configName),
+                                  peer, context);
+
+    boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(configName));
+    // the default configuration can always be opened for reading,
+    // everything else must exist
+    if (context != "default" &&
+        !syncConfig->exists()) {
+        SE_THROW_EXCEPTION(NoSuchConfig, "No configuration '" + configName + "' found");
+    }
+
+    // TODO: handle temporary configs (MB #8116)
+    // - if config was set temporarily, it doesn't have to exist on disk =>
+    //   the check above is too strict
+    // - set temporary properties as filters
+
+    return syncConfig;
+}
+
 void ReadOperations::getConfig(bool getTemplate,
                                Config_t &config)
 {
-    if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Template or server name must be given");
-    }
     map<string, string> localConfigs;
     boost::shared_ptr<SyncConfig> syncConfig;
     /** get server template */
     if(getTemplate) {
-        syncConfig = SyncConfig::createServerTemplate(m_configName);
+        string peer, context;
+        SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_configName),
+                                      peer, context);
+
+        syncConfig = SyncConfig::createServerTemplate(peer);
         if(!syncConfig.get()) {
             SE_THROW_EXCEPTION(NoSuchConfig, "No template '" + m_configName + "' found");
         }
-    } else { ///< get a matching server configuration
-        boost::shared_ptr<SyncConfig> from;
-        syncConfig.reset(new SyncConfig(m_configName));
-        if (!syncConfig->exists()) {
-            SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
+
+        // use the shared properties from the right context as filter
+        // so that the returned template preserves existing properties
+        boost::shared_ptr<SyncConfig> shared = getLocalConfig(string("@") + context);
+
+        ConfigProps props;
+        shared->getProperties()->readProperties(props);
+        syncConfig->setConfigFilter(true, "", props);
+        BOOST_FOREACH(std::string source, shared->getSyncSources()) {
+            SyncSourceNodes nodes = shared->getSyncSourceNodes(source, "");
+            props.clear();
+            nodes.getProperties()->readProperties(props);
+            syncConfig->setConfigFilter(false, source, props);
         }
+    } else {
+        syncConfig = getLocalConfig(m_configName);
     }
 
     /** get sync properties and their values */
     ConfigPropertyRegistry &syncRegistry = SyncConfig::getRegistry();
     BOOST_FOREACH(const ConfigProperty *prop, syncRegistry) {
         bool isDefault = false;
-        string value = prop->getProperty(syncConfig->getConfigNode(), &isDefault);
+        string value = prop->getProperty(*syncConfig->getProperties(), &isDefault);
         if(!isDefault) {
             localConfigs.insert(pair<string, string>(prop->getName(), value));
         }
@@ -1202,7 +1239,7 @@ void ReadOperations::getConfig(bool getTemplate,
         ConfigPropertyRegistry &sourceRegistry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, sourceRegistry) {
             bool isDefault = false;
-            string value = prop->getProperty(*sourceNodes.m_configNode, &isDefault);
+            string value = prop->getProperty(*sourceNodes.getProperties(), &isDefault);
             if(!isDefault) {
                 localConfigs.insert(pair<string, string>(prop->getName(), value));
             }
@@ -1215,7 +1252,10 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
                                 Reports_t &reports)
 {
     if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
+        // TODO: an empty config name should return reports for
+        // all peers (MB#8049)
+        SE_THROW_EXCEPTION(NoSuchConfig,
+                           "listing reports without peer name not implemented yet");
     }
     SyncContext client(m_configName, false);
     std::vector<string> dirs;
@@ -1284,13 +1324,7 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
 
 void ReadOperations::checkSource(const std::string &sourceName)
 {
-    if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
-    }
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
-    if(!config->exists()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
-    }
     list<std::string> sourceNames = config->getSyncSources();
     list<std::string>::iterator it;
     for(it = sourceNames.begin(); it != sourceNames.end(); ++it) {
@@ -1301,7 +1335,7 @@ void ReadOperations::checkSource(const std::string &sourceName)
     if(it == sourceNames.end()) {
         SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' has no '" + sourceName + "' source");
     }
-    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
+    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
     auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
     try {
         if (syncSource.get()) {
@@ -1313,22 +1347,23 @@ void ReadOperations::checkSource(const std::string &sourceName)
 }
 void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &databases)
 {
-    if(m_configName.empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
-    }
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
-    if(!config->exists()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "No server '" + m_configName + "' found");
-    }
-    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), "");
+    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
     const SourceRegistry &registry(SyncSource::getSourceRegistry());
     BOOST_FOREACH(const RegisterSyncSource *sourceInfo, registry) {
         SyncSource *source = sourceInfo->m_create(params);
-        if(source && (source != RegisterSyncSource::InactiveSource)) {
+        if (!source) {
+            continue;
+        } else if (source == RegisterSyncSource::InactiveSource) {
+            SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' backend of source '" + sourceName + "' is not supported");
+        } else {
             auto_ptr<SyncSource> autoSource(source);
             databases = autoSource->getDatabases();
+            return;
         }
     }
+
+    SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' has no '" + sourceName + "' source");
 }
 
 /***************** DBusSync implementation **********************/
@@ -1438,9 +1473,6 @@ void Session::setConfig(bool update, bool temporary,
     if (m_sync) {
         SE_THROW_EXCEPTION(InvalidCall, "sync started, cannot change configuration at this time");
     }
-    if (getConfigName().empty()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "Server name must be given");
-    }
     if (!update && temporary) {
         throw std::runtime_error("Clearing existing configuration and temporary configuration changes which only affects the duration of the session are mutually exclusive");
     }
@@ -1463,7 +1495,7 @@ void Session::setConfig(bool update, bool temporary,
         boost::shared_ptr<SyncConfig> from(new SyncConfig(getConfigName()));
         /* if it is not clear mode and config does not exist, an error throws */
         if(update && !from->exists()) {
-            SE_THROW_EXCEPTION(NoSuchConfig, "The server '" + getConfigName() + "' doesn't exist" );
+            SE_THROW_EXCEPTION(NoSuchConfig, "The configuration '" + getConfigName() + "' doesn't exist" );
         }
         if(!update) {
             list<string> sources = from->getSyncSources();

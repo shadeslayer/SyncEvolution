@@ -63,7 +63,7 @@ class SQLiteContactSource : public SyncSource,
     SQLiteContactSource(const SyncSourceParams &params) :
         SyncSource(params),
         m_trackingNode(new PrefixConfigNode("item-",
-                                        boost::shared_ptr<ConfigNode>(new SafeConfigNode(params.m_nodes.m_trackingNode))))
+                                            boost::shared_ptr<ConfigNode>(new SafeConfigNode(params.m_nodes.getTrackingNode()))))
         {
             SyncSourceSession::init(m_operations);
             SyncSourceDelete::init(m_operations);

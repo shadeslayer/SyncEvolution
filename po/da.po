@@ -1,197 +1,207 @@
+# Danish translation of syncevolution
+# Copyright (C) 2009
+# This file is distributed under the same license as the syncevolution package.
+# Kris Thomsen <lakristho@gmail.com>, 2009.
+#
+#: ../src/gtk-ui/sync-ui.c:765
 msgid ""
 msgstr ""
-"Project-Id-Version: \n"
+"Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
 "POT-Creation-Date: 2009-11-19 18:24+0000\n"
-"PO-Revision-Date: \n"
-"Last-Translator: Tomás Galicia <tomas.galicia@intel.com>\n"
-"Language-Team: \n"
+"PO-Revision-Date: 2009-11-24 22:25+0100\n"
+"Last-Translator: Kris Thomsen <lakristho@gmail.com>\n"
+"Language-Team: Danish <dansk@dansk-gruppen.dk>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Language: Portuguese\n"
-"X-Poedit-SourceCharset: utf-8\n"
-"Plural-Forms: nplurals=2; plural=n!=1;\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #. TRANSLATORS: this is the application name that may be used by e.g.
 #. the windowmanager
-#: ../src/gtk-ui/main.c:31
-#: ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/main.c:31 ../src/gtk-ui/ui.glade.h:28
 #: ../src/gtk-ui/sync.desktop.in.h:1
 msgid "Sync"
-msgstr "Sincronização"
+msgstr "Synkronisering"
 
 #: ../src/gtk-ui/sync-ui.c:259
 msgid "Addressbook"
-msgstr "Endereços"
+msgstr "Adressebog"
 
 #: ../src/gtk-ui/sync-ui.c:261
 msgid "Calendar"
-msgstr "Calendário"
+msgstr "Kalender"
 
 #: ../src/gtk-ui/sync-ui.c:263
 msgid "Todo"
-msgstr "Tarefas"
+msgstr "Gøremålsliste"
 
 #: ../src/gtk-ui/sync-ui.c:265
 msgid "Memo"
-msgstr "Anotação"
+msgstr "Huskeliste"
 
 #: ../src/gtk-ui/sync-ui.c:320
 msgid "Failed to save current service in GConf configuration system"
-msgstr "Falha ao salvar o serviço atual no sistema de configuração do GConf"
+msgstr "Kunne ikke gemme aktuel tjeneste i GConf-konfigurationssystem"
 
 #: ../src/gtk-ui/sync-ui.c:331
 msgid "Failed to save service configuration to SyncEvolution"
-msgstr "Falha ao salvar a configuração de serviço ao SyncEvolution"
+msgstr "Kunne ikke gemme tjenestekonfigurationen til SyncEvolution"
 
 #: ../src/gtk-ui/sync-ui.c:416
 msgid "Failed to get service configuration from SyncEvolution"
-msgstr "Falha ao buscar a configuração de serviço do SyncEvolution"
+msgstr "Kunne ikke hente tjenestekonfigurationen fra SyncEvolution"
 
 #: ../src/gtk-ui/sync-ui.c:480
 msgid "Failed to remove service configuration from SyncEvolution"
-msgstr "Falha ao remover a configuração de serviço do SyncEvolution"
+msgstr "Kunne ikke fjerne tjenestekonfigurationen fra SyncEvolution"
 
 #: ../src/gtk-ui/sync-ui.c:600
 msgid "Service must have a name and server URL"
-msgstr "Serviço tem que ter um nome e um URL de servidor"
+msgstr "Tjeneste skal have et navn og en server-URL"
 
 #. sync is no longer in progress for some reason
 #: ../src/gtk-ui/sync-ui.c:676
 msgid "Failed to cancel: sync was no longer in progress"
-msgstr "Falhou ao cancelar: sincronização não estava em andamento"
+msgstr "Kunne ikke annullere: synkronisering var ikke længere kørende"
 
 #: ../src/gtk-ui/sync-ui.c:680
 msgid "Failed to cancel sync"
-msgstr "Falha ao cancelar sincronização"
+msgstr "Kunne ikke annullere synkronisering"
 
 #: ../src/gtk-ui/sync-ui.c:684
 msgid "Canceling sync"
-msgstr "Cancelando sincronização"
+msgstr "Annullerer synkronisering"
 
 #: ../src/gtk-ui/sync-ui.c:698
 msgid "Trying to cancel sync"
-msgstr "Tentando cancelar sincronização"
+msgstr "Prøver at annullere synkronisering"
 
 #: ../src/gtk-ui/sync-ui.c:705
 #, c-format
-msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
-msgstr "Você quer excluir todos os dados locais e substituir por dados de: %s? Isso não é aconselhável."
+msgid ""
+"Do you want to delete all local data and replace it with data from %s? This "
+"is not usually advised."
+msgstr ""
+"Vil du slette alle lokale data og erstatte dem med data fra %s? Dette er "
+"normalvis ikke anbefalet."
 
 #: ../src/gtk-ui/sync-ui.c:710
 #, c-format
-msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
-msgstr "Você quer excluir todos os dados em: %s e substituir por seus dados locais? Isso não é aconselhável."
+msgid ""
+"Do you want to delete all data in %s and replace it with your local data? "
+"This is not usually advised."
+msgstr ""
+"Vil du slette alle data i %s og erstatte dem med dine lokale data? "
+"Dette er normalvis ikke anbefalet."
 
 #: ../src/gtk-ui/sync-ui.c:727
 msgid "No, cancel sync"
-msgstr "Não, cancele a sincronização"
+msgstr "Nej, annullér synkronisering"
 
 #: ../src/gtk-ui/sync-ui.c:728
 msgid "Yes, delete and replace"
-msgstr "Sim, excluir e substituir"
+msgstr "Ja, slet og erstat"
 
 #: ../src/gtk-ui/sync-ui.c:750
 msgid "No sources are enabled, not syncing"
-msgstr "Nenhuma fonte habilitada, não sincronizando."
+msgstr "Ingen kilder er aktiveret, synkronisér ikke"
 
 #: ../src/gtk-ui/sync-ui.c:767
 msgid "A sync is already in progress"
-msgstr "Sincronização já em andamento"
+msgstr "En synkronisering er allerede i gang"
 
 #: ../src/gtk-ui/sync-ui.c:769
 msgid "Failed to start sync"
-msgstr "Falha no início da sincronização"
+msgstr "Kunne ikke starte synkronisering"
 
 #: ../src/gtk-ui/sync-ui.c:774
 msgid "Starting sync"
-msgstr "Iniciando sincronização"
+msgstr "Starter synkronisering"
 
 #: ../src/gtk-ui/sync-ui.c:799
 msgid "Last synced just seconds ago"
-msgstr "Ultima sincronização há segundos atrás"
+msgstr "Sidst synkroniseret for kun få sekunder siden"
 
 #: ../src/gtk-ui/sync-ui.c:802
 msgid "Last synced a minute ago"
-msgstr "Ultima sincronização há um minuto atrás"
+msgstr "Sidst synkroniseret for et minut siden"
 
 #: ../src/gtk-ui/sync-ui.c:805
 #, c-format
 msgid "Last synced %ld minutes ago"
-msgstr "Ultima sincronização há: %ld minutos atrás"
+msgstr "Sidst synkroniseret for %ld minutter siden"
 
 #: ../src/gtk-ui/sync-ui.c:808
 msgid "Last synced an hour ago"
-msgstr "Ultima sincronização há uma hora atrás"
+msgstr "Sidst synkroniseret for en time siden"
 
 #: ../src/gtk-ui/sync-ui.c:811
 #, c-format
 msgid "Last synced %ld hours ago"
-msgstr "Ultima sincronização há: %ld horas atrás"
+msgstr "Sidst synkroniseret for %ld timer siden"
 
 #: ../src/gtk-ui/sync-ui.c:814
 msgid "Last synced a day ago"
-msgstr "Ultima sincronização há um dia atrás"
+msgstr "Sidst synkroniseret for en dag siden"
 
 #: ../src/gtk-ui/sync-ui.c:817
 #, c-format
 msgid "Last synced %ld days ago"
-msgstr "Ultima sincronização há: %ld dias atrás"
+msgstr "Sidst synkroniseret for %ld dage siden"
 
 #: ../src/gtk-ui/sync-ui.c:902
 msgid "Sync again"
-msgstr "Sincronize de novo"
+msgstr "Synkronisér igen"
 
-#: ../src/gtk-ui/sync-ui.c:904
-#: ../src/gtk-ui/ui.glade.h:29
+#: ../src/gtk-ui/sync-ui.c:904 ../src/gtk-ui/ui.glade.h:29
 msgid "Sync now"
-msgstr "Sincronize agora"
+msgstr "Synkronisér nu"
 
 #: ../src/gtk-ui/sync-ui.c:913
 msgid "Syncing"
-msgstr "Sincronizando"
+msgstr "Synkroniserer"
 
 #: ../src/gtk-ui/sync-ui.c:919
 msgid "Cancel sync"
-msgstr "Cancelar sincronização"
+msgstr "Annullér synkronisering"
 
 #. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
 #: ../src/gtk-ui/sync-ui.c:1266
 #, c-format
 msgid "%s (not supported by this service)"
-msgstr "%s: (não suportado por este serviço)"
+msgstr "%s (ikke understøttet af denne tjeneste)"
 
 #: ../src/gtk-ui/sync-ui.c:1299
 #, c-format
 msgid "There was one remote rejection."
 msgid_plural "There were %d remote rejections."
-msgstr[0] "Houve uma rejeição remota."
-msgstr[1] "Houve %d rejeições remotas."
+msgstr[0] "Der var én fjernafvisning."
+msgstr[1] "Der var %d fjernafvisninger."
 
 #: ../src/gtk-ui/sync-ui.c:1304
 #, c-format
 msgid "There was one local rejection."
 msgid_plural "There were %d local rejections."
-msgstr[0] "Houve uma rejeição local."
-msgstr[1] "Houve %d rejeições locais."
+msgstr[0] "Der var én lokal afvisning."
+msgstr[1] "Der var %d lokale afvisninger."
 
 #: ../src/gtk-ui/sync-ui.c:1309
 #, c-format
 msgid "There were %d local rejections and %d remote rejections."
-msgstr "Houve %d rejeições locais e %d rejeições remotas."
+msgstr "Der var %d lokale afvisninger og %d fjernafvisninger."
 
 #: ../src/gtk-ui/sync-ui.c:1314
 #, c-format
 msgid "Last time: No changes."
-msgstr "Ultima vez: sem mudanças."
+msgstr "Sidste gang: Ingen ændringer."
 
 #: ../src/gtk-ui/sync-ui.c:1316
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %d changes."
-msgstr[0] "Ultima vez: Enviou uma mudança."
-msgstr[1] "Ultima vez: Enviou %d mudanças."
+msgstr[0] "Sidste gang: Èn ændring indsendt."
+msgstr[1] "Sidste gang: %d ændringer indsendt."
 
 #. This is about changes made to the local data. Not all of these
 #. changes were requested by the remote server, so "applied"
@@ -200,347 +210,344 @@ msgstr[1] "Ultima vez: Enviou %d mudanças."
 #, c-format
 msgid "Last time: Applied one change."
 msgid_plural "Last time: Applied %d changes."
-msgstr[0] "Ultima vez: Efetuou uma mudança."
-msgstr[1] "Ultima vez: Efetuou %d mudanças."
+msgstr[0] "Sidste gang: Èn ændring tilføjet."
+msgstr[1] "Sidste gang: %d ændringer tilføjet."
 
 #: ../src/gtk-ui/sync-ui.c:1329
 #, c-format
 msgid "Last time: Applied %d changes and sent %d changes."
-msgstr "Ultima vez: Efetuou %d mudanças e enviou %d mudanças."
+msgstr "Sidste gang: %d ændringer tilføjet og %d ændringer indsendt."
 
 #: ../src/gtk-ui/sync-ui.c:1421
 msgid "Failed to get server configuration from SyncEvolution"
-msgstr "Não conseguiu a configuração do servidor do SyncEvolution"
+msgstr "Kunne ikke hente serverkonfiguration fra SyncEvolution"
 
 #: ../src/gtk-ui/sync-ui.c:1473
-msgid "ScheduleWorld enables you to keep your contacts, events, tasks, and notes in sync."
-msgstr "ScheduleWorld possibilita manter sincronizados seus contatos, eventos, tarefas e anotações."
+msgid ""
+"ScheduleWorld enables you to keep your contacts, events, tasks, and notes in "
+"sync."
+msgstr ""
+"ScheduleWorld giver dig mulighed for at holde dine kontakter, aktiviteter, gøremål "
+"og noter synkroniseret."
 
 #: ../src/gtk-ui/sync-ui.c:1476
-msgid "Google Sync can backup and synchronize your Address Book with your Gmail contacts."
-msgstr "Google Sync pode fazer backup e sincronizar seus endereços com seus contatos Gmail."
+msgid ""
+"Google Sync can backup and synchronize your Address Book with your Gmail "
+"contacts."
+msgstr ""
+"Google Sync kan tage en sikkerhedskopi og synkronisere din adressebog med "
+"dine Gmail-kontakter."
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
 #. in the future
 #: ../src/gtk-ui/sync-ui.c:1482
-msgid "Backup your contacts and calendar. Sync with a singleclick, anytime, anywhere (DEMO)."
-msgstr "Faça backup de seus contatos e calendário. Sincronize com um só clique, a qualquer hora em qualquer lugar (DEMO)."
+msgid ""
+"Backup your contacts and calendar. Sync with a singleclick, anytime, "
+"anywhere (DEMO)."
+msgstr ""
+"Lav en sikkerhedskopi af dine kontakter og kalender. Synkroniser med "
+"enkeltklik, når som helst og hvor som helst (DEMO)."
 
 #: ../src/gtk-ui/sync-ui.c:1510
 msgid "New service"
-msgstr "Serviço novo"
+msgstr "Ny tjeneste"
 
 #: ../src/gtk-ui/sync-ui.c:1557
 msgid "Server URL"
-msgstr "URL de servidor"
+msgstr "Server URL"
 
 #. TRANSLATORS: placeholder is a source name in settings window
 #: ../src/gtk-ui/sync-ui.c:1579
 #, c-format
 msgid "%s URI"
-msgstr "URI: %s"
+msgstr "%s URI"
 
-#: ../src/gtk-ui/sync-ui.c:1716
-#: ../src/gtk-ui/ui.glade.h:17
+#: ../src/gtk-ui/sync-ui.c:1716 ../src/gtk-ui/ui.glade.h:17
 msgid "Launch website"
-msgstr "Iniciar o site na web"
+msgstr "Åben websted"
 
 #: ../src/gtk-ui/sync-ui.c:1720
 msgid "Setup and use"
-msgstr "Configure e use"
+msgstr "Sæt op og brug"
 
 #: ../src/gtk-ui/sync-ui.c:1766
 msgid "Failed to get list of manually setup services from SyncEvolution"
-msgstr "Não conseguiu a lista de serviços configurados manualmente do SyncEvolution"
+msgstr "Kunne ikke hente liste over manuelt opsatte tjenester fra SyncEvolution"
 
 #: ../src/gtk-ui/sync-ui.c:1807
 msgid "Failed to get list of supported services from SyncEvolution"
-msgstr "Não conseguiu a lista de serviços suportados do SyncEvolution"
+msgstr "Kunne ikke hente liste over understøttede tjenester fra SyncEvolution"
 
 #. TODO: this is a hack... SyncEnd should be a signal of it's own,
 #. not just hacked on top of the syncevolution error codes
 #: ../src/gtk-ui/sync-ui.c:1968
 msgid "Service configuration not found"
-msgstr "Configuração de serviço não localizado"
+msgstr "Tjenestekonfiguration ikke fundet"
 
 #: ../src/gtk-ui/sync-ui.c:1974
 msgid "Not authorized"
-msgstr "Não autorizado"
+msgstr "Ikke godkendt"
 
 #: ../src/gtk-ui/sync-ui.c:1976
 msgid "Forbidden"
-msgstr "Proibído"
+msgstr "Forbudt"
 
 #: ../src/gtk-ui/sync-ui.c:1978
 msgid "Not found"
-msgstr "Não localizado"
+msgstr "Ikke fundet"
 
 #: ../src/gtk-ui/sync-ui.c:1980
 msgid "Fatal database error"
-msgstr "Erro fatal no banco de dados"
+msgstr "Fatal databasefejl"
 
 #: ../src/gtk-ui/sync-ui.c:1982
 msgid "Database error"
-msgstr "Erro de banco de dados"
+msgstr "Databasefejl"
 
 #: ../src/gtk-ui/sync-ui.c:1984
 msgid "No space left"
-msgstr "Não há mais espaço"
+msgstr "Ingen plads tilbage"
 
 #. TODO identify problem item somehow ?
 #: ../src/gtk-ui/sync-ui.c:1987
 msgid "Failed to process SyncML"
-msgstr "Falhou o processo de SyncML"
+msgstr "Kunne ikke behandle SyncML"
 
 #: ../src/gtk-ui/sync-ui.c:1989
 msgid "Server authorization failed"
-msgstr "Autorização do servidor falhou"
+msgstr "Godkendelse af server mislykkedes"
 
 #: ../src/gtk-ui/sync-ui.c:1991
 msgid "Failed to parse configuration file"
-msgstr "Falha na triagem do arquivo de configuração"
+msgstr "Kunne ikke tolke konfigurationsfil"
 
 #: ../src/gtk-ui/sync-ui.c:1993
 msgid "Failed to read configuration file"
-msgstr "Falha na leitura do arquivo de configuração"
+msgstr "Kunne ikke læse konfigurationsfil"
 
 #: ../src/gtk-ui/sync-ui.c:1995
 msgid "No configuration found"
-msgstr "Nenhuma configuração encontrada"
+msgstr "Ingen konfiguration fundet"
 
 #: ../src/gtk-ui/sync-ui.c:1997
 msgid "No configuration file found"
-msgstr "Nenhum arquivo de configuração encontrado"
+msgstr "Ingen konfigurationsfil fundet"
 
 #: ../src/gtk-ui/sync-ui.c:1999
 msgid "Server sent bad content"
-msgstr "Servidor enviou conteúdo ruim"
+msgstr "Serveren sendte ugyldigt indhold"
 
 #: ../src/gtk-ui/sync-ui.c:2001
 msgid "Transport failure (no connection?)"
-msgstr "Falha de transporte (sem conexão?)"
+msgstr "Transportfejl (ingen forbindelse?)"
 
 #: ../src/gtk-ui/sync-ui.c:2003
 msgid "Connection timed out"
-msgstr "Conexão expirou"
+msgstr "Tiden for forbindelsen er løbet ud"
 
 #: ../src/gtk-ui/sync-ui.c:2005
 msgid "Connection certificate has expired"
-msgstr "Certificado de conexão vencido"
+msgstr "Forbindelsescertifikatet er udløbet"
 
 #: ../src/gtk-ui/sync-ui.c:2007
 msgid "Connection certificate is invalid"
-msgstr "Certificado de conexão inválido"
+msgstr "Forbindelsescertifikat er ugyldigt"
 
 #: ../src/gtk-ui/sync-ui.c:2010
 msgid "Connection failed"
-msgstr "Conexão falhou"
+msgstr "Forbindelse mislykkedes"
 
 #: ../src/gtk-ui/sync-ui.c:2012
 msgid "URL is bad"
-msgstr "URL está ruim"
+msgstr "URL er ugyldig"
 
 #: ../src/gtk-ui/sync-ui.c:2014
 msgid "Server not found"
-msgstr "Servidor não localizado"
+msgstr "Server ikke fundet"
 
 #: ../src/gtk-ui/sync-ui.c:2016
 #, c-format
 msgid "Error %d"
-msgstr "Erro: %d"
+msgstr "Fejl %d"
 
 #: ../src/gtk-ui/sync-ui.c:2026
 msgid "Sync D-Bus service exited unexpectedly"
-msgstr "Saída inesperada do serviço Sync D-Bus"
+msgstr "Synkroniserings-D-Bus-tjeneste afsluttede ikke som forventet"
 
-#: ../src/gtk-ui/sync-ui.c:2029
-#: ../src/gtk-ui/sync-ui.c:2080
+#: ../src/gtk-ui/sync-ui.c:2029 ../src/gtk-ui/sync-ui.c:2080
 msgid "Sync Failed"
-msgstr "Sinc. falhou"
+msgstr "Synkronisering mislykkedes"
 
 #: ../src/gtk-ui/sync-ui.c:2072
 msgid "Sync complete"
-msgstr "Sinc. completado"
+msgstr "Synkronisering gennemført"
 
 #: ../src/gtk-ui/sync-ui.c:2077
 msgid "Sync canceled"
-msgstr "Sinc. cancelado"
+msgstr "Synkronisering annulleret"
 
 #. NOTE extra1 can be error here
 #: ../src/gtk-ui/sync-ui.c:2095
 msgid "Ending sync"
-msgstr "Terminando sinc."
+msgstr "Afslutter synkronisering"
 
 #. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
 #: ../src/gtk-ui/sync-ui.c:2119
 #, c-format
 msgid "Preparing '%s'"
-msgstr "Preparando: '%s'"
+msgstr "Forbereder \"%s\""
 
 #. TRANSLATORS: placeholder is a source name in a progress text
 #: ../src/gtk-ui/sync-ui.c:2131
 #, c-format
 msgid "Sending '%s'"
-msgstr "Enviando: '%s"
+msgstr "Sender \"%s\""
 
 #. TRANSLATORS: placeholder is a source name in a progress text
 #: ../src/gtk-ui/sync-ui.c:2143
 #, c-format
 msgid "Receiving '%s'"
-msgstr "Recebendo: '%s'"
+msgstr "Modtager \"%s\""
 
 #: ../src/gtk-ui/ui.glade.h:1
 msgid "<b>Data</b>"
-msgstr "<b>Dados</b>"
+msgstr "<b>Data</b>"
 
 #: ../src/gtk-ui/ui.glade.h:2
 msgid "<b>No sync service in use</b>"
-msgstr "<b>Nenhum serviço de sincronização em uso</b>"
+msgstr "<b>Ingen synkroniseringstjeneste i brug</b>"
 
 #: ../src/gtk-ui/ui.glade.h:3
 msgid "<b>Sync failure</b>"
-msgstr "<b>Falha de sincronização</b>"
+msgstr "<b>Synkroniseringsfejl</b>"
 
 #: ../src/gtk-ui/ui.glade.h:4
 msgid "<b>Type of Sync</b>"
-msgstr "<b>Tipo de sincronização</b>"
+msgstr "<b>Synkroniseringstype</b>"
 
 #: ../src/gtk-ui/ui.glade.h:5
 msgid "<big>Manual setup</big>"
-msgstr "<big>Configuração manual</big>"
+msgstr "<big>Manuel opsætning</big>"
 
 #: ../src/gtk-ui/ui.glade.h:6
 msgid "<big>Supported services</big>"
-msgstr "<big>Serviços suportados</big>"
+msgstr "<big>Understøttede tjenester</big>"
 
 #: ../src/gtk-ui/ui.glade.h:7
 msgid "Add new service"
-msgstr "Adicionar serviço"
+msgstr "Tilføj ny tjeneste"
 
 #: ../src/gtk-ui/ui.glade.h:8
 msgid "Back to sync"
-msgstr "Voltar a sincronização"
+msgstr "Tilbage til synkronisering"
 
 #: ../src/gtk-ui/ui.glade.h:9
 msgid ""
 "Change sync\n"
 "service"
 msgstr ""
-"Modificar serviço\n"
-"de sincronização"
+"Skift synkroniserings-\n"
+"tjeneste"
 
 #: ../src/gtk-ui/ui.glade.h:11
 msgid "Delete all local data and replace it with remote data"
-msgstr "Excluir todos os dados locais e substituir com por remotos."
+msgstr "Slet alle lokale data og erstat dem med fjerndata"
 
 #: ../src/gtk-ui/ui.glade.h:12
 msgid "Delete all remote data and replace it with local data"
-msgstr "Excluir todos os dados remotos e substituir por dados locais"
+msgstr "Slet alle fjerndata og erstat dem med lokale data"
 
 #: ../src/gtk-ui/ui.glade.h:13
 msgid "Delete this service"
-msgstr "Excluir este serviço"
+msgstr "Slet denne tjeneste"
 
 #: ../src/gtk-ui/ui.glade.h:14
 msgid "Edit service settings"
-msgstr "Editar configurações de serviço"
+msgstr "Redigér tjenesteindstillinger"
 
 #: ../src/gtk-ui/ui.glade.h:15
 msgid ""
-"If you don't see your service above but know that your sync provider uses SyncML\n"
+"If you don't see your service above but know that your sync provider uses "
+"SyncML\n"
 "you can setup a service manually."
 msgstr ""
-"Se não ver seu serviço acima, porém sabe que seu provedor de sinc. usa SyncML\n"
-"você poderá configurá-la manualmente."
+"Hvis du ikke kan se din tjeneste ovenfor, men ved at din synkroniseringsudbyder "
+"bruger SyncML,\n"
+"kan du sætte en tjeneste manuelt."
 
 #: ../src/gtk-ui/ui.glade.h:18
 msgid "Merge local and remote data (recommended)"
-msgstr "Intercalar dados locais e remotos (recomendado)"
+msgstr "Læg lokale og fjerndata sammen (anbefalet)"
 
 #: ../src/gtk-ui/ui.glade.h:19
 msgid "Password"
-msgstr "Senha"
+msgstr "Adgangskode"
 
 #: ../src/gtk-ui/ui.glade.h:20
 msgid "Reset original server settings"
-msgstr "Reinicializar configurações originais do servidor"
+msgstr "Nulstil til originale serverindstillinger"
 
 #: ../src/gtk-ui/ui.glade.h:21
 msgid "Save and use this service"
-msgstr "Salvar e usar este serviço"
+msgstr "Gem og brug denne tjeneste"
 
 #: ../src/gtk-ui/ui.glade.h:22
 msgid "Select sync service"
-msgstr "Selecione serviço de sincronização"
+msgstr "Vælg synkroniseringstjeneste"
 
 #: ../src/gtk-ui/ui.glade.h:23
 msgid "Server settings"
-msgstr "Configurações de servidor"
+msgstr "Tjenesteopsætning"
 
 #: ../src/gtk-ui/ui.glade.h:24
 msgid "Service name"
-msgstr "Nome do serviço"
+msgstr "Tjenestenavn"
 
 #: ../src/gtk-ui/ui.glade.h:25
 msgid ""
 "Sorry, you need an internet\n"
 "connection to sync."
 msgstr ""
-"Sinto muito, você precisa de\n"
-"conexão internet para sincronizar."
+"Beklager, du skal bruge en internetforbindelse\n"
+"for at synkronisere."
 
 #: ../src/gtk-ui/ui.glade.h:27
 msgid "Stop using this service"
-msgstr "Pare de usar este serviço"
+msgstr "Stop med at bruge denne tjeneste"
 
 #: ../src/gtk-ui/ui.glade.h:30
-msgid "Synchronization is not available (D-Bus service does not answer), sorry."
-msgstr "Sincronização não disponível (Serviço D-Bus não responde), sinto muito."
+msgid ""
+"Synchronization is not available (D-Bus service does not answer), sorry."
+msgstr ""
+"Synkronisering er ikke tilgængelig (D-Bus-tjenesten svarer ikke), beklager."
 
 #: ../src/gtk-ui/ui.glade.h:31
 msgid ""
-"To sync you'll need a network connection and an account with a sync service.\n"
+"To sync you'll need a network connection and an account with a sync "
+"service.\n"
 "We support the following services: "
 msgstr ""
-"Para sincronizar você precisa de conexão de rede e uma conta com serviço\n"
-"de sincronização. Nós suportamos os seguintes serviços:"
+"For at synkronisere skal du have en netværksforbindelse og en konto med "
+"en synkroniseringstjeneste.\n"
+"Vi understøtter følgende tjenester: "
 
 #: ../src/gtk-ui/ui.glade.h:33
 msgid "Username"
-msgstr "Nome do usuário"
+msgstr "Brugernavn"
 
 #: ../src/gtk-ui/ui.glade.h:34
 msgid ""
 "You haven't selected a sync service yet. Sync services let you \n"
 "synchronize your data between your netbook and a web service."
 msgstr ""
-"Você ainda não selecionou seu serviço de sincronização.  Serviços de sinc permitem a você \n"
-"sincronizar seus dados entre netbook e um serviço da web."
+"Du har ikke valgt en synkroniseringstjeneste endnu. Synkroniseringstjenester \n"
+"lader dig synkronisere dine data mellem din netbook og en webtjeneste."
 
-#: ../src/gtk-ui/sync.desktop.in.h:2
-#: ../src/gtk-ui/sync-gtk.desktop.in.h:2
+#: ../src/gtk-ui/sync.desktop.in.h:2 ../src/gtk-ui/sync-gtk.desktop.in.h:2
 msgid "Up to date"
-msgstr "Atualizado"
+msgstr "Fuldt opdatereret"
 
 #: ../src/gtk-ui/sync-gtk.desktop.in.h:1
 msgid "Sync (GTK)"
-msgstr "Sincronizar (GTK)"
-
-#~ msgid "Last time: Received one change."
-#~ msgid_plural "Last time: Received %d changes."
-#~ msgstr[0] "Ultima vez: Recebeu uma mudança."
-#~ msgstr[1] "Ultima vez: Recebeu %d mudanças."
-#~ msgid "Last time: Received %d changes and sent %d changes."
-#~ msgstr "Ultima vez: Recebidos %d mudanças e enviados %d mudanças."
-#~ msgid "Setup sync service"
-#~ msgstr "Configurar serviço de sincronização"
-#~ msgid ""
-#~ "You haven't set up a sync service yet. Sync services let you \n"
-#~ "synchronize your data between your netbook and a web service."
-#~ msgstr ""
-#~ "Você ainda não configurou seu serviço de sincronização. Os serviços\n"
-#~ "lhe permitem sincronizar os dados entre netbook e serviço na web."
-#~ msgid "Bring your data with you"
-#~ msgstr "Traga seus dados contigo"
-
+msgstr "Synkronisering (GTK)"

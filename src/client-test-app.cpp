@@ -192,29 +192,31 @@ public:
         // get configuration and set obligatory fields
         LoggerBase::instance().setLevel(Logger::DEBUG);
         std::string root = std::string("evolution/") + server + "_" + id;
-        SyncConfig config(string(server) + "_" + id);
+        boost::shared_ptr<SyncConfig> config(new SyncConfig(string(server) + "_" + id));
         boost::shared_ptr<SyncConfig> from = boost::shared_ptr<SyncConfig> ();
 
-        if (!config.exists()) {
-            // no configuration yet
-            config.setDefaults();
+        if (!config->exists()) {
+            // no configuration yet, create in different contexts because
+            // device ID is different
+            config.reset(new SyncConfig(string(server) + "_" + id + "@client-test-" + id));
+            config->setDefaults();
             from = SyncConfig::createServerTemplate(server);
             if(from) {
                 set<string> filter;
-                config.copy(*from, &filter);
+                config->copy(*from, &filter);
             }
-            config.setDevID(id == "1" ? "sc-api-nat" : "sc-pim-ppc");
+            config->setDevID(id == "1" ? "sc-api-nat" : "sc-pim-ppc");
         }
         BOOST_FOREACH(const RegisterSyncSourceTest *test, m_configs) {
             ClientTest::Config testconfig;
             getSourceConfig(test, testconfig);
             CPPUNIT_ASSERT(testconfig.type);
 
-            boost::shared_ptr<SyncSourceConfig> sc = config.getSyncSourceConfig(testconfig.sourceName);
+            boost::shared_ptr<SyncSourceConfig> sc = config->getSyncSourceConfig(testconfig.sourceName);
             if (!sc || !sc->exists()) {
                 // no configuration yet
-                config.setSourceDefaults(testconfig.sourceName);
-                sc = config.getSyncSourceConfig(testconfig.sourceName);
+                config->setSourceDefaults(testconfig.sourceName);
+                sc = config->getSyncSourceConfig(testconfig.sourceName);
                 CPPUNIT_ASSERT(sc);
                 sc->setURI(testconfig.uri);
                 if(from && testconfig.sourceNameServerTemplate){
@@ -230,7 +232,7 @@ public:
             sc->setUser(m_evoUser);
             sc->setPassword(m_evoPassword);
         }
-        config.flush();
+        config->flush();
     }
 
     virtual LocalTests *createLocalTests(const std::string &name, int sourceParam, ClientTest::Config &co) {
@@ -362,9 +364,7 @@ private:
     
     static TestingSyncSource *createSource(ClientTest &client, int source, bool isSourceA) {
         TestEvolution &evClient((TestEvolution &)client);
-        string changeID = "SyncEvolution Change ID #";
         string name = evClient.m_source2Config[source];
-        changeID += isSourceA ? "1" : "2";
         string database = evClient.getDatabaseName(name);
 
         SyncConfig config("client-test-changes");
@@ -373,13 +373,12 @@ private:
                                                           "_" + (isSourceA ? "A" : "B"));
 
         // always set this property: the name might have changes since last test run
-        nodes.m_configNode->setProperty("evolutionsource", database.c_str());
-        nodes.m_configNode->setProperty("evolutionuser", evClient.m_evoUser.c_str());
-        nodes.m_configNode->setProperty("evolutionpassword", evClient.m_evoPassword.c_str());
+        nodes.getProperties()->setProperty("evolutionsource", database.c_str());
+        nodes.getProperties()->setProperty("evolutionuser", evClient.m_evoUser.c_str());
+        nodes.getProperties()->setProperty("evolutionpassword", evClient.m_evoPassword.c_str());
 
         SyncSourceParams params(name,
-                                nodes,
-                                changeID);
+                                nodes);
 
         const RegisterSyncSourceTest *test = evClient.m_configs[name];
         ClientTestConfig testConfig;

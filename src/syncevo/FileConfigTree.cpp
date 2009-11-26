@@ -37,8 +37,10 @@
 SE_BEGIN_CXX
 
 FileConfigTree::FileConfigTree(const string &root,
+                               const string &peer,
                                bool oldLayout) :
     m_root(root),
+    m_peer(peer),
     m_oldLayout(oldLayout),
     m_readonly(false)
 {
@@ -46,7 +48,7 @@ FileConfigTree::FileConfigTree(const string &root,
 
 string FileConfigTree::getRootPath() const
 {
-    return normalizePath(m_root);
+    return normalizePath(m_root + "/" + m_peer);
 }
 
 void FileConfigTree::flush()
@@ -82,22 +84,27 @@ static bool rm_filter(const string &path, bool isDir)
     }
 }
 
-void FileConfigTree::remove()
+void FileConfigTree::remove(const string &path)
 {
-    reset();
-    rm_r(getRootPath(), rm_filter);
+    string fullpath = m_root + "/" + path;
+    clearNodes(fullpath);
+    rm_r(fullpath, rm_filter);
 }
 
 void FileConfigTree::reset()
 {
+    for (NodeCache_t::iterator it = m_nodes.begin();
+         it != m_nodes.end();
+         ++it) {
+        if (it->second.use_count() > 1) {
+            // If the use count is larger than 1, then someone besides
+            // the cache is referencing the node. We cannot force that
+            // other entity to drop the reference, so bail out here.
+            SE_THROW(it->second->getName() +
+                     ": cannot be removed while in use");
+        }
+    }
     m_nodes.clear();
-}
-
-void FileConfigTree::removeSubtree(const string &name) 
-{
-    string fullpath = getRootPath() + "/" + name;
-    clearNodes(fullpath);
-    rm_r(fullpath, rm_filter);
 }
 
 void FileConfigTree::clearNodes(const string &fullpath) 
@@ -113,6 +120,11 @@ void FileConfigTree::clearNodes(const string &fullpath)
              * Below is STL recommended usage. 
              */
             NodeCache_t::iterator erased = it++;
+            if (erased->second.use_count() > 1) {
+                // same check as in reset()
+                SE_THROW(erased->second->getName() +
+                         ": cannot be removed while in use");
+            }
             m_nodes.erase(erased);
         } else {
             ++it;

@@ -44,40 +44,15 @@ struct SyncSourceParams {
     /**
      * @param    name        the name needed by SyncSource
      * @param    nodes       a set of config nodes to be used by this source
-     * @param    changeId    a unique string constructed from an ID for SyncEvolution
-     *                       and the URL/database we synchronize against; can be
-     *                       used to do change tracking for that combination of
-     *                       peers
      */
     SyncSourceParams(const string &name,
-                     const SyncSourceNodes &nodes,
-                     const string &changeId) :
-    m_name(name),
-        m_nodes(nodes),
-        m_changeId(stripChangeId(changeId))
+                     const SyncSourceNodes &nodes = SyncSourceNodes()) :
+        m_name(name),
+        m_nodes(nodes)
     {}
 
-    const string m_name;
-    const SyncSourceNodes m_nodes;
-    const string m_changeId;
-
-    /** remove special characters from change ID */
-    static string stripChangeId(const string changeId) {
-        string strippedChangeId = changeId;
-        size_t offset = 0;
-        while (offset < strippedChangeId.size()) {
-            switch (strippedChangeId[offset]) {
-            case ':':
-            case '/':
-            case '\\':
-                strippedChangeId.erase(offset, 1);
-                break;
-            default:
-                offset++;
-            }
-        }
-        return strippedChangeId;
-    }
+    string m_name;
+    SyncSourceNodes m_nodes;
 };
 
 /**
@@ -1010,7 +985,7 @@ class DummySyncSource : public SyncSource
        SyncSource(params) {}
 
     DummySyncSource(const std::string &name) :
-       SyncSource(SyncSourceParams(name, SyncSourceNodes(), "")) {}
+       SyncSource(SyncSourceParams(name)) {}
 
     virtual Databases getDatabases() { return Databases(); }
     virtual void open() {}
@@ -1477,8 +1452,8 @@ class SyncSourceAdmin : public virtual SyncSourceBase
     std::string m_adminPropertyName;
     boost::shared_ptr<ConfigNode> m_mappingNode;
 
-    StringMap m_mapping;
-    StringMap::const_iterator m_mappingIterator;
+    ConfigProps m_mapping;
+    ConfigProps::const_iterator m_mappingIterator;
 
     sysync::TSyError loadAdminData(const char *aLocDB,
                                    const char *aRemDB,
@@ -1503,8 +1478,9 @@ class SyncSourceAdmin : public virtual SyncSourceBase
 
     /**
      * simpler initialization, using the default placement of data
+     * inside the SyncSourceConfig base class
      */
-    void init(SyncSource::Operations &ops, SyncSourceNodes &nodes);
+    void init(SyncSource::Operations &ops, SyncSource *source);
 };
 
 /**

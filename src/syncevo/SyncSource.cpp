@@ -343,7 +343,7 @@ SyncSource *SyncSource::createTestingSource(const string &name, const string &ty
 {
     SyncConfig config("testing");
     SyncSourceNodes nodes = config.getSyncSourceNodes(name);
-    SyncSourceParams params(name, nodes, "");
+    SyncSourceParams params(name, nodes);
     PersistentSyncSourceConfig sourceconfig(name, nodes);
     sourceconfig.setSourceType(type);
     if (prefix) {
@@ -712,7 +712,7 @@ void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode)
     }
 
     // clear information about all items that we recognized as deleted
-    map<string, string> props;
+    ConfigProps props;
     trackingNode.readProperties(props);
 
     BOOST_FOREACH(const StringPair &mapping, props) {
@@ -1021,12 +1021,13 @@ void SyncSourceAdmin::init(SyncSource::Operations &ops,
                                            this));
 }
 
-void SyncSourceAdmin::init(SyncSource::Operations &ops, SyncSourceNodes &nodes)
+void SyncSourceAdmin::init(SyncSource::Operations &ops,
+                           SyncSource *source)
 {
     init(ops,
-         nodes.m_hiddenNode,
+         source->getProperties(true),
          SourceAdminDataName,
-         nodes.m_serverNode);
+         source->getServerNode());
 }
 
 SE_END_CXX

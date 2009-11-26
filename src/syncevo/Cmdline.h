@@ -116,6 +116,20 @@ protected:
     bool listProperties(const ConfigPropertyRegistry &validProps,
                         const string &opt);
 
+    typedef map<string, ConfigProps> SourceFilters_t;
+
+    /**
+     * read properties from context, then update with
+     * command line properties
+     *
+     * @param context         context name, without @ sign
+     * @retval syncFilter     global sync properties
+     * @retval sourceFilters  entries for specific sources, key "" as fallback
+     */
+    void getFilters(const string &context,
+                    ConfigProps &syncFilter,
+                    SourceFilters_t &sourceFilters);
+
     /**
      * list all known data sources of a certain type
      */

@@ -247,7 +247,7 @@ string FileConfigNode::readProperty(const string &property) const {
 
 
 
-void FileConfigNode::readProperties(map<string, string> &props) const {
+void FileConfigNode::readProperties(ConfigProps &props) const {
     map<string, string> res;
     string value, property;
 
@@ -372,13 +372,13 @@ void HashFileConfigNode::toFile(FILE* file) {
     }
 }
 
-void HashFileConfigNode::readProperties(map<string, string> &props) const {
+void HashFileConfigNode::readProperties(ConfigProps &props) const {
     BOOST_FOREACH(const StringPair &prop, m_props) {
         props.insert(prop);
     }
 }
 
-void HashFileConfigNode::writeProperties(const map<string, string> &props) {
+void HashFileConfigNode::writeProperties(const ConfigProps &props) {
     if (!props.empty()) {
         m_props.insert(props.begin(), props.end());
         m_modified = true;

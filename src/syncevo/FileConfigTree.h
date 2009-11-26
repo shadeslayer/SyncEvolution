@@ -38,10 +38,13 @@ using namespace std;
 class FileConfigTree : public ConfigTree {
  public:
     /**
-     * @param root              absolute filesystem path
-     * @param oldLayout         use file names as in SyncEvolution <= 0.7
+     * @param root              absolute filesystem path for
+     *                          .syncj4/evolution or .config/syncevolution
+     * @param peer              the relative path to the peer configuration
+     * @param oldLayout         true: use pre-0.7 file names
      */
     FileConfigTree(const string &root,
+                   const string &peer,
                    bool oldLayout);
 
     void setReadOnly(bool readonly) { m_readonly = readonly; }
@@ -50,13 +53,12 @@ class FileConfigTree : public ConfigTree {
     /* ConfigTree API */
     virtual string getRootPath() const;
     virtual void flush();
-    virtual void remove();
+    virtual void remove(const string &path);
     virtual void reset();
     virtual boost::shared_ptr<ConfigNode> open(const string &path,
                                                PropertyType type,
                                                const string &otherId = string(""));
     list<string> getChildren(const string &path);
-    virtual void removeSubtree(const string &path);
 
  private:
     /**
@@ -67,6 +69,7 @@ class FileConfigTree : public ConfigTree {
 
  private:
     const string m_root;
+    const string m_peer;
     const bool m_oldLayout;
     bool m_readonly;
 

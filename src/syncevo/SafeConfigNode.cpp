@@ -54,9 +54,9 @@ void SafeConfigNode::setProperty(const string &property,
                         defValue);
 }
 
-void SafeConfigNode::readProperties(map<string, string> &props) const
+void SafeConfigNode::readProperties(ConfigProps &props) const
 {
-    map<string, string> original;
+    ConfigProps original;
     m_readOnlyNode->readProperties(original);
 
     BOOST_FOREACH(const StringPair &prop, original) {

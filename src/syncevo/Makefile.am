@@ -63,6 +63,10 @@ SYNCEVOLUTION_SOURCES  = \
 	SyncConfig.h \
 	SyncConfig.cpp \
 	\
+	DevNullConfigNode.h \
+	MultiplexConfigNode.h \
+	MultiplexConfigNode.cpp \
+	\
 	FilterConfigNode.h \
 	FilterConfigNode.cpp \
 	\

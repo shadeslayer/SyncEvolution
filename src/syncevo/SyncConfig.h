@@ -49,8 +49,8 @@ class SyncSourceConfig;
 class PersistentSyncSourceConfig;
 class ConfigTree;
 class ConfigUserInterface;
-struct SyncSourceNodes;
-struct ConstSyncSourceNodes;
+class SyncSourceNodes;
+class ConstSyncSourceNodes;
 
 /** name of the per-source admin data property */
 extern const char *const SourceAdminDataName;
@@ -67,6 +67,33 @@ extern const char *const SourceAdminDataName;
  * trigger an exception. Setting invalid values does not because
  * it is not known where the value comes from - the caller should
  * check it himself.
+ *
+ * Properties are either registered as source properties or
+ * source-independent sync properties. In each of these two sets of
+ * properties, the names must be unique.
+ *
+ * Properties can be either user-visible (and editable) or
+ * internal. Internal properties are used to cache some information
+ * and may get lost when copying configurations. Therefore it
+ * must be possible to recreate them somehow, if necessary with
+ * an expensive operation like a slow sync.
+ *
+ * Starting with SyncEvolution 1.0, the internal storage of
+ * property values was reorganized so that some properties
+ * can be shared between peers. The concept of two property
+ * sets (source and sync properties) was preserved because of
+ * the simplicity that it brings to the APIs. Now this concept
+ * is implemented by mapping properties into "views" that
+ * contain the properties relevant for a particular peer.
+ * Setting a shared value in one view updates the value in
+ * another. For details, see:
+ * http://syncevolution.org/development/configuration-handling
+ *
+ * As in the migration from the Sync4j config layout (internal and
+ * user-visible properties in the same file), the code is written so
+ * that properties are mapped to config nodes according to the most
+ * recent layout. Older layouts are accessed by using the same config
+ * node instance multiple times.
  */
 class ConfigProperty {
  public:
@@ -74,6 +101,8 @@ class ConfigProperty {
                    const string &def = string(""), const string &descr = string("")) :
         m_obligatory(false),
         m_hidden(false),
+        m_sharing(NO_SHARING),
+        m_flags(0),
         m_name(name),
         m_comment(boost::trim_right_copy(comment)),
             m_defValue(def),
@@ -137,11 +166,40 @@ class ConfigProperty {
     /** split \n separated comment into lines without \n, appending them to commentLines */
     static void splitComment(const string &comment, list<string> &commentLines);
 
+    /** internal property? */
     bool isHidden() const { return m_hidden; }
     void setHidden(bool hidden) { m_hidden = hidden; }
 
+    /** config is invalid without setting this property? */
     bool isObligatory() const { return m_obligatory; }
     void setObligatory(bool obligatory) { m_obligatory = obligatory; }
+
+    /**
+     * determines how a property is shared between different views
+     */
+    enum Sharing {
+        GLOBAL_SHARING,         /**< shared between all views,
+                                   for example the "default peer" property */
+        SOURCE_SET_SHARING,     /**< shared between all peers accessing
+                                   the same source set, for example the
+                                   logdir property */
+        NO_SHARING              /**< each peer has his own values */
+    };
+    Sharing getSharing() const { return m_sharing; }
+    void setSharing(Sharing sharing) { m_sharing = sharing; }
+
+    /**
+     * special hacks for certain properties
+     */
+    enum Flags {
+        SHARED_AND_UNSHARED = 1<<0   /**< value is stored with
+                                        SOURCE_SET_SHARING and
+                                        NO_SHARING, the later taking
+                                        precedency when reading
+                                        ("type"!) */
+    };
+    void setFlags(int flags) { m_flags = flags; }
+    int getFlags(void) const { return m_flags; }
 
     /** set value unconditionally, even if it is not valid */
     void setProperty(ConfigNode &node, const string &value) const { node.setProperty(getName(), value, getComment()); }
@@ -160,6 +218,10 @@ class ConfigProperty {
     }
 
     /**
+     * String representation of property value. getPropertyValue() in
+     * some derived classes returns the value in some other, class specific
+     * representation.
+     *
      * @retval isDefault    return true if the node had no value set and
      *                      the default was returned instead
      */
@@ -184,7 +246,7 @@ class ConfigProperty {
     }
 
     // true if property is set to non-empty value
-    virtual bool isSet(const ConfigNode &node) const {
+    bool isSet(const ConfigNode &node) const {
         string name = getName();
         string value = node.readProperty(name);
         return !value.empty();
@@ -196,6 +258,8 @@ class ConfigProperty {
  private:
     bool m_obligatory;
     bool m_hidden;
+    Sharing m_sharing;
+    int m_flags;
     const string m_name, m_comment, m_defValue, m_descr;
 };
 
@@ -351,7 +415,7 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
         }
     }
 
-    T getProperty(ConfigNode &node, bool *isDefault = NULL) {
+    T getPropertyValue(const ConfigNode &node, bool *isDefault = NULL) const {
         string name = getName();
         string value = node.readProperty(name);
         istringstream in(value);
@@ -481,6 +545,7 @@ struct ConfigPasswordKey {
     /** the network port */
     unsigned int port;
 };
+
 /**
  * This interface has to be provided by the user of the config
  * to let the config code interact with the user.
@@ -528,8 +593,9 @@ class PasswordConfigProperty : public ConfigProperty {
     virtual void checkPassword(ConfigUserInterface &ui,
                                const string &serverName,
                                FilterConfigNode &globalConfigNode,
-                               const string &sourceName,
-                               const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const;
+                               const string &sourceName = "",
+                               const boost::shared_ptr<FilterConfigNode> &sourceConfigNode =
+                               boost::shared_ptr<FilterConfigNode>()) const;
 
     /**
      * It firstly check password and then invoke ui's savePassword
@@ -538,8 +604,9 @@ class PasswordConfigProperty : public ConfigProperty {
     virtual void savePassword(ConfigUserInterface &ui,
                               const string &serverName,
                               FilterConfigNode &globalConfigNode,
-                              const string &sourceName,
-                              const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const;
+                              const string &sourceName = "",
+                              const boost::shared_ptr<FilterConfigNode> &sourceConfigNode =
+                              boost::shared_ptr<FilterConfigNode>()) const;
 
     /**
      * Get password key for storing or retrieving passwords
@@ -552,12 +619,13 @@ class PasswordConfigProperty : public ConfigProperty {
                                              const string &serverName,
                                              FilterConfigNode &globalConfigNode,
                                              const string &sourceName = string(),
-                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<FilterConfigNode>()) const; 
+                                             const boost::shared_ptr<FilterConfigNode> &sourceConfigNode =
+                                             boost::shared_ptr<FilterConfigNode>()) const; 
 
     /**
      * return the cached value if necessary and possible
      */
-    virtual string getCachedProperty(ConfigNode &node,
+    virtual string getCachedProperty(const ConfigNode &node,
                                      const string &cachedPassword);
 };
 
@@ -629,7 +697,7 @@ class BoolConfigProperty : public StringConfigProperty {
     void setProperty(FilterConfigNode &node, bool value, bool temporarily = false) {
         StringConfigProperty::setProperty(node, value ? "1" : "0", temporarily);
     }
-    int getProperty(ConfigNode &node, bool *isDefault = NULL) {
+    int getPropertyValue(const ConfigNode &node, bool *isDefault = NULL) const {
         string res = ConfigProperty::getProperty(node, isDefault);
 
         return boost::iequals(res, "T") ||
@@ -639,22 +707,19 @@ class BoolConfigProperty : public StringConfigProperty {
 };
 
 /**
- * A property for arbitrary strings. Users are not expected to edit
- * these, so they are marked "internal" by default.
+ * A property for arbitrary strings.
  */
 class SafeConfigProperty : public ConfigProperty {
  public:
     SafeConfigProperty(const string &name, const string &comment) :
     ConfigProperty(name, comment)
-    {
-        setHidden(true);
-    }
+    {}
 
     void setProperty(ConfigNode &node, const string &value) {
         ConfigProperty::setProperty(node, SafeConfigNode::escape(value, true, false));
     }
-    string getProperty(ConfigNode &node) {
-        string res = ConfigProperty::getProperty(node);
+    virtual string getProperty(const ConfigNode &node, bool *isDefault = NULL) const {
+        string res = ConfigProperty::getProperty(node, isDefault);
         res = SafeConfigNode::unescape(res);
         return res;
     }
@@ -743,13 +808,24 @@ class SyncConfig {
      * places. Will succeed even if config does not
      * yet exist: flushing such a config creates it.
      *
+     * @param peer   string that identifies the peer,
+     *               matching regex (.*)(@([^@]*))? 
+     *               where the $1 (the first part) is 
+     *               the peer name and the optional $2
+     *               (the part after the last @) is the
+     *               context, "default" if not given.
+     *               For example "scheduleworld" =
+     *               "ScheduleWorld" =
+     *               "scheduleworld@default", but not the same as
+     *               "scheduleworld@other_context"
+     *
      * @param tree   if non-NULL, then this is used
      *               as configuration tree instead of
      *               searching for it; always uses the
      *               current layout in that tree
      */
-    SyncConfig(const string &server,
-                        boost::shared_ptr<ConfigTree> tree = boost::shared_ptr<ConfigTree>());
+    SyncConfig(const string &peer,
+               boost::shared_ptr<ConfigTree> tree = boost::shared_ptr<ConfigTree>());
 
     /**
      * Creates a temporary configuration.
@@ -779,9 +855,10 @@ class SyncConfig {
      * The result can be modified to set filters, but it
      * cannot be flushed.
      *
+     * @param peer   a configuration name, *without* a context (scheduleworld, not scheduleworld@default)
      * @return NULL if no such template
      */
-    static boost::shared_ptr<SyncConfig> createServerTemplate(const string &server);
+    static boost::shared_ptr<SyncConfig> createServerTemplate(const string &peer);
 
     /** true if the main configuration file already exists */
     bool exists() const;
@@ -796,14 +873,16 @@ class SyncConfig {
     void flush();
 
     /**
-     * Remove the configuration. The config object itself is still
-     * valid afterwards, but empty and cannot be flushed.
+     * Remove the configuration. Config directories are removed if
+     * empty.
+     *
+     * When the configuration is peer-specific, only the peer's
+     * properties and config nodes are removed. Otherwise the complete
+     * configuration is removed, including all peers.
      *
      * Does *not* remove logs associated with the configuration.
      * For that use the logdir handling in SyncContext
      * before removing the configuration.
-     *
-     * The config directory is removed if it is empty.
      */
     void remove();
 
@@ -811,6 +890,31 @@ class SyncConfig {
      * A list of all properties. Can be extended by derived clients.
      */
     static ConfigPropertyRegistry &getRegistry();
+
+    /**
+     * Normalize a config string:
+     * - lower case
+     * - @default stripped
+     * - empty string replaced with "@default"
+     */
+    static string normalizeConfigString(const string &config);
+
+    /**
+     * Normalize and in addition, set original context.
+     *
+     * @param config      one of the various ways of selecting a configuration
+     *                    (@default, scheduleworld, scheduleworld@foo, ...)
+     * @retval normal     normalized form of config string       
+     * @retval context    empty if no specified, otherwise normalized value
+     */
+    static void normalizeConfigString(const string &config, string &normal, string &context);
+
+    /**
+     * Split a config string (normalized or not) into the peer part
+     * (before final @) and the context (after that @, not including
+     * it), return "default" as context if not specified otherwise.
+     */
+    static void splitConfigString(const string &config, string &peer, string &context);
 
     /**
      * Replaces the property filter of either the sync properties or
@@ -826,32 +930,25 @@ class SyncConfig {
      */
     void setConfigFilter(bool sync,
                          const std::string &source,
-                         const FilterConfigNode::ConfigFilter &filter) {
-        if (sync) {
-            m_configNode->setFilter(filter);
-        } else if (source.empty()) {
-            m_sourceFilter = filter;
-        } else {
-            m_sourceFilters[source] = filter;
-        }
-    }
-
-    
+                         const FilterConfigNode::ConfigFilter &filter);
 
     /**
      * Read-write access to all configurable properties of the server.
      * The visible properties are passed through the config filter,
      * which can be modified.
      */
-    virtual boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) {
-        if (hidden) {
-            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenNode));
-        } else {
-            return m_configNode;
-        }
-    }
-    virtual boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<SyncConfig *>(this)->getProperties(hidden); }
+    boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) { return m_props[hidden]; }
+    boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<SyncConfig *>(this)->getProperties(hidden); }
 
+    /**
+     * Returns the right config node for a certain property,
+     * depending on visibility and sharing.
+     */
+    boost::shared_ptr<FilterConfigNode> getNode(const ConfigProperty &prop);
+    boost::shared_ptr<const FilterConfigNode> getNode(const ConfigProperty &prop) const 
+    {
+        return const_cast<SyncConfig *>(this)->getNode(prop);
+    }
 
     /**
      * Returns a wrapper around all properties of the given source
@@ -899,18 +996,26 @@ class SyncConfig {
     void setSourceDefaults(const string &name, bool force = true);
 
     /**
-     * remove sync source configuration. And remove the directory
-     * if it has no other files 
+     * Remove sync source configuration. And remove the directory
+     * if it has no other files.
+     *
+     * When the configuration is peer-specific, only the peer's
+     * properties are removed. Otherwise the complete source
+     * configuration is removed, including properties stored
+     * for in any of the peers.
      */
     void removeSyncSource(const string &name);
 
     /**
-     * clear existing visible properties in config.ini
+     * clear existing visible source properties selected by the
+     * configuration: with or without peer-specific properties,
+     * depending on the current view
      */
     void clearSyncSourceProperties(const string &name);
 
     /**
-     * clear all global sync properties
+     * clear all global sync properties, with or without
+     * peer-specific properties, depending on the current view
      */
     void clearSyncProperties();
 
@@ -939,6 +1044,9 @@ class SyncConfig {
      * these settings.
      */
     /**@{*/
+
+    virtual string getDefaultPeer() const;
+    virtual void setDefaultPeer(const string &value);
 
     virtual const char *getLogDir() const;
     virtual void setLogDir(const string &value, bool temporarily = false);
@@ -1090,23 +1198,78 @@ class SyncConfig {
     virtual const char*  getHwv() const { return "unknown"; }
     virtual const char*  getSwv() const;
     virtual const char*  getDevType() const;
-
-    FilterConfigNode& getConfigNode() { return *m_configNode; }
-
     /**@}*/
 
 private:
-    string m_server;
-    bool m_oldLayout;
+    enum Layout {
+        SYNC4J_LAYOUT,        /**< .syncj4/evolution/<server>, SyncEvolution <= 0.7.x */
+        HTTP_SERVER_LAYOUT,   /**< .config/syncevolution/<server> with sources
+                                 underneath, SyncEvolution <= 0.9.x */
+        SHARED_LAYOUT         /**< .config/syncevolution/<context> containing sources 
+                                 and peers, with source settings shared by peers,
+                                 SyncEvolution >= 1.0 */
+    };
+
+    /**
+     * scans for peer configurations
+     * @param root         absolute directory path
+     * @param configname   expected name of config files (config.ini or config.txt)
+     * @retval res         filled with new peer configurations found
+     */
+    static void addPeers(const string &root,
+                         const std::string &configname,
+                         SyncConfig::ServerList &res);
+
+    /**
+     * set tree and nodes to VolatileConfigTree/Node
+     */
+    void makeVolatile();
+
+    /**
+     * String that identifies the peer, see constructor.
+     * This is a normalized string (normalizePeerString()).
+     */
+    string m_peer;
+
+    /**
+     * Lower case path to peer configuration,
+     * relative to configuration tree root.
+     * For example "scheduleworld" for "ScheduleWorld" when
+     * using the old config layouts, "default/peers/scheduleworld"
+     * in the new layout.
+     *
+     * Empty if configuration view has no peer-specific properties.
+     */
+    string m_peerPath;
+
+    /**
+     * lower case path to source set properties,
+     * unused for old layouts, else something like
+     * "default" or "other_context"
+     */
+    string m_contextPath;
+
+    Layout m_layout;
     string m_cachedPassword;
     string m_cachedProxyPassword;
 
     /** holds all config nodes relative to the root that we found */
     boost::shared_ptr<ConfigTree> m_tree;
 
-    /** access to global sync properties */
-    boost::shared_ptr<FilterConfigNode> m_configNode;
-    boost::shared_ptr<ConfigNode> m_hiddenNode;
+    /** access to global sync properties, independent of
+        the context (for example, "defaultPeer") */
+    boost::shared_ptr<FilterConfigNode> m_globalNode;
+        
+    /** access to properties shared between peers */
+    boost::shared_ptr<FilterConfigNode> m_contextNode;
+    boost::shared_ptr<ConfigNode> m_contextHiddenNode;
+
+    /** access to properties specific to a peer */
+    boost::shared_ptr<FilterConfigNode> m_peerNode;
+    boost::shared_ptr<ConfigNode> m_hiddenPeerNode;
+
+    /** multiplexer for the other config nodes */
+    boost::shared_ptr<FilterConfigNode> m_props[2];
 
     /**
      * temporary override for all sync source settings
@@ -1114,7 +1277,8 @@ private:
     FilterConfigNode::ConfigFilter m_sourceFilter;
 
     /** temporary override for settings of specific sources */
-    std::map<std::string, FilterConfigNode::ConfigFilter> m_sourceFilters;
+    typedef std::map<std::string, FilterConfigNode::ConfigFilter> SourceFilters_t;
+    SourceFilters_t m_sourceFilters;
 
     mutable ConfigStringCache m_stringCache;
 
@@ -1131,58 +1295,80 @@ private:
 
 /**
  * This set of config nodes is to be used by SyncSourceConfig
- * to accesss properties.
+ * to accesss properties. Note that "const SyncSourceNodes"
+ * only implies that the nodes cannot be changed; the properties
+ * are still read- and writable. ConstSyncSourceNodes grants
+ * only read access to properties.
  */
-struct SyncSourceNodes {
+class SyncSourceNodes {
+ public:
     SyncSourceNodes() {}
 
     /**
-     * @param configNode    node for user-visible properties
-     * @param hiddenNode    node for internal properties (may be the same as
-     *                      configNode in old config layouts!)
-     * @param trackingNode  node for tracking changes (always different than the
-     *                      other nodes)
-     * @param serverNode    node for tracking items in a server (always different
-     *                      than the other nodes)
+     * @param sharedNode      node for user-visible properties, shared between peers
+     * @param peerNode        node for user-visible, per-peer properties (the same
+     *                        as sharedNode in SYNC4J_LAYOUT and HTTP_SERVER_LAYOUT)
+     * @param hiddenPeerNode  node for internal, per-peer properties (the same as
+     *                        sharedNode in SYNC4J_LAYOUT)
+     * @param trackingNode    node for tracking changes (always different than the
+     *                        other nodes)
+     * @param serverNode      node for tracking items in a server (always different
+     *                        than the other nodes)
      */
-    SyncSourceNodes(const boost::shared_ptr<FilterConfigNode> &configNode,
-                    const boost::shared_ptr<ConfigNode> &hiddenNode,
+    SyncSourceNodes(const boost::shared_ptr<FilterConfigNode> &sharedNode,
+                    const boost::shared_ptr<FilterConfigNode> &peerNode,
+                    const boost::shared_ptr<ConfigNode> &hiddenPeerNode,
                     const boost::shared_ptr<ConfigNode> &trackingNode,
-                    const boost::shared_ptr<ConfigNode> &serverNode) :
-    m_configNode(configNode),
-        m_hiddenNode(hiddenNode),
-        m_trackingNode(trackingNode),
-        m_serverNode(serverNode)
-    {}
+                    const boost::shared_ptr<ConfigNode> &serverNode);
 
-    const boost::shared_ptr<FilterConfigNode> m_configNode;
-    const boost::shared_ptr<ConfigNode> m_hiddenNode;
+    /** true if the peer-specific config node exists */
+    bool exists() const { return m_peerNode->exists(); }
+
+    /**
+     * Returns the right config node for a certain property,
+     * depending on visibility and sharing.
+     */
+    boost::shared_ptr<FilterConfigNode> getNode(const ConfigProperty &prop) const;
+
+    /**
+     * Read-write access to all configurable properties of the source.
+     * The visible properties are passed through the config filter,
+     * which can be modified.
+     */
+    boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) const { return m_props[hidden]; }
+
+    /** read-write access to SyncML server specific config node */
+    boost::shared_ptr<ConfigNode> getServerNode() const { return m_serverNode; }
+
+    /** read-write access to backend specific tracking node */
+    boost::shared_ptr<ConfigNode> getTrackingNode() const { return m_trackingNode; }
+
+ protected:
+    const boost::shared_ptr<FilterConfigNode> m_sharedNode;
+    const boost::shared_ptr<FilterConfigNode> m_peerNode;
+    const boost::shared_ptr<ConfigNode> m_hiddenPeerNode;
     const boost::shared_ptr<ConfigNode> m_trackingNode;
     const boost::shared_ptr<ConfigNode> m_serverNode;
+
+    /** multiplexer for the other nodes */
+    boost::shared_ptr<FilterConfigNode> m_props[2];
 };
 
-struct ConstSyncSourceNodes {
-    ConstSyncSourceNodes(const boost::shared_ptr<const FilterConfigNode> &configNode,
-                         const boost::shared_ptr<const ConfigNode> &hiddenNode,
-                         const boost::shared_ptr<const ConfigNode> &trackingNode,
-                         const boost::shared_ptr<const ConfigNode> &serverNode) :
-    m_configNode(configNode),
-        m_hiddenNode(hiddenNode),
-        m_trackingNode(trackingNode),
-        m_serverNode(serverNode)
-    {}
-
+/**
+ * same as SyncSourceNodes, but with only read access to properties
+ */
+class ConstSyncSourceNodes : private SyncSourceNodes
+{
+ public:
     ConstSyncSourceNodes(const SyncSourceNodes &other) :
-    m_configNode(other.m_configNode),
-        m_hiddenNode(other.m_hiddenNode),
-        m_trackingNode(other.m_trackingNode),
-        m_serverNode(other.m_serverNode)
+       SyncSourceNodes(other)
     {}
 
-    const boost::shared_ptr<const FilterConfigNode> m_configNode;
-    const boost::shared_ptr<const ConfigNode> m_hiddenNode;
-    const boost::shared_ptr<const ConfigNode> m_trackingNode;
-    const boost::shared_ptr<const ConfigNode> m_serverNode;
+    boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const {
+        return const_cast<SyncSourceNodes *>(static_cast<const SyncSourceNodes *>(this))->getProperties(hidden);
+    }
+    boost::shared_ptr<const ConfigNode> getServerNode() const { return m_serverNode; }
+    boost::shared_ptr<const ConfigNode> getTrackingNode() const { return m_trackingNode; } 
 };
 
 struct SourceType {
@@ -1204,22 +1390,47 @@ class SyncSourceConfig {
 
     static ConfigPropertyRegistry &getRegistry();
 
+    /**
+     * Read-write access to all configurable properties of the source.
+     * The visible properties are passed through the config filter,
+     * which can be modified.
+     */
+    boost::shared_ptr<FilterConfigNode> getProperties(bool hidden = false) {
+        return m_nodes.getProperties(hidden);
+    }
+    boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<SyncSourceConfig *>(this)->getProperties(hidden); }
+
+    virtual const char*  getName() const { return m_name.c_str(); }
+
+    /**
+     * Returns the right config node for a certain property,
+     * depending on visibility and sharing.
+     */
+    boost::shared_ptr<FilterConfigNode> getNode(const ConfigProperty &prop) {
+        return m_nodes.getNode(prop);
+    }
+    boost::shared_ptr<const FilterConfigNode> getNode(const ConfigProperty &prop) const {
+        return m_nodes.getNode(prop);
+    }
+
+    /** access to SyncML server specific config node */
+    boost::shared_ptr<ConfigNode> getServerNode() { return m_nodes.getServerNode(); }
+    boost::shared_ptr<const ConfigNode> getServerNode() const { return m_nodes.getServerNode(); }
+
+    /** access to backend specific tracking node */
+    boost::shared_ptr<ConfigNode> getTrackingNode() { return m_nodes.getTrackingNode(); }
+    boost::shared_ptr<const ConfigNode> getTrackingNode() const { return m_nodes.getTrackingNode(); }
+
     /** sync mode for sync sources */
     static StringConfigProperty m_sourcePropSync;
 
-    bool exists() const { return m_nodes.m_configNode->exists(); }
+    /** true if the source config exists with view-specific properties (not just default or shared ones) */
+    bool exists() const { return m_nodes.exists(); }
 
     /** checks if a certain property is set to a non-empty value */
     bool isSet(ConfigProperty &prop) {
-        return prop.isHidden() ?
-            prop.isSet(*m_nodes.m_hiddenNode) :
-            prop.isSet(*m_nodes.m_configNode);
+        return prop.isSet(*getProperties(prop.isHidden()));
     }
-
-    /**
-     * @name Settings specific to SyncEvolution SyncSources
-     */
-    /**@{*/
 
     virtual const char *getUser() const;
     virtual void setUser(const string &value, bool temporarily = false);
@@ -1256,14 +1467,6 @@ class SyncSourceConfig {
     /** set the source type in <backend>[:format] style */
     virtual void setSourceType(const string &value, bool temporarily = false);
 
-
-    /**@}*/
-
-    /**
-     * @name Calls which usually do not have to be implemented by each SyncSource.
-     */
-    /**@{*/
-
     /**
      * Returns the SyncSource URI: used in SyncML to address the data
      * on the server.
@@ -1289,49 +1492,6 @@ class SyncSourceConfig {
      */
     virtual const char*  getSync() const;
     virtual void setSync(const string &value, bool temporarily = false);
-    
-    /**
-     * Sets the last sync timestamp. Called by the sync engine at
-     * the end of a sync. The client must save that modified
-     * value; it is needed to decide during the next sync whether
-     * an incremental sync is possible.
-     *
-     * SyncEvolution will reset this value when a SyncSource fails
-     * and thus force a slow sync during the next sync.
-     *
-     * @param timestamp the last sync timestamp
-     */
-    virtual unsigned long getLast() const;
-    virtual void setLast(unsigned long timestamp);
-
-    /**
-     * "des" enables an encryption mode which only the Funambol server
-     * understands. Not configurable in SyncEvolution unless a derived
-     * SyncSource decides otherwise.
-     */
-    virtual const char* getEncryption() const { return ""; }
-
-    /**
-     * Returns an array of CtCap with all the capabilities for this
-     * source.  The capabilities specify which parts of e.g. a vCard
-     * the sync source supports. Not specifying this in detail by
-     * returning an empty array implies that it supports all aspects.
-     * This is the default implementation of this call.
-     *
-     * @TODO: per-source capabilities
-     */
-    // virtual const ArrayList& getCtCaps() const { static const ArrayList dummy; return dummy; }
-
-    /**@}*/
-
-    /**
-     * @name Calls implemented by SyncEvolution.
-     */
-    /**@{*/
-    virtual const char*  getName() const { return m_name.c_str(); }
-
-    virtual SyncSourceNodes& getSyncSourceNodes() { return m_nodes; }
-    /**@}*/
 
  private:
     string m_name;

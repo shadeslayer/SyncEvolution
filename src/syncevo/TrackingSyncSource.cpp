@@ -31,7 +31,7 @@ TrackingSyncSource::TrackingSyncSource(const SyncSourceParams &params,
                                        int granularitySeconds) :
     TestingSyncSource(params),
     m_trackingNode(new PrefixConfigNode("item-",
-                                        boost::shared_ptr<ConfigNode>(new SafeConfigNode(params.m_nodes.m_trackingNode))))
+                                        boost::shared_ptr<ConfigNode>(new SafeConfigNode(params.m_nodes.getTrackingNode()))))
 {
     m_operations.m_checkStatus = boost::bind(&TrackingSyncSource::checkStatus, this);
     SyncSourceRevisions::init(this, this, granularitySeconds, m_operations);
@@ -96,8 +96,7 @@ void TrackingSyncSource::deleteItem(const std::string &luid)
 
 void TrackingSyncSource::enableServerMode()
 {
-    SyncSourceAdmin::init(m_operations,
-                          getSyncSourceNodes());
+    SyncSourceAdmin::init(m_operations, this);
 }
 
 bool TrackingSyncSource::serverModeEnabled() const

@@ -300,7 +300,7 @@ class DBusUtil(Timeout):
             timeout = test.timeout
         else:
             timeout = 5
-        handle = None
+        timeout_handle = None
         if timeout and not debugger:
             def timedout():
                 error = "%s timed out after %d seconds" % (self.id(), timeout)
@@ -460,26 +460,22 @@ class DBusUtil(Timeout):
                                 byte_arrays=True, 
                                 utf8_strings=True)
 
-    def setupFiles(self):
-        """ copy reference directory trees from test/test-dbus to own xdg(xdg_root
-        - destination directory) directory. Thus it won't do copy unless 
-        using own_xdg. Don't pollute user's directories """
-        if not self.own_xdg: 
-            return
+    def setupFiles(self, snapshot):
+        """ Copy reference directory trees from
+        test/test-dbus/<snapshot> to own xdg_root (=./test-dbus). To
+        be used only in tests which called runTest() with
+        own_xdg=True."""
+        self.failUnless(self.own_xdg)
 
         # Get the absolute path of the current python file.
         scriptpath = os.path.abspath(os.path.expanduser(os.path.expandvars(sys.argv[0])))
 
         # reference directory 'test-dbus' is in the same directory as the current python file
-        sourcedir = os.path.join(os.path.dirname(scriptpath), 'test-dbus')
-
-        # if xdg_root doesn't exist, create it
-        if not os.access(xdg_root, os.F_OK):
-            os.makedirs(xdg_root)
+        sourcedir = os.path.join(os.path.dirname(scriptpath), 'test-dbus', snapshot)
 
         """ Directories in test/test-dbus are copied to xdg_root, but
         maybe with different names, mappings are:
-         test/test-dbus               ./test-dbus
+         test/test-dbus/<snapshot>   ./test-dbus
             sync4j                       .sync4j
             data                         data
             config                       config
@@ -535,7 +531,9 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
             config1 = self.server.GetConfig("no-such-config", False, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No server 'no-such-config' found")
+                                 "org.syncevolution.NoSuchConfig: No configuration 'no-such-config' found")
+        else:
+            self.fail("no exception thrown")
 
 class TestDBusSession(unittest.TestCase, DBusUtil):
     """Tests that work with an active session."""
@@ -627,20 +625,18 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         self.runTest(result)
 
     def testGetConfigEmptyName(self):
-        """Test the error is reported when the server name is empty for GetConfig"""
-        try:
-            self.session.GetConfig(True, utf8_strings=True)
-        except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: Template or server name must be given")
+        """reading empty default config"""
+        config = self.session.GetConfig(False, utf8_strings=True)
 
-    def testSetConfigEmptyName(self):
-        """Test the error is reported when the server name is empty for SetConfig"""
+    def testGetTemplateEmptyName(self):
+        """trigger error by getting template for empty server name"""
         try:
-            self.session.SetConfig(True, False, {}, utf8_strings=True)
+            config = self.session.GetConfig(True, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: Server name must be given")
+                                 "org.syncevolution.NoSuchConfig: No template '' found")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSourceEmptyName(self):
         """Test the error is reported when the server name is empty for CheckSource"""
@@ -648,7 +644,9 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.session.CheckSource("", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: Server name must be given")
+                                 "org.syncevolution.NoSuchSource: '' has no '' source")
+        else:
+            self.fail("no exception thrown")
 
     def testGetDatabasesEmptyName(self):
         """Test the error is reported when the server name is empty for GetDatabases"""
@@ -656,7 +654,9 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.session.GetDatabases("", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: Server name must be given")
+                                 "org.syncevolution.NoSuchSource: '' has no '' source")
+        else:
+            self.fail("no exception thrown")
 
     def testGetReportsEmptyName(self):
         """Test the error is reported when the server name is empty for GetReports"""
@@ -664,7 +664,10 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.session.GetReports(0, 0, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: Server name must be given")
+                                 "org.syncevolution.NoSuchConfig: listing reports without "
+                                 "peer name not implemented yet")
+        else:
+            self.fail("no exception thrown")
 
 class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     """Tests that work for GetConfig/SetConfig/CheckSource/GetDatabases/GetReports in Session.
@@ -729,6 +732,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                  "org.syncevolution.Exception: Clearing existing configuration "
                                  "and temporary configuration changes which only affects the "
                                  "duration of the session are mutually exclusive")
+        else:
+            self.fail("no exception thrown")
 
     def testCreateGetConfig(self):
         """ test the config is created successfully. """
@@ -765,12 +770,14 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.SetConfig(True, False, config, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.Exception: test-dbus/config/syncevolution/"
+                                 "org.syncevolution.Exception: test-dbus/config/syncevolution/default/peers/"
                                  "dummy-test/sources/addressbook/config.ini: "
                                  "sync = invalid-value: not one of the valid values (two-way, "
                                  "slow, refresh-from-client = refresh-client, refresh-from-server "
                                  "= refresh-server = refresh, one-way-from-client = one-way-client, "
                                  "one-way-from-server = one-way-server = one-way, disabled = none)")
+        else:
+            self.fail("no exception thrown")
 
     def testUpdateNoConfig(self):
         """ test the right error is reported when updating properties for a non-existing server """
@@ -778,8 +785,10 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: The server 'dummy-test' doesn't exist")
-        
+                                 "org.syncevolution.NoSuchConfig: The configuration 'dummy-test' doesn't exist")
+        else:
+            self.fail("no exception thrown")
+
     def testClearAllConfig(self):
         """ test all configs of a server are cleared correctly. """
         """ first set up config and then clear all configs and also check a non-existing config """
@@ -789,21 +798,9 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             config = self.session.GetConfig(False, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test' found")
-    
-    def testClearConfigSources(self):
-        """ test sources related configs are cleared correctly. """
-        self.setupConfig()
-        config1 = { 
-                     "" : { "syncURL" : "http://my.funambol.com/sync",
-                            "username" : "unknown",
-                            "password" : "secret",
-                            "deviceId" : "foo"
-                          }
-                  }
-        self.session.SetConfig(False, False, config1, utf8_strings=True)
-        config2 = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config2, config1)
+                                "org.syncevolution.NoSuchConfig: No configuration 'dummy-test' found")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSourceNoConfig(self):
         """ test the right error is reported when the server doesn't exist """
@@ -811,7 +808,9 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.CheckSource("", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test' found")
+                                 "org.syncevolution.NoSuchSource: 'dummy-test' has no '' source")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSourceNoSourceName(self):
         """ test the right error is reported when the source doesn't exist """
@@ -822,6 +821,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: 'dummy-test' "
                                  "has no 'dummy' source")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSourceInvalidEvolutionSource(self):
         """ test the right error is reported when the evolutionsource is invalid """
@@ -834,15 +835,14 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.Exception: The source 'memo' configuration "
                                  "is not correct")
+        else:
+            self.fail("no exception thrown")
 
     def testCheckSource(self):
         """ test all are right """
         self.setupConfig()
-        try:
-            for source in self.sources:
-                self.session.CheckSource(source, utf8_strings=True)
-        except dbus.DBusException, ex:
-            self.fail("check source is failed with exception: " + str(ex))
+        for source in self.sources:
+            self.session.CheckSource(source, utf8_strings=True)
 
     def testGetDatabasesNoConfig(self):
         """ test the right error is reported when the server doesn't exist """
@@ -851,20 +851,27 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.GetDatabases("", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: No server 'dummy-test' found")
+                                 "org.syncevolution.NoSuchSource: 'dummy-test' has no '' source")
+        else:
+            self.fail("no exception thrown")
 
     def testGetDatabasesEmpty(self):
-        """ test the empty is gotten for non-existing source """
+        """ test the right error is reported for non-existing source"""
         self.setupConfig()
-        databases = self.session.GetDatabases("never_use_this_source_name", utf8_strings=True)
-        self.failUnlessEqual(databases, [])
+        try:
+            databases = self.session.GetDatabases("never_use_this_source_name", utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.NoSuchSource: 'dummy-test' has no 'never_use_this_source_name' source")
+        else:
+            self.fail("no exception thrown")
 
     def testGetDatabases(self):
         """ test the right way to get databases """
         self.setupConfig()
 
         # don't know actual databases, so compare results of two different times
-        sources = ['addressbook', 'calendar', 'task', 'memo']
+        sources = ['addressbook', 'calendar', 'todo', 'memo']
         databases1 = []
         for source in sources:
             databases1.append(self.session.GetDatabases(source, utf8_strings=True))
@@ -904,7 +911,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testGetReportsByRef(self):
         """ Test the reports are gotten correctly from reference files. Also covers boundaries """
         """ This could be extractly compared since the reference files are known """
-        self.setupFiles()
+        self.setupFiles('reports')
         report0 = { "source-addressbook-stat-local-any-sent" : "9168",
                     "source-addressbook-stat-remote-added-total" : "71",
                     "source-addressbook-stat-remote-updated-total" : "100",
@@ -1100,6 +1107,8 @@ class TestConnection(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  'org.syncevolution.Exception: message type not supported for starting a sync')
+        else:
+            self.fail("no exception thrown")
         loop.run()
         self.failUnlessEqual(DBusUtil.events, [('abort',)])
 
@@ -1253,6 +1262,228 @@ class TestConnection(unittest.TestCase, DBusUtil):
         loop.run()
         self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
+
+class TestMultipleConfigs(unittest.TestCase, DBusUtil):
+    """ sharing of properties between configs
+
+    Creates and tests the configs 'foo', 'bar', 'foo@other_context',
+    '@default' and checks that 'defaultPeer' (global), 'syncURL' (per
+    peer), 'evolutionsource' (per source), 'uri' (per source and peer)
+    are shared correctly.
+
+    Runs with a the server ready, without session."""
+
+    def setUp(self):
+        self.setUpServer()
+
+    def run(self, result):
+        self.runTest(result)
+
+    def setupEmpty(self):
+        """Creates empty configs 'foo', 'bar', 'foo@other_context'.
+        Updating non-existant configs is an error. Use this
+        function before trying to update one of these configs."""
+        self.setUpSession("foo")
+        self.session.SetConfig(False, False, {"" : {}})
+        self.session.Detach()
+        self.setUpSession("bar")
+        self.session.SetConfig(False, False, {"": {}})
+        self.session.Detach()
+        self.setUpSession("foo@other_CONTEXT")
+        self.session.SetConfig(False, False, {"": {}})
+        self.session.Detach()
+
+    def setupConfigs(self):
+        """Creates polulated configs 'foo', 'bar', 'foo@other_context'."""
+        self.setupEmpty()
+
+        # update normal view on "foo"
+        self.setUpSession("foo")
+        self.session.SetConfig(True, False,
+                               { "" : { "defaultPeer" : "foobar_peer",
+                                        "deviceId" : "shared-device-identifier",
+                                        "syncURL": "http://scheduleworld" },
+                                 "source/calendar" : { "uri" : "cal3" },
+                                 "source/addressbook" : { "evolutionsource": "Personal",
+                                                          "sync" : "two-way",
+                                                          "uri": "card3" } },
+                               utf8_strings=True)
+        self.session.Detach()
+
+        # "bar" shares properties with "foo"
+        self.setUpSession("bar")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
+        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Personal")
+        self.session.SetConfig(True, False,
+                               { "" : { "syncURL": "http://funambol" },
+                                 "source/calendar" : { "uri" : "cal" },
+                                 "source/addressbook" : { "evolutionsource": "Work",
+                                                          "sync" : "refresh-from-client",
+                                                          "uri": "card" } },
+                               utf8_strings=True)
+        self.session.Detach()
+
+    def testSharing(self):
+        """set up configs and tests reading them"""
+        self.setupConfigs()
+
+        # check how view "foo" has been modified
+        self.setUpSession("Foo@deFAULT")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld")
+        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Work")
+        self.failUnlessEqual(config["source/addressbook"]["uri"], "card3")
+        self.session.Detach()
+
+        # different ways of addressing this context
+        self.setUpSession("")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnless("source/addressbook" in config)
+        self.failIf("uri" in config["source/addressbook"])
+        self.session.Detach()
+
+        self.setUpSession("@DEFAULT")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
+        self.failUnless("source/addressbook" in config)
+        self.failIf("uri" in config["source/addressbook"])
+        self.session.Detach()
+
+        # different context
+        self.setUpSession("@other_context")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failIf("source/addressbook" in config)        
+        self.session.Detach()
+
+    def testOtherContext(self):
+        """write into independent context"""
+        self.setupConfigs()
+
+        # write independent "foo@other_context" config
+        self.setUpSession("foo@other_context")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        config[""]["syncURL"] = "http://scheduleworld2"
+        config["source/addressbook"] = { "evolutionsource": "Play",
+                                         "uri": "card30" }
+        self.session.SetConfig(True, False,
+                               config,
+                               utf8_strings=True)
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld2")
+        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Play")
+        self.failUnlessEqual(config["source/addressbook"]["uri"], "card30")
+        self.session.Detach()
+
+        # "foo" modified?
+        self.setUpSession("foo")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld")
+        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Work")
+        self.failUnlessEqual(config["source/addressbook"]["uri"], "card3")
+        self.session.Detach()
+
+    def testSourceRemovalLocal(self):
+        '''remove "addressbook" source in "foo"'''
+        self.setupConfigs()
+        self.setUpSession("foo")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        del config["source/addressbook"]
+        self.session.SetConfig(False, False, config, utf8_strings=True)
+        self.session.Detach()
+
+        # "addressbook" still exists in "foo" but only with default values
+        config = self.server.GetConfig("foo", False, utf8_strings=True)
+        self.failIf("uri" in config["source/addressbook"])
+        self.failIf("sync" in config["source/addressbook"])
+
+        # "addressbook" unchanged in "bar"
+        config = self.server.GetConfig("bar", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["uri"], "card")
+        self.failUnlessEqual(config["source/addressbook"]["sync"], "refresh-from-client")
+
+    def testSourceRemovalGlobal(self):
+        '''remove "addressbook" everywhere'''
+        self.setupConfigs()
+        self.setUpSession("")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        del config["source/addressbook"]
+        self.session.SetConfig(False, False, config, utf8_strings=True)
+        self.session.Detach()
+
+        # "addressbook" gone in "foo" and "bar"
+        config = self.server.GetConfig("foo", False, utf8_strings=True)
+        self.failIf("source/addressbook" in config)
+        config = self.server.GetConfig("bar", False, utf8_strings=True)
+        self.failIf("source/addressbook" in config)
+
+    def testRemovePeer(self):
+        '''check listing of peers while removing "bar"'''
+        self.setupConfigs()
+        self.testOtherContext()
+        self.setUpSession("bar")
+        peers = self.session.GetConfigs(False, utf8_strings=True)
+        self.failUnlessEqual(peers,
+                             [ "bar", "foo", "foo@other_context" ])
+        peers2 = self.server.GetConfigs(False, utf8_strings=True)
+        self.failUnlessEqual(peers, peers2)
+        # remove "bar"
+        self.session.SetConfig(False, False, {}, utf8_strings=True)
+        peers = self.server.GetConfigs(False, utf8_strings=True)
+        self.failUnlessEqual(peers,
+                             [ "foo", "foo@other_context" ])
+        self.session.Detach()
+
+        # other configs should not have been affected
+        config = self.server.GetConfig("foo", False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld")
+        self.failUnlessEqual(config["source/calendar"]["uri"], "cal3")
+        config = self.server.GetConfig("foo@other_context", False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld2")
+        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Play")
+        self.failUnlessEqual(config["source/addressbook"]["uri"], "card30")
+
+    def testRemoveContext(self):
+        '''remove complete config'''
+        self.setupConfigs()
+        self.setUpSession("")
+        self.session.SetConfig(False, False, {}, utf8_strings=True)
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        peers = self.server.GetConfigs(False, utf8_strings=True)
+        self.failUnlessEqual(peers, ['foo@other_context'])
+        self.session.Detach()
+
+    def testTemplates(self):
+        '''templates reuse common properties'''
+        self.setupConfigs()
+
+        # deviceID must be shared and thus be reused in templates
+        self.setUpSession("")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        config[""]["DEVICEID"] = "shared-device-identifier"
+        self.session.SetConfig(True, False, config, utf8_strings=True)
+        config = self.server.GetConfig("", False, utf8_strings=True)
+        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
+
+        # get template for default context
+        config = self.server.GetConfig("scheduleworld", True, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
+
+        # now for @other_context - different device ID!
+        config = self.server.GetConfig("scheduleworld@other_context", True, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failIfEqual(config[""]["deviceId"], "shared-device-identifier")
 
 if __name__ == '__main__':
     unittest.main()

@@ -127,15 +127,26 @@ void SyncContext::printSignals()
     }
 }
 
-SyncContext::SyncContext(const string &server,
-                                         bool doLogging) :
-    SyncConfig(server),
-    m_server(server),
-    m_doLogging(doLogging),
-    m_quiet(false),
-    m_dryrun(false),
-    m_serverMode(false)
+SyncContext::SyncContext()
 {
+    init();
+}
+
+SyncContext::SyncContext(const string &server,
+                         bool doLogging) :
+    SyncConfig(server),
+    m_server(server)
+{
+    init();
+    m_doLogging = doLogging;
+}
+
+void SyncContext::init()
+{
+    m_doLogging = false;
+    m_quiet = false;
+    m_dryrun = false;
+    m_serverMode = false;
 }
 
 SyncContext::~SyncContext()
@@ -1205,12 +1216,8 @@ void SyncContext::initSources(SourceList &sourceList)
         string sync = sc->getSync();
         bool enabled = sync != "disabled";
         if (enabled) {
-            string url = getSyncURL();
-            boost::replace_first(url, "https://", "http://"); // do not distinguish between protocol in change tracking
-            string changeId = string("sync4jevolution:") + url + "/" + name;
             SyncSourceParams params(name,
-                                    getSyncSourceNodes(name),
-                                    changeId);
+                                    getSyncSourceNodes(name));
             SyncSource *syncSource =
                 SyncSource::createSource(params);
             if (!syncSource) {
@@ -1587,7 +1594,7 @@ struct SyncContext::SyncMLMessageInfo
 SyncContext::analyzeSyncMLMessage(const char *data, size_t len,
                                   const std::string &messageType)
 {
-    SyncContext sync("", false);
+    SyncContext sync;
     SwapContext syncSentinel(&sync);
     SourceList sourceList(sync, false);
     sourceList.setLogLevel(SourceList::LOGGING_SUMMARY);
@@ -1649,6 +1656,35 @@ void SyncContext::initEngine(bool logXML)
     }
 }
 
+void SyncContext::preSync() {
+    // create a Synthesis engine, used purely for logging purposes
+    // at this time
+    SwapEngine swapengine(*this);
+    initEngine(false);
+
+    // dump some summary information at the beginning of the log
+    SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername());
+    SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv(), getDevType());
+    SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
+    SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
+    SE_LOG_DEV(NULL, NULL, "%s", SyncSource::backendsDebug().c_str());
+
+    // instantiate backends, but do not open them yet
+    initSources(*m_sourceListPtr);
+    if (m_sourceListPtr->empty()) {
+        throwError("no sources active, check configuration");
+    }
+
+    if ( getPeerIsClient()) {
+        m_serverMode = true;
+        //This is a server alerted sync !
+        if (! initSAN ()) {
+            // return a proper error code 
+            throwError ("Server Alerted Sync init failed");
+        }
+    }
+}
+
 SyncMLStatus SyncContext::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
@@ -1702,25 +1738,13 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                                 report,
                                 "client");
 
-        // create a Synthesis engine, used purely for logging purposes
-        // at this time
-        SwapEngine swapengine(*this);
-        initEngine(false);
-
         try {
-            // dump some summary information at the beginning of the log
-            SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername());
-            SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv(), getDevType());
-            SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
-            SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
-            SE_LOG_DEV(NULL, NULL, "%s", SyncSource::backendsDebug().c_str());
+            preSync();
 
-            // instantiate backends, but do not open them yet
-            initSources(sourceList);
-            if (sourceList.empty()) {
-                throwError("no sources active, check configuration");
-            }
-
+            // initializes the engine, only at this time can we decide whether
+            // this is a server session or client session.
+            SwapEngine swapengine(*this);
+            
             // request all config properties once: throwing exceptions
             // now is okay, whereas later it would lead to leaks in the
             // not exception safe client library
@@ -1738,28 +1762,16 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
              */
             ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
             BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                prop->checkPassword(*this, m_server, getConfigNode());
+                prop->checkPassword(*this, m_server, *getProperties());
             }
             BOOST_FOREACH(SyncSource *source, sourceList) {
                 ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
                 BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                    prop->checkPassword(*this, m_server, getConfigNode(),
-                                        source->getName(), source->getSyncSourceNodes().m_configNode);
+                    prop->checkPassword(*this, m_server, *getProperties(),
+                                        source->getName(), source->getProperties());
                 }
             }
 
-            if ( getPeerIsClient()) {
-                m_serverMode = true;
-                //This is a server alerted sync !
-                if (! initSAN ()) {
-                    // return a proper error code 
-                    throwError ("Server Alerted Sync init failed");
-                }
-            }
-
-            // reinitializes the engine, only at this time can we decide whether
-            // this is a server session or client session.
-            SwapEngine swapengine(*this);
             // open each source - failing now is still safe
             BOOST_FOREACH(SyncSource *source, sourceList) {
                 if (m_serverMode) {
@@ -1841,9 +1853,9 @@ bool SyncContext::initSAN(int retries)
     }
 
     /* Generate the SAN Package */
-    char *buffer ;
+    char *buffer;
     size_t sanSize;
-    if (san.GetPackage((void * &)buffer, sanSize, NULL, (size_t) 0)){
+    if (san.GetPackage(reinterpret_cast<void * &> (buffer), sanSize, NULL, (size_t) 0)){
         SE_LOG_ERROR (NULL, NULL, "SAN package generating faield");
         return false;
     }
@@ -2363,8 +2375,8 @@ void SyncContext::status()
     BOOST_FOREACH(SyncSource *source, sourceList) {
         ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*this, m_server, getConfigNode(),
-                                source->getName(), source->getSyncSourceNodes().m_configNode);
+            prop->checkPassword(*this, m_server, *getProperties(),
+                                source->getName(), source->getProperties());
         }
     }
     BOOST_FOREACH(SyncSource *source, sourceList) {
@@ -2416,8 +2428,8 @@ void SyncContext::checkStatus(SyncReport &report)
     BOOST_FOREACH(SyncSource *source, sourceList) {
         ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*this, m_server, getConfigNode(),
-                                source->getName(), source->getSyncSourceNodes().m_configNode);
+            prop->checkPassword(*this, m_server, *getProperties(),
+                                source->getName(), source->getProperties());
         }
     }
     BOOST_FOREACH(SyncSource *source, sourceList) {
@@ -2478,8 +2490,8 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
     BOOST_FOREACH(SyncSource *source, sourceList) {
         ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*this, m_server, getConfigNode(),
-                                source->getName(), source->getSyncSourceNodes().m_configNode);
+            prop->checkPassword(*this, m_server, *getProperties(),
+                                source->getName(), source->getProperties());
         }
     }
 

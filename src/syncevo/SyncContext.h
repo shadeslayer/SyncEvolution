@@ -79,7 +79,7 @@ SuspendFlags():state(CLIENT_NORMAL),last_suspend(0),message(NULL)
  */
 class SyncContext : public SyncConfig, public ConfigUserInterface {
     const string m_server;
-    const bool m_doLogging;
+    bool m_doLogging;
     bool m_quiet;
     bool m_dryrun;
 
@@ -147,7 +147,21 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
         }
     };
 
+    /**
+     * This is used within sync() to carry out work need to be done before we
+     * can finally decide whether this is a server session or client session.
+     * Init a tempory client engine for logging purposes, the engine is
+     * destructed after leaving this function and afterwards sync() should
+     * create the real engine for syncing.
+     */
+    void preSync ();
   public:
+    /**
+     * SyncContext using a volatile config
+     * and no logging.
+     */
+    SyncContext();
+
     /**
      * @param server     identifies the server config to be used
      * @param doLogging  write additional log and datatbase files about the sync
@@ -601,6 +615,9 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     }
 
  private:
+    /** initialize members as part of constructors */
+    void init();
+
     /**
      * generate XML configuration and (re)initialize engine with it
      */
