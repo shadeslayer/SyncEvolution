@@ -79,7 +79,7 @@ SyncMode StringToSyncMode(const std::string &mode, bool serverAlerted)
     } else if (boost::iequals(mode, "refresh-from-client") || boost::iequals(mode, "SYNC_REFRESH_FROM_CLIENT")) {
         return serverAlerted? SA_SYNC_REFRESH_FROM_CLIENT: SYNC_REFRESH_FROM_CLIENT;
     } else if (boost::iequals(mode, "one-way-from-server") || boost::iequals(mode, "SYNC_ONE_WAY_FROM_SERVER")) {
-        return serverAlerted? SA_SYNC_REFRESH_FROM_SERVER: SYNC_REFRESH_FROM_SERVER;
+        return serverAlerted? SA_SYNC_ONE_WAY_FROM_SERVER: SYNC_ONE_WAY_FROM_SERVER;
     } else if (boost::iequals(mode, "one-way-from-client") || boost::iequals(mode, "SYNC_ONE_WAY_FROM_CLIENT")) {
         return serverAlerted? SA_SYNC_ONE_WAY_FROM_CLIENT: SYNC_ONE_WAY_FROM_CLIENT;
     } else if (boost::iequals(mode, "disabled") || boost::iequals(mode, "SYNC_NONE")) {
