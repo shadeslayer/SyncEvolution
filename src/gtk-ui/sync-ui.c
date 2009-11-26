@@ -278,6 +278,7 @@ save_gconf_settings (app_data *data, const char *service_name)
     if (!gconf_client_set_string (client, SYNC_UI_SERVER_KEY, 
                                   service_name ? service_name : "", 
                                   &err)) {
+        /* TODO show in UI: save failed */
         show_error_dialog (data->sync_win,
                            _("Failed to save current service in GConf configuration system"));
         g_warning ("Failed to save current service in GConf configuration system: %s", err->message);
@@ -291,9 +292,11 @@ abort_sync_cb (SyncevoSession *session,
                app_data *data)
 {
     if (error) {
-        g_warning ("Session.Abort failed: %s", error->message);
+        /* TODO show in UI: failed to abort sync (while syncing) */
+        add_error_info (data, _("Failed to abort sync"), error->message);
         g_error_free (error);
     }
+
     /* status change handler takes care of updating UI */
 }
 
@@ -303,6 +306,7 @@ sync_cb (SyncevoSession *session,
          app_data *data)
 {
     if (error) {
+        /* TODO show in UI: sync failed (failed to even start) */
         add_error_info (data, _("Failed to start sync"), error->message);
         g_error_free (error);
         g_object_unref (session);
@@ -859,6 +863,7 @@ check_source_cb (SyncevoSession *session,
             }
         } else {
             g_warning ("CheckSource failed: %s", error->message);
+            /* non-fatal, unknown error */
         }
 
         g_error_free (error);
@@ -1008,6 +1013,7 @@ get_configs_cb (SyncevoServer *server,
 
     if (error) {
         show_main_view (data);
+        /* TODO show in UI: failed to show service list */
         show_error_dialog (data->sync_win, 
                            _("Failed to get list of configured services from SyncEvolution"));
         g_warning ("Server.GetConfigs() failed: %s", error->message);
@@ -1078,6 +1084,7 @@ get_template_configs_cb (SyncevoServer *server,
 
     if (error) {
         show_main_view (data);
+        /* TODO show in UI: failed to show service list */
         show_error_dialog (data->sync_win, 
                            _("Failed to get list of supported services from SyncEvolution"));
         g_warning ("Server.GetConfigs() failed: %s", error->message);
@@ -1118,12 +1125,14 @@ get_config_for_main_win_cb (SyncevoServer *server,
                             app_data *data)
 {
     if (error) {
-        if(error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
-           dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_NO_SUCH_CONFIG)) {
-            set_app_state (data, SYNC_UI_STATE_NO_SERVER);
+        if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+            dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_NO_SUCH_CONFIG)) {
+            /* another syncevolution client probably removed the config */
         } else {
             g_warning ("Error in Server.GetConfig: %s", error->message);
+            /* non-fatal, ignore in UI */
         }
+        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
         g_error_free (error);
 
         return;
@@ -1198,11 +1207,11 @@ update_source_status (char *name,
                       guint error_code,
                       app_data *data)
 {
-    /* TODO: show errors in UI -- but not duplicates */
     char *error;
     
     error = get_error_string_for_code (error_code);
     if (error) {
+        /* TODO show sync error in UI -- but not duplicates */
         g_warning ("Source '%s' error: %s", name, error);
         g_free (error);
     }
@@ -1227,6 +1236,7 @@ running_session_status_changed_cb (SyncevoSession *session,
 
     error = get_error_string_for_code (error_code);
     if (error) {
+        /* TODO show sync error in UI -- but not duplicates */
         g_warning ("Error %s", error);
         g_free (error);
     }
@@ -1243,6 +1253,7 @@ get_running_session_status_cb (SyncevoSession *session,
     if (error) {
         g_warning ("Error in Session.GetStatus: %s", error->message);
         g_error_free (error);
+        /* non-fatal, unknown error */
         return;
     }
 
@@ -1311,6 +1322,7 @@ get_reports_cb (SyncevoServer *server,
     if (error) {
         g_warning ("Error in Session.GetReports: %s", error->message);
         g_error_free (error);
+        /* non-fatal, unknown error */
         return;
     }
 
@@ -1395,8 +1407,7 @@ set_config_cb (SyncevoSession *session,
     if (error) {
         g_warning ("Error in Session.SetConfig: %s", error->message);
         g_error_free (error);
-
-        /* TODO show in UI */
+        /* TODO show in UI: save failed */
     }
     g_object_unref (session);
 }
@@ -1450,7 +1461,7 @@ set_config_for_sync_cb (SyncevoSession *session,
     if (error) {
         g_warning ("Error in Session.SetConfig: %s", error->message);
         g_error_free (error);
-        /* no matter ,this is not critical... */
+        /* TODO show in UI: sync failed (failed to even start) */
         return;
     }
 
@@ -1487,7 +1498,7 @@ status_changed_cb (SyncevoSession *session,
             save_config (op_data->data, session);
             break;
         default:
-            ;
+            g_warn_if_reached ();
         }
         break;
     
@@ -1528,9 +1539,18 @@ get_status_cb (SyncevoSession *session,
         g_warning ("Error in Session.GetStatus: %s", error->message);
         g_error_free (error);
         g_object_unref (session);
-        g_slice_free (operation_data, op_data);
 
-        /* TODO show in UI */
+        switch (op_data->operation) {
+        case OP_SYNC:
+            /* TODO show in UI: sync failed (failed to even start) */
+            break;
+        case OP_SAVE:
+            /* TODO show in UI: save failed */
+            break;
+        default:
+            g_warn_if_reached ();
+        }
+        g_slice_free (operation_data, op_data);
         return;
     }
 
@@ -1545,7 +1565,7 @@ get_status_cb (SyncevoSession *session,
             save_config (op_data->data, session);
             break;
         default:
-            ;
+            g_warn_if_reached ();
         }
     }
 }
@@ -1563,9 +1583,18 @@ start_session_cb (SyncevoServer *server,
         g_warning ("Error in Server.StartSession: %s", error->message);
         g_error_free (error);
         g_free (path);
-        g_slice_free (operation_data, op_data);
 
-        /* TODO show in UI*/
+        switch (op_data->operation) {
+        case OP_SYNC:
+            /* TODO show in UI: sync failed (failed to even start) */
+            break;
+        case OP_SAVE:
+            /* TODO show in UI: save failed */
+            break;
+        default:
+            g_warn_if_reached ();
+        }
+        g_slice_free (operation_data, op_data);
         return;
     }
 
@@ -1702,6 +1731,8 @@ server_shutdown_cb (SyncevoServer *server,
                     app_data *data)
 {
     if (data->syncing) {
+        /* TODO show in UI: server disappeared */
+
         add_error_info (data, _("Syncevolution.Server D-Bus service exited unexpectedly"), NULL);
 
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
@@ -1761,6 +1792,7 @@ get_presence_cb (SyncevoServer *server,
     if (error) {
         g_warning ("Server.GetSessions failed: %s", error->message);
         g_error_free (error);
+        /* non-fatal, ignore in UI */
         return;
     }
 
@@ -1824,7 +1856,7 @@ get_sessions_cb (SyncevoServer *server,
     if (error) {
         g_warning ("Server.GetSessions failed: %s", error->message);
         g_error_free (error);
-
+        /* TODO show in UI: failed first syncevo call (unexpected, fatal?) */
         return;
     }
 

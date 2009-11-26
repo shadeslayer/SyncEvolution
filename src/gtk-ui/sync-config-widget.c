@@ -94,7 +94,7 @@ set_config_cb (SyncevoSession *session,
     if (error) {
         g_warning ("Error in Session.SetConfig: %s", error->message);
         g_error_free (error);
-        /* TODO: dialog? */
+        /* TODO show in UI: save failed in service list */
         return;
     }
 
@@ -128,11 +128,11 @@ typedef struct save_config_data {
 } save_config_data;
 
 static void
-status_changed_cb (SyncevoSession *session,
-                   SyncevoSessionStatus status,
-                   guint error_code,
-                   SyncevoSourceStatuses *source_statuses,
-                   save_config_data *data)
+status_changed_for_config_write_cb (SyncevoSession *session,
+                                    SyncevoSessionStatus status,
+                                    guint error_code,
+                                    SyncevoSourceStatuses *source_statuses,
+                                    save_config_data *data)
 {
     if (status == SYNCEVO_STATUS_IDLE) {
         sync_config_widget_save_config (data->widget, session, data->delete);
@@ -140,17 +140,18 @@ status_changed_cb (SyncevoSession *session,
 }
 
 static void
-get_status_cb (SyncevoSession *session,
-               SyncevoSessionStatus status,
-               guint error_code,
-               SyncevoSourceStatuses *source_statuses,
-               GError *error,
-               save_config_data *data)
+get_status_for_config_write_cb (SyncevoSession *session,
+                                SyncevoSessionStatus status,
+                                guint error_code,
+                                SyncevoSourceStatuses *source_statuses,
+                                GError *error,
+                                save_config_data *data)
 {
     if (error) {
         g_warning ("Error in Session.GetStatus: %s", error->message);
         g_error_free (error);
-        /* TODO ? */
+        g_object_unref (session);
+        /* TODO show in UI: save failed in service list */
         return;
     }
 
@@ -173,7 +174,7 @@ start_session_for_config_write_cb (SyncevoServer *server,
     if (error) {
         g_warning ("Error in Server.StartSession: %s", error->message);
         g_error_free (error);
-        /* TODO show in UI ? */
+        /* TODO show in UI: save failed in service list */
         return;
     }
 
@@ -181,9 +182,9 @@ start_session_for_config_write_cb (SyncevoServer *server,
 
     /* we want to know about status changes to our session */
     g_signal_connect (session, "status-changed",
-                      G_CALLBACK (status_changed_cb), data);
+                      G_CALLBACK (status_changed_for_config_write_cb), data);
     syncevo_session_get_status (session,
-                                (SyncevoSessionGetStatusCb)get_status_cb,
+                                (SyncevoSessionGetStatusCb)get_status_for_config_write_cb,
                                 data);
 }
 
@@ -221,6 +222,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 
     if (!name || strlen (name) == 0 ||
         !sync_url || strlen (sync_url) == 0) {
+        /* TODO show in UI: service settings missing name or url */
         show_error_dialog (GTK_WIDGET (self), 
                            _("Service must have a name and server URL"));
         return;
@@ -314,6 +316,7 @@ check_source_cb (SyncevoServer *server,
             /* TODO: could use a temporary config to do it... */
         } else {
             g_warning ("CheckSource failed: %s", error->message);
+            /* non-fatal, ignore in UI */
         }
         g_error_free (error);
     }
@@ -576,7 +579,7 @@ get_sessions_cb (SyncevoServer *server,
     if (error) {
         g_warning ("Server.GetSessions failed: %s", error->message);
         g_error_free (error);
-
+        /* non-fatal, ignore in UI */
         return;
     }
 
