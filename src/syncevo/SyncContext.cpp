@@ -1911,6 +1911,7 @@ bool SyncContext::initSAN(int retries)
             sysync::Initiator_Server, sessionId, serverId);
 
     san.CreateEmptyNotificationBody();
+    bool hasSource = false;
     /* For each source to be notified do the following: */
     BOOST_FOREACH (string name, m_sourceListPtr->getSources()) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
@@ -1920,6 +1921,7 @@ bool SyncContext::initSAN(int retries)
             SE_LOG_DEV (NULL, NULL, "Ignoring data source %s with an invalid sync mode", name.c_str());
             continue;
         }
+        hasSource = true;
         string uri = sc->getURI();
 
         SourceType sourceType = sc->getSourceType();
@@ -1936,6 +1938,10 @@ bool SyncContext::initSAN(int retries)
         if ( san.AddSync(mode, (uInt32) contentTypeB, uri.c_str())) {
             SE_LOG_ERROR(NULL, NULL, "SAN: adding server alerted sync element failed");
         };
+    }
+
+    if (!hasSource) {
+        SE_THROW ("No source enabled for server alerted sync!");
     }
 
     /* Generate the SAN Package */
