@@ -147,14 +147,6 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
         }
     };
 
-    /**
-     * This is used within sync() to carry out work need to be done before we
-     * can finally decide whether this is a server session or client session.
-     * Init a tempory client engine for logging purposes, the engine is
-     * destructed after leaving this function and afterwards sync() should
-     * create the real engine for syncing.
-     */
-    void preSync ();
   public:
     /**
      * SyncContext using a volatile config
