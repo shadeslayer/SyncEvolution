@@ -95,7 +95,8 @@ ContentType StringToContentType(const std::string &type) {
         return WSPCTC_XVCARD;
     } else if (boost::iequals (type, "text/vcard") ||boost::iequals (type, "text/vcard:3.0")) {
         return WSPCTC_VCARD;
-    } else if (boost::iequals (type, "text/x-vcalendar") ||boost::iequals (type, "text/x-vcalendar:1.0")) {
+    } else if (boost::iequals (type, "text/x-vcalendar") ||boost::iequals (type, "text/x-vcalendar:1.0")
+              ||boost::iequals (type, "text/x-calendar") || boost::iequals (type, "text/x-calendar:1.0")) {
         return WSPCTC_XVCALENDAR;
     } else if (boost::iequals (type, "text/calendar") ||boost::iequals (type, "text/calendar:2.0")) {
         return WSPCTC_ICALENDAR;

@@ -1033,7 +1033,8 @@ public:
                 datatypes +=
                     "        <use datatype='vCard21' mode='rw'/>\n";
             }
-        } else if (type == "text/x-vcalendar:1.0" || type == "text/x-vcalendar") {
+        } else if (type == "text/x-vcalendar:1.0" || type == "text/x-vcalendar" 
+                  || type == "text/x-calendar:1.0" || type == "text/x-calendar") {
             datatypes =
                 "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n";
             if (!sourceType.m_forceFormat) {

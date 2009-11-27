@@ -72,7 +72,7 @@ static RegisterSyncSource registerMe("Files in one directory",
                                      "      file:text/plain:1.0\n"
                                      "      file:text/x-vcard:2.1\n"
                                      "      file:text/vcard:3.0\n"
-                                     "      file:text/x-calendar:1.0\n"
+                                     "      file:text/x-vcalendar:1.0\n"
                                      "      file:text/calendar:2.0\n",
                                      Values() +
                                      (Aliases("Files in one directory") + "file"));

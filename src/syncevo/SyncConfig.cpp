@@ -1492,7 +1492,7 @@ public:
                              "  contacts - synchronize address book with default vCard 2.1 format\n"
                              "  contacts:text/vcard - address book with vCard 3.0 format\n"
                              "  calendar - synchronize events in iCalendar 2.0 format\n"
-                             "  calendar:text/x-calendar - prefer legacy vCalendar 1.0 format\n"
+                             "  calendar:text/x-vcalendar - prefer legacy vCalendar 1.0 format\n"
                              "  virtual:text/x-vcalendar - a virtual backend using vCalendar 1.0 format\n"
                              "\n"
                              "Sending and receiving items in the same format as used by the server for\n"

@@ -447,7 +447,7 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
         info.m_datatypes =
             "        <use datatype='vCard21' mode='rw'/>\n"
             "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
-    } else if (type == "text/x-calendar") {
+    } else if (type == "text/x-calendar" || type == "text/x-vcalendar") {
         info.m_native = "vCalendar10";
         info.m_fieldlist = "calendar";
         info.m_profile = "\"vCalendar\", 1";
@@ -495,7 +495,8 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
             info.m_datatypes +=
                 "        <use datatype='vCard21' mode='rw'/>\n";
         }
-    } else if (type == "text/x-vcalendar:1.0" || type == "text/x-vcalendar") {
+    } else if (type == "text/x-vcalendar:1.0" || type == "text/x-vcalendar"
+             || type == "text/x-calendar:1.0" || type == "text/x-calendar") {
         info.m_datatypes =
             "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n";
         if (!sourceType.m_forceFormat) {
