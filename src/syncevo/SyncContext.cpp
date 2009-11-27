@@ -840,7 +840,8 @@ string SyncContext::askPassword(const string &passwordName, const string &descr,
 boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent()
 {
     std::string url = getSyncURL();
-    if (url.find ("http://") ==0) {
+    if (boost::starts_with(url, "http://") ||
+        boost::starts_with(url, "https://")) {
 #ifdef ENABLE_LIBSOUP
         boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent());
         agent->setConfig(*this);
