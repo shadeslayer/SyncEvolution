@@ -1,3 +1,46 @@
+SyncEvolution 0.9.1 -> 0.9.2, 27.11.2009
+========================================
+Synthesis SyncML Engine version: see src/synthesis/ChangeLog
+
+Incremental update, with several updated translations and addressing
+most of the issues reported by users for 0.9.1:
+
+- Evolution Address Book: avoid picking CouchDB by default (MB #7877, evolution-couchdb #479110)
+
+  CouchDB address books are appended at the end of the local database
+  list, otherwise preserving the order of address books. The initial
+  release of evolution-couchdb in Ubuntu 9.10 is unusable because it
+  does not support the REV property.
+
+  Reordering the entries ensures that the CouchDB address book is not
+  used as the default database by SyncEvolution, as it happened in
+  Ubuntu 9.10.  Users can still pick it intentionally via
+  "evolutionsource".
+
+- installation: templates now in $(datadir)/syncevolution/templates (MB #7808)
+  This are files used internally, meant to be extended by distributors.
+  Storing them in /etc is no longer supported, but also unlikely to be
+  needed. Added warnings that these files cannot simply be copied into
+  .config because they are not complete configurations.
+
+- installation: "make install" populates $(docdir) (MB #7168)
+  Previously README, COPYING, NEWS, and server READMEs were copied
+  into syncevolution.org .tar.gz/.deb/.rpm archives as part of
+  custom make rules and thus missing in other installations.
+
+- autotools + Boost: --with-boost had no effect (MB#7856)
+
+- configure: detect incorrect use of --with-synthesis-src
+
+- stderr redirection: detect "error" messages and show them (MB#7655)
+  The "GConf Error: Failed to contact configuration server..." error
+  message was suppressed by the code which catches noise from libraries
+  invoked by SyncEvolution. Now it is printed as ERROR, making it
+  easier to detect why running SyncEvolution inside cron needs
+  additional changes:
+  http://www.estamos.de/blog/2009/05/08/running-syncevolution-as-cron-job/
+
+
 SyncEvolution 0.9 -> 0.9.1, 26.10.2009
 ======================================
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog
