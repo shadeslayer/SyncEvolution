@@ -149,8 +149,14 @@
                 ResultName ::= 'total' | 'reject' | 'match' | 'conflict_server_won' | 'conflict_client_won' 
                                 | 'conflict_duplicated' | 'sent' | 'received'
                 Sep ::= '-'
-                It is highlighted that if SourceName has characters '_' and '-', they will be escaped with '__' and '_+' respectively.
-                For a key which contains StatPart, if its value is 0, its pair-value won't be included in the dictionary.
+
+                If SourceName has characters '_' and '-', they will be
+                escaped with '__' and '_+' respectively. This means
+                that a key can be split at '-' before replacing these
+                escape sequences in the source name.
+
+                For a key which contains StatPart, if its value is 0,
+                its pair-value won't be included in the dictionary.
         </doc:description></doc:doc>
       </arg>
     </method>
