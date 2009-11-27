@@ -106,7 +106,7 @@ EXTRA_DIST =syncevolution.pc.in
 libsyncevolution_la_SOURCES = $(SYNCEVOLUTION_SOURCES)
 libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ $(SYNTHESIS_LIBS) $(TRANSPORT_LIBS) @LIBS@ $(SYNCEVOLUTION_LDADD)
 libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
-libsyncevolution_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEMPLATE_DIR=\""$(sysconfdir)/default/syncevolution"\" -DLIBDIR=\""$(libdir)"\"
+libsyncevolution_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEMPLATE_DIR=\""$(datadir)/syncevolution/templates"\" -DLIBDIR=\""$(libdir)"\"
 
 if ENABLE_MODULES
 libsyncevolution_la_LDFLAGS =
