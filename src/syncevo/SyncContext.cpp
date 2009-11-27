@@ -1835,14 +1835,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                 }
             }
 
-            if (m_serverMode) {
-                //This is a server alerted sync !
-                if (! initSAN ()) {
-                    // return a proper error code 
-                    throwError ("Server Alerted Sync init failed");
-                }
-            }
-
             // open each source - failing now is still safe
             BOOST_FOREACH(SyncSource *source, sourceList) {
                 if (m_serverMode) {
@@ -1954,6 +1946,10 @@ bool SyncContext::initSAN(int retries)
     /* Create the transport agent */
     try {
         m_agent = createTransportAgent();
+        //register transport callback
+        if (m_retryInterval) {
+            m_agent->setCallback (transport_cb, this, m_retryInterval);
+        }
         int retry = 0;
         while (retry++ < retries) 
         {
@@ -2008,6 +2004,14 @@ SyncMLStatus SyncContext::doSync()
 
     SyncMLStatus status = STATUS_OK;
     std::string s;
+
+    if (m_serverMode) {
+        //This is a server alerted sync !
+        if (! initSAN ()) {
+            // return a proper error code 
+            throwError ("Server Alerted Sync init failed");
+        }
+    }
 
     // re-init engine with all sources configured
     string xml, configname;
