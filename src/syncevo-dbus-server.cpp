@@ -1517,7 +1517,6 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
     }
 
     m_sync.reset(new DBusSync(getConfigName(), *this));
-    m_syncStatus = SYNC_RUNNING;
     if (m_serverMode) {
         m_sync->initServer(m_sessionID,
                            m_initialMessage,
@@ -1722,10 +1721,6 @@ void Session::syncProgress(sysync::TProgressEventEnum type,
 {
     switch(type) {
     case sysync::PEV_SESSIONSTART:
-        /** clear existing status */
-        m_syncStatus = SYNC_RUNNING;
-        m_error = 0;
-        fireStatus(true);
         m_progData.setStep(ProgressData::PRO_SYNC_INIT);
         fireProgress(true);
         break;
@@ -1820,6 +1815,8 @@ void Session::run()
 {
     if (m_sync) {
         try {
+            m_syncStatus = SYNC_RUNNING;
+            fireStatus(true);
             SyncMLStatus status;
             m_progData.setStep(ProgressData::PRO_SYNC_PREPARE);
             try {
