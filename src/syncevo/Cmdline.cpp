@@ -1231,7 +1231,6 @@ public:
         // in the sync and sync source property registry
         m_scheduleWorldConfig("peers/scheduleworld/.internal.ini:# HashCode = 0\n"
                               "peers/scheduleworld/.internal.ini:# ConfigDate = \n"
-                              "peers/scheduleworld/.internal.ini:# remoteDeviceId = \n"
                               "peers/scheduleworld/.internal.ini:# lastNonce = \n"
                               "peers/scheduleworld/.internal.ini:# deviceData = \n"
                               "peers/scheduleworld/config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
@@ -1251,6 +1250,7 @@ public:
                               "peers/scheduleworld/config.ini:# remoteIdentifier = \n"
                               "peers/scheduleworld/config.ini:# PeerIsClient = 0\n"
                               "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
+                              "peers/scheduleworld/config.ini:# remoteDeviceId = \n"
                               "peers/scheduleworld/config.ini:# enableWBXML = 1\n"
                               "peers/scheduleworld/config.ini:# maxMsgSize = 20000\n"
                               "peers/scheduleworld/config.ini:# maxObjSize = 4000000\n"
@@ -1764,6 +1764,8 @@ protected:
                               "\n"
                               "deviceId:\n"
                               "\n"
+                              "remoteDeviceId:\n"
+                              "\n"
                               "enableWBXML:\n"
                               "\n"
                               "maxMsgSize:\n"
@@ -1846,7 +1848,6 @@ protected:
             "ConfigDate" +
             "deviceData" +
             "adminData" +
-            "remoteDeviceId" +
             "lastNonce" +
             "last";
         BOOST_FOREACH(string &prop, props) {
@@ -2119,6 +2120,7 @@ private:
             "spds/syncml/config.txt:# remoteIdentifier = \n"
             "spds/syncml/config.txt:# PeerIsClient = 0\n"
             "spds/syncml/config.txt:deviceId = fixed-devid\n" /* this is not the default! */
+            "spds/syncml/config.txt:# remoteDeviceId = \n"
             "spds/syncml/config.txt:# enableWBXML = 1\n"
             "spds/syncml/config.txt:# maxMsgSize = 20000\n"
             "spds/syncml/config.txt:# maxObjSize = 4000000\n"

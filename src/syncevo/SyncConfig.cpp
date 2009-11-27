@@ -720,9 +720,9 @@ static ConfigProperty syncPropSyncURL("syncURL",
                                       "  http://sync.scheduleworld.com/funambol/ds\n"
                                       "  https://m.google.com/syncml\n"
                                       "OBEX over Bluetooth uses the MAC address, with\n"
-                                      "the channel choose automatically:\n"
+                                      "the channel chosen automatically:\n"
                                       "  obex-bt://00:0A:94:03:F3:7E\n"
-                                      "If the automatism fails, the channel can also be chosen:\n"
+                                      "If the automatism fails, the channel can also be specified:\n"
                                       "  obex-bt://00:0A:94:03:F3:7E+16\n");
 
 static ConfigProperty syncPropDevID("deviceId",
@@ -747,7 +747,8 @@ static PasswordConfigProperty syncPropPassword("password",
                                                "SyncML server");
 static BoolConfigProperty syncPropUseProxy("useProxy",
                                            "set to T to choose an HTTP proxy explicitly; otherwise the default\n"
-                                           "proxy settings of the underlying HTTP transport mechanism are used");
+                                           "proxy settings of the underlying HTTP transport mechanism are used;\n"
+                                           "only relevant when contacting the peer via HTTP");
 static ConfigProperty syncPropProxyHost("proxyHost",
                                         "proxy URL (http://<host>:<port>)");
 static ConfigProperty syncPropProxyUsername("proxyUsername",
@@ -764,7 +765,9 @@ static StringConfigProperty syncPropClientAuthType("clientAuthType",
                                                    "This setting is only for debugging purpose and only\n"
                                                    "has an effect during the initial sync of a client.\n"
                                                    "Later it remembers the method that was supported by\n"
-                                                   "the server and uses that.",
+                                                   "the server and uses that. When acting as server,\n"
+                                                   "clients contacting us can use both basic and md5\n"
+                                                   "authentication.\n",
                                                    "md5",
                                                    "",
                                                    Values() +
@@ -772,15 +775,17 @@ static StringConfigProperty syncPropClientAuthType("clientAuthType",
                                                    (Aliases("md5") + "syncml:auth-md5" + ""));
 static ULongConfigProperty syncPropMaxMsgSize("maxMsgSize",
                                               "The maximum size of each message can be set (maxMsgSize) and the\n"
-                                              "server can be told to never sent items larger than a certain\n"
-                                              "threshold (maxObjSize). Presumably the server has to truncate or\n"
+                                              "peer can be told to never sent items larger than a certain\n"
+                                              "threshold (maxObjSize). Presumably the peer has to truncate or\n"
                                               "skip larger items. Sizes are specified as number of bytes.",
                                               "20000");
 static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "4000000");
 
 static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)");
 static BoolConfigProperty syncPropWBXML("enableWBXML",
-                                        "use the more compact binary XML (WBXML) for messages between client and server",
+                                        "use the more compact binary XML (WBXML) for messages between client and server;\n"
+                                        "not applicable when the peer is a SyncML client, because then the client\n"
+                                        "chooses the encoding",
                                         "TRUE");
 static ConfigProperty syncPropLogDir("logdir",
                                      "full path to directory where automatic backups and logs\n"
@@ -815,7 +820,11 @@ static UIntConfigProperty syncPropRetryDuration("RetryDuration",
                                           "is received or the message could not be delivered due\n"
                                           "to transport problems. When this time is exceeded\n"
                                           "without a response, the synchronization aborts without\n"
-                                          "sending further messages to the server."
+                                          "sending further messages to the server.\n"
+                                          "\n"
+                                          "When acting as server, this setting controls how long\n"
+                                          "a client is allowed to not send a message before the\n"
+                                          "synchronization is aborted."
                                           ,"300");
 static UIntConfigProperty syncPropRetryInterval("RetryInterval",
                                           "The number of seconds between the start of message sending\n"
@@ -823,7 +832,10 @@ static UIntConfigProperty syncPropRetryInterval("RetryInterval",
                                           "already passed when a message send returns, the\n"
                                           "message is resent immediately. Resending without\n"
                                           "any delay will never succeed and therefore specifying 0\n"
-                                          "disables retries."
+                                          "disables retries.\n"
+                                          "\n"
+                                          "Servers cannot resend messages, so this setting has no\n"
+                                          "effect in that case."
                                           ,"60");
 static BoolConfigProperty syncPropPeerIsClient("PeerIsClient",
                                           "Indicates whether this configuration is about a\n"
@@ -835,7 +847,10 @@ static ConfigProperty syncPropRemoteIdentifier("remoteIdentifier",
 static ConfigProperty syncPropSSLServerCertificates("SSLServerCertificates",
                                                     "A string specifying the location of the certificates\n"
                                                     "used to authenticate the server. When empty, the\n"
-                                                    "system's default location will be searched.",
+                                                    "system's default location will be searched.\n"
+                                                    "\n"
+                                                    "SSL support when acting as HTTP server is implemented\n"
+                                                    "by the HTTP server frontend, not with these properties.",
                                                     SYNCEVOLUTION_SSL_SERVER_CERTIFICATES);
 static BoolConfigProperty syncPropSSLVerifyServer("SSLVerifyServer",
                                                   "The client refuses to establish the connection unless\n"
@@ -874,7 +889,18 @@ static ULongConfigProperty syncPropHashCode("HashCode", "used by the SyncML libr
 static ConfigProperty syncPropConfigDate("ConfigDate", "used by the SyncML library internally; do not modify");
 
 static SafeConfigProperty syncPropRemoteDevID("remoteDeviceId",
-                                              "ID of our peer, empty if unknown; do not edit, used internally");
+                                              "SyncML ID of our peer, empty if unknown; must be set only when\n"
+                                              "the peer is a SyncML client contacting us via HTTP.\n"
+                                              "Clients contacting us via OBEX/Bluetooth can be identified\n"
+                                              "either via this remoteDeviceId property or by their MAC\n"
+                                              "address, if that was set in the syncURL property.\n"
+                                              "\n"
+                                              "If this property is empty and the peer synchronizes with\n"
+                                              "this configuration chosen by some other means, then its ID\n"
+                                              "is recorded here automatically and later used to verify that\n"
+                                              "the configuration is not accidentally used by a different\n"
+                                              "peer.");
+
 static SafeConfigProperty syncPropNonce("lastNonce",
                                         "MD5 nonce of our peer, empty if not set yet; do not edit, used internally");
 
@@ -909,6 +935,7 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropRemoteIdentifier);
         registry.push_back(&syncPropPeerIsClient);
         registry.push_back(&syncPropDevID);
+        registry.push_back(&syncPropRemoteDevID);
         registry.push_back(&syncPropWBXML);
         registry.push_back(&syncPropMaxMsgSize);
         registry.push_back(&syncPropMaxObjSize);
@@ -921,7 +948,6 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropConsumerReady);
         registry.push_back(&syncPropHashCode);
         registry.push_back(&syncPropConfigDate);
-        registry.push_back(&syncPropRemoteDevID);
         registry.push_back(&syncPropNonce);
         registry.push_back(&syncPropDeviceData);
         registry.push_back(&syncPropDefaultPeer);
@@ -935,7 +961,6 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         // hidden sync properties
         syncPropHashCode.setHidden(true);
         syncPropConfigDate.setHidden(true);
-        syncPropRemoteDevID.setHidden(true);
         syncPropNonce.setHidden(true);
         syncPropDeviceData.setHidden(true);
 
