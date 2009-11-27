@@ -2660,7 +2660,6 @@ void DBusServer::startSession(const Caller_t &caller,
                                                    "is this a client or server session?",
                                                    server,
                                                    new_session));
-    // TODO: how do we decide whether this is a client or server session?
     client->attach(session);
     session->activate();
     enqueue(session);

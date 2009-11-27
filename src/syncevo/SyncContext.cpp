@@ -1781,6 +1781,14 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                                 report,
                                 "client");
 
+
+        /* Must detect server or client session before creating the
+         * underlying SynthesisEngine 
+         * */
+        if ( getPeerIsClient()) {
+            m_serverMode = true;
+        }
+
         // create a Synthesis engine, used purely for logging purposes
         // at this time
         SwapEngine swapengine(*this);
@@ -1827,8 +1835,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                 }
             }
 
-            if ( getPeerIsClient()) {
-                m_serverMode = true;
+            if (m_serverMode) {
                 //This is a server alerted sync !
                 if (! initSAN ()) {
                     // return a proper error code 
