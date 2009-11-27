@@ -11,6 +11,7 @@ EXTRA_DIST = \
 	description \
 	configure-pre.in \
 	configure-post.in \
+	gen-autotools.sh \
 	autogen.sh \
 	Makefile-gen.am \
 	Doxyfile
