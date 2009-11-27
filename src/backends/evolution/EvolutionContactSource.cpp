@@ -37,6 +37,7 @@ using namespace std;
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/foreach.hpp>
 
 #include <syncevo/declarations.h>
@@ -81,6 +82,7 @@ EvolutionSyncSource::Databases EvolutionContactSource::getDatabases()
         SyncContext::throwError("unable to access address books");
     }
 
+    Databases secondary;
     Databases result;
     bool first = true;
     for (GSList *g = e_source_list_peek_groups (sources); g; g = g->next) {
@@ -88,12 +90,35 @@ EvolutionSyncSource::Databases EvolutionContactSource::getDatabases()
         for (GSList *s = e_source_group_peek_sources (group); s; s = s->next) {
             ESource *source = E_SOURCE (s->data);
             eptr<char> uri(e_source_get_uri(source));
-            result.push_back(Database(e_source_peek_name(source),
-                                                         uri ? uri.get() : "",
-                                                         first));
+            string uristr;
+            if (uri) {
+                uristr = uri.get();
+            }
+            Database entry(e_source_peek_name(source),
+                           uristr,
+                           first);
+            if (boost::starts_with(uristr, "couchdb://")) {
+                // Append CouchDB address books at the end of the list,
+                // otherwise preserving the order of address books.
+                //
+                // The reason is Moblin Bugzilla #7877 (aka CouchDB
+                // feature request #479110): the initial release of
+                // evolution-couchdb in Ubuntu 9.10 is unusable because
+                // it does not support the REV property.
+                //
+                // Reordering the entries ensures that the CouchDB
+                // address book is not used as the default database by
+                // SyncEvolution, as it happened in Ubuntu 9.10.
+                // Users can still pick it intentionally via
+                // "evolutionsource".
+                secondary.push_back(entry);
+            } else {
+                result.push_back(entry);
+            }
             first = false;
         }
     }
+    result.insert(result.end(), secondary.begin(), secondary.end());
 
     // No results? Try system address book (workaround for embedded Evolution Dataserver).
     if (!result.size()) {
