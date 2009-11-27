@@ -91,7 +91,9 @@ typedef struct app_data {
 
     GtkWidget *new_service_btn;
     GtkWidget *services_box;
+    GtkWidget *scrolled_window;
     GtkWidget *back_btn;
+    GtkWidget *expanded_config;
 
     gboolean online;
 
@@ -613,13 +615,34 @@ switch_main_and_settings_to_mux_window (app_data *data,
 }
 #endif
 
+/* This is a hacky way to achieve autoscrolling when the expanders open/close */
+static void
+services_box_allocate_cb (GtkWidget     *widget,
+                          GtkAllocation *allocation,
+                          app_data *data)
+{
+    if (data->expanded_config) {
+        int y, height;
+        GtkAdjustment *adj;
+
+        gtk_widget_translate_coordinates (data->expanded_config,
+                                          data->services_box,
+                                          0, 0, NULL, &y);
+        height = data->expanded_config->allocation.height;
+
+        adj = gtk_scrolled_window_get_vadjustment
+                (GTK_SCROLLED_WINDOW (data->scrolled_window));
+        gtk_adjustment_clamp_page (adj, y, y + height);
+    }
+}
+
 static gboolean
 init_ui (app_data *data)
 {
     GtkBuilder *builder;
     GError *error = NULL;
     GObject *radio;
-    GtkWidget *frame, *setup_service_btn , *image, *scrolled_window;
+    GtkWidget *frame, *setup_service_btn , *image;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -665,11 +688,10 @@ init_ui (app_data *data)
     g_signal_connect (data->new_service_btn, "clicked",
                       G_CALLBACK (setup_new_service_clicked), data);
 
-    scrolled_window = GTK_WIDGET (gtk_builder_get_object (builder, "scrolledwindow"));
+    data->scrolled_window = GTK_WIDGET (gtk_builder_get_object (builder, "scrolledwindow"));
     data->services_box = GTK_WIDGET (gtk_builder_get_object (builder, "services_box"));
-    gtk_container_set_focus_vadjustment
-            (GTK_CONTAINER (data->services_box),
-             gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scrolled_window)));
+    g_signal_connect(data->services_box, "size-allocate",
+                     G_CALLBACK (services_box_allocate_cb), data);
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
     radio = gtk_builder_get_object (builder, "two_way_radio");
@@ -917,6 +939,7 @@ static void
 config_widget_expanded_cb (GtkWidget *widget, GParamSpec *pspec, app_data *data)
 {
     if (sync_config_widget_get_expanded (SYNC_CONFIG_WIDGET (widget))) {
+        data->expanded_config = widget;
         gtk_container_foreach (GTK_CONTAINER (data->services_box),
                                (GtkCallback)unexpand_config_widget,
                                widget);
@@ -986,9 +1009,6 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
                                 FALSE, TRUE,
                                 data);
     sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (widget), TRUE);
-
-    /* TODO: Get "empty config widget" on startup 
-     * so there is no need to wait here... */
 }
 
 

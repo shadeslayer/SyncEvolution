@@ -724,7 +724,6 @@ sync_config_widget_real_init (SyncConfigWidget *self,
     char *url, *icon;
     GdkPixbuf *buf;
     server_config_init (self->config, config);
-
     if (self->config->name &&
         strcmp (self->config->name, "default") == 0) {
 
@@ -754,9 +753,12 @@ sync_config_widget_real_init (SyncConfigWidget *self,
 
     if (self->showing) {
         gtk_widget_show (GTK_WIDGET (self));
+
+        /* hack to get focus in the right place on "Setup new service" */
+        if (GTK_WIDGET_VISIBLE (self->entry)) {
+            gtk_widget_grab_focus (self->entry);
+        }
     }
-    /* hack for widgets added with "add new service" */
-    gtk_widget_grab_focus (GTK_WIDGET (self));
 }
 
 static void
@@ -880,18 +882,16 @@ sync_config_widget_size_allocate (GtkWidget     *widget,
 
 
     if (self->expanded) {
-      gtk_widget_size_request (self->expando_box, &req);
+        gtk_widget_size_request (self->expando_box, &req);
 
-      alloc.x = allocation->x + 2 * widget->style->xthickness;
-      alloc.y = allocation->y + widget->style->ythickness +
-                label_h + CHILD_PADDING;
-      alloc.width = allocation->width - 4 * widget->style->xthickness;
-      alloc.height = req.height;
+        alloc.x = allocation->x + 2 * widget->style->xthickness;
+        alloc.y = allocation->y + widget->style->ythickness +
+                  label_h + CHILD_PADDING;
+        alloc.width = allocation->width - 4 * widget->style->xthickness;
+        alloc.height = req.height;
 
-      gtk_widget_size_allocate (self->expando_box, &alloc);
+        gtk_widget_size_allocate (self->expando_box, &alloc);
     }
-
-
 }
 
 static void
@@ -1155,7 +1155,6 @@ sync_config_widget_init (SyncConfigWidget *self)
     GtkWidget *tmp_box, *vbox, *table, *label;
 
     GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
-    GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_CAN_FOCUS);
 
     self->label_box = gtk_hbox_new (FALSE, 0);
     gtk_widget_set_size_request (self->label_box, -1, SYNC_UI_LIST_ICON_SIZE + 6);
@@ -1335,11 +1334,17 @@ sync_config_widget_set_expanded (SyncConfigWidget *self, gboolean expanded)
         if (self->expanded) {
             gtk_widget_hide (self->button);
             gtk_widget_show (self->expando_box);
+            if (GTK_WIDGET_VISIBLE (self->entry)) {
+                gtk_widget_grab_focus (self->entry);
+            } else {
+                gtk_widget_grab_focus (self->username_entry);
+            }
         } else {
             gtk_widget_show (self->button);
             gtk_widget_hide (self->expando_box);
         }
         g_object_notify (G_OBJECT (self), "expanded");
+
     }
 }
 
