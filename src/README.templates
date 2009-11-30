@@ -1,5 +1,5 @@
-The configuration templates in this directory get installed into
-sysconfdir/etc/default.
+The configuration templates in "templates" get installed into
+$(datadir)/syncevolution/templates.
 
 When adding/changing a new server, then only enter the properties
 which need to be changed here so that the default values can
@@ -15,5 +15,4 @@ Server configurations must be kept in sync in three different places:
 - in test/test-dbus.py testGetConfigsTemplates()
 
 Note that server icons must come with a suitable license that allows
-redistribution. TODO: verify the license of ScheduleWorld and 
-Funambol icons.
+redistribution.

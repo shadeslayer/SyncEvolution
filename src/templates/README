@@ -1,0 +1,7 @@
+The configuration templates in this directory are *not* complete and
+therefore not suitable for copying them directly in a .config
+directory.
+
+They contain only those properties which are different for a certain
+peer compared to the built-in default values. They are used by the
+SyncEvolution binaries to create complete configurations.

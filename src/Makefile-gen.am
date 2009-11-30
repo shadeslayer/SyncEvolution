@@ -42,7 +42,8 @@ endif
 EXTRA_DIST = shlibs.local Makefile-gen.am syncclient_sample_config.xml $(service_in_files)
 
 TEMPLATE_FILES = @TEMPLATE_FILES@
-nobase_dist_sysconf_DATA = $(TEMPLATE_FILES)
+templatedir = $(datadir)/syncevolution/
+nobase_dist_template_DATA = $(TEMPLATE_FILES)
 
 DISTCLEANFILES = synccompare
 MAINTAINERCLEANFILES = Makefile.in
