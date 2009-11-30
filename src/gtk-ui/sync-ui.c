@@ -589,7 +589,6 @@ static GtkWidget*
 switch_dummy_to_mux_window (GtkWidget *dummy)
 {
     GtkWidget *window;
-    const char *title;
 
     g_assert (GTK_IS_WINDOW (dummy));
 
@@ -632,11 +631,6 @@ switch_main_and_settings_to_mux_window (app_data *data,
 /* return the placeholders themselves when not using Moblin UX */
 static GtkWidget*
 switch_dummy_to_mux_frame (GtkWidget *dummy) {
-    return dummy;
-}
-static GtkWidget*
-switch_dummy_to_mux_window (GtkWidget *dummy)
-{
     return dummy;
 }
 static void
