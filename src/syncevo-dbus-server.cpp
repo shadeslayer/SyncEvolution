@@ -2106,7 +2106,7 @@ void Connection::process(const Caller_t &caller,
 {
     SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s sends %lu bytes via connection %s, %s",
                  caller.c_str(),
-                 message.first,
+                 (unsigned long)message.first,
                  getPath(),
                  message_type.c_str());
 
