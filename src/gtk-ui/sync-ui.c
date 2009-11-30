@@ -596,9 +596,6 @@ switch_dummy_to_mux_window (GtkWidget *dummy)
     window = mux_window_new ();
     gtk_window_set_default_size (GTK_WINDOW (window), 1024, 600);
     gtk_widget_set_name (window, gtk_widget_get_name (dummy));
-    title = gtk_window_get_title (GTK_WINDOW (dummy));
-    if (title && strlen (title) > 0)
-        gtk_window_set_title (GTK_WINDOW (window), title);
     gtk_window_set_modal (GTK_WINDOW (window),
                           gtk_window_get_modal (GTK_WINDOW (dummy)));
 
@@ -623,8 +620,6 @@ switch_main_and_settings_to_mux_window (app_data *data,
     tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (settings)));
     gtk_container_remove (GTK_CONTAINER (settings), tmp);
     mux_window_set_settings_widget (MUX_WINDOW (mux_main), tmp);
-    mux_window_set_settings_title (MUX_WINDOW (mux_main), 
-                                   gtk_window_get_title (GTK_WINDOW (settings)));
     g_object_unref (tmp);
 
     data->sync_win = mux_main;
