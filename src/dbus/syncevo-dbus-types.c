@@ -315,7 +315,7 @@ syncevo_source_progresses_get_current (SyncevoSourceProgresses *source_progresse
         }
 
         progress = g_slice_new (SyncevoSourceProgress);
-        progress->name = name;
+        progress->name = g_strdup (name);
         progress->phase = phase;
 
         val = g_value_array_get_nth (progress_array, 1);
@@ -339,6 +339,7 @@ syncevo_source_progresses_get_current (SyncevoSourceProgresses *source_progresse
 void
 syncevo_source_progress_free (SyncevoSourceProgress *progress)
 {
+    g_free (progress->name);
     g_slice_free (SyncevoSourceProgress, progress);
 }
 static void
