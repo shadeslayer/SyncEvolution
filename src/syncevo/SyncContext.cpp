@@ -73,6 +73,8 @@ SourceList *SyncContext::m_sourceListPtr;
 SyncContext *SyncContext::m_activeContext;
 SuspendFlags SyncContext::s_flags;
 
+static const char *LogfileBasename = "syncevolution-log";
+
 void SyncContext::handleSignal(int sig)
 {
     switch (sig) {
@@ -343,7 +345,7 @@ public:
                     SyncContext::throwError(m_path, errno);
                 }
             }
-            m_logfile = m_path + "/" + "sysynclib_linux.html";
+            m_logfile = m_path + "/" + LogfileBasename + ".html";
         }
 
         // update log level of default logger and our own replacement
@@ -1407,6 +1409,8 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             "  <debug>\n"
             // logpath is a config variable set by SyncContext::doSync()
             "    <logpath>$(logpath)</logpath>\n"
+            "    <filename>" <<
+            LogfileBasename << "</filename>" <<
             "    <logflushmode>flush</logflushmode>\n"
             "    <logformat>html</logformat>\n"
             "    <folding>auto</folding>\n"
