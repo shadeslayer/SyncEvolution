@@ -333,6 +333,45 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
                                data);
         set_sync_progress (data, -1.0, _("Trying to cancel sync"));
     } else {
+        char *message = NULL;
+
+        /* confirmation dialog for destructive sync options */
+        switch (data->mode) {
+        case SYNCEVO_SYNC_REFRESH_FROM_SERVER:
+            message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
+                                         "data from %s? This is not usually advised."),
+                                       data->current_service->name);
+            break;
+        case SYNCEVO_SYNC_REFRESH_FROM_CLIENT:
+            message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
+                                         "your local data? This is not usually advised."),
+                                       data->current_service->name);
+            break;
+        default:
+            ;
+        }
+        if (message) {
+            GtkWidget *w;
+            int ret;
+            w = gtk_message_dialog_new (GTK_WINDOW (data->sync_win),
+                                        GTK_DIALOG_MODAL,
+                                        GTK_MESSAGE_QUESTION,
+                                        GTK_BUTTONS_NONE,
+                                        "%s",
+                                        message);
+            gtk_dialog_add_buttons (GTK_DIALOG (w), 
+                                    _("No, cancel sync"),
+                                    GTK_RESPONSE_NO,
+                                    _("Yes, delete and replace"),
+                                    GTK_RESPONSE_YES,
+                                    NULL);
+            ret = gtk_dialog_run (GTK_DIALOG (w));
+            gtk_widget_destroy (w);
+            g_free (message);
+            if (ret != GTK_RESPONSE_YES) {
+                return;
+            }
+        }
 
         op_data = g_slice_new (operation_data);
         op_data->data = data;
@@ -345,7 +384,7 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
 }
 
 static gboolean
-refresh_last_synced_label (app_data *data)
+    refresh_last_synced_label (app_data *data)
 {
     GTimeVal val;
     glong diff;
@@ -699,11 +738,11 @@ init_ui (app_data *data)
     g_signal_connect (radio, "toggled",
                       G_CALLBACK (sync_type_toggled_cb), data);
     radio = gtk_builder_get_object (builder, "one_way_from_remote_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_ONE_WAY_FROM_SERVER));
+    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_REFRESH_FROM_SERVER));
     g_signal_connect (radio, "toggled",
                       G_CALLBACK (sync_type_toggled_cb), data);
     radio = gtk_builder_get_object (builder, "one_way_from_local_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT));
+    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_REFRESH_FROM_CLIENT));
     g_signal_connect (radio, "toggled",
                       G_CALLBACK (sync_type_toggled_cb), data);
 
