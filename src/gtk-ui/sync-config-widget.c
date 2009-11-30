@@ -228,6 +228,8 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         return;
     }
 
+    syncevo_config_set_value (config, NULL, "defaultPeer", name);
+
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)update_source_config,
                                    self);

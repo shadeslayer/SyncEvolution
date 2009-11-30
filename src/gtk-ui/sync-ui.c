@@ -23,7 +23,6 @@
 #include <string.h>
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
-#include <gconf/gconf-client.h>
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 #include <dbus/dbus-glib.h>
@@ -47,9 +46,6 @@
 #endif
 
 static gboolean support_canceling = FALSE;
-
-#define SYNC_UI_GCONF_DIR "/apps/sync-ui"
-#define SYNC_UI_SERVER_KEY SYNC_UI_GCONF_DIR"/server"
 
 #define SYNC_UI_ICON_SIZE 48
 
@@ -266,30 +262,6 @@ reload_config (app_data *data, const char *server)
     }
 }
 
-
-static void
-save_gconf_settings (app_data *data, const char *service_name)
-{
-    GConfClient* client;
-    GError *err = NULL;
-
-    client = gconf_client_get_default ();
-    if (service_name && data->current_service &&
-        strcmp (service_name, data->current_service->name) == 0) {
-        /* need to reload because there will be no gconf change event */
-        reload_config (data, service_name);
-    }
-
-    if (!gconf_client_set_string (client, SYNC_UI_SERVER_KEY, 
-                                  service_name ? service_name : "", 
-                                  &err)) {
-        /* TODO show in UI: save failed */
-        show_error_dialog (data->sync_win,
-                           _("Failed to save current service in GConf configuration system"));
-        g_warning ("Failed to save current service in GConf configuration system: %s", err->message);
-        g_error_free (err);
-    }
-}
 
 static void
 abort_sync_cb (SyncevoSession *session,
@@ -980,12 +952,13 @@ config_widget_expanded_cb (GtkWidget *widget, GParamSpec *pspec, app_data *data)
 static void
 config_widget_changed_cb (GtkWidget *widget, app_data *data)
 {
+    const char *name = NULL;
+
     if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
-        save_gconf_settings (data, sync_config_widget_get_name SYNC_CONFIG_WIDGET (widget));
-    } else {
-        /* stop using current service */
-        save_gconf_settings (data, NULL);
+        name = sync_config_widget_get_name (SYNC_CONFIG_WIDGET (widget));
     }
+    reload_config (data, name);
+
     update_services_list (data);
 }
 
@@ -1692,36 +1665,6 @@ show_main_view (app_data *data)
     gtk_window_present (GTK_WINDOW (data->sync_win));
 }
 
-static void
-gconf_change_cb (GConfClient *client, guint id, GConfEntry *entry, app_data *data)
-{
-    char *server = NULL;
-    GError *error = NULL;
-
-    server = gconf_client_get_string (client, SYNC_UI_SERVER_KEY, &error);
-    if (error) {
-        g_warning ("Could not read current server name from gconf: %s", error->message);
-        g_error_free (error);
-    }
-
-    reload_config (data, server);
-    g_free (server);
-}
-
-static void
-init_configuration (app_data *data)
-{
-    GConfClient* client;
-
-    client = gconf_client_get_default ();
-    gconf_client_add_dir (client, SYNC_UI_GCONF_DIR, GCONF_CLIENT_PRELOAD_RECURSIVE, NULL);
-    gconf_client_notify_add (client, SYNC_UI_GCONF_DIR, (GConfClientNotifyFunc)gconf_change_cb,
-                             data, NULL, NULL);
-
-    /* fake gconf change to init values */
-    gconf_change_cb (client, 0, NULL, data);
-}
-
 static char*
 get_error_string_for_code (int error_code)
 {
@@ -1919,6 +1862,27 @@ get_sessions_cb (SyncevoServer *server,
     syncevo_sessions_free (sessions);
 }
 
+static void
+get_config_for_default_peer_cb (SyncevoServer *syncevo,
+                                SyncevoConfig *config,
+                                GError *error,
+                                app_data *data)
+{
+    char *name;
+
+    if (error) {
+        g_warning ("Server.GetConfig failed: %s", error->message);
+        g_error_free (error);
+        /* TODO show in UI: failed first syncevo call (unexpected, fatal?) */
+        return;
+    }
+
+    syncevo_config_get_value (config, NULL, "defaultPeer", &name);
+    reload_config (data, name);
+
+    syncevo_config_free (config);
+}
+
 GtkWidget*
 sync_ui_create_main_window ()
 {
@@ -1940,11 +1904,16 @@ sync_ui_create_main_window ()
                       G_CALLBACK (server_presence_changed_cb), data);
     g_signal_connect (data->server, "info-request",
                       G_CALLBACK (info_request_cb), data);
+
+    syncevo_server_get_config (data->server,
+                               "",
+                               FALSE,
+                               (SyncevoServerGetConfigCb)get_config_for_default_peer_cb,
+                               data);
+
     syncevo_server_get_sessions (data->server,
                                  (SyncevoServerGetSessionsCb)get_sessions_cb,
                                  data);
-
-    init_configuration (data);
 
     gtk_window_present (GTK_WINDOW (data->sync_win));
 
