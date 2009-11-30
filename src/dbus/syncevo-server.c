@@ -145,6 +145,7 @@ proxy_destroy_cb (DBusGProxy *proxy,
     g_signal_emit (server, signals[SHUTDOWN], 0);
 }
 
+#if 0
 static void
 detach_cb (DBusGProxy *proxy,
            GError *error,
@@ -155,6 +156,7 @@ detach_cb (DBusGProxy *proxy,
         g_error_free (error);
     }
 }
+#endif
 
 static void
 dispose (GObject *object)
