@@ -17,34 +17,18 @@
  * 02110-1301  USA
  */
 
-/* test syncevo dbus */
+/* test syncevo dbus client wrappers */
 
-#include "syncevo-dbus.h"
+#include "syncevo-server.h"
 
 #include <synthesis/syerror.h>
 #include <synthesis/engine_defs.h>
 
-static void
-print_option (SyncevoOption *option, gpointer userdata)
-{
-	const char *ns, *key, *value;
+gboolean stop = FALSE;
+GMainLoop *loop;
 
-	syncevo_option_get (option, &ns, &key, &value);
-	g_debug ("  Got option [%s] %s = %s", ns, key, value);
-}
-
-static void
-print_server (SyncevoServer *temp, gpointer userdata)
-{
-	const char *name, *url, *icon;
-	gboolean ready;
-
-	syncevo_server_get (temp, &name, &url, &icon, &ready);
-	g_debug ("  Got server %s (%s, %s, %sconsumer ready)",
-	         name, url, icon,
-	         ready ? "" : "non-");
-}
-
+/*
+// This is the old progress callback, here for future reference...
 static void
 progress_cb (SyncevoService *service,
              char *server,
@@ -138,67 +122,192 @@ progress_cb (SyncevoService *service,
     }
 }
 
+*/
+
+static void
+get_template_configs_cb(SyncevoServer *server,
+               char **config_names,
+               GError *error,
+               gpointer userdata)
+{
+    char **name;
+    
+    if (error) {
+        g_printerr ("GetConfigs error: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+    g_print ("GetConfigs (template=TRUE):\n");
+
+    for (name = config_names; name && *name; name++) {
+        g_print ("\t%s\n", *name);
+    }
+    g_print ("\n");
+}
+
+static void
+print_config_value (char *key, char *value, gpointer data)
+{
+    g_print ("\t\t%s = %s\n", key, value);
+}
+static void
+print_config (char *key, GHashTable *sourceconfig, gpointer data)
+{
+    g_print ("\tsource = %s\n", key);
+    g_hash_table_foreach (sourceconfig, (GHFunc)print_config_value, NULL);
+}
+
+static void
+get_config_cb (SyncevoSession *session,
+               SyncevoConfig *config,
+               GError *error,
+               gpointer userdata)
+{
+    if (error) {
+        g_printerr ("GetConfig error: %s\n", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    g_print ("Session configuration:\n");
+    g_hash_table_foreach (config, (GHFunc)print_config, NULL);
+}
+
+static void
+progress_cb (SyncevoSession *session,
+             int progress,
+             SyncevoSourceProgresses *source_progresses)
+{
+    g_print ("\tprogress = %d\n", progress);
+}
+
+static void
+status_cb (SyncevoSession *session,
+           SyncevoSessionStatus status,
+           guint error_code,
+           SyncevoSourceStatuses *source_statuses,
+           gpointer *data)
+{
+    if (status == SYNCEVO_STATUS_DONE) {
+        g_print ("Session done.");
+        g_object_unref (session);
+        g_main_loop_quit (loop);
+    }
+}
+
+static void
+start_session_cb (SyncevoServer *server,
+                  char *path,
+                  GError *error,
+                  gpointer userdata)
+{
+    GHashTable *source_modes;
+    SyncevoSession *session;
+
+    if (error) {
+        g_printerr ("StartSession error: %s\n", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    g_print ("\nTesting Session...\n\n");
+
+    session = syncevo_session_new (path);
+    syncevo_session_get_config (session,
+                                FALSE,
+                                (SyncevoSessionGetConfigCb)get_config_cb,
+                                NULL);
+
+    g_signal_connect (session, "progress-changed",
+                      G_CALLBACK (progress_cb), NULL);
+    g_signal_connect (session, "status-changed",
+                      G_CALLBACK (status_cb), NULL);
+
+
+    /* TODO should wait for session status == idle */
+    source_modes = g_hash_table_new (g_str_hash, g_str_equal);
+    syncevo_session_sync (session, 
+                          SYNCEVO_SYNC_DEFAULT,
+                          source_modes,
+                          NULL,
+                          NULL);
+    g_hash_table_unref (source_modes);
+}
+
+
+static void
+get_configs_cb(SyncevoServer *server,
+               char **config_names,
+               GError *error,
+               char *service_name)
+{
+    char **name;
+
+    if (error) {
+        g_printerr ("GetConfigs error: %s\n", error->message);
+        g_error_free (error);
+        return;
+    }
+    g_print ("GetConfigs (template=FALSE):\n");
+
+    for (name = config_names; name && *name; name++){
+        g_print ("\t%s\n", *name);
+    }
+    g_print ("\n");
+
+    if (stop) {
+        g_print ("No server given, stopping here.\n");
+        g_main_loop_quit (loop);
+    }
+}
+
+static void 
+session_changed_cb (SyncevoServer *server,
+                    char *path,
+                    gboolean active,
+                    gpointer data) 
+{
+    g_print ("Session %s is now %s\n",
+             path,
+             active ? "active" : "not active");
+}
+
 int main (int argc, char *argv[])
 {
-    SyncevoService *service;
-    GMainLoop *loop;
-    GPtrArray *sources;
-    GError *error = NULL;
-    GPtrArray *array;
-    char *server = NULL;
+    SyncevoServer *server;
+    char *service = NULL;
 
     g_type_init();
 
-    if (argc > 1) {
-        server = argv[1];
+
+    g_print ("Testing Server...\n");
+
+    server = syncevo_server_get_default ();
+
+    syncevo_server_get_configs (server,
+                                TRUE,
+                                (SyncevoServerGetConfigsCb)get_template_configs_cb,
+                                NULL);
+    syncevo_server_get_configs (server,
+                                FALSE,
+                                (SyncevoServerGetConfigsCb)get_configs_cb,
+                                NULL);
+    g_signal_connect (server, "session-changed",
+                      G_CALLBACK (session_changed_cb), NULL);
+
+    if (argc < 2) {
+        stop = TRUE;
     }
 
-    service = syncevo_service_get_default ();
+    service = argv[1];
+    if (service)
+        syncevo_server_start_session (server,
+                                      service,
+                                      (SyncevoServerStartSessionCb)start_session_cb,
+                                      NULL);
 
-    array = g_ptr_array_new();
-    g_print ("Testing syncevo_service_get_servers()\n");
-    syncevo_service_get_servers (service, &array, &error);
-    if (error) {
-        g_error ("  syncevo_service_get_servers() failed with %s", error->message);
-    }
-    g_ptr_array_foreach (array, (GFunc)print_server, NULL);
-
-    array = g_ptr_array_new();
-    g_print ("Testing syncevo_service_get_templates()\n");
-    syncevo_service_get_templates (service, &array, &error);
-    if (error) {
-        g_error ("  syncevo_service_get_templates() failed with %s", error->message);
-    }
-    g_ptr_array_foreach (array, (GFunc)print_server, NULL);
-    
-
-    if (!server) {
-        g_print ("No server given, stopping here\n");
-        return 0;
-    }
-
-
-    array = g_ptr_array_new();
-    g_print ("Testing syncevo_service_get_config() with server %s\n", server);
-    syncevo_service_get_server_config (service, server, &array, &error);
-    if (error) {
-        g_error ("  syncevo_service_get_server_config() failed with %s", error->message);
-    }
-    g_ptr_array_foreach (array, (GFunc)print_option, NULL);
 
     loop = g_main_loop_new (NULL, TRUE);
-    g_signal_connect (service, "progress", (GCallback)progress_cb, loop);
-    
-    g_print ("Testing syncevo_service_start_sync() with server %s\n", server);
-    sources = g_ptr_array_new (); /*empty*/
-    syncevo_service_start_sync (service, 
-                                server,
-                                sources,
-                                &error);
-    if (error) {
-        g_error ("  syncevo_service_start_sync() failed with %s", error->message);
-    }
-
     g_main_loop_run (loop);
 
     return 0;

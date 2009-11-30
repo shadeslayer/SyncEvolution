@@ -4,9 +4,12 @@
 %-doc.xml: %-full.xml
 	$(XSLT) -o $@ $(srcdir)/spec-to-docbook.xsl $<
 
-BUILT_SOURCES = syncevo.xml syncevo-dbus-glue.h syncevo-marshal.c syncevo-marshal.h syncevo-bindings.h syncevo-server-doc.xml syncevo-connection-doc.xml syncevo-session-doc.xml
+BUILT_SOURCES =  syncevo-marshal.c syncevo-marshal.h \
+	syncevo-server-bindings.h syncevo-connection-bindings.h syncevo-session-bindings.h \
+	syncevo-server-glue.h syncevo-connection-glue.h syncevo-session-glue.h \
+	syncevo-server-doc.xml syncevo-connection-doc.xml syncevo-session-doc.xml \
+	syncevo-server.xml syncevo-connection.xml syncevo-session.xml
 
-noinst_DATA = syncevo.xml
 CLEANFILES = $(noinst_DATA) $(BUILT_SOURCES) stamp-syncevo-dbus-glue.h
 EXTRA_DIST = syncevo-marshal.list spec-strip-docs.xsl $(noinst_DATA)
 
@@ -24,9 +27,9 @@ syncevo-marshal.c: $(srcdir)/syncevo-marshal.list syncevo-marshal.h $(GLIB_GENMA
 	echo "#include \"syncevo-marshal.h\"" > $@ \
 	&& $(GLIB_GENMARSHAL) --prefix=syncevo_marshal $(srcdir)/syncevo-marshal.list --body >> $@
 
-syncevo-dbus-glue.h: stamp-syncevo-dbus-glue.h
+%-glue.h: stamp-%-glue.h
 	@true
-stamp-syncevo-dbus-glue.h: syncevo.xml
+stamp-%-glue.h: %.xml
 	$(DBUS_BINDING_TOOL) --prefix=syncevo --mode=glib-server $< > xgen-$(@F) \
 	&& (cmp -s xgen-$(@F) $(@F:stamp-%=%) || cp xgen-$(@F) $(@F:stamp-%=%)) \
 	&& rm -f xgen-$(@F) \

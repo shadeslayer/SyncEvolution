@@ -44,6 +44,9 @@ G_BEGIN_DECLS
 typedef struct {
     GtkButton parent;
     GdkPixbuf *pixbufs[5];
+
+    gboolean toggleable;
+    gboolean active;
 } MuxIconButton;
 
 typedef struct {
@@ -52,11 +55,16 @@ typedef struct {
 
 GType mux_icon_button_get_type (void);
 
-GtkWidget* mux_icon_button_new (GdkPixbuf *normal_pixbuf);
+GtkWidget* mux_icon_button_new (GdkPixbuf *normal_pixbuf, gboolean toggleable);
 
 void mux_icon_button_set_pixbuf (MuxIconButton *button, GtkStateType state, GdkPixbuf *pixbuf);
 
 GdkPixbuf* mux_icon_button_get_pixbuf (MuxIconButton *button, GtkStateType state);
+
+/* for togglebuttons */
+void mux_icon_button_set_active (MuxIconButton *button, gboolean active);
+
+gboolean mux_icon_button_get_active (MuxIconButton *button);
 
 G_END_DECLS
 

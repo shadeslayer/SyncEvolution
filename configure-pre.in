@@ -271,10 +271,6 @@ AC_ARG_ENABLE(gui,
 
 AM_CONDITIONAL([COND_GUI], [test "$enable_gui" != "no"])
 
-if test $enable_gui == "moblin"; then
-    AC_DEFINE(USE_MOBLIN_UX, 1, [Use the MUX widget library])
-fi
-
 AC_ARG_ENABLE(dbus-service,
               AS_HELP_STRING([--enable-dbus-service],
                              [enables building the dbus service executable and the wrapper library for it]),
@@ -335,7 +331,10 @@ case $enable_gui in
 esac
 
 if test $enable_gui != "no"; then
-    gui_modules="glib-2.0 dbus-glib-1 >= 0.60 gtk+-2.0 libglade-2.0 gconf-2.0 gio-2.0 gnome-keyring-1"
+    gui_modules="glib-2.0 dbus-glib-1 >= 0.60 gtk+-2.0 libglade-2.0 gconf-2.0 gio-2.0"
+    if test $enable_gui == "moblin"; then
+        AC_DEFINE(USE_MOBLIN_UX, 1, [Use Moblin UI widgets])
+    fi
 
     PKG_CHECK_MODULES(UNIQUE, unique-1.0,
                       have_unique="yes",

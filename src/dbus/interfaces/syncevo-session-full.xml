@@ -8,6 +8,9 @@
 
     <method name="GetConfig">
       <doc:doc><doc:description>Get the configuration of the server</doc:description></doc:doc>
+      <arg type="b" name="template" direction="in">
+        <doc:doc><doc:summary>if TRUE, will return a matching template configuration, otherwise will return a matching server configuration</doc:summary></doc:doc>
+      </arg>
       <arg type="a{sa{ss}}" name="configuration" direction="out">
         <doc:doc><doc:summary>server configuration</doc:summary></doc:doc>
         <doc:doc><doc:description>See Server.GetConfig() for dictionary description.</doc:description></doc:doc>
@@ -108,7 +111,7 @@
     <method name="CheckSource">
       <doc:doc>
         <doc:description>Tests whether the source configuration
-          is correct. Raises an exception if not.
+          is correct. Raises the SourceUnusable exception if not.
         </doc:description>
       </doc:doc>
       <arg type="s" name="source" direction="in">
@@ -122,16 +125,25 @@
     </method>
 
     <method name="Sync">
-      <doc:doc><doc:description>Start synchronization. The synchronization mode selection for sources works like this: Primarily, use mode from "sources" array. If the source was not found or its mode was empty, use the mode parameter. If mode parameter is empty, use the mode in configuration.
-          Examples:
-          * sync all with mode from config
-          Sync (NULL, ())
-          * refresh all from server
-          Sync ("refresh-from-server", ())
-          * force slow sync for calendar, use mode from config for others
-          Sync (NULL, (("calendar", "slow")))
-          * sync only calendar and addressbook, with mode from config
-          Sync ("none", (("calendar", NULL), ("addressbook", NULL)))
+      <doc:doc><doc:description>
+        <doc:para>
+          Start synchronization. The synchronization mode selection for sources works like this: Primarily, use mode from "sources" array. If the source was not found or its mode was empty, use the mode parameter. If mode parameter is empty, use the mode in configuration.
+              Examples:
+              * sync all with mode from config
+              Sync (NULL, ())
+              * refresh all from server
+              Sync ("refresh-from-server", ())
+              * force slow sync for calendar, use mode from config for others
+              Sync (NULL, (("calendar", "slow")))
+              * sync only calendar and addressbook, with mode from config
+              Sync ("none", (("calendar", NULL), ("addressbook", NULL)))
+        </doc:para>
+        <doc:para>
+          Syncevolution will by default output a sync "diff" in the end of Sync().
+          Producing the diff can be expensive CPU-wise, so setting the 
+          configuration value "printChanges" to 0 before a Sync() is advised
+          for clients who are not interested in the diff.
+        </doc:para>
       </doc:description></doc:doc>
       <arg type="s" name="mode" direction="in">
         <doc:doc><doc:summary>synchronization mode</doc:summary></doc:doc>

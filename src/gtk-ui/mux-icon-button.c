@@ -23,6 +23,7 @@
 
 enum {
 	PROP_0,
+	PROP_TOGGLEABLE,
 	PROP_PIXBUF_NORMAL,
 	PROP_PIXBUF_ACTIVE,
 	PROP_PIXBUF_PRELIGHT,
@@ -40,6 +41,9 @@ mux_icon_button_get_property (GObject *object, guint property_id,
     MuxIconButton *btn = MUX_ICON_BUTTON (object);
     
     switch (property_id) {
+    case PROP_TOGGLEABLE:
+        g_value_set_boolean (value, btn->toggleable);
+        break;
     case PROP_PIXBUF_NORMAL:
         g_value_set_object (value, mux_icon_button_get_pixbuf (btn, GTK_STATE_NORMAL));
         break;
@@ -68,6 +72,9 @@ mux_icon_button_set_property (GObject *object, guint property_id,
     GdkPixbuf *pixbuf;
     
     switch (property_id) {
+    case PROP_TOGGLEABLE:
+        btn->toggleable = g_value_get_boolean (value);
+        break;
     case PROP_PIXBUF_NORMAL:
         pixbuf = GDK_PIXBUF (g_value_get_object (value));
         mux_icon_button_set_pixbuf (btn, GTK_STATE_NORMAL, pixbuf);
@@ -127,9 +134,17 @@ mux_icon_button_expose (GtkWidget *widget,
     GdkRectangle dirty_area, btn_area;
     MuxIconButton *btn = MUX_ICON_BUTTON (widget);
     GdkPixbuf *pixbuf;
+    GtkStateType state;
 
-    if (btn->pixbufs[GTK_WIDGET_STATE (widget)]) {
-        pixbuf = btn->pixbufs[GTK_WIDGET_STATE (widget)];
+    if (btn->active) {
+        /* this is a active toggle button */
+        state = GTK_STATE_ACTIVE;
+    } else {
+        state = GTK_WIDGET_STATE (widget);
+    }
+
+    if (btn->pixbufs[state]) {
+        pixbuf = btn->pixbufs[state];
     } else {
         pixbuf = btn->pixbufs[GTK_STATE_NORMAL];
     }
@@ -155,10 +170,21 @@ mux_icon_button_expose (GtkWidget *widget,
 }
 
 static void
+mux_icon_button_clicked (GtkButton *button)
+{
+    MuxIconButton *icon_button = MUX_ICON_BUTTON (button);
+    
+    if (icon_button->toggleable) {
+        icon_button->active = !icon_button->active;
+    }
+}
+
+static void
 mux_icon_button_class_init (MuxIconButtonClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
+    GtkButtonClass *button_class = GTK_BUTTON_CLASS (klass);
     GParamSpec *pspec;
 
     object_class->get_property = mux_icon_button_get_property;
@@ -168,6 +194,14 @@ mux_icon_button_class_init (MuxIconButtonClass *klass)
     widget_class->size_request = mux_icon_button_size_request;
     widget_class->expose_event = mux_icon_button_expose;
 
+    button_class->clicked = mux_icon_button_clicked;
+
+    pspec = g_param_spec_boolean ("toggleable",
+                                 "Toggleable",
+                                 "Is icon button button a toggle or normal",
+                                 FALSE,
+                                 G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_TOGGLEABLE, pspec);
     pspec = g_param_spec_object ("normal-state-pixbuf",
                                  "Normal state pixbuf",
                                  "GdkPixbuf for GTK_STATE_NORMAL",
@@ -206,10 +240,11 @@ mux_icon_button_init (MuxIconButton *self)
 }
 
 GtkWidget*
-mux_icon_button_new (GdkPixbuf *normal_pixbuf)
+mux_icon_button_new (GdkPixbuf *normal_pixbuf, gboolean toggleable)
 {
     return g_object_new (MUX_TYPE_ICON_BUTTON, 
                          "normal-state-pixbuf", normal_pixbuf,
+                         "toggleable", toggleable,
                          NULL);
 }
 
@@ -232,4 +267,17 @@ GdkPixbuf*
 mux_icon_button_get_pixbuf (MuxIconButton *button, GtkStateType state)
 {
     return button->pixbufs[state];
+}
+
+void
+mux_icon_button_set_active (MuxIconButton *button, gboolean active)
+{
+    button->active = active;
+    gtk_widget_queue_draw (GTK_WIDGET (button));
+}
+
+gboolean 
+mux_icon_button_get_active (MuxIconButton *button)
+{
+    return button->active;
 }

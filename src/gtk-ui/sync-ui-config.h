@@ -21,38 +21,29 @@
 #define SYNC_UI_CONFIG_H
 
 #include <gtk/gtk.h>
-#include "syncevo-dbus.h"
+#include "syncevo-session.h"
+#include "syncevo-server.h"
 
-typedef enum {
-    SYNC_NONE,
-    SYNC_TWO_WAY,
-    SYNC_SLOW,
-    SYNC_ONE_WAY_FROM_CLIENT,
-    SYNC_REFRESH_FROM_CLIENT,
-    SYNC_ONE_WAY_FROM_SERVER,
-    SYNC_REFRESH_FROM_SERVER,
-    SYNC_MODE_MAX
-}SyncMode;
-
+/* need a separate struct for sources because we need to know local support ... */
 typedef struct source_config {
     char *name;
-    gboolean enabled;
     gboolean supported_locally;
-    char *uri;
+
+    long local_changes;
+    long remote_changes;
+    long local_rejections;
+    long remote_rejections;
+
+    GtkWidget *label; /* source report label, after ui has been constructed */
+    GtkWidget *box; /* source box, after ui has been constructed */
+
+    GHashTable *config; /* link to a "sub-hashtable" inside server_config->config */
 } source_config;
 
 typedef struct server_config {
     char *name;
-    char *base_url;
-    char *web_url;
-    char *icon_uri;
-
-    char *username;
     char *password;
-
-    GList *source_configs;
-    
-    /* any field in struct has changed */
+    /* any field in config has changed */
     gboolean changed;
 
     /* a authentication detail (base_url/username/password) has changed */
@@ -60,16 +51,35 @@ typedef struct server_config {
 
     gboolean password_changed;
 
-    gboolean from_template;
+    GHashTable *source_configs; /* source_config's*/
+
+    SyncevoConfig *config;
 } server_config;
 
+gboolean source_config_is_enabled (source_config *source);
+void source_config_update_label (source_config *source);
 void source_config_free (source_config *source);
+
+void server_config_init (server_config *server, SyncevoConfig *config);
 void server_config_free (server_config *server);
-void server_config_update_from_option (server_config *server, SyncevoOption *option);
+
 void server_config_update_from_entry (server_config *server, GtkEntry *entry);
 GPtrArray* server_config_get_option_array (server_config *server);
-GPtrArray* server_config_get_source_array (server_config *server, SyncMode mode);
 void server_config_disable_unsupported_sources (server_config *server);
-source_config* server_config_get_source_config (server_config *server, const char *name);
+
+void server_config_ensure_default_sources_exist (server_config *server);
+
+/* data structure for syncevo_service_get_template_config_async and
+ * syncevo_service_get_server_config_async. server is the server that
+ * the method was called for. options_override are options that should
+ * be overridden on the config we get.
+ */
+typedef struct server_data {
+    server_config *config;
+    GPtrArray *options_override;
+    gpointer *data;
+} server_data;
+server_data* server_data_new (const char *name, gpointer *data);
+void server_data_free (server_data *data, gboolean free_config);
 
 #endif

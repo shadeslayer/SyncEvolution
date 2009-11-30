@@ -133,6 +133,20 @@ class InvalidCall : public DBusSyncException
 };
 
 /**
+ * org.syncevolution.SourceUnusable
+ * CheckSource will use this when the source cannot be used for whatever reason 
+ */
+class SourceUnusable : public DBusSyncException
+{
+ public:
+    SourceUnusable(const std::string &file,
+                   int line,
+                   const std::string &error): DBusSyncException(file, line, error)
+    {}
+    virtual std::string getName() const { return "org.syncevolution.SourceUnusable";}
+};
+
+/**
  * implement syncevolution exception handler
  * to cover its default implementation
  */
@@ -1292,7 +1306,7 @@ void ReadOperations::checkSource(const std::string &sourceName)
             syncSource->open();
         }
     } catch (...) {
-        throw std::runtime_error("The source '" + sourceName + "' configuration is not correct");
+        SE_THROW_EXCEPTION(SourceUnusable, "The source '" + sourceName + "' is not usable");
     }
 }
 void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &databases)
