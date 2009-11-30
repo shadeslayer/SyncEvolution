@@ -1725,8 +1725,10 @@ void Session::syncProgress(sysync::TProgressEventEnum type,
         fireProgress(true);
         break;
     case sysync::PEV_SESSIONEND:
-        m_error = extra1;
-        fireStatus(true);
+        if((uint32_t)extra1 != m_error) {
+            m_error = extra1;
+            fireStatus(true);
+        }
         m_progData.setStep(ProgressData::PRO_SYNC_INVALID);
         fireProgress(true);
         break;
