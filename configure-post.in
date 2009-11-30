@@ -78,7 +78,7 @@ else
 backendsearchdir='$(libdir)'/syncevolution/backends/
 fi
 
-backenddir='$(libdir)'/syncevolution/backends/
+backenddir='$(libdir)'/syncevolution/backends
 AC_SUBST(backenddir)
 AC_SUBST(backendsearchdir)
 
