@@ -1052,28 +1052,6 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
                                                     "session " + sessionpath2 + " ready"])
         session2.Detach()
 
-    # TODO: don't depend on running a real sync in this test,
-    # then remove timeout
-    @timeout(300)
-    def testGetReports(self):
-        """ Test when the given server exists and reports are returned correctly. Also covers boundaries """
-        # one sync, so reports could be generated at least one time """
-        self.doSync()
-
-        reports = self.session.GetReports(0, 0, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
-        # GetReports should return one report starting from index 0
-        reports = self.session.GetReports(0, 1, utf8_strings=True)
-        self.assertTrue(len(reports) == 1)
-
-        # test the returned reports should be less than maximum and greater than 1
-        reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
-        self.assertTrue(len(reports) >= 1)
-        self.assertTrue(len(reports) <= 0xFFFFFFFF)
-
-        reports = self.session.GetReports(0xFFFFFFFF, 0xFFFFFFFF, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
-
 class TestDBusSyncError(unittest.TestCase, DBusUtil):
     def setUp(self):
         self.setUpServer()
