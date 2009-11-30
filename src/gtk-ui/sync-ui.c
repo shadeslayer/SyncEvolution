@@ -1799,6 +1799,7 @@ set_online_status (app_data *data, gboolean online)
                 gtk_widget_show (data->no_connection_box);
             }
         }
+        gtk_widget_set_sensitive (data->sync_btn, data->online);
     }
 }
 
