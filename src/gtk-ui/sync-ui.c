@@ -190,7 +190,10 @@ char*
 get_pretty_source_name (const char *source_name)
 {
     if (strcmp (source_name, "addressbook") == 0) {
-        return g_strdup (_("Addressbook"));
+        /* TRANSLATORS: The name was changed from 'Addressbook' to
+           'Contacts' to match naming in rest of moblin. Please make sure the
+           name you use matches the name in the panel and Contacts application. */
+        return g_strdup (_("Contacts"));
     } else if (strcmp (source_name, "calendar") == 0) {
         return g_strdup (_("Calendar"));
     } else if (strcmp (source_name, "todo") == 0) {
