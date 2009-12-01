@@ -1175,7 +1175,7 @@ boost::shared_ptr<SyncConfig> ReadOperations::getLocalConfig(const string &confi
     boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(configName));
     // the default configuration can always be opened for reading,
     // everything else must exist
-    if (context != "default" &&
+    if ((context != "default" || peer != "") &&
         !syncConfig->exists()) {
         SE_THROW_EXCEPTION(NoSuchConfig, "No configuration '" + configName + "' found");
     }
