@@ -1348,4 +1348,13 @@
 
   <clientorserver/>
 
+  <client type="plugin">
+      <remoterule name="ZYB">
+          <manufacturer>ZYB</manufacturer>
+          <model>ZYB</model>
+          <!-- information to disable anchors checking -->
+          <lenientmode>yes</lenientmode>
+      </remoterule>
+  </client>
+
 </sysync_config>
