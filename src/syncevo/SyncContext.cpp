@@ -2005,7 +2005,7 @@ SyncMLStatus SyncContext::doSync()
     SyncMLStatus status = STATUS_OK;
     std::string s;
 
-    if (m_serverMode) {
+    if (m_serverMode && !m_initialMessage.size()) {
         //This is a server alerted sync !
         if (! initSAN ()) {
             // return a proper error code 
