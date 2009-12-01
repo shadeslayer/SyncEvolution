@@ -170,7 +170,11 @@ SyncConfig::SyncConfig(const string &peer,
         m_peer;
 
     if (tree.get() != NULL) {
+        // existing tree points into simple configuration
         m_tree = tree;
+        m_layout = HTTP_SERVER_LAYOUT;
+        m_peerPath =
+            m_contextPath = "";
     } else {
         // search for configuration in various places...
         root = getOldRoot();
@@ -383,6 +387,10 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
 
     // case insensitive search for read-only file template config
     string templateConfig(TEMPLATE_DIR);
+    const char *envvar = getenv("SYNCEVOLUTION_TEMPLATE_DIR");
+    if (envvar) {
+        templateConfig = envvar;
+    }
     if (isDir(templateConfig)) {
         ReadDir dir(templateConfig);
         templateConfig = dir.find(boost::iequals(server, "default") ?

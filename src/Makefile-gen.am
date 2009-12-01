@@ -248,8 +248,16 @@ $(filter-out %.tem, $(filter testcases/%, $(subst $(srcdir)/../test/,,$(CLIENT_L
 # The binary does not really depend on the test cases, only running it does.
 # Listing the dependencies here is done to ensure that one doesn't accidentally
 # runs the binary with out-dated auxiliary files.
-client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) testcase2patch synccompare
+client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) testcase2patch synccompare templates
 
+# copy template directory into current working directory, if not there
+# yet
+.PHONY: templates
+templates:
+	if test "$(srcdir)/templates" != "./templates"; then \
+		rm -rf ./templates; \
+		cp -r "$(srcdir)/templates" .; \
+	fi
 
 # distribute test system?
 if ENABLE_TESTING

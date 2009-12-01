@@ -1234,6 +1234,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testSetupSynthesis);
     CPPUNIT_TEST(testPrintServers);
     CPPUNIT_TEST(testPrintConfig);
+    CPPUNIT_TEST(testPrintFileTemplates);
     CPPUNIT_TEST(testTemplate);
     CPPUNIT_TEST(testSync);
     CPPUNIT_TEST(testConfigure);
@@ -1364,6 +1365,7 @@ protected:
     void testSetupScheduleWorld() { doSetupScheduleWorld(false); }
     void doSetupScheduleWorld(bool shared) {
         string root;
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -1416,6 +1418,7 @@ protected:
 
     void testSetupDefault() {
         string root;
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -1436,6 +1439,7 @@ protected:
     }
     void testSetupRenamed() {
         string root;
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -1458,6 +1462,7 @@ protected:
     void testSetupFunambol() { doSetupFunambol(false); }
     void doSetupFunambol(bool shared) {
         string root;
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -1493,6 +1498,7 @@ protected:
     void testSetupSynthesis() { doSetupSynthesis(false); }
     void doSetupSynthesis(bool shared) {
         string root;
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -1544,6 +1550,7 @@ protected:
     }
 
     void testPrintServers() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -1563,6 +1570,7 @@ protected:
     }
 
     void testPrintConfig() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -1694,6 +1702,39 @@ protected:
         }
     }
 
+    void testPrintFileTemplates() {
+        // use local copy of templates in build dir (no need to install)
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "./templates");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+        testSetupFunambol();
+
+        {
+            TestCmdline cmdline("--print-config", "--template", "scheduleworld", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            string actual = cmdline.m_out.str();
+            // deviceId must be the one from Funambol
+            CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
+            string filtered = injectValues(filterConfig(actual));
+            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(ScheduleWorldConfig())),
+                                      filtered);
+            // there should have been comments
+            CPPUNIT_ASSERT(actual.size() > filtered.size());
+        }
+
+        {
+            TestCmdline cmdline("--print-config", "funambol", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(FunambolConfig())),
+                                      injectValues(filterConfig(cmdline.m_out.str())));
+        }
+    }
+
+
     void testSync() {
         TestCmdline failure("--sync", NULL);
         CPPUNIT_ASSERT(!failure.m_cmdline->parse());
@@ -1741,6 +1782,7 @@ protected:
     }
 
     void testConfigure() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -1855,6 +1897,7 @@ protected:
     }
 
     void testOldConfigure() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -1959,6 +2002,7 @@ protected:
     }
 
     void testMigrate() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2156,11 +2200,22 @@ private:
     string ScheduleWorldConfig() {
         string config = m_scheduleWorldConfig;
 
-        if (isDir(string(TEMPLATE_DIR) + "/ScheduleWorld")) {
+#if 0
+        // Currently we don't have an icon for ScheduleWorld. If we
+        // had (MB #2062) one, then this code would ensure that the
+        // reference config also has the right path for it.
+        const char *templateDir = getenv("SYNCEVOLUTION_TEMPLATE_DIR");
+        if (!templateDir) {
+            templateDir = TEMPLATE_DIR;
+        }
+
+
+        if (isDir(string(templateDir) + "/ScheduleWorld")) {
             boost::replace_all(config,
                                "# IconURI = ",
-                               "IconURI = file://" TEMPLATE_DIR "/ScheduleWorld/icon.png");
+                               string("IconURI = file://") + templateDir + "/ScheduleWorld/icon.png");
         }
+#endif
         return config;
     }
 
@@ -2433,6 +2488,7 @@ private:
     }
 
     string printConfig(const string &server) {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
