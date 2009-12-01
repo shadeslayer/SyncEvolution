@@ -45,6 +45,7 @@ const char *const SourceAdminDataName = "adminData";
 
 static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source);
 static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source);
+static bool SourcePropSyncIsSet(boost::shared_ptr<SyncSourceConfig> source);
 
 void ConfigProperty::splitComment(const string &comment, list<string> &commentLines)
 {
@@ -420,6 +421,10 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
     if (!SourcePropURIIsSet(source)) {
         source->setURI("card");
     }
+    if (!SourcePropSyncIsSet(source)) {
+        source->setSync("two-way");
+    }
+
     source = config->getSyncSourceConfig("calendar");
     if (!SourcePropSourceTypeIsSet(source)) {
         source->setSourceType("calendar");
@@ -427,6 +432,10 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
     if (!SourcePropURIIsSet(source)) {
         source->setURI("event");
     }
+    if (!SourcePropSyncIsSet(source)) {
+        source->setSync("two-way");
+    }
+
     source = config->getSyncSourceConfig("todo");
     if (!SourcePropSourceTypeIsSet(source)) {
         source->setSourceType("todo");
@@ -434,12 +443,19 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
     if (!SourcePropURIIsSet(source)) {
         source->setURI("task");
     }
+    if (!SourcePropSyncIsSet(source)) {
+        source->setSync("two-way");
+    }
+
     source = config->getSyncSourceConfig("memo");
     if (!SourcePropSourceTypeIsSet(source)) {
         source->setSourceType("memo");
     }
     if (!SourcePropURIIsSet(source)) {
         source->setURI("note");
+    }
+    if (!SourcePropSyncIsSet(source)) {
+        source->setSync("two-way");
     }
 
     if (isDir(templateConfig)) {
@@ -1457,6 +1473,11 @@ StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
                                            (Aliases("one-way-from-client") + "one-way-client") +
                                            (Aliases("one-way-from-server") + "one-way-server" + "one-way") +
                                            (Aliases("disabled") + "none"));
+static bool SourcePropSyncIsSet(boost::shared_ptr<SyncSourceConfig> source)
+{
+    return source->isSet(SyncSourceConfig::m_sourcePropSync);
+}
+
 
 static class SourceTypeConfigProperty : public StringConfigProperty {
 public:
