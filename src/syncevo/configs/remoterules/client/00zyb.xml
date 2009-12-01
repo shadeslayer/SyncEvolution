@@ -1,0 +1,7 @@
+      <remoterule name="ZYB">
+          <manufacturer>ZYB</manufacturer>
+          <model>ZYB</model>
+          <!-- information to disable anchors checking -->
+          <lenientmode>yes</lenientmode>
+      </remoterule>
+
