@@ -721,33 +721,31 @@ void Cmdline::getFilters(const string &context,
                          ConfigProps &syncFilter,
                          map<string, ConfigProps> &sourceFilters)
 {
+    // Read from context. If it does not exist, we simply set no properties
+    // as filter. Previously there was a check for existance, but that was
+    // flawed because it ignored the global property "defaultPeer".
     boost::shared_ptr<SyncConfig> shared(new SyncConfig(string("@") + context));
-    if (shared->exists()) {
-        shared->getProperties()->readProperties(syncFilter);
-        BOOST_FOREACH(StringPair entry, m_syncProps) {
-            syncFilter[entry.first] = entry.second;
-        }
-
-        BOOST_FOREACH(std::string source, shared->getSyncSources()) {
-            SyncSourceNodes nodes = shared->getSyncSourceNodes(source, "");
-            ConfigProps &props = sourceFilters[source];
-            nodes.getProperties()->readProperties(props);
-
-            // Special case "type" property: the value in the context
-            // is not preserved. Every new peer must ensure that
-            // its own value is compatible (= same backend) with
-            // the other peers.
-            props.erase("type");
-
-            BOOST_FOREACH(StringPair entry, m_sourceProps) {
-                props[entry.first] = entry.second;
-            }
-        }
-        sourceFilters[""] = m_sourceProps;
-    } else {
-        syncFilter = m_syncProps;
-        sourceFilters[""] = m_sourceProps;
+    shared->getProperties()->readProperties(syncFilter);
+    BOOST_FOREACH(StringPair entry, m_syncProps) {
+        syncFilter[entry.first] = entry.second;
     }
+
+    BOOST_FOREACH(std::string source, shared->getSyncSources()) {
+        SyncSourceNodes nodes = shared->getSyncSourceNodes(source, "");
+        ConfigProps &props = sourceFilters[source];
+        nodes.getProperties()->readProperties(props);
+
+        // Special case "type" property: the value in the context
+        // is not preserved. Every new peer must ensure that
+        // its own value is compatible (= same backend) with
+        // the other peers.
+        props.erase("type");
+
+        BOOST_FOREACH(StringPair entry, m_sourceProps) {
+            props[entry.first] = entry.second;
+        }
+    }
+    sourceFilters[""] = m_sourceProps;
 }
 
 void Cmdline::listSources(SyncSource &syncSource, const string &header)

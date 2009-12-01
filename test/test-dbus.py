@@ -1385,6 +1385,15 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failIf("source/addressbook" in config)        
         self.session.Detach()
 
+    def testSharedTemplate(self):
+        """templates must contain shared properties"""
+        self.setupConfigs()
+
+        config = self.server.GetConfig("scheduleworld", True, utf8_strings=True)
+        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
+        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Work")
+
     def testOtherContext(self):
         """write into independent context"""
         self.setupConfigs()
