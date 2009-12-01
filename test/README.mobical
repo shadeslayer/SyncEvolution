@@ -31,6 +31,7 @@ http://bugzilla.moblin.org/show_bug.cgi?id=3009
   Client::Sync::vcard21::testDelete,                                        \
   Client::Sync::vcard21::testItemsXML,                                      \
   Client::Sync::vcard21::testOneWayFromServer,                              \
+  Client::Sync::vcard21::testOneWayFromClient,                              \
   Client::Sync::vcard21::Retry,Client::Sync::vcard21::Suspend,              \
   Client::Sync::ical20::testRefreshFromClientSync,                          \
   Client::Sync::ical20::testSlowSyncSemantic,                               \
@@ -38,6 +39,7 @@ http://bugzilla.moblin.org/show_bug.cgi?id=3009
   Client::Sync::ical20::testDelete,                                         \
   Client::Sync::ical20::testItemsXML,                                       \
   Client::Sync::ical20::testOneWayFromServer,                               \
+  Client::Sync::ical20::testOneWayFromClient,                               \
   Client::Sync::ical20::Retry,Client::Sync::ical20::Suspend,                \
   Client::Sync::itodo20::testRefreshFromClientSync,                         \
   Client::Sync::itodo20::testSlowSyncSemantic,                              \
@@ -45,6 +47,7 @@ http://bugzilla.moblin.org/show_bug.cgi?id=3009
   Client::Sync::itodo20::testDelete,                                        \
   Client::Sync::itodo20::testItemsXML,                                      \
   Client::Sync::itodo20::testOneWayFromServer,                              \
+  Client::Sync::itodo20::testOneWayFromClient,                              \
   Client::Sync::itodo20::Retry,Client::Sync::itodo20::Suspend,              \
   Client::Sync::text::testRefreshFromClientSync,                            \
   Client::Sync::text::testSlowSyncSemantic,                                 \
@@ -52,6 +55,7 @@ http://bugzilla.moblin.org/show_bug.cgi?id=3009
   Client::Sync::text::testDelete,                                           \
   Client::Sync::text::testItemsXML,                                         \
   Client::Sync::text::testOneWayFromServer,                                 \
+  Client::Sync::text::testOneWayFromClient,                                 \
   Client::Sync::text::Retry,Client::Sync::text::Suspend,                    \
   
  
@@ -70,6 +74,8 @@ All
      testOneWayFromServer,testRefreshFromClientSync.
   -- It fails in xml mode due to devinfo wrapped with cdata type
      This causes failure of testItemsXML.
+  -- Server initiates a slow-sync when one client syncs with server in one-way-from-client mode 
+     from the second time.
 vCard21
   -- Below properties are not supported:
      CALURI, CATEGORIES, FBURL, NICKNAME, X-MOZILLA-HTML, X-EVOLUTION-FILE-AS, X-AIM, 
