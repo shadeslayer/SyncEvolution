@@ -991,7 +991,7 @@ void SyncSourceAdmin::entry2mapid(const string &key, const string &value, sysync
 {
     mID->localID = StrAlloc(SafeConfigNode::unescape(key).c_str());
     std::vector< std::string > tokens;
-    boost::split(tokens, value, boost::is_any_of(" "));
+    boost::split(tokens, value, boost::is_from_range(' ', ' '));
     mID->remoteID = tokens.size() > 0 ? StrAlloc(tokens[0].c_str()) : NULL;
     mID->flags = tokens.size() > 1 ? strtol(tokens[1].c_str(), NULL, 16) : 0;
     mID->ident = tokens.size() > 2 ? strtol(tokens[2].c_str(), NULL, 16) : 0;
