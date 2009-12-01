@@ -216,20 +216,39 @@ SyncConfig::SyncConfig(const string &peer,
         m_props[false] = m_peerNode;
         m_props[true].reset(new FilterConfigNode(m_hiddenPeerNode));
         break;
-    case HTTP_SERVER_LAYOUT:
+    case HTTP_SERVER_LAYOUT: {
         // properties which are normally considered shared are
-        // stored in the same nodes as the per-peer properties
-        path = m_peerPath;
+        // stored in the same nodes as the per-peer properties,
+        // except for global ones
+        path = "";
+        node = m_tree->open(path, ConfigTree::visible);
+        m_globalNode.reset(new FilterConfigNode(node));
+        path = m_peerPath;      
         node = m_tree->open(path, ConfigTree::visible);
         m_peerNode.reset(new FilterConfigNode(node));
-        m_globalNode =
-            m_contextNode = m_peerNode;
+        m_contextNode = m_peerNode;
         m_hiddenPeerNode =
             m_contextHiddenNode =
             m_tree->open(path, ConfigTree::hidden);
-        m_props[false] = m_peerNode;
+
+        // similar multiplexing as for SHARED_LAYOUT,
+        // with two nodes underneath
+        boost::shared_ptr<MultiplexConfigNode> mnode;
+        mnode.reset(new MultiplexConfigNode(m_peerNode->getName(),
+                                            getRegistry(),
+                                            false));
+        m_props[false] = mnode;
+        mnode->setNode(false, ConfigProperty::GLOBAL_SHARING,
+                       m_globalNode);
+        mnode->setNode(false, ConfigProperty::SOURCE_SET_SHARING,
+                       m_peerNode);
+        mnode->setNode(false, ConfigProperty::NO_SHARING,
+                       m_peerNode);
+
+        // no multiplexing necessary for hidden nodes
         m_props[true].reset(new FilterConfigNode(m_hiddenPeerNode));
         break;
+    }
     case SHARED_LAYOUT:
         // really use different nodes for everything
         path = "";
