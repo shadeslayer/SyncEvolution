@@ -833,8 +833,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.CheckSource("memo", utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.Exception: The source 'memo' configuration "
-                                 "is not correct")
+                                 "org.syncevolution.SourceUnusable: The source 'memo' is not usable")
         else:
             self.fail("no exception thrown")
 
