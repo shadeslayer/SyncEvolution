@@ -1316,13 +1316,22 @@ void ReadOperations::checkSource(const std::string &sourceName)
     if(it == sourceNames.end()) {
         SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' has no '" + sourceName + "' source");
     }
-    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
-    auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
+    bool checked = false;
     try {
+        // this can already throw exceptions when the config is invalid
+        SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
+        auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
+
         if (syncSource.get()) {
             syncSource->open();
+            // success!
+            checked = true;
         }
     } catch (...) {
+        Exception::handle();
+    }
+
+    if (!checked) {
         SE_THROW_EXCEPTION(SourceUnusable, "The source '" + sourceName + "' is not usable");
     }
 }
