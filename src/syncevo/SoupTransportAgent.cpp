@@ -53,6 +53,12 @@ SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
 
 SoupTransportAgent::~SoupTransportAgent()
 {
+    if (m_session.get()) {
+        // ensure that no callbacks for this session will be triggered
+        // in the future, they would use a stale pointer to this agent
+        // instance
+        soup_session_abort(m_session.get());
+    }
 }
 
 void SoupTransportAgent::setURL(const std::string &url)
