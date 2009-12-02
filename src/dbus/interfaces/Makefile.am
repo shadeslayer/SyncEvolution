@@ -10,8 +10,13 @@ BUILT_SOURCES =  syncevo-marshal.c syncevo-marshal.h \
 	syncevo-server-doc.xml syncevo-connection-doc.xml syncevo-session-doc.xml \
 	syncevo-server.xml syncevo-connection.xml syncevo-session.xml
 
-CLEANFILES = $(noinst_DATA) $(BUILT_SOURCES) stamp-syncevo-dbus-glue.h
-EXTRA_DIST = syncevo-marshal.list spec-strip-docs.xsl $(noinst_DATA)
+CLEANFILES = $(BUILT_SOURCES) stamp-syncevo-dbus-glue.h
+EXTRA_DIST = syncevo-marshal.list \
+	spec-strip-docs.xsl \
+	spec-to-docbook.xsl \
+	syncevo-connection-full.xml  \
+	syncevo-server-full.xml \
+	syncevo-session-full.xml
 
 %-bindings.h: stamp-%-bindings.h
 	@true
