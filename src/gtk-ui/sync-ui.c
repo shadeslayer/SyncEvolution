@@ -116,6 +116,7 @@ typedef struct operation_data {
         OP_SYNC,
         OP_SAVE,
     } operation;
+    gboolean started;
 } operation_data;
 
 static void set_sync_progress (app_data *data, float progress, char *status);
@@ -351,6 +352,7 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
         op_data = g_slice_new (operation_data);
         op_data->data = data;
         op_data->operation = OP_SYNC;
+        op_data->started = FALSE;
         syncevo_server_start_session (data->server,
                                       data->current_service->name,
                                       (SyncevoServerStartSessionCb)start_session_cb,
@@ -754,6 +756,7 @@ source_check_toggled_cb (GtkCheckButton *check, app_data *data)
     op_data = g_slice_new (operation_data);
     op_data->data = data;
     op_data->operation = OP_SAVE;
+    op_data->started = FALSE;
     syncevo_server_start_session (data->server,
                                   data->current_service->name,
                                   (SyncevoServerStartSessionCb)start_session_cb,
@@ -1492,6 +1495,36 @@ set_config_for_sync_cb (SyncevoSession *session,
     sync (data, session);
 }
 
+static void
+run_operation (operation_data *op_data, SyncevoSession *session)
+{
+    /* when we first get idle, start the operation */
+    if (op_data->started) {
+        return;
+    }
+    op_data->started = TRUE;
+
+    /* time for business */
+    switch (op_data->operation) {
+    case OP_SYNC:
+        /* Make sure we don't get change diffs printed out, then sync */
+        syncevo_config_set_value (op_data->data->current_service->config,
+                                  NULL, "printChanges", "0");
+        syncevo_session_set_config (session,
+                                    TRUE,
+                                    TRUE,
+                                    op_data->data->current_service->config,
+                                    (SyncevoSessionGenericCb)set_config_for_sync_cb,
+                                    op_data->data);
+
+        break;
+    case OP_SAVE:
+        save_config (op_data->data, session);
+        break;
+    default:
+        g_warn_if_reached ();
+    }
+}
 /* Our sync session status */
 static void
 status_changed_cb (SyncevoSession *session,
@@ -1504,28 +1537,8 @@ status_changed_cb (SyncevoSession *session,
 
     switch (status) {
     case SYNCEVO_STATUS_IDLE:
-        /* time for business */
-        switch (op_data->operation) {
-        case OP_SYNC:
-            /* Make sure we don't get change diffs printed out, then sync */
-            syncevo_config_set_value (op_data->data->current_service->config,
-                                      NULL, "printChanges", "0");
-            syncevo_session_set_config (session,
-                                        TRUE,
-                                        TRUE,
-                                        op_data->data->current_service->config,
-                                        (SyncevoSessionGenericCb)set_config_for_sync_cb,
-                                        op_data->data);
-    
-            break;
-        case OP_SAVE:
-            save_config (op_data->data, session);
-            break;
-        default:
-            g_warn_if_reached ();
-        }
+        run_operation (op_data, session);
         break;
-    
     case SYNCEVO_STATUS_DONE:
         g_get_current_time (&val);
         op_data->data->last_sync = val.tv_sec;
@@ -1579,18 +1592,7 @@ get_status_cb (SyncevoSession *session,
     }
 
     if (status == SYNCEVO_STATUS_IDLE) {
-        /* time for business */
-        
-        switch (op_data->operation) {
-        case OP_SYNC:
-            sync (op_data->data, session);
-            break;
-        case OP_SAVE:
-            save_config (op_data->data, session);
-            break;
-        default:
-            g_warn_if_reached ();
-        }
+        run_operation (op_data, session);
     }
 }
 
