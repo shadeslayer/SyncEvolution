@@ -676,10 +676,43 @@ list<string> SyncConfig::getSyncSources() const
     // is necessary so that sources created for some other peer
     // show up for the current one, to prevent overwriting
     // existing properties unintentionally.
-    return m_tree->getChildren(m_contextPath +
-                               (m_layout == SYNC4J_LAYOUT ? 
-                                "/spds/sources" :
-                                "/sources"));
+    // Returned sources are an union of:
+    // 1. contextpath/sources
+    // 2. peers/[one-peer]/sources
+    // 3. sources in source filter
+    list<string> sources;
+    if (m_layout == SHARED_LAYOUT) {
+        // get sources in context
+        sources = m_tree->getChildren(m_contextPath + "/sources");
+        list<string> peerSources;
+        // get sources from peer if it's not empty
+        if (!m_peerPath.empty()) {
+            peerSources = m_tree->getChildren(m_peerPath + "/sources");
+        }
+        // union sources in specific peer
+        BOOST_FOREACH(const string &peerSource, peerSources) {
+            list<string>::iterator it = std::find(sources.begin(), sources.end(), peerSource);
+            // not found
+            if ( it == sources.end()) {
+                sources.push_back(peerSource); 
+            }
+        }
+    } else {
+        // get sources from peer
+        sources = m_tree->getChildren(m_peerPath +
+                                      (m_layout == SYNC4J_LAYOUT ? 
+                                       "/spds/sources" :
+                                       "/sources"));
+    }
+    // get sources from filter and union them into returned sources
+    BOOST_FOREACH(const SourceFilters_t::value_type &value, m_sourceFilters) {
+        list<string>::iterator it = std::find(sources.begin(), sources.end(), value.first);
+        if ( it == sources.end()) {
+            sources.push_back(value.first); 
+        }
+    }
+
+    return sources;
 }
 
 SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
