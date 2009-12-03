@@ -803,7 +803,7 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
 static void
 update_service_source_ui (const char *name, source_config *conf, app_data *data)
 {
-    GtkWidget *check, *box, *lbl;
+    GtkWidget *check, *box, *hbox, *lbl;
     char *pretty_name;
     const char *source_uri, *sync;
     gboolean enabled;
@@ -857,9 +857,19 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
     gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
     gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
 
+
+    hbox = gtk_hbox_new (FALSE, 0);
+    gtk_box_pack_start_defaults (GTK_BOX (box), hbox);
+
+    conf->error_image = gtk_image_new_from_stock (GTK_STOCK_DIALOG_ERROR,
+                                                  GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_box_pack_start (GTK_BOX (hbox), conf->error_image, FALSE, FALSE, 8);
+    gtk_widget_set_no_show_all (conf->error_image, TRUE);
+
+
     conf->label = gtk_label_new (NULL);
     gtk_misc_set_alignment (GTK_MISC (conf->label), 0.0, 0.5);
-    gtk_box_pack_start_defaults (GTK_BOX (box), conf->label);
+    gtk_box_pack_start_defaults (GTK_BOX (hbox), conf->label);
 
     source_config_update_label (conf);
 
@@ -1424,7 +1434,7 @@ get_reports_cb (SyncevoServer *server,
                 GError *error,
                 app_data *data)
 {
-    long time;
+    long time = -1;
     long status;
     source_stats *stats;
     GHashTable *sources; /* key is source name, value is a source_stats */
@@ -1490,7 +1500,6 @@ get_reports_cb (SyncevoServer *server,
             source_conf->local_rejections = stats->local_rejections;
             source_conf->remote_rejections = stats->remote_rejections;
             source_conf->status = stats->status;
-
             /* if ui has been constructed already, update it */
             source_config_update_label (source_conf);
         }

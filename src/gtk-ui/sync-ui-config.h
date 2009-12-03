@@ -35,6 +35,7 @@ typedef struct source_config {
     long local_rejections;
     long remote_rejections;
 
+    GtkWidget *error_image; /* error icon, after ui has been constructed */
     GtkWidget *label; /* source report label, after ui has been constructed */
     GtkWidget *box; /* source box, after ui has been constructed */
 

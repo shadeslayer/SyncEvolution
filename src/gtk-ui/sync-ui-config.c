@@ -63,11 +63,10 @@ add_source_config (char *name,
 {
     source_config *new_conf;
 
-    new_conf = g_slice_new (source_config);
+    new_conf = g_slice_new0 (source_config);
     new_conf->name = name;
     new_conf->supported_locally = TRUE;
     new_conf->config = syncevo_source_config;
-
     g_hash_table_insert (source_configs, name, new_conf);
 }
 
@@ -146,7 +145,10 @@ source_config_update_label (source_config *source)
 
     /* TODO improve error visibility */
     msg = get_error_string_for_code (source->status);
-    if (!msg) {
+    if (msg) {
+        gtk_widget_show (source->error_image);
+    } else {
+        gtk_widget_hide (source->error_image);
         msg = get_report_summary (source->local_changes,
                                   source->remote_changes,
                                   source->local_rejections,
