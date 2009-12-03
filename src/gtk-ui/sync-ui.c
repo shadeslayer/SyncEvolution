@@ -133,7 +133,6 @@ static void start_session_cb (SyncevoServer *server, char *path,
                               GError *error, operation_data *op_data);
 static void get_config_for_main_win_cb (SyncevoServer *server, SyncevoConfig *config,
                                         GError *error, app_data *data);
-static char* get_error_string_for_code (int error_code);
 
 void
 show_error_dialog (GtkWidget *widget, const char* message)
@@ -361,7 +360,7 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
 }
 
 static gboolean
-    refresh_last_synced_label (app_data *data)
+refresh_last_synced_label (app_data *data)
 {
     GTimeVal val;
     glong diff;
@@ -1328,6 +1327,9 @@ running_session_progress_changed_cb (SyncevoSession *session,
 }
 
 typedef struct source_stats {
+    long status;
+    long mode;
+
     long local_changes;
     long remote_changes;
     long local_rejections;
@@ -1340,12 +1342,93 @@ free_source_stats (source_stats *stats)
     g_slice_free (source_stats, stats);
 }
 
+static gboolean
+handle_source_report_item (char **strs, const char *value, GHashTable *sources)
+{
+    source_stats *stats;
+    char **tmp;
+    char *name;
+
+    if (g_strv_length (strs) < 3) {
+        return FALSE;
+    }
+
+    /* replace '__' with '_' and '_+' with '-' */
+    tmp = g_strsplit (strs[1], "__", 0);
+    name = g_strjoinv ("_", tmp);
+    g_strfreev (tmp);
+    tmp = g_strsplit (name, "_+", 0);
+    g_free (name);
+    name = g_strjoinv ("-", tmp);
+    g_strfreev (tmp);
+
+    stats = g_hash_table_lookup (sources, name);
+    if (!stats) {
+        stats = g_slice_new0 (source_stats);
+        g_hash_table_insert (sources, g_strdup (name), stats);
+    }
+    g_free (name);
+
+    if (strcmp (strs[2], "stat") == 0) {
+        if (g_strv_length (strs) != 6) {
+            return FALSE;
+        }
+        
+        if (strcmp (strs[3], "remote") == 0) {
+            if (strcmp (strs[4], "added") == 0 ||
+                strcmp (strs[4], "updated") == 0 ||
+                strcmp (strs[4], "removed") == 0) {
+                stats->remote_changes += strtol (value, NULL, 10);
+            } else if (strcmp (strs[5], "reject") == 0) {
+                stats->remote_rejections += strtol (value, NULL, 10);
+            }
+
+        } else if (strcmp (strs[3], "local") == 0) {
+            if (strcmp (strs[4], "added") == 0 ||
+                strcmp (strs[4], "updated") == 0 ||
+                strcmp (strs[4], "removed") == 0) {
+                stats->local_changes += strtol (value, NULL, 10);
+            } else if (strcmp (strs[5], "reject") == 0) {
+                stats->local_rejections += strtol (value, NULL, 10);
+            }
+        } else {
+            return FALSE;
+        }
+    } else if (strcmp (strs[2], "mode") == 0) {
+        stats->mode = strtol (value, NULL, 10);
+    } else if (strcmp (strs[2], "status") == 0) {
+        stats->status = strtol (value, NULL, 10);
+    } else if (strcmp (strs[2], "resume") == 0) {
+    } else if (strcmp (strs[2], "first") == 0) {
+    } else if (strcmp (strs[2], "backup") == 0) {
+        if (g_strv_length (strs) != 4) {
+            return FALSE;
+        }
+        if (strcmp (strs[3], "before") == 0) {
+        } else if (strcmp (strs[3], "after") == 0) {
+        } else {
+            return FALSE;
+        }
+    } else {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static void
 get_reports_cb (SyncevoServer *server,
                 SyncevoReports *reports,
                 GError *error,
                 app_data *data)
 {
+    long time;
+    long status;
+    source_stats *stats;
+    GHashTable *sources; /* key is source name, value is a source_stats */
+    GHashTableIter iter;
+    const char *key, *val;
+
     if (error) {
         g_warning ("Error in Session.GetReports: %s", error->message);
         g_error_free (error);
@@ -1353,77 +1436,66 @@ get_reports_cb (SyncevoServer *server,
         return;
     }
 
-    if (syncevo_reports_get_length (reports) > 0) {
-        GHashTableIter iter;
-        GHashTable *sources; /* key is source name, value is a source_stats */
-        const char *key, *val;
-        GHashTable *report = syncevo_reports_index (reports, 0);
-        source_stats *stats;
+    sources = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                     g_free, (GDestroyNotify)free_source_stats);
 
-        sources = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                         g_free, (GDestroyNotify)free_source_stats);
+
+    if (syncevo_reports_get_length (reports) > 0) {
+        GHashTable *report = syncevo_reports_index (reports, 0);
 
         g_hash_table_iter_init (&iter, report);
         while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&val)) {
             char **strs;
-
             strs = g_strsplit (key, "-", 6);
-            if (g_strv_length (strs) != 6) {
-                g_warning ("'%s' not parsable as a sync report item", key);
-                g_strfreev (strs);
+            if (!strs) {
                 continue;
             }
 
-            stats = g_hash_table_lookup (sources, strs[1]);
-            if (!stats) {
-                stats = g_slice_new0 (source_stats);
-                g_hash_table_insert (sources, g_strdup (strs[1]), stats);
+            if (strcmp (strs[0], "source") == 0) {
+                if (!handle_source_report_item (strs, val, sources)) {
+                    g_warning ("Unidentified sync report item: %s=%s",
+                               key, val);
+                }
+            } else if (strcmp (strs[0], "start") == 0) {
+                /* not used */
+            } else if (strcmp (strs[0], "end") == 0) {
+                time = strtol (val, NULL, 10);
+            } else if (strcmp (strs[0], "status") == 0) {
+                status = strtol (val, NULL, 10);
+            } else {
+                g_warning ("Unidentified sync report item: %s=%s",
+                           key, val);
             }
 
-            if (strcmp (strs[3], "remote") == 0) {
-                if (strcmp (strs[4], "added") == 0 ||
-                    strcmp (strs[4], "updated") == 0 ||
-                    strcmp (strs[4], "removed") == 0) {
-                    stats->remote_changes += strtol (val, NULL, 10);
-                } else if (strcmp (strs[5], "reject") == 0) {
-                    stats->remote_rejections += strtol (val, NULL, 10);
-                }
-
-            }
-            if (strcmp (strs[3], "local") == 0) {
-                if (strcmp (strs[4], "added") == 0 ||
-                    strcmp (strs[4], "updated") == 0 ||
-                    strcmp (strs[4], "removed") == 0) {
-                    stats->local_changes += strtol (val, NULL, 10);
-                } else if (strcmp (strs[5], "reject") == 0) {
-                    stats->local_rejections += strtol (val, NULL, 10);
-                }
-            }
             g_strfreev (strs);
             
         }
+    }
 
-        /* sources now has all statistics we want */
-        g_hash_table_iter_init (&iter, sources);
-        while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
-            source_config *source_conf;
+    /* sources now has all statistics we want */
+    g_hash_table_iter_init (&iter, sources);
+    while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
+        source_config *source_conf;
 
-            /* store the statistics in source config */
-            source_conf = g_hash_table_lookup (data->current_service->source_configs,
-                                               key);
-            if (source_conf) {
-                source_conf->local_changes = stats->local_changes;
-                source_conf->remote_changes = stats->remote_changes;
-                source_conf->local_rejections = stats->local_rejections;
-                source_conf->remote_rejections = stats->remote_rejections;
-            }
+        /* store the statistics in source config */
+        source_conf = g_hash_table_lookup (data->current_service->source_configs,
+                                           key);
+        if (source_conf) {
+            source_conf->local_changes = stats->local_changes;
+            source_conf->remote_changes = stats->remote_changes;
+            source_conf->local_rejections = stats->local_rejections;
+            source_conf->remote_rejections = stats->remote_rejections;
+            source_conf->status = stats->status;
 
             /* if ui has been constructed already, update it */
             source_config_update_label (source_conf);
         }
-
-        g_hash_table_destroy (sources);
     }
+
+    data->last_sync = time;
+    refresh_last_synced_label (data);
+
+    g_hash_table_destroy (sources);
 }
 
 static void
@@ -1533,17 +1605,12 @@ status_changed_cb (SyncevoSession *session,
                    SyncevoSourceStatuses *source_statuses,
                    operation_data *op_data)
 {
-    GTimeVal val;
 
     switch (status) {
     case SYNCEVO_STATUS_IDLE:
         run_operation (op_data, session);
         break;
     case SYNCEVO_STATUS_DONE:
-        g_get_current_time (&val);
-        op_data->data->last_sync = val.tv_sec;
-        refresh_last_synced_label (op_data->data);
-        
         op_data->data->synced_this_session = TRUE;
 
         /* no need for sync session anymore */
@@ -1667,7 +1734,7 @@ show_main_view (app_data *data)
     gtk_window_present (GTK_WINDOW (data->sync_win));
 }
 
-static char*
+char*
 get_error_string_for_code (int error_code)
 {
     switch (error_code) {

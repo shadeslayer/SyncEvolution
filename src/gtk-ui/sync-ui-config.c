@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include "sync-ui-config.h"
+#include "sync-ui.h"
 
 void
 server_config_free (server_config *server)
@@ -270,10 +271,14 @@ source_config_update_label (source_config *source)
         return;
     }
 
-    msg = get_report_summary (source->local_changes,
-                              source->remote_changes,
-                              source->local_rejections,
-                              source->remote_rejections);
+    /* TODO improve error visibility */
+    msg = get_error_string_for_code (source->status);
+    if (!msg) {
+        msg = get_report_summary (source->local_changes,
+                                  source->remote_changes,
+                                  source->local_rejections,
+                                  source->remote_rejections);
+    }
     gtk_label_set_text (GTK_LABEL (source->label), msg);
     g_free (msg);
 }
