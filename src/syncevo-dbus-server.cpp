@@ -1280,23 +1280,20 @@ void ReadOperations::getConfig(bool getTemplate,
 void ReadOperations::getReports(uint32_t start, uint32_t count,
                                 Reports_t &reports)
 {
-    if(m_configName.empty()) {
-        // TODO: an empty config name should return reports for
-        // all peers (MB#8049)
-        SE_THROW_EXCEPTION(NoSuchConfig,
-                           "listing reports without peer name not implemented yet");
-    }
     SyncContext client(m_configName, false);
     std::vector<string> dirs;
     client.getSessions(dirs);
 
     uint32_t index = 0;
-    BOOST_FOREACH( const string &dir, dirs) {
+    // newest report firstly
+    for( int i = dirs.size() - 1; i >= 0; --i) {
         /** if start plus count is bigger than actual size, then return actual - size reports */
         if(index >= start && index - start < count) {
+            const string &dir = dirs[i];
             std::map<string, string> aReport;
             SyncReport report;
-            client.readSessionInfo(dir,report);
+            // peerName is also extracted from the dir 
+            string peerName = client.readSessionInfo(dir,report);
 
             /** serialize report to ConfigProps and then copy them to reports */
             HashFileConfigNode node("/dev/null","",true);
@@ -1307,6 +1304,8 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
             BOOST_FOREACH(const ConfigProps::value_type &entry, props) {
                 aReport.insert(entry);
             }
+            // a new key-value pair <"peer", [peer name]> is transferred
+            aReport.insert(pair<string, string>("peer", peerName));
             reports.push_back(aReport);
         }
         index++;

@@ -671,15 +671,15 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testGetReportsEmptyName(self):
-        """Test the error is reported when the server name is empty for GetReports"""
-        try:
-            self.session.GetReports(0, 0, utf8_strings=True)
-        except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.NoSuchConfig: listing reports without "
-                                 "peer name not implemented yet")
-        else:
-            self.fail("no exception thrown")
+        """Test reports from all peers are returned in order when the peer name is empty for GetReports"""
+        self.setupFiles('reports')
+        reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
+        self.failUnlessEqual(len(reports), 7)
+        refPeers = ["dummy-test", "dummy", "dummy-test", "dummy-test",
+                    "dummy-test", "dummy_test", "dummy-test"]
+        for i in range(0, len(refPeers)):
+            self.failUnlessEqual(reports[i]["peer"], refPeers[i])
+
 
 class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     """Tests that work for GetConfig/SetConfig/CheckSource/GetDatabases/GetReports in Session.
@@ -981,8 +981,9 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         """ Test the reports are gotten correctly from reference files. Also covers boundaries """
         """ This could be extractly compared since the reference files are known """
         self.setupFiles('reports')
-        report0 = { "start" : "1258519955",
-                    "end" : "1258519964",
+        report0 = { "peer" : "dummy-test",
+                    "start" : "1258520955",
+                    "end" : "1258520964",
                     "status" : "200",
                     "source-addressbook-mode" : "slow",
                     "source-addressbook-first" : "true",
@@ -1065,6 +1066,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         # get only one report
         reports = self.session.GetReports(0, 1, utf8_strings=True)
         self.assertTrue(len(reports) == 1)
+
         self.failUnlessEqual(reports[0], report0)
         """ the number of reference sessions is totally 5. Check the returned count
         when parameter is bigger than 5 """

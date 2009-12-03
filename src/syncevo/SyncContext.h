@@ -268,8 +268,9 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
 
     /**
      * fills report with information about previous session
+     * @return the peer name from the dir.
      */
-    void readSessionInfo(const string &dir, SyncReport &report);
+    string readSessionInfo(const string &dir, SyncReport &report);
 
     /**
      * fills report with information about local changes

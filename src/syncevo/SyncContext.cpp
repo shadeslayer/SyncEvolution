@@ -178,25 +178,28 @@ class LogDir : public LoggerBase {
     bool m_readonly;         /**< m_info is not to be written to */
     SyncReport *m_report;    /**< record start/end times here */
 
+    // internal prefix for backup directory name: "SyncEvolution-"
+    static const char* const DIR_PREFIX;
+
     /** set m_logdir and adapt m_prefix accordingly */
     void setLogdir(const string &logdir) {
-        // strip trailing slashes, but not the initial one
-        size_t off = logdir.size();
-        while (off > 0 && logdir[off - 1] == '/') {
-            off--;
-        }
-        m_logdir = logdir.substr(0, off);
+        m_logdir = boost::trim_right_copy_if(logdir, boost::is_any_of("/"));
 
         string lower = m_client.getServer();
-        boost::to_lower(lower);
+        string context, peer;
+        SyncConfig::splitConfigString(lower, peer, context);
+
+        boost::to_lower(peer);
+        // escape "_" and "-" the peer name
+        peer = escapePeerName(peer);
 
         if (boost::iends_with(m_logdir, "syncevolution")) {
             // use just the server name as prefix
-            m_prefix = lower;
+            m_prefix = peer;
         } else {
             // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
-            m_prefix = "SyncEvolution-";
-            m_prefix += lower;
+            m_prefix = DIR_PREFIX;
+            m_prefix += peer;
         }
     }
 
@@ -265,6 +268,22 @@ public:
         m_info->setMode(false);
         m_readonly = true;
     }
+    /*
+     * get the corresponding peer name encoded in the logging dir name.
+     * The dir name must match the format(see startSession). Otherwise,
+     * empty string is returned.
+     */
+    string getPeerNameFromLogdir(const string &dir) {
+        // extract the dir name from the fullpath
+        string iDirPath, iDirName;
+        parseLogDir(dir, iDirPath, iDirName);
+        // extract the peer name from the dir name
+        string dirPrefix, peerName, dateTime;
+        if(parseDirName(iDirName, dirPrefix, peerName, dateTime)) {
+            return unescapePeerName(peerName);
+        }
+        return "";
+    }
 
     /**
      * read sync report for session selected with openLogdir()
@@ -313,15 +332,26 @@ public:
                 time_t ts = time(NULL);
                 struct tm *tm = localtime(&ts);
                 stringstream base;
-                base << m_logdir << "/"
-                     << m_prefix
-                     << "-"
+                base << "-"
                      << setfill('0')
                      << setw(4) << tm->tm_year + 1900 << "-"
                      << setw(2) << tm->tm_mon + 1 << "-"
                      << setw(2) << tm->tm_mday << "-"
                      << setw(2) << tm->tm_hour << "-"
                      << setw(2) << tm->tm_min;
+                // make sure no directory name has the same date time with others 
+                // even for different peers
+                std::vector<string> dateTimes;
+                if(isDir(m_logdir)) {
+                    ReadDir dir(m_logdir);
+                    BOOST_FOREACH(const string &entry, dir) {
+                        string dirPrefix, peerName, dateTime;
+                        if(parseDirName(entry, dirPrefix, peerName, dateTime)) {
+                            dateTimes.push_back(dateTime);
+                        }
+                    }
+                    sort(dateTimes.begin(), dateTimes.end());
+                }
                 int seq = 0;
                 while (true) {
                     stringstream path;
@@ -329,8 +359,10 @@ public:
                     if (seq) {
                         path << "-" << seq;
                     }
-                    m_path = path.str();
-                    if (!isDir(m_path)) {
+                    if (!binary_search(dateTimes.begin(), dateTimes.end(), path.str())) {
+                        m_path = m_logdir + "/";
+                        m_path += m_prefix;
+                        m_path += path.str();
                         mkdir_p(m_path);
                         break;
                     } else {
@@ -467,25 +499,112 @@ public:
         m_parentLogger.messagev(level, prefix, file, line, function, format, args);
     }
 
+    /**
+     * Compare two directory by its creation time encoded in the directory name
+     * sort them in ascending order
+     */
+    bool operator()(const string &str1, const string &str2) {
+        string iDirPath1, iStr1;
+        string iDirPath2, iStr2;
+        parseLogDir(str1, iDirPath1, iStr1);
+        parseLogDir(str2, iDirPath2, iStr2);
+        string dirPrefix1, peerName1, dateTime1;
+        parseDirName(iStr1, dirPrefix1, peerName1, dateTime1);
+        string dirPrefix2, peerName2, dateTime2;
+        parseDirName(iStr2, dirPrefix2, peerName2, dateTime2);
+        return dateTime1 < dateTime2;
+    }
+
 private:
-    /** find all entries in a given directory, return as sorted array of full paths */
+    /**
+     * extract backup directory name from a full backup path
+     * for example, a full path "/home/xxx/.cache/syncevolution/default/funambol-2009-12-08-14-05"
+     * is parsed as "/home/xxx/.cache/syncevolution/default" and "funambol-2009-12-08-14-05"
+     */
+    static void parseLogDir(const string &fullpath, string &dirPath, string &dirName) {
+        string iFullpath = boost::trim_right_copy_if(fullpath, boost::is_any_of("/"));
+        size_t off = iFullpath.find_last_of('/');
+        if(off != iFullpath.npos) {
+            dirPath = iFullpath.substr(0, off);
+            dirName = iFullpath.substr(off+1);
+        } else {
+            dirPath = "";
+            dirName = iFullpath;
+        }
+    }
+
+    // escape '-' and '_' for peer name 
+    static string escapePeerName(const string &prefix) {
+        string escaped = prefix;
+        boost::replace_all(escaped, "_", "__");
+        boost::replace_all(escaped, "-", "_+");
+        return escaped;
+    }
+
+    // un-escape '_+' and '__' for peer name 
+    static string unescapePeerName(const string &escaped) {
+        string prefix = escaped;
+        boost::replace_all(prefix, "_+", "-");
+        boost::replace_all(prefix, "__", "_");
+        return prefix;
+    }
+
+    /**
+     * parse a directory name into dirPrefix(empty or DIR_PREFIX), peerName, dateTime.
+     * If directory name is in the format of '[DIR_PREFIX]-peerName-year-month-day-hour-min'
+     * then parsing is sucessful and these 3 strings are correctly set and true is returned. 
+     * Otherwise, false is returned. 
+     * Here we don't check whether the dir name is matching peer name
+     */
+    static bool parseDirName(const string &dir, string &dirPrefix, string &peerName, string &dateTime) {
+        string iDir = dir;
+        if (!boost::starts_with(iDir, DIR_PREFIX)) {
+            dirPrefix = "";
+        } else {
+            dirPrefix = DIR_PREFIX;
+            boost::erase_first(iDir, DIR_PREFIX);
+        }
+        size_t off = iDir.find('-');
+        if (off != iDir.npos) {
+            peerName = iDir.substr(0, off);
+            dateTime = iDir.substr(off);
+            // m_prefix doesn't contain peer name or it equals with dirPrefix plus peerName
+            return checkDirName(dateTime);
+        }
+        return false;
+    }
+
+    /** 
+     * Find all entries in a given directory, return as sorted array of full paths in ascending order.
+     * If m_prefix doesn't contain peer name information, then all log dirs for different peers in the
+     * logdir are returned.
+     */
     void getLogdirs(vector<string> &dirs) {
         if (!isDir(m_logdir)) {
             return;
         }
         ReadDir dir(m_logdir);
         BOOST_FOREACH(const string &entry, dir) {
-            if (boost::starts_with(entry, m_prefix)) {
-                string remain = boost::erase_first_copy(entry, m_prefix);
-                if(checkDirName(remain)) {
+            string dirPrefix, peerName, dateTime;
+            // if directory name could not be parsed, ignore it
+            if(parseDirName(entry, dirPrefix, peerName, dateTime)) {
+                // if directory name is not satisfied with m_prefix, ignore it
+                if (m_prefix == dirPrefix || m_prefix == (dirPrefix + peerName)) {
                     dirs.push_back(m_logdir + "/" + entry);
                 }
             }
         }
-        sort(dirs.begin(), dirs.end());
+        // sort vector in ascending order
+        // if no peer name
+        if(m_prefix.empty() || m_prefix == DIR_PREFIX){
+            sort(dirs.begin(), dirs.end(), *this);
+        } else {
+            sort(dirs.begin(), dirs.end());
+        }
     }
+
     // check the dir name is conforming to what format we write
-    bool checkDirName(const string& value) {
+    static bool checkDirName(const string& value) {
         const char* str = value.c_str();
         /** need check whether string after prefix is a valid date-time we wrote, format
          * should be -YYYY-MM-DD-HH-MM and optional sequence number */
@@ -542,6 +661,8 @@ private:
         }
     }
 };
+
+const char* const LogDir::DIR_PREFIX = "SyncEvolution-";
 
 // this class owns the sync sources and (together with
 // a logdir) handles writing of per-sync files as well
@@ -2641,11 +2762,12 @@ void SyncContext::getSessions(vector<string> &dirs)
     logging.previousLogdirs(getLogDir(), dirs);
 }
 
-void SyncContext::readSessionInfo(const string &dir, SyncReport &report)
+string SyncContext::readSessionInfo(const string &dir, SyncReport &report)
 {
     LogDir logging(*this);
     logging.openLogdir(dir);
     logging.readReport(report);
+    return logging.getPeerNameFromLogdir(dir);
 }
 
 SE_END_CXX
