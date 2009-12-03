@@ -59,9 +59,8 @@ class ObexEvent {
     guint event;
 public:
     ObexEvent() {event = 0;}
-    ObexEvent (guint e) {event = e; SE_LOG_DEBUG (NULL, NULL, "ObexTransportAgent: creating obex event %d", e);}
-    ~ObexEvent () {if (event) {g_source_remove (event);} 
-                   SE_LOG_DEBUG (NULL, NULL, "ObexTransportAgent: removing obex event %d", event);}
+    ObexEvent (guint e) {event = e;}
+    ~ObexEvent () {if (event) {g_source_remove (event);}}
     guint get() {return event;}
 };
 

@@ -254,16 +254,6 @@ void ObexTransportAgent::shutdown() {
     OBEX_ObjectAddHeader (m_handle->get(), disconnect, OBEX_HDR_CONNECTION, header, sizeof
             (m_connectId), OBEX_FL_FIT_ONE_PACKET);
 
-    /*
-     * This is a must check when working with SyncML server case:
-     * It will not call wait() for the last send(), which caused the
-     * event source set up during that send() has no chance to be removed
-     * until here.
-     * */
-    if (m_obexEvent) {
-        m_obexEvent.set(NULL);
-    }
-
     //reset up obex fd soruce 
     guint obexSource = g_io_add_watch (m_channel->get(), (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL), obex_fd_source_cb, static_cast<void *> (this));
     cxxptr<ObexEvent> obexEventSource (new ObexEvent (obexSource));
@@ -309,14 +299,6 @@ void ObexTransportAgent::send(const char *data, size_t len) {
     header.bs = reinterpret_cast <const uint8_t *> (data);
     OBEX_ObjectAddHeader (m_handle->get(), put, OBEX_HDR_BODY, header, len, 0);
 
-    /*
-     * This is a safe check, the problem is: 
-     * If application called send() and without calling wait() it calls send()
-     * again, this will leading to a event leak.
-     * */
-    if (m_obexEvent) {
-        m_obexEvent.set(NULL);
-    }
     //reset up the OBEX fd source 
     guint obexSource = g_io_add_watch (channel->get(), (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL), obex_fd_source_cb, static_cast<void *> (this));
     cxxptr<ObexEvent> obexEventSource (new ObexEvent (obexSource));
