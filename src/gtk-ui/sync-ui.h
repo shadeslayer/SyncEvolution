@@ -30,8 +30,8 @@
 
 
 char* get_pretty_source_name (const char *source_name);
+char* get_error_string_for_code (int error_code);
 void show_error_dialog (GtkWidget *widget, const char* message);
-
 
 GtkWidget* sync_ui_create_main_window ();
 

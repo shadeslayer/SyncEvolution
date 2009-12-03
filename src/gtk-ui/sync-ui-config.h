@@ -29,6 +29,7 @@ typedef struct source_config {
     char *name;
     gboolean supported_locally;
 
+    long status;
     long local_changes;
     long remote_changes;
     long local_rejections;
