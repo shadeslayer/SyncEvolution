@@ -111,8 +111,10 @@ template<class T, class base = T, class R = Unref > class eptr {
         other.m_pointer = NULL;
     }
     eptr & operator = (eptr &other) {
-        m_pointer = other.m_pointer;
-        other.m_pointer = NULL;
+        if (this != &other) {
+            set (other.m_pointer);
+            other.m_pointer = NULL;
+        }
         return *this;
     }
 
