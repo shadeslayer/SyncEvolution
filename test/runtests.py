@@ -267,13 +267,16 @@ class Context:
         # report result by email
         if self.recipients:
             server = smtplib.SMTP(self.mailhost)
-            resulthtml = open (self.resultdir + "/nightly.html")
-            line=resulthtml.readline()
             msg=''
-            while(line!=''):
+            try:
+                resulthtml = open (self.resultdir + "/nightly.html")
+                line=resulthtml.readline()
+                while(line!=''):
                     msg=msg+line
                     line=resulthtml.readline()
-            resulthtml.close()
+                resulthtml.close()
+            except IOError:
+                msg = '''<html><body><h1>Error: No HTML report generated!</h1></body></html>\n'''
             body = StringIO.StringIO()
             writer = MimeWriter.MimeWriter (body)
             writer.addheader("From", self.sender)

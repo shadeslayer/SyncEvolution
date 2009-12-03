@@ -220,7 +220,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
             #valgrind check resutls
             if(params[server].find('return code ') !=-1):
                 result.write('result="'+params[server].partition('return code ')[2].partition(')')[0]+'" ')
-            result.write('parameter="'+params[server]+'">\n')
+            result.write('>\n')
             logs = glob.glob(resultdir+'/'+rserver+'/*.log')
             logdic ={}
             logprefix ={}
