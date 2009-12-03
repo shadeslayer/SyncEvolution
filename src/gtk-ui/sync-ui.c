@@ -371,32 +371,44 @@ refresh_last_synced_label (app_data *data)
     diff = val.tv_sec - data->last_sync;
 
     if (data->last_sync <= 0) {
-        msg = g_strdup (""); /* we don't know */
+        msg = g_strdup (data->current_service->name); /* we don't know */
         delay = -1;
     } else if (diff < 30) {
-        msg = g_strdup (_("Last synced just seconds ago"));
+        /* TRANSLATORS: This is the title on main view. Placeholder is 
+         * the service name. Example: "Google - synced just now" */
+        msg = g_strdup_printf (_("%s - synced just now"),
+                               data->current_service->name);
         delay = 30;
     } else if (diff < 90) {
-        msg = g_strdup (_("Last synced a minute ago"));
+        msg = g_strdup_printf (_("%s - synced a minute ago"),
+                               data->current_service->name);
         delay = 60;
     } else if (diff < 60 * 60) {
-        msg = g_strdup_printf (_("Last synced %ld minutes ago"), (diff + 30) / 60);
+        msg = g_strdup_printf (_("%s - synced %ld minutes ago"),
+                               data->current_service->name,
+                               (diff + 30) / 60);
         delay = 60;
     } else if (diff < 60 * 90) {
-        msg = g_strdup (_("Last synced an hour ago"));
+        msg = g_strdup_printf (_("%s - synced an hour ago"),
+                               data->current_service->name);
         delay = 60 * 60;
     } else if (diff < 60 * 60 * 24) {
-        msg = g_strdup_printf (_("Last synced %ld hours ago"), (diff + 60 * 30) / (60 * 60));
+        msg = g_strdup_printf (_("%s - synced %ld hours ago"),
+                               data->current_service->name,
+                               (diff + 60 * 30) / (60 * 60));
         delay = 60 * 60;
     } else if (diff < 60 * 60 * 24 - (60 * 30)) {
-        msg = g_strdup (_("Last synced a day ago"));
+        msg = g_strdup_printf (_("%s - synced a day ago"),
+                               data->current_service->name);
         delay = 60 * 60 * 24;
     } else {
-        msg = g_strdup_printf (_("Last synced %ld days ago"), (diff + 24 * 60 * 30) / (60 * 60 * 24));
+        msg = g_strdup_printf (_("%s - synced %ld days ago"),
+                               data->current_service->name,
+                               (diff + 24 * 60 * 30) / (60 * 60 * 24));
         delay = 60 * 60 * 24;
     }
 
-    gtk_label_set_text (GTK_LABEL (data->last_synced_label), msg);
+    gtk_label_set_text (GTK_LABEL (data->server_label), msg);
     g_free (msg);
 
     if (data->last_sync_src_id > 0)
