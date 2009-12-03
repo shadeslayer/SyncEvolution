@@ -38,7 +38,8 @@ static SyncSource *createSource(const SyncSourceParams &params)
 
     isMe = sourceType.m_backend == "Evolution Task List";
     if (isMe || sourceType.m_backend == "todo") {
-        if (sourceType.m_format == "" || sourceType.m_format == "text/calendar") { 
+        if (sourceType.m_format == "" || sourceType.m_format == "text/calendar" 
+                || sourceType.m_format == "text/x-vcalendar") { 
             return
 #ifdef ENABLE_ECAL
                 enabled ? new EvolutionCalendarSource(E_CAL_SOURCE_TYPE_TODO, params) :
