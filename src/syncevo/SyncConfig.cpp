@@ -1468,7 +1468,7 @@ static void copyProperties(const ConfigNode &fromProps,
 }
 
 void SyncConfig::copy(const SyncConfig &other,
-                               const set<string> *sourceFilter)
+                      const set<string> *sourceSet)
 {
     for (int i = 0; i < 2; i++ ) {
         boost::shared_ptr<const FilterConfigNode> fromSyncProps(other.getProperties(i));
@@ -1480,25 +1480,29 @@ void SyncConfig::copy(const SyncConfig &other,
                        SyncConfig::getRegistry());
     }
 
-    list<string> sources = other.getSyncSources();
-    BOOST_FOREACH(const string &sourceName, sources) {
-        if (!sourceFilter ||
-            sourceFilter->find(sourceName) != sourceFilter->end()) {
-            ConstSyncSourceNodes fromNodes = other.getSyncSourceNodes(sourceName);
-            SyncSourceNodes toNodes = this->getSyncSourceNodes(sourceName);
-
-            for (int i = 0; i < 2; i++ ) {
-                copyProperties(*fromNodes.getProperties(i),
-                               *toNodes.getProperties(i),
-                               i,
-                               !m_peerPath.empty(),
-                               SyncSourceConfig::getRegistry());
-            }
-            copyProperties(*fromNodes.getTrackingNode(),
-                           *toNodes.getTrackingNode());
-            copyProperties(*fromNodes.getServerNode(),
-                           *toNodes.getServerNode());
+    list<string> sources;
+    if (!sourceSet) {
+        sources = other.getSyncSources();
+    } else {
+        BOOST_FOREACH(const string &sourceName, *sourceSet) {
+            sources.push_back(sourceName);
         }
+    }
+    BOOST_FOREACH(const string &sourceName, sources) {
+        ConstSyncSourceNodes fromNodes = other.getSyncSourceNodes(sourceName);
+        SyncSourceNodes toNodes = this->getSyncSourceNodes(sourceName);
+
+        for (int i = 0; i < 2; i++ ) {
+            copyProperties(*fromNodes.getProperties(i),
+                           *toNodes.getProperties(i),
+                           i,
+                           !m_peerPath.empty(),
+                           SyncSourceConfig::getRegistry());
+        }
+        copyProperties(*fromNodes.getTrackingNode(),
+                       *toNodes.getTrackingNode());
+        copyProperties(*fromNodes.getServerNode(),
+                       *toNodes.getServerNode());
     }
 }
 

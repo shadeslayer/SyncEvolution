@@ -1234,6 +1234,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testPrintConfig);
     CPPUNIT_TEST(testPrintFileTemplates);
     CPPUNIT_TEST(testTemplate);
+    CPPUNIT_TEST(testAddSource);
     CPPUNIT_TEST(testSync);
     CPPUNIT_TEST(testConfigure);
     CPPUNIT_TEST(testOldConfigure);
@@ -1732,6 +1733,39 @@ protected:
         }
     }
 
+    void testAddSource() {
+        string root;
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        testSetupScheduleWorld();
+
+        root = m_testDir;
+        root += "/syncevolution/default";
+
+        {
+            TestCmdline cmdline("--configure",
+                                "--source-property", "uri = dummy",
+                                "scheduleworld",
+                                "xyz",
+                                NULL);
+            cmdline.doit();
+            string res = scanFiles(root);
+            string expected = ScheduleWorldConfig();
+            expected += "\n"
+                "peers/scheduleworld/sources/xyz/.internal.ini:# adminData = \n"
+                "peers/scheduleworld/sources/xyz/config.ini:# sync = two-way\n"
+                "peers/scheduleworld/sources/xyz/config.ini:# type = select backend\n"
+                "peers/scheduleworld/sources/xyz/config.ini:uri = dummy\n"
+                "sources/xyz/config.ini:# type = select backend\n"
+                "sources/xyz/config.ini:# evolutionsource = \n"
+                "sources/xyz/config.ini:# evolutionuser = \n"
+                "sources/xyz/config.ini:# evolutionpassword = ";
+            sortConfig(expected);
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+        }
+    }
 
     void testSync() {
         TestCmdline failure("--sync", NULL);

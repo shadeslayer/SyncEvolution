@@ -1030,11 +1030,12 @@ class SyncConfig {
      * The current config still needs to be flushed to make the
      * changes permanent.
      *
-     * @param sourceFilter   if NULL, then copy all sources; if not NULL,
-     *                       then only copy sources listed here
+     * @param sources   if NULL, then copy all sources; if not NULL,
+     *                  then copy exactly the sources listed here
+     *                  (regardless whether they exist or not)
      */
     void copy(const SyncConfig &other,
-              const set<string> *sourceFilter);
+              const set<string> *sources);
 
     /**
      * @name Settings specific to SyncEvolution
