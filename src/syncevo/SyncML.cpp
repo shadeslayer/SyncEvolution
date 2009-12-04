@@ -460,6 +460,9 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
     if (getStatus() || getStart()) {
         out << sep;
     }
+    if (!getError().empty()) {
+        out << "First ERROR encountered: " << getError() << endl;
+    }
 }
 
 std::string SyncReport::formatSyncTimes() const
@@ -490,6 +493,10 @@ ConfigNode &operator << (ConfigNode &node, const SyncReport &report)
     node.setProperty("start", static_cast<long>(report.getStart()));
     node.setProperty("end", static_cast<long>(report.getEnd()));
     node.setProperty("status", static_cast<int>(report.getStatus()));
+    string error = report.getError();
+    if (!error.empty()) {
+        node.setProperty("error", error);
+    }
 
     BOOST_FOREACH(const SyncReport::value_type &entry, report) {
         const std::string &name = entry.first;
@@ -553,6 +560,10 @@ ConfigNode &operator >> (ConfigNode &node, SyncReport &report)
     int status;
     if (node.getProperty("status", status)) {
         report.setStatus(static_cast<SyncMLStatus>(status));
+    }
+    string error;
+    if (node.getProperty("error", error)) {
+        report.setError(error);
     }
 
     ConfigNode::PropsType props;

@@ -418,6 +418,10 @@ public:
             boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(m_path, "status.ini", false));
             m_info = new SafeConfigNode(filenode);
             m_info->setMode(false);
+            // Create a status.ini which contains an error.
+            // Will be overwritten later on, unless we crash.
+            m_info->setProperty("status", "500");
+            m_info->setProperty("error", "synchronization process died prematurely");
             writeTimestamp("start", start);
         }
     }
@@ -488,6 +492,17 @@ public:
                           const char *format,
                           va_list args)
     {
+        if (m_report &&
+            level <= ERROR &&
+            m_report->getError().empty()) {
+            va_list argscopy;
+            va_copy(argscopy, args);
+            string error = StringPrintfV(format, argscopy);
+            va_end(argscopy);
+
+            m_report->setError(error);
+        }
+
         if (m_client.getEngine().get()) {
             va_list argscopy;
             va_copy(argscopy, args);

@@ -232,6 +232,7 @@ class SyncSourceReport {
 class SyncReport : public std::map<std::string, SyncSourceReport> {
     time_t m_start, m_end;
     SyncMLStatus m_status;
+    std::string m_error;
 
  public:
     SyncReport() :
@@ -264,9 +265,18 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
     SyncMLStatus getStatus() const { return m_status; }
     void setStatus(SyncMLStatus status) { m_status = status; }
 
+    /**
+     * Initial ERROR description as seen by SyncEvolution,
+     * typically via the logging infrastructure. Not localized.
+     */
+    std::string getError() const { return m_error; }
+    void setError(const std::string &error) { m_error = error; }
+
     void clear() {
         std::map<std::string, SyncSourceReport>::clear();
         m_start = m_end = 0;
+        m_error = "";
+        m_status = STATUS_OK;
     }
 
     /** generate short string representing start and duration of sync */
