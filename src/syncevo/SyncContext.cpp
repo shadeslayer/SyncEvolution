@@ -1912,6 +1912,10 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                            getPrintChanges() ? SourceList::LOGGING_FULL :
                            SourceList::LOGGING_SUMMARY);
 
+    // careful about scope, this is needed for writing the
+    // report below
+    SyncReport buffer;
+
     SwapContext syncSentinel(this);
     try {
         m_sourceListPtr = &sourceList;
@@ -1934,7 +1938,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             }
         }
 
-        SyncReport buffer;
         if (!report) {
             report = &buffer;
         }
