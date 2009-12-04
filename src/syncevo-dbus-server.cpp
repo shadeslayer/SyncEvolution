@@ -2984,6 +2984,7 @@ int main(int argc, char **argv)
         DBusErrorCXX err;
         DBusConnectionPtr conn = g_dbus_setup_bus(DBUS_BUS_SESSION,
                                                   "org.syncevolution",
+                                                  true,
                                                   &err);
         if (!conn) {
             err.throwFailure("g_dbus_setup_bus()");

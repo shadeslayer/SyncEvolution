@@ -208,10 +208,12 @@ typedef struct {
 } GDBusPropertyTable;
 
 void g_dbus_setup_connection(DBusConnection *connection,
+						gboolean unshared,
 						GMainContext *context);
 void g_dbus_cleanup_connection(DBusConnection *connection);
 
 DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
+							gboolean unshared,
 							DBusError *error);
 
 DBusConnection *g_dbus_setup_address(const char *address, DBusError *error);

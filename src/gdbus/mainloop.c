@@ -39,6 +39,7 @@ typedef struct {
 	DBusConnection *connection;
 	GMainContext *context;
 	GSource *queue;
+	gboolean unshared;
 } ConnectionData;
 
 typedef struct {
@@ -317,6 +318,7 @@ static void wakeup_context(void *user_data)
 }
 
 static ConnectionData *setup_connection(DBusConnection *connection,
+						gboolean unshared,
 						GMainContext *context)
 {
 	ConnectionData *data;
@@ -326,6 +328,7 @@ static ConnectionData *setup_connection(DBusConnection *connection,
 	data = g_new0(ConnectionData, 1);
 
 	data->context = g_main_context_ref(context);
+	data->unshared = unshared;
 
 	DBG("connection data %p", data);
 
@@ -353,6 +356,8 @@ static void free_connection(void *memory)
 
 	//g_dbus_unregister_all_objects(data->connection);
 
+	if (data->unshared)
+		dbus_connection_close(data->connection);
 	dbus_connection_unref(data->connection);
 
 	g_main_context_unref(data->context);
@@ -363,6 +368,7 @@ static void free_connection(void *memory)
 /**
  * g_dbus_setup_connection:
  * @connection: a #DBusConnection
+ * @unshared: the connection is private and must be closed explicitly
  * @context: a #GMainContext or #NULL for default context
  *
  * Setup connection with main context
@@ -373,6 +379,7 @@ static void free_connection(void *memory)
  * doing something specialized.
  */
 void g_dbus_setup_connection(DBusConnection *connection,
+						gboolean unshared,
 						GMainContext *context)
 {
 	ConnectionData *data;
@@ -393,7 +400,7 @@ void g_dbus_setup_connection(DBusConnection *connection,
 	if (context == NULL)
 		context = g_main_context_default();
 
-	data = setup_connection(connection, context);
+	data = setup_connection(connection, unshared, context);
 	if (data == NULL)
 		return;
 
@@ -438,6 +445,9 @@ void g_dbus_cleanup_connection(DBusConnection *connection)
  * g_dbus_setup_bus:
  * @type: a #DBusBusType
  * @name: well known name
+ * @unshared: use dbus_bus_get_private() to ensure that we have the connection
+ *            for ourself (otherwise assertions and CRITICAL warnings were triggered
+ *            inside glib-dbus when the app also used that)
  * @error: a #DBusError
  *
  * Connect to bus and setup connection
@@ -449,13 +459,15 @@ void g_dbus_cleanup_connection(DBusConnection *connection)
  * Returns: newly setup #DBusConnection
  */
 DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
+							gboolean unshared,
 							DBusError *error)
 {
 	DBusConnection *connection;
 
 	DBG("type %d name %s error %p", type, name, error);
 
-	connection = dbus_bus_get(type, error);
+	connection = unshared ? dbus_bus_get_private(type, error) :
+		dbus_bus_get(type, error);
 
 	if (error != NULL) {
 		if (dbus_error_is_set(error) == TRUE)
@@ -481,7 +493,7 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 		}
 	}
 
-	g_dbus_setup_connection(connection, NULL);
+	g_dbus_setup_connection(connection, unshared, NULL);
 
 	return connection;
 }
@@ -515,7 +527,7 @@ DBusConnection *g_dbus_setup_address(const char *address, DBusError *error)
 	if (connection == NULL)
 		return NULL;
 
-	g_dbus_setup_connection(connection, NULL);
+	g_dbus_setup_connection(connection, FALSE, NULL);
 
 	return connection;
 }

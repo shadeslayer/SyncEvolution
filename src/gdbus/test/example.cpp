@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 
     dbus_error_init(&err);
 
-    conn = g_dbus_setup_bus(DBUS_BUS_SESSION, "org.example", &err);
+    conn = g_dbus_setup_bus(DBUS_BUS_SESSION, "org.example", false, &err);
     if (conn == NULL) {
         if (dbus_error_is_set(&err) == TRUE) {
             fprintf(stderr, "%s\n", err.message);
