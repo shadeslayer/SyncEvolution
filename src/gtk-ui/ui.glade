@@ -21,75 +21,86 @@
                 <property name="label_xalign">0</property>
                 <property name="shadow_type">none</property>
                 <child>
-                  <widget class="GtkVBox" id="left_box">
+                  <widget class="GtkVBox" id="main_box">
                     <property name="visible">True</property>
                     <property name="orientation">vertical</property>
+                    <property name="spacing">8</property>
                     <child>
-                      <widget class="GtkVBox" id="server_box">
+                      <widget class="GtkHBox" id="hbox3">
                         <property name="visible">True</property>
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">10</property>
                         <child>
-                          <widget class="GtkHBox" id="hbox3">
+                          <widget class="GtkHBox" id="server_icon_box">
+                            <property name="width_request">48</property>
+                            <property name="height_request">48</property>
                             <property name="visible">True</property>
                             <child>
-                              <widget class="GtkHBox" id="server_icon_box">
-                                <property name="width_request">48</property>
-                                <property name="height_request">48</property>
+                              <widget class="GtkImage" id="sync_service_image">
                                 <property name="visible">True</property>
-                                <child>
-                                  <widget class="GtkImage" id="sync_service_image">
-                                    <property name="visible">True</property>
-                                    <property name="stock">gtk-missing-image</property>
-                                    <property name="icon-size">6</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
+                                <property name="stock">gtk-missing-image</property>
+                                <property name="icon-size">6</property>
                               </widget>
                               <packing>
-                                <property name="expand">False</property>
-                                <property name="padding">10</property>
                                 <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="sync_service_label">
-                                <property name="visible">True</property>
-                                <property name="xalign">0</property>
-                                <property name="yalign">0.80000001192092896</property>
-                                <property name="use_markup">True</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="padding">5</property>
-                                <property name="position">1</property>
                               </packing>
                             </child>
                           </widget>
                           <packing>
                             <property name="expand">False</property>
+                            <property name="padding">10</property>
                             <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkVBox" id="vbox5">
+                          <widget class="GtkLabel" id="sync_service_label">
                             <property name="visible">True</property>
-                            <property name="orientation">vertical</property>
+                            <property name="xalign">0</property>
+                            <property name="yalign">0.80000001192092896</property>
+                            <property name="use_markup">True</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="padding">5</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkVBox" id="vbox5">
+                        <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <widget class="GtkEventBox" id="sync_data_and_type_box">
+                            <property name="visible">True</property>
                             <child>
-                              <widget class="GtkEventBox" id="sync_data_and_type_box">
+                              <widget class="GtkVBox" id="vbox15">
                                 <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
                                 <child>
-                                  <widget class="GtkVBox" id="vbox15">
+                                  <widget class="GtkHBox" id="hbox15">
                                     <property name="visible">True</property>
-                                    <property name="orientation">vertical</property>
                                     <child>
-                                      <widget class="GtkHBox" id="hbox15">
+                                      <widget class="GtkVBox" id="vbox16">
                                         <property name="visible">True</property>
+                                        <property name="orientation">vertical</property>
                                         <child>
-                                          <widget class="GtkVBox" id="vbox16">
+                                          <widget class="GtkHBox" id="service_error_box">
                                             <property name="visible">True</property>
+                                            <property name="orientation">vertical</property>
+                                            <child>
+                                              <placeholder/>
+                                            </child>
+                                          </widget>
+                                          <packing>
+                                            <property name="position">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkVBox" id="service_box">
                                             <property name="orientation">vertical</property>
                                             <child>
                                               <widget class="GtkFrame" id="frame2">
@@ -173,7 +184,6 @@
                                                             <property name="visible">True</property>
                                                             <property name="can_focus">True</property>
                                                             <property name="receives_default">False</property>
-                                                            <property name="active">True</property>
                                                             <property name="draw_indicator">True</property>
                                                             <property name="group">two_way_radio</property>
                                                           </widget>
@@ -188,7 +198,6 @@
                                                             <property name="visible">True</property>
                                                             <property name="can_focus">True</property>
                                                             <property name="receives_default">False</property>
-                                                            <property name="active">True</property>
                                                             <property name="draw_indicator">True</property>
                                                             <property name="group">two_way_radio</property>
                                                           </widget>
@@ -221,220 +230,60 @@
                                             </child>
                                           </widget>
                                           <packing>
-                                            <property name="expand">False</property>
-                                            <property name="fill">False</property>
-                                            <property name="padding">55</property>
-                                            <property name="position">0</property>
+                                            <property name="position">1</property>
                                           </packing>
                                         </child>
                                       </widget>
                                       <packing>
                                         <property name="expand">False</property>
                                         <property name="fill">False</property>
-                                        <property name="padding">6</property>
+                                        <property name="padding">55</property>
                                         <property name="position">0</property>
                                       </packing>
                                     </child>
                                   </widget>
-                                </child>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkHBox" id="hbox9">
-                                <property name="visible">True</property>
-                                <child>
-                                  <widget class="GtkButton" id="edit_service_btn">
-                                    <property name="label" translatable="yes">Edit service settings</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                  </widget>
                                   <packing>
                                     <property name="expand">False</property>
-                                    <property name="padding">76</property>
+                                    <property name="fill">False</property>
+                                    <property name="padding">6</property>
                                     <property name="position">0</property>
                                   </packing>
                                 </child>
                               </widget>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkHBox" id="hbox9">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkButton" id="edit_service_btn">
+                                <property name="label">Edit service settings</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                              </widget>
                               <packing>
                                 <property name="expand">False</property>
-                                <property name="padding">10</property>
-                                <property name="position">1</property>
+                                <property name="padding">76</property>
+                                <property name="position">0</property>
                               </packing>
                             </child>
                           </widget>
                           <packing>
                             <property name="expand">False</property>
+                            <property name="padding">10</property>
                             <property name="position">1</property>
                           </packing>
                         </child>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="padding">10</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkHBox" id="hbox10">
-                        <property name="visible">True</property>
-                        <child>
-                          <widget class="GtkVBox" id="no_server_box">
-                            <property name="orientation">vertical</property>
-                            <property name="spacing">10</property>
-                            <child>
-                              <widget class="GtkHBox" id="hbox21">
-                                <property name="visible">True</property>
-                                <child>
-                                  <widget class="GtkHBox" id="hbox22">
-                                    <property name="visible">True</property>
-                                    <child>
-                                      <widget class="GtkImage" id="no_server_image">
-                                        <property name="visible">True</property>
-                                        <property name="stock">gtk-missing-image</property>
-                                        <property name="icon-size">6</property>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="position">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <widget class="GtkLabel" id="no_server_label">
-                                        <property name="visible">True</property>
-                                        <property name="label" translatable="yes">&lt;b&gt;No sync service in use&lt;/b&gt;</property>
-                                        <property name="use_markup">True</property>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="padding">5</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="label11">
-                                <property name="visible">True</property>
-                                <property name="xalign">0</property>
-                                <property name="label" translatable="yes">You haven't selected a sync service yet. Sync services let you 
-synchronize your data between your netbook and a web service.</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkHBox" id="hbox23">
-                                <property name="visible">True</property>
-                                <child>
-                                  <widget class="GtkButton" id="setup_sync_service_btn">
-                                    <property name="label" translatable="yes">Select sync service</property>
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">False</property>
-                                <property name="position">2</property>
-                              </packing>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="padding">20</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="padding">20</property>
                         <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkHBox" id="hbox13">
-                        <property name="visible">True</property>
-                        <child>
-                          <widget class="GtkVBox" id="server_failure_box">
-                            <property name="orientation">vertical</property>
-                            <child>
-                              <widget class="GtkHBox" id="hbox24">
-                                <property name="visible">True</property>
-                                <child>
-                                  <widget class="GtkImage" id="sync_failure_image">
-                                    <property name="visible">True</property>
-                                    <property name="stock">gtk-missing-image</property>
-                                    <property name="icon-size">6</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkLabel" id="sync_failure_label">
-                                    <property name="visible">True</property>
-                                    <property name="label" translatable="yes">&lt;b&gt;Sync failure&lt;/b&gt;</property>
-                                    <property name="use_markup">True</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="padding">5</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="label12">
-                                <property name="visible">True</property>
-                                <property name="xalign">0</property>
-                                <property name="label" translatable="yes">Synchronization is not available (D-Bus service does not answer), sorry.</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="padding">20</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="padding">20</property>
-                        <property name="position">2</property>
                       </packing>
                     </child>
                   </widget>

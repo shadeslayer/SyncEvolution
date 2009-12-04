@@ -62,13 +62,6 @@ get_service_description (const char *service)
 }
 
 static void
-stop_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
-{
-    sync_config_widget_set_current (self, FALSE);
-    g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
-}
-
-static void
 update_source_config (char *name,
                       GHashTable *source_configuration,
                       SyncConfigWidget *self)
@@ -94,12 +87,12 @@ set_config_cb (SyncevoSession *session,
     if (error) {
         g_warning ("Error in Session.SetConfig: %s", error->message);
         g_error_free (error);
+        g_object_unref (session);
         /* TODO show in UI: save failed in service list */
         return;
     }
 
     g_object_unref (session);
-
     g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
 }
 
@@ -111,8 +104,6 @@ sync_config_widget_save_config (SyncConfigWidget *self,
     if (delete) {
         syncevo_config_free (self->config->config);
         self->config->config = g_hash_table_new (g_str_hash, g_str_equal);
-    } else {
-        sync_config_widget_set_current (self, TRUE);
     }
     syncevo_session_set_config (session,
                                 FALSE,
@@ -189,6 +180,31 @@ start_session_for_config_write_cb (SyncevoServer *server,
 }
 
 static void
+stop_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
+{
+    save_config_data *data;
+    SyncevoConfig *config;
+
+    if (!self->config) {
+        return;
+    }
+
+    config = self->config->config;
+
+    syncevo_config_set_value (config, NULL, "defaultPeer", "");
+    sync_config_widget_set_current (self, FALSE);
+
+    data = g_slice_new (save_config_data);
+    data->widget = self;
+    data->delete = FALSE;
+    syncevo_server_start_session (self->server,
+                                  self->config->name,
+                                  (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
+                                  data);
+}
+
+
+static void
 use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
     SyncevoConfig *config;
@@ -229,6 +245,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     }
 
     syncevo_config_set_value (config, NULL, "defaultPeer", name);
+    sync_config_widget_set_current (self, TRUE);
 
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)update_source_config,
