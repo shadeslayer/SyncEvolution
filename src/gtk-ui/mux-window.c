@@ -456,7 +456,7 @@ load_icon (MuxWindow *window, const char *icon_name)
 static void
 mux_window_build_title_bar (MuxWindow *window)
 {
-    GtkWidget *box, *btn;
+    GtkWidget *box, *button_box, *btn;
     GdkPixbuf *pixbuf, *pixbuf_hover;
 
     if (window->title_bar) {
@@ -477,6 +477,10 @@ mux_window_build_title_bar (MuxWindow *window)
                         FALSE, FALSE, 0);
     gtk_widget_show (window->title_label);
 
+    button_box = gtk_hbox_new (TRUE, 0);
+    gtk_box_pack_end (GTK_BOX (box), button_box, FALSE, FALSE, 4);
+    gtk_widget_show (button_box);
+
     if (window->decorations & MUX_DECOR_CLOSE) {
         pixbuf = load_icon (window, "close");
         pixbuf_hover = load_icon (window, "close_hover");
@@ -487,7 +491,7 @@ mux_window_build_title_bar (MuxWindow *window)
         gtk_widget_set_name (btn, "mux_icon_button_close");
         g_signal_connect_swapped (btn, "clicked", 
                                   G_CALLBACK (mux_window_close_clicked), window);
-        gtk_box_pack_end (GTK_BOX (box), btn, FALSE, FALSE, 0);
+        gtk_box_pack_end (GTK_BOX (button_box), btn, FALSE, FALSE, 0);
         gtk_widget_show (btn);
     }
 
@@ -503,7 +507,7 @@ mux_window_build_title_bar (MuxWindow *window)
         gtk_widget_set_name (window->settings_button, "mux_icon_button_settings");
         g_signal_connect (window->settings_button, "clicked", 
                           G_CALLBACK (mux_window_settings_clicked), window);
-        gtk_box_pack_end (GTK_BOX (box), window->settings_button, FALSE, FALSE, 0);
+        gtk_box_pack_end (GTK_BOX (button_box), window->settings_button, FALSE, FALSE, 0);
         gtk_widget_show (window->settings_button);
     }
 
