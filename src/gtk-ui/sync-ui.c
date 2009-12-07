@@ -954,14 +954,16 @@ config_widget_expanded_cb (GtkWidget *widget, GParamSpec *pspec, app_data *data)
 static void
 config_widget_changed_cb (GtkWidget *widget, app_data *data)
 {
-    const char *name = NULL;
-
     if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
-        name = sync_config_widget_get_name (SYNC_CONFIG_WIDGET (widget));
-    }
-    reload_config (data, name);
+        const char *name = NULL;
 
-    update_services_list (data);
+        name = sync_config_widget_get_name (SYNC_CONFIG_WIDGET (widget));
+        reload_config (data, name);
+        show_main_view (data);
+    } else {
+        reload_config (data, NULL);
+        update_services_list (data);
+    }
 }
 
 static GtkWidget*
