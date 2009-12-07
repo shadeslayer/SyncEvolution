@@ -591,6 +591,8 @@ protected:
                                        SyncSource &source,
                                        int32_t extra1, int32_t extra2, int32_t extra3);
 
+    virtual void reportStepCmd(sysync::uInt16 stepCmd);
+
     /**
      * Implement checkForSuspend and checkForAbort.
      * They will check whether dbus clients suspend
@@ -861,6 +863,9 @@ class Session : public DBusObjectHelper,
     /** current sync status */
     SyncStatus m_syncStatus;
 
+    /** step info: whether engine is waiting for something */
+    bool m_stepIsWaiting;
+
     /**
      * Priority which determines position in queue.
      * Lower is more important. PRI_DEFAULT is zero.
@@ -1000,6 +1005,13 @@ public:
 
     bool isSuspend() { return m_syncStatus == SYNC_SUSPEND; }
     bool isAbort() { return m_syncStatus == SYNC_ABORT; }
+
+    /**
+     * step info for engine: whether the engine is blocked by something
+     * If yes, 'waiting' will be appended as specifiers in the status string.
+     * see GetStatus documentation.
+     */
+    void setStepInfo(bool isWaiting); 
 
 private:
     /** set m_syncFilter and m_sourceFilters to config */
@@ -1399,6 +1411,22 @@ void DBusSync::displaySourceProgress(sysync::TProgressEventEnum type,
     m_session.sourceProgress(type, source, extra1, extra2, extra3);
 }
 
+void DBusSync::reportStepCmd(sysync::uInt16 stepCmd)
+{
+    switch(stepCmd) {
+        case sysync::STEPCMD_SENDDATA:
+        case sysync::STEPCMD_RESENDDATA:
+        case sysync::STEPCMD_NEEDDATA:
+            //sending or waiting data
+            m_session.setStepInfo(true);
+            break;
+        default:
+            // otherwise, processing
+            m_session.setStepInfo(false);
+            break;
+    }
+}
+
 bool DBusSync::checkForSuspend()
 {
     return m_session.isSuspend() || SyncContext::checkForSuspend();
@@ -1621,7 +1649,9 @@ void Session::getStatus(std::string &status,
                         SourceStatuses_t &sources)
 {
     status = syncStatusToString(m_syncStatus);
-    // TODO: append ";processing" or ";waiting"
+    if (m_stepIsWaiting) {
+        status += ";waiting";
+    }
 
     error = m_error;
     sources = m_sourceStatus;
@@ -1700,6 +1730,7 @@ Session::Session(DBusServer &server,
     m_tempConfig(false),
     m_active(false),
     m_syncStatus(SYNC_QUEUEING),
+    m_stepIsWaiting(false),
     m_priority(PRI_DEFAULT),
     m_progress(0),
     m_progData(m_progress),
@@ -1885,6 +1916,15 @@ void Session::setFilters(SyncConfig &config)
     // set all sources in the filter to config
     BOOST_FOREACH(const SourceFilters_t::value_type &value, m_sourceFilters) {
         config.setConfigFilter(false, value.first, value.second);
+    }
+}
+
+void Session::setStepInfo(bool isWaiting)
+{
+    // if stepInfo doesn't change, then ignore it to avoid duplicate status info
+    if(m_stepIsWaiting != isWaiting) {
+        m_stepIsWaiting = isWaiting;
+        fireStatus(true);
     }
 }
 

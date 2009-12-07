@@ -182,7 +182,9 @@
       <doc:doc><doc:description>Get session status. Individual source statuses are relevant and provided only when status is neither "queuing" nor "idle".</doc:description></doc:doc>
       <arg type="s" name="status" direction="out">
         <doc:doc><doc:summary>Session status</doc:summary></doc:doc>
-        <doc:doc><doc:description>Valid values include strings starting with "queueing", "idle" (ready to execute commands), "running", "aborting", "suspending", "done" (a sync was executed, individual source statuses for that sync are available, session is now inactive and cannot execute new commands). The strings may contain additional specifiers separated by a semicolons: "running;processing", "suspending;waiting". There may be several specifiers: "running;waiting;foo"</doc:description></doc:doc>
+        <doc:doc><doc:description>Valid values include strings starting with "queueing", "idle" (ready to execute commands), "running", "aborting", "suspending", "done" (a sync was executed, individual source statuses for that sync are available, session is now inactive and cannot execute new commands). The strings may contain additional specifiers separated by a semicolons: "running;waiting", "suspending;waiting". There may be several specifiers: "running;waiting;foo".
+                Specifier "waiting" means that the dbus server is waiting for some external events, typically IO events(like network transports, etc). If "waiting" is absent, then we've done the waiting.
+        </doc:description></doc:doc>
       </arg>
       <arg type="u" name="error" direction="out">
         <doc:doc><doc:summary>Error code for current or last action (zero for no error).</doc:summary></doc:doc>

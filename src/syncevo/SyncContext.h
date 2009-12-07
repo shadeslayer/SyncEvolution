@@ -580,6 +580,15 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
                                        int32_t extra1, int32_t extra2, int32_t extra3);
 
     /**
+     * report step command info
+     *
+     * Will be called after each step in step loop in SyncContext::doSync().
+     * This reports step command info. 
+     * @param stepCmd step command enum value 
+     */
+    virtual void reportStepCmd(sysync::uInt16 stepCmd) {}
+
+    /**
      * Called to find out whether user wants to abort sync.
      *
      * Will be called regularly. Once it has flagged an abort, all

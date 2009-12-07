@@ -1135,8 +1135,13 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
             # no error
             self.failUnlessEqual(error, 0)
             # keep order: session status must be unchanged or the next status 
-            self.failUnless(statusPairs.has_key(status))
-            self.failUnless(statusPairs[status] >= statusPairs[lastStatus])
+            seps = status.split(';')
+            lastSeps = lastStatus.split(';')
+            self.failUnless(statusPairs.has_key(seps[0]))
+            self.failUnless(statusPairs[seps[0]] >= statusPairs[lastSeps[0]])
+            # check specifiers
+            if len(seps) > 1:
+                self.failUnlessEqual(seps[1], "waiting")
             for sourcename, value in sources.items():
                 # no error
                 self.failUnlessEqual(value[2], 0)
@@ -1177,7 +1182,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         self.doSync()
         hasSuspendingStatus = False
         for item in DBusUtil.events:
-            if item[0] == "status" and item[1][0] == "suspending":
+            if item[0] == "status" and "suspending" in item[1][0] :
                 hasSuspendingStatus = True
                 break
         self.failUnlessEqual(hasSuspendingStatus, True)

@@ -2200,6 +2200,7 @@ SyncMLStatus SyncContext::doSync()
                 // and wait for response.
             } else {
                 m_engine.SessionStep(session, stepCmd, &progressInfo);
+                reportStepCmd(stepCmd);
             }
 
             //During suspention we actually insert a STEPCMD_SUSPEND cmd
