@@ -51,6 +51,11 @@
 #include <boost/noncopyable.hpp>
 
 #include <glib-object.h>
+#ifdef USE_GNOME_KEYRING
+extern "C" {
+#include <gnome-keyring.h>
+}
+#endif
 
 class DBusMessage;
 static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
@@ -603,6 +608,17 @@ protected:
     virtual bool checkForSuspend(); 
     virtual bool checkForAbort();
     virtual int sleep(int intervals);
+
+    /**
+     * Implement askPassword and savePassword to retrieve
+     * or save password in DBusSync. 
+     */
+    string askPassword(const string &passwordName, 
+                       const string &descr, 
+                       const ConfigPasswordKey &key);
+    bool savePassword(const string &passwordName, 
+                      const string &password, 
+                      const ConfigPasswordKey &key);
 };
 
 /**
@@ -1449,6 +1465,88 @@ int DBusSync::sleep(int intervals)
             return intervals - now +start;
         }
     }
+}
+
+inline const char *passwdStr(const std::string &str)
+{
+    return str.empty() ? NULL : str.c_str();
+}
+
+string DBusSync::askPassword(const string &passwordName, 
+                             const string &descr, 
+                             const ConfigPasswordKey &key) 
+{
+    string password;
+#ifdef USE_GNOME_KEYRING
+    /** here we use server sync url without protocol prefix and
+     * user account name as the key in the keyring */
+    /* It is possible to let CmdlineSyncClient decide which of fields in ConfigPasswordKey it would use
+     * but currently only use passed key instead */
+    GnomeKeyringResult result;
+    GList* list;
+
+    result = gnome_keyring_find_network_password_sync(passwdStr(key.user),
+                                                      passwdStr(key.domain),
+                                                      passwdStr(key.server),
+                                                      passwdStr(key.object),
+                                                      passwdStr(key.protocol),
+                                                      passwdStr(key.authtype),
+                                                      key.port,
+                                                      &list);
+
+    /** if find password stored in gnome keyring */
+    if(result == GNOME_KEYRING_RESULT_OK && list && list->data ) {
+        GnomeKeyringNetworkPasswordData *key_data;
+        key_data = (GnomeKeyringNetworkPasswordData*)list->data;
+        password = key_data->password;
+        gnome_keyring_network_password_list_free(list);
+        return password;
+    }
+    //if not found, then ask user to interactively input password
+#endif
+    /** if not built with gnome_keyring support, directly ask dbus clients to
+     * input password */
+    // TODO: send InfoRequest signal to dbus clients
+    // m_session.infoRequest()
+    return password;
+}
+
+bool DBusSync::savePassword(const string &passwordName, 
+                            const string &password, 
+                            const ConfigPasswordKey &key)
+{
+#ifdef USE_GNOME_KEYRING
+    /* It is possible to let CmdlineSyncClient decide which of fields in ConfigPasswordKey it would use
+     * but currently only use passed key instead */
+    guint32 itemId;
+    GnomeKeyringResult result;
+    // write password to keyring
+    result = gnome_keyring_set_network_password_sync(NULL,
+                                                     passwdStr(key.user),
+                                                     passwdStr(key.domain),
+                                                     passwdStr(key.server),
+                                                     passwdStr(key.object),
+                                                     passwdStr(key.protocol),
+                                                     passwdStr(key.authtype),
+                                                     key.port,
+                                                     password.c_str(),
+                                                     &itemId);
+    /* if set operation is failed */
+    if(result != GNOME_KEYRING_RESULT_OK) {
+#ifdef GNOME_KEYRING_220
+        SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. " + gnome_keyring_result_to_message(result));
+#else
+        /** if gnome-keyring version is below 2.20, it doesn't support 'gnome_keyring_result_to_message'. */
+        stringstream value;
+        value << (int)result;
+        SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. The gnome-keyring error code is " + value.str() + ".");
+#endif
+    } 
+    return true;
+#else
+    /** if no support of gnome-keyring, don't save anything */
+    return false;
+#endif
 }
 
 /***************** Session implementation ***********************/
