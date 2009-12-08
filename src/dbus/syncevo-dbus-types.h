@@ -50,12 +50,17 @@ typedef enum {
   SYNCEVO_STATUS_DONE,
 } SyncevoSessionStatus;
 
+
+/* SyncevoSourceStatus is a bitfield, but only one of four first values 
+ * will be present */
 typedef enum {
-  SYNCEVO_SOURCE_IDLE,
-  SYNCEVO_SOURCE_RUNNING,
-  SYNCEVO_SOURCE_RUNNING_WAITING,
-  SYNCEVO_SOURCE_RUNNING_PROCESSING,
-  SYNCEVO_SOURCE_DONE,
+  SYNCEVO_SOURCE_UNKNOWN = 0,
+  SYNCEVO_SOURCE_IDLE = 1 << 0,
+  SYNCEVO_SOURCE_RUNNING = 1 << 1,
+  SYNCEVO_SOURCE_DONE = 1 << 2,
+
+  /* the ones below are modifiers */
+  SYNCEVO_SOURCE_WAITING = 1 << 3,
 } SyncevoSourceStatus;
 
 typedef enum {

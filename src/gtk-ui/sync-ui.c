@@ -1282,12 +1282,23 @@ update_source_status (char *name,
                       app_data *data)
 {
     char *error;
-    
+    static char *waiting_source = NULL;
+
     error = get_error_string_for_code (error_code);
     if (error) {
         /* TODO show sync error in UI -- but not duplicates */
         g_warning ("Source '%s' error: %s", name, error);
         g_free (error);
+    }
+
+    if (status & SYNCEVO_SOURCE_WAITING) {
+        g_free (waiting_source);
+        waiting_source = g_strdup (name);
+        /* TODO: start spinner */
+    } else if (waiting_source && strcmp (waiting_source, name) == 0) {
+        g_free (waiting_source);
+        waiting_source = NULL;
+        /* TODO: stop spinner */
     }
 }
 

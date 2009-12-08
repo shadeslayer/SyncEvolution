@@ -238,6 +238,31 @@ syncevo_sync_mode_from_string (const char *mode_str)
     }
 }
 
+static SyncevoSourceStatus
+syncevo_source_status_from_string (const char *status_str)
+{
+    SyncevoSourceStatus status;
+
+    if (!status_str) {
+        status = SYNCEVO_SOURCE_UNKNOWN;
+    } else if (g_str_has_prefix (status_str, "idle")) {
+        status = SYNCEVO_SOURCE_IDLE;
+    } else if (g_str_has_prefix (status_str, "running")) {
+        status = SYNCEVO_SOURCE_RUNNING;
+    } else if (g_str_has_prefix (status_str, "done")) {
+        status = SYNCEVO_SOURCE_DONE;
+    } else {
+        status = SYNCEVO_SOURCE_UNKNOWN;
+    }
+
+    /* check modifiers */
+    if (status_str && strstr (status_str, ";waiting")) {
+        status |= SYNCEVO_SOURCE_WAITING;
+    }
+
+    return status;
+}
+
 void
 syncevo_source_statuses_foreach (SyncevoSourceStatuses *source_statuses,
                                  SourceStatusFunc func,
@@ -262,7 +287,7 @@ syncevo_source_statuses_foreach (SyncevoSourceStatuses *source_statuses,
         mode = syncevo_sync_mode_from_string (mode_str);
 
         status_str = g_value_get_string (g_value_array_get_nth (source_status, 1));
-        status = syncevo_session_status_from_string (status_str);
+        status = syncevo_source_status_from_string (status_str);
         error_code = g_value_get_uint (g_value_array_get_nth (source_status, 2));
 
         func (name, mode, status, error_code, data);
