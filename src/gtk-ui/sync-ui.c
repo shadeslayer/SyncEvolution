@@ -62,7 +62,11 @@ typedef enum app_state {
 
 typedef struct app_data {
     GtkWidget *sync_win;
+
     GtkWidget *services_win; /* will be NULL when USE_MOBLIN_UX is set*/
+    GtkWidget *emergency_win; /* will be NULL when USE_MOBLIN_UX is set*/
+
+    gint emergency_index; /* for use in mux_window_set_current_page() */
 
     GtkWidget *service_box;
     GtkWidget *info_bar;
@@ -603,47 +607,53 @@ switch_dummy_to_mux_frame (GtkWidget *dummy)
     return frame;
 }
 
-/* truly stupid, but glade doesn't allow custom containers.
-   Now glade file has dummy containers that will be replaced here.
-   The dummy should be a gtkwindow */ 
-static GtkWidget*
-switch_dummy_to_mux_window (GtkWidget *dummy)
-{
-    GtkWidget *window;
-
-    g_assert (GTK_IS_WINDOW (dummy));
-
-    window = mux_window_new ();
-    gtk_window_set_default_size (GTK_WINDOW (window), 1024, 600);
-    gtk_widget_set_name (window, gtk_widget_get_name (dummy));
-    gtk_window_set_modal (GTK_WINDOW (window),
-                          gtk_window_get_modal (GTK_WINDOW (dummy)));
-
-    mux_window_set_decorations (MUX_WINDOW (window), MUX_DECOR_CLOSE);
-    gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (dummy)), window);
-
-    return window;
-}
-
 static void
-switch_main_and_settings_to_mux_window (app_data *data,
-                                        GtkWidget *main, GtkWidget *settings)
+setup_windows (app_data *data,
+               GtkWidget *main,
+               GtkWidget *settings,
+               GtkWidget *emergency)
 {
     GtkWidget *mux_main;
     GtkWidget *tmp;
 
-    mux_main = switch_dummy_to_mux_window (main);
+    g_assert (GTK_IS_WINDOW (main));
+    g_assert (GTK_IS_WINDOW (settings));
+    g_assert (GTK_IS_WINDOW (emergency));
+
+    mux_main = mux_window_new ();
+    gtk_window_set_title (GTK_WINDOW (mux_main),
+                          gtk_window_get_title (GTK_WINDOW (main)));
+    gtk_window_set_default_size (GTK_WINDOW (mux_main), 1024, 600);
+    gtk_widget_set_name (mux_main, gtk_widget_get_name (main));
+
+
+    mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_CLOSE);
+    gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (main)), mux_main);
+
     mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_SETTINGS|MUX_DECOR_CLOSE);
     g_signal_connect (mux_main, "settings-visibility-changed",
                       G_CALLBACK (settings_visibility_changed_cb), data);
 
     tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (settings)));
     gtk_container_remove (GTK_CONTAINER (settings), tmp);
-    mux_window_set_settings_widget (MUX_WINDOW (mux_main), tmp);
+    mux_window_append_page (MUX_WINDOW (mux_main),
+                                        gtk_window_get_title (GTK_WINDOW (settings)),
+                                        tmp,
+                                        TRUE);
+    g_object_unref (tmp);
+
+    tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (emergency)));
+    gtk_container_remove (GTK_CONTAINER (emergency), tmp);
+    data->emergency_index =
+        mux_window_append_page (MUX_WINDOW (mux_main),
+                                gtk_window_get_title (GTK_WINDOW (emergency)),
+                                tmp,
+                                FALSE);
     g_object_unref (tmp);
 
     data->sync_win = mux_main;
     data->services_win = NULL;
+    data->emergency_win = NULL;
 }
 
 
@@ -655,14 +665,20 @@ switch_dummy_to_mux_frame (GtkWidget *dummy) {
     return dummy;
 }
 static void
-switch_main_and_settings_to_mux_window (app_data *data,
-                                        GtkWidget *main, GtkWidget *settings)
+setup_windows (app_data *data,
+               GtkWidget *main,
+               GtkWidget *settings,
+               GtkWidget *emergency)
 {
     data->sync_win = main;
-    data->services_win = settings;
+    data->emergency_win = emergency;
     gtk_window_set_transient_for (GTK_WINDOW (data->services_win),
                                   GTK_WINDOW (data->sync_win));
+    gtk_window_set_transient_for (GTK_WINDOW (data->emergency_win),
+                                  GTK_WINDOW (data->sync_win));
     g_signal_connect (data->services_win, "delete-event",
+                      G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+    g_signal_connect (data->emergency_win, "delete-event",
                       G_CALLBACK (gtk_widget_hide_on_delete), NULL);
 }
 #endif
@@ -757,9 +773,10 @@ init_ui (app_data *data)
 
     /* No (documented) way to add own widgets to gtkbuilder it seems...
        swap the all dummy widgets with Muxwidgets */
-    switch_main_and_settings_to_mux_window (data,
-                                            GTK_WIDGET (gtk_builder_get_object (builder, "sync_win")),
-                                            GTK_WIDGET (gtk_builder_get_object (builder, "services_win")));
+    setup_windows (data,
+                   GTK_WIDGET (gtk_builder_get_object (builder, "sync_win")),
+                   GTK_WIDGET (gtk_builder_get_object (builder, "services_win")),
+                   GTK_WIDGET (gtk_builder_get_object (builder, "emergency_win")));
 
     data->main_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
     data->log_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
