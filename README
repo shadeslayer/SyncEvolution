@@ -700,7 +700,10 @@ Necessary on some distros due to bad dependencies (not needed by SyncEvolution i
 Optional (enables reading proxy settings from GNOME preferences):
    apt-get install libsoup-gnome2.4-dev
 
-See also the libsynthesis README file for other required packages.
+For compiling libsynthesis:
+   apt-get install libpcre3-dev libsqlite3-dev libexpat-dev libz-dev
+
+This was copied from the libsynthesis README.
 
 The test framework also requires CPPUnit:
    apt-get install libcppunit-dev
