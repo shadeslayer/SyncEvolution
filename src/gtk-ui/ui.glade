@@ -258,27 +258,7 @@
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkHBox" id="hbox9">
-                            <property name="visible">True</property>
-                            <child>
-                              <widget class="GtkButton" id="edit_service_btn">
-                                <property name="label">Edit service settings</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="padding">76</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="padding">10</property>
-                            <property name="position">1</property>
-                          </packing>
+                          <placeholder/>
                         </child>
                       </widget>
                       <packing>
@@ -387,16 +367,7 @@
                                 <child>
                                   <widget class="GtkHBox" id="no_connection_box">
                                     <child>
-                                      <widget class="GtkLabel" id="offline_label">
-                                        <property name="width_request">230</property>
-                                        <property name="visible">True</property>
-                                        <property name="label" translatable="yes">Sorry, you need an internet
-connection to sync.</property>
-                                        <property name="wrap">True</property>
-                                      </widget>
-                                      <packing>
-                                        <property name="position">0</property>
-                                      </packing>
+                                      <placeholder/>
                                     </child>
                                   </widget>
                                   <packing>
@@ -484,7 +455,7 @@ connection to sync.</property>
                                 <property name="spacing">10</property>
                                 <child>
                                   <widget class="GtkButton" id="sync_btn">
-                                    <property name="label" translatable="yes">Sync now</property>
+                                    <property name="label">Sync now</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
@@ -502,8 +473,8 @@ connection to sync.</property>
                                     <child>
                                       <widget class="GtkLabel" id="label15">
                                         <property name="visible">True</property>
-                                        <property name="label" translatable="yes">Change sync
-service</property>
+                                        <property name="label" translatable="yes" comments="Button in main view, right side. Keep to below 20 chars per line, feel free to use two lines">Change or edit
+sync service</property>
                                         <property name="justify">center</property>
                                       </widget>
                                     </child>
@@ -511,6 +482,20 @@ service</property>
                                   <packing>
                                     <property name="fill">False</property>
                                     <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkButton" id="emergency_btn">
+                                    <property name="label" translatable="yes" comments="button in main view, right side. Keep length to 20 characters or so, use two lines if needed">Fix a sync
+emergency</property>
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="receives_default">True</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">False</property>
+                                    <property name="position">2</property>
                                   </packing>
                                 </child>
                               </widget>
@@ -790,15 +775,26 @@ you can setup a service manually.</property>
                     <property name="visible">True</property>
                     <property name="orientation">vertical</property>
                     <child>
-                      <widget class="GtkVBox" id="vbox21">
+                      <widget class="GtkLabel" id="label12">
+                        <property name="visible">True</property>
+                        <property name="xalign">0</property>
+                        <property name="label" translatable="yes">If something has gone horribly wrong you can start from scratch or restore from backup.</property>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkVBox" id="vbox1">
                         <property name="visible">True</property>
                         <property name="orientation">vertical</property>
                         <property name="spacing">5</property>
                         <child>
-                          <widget class="GtkLabel" id="label9">
+                          <widget class="GtkLabel" id="label14">
                             <property name="visible">True</property>
                             <property name="xalign">0</property>
-                            <property name="label" translatable="yes">&lt;big&gt;Emergency&lt;/big&gt;</property>
+                            <property name="label" translatable="yes" comments="a title in emergency view">&lt;big&gt;Start from scratch&lt;/big&gt;</property>
                             <property name="use_markup">True</property>
                           </widget>
                           <packing>
@@ -807,17 +803,53 @@ you can setup a service manually.</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkHBox" id="hbox18">
+                          <widget class="GtkAlignment" id="alignment3">
                             <property name="visible">True</property>
+                            <property name="xscale">0</property>
                             <child>
-                              <widget class="GtkLabel" id="label10">
+                              <widget class="GtkHBox" id="hbox13">
                                 <property name="visible">True</property>
-                                <property name="label" translatable="yes">Oh no!</property>
+                                <child>
+                                  <widget class="GtkButton" id="button3">
+                                    <property name="label">Delete all your local
+information and replace
+with data from Zyb</property>
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="receives_default">True</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkLabel" id="label4">
+                                    <property name="visible">True</property>
+                                    <property name="xpad">15</property>
+                                    <property name="label" translatable="yes" comments="text between the two &quot;start from scratch&quot; buttons in emergency view">or</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">False</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkButton" id="button4">
+                                    <property name="label">Delete all data on Zyb 
+and replace with your
+local information</property>
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="receives_default">True</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="position">2</property>
+                                  </packing>
+                                </child>
                               </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="position">0</property>
-                              </packing>
                             </child>
                           </widget>
                           <packing>
@@ -825,20 +857,46 @@ you can setup a service manually.</property>
                             <property name="position">1</property>
                           </packing>
                         </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
+                        <property name="expand">False</property>
                         <property name="padding">8</property>
-                        <property name="position">0</property>
+                        <property name="position">1</property>
                       </packing>
                     </child>
                     <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
+                      <widget class="GtkVBox" id="vbox21">
+                        <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">5</property>
+                        <child>
+                          <widget class="GtkLabel" id="label9">
+                            <property name="visible">True</property>
+                            <property name="xalign">0</property>
+                            <property name="label" translatable="yes" comments="a title in emergency view">&lt;big&gt;Restore from backup&lt;/big&gt;</property>
+                            <property name="use_markup">True</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkLabel" id="label16">
+                            <property name="visible">True</property>
+                            <property name="sensitive">False</property>
+                            <property name="label">not implemented yet</property>
+                          </widget>
+                          <packing>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="padding">8</property>
+                        <property name="position">2</property>
+                      </packing>
                     </child>
                   </widget>
                   <packing>

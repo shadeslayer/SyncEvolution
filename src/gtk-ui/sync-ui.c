@@ -79,8 +79,8 @@ typedef struct app_data {
     GtkWidget *progress;
     GtkWidget *sync_status_label;
     GtkWidget *sync_btn;
-    GtkWidget *edit_service_btn;
     GtkWidget *change_service_btn;
+    GtkWidget *emergency_btn;
 
     GtkWidget *server_label;
     GtkWidget *last_synced_label;
@@ -123,6 +123,7 @@ typedef struct operation_data {
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
 static void show_main_view (app_data *data);
+static void show_emergency_view (app_data *data);
 static void show_services_list (app_data *data);
 static void update_services_list (app_data *data);
 static void update_service_ui (app_data *data);
@@ -162,17 +163,16 @@ remove_child (GtkWidget *widget, GtkContainer *container)
 static void 
 change_service_clicked_cb (GtkButton *btn, app_data *data)
 {
+    /* data->open_current = TRUE; */
     show_services_list (data);
 }
 
 static void 
-edit_service_clicked_cb (GtkButton *btn, app_data *data)
+emergency_clicked_cb (GtkButton *btn, app_data *data)
 {
-    g_assert (data);
-
-    data->open_current = TRUE;
-    show_services_list (data);
+    show_emergency_view (data);
 }
+
 
 char*
 get_pretty_source_name (const char *source_name)
@@ -425,22 +425,6 @@ set_sync_progress (app_data *data, float progress, char *status)
 }
 
 static void
-update_change_button (app_data *data, gboolean no_service)
-{
-    if (no_service) {
-        /* TRANSLATORS: Button in the bottom of main view when 
-         * no service is selected */
-        gtk_button_set_label (GTK_BUTTON (data->change_service_btn),
-                              _("Select sync service"));
-    } else {
-        /* TRANSLATORS: Button in the bottom of main view when 
-         * a service is selected */
-        gtk_button_set_label (GTK_BUTTON (data->change_service_btn),
-                              _("Edit service settings"));
-    }
-}
-
-static void
 set_info_bar (app_data *data, GtkMessageType type, const char *message)
 {
     GtkWidget *container, *label;
@@ -477,7 +461,6 @@ set_app_state (app_data *data, app_state state)
     case SYNC_UI_STATE_GETTING_SERVER:
         gtk_widget_hide (data->service_box);
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
-        update_change_button (data, TRUE);
         refresh_last_synced_label (data);
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
@@ -491,7 +474,6 @@ set_app_state (app_data *data, app_state state)
                         "Sync services let you synchronize your data "
                         "between your netbook and a web service"));
         gtk_widget_show (data->info_bar);
-        update_change_button (data, TRUE);
         refresh_last_synced_label (data);
 
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
@@ -503,7 +485,6 @@ set_app_state (app_data *data, app_state state)
         break;
     case SYNC_UI_STATE_SERVER_FAILURE:
         gtk_widget_hide (data->service_box);
-        update_change_button (data, TRUE);
         refresh_last_synced_label (data);
 
         /* info bar content should be set earlier */
@@ -519,7 +500,6 @@ set_app_state (app_data *data, app_state state)
         /* we have a active, idle session */
         gtk_widget_show (data->service_box);
         gtk_widget_hide (data->info_bar);
-        update_change_button (data, FALSE);
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         if (data->online) {
@@ -529,6 +509,8 @@ set_app_state (app_data *data, app_state state)
         }
         gtk_widget_set_sensitive (data->sync_btn, data->online);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
+        /* TRANSLATORS: These are for the button in main view, right side.
+           Keep line length below ~20 characters, use two lines if needed */
         if (data->synced_this_session)
             gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync again"));
         else
@@ -548,6 +530,8 @@ set_app_state (app_data *data, app_state state)
 
         gtk_widget_set_sensitive (data->sync_btn, support_canceling);
         if (support_canceling) {
+            /* TRANSLATORS: This is for the button in main view, right side.
+               Keep line length below ~20 characters, use two lines if needed */
             gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Cancel sync"));
         }
 
@@ -737,8 +721,8 @@ init_ui (app_data *data)
 
     data->offline_label = GTK_WIDGET (gtk_builder_get_object (builder, "offline_label"));
     data->progress = GTK_WIDGET (gtk_builder_get_object (builder, "progressbar"));
-    data->edit_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "edit_service_btn"));
     data->change_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "change_service_btn"));
+    data->emergency_btn = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_btn"));
     data->sync_btn = GTK_WIDGET (gtk_builder_get_object (builder, "sync_btn"));
     data->sync_status_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_status_label"));
 
@@ -781,6 +765,7 @@ init_ui (app_data *data)
     data->main_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
     data->log_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
     frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
+    frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "emergency_frame")));
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
@@ -788,8 +773,8 @@ init_ui (app_data *data)
                       G_CALLBACK (show_main_view), data);
     g_signal_connect (data->change_service_btn, "clicked",
                       G_CALLBACK (change_service_clicked_cb), data);
-    g_signal_connect (data->edit_service_btn, "clicked",
-                      G_CALLBACK (edit_service_clicked_cb), data);
+    g_signal_connect (data->emergency_btn, "clicked",
+                      G_CALLBACK (emergency_clicked_cb), data);
     g_signal_connect (data->sync_btn, "clicked", 
                       G_CALLBACK (sync_clicked_cb), data);
 
@@ -1787,6 +1772,17 @@ start_session_cb (SyncevoServer *server,
                                 op_data);
 
     g_free (path);
+}
+
+static void
+show_emergency_view (app_data *data)
+{
+#ifdef USE_MOBLIN_UX
+    mux_window_set_current_page (MUX_WINDOW (data->sync_win),
+                                 data->emergency_index);
+#else
+    gtk_window_present (GTK_WINDOW (data->emergency_win));
+#endif
 }
 
 static void
