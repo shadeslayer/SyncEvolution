@@ -99,8 +99,6 @@ typedef struct app_data {
     int last_sync;
     guint last_sync_src_id;
 
-    SyncevoSyncMode mode;
-
     server_config *current_service;
     app_state current_state;
     gboolean open_current; /* should the service list open the current 
@@ -114,7 +112,10 @@ typedef struct app_data {
 typedef struct operation_data {
     app_data *data;
     enum op {
-        OP_SYNC,
+        OP_SYNC, /* use sync mode from config */
+        OP_SYNC_SLOW,
+        OP_SYNC_REFRESH_FROM_CLIENT,
+        OP_SYNC_REFRESH_FROM_SERVER,
         OP_SAVE,
     } operation;
     gboolean started;
@@ -289,7 +290,111 @@ sync_cb (SyncevoSession *session,
     set_app_state (data, SYNC_UI_STATE_SYNCING);
 }
 
-static void 
+static gboolean
+confirm (app_data *data, const char *message, const char *yes)
+{
+    GtkWidget *w;
+    int ret;
+
+    w = gtk_message_dialog_new (GTK_WINDOW (data->sync_win),
+                                GTK_DIALOG_MODAL,
+                                GTK_MESSAGE_QUESTION,
+                                GTK_BUTTONS_NONE,
+                                "%s",
+                                message);
+    gtk_dialog_add_buttons (GTK_DIALOG (w),
+                            _("No, cancel sync"),
+                            GTK_RESPONSE_NO,
+                            yes,
+                            GTK_RESPONSE_YES,
+                            NULL);
+    ret = gtk_dialog_run (GTK_DIALOG (w));
+    gtk_widget_destroy (w);
+
+    return (ret == GTK_RESPONSE_YES);
+}
+static void
+slow_sync_clicked_cb (GtkButton *btn, app_data *data)
+{
+    operation_data *op_data;
+    char *message;
+
+    message = g_strdup_printf (_("Do you want to slow sync with %s?"),
+                               data->current_service->name);
+    if (!confirm (data, message, _("Yes, do slow sync"))) {
+        g_free (message);
+        return;
+    }
+    g_free (message);
+
+    op_data = g_slice_new (operation_data);
+    op_data->data = data;
+    op_data->operation = OP_SYNC_SLOW;
+    op_data->started = FALSE;
+    syncevo_server_start_session (data->server,
+                                  data->current_service->name,
+                                  (SyncevoServerStartSessionCb)start_session_cb,
+                                  op_data);
+
+    show_main_view (data);
+}
+
+
+static void
+refresh_from_server_clicked_cb (GtkButton *btn, app_data *data)
+{
+    operation_data *op_data;
+    char *message;
+
+    message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
+                                 "data from %s? This is not usually advised."),
+                               data->current_service->name);
+    if (!confirm (data, message, _("Yes, delete and replace"))) {
+        g_free (message);
+        return;
+    }
+    g_free (message);
+
+    op_data = g_slice_new (operation_data);
+    op_data->data = data;
+    op_data->operation = OP_SYNC_REFRESH_FROM_SERVER;
+    op_data->started = FALSE;
+    syncevo_server_start_session (data->server,
+                                  data->current_service->name,
+                                  (SyncevoServerStartSessionCb)start_session_cb,
+                                  op_data);
+
+    show_main_view (data);
+}
+
+static void
+refresh_from_client_clicked_cb (GtkButton *btn, app_data *data)
+{
+    operation_data *op_data;
+    char *message;
+
+    message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
+                                 "your local data? This is not usually advised."),
+                               data->current_service->name);
+    if (!confirm (data, message, _("Yes, delete and replace"))) {
+        g_free (message);
+        return;
+    }
+    g_free (message);
+
+    op_data = g_slice_new (operation_data);
+    op_data->data = data;
+    op_data->operation = OP_SYNC_REFRESH_FROM_CLIENT;
+    op_data->started = FALSE;
+    syncevo_server_start_session (data->server,
+                                  data->current_service->name,
+                                  (SyncevoServerStartSessionCb)start_session_cb,
+                                  op_data);
+
+    show_main_view (data);
+}
+
+static void
 sync_clicked_cb (GtkButton *btn, app_data *data)
 {
     operation_data *op_data;
@@ -300,45 +405,6 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
                                data);
         set_sync_progress (data, -1.0, _("Trying to cancel sync"));
     } else {
-        char *message = NULL;
-
-        /* confirmation dialog for destructive sync options */
-        switch (data->mode) {
-        case SYNCEVO_SYNC_REFRESH_FROM_SERVER:
-            message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
-                                         "data from %s? This is not usually advised."),
-                                       data->current_service->name);
-            break;
-        case SYNCEVO_SYNC_REFRESH_FROM_CLIENT:
-            message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
-                                         "your local data? This is not usually advised."),
-                                       data->current_service->name);
-            break;
-        default:
-            ;
-        }
-        if (message) {
-            GtkWidget *w;
-            int ret;
-            w = gtk_message_dialog_new (GTK_WINDOW (data->sync_win),
-                                        GTK_DIALOG_MODAL,
-                                        GTK_MESSAGE_QUESTION,
-                                        GTK_BUTTONS_NONE,
-                                        "%s",
-                                        message);
-            gtk_dialog_add_buttons (GTK_DIALOG (w), 
-                                    _("No, cancel sync"),
-                                    GTK_RESPONSE_NO,
-                                    _("Yes, delete and replace"),
-                                    GTK_RESPONSE_YES,
-                                    NULL);
-            ret = gtk_dialog_run (GTK_DIALOG (w));
-            gtk_widget_destroy (w);
-            g_free (message);
-            if (ret != GTK_RESPONSE_YES) {
-                return;
-            }
-        }
 
         op_data = g_slice_new (operation_data);
         op_data->data = data;
@@ -466,6 +532,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
+        gtk_widget_set_sensitive (data->emergency_btn, FALSE);
         break;
     case SYNC_UI_STATE_NO_SERVER:
         gtk_widget_hide (data->service_box);
@@ -481,6 +548,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
+        gtk_widget_set_sensitive (data->emergency_btn, FALSE);
         gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->change_service_btn);
         break;
     case SYNC_UI_STATE_SERVER_FAILURE:
@@ -494,6 +562,7 @@ set_app_state (app_data *data, app_state state)
 
         gtk_widget_set_sensitive (data->main_frame, FALSE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
+        gtk_widget_set_sensitive (data->emergency_btn, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
         break;
     case SYNC_UI_STATE_SERVER_OK:
@@ -509,6 +578,7 @@ set_app_state (app_data *data, app_state state)
         }
         gtk_widget_set_sensitive (data->sync_btn, data->online);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
+        gtk_widget_set_sensitive (data->emergency_btn, TRUE);
         /* TRANSLATORS: These are for the button in main view, right side.
            Keep line length below ~20 characters, use two lines if needed */
         if (data->synced_this_session)
@@ -527,6 +597,7 @@ set_app_state (app_data *data, app_state state)
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Syncing"));
         gtk_widget_set_sensitive (data->main_frame, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
+        gtk_widget_set_sensitive (data->emergency_btn, FALSE);
 
         gtk_widget_set_sensitive (data->sync_btn, support_canceling);
         if (support_canceling) {
@@ -539,14 +610,6 @@ set_app_state (app_data *data, app_state state)
         break;
     default:
         g_assert_not_reached ();
-    }
-}
-
-static void
-sync_type_toggled_cb (GObject *radio, app_data *data)
-{
-    if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (radio))) {
-        data->mode = GPOINTER_TO_INT (g_object_get_data (radio, "mode"));
     }
 }
 
@@ -693,8 +756,7 @@ init_ui (app_data *data)
 {
     GtkBuilder *builder;
     GError *error = NULL;
-    GObject *radio;
-    GtkWidget *frame, * service_error_box;
+    GtkWidget *frame, * service_error_box, *btn;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -736,24 +798,23 @@ init_ui (app_data *data)
     g_signal_connect (data->new_service_btn, "clicked",
                       G_CALLBACK (setup_new_service_clicked), data);
 
+    /* service list view */
     data->scrolled_window = GTK_WIDGET (gtk_builder_get_object (builder, "scrolledwindow"));
     data->services_box = GTK_WIDGET (gtk_builder_get_object (builder, "services_box"));
     g_signal_connect(data->services_box, "size-allocate",
                      G_CALLBACK (services_box_allocate_cb), data);
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
-    radio = gtk_builder_get_object (builder, "two_way_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_TWO_WAY));
-    g_signal_connect (radio, "toggled",
-                      G_CALLBACK (sync_type_toggled_cb), data);
-    radio = gtk_builder_get_object (builder, "one_way_from_remote_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_REFRESH_FROM_SERVER));
-    g_signal_connect (radio, "toggled",
-                      G_CALLBACK (sync_type_toggled_cb), data);
-    radio = gtk_builder_get_object (builder, "one_way_from_local_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_REFRESH_FROM_CLIENT));
-    g_signal_connect (radio, "toggled",
-                      G_CALLBACK (sync_type_toggled_cb), data);
+    /* emergency view */
+    btn = GTK_WIDGET (gtk_builder_get_object (builder, "slow_sync_btn"));
+    g_signal_connect (btn, "clicked",
+                      G_CALLBACK (slow_sync_clicked_cb), data);
+    btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_server_btn"));
+    g_signal_connect (btn, "clicked",
+                      G_CALLBACK (refresh_from_server_clicked_cb), data);
+    btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_client_btn"));
+    g_signal_connect (btn, "clicked",
+                      G_CALLBACK (refresh_from_client_clicked_cb), data);
 
     /* No (documented) way to add own widgets to gtkbuilder it seems...
        swap the all dummy widgets with Muxwidgets */
@@ -1585,29 +1646,46 @@ save_config (app_data *data, SyncevoSession *session)
 }
 
 static void
-sync (app_data *data, SyncevoSession *session)
+sync (operation_data *op_data, SyncevoSession *session)
 {
     GHashTable *source_modes;
     GHashTableIter iter;
     source_config *source;
+    SyncevoSyncMode mode;
 
-   /* override the sync mode in config with data->mode,
-     * then override all non-supported sources with "none".  */
+    app_data *data = op_data->data;
+
+   /* override all non-supported with "none".  */
     source_modes = syncevo_source_modes_new ();
 
     g_hash_table_iter_init (&iter, data->current_service->source_configs);
     while (g_hash_table_iter_next (&iter, NULL, (gpointer)&source)) {
-        if (!source->supported_locally ||
-            !source_config_is_enabled (source)) {
-
+        if (!source->supported_locally) {
             syncevo_source_modes_add (source_modes,
                                       source->name,
                                       SYNCEVO_SYNC_NONE);
         }
     }
 
+    /* use given mode or use default for normal syncs */
+    switch (op_data->operation) {
+    case OP_SYNC:
+        mode = SYNCEVO_SYNC_DEFAULT;
+        break;
+    case OP_SYNC_SLOW:
+        mode = SYNCEVO_SYNC_SLOW;
+        break;
+    case OP_SYNC_REFRESH_FROM_CLIENT:
+        mode = SYNCEVO_SYNC_REFRESH_FROM_CLIENT;
+        break;
+    case OP_SYNC_REFRESH_FROM_SERVER:
+        mode = SYNCEVO_SYNC_REFRESH_FROM_SERVER;
+        break;
+    default:
+        g_warn_if_reached();
+    }
     syncevo_session_sync (session,
-                          data->mode,
+                          mode,
                           source_modes,
                           (SyncevoSessionGenericCb)sync_cb,
                           data);
@@ -1617,7 +1695,7 @@ sync (app_data *data, SyncevoSession *session)
 static void
 set_config_for_sync_cb (SyncevoSession *session,
                         GError *error,
-                        app_data *data)
+                        operation_data *op_data)
 {
     if (error) {
         g_warning ("Error in Session.SetConfig: %s", error->message);
@@ -1626,12 +1704,14 @@ set_config_for_sync_cb (SyncevoSession *session,
         return;
     }
 
-    sync (data, session);
+    sync (op_data, session);
 }
 
 static void
 run_operation (operation_data *op_data, SyncevoSession *session)
 {
+  SyncevoConfig *config; 
+
     /* when we first get idle, start the operation */
     if (op_data->started) {
         return;
@@ -1641,15 +1721,20 @@ run_operation (operation_data *op_data, SyncevoSession *session)
     /* time for business */
     switch (op_data->operation) {
     case OP_SYNC:
+    case OP_SYNC_SLOW:
+    case OP_SYNC_REFRESH_FROM_CLIENT:
+    case OP_SYNC_REFRESH_FROM_SERVER:
         /* Make sure we don't get change diffs printed out, then sync */
-        syncevo_config_set_value (op_data->data->current_service->config,
+        config = g_hash_table_new (g_str_hash, g_str_equal);
+        syncevo_config_set_value (config,
                                   NULL, "printChanges", "0");
         syncevo_session_set_config (session,
                                     TRUE,
                                     TRUE,
-                                    op_data->data->current_service->config,
+                                    config,
                                     (SyncevoSessionGenericCb)set_config_for_sync_cb,
-                                    op_data->data);
+                                    op_data);
+        syncevo_config_free (config);
 
         break;
     case OP_SAVE:
@@ -1800,7 +1885,7 @@ static void
 show_main_view (app_data *data)
 {
 #ifdef USE_MOBLIN_UX
-    mux_window_set_settings_visible (MUX_WINDOW (data->sync_win), FALSE);
+    mux_window_set_current_page (MUX_WINDOW (data->sync_win), -1);
 #else
     gtk_widget_hide (data->services_win);
 #endif
@@ -1822,6 +1907,7 @@ get_error_string_for_code (int error_code)
     case DB_NotFound:
         return g_strdup(_("Not found"));
     case DB_Fatal:
+        /* This can happen when EDS is borked, restart may help... */
         return g_strdup(_("Fatal database error"));
     case DB_Error:
         return g_strdup(_("Database error"));
