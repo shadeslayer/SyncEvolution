@@ -23,7 +23,7 @@ SUBDIRS = $(SYNTHESIS_SUBDIR) $(DBUS_DIRS) syncevo $(BACKENDS) $(GUI_DIR)
 DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui
 BUILT_SOURCES =
 
-AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS) $(GLIB_CFLAGS)
+AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS)
 
 EXTRA_PROGRAMS =
 TESTS =
@@ -75,7 +75,7 @@ CORE_SOURCES += $(BACKEND_REGISTRIES)
 endif
 
 CORE_CXXFLAGS = $(SYNTHESIS_CFLAGS)
-CORE_LDADD = $(SYNCEVOLUTION_LDADD) syncevo/libsyncevolution.la $(GLIB_LIBS) $(LIBS)
+CORE_LDADD = $(SYNCEVOLUTION_LDADD) syncevo/libsyncevolution.la $(GLIB_LIBS) $(GTHREAD_LIBS) $(GOBJECT_LIBS) $(LIBS)
 CORE_DEP = $(SYNCEVOLUTION_DEP) syncevo/libsyncevolution.la $(SYNTHESIS_DEP)
 CORE_LD_FLAGS = -uSyncEvolution_Module_Version -Wl,--export-dynamic
 

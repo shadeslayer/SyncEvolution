@@ -560,7 +560,7 @@ void EvolutionCalendarSource::removeItem(const string &luid)
 icalcomponent *EvolutionCalendarSource::retrieveItem(const ItemID &id)
 {
     GError *gerror = NULL;
-    icalcomponent *comp;
+    icalcomponent *comp = NULL;
 
     if (!e_cal_get_object(m_calendar,
                           id.m_uid.c_str(),
