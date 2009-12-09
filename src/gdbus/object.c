@@ -1041,12 +1041,13 @@ char *printf_dyn(const char *format, va_list ap)
         va_copy(aq, ap);
 
         if (size < realsize) {
+            char *oldbuffer = buffer;
             buffer = (char *)realloc(buffer, realsize + 1);
             if (!buffer) {
-                if (buffer) {
-                    free(buffer);
+                if (oldbuffer) {
+                    free(oldbuffer);
                 }
-                return "";
+                return strdup("");
             }
             size = realsize;
         }
@@ -1076,14 +1077,16 @@ char *printf_dyn(const char *format, va_list ap)
 DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
 						const char *format, va_list args)
 {
-	DBusMessage *msg;
+	DBusMessage *msg = NULL;
         char *descr;
 
 	DBG("message %p name %s", message, name);
 
 	descr = printf_dyn(format, args);
-	msg = dbus_message_new_error(message, name, descr);
-	free(descr);
+        if (descr) {
+            msg = dbus_message_new_error(message, name, descr);
+            free(descr);
+        }
 	return msg;
 }
 
