@@ -61,7 +61,7 @@ while [ $i -le $count ]; do
     # - write index
     id=`git write-tree`
     # - find information for commit and commit
-    parent=`git show-ref --hash $TARGET_BRANCH`
+    parent=`git show-ref --heads --hash $TARGET_BRANCH`
     origid=`grep ^commit $MSG | sed -e 's/commit //'`
     GIT_AUTHOR_NAME="`grep ^Author: $MSG | sed -e 's/Author: \(.*\) <.*/\1/'`"
     GIT_AUTHOR_EMAIL="`grep ^Author: $MSG | sed -e 's/Author: [^<]*<\([^>]*\)>/\1/'`"
