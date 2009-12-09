@@ -6,6 +6,27 @@ It is licensed under LGPL v2.1, see upstream COPYING.
 The source is included here because there is no stable
 upstream release. Patches added here need to be submitted
 upstream. Likewise, patches applied upstream must be imported.
+The build/import-gdbus.sh and build/export-gdbus.sh scripts
+automate that process.
 
-The build/import-gdbus.sh script automates that process.
-See build/import-foreign-git.sh for details.
+To import fixes from upstream:
+- checkout out libgdbus and syncevolution
+- enter syncevolution directory
+- if not done before, create local "gdbus" branch:
+  git branch gdbus origin/gdbus
+- run build/import-gdbus.sh
+- "gdbus" branch is now checked out and updated
+- verify changes, merge into master, etc.
+- push into remote syncevolution repo
+
+To export fixes to upstream:
+- check out relevant branch in syncevolution
+  which has our local changes (typically "master")
+- run build/export-gdbus.sh
+- send 0*.patch files to upstream
+
+Caveats:
+- only files explicitly mentioned in the two scripts
+  are imported/exports
+- Makefile changes are only imported, but not exported
+  (local changes not relevant upstream)
