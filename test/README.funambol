@@ -58,6 +58,9 @@ itodo20
 Both itodo20 and ical20:
   -- ACTION in VALARM is never sent although required by standard
      http://forge.ow2.org/tracker/index.php?func=detail&aid=313969&group_id=96&atid=100096
+  -- TRIGGER + relative alarm time is replaced with a fixed UTC date+time (wrong, fires only
+     once for recurring meetings, ignores timezone changes)
+     
 
 * Known test failures:
 Client::Sync::vcard21
