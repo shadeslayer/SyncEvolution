@@ -981,20 +981,28 @@ void SyncSourceAdmin::resetMap()
 
 void SyncSourceAdmin::mapid2entry(sysync::cMapID mID, string &key, string &value)
 {
-    key = SafeConfigNode::escape(mID->localID ? mID->localID : "", true, false);
-    value = StringPrintf("%s %x %x",
+    key = StringPrintf ("%s-%x",
+                         SafeConfigNode::escape(mID->localID ? mID->localID : "", true, false).c_str(),
+                         mID->ident);
+    value = StringPrintf("%s %x",
                          SafeConfigNode::escape(mID->remoteID ? mID->remoteID : "", true, false).c_str(),
-                         mID->flags, mID->ident);
+                         mID->flags);
 }
 
 void SyncSourceAdmin::entry2mapid(const string &key, const string &value, sysync::MapID mID)
 {
-    mID->localID = StrAlloc(SafeConfigNode::unescape(key).c_str());
+    std::string rawkey = SafeConfigNode::unescape(key);
+    size_t found = rawkey.find_last_of ("-");
+    mID->localID = StrAlloc(rawkey.substr(0,found).c_str());
+    if (found != rawkey.npos) {
+        mID->ident =  strtol(rawkey.substr(found+1).c_str(), NULL, 16);
+    } else {
+        mID->ident = 0;
+    }
     std::vector< std::string > tokens;
     boost::split(tokens, value, boost::is_from_range(' ', ' '));
     mID->remoteID = tokens.size() > 0 ? StrAlloc(tokens[0].c_str()) : NULL;
     mID->flags = tokens.size() > 1 ? strtol(tokens[1].c_str(), NULL, 16) : 0;
-    mID->ident = tokens.size() > 2 ? strtol(tokens[2].c_str(), NULL, 16) : 0;
 }
 
 void SyncSourceAdmin::init(SyncSource::Operations &ops,
