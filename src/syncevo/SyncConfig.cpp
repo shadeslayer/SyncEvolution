@@ -585,10 +585,12 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
     } else if (boost::iequals(server, "zyb")) {
         config->setSyncURL("http://sync.zyb.com");
         config->setWebURL("http://www.zyb.com");
+        config->setConsumerReady(true);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("contacts");
         source = config->getSyncSourceConfig("calendar");
         source->setURI("calendar");
+        source->setSync("disabled");
         source = config->getSyncSourceConfig("todo");
         source->setURI("task");
         source->setSync("disabled");
