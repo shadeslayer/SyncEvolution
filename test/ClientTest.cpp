@@ -2589,13 +2589,19 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
                        withLargeObject));
 
     // copy to second client
-    accessClientB->doSync("recv",
-                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                                      CheckSyncReport(-1,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER), // number of items received from server depends on source
-                                      withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
-                                      withMaxMsgSize ? maxMsgSize * 100 : 0,
-                                      withLargeObject));
-
+    const char *value = getenv ("CLIENT_TEST_NOREFRESH");
+    // If refresh_from_server or refresh_from_client (depending on this is a
+    // server or client) is not supported, we can still test via slow sync.
+    if (value) {
+        accessClientB->refreshClient();
+    } else {
+        accessClientB->doSync("recv",
+                SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                    CheckSyncReport(-1,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER), // number of items received from server depends on source
+                    withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
+                    withMaxMsgSize ? maxMsgSize * 100 : 0,
+                    withLargeObject));
+    }
     // compare
     compareDatabases();
 }
