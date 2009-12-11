@@ -686,7 +686,7 @@ sync_config_widget_update_label (SyncConfigWidget *self)
         char *url;
         char *str;
 
-        syncevo_config_get_value (self->config->config, NULL, "WebURL", &url);
+        syncevo_config_get_value (self->config->config, NULL, "syncURL", &url);
 
         if (self->current) {
             str = g_strdup_printf ("<b>%s</b>", self->config->name);
@@ -924,7 +924,7 @@ sync_config_widget_real_init (SyncConfigWidget *self,
         gtk_widget_show (self->label);
     }
 
-    syncevo_config_get_value (self->config->config, NULL, "syncURL", &url);
+    syncevo_config_get_value (self->config->config, NULL, "WebURL", &url);
     syncevo_config_get_value (self->config->config, NULL, "IconURI", &icon);
 
     buf = load_icon (icon, SYNC_UI_LIST_ICON_SIZE);
@@ -971,12 +971,41 @@ get_config_cb (SyncevoServer *syncevo,
 }
 
 static gboolean
+label_button_expose_cb (GtkWidget      *widget,
+                        GdkEventExpose *event,
+                        SyncConfigWidget *self)
+{
+    GtkExpanderStyle style;
+    gint indicator_x, indicator_y;
+
+    indicator_x = widget->style->xthickness + INDICATOR_SIZE / 2;
+    indicator_y = widget->style->ythickness +
+                  widget->allocation.height / 2;
+
+    if (self->expanded) {
+        style = GTK_EXPANDER_EXPANDED;
+    } else {
+        style = GTK_EXPANDER_COLLAPSED;
+    }
+
+    gtk_paint_expander (widget->style,
+                        widget->window,
+                        widget->state,
+                        NULL,
+                        GTK_WIDGET (self),
+                        NULL,
+                        indicator_x,
+                        indicator_y,
+                        style);
+
+    return FALSE;
+}
+
+static gboolean
 sync_config_widget_expose_event (GtkWidget      *widget,
                                  GdkEventExpose *event)
 {
     GdkRectangle rect;
-    GtkExpanderStyle style;
-    gint indicator_x, indicator_y;
     SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
 
     rect.x = widget->allocation.x;
@@ -1016,26 +1045,6 @@ sync_config_widget_expose_event (GtkWidget      *widget,
                        rect.height - (shadow_y - rect.y) - widget->style->ythickness);
     }
 
-
-    if (self->expanded) {
-        style = GTK_EXPANDER_EXPANDED;
-    } else {
-        style = GTK_EXPANDER_COLLAPSED;
-    }
-
-    indicator_x = rect.x + widget->style->xthickness + INDICATOR_SIZE / 2;
-    indicator_y = rect.y + widget->style->ythickness +
-                            self->label_box->allocation.height / 2;
-
-    gtk_paint_expander (widget->style,
-                        widget->window,
-                        widget->state,
-                        NULL,
-                        widget,
-                        NULL,
-                        indicator_x,
-                        indicator_y,
-                        style);
 
     gtk_container_propagate_expose (GTK_CONTAINER (self),
                                     self->label_box, event);
@@ -1345,6 +1354,7 @@ label_enter_notify_cb (GtkWidget *widget,
     if (!self->expanded) {
         gtk_widget_show (self->button);
     }
+    gtk_widget_set_state (self->label_box, GTK_STATE_PRELIGHT);
 }
 
 static void
@@ -1354,6 +1364,7 @@ label_leave_notify_cb (GtkWidget *widget,
 {
     if (event->detail != GDK_NOTIFY_INFERIOR) {
         gtk_widget_hide (self->button);
+        gtk_widget_set_state (self->label_box, GTK_STATE_NORMAL);
     }
 }
 
@@ -1387,15 +1398,19 @@ sync_config_widget_init (SyncConfigWidget *self)
                       G_CALLBACK (label_leave_notify_cb), self);
     g_signal_connect (self->label_box, "button-release-event",
                       G_CALLBACK (label_button_release_cb), self);
+    g_signal_connect (self->label_box, "expose-event",
+                      G_CALLBACK (label_button_expose_cb), self);
 
     hbox = gtk_hbox_new (FALSE, 0);
     gtk_widget_show (hbox);
     gtk_container_add (GTK_CONTAINER (self->label_box), hbox);
 
     self->image = gtk_image_new ();
+    /* leave room for drawing the expander indicator in expose handler */
     gtk_widget_set_size_request (self->image, 
-                                 SYNC_UI_LIST_ICON_SIZE,
+                                 SYNC_UI_LIST_ICON_SIZE + INDICATOR_SIZE,
                                  SYNC_UI_LIST_ICON_SIZE);
+    gtk_misc_set_alignment (GTK_MISC (self->image), 1.0, 0.5);
     gtk_widget_show (self->image);
     gtk_box_pack_start (GTK_BOX (hbox), self->image, FALSE, FALSE, 8);
 
