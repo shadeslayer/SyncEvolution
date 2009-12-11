@@ -218,7 +218,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
     SyncevoConfig *config;
     save_config_data *data;
-    const char *username, *password, *sync_url, *name;
+    const char *username, *password, *sync_url;
     char *real_url;
     gboolean send, receive;
     SyncevoSyncMode mode;
@@ -228,8 +228,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     }
 
     config = self->config->config;
-
-    name = gtk_entry_get_text (GTK_ENTRY (self->entry));
+    self->config->name = g_strdup (gtk_entry_get_text (GTK_ENTRY (self->entry)));
 
     if (self->mode_changed) {
         GHashTableIter iter;
@@ -277,7 +276,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     syncevo_config_set_value (config, NULL, "password", password);
 
 
-    if (!name || strlen (name) == 0 ||
+    if (!self->config->name || strlen (self->config->name) == 0 ||
         !sync_url || strlen (sync_url) == 0) {
         /* TODO show in UI: service settings missing name or url */
         show_error_dialog (GTK_WIDGET (self), 
@@ -289,15 +288,14 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
                                    (ConfigFunc)update_source_uri,
                                    self);
 
-
-    syncevo_config_set_value (config, NULL, "defaultPeer", name);
+    syncevo_config_set_value (config, NULL, "defaultPeer", self->config->name);
     sync_config_widget_set_current (self, TRUE);
 
     data = g_slice_new (save_config_data);
     data->widget = self;
     data->delete = FALSE;
     syncevo_server_start_session (self->server,
-                                  name,
+                                  self->config->name,
                                   (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
                                   data);
 
@@ -313,7 +311,9 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         return;
     }
 
-    sync_config_widget_set_current (self, FALSE);
+    if (self->current) {
+        sync_config_widget_set_current (self, FALSE);
+    }
 
     data = g_slice_new (save_config_data);
     data->widget = self;
@@ -333,11 +333,11 @@ static void update_buttons (SyncConfigWidget *self)
     } else {
         gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
                               _("Delete service"));
-        if (self->configured) {
-            gtk_widget_show (GTK_WIDGET (self->reset_delete_button));
-        } else {
-            gtk_widget_hide (GTK_WIDGET (self->reset_delete_button));
-        }
+    }
+    if (self->configured) {
+        gtk_widget_show (GTK_WIDGET (self->reset_delete_button));
+    } else {
+        gtk_widget_hide (GTK_WIDGET (self->reset_delete_button));
     }
 
     if (self->unset || self->current) {
@@ -915,10 +915,13 @@ sync_config_widget_real_init (SyncConfigWidget *self,
         strcmp (self->config->name, "default") == 0) {
 
         init_default_config (self->config);
+        self->has_template = FALSE;
         gtk_widget_show (self->entry);
+        gtk_widget_hide (self->label);
     } else {
         /**/
         gtk_widget_hide (self->entry);
+        gtk_widget_show (self->label);
     }
 
     syncevo_config_get_value (self->config->config, NULL, "syncURL", &url);
@@ -957,11 +960,13 @@ get_config_cb (SyncevoServer *syncevo,
     if (error) {
         g_warning ("Server.GetConfig failed: %s", error->message);
         g_error_free (error);
+        g_object_thaw_notify (G_OBJECT (self));
 
         /* TODO: show in UI */
         return;
     }
     sync_config_widget_real_init (self, config);
+    g_object_thaw_notify (G_OBJECT (self));
 
 }
 
@@ -1117,6 +1122,9 @@ sync_config_widget_constructor (GType                  gtype,
         g_warning ("No SyncevoServer set for SyncConfigWidget");
     }
 
+    /* freeze notifys so we don't claim to have expanded until we have...
+       this could be achieved in more clean ways as well... */
+    g_object_freeze_notify (G_OBJECT (self));
     syncevo_server_get_config (self->server,
                                self->config->name,
                                self->has_template && !self->configured,

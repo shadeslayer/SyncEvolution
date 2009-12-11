@@ -1069,7 +1069,6 @@ config_widget_changed_cb (GtkWidget *widget, app_data *data)
 {
     if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
         const char *name = NULL;
-
         name = sync_config_widget_get_name (SYNC_CONFIG_WIDGET (widget));
         reload_config (data, name);
         show_main_view (data);
@@ -1114,21 +1113,37 @@ add_server_to_box (GtkBox *box,
     return item;
 }
 
+static void
+find_new_service_config (SyncConfigWidget *w, GtkWidget **found)
+{
+    if (SYNC_IS_CONFIG_WIDGET (w)) {
+        if (!sync_config_widget_get_configured (w) &&
+            !sync_config_widget_get_has_template (w)) {
+            *found = GTK_WIDGET (w);
+        }
+    }
+}
 
 static void
 setup_new_service_clicked (GtkButton *btn, app_data *data)
 {
-
-    GtkWidget *widget;
+    GtkWidget *widget = NULL;
 
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)unexpand_config_widget,
                            NULL);
 
-    widget = add_server_to_box (GTK_BOX (data->services_box),
-                                "default",
-                                FALSE, TRUE,
-                                data);
+    /* if a new service config has already been added, use that.
+     * Otherwise add one. */
+    gtk_container_foreach (GTK_CONTAINER (data->services_box),
+                           (GtkCallback)find_new_service_config,
+                           &widget);
+    if (!widget) {
+        widget = add_server_to_box (GTK_BOX (data->services_box),
+                                    "default",
+                                    FALSE, TRUE,
+                                    data);
+    }
     sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (widget), TRUE);
 }
 
