@@ -116,7 +116,7 @@ sync_config_widget_save_config (SyncConfigWidget *self,
     }
 
     syncevo_session_set_config (session,
-                                TRUE,
+                                FALSE,
                                 FALSE,
                                 self->config->config,
                                 (SyncevoSessionGenericCb)set_config_cb,
@@ -313,6 +313,8 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         return;
     }
 
+    sync_config_widget_set_current (self, FALSE);
+
     data = g_slice_new (save_config_data);
     data->widget = self;
     data->delete = TRUE;
@@ -360,7 +362,6 @@ check_source_cb (SyncevoServer *server,
                  source_widgets *widgets)
 {
     gboolean show = TRUE;
-
     if (error) {
         if(error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
            dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_SOURCE_UNUSABLE)) {
@@ -448,11 +449,19 @@ init_source (char *name,
                                widgets->entry,
                                1, 2, row, row + 1);
 
-    syncevo_server_check_source (self->server,
-                                 self->config->name,
-                                 name,
-                                 (SyncevoServerGenericCb)check_source_cb,
-                                 widgets);
+    if (self->configured) {
+        syncevo_server_check_source (self->server,
+                                     self->config->name,
+                                     name,
+                                     (SyncevoServerGenericCb)check_source_cb,
+                                     widgets);
+    } else {
+        /* TODO: should do a temp config to test eve n template sources */
+        gtk_widget_show (widgets->source_toggle_label);
+        gtk_widget_show (widgets->label);
+        gtk_widget_show (widgets->entry);
+        gtk_widget_show (widgets->check);
+    }
 }
 
 static void
