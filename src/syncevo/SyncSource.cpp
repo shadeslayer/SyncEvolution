@@ -966,9 +966,11 @@ sysync::TSyError SyncSourceAdmin::deleteMapItem(sysync::cMapID mID)
 void SyncSourceAdmin::flush()
 {
     m_configNode->flush();
-    m_mappingNode->clear();
-    m_mappingNode->writeProperties(m_mapping);
-    m_mappingNode->flush();
+    if (m_mappingLoaded) {
+        m_mappingNode->clear();
+        m_mappingNode->writeProperties(m_mapping);
+        m_mappingNode->flush();
+    }
 }
 
 void SyncSourceAdmin::resetMap()
@@ -976,6 +978,7 @@ void SyncSourceAdmin::resetMap()
     m_mapping.clear();
     m_mappingNode->readProperties(m_mapping);
     m_mappingIterator = m_mapping.begin();
+    m_mappingLoaded = true;
 }
 
 
@@ -1013,6 +1016,7 @@ void SyncSourceAdmin::init(SyncSource::Operations &ops,
     m_configNode = config;
     m_adminPropertyName = adminPropertyName;
     m_mappingNode = mapping;
+    m_mappingLoaded = false;
 
     ops.m_loadAdminData = boost::bind(&SyncSourceAdmin::loadAdminData,
                                       this, _1, _2, _3);

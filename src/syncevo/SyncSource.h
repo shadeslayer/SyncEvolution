@@ -1515,6 +1515,7 @@ class SyncSourceAdmin : public virtual SyncSourceBase
     boost::shared_ptr<ConfigNode> m_configNode;
     std::string m_adminPropertyName;
     boost::shared_ptr<ConfigNode> m_mappingNode;
+    bool m_mappingLoaded;
 
     ConfigProps m_mapping;
     ConfigProps::const_iterator m_mappingIterator;
