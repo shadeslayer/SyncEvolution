@@ -1,0 +1,95 @@
+This document is used to show interoperability test information with Nokia
+phone 7210c. 
+
+* Nokia 7210c's (S40 5the) device information 
+    Man=Nokia
+    Mod=Nokia 7210c
+    SwV=V 05.60 10-12-08 RM-436 (c) N..
+    FwV=V 05.60 10-12-08 RM-436 (c) N..
+    Hwv=1001
+    DevID=Phone's device id
+    DevTyp=phone
+    VerDTD=1.2
+    UTC=-
+    SupportLargeObjs=true
+    SupportNumberOfChanges=true
+
+
+* Test Environment Variables Settings
+  CLIENT_TEST_SERVER=nokia_7210c CLIENT_TEST_XML=0 CLIENT_TEST_NOCHECK_SYNCMOD=1\
+  CLIENT_TEST_DELAY=3
+  CLIENT_TEST_MAX_ITEM_SIZE=512
+  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test/
+  CLIENT_TEST_NOCHECK_SYNCSTATS=1
+  CLIENT_TEST_MODE=server
+  CLIENT_TEST_FORCESLOW=1
+  CLIENT_TEST_NOREFRESH=1
+  CLIENT_TEST_NOUTC=1
+
+
+* Data formats we need to test:
+vcard21
+vcal1.0
+
+* Know Limitations in google server:
+Only supports WBXML for transmitting.
+Don't support refresh-from-client and refresh-from-server sync.
+Treat one-way-from-client and one-way-from-server the same as two-way sync.
+
+VCard21
+  'NOTE' has a limited size, about 80 characters, add/lost spaces in between.
+  'DESCRIPTION' add/lost spaces in between.
+  supoprts only one 'ADR', 'type' in 'ADR' is lost, only preserves one line.
+  supports three 'EMAIL', 'type' and 'X-EVOLUTION-UI-SLOT' lost.
+  supports 5 'TEL'
+  sometimes add a default 'unknown' photo.
+  -- Below properties are lost:
+  X-MOZILLA-HTML NICKNAME CALURL CATEGORIES  FBURL ROLE X-AIM X-ANNIVERSARY 
+  X-ASSISTANT X-EVOLUTION-BLOG-URL X-EVOLUTION-VIDEO-URL X-GROUPWISE X-ICQ 
+  X-MANAGER X-SPOUSE X-YAHOO
+  -- 'TEL' value do not preserve non-digits, add type=PREF by default.
+  -- 'N' mismatch, sometimes lost part of the value
+  -- 'ORG' only stores the first component.
+  -- 'X-EVOLUTION-FILE-AS' value incorrect
+
+* Known test failures:
+Not supported/applicable test:
+testConversion
+testComplexRefreshFromServer
+testDeleteAllRefresh
+testSlowSync
+testSlowSyncSemantic
+testRefresh*
+testOneWay*
+testMerge
+testManyDeletes
+testManyItems
+testItemsXML
+
+
+VCal1.0
+ VEVENT:
+ 'DESCRIPTION' add/lost spaces in between.
+ UTC time is supported by the phone though it does not declare in DevInf. (It
+ correctly parse UTC time but will not rely with UTC time).
+ Add 'CATEGORIES' by default as 'MEETING', 'PRIORITY' by default '0' 
+ VTODO:
+ 'PRIORITY' , 'CATEGORIES' and 'STATUS' value mismatch.
+ Don't support 'ORGANIZER'
+ 'ALARM' is not recognized.
+ Lost 'DTSTART'
+
+* Known test failures:
+Not supported/applicable test:
+testConversion
+testComplexRefreshFromServer
+testDeleteAllRefresh
+testSlowSync
+testSlowSyncSemantic
+testRefresh*
+testOneWay*
+testMerge
+testManyDeletes
+testManyItems
+testItemsXML
+

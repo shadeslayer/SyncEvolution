@@ -60,6 +60,7 @@ my $synthesis = $server =~ /synthesis/;
 my $zyb = $server =~ /zyb/;
 my $mobical = $server =~ /mobical/;
 my $memotoo = $server =~ /memotoo/;
+my $nokia_7210c = $server = ~ /nokia_7210c/;
 
 # TODO: this hack ensures that any synchronization is limited to
 # properties supported by Synthesis. Remove this again.
@@ -353,7 +354,48 @@ sub Normalize {
       }
     }
 
-    if ($funambol || $egroupware) {
+    if($nokia_7210c) {
+        if (/BEGIN:VCARD/m) {
+            #ignore PREF, as it will added by default
+            s/^TEL([^:\n]*);TYPE=PREF/TEL$1/mg;
+            #remove non-digit prefix in TEL
+            s/^TEL([^:\n]*):(\D*)/TEL$1:/mg;
+            #properties N mismatch, sometimes lost part of components
+            s/^(N|X-EVOLUTION-FILE-AS):.*\r?\n?/$1:[...]\n/gm;
+            #strip spaces in 'NOTE'
+            while (s/^(NOTE|DESCRIPTION):(\S+)[\t ]+(\S+)/$1:$2$3/mg) {}
+            #preserve 80 chars in NOTE
+            s/^NOTE:(.{70}).*\r?\n?/NOTE:$1\n/mg;
+            #preserve one ADDR
+
+            # ignore the PHOTO encoding data, sometimes it add a default photo
+            s/^PHOTO(.*?): .*\n//mg; 
+            #s/^(ADR)([^:;\n]*)(;TYPE=[^:\n]*)?:.*\r?\n?/$1:$4\n/mg;
+
+            #lost properties
+            s/^(NICKNAME|CATEGORIES|CALURI|FBURL|ROLE|X-AIM|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-MANAGER|X-SPOUSE|X-MOZILLA-HTML|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
+        }
+
+        if (/^BEGIN:VEVENT/m ) {
+            #The properties phones add by default
+            s/^(PRIORITY|CATEGORIES)(;[^:;\n]*)*:.*\r?\n?//gm;
+            #strip spaces in 'DESCRIPTION'
+            while (s/^DESCRIPTION:(\S+)[\t ]+(\S+)/DESCRIPTION:$1$2/mg) {}
+
+        }
+
+        if (/^BEGIN:VTODO/m) {
+            #mismatch properties
+            s/^(PRIORITY)(;[^:;\n]*)*:.*\r?\n?/$1:[...]\n/gm;
+            #lost properties
+            s/^(STATUS|DTSTART|CATEGORIES)(;[^:;\n]*)*:.*\r?\n?//gm;
+        }
+
+        #Testing with phones using vcalendar, do not support UID
+        s/^(UID|CLASS|SEQUENCE|TRANSP)(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
+
+    if ($funambol || $egroupware || $nokia_7210c) {
       # NOTE may be truncated due to length resistrictions
       s/^(NOTE(;[^:;\n]*)*:.{0,160}).*(\r?\n?)/$1$3/gm;
     }
