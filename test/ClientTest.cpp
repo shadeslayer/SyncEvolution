@@ -1385,6 +1385,7 @@ SyncTests::SyncTests(const std::string &name, ClientTest &cl, std::vector<int> s
     CppUnit::TestSuite(name),
     client(cl) {
     sourceArray = new int[sourceIndices.size() + 1];
+    int offset = 0;
     for (std::vector<int>::iterator it = sourceIndices.begin();
          it != sourceIndices.end();
          ++it) {
@@ -1392,11 +1393,15 @@ SyncTests::SyncTests(const std::string &name, ClientTest &cl, std::vector<int> s
         client.getSourceConfig(*it, config);
 
         if (config.sourceName) {
-            sourceArray[sources.size()] = *it;
-            sources.push_back(std::pair<int,LocalTests *>(*it, cl.createLocalTests(config.sourceName, *it, config)));
+            sourceArray[sources.size()+offset] = *it;
+            if (strcmp (config.sourceName, "super")) {
+                sources.push_back(std::pair<int,LocalTests *>(*it, cl.createLocalTests(config.sourceName, *it, config)));
+            } else {
+                offset++;
+            }
         }
     }
-    sourceArray[sources.size()] = -1;
+    sourceArray[sources.size()+offset] = -1;
 
     // check whether we have a second client
     ClientTest *clientB = cl.getClientB();

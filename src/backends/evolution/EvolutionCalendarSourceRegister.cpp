@@ -329,6 +329,16 @@ public:
     }
 } iTodo20Test;
 
+static class SuperTest : public RegisterSyncSourceTest {
+public:
+    SuperTest() : RegisterSyncSourceTest("super", "super") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.type = "evolution-calendar";
+    }
+} superTest;
+
 static class MemoTest : public RegisterSyncSourceTest {
 public:
     MemoTest() : RegisterSyncSourceTest("text", "text") {}
