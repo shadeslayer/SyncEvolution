@@ -1464,6 +1464,8 @@ get_reports_cb (SyncevoServer *server,
                 time = strtol (val, NULL, 10);
             } else if (strcmp (strs[0], "status") == 0) {
                 status = strtol (val, NULL, 10);
+            } else if (strcmp (strs[0], "peer") == 0) {
+                /* not used */
             } else {
                 g_warning ("Unidentified sync report item: %s=%s",
                            key, val);
