@@ -108,6 +108,7 @@ void syncevo_config_foreach_source (SyncevoConfig *config,
 void syncevo_config_free (SyncevoConfig *config);
 
 const char* syncevo_sync_mode_to_string (SyncevoSyncMode mode);
+SyncevoSyncMode syncevo_sync_mode_from_string (const char *mode_str);
 
 SyncevoSourceModes* syncevo_source_modes_new ();
 void syncevo_source_modes_add (SyncevoSourceModes *source_modes,
