@@ -394,6 +394,22 @@ mode_widget_clicked_cb (GtkWidget *widget, SyncConfigWidget *self)
 }
 
 static void
+source_entry_notify_text_cb (GObject *gobject,
+                             GParamSpec *pspec,
+                             source_widgets *widgets)
+{
+    gboolean new_editable, old_editable;
+
+    new_editable = (gtk_entry_get_text_length (GTK_ENTRY (widgets->entry)) > 0);
+    old_editable = gtk_widget_get_sensitive (widgets->check);
+    if (new_editable != old_editable) {
+        gtk_widget_set_sensitive (widgets->check, new_editable);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widgets->check),
+                                      new_editable);
+    }
+}
+
+static void
 init_source (char *name,
              GHashTable *source_configuration,
              SyncConfigWidget *self)
@@ -440,6 +456,8 @@ init_source (char *name,
                       0, 1, row, row + 1, GTK_FILL, GTK_EXPAND, 0, 0);
 
     widgets->entry = gtk_entry_new ();
+    g_signal_connect (widgets->entry, "notify::text",
+                      G_CALLBACK (source_entry_notify_text_cb), widgets);
     gtk_entry_set_max_length (GTK_ENTRY (widgets->entry), 99);
     gtk_entry_set_width_chars (GTK_ENTRY (widgets->entry), 80);
     if (uri) {
@@ -448,6 +466,9 @@ init_source (char *name,
     gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table),
                                widgets->entry,
                                1, 2, row, row + 1);
+
+    gtk_widget_set_sensitive (widgets->check,
+                              uri && strlen (uri) > 0);
 
     if (self->configured) {
         syncevo_server_check_source (self->server,
