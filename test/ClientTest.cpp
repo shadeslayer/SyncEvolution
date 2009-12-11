@@ -3359,6 +3359,12 @@ void ClientTest::getTestData(const char *type, Config &config)
     config.dump = dump;
     config.compare = compare;
 
+    env = getenv ("CLIENT_TEST_NOUTC");
+    if (env && !strcmp (env, "t")) {
+        if (!strcmp (type, "ical20")) {
+        type = (string (type) + "_noutc").c_str();
+        }
+    }
     if (!strcmp(type, "vcard30")) {
         config.sourceName = "vcard30";
         config.sourceNameServerTemplate = "addressbook";
@@ -3685,6 +3691,96 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.uniqueProperties = "SUMMARY:UID:LOCATION";
         config.sizeProperty = "DESCRIPTION";
         config.testcases = "testcases/vcal10.ics";
+    } else if(!strcmp(type, "ical20_noutc")) {
+        config.sourceName = "ical20";
+        config.sourceNameServerTemplate = "calendar";
+        config.uri = "cal2"; // ScheduleWorld
+        config.type = "text/x-vcalendar";
+        config.insertItem =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VTIMEZONE\n"
+            "TZID:Asia/Shanghai\n"
+            "BEGIN:STANDARD\n"
+            "DTSTART:19670101T000000\n"
+            "TZOFFSETFROM:+0800\n"
+            "TZOFFSETTO:+0800\n"
+            "END:STANDARD\n"
+            "END:VTIMEZONE\n"
+            "BEGIN:VTIMEZONE\n"
+            "TZID:/freeassociation.sourceforge.net/Tzfile/Asia/Shanghai\n"
+            "X-LIC-LOCATION:Asia/Shanghai\n"
+            "BEGIN:STANDARD\n"
+            "TZNAME:CST\n"
+            "DTSTART:19700914T230000\n"
+            "TZOFFSETFROM:+0800\n"
+            "TZOFFSETTO:+0800\n"
+            "END:STANDARD\n"
+            "END:VTIMEZONE\n"
+            "BEGIN:VEVENT\n"
+            "SUMMARY:phone meeting\n"
+            "DTEND;TZID=/freeassociation.sourceforge.net/Tzfile/Asia/Shanghai:20060406T163000\n"
+            "DTSTART;TZID=/freeassociation.sourceforge.net/Tzfile/Asia/Shanghai:20060406T160000\n"
+            "UID:1234567890!@#$%^&*()<>@dummy\n"
+            "DTSTAMP:20060406T211449Z\n"
+            "LAST-MODIFIED:20060409T213201\n"
+            "CREATED:20060409T213201\n"
+            "LOCATION:my office\n"
+            "DESCRIPTION:let's talk<<REVISION>>\n"
+            "CLASS:PUBLIC\n"
+            "TRANSP:OPAQUE\n"
+            "SEQUENCE:1\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+        config.updateItem =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VTIMEZONE\n"
+            "TZID:Asia/Shanghai\n"
+            "BEGIN:STANDARD\n"
+            "DTSTART:19670101T000000\n"
+            "TZOFFSETFROM:+0800\n"
+            "TZOFFSETTO:+0800\n"
+            "END:STANDARD\n"
+            "END:VTIMEZONE\n"
+            "BEGIN:VTIMEZONE\n"
+            "TZID:/freeassociation.sourceforge.net/Tzfile/Asia/Shanghai\n"
+            "X-LIC-LOCATION:Asia/Shanghai\n"
+            "BEGIN:STANDARD\n"
+            "TZNAME:CST\n"
+            "DTSTART:19700914T230000\n"
+            "TZOFFSETFROM:+0800\n"
+            "TZOFFSETTO:+0800\n"
+            "END:STANDARD\n"
+            "END:VTIMEZONE\n"
+            "BEGIN:VEVENT\n"
+            "SUMMARY:meeting on site\n"
+            "DTEND;TZID=/freeassociation.sourceforge.net/Tzfile/Asia/Shanghai:20060406T163000\n"
+            "DTSTART;TZID=/freeassociation.sourceforge.net/Tzfile/Asia/Shanghai:20060406T160000\n"
+            "UID:1234567890!@#$%^&*()<>@dummy\n"
+            "DTSTAMP:20060406T211449Z\n"
+            "LAST-MODIFIED:20060409T213201\n"
+            "CREATED:20060409T213201\n"
+            "LOCATION:big meeting room\n"
+            "DESCRIPTION:nice to see you\n"
+            "CLASS:PUBLIC\n"
+            "TRANSP:OPAQUE\n"
+            "SEQUENCE:1\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+        /* change location and description of insertItem in testMerge(), add alarm */
+        config.mergeItem1 = "";
+        config.mergeItem2 = "";
+        config.parentItem = "";
+        config.childItem = "";
+        config.templateItem = config.insertItem;
+        config.uniqueProperties = "SUMMARY:UID:LOCATION";
+        config.sizeProperty = "DESCRIPTION";
+        config.testcases = "testcases/ical20.ics";
     } else if(!strcmp(type, "itodo20")) {
         config.sourceName = "itodo20";
         config.sourceNameServerTemplate = "todo";
