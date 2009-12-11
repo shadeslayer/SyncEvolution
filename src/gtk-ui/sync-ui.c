@@ -248,10 +248,10 @@ reload_config (app_data *data, const char *server)
         set_app_state (data, SYNC_UI_STATE_NO_SERVER);
         data->current_service = NULL;
     } else {
-        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
         data->synced_this_session = FALSE;
         data->current_service = g_slice_new0 (server_config);
         data->current_service->name = g_strdup (server);
+        set_app_state (data, SYNC_UI_STATE_GETTING_SERVER);
 
         syncevo_server_get_config (data->server,
                                    data->current_service->name,
