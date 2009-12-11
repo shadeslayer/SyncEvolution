@@ -686,7 +686,7 @@ sync_config_widget_update_label (SyncConfigWidget *self)
         char *url;
         char *str;
 
-        syncevo_config_get_value (self->config->config, NULL, "syncURL", &url);
+        syncevo_config_get_value (self->config->config, NULL, "WebURL", &url);
 
         if (self->current) {
             str = g_strdup_printf ("<b>%s</b>", self->config->name);
