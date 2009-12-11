@@ -539,6 +539,9 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     if (self->config->name) {
         gtk_entry_set_text (GTK_ENTRY (self->entry), self->config->name);
     }
+    if (!self->config->name || strlen (self->config->name) == 0) {
+        gtk_expander_set_expanded (GTK_EXPANDER (self->expander), TRUE);
+    }
 
     gtk_label_set_text (GTK_LABEL (self->description_label),
                         get_service_description (self->config->name));
