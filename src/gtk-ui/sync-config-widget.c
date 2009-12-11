@@ -972,7 +972,7 @@ sync_config_widget_expose_event (GtkWidget      *widget,
 
         shadow_x = rect.x + widget->style->xthickness;
         shadow_y = rect.y + 2 * widget->style->ythickness +
-                   MAX (INDICATOR_SIZE, self->label_box->allocation.height);
+                   self->label_box->allocation.height;
 
         gtk_paint_box (widget->style,
                        widget->window,
@@ -995,8 +995,8 @@ sync_config_widget_expose_event (GtkWidget      *widget,
     }
 
     indicator_x = rect.x + widget->style->xthickness + INDICATOR_SIZE / 2;
-    indicator_y = rect.y + (widget->style->ythickness * 2 +
-                            MAX (self->label_box->allocation.height, INDICATOR_SIZE)) / 2;
+    indicator_y = rect.y + widget->style->ythickness +
+                            self->label_box->allocation.height / 2;
 
     gtk_paint_expander (widget->style,
                         widget->window,
@@ -1012,6 +1012,7 @@ sync_config_widget_expose_event (GtkWidget      *widget,
                                     self->label_box, event);
     gtk_container_propagate_expose (GTK_CONTAINER (self),
                                     self->expando_box, event);
+
     return FALSE;
 }
 
@@ -1023,7 +1024,6 @@ sync_config_widget_size_allocate (GtkWidget     *widget,
     GtkRequisition req;
     GtkAllocation alloc;
     SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
-    gint label_h;
 
     GTK_WIDGET_CLASS (sync_config_widget_parent_class)->size_allocate (widget,
                                                                        allocation);
@@ -1035,13 +1035,7 @@ sync_config_widget_size_allocate (GtkWidget     *widget,
     alloc.width = allocation->width - 2 * widget->style->xthickness;
     alloc.height = req.height;
 
-    /* make room for indicator */
-    alloc.x += INDICATOR_SIZE + widget->style->xthickness;
-    alloc.width -= INDICATOR_SIZE + widget->style->xthickness;
-
     gtk_widget_size_allocate (self->label_box, &alloc);
-
-    label_h = MAX (INDICATOR_SIZE, alloc.height);
 
 
     if (self->expanded) {
@@ -1049,7 +1043,7 @@ sync_config_widget_size_allocate (GtkWidget     *widget,
 
         alloc.x = allocation->x + 2 * widget->style->xthickness;
         alloc.y = allocation->y + widget->style->ythickness +
-                  label_h + CHILD_PADDING;
+                  alloc.height + CHILD_PADDING;
         alloc.width = allocation->width - 4 * widget->style->xthickness;
         alloc.height = req.height;
 
@@ -1070,9 +1064,8 @@ sync_config_widget_size_request (GtkWidget      *widget,
     gtk_widget_size_request (self->label_box, &req);
 
     requisition->width += req.width;
-    requisition->height = MAX (req.height,
-                               INDICATOR_SIZE +
-                               widget->style->ythickness * 2);
+    requisition->height = MAX (req.height, INDICATOR_SIZE) +
+                          widget->style->ythickness * 2;
 
     if (self->expanded) {
 
@@ -1313,27 +1306,70 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
 }
 
 static void
+label_enter_notify_cb (GtkWidget *widget,
+                       GdkEventCrossing *event,
+                       SyncConfigWidget *self)
+{
+    if (!self->expanded) {
+        gtk_widget_show (self->button);
+    }
+}
+
+static void
+label_leave_notify_cb (GtkWidget *widget,
+                       GdkEventCrossing *event,
+                       SyncConfigWidget *self)
+{
+    if (event->detail != GDK_NOTIFY_INFERIOR) {
+        gtk_widget_hide (self->button);
+    }
+}
+
+static void
+label_button_release_cb (GtkWidget *widget,
+                         GdkEventButton *event,
+                         SyncConfigWidget *self)
+
+{
+    if (event->button == 1) {
+        sync_config_widget_set_expanded (self,
+                                         !sync_config_widget_get_expanded (self));
+    }
+}
+
+static void
 sync_config_widget_init (SyncConfigWidget *self)
 {
-    GtkWidget *tmp_box, *cont, *vbox, *table, *label;
+    GtkWidget *tmp_box, *hbox, *cont, *vbox, *table, *label;
 
     GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
 
-    self->label_box = gtk_hbox_new (FALSE, 0);
-    gtk_widget_set_size_request (self->label_box, -1, SYNC_UI_LIST_ICON_SIZE + 6);
+    self->label_box = gtk_event_box_new ();
+    gtk_widget_set_app_paintable (self->label_box, TRUE);
     gtk_widget_show (self->label_box);
     gtk_widget_set_parent (self->label_box, GTK_WIDGET (self));
+    gtk_widget_set_size_request (self->label_box, -1, SYNC_UI_LIST_ICON_SIZE + 6);
+    g_signal_connect (self->label_box, "enter-notify-event",
+                      G_CALLBACK (label_enter_notify_cb), self);
+    g_signal_connect (self->label_box, "leave-notify-event",
+                      G_CALLBACK (label_leave_notify_cb), self);
+    g_signal_connect (self->label_box, "button-release-event",
+                      G_CALLBACK (label_button_release_cb), self);
+
+    hbox = gtk_hbox_new (FALSE, 0);
+    gtk_widget_show (hbox);
+    gtk_container_add (GTK_CONTAINER (self->label_box), hbox);
 
     self->image = gtk_image_new ();
     gtk_widget_set_size_request (self->image, 
                                  SYNC_UI_LIST_ICON_SIZE,
                                  SYNC_UI_LIST_ICON_SIZE);
     gtk_widget_show (self->image);
-    gtk_box_pack_start (GTK_BOX (self->label_box), self->image, FALSE, FALSE, 8);
+    gtk_box_pack_start (GTK_BOX (hbox), self->image, FALSE, FALSE, 8);
 
     tmp_box = gtk_hbox_new (FALSE, 0);
     gtk_widget_show (tmp_box);
-    gtk_box_pack_start (GTK_BOX (self->label_box), tmp_box, FALSE, FALSE, 8);
+    gtk_box_pack_start (GTK_BOX (hbox), tmp_box, FALSE, FALSE, 8);
 
     self->label = gtk_label_new ("");
     gtk_misc_set_alignment (GTK_MISC (self->label), 0.0, 0.5);
@@ -1355,15 +1391,13 @@ sync_config_widget_init (SyncConfigWidget *self)
 
     vbox = gtk_vbox_new (FALSE, 0);
     gtk_widget_show (vbox);
-    gtk_box_pack_end (GTK_BOX (self->label_box), vbox, FALSE, FALSE, 32);
+    gtk_box_pack_end (GTK_BOX (hbox), vbox, FALSE, FALSE, 32);
 
     /* TRANSLATORS: button in service configuration form */
     self->button = gtk_button_new_with_label (_("Setup now"));
     gtk_widget_set_size_request (self->button, SYNC_UI_LIST_BTN_WIDTH, -1);
     g_signal_connect (self->button, "clicked",
                       G_CALLBACK (setup_service_clicked), self);
-
-    gtk_widget_show (self->button);
     gtk_box_pack_start (GTK_BOX (vbox), self->button, TRUE, FALSE, 0);
 
     /* label_box built, now build expando_box */

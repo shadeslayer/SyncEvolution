@@ -748,6 +748,8 @@ services_box_allocate_cb (GtkWidget     *widget,
         adj = gtk_scrolled_window_get_vadjustment
                 (GTK_SCROLLED_WINDOW (data->scrolled_window));
         gtk_adjustment_clamp_page (adj, y, y + height);
+
+        data->expanded_config = NULL;
     }
 }
 
