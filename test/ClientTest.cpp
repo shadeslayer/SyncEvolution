@@ -3839,6 +3839,7 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
 
         const char* checkSyncModeStr = getenv("CLIENT_TEST_NOCHECK_SYNCMODE");
         bool checkSyncMode = true;
+        bool checkSyncStats = getenv ("CLIENT_TEST_NOCHECK_SYNCSTATS") ? false : true;
         if (checkSyncModeStr && 
                 (!strcmp(checkSyncModeStr, "1") || !strcasecmp(checkSyncModeStr, "t"))) {
             checkSyncMode = false;
@@ -3848,38 +3849,38 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
             CLIENT_TEST_EQUAL(name, syncMode, source.getFinalSyncMode());
         }
 
-        if (clientAdded != -1) {
+        if (clientAdded != -1 && checkSyncStats) {
             CLIENT_TEST_EQUAL(name, clientAdded,
                               source.getItemStat(SyncSourceReport::ITEM_LOCAL,
                                                  SyncSourceReport::ITEM_ADDED,
                                                  SyncSourceReport::ITEM_TOTAL));
         }
-        if (clientUpdated != -1) {
+        if (clientUpdated != -1 && checkSyncStats) {
             CLIENT_TEST_EQUAL(name, clientUpdated,
                               source.getItemStat(SyncSourceReport::ITEM_LOCAL,
                                                  SyncSourceReport::ITEM_UPDATED,
                                                  SyncSourceReport::ITEM_TOTAL));
         }
-        if (clientDeleted != -1) {
+        if (clientDeleted != -1 && checkSyncStats) {
             CLIENT_TEST_EQUAL(name, clientDeleted,
                               source.getItemStat(SyncSourceReport::ITEM_LOCAL,
                                                  SyncSourceReport::ITEM_REMOVED,
                                                  SyncSourceReport::ITEM_TOTAL));
         }
 
-        if (serverAdded != -1) {
+        if (serverAdded != -1 && checkSyncStats) {
             CLIENT_TEST_EQUAL(name, serverAdded,
                               source.getItemStat(SyncSourceReport::ITEM_REMOTE,
                                                  SyncSourceReport::ITEM_ADDED,
                                                  SyncSourceReport::ITEM_TOTAL));
         }
-        if (serverUpdated != -1) {
+        if (serverUpdated != -1 && checkSyncStats) {
             CLIENT_TEST_EQUAL(name, serverUpdated,
                               source.getItemStat(SyncSourceReport::ITEM_REMOTE,
                                                  SyncSourceReport::ITEM_UPDATED,
                                                  SyncSourceReport::ITEM_TOTAL));
         }
-        if (serverDeleted != -1) {
+        if (serverDeleted != -1 && checkSyncStats) {
             CLIENT_TEST_EQUAL(name, serverDeleted,
                               source.getItemStat(SyncSourceReport::ITEM_REMOTE,
                                                  SyncSourceReport::ITEM_REMOVED,
