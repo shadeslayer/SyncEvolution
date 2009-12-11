@@ -11,6 +11,15 @@
 
 G_DEFINE_TYPE (SyncConfigWidget, sync_config_widget, GTK_TYPE_CONTAINER)
 
+
+typedef struct source_widgets {
+    GtkWidget *label;
+    GtkWidget *entry;
+    GtkWidget *check;
+
+    GtkWidget *source_toggle_label;
+} source_widgets;
+
 enum
 {
   PROP_0,
@@ -62,20 +71,20 @@ get_service_description (const char *service)
 }
 
 static void
-update_source_config (char *name,
-                      GHashTable *source_configuration,
-                      SyncConfigWidget *self)
+update_source_uri (char *name,
+                   GHashTable *source_configuration,
+                   SyncConfigWidget *self)
 {
     const char *uri;
-    GtkEntry *entry;
+    source_widgets *widgets;
 
-    entry = GTK_ENTRY (g_hash_table_lookup (self->uri_entries, name));
-    if (!entry) {
-        g_warning ("No entry found for source %s", name);
+    widgets = (source_widgets*)g_hash_table_lookup (self->sources, name);
+    if (!widgets) {
+        g_warning ("No widgets found for source %s", name);
         return;
     }
 
-    uri = gtk_entry_get_text (entry);
+    uri = gtk_entry_get_text (GTK_ENTRY (widgets->entry));
     g_hash_table_insert (source_configuration, g_strdup ("uri"), g_strdup (uri));
 }
 
@@ -105,8 +114,9 @@ sync_config_widget_save_config (SyncConfigWidget *self,
         syncevo_config_free (self->config->config);
         self->config->config = g_hash_table_new (g_str_hash, g_str_equal);
     }
+
     syncevo_session_set_config (session,
-                                FALSE,
+                                TRUE,
                                 FALSE,
                                 self->config->config,
                                 (SyncevoSessionGenericCb)set_config_cb,
@@ -203,7 +213,6 @@ stop_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
                                   data);
 }
 
-
 static void
 use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
@@ -211,6 +220,8 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     save_config_data *data;
     const char *username, *password, *sync_url, *name;
     char *real_url;
+    gboolean send, receive;
+    SyncevoSyncMode mode;
 
     if (!self->config) {
         return;
@@ -219,6 +230,36 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     config = self->config->config;
 
     name = gtk_entry_get_text (GTK_ENTRY (self->entry));
+
+    if (self->mode_changed) {
+        GHashTableIter iter;
+        source_widgets *widgets;
+        char *name;
+
+        send = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->send_check));
+        receive = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->receive_check));
+        if (send && receive) {
+            mode = SYNCEVO_SYNC_TWO_WAY;
+        } else if (send) {
+            mode = SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT;
+        } else if (receive) {
+            mode = SYNCEVO_SYNC_ONE_WAY_FROM_SERVER;
+        } else {
+            mode = SYNCEVO_SYNC_NONE;
+        }
+
+        g_hash_table_iter_init (&iter, self->sources);
+        while (g_hash_table_iter_next (&iter, (gpointer)&name, (gpointer)&widgets)) {
+            const char *mode_str;
+
+            if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widgets->check))) {
+                mode_str = syncevo_sync_mode_to_string (mode);
+            } else {
+                mode_str = "none";
+            }
+            syncevo_config_set_value (config, name, "sync", mode_str);
+        }
+    }
 
     username = gtk_entry_get_text (GTK_ENTRY (self->username_entry));
     syncevo_config_set_value (config, NULL, "username", username);
@@ -244,12 +285,13 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         return;
     }
 
+    syncevo_config_foreach_source (config,
+                                   (ConfigFunc)update_source_uri,
+                                   self);
+
+
     syncevo_config_set_value (config, NULL, "defaultPeer", name);
     sync_config_widget_set_current (self, TRUE);
-
-    syncevo_config_foreach_source (config,
-                                   (ConfigFunc)update_source_config,
-                                   self);
 
     data = g_slice_new (save_config_data);
     data->widget = self;
@@ -283,7 +325,7 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 static void update_buttons (SyncConfigWidget *self)
 {
     if (self->has_template) {
-        /* TRANSLATORS: button labels */
+        /* TRANSLATORS: button labels in service configuration form */
         gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
                               _("Reset service"));
     } else {
@@ -311,15 +353,11 @@ static void update_buttons (SyncConfigWidget *self)
     }
 }
 
-typedef struct source_row_data {
-    GtkWidget *label;
-    GtkWidget *entry;
-} source_row_data;
 
 static void
 check_source_cb (SyncevoServer *server,
                  GError *error,
-                 source_row_data *data)
+                 source_widgets *widgets)
 {
     gboolean show = TRUE;
 
@@ -341,10 +379,17 @@ check_source_cb (SyncevoServer *server,
     }
 
     if (show) {
-        gtk_widget_show (data->label);
-        gtk_widget_show (data->entry);
+        gtk_widget_show (widgets->source_toggle_label);
+        gtk_widget_show (widgets->label);
+        gtk_widget_show (widgets->entry);
+        gtk_widget_show (widgets->check);
     }
-    g_slice_free (source_row_data, data);
+}
+
+static void
+mode_widget_clicked_cb (GtkWidget *widget, SyncConfigWidget *self)
+{
+    self->mode_changed = TRUE;
 }
 
 static void
@@ -355,9 +400,13 @@ init_source (char *name,
     char *str, *pretty_name;
     const char *uri;
     guint row;
-    source_row_data *row_data;
+    source_widgets *widgets;
+    SyncevoSyncMode mode;
 
-    row_data = g_slice_new (source_row_data);
+    widgets = g_slice_new (source_widgets);
+    g_hash_table_insert (self->sources, name, widgets);
+
+    widgets->source_toggle_label = self->source_toggle_label;
 
     g_object_get (self->server_settings_table,
                   "n-rows", &row,
@@ -365,34 +414,75 @@ init_source (char *name,
 
     uri = g_hash_table_lookup (source_configuration, "uri");
     pretty_name = get_pretty_source_name (name);
+    mode = syncevo_sync_mode_from_string
+        (g_hash_table_lookup (source_configuration, "sync"));
 
-    /* TRANSLATORS: label for an entry in service configuration.
-     * Placeholder is a source  name in settings window. 
-     * Example: "Addressbook URI" */
+    widgets->check = gtk_check_button_new_with_label (pretty_name);
+    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widgets->check),
+                                  (mode > SYNCEVO_SYNC_NONE));
+    g_signal_connect (widgets->check, "clicked",
+                      G_CALLBACK (mode_widget_clicked_cb), self);
+    gtk_box_pack_start (GTK_BOX (self->source_toggle_box), widgets->check,
+                        FALSE, FALSE, 0);
+
+    /* TRANSLATORS: label for an entry in service configuration form.
+     * Placeholder is a source  name.
+     * Example: "Calendar URI" */
     str = g_strdup_printf (_("%s URI"), pretty_name);
-    row_data->label = gtk_label_new (str);
+    widgets->label = gtk_label_new (str);
     g_free (str);
+
     g_free (pretty_name);
 
-    gtk_misc_set_alignment (GTK_MISC (row_data->label), 1.0, 0.5);
-    gtk_table_attach (GTK_TABLE (self->server_settings_table), row_data->label,
+    gtk_misc_set_alignment (GTK_MISC (widgets->label), 1.0, 0.5);
+    gtk_table_attach (GTK_TABLE (self->server_settings_table), widgets->label,
                       0, 1, row, row + 1, GTK_FILL, GTK_EXPAND, 0, 0);
 
-    row_data->entry = gtk_entry_new ();
-    gtk_entry_set_max_length (GTK_ENTRY (row_data->entry), 99);
-    gtk_entry_set_width_chars (GTK_ENTRY (row_data->entry), 80);
+    widgets->entry = gtk_entry_new ();
+    gtk_entry_set_max_length (GTK_ENTRY (widgets->entry), 99);
+    gtk_entry_set_width_chars (GTK_ENTRY (widgets->entry), 80);
     if (uri) {
-        gtk_entry_set_text (GTK_ENTRY (row_data->entry), uri);
+        gtk_entry_set_text (GTK_ENTRY (widgets->entry), uri);
     }
-    g_hash_table_insert (self->uri_entries, name, row_data->entry);
-    gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table), row_data->entry,
+    gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table),
+                               widgets->entry,
                                1, 2, row, row + 1);
 
     syncevo_server_check_source (self->server,
                                  self->config->name,
                                  name,
                                  (SyncevoServerGenericCb)check_source_cb,
-                                 row_data);
+                                 widgets);
+}
+
+static void
+get_common_mode (char *name,
+                 GHashTable *source_configuration,
+                 SyncevoSyncMode *common_mode)
+{
+    SyncevoSyncMode mode;
+    char *mode_str;
+
+    mode_str = g_hash_table_lookup (source_configuration, "sync");
+    mode = syncevo_sync_mode_from_string (mode_str);
+
+    if (mode == SYNCEVO_SYNC_NONE) {
+        return;
+    }
+
+    if (*common_mode == SYNCEVO_SYNC_NONE) {
+        *common_mode = mode;
+    } else if (mode != *common_mode) {
+        *common_mode = SYNCEVO_SYNC_UNKNOWN;
+    }
+}
+
+static void
+source_widgets_free (source_widgets *widgets)
+{
+    if (widgets) {
+        g_slice_free (source_widgets, widgets);
+    }
 }
 
 static void
@@ -401,7 +491,9 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     char *username = "";
     char *password = "";
     char *sync_url = "";
+    char *str;
     GtkWidget *label;
+    SyncevoSyncMode mode = SYNCEVO_SYNC_NONE;
     SyncevoConfig *config = self->config->config;
 
     gtk_container_foreach (GTK_CONTAINER (self->server_settings_table),
@@ -409,6 +501,10 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                            self->server_settings_table);
     gtk_table_resize (GTK_TABLE (self->server_settings_table), 
                       2, 1);
+    gtk_container_foreach (GTK_CONTAINER (self->source_toggle_box),
+                           (GtkCallback)remove_child,
+                           self->source_toggle_box);
+    gtk_widget_hide (self->source_toggle_label);
 
     if (self->config->name) {
         gtk_entry_set_text (GTK_ENTRY (self->entry), self->config->name);
@@ -417,9 +513,47 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     gtk_label_set_text (GTK_LABEL (self->description_label),
                         get_service_description (self->config->name));
 
-    /* TODO set expanded status based on user pref? */
-
     update_buttons (self);
+
+    /* TRANSLATORS: check buttons in service configuration form */
+    str = g_strdup_printf (_("Send changes to %s"), self->config->name);
+    gtk_button_set_label (GTK_BUTTON (self->send_check),
+                          str);
+    g_free (str);
+    str = g_strdup_printf (_("Receive changes from %s"), self->config->name);
+    gtk_button_set_label (GTK_BUTTON (self->receive_check),
+                          str);
+    g_free (str);
+
+    syncevo_config_foreach_source (config,
+                                   (ConfigFunc)get_common_mode,
+                                   &mode);
+    switch (mode) {
+    case SYNCEVO_SYNC_TWO_WAY:
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->send_check), TRUE);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->receive_check), TRUE);
+        break;
+    case SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT:
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->send_check), TRUE);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->receive_check), FALSE);
+        break;
+    case SYNCEVO_SYNC_ONE_WAY_FROM_SERVER:
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->send_check), FALSE);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->receive_check), TRUE);
+        break;
+    default:
+        /* TODO show this in UI */
+        gtk_widget_show (self->complex_config_info_bar);
+        g_warning ("sync mode config is more complex than UI can handle");
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->send_check), FALSE);
+        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->receive_check), FALSE);
+    }
+
+    self->mode_changed = FALSE;
+    g_signal_connect (self->send_check, "clicked",
+                      G_CALLBACK (mode_widget_clicked_cb), self);
+    g_signal_connect (self->receive_check, "clicked",
+                      G_CALLBACK (mode_widget_clicked_cb), self);
 
     syncevo_config_get_value (config, NULL, "username", &username);
     syncevo_config_get_value (config, NULL, "password", &password);
@@ -451,15 +585,17 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                                self->baseurl_entry,
                                1, 2, 0, 1);
 
-    /* update source uris */
-    if (self->uri_entries) {
-        g_hash_table_destroy (self->uri_entries);
+    /* update source widgets */
+    if (self->sources) {
+        g_hash_table_destroy (self->sources);
     }
-    self->uri_entries = g_hash_table_new (g_str_hash, g_str_equal);
+    self->sources = g_hash_table_new_full (g_str_hash,
+                                           g_str_equal,
+                                           NULL,
+                                           (GDestroyNotify)source_widgets_free);
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)init_source,
                                    self);
-
 }
 
 static void
@@ -472,7 +608,8 @@ static void
 server_settings_expand_cb (GtkExpander *expander, SyncConfigWidget *self)
 {
     if (gtk_expander_get_expanded (expander)) {
-        /* TRANSLATORS: this is the epander label for server settings */
+        /* TRANSLATORS: this is the epander label for server settings
+           in service configuration form */
         gtk_expander_set_label (expander, _("Hide server settings"));
     } else {
         gtk_expander_set_label (expander, _("Show server settings"));
@@ -1169,7 +1306,7 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
 static void
 sync_config_widget_init (SyncConfigWidget *self)
 {
-    GtkWidget *tmp_box, *vbox, *table, *label;
+    GtkWidget *tmp_box, *cont, *vbox, *table, *label;
 
     GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
 
@@ -1202,7 +1339,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (vbox);
     gtk_box_pack_start (GTK_BOX (tmp_box), vbox, FALSE, FALSE, 0);
 
-    /* TRANSLATORS: linkbutton label */
+    /* TRANSLATORS: link button in service configuration form */
     self->link = gtk_link_button_new_with_label ("", _("Launch website"));
     gtk_widget_set_no_show_all (self->link, TRUE);
     gtk_box_pack_start (GTK_BOX (vbox), self->link, TRUE, FALSE, 0);
@@ -1211,7 +1348,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (vbox);
     gtk_box_pack_end (GTK_BOX (self->label_box), vbox, FALSE, FALSE, 32);
 
-    /* TRANSLATORS: button label  */
+    /* TRANSLATORS: button in service configuration form */
     self->button = gtk_button_new_with_label (_("Setup now"));
     gtk_widget_set_size_request (self->button, SYNC_UI_LIST_BTN_WIDTH, -1);
     g_signal_connect (self->button, "clicked",
@@ -1243,13 +1380,13 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (tmp_box);
     gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 0);
 
-    table = gtk_table_new (3, 2, FALSE);
+    table = gtk_table_new (4, 2, FALSE);
     gtk_table_set_row_spacings (GTK_TABLE (table), 2);
     gtk_table_set_col_spacings (GTK_TABLE (table), 5);
     gtk_widget_show (table);
     gtk_box_pack_start (GTK_BOX (tmp_box), table, FALSE, FALSE, 0);
 
-    /* TRANSLATORS: labels of entries  */
+    /* TRANSLATORS: labels of entries in service configuration form */
     label = gtk_label_new (_("Username"));
     gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
     gtk_widget_show (label);
@@ -1280,6 +1417,53 @@ sync_config_widget_init (SyncConfigWidget *self)
                                1, 2,
                                1, 2);
 
+    self->complex_config_info_bar = gtk_info_bar_new ();
+    gtk_info_bar_set_message_type (GTK_INFO_BAR (self->complex_config_info_bar),
+                                   GTK_MESSAGE_WARNING);
+    gtk_box_pack_start (GTK_BOX (vbox), self->complex_config_info_bar,
+                        FALSE, FALSE, 0);
+    /* TRANSLATORS: warning in service configuration form for people
+       who have modified the configuration via other means. */
+    label = gtk_label_new (_("Current service configuration is more complex "
+                             "than what can be shown here. Changes to sync "
+                             "mode or synced data types will overwrite that "
+                             "configuration."));
+    gtk_widget_set_size_request (label, 600, -1);
+    gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
+    gtk_widget_show (label);
+    cont = gtk_info_bar_get_content_area (
+        GTK_INFO_BAR (self->complex_config_info_bar));
+    gtk_container_add (GTK_CONTAINER (cont), label);
+
+    tmp_box = gtk_hbox_new (FALSE, 0);
+    gtk_widget_show (tmp_box);
+    gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 8);
+
+    self->send_check = gtk_check_button_new_with_label ("Send changes");
+    gtk_widget_show (self->send_check);
+    gtk_box_pack_start (GTK_BOX (tmp_box), self->send_check,
+                        TRUE, FALSE, 0);
+
+    self->receive_check = gtk_check_button_new_with_label ("Receive changes");
+    gtk_widget_show (self->receive_check);
+    gtk_box_pack_start (GTK_BOX (tmp_box), self->receive_check,
+                        TRUE, FALSE, 0);
+
+    tmp_box = gtk_vbox_new (FALSE, 0);
+    gtk_widget_show (tmp_box);
+    gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 0);
+
+    /* TRANSLATORS: Label for the source toggles in configuration form.
+       This is a verb, as in "Sync Calendar". */
+    self->source_toggle_label = gtk_label_new (_("Sync"));
+    gtk_box_pack_start (GTK_BOX (tmp_box), self->source_toggle_label,
+                        FALSE, FALSE, 0);
+    gtk_misc_set_alignment (GTK_MISC (self->source_toggle_label), 0.0, 0.5);
+
+    self->source_toggle_box = gtk_vbox_new (FALSE, 0);
+    gtk_widget_show (self->source_toggle_box);
+    gtk_box_pack_start (GTK_BOX (tmp_box), self->source_toggle_box, FALSE, FALSE, 0);
+
     self->expander = gtk_expander_new ("");
     gtk_widget_show (self->expander);
     gtk_box_pack_start (GTK_BOX (vbox), self->expander, FALSE, FALSE, 0);
@@ -1302,13 +1486,13 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (tmp_box);
     gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 8);
 
-    /* TRANSLATORS: button labels  */
     self->use_button = gtk_button_new ();
     gtk_widget_show (self->use_button);
     gtk_box_pack_end (GTK_BOX (tmp_box), self->use_button, FALSE, FALSE, 8);
     g_signal_connect (self->use_button, "clicked",
                       G_CALLBACK (use_clicked_cb), self);
 
+    /* TRANSLATORS: button in service configuration form */
     self->stop_button = gtk_button_new_with_label (_("Stop using service"));
     gtk_box_pack_end (GTK_BOX (tmp_box), self->stop_button, FALSE, FALSE, 8);
     g_signal_connect (self->stop_button, "clicked",

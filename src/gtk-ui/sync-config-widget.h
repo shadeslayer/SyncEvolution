@@ -26,6 +26,7 @@ G_BEGIN_DECLS
 #define SYNC_CONFIG_WIDGET_GET_CLASS(obj) \
     (G_TYPE_INSTANCE_GET_CLASS ((obj), SYNC_TYPE_CONFIG_WIDGET, SyncConfigWidgetClass))
 
+
 typedef struct {
     GtkContainer parent;
     GtkWidget *expando_box;
@@ -54,15 +55,23 @@ typedef struct {
     GtkWidget *description_label;
     GtkWidget *name_label;
     GtkWidget *name_entry;
+    GtkWidget *complex_config_info_bar;
+    GtkWidget *send_check;
+    GtkWidget *receive_check;
     GtkWidget *username_entry;
     GtkWidget *password_entry;
+    GtkWidget *source_toggle_label;
+    GtkWidget *source_toggle_box;
     GtkWidget *baseurl_entry;
     GtkWidget *expander;
     GtkWidget *server_settings_table;
     GtkWidget *reset_delete_button;
     GtkWidget *stop_button;
     GtkWidget *use_button;
-    GHashTable *uri_entries;
+
+    GHashTable *sources;   /* key is source name, value is source_widgets */
+
+    gboolean mode_changed;
 } SyncConfigWidget;
 
 typedef struct {
