@@ -1061,7 +1061,7 @@ get_configs_cb (SyncevoServer *server,
                                      strlen (*config_iter)) == 0) {
 
                 widget = add_server_to_box (GTK_BOX (data->services_box),
-                                            *config_iter,
+                                            *template_iter,
                                             TRUE, TRUE,
                                             data);
                 found_config = TRUE;
