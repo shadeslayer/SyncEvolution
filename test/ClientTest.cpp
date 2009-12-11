@@ -72,6 +72,10 @@ public:
         CPPUNIT_ASSERT(source);
         SOURCE_ASSERT_NO_FAILURE(source, source->open());
         SOURCE_ASSERT_NO_FAILURE(source, source->beginSync("", ""));
+        const char * serverMode = getenv ("CLIENT_TEST_MODE");
+        if (serverMode && !strcmp (serverMode, "server")) {
+            SOURCE_ASSERT_NO_FAILURE(source, source->enableServerMode());
+        }
     }
     ~TestingSyncSourcePtr()
     {
@@ -92,6 +96,10 @@ public:
         if (source) {
             SOURCE_ASSERT_NO_FAILURE(source, source->open());
             SOURCE_ASSERT_NO_FAILURE(source, source->beginSync("", ""));
+            const char * serverMode = getenv ("CLIENT_TEST_MODE");
+            if (serverMode && !strcmp (serverMode, "server")) {
+                SOURCE_ASSERT_NO_FAILURE(source, source->enableServerMode());
+            }
             BOOST_FOREACH(const SyncSource::Operations::CallbackFunctor_t &callback,
                           source->getOperations().m_endSession) {
                 callback();
