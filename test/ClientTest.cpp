@@ -1939,7 +1939,7 @@ void SyncTests::testTwinning() {
     accessClientB->refreshClient();
 
     // slow sync should not change anything
-    doSync("twinning", SyncOptions(SYNC_TWO_WAY));
+    doSync("twinning", SyncOptions(SYNC_SLOW));
 
     // check
     compareDatabases();
