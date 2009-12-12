@@ -56,12 +56,12 @@ typedef struct {
     GtkWidget *name_label;
     GtkWidget *name_entry;
     GtkWidget *complex_config_info_bar;
+    GtkWidget *mode_table;
     GtkWidget *send_check;
     GtkWidget *receive_check;
     GtkWidget *username_entry;
     GtkWidget *password_entry;
     GtkWidget *source_toggle_label;
-    GtkWidget *source_toggle_box;
     GtkWidget *baseurl_entry;
     GtkWidget *expander;
     GtkWidget *server_settings_table;

@@ -3,8 +3,13 @@
 #include <glib/gi18n.h>
 #include <dbus/dbus-glib.h>
 
+#ifdef USE_MOBLIN_UX
+#include <mx/mx-gtk.h>
+#endif
+
 #include "sync-ui.h"
 #include "sync-config-widget.h"
+
 
 #define INDICATOR_SIZE 16
 #define CHILD_PADDING 3
@@ -388,7 +393,7 @@ check_source_cb (SyncevoServer *server,
 }
 
 static void
-mode_widget_clicked_cb (GtkWidget *widget, SyncConfigWidget *self)
+mode_widget_notify_active_cb (GtkWidget *widget, SyncConfigWidget *self)
 {
     self->mode_changed = TRUE;
 }
@@ -425,22 +430,23 @@ init_source (char *name,
 
     widgets->source_toggle_label = self->source_toggle_label;
 
-    g_object_get (self->server_settings_table,
+    g_object_get (self->mode_table,
                   "n-rows", &row,
                   NULL);
-
     uri = g_hash_table_lookup (source_configuration, "uri");
     pretty_name = get_pretty_source_name (name);
     mode = syncevo_sync_mode_from_string
         (g_hash_table_lookup (source_configuration, "sync"));
 
+
     widgets->check = gtk_check_button_new_with_label (pretty_name);
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widgets->check),
                                   (mode > SYNCEVO_SYNC_NONE));
-    g_signal_connect (widgets->check, "clicked",
-                      G_CALLBACK (mode_widget_clicked_cb), self);
-    gtk_box_pack_start (GTK_BOX (self->source_toggle_box), widgets->check,
-                        FALSE, FALSE, 0);
+    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), widgets->check,
+                               1, 2,
+                               row, row + 1);
+    g_signal_connect (widgets->check, "notify::active",
+                      G_CALLBACK (mode_widget_notify_active_cb), self);
 
     /* TRANSLATORS: label for an entry in service configuration form.
      * Placeholder is a source  name.
@@ -456,8 +462,6 @@ init_source (char *name,
                       0, 1, row, row + 1, GTK_FILL, GTK_EXPAND, 0, 0);
 
     widgets->entry = gtk_entry_new ();
-    g_signal_connect (widgets->entry, "notify::text",
-                      G_CALLBACK (source_entry_notify_text_cb), widgets);
     gtk_entry_set_max_length (GTK_ENTRY (widgets->entry), 99);
     gtk_entry_set_width_chars (GTK_ENTRY (widgets->entry), 80);
     if (uri) {
@@ -466,6 +470,8 @@ init_source (char *name,
     gtk_table_attach_defaults (GTK_TABLE (self->server_settings_table),
                                widgets->entry,
                                1, 2, row, row + 1);
+    g_signal_connect (widgets->entry, "notify::text",
+                      G_CALLBACK (source_entry_notify_text_cb), widgets);
 
     gtk_widget_set_sensitive (widgets->check,
                               uri && strlen (uri) > 0);
@@ -531,10 +537,11 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                            self->server_settings_table);
     gtk_table_resize (GTK_TABLE (self->server_settings_table), 
                       2, 1);
-    gtk_container_foreach (GTK_CONTAINER (self->source_toggle_box),
+    gtk_container_foreach (GTK_CONTAINER (self->mode_table),
                            (GtkCallback)remove_child,
-                           self->source_toggle_box);
-    gtk_widget_hide (self->source_toggle_label);
+                           self->mode_table);
+    gtk_table_resize (GTK_TABLE (self->mode_table),
+                      2, 1);
 
     if (self->config->name) {
         gtk_entry_set_text (GTK_ENTRY (self->entry), self->config->name);
@@ -550,13 +557,31 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
 
     /* TRANSLATORS: check buttons in service configuration form */
     str = g_strdup_printf (_("Send changes to %s"), self->config->name);
-    gtk_button_set_label (GTK_BUTTON (self->send_check),
-                          str);
+    self->send_check = gtk_check_button_new_with_label (str);
     g_free (str);
+    gtk_widget_show (self->send_check);
+    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), self->send_check,
+                               1, 2,
+                               0, 1);
+
     str = g_strdup_printf (_("Receive changes from %s"), self->config->name);
-    gtk_button_set_label (GTK_BUTTON (self->receive_check),
-                          str);
+    self->receive_check = gtk_check_button_new_with_label (str);
     g_free (str);
+    gtk_widget_show (self->receive_check);
+    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), self->receive_check,
+                               3, 4,
+                               0, 1);
+
+    self->source_toggle_label = gtk_label_new ("");
+    /* TRANSLATORS: Label for the source toggles in configuration form.
+       This is a verb, as in "Sync Calendar". */
+    gtk_label_set_markup (GTK_LABEL (self->source_toggle_label),
+                          _("<b>Sync</b>"));
+    gtk_misc_set_alignment (GTK_MISC (self->source_toggle_label), 0.0, 0.5);
+    gtk_widget_show (self->source_toggle_label);
+    gtk_table_attach (GTK_TABLE (self->mode_table), self->source_toggle_label,
+                      0, 1, 1, 2,
+                      GTK_FILL, GTK_FILL, 20, 0);
 
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)get_common_mode,
@@ -583,10 +608,10 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     }
 
     self->mode_changed = FALSE;
-    g_signal_connect (self->send_check, "clicked",
-                      G_CALLBACK (mode_widget_clicked_cb), self);
-    g_signal_connect (self->receive_check, "clicked",
-                      G_CALLBACK (mode_widget_clicked_cb), self);
+    g_signal_connect (self->send_check, "notify::active",
+                      G_CALLBACK (mode_widget_notify_active_cb), self);
+    g_signal_connect (self->receive_check, "notify::active",
+                      G_CALLBACK (mode_widget_notify_active_cb), self);
 
     syncevo_config_get_value (config, NULL, "username", &username);
     syncevo_config_get_value (config, NULL, "password", &password);
@@ -1525,34 +1550,11 @@ sync_config_widget_init (SyncConfigWidget *self)
         GTK_INFO_BAR (self->complex_config_info_bar));
     gtk_container_add (GTK_CONTAINER (cont), label);
 
-    tmp_box = gtk_hbox_new (FALSE, 0);
-    gtk_widget_show (tmp_box);
-    gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 8);
-
-    self->send_check = gtk_check_button_new_with_label ("Send changes");
-    gtk_widget_show (self->send_check);
-    gtk_box_pack_start (GTK_BOX (tmp_box), self->send_check,
-                        TRUE, FALSE, 0);
-
-    self->receive_check = gtk_check_button_new_with_label ("Receive changes");
-    gtk_widget_show (self->receive_check);
-    gtk_box_pack_start (GTK_BOX (tmp_box), self->receive_check,
-                        TRUE, FALSE, 0);
-
-    tmp_box = gtk_vbox_new (FALSE, 0);
-    gtk_widget_show (tmp_box);
-    gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 0);
-
-    /* TRANSLATORS: Label for the source toggles in configuration form.
-       This is a verb, as in "Sync Calendar". */
-    self->source_toggle_label = gtk_label_new (_("Sync"));
-    gtk_box_pack_start (GTK_BOX (tmp_box), self->source_toggle_label,
-                        FALSE, FALSE, 0);
-    gtk_misc_set_alignment (GTK_MISC (self->source_toggle_label), 0.0, 0.5);
-
-    self->source_toggle_box = gtk_vbox_new (FALSE, 0);
-    gtk_widget_show (self->source_toggle_box);
-    gtk_box_pack_start (GTK_BOX (tmp_box), self->source_toggle_box, FALSE, FALSE, 0);
+    self->mode_table = gtk_table_new (4, 1, FALSE);
+    gtk_table_set_row_spacings (GTK_TABLE (self->mode_table), 2);
+    gtk_table_set_col_spacings (GTK_TABLE (self->mode_table), 5);
+    gtk_widget_show (self->mode_table);
+    gtk_box_pack_start (GTK_BOX (vbox), self->mode_table, FALSE, FALSE, 0);
 
     self->expander = gtk_expander_new ("");
     gtk_widget_show (self->expander);
