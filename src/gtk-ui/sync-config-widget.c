@@ -240,8 +240,14 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         source_widgets *widgets;
         char *name;
 
+#ifdef USE_MOBLIN_UX
+        send = mx_gtk_light_switch_get_active (MX_GTK_LIGHT_SWITCH (self->send_check));
+        receive = mx_gtk_light_switch_get_active (MX_GTK_LIGHT_SWITCH (self->receive_check));
+#else
         send = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->send_check));
         receive = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->receive_check));
+#endif
+
         if (send && receive) {
             mode = SYNCEVO_SYNC_TWO_WAY;
         } else if (send) {
@@ -255,8 +261,16 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         g_hash_table_iter_init (&iter, self->sources);
         while (g_hash_table_iter_next (&iter, (gpointer)&name, (gpointer)&widgets)) {
             const char *mode_str;
+            gboolean active;
 
-            if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widgets->check))) {
+#ifdef USE_MOBLIN_UX
+            active = mx_gtk_light_switch_get_active
+                    (MX_GTK_LIGHT_SWITCH (widgets->check));
+#else
+            active = gtk_toggle_button_get_active
+                    (GTK_TOGGLE_BUTTON (widgets->check));
+#endif
+            if (active) {
                 mode_str = syncevo_sync_mode_to_string (mode);
             } else {
                 mode_str = "none";
@@ -393,7 +407,9 @@ check_source_cb (SyncevoServer *server,
 }
 
 static void
-mode_widget_notify_active_cb (GtkWidget *widget, SyncConfigWidget *self)
+mode_widget_notify_active_cb (GtkWidget *widget,
+                              GParamSpec *pspec,
+                              SyncConfigWidget *self)
 {
     self->mode_changed = TRUE;
 }
@@ -412,6 +428,38 @@ source_entry_notify_text_cb (GObject *gobject,
         gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widgets->check),
                                       new_editable);
     }
+}
+
+static GtkWidget*
+add_toggle_widget (SyncConfigWidget *self,
+                   const char *title,
+                   gboolean active,
+                   guint row, guint col)
+{
+    GtkWidget *toggle;
+
+#ifdef USE_MOBLIN_UX
+    GtkWidget *label;
+    label = gtk_label_new (title);
+    gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+    gtk_widget_show (label);
+    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), label,
+                               col, col + 1, row, row + 1);
+    toggle = mx_gtk_light_switch_new ();
+    gtk_widget_show (toggle);
+    mx_gtk_light_switch_set_active (MX_GTK_LIGHT_SWITCH (toggle), active);
+    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), toggle,
+                               col + 1, col + 2, row, row + 1);
+#else
+    toggle = gtk_check_button_new_with_label (pretty_name);
+    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (toggle), active);
+    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), toggle,
+                               col + 1, col + 2, row, row + 1);
+#endif
+    g_signal_connect (toggle, "notify::active",
+                      G_CALLBACK (mode_widget_notify_active_cb), self);
+
+    return toggle;
 }
 
 static void
@@ -438,15 +486,10 @@ init_source (char *name,
     mode = syncevo_sync_mode_from_string
         (g_hash_table_lookup (source_configuration, "sync"));
 
-
-    widgets->check = gtk_check_button_new_with_label (pretty_name);
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widgets->check),
-                                  (mode > SYNCEVO_SYNC_NONE));
-    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), widgets->check,
-                               1, 2,
-                               row, row + 1);
-    g_signal_connect (widgets->check, "notify::active",
-                      G_CALLBACK (mode_widget_notify_active_cb), self);
+    widgets->check = add_toggle_widget (self,
+                                        pretty_name,
+                                        (mode > SYNCEVO_SYNC_NONE),
+                                        row, 0);
 
     /* TRANSLATORS: label for an entry in service configuration form.
      * Placeholder is a source  name.
@@ -521,6 +564,7 @@ source_widgets_free (source_widgets *widgets)
     }
 }
 
+
 static void
 sync_config_widget_update_expander (SyncConfigWidget *self)
 {
@@ -530,6 +574,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     char *str;
     GtkWidget *label;
     SyncevoSyncMode mode = SYNCEVO_SYNC_NONE;
+    gboolean send, receive;
     SyncevoConfig *config = self->config->config;
 
     gtk_container_foreach (GTK_CONTAINER (self->server_settings_table),
@@ -543,6 +588,31 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     gtk_table_resize (GTK_TABLE (self->mode_table),
                       2, 1);
 
+    syncevo_config_foreach_source (config,
+                                   (ConfigFunc)get_common_mode,
+                                   &mode);
+    switch (mode) {
+    case SYNCEVO_SYNC_TWO_WAY:
+        send = receive = TRUE;
+        break;
+    case SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT:
+        send = TRUE;
+        receive = FALSE;
+        break;
+    case SYNCEVO_SYNC_ONE_WAY_FROM_SERVER:
+        send = FALSE;
+        receive = TRUE;
+        break;
+    default:
+        /* TODO show this in UI */
+        gtk_widget_show (self->complex_config_info_bar);
+        g_warning ("sync mode config is more complex than UI can handle");
+        send = FALSE;
+        receive = FALSE;
+    }
+    self->mode_changed = FALSE;
+
+
     if (self->config->name) {
         gtk_entry_set_text (GTK_ENTRY (self->entry), self->config->name);
     }
@@ -555,22 +625,16 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
 
     update_buttons (self);
 
-    /* TRANSLATORS: check buttons in service configuration form */
+    /* TRANSLATORS: check button (or toggle) in service configuration form */
     str = g_strdup_printf (_("Send changes to %s"), self->config->name);
-    self->send_check = gtk_check_button_new_with_label (str);
+    self->send_check = add_toggle_widget (self, str, send, 0, 0);
     g_free (str);
-    gtk_widget_show (self->send_check);
-    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), self->send_check,
-                               1, 2,
-                               0, 1);
 
+    /* TRANSLATORS: check button (or toggle) in service configuration form */
     str = g_strdup_printf (_("Receive changes from %s"), self->config->name);
-    self->receive_check = gtk_check_button_new_with_label (str);
+    self->receive_check = add_toggle_widget (self, str, receive, 0, 2);
     g_free (str);
-    gtk_widget_show (self->receive_check);
-    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), self->receive_check,
-                               3, 4,
-                               0, 1);
+
 
     self->source_toggle_label = gtk_label_new ("");
     /* TRANSLATORS: Label for the source toggles in configuration form.
@@ -582,36 +646,6 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     gtk_table_attach (GTK_TABLE (self->mode_table), self->source_toggle_label,
                       0, 1, 1, 2,
                       GTK_FILL, GTK_FILL, 20, 0);
-
-    syncevo_config_foreach_source (config,
-                                   (ConfigFunc)get_common_mode,
-                                   &mode);
-    switch (mode) {
-    case SYNCEVO_SYNC_TWO_WAY:
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->send_check), TRUE);
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->receive_check), TRUE);
-        break;
-    case SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT:
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->send_check), TRUE);
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->receive_check), FALSE);
-        break;
-    case SYNCEVO_SYNC_ONE_WAY_FROM_SERVER:
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->send_check), FALSE);
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->receive_check), TRUE);
-        break;
-    default:
-        /* TODO show this in UI */
-        gtk_widget_show (self->complex_config_info_bar);
-        g_warning ("sync mode config is more complex than UI can handle");
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->send_check), FALSE);
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->receive_check), FALSE);
-    }
-
-    self->mode_changed = FALSE;
-    g_signal_connect (self->send_check, "notify::active",
-                      G_CALLBACK (mode_widget_notify_active_cb), self);
-    g_signal_connect (self->receive_check, "notify::active",
-                      G_CALLBACK (mode_widget_notify_active_cb), self);
 
     syncevo_config_get_value (config, NULL, "username", &username);
     syncevo_config_get_value (config, NULL, "password", &password);
