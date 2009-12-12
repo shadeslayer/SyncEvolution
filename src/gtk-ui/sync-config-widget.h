@@ -33,7 +33,7 @@ typedef struct {
     GtkWidget *label_box;
 
     gboolean current; /* is this currently used config */
-    gboolean unset; /* is there a current config at all */
+    char *current_service_name; /* name of the current service */
     gboolean configured; /* actual service configuration exists on server */
     gboolean has_template; /* this service configuration has a matching template */
     gboolean showing;
@@ -85,7 +85,7 @@ GType sync_config_widget_get_type (void);
 GtkWidget *sync_config_widget_new (SyncevoServer *server,
                                    const char *name,
                                    gboolean current,
-                                   gboolean unset,
+                                   const char *current_service_name,
                                    gboolean configured,
                                    gboolean has_template);
 

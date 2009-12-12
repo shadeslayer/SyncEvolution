@@ -34,7 +34,7 @@ enum
   PROP_CURRENT,
   PROP_HAS_TEMPLATE,
   PROP_CONFIGURED,
-  PROP_UNSET,
+  PROP_CURRENT_SERVICE_NAME,
   PROP_EXPANDED,
 };
 
@@ -232,6 +232,46 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         return;
     }
 
+    if (self->current_service_name && !self->current) {
+        GtkWidget *w, *top_level;
+        int ret;
+        char *msg, *yes, *no;
+
+        /*TRANSLATORS: warning dialog text for changing current service */
+        msg = g_strdup_printf
+            (_("Do you want to replace %s with %s? This\n"
+               "will not remove any synced information on either\n"
+               "end but you will no longer be able to sync with\n"
+               "%s."),
+             self->current_service_name,
+             gtk_entry_get_text (GTK_ENTRY (self->entry)),
+             self->current_service_name);
+        /* TRANSLATORS: decline/accept buttons in warning dialog.
+           Placeholder is service name */
+        yes = g_strdup_printf (_("Yes, use %s"),
+                               gtk_entry_get_text (GTK_ENTRY (self->entry)));
+        no = g_strdup_printf (_("No, use %s"), self->current_service_name);
+        top_level = gtk_widget_get_toplevel (GTK_WIDGET (self));
+        w = gtk_message_dialog_new (GTK_WINDOW (top_level),
+                                    GTK_DIALOG_MODAL,
+                                    GTK_MESSAGE_QUESTION,
+                                    GTK_BUTTONS_NONE,
+                                    msg);
+        gtk_dialog_add_buttons (GTK_DIALOG (w),
+                                no, GTK_RESPONSE_NO,
+                                yes, GTK_RESPONSE_YES,
+                                NULL);
+        ret = gtk_dialog_run (GTK_DIALOG (w));
+        gtk_widget_destroy (w);
+        g_free (msg);
+        g_free (yes);
+        g_free (no);
+
+        if (ret != GTK_RESPONSE_YES) {
+            return;
+        }
+    }
+
     config = self->config->config;
     self->config->name = g_strdup (gtk_entry_get_text (GTK_ENTRY (self->entry)));
 
@@ -324,9 +364,54 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 static void
 reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
+    GtkWidget *w, *top_level;
+    int ret;
+    char *msg, *yes;
     save_config_data *data;
 
     if (!self->config) {
+        return;
+    }
+
+    if (self->has_template) {
+        /*TRANSLATORS: warning dialog text for resetting pre-defined
+          services */
+        msg = g_strdup_printf
+            (_("Do you want to reset the settings for %s?\n"
+               "This will not remove any synced information on either end."),
+             self->config->name);
+        /*TRANSLATORS: accept button in warning dialog */
+        yes = _("Yes, reset");
+    } else {
+        /*TRANSLATORS: warning dialog text for deleting user-defined
+          services */
+        msg = g_strdup_printf
+            (_("Do you want to delete the settings for %s?\n"
+               "This will not remove any synced information on either\n"
+               "end but it will remove this service configuration."),
+             self->config->name);
+        /*TRANSLATORS: accept button in warning dialog */
+        yes = _("Yes, delete");
+    }
+
+    top_level = gtk_widget_get_toplevel (GTK_WIDGET (self));
+    w = gtk_message_dialog_new (GTK_WINDOW (top_level),
+                                GTK_DIALOG_MODAL,
+                                GTK_MESSAGE_QUESTION,
+                                GTK_BUTTONS_NONE,
+                                msg);
+    /*TRANSLATORS: decline button in warning dialog */
+    gtk_dialog_add_buttons (GTK_DIALOG (w),
+                            _("No, keep settings"),
+                            GTK_RESPONSE_NO,
+                            yes,
+                            GTK_RESPONSE_YES,
+                            NULL);
+    ret = gtk_dialog_run (GTK_DIALOG (w));
+    gtk_widget_destroy (w);
+    g_free (msg);
+
+    if (ret != GTK_RESPONSE_YES) {
         return;
     }
 
@@ -359,7 +444,7 @@ static void update_buttons (SyncConfigWidget *self)
         gtk_widget_hide (GTK_WIDGET (self->reset_delete_button));
     }
 
-    if (self->unset || self->current) {
+    if (self->current_service_name || self->current) {
         gtk_button_set_label (GTK_BUTTON (self->use_button),
                               _("Save and use"));
     } else { 
@@ -659,7 +744,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     }
 
     // TRANSLATORS: label of a entry in service configuration
-    label = gtk_label_new (_("Server URL"));
+    label = gtk_label_new (_("Server address"));
     gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
     gtk_widget_show (label);
     gtk_table_attach (GTK_TABLE (self->server_settings_table), label,
@@ -770,10 +855,11 @@ sync_config_widget_update_label (SyncConfigWidget *self)
 }
 
 void
-sync_config_widget_set_unset (SyncConfigWidget *self,
-                              gboolean unset)
+sync_config_widget_set_current_service_name (SyncConfigWidget *self,
+                                             const char *name)
 {
-    self->unset = unset;
+    g_free (self->current_service_name);
+    self->current_service_name = g_strdup (name);
 
     update_buttons (self);
 }
@@ -894,8 +980,8 @@ sync_config_widget_set_property (GObject      *object,
     case PROP_CONFIGURED:
         sync_config_widget_set_configured (self, g_value_get_boolean (value));
         break;
-    case PROP_UNSET:
-        sync_config_widget_set_unset (self, g_value_get_boolean (value));
+    case PROP_CURRENT_SERVICE_NAME:
+        sync_config_widget_set_current_service_name (self, g_value_get_string (value));
         break;
     case PROP_EXPANDED:
         sync_config_widget_set_expanded (self, g_value_get_boolean (value));
@@ -927,8 +1013,8 @@ sync_config_widget_get_property (GObject    *object,
         g_value_set_boolean (value, self->has_template);
     case PROP_CONFIGURED:
         g_value_set_boolean (value, self->configured);
-    case PROP_UNSET:
-        g_value_set_boolean (value, self->unset);
+    case PROP_CURRENT_SERVICE_NAME:
+        g_value_set_string (value, self->current_service_name);
     case PROP_EXPANDED:
       g_value_set_boolean (value, self->expanded);
     default:
@@ -1370,12 +1456,12 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
                                   G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_CONFIGURED, pspec);
 
-    pspec = g_param_spec_boolean ("unset",
-                                  "Unset",
-                                  "Whether there is a currently used service at all",
-                                  TRUE,
+    pspec = g_param_spec_string ("current-service-name",
+                                 "Current service name",
+                                 "The name of the currently used service or NULL",
+                                  NULL,
                                   G_PARAM_READWRITE);
-    g_object_class_install_property (object_class, PROP_UNSET, pspec);
+    g_object_class_install_property (object_class, PROP_CURRENT_SERVICE_NAME, pspec);
 
     pspec = g_param_spec_boolean ("expanded",
                                   "Expanded",
@@ -1636,7 +1722,7 @@ GtkWidget*
 sync_config_widget_new (SyncevoServer *server,
                         const char *name,
                         gboolean current,
-                        gboolean unset,
+                        const char *current_service_name,
                         gboolean configured,
                         gboolean has_template)
 {
@@ -1644,7 +1730,7 @@ sync_config_widget_new (SyncevoServer *server,
                        "server", server,
                        "name", name,
                        "current", current,
-                       "unset", unset,
+                       "current-service-name", current_service_name,
                        "configured", configured,
                        "has-template", has_template,
                        NULL);

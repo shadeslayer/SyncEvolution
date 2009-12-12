@@ -1087,16 +1087,19 @@ add_server_to_box (GtkBox *box,
 {
     GtkWidget *item = NULL;
     gboolean current = FALSE;
-    gboolean unset;
+    const char *current_name = NULL;
 
-    if (data->current_service && data->current_service->name &&
-        name && strcmp (name, data->current_service->name) == 0) {
-        current = TRUE;
+    if (data->current_service) {
+        current_name = data->current_service->name;
+        if (data->current_service->name && name && 
+            strcmp (name, data->current_service->name) == 0) {
+            current = TRUE;
+        }
      }
-    unset = !data->current_service;
 
     item = sync_config_widget_new (data->server, name,
-                                   current, unset, configured, has_template);
+                                   current, current_name,
+                                   configured, has_template);
     g_signal_connect (item, "changed",
                       G_CALLBACK (config_widget_changed_cb), data);
     g_signal_connect (item, "notify::expanded",
