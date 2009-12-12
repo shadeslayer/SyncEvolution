@@ -1647,6 +1647,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     self->password_entry = gtk_entry_new ();
     gtk_widget_show (self->password_entry);
     gtk_entry_set_width_chars (GTK_ENTRY (self->password_entry), 40);
+    gtk_entry_set_visibility (GTK_ENTRY (self->password_entry), FALSE);
     gtk_entry_set_max_length (GTK_ENTRY (self->password_entry), 99);
     gtk_table_attach_defaults (GTK_TABLE (table), self->password_entry,
                                1, 2,
