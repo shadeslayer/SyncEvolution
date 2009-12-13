@@ -56,23 +56,34 @@ const char*
 get_service_description (const char *service)
 {
     if (!service)
-        return "";
+        return NULL;
 
+    /* TRANSLATORS: Descriptions for specific services, shown in service
+     * configuration form */
     if (strcmp (service, "ScheduleWorld") == 0) {
         return _("ScheduleWorld enables you to keep your contacts, events, "
                  "tasks, and notes in sync.");
     }else if (strcmp (service, "Google") == 0) {
-        return _("Google Sync can backup and synchronize your Address Book "
+        return _("Google Sync can backup and synchronize your contacts "
                  "with your Gmail contacts.");
     }else if (strcmp (service, "Funambol") == 0) {
         /* TRANSLATORS: Please include the word "demo" (or the equivalent in
            your language): Funambol is going to be a 90 day demo service
            in the future */
-        return _("Backup your contacts and calendar. Sync with a single"
+        return _("Backup your contacts and calendar. Sync with a single "
                  "click, anytime, anywhere (DEMO).");
+    }else if (strcmp (service, "Mobical") == 0) {
+        return _("Mobical Backup and Restore service allows you to securely "
+                 "backup your personal mobile data for free.");
+    }else if (strcmp (service, "ZYB") == 0) {
+        return _("ZYB is a simple way for people to store and share mobile "
+                 "information online.");
+    }else if (strcmp (service, "Memotoo") == 0) {
+        return _("Memotoo lets you access your personal data from any "
+                 "computer connected to the Internet.");
     }
 
-    return "";
+    return NULL;
 }
 
 static void
@@ -585,7 +596,7 @@ init_source (char *name,
 
     g_free (pretty_name);
 
-    gtk_misc_set_alignment (GTK_MISC (widgets->label), 1.0, 0.5);
+    gtk_misc_set_alignment (GTK_MISC (widgets->label), 0.0, 0.5);
     gtk_table_attach (GTK_TABLE (self->server_settings_table), widgets->label,
                       0, 1, row, row + 1, GTK_FILL, GTK_EXPAND, 0, 0);
 
@@ -656,6 +667,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     char *username = "";
     char *password = "";
     char *sync_url = "";
+    const char *descr;
     char *str;
     GtkWidget *label;
     SyncevoSyncMode mode = SYNCEVO_SYNC_NONE;
@@ -705,8 +717,14 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
         gtk_expander_set_expanded (GTK_EXPANDER (self->expander), TRUE);
     }
 
-    gtk_label_set_text (GTK_LABEL (self->description_label),
-                        get_service_description (self->config->name));
+    descr = get_service_description (self->config->name);
+    if (descr) {
+        gtk_label_set_text (GTK_LABEL (self->description_label),
+                            get_service_description (self->config->name));
+        gtk_widget_show (self->description_label);
+    } else {
+        gtk_widget_hide (self->description_label);
+    }
 
     update_buttons (self);
 
@@ -745,7 +763,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
 
     // TRANSLATORS: label of a entry in service configuration
     label = gtk_label_new (_("Server address"));
-    gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
+    gtk_misc_set_alignment (GTK_MISC (label), 9.0, 0.5);
     gtk_widget_show (label);
     gtk_table_attach (GTK_TABLE (self->server_settings_table), label,
                       0, 1, 0, 1, GTK_FILL, GTK_EXPAND, 0, 0);
@@ -1642,7 +1660,7 @@ sync_config_widget_init (SyncConfigWidget *self)
 
     /* TRANSLATORS: labels of entries in service configuration form */
     label = gtk_label_new (_("Username"));
-    gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
+    gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     gtk_widget_show (label);
     gtk_table_attach_defaults (GTK_TABLE (table), label,
                                0, 1,
@@ -1657,7 +1675,7 @@ sync_config_widget_init (SyncConfigWidget *self)
                                0, 1);
 
     label = gtk_label_new (_("Password"));
-    gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
+    gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     gtk_widget_show (label);
     gtk_table_attach_defaults (GTK_TABLE (table), label,
                                0, 1,
