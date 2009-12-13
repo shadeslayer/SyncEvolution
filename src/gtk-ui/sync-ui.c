@@ -718,6 +718,7 @@ setup_windows (app_data *data,
                GtkWidget *emergency)
 {
     data->sync_win = main;
+    data->services_win = settings;
     data->emergency_win = emergency;
     gtk_window_set_transient_for (GTK_WINDOW (data->services_win),
                                   GTK_WINDOW (data->sync_win));

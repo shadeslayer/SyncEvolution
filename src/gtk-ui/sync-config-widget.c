@@ -291,13 +291,8 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         source_widgets *widgets;
         char *name;
 
-#ifdef USE_MOBLIN_UX
-        send = mx_gtk_light_switch_get_active (MX_GTK_LIGHT_SWITCH (self->send_check));
-        receive = mx_gtk_light_switch_get_active (MX_GTK_LIGHT_SWITCH (self->receive_check));
-#else
-        send = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->send_check));
-        receive = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->receive_check));
-#endif
+        g_object_get (self->send_check, "active", &send, NULL);
+        g_object_get (self->receive_check, "active", &receive, NULL);
 
         if (send && receive) {
             mode = SYNCEVO_SYNC_TWO_WAY;
@@ -314,13 +309,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
             const char *mode_str;
             gboolean active;
 
-#ifdef USE_MOBLIN_UX
-            active = mx_gtk_light_switch_get_active
-                    (MX_GTK_LIGHT_SWITCH (widgets->check));
-#else
-            active = gtk_toggle_button_get_active
-                    (GTK_TOGGLE_BUTTON (widgets->check));
-#endif
+            g_object_get (widgets->check, "active", &active, NULL);
             if (active) {
                 mode_str = syncevo_sync_mode_to_string (mode);
             } else {
@@ -521,8 +510,7 @@ source_entry_notify_text_cb (GObject *gobject,
     old_editable = gtk_widget_get_sensitive (widgets->check);
     if (new_editable != old_editable) {
         gtk_widget_set_sensitive (widgets->check, new_editable);
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widgets->check),
-                                      new_editable);
+        g_object_set (widgets->check, "active", new_editable, NULL);
     }
 }
 
@@ -542,16 +530,13 @@ add_toggle_widget (SyncConfigWidget *self,
     gtk_table_attach_defaults (GTK_TABLE (self->mode_table), label,
                                col, col + 1, row, row + 1);
     toggle = mx_gtk_light_switch_new ();
-    gtk_widget_show (toggle);
-    mx_gtk_light_switch_set_active (MX_GTK_LIGHT_SWITCH (toggle), active);
-    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), toggle,
-                               col + 1, col + 2, row, row + 1);
 #else
-    toggle = gtk_check_button_new_with_label (pretty_name);
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (toggle), active);
+    toggle = gtk_check_button_new_with_label (title);
+#endif
+    g_object_set (toggle, "active", active, NULL);
+    gtk_widget_show (toggle);
     gtk_table_attach_defaults (GTK_TABLE (self->mode_table), toggle,
                                col + 1, col + 2, row, row + 1);
-#endif
     g_signal_connect (toggle, "notify::active",
                       G_CALLBACK (mode_widget_notify_active_cb), self);
 
