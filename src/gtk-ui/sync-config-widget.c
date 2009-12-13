@@ -782,14 +782,33 @@ setup_service_clicked (GtkButton *btn, SyncConfigWidget *self)
 }
 
 static void
-server_settings_expand_cb (GtkExpander *expander, SyncConfigWidget *self)
+server_settings_notify_expand_cb (GtkExpander *expander,
+                                  GParamSpec *pspec,
+                                  SyncConfigWidget *self)
 {
-    if (gtk_expander_get_expanded (expander)) {
-        /* TRANSLATORS: this is the epander label for server settings
-           in service configuration form */
-        gtk_expander_set_label (expander, _("Hide server settings"));
+    /* NOTE: expander can be the fake or real one... */
+    if (gtk_expander_get_expanded (GTK_EXPANDER (self->fake_expander))) {
+        g_signal_handlers_disconnect_by_func (self->fake_expander,
+                                              server_settings_notify_expand_cb,
+                                              self);
+
+        gtk_widget_hide (self->fake_expander);
+        gtk_expander_set_expanded (GTK_EXPANDER (self->fake_expander), FALSE);
+        gtk_expander_set_expanded (GTK_EXPANDER (self->expander), TRUE);
+        gtk_widget_show (self->expander);
+
+        g_signal_connect (self->expander, "notify::expanded",
+                      G_CALLBACK (server_settings_notify_expand_cb), self);
     } else {
-        gtk_expander_set_label (expander, _("Show server settings"));
+        g_signal_handlers_disconnect_by_func (self->expander,
+                                              server_settings_notify_expand_cb,
+                                              self);
+
+        gtk_widget_hide (self->expander);
+        gtk_widget_show (self->fake_expander);
+
+        g_signal_connect (self->fake_expander, "notify::expanded",
+                      G_CALLBACK (server_settings_notify_expand_cb), self);
     }
 }
 
@@ -1677,12 +1696,10 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (self->mode_table);
     gtk_box_pack_start (GTK_BOX (vbox), self->mode_table, FALSE, FALSE, 0);
 
-    self->expander = gtk_expander_new ("");
-    gtk_widget_show (self->expander);
-    gtk_box_pack_start (GTK_BOX (vbox), self->expander, FALSE, FALSE, 0);
-    g_signal_connect (self->expander, "notify::expanded",
-                      G_CALLBACK (server_settings_expand_cb), self);
-    server_settings_expand_cb (GTK_EXPANDER (self->expander), self);
+    /* TRANSLATORS: this is the epander label for server settings
+       in service configuration form */
+    self->expander = gtk_expander_new (_("Hide server settings"));
+    gtk_box_pack_start (GTK_BOX (vbox), self->expander, FALSE, FALSE, 8);
 
     tmp_box = gtk_hbox_new (FALSE, 0);
     gtk_widget_show (tmp_box);
@@ -1698,6 +1715,14 @@ sync_config_widget_init (SyncConfigWidget *self)
     tmp_box = gtk_hbox_new (FALSE, 0);
     gtk_widget_show (tmp_box);
     gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 8);
+
+    /* TRANSLATORS: this is the epander label for server settings
+       in service configuration form */
+    self->fake_expander = gtk_expander_new (_("Show server settings"));
+    gtk_widget_show (self->fake_expander);
+    gtk_box_pack_start (GTK_BOX (tmp_box), self->fake_expander, FALSE, FALSE, 0);
+    g_signal_connect (self->fake_expander, "notify::expanded",
+                      G_CALLBACK (server_settings_notify_expand_cb), self);
 
     self->use_button = gtk_button_new ();
     gtk_widget_show (self->use_button);

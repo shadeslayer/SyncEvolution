@@ -64,6 +64,7 @@ typedef struct {
     GtkWidget *source_toggle_label;
     GtkWidget *baseurl_entry;
     GtkWidget *expander;
+    GtkWidget *fake_expander;
     GtkWidget *server_settings_table;
     GtkWidget *reset_delete_button;
     GtkWidget *stop_button;
