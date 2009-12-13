@@ -121,6 +121,12 @@ typedef struct operation_data {
     gboolean started;
 } operation_data;
 
+typedef enum SyncInfoBarResponse {
+    RESPONSE_NONE,
+    RESPONSE_SETTINGS,
+    RESPONSE_EMERGENCY,
+} SyncInfoBarResponse;
+
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
 static void show_main_view (app_data *data);
@@ -491,13 +497,35 @@ set_sync_progress (app_data *data, float progress, char *status)
 }
 
 static void
-set_info_bar (app_data *data, GtkMessageType type, const char *message)
+set_info_bar (app_data *data,
+              GtkMessageType type,
+              SyncInfoBarResponse response_id,
+              const char *message)
 {
     GtkWidget *container, *label;
 
     if (!message) {
         gtk_widget_hide (data->info_bar);
         return;
+    }
+
+    container = gtk_info_bar_get_action_area (GTK_INFO_BAR (data->info_bar));
+    gtk_container_foreach (GTK_CONTAINER (container),
+                           (GtkCallback)remove_child,
+                           container);
+    switch (response_id) {
+    case RESPONSE_EMERGENCY:
+        gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
+                                 _("Fix it"),
+                                 response_id);
+        break;
+    case RESPONSE_SETTINGS:
+        gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
+                                 _("Select sync service"),
+                                 response_id);
+        break;
+    default:
+        g_warn_if_reached ();
     }
 
     gtk_info_bar_set_message_type (GTK_INFO_BAR (data->info_bar), type);
@@ -526,6 +554,7 @@ set_app_state (app_data *data, app_state state)
     switch (data->current_state) {
     case SYNC_UI_STATE_GETTING_SERVER:
         gtk_widget_hide (data->service_box);
+        gtk_widget_hide (data->info_bar);
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
         refresh_last_synced_label (data);
 
@@ -536,10 +565,11 @@ set_app_state (app_data *data, app_state state)
         break;
     case SYNC_UI_STATE_NO_SERVER:
         gtk_widget_hide (data->service_box);
-        set_info_bar (data, GTK_MESSAGE_INFO,
+        set_info_bar (data, GTK_MESSAGE_INFO, RESPONSE_SETTINGS,
                       _("You haven't selected a sync service yet. "
                         "Sync services let you synchronize your data "
                         "between your netbook and a web service"));
+
         gtk_widget_show (data->info_bar);
         refresh_last_synced_label (data);
 
@@ -754,6 +784,23 @@ services_box_allocate_cb (GtkWidget     *widget,
     }
 }
 
+static void
+info_bar_response_cb (GtkInfoBar          *info_bar,
+                      SyncInfoBarResponse  response_id,
+                      app_data            *data)
+{
+    switch (response_id) {
+    case RESPONSE_EMERGENCY:
+        show_emergency_view (data);
+        break;
+    case RESPONSE_SETTINGS:
+        show_services_list (data);
+        break;
+    default:
+        g_warn_if_reached ();
+    }
+}
+
 static gboolean
 init_ui (app_data *data)
 {
@@ -779,6 +826,8 @@ init_ui (app_data *data)
     service_error_box = GTK_WIDGET (gtk_builder_get_object (builder, "service_error_box"));
     data->info_bar = gtk_info_bar_new ();
     gtk_widget_set_no_show_all (data->info_bar, TRUE);
+    g_signal_connect (data->info_bar, "response",
+                      G_CALLBACK (info_bar_response_cb), data);
     gtk_box_pack_start (GTK_BOX (service_error_box), data->info_bar,
                         FALSE, FALSE, 16);
 
