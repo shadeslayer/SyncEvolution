@@ -759,6 +759,7 @@ init_ui (app_data *data)
     GtkBuilder *builder;
     GError *error = NULL;
     GtkWidget *frame, * service_error_box, *btn;
+    GtkAdjustment *adj;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -802,7 +803,9 @@ init_ui (app_data *data)
 
     /* service list view */
     data->scrolled_window = GTK_WIDGET (gtk_builder_get_object (builder, "scrolledwindow"));
+    adj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (data->scrolled_window));
     data->services_box = GTK_WIDGET (gtk_builder_get_object (builder, "services_box"));
+    gtk_container_set_focus_vadjustment (GTK_CONTAINER (data->services_box), adj);
     g_signal_connect(data->services_box, "size-allocate",
                      G_CALLBACK (services_box_allocate_cb), data);
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
