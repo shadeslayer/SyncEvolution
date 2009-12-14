@@ -167,6 +167,30 @@
       <doc:doc><doc:description>Detach from the session.</doc:description></doc:doc>
     </method>
 
+    <method name="Restore">
+      <doc:doc><doc:description>
+        <doc:para>
+          Restores the data of the selected sources to the state from before or after the selected synchronization. The synchronization is selected via its session directory. Other directories can also be given as long as they contain database dumps in the format created by SyncEvolution. 
+        </doc:para>
+        <doc:para>
+          When "sources" are empty, it assumes to restore all available backup sources in the session. If a source is not found in the backup database, then an exception is thrown.
+        </doc:para>
+        <doc:para>
+          Once this method is called, the session is not active anymore. Thus, to call other APIs, a new session is needed to create.  
+        </doc:para>
+      </doc:description></doc:doc>
+      <arg type="s" name="dir" direction="in">
+        <doc:doc><doc:summary>the session directory</doc:summary></doc:doc>
+      </arg>
+      <arg type="b" name="before" direction="in">
+        <doc:doc><doc:summary>restore to the data before or after the session</doc:summary></doc:doc>
+      </arg>
+      <arg type="as" name="sources" direction="in">
+        <doc:doc><doc:summary>sources list that be needed to restore</doc:summary></doc:doc>
+        <doc:doc><doc:description>Valid values are all available sources.</doc:description></doc:doc>
+      </arg>
+    </method>
+
     <method name="CheckPresence">
       <doc:doc><doc:description>Checks whether a sync with the current server can start.</doc:description></doc:doc>
       <arg type="s" name="status">

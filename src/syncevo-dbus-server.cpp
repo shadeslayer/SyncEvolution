@@ -904,6 +904,19 @@ class Session : public DBusObjectHelper,
     Timer m_statusTimer;
     Timer m_progressTimer;
 
+    /** restore used */
+    string m_restoreDir;
+    bool m_restoreBefore;
+
+    enum RunOperation {
+        OP_SYNC = 0,
+        OP_RESTORE
+    };
+
+    static string runOpToString(RunOperation op);
+
+    RunOperation m_runOperation;
+
     /** Session.Detach() */
     void detach(const Caller_t &caller);
 
@@ -918,6 +931,9 @@ class Session : public DBusObjectHelper,
     /** Session.GetProgress() */
     void getProgress(int32_t &progress,
                      SourceProgresses_t &sources);
+
+    /** Session.Restore() */
+    void restore(const string &dir, bool before,const std::vector<std::string> &sources);
 
     /**
      * Must be called each time that properties changing the
@@ -1670,7 +1686,8 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
         SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
     }
     if (m_sync) {
-        SE_THROW_EXCEPTION(InvalidCall, "sync started, cannot start again");
+        string msg = StringPrintf("%s started, cannot start(again)", runOpToString(m_runOperation).c_str());
+        SE_THROW_EXCEPTION(InvalidCall, msg);
     }
 
     m_sync.reset(new DBusSync(getConfigName(), *this));
@@ -1715,6 +1732,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
     }
     fireProgress(true);
     fireStatus(true);
+    m_runOperation = OP_SYNC;
 
     // now that we have a DBusSync object, return from the main loop
     // and once that is done, transfer control to that object
@@ -1836,6 +1854,8 @@ Session::Session(DBusServer &server,
     m_error(0),
     m_statusTimer(100),
     m_progressTimer(50),
+    m_restoreBefore(true),
+    m_runOperation(OP_SYNC),
     emitStatus(*this, "StatusChanged"),
     emitProgress(*this, "ProgressChanged")
 {
@@ -1851,6 +1871,7 @@ Session::Session(DBusServer &server,
     add(this, &Session::suspend, "Suspend");
     add(this, &Session::getStatus, "GetStatus");
     add(this, &Session::getProgress, "GetProgress");
+    add(this, &Session::restore, "Restore");
     add(emitStatus);
     add(emitProgress);
 }
@@ -1980,22 +2001,32 @@ void Session::run()
         try {
             m_syncStatus = SYNC_RUNNING;
             fireStatus(true);
-            SyncMLStatus status;
-            m_progData.setStep(ProgressData::PRO_SYNC_PREPARE);
-            try {
-                status = m_sync->sync();
-            } catch (...) {
-                status = m_sync->handleException();
+            switch(m_runOperation) {
+            case OP_SYNC: {
+                SyncMLStatus status;
+                m_progData.setStep(ProgressData::PRO_SYNC_PREPARE);
+                try {
+                    status = m_sync->sync();
+                } catch (...) {
+                    status = m_sync->handleException();
+                }
+                if (!m_error) {
+                    m_error = status;
+                }
+                // if there is a connection, then it is no longer needed
+                boost::shared_ptr<Connection> c = m_connection.lock();
+                if (c) {
+                    c->shutdown();
+                }
+                break;
             }
-            if (!m_error) {
-                m_error = status;
-            }
-
-            // if there is a connection, then it is no longer needed
-            boost::shared_ptr<Connection> c = m_connection.lock();
-            if (c) {
-                c->shutdown();
-            }
+            case OP_RESTORE:
+                m_sync->restore(m_restoreDir, 
+                                m_restoreBefore ? SyncContext::DATABASE_BEFORE_SYNC : SyncContext::DATABASE_AFTER_SYNC);
+                break;
+            default:
+                break;
+            };
         } catch (...) {
             // we must enter SYNC_DONE under all circumstances,
             // even when failing during connection shutdown
@@ -2025,6 +2056,50 @@ void Session::setStepInfo(bool isWaiting)
         m_stepIsWaiting = isWaiting;
         fireStatus(true);
     }
+}
+
+void Session::restore(const string &dir, bool before, const std::vector<std::string> &sources)
+{
+    if (!m_active) {
+        SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
+    }
+    if (m_sync) {
+        // actually this never happen currently, for during the real restore process, 
+        // it never poll the sources in default main context 
+        string msg = StringPrintf("%s started, cannot restore(again)", runOpToString(m_runOperation).c_str());
+        SE_THROW_EXCEPTION(InvalidCall, msg);
+    }
+
+    m_sync.reset(new DBusSync(getConfigName(), *this));
+
+    if(!sources.empty()) {
+        BOOST_FOREACH(const std::string &source, sources) {
+            FilterConfigNode::ConfigFilter filter;
+            filter[SyncSourceConfig::m_sourcePropSync.getName()] = "two-way";
+            m_sync->setConfigFilter(false, source, filter);
+        }
+        // disable other sources
+        FilterConfigNode::ConfigFilter disabled;
+        disabled[SyncSourceConfig::m_sourcePropSync.getName()] = "disabled";
+        m_sync->setConfigFilter(false, "", disabled);
+    }
+    m_restoreBefore = before;
+    m_restoreDir = dir;
+    m_runOperation = OP_RESTORE;
+
+    g_main_loop_quit(loop);
+}
+
+string Session::runOpToString(RunOperation op)
+{
+    switch(op) {
+    case OP_SYNC:
+        return "sync";
+    case OP_RESTORE:
+        return "restore";
+    default:
+        return "";
+    };
 }
 
 /************************ ProgressData implementation *****************/
