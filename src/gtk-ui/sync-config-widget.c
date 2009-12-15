@@ -704,9 +704,7 @@ static void
 init_default_config (server_config *config)
 {
     g_free (config->name);
-    /* TRANSLATORS: title in service list for new services
-       (there will be a entry to the right of the title) */
-    config->name = g_strdup (_(""));
+    config->name = g_strdup ("");
 
     syncevo_config_set_value (config->config, NULL, "username", "");
     syncevo_config_set_value (config->config, NULL, "password", "");
