@@ -1574,47 +1574,57 @@ void SyncContext::getConfigXML(string &xml, string &configname)
     size_t index;
     unsigned long hash = 0;
 
+    const char *sessioninitscript =
+        "    <sessioninitscript><![CDATA[\n"
+        "      // these variables are possibly modified by rule scripts\n"
+        "      TIMESTAMP mindate; // earliest date remote party can handle\n"
+        "      INTEGER retransfer_body; // if set to true, body is re-sent to client when message is moved from outbox to sent\n"
+        "      mindate=EMPTY; // no limit by default\n"
+        "      retransfer_body=FALSE; // normally, do not retransfer email body (and attachments) when moving items to sent box\n"
+        "      INTEGER delayedabort;\n"
+        "      delayedabort = FALSE;\n"
+        "    ]]></sessioninitscript>\n";
+
+    ostringstream clientorserver;
+    if (m_serverMode) {
+        clientorserver <<
+            "  <server type='plugin'>\n"
+            "    <plugin_module>SyncEvolution</plugin_module>\n"
+            "    <plugin_sessionauth>yes</plugin_sessionauth>\n"
+            "    <plugin_deviceadmin>yes</plugin_deviceadmin>\n"
+            "\n" <<
+            sessioninitscript <<
+            "    <sessiontimeout>300</sessiontimeout>\n"
+            "\n"
+            "    <defaultauth/>\n"
+            "\n"
+            "    <datastore/>\n"
+            "\n"
+            "    <remoterules/>\n"
+            "  </server>\n";
+    } else {
+        clientorserver <<
+            "  <client type='plugin'>\n"
+            "    <binfilespath>$(binfilepath)</binfilespath>\n"
+            "    <defaultauth/>\n"
+            "\n" <<
+            sessioninitscript <<
+            // SyncEvolution has traditionally not folded long lines in
+            // vCard.  Testing showed that servers still have problems with
+            // it, so avoid it by default
+            "    <donotfoldcontent>yes</donotfoldcontent>\n"
+            "\n"
+            "    <fakedeviceid/>\n"
+            "\n"
+            "    <datastore/>\n"
+            "\n"
+            "    <remoterules/>\n"
+            "  </client>\n";
+    }
     substTag(xml,
              "clientorserver",
-             m_serverMode ?
-             "  <server type='plugin'>\n"
-             "    <plugin_module>SyncEvolution</plugin_module>\n"
-             "    <plugin_sessionauth>yes</plugin_sessionauth>\n"
-             "    <plugin_deviceadmin>yes</plugin_deviceadmin>\n"
-             "\n"
-             "    <sessioninitscript><![CDATA[\n"
-             "      // these variables are possibly modified by rule scripts\n"
-             "      TIMESTAMP mindate; // earliest date remote party can handle\n"
-             "      INTEGER retransfer_body; // if set to true, body is re-sent to client when message is moved from outbox to sent\n"
-             "      mindate=EMPTY; // no limit by default\n"
-             "      retransfer_body=FALSE; // normally, do not retransfer email body (and attachments) when moving items to sent box\n"
-             "    ]]></sessioninitscript>\n"
-             "    <sessiontimeout>300</sessiontimeout>\n"
-             "\n"
-             "    <defaultauth/>\n"
-             "\n"
-             "    <datastore/>\n"
-             "\n"
-             "    <remoterules/>\n"
-             "  </server>\n"
-             :
-             "  <client type='plugin'>\n"
-             "    <binfilespath>$(binfilepath)</binfilespath>\n"
-             "    <defaultauth/>\n"
-             "\n"
-             // SyncEvolution has traditionally not folded long lines in
-             // vCard.  Testing showed that servers still have problems with
-             // it, so avoid it by default
-             "    <donotfoldcontent>yes</donotfoldcontent>\n"
-             "\n"
-             "    <fakedeviceid/>\n"
-             "\n"
-             "    <datastore/>\n"
-             "\n"
-             "    <remoterules/>\n"
-             "  </client>\n",
-             true
-             );
+             clientorserver.str(),
+             true);
 
     tag = "<debug/>";
     index = xml.find(tag);
@@ -1684,20 +1694,45 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             }
             datastores << "    <datastore name='" << source->getName() << "' type='plugin'>\n" <<
                 "      <dbtypeid>" << hash << "</dbtypeid>\n" <<
-                fragment ;
+                fragment;
 
-            if (m_sourceListPtr->m_configSpecials[source->getName()].m_forceSlow) {
-                datastores << " <alertscript> FORCESLOWSYNC(); </alertscript>\n";
+            string mode = source->getSync();
+            const struct SourceList::SourceConfigSpecials &special =
+                m_sourceListPtr->m_configSpecials[source->getName()];
+            if (special.m_forceSlow) {
+                // we *want* a slow sync, but couldn't tell the client -> force it server-side
+                datastores << "      <alertscript> FORCESLOWSYNC(); </alertscript>\n";
+            } else if (mode != "slow" &&
+                       mode != "refresh-from-server" && // is implemented as "delete local data" + "slow sync",
+                                                        // so a slow sync is acceptable in this case
+                       !m_serverMode) {
+                // We are not expecting a slow sync => refuse to execute one.
+                // This is the client check for this, server must be handled
+                // differently (TODO).
+                datastores <<
+                    "      <alertscript><![CDATA[\n"
+                    "INTEGER alertcode;\n"
+                    "alertcode = ALERTCODE();\n"
+                    "if (alertcode == 201) {\n" // SLOWSYNC() cannot be used here, refresh-from-client also sets it
+                    "   DEBUGMESSAGE(\"slow sync not expected by SyncEvolution, disabling datastore\");\n"
+                    "   ABORTDATASTORE(" << STATUS_UNEXPECTED_SLOW_SYNC <<
+                    ");\n"
+                    "   // tell UI to abort instead of sending the next message\n"
+                    "   SETSESSIONVAR(\"delayedabort\", 1);\n"
+                    "}\n"
+                    "]]></alertscript>\n";
             }
-            if (m_serverMode && !m_sourceListPtr->m_configSpecials[source->getName()].m_alias.empty()) {
-                datastores << " <alias name='" << m_sourceListPtr->m_configSpecials[source->getName()].m_alias << "'/>";
+
+            if (m_serverMode && !special.m_alias.empty()) {
+                datastores << " <alias name='" << special.m_alias << "'/>";
             }
-            datastores <<    "    </datastore>\n\n";
+
+            datastores << "    </datastore>\n\n";
         }
 
         /*If there is super datastore, add it here*/
-        //TODO generate specific superdatastore contents
-        //Now only works for synthesis built-in events+tasks 
+        //TODO generate specific superdatastore contents (MB #8753)
+        //Now only works for synthesis built-in events+tasks
         BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->m_virtualDS) {
             std::string superType = vSource->getSourceType().m_format;
             std::string evoSyncSource = vSource->getDatabaseID();
@@ -2229,6 +2264,33 @@ bool SyncContext::initSAN()
     return false;
 }
 
+static string Step2String(sysync::uInt16 stepcmd)
+{
+    switch (stepcmd) {
+    case sysync::STEPCMD_CLIENTSTART: return "STEPCMD_CLIENTSTART";
+    case sysync::STEPCMD_CLIENTAUTOSTART: return "STEPCMD_CLIENTAUTOSTART";
+    case sysync::STEPCMD_STEP: return "STEPCMD_STEP";
+    case sysync::STEPCMD_GOTDATA: return "STEPCMD_GOTDATA";
+    case sysync::STEPCMD_SENTDATA: return "STEPCMD_SENTDATA";
+    case sysync::STEPCMD_SUSPEND: return "STEPCMD_SUSPEND";
+    case sysync::STEPCMD_ABORT: return "STEPCMD_ABORT";
+    case sysync::STEPCMD_TRANSPFAIL: return "STEPCMD_TRANSPFAIL";
+    case sysync::STEPCMD_TIMEOUT: return "STEPCMD_TIMEOUT";
+    case sysync::STEPCMD_SAN_CHECK: return "STEPCMD_SAN_CHECK";
+    case sysync::STEPCMD_AUTOSYNC_CHECK: return "STEPCMD_AUTOSYNC_CHECK";
+    case sysync::STEPCMD_OK: return "STEPCMD_OK";
+    case sysync::STEPCMD_PROGRESS: return "STEPCMD_PROGRESS";
+    case sysync::STEPCMD_ERROR: return "STEPCMD_ERROR";
+    case sysync::STEPCMD_SENDDATA: return "STEPCMD_SENDDATA";
+    case sysync::STEPCMD_NEEDDATA: return "STEPCMD_NEEDDATA";
+    case sysync::STEPCMD_RESENDDATA: return "STEPCMD_RESENDDATA";
+    case sysync::STEPCMD_DONE: return "STEPCMD_DONE";
+    case sysync::STEPCMD_RESTART: return "STEPCMD_RESTART";
+    case sysync::STEPCMD_NEEDSYNC: return "STEPCMD_NEEDSYNC";
+    default: return StringPrintf("STEPCMD %d", stepcmd);
+    }
+}
+
 SyncMLStatus SyncContext::doSync()
 {
     // install signal handlers only if default behavior
@@ -2407,17 +2469,26 @@ SyncMLStatus SyncContext::doSync()
             // After exception occurs, stepCmd will be set to abort to force
             // aborting, must avoid to change it back to suspend cmd.
             if (checkForSuspend() && stepCmd == sysync::STEPCMD_GOTDATA) {
+                SE_LOG_DEBUG(NULL, NULL, "suspending before SessionStep() in STEPCMD_GOTDATA as requested by user");
                 stepCmd = sysync::STEPCMD_SUSPEND;
             }
 
-            //check for abort, if so, modify step command for next step.
-            //We think abort is useful when the server is unresponsive or 
-            //too slow to the user; therefore, we can delay abort at other
-            //points to this two points (before sending and before receiving
-            //the data).
-            if (checkForAbort() && (stepCmd == sysync::STEPCMD_RESENDDATA
-                        || stepCmd ==sysync::STEPCMD_SENDDATA 
-                        || stepCmd == sysync::STEPCMD_NEEDDATA)) {
+            // Aborting is useful while waiting for a reply and before
+            // sending a message (which will just lead to us waiting
+            // for the reply, but possibly after doing some slow network
+            // IO for setting up the message send).
+            //
+            // While processing a message we let the engine run, because
+            // that is a) likely to be done soon and b) may reduce the
+            // breakage caused by aborting a running sync.
+            //
+            // This check here covers the "waiting for reply" case.
+            if ((stepCmd == sysync::STEPCMD_RESENDDATA ||
+                 stepCmd == sysync::STEPCMD_SENTDATA ||
+                 stepCmd == sysync::STEPCMD_NEEDDATA) &&
+                checkForAbort()) {
+                SE_LOG_DEBUG(NULL, NULL, "aborting before SessionStep() in %s as requested by script",
+                             Step2String(stepCmd).c_str());
                 stepCmd = sysync::STEPCMD_ABORT;
             }
 
@@ -2425,6 +2496,8 @@ SyncMLStatus SyncContext::doSync()
             // let engine contine with its shutdown
             if (stepCmd == sysync::STEPCMD_ABORT) {
                 if (aborting) {
+                    SE_LOG_DEBUG(NULL, NULL, "engine already notified of abort request, reverting to %s",
+                                 Step2String(previousStepCmd).c_str());
                     stepCmd = previousStepCmd;
                 } else {
                     aborting = true;
@@ -2433,6 +2506,8 @@ SyncMLStatus SyncContext::doSync()
             // same for suspending
             if (stepCmd == sysync::STEPCMD_SUSPEND) {
                 if (suspending) {
+                    SE_LOG_DEBUG(NULL, NULL, "engine already notified of suspend request, reverting to %s",
+                                 Step2String(previousStepCmd).c_str());
                     stepCmd = previousStepCmd;
                     suspending++;
                 } else {
@@ -2450,13 +2525,55 @@ SyncMLStatus SyncContext::doSync()
                 reportStepCmd(stepCmd);
             }
 
-            //During suspention we actually insert a STEPCMD_SUSPEND cmd
-            //Should restore to the original step here
-            if(suspending == 1)
-            {
+            if (stepCmd == sysync::STEPCMD_SENDDATA &&
+                checkForScriptAbort(session)) {
+                SE_LOG_DEBUG(NULL, NULL, "aborting after SessionStep() in STEPCMD_SENDDATA as requested by script");
+
+                // Catch outgoing message and abort if requested by script.
+                // Report which sources are affected, based on their status code.
+                list<string> sources;
+                BOOST_FOREACH(SyncSource *source, *m_sourceListPtr) {
+                    if (source->getStatus() == STATUS_UNEXPECTED_SLOW_SYNC) {
+                        sources.push_back(source->getName());
+                    }
+                }
+                if (!sources.empty()) {
+                    string sourceparam = boost::join(sources, " ");
+                    SE_LOG_ERROR(NULL, NULL,
+                                 "Aborting because of unexpected slow sync for source(s): %s",
+                                 sourceparam.c_str());
+                    SE_LOG_INFO(NULL, NULL,
+                                "Doing a slow synchronization may lead to duplicated items or\n"
+                                "lost data when the server merges items incorrectly. Choosing\n"
+                                "a different synchronization mode may be the better alternative.\n"
+                                "Restart synchronization of affected source(s) with one of the\n"
+                                "following sync modes to recover from this problem:\n"
+                                "    slow, refresh-from-server, refresh-from-client\n\n"
+                                "Analyzing the current state:\n"
+                                "    syncevolution --status %s %s\n\n"
+                                "Running with one of the three modes:\n"
+                                "    syncevolution --sync [slow|refresh-from-server|refresh-from-client] %s %s\n",
+                                m_server.c_str(), sourceparam.c_str(),
+                                m_server.c_str(), sourceparam.c_str());
+                } else {
+                    // we should not get here, but if we do, at least log something
+                    SE_LOG_ERROR(NULL, NULL, "aborting as requested by script");
+                }
+                stepCmd = sysync::STEPCMD_ABORT;
+                continue;
+            } else if (stepCmd == sysync::STEPCMD_SENDDATA &&
+                       checkForAbort()) {
+                // Catch outgoing message and abort if requested by user.
+                SE_LOG_DEBUG(NULL, NULL, "aborting after SessionStep() in STEPCMD_SENDDATA as requested by user");
+                stepCmd = sysync::STEPCMD_ABORT;
+                continue;
+            } else if (suspending == 1) {
+                //During suspention we actually insert a STEPCMD_SUSPEND cmd
+                //Should restore to the original step here
                 stepCmd = previousStepCmd;
                 continue;
             }
+
             switch (stepCmd) {
             case sysync::STEPCMD_OK:
                 // no progress info, call step again
@@ -2634,9 +2751,11 @@ SyncMLStatus SyncContext::doSync()
                         // Send might have failed because of abort or
                         // suspend request.
                         if (checkForSuspend()) {
+                            SE_LOG_DEBUG(NULL, NULL, "suspending after TransportAgent::FAILED as requested by user");
                             stepCmd = sysync::STEPCMD_SUSPEND;
                             break;
                         } else if (checkForAbort()) {
+                            SE_LOG_DEBUG(NULL, NULL, "aborting after TransportAgent::FAILED as requested by user");
                             stepCmd = sysync::STEPCMD_ABORT;
                             break;
                         }
@@ -2646,8 +2765,10 @@ SyncMLStatus SyncContext::doSync()
                         if (leftTime >0 ) {
                             if (sleep (leftTime) > 0) {
                                 if (checkForSuspend()) {
+                                    SE_LOG_DEBUG(NULL, NULL, "suspending after premature exit from sleep() caused by user suspend");
                                     stepCmd = sysync::STEPCMD_SUSPEND;
                                 } else {
+                                    SE_LOG_DEBUG(NULL, NULL, "aborting after premature exit from sleep() caused by user abort");
                                     stepCmd = sysync::STEPCMD_ABORT;
                                 }
                                 break;
@@ -2681,10 +2802,12 @@ SyncMLStatus SyncContext::doSync()
                 stepCmd = sysync::STEPCMD_DONE;
             } else {
                 Exception::handle(&status);
+                SE_LOG_DEBUG(NULL, NULL, "aborting after catching fatal error");
                 stepCmd = sysync::STEPCMD_ABORT;
             }
         } catch (...) {
             Exception::handle(&status);
+            SE_LOG_DEBUG(NULL, NULL, "aborting after catching fatal error");
             stepCmd = sysync::STEPCMD_ABORT;
         }
     } while (stepCmd != sysync::STEPCMD_DONE && stepCmd != sysync::STEPCMD_ERROR);
@@ -2827,6 +2950,22 @@ int SyncContext::sleep (int intervals)
         }
     }
     return intervals;
+}
+
+bool SyncContext::checkForScriptAbort(SharedSession session)
+{
+    try {
+        SharedKey sessionKey = m_engine.OpenSessionKey(session);
+        SharedKey contextKey = m_engine.OpenKeyByPath(sessionKey, "/sessionvars");
+        bool abort = m_engine.GetInt32Value(contextKey, "delayedabort");
+        return abort;
+    } catch (NoSuchKey) {
+        // this is necessary because the session might already have
+        // been closed, which removes the variable
+        return false;
+    } catch (BadSynthesisResult) {
+        return false;
+    }
 }
 
 void SyncContext::restore(const string &dirname, RestoreDatabase database)

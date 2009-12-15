@@ -657,6 +657,11 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      */
     static void printSignals();
 
+    /**
+     * return true if "delayedabort" session variable is true
+     */
+    bool checkForScriptAbort(SharedSession session);
+
     // total retry duration
     int m_retryDuration;
     // message resend interval
