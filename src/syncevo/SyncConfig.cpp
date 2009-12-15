@@ -793,9 +793,33 @@ ConfigPasswordKey ProxyPasswordConfigProperty::getPasswordKey(const string &desc
 }
 
 void SyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*m_configNode, value, temporarily); }
-bool SyncConfig::getUseProxy() const { return syncPropUseProxy.getProperty(*m_configNode); }
+
+static const char *ProxyString = "http_proxy";
+
+/* Reads http_proxy from environment, if not available returns configured value */
+bool SyncConfig::getUseProxy() const {
+    char *proxy = getenv(ProxyString);
+    if (!proxy ) {
+        return syncPropUseProxy.getProperty(*m_configNode);
+    } else if (strlen(proxy)>0) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
 void SyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*m_configNode, value, temporarily); }
-const char *SyncConfig::getProxyHost() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyHost); }
+
+/* If http_proxy set in the environment returns it, otherwise configured value */
+const char *SyncConfig::getProxyHost() const {
+    char *proxy = getenv(ProxyString);
+    if (!proxy) {
+        return m_stringCache.getProperty(*m_configNode,syncPropProxyHost); 
+    } else {
+        return m_stringCache.storeString(syncPropProxyHost.getName(), proxy);
+    }
+}
+
 void SyncConfig::setProxyHost(const string &value, bool temporarily) { syncPropProxyHost.setProperty(*m_configNode, value, temporarily); }
 const char *SyncConfig::getProxyUsername() const { return m_stringCache.getProperty(*m_configNode, syncPropProxyUsername); }
 void SyncConfig::setProxyUsername(const string &value, bool temporarily) { syncPropProxyUsername.setProperty(*m_configNode, value, temporarily); }
