@@ -2042,7 +2042,9 @@ bool SyncContext::initSAN(int retries)
         if(sourceType.m_format.empty()) {
             sourceType.m_format = (*m_sourceListPtr)[name]->getPeerMimeType();
         }
-        int contentTypeB = StringToContentType (sourceType.m_format);
+        /*If user did not use force type, we will always use the older type as
+         * this is what most phones support*/
+        int contentTypeB = StringToContentType (sourceType.m_format, sourceType.m_forceFormat);
         if (contentTypeB == WSPCTC_UNKNOWN) {
             contentTypeB = 0;
             SE_LOG_DEBUG (NULL, NULL, "Unknown datasource mimetype, use 0 as default");

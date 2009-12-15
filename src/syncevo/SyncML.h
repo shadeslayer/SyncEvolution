@@ -78,8 +78,9 @@ SyncMode StringToSyncMode(const std::string &str, bool serverAlerted = false);
 
 /*
  * Parse string based content type to WSPCTC encoded binary code
+ * Always use older type unless forceType is true.
  */
-ContentType StringToContentType (const std::string &str);
+ContentType StringToContentType (const std::string &str, bool forceType);
 
 /**
  * result of SyncML operations, same codes as in HTTP and the Synthesis engine
