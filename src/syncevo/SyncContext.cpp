@@ -1336,6 +1336,49 @@ SyncContext *SyncContext::findContext(const char *sessionName)
 void SyncContext::initSources(SourceList &sourceList)
 {
     list<string> configuredSources = getSyncSources();
+
+    // Phase 1, check all virtual sync soruces
+    BOOST_FOREACH(const string &name, configuredSources) {
+        boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
+        SyncSourceNodes source = getSyncSourceNodes (name);
+        SourceType sourceType = SyncSource::getSourceType(source);
+        // is the source enabled?
+        string sync = sc->getSync();
+        bool enabled = sync != "disabled";
+        if (enabled) {
+            if (sourceType.m_backend == "virtual") {
+                //This is a virtual sync source, check and enable the referenced
+                //sub syncsources here
+                SyncSourceParams params(name, source);
+                boost::shared_ptr<VirtualSyncSource> vSource = boost::shared_ptr<VirtualSyncSource> (new VirtualSyncSource (params));
+                std::string evoSyncSource = vSource->getDatabaseID();
+                bool valid = true;
+                std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
+                BOOST_FOREACH (std::string source, mappedSources) {
+                    //check whether the mapped source is really available
+                    boost::shared_ptr<PersistentSyncSourceConfig> source_config 
+                        = getSyncSourceConfig(source);
+                    if (!source_config || !source_config->exists()) {
+                        SE_LOG_ERROR (NULL, NULL, 
+                                "Virtual datasource %s referenced a non-existed datasource %s, check your configuration!",
+                                vSource->getName(), source.c_str());
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid) {
+                    FilterConfigNode::ConfigFilter vFilter;
+                    vFilter["sync"] = sync;
+                    vFilter["uri"] = sc->getURI();
+                    BOOST_FOREACH (std::string source, mappedSources) {
+                        setConfigFilter (false, source, vFilter);
+                    }
+                }
+                sourceList.m_virtualDS.push_back (vSource);
+            }
+        }
+    }
+
     BOOST_FOREACH(const string &name, configuredSources) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
 
@@ -1346,12 +1389,7 @@ void SyncContext::initSources(SourceList &sourceList)
         string sync = sc->getSync();
         bool enabled = sync != "disabled";
         if (enabled) {
-            if (sourceType.m_backend == "virtual") {
-                //This is a virtual sync source 
-                SyncSourceParams params(name, source);
-                sourceList.m_virtualDS.push_back (
-                        boost::shared_ptr<VirtualSyncSource> (new VirtualSyncSource (params)));
-            } else {
+            if (sourceType.m_backend != "virtual") {
                 string url = getSyncURL();
                 SyncSourceParams params(name,
                         source);
@@ -1609,24 +1647,32 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         //TODO generate specific superdatastore contents
         //Now only works for synthesis built-in events+tasks 
         BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->m_virtualDS) {
+            std::string superType = vSource->getSourceType().m_format;
             std::string evoSyncSource = vSource->getDatabaseID();
-            bool valid = true;
             std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
-            BOOST_FOREACH (std::string source, mappedSources) {
-                //check whether the mapped source is really available
-                if (! (*m_sourceListPtr)[source]) {
-                    SE_LOG_ERROR (NULL, NULL, 
-                            "Virtual datasource %s referenced a non-existed datasource %s, check your configuration!",
-                            vSource->getName(), source.c_str());
-                    valid = false;
-                    break;
+            //only check the type when user uses forceFormat
+            if (vSource->getSourceType().m_forceFormat) {
+                if (superType.find_last_of (":") != superType.npos) {
+                    superType = superType.substr (superType.find_last_of (":"));
                 }
-                //TODO check the format. Must be the same for the superdatastore and all
-                //sub datastores. If not match, warn user.
-           }
+                BOOST_FOREACH (std::string source, mappedSources) {
+                    //check the data type
+                    SyncSource *subSource = (*m_sourceListPtr)[source];
+                    std::string subType = subSource->getPeerMimeType();
+                    if (subType.empty()) {
+                        subType = subSource->getSourceType().m_format;
+                        if (subType.find_last_of (":") != subType.npos) {
+                            subType = subType.substr (subType.find_last_of (":"));
+                        }
+                    }
+                    if (superType != subType) {
+                        SE_LOG_WARNING (NULL, NULL, 
+                                "Virtual datasource %s and sub datasource %s has different data format, will use the format in virtual datasource",
+                                vSource->getName(), source.c_str());
+                        break;
+                    }
+                }
 
-            if (!valid) {
-                continue;
             }
 
             if (mappedSources.size() !=2) {
@@ -1646,9 +1692,6 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             std::string typesupport;
             typesupport = vSource->getDataTypeSupport();
             if (typesupport.empty()) {
-                //TODO
-                //If the datatype is not set explictly by user, what should
-                //be do?
                 SE_THROW ("datatype format is not set in virtual datasource configuration");
             } 
             datastores << "      <typesupport>\n"
@@ -2024,8 +2067,20 @@ bool SyncContext::initSAN(int retries)
 
     san.CreateEmptyNotificationBody();
     bool hasSource = false;
+     
+    std::set<std::string> dataSources = m_sourceListPtr->getSources();
+    /* For each virtual datasoruce, generate the SAN accoring to it and ignoring
+     * sub datasource in the later phase*/
+    BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->m_virtualDS) {
+            std::string evoSyncSource = vSource->getDatabaseID();
+            std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
+            BOOST_FOREACH (std::string source, mappedSources) {
+                dataSources.erase (source);
+            }
+            dataSources.insert (vSource->getName());
+    }
     /* For each source to be notified do the following: */
-    BOOST_FOREACH (string name, m_sourceListPtr->getSources()) {
+    BOOST_FOREACH (string name, dataSources) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
         string sync = sc->getSync();
         int mode = StringToSyncMode (sync, true);
