@@ -445,6 +445,11 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
             }
             out << '|' << align(' ', backup.str(), text_width, name_column) << "|\n";
         }
+        if (source.getStatus()) {
+            out  << '|' << align(' ',
+                                 StringPrintf("synchronization failed (status code %d)", static_cast<int>(source.getStatus())),
+                                 text_width, name_column) << "|\n";
+        }
         out << sep;
     }
 

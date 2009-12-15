@@ -1185,6 +1185,15 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         case 404:
             SE_LOG_INFO(&source, NULL, "server database not found, check URI '%s'", source.getURI());
             break;
+        case 0:
+            break;
+        default:
+            // Printing unknown status codes here is of somewhat questionable value,
+            // because even "good" sources will get a bad status when the overall
+            // session turns bad. We also don't have good explanations for the
+            // status here.
+            SE_LOG_ERROR(&source, NULL, "failed with status code %d", extra1);
+            break;
         }
         source.recordStatus(SyncMLStatus(extra1));
         break;
