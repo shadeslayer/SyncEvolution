@@ -1307,6 +1307,8 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
         if(index >= start && index - start < count) {
             const string &dir = dirs[i];
             std::map<string, string> aReport;
+            // insert a 'dir' as an ID for the current report
+            aReport.insert(pair<string, string>("dir", dir));
             SyncReport report;
             // peerName is also extracted from the dir 
             string peerName = client.readSessionInfo(dir,report);

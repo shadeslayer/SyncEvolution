@@ -1066,6 +1066,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         # get only one report
         reports = self.session.GetReports(0, 1, utf8_strings=True)
         self.assertTrue(len(reports) == 1)
+        del reports[0]["dir"]
 
         self.failUnlessEqual(reports[0], report0)
         """ the number of reference sessions is totally 5. Check the returned count

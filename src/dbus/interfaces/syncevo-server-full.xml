@@ -167,7 +167,7 @@
       <arg type="aa{ss}" name="reports" direction="out">
         <doc:doc><doc:summary>synchronization reports</doc:summary></doc:doc>
         <doc:doc><doc:description>The array contains report dictionaries. The dictionary keys can be defined by below BNFs:
-                Key ::= 'peer' | 'start' | 'end' | 'status' | 'error' | SourceKey
+                Key ::= 'dir' | 'peer' | 'start' | 'end' | 'status' | 'error' | SourceKey
                 SourceKey ::= SourcePrefix SourcePart
                 SourcePrefix ::= 'source' Sep SourceName
                 SourceName ::= character+ 
