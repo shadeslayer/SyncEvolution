@@ -291,15 +291,30 @@ class ClientTest {
      * Data sources are enumbered from 0 to n-1 for the purpose of
      * testing. This call returns n.
      */
-    virtual int getNumSources() = 0;
+    virtual int getNumLocalSources() = 0;
+    virtual int getNumSyncSources() = 0;
 
     /**
      * Called to fill the given test source config with information
      * about a sync source identified by its index. It's okay to only
      * fill in the available pieces of information and set everything
      * else to zero.
+     * Two kinds of source config indexs are maintained, used for localSources
+     * and SyncSources, this is because virtual datasoures should be visible as
+     * a whole to the synccontext while should be viewed as a list of sub
+     * datasoures for Localtests.
      */
-    virtual void getSourceConfig(int source, Config &config) = 0;
+    virtual void getLocalSourceConfig(int source, Config &config) = 0;
+    virtual void getSyncSourceConfig(int source, Config &config) = 0;
+
+    /**
+     * Find the correspoding test source config via config name.
+     */
+    virtual void getSourceConfig(const string &configName, Config &config) =0;
+    /*
+     * Give me a test source config name, return the index in localSyncSources.
+     * */
+    virtual int getLocalSourcePosition (const string &configName) =0;
 
     /**
      * The instance to use as second client. Returning NULL disables

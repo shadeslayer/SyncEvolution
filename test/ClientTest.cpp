@@ -1390,18 +1390,26 @@ SyncTests::SyncTests(const std::string &name, ClientTest &cl, std::vector<int> s
          it != sourceIndices.end();
          ++it) {
         ClientTest::Config config;
-        client.getSourceConfig(*it, config);
+        client.getSyncSourceConfig(*it, config);
 
         if (config.sourceName) {
             sourceArray[sources.size()+offset] = *it;
-            if (strcmp (config.sourceName, "super")) {
-                sources.push_back(std::pair<int,LocalTests *>(*it, cl.createLocalTests(config.sourceName, *it, config)));
-            } else {
+            if (config.subConfigs) {
+                vector<string> subs;
+                boost::split (subs, config.subConfigs, boost::is_any_of(","));
                 offset++;
+                ClientTest::Config subConfig;
+                BOOST_FOREACH (string sub, subs) {
+                client.getSourceConfig (sub, subConfig);
+                sources.push_back(std::pair<int,LocalTests *>(*it, cl.createLocalTests(sub, client.getLocalSourcePosition(sub), subConfig)));
+                offset--;
+                }
+            } else {
+                sources.push_back(std::pair<int,LocalTests *>(*it, cl.createLocalTests(config.sourceName, client.getLocalSourcePosition(config.sourceName), config)));
             }
         }
     }
-    sourceArray[sources.size()+offset] = -1;
+    sourceArray[sources.size()+ offset] = -1;
 
     // check whether we have a second client
     ClientTest *clientB = cl.getClientB();
@@ -3126,9 +3134,9 @@ public:
 
         // create local source tests
         tests = new CppUnit::TestSuite(alltests->getName() + "::Source");
-        for (source=0; source < client.getNumSources(); source++) {
+        for (source=0; source < client.getNumLocalSources(); source++) {
             ClientTest::Config config;
-            client.getSourceConfig(source, config);
+            client.getLocalSourceConfig(source, config);
             if (config.sourceName) {
                 LocalTests *sourcetests =
                     client.createLocalTests(tests->getName() + "::" + config.sourceName, source, config);
@@ -3141,9 +3149,9 @@ public:
 
         // create sync tests with just one source
         tests = new CppUnit::TestSuite(alltests->getName() + "::Sync");
-        for (source=0; source < client.getNumSources(); source++) {
+        for (source=0; source < client.getNumSyncSources(); source++) {
             ClientTest::Config config;
-            client.getSourceConfig(source, config);
+            client.getSyncSourceConfig(source, config);
             if (config.sourceName) {
                 std::vector<int> sources;
                 sources.push_back(source);
@@ -3158,9 +3166,9 @@ public:
         // that would be identical to the test above
         std::vector<int> sources;
         std::string name, name_reversed;
-        for (source=0; source < client.getNumSources(); source++) {
+        for (source=0; source < client.getNumSyncSources(); source++) {
             ClientTest::Config config;
-            client.getSourceConfig(source, config);
+            client.getSyncSourceConfig(source, config);
             if (config.sourceName) {
                 sources.push_back(source);
                 if (name.size() > 0) {
@@ -3902,6 +3910,8 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.uniqueProperties = "SUMMARY:DESCRIPTION";
         config.sizeProperty = "DESCRIPTION";
         config.testcases = "testcases/imemo20.ics";
+    }else if (!strcmp (type, "super")) {
+        config.subConfigs = "ical20,itodo20";
     }
 }
 

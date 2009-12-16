@@ -335,8 +335,9 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "evolution-calendar";
+        config.type = "virtual:text/x-vcalendar";
     }
+
 } superTest;
 
 static class MemoTest : public RegisterSyncSourceTest {

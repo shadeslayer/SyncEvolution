@@ -371,6 +371,11 @@ struct ClientTestConfig{
     const char *type;
 
     /**
+     * a list of sub configs separated via , if this is a super datastore
+     */
+    const char *subConfigs;
+
+    /**
      * TRUE if the source supports recovery from an interrupted
      * synchronization. Enables the Client::Sync::*::Retry group
      * of tests.
