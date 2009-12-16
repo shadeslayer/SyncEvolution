@@ -1192,7 +1192,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
             // because even "good" sources will get a bad status when the overall
             // session turns bad. We also don't have good explanations for the
             // status here.
-            SE_LOG_ERROR(&source, NULL, "failed with status code %d", extra1);
+            SE_LOG_ERROR(&source, NULL, "%s", Status2String(SyncMLStatus(extra1)).c_str());
             break;
         }
         source.recordStatus(SyncMLStatus(extra1));

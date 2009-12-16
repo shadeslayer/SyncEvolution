@@ -106,6 +106,8 @@ enum SyncMLStatus {
     STATUS_NOT_FOUND = 404,
     /** command not allowed */
     STATUS_COMMAND_NOT_ALLOWED = 405,
+    /** object exists already */
+    STATUS_ALREADY_EXISTS = 418,
     /** command failed / fatal DB error */
     STATUS_FATAL = 500,
     /** general DB error */
@@ -113,8 +115,20 @@ enum SyncMLStatus {
     /** database / memory full error */
     STATUS_FULL = 420,
 
+    /* error codes in the range reserved by Synthesis for the application follow */
+
+    /** ran into an unexpected slow sync, refused to execute it */
+    STATUS_UNEXPECTED_SLOW_SYNC = 22000,
+
     STATUS_MAX = 0x7FFFFFF
 };
+
+/**
+ * short (in the range of 80 characters or less) description of the status code,
+ * followed by "(status xxxx)" because the mapping of description to code
+ * might be ambiguous
+ */
+std::string Status2String(SyncMLStatus status);
 
 /**
  * Information about a database dump.

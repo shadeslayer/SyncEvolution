@@ -31,6 +31,8 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
+#include <synthesis/syerror.h>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -103,6 +105,218 @@ ContentType StringToContentType(const std::string &type, bool force) {
     } else {
         return WSPCTC_UNKNOWN;
     }
+}
+
+std::string Status2String(SyncMLStatus status)
+{
+    string error;
+    bool local;
+    int code = status;
+
+    local = status >= static_cast<int>(sysync::LOCAL_STATUS_CODE);
+    if (local &&
+        status <= static_cast<int>(sysync::LOCAL_STATUS_CODE_END)) {
+        code = status - static_cast<int>(sysync::LOCAL_STATUS_CODE);
+    } else {
+        code = status;
+    }
+
+    switch (code) {
+    case STATUS_OK:
+    case STATUS_HTTP_OK:
+        error = "no error";
+        break;
+    case STATUS_NO_CONTENT:
+        error = "no content/end of data";
+        break;
+    case STATUS_DATA_MERGED:
+        error = "data merged";
+        break;
+    case STATUS_FORBIDDEN:
+        error = "access denied";
+        break;
+    case STATUS_NOT_FOUND:
+        error = "object not found";
+        break;
+    case STATUS_COMMAND_NOT_ALLOWED:
+        error = "operation not allowed";
+        break;
+    case STATUS_ALREADY_EXISTS:
+        error = "object exists already";
+        break;
+    case STATUS_FATAL:
+        error = "fatal error";
+        break;
+    case STATUS_DATASTORE_FAILURE:
+        error = "database failure";
+        break;
+    case STATUS_FULL:
+        error = "out of space";
+        break;
+
+    case STATUS_UNEXPECTED_SLOW_SYNC:
+        error = "unexpected slow sync";
+        break;
+
+    case sysync::LOCERR_BADPROTO:
+        error = "bad or unknown protocol";
+        break;
+    case sysync::LOCERR_SMLFATAL:
+        error = "fatal problem with SML";
+        break;
+    case sysync::LOCERR_COMMOPEN:
+        error = "cannot open communication";
+        break;
+    case sysync::LOCERR_SENDDATA:
+        error = "cannot send data";
+        break;
+    case sysync::LOCERR_RECVDATA:
+        error = "cannot receive data";
+        break;
+    case sysync::LOCERR_BADCONTENT:
+        error = "bad content in response";
+        break;
+    case sysync::LOCERR_PROCESSMSG:
+        error = "SML (or SAN) error processing incoming message";
+        break;
+    case sysync::LOCERR_COMMCLOSE:
+        error = "cannot close communication";
+        break;
+    case sysync::LOCERR_AUTHFAIL:
+        error = "transport layer authorisation failed";
+        break;
+    case sysync::LOCERR_CFGPARSE:
+        error = "error parsing config file";
+        break;
+    case sysync::LOCERR_CFGREAD:
+        error = "error reading config file";
+        break;
+    case sysync::LOCERR_NOCFG:
+        error = "no config found";
+        break;
+    case sysync::LOCERR_NOCFGFILE:
+        error = "config file could not be found";
+        break;
+    case sysync::LOCERR_EXPIRED:
+        error = "expired";
+        break;
+    case sysync::LOCERR_WRONGUSAGE:
+        error = "bad usage";
+        break;
+    case sysync::LOCERR_BADHANDLE:
+        error = "bad handle";
+        break;
+    case sysync::LOCERR_USERABORT:
+        error = "aborted on behalf of user";
+        break;
+    case sysync::LOCERR_BADREG:
+        error = "bad registration";
+        break;
+    case sysync::LOCERR_LIMITED:
+        error = "limited trial version";
+        break;
+    case sysync::LOCERR_TIMEOUT:
+        error = "connection timeout";
+        break;
+    case sysync::LOCERR_CERT_EXPIRED:
+        error = "connection SSL certificate expired";
+        break;
+    case sysync::LOCERR_CERT_INVALID:
+        error = "connection SSL certificate invalid";
+        break;
+    case sysync::LOCERR_INCOMPLETE:
+        error = "incomplete sync session";
+        break;
+    case sysync::LOCERR_RETRYMSG:
+        error = "retry sending message";
+        break;
+    case sysync::LOCERR_OUTOFMEM:
+        error = "out of memory";
+        break;
+    case sysync::LOCERR_NOCONN:
+        error = "no means to open a connection";
+        break;
+    case sysync::LOCERR_CONN:
+        error = "connection cannot be established";
+        break;
+    case sysync::LOCERR_ALREADY:
+        error = "element is already installed";
+        break;
+    case sysync::LOCERR_TOONEW:
+        error = "this build is too new for this license";
+        break;
+    case sysync::LOCERR_NOTIMP:
+        error = "function not implemented";
+        break;
+    case sysync::LOCERR_WRONGPROD:
+        error = "this license code is valid, but not for this product";
+        break;
+    case sysync::LOCERR_USERSUSPEND:
+        error = "explicitly suspended on behalf of user";
+        break;
+    case sysync::LOCERR_TOOOLD:
+        error = "this build is too old for this SDK/plugin";
+        break;
+    case sysync::LOCERR_UNKSUBSYSTEM:
+        error = "unknown subsystem";
+        break;
+    case sysync::LOCERR_SESSIONRST:
+        error = "next message will be a session restart";
+        break;
+    case sysync::LOCERR_LOCDBNOTRDY:
+        error = "local datastore is not ready";
+        break;
+    case sysync::LOCERR_RESTART:
+        error = "session should be restarted from scratch";
+        break;
+    case sysync::LOCERR_PIPECOMM:
+        error = "internal pipe communication problem";
+        break;
+    case sysync::LOCERR_BUFTOOSMALL:
+        error = "buffer too small for requested value";
+        break;
+    case sysync::LOCERR_TRUNCATED:
+        error = "value truncated to fit into field or buffer";
+        break;
+    case sysync::LOCERR_BADPARAM:
+        error = "bad parameter";
+        break;
+    case sysync::LOCERR_OUTOFRANGE:
+        error = "out of range";
+        break;
+    case sysync::LOCERR_TRANSPFAIL:
+        error = "external transport failure";
+        break;
+    case sysync::LOCERR_CLASSNOTREG:
+        error = "class not registered";
+        break;
+    case sysync::LOCERR_IIDNOTREG:
+        error = "interface not registered";
+        break;
+    case sysync::LOCERR_BADURL:
+        error = "bad URL";
+        break;
+    case sysync::LOCERR_SRVNOTFOUND:
+        error = "server not found";
+        break;
+
+    case STATUS_MAX:
+        break;
+    }
+
+    string statusstr = StringPrintf("%s, status %d",
+                                    local ? "local" : "remote",
+                                    status);
+    string description;
+    if (error.empty()) {
+        description = statusstr;
+    } else {
+        description = StringPrintf("%s (%s)",
+                                   error.c_str(),
+                                   statusstr.c_str());
+    }
+
+    return description;
 }
 
 namespace {
@@ -447,7 +661,7 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
         }
         if (source.getStatus()) {
             out  << '|' << align(' ',
-                                 StringPrintf("synchronization failed (status code %d)", static_cast<int>(source.getStatus())),
+                                 Status2String(source.getStatus()),
                                  text_width, name_column) << "|\n";
         }
         out << sep;
@@ -459,7 +673,7 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
     if (getStatus()) {
         out << '|' << center(' ',
                              getStatus() != STATUS_HTTP_OK ?
-                             StringPrintf("synchronization failed (status code %d)", static_cast<int>(getStatus())) :
+                             Status2String(getStatus()) :
                              "synchronization completed successfully",
                              text_width)
             << "|\n";
