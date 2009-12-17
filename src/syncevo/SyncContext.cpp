@@ -678,6 +678,7 @@ public:
     };
 
     std::vector<boost::shared_ptr<VirtualSyncSource> >m_virtualDS; /**All configured virtual datastores*/
+    std::map<std::string, bool> m_forceSlow; /*Indicating whether the corresponding sync source is forced slow*/
 private:
     LogDir m_logdir;     /**< our logging directory */
     bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
@@ -1639,8 +1640,12 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             }
             datastores << "    <datastore name='" << source->getName() << "' type='plugin'>\n" <<
                 "      <dbtypeid>" << hash << "</dbtypeid>\n" <<
-                fragment <<
-                "    </datastore>\n\n";
+                fragment ;
+
+            if (m_sourceListPtr->m_forceSlow[source->getName()]) {
+                datastores << " <alertscript> FORCESLOWSYNC(); </alertscript>\n";
+            }
+            datastores <<    "    </datastore>\n\n";
         }
 
         /*If there is super datastore, add it here*/
@@ -2069,13 +2074,19 @@ bool SyncContext::initSAN(int retries)
     bool hasSource = false;
      
     std::set<std::string> dataSources = m_sourceListPtr->getSources();
+
     /* For each virtual datasoruce, generate the SAN accoring to it and ignoring
      * sub datasource in the later phase*/
     BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->m_virtualDS) {
             std::string evoSyncSource = vSource->getDatabaseID();
+            std::string sync = vSource->getSync();
+            int mode = StringToSyncMode (sync, true);
             std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
             BOOST_FOREACH (std::string source, mappedSources) {
                 dataSources.erase (source);
+                if (mode == SYNC_SLOW) {
+                    m_sourceListPtr->m_forceSlow[source] = true;
+                }
             }
             dataSources.insert (vSource->getName());
     }
@@ -2084,6 +2095,10 @@ bool SyncContext::initSAN(int retries)
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
         string sync = sc->getSync();
         int mode = StringToSyncMode (sync, true);
+        if (mode == SYNC_SLOW) {
+            m_sourceListPtr->m_forceSlow[name] = true;
+            mode = SA_SYNC_TWO_WAY;
+        }
         if (mode <SYNC_FIRST || mode >SYNC_LAST) {
             SE_LOG_DEV (NULL, NULL, "Ignoring data source %s with an invalid sync mode", name.c_str());
             continue;

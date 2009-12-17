@@ -67,10 +67,6 @@ std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)
 SyncMode StringToSyncMode(const std::string &mode, bool serverAlerted)
 {
     if (boost::iequals(mode, "slow") || boost::iequals(mode, "SYNC_SLOW")) {
-        if (serverAlerted) {
-            //No server initiated slow sync, fallback to two way sync
-            return SA_SYNC_TWO_WAY;
-        }
         return SYNC_SLOW;
     } else if (boost::iequals(mode, "two-way") || boost::iequals(mode, "SYNC_TWO_WAY")) {
         return serverAlerted ?SA_SYNC_TWO_WAY: SYNC_TWO_WAY;
