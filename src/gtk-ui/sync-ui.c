@@ -685,6 +685,21 @@ switch_dummy_to_mux_frame (GtkWidget *dummy)
     return frame;
 }
 
+
+static gboolean
+key_press_cb (GtkWidget *widget,
+              GdkEventKey *event,
+              app_data *data)
+{
+    if (event->keyval == GDK_Escape &&
+        mux_window_get_current_page (MUX_WINDOW (data->sync_win)) >= 0) {
+
+        show_main_view (data);
+    }
+
+    return FALSE;
+}
+
 static void
 setup_windows (app_data *data,
                GtkWidget *main,
@@ -703,14 +718,13 @@ setup_windows (app_data *data,
                           gtk_window_get_title (GTK_WINDOW (main)));
     gtk_window_set_default_size (GTK_WINDOW (mux_main), 1024, 600);
     gtk_widget_set_name (mux_main, gtk_widget_get_name (main));
-
-
-    mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_CLOSE);
     gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (main)), mux_main);
-
     mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_SETTINGS|MUX_DECOR_CLOSE);
     g_signal_connect (mux_main, "settings-visibility-changed",
                       G_CALLBACK (settings_visibility_changed_cb), data);
+    g_signal_connect (mux_main, "key-press-event",
+                      G_CALLBACK (key_press_cb), data);
+
 
     tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (settings)));
     gtk_container_remove (GTK_CONTAINER (settings), tmp);
