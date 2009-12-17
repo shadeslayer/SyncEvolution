@@ -160,8 +160,6 @@
                                         </child>
                                       </widget>
                                       <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">False</property>
                                         <property name="padding">55</property>
                                         <property name="position">0</property>
                                       </packing>

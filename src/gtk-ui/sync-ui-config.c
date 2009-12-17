@@ -134,20 +134,24 @@ get_report_summary (int local_changes, int remote_changes, int local_rejects, in
     return msg;
 }
 
-void
+/* return TRUE if no errors are shown */
+gboolean
 source_config_update_label (source_config *source)
 {
     char *msg;
+    gboolean show_error;
 
     if (!source->label) {
-        return;
+        return TRUE;
     }
 
     /* TODO improve error visibility */
-    msg = get_error_string_for_code (source->status);
+    msg = get_error_string_for_code (source->status, NULL);
     if (msg) {
+        show_error = TRUE;
         gtk_widget_show (source->error_image);
     } else {
+        show_error = FALSE;
         gtk_widget_hide (source->error_image);
         msg = get_report_summary (source->local_changes,
                                   source->remote_changes,
@@ -156,6 +160,8 @@ source_config_update_label (source_config *source)
     }
     gtk_label_set_text (GTK_LABEL (source->label), msg);
     g_free (msg);
+
+    return !show_error;
 }
 
 gboolean

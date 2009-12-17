@@ -28,9 +28,16 @@
 #define SYNC_UI_LIST_ICON_SIZE 32
 #define SYNC_UI_LIST_BTN_WIDTH 150
 
+typedef enum SyncErrorResponse {
+    SYNC_ERROR_RESPONSE_NONE,
+    SYNC_ERROR_RESPONSE_SETTINGS_SELECT,
+    SYNC_ERROR_RESPONSE_SETTINGS_OPEN,
+    SYNC_ERROR_RESPONSE_EMERGENCY,
+} SyncErrorResponse;
+
 
 char* get_pretty_source_name (const char *source_name);
-char* get_error_string_for_code (int error_code);
+char* get_error_string_for_code (int error_code, SyncErrorResponse *response);
 void show_error_dialog (GtkWidget *widget, const char* message);
 
 GtkWidget* sync_ui_create_main_window ();

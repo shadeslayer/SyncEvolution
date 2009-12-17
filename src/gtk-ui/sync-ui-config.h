@@ -59,7 +59,7 @@ typedef struct server_config {
 } server_config;
 
 gboolean source_config_is_enabled (source_config *source);
-void source_config_update_label (source_config *source);
+gboolean source_config_update_label (source_config *source);
 void source_config_free (source_config *source);
 
 void server_config_init (server_config *server, SyncevoConfig *config);

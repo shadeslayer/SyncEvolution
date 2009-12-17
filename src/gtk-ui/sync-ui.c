@@ -121,12 +121,6 @@ typedef struct operation_data {
     gboolean started;
 } operation_data;
 
-typedef enum SyncInfoBarResponse {
-    RESPONSE_NONE,
-    RESPONSE_SETTINGS,
-    RESPONSE_EMERGENCY,
-} SyncInfoBarResponse;
-
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
 static void show_main_view (app_data *data);
@@ -499,7 +493,7 @@ set_sync_progress (app_data *data, float progress, char *status)
 static void
 set_info_bar (app_data *data,
               GtkMessageType type,
-              SyncInfoBarResponse response_id,
+              SyncErrorResponse response_id,
               const char *message)
 {
     GtkWidget *container, *label;
@@ -514,15 +508,23 @@ set_info_bar (app_data *data,
                            (GtkCallback)remove_child,
                            container);
     switch (response_id) {
-    case RESPONSE_EMERGENCY:
+    case SYNC_ERROR_RESPONSE_EMERGENCY:
+        /* TRANSLATORS: Buttons in error/info bars. */
         gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
                                  _("Fix it"),
                                  response_id);
         break;
-    case RESPONSE_SETTINGS:
+    case SYNC_ERROR_RESPONSE_SETTINGS_SELECT:
         gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
                                  _("Select sync service"),
                                  response_id);
+        break;
+    case SYNC_ERROR_RESPONSE_SETTINGS_OPEN:
+        gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
+                                 _("Edit service settings"),
+                                 response_id);
+        break;
+    case SYNC_ERROR_RESPONSE_NONE:
         break;
     default:
         g_warn_if_reached ();
@@ -536,9 +538,10 @@ set_info_bar (app_data *data,
 
     label = gtk_label_new (message);
     gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
-    gtk_container_add (GTK_CONTAINER (container),
-                       label);
+    gtk_widget_set_size_request (label, 450, -1);
+    gtk_box_pack_start (GTK_BOX (container), label, FALSE, FALSE, 8);
     gtk_widget_show (label);
+    gtk_widget_show (data->info_bar);
 }
 
 static void
@@ -565,12 +568,10 @@ set_app_state (app_data *data, app_state state)
         break;
     case SYNC_UI_STATE_NO_SERVER:
         gtk_widget_hide (data->service_box);
-        set_info_bar (data, GTK_MESSAGE_INFO, RESPONSE_SETTINGS,
+        set_info_bar (data, GTK_MESSAGE_INFO, SYNC_ERROR_RESPONSE_SETTINGS_SELECT,
                       _("You haven't selected a sync service yet. "
                         "Sync services let you synchronize your data "
                         "between your netbook and a web service"));
-
-        gtk_widget_show (data->info_bar);
         refresh_last_synced_label (data);
 
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
@@ -786,14 +787,18 @@ services_box_allocate_cb (GtkWidget     *widget,
 
 static void
 info_bar_response_cb (GtkInfoBar          *info_bar,
-                      SyncInfoBarResponse  response_id,
+                      SyncErrorResponse  response_id,
                       app_data            *data)
 {
     switch (response_id) {
-    case RESPONSE_EMERGENCY:
+    case SYNC_ERROR_RESPONSE_EMERGENCY:
         show_emergency_view (data);
         break;
-    case RESPONSE_SETTINGS:
+    case SYNC_ERROR_RESPONSE_SETTINGS_OPEN:
+        data->open_current = TRUE;
+        show_services_list (data);
+        break;
+    case SYNC_ERROR_RESPONSE_SETTINGS_SELECT:
         show_services_list (data);
         break;
     default:
@@ -829,7 +834,7 @@ init_ui (app_data *data)
     g_signal_connect (data->info_bar, "response",
                       G_CALLBACK (info_bar_response_cb), data);
     gtk_box_pack_start (GTK_BOX (service_error_box), data->info_bar,
-                        FALSE, FALSE, 16);
+                        TRUE, TRUE, 16);
 
     data->no_connection_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_connection_box"));
     data->server_icon_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_icon_box"));
@@ -956,8 +961,14 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
     gtk_container_foreach (GTK_CONTAINER(icon_box),
                            (GtkCallback)remove_child,
                            icon_box);
-   gtk_box_pack_start (icon_box, image, FALSE, FALSE, 0);
+    gtk_box_pack_start (icon_box, image, FALSE, FALSE, 0);
     gtk_widget_show (image);
+}
+
+static void
+update_emergency_view (app_data *data, GList *slow_sync_sources)
+{
+    /* TODO set only slow_sync_sources enabled in emregency view */
 }
 
 static void
@@ -1420,7 +1431,7 @@ update_source_status (char *name,
     char *error;
     static char *waiting_source = NULL;
 
-    error = get_error_string_for_code (error_code);
+    error = get_error_string_for_code (error_code, NULL);
     if (error) {
         /* TODO show sync error in UI -- but not duplicates */
         g_warning ("Source '%s' error: %s", name, error);
@@ -1445,22 +1456,11 @@ running_session_status_changed_cb (SyncevoSession *session,
                                    SyncevoSourceStatuses *source_statuses,
                                    app_data *data)
 {
-    /* TODO: show errors in UI -- but not duplicates */
-
-    char *error;
-
     set_running_session_status (data, status);
 
     syncevo_source_statuses_foreach (source_statuses,
                                      (SourceStatusFunc)update_source_status,
                                      data);
-
-    error = get_error_string_for_code (error_code);
-    if (error) {
-        /* TODO show sync error in UI -- but not duplicates */
-        g_warning ("Error %s", error);
-        g_free (error);
-    }
 }
 
 static void
@@ -1617,12 +1617,17 @@ get_reports_cb (SyncevoServer *server,
                 GError *error,
                 app_data *data)
 {
-    long time = -1;
     long status;
+    long common_status = -1;
     source_stats *stats;
     GHashTable *sources; /* key is source name, value is a source_stats */
     GHashTableIter iter;
     const char *key, *val;
+    source_config *source_conf;
+    GList *slow_sync_sources = NULL;
+    char *error_msg;
+    SyncErrorResponse response;
+    gboolean have_source_errors;
 
     if (error) {
         g_warning ("Error in Session.GetReports: %s", error->message);
@@ -1654,7 +1659,7 @@ get_reports_cb (SyncevoServer *server,
             } else if (strcmp (strs[0], "start") == 0) {
                 /* not used */
             } else if (strcmp (strs[0], "end") == 0) {
-                time = strtol (val, NULL, 10);
+                data->last_sync = strtol (val, NULL, 10);
             } else if (strcmp (strs[0], "status") == 0) {
                 status = strtol (val, NULL, 10);
             } else if (strcmp (strs[0], "peer") == 0) {
@@ -1670,9 +1675,34 @@ get_reports_cb (SyncevoServer *server,
     }
 
     /* sources now has all statistics we want */
+
+    /* ficure out if all sources have same status or if there's a slow sync */
     g_hash_table_iter_init (&iter, sources);
     while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
-        source_config *source_conf;
+
+        if (stats->status == 10001) {
+            /* ignore abort because of another source slow syncing */
+        } else if (stats->status == 10000) {
+            common_status = stats->status;
+            slow_sync_sources = g_list_prepend (slow_sync_sources, source_conf);
+        } else if (common_status == -1) {
+            common_status = stats->status;
+        } else  if (common_status != stats->status) {
+            common_status = 0;
+        }
+    }
+
+    if (slow_sync_sources) {
+        update_emergency_view (data, slow_sync_sources);
+        g_list_free (slow_sync_sources);
+    }
+
+    /* get common error message */
+    error_msg = get_error_string_for_code (common_status, &response);
+    have_source_errors = FALSE;
+
+    g_hash_table_iter_init (&iter, sources);
+    while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
 
         /* store the statistics in source config */
         source_conf = g_hash_table_lookup (data->current_service->source_configs,
@@ -1682,14 +1712,32 @@ get_reports_cb (SyncevoServer *server,
             source_conf->remote_changes = stats->remote_changes;
             source_conf->local_rejections = stats->local_rejections;
             source_conf->remote_rejections = stats->remote_rejections;
-            source_conf->status = stats->status;
+            if (error_msg) {
+                /* there is a service-wide error, no need to show here */
+                source_conf->status = 0;
+            } else {
+                source_conf->status = stats->status;
+            }
             /* if ui has been constructed already, update it */
-            source_config_update_label (source_conf);
+            if (!source_config_update_label (source_conf)) {
+                have_source_errors = TRUE;
+            }
         }
     }
 
-    data->last_sync = time;
+    if (!error_msg && !have_source_errors) {
+        /* no common source errors or individual source errors:
+           it's still possible that there are sync errors */
+        error_msg = get_error_string_for_code (status, &response);
+    }
+
+    /* update service UI */
     refresh_last_synced_label (data);
+    if (error_msg) {
+        set_info_bar (data, GTK_MESSAGE_ERROR, response,
+                      error_msg);
+        g_free (error_msg);
+    }
 
     g_hash_table_destroy (sources);
 }
@@ -1966,15 +2014,29 @@ show_main_view (app_data *data)
 }
 
 char*
-get_error_string_for_code (int error_code)
+get_error_string_for_code (int error_code, SyncErrorResponse *response)
 {
+    if (response) {
+        *response = SYNC_ERROR_RESPONSE_NONE;
+    }
+
     switch (error_code) {
     case 0:
     case LOCERR_USERABORT:
     case LOCERR_USERSUSPEND:
         return NULL;
+    case 10000:
+        if (response) {
+            *response = SYNC_ERROR_RESPONSE_EMERGENCY;
+        }
+        return g_strdup (_("A normal sync is not possible at this time. You "
+                           "will need to fix things before we can sync again."));
     case DB_Unauthorized:
-        return g_strdup(_("Not authorized"));
+        if (response) {
+            *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
+        }
+        return g_strdup(_("Failed to login. Could there be a problem with "
+                          "your username or password?"));
     case DB_Forbidden:
         return g_strdup(_("Forbidden"));
     case DB_NotFound:
@@ -2026,13 +2088,13 @@ server_shutdown_cb (SyncevoServer *server,
                     app_data *data)
 {
     if (data->syncing) {
-        /* TODO show in UI: server disappeared */
-
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
-                            _("Sync Failed"));
+                            _("Sync failed"));
         set_sync_progress (data, 1.0 , "");
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
     }
+
+    /* re-init server here */
 }
 
 
