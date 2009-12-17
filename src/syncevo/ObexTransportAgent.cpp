@@ -350,7 +350,7 @@ TransportAgent::Status ObexTransportAgent::wait(bool noReply) {
     cxxptr<Channel> channel;
 
     while (!m_obexReady) {
-        g_main_context_iteration (NULL, FALSE);
+        g_main_context_iteration (NULL, TRUE);
         if (m_status == FAILED) {
             if (m_obexEvent) {
                 obexEvent = m_obexEvent;
