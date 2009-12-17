@@ -1705,10 +1705,12 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             } else if (mode != "slow" &&
                        mode != "refresh-from-server" && // is implemented as "delete local data" + "slow sync",
                                                         // so a slow sync is acceptable in this case
-                       !m_serverMode) {
+                       !m_serverMode &&
+                       source->m_backupBefore.getNumItems() != 0) { // check is only relevant if we have local data;
+                                                                    // if no backup was made (-1), better check
                 // We are not expecting a slow sync => refuse to execute one.
                 // This is the client check for this, server must be handled
-                // differently (TODO).
+                // differently (TODO, MB #2416).
                 datastores <<
                     "      <alertscript><![CDATA[\n"
                     "INTEGER alertcode;\n"
