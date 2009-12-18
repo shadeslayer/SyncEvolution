@@ -1,0 +1,21 @@
+    <macro name="VCARD_INCOMING_NAMECHANGE_SCRIPT"><![CDATA[
+      STRING tmp;
+      tmp=NORMALIZED(FN);
+      if (tmp==EMPTY){
+        tmp=N_FIRST;
+        if (N_MIDDLE != EMPTY) {
+          if (tmp != EMPTY) {
+            tmp = tmp + " ";
+          }
+          tmp = tmp + N_MIDDLE;
+        }
+        if (N_LAST != EMPTY) {
+          if (tmp != EMPTY) {
+            tmp = tmp + " ";
+          }
+          tmp = tmp + N_LAST;
+        }
+        FN = tmp;
+      }
+    ]]></macro>
+
