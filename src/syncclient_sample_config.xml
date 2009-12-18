@@ -97,6 +97,27 @@
       $VCALENDAR_10TO20_PRIORITY_CONVERSION;
     ]]></macro>
 
+    <macro name="VCARD_INCOMING_NAMECHANGE_SCRIPT"><![CDATA[
+      STRING tmp;
+      tmp=NORMALIZED(FN);
+      if (tmp==EMPTY){
+        tmp=N_FIRST;
+        if (N_MIDDLE != EMPTY) {
+          if (tmp != EMPTY) {
+            tmp = tmp + " ";
+          }
+          tmp = tmp + N_MIDDLE;
+        }
+        if (N_LAST != EMPTY) {
+          if (tmp != EMPTY) {
+            tmp = tmp + " ";
+          }
+          tmp = tmp + N_LAST;
+        }
+        FN = tmp;
+      }
+    ]]></macro>
+
 		<!-- define script macros for scripts that are used by both vCalendar 1.0 and iCalendar 2.0 -->
 
     <macro name="VCALENDAR_INCOMING_SCRIPT"><![CDATA[
@@ -198,7 +219,6 @@
         }
       }
     ]]></macro>
-
 
     <macro name="VCALENDAR_OUTGOING_SCRIPT"><![CDATA[
       // set UTC time of generation for iCalendar 2.0 DTSTAMP
@@ -623,12 +643,18 @@
     <datatype name="vCard21" basetype="vcard">
       <version>2.1</version>
       <use mimeprofile="vCard"/>
+     <incomingscript><![CDATA[
+        $VCARD_INCOMING_NAMECHANGE_SCRIPT
+      ]]></incomingscript>
     </datatype>
 
     <!-- vCard 3.0 datatype, using vCard profile defined above -->
     <datatype name="vCard30" basetype="vcard">
       <version>3.0</version>
       <use mimeprofile="vCard"/>
+      <incomingscript><![CDATA[
+        $VCARD_INCOMING_NAMECHANGE_SCRIPT
+      ]]></incomingscript>
     </datatype>
 
 
@@ -1219,7 +1245,7 @@
       <incomingscript><![CDATA[
         $VCALENDAR_INCOMING_SCRIPT
       ]]></incomingscript>
-
+      
       <outgoingscript><![CDATA[
         $VCALENDAR_OUTGOING_SCRIPT
       ]]></outgoingscript>
@@ -1235,6 +1261,7 @@
       <incomingscript><![CDATA[
         $VCALENDAR_INCOMING_SCRIPT
       ]]></incomingscript>
+
 
       <outgoingscript><![CDATA[
         $VCALENDAR_OUTGOING_SCRIPT
