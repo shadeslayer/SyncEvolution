@@ -35,7 +35,7 @@ typedef struct source_config {
     long local_rejections;
     long remote_rejections;
 
-    GtkWidget *error_image; /* error icon, after ui has been constructed */
+    GtkWidget *info_bar; /* info/error bar, after ui has been constructed */
     GtkWidget *label; /* source report label, after ui has been constructed */
     GtkWidget *box; /* source box, after ui has been constructed */
 
@@ -59,7 +59,6 @@ typedef struct server_config {
 } server_config;
 
 gboolean source_config_is_enabled (source_config *source);
-gboolean source_config_update_label (source_config *source);
 void source_config_free (source_config *source);
 
 void server_config_init (server_config *server, SyncevoConfig *config);

@@ -129,6 +129,7 @@ static void show_services_list (app_data *data);
 static void update_services_list (app_data *data);
 static void update_service_ui (app_data *data);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
+static gboolean source_config_update_widget (source_config *source);
 static void get_presence_cb (SyncevoServer *server, char *status, char *transport,
                              GError *error, app_data *data);
 static void get_reports_cb (SyncevoServer *server, SyncevoReports *reports, 
@@ -491,38 +492,33 @@ set_sync_progress (app_data *data, float progress, char *status)
 }
 
 static void
-set_info_bar (app_data *data,
+set_info_bar (GtkWidget *widget,
               GtkMessageType type,
               SyncErrorResponse response_id,
               const char *message)
 {
     GtkWidget *container, *label;
+    GtkInfoBar *bar = GTK_INFO_BAR (widget);
 
     if (!message) {
-        gtk_widget_hide (data->info_bar);
+        gtk_widget_hide (widget);
         return;
     }
 
-    container = gtk_info_bar_get_action_area (GTK_INFO_BAR (data->info_bar));
+    container = gtk_info_bar_get_action_area (bar);
     gtk_container_foreach (GTK_CONTAINER (container),
                            (GtkCallback)remove_child,
                            container);
     switch (response_id) {
     case SYNC_ERROR_RESPONSE_EMERGENCY:
         /* TRANSLATORS: Buttons in error/info bars. */
-        gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
-                                 _("Fix it"),
-                                 response_id);
+        gtk_info_bar_add_button (bar, _("Fix it"), response_id);
         break;
     case SYNC_ERROR_RESPONSE_SETTINGS_SELECT:
-        gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
-                                 _("Select sync service"),
-                                 response_id);
+        gtk_info_bar_add_button (bar, _("Select sync service"), response_id);
         break;
     case SYNC_ERROR_RESPONSE_SETTINGS_OPEN:
-        gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
-                                 _("Edit service settings"),
-                                 response_id);
+        gtk_info_bar_add_button (bar, _("Edit service settings"), response_id);
         break;
     case SYNC_ERROR_RESPONSE_NONE:
         break;
@@ -530,8 +526,8 @@ set_info_bar (app_data *data,
         g_warn_if_reached ();
     }
 
-    gtk_info_bar_set_message_type (GTK_INFO_BAR (data->info_bar), type);
-    container = gtk_info_bar_get_content_area (GTK_INFO_BAR (data->info_bar));
+    gtk_info_bar_set_message_type (bar, type);
+    container = gtk_info_bar_get_content_area (bar);
     gtk_container_foreach (GTK_CONTAINER (container),
                            (GtkCallback)remove_child,
                            container);
@@ -541,7 +537,7 @@ set_info_bar (app_data *data,
     gtk_widget_set_size_request (label, 450, -1);
     gtk_box_pack_start (GTK_BOX (container), label, FALSE, FALSE, 8);
     gtk_widget_show (label);
-    gtk_widget_show (data->info_bar);
+    gtk_widget_show (widget);
 }
 
 static void
@@ -568,7 +564,8 @@ set_app_state (app_data *data, app_state state)
         break;
     case SYNC_UI_STATE_NO_SERVER:
         gtk_widget_hide (data->service_box);
-        set_info_bar (data, GTK_MESSAGE_INFO, SYNC_ERROR_RESPONSE_SETTINGS_SELECT,
+        set_info_bar (data->info_bar,
+                      GTK_MESSAGE_INFO, SYNC_ERROR_RESPONSE_SETTINGS_SELECT,
                       _("You haven't selected a sync service yet. "
                         "Sync services let you synchronize your data "
                         "between your netbook and a web service"));
@@ -918,30 +915,6 @@ init_ui (app_data *data)
 }
 
 static void
-source_check_toggled_cb (GtkCheckButton *check, app_data *data)
-{
-    operation_data *op_data;
-    source_config *source;
-    char *value;
-
-    source = (source_config*) g_object_get_data (G_OBJECT (check), "source");
-    g_return_if_fail (source);
-
-    value = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (check)) ?
-            g_strdup ("two-way") : g_strdup ("none");
-    g_hash_table_insert (source->config, g_strdup ("sync"), value);
-
-    op_data = g_slice_new (operation_data);
-    op_data->data = data;
-    op_data->operation = OP_SAVE;
-    op_data->started = FALSE;
-    syncevo_server_start_session (data->server,
-                                  data->current_service->name,
-                                  (SyncevoServerStartSessionCb)start_session_cb,
-                                  op_data);
-}
-
-static void
 load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
 {
     GError *error = NULL;
@@ -988,83 +961,48 @@ update_emergency_view (app_data *data, GList *slow_sync_sources)
 static void
 update_service_source_ui (const char *name, source_config *conf, app_data *data)
 {
-    GtkWidget *check, *box, *hbox, *lbl;
+    GtkWidget *lbl, *box;
     char *pretty_name;
     const char *source_uri, *sync;
-    gboolean enabled;
 
-    pretty_name = get_pretty_source_name (name);
     source_uri = g_hash_table_lookup (conf->config, "uri");
     sync = g_hash_table_lookup (conf->config, "sync");
+
     if (!sync || 
         strcmp (sync, "disabled") == 0 ||
-        strcmp (sync, "none") == 0) {
-        // consider this source not available at all
-        enabled = FALSE;
-    } else {
-        enabled = TRUE;
+        strcmp (sync, "none") == 0 ||
+        !source_uri ||
+        strlen (source_uri) == 0 ||
+        !conf->supported_locally) {
+        return;
     }
 
-    /* argh, GtkCheckButton won't layout nicely with several labels... 
-       There is no way to align the check with the top row and 
-       get the labels to align and not use way too much vertical space.
-       In this hack the labels are not related to the checkbutton at all,
-       this is definitely not nice but looks better */
+    conf->box = gtk_vbox_new (FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (data->sources_box), conf->box,
+                        FALSE, FALSE, 8);
 
-    conf->box = gtk_hbox_new (FALSE, 0);
-    gtk_box_pack_start_defaults (GTK_BOX (data->sources_box), conf->box);
-    
- 
-    box = gtk_vbox_new (FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (conf->box), box, FALSE, FALSE, 0);
-    check = gtk_check_button_new ();
-    gtk_box_pack_start (GTK_BOX (box), check, FALSE, FALSE, 0);
-
-    box = gtk_vbox_new (FALSE, 0);
-    gtk_box_pack_start_defaults (GTK_BOX (conf->box), box);
-    gtk_container_set_border_width (GTK_CONTAINER (box), 2);
-
-    if (source_uri && strlen (source_uri) > 0) {
-        lbl = gtk_label_new (pretty_name);
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), enabled);
-        gtk_widget_set_sensitive (check, TRUE);
-    } else {
-        char *text;
-        /* TRANSLATORS: placeholder is a source name, shown with checkboxes in main window */
-        text = g_strdup_printf (_("%s (not supported by this service)"), pretty_name);
-        lbl = gtk_label_new (text);
-        g_free (text);
-        gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), FALSE);
-        gtk_widget_set_sensitive (check, FALSE);
-    }
+    pretty_name = get_pretty_source_name (name);
+    lbl = gtk_label_new (pretty_name);
     g_free (pretty_name);
-
     gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
-    gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
+    gtk_box_pack_start_defaults (GTK_BOX (conf->box), lbl);
 
+    box = gtk_hbox_new (FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (conf->box), box, FALSE, FALSE, 0);
 
-    hbox = gtk_hbox_new (FALSE, 0);
-    gtk_box_pack_start_defaults (GTK_BOX (box), hbox);
-
-    conf->error_image = gtk_image_new_from_stock (GTK_STOCK_DIALOG_ERROR,
-                                                  GTK_ICON_SIZE_SMALL_TOOLBAR);
-    gtk_box_pack_start (GTK_BOX (hbox), conf->error_image, FALSE, FALSE, 8);
-    gtk_widget_set_no_show_all (conf->error_image, TRUE);
-
+    conf->info_bar = gtk_info_bar_new ();
+    gtk_box_pack_start (GTK_BOX (box), conf->info_bar, TRUE, TRUE, 16);
+    gtk_widget_set_no_show_all (conf->info_bar, TRUE);
+    g_signal_connect (conf->info_bar, "response",
+                      G_CALLBACK (info_bar_response_cb), data);
 
     conf->label = gtk_label_new (NULL);
     gtk_misc_set_alignment (GTK_MISC (conf->label), 0.0, 0.5);
-    gtk_box_pack_start_defaults (GTK_BOX (hbox), conf->label);
+    gtk_box_pack_start_defaults (GTK_BOX (conf->box), conf->label);
 
-    source_config_update_label (conf);
+    source_config_update_widget (conf);
 
-    g_object_set_data (G_OBJECT (check), "source", (gpointer)conf);
-    g_signal_connect (check, "toggled",
-                      G_CALLBACK (source_check_toggled_cb), data);
-
-    if (conf->supported_locally) {
-        gtk_widget_show_all (conf->box); 
-    }
+    gtk_widget_show_all (conf->box); 
 }
 
 static void
@@ -1625,6 +1563,89 @@ handle_source_report_item (char **strs, const char *value, GHashTable *sources)
     return TRUE;
 }
 
+static char*
+get_report_summary (int local_changes, int remote_changes, int local_rejects, int remote_rejects)
+{
+    char *rejects, *changes, *msg;
+
+    if (local_rejects + remote_rejects == 0) {
+        rejects = NULL;
+    } else if (local_rejects == 0) {
+        rejects = g_strdup_printf (ngettext ("There was one remote rejection.", 
+                                             "There were %d remote rejections.",
+                                             remote_rejects),
+                                   remote_rejects);
+    } else if (remote_rejects == 0) {
+        rejects = g_strdup_printf (ngettext ("There was one local rejection.", 
+                                             "There were %d local rejections.",
+                                             local_rejects),
+                                   local_rejects);
+    } else {
+        rejects = g_strdup_printf (_ ("There were %d local rejections and %d remote rejections."),
+                                   local_rejects, remote_rejects);
+    }
+
+    if (local_changes + remote_changes == 0) {
+        changes = g_strdup_printf (_("Last time: No changes."));
+    } else if (local_changes == 0) {
+        changes = g_strdup_printf (ngettext ("Last time: Sent one change.",
+                                             "Last time: Sent %d changes.",
+                                             remote_changes),
+                                   remote_changes);
+    } else if (remote_changes == 0) {
+        // This is about changes made to the local data. Not all of these
+        // changes were requested by the remote server, so "applied"
+        // is a better word than "received" (bug #5185).
+        changes = g_strdup_printf (ngettext ("Last time: Applied one change.",
+                                             "Last time: Applied %d changes.",
+                                             local_changes),
+                                   local_changes);
+    } else {
+        changes = g_strdup_printf (_("Last time: Applied %d changes and sent %d changes."),
+                                   local_changes, remote_changes);
+    }
+
+    if (rejects)
+        msg = g_strdup_printf ("%s\n%s", changes, rejects);
+    else
+        msg = g_strdup (changes);
+    g_free (rejects);
+    g_free (changes);
+    return msg;
+}
+
+/* return TRUE if no errors are shown */
+static gboolean
+source_config_update_widget (source_config *source)
+{
+    char *msg;
+    gboolean show_error;
+    SyncErrorResponse response;
+
+    if (!source->label) {
+        return TRUE;
+    }
+
+    /* TODO improve error visibility */
+    msg = get_error_string_for_code (source->status, &response);
+    if (msg) {
+        show_error = TRUE;
+        set_info_bar (source->info_bar, GTK_MESSAGE_ERROR, response, msg);
+    } else {
+        show_error = FALSE;
+        gtk_widget_hide (source->info_bar);
+        msg = get_report_summary (source->local_changes,
+                                  source->remote_changes,
+                                  source->local_rejections,
+                                  source->remote_rejections);
+        gtk_label_set_text (GTK_LABEL (source->label), msg);
+    }
+    g_free (msg);
+
+    return !show_error;
+}
+
+
 static void
 get_reports_cb (SyncevoServer *server,
                 SyncevoReports *reports,
@@ -1733,7 +1754,7 @@ get_reports_cb (SyncevoServer *server,
                 source_conf->status = stats->status;
             }
             /* if ui has been constructed already, update it */
-            if (!source_config_update_label (source_conf)) {
+            if (!source_config_update_widget (source_conf)) {
                 have_source_errors = TRUE;
             }
         }
@@ -1748,7 +1769,8 @@ get_reports_cb (SyncevoServer *server,
     /* update service UI */
     refresh_last_synced_label (data);
     if (error_msg) {
-        set_info_bar (data, GTK_MESSAGE_ERROR, response,
+        set_info_bar (data->info_bar,
+                      GTK_MESSAGE_ERROR, response,
                       error_msg);
         g_free (error_msg);
     }
@@ -2054,7 +2076,11 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
     case DB_Forbidden:
         return g_strdup(_("Forbidden"));
     case DB_NotFound:
-        return g_strdup(_("Not found"));
+        if (response) {
+            *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
+        }
+        return g_strdup(_("The source could not be found. Could there be a "
+                          "problem with the server settings?"));
     case DB_Fatal:
         /* This can happen when EDS is borked, restart may help... */
         return g_strdup(_("Fatal database error"));
