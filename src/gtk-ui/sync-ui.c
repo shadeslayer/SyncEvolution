@@ -2049,6 +2049,7 @@ show_main_view (app_data *data)
     gtk_window_present (GTK_WINDOW (data->sync_win));
 }
 
+/* TODO: this function should accept source/peer name as param */
 char*
 get_error_string_for_code (int error_code, SyncErrorResponse *response)
 {
@@ -2089,7 +2090,6 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
     case DB_Full:
         return g_strdup(_("No space left"));
     case LOCERR_PROCESSMSG:
-        /* TODO identify problem item somehow ? */
         return g_strdup(_("Failed to process SyncML"));
     case LOCERR_AUTHFAIL:
         return g_strdup(_("Server authorization failed"));
@@ -2103,17 +2103,20 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
         return g_strdup(_("No configuration file found"));
     case LOCERR_BADCONTENT:
         return g_strdup(_("Server sent bad content"));
-    case LOCERR_TRANSPFAIL:
-        return g_strdup(_("Transport failure (no connection?)"));
-    case LOCERR_TIMEOUT:
-        return g_strdup(_("Connection timed out"));
     case LOCERR_CERT_EXPIRED:
         return g_strdup(_("Connection certificate has expired"));
     case LOCERR_CERT_INVALID:
         return g_strdup(_("Connection certificate is invalid"));
     case LOCERR_CONN:
     case LOCERR_NOCONN:
-        return g_strdup(_("Connection failed"));
+    case LOCERR_TRANSPFAIL:
+    case LOCERR_TIMEOUT:
+        if (response) {
+            *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
+        }
+        return g_strdup(_("We were unable to connect to the server. The problem "
+                          "could be temporary or there could be something wrong "
+                          "with the server settings."));
     case LOCERR_BADURL:
         return g_strdup(_("URL is bad"));
     case LOCERR_SRVNOTFOUND:
