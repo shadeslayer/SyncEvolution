@@ -3367,12 +3367,13 @@ void ClientTest::getTestData(const char *type, Config &config)
     config.dump = dump;
     config.compare = compare;
 
+    // redirect requests for "ical20" towards "ical20_noutc"?
+    bool noutc = false;
     env = getenv ("CLIENT_TEST_NOUTC");
     if (env && !strcmp (env, "t")) {
-        if (!strcmp (type, "ical20")) {
-        type = (string (type) + "_noutc").c_str();
-        }
+        noutc = true;
     }
+
     if (!strcmp(type, "vcard30")) {
         config.sourceName = "vcard30";
         config.sourceNameServerTemplate = "addressbook";
@@ -3504,7 +3505,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.uniqueProperties = "FN:N";
         config.sizeProperty = "NOTE";
         config.testcases = "testcases/vcard21.vcf";
-    } else if(!strcmp(type, "ical20")) {
+    } else if (!strcmp(type, "ical20") && !noutc) {
         config.sourceName = "ical20";
         config.sourceNameServerTemplate = "calendar";
         config.uri = "cal2"; // ScheduleWorld
@@ -3699,7 +3700,8 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.uniqueProperties = "SUMMARY:UID:LOCATION";
         config.sizeProperty = "DESCRIPTION";
         config.testcases = "testcases/vcal10.ics";
-    } else if(!strcmp(type, "ical20_noutc")) {
+    } else if (!strcmp(type, "ical20_noutc") ||
+               (!strcmp(type, "ical20") && noutc)) {
         config.sourceName = "ical20";
         config.sourceNameServerTemplate = "calendar";
         config.uri = "cal2"; // ScheduleWorld
