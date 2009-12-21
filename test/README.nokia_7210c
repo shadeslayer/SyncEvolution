@@ -31,7 +31,7 @@ phone 7210c.
 vcard21
 vcal1.0
 
-* Know Limitations in google server:
+* Know Limitations:
 Only supports WBXML for transmitting.
 Don't support refresh-from-client and refresh-from-server sync.
 Treat one-way-from-client and one-way-from-server the same as two-way sync.
