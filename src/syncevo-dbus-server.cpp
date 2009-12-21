@@ -2668,17 +2668,34 @@ void Connection::process(const Caller_t &caller,
                     std::string serverID = san.fServerID;
                     SyncConfig::ServerList servers = SyncConfig::getServers();
                     BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,
-                    	          servers) {
-                    	SyncContext context(server.first);
-                    	if (context.getSyncURL() == serverID) {
+                            servers) {
+                        SyncConfig conf(server.first);
+                        if (conf.getSyncURL() == serverID) {
                             config = server.first;
-                    	    break;
-                    	}
-
-                    	// TODO: for other transports match against
-                    	// transport specific properties, like Bluetooth MAC
-                        // address
+                            break;
+                        }
                     }
+
+                    // for Bluetooth transports match against mac address.
+                    StringMap::const_iterator id = m_peer.find("id"),
+                        trans = m_peer.find("transport");
+                    if (trans != m_peer.end() && id != m_peer.end()) {
+                        if (trans->second == "org.openobex.obexd") {
+                            string btAddr = id->second.substr(0, id->second.find("+"));
+                            BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,
+                                    servers) {
+                                SyncConfig conf(server.first);
+                                string url = conf.getSyncURL();
+                                url = url.substr (0, url.find("+"));
+                                SE_LOG_DEBUG (NULL, NULL, "matching against %s",url.c_str());
+                                if (url.find ("obex-bt://") ==0 && url.substr(strlen("obex-bt://"), url.npos) == btAddr) {
+                                    config = server.first;
+                                    break;
+                                } 
+                            }
+                        }
+                    }
+
                     if (config.empty()) {
                         BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,
                                       servers) {
