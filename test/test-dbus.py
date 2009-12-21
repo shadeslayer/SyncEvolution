@@ -1082,6 +1082,45 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         reports = self.session.GetReports(5, 0xFFFFFFFF, utf8_strings=True)
         self.failUnlessEqual(reports, [])
 
+    def testRestoreByRef(self):
+        # test when the data before or after a given session is restored
+        self.setupConfig()
+        self.setUpListeners(self.sessionpath)
+        self.setupFiles('restore')
+        reports = self.session.GetReports(0, 1, utf8_strings=True)
+        dir = reports[0]["dir"]
+        sessionpath, session = self.createSession("dummy-test", False)
+        #TODO: check restore result, how?
+        #restore data before this session
+        self.session.Restore(dir, True, [], utf8_strings=True)
+        loop.run()
+        self.session.Detach()
+        session.SetConfig(False, False, self.config, utf8_strings=True)
+        #restore data after this session
+        session.Restore(dir, False, ["addressbook", "calendar"], utf8_strings=True)
+        loop.run()
+
+    def testSecondRestore(self):
+        # test the right error is thrown when session is not active
+        self.setupConfig()
+        self.setUpListeners(self.sessionpath)
+        self.setupFiles('restore')
+        reports = self.session.GetReports(0, 1, utf8_strings=True)
+        dir = reports[0]["dir"]
+        sessionpath, session = self.createSession("dummy-test", False)
+        try:
+            session.Restore(dir, False, [], utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                    "org.syncevolution.InvalidCall: session is not active, call not allowed at this time")
+        else:
+            self.fail("no exception thrown")
+
+        self.session.Detach()
+        session.SetConfig(False, False, self.config, utf8_strings=True)
+        session.Restore(dir, False, [], utf8_strings=True)
+        loop.run()
+
 class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
     """ This class is used to test those unit tests of session APIs, depending on doing sync.
         Thus we need a real server configuration to confirm sync could be run successfully.
