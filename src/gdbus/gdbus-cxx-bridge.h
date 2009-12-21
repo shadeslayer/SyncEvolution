@@ -610,6 +610,50 @@ class EmitSignal5
     }
 };
 
+template <typename A1, typename A2, typename A3, typename A4, typename A5, typename A6>
+class EmitSignal6
+{
+    const DBusObject &m_object;
+    const std::string m_signal;
+
+ public:
+    EmitSignal6(const DBusObject &object,
+                const std::string &signal) :
+        m_object(object),
+        m_signal(signal)
+    {}
+
+    void operator () (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6)
+    {
+        DBusMessagePtr msg(dbus_message_new_signal(m_object.getPath(),
+                                                   m_object.getInterface(),
+                                                   m_signal.c_str()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_signal() failed");
+        }
+        append_retvals(msg, a1, a2, a3, a4, a5, a6);
+        if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+    }
+
+    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
+    {
+        GDBusSignalTable entry;
+        entry.name = m_signal.c_str();
+        std::string buffer;
+        buffer += dbus_traits<A1>::getSignature();
+        buffer += dbus_traits<A2>::getSignature();
+        buffer += dbus_traits<A3>::getSignature();
+        buffer += dbus_traits<A4>::getSignature();
+        buffer += dbus_traits<A5>::getSignature();
+        buffer += dbus_traits<A6>::getSignature();
+        entry.signature = strdup(buffer.c_str());
+        entry.flags = flags;
+        return entry;
+    }
+};
+
 template <class M>
 struct MakeMethodEntry
 {

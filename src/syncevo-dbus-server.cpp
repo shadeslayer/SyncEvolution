@@ -232,6 +232,7 @@ template<> struct dbus_traits<ReadOperations::SourceDatabase> :
                               dbus_member<ReadOperations::SourceDatabase, std::string, &ReadOperations::SourceDatabase::m_uri,
                               dbus_member_single<ReadOperations::SourceDatabase, bool, &ReadOperations::SourceDatabase::m_isDefault> > > >{}; 
 
+class InfoReq;
 
 /**
  * Implements the main org.syncevolution.Server interface.
@@ -285,6 +286,17 @@ class DBusServer : public DBusObjectHelper
      * it is the currently running sync session (m_syncSession).
      */
     WorkQueue_t m_workQueue;
+
+    /**
+     * a hash of pending InfoRequest
+     */
+    typedef std::map<string, boost::weak_ptr<InfoReq> > InfoReqMap;
+
+    // hash map of pending info requests
+    InfoReqMap m_infoReqMap;
+
+    // the index of last info request
+    uint32_t m_lastInfoReq;
 
     /**
      * Watch callback for a specific client or connection.
@@ -362,6 +374,23 @@ class DBusServer : public DBusObjectHelper
     /** Server.GetSessions() */
     void getSessions(std::vector<std::string> &sessions);
 
+    /** Server.InfoResponse() */
+    void infoResponse(const Caller_t &caller,
+                      const std::string &id,
+                      const std::string &state,
+                      const std::map<string, string> &response);
+
+    friend class InfoReq;
+
+    /** emit InfoRequest */
+    void emitInfoReq(const InfoReq &);
+
+    /** get the next id of InfoRequest */
+    std::string getNextInfoReq();
+
+    /** remove InfoReq from hash map */
+    void removeInfoReq(const InfoReq &req);
+
     /** Server.SessionChanged */
     EmitSignal2<const DBusObject_t &,
                 bool> sessionChanged;
@@ -370,6 +399,14 @@ class DBusServer : public DBusObjectHelper
     EmitSignal3<const std::string &,
                 const std::string &,
                 const std::string &> presence;
+
+    /** Server.InfoRequest */
+    EmitSignal6<const std::string &,
+                const DBusObject_t &,
+                const std::string &,
+                const std::string &,
+                const std::string &,
+                const std::map<string, string> &> infoRequest;
 
 public:
     DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn);
@@ -424,6 +461,11 @@ public:
      * and if so, activates the first one in the queue.
      */
     void checkQueue();
+
+    boost::shared_ptr<InfoReq> createInfoReq(const string &type, 
+                                             const std::map<string, string> &parameters,
+                                             const Session *session);
+
 };
 
 
@@ -1207,6 +1249,126 @@ class DBusTransportAgent : public TransportAgent
         m_callbackInterval = interval;
     }
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
+};
+
+/**
+ * A wrapper for handling info request and response.
+ */
+class InfoReq {
+public:
+    typedef std::map<string, string> InfoMap;
+
+    // status of current request
+    enum Status {
+        ST_RUN, // request is running
+        ST_OK, // ok, response is gotten
+        ST_TIMEOUT, // timeout
+        ST_CANCEL // request is cancelled
+    };
+
+    /**
+     * constructor
+     * The default timeout is 120 seconds
+     */
+    InfoReq(DBusServer &server,
+            const string &type,
+            const InfoMap &parameters,
+            const Session *session,
+            uint32_t timeout = 120); 
+
+    ~InfoReq();
+
+    /**
+     * check whether the request is ready. Also give an opportunity
+     * to poll the sources and then check the response is ready
+     * @return the state of the request
+     */
+    Status check();
+
+    /**
+     * wait the response until timeout, abort or suspend. It may be blocked.
+     * The response is returned though the parameter 'response' when the Status is
+     * 'ST_OK'. Otherwise, corresponding statuses are returned.
+     * @param response the received response if gotten
+     * @param interval the interval to check abort, suspend and timeout, in seconds
+     * @return the current status
+     */
+    Status wait(InfoMap &response, uint32_t interval = 3);
+
+    /**
+     * get response when it is ready. If false, nothing will be set in response
+     */
+    bool getResponse(InfoMap &response);
+
+    /** cancel the request. If request is done, cancel won't do anything */
+    void cancel();
+
+    /** get current status in string format */
+    string getStatusStr() const { return statusToString(m_status); }
+
+private:
+    static string statusToString(Status status);
+
+    enum InfoState {
+        IN_REQ,  //request
+        IN_WAIT, // waiting
+        IN_DONE  // done
+    };
+
+    static string infoStateToString(InfoState state);
+
+    /** callback for the timemout source */
+    static gboolean checkCallback(gpointer data);
+
+    /** check whether the request is timeout */
+    bool checkTimeout();
+
+    friend class DBusServer;
+
+    /** set response from dbus clients */
+    void setResponse(const Caller_t &caller, const string &state, const InfoMap &response);
+
+    /** send 'done' state if needed */
+    void done();
+
+    string getId() const { return m_id; }
+    string getSessionPath() const { return m_session ? m_session->getPath() : ""; }
+    string getInfoStateStr() const { return infoStateToString(m_infoState); }
+    string getHandler() const { return m_handler; }
+    string getType() const { return m_type; }
+    const InfoMap& getParam() const { return m_param; }
+
+    DBusServer &m_server;
+
+    /** caller's session, might be NULL */
+    const Session *m_session;
+
+    /** unique id of this info request */
+    string m_id;
+
+    /** info req state defined in dbus api */
+    InfoState m_infoState;
+
+    /** status to indicate the info request is timeout, ok, abort, etc */
+    Status m_status;
+
+    /** the handler of the responsed dbus client */
+    Caller_t m_handler;
+
+    /** the type of the info request */
+    string m_type;
+
+    /** parameters from info request callers */
+    InfoMap m_param;
+
+    /** response returned from dbus clients */
+    InfoMap m_response;
+
+    /** default timeout is 120 seconds */
+    uint32_t m_timeout;
+
+    /** a timer */
+    Timer m_timer;
 };
 
 /***************** ReadOperations implementation ****************/
@@ -3012,8 +3174,10 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     m_loop(loop),
     m_lastSession(time(NULL)),
     m_activeSession(NULL),
+    m_lastInfoReq(0),
     sessionChanged(*this, "SessionChanged"),
-    presence(*this, "Presence")
+    presence(*this, "Presence"),
+    infoRequest(*this, "InfoRequest")
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -3029,8 +3193,10 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
     add(this, &DBusServer::getDatabases, "GetDatabases");
     add(this, &DBusServer::checkPresence, "CheckPresence");
     add(this, &DBusServer::getSessions, "GetSessions");
+    add(this, &DBusServer::infoResponse, "InfoResponse");
     add(sessionChanged);
     add(presence);
+    add(infoRequest);
 }
 
 DBusServer::~DBusServer()
@@ -3219,6 +3385,205 @@ void DBusServer::checkQueue()
             sessionChanged(session->getPath(), true);
             return;
         }
+    }
+}
+
+void DBusServer::infoResponse(const Caller_t &caller,
+                              const std::string &id,
+                              const std::string &state,
+                              const std::map<string, string> &response)
+{
+    InfoReqMap::iterator it = m_infoReqMap.find(id);
+    // if not found, ignore
+    if(it != m_infoReqMap.end()) {
+        boost::shared_ptr<InfoReq> infoReq = it->second.lock();
+        infoReq->setResponse(caller, state, response);
+    }
+}
+
+boost::shared_ptr<InfoReq> DBusServer::createInfoReq(const string &type,
+                                                     const std::map<string, string> &parameters,
+                                                     const Session *session)
+{
+    boost::shared_ptr<InfoReq> infoReq(new InfoReq(*this, type, parameters, session)); 
+    boost::weak_ptr<InfoReq> item(infoReq) ;
+    m_infoReqMap.insert(pair<string, boost::weak_ptr<InfoReq> >(infoReq->getId(), item));
+    return infoReq;
+}
+
+std::string DBusServer::getNextInfoReq()
+{
+    return StringPrintf("%u", ++m_lastInfoReq);
+}
+
+void DBusServer::emitInfoReq(const InfoReq &req)
+{
+    infoRequest(req.getId(), 
+                req.getSessionPath(), 
+                req.getInfoStateStr(), 
+                req.getHandler(), 
+                req.getType(), 
+                req.getParam());
+}
+
+void DBusServer::removeInfoReq(const InfoReq &req)
+{
+    // remove InfoRequest from hash map
+    InfoReqMap::iterator it = m_infoReqMap.find(req.getId());
+    if(it != m_infoReqMap.end()) {
+        m_infoReqMap.erase(it);
+    }
+}
+
+/********************** InfoReq implementation ******************/
+InfoReq::InfoReq(DBusServer &server,
+                 const string &type,
+                 const InfoMap &parameters,
+                 const Session *session,
+                 uint32_t timeout) :
+    m_server(server), m_session(session), m_infoState(IN_REQ),
+    m_status(ST_RUN), m_type(type), m_param(parameters), 
+    m_timeout(timeout), m_timer(m_timeout * 1000)
+{
+    m_id = m_server.getNextInfoReq();
+    m_server.emitInfoReq(*this);
+    m_param.clear();
+}
+
+InfoReq::~InfoReq()
+{
+    m_handler = "";
+    done();
+    m_server.removeInfoReq(*this);
+}
+
+InfoReq::Status InfoReq::check()
+{
+    if(m_status == ST_RUN) {
+        // give an opportunity to poll the sources on the main context
+        g_main_context_iteration(g_main_loop_get_context(m_server.getLoop()), false);
+        checkTimeout();
+    }
+    return m_status;
+}
+
+bool InfoReq::getResponse(InfoMap &response)
+{
+    if (m_status == ST_OK) {
+        response = m_response;
+        return true;
+    }
+    return false;
+}
+
+InfoReq::Status InfoReq::wait(InfoMap &response, uint32_t interval)
+{
+    // give a chance to check whether it has been timeout
+    check();
+    if(m_status == ST_RUN) {
+        guint checkSource = g_timeout_add_seconds(interval, 
+                                                  (GSourceFunc) checkCallback,
+                                                  static_cast<gpointer>(this));
+        while(m_status == ST_RUN) {
+            g_main_context_iteration(g_main_loop_get_context(m_server.getLoop()), true);
+        }
+
+        // if the source is not removed
+        if(m_status != ST_TIMEOUT && m_status != ST_CANCEL) {
+            g_source_remove(checkSource);
+        }
+    }
+    if (m_status == ST_OK) {
+        response = m_response;
+    }
+    return m_status;
+}
+
+void InfoReq::cancel()
+{
+    if(m_status == ST_RUN) {
+        m_handler = "";
+        done();
+        m_status = ST_CANCEL;
+    }
+}
+
+string InfoReq::statusToString(Status status)
+{
+    switch(status) {
+    case ST_RUN:
+        return "running";
+    case ST_OK:
+        return "ok";
+    case ST_CANCEL:
+        return "cancelled";
+    case ST_TIMEOUT:
+        return "timeout";
+    default:
+        return "";
+    };
+}
+
+string InfoReq::infoStateToString(InfoState state)
+{
+    switch(state) {
+    case IN_REQ:
+        return "request";
+    case IN_WAIT:
+        return "waiting";
+    case IN_DONE:
+        return "done";
+    default:
+        return "";
+    }
+}
+
+gboolean InfoReq::checkCallback(gpointer data)
+{
+    // TODO: check abort and suspend(MB#8730)
+
+    // if InfoRequest("request") is sent and waiting for InfoResponse("working"),
+    // add a timeout mechanism
+    InfoReq *req = static_cast<InfoReq*>(data);
+    if (req->checkTimeout()) {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+bool InfoReq::checkTimeout()
+{
+    // if waiting for 'working' response, check time out
+    if(m_status == ST_RUN && m_infoState == IN_REQ) {
+        if (m_timer.timeout()) {
+            m_status = ST_TIMEOUT;
+            return true;
+        }
+    }
+    return false;
+}
+
+void InfoReq::setResponse(const Caller_t &caller, const string &state, const InfoMap &response)
+{
+    if(m_status != ST_RUN) {
+        return;
+    } else if(m_infoState == IN_REQ && state == "working") {
+        m_handler = caller;
+        m_infoState = IN_WAIT;
+        m_server.emitInfoReq(*this);
+    } else if(m_infoState == IN_WAIT && state == "response") {
+        m_response = response;
+        m_handler = caller;
+        done();
+        m_status = ST_OK;
+    }
+}
+
+void InfoReq::done()
+{
+    if (m_infoState != IN_DONE) {
+        m_infoState = IN_DONE;
+        m_server.emitInfoReq(*this);
     }
 }
 
