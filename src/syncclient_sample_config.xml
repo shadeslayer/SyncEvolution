@@ -941,10 +941,6 @@
         <!-- sub-profile for event -->
         <subprofile name="VEVENT" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="1">
 
-            <property rule='N7210c' name="TZ" filter="false" suppressempty="yes">
-                <value field="DTSTART" conversion="tz"/>
-            </property>
-
             <property name="STATUS"  suppressempty="yes" onlyformode="old">
                 <value field="STATUS" conversion="emptyonly">
                     <enum name="COMPLETED"      value="0"/>
@@ -1375,15 +1371,6 @@
   </datatypes>
 
   <clientorserver/>
-  <server type="plugin">
-      <remoterule name="N7210c">
-          <manufacturer>NOKIA</manufacturer>
-          <model>Nokia 7210c</model>
-          <descriptivename>Nokia 7210c</descriptivename>
-          <forceutc>yes</forceutc>
-          <limitedfieldlengths>yes</limitedfieldlengths>
-      </remoterule>
-  </server>
 
   <client type="plugin">
       <remoterule name="ZYB">
