@@ -3914,6 +3914,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.testcases = "testcases/imemo20.ics";
     }else if (!strcmp (type, "super")) {
         config.subConfigs = "ical20,itodo20";
+        config.uri="";
     }
 }
 
