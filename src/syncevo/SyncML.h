@@ -48,7 +48,10 @@ enum SyncMode {
     SA_SYNC_REFRESH_FROM_CLIENT = 208,
     SA_SYNC_ONE_WAY_FROM_SERVER = 209,
     SA_SYNC_REFRESH_FROM_SERVER = 210,
-    
+
+    // used by restore backend with backup data, a pseudo mode
+    SYNC_RESTORE_FROM_BACKUP = 211,
+
     SYNC_LAST = 220,
     /** error situation (in contrast to SYNC_NONE) */
     SYNC_INVALID = 255

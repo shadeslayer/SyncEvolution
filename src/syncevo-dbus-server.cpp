@@ -907,6 +907,10 @@ class Session : public DBusObjectHelper,
     /** restore used */
     string m_restoreDir;
     bool m_restoreBefore;
+    /** the total number of sources to be restored */
+    int m_restoreSrcTotal;
+    /** the number of sources that have been restored */
+    int m_restoreSrcEnd;
 
     enum RunOperation {
         OP_SYNC = 0,
@@ -1855,6 +1859,8 @@ Session::Session(DBusServer &server,
     m_statusTimer(100),
     m_progressTimer(50),
     m_restoreBefore(true),
+    m_restoreSrcTotal(0),
+    m_restoreSrcEnd(0),
     m_runOperation(OP_SYNC),
     emitStatus(*this, "StatusChanged"),
     emitProgress(*this, "ProgressChanged")
@@ -1940,58 +1946,96 @@ void Session::sourceProgress(sysync::TProgressEventEnum type,
                              SyncSource &source,
                              int32_t extra1, int32_t extra2, int32_t extra3)
 {
-    SourceProgress &progress = m_sourceProgress[source.getName()];
-    SourceStatus &status = m_sourceStatus[source.getName()];
-    switch(type) {
-    case sysync::PEV_SYNCSTART:
-        if(source.getFinalSyncMode() != SYNC_NONE) {
-            m_progData.setStep(ProgressData::PRO_SYNC_UNINIT);
-            fireProgress();
+    switch(m_runOperation) {
+    case OP_SYNC: {
+        SourceProgress &progress = m_sourceProgress[source.getName()];
+        SourceStatus &status = m_sourceStatus[source.getName()];
+        switch(type) {
+        case sysync::PEV_SYNCSTART:
+            if(source.getFinalSyncMode() != SYNC_NONE) {
+                m_progData.setStep(ProgressData::PRO_SYNC_UNINIT);
+                fireProgress();
+            }
+            break;
+        case sysync::PEV_SYNCEND:
+            if(source.getFinalSyncMode() != SYNC_NONE) {
+                status.set(PrettyPrintSyncMode(source.getFinalSyncMode()), "done", extra1);
+                fireStatus(true);
+            }
+            break;
+        case sysync::PEV_PREPARING:
+            if(source.getFinalSyncMode() != SYNC_NONE) {
+                progress.m_phase        = "preparing";
+                progress.m_prepareCount = extra1;
+                progress.m_prepareTotal = extra2;
+                m_progData.itemPrepare();
+                fireProgress(true);
+            }
+            break;
+        case sysync::PEV_ITEMSENT:
+            if(source.getFinalSyncMode() != SYNC_NONE) {
+                progress.m_phase     = "sending";
+                progress.m_sendCount = extra1;
+                progress.m_sendTotal = extra2;
+                fireProgress(true);
+            }
+            break;
+        case sysync::PEV_ITEMRECEIVED:
+            if(source.getFinalSyncMode() != SYNC_NONE) {
+                progress.m_phase        = "receiving";
+                progress.m_receiveCount = extra1;
+                progress.m_receiveTotal = extra2;
+                m_progData.itemReceive(source.getName(), extra1, extra2);
+                fireProgress(true);
+            }
+            break;
+        case sysync::PEV_ALERTED:
+            if(source.getFinalSyncMode() != SYNC_NONE) {
+                status.set(PrettyPrintSyncMode(source.getFinalSyncMode()), "running", 0);
+                fireStatus(true);
+                m_progData.setStep(ProgressData::PRO_SYNC_DATA);
+                m_progData.addSyncMode(source.getFinalSyncMode());
+                fireProgress();
+            }
+            break;
+        default:
+            ;
         }
         break;
-    case sysync::PEV_SYNCEND:
-        if(source.getFinalSyncMode() != SYNC_NONE) {
-            status.set(PrettyPrintSyncMode(source.getFinalSyncMode()), "done", extra1);
-            fireStatus(true);
+    }
+    case OP_RESTORE: {
+        switch(type) {
+        case sysync::PEV_ALERTED:
+            // count the total number of sources to be restored
+            m_restoreSrcTotal++;
+            break;
+        case sysync::PEV_SYNCSTART: {
+            if (source.getFinalSyncMode() != SYNC_NONE) {
+                SourceStatus &status = m_sourceStatus[source.getName()];
+                // set statuses as 'restore-from-backup'
+                status.set(PrettyPrintSyncMode(source.getFinalSyncMode()), "running", 0);
+                fireStatus(true);
+            }
+            break;
+        }
+        case sysync::PEV_SYNCEND: {
+            if (source.getFinalSyncMode() != SYNC_NONE) {
+                m_restoreSrcEnd++;
+                SourceStatus &status = m_sourceStatus[source.getName()];
+                status.set(PrettyPrintSyncMode(source.getFinalSyncMode()), "done", 0);
+                m_progress = 100 * m_restoreSrcEnd / m_restoreSrcTotal;
+                fireStatus(true);
+                fireProgress(true);
+            }
+            break;
+        }
+        default:
+            break;
         }
         break;
-    case sysync::PEV_PREPARING:
-        if(source.getFinalSyncMode() != SYNC_NONE) {
-            progress.m_phase        = "preparing";
-            progress.m_prepareCount = extra1;
-            progress.m_prepareTotal = extra2;
-            m_progData.itemPrepare();
-            fireProgress(true);
-        }
-        break;
-    case sysync::PEV_ITEMSENT:
-        if(source.getFinalSyncMode() != SYNC_NONE) {
-            progress.m_phase     = "sending";
-            progress.m_sendCount = extra1;
-            progress.m_sendTotal = extra2;
-            fireProgress(true);
-        }
-        break;
-    case sysync::PEV_ITEMRECEIVED:
-        if(source.getFinalSyncMode() != SYNC_NONE) {
-            progress.m_phase        = "receiving";
-            progress.m_receiveCount = extra1;
-            progress.m_receiveTotal = extra2;
-            m_progData.itemReceive(source.getName(), extra1, extra2);
-            fireProgress(true);
-        }
-        break;
-    case sysync::PEV_ALERTED:
-        if(source.getFinalSyncMode() != SYNC_NONE) {
-            status.set(PrettyPrintSyncMode(source.getFinalSyncMode()), "running", 0);
-            fireStatus(true);
-            m_progData.setStep(ProgressData::PRO_SYNC_DATA);
-            m_progData.addSyncMode(source.getFinalSyncMode());
-            fireProgress();
-        }
-        break;
+    }
     default:
-        ;
+        break;
     }
 }
 
@@ -2086,6 +2130,14 @@ void Session::restore(const string &dir, bool before, const std::vector<std::str
     m_restoreBefore = before;
     m_restoreDir = dir;
     m_runOperation = OP_RESTORE;
+
+    // initiate status and progress and sourceProgress is not calculated currently
+    BOOST_FOREACH(const std::string source,
+                  m_sync->getSyncSources()) {
+        m_sourceStatus[source];
+    }
+    fireProgress(true);
+    fireStatus(true);
 
     g_main_loop_quit(loop);
 }

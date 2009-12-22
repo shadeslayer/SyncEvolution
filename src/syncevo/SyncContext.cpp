@@ -1049,51 +1049,57 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         /* datastore alerted (extra1=0 for normal, 1 for slow, 2 for first time slow, 
            extra2=1 for resumed session,
            extra3 0=twoway, 1=fromserver, 2=fromclient */
-        SE_LOG_INFO(NULL, NULL, "%s: %s %s sync%s",
-                    source.getName(),
-                    extra2 ? "resuming" : "starting",
-                    extra1 == 0 ? "normal" :
-                    extra1 == 1 ? "slow" :
-                    extra1 == 2 ? "first time" :
-                    "unknown",
-                    extra3 == 0 ? ", two-way" :
-                    extra3 == 1 ? " from server" :
-                    extra3 == 2 ? " from client" :
-                    ", unknown direction");
-
-        SyncMode mode = SYNC_NONE;
-        switch (extra1) {
-        case 0:
-            switch (extra3) {
+        // -1 is used for alerting a restore from backup. Synthesis won't use this
+        if (extra1 != -1) {
+            SE_LOG_INFO(NULL, NULL, "%s: %s %s sync%s",
+                        source.getName(),
+                        extra2 ? "resuming" : "starting",
+                        extra1 == 0 ? "normal" :
+                        extra1 == 1 ? "slow" :
+                        extra1 == 2 ? "first time" :
+                        "unknown",
+                        extra3 == 0 ? ", two-way" :
+                        extra3 == 1 ? " from server" :
+                        extra3 == 2 ? " from client" :
+                        ", unknown direction");
+         
+            SyncMode mode = SYNC_NONE;
+            switch (extra1) {
             case 0:
-                mode = SYNC_TWO_WAY;
+                switch (extra3) {
+                case 0:
+                    mode = SYNC_TWO_WAY;
+                    break;
+                case 1:
+                    mode = SYNC_ONE_WAY_FROM_SERVER;
+                    break;
+                case 2:
+                    mode = SYNC_ONE_WAY_FROM_CLIENT;
+                    break;
+                }
                 break;
             case 1:
-                mode = SYNC_ONE_WAY_FROM_SERVER;
-                break;
             case 2:
-                mode = SYNC_ONE_WAY_FROM_CLIENT;
+                switch (extra3) {
+                case 0:
+                    mode = SYNC_SLOW;
+                    break;
+                case 1:
+                    mode = SYNC_REFRESH_FROM_SERVER;
+                    break;
+                case 2:
+                    mode = SYNC_REFRESH_FROM_CLIENT;
+                    break;
+                }
                 break;
             }
-            break;
-        case 1:
-        case 2:
-            switch (extra3) {
-            case 0:
-                mode = SYNC_SLOW;
-                break;
-            case 1:
-                mode = SYNC_REFRESH_FROM_SERVER;
-                break;
-            case 2:
-                mode = SYNC_REFRESH_FROM_CLIENT;
-                break;
-            }
-            break;
+            source.recordFinalSyncMode(mode);
+            source.recordFirstSync(extra1 == 2);
+            source.recordResumeSync(extra2 == 1);
+        } else {
+            SE_LOG_INFO(NULL, NULL, "%s: restore from backup", source.getName());
+            source.recordFinalSyncMode(SYNC_RESTORE_FROM_BACKUP);
         }
-        source.recordFinalSyncMode(mode);
-        source.recordFirstSync(extra1 == 2);
-        source.recordResumeSync(extra2 == 1);
         break;
     }
     case sysync::PEV_SYNCSTART:
@@ -1141,6 +1147,10 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
            extra3=1 for resumed session) */
         if (source.getFinalSyncMode() == SYNC_NONE) {
             SE_LOG_INFO(NULL, NULL, "%s: inactive", source.getName());
+        } else if(source.getFinalSyncMode() == SYNC_RESTORE_FROM_BACKUP) {
+            SE_LOG_INFO(NULL, NULL, "%s: restore done %s", 
+                        source.getName(),
+                        extra1 ? "unsuccessfully" : "successfully" );
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: %s%s sync done %s",
                         source.getName(),
@@ -2808,6 +2818,8 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
     string datadump = database == DATABASE_BEFORE_SYNC ? "before" : "after";
 
     BOOST_FOREACH(SyncSource *source, sourceList) {
+        // fake a source alert event
+        displaySourceProgress(sysync::PEV_ALERTED, *source, -1, 0, 0);
         source->open();
     }
 
@@ -2826,12 +2838,12 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
         BOOST_FOREACH(SyncSource *source, sourceList) {
             SyncSourceReport sourcereport;
             try {
-                SE_LOG_DEBUG(NULL, NULL, "Restoring %s...", source->getName());
+                displaySourceProgress(sysync::PEV_SYNCSTART, *source, 0, 0, 0);
                 sourceList.restoreDatabase(*source,
                                            datadump,
                                            m_dryrun,
                                            sourcereport);
-                SE_LOG_DEBUG(NULL, NULL, "... %s restored.", source->getName());
+                displaySourceProgress(sysync::PEV_SYNCEND, *source, 0, 0, 0);
                 report.addSyncSourceReport(source->getName(), sourcereport);
             } catch (...) {
                 sourcereport.recordStatus(STATUS_FATAL);

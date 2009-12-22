@@ -56,6 +56,8 @@ std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)
     case SYNC_REFRESH_FROM_SERVER:
     case SA_SYNC_REFRESH_FROM_SERVER:
         return userVisible ? "refresh-from-server" : "SYNC_REFRESH_FROM_SERVER";
+    case SYNC_RESTORE_FROM_BACKUP:
+        return userVisible ? "restore-from-backup" : "SYNC_RESTORE_FROM_BACKUP";
     default:
         std::stringstream res;
 

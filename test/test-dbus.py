@@ -1095,6 +1095,40 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.session.Restore(dir, True, [], utf8_strings=True)
         loop.run()
         self.session.Detach()
+
+        # check recorded events in DBusUtil.events, first filter them
+        statuses = []
+        progresses = []
+        for item in DBusUtil.events:
+            if item[0] == "status":
+                statuses.append(item[1])
+            elif item[0] == "progress":
+                progresses.append(item[1])
+
+        lastStatus = ""
+        lastSources = {}
+        statusPairs = {"": 0, "idle": 1, "running" : 2, "done" : 3}
+        for status, error, sources in statuses:
+            self.failIf(status == lastStatus and lastSources == sources)
+            # no error
+            self.failUnlessEqual(error, 0)
+            for sourcename, value in sources.items():
+                # no error
+                self.failUnlessEqual(value[2], 0)
+                # keep order: source status must also be unchanged or the next status
+                if lastSources.has_key(sourcename):
+                    lastValue = lastSources[sourcename]
+                    self.failUnless(statusPairs[value[1]] >= statusPairs[lastValue[1]])
+
+            lastStatus = status
+            lastSources = sources
+
+        # check increasing progress percentage
+        lastPercent = 0
+        for percent, sources in progresses:
+            self.failIf(percent < lastPercent)
+            lastPercent = percent
+
         session.SetConfig(False, False, self.config, utf8_strings=True)
         #restore data after this session
         session.Restore(dir, False, ["addressbook", "calendar"], utf8_strings=True)
