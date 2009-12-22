@@ -1424,7 +1424,7 @@ get_reports_cb (SyncevoServer *server,
                 GError *error,
                 app_data *data)
 {
-    long time;
+    long time = -1;
     long status;
     source_stats *stats;
     GHashTable *sources; /* key is source name, value is a source_stats */
