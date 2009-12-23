@@ -44,7 +44,9 @@ config.status: configure
 	# --enable-shared added to build SyncEvolution backends as modules,
 	# which is more flexible but not the default because it requires a
 	# specific installation layout.
-	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) $(CONFIGURE_FLAGS) --prefix=/usr --docdir=/usr/lib/syncevolution/doc --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info
+	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) $(CONFIGURE_FLAGS) \
+	 --prefix=/usr --docdir=/usr/lib/syncevolution/doc --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info \
+	 --sysconfdir=/etc
 	# fix place of \$compiler_flags in -shared build line: our -Wl,--as-needed has
 	# no effect if it comes after the libs, which is where libtool 1.5.24 puts it
 	# normally
