@@ -10,3 +10,8 @@ Architecture: any
 Depends: ${shlibs:Depends}
 Description: SyncEvolution - a SyncML client for Evolution
 
+Package: syncevolution-dev
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: SyncEvolution development files
+
