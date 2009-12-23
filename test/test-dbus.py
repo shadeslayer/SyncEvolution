@@ -1084,9 +1084,9 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def testRestoreByRef(self):
         # test when the data before or after a given session is restored
+        self.setupFiles('restore')
         self.setupConfig()
         self.setUpListeners(self.sessionpath)
-        self.setupFiles('restore')
         reports = self.session.GetReports(0, 1, utf8_strings=True)
         dir = reports[0]["dir"]
         sessionpath, session = self.createSession("dummy-test", False)
@@ -1102,9 +1102,9 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def testSecondRestore(self):
         # test the right error is thrown when session is not active
+        self.setupFiles('restore')
         self.setupConfig()
         self.setUpListeners(self.sessionpath)
-        self.setupFiles('restore')
         reports = self.session.GetReports(0, 1, utf8_strings=True)
         dir = reports[0]["dir"]
         sessionpath, session = self.createSession("dummy-test", False)
