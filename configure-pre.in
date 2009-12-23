@@ -132,6 +132,7 @@ else
     AC_MSG_RESULT([no])
     have_libcurl="no"
 fi
+
 PKG_CHECK_MODULES(LIBSOUP, libsoup-gnome-2.4,
                   [have_libsoup="yes"
                    AC_DEFINE(HAVE_LIBSOUP_SOUP_GNOME_FEATURES_H, 1, [enable GNOME specific libsoup])],
@@ -140,13 +141,16 @@ PKG_CHECK_MODULES(LIBSOUP, libsoup-gnome-2.4,
                                      have_libsoup="no")])
 
 PKG_CHECK_MODULES(LIBOPENOBEX, openobex, have_obex="yes", have_obex="no")
-if test $have_obex == "yes"; then
+have_bluetooth="no"
+if test $have_obex = "yes"; then
 AC_DEFINE(ENABLE_OBEX, 1, [define if openobex library is available])
     PKG_CHECK_MODULES(BLUEZ, bluez, have_bluez="yes", have_bluez="no")
-    if test $have_bluez == "yes"; then
+    if test $have_bluez = "yes"; then
     AC_DEFINE(ENABLE_BLUETOOTH, 1, [define if bluez library is available])
+    have_bluetooth="yes"
     fi
 fi
+
 AM_CONDITIONAL([ENABLE_OBEX], [test "$have_obex" = "yes"])
 AM_CONDITIONAL([ENABLE_BLUETOOTH], [test "$have_bluez" = "yes"])
 AC_SUBST(LIBOPENOBEX_CFLAGS)
@@ -167,11 +171,11 @@ AC_ARG_WITH(ca-certificates,
             [CA_CERTIFICATES="$withval"])
 
 
-# choose default transport (mirrors code in EvolutionSyncClient::createTransportAgent())
+# choose default http transport (mirrors code in EvolutionSyncClient::createTransportAgent())
 if test "$have_libsoup" = "yes"; then
-   default_transport="libsoup"
+   default_http_transport="libsoup"
 elif test "$have_libcurl" = "yes"; then
-   default_transport="libcurl"
+   default_http_transport="libcurl"
 fi
 
 AC_ARG_ENABLE(libcurl,
@@ -186,7 +190,7 @@ AC_ARG_ENABLE(libcurl,
                 else
                    libcurl_disabled="yes"
                 fi ],
-              [ if test "$have_libcurl" = "yes" && test "$default_transport" = "libcurl" ; then
+              [ if test "$have_libcurl" = "yes" && test "$default_http_transport" = "libcurl" ; then
                    TRANSPORT="$TRANSPORT libcurl"
                    TRANSPORT_LIBS="$TRANSPORT_LIBS $LIBCURL_LIBS"
                    TRANSPORT_CFLAGS="$TRANSPORT_CFLAGS $LIBCURL_CFLAGS"
@@ -205,18 +209,36 @@ AC_ARG_ENABLE(libsoup,
                 else
                    libsoup_disabled="yes"
                 fi ],
-              [ if test "$have_libsoup" = "yes" && test "$default_transport" = "libsoup"; then
+              [ if test "$have_libsoup" = "yes" && test "$default_http_transport" = "libsoup"; then
                    TRANSPORT="$TRANSPORT libsoup"
                    TRANSPORT_LIBS="$TRANSPORT_LIBS $LIBSOUP_LIBS"
                    TRANSPORT_CFLAGS="$TRANSPORT_CFLAGS $LIBSOUP_CFLAGS"
                    AC_DEFINE(ENABLE_LIBSOUP, 1, [enable libsoup transport])
                 fi ])
 
+AC_ARG_ENABLE(bluetooth,
+              AC_HELP_STRING([--enable-bluetooth],
+                             [enable bluetooth transport support]),
+              [ if test "$enableval" = "yes"; then
+	           bluetooth_disabled="no"
+                   test "$have_bluetooth" = "yes" || AC_MSG_ERROR([openobex or bluez not found])
+		else 
+		   have_bluetooth="no"
+		   bluetooth_disabled="yes"
+                fi ])
+
+
 if test ! "$TRANSPORT" &&
    test "$libsoup_disabled" != "yes" &&
    test "$libcurl_disabled" != "yes" &&
-   test "$have_bluez" != "yes" ; then
-   AC_ERROR([no transport library found, configure with --disable-libcurl --disable-libsoup to continue anyway (only useful if users of libsyncevolution provide transport implementation)])
+   test "$bluetooth_disabled" != "yes" &&
+   test "$have_bluetooth" != "yes" ; then
+   AC_ERROR([no transport library found, configure with --disable-libcurl --disable-libsoup --disable-bluetooth to continue anyway (only useful if users of libsyncevolution provide transport implementation)])
+fi
+
+if test "$have_bluetooth" != "yes" &&
+	test "$bluetooth_disabled" !="yes" ; then 
+   AC_ERROR([no bluetooth library found libopenobex or bluez, please check your installation])
 fi
 
 # for libsoup we must specify the SSL certificate file outself

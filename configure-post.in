@@ -108,4 +108,5 @@ for backend in $BACKENDS; do
 done
 echo "DBus service: $enable_dbus_service"
 echo "UI (DBus client): $enable_gui"
+echo "Bluetooth transport: $have_bluetooth"
 echo
