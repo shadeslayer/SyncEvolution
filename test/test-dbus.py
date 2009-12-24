@@ -696,8 +696,10 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.config = { 
                          "" : { "syncURL" : "http://my.funambol.com/sync",
                                 "username" : "unknown",
-                                "password" : "secret",
-                                "deviceId" : "foo"
+                                "password" : "-",
+                                "deviceId" : "foo",
+                                "retryInterval" : "1",
+                                "retryDuration" : "1"
                               },
                          "source/addressbook" : { "sync" : "two-way",
                                                   "type" : "addressbook",
@@ -1154,6 +1156,52 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         session.SetConfig(False, False, self.config, utf8_strings=True)
         session.Restore(dir, False, [], utf8_strings=True)
         loop.run()
+
+    @timeout(300)
+    def testInteractivePassword(self):
+        """ test the info request is correctly working for password """
+        self.setupConfig()
+        self.setUpListeners(self.sessionpath)
+        self.lastState = "unknown"
+        # define callback for InfoRequest signals and send corresponds response
+        # to dbus server
+        def infoRequest(id, session, state, handler, type, params):
+            if state == "request":
+                self.failUnlessEqual(self.lastState, "unknown")
+                self.lastState = "request"
+                self.server.InfoResponse(id, "working", {}, utf8_strings=True)
+            elif state == "waiting":
+                self.failUnlessEqual(self.lastState, "request")
+                self.lastState = "waiting"
+                self.server.InfoResponse(id, "response", {"password" : "123456"}, utf8_strings=True)
+            elif state == "done":
+                self.failUnlessEqual(self.lastState, "waiting")
+                self.lastState = "done"
+            else:
+                self.fail("state should not be '" + state + "'")
+
+        signal = bus.add_signal_receiver(infoRequest,
+                                         'InfoRequest',
+                                         'org.syncevolution.Server',
+                                         'org.syncevolution',
+                                         None,
+                                         byte_arrays=True,
+                                         utf8_strings=True)
+
+        # dbus server will be blocked by gnome-keyring-ask dialog, so we kill it, and then 
+        # it can't get the password from gnome keyring and send info request for password
+        def callback():
+            kill = subprocess.Popen("sh -c 'killall -9 gnome-keyring-ask >/dev/null 2>&1'", shell=True)
+            kill.communicate()
+            return True
+
+        timeout_handler = Timeout.addTimeout(1, callback)
+
+        # try to sync and invoke password request
+        self.session.Sync("", {})
+        loop.run()
+        Timeout.removeTimeout(timeout_handler)
+        self.failUnlessEqual(self.lastState, "done")
 
 class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
     """ This class is used to test those unit tests of session APIs, depending on doing sync.
