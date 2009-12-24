@@ -29,6 +29,7 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <glib/giochannel.h>
 #include <syncevo/SyncContext.h>
@@ -617,7 +618,7 @@ gboolean ObexTransportAgent::obex_fd_source_cb_impl (GIOChannel *io, GIOConditio
             return TRUE;
         }
 
-        if (OBEX_HandleInput (m_handle->get(), OBEX_POLL_INTERVAL) <0) {
+        if (OBEX_HandleInput (m_handle->get(), OBEX_POLL_INTERVAL) <0 && errno != EINTR) {
             //transport error
             //no way to recovery, simply abort
             //disconnect without sending disconnect request
