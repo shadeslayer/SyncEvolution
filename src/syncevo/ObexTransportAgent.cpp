@@ -592,29 +592,34 @@ gboolean ObexTransportAgent::obex_fd_source_cb_impl (GIOChannel *io, GIOConditio
 
         SuspendFlags s_flags = SyncContext::getSuspendFlags();
         //abort transfer, only process the abort one time.
-        if (s_flags.state == SuspendFlags::CLIENT_ABORT /*&& !m_disconnectingi*/){
+        if (s_flags.state == SuspendFlags::CLIENT_ABORT && !m_disconnecting){
             //first check abort flag
-            cancel();
+            SE_LOG_INFO (NULL, NULL, "ObexTransport aborting.");
+            //do not send the disconnect cmd, close the connection directly.
+            m_disconnecting = true;
             m_sock = sockObj;
             m_channel = channel;
+            cancel();
             return TRUE;
         }
 
         time_t now = time(NULL);
         if (m_cb && (m_requestStart != 0) 
                 && (now - m_requestStart > m_cbInterval)) {
+            m_sock = sockObj;
+            m_channel = channel;
             if (m_cb (m_cbData)){
                 //timeout
                 m_status = TIME_OUT;
                 //currently we will not support transport resend for 
                 //OBEX transport ??
+                m_disconnecting = true;
                 cancel();
             } else {
                 //abort
+                m_disconnecting = true;
                 cancel();
             }
-            m_sock = sockObj;
-            m_channel = channel;
             return TRUE;
         }
 
