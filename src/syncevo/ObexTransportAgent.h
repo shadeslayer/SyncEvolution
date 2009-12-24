@@ -51,7 +51,7 @@ class Channel {
  public:
      Channel() {channel = NULL;}
      Channel(GIOChannel *c) {channel = c;}
-     ~Channel() { if (!channel) {g_io_channel_unref (channel);}}
+     ~Channel() { if (channel) {g_io_channel_unref (channel);}}
      GIOChannel* get() {return channel;}
 };
 
@@ -69,7 +69,7 @@ class ObexHandle {
 public:
     ObexHandle() {handle = NULL;}
     ObexHandle(obex_t *h) {handle = h;}
-    ~ObexHandle() {if (!handle) {OBEX_Cleanup (handle);}}
+    ~ObexHandle() {if (handle) {OBEX_Cleanup (handle);}}
     obex_t* get() {return handle;}
 };
 
