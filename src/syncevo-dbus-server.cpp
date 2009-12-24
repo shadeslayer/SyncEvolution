@@ -1072,6 +1072,9 @@ public:
     void sourceProgress(sysync::TProgressEventEnum type,
                         SyncSource &source,
                         int32_t extra1, int32_t extra2, int32_t extra3);
+    string askPassword(const string &passwordName, 
+                       const string &descr, 
+                       const ConfigPasswordKey &key);
 
     typedef StringMap SourceModes_t;
     /** Session.Sync() */
@@ -1688,11 +1691,11 @@ string DBusSync::askPassword(const string &passwordName,
     }
     //if not found, then ask user to interactively input password
 #endif
-    /** if not built with gnome_keyring support, directly ask dbus clients to
-     * input password */
-    // TODO: send InfoRequest signal to dbus clients
-    // m_session.infoRequest()
-    return password;
+    /** 
+     * if not built with gnome_keyring support, directly send password request 
+     * to dbus clients
+     */
+    return m_session.askPassword(passwordName, descr, key);
 }
 
 bool DBusSync::savePassword(const string &passwordName, 
@@ -2314,6 +2317,38 @@ string Session::runOpToString(RunOperation op)
     default:
         return "";
     };
+}
+
+inline void insertPair(std::map<string, string> &params,
+                       const string &key, 
+                       const string &value)
+{
+    if(!value.empty()) {
+        params.insert(pair<string, string>(key, value));
+    }
+}
+
+string Session::askPassword(const string &passwordName, 
+                             const string &descr, 
+                             const ConfigPasswordKey &key) 
+{
+    std::map<string, string> params;
+    insertPair(params, "description", descr);
+    insertPair(params, "user", key.user);
+    insertPair(params, "SyncML server", key.server);
+    insertPair(params, "domain", key.domain);
+    insertPair(params, "object", key.object);
+    insertPair(params, "protocol", key.protocol);
+    insertPair(params, "authtype", key.authtype);
+    insertPair(params, "port", key.port ? StringPrintf("%u",key.port) : "");
+    boost::shared_ptr<InfoReq> req = m_server.createInfoReq("password", params, this);
+    std::map<string, string> response;
+    if(req->wait(response) == InfoReq::ST_OK) {
+        return response["password"];
+    } 
+
+    SyncContext::throwError("can't get the password from clients. The password request is '" + req->getStatusStr() + "'");
+    return "";
 }
 
 /************************ ProgressData implementation *****************/
