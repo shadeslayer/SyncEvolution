@@ -720,7 +720,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                        }
         # update config
         self.updateConfig = { 
-                               "" : { "password" : "nosecret"},
+                               "" : { "username" : "doe"},
                                "source/addressbook" : { "sync" : "slow"}
                             }
         self.sources = ['addressbook', 'calendar', 'todo', 'memo']
@@ -762,7 +762,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         """ update the given config """
         self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["password"], "nosecret")
+        self.failUnlessEqual(config[""]["username"], "doe")
         self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
 
     def testUpdateConfigTemp(self):
@@ -785,7 +785,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         """ GetConfig is affected """
         config = self.session.GetConfig(False, utf8_strings=True)
         """ no change of any properties """
-        self.failUnlessEqual(config[""]["password"], "nosecret")
+        self.failUnlessEqual(config[""]["username"], "doe")
         self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
 
     def testGetConfigWithTempConfig(self):
