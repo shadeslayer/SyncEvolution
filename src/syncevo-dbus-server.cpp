@@ -215,8 +215,10 @@ private:
     /** 
      * This virtual function is used to let subclass set
      * filters to config. Only used internally.
+     * Return true if filters exists and have been set.
+     * Otherwise, nothing is set to config
      */
-    virtual void setFilters(SyncConfig &config) {}
+    virtual bool setFilters(SyncConfig &config) { return false; }
 
     /** utility method which constructs a SyncConfig which references a local configuration (never a template) */
     boost::shared_ptr<SyncConfig> getLocalConfig(const std::string &configName);
@@ -1096,7 +1098,7 @@ public:
 
 private:
     /** set m_syncFilter and m_sourceFilters to config */
-    virtual void setFilters(SyncConfig &config);
+    virtual bool setFilters(SyncConfig &config);
 };
 
 
@@ -1400,18 +1402,16 @@ boost::shared_ptr<SyncConfig> ReadOperations::getLocalConfig(const string &confi
                                   peer, context);
 
     boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(configName));
-    // the default configuration can always be opened for reading,
-    // everything else must exist
-    if ((context != "default" || peer != "") &&
-        !syncConfig->exists()) {
-        SE_THROW_EXCEPTION(NoSuchConfig, "No configuration '" + configName + "' found");
+
+    /** if config was not set temporarily */
+    if (!setFilters(*syncConfig)) {
+        // the default configuration can always be opened for reading,
+        // everything else must exist
+        if ((context != "default" || peer != "") &&
+                !syncConfig->exists()) {
+            SE_THROW_EXCEPTION(NoSuchConfig, "No configuration '" + configName + "' found");
+        }
     }
-
-    // TODO: handle temporary configs (MB #8116)
-    // - if config was set temporarily, it doesn't have to exist on disk =>
-    //   the check above is too strict
-    // - set temporary properties as filters
-
     return syncConfig;
 }
 
@@ -1447,7 +1447,6 @@ void ReadOperations::getConfig(bool getTemplate,
     } else {
         syncConfig = getLocalConfig(m_configName);
     }
-    setFilters(*syncConfig);
 
     /** get sync properties and their values */
     ConfigPropertyRegistry &syncRegistry = SyncConfig::getRegistry();
@@ -2248,7 +2247,7 @@ void Session::run()
     }
 }
 
-void Session::setFilters(SyncConfig &config)
+bool Session::setFilters(SyncConfig &config)
 {
     /** apply temporary configs to config */
     config.setConfigFilter(true, "", m_syncFilter);
@@ -2256,6 +2255,7 @@ void Session::setFilters(SyncConfig &config)
     BOOST_FOREACH(const SourceFilters_t::value_type &value, m_sourceFilters) {
         config.setConfigFilter(false, value.first, value.second);
     }
+    return m_tempConfig;
 }
 
 void Session::setStepInfo(bool isWaiting)

@@ -698,8 +698,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                 "username" : "unknown",
                                 "password" : "-",
                                 "deviceId" : "foo",
-                                "retryInterval" : "1",
-                                "retryDuration" : "1"
+                                "RetryInterval" : "1",
+                                "RetryDuration" : "1"
                               },
                          "source/addressbook" : { "sync" : "two-way",
                                                   "type" : "addressbook",
@@ -787,6 +787,14 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         """ no change of any properties """
         self.failUnlessEqual(config[""]["password"], "nosecret")
         self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
+
+    def testGetConfigWithTempConfig(self):
+        """ test the config is gotten for a new temporary config. """
+        """ The given config doesn't exist on disk and it's set temporarily. Then GetConfig should
+            return the configs temporarily set. """
+        self.session.SetConfig(True, True, self.config, utf8_strings=True)
+        config = self.session.GetConfig(False, utf8_strings=True)
+        self.failUnlessEqual(config, self.config)
 
     def testUpdateConfigError(self):
         """ test the right error is reported when an invalid property value is set """
