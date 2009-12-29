@@ -692,8 +692,18 @@ public:
         LOGGING_FULL      /**< everything */
     };
 
+    struct SourceConfigSpecials{
+        bool m_forceSlow;
+        string m_alias;
+        SourceConfigSpecials ():
+            m_forceSlow(false),
+            m_alias("")
+        {
+        }
+    };
+
     std::vector<boost::shared_ptr<VirtualSyncSource> >m_virtualDS; /**All configured virtual datastores*/
-    std::map<std::string, bool> m_forceSlow; /*Indicating whether the corresponding sync source is forced slow*/
+    std::map<std::string, SourceConfigSpecials > m_configSpecials; /*Indicating whether the corresponding sync source is forced slow*/
 private:
     LogDir m_logdir;     /**< our logging directory */
     bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
@@ -1426,6 +1436,7 @@ void SyncContext::initSources(SourceList &sourceList)
                 }
                 sourceList.push_back(syncSource);
             }
+            sourceList.m_configSpecials[name].m_alias = sc->getURI();
         } else {
             // the Synthesis engine is never going to see this source,
             // therefore we have to mark it as 100% complete and
@@ -1667,8 +1678,11 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 "      <dbtypeid>" << hash << "</dbtypeid>\n" <<
                 fragment ;
 
-            if (m_sourceListPtr->m_forceSlow[source->getName()]) {
+            if (m_sourceListPtr->m_configSpecials[source->getName()].m_forceSlow) {
                 datastores << " <alertscript> FORCESLOWSYNC(); </alertscript>\n";
+            }
+            if (m_serverMode && !m_sourceListPtr->m_configSpecials[source->getName()].m_alias.empty()) {
+                datastores << " <alias name='" << m_sourceListPtr->m_configSpecials[source->getName()].m_alias << "'/>";
             }
             datastores <<    "    </datastore>\n\n";
         }
@@ -2113,7 +2127,7 @@ bool SyncContext::initSAN(int retries)
             BOOST_FOREACH (std::string source, mappedSources) {
                 dataSources.erase (source);
                 if (mode == SYNC_SLOW) {
-                    m_sourceListPtr->m_forceSlow[source] = true;
+                    m_sourceListPtr->m_configSpecials[source].m_forceSlow = true;
                 }
             }
             dataSources.insert (vSource->getName());
@@ -2124,7 +2138,7 @@ bool SyncContext::initSAN(int retries)
         string sync = sc->getSync();
         int mode = StringToSyncMode (sync, true);
         if (mode == SYNC_SLOW) {
-            m_sourceListPtr->m_forceSlow[name] = true;
+            m_sourceListPtr->m_configSpecials[name].m_forceSlow = true;
             mode = SA_SYNC_TWO_WAY;
         }
         if (mode <SYNC_FIRST || mode >SYNC_LAST) {
