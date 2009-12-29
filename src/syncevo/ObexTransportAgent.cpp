@@ -627,8 +627,13 @@ gboolean ObexTransportAgent::obex_fd_source_cb_impl (GIOChannel *io, GIOConditio
             //transport error
             //no way to recovery, simply abort
             //disconnect without sending disconnect request
-            m_disconnecting = true;
-            cancel();
+            //The failure may already has been processed during
+            //OBEX callback, thus no need to handle it again if status is
+            //already marked as FAILED
+            if (m_status != FAILED){
+                m_disconnecting = true;
+                cancel();
+            }
         }
         m_sock = sockObj;
         m_channel = channel;
@@ -753,7 +758,7 @@ void ObexTransportAgent::obex_callback (obex_object_t *object, int mode, int eve
                         m_connectStatus = END;
                         OBEX_TransportDisconnect (m_handle->get());
                         m_status = CLOSED;
-                    } else if (obex_rsp !=0) {
+                    } else {
                         SE_LOG_ERROR (NULL, NULL, "ObexTransport Error %d", obex_rsp);
                         m_status = FAILED;
                         return;
