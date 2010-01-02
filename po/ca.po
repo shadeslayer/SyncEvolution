@@ -1,0 +1,557 @@
+# Syncevolution Catalan translation.
+# Copyright (C) 2009 Free Software Foundation, Inc.
+# This file is distributed under the same license as the Syncevolution package.
+# Gil Forcada <gilforcada@guifi.net>, 2009.
+#
+#: ../src/gtk-ui/sync-ui.c:765
+msgid ""
+msgstr ""
+"Project-Id-Version: Syncevolution 2.x\n"
+"Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
+"POT-Creation-Date: 2009-08-15 09:21+0000\n"
+"PO-Revision-Date: 2010-01-02 14:18+0100\n"
+"Last-Translator: Gil Forcada <gilforcada@guifi.net>\n"
+"Language-Team: Catalan <tradgnome@softcatala.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#. TRANSLATORS: this is the application name that may be used by e.g.
+#. the windowmanager
+#: ../src/gtk-ui/main.c:31 ../src/gtk-ui/ui.glade.h:28
+#: ../src/gtk-ui/sync.desktop.in.h:1
+msgid "Sync"
+msgstr "Sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:259
+msgid "Addressbook"
+msgstr "Llibreta d'adreces"
+
+#: ../src/gtk-ui/sync-ui.c:261
+msgid "Calendar"
+msgstr "Calendari"
+
+#: ../src/gtk-ui/sync-ui.c:263
+msgid "Todo"
+msgstr "Tasques"
+
+#: ../src/gtk-ui/sync-ui.c:265
+msgid "Memo"
+msgstr "Anotacions"
+
+#: ../src/gtk-ui/sync-ui.c:320
+msgid "Failed to save current service in GConf configuration system"
+msgstr ""
+"No s'ha pogut desar el servei actual en el sistema de configuració GConf"
+
+#: ../src/gtk-ui/sync-ui.c:331
+msgid "Failed to save service configuration to SyncEvolution"
+msgstr "No s'ha pogut desar la configuració del servei al SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:416
+msgid "Failed to get service configuration from SyncEvolution"
+msgstr "No s'ha pogut obtenir la configuració del servei del SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:480
+msgid "Failed to remove service configuration from SyncEvolution"
+msgstr "No s'ha pogut suprimir la configuració del servei del SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:600
+msgid "Service must have a name and server URL"
+msgstr "El servei ha de tenir un nom i l'URL de servidor"
+
+#. sync is no longer in progress for some reason
+#: ../src/gtk-ui/sync-ui.c:676
+msgid "Failed to cancel: sync was no longer in progress"
+msgstr "No s'ha pogut cancel·lar: ja no s'estava sincronitzant"
+
+#: ../src/gtk-ui/sync-ui.c:680
+msgid "Failed to cancel sync"
+msgstr "No s'ha pogut cancel·lar la sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:684
+msgid "Canceling sync"
+msgstr "S'està cancel·lant la sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:698
+msgid "Trying to cancel sync"
+msgstr "S'està intentant cancel·lar la sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:705
+#, c-format
+msgid ""
+"Do you want to delete all local data and replace it with data from %s? This "
+"is not usually advised."
+msgstr ""
+"Voleu suprimir totes les dades locals i reemplaçar-les amb les dades de %s? "
+"Normalment no és recomanable fer-ho."
+
+#: ../src/gtk-ui/sync-ui.c:710
+#, c-format
+msgid ""
+"Do you want to delete all data in %s and replace it with your local data? "
+"This is not usually advised."
+msgstr ""
+"Voleu suprimir totes les dades de %s i reemplaçar-les amb les vostres dades "
+"locals? Normalment no és recomanable fer-ho."
+
+#: ../src/gtk-ui/sync-ui.c:727
+msgid "No, cancel sync"
+msgstr "No, cancel·la la sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:728
+msgid "Yes, delete and replace"
+msgstr "Sí, suprimeix-ho i reemplaça-ho"
+
+#: ../src/gtk-ui/sync-ui.c:750
+msgid "No sources are enabled, not syncing"
+msgstr "No hi ha cap font habilitada, no se sincronitzarà"
+
+#: ../src/gtk-ui/sync-ui.c:767
+msgid "A sync is already in progress"
+msgstr "Ja s'està sincronitzant"
+
+#: ../src/gtk-ui/sync-ui.c:769
+msgid "Failed to start sync"
+msgstr "No s'ha pogut iniciar la sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:774
+msgid "Starting sync"
+msgstr "S'està iniciant la sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:799
+msgid "Last synced just seconds ago"
+msgstr "Acabeu de sincronitzar"
+
+#: ../src/gtk-ui/sync-ui.c:802
+msgid "Last synced a minute ago"
+msgstr "Fa alguns minuts que s'ha realitzat l'última sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:805
+#, c-format
+msgid "Last synced %ld minutes ago"
+msgstr "Fa %ld minuts que s'ha realitzat l'última sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:808
+msgid "Last synced an hour ago"
+msgstr "Fa una hora que s'ha realitzat l'última sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:811
+#, c-format
+msgid "Last synced %ld hours ago"
+msgstr "Fa %ld hores que s'ha realitzat l'última sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:814
+msgid "Last synced a day ago"
+msgstr "Ahir es va realitzar l'última sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:817
+#, c-format
+msgid "Last synced %ld days ago"
+msgstr "Fa %ld dies que es va realitzar l'última sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:902
+msgid "Sync again"
+msgstr "Sincronitza una altra vegada"
+
+#: ../src/gtk-ui/sync-ui.c:904 ../src/gtk-ui/ui.glade.h:29
+msgid "Sync now"
+msgstr "Sincronitza ara"
+
+#: ../src/gtk-ui/sync-ui.c:913
+msgid "Syncing"
+msgstr "S'està sincronitzant"
+
+#: ../src/gtk-ui/sync-ui.c:919
+msgid "Cancel sync"
+msgstr "Cancel·la la sincronització"
+
+#. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
+#: ../src/gtk-ui/sync-ui.c:1266
+#, c-format
+msgid "%s (not supported by this service)"
+msgstr "%s (aquest servei no permet fer-ho)"
+
+#: ../src/gtk-ui/sync-ui.c:1299
+#, c-format
+msgid "There was one remote rejection."
+msgid_plural "There were %d remote rejections."
+msgstr[0] "Hi ha hagut un rebuig remot."
+msgstr[1] "Hi ha hagut %d rebuigs remots."
+
+#: ../src/gtk-ui/sync-ui.c:1304
+#, c-format
+msgid "There was one local rejection."
+msgid_plural "There were %d local rejections."
+msgstr[0] "Hi ha hagut un rebuig local."
+msgstr[1] "Hi ha hagut %d rebuigs locals."
+
+#: ../src/gtk-ui/sync-ui.c:1309
+#, c-format
+msgid "There were %d local rejections and %d remote rejections."
+msgstr "Hi han hagut %d rebuigs locals i %d rebuigs remots."
+
+#: ../src/gtk-ui/sync-ui.c:1314
+#, c-format
+msgid "Last time: No changes."
+msgstr "L'última vegada: cap canvi."
+
+#: ../src/gtk-ui/sync-ui.c:1316
+#, c-format
+msgid "Last time: Sent one change."
+msgid_plural "Last time: Sent %d changes."
+msgstr[0] "L'última vegada: es va enviar un canvi."
+msgstr[1] "L'última vegada: es van enviar %d canvis."
+
+#. This is about changes made to the local data. Not all of these
+#. changes were requested by the remote server, so "applied"
+#. is a better word than "received" (bug #5185).
+#: ../src/gtk-ui/sync-ui.c:1324
+#, c-format
+msgid "Last time: Applied one change."
+msgid_plural "Last time: Applied %d changes."
+msgstr[0] "L'última vegada: es va aplicar un canvi."
+msgstr[1] "L'última vegada: es van aplicar %d canvis."
+
+#: ../src/gtk-ui/sync-ui.c:1329
+#, c-format
+msgid "Last time: Applied %d changes and sent %d changes."
+msgstr "L'última vegada: es van aplicar %d canvis i se'n van enviar %d."
+
+#: ../src/gtk-ui/sync-ui.c:1421
+msgid "Failed to get server configuration from SyncEvolution"
+msgstr "No s'ha pogut obtenir la configuració del servidor del SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:1473
+msgid ""
+"ScheduleWorld enables you to keep your contacts, events, tasks, and notes in "
+"sync."
+msgstr ""
+"El ScheduleWorld us permet mantenir sincronitzats els contactes, els "
+"esdeveniments, les tasques i les anotacions."
+
+#: ../src/gtk-ui/sync-ui.c:1476
+msgid ""
+"Google Sync can backup and synchronize your Address Book with your Gmail "
+"contacts."
+msgstr ""
+"El Google Sync pot fer còpies de seguretat i sincronitzar la llibreta "
+"d'adreces amb els contactes del GMail."
+
+#. TRANSLATORS: Please include the word "demo" (or the equivalent in
+#. your language): Funambol is going to be a 90 day demo service
+#. in the future
+#: ../src/gtk-ui/sync-ui.c:1482
+msgid ""
+"Backup your contacts and calendar. Sync with a singleclick, anytime, "
+"anywhere (DEMO)."
+msgstr ""
+"Feu una còpia de seguretat dels vostres contactes i calendaris. "
+"Sincronitzeu-los amb un sol clic, a qualsevol hora a qualsevol lloc "
+"(DEMOSTRACIÓ)."
+
+#: ../src/gtk-ui/sync-ui.c:1510
+msgid "New service"
+msgstr "Servei nou"
+
+#: ../src/gtk-ui/sync-ui.c:1557
+msgid "Server URL"
+msgstr "URL del servidor"
+
+#. TRANSLATORS: placeholder is a source name in settings window
+#: ../src/gtk-ui/sync-ui.c:1579
+#, c-format
+msgid "%s URI"
+msgstr "URI de %s"
+
+#: ../src/gtk-ui/sync-ui.c:1716 ../src/gtk-ui/ui.glade.h:17
+msgid "Launch website"
+msgstr "Obre el lloc web"
+
+#: ../src/gtk-ui/sync-ui.c:1720
+msgid "Setup and use"
+msgstr "Configureu i utilitzeu"
+
+#: ../src/gtk-ui/sync-ui.c:1766
+msgid "Failed to get list of manually setup services from SyncEvolution"
+msgstr ""
+"No s'ha pogut obtenir la llista dels serveis configurats manualment del "
+"SyncEvolution"
+
+#: ../src/gtk-ui/sync-ui.c:1807
+msgid "Failed to get list of supported services from SyncEvolution"
+msgstr "No s'ha pogut obtenir la llista dels serveis admesos pel SyncEvolution"
+
+#. TODO: this is a hack... SyncEnd should be a signal of it's own,
+#. not just hacked on top of the syncevolution error codes
+#: ../src/gtk-ui/sync-ui.c:1968
+msgid "Service configuration not found"
+msgstr "No s'ha trobat la configuració del servei"
+
+#: ../src/gtk-ui/sync-ui.c:1974
+msgid "Not authorized"
+msgstr "No autoritzat"
+
+#: ../src/gtk-ui/sync-ui.c:1976
+msgid "Forbidden"
+msgstr "Prohibit"
+
+#: ../src/gtk-ui/sync-ui.c:1978
+msgid "Not found"
+msgstr "No s'ha trobat"
+
+#: ../src/gtk-ui/sync-ui.c:1980
+msgid "Fatal database error"
+msgstr "Error greu a la base de dades"
+
+#: ../src/gtk-ui/sync-ui.c:1982
+msgid "Database error"
+msgstr "Error en la base de dades"
+
+#: ../src/gtk-ui/sync-ui.c:1984
+msgid "No space left"
+msgstr "No queda espai lliure"
+
+#. TODO identify problem item somehow ?
+#: ../src/gtk-ui/sync-ui.c:1987
+msgid "Failed to process SyncML"
+msgstr "No s'ha pogut processar el SyncML"
+
+#: ../src/gtk-ui/sync-ui.c:1989
+msgid "Server authorization failed"
+msgstr "Ha fallat l'autorització del servidor"
+
+#: ../src/gtk-ui/sync-ui.c:1991
+msgid "Failed to parse configuration file"
+msgstr "No s'ha pogut analitzar el fitxer de configuració"
+
+#: ../src/gtk-ui/sync-ui.c:1993
+msgid "Failed to read configuration file"
+msgstr "No s'ha pogut llegir el fitxer de configuració"
+
+#: ../src/gtk-ui/sync-ui.c:1995
+msgid "No configuration found"
+msgstr "No s'ha trobat la configuració"
+
+#: ../src/gtk-ui/sync-ui.c:1997
+msgid "No configuration file found"
+msgstr "No s'ha trobat el fitxer de configuració"
+
+#: ../src/gtk-ui/sync-ui.c:1999
+msgid "Server sent bad content"
+msgstr "El servidor ha enviat continguts erronis"
+
+#: ../src/gtk-ui/sync-ui.c:2001
+msgid "Transport failure (no connection?)"
+msgstr "Error en la transmissió (no hi ha connexió?)"
+
+#: ../src/gtk-ui/sync-ui.c:2003
+msgid "Connection timed out"
+msgstr "La connexió ha expirat"
+
+#: ../src/gtk-ui/sync-ui.c:2005
+msgid "Connection certificate has expired"
+msgstr "El certificat de la connexió ha expirat"
+
+#: ../src/gtk-ui/sync-ui.c:2007
+msgid "Connection certificate is invalid"
+msgstr "El certificat de la connexió no és vàlid"
+
+#: ../src/gtk-ui/sync-ui.c:2010
+msgid "Connection failed"
+msgstr "Ha fallat la connexió"
+
+#: ../src/gtk-ui/sync-ui.c:2012
+msgid "URL is bad"
+msgstr "L'URL és errònia"
+
+#: ../src/gtk-ui/sync-ui.c:2014
+msgid "Server not found"
+msgstr "No s'ha trobat el servidor"
+
+#: ../src/gtk-ui/sync-ui.c:2016
+#, c-format
+msgid "Error %d"
+msgstr "Error %d"
+
+#: ../src/gtk-ui/sync-ui.c:2026
+msgid "Sync D-Bus service exited unexpectedly"
+msgstr "El servei de D-Bus de sincronització s'ha tancat inesperadament"
+
+#: ../src/gtk-ui/sync-ui.c:2029 ../src/gtk-ui/sync-ui.c:2080
+msgid "Sync Failed"
+msgstr "Ha fallat la sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:2072
+msgid "Sync complete"
+msgstr "S'ha completat la sincronització"
+
+#: ../src/gtk-ui/sync-ui.c:2077
+msgid "Sync canceled"
+msgstr "S'ha cancel·lat la sincronització"
+
+#. NOTE extra1 can be error here
+#: ../src/gtk-ui/sync-ui.c:2095
+msgid "Ending sync"
+msgstr "S'està acabat la sincronització"
+
+#. TRANSLATORS: placeholder is a source name (e.g. 'Calendar') in a progress text
+#: ../src/gtk-ui/sync-ui.c:2119
+#, c-format
+msgid "Preparing '%s'"
+msgstr "S'està preparant «%s»"
+
+#. TRANSLATORS: placeholder is a source name in a progress text
+#: ../src/gtk-ui/sync-ui.c:2131
+#, c-format
+msgid "Sending '%s'"
+msgstr "S'està enviant «%s»"
+
+#. TRANSLATORS: placeholder is a source name in a progress text
+#: ../src/gtk-ui/sync-ui.c:2143
+#, c-format
+msgid "Receiving '%s'"
+msgstr "S'està rebent «%s»"
+
+#: ../src/gtk-ui/ui.glade.h:1
+msgid "<b>Data</b>"
+msgstr "<b>Dades</b>"
+
+#: ../src/gtk-ui/ui.glade.h:2
+msgid "<b>No sync service in use</b>"
+msgstr "<b>No s'està utilitzant cap servei de sincronització</b>"
+
+#: ../src/gtk-ui/ui.glade.h:3
+msgid "<b>Sync failure</b>"
+msgstr "<b>S'ha produït un error en la sincronització</b>"
+
+#: ../src/gtk-ui/ui.glade.h:4
+msgid "<b>Type of Sync</b>"
+msgstr "<b>Tipus de sincronització</b>"
+
+#: ../src/gtk-ui/ui.glade.h:5
+msgid "<big>Manual setup</big>"
+msgstr "<big>Configuració manual</big>"
+
+#: ../src/gtk-ui/ui.glade.h:6
+msgid "<big>Supported services</big>"
+msgstr "<big>Serveis coneguts</big>"
+
+#: ../src/gtk-ui/ui.glade.h:7
+msgid "Add new service"
+msgstr "Afegeix un servei nou"
+
+#: ../src/gtk-ui/ui.glade.h:8
+msgid "Back to sync"
+msgstr "Torna a la sincronització"
+
+#: ../src/gtk-ui/ui.glade.h:9
+msgid ""
+"Change sync\n"
+"service"
+msgstr ""
+"Canvia el servei\n"
+"de sincronització"
+
+#: ../src/gtk-ui/ui.glade.h:11
+msgid "Delete all local data and replace it with remote data"
+msgstr "Suprimeix totes les dades locals i reemplaça-les per les remotes"
+
+#: ../src/gtk-ui/ui.glade.h:12
+msgid "Delete all remote data and replace it with local data"
+msgstr "Suprimeix totes les dades remotes i reemplaça-les per les locals"
+
+#: ../src/gtk-ui/ui.glade.h:13
+msgid "Delete this service"
+msgstr "Suprimeix aquest servei"
+
+#: ../src/gtk-ui/ui.glade.h:14
+msgid "Edit service settings"
+msgstr "Edita els paràmetres del servei"
+
+#: ../src/gtk-ui/ui.glade.h:15
+msgid ""
+"If you don't see your service above but know that your sync provider uses "
+"SyncML\n"
+"you can setup a service manually."
+msgstr ""
+"Si no veieu el vostre servei aquí sobre però sabeu que el vostre proveïdor "
+"de sincronització permet utilitzar SyncML\n"
+"podeu configurar un servei manualment."
+
+#: ../src/gtk-ui/ui.glade.h:18
+msgid "Merge local and remote data (recommended)"
+msgstr "Unifica les dades locals i remotes (recomanat)"
+
+#: ../src/gtk-ui/ui.glade.h:19
+msgid "Password"
+msgstr "Contrasenya"
+
+#: ../src/gtk-ui/ui.glade.h:20
+msgid "Reset original server settings"
+msgstr "Reinicia els paràmetres originals del servidor"
+
+#: ../src/gtk-ui/ui.glade.h:21
+msgid "Save and use this service"
+msgstr "Desa i utilitza aquest servei"
+
+#: ../src/gtk-ui/ui.glade.h:22
+msgid "Select sync service"
+msgstr "Seleccioneu el servei de sincronització"
+
+#: ../src/gtk-ui/ui.glade.h:23
+msgid "Server settings"
+msgstr "Paràmetres del servidor"
+
+#: ../src/gtk-ui/ui.glade.h:24
+msgid "Service name"
+msgstr "Nom del servei"
+
+#: ../src/gtk-ui/ui.glade.h:25
+msgid ""
+"Sorry, you need an internet\n"
+"connection to sync."
+msgstr ""
+"Heu d'estar connectat a Internet\n"
+"per a poder fer una sincronització."
+
+#: ../src/gtk-ui/ui.glade.h:27
+msgid "Stop using this service"
+msgstr "No facis servir més aquest servei"
+
+#: ../src/gtk-ui/ui.glade.h:30
+msgid ""
+"Synchronization is not available (D-Bus service does not answer), sorry."
+msgstr ""
+"No està disponible la sincronització (el servei de D-Bus no respon)."
+
+#: ../src/gtk-ui/ui.glade.h:31
+msgid ""
+"To sync you'll need a network connection and an account with a sync "
+"service.\n"
+"We support the following services: "
+msgstr ""
+"Per a poder sincronitzar necessiteu una connexió a Internet i un compte "
+"a un servei de sincronització.\n"
+"Ja hi ha configuracions per als següents serveis:"
+
+#: ../src/gtk-ui/ui.glade.h:33
+msgid "Username"
+msgstr "Nom d'usuari"
+
+#: ../src/gtk-ui/ui.glade.h:34
+msgid ""
+"You haven't selected a sync service yet. Sync services let you \n"
+"synchronize your data between your netbook and a web service."
+msgstr ""
+"Encara no heu seleccionat cap servei de sincronització. Aquests us \n"
+"permeten sincronitzar dades entre el vostre ordinador i serveis webs."
+
+#: ../src/gtk-ui/sync.desktop.in.h:2 ../src/gtk-ui/sync-gtk.desktop.in.h:2
+msgid "Up to date"
+msgstr "Actualitzat"
+
+#: ../src/gtk-ui/sync-gtk.desktop.in.h:1
+msgid "Sync (GTK)"
+msgstr "Sincronització (GTK)"
