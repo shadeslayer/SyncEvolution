@@ -2356,9 +2356,8 @@ SyncMLStatus SyncContext::doSync()
     
         // open first profile
         SharedKey profile;
-        try {
-            profile = m_engine.OpenSubkey(profiles, sysync::KEYVAL_ID_FIRST);
-        } catch (NoSuchKey error) {
+        profile = m_engine.OpenSubkey(profiles, sysync::KEYVAL_ID_FIRST, true);
+        if (!profile) {
             // no profile exists  yet, create default profile
             profile = m_engine.OpenSubkey(profiles, sysync::KEYVAL_ID_NEW_DEFAULT);
         }
@@ -2375,47 +2374,44 @@ SyncMLStatus SyncContext::doSync()
         // XML snippets (inside <client> and inside <datatypes>).
         targets = m_engine.OpenKeyByPath(profile, "targets");
 
-        try {
-            target = m_engine.OpenSubkey(targets, sysync::KEYVAL_ID_FIRST);
-            while (true) {
-                s = m_engine.GetStrValue(target, "dbname");
-                SyncSource *source = (*m_sourceListPtr)[s];
-                if (source) {
-                    m_engine.SetInt32Value(target, "enabled", 1);
-                    int slow = 0;
-                    int direction = 0;
-                    string mode = source->getSync();
-                    if (!strcasecmp(mode.c_str(), "slow")) {
-                        slow = 1;
-                        direction = 0;
-                    } else if (!strcasecmp(mode.c_str(), "two-way")) {
-                        slow = 0;
-                        direction = 0;
-                    } else if (!strcasecmp(mode.c_str(), "refresh-from-server")) {
-                        slow = 1;
-                        direction = 1;
-                    } else if (!strcasecmp(mode.c_str(), "refresh-from-client")) {
-                        slow = 1;
-                        direction = 2;
-                    } else if (!strcasecmp(mode.c_str(), "one-way-from-server")) {
-                        slow = 0;
-                        direction = 1;
-                    } else if (!strcasecmp(mode.c_str(), "one-way-from-client")) {
-                        slow = 0;
-                        direction = 2;
-                    } else {
-                        source->throwError(string("invalid sync mode: ") + mode);
-                    }
-                    m_engine.SetInt32Value(target, "forceslow", slow);
-                    m_engine.SetInt32Value(target, "syncmode", direction);
-
-                    m_engine.SetStrValue(target, "remotepath", source->getURI());
+        for(target = m_engine.OpenSubkey(targets, sysync::KEYVAL_ID_FIRST, true);
+            target;
+            target = m_engine.OpenSubkey(targets, sysync::KEYVAL_ID_NEXT, true)) {
+            s = m_engine.GetStrValue(target, "dbname");
+            SyncSource *source = (*m_sourceListPtr)[s];
+            if (source) {
+                m_engine.SetInt32Value(target, "enabled", 1);
+                int slow = 0;
+                int direction = 0;
+                string mode = source->getSync();
+                if (!strcasecmp(mode.c_str(), "slow")) {
+                    slow = 1;
+                    direction = 0;
+                } else if (!strcasecmp(mode.c_str(), "two-way")) {
+                    slow = 0;
+                    direction = 0;
+                } else if (!strcasecmp(mode.c_str(), "refresh-from-server")) {
+                    slow = 1;
+                    direction = 1;
+                } else if (!strcasecmp(mode.c_str(), "refresh-from-client")) {
+                    slow = 1;
+                    direction = 2;
+                } else if (!strcasecmp(mode.c_str(), "one-way-from-server")) {
+                    slow = 0;
+                    direction = 1;
+                } else if (!strcasecmp(mode.c_str(), "one-way-from-client")) {
+                    slow = 0;
+                    direction = 2;
                 } else {
-                    m_engine.SetInt32Value(target, "enabled", 0);
+                    source->throwError(string("invalid sync mode: ") + mode);
                 }
-                target = m_engine.OpenSubkey(targets, sysync::KEYVAL_ID_NEXT);
+                m_engine.SetInt32Value(target, "forceslow", slow);
+                m_engine.SetInt32Value(target, "syncmode", direction);
+
+                m_engine.SetStrValue(target, "remotepath", source->getURI());
+            } else {
+                m_engine.SetInt32Value(target, "enabled", 0);
             }
-        } catch (NoSuchKey error) {
         }
 
         // Close all keys so that engine can flush the modified config.

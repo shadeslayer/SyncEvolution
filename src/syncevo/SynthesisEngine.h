@@ -102,9 +102,11 @@ class SharedEngine {
     SharedBuffer GetSyncMLBuffer(const SharedSession &aSessionH, bool aForSend);
     void WriteSyncMLBuffer(const SharedSession &aSessionH, const char *data, size_t len);
     SharedKey OpenKeyByPath(const SharedKey &aParentKeyH,
-                            const string &aPath);
+                            const string &aPath,
+                            bool noThrow = false);
     SharedKey OpenSubkey(const SharedKey &aParentKeyH,
-                         sysync::sInt32 aID);
+                         sysync::sInt32 aID,
+                         bool noThrow = false);
 
     string GetStrValue(const SharedKey &aKeyH, const string &aValName);
     void SetStrValue(const SharedKey &aKeyH, const string &aValName, const string &aValue);

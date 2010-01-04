@@ -143,10 +143,14 @@ void SharedEngine::WriteSyncMLBuffer(const SharedSession &aSessionH, const char 
 }
 
 SharedKey SharedEngine::OpenKeyByPath(const SharedKey &aParentKeyH,
-                                      const string &aPath)
+                                      const string &aPath,
+                                      bool noThrow)
 {
     sysync::KeyH key = NULL;
     sysync::TSyError err = m_engine->OpenKeyByPath(key, aParentKeyH.get(), aPath.c_str(), 0);
+    if (err && noThrow) {
+        return SharedKey();
+    }
     if (err) {
         string what = "opening key ";
         what += aPath;
@@ -160,10 +164,14 @@ SharedKey SharedEngine::OpenKeyByPath(const SharedKey &aParentKeyH,
 }
 
 SharedKey SharedEngine::OpenSubkey(const SharedKey &aParentKeyH,
-                                   sysync::sInt32 aID)
+                                   sysync::sInt32 aID,
+                                   bool noThrow)
 {
     sysync::KeyH key = NULL;
     sysync::TSyError err = m_engine->OpenSubkey(key, aParentKeyH.get(), aID, 0);
+    if (err && noThrow) {
+        return SharedKey();
+    }
     if (err) {
         string what = "opening sub key";
         if (err == sysync::DB_NoContent) {
