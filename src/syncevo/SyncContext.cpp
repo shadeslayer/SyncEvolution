@@ -54,6 +54,7 @@ using namespace std;
 #include <boost/algorithm/string/split.hpp>
 
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <pwd.h>
 #include <unistd.h>
 #include <signal.h>
