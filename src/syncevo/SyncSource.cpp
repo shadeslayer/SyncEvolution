@@ -40,6 +40,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <fstream>
 #include <iostream>
