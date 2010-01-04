@@ -47,7 +47,7 @@ using namespace std;
  */
 
 class SyncSourceConfig;
-class PersistentSyncSourceConfig;
+typedef SyncSourceConfig PersistentSyncSourceConfig;
 class ConfigTree;
 class ConfigUserInterface;
 class SyncSourceNodes;
@@ -1583,20 +1583,6 @@ class SyncSourceConfig {
     SyncSourceNodes m_nodes;
     mutable ConfigStringCache m_stringCache;
     string m_cachedPassword;
-};
-
-/**
- * Adds dummy implementations of the missing calls to
- * SyncSourceConfig so that the other properties can be read.
- */
-class PersistentSyncSourceConfig : public SyncSourceConfig {
- public:
-    PersistentSyncSourceConfig(const string &name, const SyncSourceNodes &nodes) :
-    SyncSourceConfig(name, nodes) {}
-
-    virtual const char* getMimeType() const { return ""; }
-    virtual const char* getMimeVersion() const { return ""; }
-    virtual const char* getSupportedTypes() const { return ""; }
 };
 
 /**
