@@ -2188,7 +2188,7 @@ bool SyncContext::initSAN(int retries)
         int retry = 0;
         while (retry++ < retries) 
         {
-            SE_LOG_INFO (NULL, NULL, "Server sending SAN %d", retry);
+            SE_LOG_INFO (NULL, NULL, "Server sending SAN attempts #%d", retry);
             m_agent->setContentType (TransportAgent::m_contentTypeServerAlertedNotificationDS);
             m_agent->send(reinterpret_cast <char *> (buffer), sanSize);
             //change content type
@@ -2385,6 +2385,7 @@ SyncMLStatus SyncContext::doSync()
     bool aborting = false;
     int suspending = 0; 
     time_t sendStart = 0, resendStart = 0;
+    int requestNum = 0;
     sysync::uInt16 previousStepCmd = stepCmd;
     do {
         try {
@@ -2527,6 +2528,7 @@ SyncMLStatus SyncContext::doSync()
                 if (m_retryInterval) {
                     m_agent->setCallback (transport_cb, this, m_retryInterval);
                 }
+                requestNum ++;
                 // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
                 // sent or have it copied into caller's buffer using
                 // ReadSyncMLBuffer(), then send it to the server
@@ -2604,7 +2606,7 @@ SyncMLStatus SyncContext::doSync()
                 case TransportAgent::FAILED: {
                     time_t curTime = time(NULL);
                     time_t duration = curTime - sendStart;
-                    if (!m_retryInterval || duration > m_retryDuration) {
+                    if (!m_retryInterval || duration > m_retryDuration || requestNum == 1) {
                         SE_LOG_INFO(NULL, NULL,
                                     "Transport giving up after %d retries and %ld:%02ldmin",
                                     m_retries,
