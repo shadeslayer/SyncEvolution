@@ -101,6 +101,9 @@ AC_SUBST(CPPUNIT_LDFLAGS)
 if test "$enable_unit_tests" = "yes"; then
         AC_DEFINE(ENABLE_UNIT_TESTS, 1, [enable unit tests inside the library's source code])
 fi
+if test "$enable_integration_tests" = "yes"; then
+        AC_DEFINE(ENABLE_INTEGRATION_TESTS, 1, [enable integration tests inside the final library])
+fi
 AM_CONDITIONAL([ENABLE_UNIT_TESTS], [test "$enable_unit_tests" = "yes"])
 AM_CONDITIONAL([ENABLE_TESTING], [test "$enable_unit_tests" = "yes" || test "$enable_integration_tests" = "yes" ])
 

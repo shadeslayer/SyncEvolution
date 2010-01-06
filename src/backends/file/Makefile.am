@@ -19,7 +19,7 @@ SYNCFILE_SOURCES = \
 syncfile_la_SOURCES = $(SYNCFILE_SOURCES)
 syncfile_la_LIBADD = $(FILE_LIBS)
 syncfile_la_LDFLAGS = -module -avoid-version
-syncfile_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) -DENABLE_INTEGRATION_TESTS
+syncfile_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 # If you need special test cases for your sync source, then
 # install them here. Here's how the sqlite backend does that:
 #

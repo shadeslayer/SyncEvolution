@@ -19,7 +19,7 @@ SYNCXMLRPC_SOURCES = \
 syncxmlrpc_la_SOURCES = $(SYNCXMLRPC_SOURCES)
 syncxmlrpc_la_LIBADD = $(XMLRPC_LIBS)
 syncxmlrpc_la_LDFLAGS = -module -avoid-version
-syncxmlrpc_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) -DENABLE_INTEGRATION_TESTS
+syncxmlrpc_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 # If you need special test cases for your sync source, then
 # install them here. Here's how the sqlite backend does that:
 #
