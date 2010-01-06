@@ -42,7 +42,6 @@ syncecal_la_CPPFLAGS = -D_GNU_SOURCE \
 	-De_cal_tzlookup_ecal=syncevolution_tzlookup_ecal \
 	-De_cal_tzlookup_icomp=syncevolution_tzlookup_icomp \
 	-De_cal_match_tzid=syncevolution_match_tzid \
-	-DENABLE_INTEGRATION_TESTS \
 	$(AM_CPPFLAGS)
 syncecal_la_LDFLAGS = -module -avoid-version -ldl
 syncecal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
@@ -50,4 +49,4 @@ syncecal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 syncebook_la_SOURCES = $(SYNCEBOOK_SOURCES)
 syncebook_la_LIBADD = $(EBOOK_LIBS) ../../syncevo/libsyncevolution.la
 syncebook_la_LDFLAGS = -module -avoid-version 
-syncebook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) -DENABLE_INTEGRATION_TESTS
+syncebook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
