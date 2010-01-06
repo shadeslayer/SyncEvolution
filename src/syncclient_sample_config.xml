@@ -329,6 +329,8 @@
       <field name="MSN_SLOT"          array="yes" type="string" compare="conflict"/>
       <field name="YAHOO_HANDLE"        array="yes" type="string" compare="conflict"/>
       <field name="YAHOO_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="SKYPE_HANDLE"      array="yes" type="string" compare="conflict"/>
+      <field name="SKYPE_SLOT"        array="yes" type="string" compare="conflict"/>
 
       <!-- home address -->
       <field name="ADR_STREET"        array="yes" type="multiline" compare="conflict"/>
@@ -575,6 +577,13 @@
           <value field="YAHOO_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="YAHOO_SLOT"/>
+          </parameter>
+        </property>
+
+        <property name="X-SKYPE" suppressempty="yes"> 
+          <value field="SKYPE_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="SKYPE_SLOT"/>
           </parameter>
         </property>
 
