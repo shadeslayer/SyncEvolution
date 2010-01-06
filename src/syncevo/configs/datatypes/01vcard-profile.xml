@@ -225,6 +225,13 @@
           </parameter>
         </property>
 
+        <property name="X-SKYPE" suppressempty="yes"> 
+          <value field="SKYPE_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="SKYPE_SLOT"/>
+          </parameter>
+        </property>
+
         <property name="ADR" values="7">
           <value index="0" field="ADR_POBOX"/>
           <value index="1" field="ADR_ADDTL"/>
