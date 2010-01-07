@@ -60,7 +60,7 @@ my $synthesis = $server =~ /synthesis/;
 my $zyb = $server =~ /zyb/;
 my $mobical = $server =~ /mobical/;
 my $memotoo = $server =~ /memotoo/;
-my $nokia_7210c = $server = ~ /nokia_7210c/;
+my $nokia_7210c = $server =~ /nokia_7210c/;
 
 # TODO: this hack ensures that any synchronization is limited to
 # properties supported by Synthesis. Remove this again.
