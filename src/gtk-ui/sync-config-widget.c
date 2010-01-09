@@ -670,6 +670,9 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     gtk_table_resize (GTK_TABLE (self->mode_table),
                       2, 1);
 
+    /* TODO: sources that are not supported locally will trigger the complex
+     * config warning for no real reason... should do get_common_mode only after
+     * check_source calls, and make sure unsupported sources do not get edited */
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)get_common_mode,
                                    &mode);
@@ -686,7 +689,6 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
         receive = TRUE;
         break;
     default:
-        /* TODO show this in UI */
         gtk_widget_show (self->complex_config_info_bar);
         g_warning ("sync mode config is more complex than UI can handle");
         send = FALSE;

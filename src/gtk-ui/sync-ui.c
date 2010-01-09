@@ -1036,7 +1036,6 @@ update_service_ui (app_data *data)
 {
     char *icon_uri = NULL;
 
-
     gtk_container_foreach (GTK_CONTAINER (data->sources_box),
                            (GtkCallback)remove_child,
                            data->sources_box);
@@ -1564,45 +1563,51 @@ handle_source_report_item (char **strs, const char *value, GHashTable *sources)
 }
 
 static char*
-get_report_summary (int local_changes, int remote_changes, int local_rejects, int remote_rejects)
+get_report_summary (source_config *source)
 {
-    char *rejects, *changes, *msg;
+    char *rejects = NULL;
+    char *changes = NULL;
+    char *msg = NULL;
 
-    if (local_rejects + remote_rejects == 0) {
-        rejects = NULL;
-    } else if (local_rejects == 0) {
-        rejects = g_strdup_printf (ngettext ("There was one remote rejection.", 
-                                             "There were %d remote rejections.",
-                                             remote_rejects),
-                                   remote_rejects);
-    } else if (remote_rejects == 0) {
-        rejects = g_strdup_printf (ngettext ("There was one local rejection.", 
-                                             "There were %d local rejections.",
-                                             local_rejects),
-                                   local_rejects);
-    } else {
-        rejects = g_strdup_printf (_ ("There were %d local rejections and %d remote rejections."),
-                                   local_rejects, remote_rejects);
+    if (!source->stats_set) {
+        return g_strdup ("");
     }
 
-    if (local_changes + remote_changes == 0) {
+    if (source->local_rejections + source->remote_rejections == 0) {
+        rejects = NULL;
+    } else if (source->local_rejections == 0) {
+        rejects = g_strdup_printf (ngettext ("There was one remote rejection.", 
+                                             "There were %ld remote rejections.",
+                                             source->remote_rejections),
+                                   source->remote_rejections);
+    } else if (source->remote_rejections == 0) {
+        rejects = g_strdup_printf (ngettext ("There was one local rejection.", 
+                                             "There were %ld local rejections.",
+                                             source->local_rejections),
+                                   source->local_rejections);
+    } else {
+        rejects = g_strdup_printf (_ ("There were %ld local rejections and %ld remote rejections."),
+                                   source->local_rejections, source->remote_rejections);
+    }
+
+    if (source->local_changes + source->remote_changes == 0) {
         changes = g_strdup_printf (_("Last time: No changes."));
-    } else if (local_changes == 0) {
+    } else if (source->local_changes == 0) {
         changes = g_strdup_printf (ngettext ("Last time: Sent one change.",
-                                             "Last time: Sent %d changes.",
-                                             remote_changes),
-                                   remote_changes);
-    } else if (remote_changes == 0) {
+                                             "Last time: Sent %ld changes.",
+                                             source->remote_changes),
+                                   source->remote_changes);
+    } else if (source->remote_changes == 0) {
         // This is about changes made to the local data. Not all of these
         // changes were requested by the remote server, so "applied"
         // is a better word than "received" (bug #5185).
         changes = g_strdup_printf (ngettext ("Last time: Applied one change.",
-                                             "Last time: Applied %d changes.",
-                                             local_changes),
-                                   local_changes);
+                                             "Last time: Applied %ld changes.",
+                                             source->local_changes),
+                                   source->local_changes);
     } else {
-        changes = g_strdup_printf (_("Last time: Applied %d changes and sent %d changes."),
-                                   local_changes, remote_changes);
+        changes = g_strdup_printf (_("Last time: Applied %ld changes and sent %ld changes."),
+                                   source->local_changes, source->remote_changes);
     }
 
     if (rejects)
@@ -1634,10 +1639,7 @@ source_config_update_widget (source_config *source)
     } else {
         show_error = FALSE;
         gtk_widget_hide (source->info_bar);
-        msg = get_report_summary (source->local_changes,
-                                  source->remote_changes,
-                                  source->local_rejections,
-                                  source->remote_rejections);
+        msg = get_report_summary (source);
         gtk_label_set_text (GTK_LABEL (source->label), msg);
     }
     g_free (msg);
@@ -1707,6 +1709,8 @@ get_reports_cb (SyncevoServer *server,
             g_strfreev (strs);
             
         }
+    } else {
+        common_status = 0;
     }
 
     /* sources now has all statistics we want */
@@ -1714,7 +1718,6 @@ get_reports_cb (SyncevoServer *server,
     /* ficure out if all sources have same status or if there's a slow sync */
     g_hash_table_iter_init (&iter, sources);
     while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
-
         if (stats->status == 10001) {
             /* ignore abort because of another source slow syncing */
         } else if (stats->status == 10000) {
@@ -1738,11 +1741,11 @@ get_reports_cb (SyncevoServer *server,
 
     g_hash_table_iter_init (&iter, sources);
     while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
-
         /* store the statistics in source config */
         source_conf = g_hash_table_lookup (data->current_service->source_configs,
                                            key);
         if (source_conf) {
+            source_conf->stats_set = TRUE;
             source_conf->local_changes = stats->local_changes;
             source_conf->remote_changes = stats->remote_changes;
             source_conf->local_rejections = stats->local_rejections;
