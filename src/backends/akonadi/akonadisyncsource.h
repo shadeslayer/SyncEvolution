@@ -20,136 +20,112 @@
 #ifndef AKONADISYNCSOURCE_H
 #define AKONADISYNCSOURCE_H
 
-#include "settings.h"
+#include "config.h"
+
+#ifdef ENABLE_AKONADI
 
 #include <Akonadi/Collection>
 #include <Akonadi/Item>
 
-#include <QDateTime>
-#include <QObject>
+#include <QtCore/QDateTime>
 
-#include <funambol/common/spds/SyncManagerConfig.h>
-#include <funambol/common/spds/SyncSource.h>
+#include <syncevo/TrackingSyncSource.h>
+
+SE_BEGIN_CXX
 
 class TimeTrackingObserver;
 
 /**
- * Base config for all sync sources.
+ * General purpose Akonadi Sync Source. Choosing the type of data is
+ * done when instantiating it, using the Akonadi MIME subtypes.
+ * Payload is always using the native Akonadi format (no special "raw"
+ * and "engine" formats).
+ *
+ * Change tracking is done via the item uid/revision attributes.
+ * 
+ *
+ * Databases (collections in Akonadi terminology) are selected via
+ * their int64 ID number.
  */
-class AkonadiSyncSourceConfig : public QObject,
-                                public SyncSourceConfig
+class AkonadiSyncSource : public TrackingSyncSource
 {
-    Q_OBJECT
-
 public:
-    enum SyncMode {
-        Slow = 0,
-        TwoWay,
-        OneWayFromServer,
-        OneWayFromClient,
-        RefreshFromServer,
-        RefreshFromClient
-    };
-
-    AkonadiSyncSourceConfig(unsigned long lastSync = 0,
-                            const char *uri = "default")
-        : SyncSourceConfig()
-    {
-        setURI(uri);
-        setLast(lastSync);                          // Set last sync time
-        setVersion("");                             // Don't care for the SyncML version
-        setEncoding(SyncItem::encodings::escaped);  // Means base64 in Funambol tongue
-
-        setSyncModes("slow,two-way,one-way-from-server,one-way-from-client,refresh-from-server,refresh-from-client");
-        //setSupportedTypes("");                    // This can be set by derived sync sources
-        setEncryption("");
-
-        // Determine how to sync
-        switch(Settings::self()->syncMode()) {
-            case 0: setSync("slow");
-                    kDebug() << "Use 'Slow' sync mode"; break;
-            case 1: setSync("two-way");
-                    kDebug() << "Use 'TwoWay' sync mode"; break;
-            case 2: setSync("one-way-from-server");
-                    kDebug() << "Use 'OneWayFromServer' sync mode"; break;
-            case 3: setSync("one-way-from-client");
-                    kDebug() << "Use 'OneWayFromClient' sync mode"; break;
-            case 4: setSync("refresh-from-server");
-                    kDebug() << "Use 'RefreshFromServer' sync mode"; break;
-            case 5: setSync("refresh-from-client");
-                    kDebug() << "Use 'RefreshFromClient' sync mode"; break;
-        }
-
-        kDebug() << "Sync source config for" << getName() << "with URI" << getURI() << "set up";
-    }
-};
-
-/**
- * Abstract base class for all sync sources.
- */
-class AkonadiSyncSource : public QObject
-                        , public SyncSource
-{
-    Q_OBJECT
-
-public:
+    /**
+     * @param submime     the MIME type string used by Akonadi
+     *                    to identify contacts, tasks, events, etc.
+     * @param params      the SyncEvolution source parameters
+     */
+    AkonadiSyncSource(const char *submime,
+                      const SyncSourceParams &params);
     virtual ~AkonadiSyncSource();
 
-    // The following are Funambol API specific methods
-    int beginSync();
-    int endSync();
-
-    int addItem(SyncItem& syncItem);
-    int updateItem(SyncItem& syncItem);
-    int deleteItem(SyncItem& syncItem);
-    int removeAllItems();
-
-    SyncItem *getFirstItem() { return first(AllItems); }
-    SyncItem *getNextItem() { return next(AllItems); }
-    SyncItem *getFirstNewItem() { return first(NewItems); }
-    SyncItem *getNextNewItem() { return next(NewItems); }
-    SyncItem *getFirstUpdatedItem() { return first(UpdatedItems); }
-    SyncItem *getNextUpdatedItem() { return next(UpdatedItems); }
-    SyncItem *getFirstDeletedItem() { return first(DeletedItems, false); }
-    SyncItem *getNextDeletedItem() { return next(DeletedItems, false); }
-    SyncItem *getFirstItemKey() { return first(AllItems, false); }
-    SyncItem *getNextItemKey() { return next(AllItems, false); }
-    // End of Funambol API specific methods
-
-    QDateTime lastSyncTime() const { return m_lastSyncTime; }
-
-protected:
-    AkonadiSyncSource(TimeTrackingObserver *observer,
-                      AkonadiSyncSourceConfig *config,
-                      SyncManagerConfig *managerConfig);
-
-    TimeTrackingObserver *m_observer;
-    Akonadi::Entity::Id m_collectionId;
-    QDateTime m_lastSyncTime;
-    QDateTime m_currentTime;
-
+    /* methods that have to be implemented to complete TrackingSyncSource */
+    virtual Databases getDatabases();
+    virtual void open();
+    virtual void listAllItems(SyncSourceRevisions::RevisionMap_t &revisions);
+    virtual InsertItemResult insertItem(const std::string &luid, const std::string &item, bool raw);
+    virtual void readItem(const std::string &luid, std::string &item, bool raw);
+    virtual void removeItem(const string &luid);
+    virtual void close();
+    virtual bool isEmpty();
 private:
-    enum ItemSet {
-        AllItems = 0,
-        NewItems,
-        UpdatedItems,
-        DeletedItems
-    };
+    Akonadi::Collection m_collection;
+    const std::string m_subMime;
 
-    SyncItem *first(ItemSet set, bool withData = true);
-    SyncItem *next(ItemSet set, bool withData = true);
-    SyncItem *syncItem(const Akonadi::Item &item, bool withData = true, SyncState state = SYNC_STATE_NONE) const;
-    QString syncItemToString(SyncItem& syncItem) const;
-
-    int m_allItemsIndex;
-    int m_newItemsIndex;
-    int m_updatedItemsIndex;
-int m_deletedItemsIndex;
-
-    Akonadi::Item::List m_allItems;
-    Akonadi::Item::List m_newItems;
-    Akonadi::Item::List m_updatedItems;
-    Akonadi::Item::List m_deletedItems;
+    void start();
 };
 
-#endif
+class AkonadiContactSource : public AkonadiSyncSource
+{
+ public:
+    AkonadiContactSource(const SyncSourceParams &params) :
+        AkonadiSyncSource("text/vcard", params)
+    {}
+
+    virtual const char *getMimeType() const { return "text/vcard"; }
+    virtual const char *getMimeVersion() const { return "3.0"; }
+};
+
+class AkonadiCalendarSource : public AkonadiSyncSource
+{
+ public:
+    AkonadiCalendarSource(const SyncSourceParams &params) :
+        AkonadiSyncSource("application/x-vnd.akonadi.calendar.event", params)
+    {}
+
+    // TODO: the items are expected to be complete VCALENDAR with
+    // all necessary VTIMEZONEs and one VEVENT (here) resp. VTODO
+    // (AkonadiTodoSource). Not sure what we get from Akonadi.
+    virtual const char *getMimeType() const { return "text/calendar"; }
+    virtual const char *getMimeVersion() const { return "2.0"; }
+};
+
+class AkonadiTaskSource : public AkonadiSyncSource
+{
+ public:
+    AkonadiTaskSource(const SyncSourceParams &params) :
+        AkonadiSyncSource("text/x-vnd.akonadi.calendar.todo", params)
+    {}
+
+    virtual const char *getMimeType() const { return "text/calendar"; }
+    virtual const char *getMimeVersion() const { return "2.0"; }
+};
+
+class AkonadiMemoSource : public AkonadiSyncSource
+{
+ public:
+    AkonadiMemoSource(const SyncSourceParams &params) :
+        AkonadiSyncSource("text/x-vnd.akonadi.calendar.journal", params)
+    {}
+
+    // TODO: the AkonadiMemoSource is expected to import/export
+    // plain text with the summary in the first line; currently
+    // the AkonadiSyncSource will use VJOURNAL
+    virtual const char *getMimeType() const { return "text/plain"; }
+    virtual const char *getMimeVersion() const { return "1.0"; }
+};
+
+SE_END_CXX
+
+#endif // ENABLE_AKONADI
+#endif // AKONADISYNCSOURCE_H

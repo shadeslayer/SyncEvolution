@@ -1,0 +1,41 @@
+Getting started with Akonadi on Debian testing:
+aptitude install libakonadi-dev akonadi-server \
+                 libqt4-dev kdepim-runtime \
+                 kdepimlibs5-dev
+
+Controlling Akonadi server:
+akonadictl start/stop/restart
+
+Debugging Akonadi:
+akonadiconsole (from kdepim-runtime)
+
+Configuring without Evolution and with Akonadi:
+<path>/syncevolution/configure --with-synthesis-src=<path>/libsynthesis \
+                               CFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
+                               CXXFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
+                               --disable-shared --enable-static \
+                               --enable-libcurl \
+                               --enable-unit-tests --enable-integration-tests \
+                               --disable-ecal --disable-ebook --disable-libsoup
+
+This creates src/syncevolution and src/client-test which can be run under
+a debugger directly.
+
+Query databases:
+syncevolution
+
+Configuring syncevolution for contacts with Akonadi as backend:
+syncevolution --source-property sync=none \
+              --sync-property username=... \
+              --sync-property password=... \
+              scheduleworld
+syncevolution --source-property sync=two-way \
+              --source-property type=kde-contacts \
+              --source-property evolutionsource=akonadi:?... \
+              scheduleworld addressbook
+
+Initial run:
+syncevolution --sync slow scheduleworld addressbook
+
+All following runs:
+syncevolution scheduleworld

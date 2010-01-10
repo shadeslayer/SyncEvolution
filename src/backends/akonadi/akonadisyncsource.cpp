@@ -18,269 +18,177 @@
 */
 
 #include "akonadisyncsource.h"
-#include "timetrackingobserver.h"
+
+#ifdef ENABLE_AKONADI
 
 #include <Akonadi/ItemCreateJob>
 #include <Akonadi/ItemDeleteJob>
 #include <Akonadi/ItemFetchJob>
 #include <Akonadi/ItemFetchScope>
 #include <Akonadi/ItemModifyJob>
+#include <Akonadi/CollectionFetchJob>
+#include <Akonadi/Control>
+#include <kurl.h>
 
+#include <QtCore/QCoreApplication>
+
+SE_BEGIN_CXX
 using namespace Akonadi;
 
-AkonadiSyncSource::AkonadiSyncSource(TimeTrackingObserver *observer,
-                                     AkonadiSyncSourceConfig *config,
-                                     SyncManagerConfig *managerConfig)
-    : SyncSource(config->getName(), config)
-    , m_observer(observer)
+AkonadiSyncSource::AkonadiSyncSource(const char *submime,
+                                     const SyncSourceParams &params) :
+    TrackingSyncSource(params),
+    m_subMime(submime)
 {
-    managerConfig->setSyncSourceConfig(*config);
 }
 
 AkonadiSyncSource::~AkonadiSyncSource()
 {
 }
 
-int AkonadiSyncSource::beginSync()
+bool AkonadiSyncSource::isEmpty(){return false;}
+void AkonadiSyncSource::start()
 {
-    // Fetch all item sets from the time-tracking observer that
-    // correspond to this SyncSource's corresponding Akonadi collection
-    m_allItems = m_observer->allItems(m_lastSyncTime, m_collectionId);
-    m_newItems = m_observer->addedItems(m_lastSyncTime, m_collectionId);
-    m_updatedItems = m_observer->changedItems(m_lastSyncTime, m_collectionId);
-    m_deletedItems = m_observer->removedItems(m_lastSyncTime, m_collectionId);
-
-    m_currentTime = QDateTime::currentDateTime().toUTC();
-    kDebug() << "Begin sync at" << m_currentTime;
-    return 0;
-}
-
-int AkonadiSyncSource::endSync()
-{
-    m_lastSyncTime = m_currentTime;
-    kDebug() << "End sync at" << m_lastSyncTime;
-    return 0;
-}
-
-int AkonadiSyncSource::addItem(SyncItem& syncItem)
-{
-    kDebug() << "Remote wants us to add" << syncItemToString(syncItem);
-
-    Item item;
-    item.setMimeType(syncItem.getDataType());
-    item.setPayloadFromData(QByteArray((char *)syncItem.getData()));
-
-    ItemCreateJob *createJob = new ItemCreateJob(item, Collection(m_collectionId));
-    if (createJob->exec()) {
-        item = createJob->item();
-        kDebug() << "Created new item" << item.id() << "with mimetype" << item.mimeType()
-                 << "and added it to collection" << m_collectionId;
-        syncItem.setKey(QByteArray::number(item.id()));
-        //TODO: Read-only datastores may not have actually added something here!
-        return 200; // Ok, the SyncML command completed successfully
-    } else {
-        kDebug() << "Unable to create item" << item.id() << "in Akonadi datastore";
-        return 211; // Failed, the recipient encountered an error
+    int argc = 1;
+    static const char *prog = "syncevolution";
+    static char *argv[] = { (char *)&prog, NULL };
+    if (!qApp) {
+        new QCoreApplication(argc, argv);
     }
 }
 
-int AkonadiSyncSource::updateItem(SyncItem& syncItem)
+SyncSource::Databases AkonadiSyncSource::getDatabases()
 {
-    kDebug() << "Remote wants us to update" << syncItemToString(syncItem);
+    start();
 
-    Entity::Id syncItemId = QByteArray(syncItem.getKey()).toLongLong();
+    Databases res;
+    // TODO: insert databases which match the "type"
+    // of the source, including a user-visible description
+    // and a database IDs. Exactly one of the databases
+    // should be marked as the default one used by the
+    // source.
+    // res.push_back("Contacts", "some-KDE-specific-ID", isDefault);
 
-    // Fetch item which shall be modified
-    ItemFetchJob *fetchJob = new ItemFetchJob(Item(syncItemId));
-    if (fetchJob->exec()) {
-        Item item = fetchJob->items().first();
+    CollectionFetchJob *fetchJob = new CollectionFetchJob(Collection::root(),
+                                                          CollectionFetchJob::Recursive);
+    // fetchJob->setMimeTypeFilter(m_subMime.c_str());
+    if (!fetchJob->exec()) {
+        throwError("cannot list collections");
+    }
 
-        // Modify item, e.g. set new payload data
-        QByteArray data((char *)syncItem.getData());
-        item.setPayloadFromData(data);
-
-        // Store back modified item
-        ItemModifyJob *modifyJob = new Akonadi::ItemModifyJob(item);
-        if (modifyJob->exec()) {
-            kDebug() << "Item" << item.id() << "modified successfully";
-            return 200; // Ok, the SyncML command completed successfully
-        } else {
-            return 211; // Failed, the recipient encountered an error
+    // the first collection of the right type is the default
+    // TODO: is there a better way to choose the default?
+    bool isFirst = true;
+    Collection::List collections = fetchJob->collections();
+    foreach(const Collection &collection, collections) {
+        // TODO: filter out collections which contain no items
+        // of the type we sync (m_subMime)
+        if (true) {
+            res.push_back(Database(collection.name().toUtf8().constData(),
+                                   collection.url().url().toUtf8().constData(),
+                                   isFirst));
+            isFirst = false;
         }
-    } else {
-        kDebug() << "Unable to find item with id" << syncItemId;
-        return 211; // Failed, the recipient encountered an error
+    }
+    return res;
+}
+
+void AkonadiSyncSource::open()
+{
+    start();
+
+    // the "evolutionsource" property, empty for default,
+    // otherwise the collection URL or a name
+    string id = getDatabaseID();
+
+    // TODO: support selection by name and empty ID for default
+
+    // TODO: check for invalid URL?!
+    m_collection = Collection::fromUrl(KUrl(id.c_str()));
+}
+
+void AkonadiSyncSource::listAllItems(SyncSourceRevisions::RevisionMap_t &revisions)
+{
+    // copy all local IDs and the corresponding revision
+    ItemFetchJob *fetchJob = new ItemFetchJob(m_collection);
+    if (!fetchJob->exec()) {
+        throwError("listing items");
+    }
+    BOOST_FOREACH(const Item &item, fetchJob->items()) {
+        // TODO: filter out items which don't have the right type
+        // (for example, VTODO when syncing events)
+        // if (... == m_subMime)
+        revisions[QByteArray::number(item.id()).constData()] =
+                  QByteArray::number(item.revision()).constData();
     }
 }
 
-int AkonadiSyncSource::deleteItem(SyncItem& syncItem)
+void AkonadiSyncSource::close()
 {
-    kDebug() << "Remote wants us to delete" << syncItemToString(syncItem);
+    // TODO: close collection!?
+}
 
-    Entity::Id syncItemId = QByteArray(syncItem.getKey()).toLongLong();
+TrackingSyncSource::InsertItemResult
+AkonadiSyncSource::insertItem(const std::string &luid, const std::string &data, bool raw)
+{
+    Item item;
+
+    if (luid.empty()) {
+        item.setMimeType(m_subMime.c_str());
+        item.setPayloadFromData(QByteArray(data.c_str()));
+        ItemCreateJob *createJob = new ItemCreateJob(item, m_collection);
+        if (!createJob->exec()) {
+            throwError(string("storing new item ") + luid);
+        }
+        item = createJob->item();
+    } else {
+        Entity::Id syncItemId = QByteArray(luid.c_str()).toLongLong();
+        ItemFetchJob *fetchJob = new ItemFetchJob(Item(syncItemId));
+        if (!fetchJob->exec()) {
+            throwError(string("checking item ") + luid);
+        }            
+        ItemModifyJob *modifyJob = new ItemModifyJob(item);
+        // TODO: SyncEvolution must pass the known revision that
+        // we are updating.
+        // TODO: check that the item has not been updated in the meantime
+        if (!modifyJob->exec()) {
+            throwError(string("updating item ") + luid);
+        }
+        item = modifyJob->item();
+    }
+
+    // TODO: Read-only datastores may not have actually added something here!
+    return InsertItemResult(QByteArray::number(item.id()).constData(),
+                            QByteArray::number(item.revision()).constData(),
+                            false);
+}
+
+void AkonadiSyncSource::removeItem(const string &luid)
+{
+    Entity::Id syncItemId = QByteArray(luid.c_str()).toLongLong();
 
     // Delete the item from our collection
+    // TODO: check that the revision is right (need revision from SyncEvolution)
     ItemDeleteJob *deleteJob = new ItemDeleteJob(Item(syncItemId));
-    if (deleteJob->exec()) {
-        return 200; // Ok, the SyncML command completed successfully
+    if (!deleteJob->exec()) {
+        throwError(string("deleting item " ) + luid);
+    }
+}
+
+void AkonadiSyncSource::readItem(const std::string &luid, std::string &data, bool raw)
+{
+    Entity::Id syncItemId = QByteArray(luid.c_str()).toLongLong();
+
+    ItemFetchJob *fetchJob = new ItemFetchJob(Item(syncItemId));
+    fetchJob->fetchScope().fetchFullPayload();
+    if (fetchJob->exec()) {
+        QByteArray payload = fetchJob->items().first().payloadData();
+        data.assign(payload.constData(),
+                    payload.size());
     } else {
-        return 211; // Failed, the recipient encountered an error
+        throwError(string("extracting item " ) + luid);
     }
 }
 
-int AkonadiSyncSource::removeAllItems()
-{
-    kDebug() << "Remote wants us to remove all items";
-
-    // Remove all items from our collection
-    ItemDeleteJob *deleteJob = new ItemDeleteJob(Collection(m_collectionId));
-    if (deleteJob->exec()) {
-        return 200; // Ok, the SyncML command completed successfully
-    } else {
-        return 211; // Failed, the recipient encountered an error
-    }
-}
-
-SyncItem *AkonadiSyncSource::first(ItemSet set, bool withData)
-{
-    SyncState state = SYNC_STATE_NONE;
-    Akonadi::Item item;
-
-    switch (set) {
-        case AllItems:
-            m_allItemsIndex = 0;
-            if (m_allItemsIndex < m_allItems.size()) {
-                kDebug() << "Fetch first item from 'all items' set";
-                item = m_allItems[m_allItemsIndex];
-            }
-            break;
-        case NewItems:
-            m_newItemsIndex = 0;
-            if (m_newItemsIndex < m_newItems.size()) {
-                kDebug() << "Fetch first item from 'new items' set";
-                state = SYNC_STATE_NEW;
-                item = m_newItems[m_newItemsIndex];
-            }
-            break;
-        case UpdatedItems:
-            m_updatedItemsIndex = 0;
-            if (m_updatedItemsIndex < m_updatedItems.size()) {
-                kDebug() << "Fetch first item from 'updated items' set";
-                state = SYNC_STATE_UPDATED;
-                item = m_updatedItems[m_updatedItemsIndex];
-            }
-            break;
-        case DeletedItems:
-            m_deletedItemsIndex = 0;
-            if (m_deletedItemsIndex < m_deletedItems.size()) {
-                kDebug() << "Fetch first item from 'next items' set";
-                state = SYNC_STATE_DELETED;
-                item = m_deletedItems[m_deletedItemsIndex];
-            }
-            break;
-    }
-
-    if (item.isValid()) {
-        return syncItem(item, withData, state);
-    } else {
-        kDebug() << "Fetched invalid item";
-        return 0;
-    }
-}
-
-SyncItem *AkonadiSyncSource::next(ItemSet set, bool withData)
-{
-    SyncState state = SYNC_STATE_NONE;
-    Akonadi::Item item;
-
-    switch (set) {
-        case AllItems:
-            m_allItemsIndex++;
-            if (m_allItemsIndex < m_allItems.size()) {
-                kDebug() << "Fetch item" << m_allItemsIndex << "from 'all items' set";
-                item = m_allItems[m_allItemsIndex];
-            }
-            break;
-        case NewItems:
-            m_newItemsIndex++;
-            if (m_newItemsIndex < m_newItems.size()) {
-                kDebug() << "Fetch item" << m_newItemsIndex << "from 'new items' set";
-                state = SYNC_STATE_NEW;
-                item = m_newItems[m_newItemsIndex];
-            }
-            break;
-        case UpdatedItems:
-            m_updatedItemsIndex++;
-            if (m_updatedItemsIndex < m_updatedItems.size()) {
-                kDebug() << "Fetch item" << m_updatedItemsIndex << "from 'updated items' set";
-                state = SYNC_STATE_UPDATED;
-                item = m_updatedItems[m_updatedItemsIndex];
-            }
-            break;
-        case DeletedItems:
-            m_deletedItemsIndex++;
-            if (m_deletedItemsIndex < m_deletedItems.size()) {
-                kDebug() << "Fetch item" << m_deletedItemsIndex << "from 'deleted items' set";
-                state = SYNC_STATE_DELETED;
-                item = m_deletedItems[m_deletedItemsIndex];
-            }
-            break;
-    }
-
-    if (item.isValid()) {
-        return syncItem(item, withData, state);
-    } else {
-        kDebug() << "Fetched invalid item";
-        return 0;
-    }
-}
-
-SyncItem *AkonadiSyncSource::syncItem(const Item &item, bool withData, SyncState state) const
-{
-    SyncItem *syncItem = new SyncItem();
-
-    kDebug() << "Return SyncItem for item" << item.id();
-
-    syncItem->setKey(QByteArray::number(item.id()));
-    syncItem->setModificationTime(m_lastSyncTime.toTime_t());
-    syncItem->setState(state);
-
-    if (withData) {
-        ItemFetchJob *fetchJob = new ItemFetchJob(item);
-        fetchJob->fetchScope().fetchFullPayload();
-        if (fetchJob->exec()) {
-            kDebug() << "Add payload data";
-            QByteArray data = fetchJob->items().first().payloadData().toBase64();
-
-            syncItem->setData(data, data.size());
-            syncItem->setDataEncoding(SyncItem::encodings::escaped);
-            syncItem->setDataType(getConfig().getType());
-        } else {
-            kDebug() << "Unable to add payload data";
-        }
-    }
-    //kDebug() << "Created SyncItem:" << syncItemToString(*syncItem);
-    return syncItem;
-}
-
-QString AkonadiSyncSource::syncItemToString(SyncItem& syncItem) const
-{
-    QByteArray data((char *)syncItem.getData());
-    QString ret("Key: ");
-    ret += syncItem.getKey();
-    ret += " Mod.Time: ";
-    ret += QString::number(syncItem.getModificationTime());
-    ret += " Encoding: ";
-    ret += syncItem.getDataEncoding();
-    ret += " Size: ";
-    ret += QString::number(syncItem.getDataSize());
-    ret += " Type: ";
-    ret += syncItem.getDataType();
-    ret += " State: ";
-    ret += QString::number(syncItem.getState());
-    ret += " Data:\n";
-    ret += data;
-    return ret;
-}
-
-#include "moc_akonadisyncsource.cpp"
+SE_END_CXX
+#endif // ENABLE_AKONADI

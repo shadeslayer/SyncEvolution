@@ -1,0 +1,49 @@
+dnl -*- mode: Autoconf; -*-
+dnl Invoke autogen.sh to produce a configure script.
+
+# Check for Akonadi. There is no .pc file for it,
+# so fall back to normal header file and library checking.
+# kdepimlibs5-dev >= 4.3 provides the necessary files.
+AKONADIFOUND=yes
+if ! test "$KDEPIM_CFLAGS"; then
+   KDEPIM_CFLAGS="-I/usr/include/KDE -I/usr/include/qt4"
+fi
+if ! test "$KDEPIM_LIBS"; then
+   KDEPIM_LIBS="-lakonadi-kde"
+fi
+AC_LANG_PUSH(C++)
+old_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $KDEPIM_CFLAGS"
+AC_CHECK_HEADERS(Akonadi/Collection, [], [AKONADIFOUND=no])
+CPPFLAGS="$old_CPPFLAGS"
+AC_LANG_POP(C++)
+
+# In contrast to the Evolution backend, the Akonadi backend is
+# currently considered optional. "configure" will enable it if
+# possible, but won't complain if the necessary development files
+# are missing.
+AC_ARG_ENABLE_BACKEND(akonadi, akonadi,
+                      AS_HELP_STRING([--disable-akonadi], [disable access to Akonadi (default is to use it if akonadi.pc is found)]),
+                      [enable_akonadi="$enableval"
+                       test $AKONADIFOUND = "yes" || $enable_akonadi = "no" || AC_MSG_ERROR([akonadi.pc not found. Install it to compile with the Akonadi backend enabled.])],
+                      [enable_akonadi=$AKONADIFOUND])
+
+if test "$enable_akonadi" = "yes"; then
+        # conditional compilation in preprocessor
+        AC_DEFINE(ENABLE_AKONADI, 1, [Akonadi available])
+else
+        # avoid unneeded dependencies on Akonadi
+        KDEPIM_CFLAGS=
+        KDEPIM_LIBS=
+fi
+AC_SUBST(KDEPIM_LIBS)
+AC_SUBST(KDEPIM_CFLAGS)
+
+# conditional compilation in make
+AM_CONDITIONAL([ENABLE_AKONADI], [test "$enable_akonadi" = "yes"])
+
+# let others include Akonadi backend's header file
+# (not strictly necessary, could be avoided by not
+# including Akonadi header files in public header file
+# of source)
+BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $KDEPIM_CFLAGS"
