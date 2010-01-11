@@ -98,6 +98,12 @@ AC_CHECK_HEADERS(stdarg.h valgrind/valgrind.h execinfo.h)
 
 AC_DEFINE(SYNTHESIS, 1, "using Synthesis engine")
 
+# fallback for lack of --with-docdir support in older automake
+if test ! "$docdir"; then
+   docdir = ${datadir}/doc/syncevolution
+   AC_SUBST(docdir)
+fi
+
 AC_CONFIG_FILES(Makefile src/dbus/interfaces/Makefile src/dbus/Makefile src/Makefile src/syncevo/Makefile src/syncevo/syncevolution.pc src/gtk-ui/Makefile po/Makefile.in test/Makefile src/dbus/syncevo-dbus.pc)
 AC_OUTPUT
 
