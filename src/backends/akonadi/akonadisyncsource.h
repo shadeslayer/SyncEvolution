@@ -84,6 +84,24 @@ class AkonadiContactSource : public AkonadiSyncSource
 
     virtual const char *getMimeType() const { return "text/vcard"; }
     virtual const char *getMimeVersion() const { return "3.0"; }
+
+    void getSynthesisInfo(SynthesisInfo &info,
+                          XMLConfigFragments &fragments)
+    {
+        TrackingSyncSource::getSynthesisInfo(info, fragments);
+
+        /** enable the KDE X- extensions in the Synthesis<->backend conversion */
+        info.m_backendRule = "KDE";
+
+        /*
+         * Disable the default VCARD_BEFOREWRITE_SCRIPT_EVOLUTION.
+         * If any KDE-specific transformations via such a script
+         * are needed, it can be named here and then defined by appending
+         * to the fragments.
+         */
+        info.m_beforeWriteScript = ""; // "$VCARD_BEFOREWRITE_SCRIPT_KDE;";
+        // fragments.m_datatypes["VCARD_BEFOREWRITE_SCRIPT_KDE"] = "<macro name=\"VCARD_BEFOREWRITE_SCRIPT_KDE\"><![DATA[ ... ]]></macro>";
+    }
 };
 
 class AkonadiCalendarSource : public AkonadiSyncSource

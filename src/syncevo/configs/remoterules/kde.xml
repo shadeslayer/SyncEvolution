@@ -1,0 +1,3 @@
+    <remoterule name="KDE">
+      <deviceid>none - this rule is activated via its name in MAKE/PARSETEXTWITHPROFILE() macro calls</deviceid>
+    </remoterule>
