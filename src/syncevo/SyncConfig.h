@@ -1236,6 +1236,15 @@ class SyncConfig {
     virtual void setRemoteIdentifier (const string &value, bool temporaritly = false);
     virtual bool getPeerIsClient () const;
     virtual void setPeerIsClient (bool value, bool temporarily = false);
+
+    /**
+     * An arbitrary name assigned to the peer configuration,
+     * not necessarily unique. Can be used by a GUI instead
+     * of the config name.
+     */
+    virtual string getPeerName() const;
+    virtual void setPeerName(const string &name);
+
     /**
      * The Device ID of our peer. Typically only relevant when the
      * peer is a client. Servers don't have a Device ID, just some

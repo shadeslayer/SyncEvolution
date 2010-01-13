@@ -1028,6 +1028,10 @@ static BoolConfigProperty syncPropPeerIsClient("PeerIsClient",
                                           "Indicates whether this configuration is about a\n"
                                           "client peer or server peer.\n",
                                           "0");
+static SafeConfigProperty syncPropPeerName("PeerName",
+                                           "An arbitrary name for the peer referenced by this config.\n"
+                                           "Might be used by a GUI. The command line tool always uses the\n"
+                                           "the configuration name.");
 static ConfigProperty syncPropRemoteIdentifier("remoteIdentifier",
                                       "the identifier sent to the remote peer for a server initiated sync.\n"
                                       "if not set, deviceId will be used instead\n",
@@ -1122,6 +1126,7 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropRetryInterval);
         registry.push_back(&syncPropRemoteIdentifier);
         registry.push_back(&syncPropPeerIsClient);
+        registry.push_back(&syncPropPeerName);
         registry.push_back(&syncPropDevID);
         registry.push_back(&syncPropRemoteDevID);
         registry.push_back(&syncPropWBXML);
@@ -1394,6 +1399,9 @@ void SyncConfig::setRemoteIdentifier (const string &value, bool temporarily) { r
 
 bool SyncConfig::getPeerIsClient() const { return syncPropPeerIsClient.getPropertyValue(*getNode(syncPropPeerIsClient)); }
 void SyncConfig::setPeerIsClient(bool value, bool temporarily) { syncPropPeerIsClient.setProperty(*getNode(syncPropPeerIsClient), value, temporarily); }
+
+string SyncConfig::getPeerName() const { return syncPropPeerName.getProperty(*getNode(syncPropPeerName)); }
+void SyncConfig::setPeerName(const string &name) { syncPropPeerName.setProperty(*getNode(syncPropPeerName), name); }
 
 bool SyncConfig::getPrintChanges() const { return syncPropPrintChanges.getPropertyValue(*getNode(syncPropPrintChanges)); }
 void SyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*getNode(syncPropPrintChanges), value, temporarily); }

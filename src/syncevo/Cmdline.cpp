@@ -1297,6 +1297,7 @@ public:
                               "peers/scheduleworld/config.ini:# RetryInterval = 60\n"
                               "peers/scheduleworld/config.ini:# remoteIdentifier = \n"
                               "peers/scheduleworld/config.ini:# PeerIsClient = 0\n"
+                              "peers/scheduleworld/config.ini:# PeerName = \n"
                               "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
                               "peers/scheduleworld/config.ini:# remoteDeviceId = \n"
                               "peers/scheduleworld/config.ini:# enableWBXML = 1\n"
@@ -1928,6 +1929,8 @@ protected:
                               "\n"
                               "PeerIsClient:\n"
                               "\n"
+                              "PeerName:\n"
+                              "\n"
                               "deviceId:\n"
                               "\n"
                               "remoteDeviceId:\n"
@@ -2344,6 +2347,7 @@ private:
             "spds/syncml/config.txt:# RetryInterval = 60\n"
             "spds/syncml/config.txt:# remoteIdentifier = \n"
             "spds/syncml/config.txt:# PeerIsClient = 0\n"
+            "spds/syncml/config.txt:# PeerName = \n"
             "spds/syncml/config.txt:deviceId = fixed-devid\n" /* this is not the default! */
             "spds/syncml/config.txt:# remoteDeviceId = \n"
             "spds/syncml/config.txt:# enableWBXML = 1\n"
