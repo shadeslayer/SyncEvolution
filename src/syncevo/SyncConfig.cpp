@@ -29,6 +29,7 @@
 #include <syncevo/DevNullConfigNode.h>
 #include <syncevo/MultiplexConfigNode.h>
 #include <syncevo/lcs.h>
+#include <test.h>
 #include <synthesis/timeutil.h>
 
 #include <boost/foreach.hpp>
@@ -82,6 +83,14 @@ void SyncConfig::normalizeConfigString(const string &config, string &normal, str
     context = "";
     normal = config;
     boost::to_lower(normal);
+    BOOST_FOREACH(char &character, normal) {
+        if (!isprint(character) ||
+            character == '/' ||
+            character == '\\' ||
+            character == ':') {
+            character = '_';
+        }
+    }
     if (boost::ends_with(normal, "@default")) {
         context = "default";
         normal.resize(normal.size() - strlen("@default"));
@@ -2121,4 +2130,34 @@ string TemplateConfig::getName(){
     }
     return m_name;
 }
+
+#ifdef ENABLE_UNIT_TESTS
+
+class SyncConfigTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(SyncConfigTest);
+    CPPUNIT_TEST(normalize);
+    CPPUNIT_TEST_SUITE_END();
+
+private:
+    void normalize()
+    {
+        CPPUNIT_ASSERT_EQUAL(std::string("@default"),
+                             SyncConfig::normalizeConfigString(""));
+        CPPUNIT_ASSERT_EQUAL(std::string("@default"),
+                             SyncConfig::normalizeConfigString("@default"));
+        CPPUNIT_ASSERT_EQUAL(std::string("@default"),
+                             SyncConfig::normalizeConfigString("@DeFaULT"));
+        CPPUNIT_ASSERT_EQUAL(std::string("foobar"),
+                             SyncConfig::normalizeConfigString("FooBar"));
+        CPPUNIT_ASSERT_EQUAL(std::string("foobar@something"),
+                             SyncConfig::normalizeConfigString("FooBar@Something"));
+        CPPUNIT_ASSERT_EQUAL(std::string("foo_bar_x_y_z"),
+                             SyncConfig::normalizeConfigString("Foo/bar\\x:y:z"));
+    }
+};
+
+SYNCEVOLUTION_TEST_SUITE_REGISTRATION(SyncConfigTest);
+
+#endif // ENABLE_UNIT_TESTS
+
 SE_END_CXX

@@ -967,6 +967,8 @@ class SyncConfig {
     /**
      * Normalize a config string:
      * - lower case
+     * - non-printable and unsafe characters (colon, slash, backslash)
+     *   replaced by underscore
      * - @default stripped
      * - empty string replaced with "@default"
      */
