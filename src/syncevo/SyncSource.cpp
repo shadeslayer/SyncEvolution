@@ -341,7 +341,7 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error)
 SyncSource *SyncSource::createTestingSource(const string &name, const string &type, bool error,
                                             const char *prefix)
 {
-    SyncConfig config("testing");
+    SyncConfig config("testing@client-test");
     SyncSourceNodes nodes = config.getSyncSourceNodes(name);
     SyncSourceParams params(name, nodes);
     PersistentSyncSourceConfig sourceconfig(name, nodes);
