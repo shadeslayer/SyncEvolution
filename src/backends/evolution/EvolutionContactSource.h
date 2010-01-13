@@ -71,7 +71,7 @@ class EvolutionContactSource : public EvolutionSyncSource,
     void getSynthesisInfo(SynthesisInfo &info,
                           XMLConfigFragments &fragments)
     {
-        TrackingSyncSource::getSynthesisInfo(info, fragments);
+        EvolutionSyncSource::getSynthesisInfo(info, fragments);
         info.m_profile = "\"vCard\", 2";
         info.m_native = "vCard30";
         info.m_beforeWriteScript = "$VCARD_BEFOREWRITE_SCRIPT_EVOLUTION;";

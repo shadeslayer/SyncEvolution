@@ -650,6 +650,13 @@ class SyncSourceBase : public Logger {
          * leave empty when acessing the field list directly
          */
         std::string m_profile;
+
+        /**
+         * the second parameter for MAKE/PARSETEXTWITHPROFILE
+         * which specifies a remote rule to be applied when
+         * converting to and from the backend
+         */
+        std::string m_backendRule;
     
         /** list of supported datatypes in "<use .../>" format */
         std::string m_datatypes;

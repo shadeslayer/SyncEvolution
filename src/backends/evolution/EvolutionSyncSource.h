@@ -46,6 +46,13 @@ class EvolutionSyncSource : public TrackingSyncSource
         {
         }
 
+    void getSynthesisInfo(SynthesisInfo &info,
+                          XMLConfigFragments &fragments)
+    {
+        TrackingSyncSource::getSynthesisInfo(info, fragments);
+        info.m_backendRule = "EVOLUTION";
+    }
+
   protected:
 #ifdef HAVE_EDS
     /**
