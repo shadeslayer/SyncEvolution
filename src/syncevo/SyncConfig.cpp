@@ -1409,8 +1409,8 @@ void SyncConfig::removeSyncSource(const string &name)
             m_tree->remove(pathName);
             // ... and the peer-specific ones of *all* peers
             BOOST_FOREACH(const std::string peer,
-                          m_tree->getChildren("peers")) {
-                m_tree->remove(string("peers/") + peer + "/sources/" + lower);
+                          m_tree->getChildren(m_contextPath + "/peers")) {
+                m_tree->remove(m_contextPath + "/peers/" + peer + "/sources/" + lower);
             }
         } else {
             // remove only inside the selected peer
