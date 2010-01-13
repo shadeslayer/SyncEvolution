@@ -234,6 +234,84 @@ template<> struct dbus_traits<ReadOperations::SourceDatabase> :
                               dbus_member<ReadOperations::SourceDatabase, std::string, &ReadOperations::SourceDatabase::m_uri,
                               dbus_member_single<ReadOperations::SourceDatabase, bool, &ReadOperations::SourceDatabase::m_isDefault> > > >{}; 
 
+/**
+ * Automatic termination and track clients
+ * The dbus server will automatic terminate once it is idle in a given time.
+ * If any attached clients or connections, it never terminate. 
+ * Once no actives, timer is started to detect the time of idle.
+ * Note that there will be less-than TERM_INTERVAL inaccuracy in seconds,
+ * that's because we do check every TERM_INTERVAL seconds.
+ */
+class AutoTerm {
+    int m_refs;
+    guint m_elapsed;
+    guint m_interval;
+    guint m_checkSource;
+
+    static const guint TERM_INTERVAL = 5;
+
+    /* A callback is called in each TERM_INTERVAL seconds, registered to check whether the
+     * dbus server is timeout regurally.
+     * In reality it will be called after TERM_INTERVAL + delta, with delta being large
+     * if the D-Bus server is busy. Therefore m_elapsed will underestimate the real
+     * elapsed time. But because this only happens in a busy server and a busy server
+     * doesn't have to auto-terminate, this assumption could work.
+     */
+    static gboolean checkCallback(gpointer data) {
+        AutoTerm *at = static_cast<AutoTerm*>(data);
+        // if no conncetions or attached clients
+        if(at->m_refs <= 0) {
+            at->m_elapsed += TERM_INTERVAL;
+            if(at->m_elapsed >= at->m_interval) {
+                shutdownRequested = true;
+                g_main_loop_quit(loop);
+                return FALSE;
+            }
+        }
+        return TRUE;
+    }
+
+ public:
+    /**
+     * constructor
+     * If interval is less than 0, it means 'unlimited' and never terminate
+     */
+    AutoTerm(int interval) : m_refs(0), m_elapsed(0) {
+            if(interval <= 0) {
+                ref();
+                m_interval = 0;
+                m_checkSource = 0;
+            } else {
+                m_interval = interval;
+                // call checking every 5 seconds
+                // here we don't use add/remove new sources for we might
+                // make glib source id integer overflow since its id calculation
+                // only plus one each time
+                m_checkSource = g_timeout_add_seconds(TERM_INTERVAL, 
+                                                      (GSourceFunc) checkCallback,
+                                                      static_cast<gpointer>(this));
+            }
+        }
+
+    //increase the actives objects
+    void ref(int refs = 1) {  
+        m_refs += refs; 
+    }
+
+    //decrease the actives objects
+    void unref(int refs = 1) { 
+        m_refs -= refs; 
+        if(m_refs <= 0) {
+           reset();
+           m_refs = 0;
+        }
+    }
+
+    void reset() {
+        m_elapsed = 0;
+    }
+};
+
 class InfoReq;
 
 /**
@@ -251,6 +329,12 @@ class DBusServer : public DBusObjectHelper
     uint32_t m_lastSession;
     typedef std::list< std::pair< boost::shared_ptr<Watch>, boost::shared_ptr<Client> > > Clients_t;
     Clients_t m_clients;
+
+    /* clients that attach the server explicitly
+     * the pair is <client id, attached times>. Each attach has
+     * to be matched with one detach.
+     */
+    std::list<std::pair<Caller_t, int> > m_attachedClients;
 
     /**
      * The session which currently holds the main lock on the server.
@@ -299,6 +383,9 @@ class DBusServer : public DBusObjectHelper
 
     // the index of last info request
     uint32_t m_lastInfoReq;
+
+    //automatic termination
+    AutoTerm m_autoTerm;
 
     /**
      * Watch callback for a specific client or connection.
@@ -393,6 +480,12 @@ class DBusServer : public DBusObjectHelper
     /** remove InfoReq from hash map */
     void removeInfoReq(const InfoReq &req);
 
+    /*
+     * Decrease refs for a client. If allRefs, it tries to remove all refs from 'Attach()'
+     * for the client. Otherwise, decrease one ref for the client.
+     */
+    void detachClientRefs(const Caller_t &caller, bool allRefs);
+
     /** Server.SessionChanged */
     EmitSignal2<const DBusObject_t &,
                 bool> sessionChanged;
@@ -411,7 +504,7 @@ class DBusServer : public DBusObjectHelper
                 const std::map<string, string> &> infoRequest;
 
 public:
-    DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn);
+    DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration);
     ~DBusServer();
 
     /** access to the GMainLoop reference used by this DBusServer instance */
@@ -467,7 +560,12 @@ public:
     boost::shared_ptr<InfoReq> createInfoReq(const string &type, 
                                              const std::map<string, string> &parameters,
                                              const Session *session);
+    void autoTermRef(int counts = 1) { m_autoTerm.ref(counts); }
 
+    void autoTermUnref(int counts = 1) { m_autoTerm.unref(counts); }
+
+    /** callback to reset for auto termination checking */
+    void autoTermCallback() { m_autoTerm.reset(); }
 };
 
 
@@ -2029,7 +2127,8 @@ Session::Session(DBusServer &server,
                  const std::string &session) :
     DBusObjectHelper(server.getConnection(),
                      std::string("/org/syncevolution/Session/") + session,
-                     "org.syncevolution.Session"),
+                     "org.syncevolution.Session",
+                     boost::bind(&DBusServer::autoTermCallback, &server)),
     ReadOperations(config_name),
     m_server(server),
     m_sessionID(session),
@@ -2948,7 +3047,8 @@ Connection::Connection(DBusServer &server,
                        bool must_authenticate) :
     DBusObjectHelper(conn.get(),
                      std::string("/org/syncevolution/Connection/") + sessionID,
-                     "org.syncevolution.Connection"),
+                     "org.syncevolution.Connection",
+                     boost::bind(&DBusServer::autoTermCallback, &server)),
     m_server(server),
     m_peer(peer),
     m_mustAuthenticate(must_authenticate),
@@ -2964,6 +3064,7 @@ Connection::Connection(DBusServer &server,
     add(this, &Connection::close, "Close");
     add(sendAbort);
     add(reply);
+    m_server.autoTermRef();
 }
 
 Connection::~Connection()
@@ -2986,6 +3087,7 @@ Connection::~Connection()
         // destructing
         Exception::handle();
     }
+    m_server.autoTermUnref();
 }
 
 void Connection::ready()
@@ -3178,6 +3280,8 @@ void DBusServer::clientGone(Client *c)
             return;
         }
     }
+    // remove the client if it attaches the dbus server
+    detachClientRefs(c->m_ID, true);
     SE_LOG_DEBUG(NULL, NULL, "unknown client has disconnected?!");
 }
 
@@ -3196,11 +3300,47 @@ std::string DBusServer::getNextSession()
 void DBusServer::attachClient(const Caller_t &caller,
                               const boost::shared_ptr<Watch> &watch)
 {
-    // TODO: implement idle detection and automatic shutdown of the server
+    boost::shared_ptr<Client> client = addClient(getConnection(),
+                                                 caller,
+                                                 watch);
+    std::list<std::pair<Caller_t, int> >::iterator it;
+    for(it = m_attachedClients.begin(); it != m_attachedClients.end(); ++it) {
+        if (it->first == caller) {
+            break;
+        }
+    }
+    autoTermRef();
+    // if not attach before, then create it
+    if(it == m_attachedClients.end()) {
+        m_attachedClients.push_back(std::pair<Caller_t, int>(caller, 1));
+        watch->setCallback(boost::bind(&DBusServer::clientGone, this, client.get()));
+    } else {
+        it->second++;
+    }
 }
 
 void DBusServer::detachClient(const Caller_t &caller)
 {
+    detachClientRefs(caller, false);
+}
+
+void DBusServer::detachClientRefs(const Caller_t &caller, bool allRefs)
+{
+    std::list<std::pair<Caller_t, int> >::iterator it;
+    for(it = m_attachedClients.begin(); it != m_attachedClients.end(); ++it) {
+        if (it->first == caller) {
+            if(allRefs) {
+                autoTermUnref(it->second);
+                m_attachedClients.erase(it);
+            } else if(--it->second == 0) {
+                autoTermUnref();
+                m_attachedClients.erase(it);
+            } else {
+                autoTermUnref();
+            }
+            break;
+        }
+    }
 }
 
 void DBusServer::connect(const Caller_t &caller,
@@ -3275,12 +3415,16 @@ void DBusServer::getSessions(std::vector<std::string> &sessions)
     }
 }
 
-DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn) :
-    DBusObjectHelper(conn.get(), "/org/syncevolution/Server", "org.syncevolution.Server"),
+DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration) :
+    DBusObjectHelper(conn.get(), 
+                     "/org/syncevolution/Server", 
+                     "org.syncevolution.Server", 
+                     boost::bind(&DBusServer::autoTermCallback, this)),
     m_loop(loop),
     m_lastSession(time(NULL)),
     m_activeSession(NULL),
     m_lastInfoReq(0),
+    m_autoTerm(duration),
     sessionChanged(*this, "SessionChanged"),
     presence(*this, "Presence"),
     infoRequest(*this, "InfoRequest")
@@ -3311,6 +3455,7 @@ DBusServer::~DBusServer()
     m_syncSession.reset();
     m_workQueue.clear();
     m_clients.clear();
+    m_attachedClients.clear();
 }
 
 void DBusServer::run()
@@ -3702,8 +3847,41 @@ void niam(int sig)
     g_main_loop_quit (loop);
 }
 
+static bool parseDuration(int &duration, const char* value)
+{
+    if(value == NULL) {
+        return false;
+    } else if (boost::iequals(value, "unlimited")) {
+        duration = -1;
+        return true;
+    } else if ((duration = atoi(value)) > 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 int main(int argc, char **argv)
 {
+    int duration = 600;
+    int opt = 1;
+    while(opt < argc) {
+        if(argv[opt][0] != '-') {
+            break;
+        }
+        if (boost::iequals(argv[opt], "--duration") ||
+            boost::iequals(argv[opt], "-d")) {
+            opt++;
+            if(!parseDuration(duration, opt== argc ? NULL : argv[opt])) {
+                std::cout << argv[opt-1] << ": unknown parameter value or not set" << std::endl;
+                return false;
+            }
+        } else {
+            std::cout << argv[opt] << ": unknown parameter" << std::endl;
+            return false;
+        }
+        opt++;
+    }
     try {
         g_type_init();
         g_thread_init(NULL);
@@ -3727,7 +3905,7 @@ int main(int argc, char **argv)
             err.throwFailure("g_dbus_setup_bus()");
         }
 
-        DBusServer server(loop, conn);
+        DBusServer server(loop, conn, duration);
         server.activate();
 
         std::cout << argv[0] << " ready to run\n" << std::flush;
