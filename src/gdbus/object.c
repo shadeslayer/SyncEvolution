@@ -55,6 +55,7 @@ typedef struct {
 	GDBusPropertyTable *properties;
 	void *user_data;
 	GDBusDestroyFunction destroy;
+	GDBusInterfaceFunction callback;
 } InterfaceData;
 
 static InterfaceData *find_interface(GSList *interfaces, const char *name)
@@ -614,6 +615,9 @@ static DBusHandlerResult handle_message(DBusConnection *connection,
 					method->signature) == FALSE)
 			continue;
 
+		if(interface->callback) {
+			interface->callback(interface->user_data);
+		}
 		reply = method->function(connection,
 						message,
 						(method->flags & 
@@ -935,13 +939,14 @@ static void g_dbus_unregister_all_objects(DBusConnection *connection)
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_register_interface(DBusConnection *connection,
+gboolean g_dbus_register_interface_with_callback(DBusConnection *connection,
 					const char *path, const char *name,
 					GDBusMethodTable *methods,
 					GDBusSignalTable *signals,
 					GDBusPropertyTable *properties,
 					void *user_data,
-					GDBusDestroyFunction destroy)
+					GDBusDestroyFunction destroy,
+					GDBusInterfaceFunction callback)
 {
 	ObjectData *object;
 	InterfaceData *interface;
@@ -969,6 +974,7 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
 	interface->properties = properties;
 	interface->user_data = user_data;
 	interface->destroy = destroy;
+	interface->callback = callback;
 
 	g_static_mutex_lock(&object->mutex);
 
@@ -980,6 +986,18 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
 	g_static_mutex_unlock(&object->mutex);
 
 	return TRUE;
+}
+
+gboolean g_dbus_register_interface(DBusConnection *connection,
+					const char *path, const char *name,
+					GDBusMethodTable *methods,
+					GDBusSignalTable *signals,
+					GDBusPropertyTable *properties,
+					void *user_data,
+					GDBusDestroyFunction destroy) 
+{
+	return g_dbus_register_interface_with_callback(connection,
+					path, name, methods, signals, properties, user_data, destroy, NULL);
 }
 
 /**
