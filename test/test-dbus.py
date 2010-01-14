@@ -1547,6 +1547,26 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
 
+    @timeout(20)
+    def testTimeoutSync(self):
+        """start a sync, then wait for server to detect that we stopped replying
+        
+        The server-side configuration for sc-api-nat must contain a retryDuration=10
+        because this test itself will time out with a failure after 20 seconds."""
+        conpath, connection = self.getConnection()
+        connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
+        loop.run()
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        DBusUtil.quit_events = []
+        # TODO: check events
+        self.failIfEqual(DBusUtil.reply, None)
+        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        # wait for connection reset and "session done" due to timeout
+        loop.run()
+        loop.run()
+        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+                                                    "session done"])
+
 class TestMultipleConfigs(unittest.TestCase, DBusUtil):
     """ sharing of properties between configs
 

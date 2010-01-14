@@ -1464,21 +1464,20 @@ void SyncContext::initSources(SourceList &sourceList)
 
 bool SyncContext::transport_cb (void *udata)
 {
-    return static_cast <SyncContext *> (udata) -> processTransportCb();
+    unsigned int interval = reinterpret_cast<uintptr_t>(udata);
+    SE_LOG_INFO(NULL, NULL, "Transport timeout after %u:%02umin",
+                interval / 60,
+                interval % 60);
+    // never cancel the transport, the higher levels will deal
+    // with the timeout
+    return true;
 }
 
-bool SyncContext::processTransportCb()
+void SyncContext::setTransportCallback(int seconds)
 {
-    // TODO: distinguish between client and server. In the server
-    // we have to implement a much higher time out and then disconnect
-    // an unresponsive client.
-
-    //Always return true to continue, we will detect the retry count at
-    //the higher level together with transport error scenarios.
-    SE_LOG_INFO(NULL, NULL, "Transport timeout after %d:%02dmin",
-                m_retryInterval / 60,
-                m_retryInterval % 60);
-    return true;
+    m_agent->setCallback(transport_cb,
+                         reinterpret_cast<void *>(static_cast<uintptr_t>(seconds)),
+                         seconds);
 }
 
 // XML configuration converted to C string constant
@@ -2093,7 +2092,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
     return status;
 }
 
-bool SyncContext::initSAN(int retries) 
+bool SyncContext::initSAN() 
 {
     sysync::SanPackage san;
     /* Should be nonce sent by the server in the preceeding sync session */
@@ -2178,38 +2177,41 @@ bool SyncContext::initSAN(int retries)
         return false;
     }
 
-    /* Create the transport agent */
     try {
         m_agent = createTransportAgent();
-        //register transport callback
-        if (m_retryInterval) {
-            m_agent->setCallback (transport_cb, this, m_retryInterval);
+        // Time out after the complete retry duration. This is the
+        // initial message of a sync, so we don't resend it (just as
+        // in a HTTP SyncML client trying to contact server).
+        if (m_retryDuration) {
+            setTransportCallback(m_retryDuration);
         }
-        int retry = 0;
-        while (retry++ < retries) 
-        {
-            SE_LOG_INFO (NULL, NULL, "Server sending SAN attempts #%d", retry);
-            m_agent->setContentType (TransportAgent::m_contentTypeServerAlertedNotificationDS);
-            m_agent->send(reinterpret_cast <char *> (buffer), sanSize);
-            //change content type
-            m_agent->setContentType (getWBXML() ? TransportAgent::m_contentTypeSyncWBXML :
-                    TransportAgent::m_contentTypeSyncML);
-            if (m_agent->wait() == TransportAgent::GOT_REPLY){
-                const char *reply;
-                size_t replyLen;
-                string contentType;
-                m_agent->getReply (reply, replyLen, contentType);
 
-                //sanity check for the reply 
-                if (contentType.empty() || 
-                        contentType.find(TransportAgent::m_contentTypeSyncML) != contentType.npos ||
-                        contentType.find(TransportAgent::m_contentTypeSyncWBXML) != contentType.npos) {
-                    SharedBuffer request (reply, replyLen);
-                    //TODO should generate more reasonable sessionId here
-                    string sessionId ="";
-                    initServer (sessionId, request, contentType);
-                    return true;
-                }
+        SE_LOG_INFO (NULL, NULL, "Server sending SAN");
+        m_agent->setContentType(TransportAgent::m_contentTypeServerAlertedNotificationDS);
+        m_agent->send(reinterpret_cast <char *> (buffer), sanSize);
+        //change content type
+        m_agent->setContentType(getWBXML() ? TransportAgent::m_contentTypeSyncWBXML :
+                                TransportAgent::m_contentTypeSyncML);
+
+        TransportAgent::Status status;
+        do {
+            status = m_agent->wait();
+        } while(status == TransportAgent::ACTIVE);
+        if (status == TransportAgent::GOT_REPLY) {
+            const char *reply;
+            size_t replyLen;
+            string contentType;
+            m_agent->getReply (reply, replyLen, contentType);
+
+            //sanity check for the reply 
+            if (contentType.empty() || 
+                contentType.find(TransportAgent::m_contentTypeSyncML) != contentType.npos ||
+                contentType.find(TransportAgent::m_contentTypeSyncWBXML) != contentType.npos) {
+                SharedBuffer request (reply, replyLen);
+                //TODO should generate more reasonable sessionId here
+                string sessionId ="";
+                initServer (sessionId, request, contentType);
+                return true;
             }
         }
     } catch (TransportException e) {
@@ -2524,9 +2526,9 @@ SyncMLStatus SyncContext::doSync()
                 sessionKey.reset();
                 
                 sendStart = resendStart = time (NULL);
-                //register transport callback
-                if (m_retryInterval) {
-                    m_agent->setCallback (transport_cb, this, m_retryInterval);
+                int timeout = m_serverMode ? m_retryDuration : m_retryInterval;
+                if (timeout) {
+                    setTransportCallback(timeout);
                 }
                 requestNum ++;
                 // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
@@ -2555,7 +2557,12 @@ SyncMLStatus SyncContext::doSync()
                
                 case TransportAgent::TIME_OUT: {
                     time_t duration = time(NULL) - sendStart;
-                    if(duration > m_retryDuration){
+                    // HTTP SyncML servers cannot resend a HTTP POST
+                    // reply.  Other server transports could in theory
+                    // resend, but don't have the necessary D-Bus APIs
+                    // (MB #6370).
+                    if (m_serverMode ||
+                        duration > m_retryDuration){
                         SE_LOG_INFO(NULL, NULL,
                                     "Transport giving up after %d retries and %ld:%02ldmin",
                                     m_retries,
@@ -2606,7 +2613,8 @@ SyncMLStatus SyncContext::doSync()
                 case TransportAgent::FAILED: {
                     time_t curTime = time(NULL);
                     time_t duration = curTime - sendStart;
-                    if (!m_retryInterval || duration > m_retryDuration || requestNum == 1) {
+                    if (m_serverMode ||
+                        !m_retryInterval || duration > m_retryDuration || requestNum == 1) {
                         SE_LOG_INFO(NULL, NULL,
                                     "Transport giving up after %d retries and %ld:%02ldmin",
                                     m_retries,
