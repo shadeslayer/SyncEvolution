@@ -2239,10 +2239,12 @@ void Session::run()
             // we must enter SYNC_DONE under all circumstances,
             // even when failing during connection shutdown
             m_syncStatus = SYNC_DONE;
+            m_stepIsWaiting = false;
             fireStatus(true);
             throw;
         }
         m_syncStatus = SYNC_DONE;
+        m_stepIsWaiting = false;
         fireStatus(true);
     }
 }
