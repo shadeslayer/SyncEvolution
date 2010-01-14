@@ -84,10 +84,10 @@ class SoupTransportAgent : public HTTPTransportAgent
     eptr<GMainLoop, GMainLoop, GLibUnref> m_loop;
     Status m_status;
     std::string m_failure;
-    guint m_abortEventSource;
+    GLibEvent m_abortEventSource;
 
     SoupMessage *m_message;
-    guint m_cbEventSource;
+    GLibEvent m_cbEventSource;
     TransportCallback m_cb;
     int m_cbInterval;
     void *m_cbData;
