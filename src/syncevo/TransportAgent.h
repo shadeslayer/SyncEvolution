@@ -134,9 +134,12 @@ class TransportAgent
     virtual Status wait(bool noReply = false) = 0;
 
     /**
-     * The callback is called every interval seconds, with udata as the last
-     * parameter. The callback will return true to indicate retry and false 
-     * to indicate abort.
+     * The callback is called at most once while a transmission is
+     * pending, "interval" seconds after calling send(), with udata as
+     * the last parameter.  When the callback returns true, the
+     * transport will stop waiting for a reply to the message and flag
+     * a timeout.  When the callback returns false, the transport will
+     * cancel the transmission.
      */
     virtual void setCallback (TransportCallback cb, void * udata, int interval) = 0;
 
