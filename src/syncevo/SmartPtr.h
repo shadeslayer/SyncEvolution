@@ -78,42 +78,51 @@ class Unref {
 #endif
 };
 
+#ifdef HAVE_GLIB
+class UnrefGLibEvent {
+ public:
+    static void unref(guint event) { g_source_remove(event); }
+};
+#endif // HAVE_GLIB
+
 /**
  * a smart pointer implementation for objects for which
- * a unref() function exists;
- * trying to store a NULL pointer raises an exception,
+ * a unref() function exists inside R;
+ * trying to store a NULL object raises an exception,
  * unreferencing valid objects is done automatically
  */
-template<class T, class base = T, class R = Unref > class eptr {
+template<class T, class base = T, class R = Unref>
+class SmartPtr
+{
  protected:
-    T *m_pointer;
+    T m_pointer;
     
   public:
     /**
      * create a smart pointer that owns the given object;
      * passing a NULL pointer and a name for the object raises an error
      */
-    eptr(T *pointer = NULL, const char *objectName = NULL) :
+    SmartPtr(T pointer = 0, const char *objectName = NULL) :
         m_pointer( pointer )
     {
         if (!pointer && objectName ) {
             throw std::runtime_error(std::string("Error allocating ") + objectName);
         }
     };
-    ~eptr()
+    ~SmartPtr()
     {
         set( NULL );
     }
 
     /** assignment and copy construction transfer ownership to the copy */
-    eptr(eptr &other) {
+    SmartPtr(SmartPtr &other) {
         m_pointer = other.m_pointer;
-        other.m_pointer = NULL;
+        other.m_pointer = 0;
     }
-    eptr & operator = (eptr &other) {
+    SmartPtr & operator = (SmartPtr &other) {
         if (this != &other) {
             set (other.m_pointer);
-            other.m_pointer = NULL;
+            other.m_pointer = 0;
         }
         return *this;
     }
@@ -123,10 +132,10 @@ template<class T, class base = T, class R = Unref > class eptr {
      * referenced there before;
      * passing a NULL pointer and a name for the object raises an error
      */
-    void set( T *pointer, const char *objectName = NULL )
+    void set( T pointer, const char *objectName = NULL )
     {
         if (m_pointer) {
-            R::unref((base *)m_pointer);
+            R::unref((base)m_pointer);
         }
         if (!pointer && objectName) {
             throw std::runtime_error(std::string("Error allocating ") + objectName);
@@ -139,15 +148,31 @@ template<class T, class base = T, class R = Unref > class eptr {
      * pointer tracked by smart pointer is set to NULL and the original
      * pointer is returned
      */
-    T *release() { T *res = m_pointer; m_pointer = NULL; return res; }
+    T release() { T res = m_pointer; m_pointer = 0; return res; }
 
-    eptr<T, base, R> &operator = ( T *pointer ) { set( pointer ); return *this; }
-    T *get() { return m_pointer; }
-    T *operator-> () { return m_pointer; }
-    T &operator* ()  { return *m_pointer; }
-    operator T * () { return m_pointer; }
+    SmartPtr<T, base, R> &operator = ( T pointer ) { set( pointer ); return *this; }
+    T get() { return m_pointer; }
+    T operator-> () { return m_pointer; }
+    // T &operator* ()  { return *m_pointer; }
+    operator T  () { return m_pointer; }
     operator void * () { return (void *)m_pointer; }
-    operator bool () { return m_pointer != NULL; }
+    operator bool () { return m_pointer != 0; }
+};
+
+template<class T, class base = T, class R = Unref > class eptr :
+    public SmartPtr<T *, base *, R>
+{
+    typedef SmartPtr<T *, base *, R> base_t;
+ public:
+    eptr(T *pointer = NULL, const char *objectName = NULL) :
+        base_t(pointer, objectName)
+    {
+    }
+
+    eptr<T, base, R> &operator = ( T *pointer ) {
+        base_t::set(pointer);
+        return *this;
+    }
 };
 
 template <class T> class CxxUnref {
@@ -179,6 +204,8 @@ template <class T> class arrayptr : public eptr<T, T, ArrayUnref<T> > {
     };
 };
 
+/** eptr for glib event handle */
+typedef SmartPtr<guint, guint, UnrefGLibEvent> GLibEvent;
 
 SE_END_CXX
 #endif
