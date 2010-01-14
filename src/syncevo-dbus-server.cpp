@@ -1226,14 +1226,27 @@ class DBusTransportAgent : public TransportAgent
 
     std::string m_url;
     std::string m_type;
+
+    /*
+     * When the callback is invoked, we always abort the current
+     * transmission.  If it is invoked while we are not in the wait()
+     * of this transport, then we remember that in m_eventTriggered
+     * and return from wait() right away. The main loop is only
+     * quit when the transport is waiting in it. This is a precaution
+     * to not interfere with other parts of the code.
+     */
     TransportCallback m_callback;
     void *m_callbackData;
     int m_callbackInterval;
+    GLibEvent m_eventSource;
+    bool m_eventTriggered;
+    bool m_waiting;
 
     SharedBuffer m_incomingMsg;
     std::string m_incomingMsgType;
 
     void doWait(boost::shared_ptr<Connection> &connection);
+    static gboolean timeoutCallback(gpointer transport);
 
  public:
     DBusTransportAgent(GMainLoop *loop,
@@ -1252,6 +1265,7 @@ class DBusTransportAgent : public TransportAgent
         m_callback = cb;
         m_callbackData = udata;
         m_callbackInterval = interval;
+        m_eventSource = 0;
     }
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
 };
@@ -2959,7 +2973,10 @@ DBusTransportAgent::DBusTransportAgent(GMainLoop *loop,
                                        boost::weak_ptr<Connection> connection) :
     m_loop(loop),
     m_session(session),
-    m_connection(connection)
+    m_connection(connection),
+    m_callback(NULL),
+    m_eventTriggered(false),
+    m_waiting(false)
 {
 }
 
@@ -2990,6 +3007,12 @@ void DBusTransportAgent::send(const char *data, size_t len)
     connection->m_state = Connection::WAITING;
     connection->m_incomingMsg = SharedBuffer();
 
+    // setup regular callback
+    if (m_callback) {
+        m_eventSource = g_timeout_add_seconds(m_callbackInterval, timeoutCallback, static_cast<gpointer>(this));
+    }
+    m_eventTriggered = false;
+
     // TODO: turn D-Bus exceptions into transport exceptions
     StringMap meta;
     meta["URL"] = m_url;
@@ -3015,6 +3038,18 @@ void DBusTransportAgent::shutdown()
     }
 }
 
+gboolean DBusTransportAgent::timeoutCallback(gpointer transport)
+{
+    DBusTransportAgent *me = static_cast<DBusTransportAgent *>(transport);
+    me->m_callback(me->m_callbackData);
+    // TODO: check or remove return code from callback?!
+    me->m_eventTriggered = true;
+    if (me->m_waiting) {
+        g_main_loop_quit(me->m_loop);
+    }
+    return false;
+}
+
 void DBusTransportAgent::doWait(boost::shared_ptr<Connection> &connection)
 {
     // let Connection wake us up when it has a reply or
@@ -3025,10 +3060,10 @@ void DBusTransportAgent::doWait(boost::shared_ptr<Connection> &connection)
     // be destructed when requested by the D-Bus peer
     connection.reset();
 
-    // TODO: setup regular callback
-
     // now wait
+    m_waiting = true;
     g_main_loop_run(m_loop);
+    m_waiting = false;
 }
 
 DBusTransportAgent::Status DBusTransportAgent::wait(bool noReply)
@@ -3047,6 +3082,9 @@ DBusTransportAgent::Status DBusTransportAgent::wait(bool noReply)
         return GOT_REPLY;
         break;
     case Connection::FINAL:
+        if (m_eventTriggered) {
+            return TIME_OUT;
+        }
         doWait(connection);
 
         // if the connection is still available, then keep waiting
@@ -3066,6 +3104,9 @@ DBusTransportAgent::Status DBusTransportAgent::wait(bool noReply)
             return INACTIVE;
         }
 
+        if (m_eventTriggered) {
+            return TIME_OUT;
+        }
         doWait(connection);
 
         // tell caller to check again
