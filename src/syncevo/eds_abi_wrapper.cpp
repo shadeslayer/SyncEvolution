@@ -259,6 +259,7 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.icalproperty_new_description, "icalproperty_new_description",
                 &EDSAbiWrapperSingleton.icalproperty_new_summary, "icalproperty_new_summary",
                 &EDSAbiWrapperSingleton.icalproperty_set_value_from_string, "icalproperty_set_value_from_string",
+                &EDSAbiWrapperSingleton.icalproperty_remove_parameter_by_kind, "icalproperty_remove_parameter_by_kind",
                 &EDSAbiWrapperSingleton.icaltime_as_ical_string, "icaltime_as_ical_string",
                 &EDSAbiWrapperSingleton.icaltimezone_free, "icaltimezone_free",
                 &EDSAbiWrapperSingleton.icaltimezone_get_builtin_timezone, "icaltimezone_get_builtin_timezone",

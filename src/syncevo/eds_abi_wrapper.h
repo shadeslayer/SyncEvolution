@@ -161,6 +161,8 @@ struct EDSAbiWrapper {
     icalproperty* (*icalproperty_new_description) (const char* v);
     icalproperty* (*icalproperty_new_summary) (const char* v);
     void (*icalproperty_set_value_from_string) (icalproperty* prop,const char* value, const char* kind);
+    void (*icalproperty_remove_parameter_by_kind)(icalproperty* prop,
+                                                  icalparameter_kind kind);
     const char* (*icaltime_as_ical_string) (const struct icaltimetype tt);
 
     void (*icaltimezone_free) (icaltimezone *zone, int free_struct);
@@ -266,6 +268,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalproperty_new_description EDSAbiWrapperSingleton.icalproperty_new_description
 #   define icalproperty_new_summary EDSAbiWrapperSingleton.icalproperty_new_summary
 #   define icalproperty_set_value_from_string EDSAbiWrapperSingleton.icalproperty_set_value_from_string
+#   define icalproperty_remove_parameter_by_kind EDSAbiWrapperSingleton.icalproperty_remove_parameter_by_kind
 #   define icaltime_as_ical_string EDSAbiWrapperSingleton.icaltime_as_ical_string
 #   define icaltimezone_free EDSAbiWrapperSingleton.icaltimezone_free
 #   define icaltimezone_get_builtin_timezone EDSAbiWrapperSingleton.icaltimezone_get_builtin_timezone
