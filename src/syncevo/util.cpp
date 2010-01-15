@@ -22,6 +22,7 @@
 #include <syncevo/util.h>
 #include <syncevo/SyncContext.h>
 #include <syncevo/TransportAgent.h>
+#include <syncevo/SynthesisEngine.h>
 #include <syncevo/Logging.h>
 
 #include <synthesis/syerror.h>
@@ -314,7 +315,9 @@ std::string StringPrintfV(const char *format, va_list ap)
 
 SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger)
 {
-    SyncMLStatus new_status = STATUS_FATAL;
+    // any problem here is a fatal local problem, unless set otherwise
+    // by the specific exception
+    SyncMLStatus new_status = SyncMLStatus(STATUS_FATAL + sysync::LOCAL_STATUS_CODE);
 
     try {
         throw;
@@ -323,6 +326,10 @@ SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger)
                      ex.m_file.c_str(), ex.m_line);
         SE_LOG_ERROR(logger, NULL, "%s", ex.what());
         new_status = SyncMLStatus(sysync::LOCERR_TRANSPFAIL);
+    } catch (const BadSynthesisResult &ex) {
+        new_status = SyncMLStatus(ex.result());
+        SE_LOG_DEBUG(logger, NULL, "error code from Synthesis engine %s",
+                     Status2String(new_status).c_str());
     } catch (const Exception &ex) {
         SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
