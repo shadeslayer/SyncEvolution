@@ -434,10 +434,10 @@ namespace {
 void SyncReport::prettyPrint(std::ostream &out, int flags) const
 {
     // table looks like this:
-    // +-------------------|-------ON CLIENT---------------|-------ON SERVER-------|-CON-+
-    // |                   |       rejected / total        |    rejected / total   | FLI |
-    // |            Source |  NEW  |  MOD  |  DEL  | TOTAL |  NEW  |  MOD  |  DEL  | CTS |
-    // +-------------------+-------+-------+-------+-------+-------+-------+-------+-----+
+    // +-------------------+-------------------------------+-------------------------------|-CON-+
+    // |                   |             LOCAL             |           REMOTE              | FLI |
+    // |            Source | NEW | MOD | DEL | ERR | TOTAL | NEW | MOD | DEL | ERR | TOTAL | CTS |
+    // +-------------------+-----+-----+-----+-----+-------+-----+-----+-----+-----+-------+-----+
     //
     // Most of the columns can be turned on or off dynamically.
     // Their width is calculated once (including right separators and spaces):
@@ -459,13 +459,18 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
         name_width += 2;
     }
 
-    int count_width = 8;
+    int count_width = 6;
+    int num_counts = 3;
+    if (flags & WITH_TOTAL) {
+        num_counts++;
+    }
+    if (!(flags & WITHOUT_REJECTS)) {
+        num_counts++;
+    }
     int client_width = (flags & WITHOUT_CLIENT) ? 0 :
-        (flags & WITH_TOTAL) ? 4 * count_width :
-        3 * count_width;
+        num_counts * count_width;
     int server_width = (flags & WITHOUT_SERVER) ? 0 :
-        (flags & WITH_TOTAL) ? 4 * count_width :
-        3 * count_width;
+        num_counts * count_width;
     int conflict_width = (flags & WITHOUT_CONFLICTS) ? 0 : 6;
     int text_width = name_width + client_width + server_width + conflict_width;
 
@@ -477,10 +482,10 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
 
     out << "+" << fill('-', name_width);
     if (!(flags & WITHOUT_CLIENT)) {
-        out << '|' << center('-', "ON CLIENT", client_width);
+        out << '|' << center('-', "", client_width);
     }
     if (!(flags & WITHOUT_SERVER)) {
-        out << '|' << center('-', "ON SERVER", server_width);
+        out << '|' << center('-', "", server_width);
     }
     if (!(flags & WITHOUT_CONFLICTS)) {
         out << '|' << center('-', "CON", conflict_width);
@@ -489,12 +494,11 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
 
     if (!(flags & WITHOUT_REJECTS) || !(flags & WITHOUT_CONFLICTS)) {
         out << "|" << fill(' ', name_width);
-        string header = (flags & WITHOUT_REJECTS) ? "total" : "rejected / total";
         if (!(flags & WITHOUT_CLIENT)) {
-            out << '|' << center(' ', header, client_width);
+            out << '|' << center(' ', "LOCAL", client_width);
         }
         if (!(flags & WITHOUT_SERVER)) {
-            out << '|' << center(' ', header, server_width);
+            out << '|' << center(' ', "REMOTE", server_width);
         }
         if (!(flags & WITHOUT_CONFLICTS)) {
             out << '|' << center(' ', "FLI", conflict_width);
@@ -507,6 +511,9 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
         out << '|' << center(' ', "NEW", count_width);
         out << '|' << center(' ', "MOD", count_width);
         out << '|' << center(' ', "DEL", count_width);
+        if (!(flags & WITHOUT_REJECTS)) {
+            out << '|' << center(' ', "ERR", count_width);
+        }
         if (flags & WITH_TOTAL) {
             out << '|' << center(' ', "TOTAL", count_width);
         }
@@ -515,6 +522,9 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
         out << '|' << center(' ', "NEW", count_width);
         out << '|' << center(' ', "MOD", count_width);
         out << '|' << center(' ', "DEL", count_width);
+        if (!(flags & WITHOUT_REJECTS)) {
+            out << '|' << center(' ', "ERR", count_width);
+        }
         if (flags & WITH_TOTAL) {
             out << '|' << center(' ', "TOTAL", count_width);
         }
@@ -530,6 +540,9 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
         sepstream << '+' << fill('-', count_width);
         sepstream << '+' << fill('-', count_width);
         sepstream << '+' << fill('-', count_width);
+        if (!(flags & WITHOUT_REJECTS)) {
+            sepstream << '+' << fill('-', count_width);
+        }
         if (flags & WITH_TOTAL) {
             sepstream << '+' << fill('-', count_width);
         }
@@ -538,6 +551,9 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
         sepstream << '+' << fill('-', count_width);
         sepstream << '+' << fill('-', count_width);
         sepstream << '+' << fill('-', count_width);
+        if (!(flags & WITHOUT_REJECTS)) {
+            sepstream << '+' << fill('-', count_width);
+        }
         if (flags & WITH_TOTAL) {
             sepstream << '+' << fill('-', count_width);
         }
@@ -562,14 +578,24 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
              location <= ((flags & WITHOUT_SERVER) ? SyncSourceReport::ITEM_LOCAL : SyncSourceReport::ITEM_REMOTE);
              location = SyncSourceReport::ItemLocation(int(location) + 1)) {
             for (SyncSourceReport::ItemState state = SyncSourceReport::ITEM_ADDED;
-                 state <= ((flags & WITH_TOTAL) ? SyncSourceReport::ITEM_ANY : SyncSourceReport::ITEM_REMOVED);
+                 state <= SyncSourceReport::ITEM_REMOVED;
                  state = SyncSourceReport::ItemState(int(state) + 1)) {
                 stringstream count;
-                if (!(flags & WITHOUT_REJECTS)) {
-                    count << source.getItemStat(location, state, SyncSourceReport::ITEM_REJECT)
-                          << '/';
-                }
                 count << source.getItemStat(location, state, SyncSourceReport::ITEM_TOTAL);
+                out << '|' << center(' ', count.str(), count_width);
+            }
+            if (!(flags & WITHOUT_REJECTS)) {
+                stringstream count;
+                count << source.getItemStat(location,
+                                            SyncSourceReport::ITEM_ANY,
+                                            SyncSourceReport::ITEM_REJECT);
+                out << '|' << center(' ', count.str(), count_width);
+            }
+            if (flags & WITH_TOTAL) {
+                stringstream count;
+                count << source.getItemStat(location,
+                                            SyncSourceReport::ITEM_ANY,
+                                            SyncSourceReport::ITEM_TOTAL);
                 out << '|' << center(' ', count.str(), count_width);
             }
         }
