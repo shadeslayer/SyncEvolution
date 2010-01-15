@@ -33,13 +33,18 @@ TrackingSyncSource::TrackingSyncSource(const SyncSourceParams &params,
     m_trackingNode(new PrefixConfigNode("item-",
                                         boost::shared_ptr<ConfigNode>(new SafeConfigNode(params.m_nodes.m_trackingNode))))
 {
-    m_operations.m_checkStatus = boost::bind(&TrackingSyncSource::checkStatus, this);
+    m_operations.m_checkStatus = boost::bind(&TrackingSyncSource::checkStatus, this, _1);
     SyncSourceRevisions::init(this, this, granularitySeconds, m_operations);
 }
 
-void TrackingSyncSource::checkStatus()
+void TrackingSyncSource::checkStatus(SyncSourceReport &changes)
 {
     detectChanges(*m_trackingNode);
+    // copy our item counts into the report
+    changes.setItemStat(ITEM_LOCAL, ITEM_ADDED, ITEM_TOTAL, getNewItems().size());
+    changes.setItemStat(ITEM_LOCAL, ITEM_UPDATED, ITEM_TOTAL, getUpdatedItems().size());
+    changes.setItemStat(ITEM_LOCAL, ITEM_REMOVED, ITEM_TOTAL, getDeletedItems().size());
+    changes.setItemStat(ITEM_LOCAL, ITEM_ANY, ITEM_TOTAL, getAllItems().size());
 }
 
 void TrackingSyncSource::beginSync(const std::string &lastToken, const std::string &resumeToken)

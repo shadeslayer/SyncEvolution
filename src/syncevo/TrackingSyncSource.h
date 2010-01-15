@@ -183,7 +183,7 @@ class TrackingSyncSource : public TestingSyncSource, virtual public SyncSourceRe
     using SyncSource::getName;
 
   private:
-    void checkStatus();
+    void checkStatus(SyncSourceReport &changes);
 
     /* implementations of SyncSource callbacks */
     virtual void beginSync(const std::string &lastToken, const std::string &resumeToken);
