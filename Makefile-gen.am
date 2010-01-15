@@ -99,7 +99,7 @@ PKGS = $(addprefix syncevolution-evolution-, 2.6 2.8 2.12)
 #
 # --replaces is necessary for migrating from syncevolution-evolution-<evover>
 # to syncevolution-evolution (as per http://wiki.debian.org/Renaming_a_Package)
-deb rpm : dist/$(distdir) dist/debian/control doc-pak description-pak
+deb rpm : dist/$(distdir) dist/debian/control description-pak
 	tmpdir=`mktemp -d $$HOME/syncevolution.XXXXXXXXXX` && \
 	trap "rm -rf $$tmpdir" EXIT && \
 	fakeroot checkinstall </dev/null \
@@ -129,7 +129,7 @@ dist/$(distdir): all
 	rm -rf $(call DEV_FILE_PATTERN, $@)
 clean-local: clean_dist
 clean_dist:
-	rm -rf dist doc-pak description-pak
+	rm -rf dist description-pak
 
 # install doc files via normal autotools
 dist_doc_DATA = README NEWS COPYING $(TEST_README_FILES)
