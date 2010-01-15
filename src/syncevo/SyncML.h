@@ -120,6 +120,9 @@ enum SyncMLStatus {
     /** ran into an unexpected slow sync, refused to execute it */
     STATUS_UNEXPECTED_SLOW_SYNC = 22000,
 
+    /** no error at the SyncML level, but some items did not transfer correctly */
+    STATUS_PARTIAL_FAILURE = 22001,
+
     STATUS_MAX = 0x7FFFFFF
 };
 

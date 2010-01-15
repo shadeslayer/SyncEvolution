@@ -158,6 +158,10 @@ std::string Status2String(SyncMLStatus status)
         error = "unexpected slow sync";
         break;
 
+    case STATUS_PARTIAL_FAILURE:
+        error = "some changes could not be transferred";
+        break;
+
     case sysync::LOCERR_BADPROTO:
         error = "bad or unknown protocol";
         break;

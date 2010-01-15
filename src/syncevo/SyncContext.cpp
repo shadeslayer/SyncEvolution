@@ -2121,8 +2121,20 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
     try {
         // Print final report before cleaning up.
         // Status was okay only if all sources succeeded.
+        // When a source or the overall sync was successful,
+        // but some items failed, we report a "partial failure"
+        // status.
         sourceList.updateSyncReport(*report);
         BOOST_FOREACH(SyncSource *source, sourceList) {
+            if (source->getStatus() == STATUS_OK &&
+                (source->getItemStat(SyncSource::ITEM_LOCAL,
+                                     SyncSource::ITEM_ANY,
+                                     SyncSource::ITEM_REJECT) ||
+                 source->getItemStat(SyncSource::ITEM_REMOTE,
+                                     SyncSource::ITEM_ANY,
+                                     SyncSource::ITEM_REJECT))) {
+                source->recordStatus(STATUS_PARTIAL_FAILURE);
+            }
             if (source->getStatus() != STATUS_OK &&
                 status == STATUS_OK) {
                 status = source->getStatus();
