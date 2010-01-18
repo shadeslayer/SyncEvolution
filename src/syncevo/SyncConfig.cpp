@@ -170,6 +170,7 @@ SyncConfig::ServerList SyncConfig::getServerTemplates()
     result.addDefaultTemplate("ZYB", "http://www.zyb.com");
     result.addDefaultTemplate("Mobical", "http://www.mobical.net");
     result.addDefaultTemplate("Oracle", "http://www.oracle.com/technology/products/beehive/index.html");
+    result.addDefaultTemplate("Goosync", "http://www.goosync.com/");
 
     result.sort();
     return result;
@@ -372,6 +373,17 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
         source->setURI("./calendar/tasks");
         source = config->getSyncSourceConfig("memo");
         source->setURI("./notes");
+    } else if (boost::iequals(server, "goosync")) {
+        config->setSyncURL("http://sync2.goosync.com/");
+        config->setWebURL("http://www.goosync.com/");
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("contacts");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("calendar");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("tasks");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("");
     } else {
         config.reset();
     }

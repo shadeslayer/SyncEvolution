@@ -1250,6 +1250,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                                   "   Funambol = http://my.funambol.com\n"
                                   "   Google = http://m.google.com/sync\n"
+                                  "   Goosync = http://www.goosync.com/\n"
                                   "   Memotoo = http://www.memotoo.com\n"
                                   "   Mobical = http://www.mobical.net\n"
                                   "   Oracle = http://www.oracle.com/technology/products/beehive/index.html\n"
