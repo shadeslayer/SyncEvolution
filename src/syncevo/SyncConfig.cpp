@@ -163,7 +163,7 @@ SyncConfig::ServerList SyncConfig::getServerTemplates()
 
     // builtin templates if not present
     result.addDefaultTemplate("Funambol", "http://my.funambol.com");
-    result.addDefaultTemplate("ScheduleWorld", "http://sync.scheduleworld.com");
+    result.addDefaultTemplate("ScheduleWorld", "http://www.scheduleworld.com");
     result.addDefaultTemplate("Synthesis", "http://www.synthesis.ch");
     result.addDefaultTemplate("Memotoo", "http://www.memotoo.com");
     result.addDefaultTemplate("Google", "http://m.google.com/sync");
@@ -262,7 +262,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
     if (boost::iequals(server, "scheduleworld") ||
         boost::iequals(server, "default")) {
         config->setSyncURL("http://sync.scheduleworld.com/funambol/ds");
-        config->setWebURL("http://sync.scheduleworld.com");
+        config->setWebURL("http://www.scheduleworld.com");
         config->setConsumerReady(true);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
