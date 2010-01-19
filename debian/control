@@ -15,6 +15,7 @@ Description: SyncEvolution - a SyncML client
 
 Package: syncevolution-dev
 Architecture: any
+Section: libdevel
 Depends: ${shlibs:Depends}
 Description: SyncEvolution development files
 
