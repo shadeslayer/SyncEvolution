@@ -80,6 +80,20 @@ public:
 };
 
 /**
+ * accessor which reads from an arbitrary random-access sequence,
+ * using a zero cost function (to be used for original LCS)
+ */
+template <class T> class accessor_sequence {
+public:
+    typedef typename T::value_type F;
+    typedef unsigned char C;
+
+    static C cost(const T &a, ssize_t start, size_t end) { return 0; }
+    static const F &entry_at(const T &a, size_t index) { return a[index]; }
+};
+
+
+/**
  * Calculates the longest common subsequence (LCS) of two
  * sequences stored in vectors. The result specifies the common
  * elements of that type and their positions in the two input
