@@ -34,6 +34,7 @@
 #include <string>
 #include <utility>
 #include <exception>
+#include <list>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -247,7 +248,6 @@ std::vector<std::string> unescapeJoinedString (const std::string &src, char sepa
 /** throw a class which accepts file, line, what parameters */
 #define SE_THROW_EXCEPTION(_class,  _what) \
     throw _class(__FILE__, __LINE__, _what)
-
 
 SE_END_CXX
 #endif // INCL_SYNCEVOLUTION_UTIL

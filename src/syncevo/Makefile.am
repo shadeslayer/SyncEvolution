@@ -47,6 +47,9 @@ SYNCEVOLUTION_SOURCES  = \
 	\
 	util.cpp \
 	util.h \
+	\
+	lcs.h \
+	lcs.cpp \
         \
 	Cmdline.cpp \
         Cmdline.h \

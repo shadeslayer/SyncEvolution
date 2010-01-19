@@ -186,6 +186,8 @@ nodist_client_test_SOURCES = ../test/test.cpp
 # the original base file ($(srcdir)/test/testcases/ical20.ics) by
 # applying a patch ($(srcdir)/test/testcases/ical20.ics.funambol.tem.patch).
 CLIENT_LIB_TEST_FILES = \
+	testcases/lcs/file1.txt \
+	testcases/lcs/file2.txt \
 	testcases/vcard21.vcf \
 	testcases/vcard30.vcf \
 	testcases/ical20.ics \
@@ -246,7 +248,7 @@ testcase2patch: $(TEST_FILES_GENERATED)
 
 # copy base test files
 $(filter-out %.tem, $(filter testcases/%, $(subst $(srcdir)/../test/,,$(CLIENT_LIB_TEST_FILES)))) : % : $(srcdir)/../test/%
-	mkdir -p testcases
+	mkdir -p ${@D}
 	cp $< $@
 
 # The binary does not really depend on the test cases, only running it does.
