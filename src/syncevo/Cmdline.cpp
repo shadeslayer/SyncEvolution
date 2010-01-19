@@ -2363,7 +2363,7 @@ private:
 #endif
             "spds/syncml/config.txt:# SSLVerifyServer = 1\n"
             "spds/syncml/config.txt:# SSLVerifyHost = 1\n"
-            "spds/syncml/config.txt:WebURL = http://sync.scheduleworld.com\n"
+            "spds/syncml/config.txt:WebURL = http://www.scheduleworld.com\n"
             "spds/syncml/config.txt:# IconURI = \n"
             "spds/syncml/config.txt:ConsumerReady = 1\n"
             "spds/sources/addressbook/config.txt:sync = two-way\n"
