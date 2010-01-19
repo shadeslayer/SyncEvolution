@@ -582,8 +582,32 @@ string EvolutionCalendarSource::retrieveItemAsString(const ItemID &id)
     eptr<char> icalstr;
 
     icalstr = e_cal_get_component_as_string(m_calendar, comp);
+
     if (!icalstr) {
-        throwError(string("could not encode item as iCal: ") + id.getLUID());
+        // One reason why e_cal_get_component_as_string() can fail is
+        // that it uses a TZID which has no corresponding VTIMEZONE
+        // definition. Evolution GUI ignores the TZID and interprets
+        // the times as local time. Do the same when exporting the
+        // event by removing the bogus TZID.
+        icalproperty *prop = icalcomponent_get_first_property (comp,
+                                                               ICAL_ANY_PROPERTY);
+
+        while (prop) {
+            icalparameter *param = icalproperty_get_first_parameter(prop,
+                                                                    ICAL_TZID_PARAMETER);
+            while (param) {
+                icalproperty_remove_parameter_by_kind(prop, ICAL_TZID_PARAMETER);
+                param = icalproperty_get_next_parameter (prop, ICAL_TZID_PARAMETER);
+            }
+            prop = icalcomponent_get_next_property (comp,
+                                                    ICAL_ANY_PROPERTY);
+        }
+
+        // now try again
+        icalstr = icalcomponent_as_ical_string(comp);
+        if (!icalstr) {
+            throwError(string("could not encode item as iCalendar: ") + id.getLUID());
+        }
     }
 
     /*

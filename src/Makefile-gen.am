@@ -88,7 +88,9 @@ syncevolution_SOURCES = \
 	CmdlineSyncClient.h \
 	CmdlineSyncClient.cpp \
 	$(CORE_SOURCES)
+if ENABLE_UNIT_TESTS
 nodist_syncevolution_SOURCES = ../test/test.cpp
+endif
 
 # SYNCEVOLUTION_LDADD will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
 # if linking statically against them, empty otherwise;
@@ -143,8 +145,10 @@ if COND_DBUS
 syncevo_dbus_server_SOURCES = \
 	syncevo-dbus-server.cpp \
 	$(CORE_SOURCES)
-nodist_syncevo_dbus_server_SOURCES = \
+if ENABLE_UNIT_TESTS
+nodist_syncevo_dbus_server_SOURCES =
 	../test/test.cpp
+endif
 
 syncevo_dbus_server_LDADD = gdbus/libgdbus.la $(CORE_LDADD) $(KEYRING_LIBS)
 syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -I$(srcdir)/gdbus $(AM_CPPFLAGS)

@@ -1,0 +1,192 @@
+== Summary ==
+
+This is a backend to use a web application, probably a webmail or PIM
+application, as data store. The communication is done using XMLRPC.
+
+== Installation ==
+
+This backend requires the Xmlrpc-c libraries from
+http://xmlrpc-c.sourceforge.net
+
+Precompiled packages exist for many Linux distributions, on Ubuntu or
+Debian, they development package is installed by:
+
+  apt-get install libxmlrpc-c3-dev
+
+To compile this backend as part of SyncEvolution, configure with
+--enable-xmlrpc.
+
+== Configuration ==
+
+The type parameter is similar to that on the file backend, e.g.
+
+  type = xmlrpc:text/calendar:2.0
+
+MIME type and version must be set according to the implementation on the
+XMLRPC interface side.
+
+The evolutionsource parameter contains the information of the XMLRPC service,
+e.g.
+
+  evolutionsource = http://hostname/xmlrpc|database|username|password
+
+The parameter contains several fields, delimited by a pipe character.
+
+The parameters after the URL are used as the first parameters in every XMLRPC
+request. Their number is not fixed, it depends on the implementation of the
+XMLRPC interface.
+
+== XMLRPC interface ==
+
+The parameters after the URL in the evolutionsource parameter are passed as
+the first parameters of the XMLRPC request. Their number is not limited by
+the backend, the number may even be 0, if the respective information is given
+as part of the URL (or not necessary). This set of parameters is represented
+in the specification below with "...".
+
+All parameters are sent and expected as string values.
+
+Four methods have to implemented in the XMLRPC interface:
+
+* listAllItems(...)
+
+Returns a list of id with some kind of version information, e.g. timestamp of
+the last modification, as XMLRPC struct. The id is a string value.
+
+* readItem(..., id)
+
+Reads a single item from the data store. The return value contains a string
+containing the element as vcard or icalender object.
+
+* insertItem(..., id, object)
+
+Creates a new or updates an existing object in the data store. With an empty
+id parameter, a new object will be created.
+
+The return value contains a struct, equal to that of listAllItems, but with
+only one entry, namely the updated or created one.
+
+* removeItem(..., id)
+
+Removes an object from the data store. The return value is ignored by the
+backend.
+
+== Sample XMLRPC snippets ==
+
+The following snippets of the method requests and response shall explain the
+used data types. If incorrect datatypes (e.g. int value instead of string)
+are used, the communication will fail.
+
+* listAllItems
+
+XML-RPC CALL:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+  <methodName>listAllItems</methodName>
+  <params>
+    <param><value><string>addr</string></value></param>
+    <param><value><string>testmb04</string></value></param>
+    <param><value><string>*secret*</string></value></param>
+  </params>
+</methodCall>
+
+XML-RPC RESPONSE:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<methodResponse>
+  <params>
+    <param><value><struct>
+      <member><name>4854</name><value><string>1259607642</string></value></member>
+      <member><name>4855</name><value><string>1259605716</string></value></member>
+      <member><name>4856</name><value><string>1259842773</string></value></member>
+      <member><name>4858</name><value><string>1259610815</string></value></member>
+      <member><name>4857</name><value><string>1259605717</string></value></member>
+    </struct></value></param>
+  </params>
+</methodResponse>
+
+* readItem
+
+XML-RPC CALL:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+  <methodName>readItem</methodName>
+  <params>
+    <param><value><string>addr</string></value></param>
+    <param><value><string>testmb04</string></value></param>
+    <param><value><string>*secret*</string></value></param>
+    <param><value><string>4855</string></value></param>
+  </params>
+</methodCall>
+
+XML-RPC RESPONSE:
+
+<?xml version="1.0"? encoding="UTF-8"?>
+<methodResponse>
+  <params>
+    <param><value><string>BEGIN:VCARD
+VERSION:3.0
+N:Knipp;Franz;;;
+FN:Franz Knipp
+EMAIL:knipp@m-otion.com
+END:VCARD
+</string></value></param>
+  </params>
+</methodResponse>
+
+* insertItem
+
+XML-RPC CALL:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+  <methodName>insertItem</methodName>
+  <params>
+    <param><value><string>addr</string></value></param>
+    <param><value><string>testmb04</string></value></param>
+    <param><value><string>*secret*</string></value></param>
+    <param><value><string></string></value></param>
+    <param><value><string>BEGIN:VCARD
+VERSION:3.0
+FN:Patrick Ohly
+N:Ohly;Patrick;;;
+EMAIL:patrick.ohly@intel.com
+END:VCARD
+</string></value></param>
+  </params>
+</methodCall>
+
+XML-RPC RESPONSE:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<methodResponse>
+  <params>
+    <param><value><struct>
+      <member><name>4863</name><value><string>1260216497</string></value></member>
+    </struct></value></param>
+  </params>
+</methodResponse>
+
+* removeItem
+
+XML-RPC CALL:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+  <methodName>removeItem</methodName>
+  <params>
+    <param><value><string>addr</string></value></param>
+    <param><value><string>testmb04</string></value></param>
+    <param><value><string>*secret*</string></value></param>
+    <param><value><string>4863</string></value></param>
+  </params>
+</methodCall>
+
+XML-RPC RESPONSE:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<methodResponse>
+  <params><param><value></value></param></params>
+</methodResponse>

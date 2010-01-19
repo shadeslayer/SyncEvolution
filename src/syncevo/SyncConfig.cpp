@@ -383,12 +383,14 @@ SyncConfig::ServerList SyncConfig::getServerTemplates()
 
     // builtin templates if not present
     result.addDefaultTemplate("Funambol", "http://my.funambol.com");
-    result.addDefaultTemplate("ScheduleWorld", "http://sync.scheduleworld.com");
+    result.addDefaultTemplate("ScheduleWorld", "http://www.scheduleworld.com");
     result.addDefaultTemplate("Synthesis", "http://www.synthesis.ch");
     result.addDefaultTemplate("Memotoo", "http://www.memotoo.com");
     result.addDefaultTemplate("Google", "http://m.google.com/sync");
     result.addDefaultTemplate("ZYB", "http://www.zyb.com");
     result.addDefaultTemplate("Mobical", "http://www.mobical.net");
+    result.addDefaultTemplate("Oracle", "http://www.oracle.com/technology/products/beehive/index.html");
+    result.addDefaultTemplate("Goosync", "http://www.goosync.com/");
 
     result.sort();
     return result;
@@ -507,7 +509,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
     if (boost::iequals(server, "scheduleworld") ||
         boost::iequals(server, "default")) {
         config->setSyncURL("http://sync.scheduleworld.com/funambol/ds");
-        config->setWebURL("http://sync.scheduleworld.com");
+        config->setWebURL("http://www.scheduleworld.com");
         config->setConsumerReady(true);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
@@ -609,6 +611,28 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
         source->setURI("task");
         source = config->getSyncSourceConfig("memo");
         source->setURI("pnote");
+    } else if (boost::iequals(server, "oracle")) {
+        config->setSyncURL("https://your.company/mobilesync/server");
+        config->setWebURL("http://www.oracle.com/technology/products/beehive/");
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("./contacts");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("./calendar/events");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("./calendar/tasks");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("./notes");
+    } else if (boost::iequals(server, "goosync")) {
+        config->setSyncURL("http://sync2.goosync.com/");
+        config->setWebURL("http://www.goosync.com/");
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("contacts");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("calendar");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("tasks");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("");
     } else {
         config.reset();
     }
@@ -1211,12 +1235,38 @@ ConfigPasswordKey ProxyPasswordConfigProperty::getPasswordKey(const string &desc
 }
 
 void SyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*getNode(syncPropPassword), value, temporarily); }
-bool SyncConfig::getUseProxy() const { return syncPropUseProxy.getPropertyValue(*getNode(syncPropUseProxy)); }
+
+static const char *ProxyString = "http_proxy";
+
+/* Reads http_proxy from environment, if not available returns configured value */
+bool SyncConfig::getUseProxy() const {
+    char *proxy = getenv(ProxyString);
+    if (!proxy ) {
+        return syncPropUseProxy.getPropertyValue(*getNode(syncPropUseProxy));
+    } else if (strlen(proxy)>0) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
 void SyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*getNode(syncPropUseProxy), value, temporarily); }
-const char *SyncConfig::getProxyHost() const { return m_stringCache.getProperty(*getNode(syncPropProxyHost), syncPropProxyHost); }
+
+/* If http_proxy set in the environment returns it, otherwise configured value */
+const char *SyncConfig::getProxyHost() const {
+    char *proxy = getenv(ProxyString);
+    if (!proxy) {
+        return m_stringCache.getProperty(*getNode(syncPropUseProxy),syncPropProxyHost); 
+    } else {
+        return m_stringCache.storeString(syncPropProxyHost.getName(), proxy);
+    }
+}
+
 void SyncConfig::setProxyHost(const string &value, bool temporarily) { syncPropProxyHost.setProperty(*getNode(syncPropProxyHost), value, temporarily); }
+
 const char *SyncConfig::getProxyUsername() const { return m_stringCache.getProperty(*getNode(syncPropProxyUsername), syncPropProxyUsername); }
 void SyncConfig::setProxyUsername(const string &value, bool temporarily) { syncPropProxyUsername.setProperty(*getNode(syncPropProxyUsername), value, temporarily); }
+
 const char *SyncConfig::getProxyPassword() const {
     string password = syncPropProxyPassword.getCachedProperty(*getNode(syncPropProxyPassword), m_cachedProxyPassword);
     return m_stringCache.storeString(syncPropProxyPassword.getName(), password);

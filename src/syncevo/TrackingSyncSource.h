@@ -129,7 +129,10 @@ class TrackingSyncSource : public TestingSyncSource,
      *
      * @param luid     identifies the item to be modified, empty for creating
      * @param item     contains the new content of the item
-     * @param raw      item has internal format instead of engine format
+     * @param raw      item has internal format instead of engine format;
+     *                 testing and backup/restore might use such an internal format
+     *                 which may be different (more complete!) than the
+     *                 format when talking to the sync engine
      * @return the result of inserting the item
      */
     virtual InsertItemResult insertItem(const std::string &luid, const std::string &item, bool raw) = 0;
@@ -188,7 +191,7 @@ class TrackingSyncSource : public TestingSyncSource,
     using SyncSource::getName;
 
   private:
-    void checkStatus();
+    void checkStatus(SyncSourceReport &changes);
 
     /* implementations of SyncSource callbacks */
     virtual void beginSync(const std::string &lastToken, const std::string &resumeToken);

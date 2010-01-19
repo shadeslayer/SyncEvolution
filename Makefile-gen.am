@@ -129,7 +129,7 @@ dist/$(distdir): all
 	rm -rf $(call DEV_FILE_PATTERN, $@)
 clean-local: clean_dist
 clean_dist:
-	rm -rf dist doc-pak description-pak
+	rm -rf dist description-pak
 
 # install doc files via normal autotools
 dist_doc_DATA = README NEWS COPYING $(TEST_README_FILES)

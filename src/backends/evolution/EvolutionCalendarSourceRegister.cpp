@@ -92,14 +92,14 @@ static RegisterSyncSource registerMe("Evolution Calendar/Task List/Memos",
 #endif
                                      createSource,
                                      "Evolution Calendar = calendar = events = evolution-events\n"
-                                     "   iCalendar 2.0 (default) = text/calendar)\n"
+                                     "   iCalendar 2.0 (default) = text/calendar\n"
                                      "   vCalendar 1.0 = text/x-calendar\n"
                                      "Evolution Task List = Evolution Tasks = todo = tasks = evolution-tasks\n"
-                                     "   iCalendar 2.0 (default) = text/calendar)\n"
+                                     "   iCalendar 2.0 (default) = text/calendar\n"
                                      "   vCalendar 1.0 = text/x-calendar\n"
                                      "Evolution Memos = memo = memos = evolution-memos\n"
                                      "   plain text in UTF-8 (default) = text/plain\n"
-                                     "   iCalendar 2.0 = text/calendar)\n"
+                                     "   iCalendar 2.0 = text/calendar\n"
                                      "   vCalendar 1.0 = text/x-calendar\n"
                                      "   The later format is not tested because none of the\n"
                                      "   supported SyncML servers accepts it.\n",
