@@ -320,7 +320,7 @@ a list of valid values.
   sources, so if you want to change a source property of just one specific
   sync source, then use "--configure --source-property ... <server> <source>".
 
---template|-l <server name>|default|?
+--template|-l <server name>|default|?<device>
   Can be used to select from one of the built-in default configurations
   for known SyncML servers. Defaults to the <server> name, so --template
   only has to be specified when creating multiple different configurations
@@ -330,6 +330,14 @@ a list of valid values.
   Each template contains a pseudo-random device ID. Therefore setting the
   "deviceId" sync property is only necessary when manually recreating a
   configuration or when a more descriptive name is desired.
+  The available templates for different known SyncML servers are listed when
+  using a single question mark instead of template name. When using the
+  ?<desireddevice> format, a fuzzy search for a template that might be
+  suitable for talking to such a device is done. The matching works best
+  when using <device> = <Manufacturer>_<Model>. If you don't know the
+  Manufacturer, you can just keep it as empty. The output in this mode
+  gives the template name followed by a short description and a rating how well
+  the template matches the device (higher is better).
 
 --status|-t
   The changes made to local data since the last synchronization are

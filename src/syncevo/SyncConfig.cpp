@@ -28,12 +28,14 @@
 #include <syncevo/VolatileConfigNode.h>
 #include <syncevo/DevNullConfigNode.h>
 #include <syncevo/MultiplexConfigNode.h>
+#include <syncevo/lcs.h>
 #include <synthesis/timeutil.h>
 
 #include <boost/foreach.hpp>
 #include <iterator>
 #include <algorithm>
 #include <functional>
+#include <queue>
 
 #include <unistd.h>
 #include "config.h"
@@ -151,7 +153,7 @@ SyncConfig::SyncConfig(const string &peer,
         // when ignoring their context. Peer list is sorted by name,
         // therefore shorter config names (= without context) are
         // found first, as intended.
-        BOOST_FOREACH(const StringPair &entry, getServers()) {
+        BOOST_FOREACH(const StringPair &entry, getConfigs()) {
             string entry_peer, entry_context;
             splitConfigString(entry.first, entry_peer, entry_context);
             if (m_peer == entry_peer) {
@@ -310,7 +312,7 @@ string SyncConfig::getRootPath() const
 
 void SyncConfig::addPeers(const string &root,
                           const std::string &configname,
-                          SyncConfig::ServerList &res) {
+                          SyncConfig::ConfigList &res) {
     FileConfigTree tree(root, "", false);
     list<string> servers = tree.getChildren("");
     BOOST_FOREACH(const string &server, servers) {
@@ -328,18 +330,18 @@ void SyncConfig::addPeers(const string &root,
         if (!access((root + "/" + peerPath).c_str(), F_OK)) {
             // not a real HTTP server, search for peers
             BOOST_FOREACH(const string &peer, tree.getChildren(peerPath)) {
-                res.push_back(pair<string, string>(normalizeConfigString(peer + "@" + server),
-                                                   root + "/" + peerPath + "/" + peer));
+                res.push_back(pair<string, string> (normalizeConfigString(peer + "@" + server),
+                                                  root + "/" + peerPath + "/" + peer));
             }
         } else if (!access((root + "/" + server + "/" + configname).c_str(), F_OK)) {
-            res.push_back(pair<string, string>(server, root + "/" + server));
+            res.push_back(pair<string, string> (server, root + "/" + server));
         }
     }
 }
 
-SyncConfig::ServerList SyncConfig::getServers()
+SyncConfig::ConfigList SyncConfig::getConfigs()
 {
-    ServerList res;
+    ConfigList res;
 
     addPeers(getOldRoot(), "config.txt", res);
     addPeers(getNewRoot(), "config.ini", res);
@@ -350,36 +352,32 @@ SyncConfig::ServerList SyncConfig::getServers()
     return res;
 }
 
-SyncConfig::ServerList SyncConfig::getServerTemplates()
+/* Get a list of all templates, both for any phones listed in @peers*/
+SyncConfig::TemplateList SyncConfig::getPeerTemplates(const DeviceList &peers)
 {
-    class TmpList : public ServerList {
-    public:
-        void addDefaultTemplate(const string &server, const string &url) {
-            BOOST_FOREACH(const value_type &entry, static_cast<ServerList &>(*this)) {
-                if (boost::iequals(entry.first, server)) {
-                    // already present
-                    return;
-                }
-            }
-            push_back(value_type(server, url));
-        }
-    } result;
+    TemplateList result1, result2;
+    result1 = matchPeerTemplates (peers);
+    result2 = getBuiltInTemplates();
 
-    // scan TEMPLATE_DIR for templates
-    string templateDir(TEMPLATE_DIR);
-    if (isDir(templateDir)) {
-        ReadDir dir(templateDir);
-        BOOST_FOREACH(const string &entry, dir) {
-            if (isDir(templateDir + "/" + entry)) {
-                boost::shared_ptr<SyncConfig> config = SyncConfig::createServerTemplate(entry);
-                string comment = config->getWebURL();
-                if (comment.empty()) {
-                    comment = templateDir + "/" + entry;
+    result1.insert (result1.end(), result2.begin(), result2.end());
+    return result1;
+}
+
+
+SyncConfig::TemplateList SyncConfig::getBuiltInTemplates()
+{
+    class TmpList : public TemplateList {
+        public:
+            void addDefaultTemplate(const string &server, const string &url) {
+                BOOST_FOREACH(const boost::shared_ptr<TemplateDescription> entry, static_cast<TemplateList &>(*this)) {
+                    if (boost::iequals(entry->m_name, server)) {
+                        //already present 
+                        return;
+                    }
                 }
-                result.push_back(ServerList::value_type(entry, comment));
+                push_back (boost::shared_ptr<TemplateDescription> (new TemplateDescription(server, url)));
             }
-        }
-    }
+    } result;
 
     // builtin templates if not present
     result.addDefaultTemplate("Funambol", "http://my.funambol.com");
@@ -391,12 +389,62 @@ SyncConfig::ServerList SyncConfig::getServerTemplates()
     result.addDefaultTemplate("Mobical", "http://www.mobical.net");
     result.addDefaultTemplate("Oracle", "http://www.oracle.com/technology/products/beehive/index.html");
     result.addDefaultTemplate("Goosync", "http://www.goosync.com/");
+    result.addDefaultTemplate("SyncEvolution", "http://www.syncevolution.org");
 
-    result.sort();
+    result.sort (TemplateDescription::compare_op);
     return result;
 }
 
-boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &server)
+static string SyncEvolutionTemplateDir()
+{
+    string templateDir(TEMPLATE_DIR);
+    const char *envvar = getenv("SYNCEVOLUTION_TEMPLATE_DIR");
+    if (envvar) {
+        templateDir = envvar;
+    }
+    return templateDir;
+}
+
+SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers)
+{
+    TemplateList result;
+    // match against all possible templates without any assumption on directory
+    // layout, the match is entirely based on the metadata .template.ini
+    string templateDir(SyncEvolutionTemplateDir());
+    std::queue <std::string, std::list<std::string> > directories;
+    if (isDir(templateDir)) {
+        directories.push (templateDir);
+    } 
+    while (!directories.empty()) {
+        string sDir = directories.front();
+        directories.pop();
+        if (!TemplateConfig::isTemplateConfig(sDir)) {
+            ReadDir dir(sDir);
+            //not a template folder, check all sub directories
+            BOOST_FOREACH(const string &entry, dir) {
+                if (isDir(sDir + "/" + entry)) {
+                    directories.push (sDir + "/" + entry);
+                }
+            }
+        } else {
+            TemplateConfig templateConf (sDir);
+            BOOST_FOREACH (const DeviceList::value_type &entry, peers){
+                int rank = templateConf.metaMatch (entry.first, entry.second);
+                if (rank > TemplateConfig::NO_MATCH) {
+                    result.push_back (boost::shared_ptr<TemplateDescription>(
+                                new TemplateDescription(templateConf.getName(),
+                                    templateConf.getDescription(), rank, entry.first, sDir, templateConf.getFingerprint())));
+                }
+            }
+        }
+    }
+
+    result.sort (TemplateDescription::compare_op);
+    return result;
+}
+
+
+boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &server)
 {
     if (server.empty()) {
         // Empty template name => no such template. This check is
@@ -407,24 +455,49 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
     }
 
     // case insensitive search for read-only file template config
-    string templateConfig(TEMPLATE_DIR);
-    const char *envvar = getenv("SYNCEVOLUTION_TEMPLATE_DIR");
-    if (envvar) {
-        templateConfig = envvar;
-    }
-    if (isDir(templateConfig)) {
-        ReadDir dir(templateConfig);
-        templateConfig = dir.find(boost::iequals(server, "default") ?
-                                  string("ScheduleWorld") : server,
-                                  false);
-    } else {
-        templateConfig = "";
-    }
+    string templateConfig(SyncEvolutionTemplateDir());
 
-    if (templateConfig.empty()) {
-        // not found, avoid reading current directory by using one which doesn't exist
-        templateConfig = "/dev/null";
+    // before starting another fuzzy match process, first try to load the
+    // template directly taking the parameter as the path
+    if (isDir (server) && TemplateConfig::isTemplateConfig(server)) {
+        templateConfig = server;
+    } else {
+        std::queue <std::string, std::list<std::string> > directories;
+        if (isDir(templateConfig)) {
+            directories.push (templateConfig);
+        } 
+        templateConfig = "";
+        int maxmatch = TemplateConfig::NO_MATCH;
+        while (!directories.empty()) {
+            string sDir = directories.front();
+            directories.pop();
+            if (!TemplateConfig::isTemplateConfig(sDir)) {
+                ReadDir dir(sDir);
+                //not a template folder, check all sub directories
+                BOOST_FOREACH(const string &entry, dir) {
+                    if (isDir(sDir + "/" + entry)) {
+                        directories.push (sDir + "/" + entry);
+                    }
+                }
+            } else {
+                TemplateConfig templateConf (sDir);
+                int rank = templateConf.metaMatch (server, MATCH_ALL);
+                if (rank > maxmatch){
+                    maxmatch = rank;
+                    templateConfig = sDir;
+                    if (maxmatch == TemplateConfig::BEST_MATCH){
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (templateConfig.empty()) {
+            // not found, avoid reading current directory by using one which doesn't exist
+            templateConfig = "/dev/null";
+        }
     }
+    
     boost::shared_ptr<FileConfigTree> tree(new FileConfigTree(templateConfig, "", false));
     tree->setReadOnly(true);
     boost::shared_ptr<SyncConfig> config(new SyncConfig(server, tree));
@@ -633,6 +706,18 @@ boost::shared_ptr<SyncConfig> SyncConfig::createServerTemplate(const string &ser
         source->setURI("tasks");
         source = config->getSyncSourceConfig("memo");
         source->setURI("");
+    } else if (boost::iequals(server, "syncevolution")) {
+        config->setSyncURL("http://yourserver:port");
+        config->setWebURL("http://www.syncevolution.org");
+        config->setConsumerReady(false);
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("addressbook");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("calendar");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("todo");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("memo");
     } else {
         config.reset();
     }
@@ -1911,5 +1996,121 @@ ConfigPasswordKey EvolutionPasswordConfigProperty::getPasswordKey(const string &
     return key;
 }
 
+// Used for built-in templates
+SyncConfig::TemplateDescription::TemplateDescription (const std::string &name, const std::string &description)
+:   m_name (name), m_description (description)
+{
+    m_rank = TemplateConfig::LEVEL3_MATCH;
+    m_fingerprint = "";
+    m_path = "";
+    m_matchedModel = name;
+}
 
+/* Ranking of template description is controled by the rank field, larger the
+ * better
+ */
+bool SyncConfig::TemplateDescription::compare_op (boost::shared_ptr<SyncConfig::TemplateDescription> &left, boost::shared_ptr<SyncConfig::TemplateDescription> &right)
+{
+    //first sort against the fingerprint string
+    if (left->m_fingerprint != right->m_fingerprint) {
+        return (left->m_fingerprint < right->m_fingerprint);
+    }
+    // sort against the rank
+    if (right->m_rank != left->m_rank) {
+        return (right->m_rank < left->m_rank);
+    }
+    // sort against the config name
+    return (left->m_name < right->m_name);
+}
+
+TemplateConfig::TemplateConfig (const string &path)
+    : m_metaNode (new FileConfigNode (path, ".template.ini", true)),
+    m_name("")
+{
+    m_metaNode->readProperties(m_metaProps);
+}
+
+bool TemplateConfig::isTemplateConfig (const string &dir) 
+{
+    return !ReadDir(dir).find (".template.ini", false).empty();
+}
+
+int TemplateConfig::serverModeMatch (SyncConfig::MatchMode mode)
+{
+    std::string peerIsClient = m_metaProps["peerIsClient"];
+
+    //not a match if serverMode does not match
+    if ((peerIsClient.empty() || peerIsClient == "0") && mode == SyncConfig::MATCH_FOR_SERVER_MODE) {
+        return NO_MATCH;
+    }
+    if (peerIsClient == "1" && mode == SyncConfig::MATCH_FOR_CLIENT_MODE){
+        return NO_MATCH;
+    }
+    return BEST_MATCH;
+}
+
+/**
+ * The matching is based on Least common string algorithm
+ * */
+int TemplateConfig::fingerprintMatch (const string &fingerprint)
+{
+    //if input "", match all
+    if (fingerprint.empty()) {
+        return LEVEL3_MATCH;
+    }
+
+    std::string fingerprintProp = m_metaProps["fingerprint"];
+    std::vector <string> subfingerprints = unescapeJoinedString (fingerprintProp, ',');
+    std::string input = fingerprint;
+    boost::to_lower(input);
+    //return the largest match value
+    int max = NO_MATCH;
+    BOOST_FOREACH (std::string sub, subfingerprints){
+        if (boost::iequals (sub, "default")){
+            if (LEVEL1_MATCH > max) {
+                max = LEVEL1_MATCH;
+            }
+            continue;
+        }
+
+        std::vector< LCS::Entry <char> > result;
+        std::string match = sub;
+        boost::to_lower(match);
+        LCS::lcs(match, input, std::back_inserter(result), LCS::accessor_sequence<std::string>());
+        int score = result.size() *2 *BEST_MATCH /(sub.size() + fingerprint.size()) ;
+        if (score > max) {
+            max = score;
+        }
+    }
+    return max;
+}
+
+int TemplateConfig::metaMatch (const std::string &fingerprint, SyncConfig::MatchMode mode)
+{
+    int serverMatch = serverModeMatch (mode);
+    if (serverMatch == NO_MATCH){
+        return NO_MATCH;
+    }
+    int fMatch = fingerprintMatch (fingerprint);
+    return (serverMatch *1 + fMatch *3) >>2;
+}
+
+string TemplateConfig::getDescription(){
+    return m_metaProps["description"];
+}
+
+string TemplateConfig::getFingerprint(){
+    return m_metaProps["fingerprint"];
+}
+
+string TemplateConfig::getName(){
+    if (m_name.empty()){
+        std::string fingerprintProp = m_metaProps["fingerprint"];
+        if (!fingerprintProp.empty()){
+            std::vector<std::string> subfingerprints = unescapeJoinedString (fingerprintProp, ',');
+            m_name = subfingerprints[0];
+        }
+    }
+    return m_name;
+}
 SE_END_CXX

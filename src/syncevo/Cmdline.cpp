@@ -89,7 +89,7 @@ bool Cmdline::parse()
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                 return false;
             }
-        } else if(boost::iequals(m_argv[opt], "--template") ||
+        }else if(boost::iequals(m_argv[opt], "--template") ||
                   boost::iequals(m_argv[opt], "-l")) {
             opt++;
             if (opt >= m_argc) {
@@ -98,10 +98,11 @@ bool Cmdline::parse()
             }
             m_template = m_argv[opt];
             m_configure = true;
-            if (boost::trim_copy(m_template) == "?") {
-                dumpServers("Available configuration templates:",
-                            SyncConfig::getServerTemplates());
+            string temp = boost::trim_copy (m_template);
+            if (temp.find ("?") == 0){
+                m_printTemplates = true;
                 m_dontrun = true;
+                m_template = temp.substr (1);
             }
         } else if(boost::iequals(m_argv[opt], "--print-servers")) {
             m_printServers = true;
@@ -185,8 +186,19 @@ bool Cmdline::run() {
         printf("%s", EDSAbiWrapperInfo());
         printf("%s", SyncSource::backendsInfo().c_str());
     } else if (m_printServers || boost::trim_copy(m_server) == "?") {
-        dumpServers("Configured servers:",
-                    SyncConfig::getServers());
+        dumpConfigs("Configured servers:",
+                    SyncConfig::getConfigs());
+    } else if (m_printTemplates) {
+        SyncConfig::DeviceList devices;
+        if (m_template.empty()){
+            dumpConfigTemplates("Available configuration templates:",
+                    SyncConfig::getPeerTemplates(devices), false);
+        } else {
+            //limiting at templates for syncml clients only.
+            devices.push_back (SyncConfig::DeviceList::value_type (m_template, SyncConfig::MATCH_FOR_SERVER_MODE));
+            dumpConfigTemplates("Available configuration templates:",
+                    SyncConfig::matchPeerTemplates(devices), true);
+        }
     } else if (m_dontrun) {
         // user asked for information
     } else if (m_argc == 1) {
@@ -236,7 +248,7 @@ bool Cmdline::run() {
             string peer, context;
             SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_template), peer, context);
 
-            config = SyncConfig::createServerTemplate(peer);
+            config = SyncConfig::createPeerTemplate(peer);
             if (!config.get()) {
                 m_err << "ERROR: no configuration template for '" << m_template << "' available." << endl;
                 return false;
@@ -340,11 +352,11 @@ bool Cmdline::run() {
                 fromScratch = true;
                 string configTemplate = m_template.empty() ? m_server : m_template;
                 SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configTemplate), peer, context);
-                from = SyncConfig::createServerTemplate(peer);
+                from = SyncConfig::createPeerTemplate(peer);
                 if (!from.get()) {
                     m_err << "ERROR: no configuration template for '" << configTemplate << "' available." << endl;
-                    dumpServers("Available configuration templates:",
-                                SyncConfig::getServerTemplates());
+                    dumpConfigTemplates("Available configuration templates:",
+                                SyncConfig::getPeerTemplates(SyncConfig::DeviceList()));
                     return false;
                 }
 
@@ -762,14 +774,31 @@ void Cmdline::listSources(SyncSource &syncSource, const string &header)
     }
 }
 
-void Cmdline::dumpServers(const string &preamble,
-                                       const SyncConfig::ServerList &servers)
+void Cmdline::dumpConfigs(const string &preamble,
+                                       const SyncConfig::ConfigList &servers)
 {
     m_out << preamble << endl;
-    BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,servers) {
-        m_out << "   "  << server.first << " = " << server.second << endl;
+    BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server,servers) {
+        m_out << "   "  << server.first << " = " << server.second <<endl; 
     }
     if (!servers.size()) {
+        m_out << "   none" << endl;
+    }
+}
+
+void Cmdline::dumpConfigTemplates(const string &preamble,
+                                       const SyncConfig::TemplateList &templates,
+                                       bool printRank)
+{
+    m_out << preamble << endl;
+    BOOST_FOREACH(const SyncConfig::TemplateList::value_type server,templates) {
+        m_out << "   "  << server->m_name << " = " << server->m_description;
+        if (printRank){
+            m_out << "    " << server->m_rank;
+        }
+        m_out << endl;
+    }
+    if (!templates.size()) {
         m_out << "   none" << endl;
     }
 }
@@ -1234,6 +1263,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testPrintConfig);
     CPPUNIT_TEST(testPrintFileTemplates);
     CPPUNIT_TEST(testTemplate);
+    CPPUNIT_TEST(testMatchTemplate);
     CPPUNIT_TEST(testAddSource);
     CPPUNIT_TEST(testSync);
     CPPUNIT_TEST(testConfigure);
@@ -1544,10 +1574,52 @@ protected:
                                   "   Mobical = http://www.mobical.net\n"
                                   "   Oracle = http://www.oracle.com/technology/products/beehive/index.html\n"
                                   "   ScheduleWorld = http://www.scheduleworld.com\n"
+                                  "   SyncEvolution = http://www.syncevolution.org\n"
                                   "   Synthesis = http://www.synthesis.ch\n"
                                   "   ZYB = http://www.zyb.com\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
+    }
+
+    void testMatchTemplate() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "testcases/templates");
+
+        TestCmdline help1("--template", "?nokia_7210c", NULL);
+        help1.doit();
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                "   Nokia_7210c = Nokia 7210c phone    5\n"
+                "   Nokia = Default templates for nokia phone    3\n"
+                "   SyncEvolutionClient = SyncEvolution server side template    2\n"
+                "   ServerDefault = server side default template    1\n",
+                help1.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", help1.m_err.str());
+        TestCmdline help2("--template", "?nokia", NULL);
+        help2.doit();
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                "   Nokia = Default templates for nokia phone    5\n"
+                "   Nokia_7210c = Nokia 7210c phone    3\n"
+                "   SyncEvolutionClient = SyncEvolution server side template    2\n"
+                "   ServerDefault = server side default template    1\n",
+                help2.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", help2.m_err.str());
+        TestCmdline help3("--template", "?7210c", NULL);
+        help3.doit();
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                "   Nokia_7210c = Nokia 7210c phone    3\n"
+                "   Nokia = Default templates for nokia phone    1\n"
+                "   ServerDefault = server side default template    1\n"
+                "   SyncEvolutionClient = SyncEvolution server side template    1\n",
+                help3.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", help3.m_err.str());
+        TestCmdline help4("--template", "?syncevolution", NULL);
+        help4.doit();
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                "   SyncEvolutionClient = SyncEvolution server side template    5\n"
+                "   Nokia = Default templates for nokia phone    2\n"
+                "   Nokia_7210c = Nokia 7210c phone    2\n"
+                "   ServerDefault = server side default template    2\n",
+                help4.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", help4.m_err.str());
     }
 
     void testPrintServers() {

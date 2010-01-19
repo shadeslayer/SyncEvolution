@@ -1398,14 +1398,18 @@ ReadOperations::ReadOperations(const std::string &config_name) :
 
 void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &configNames)
 {
-    SyncConfig::ServerList list;
     if (getTemplates) {
-        list = SyncConfig::getServerTemplates();
+        SyncConfig::DeviceList devices;
+        SyncConfig::TemplateList list = SyncConfig::getPeerTemplates(devices);
+        BOOST_FOREACH(const boost::shared_ptr<SyncConfig::TemplateDescription> server, list) {
+            configNames.push_back(server->m_name);
+        //TODO create the template filters
+        }
     } else {
-        list = SyncConfig::getServers();
-    }
-    BOOST_FOREACH(const SyncConfig::ServerList::value_type &server, list) {
-        configNames.push_back(server.first);
+        SyncConfig::ConfigList list = SyncConfig::getConfigs();
+        BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server, list) {
+            configNames.push_back(server.first);
+        }
     }
 }
 
@@ -1440,7 +1444,7 @@ void ReadOperations::getConfig(bool getTemplate,
         SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_configName),
                                       peer, context);
 
-        syncConfig = SyncConfig::createServerTemplate(peer);
+        syncConfig = SyncConfig::createPeerTemplate(peer);
         if(!syncConfig.get()) {
             SE_THROW_EXCEPTION(NoSuchConfig, "No template '" + m_configName + "' found");
         }
@@ -2666,8 +2670,8 @@ void Connection::process(const Caller_t &caller,
                     // same serverID ("PC Suite"), so check properties of the
                     // of our configs first before going back to the name itself.
                     std::string serverID = san.fServerID;
-                    SyncConfig::ServerList servers = SyncConfig::getServers();
-                    BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,
+                    SyncConfig::ConfigList servers = SyncConfig::getConfigs();
+                    BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server,
                             servers) {
                         SyncConfig conf(server.first);
                         if (conf.getSyncURL() == serverID) {
@@ -2682,12 +2686,13 @@ void Connection::process(const Caller_t &caller,
                     if (trans != m_peer.end() && id != m_peer.end()) {
                         if (trans->second == "org.openobex.obexd") {
                             string btAddr = id->second.substr(0, id->second.find("+"));
-                            BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,
+                            BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server,
                                     servers) {
                                 SyncConfig conf(server.first);
                                 string url = conf.getSyncURL();
                                 url = url.substr (0, url.find("+"));
                                 SE_LOG_DEBUG (NULL, NULL, "matching against %s",url.c_str());
+                                //TODO working with multiple SyncURLs
                                 if (url.find ("obex-bt://") ==0 && url.substr(strlen("obex-bt://"), url.npos) == btAddr) {
                                     config = server.first;
                                     break;
@@ -2697,7 +2702,7 @@ void Connection::process(const Caller_t &caller,
                     }
 
                     if (config.empty()) {
-                        BOOST_FOREACH(const SyncConfig::ServerList::value_type &server,
+                        BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server,
                                       servers) {
                             if (server.first == serverID) {
                                 config = serverID;
@@ -2799,8 +2804,8 @@ void Connection::process(const Caller_t &caller,
                     // TODO: proper exception
                     throw runtime_error("could not extract LocURI=deviceID from initial message");
                 }
-                BOOST_FOREACH(const StringPair &entry,
-                              SyncConfig::getServers()) {
+                BOOST_FOREACH(const SyncConfig::ConfigList::value_type &entry,
+                              SyncConfig::getConfigs()) {
                     SyncConfig peer(entry.first);
                     if (info.m_deviceID == peer.getRemoteDevID()) {
                         config = entry.first;

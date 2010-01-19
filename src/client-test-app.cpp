@@ -215,7 +215,7 @@ public:
             // device ID is different
             config.reset(new SyncConfig(string(server) + "_" + id + "@client-test-" + id));
             config->setDefaults();
-            from = SyncConfig::createServerTemplate(server);
+            from = SyncConfig::createPeerTemplate(server);
             if(from) {
                 set<string> filter;
                 config->copy(*from, &filter);

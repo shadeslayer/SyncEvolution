@@ -76,6 +76,7 @@ protected:
     Bool m_run;
     Bool m_migrate;
     Bool m_printServers;
+    Bool m_printTemplates;
     Bool m_printConfig;
     Bool m_printSessions;
     Bool m_dontrun;
@@ -135,8 +136,12 @@ protected:
      */
     void listSources(SyncSource &syncSource, const string &header);
 
-    void dumpServers(const string &preamble,
-                     const SyncConfig::ServerList &servers);
+    void dumpConfigs(const string &preamble,
+                     const SyncConfig::ConfigList &servers);
+
+    void dumpConfigTemplates(const string &preamble,
+                     const SyncConfig::TemplateList &templates,
+                     bool printRank = false);
 
     void dumpProperties(const ConfigNode &configuredProps,
                         const ConfigPropertyRegistry &allProps);
