@@ -224,7 +224,7 @@ class DBusUtil(Timeout):
     quit_events = []
     reply = None
 
-    def runTest(self, result, own_xdg=True):
+    def runTest(self, result, own_xdg=True, serverArgs=[] ):
         """Starts the D-Bus server and dbus-monitor before the test
         itself. After the test run, the output of these two commands
         are added to the test's failure, if any. Otherwise the output
@@ -279,7 +279,7 @@ class DBusUtil(Timeout):
                     time.sleep(2)
                     break
         else:
-            pserver = subprocess.Popen(server,
+            pserver = subprocess.Popen(server + serverArgs,
                                        env=env,
                                        stdout=open(syncevolog, "w"),
                                        stderr=subprocess.STDOUT)
@@ -544,6 +544,92 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: No configuration 'no-such-config' found")
+        else:
+            self.fail("no exception thrown")
+
+class TestDBusServerTerm(unittest.TestCase, DBusUtil):
+    def setUp(self):
+        self.setUpServer()
+
+    def run(self, result):
+        self.runTest(result, True, ["-d", "10"])
+
+    @timeout(100)
+    def testNoTerm(self):
+        """Test the dbus server stays alive within the duration"""
+        """The server should stay alive because we have dbus call within
+        the duration. The loop is to make sure the total time is longer 
+        than duration and the dbus server still stays alive for dbus calls.""" 
+        for i in range(0, 4):
+            time.sleep(4)
+            try:
+                self.server.GetConfigs(True, utf8_strings=True)
+            except dbus.DBusException:
+                self.fail("dbus server should work correctly")
+
+    @timeout(100)
+    def testTerm(self):
+        """Test the dbus server terminates automatically after a duration"""
+        #sleep a duration and wait for syncevo-dbus-server termination
+        time.sleep(16)
+        try:
+            self.server.GetConfigs(True, utf8_strings=True)
+        except dbus.DBusException:
+            pass
+        else:
+            self.fail("no exception thrown")
+
+    @timeout(100)
+    def testTermConnection(self):
+        """Test the dbus server doesn't terminate if it has connections"""
+        conpath = self.server.Connect({'description': 'test-dbus.py',
+                                       'transport': 'dummy'},
+                                      False,
+                                      "")
+        time.sleep(16)
+        try:
+            self.server.GetConfigs(True, utf8_strings=True)
+        except dbus.DBusException:
+            self.fail("dbus server should not terminate")
+
+        connection = dbus.Interface(bus.get_object('org.syncevolution',
+                                                   conpath),
+                                    'org.syncevolution.Connection')
+        connection.Close(False, "good bye", utf8_strings=True)
+        time.sleep(16)
+        try:
+            self.server.GetConfigs(True, utf8_strings=True)
+        except dbus.DBusException:
+            pass
+        else:
+            self.fail("no exception thrown")
+
+    @timeout(100)
+    def testTermAttachedClients(self):
+        """Test the dbus server doesn't terminate if it has attached clients"""
+        """Also it tries to test the dbus server's behavior when a client 
+        attaches the server many times"""
+        self.server.Attach()
+        self.server.Attach()
+        time.sleep(16)
+        try:
+            self.server.GetConfigs(True, utf8_strings=True)
+        except dbus.DBusException:
+            self.fail("dbus server should not terminate")
+        self.server.Detach()
+        time.sleep(16)
+
+        try:
+            self.server.GetConfigs(True, utf8_strings=True)
+        except dbus.DBusException:
+            self.fail("dbus server should not terminate")
+
+        self.server.Detach()
+        time.sleep(16)
+        try:
+            self.server.GetConfigs(True, utf8_strings=True)
+        except dbus.DBusException:
+            pass
         else:
             self.fail("no exception thrown")
 
