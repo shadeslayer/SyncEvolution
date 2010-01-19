@@ -35,9 +35,11 @@ ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	CONFIGURE_FLAGS += CXXFLAGS="-g -O0"
 endif
 
-ifneq (,$(findstring maemo,$(DEB_BUILD_OPTIONS)))
-	CONFIGURE_FLAGS += --enable-maemo --enable-shared
-endif
+CONFIGURE_FLAGS += --enable-maemo --enable-shared --disable-libsoup --enable-libcurl --disable-ecal --enable-ebook --enable-maemo-calendar --with-synthesis-src=libsynthesis
+
+#ifneq (,$(findstring maemo,$(DEB_BUILD_OPTIONS)))
+#	CONFIGURE_FLAGS += --enable-maemo --enable-shared
+#endif
 
 config.status: configure
 	dh_testdir
