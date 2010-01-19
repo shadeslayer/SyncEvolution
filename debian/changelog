@@ -1,3 +1,9 @@
+syncevolution (1:0.9.2~beta-1) unstable; urgency=low
+
+  * SyncEvolution 0.9.2 snapshot
+
+ -- Ove Kaaven <ovek@arcticnet.no>  Tue, 19 Jan 2010 22:55:14 +0100
+
 syncevolution (1:0.9.2~beta-0) unstable; urgency=low
 
   * SyncEvolution 0.9.2 snapshot - not ready for Maemo5 yet
