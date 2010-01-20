@@ -92,6 +92,7 @@ libsyncevolution_includedir= $(includedir)/syncevo
 libsyncevolution_include_HEADERS = \
 	declarations.h \
 	TrackingSyncSource.h  \
+	FileConfigNode.h \
 								  FilterConfigNode.h \
 								  PrefixConfigNode.h \
 								  SafeConfigNode.h \
