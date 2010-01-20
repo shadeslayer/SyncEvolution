@@ -418,7 +418,7 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers)
 {
     TemplateList result;
     // match against all possible templates without any assumption on directory
-    // layout, the match is entirely based on the metadata .template.ini
+    // layout, the match is entirely based on the metadata template.ini
     string templateDir(SyncEvolutionTemplateDir());
     std::queue <std::string, std::list<std::string> > directories;
     if (isDir(templateDir)) {
@@ -2046,7 +2046,7 @@ bool SyncConfig::TemplateDescription::compare_op (boost::shared_ptr<SyncConfig::
 }
 
 TemplateConfig::TemplateConfig (const string &path)
-    : m_metaNode (new FileConfigNode (path, ".template.ini", true)),
+    : m_metaNode (new FileConfigNode (path, "template.ini", true)),
     m_name("")
 {
     m_metaNode->readProperties(m_metaProps);
@@ -2054,7 +2054,7 @@ TemplateConfig::TemplateConfig (const string &path)
 
 bool TemplateConfig::isTemplateConfig (const string &dir) 
 {
-    return !ReadDir(dir).find (".template.ini", false).empty();
+    return !ReadDir(dir).find ("template.ini", false).empty();
 }
 
 int TemplateConfig::serverModeMatch (SyncConfig::MatchMode mode)

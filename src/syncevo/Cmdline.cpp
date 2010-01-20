@@ -1645,8 +1645,7 @@ protected:
         TestCmdline help1("--template", "?nokia_7210c", NULL);
         help1.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
-                "   Nokia_7210c = Nokia 7210c phone    5\n"
-                "   Nokia = Default templates for nokia phone    3\n"
+                "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    5\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    2\n"
                 "   ServerDefault = server side default template    1\n",
                 help1.m_out.str());
@@ -1654,8 +1653,7 @@ protected:
         TestCmdline help2("--template", "?nokia", NULL);
         help2.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
-                "   Nokia = Default templates for nokia phone    5\n"
-                "   Nokia_7210c = Nokia 7210c phone    3\n"
+                "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    5\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    2\n"
                 "   ServerDefault = server side default template    1\n",
                 help2.m_out.str());
@@ -1663,8 +1661,7 @@ protected:
         TestCmdline help3("--template", "?7210c", NULL);
         help3.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
-                "   Nokia_7210c = Nokia 7210c phone    3\n"
-                "   Nokia = Default templates for nokia phone    1\n"
+                "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    3\n"
                 "   ServerDefault = server side default template    1\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    1\n",
                 help3.m_out.str());
@@ -1673,8 +1670,7 @@ protected:
         help4.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    5\n"
-                "   Nokia = Default templates for nokia phone    2\n"
-                "   Nokia_7210c = Nokia 7210c phone    2\n"
+                "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    2\n"
                 "   ServerDefault = server side default template    2\n",
                 help4.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help4.m_err.str());
