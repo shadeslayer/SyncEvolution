@@ -186,23 +186,18 @@ class LogDir : public LoggerBase {
     void setLogdir(const string &logdir) {
         m_logdir = boost::trim_right_copy_if(logdir, boost::is_any_of("/"));
 
-        string lower = m_client.getServer();
-        string context, peer, normal;
-        SyncConfig::normalizeConfigString(lower, normal, context);
-        SyncConfig::splitConfigString(normal, peer, context);
+        string peer = SyncConfig::normalizeConfigString(m_client.getServer());
 
         // escape "_" and "-" the peer name
         peer = escapePeerName(peer);
-        string full = peer + "@";
-        full += context;
 
         if (boost::iends_with(m_logdir, "syncevolution")) {
             // use just the server name as prefix
-            m_prefix = full;
+            m_prefix = peer;
         } else {
             // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
             m_prefix = DIR_PREFIX;
-            m_prefix += full;
+            m_prefix += peer;
         }
     }
 
@@ -569,12 +564,12 @@ private:
 
     /**
      * parse a directory name into dirPrefix(empty or DIR_PREFIX), peerName, dateTime.
-     * If directory name is in the format of '[DIR_PREFIX]-peerName@context-year-month-day-hour-min'
+     * If directory name is in the format of '[DIR_PREFIX]-peer[@context]-year-month-day-hour-min'
      * then parsing is sucessful and these 3 strings are correctly set and true is returned. 
      * Otherwise, false is returned. 
      * Here we don't check whether the dir name is matching peer name
      */
-    static bool parseDirName(const string &dir, string &dirPrefix, string &peerName, string &dateTime) {
+    static bool parseDirName(const string &dir, string &dirPrefix, string &config, string &dateTime) {
         string iDir = dir;
         if (!boost::starts_with(iDir, DIR_PREFIX)) {
             dirPrefix = "";
@@ -584,7 +579,7 @@ private:
         }
         size_t off = iDir.find('-');
         if (off != iDir.npos) {
-            peerName = iDir.substr(0, off);
+            config = iDir.substr(0, off);
             dateTime = iDir.substr(off);
             // m_prefix doesn't contain peer name or it equals with dirPrefix plus peerName
             return checkDirName(dateTime);
@@ -607,8 +602,7 @@ private:
             // if directory name could not be parsed, ignore it
             if(parseDirName(entry, dirPrefix, peerName, dateTime)) {
                 // if directory name is not satisfied with m_prefix, ignore it
-                if (m_prefix == dirPrefix || m_prefix == (dirPrefix + peerName) 
-                            || m_prefix == (dirPrefix + peerName + "@default")) {
+                if (m_prefix == dirPrefix || m_prefix == (dirPrefix + peerName)) {
                     dirs.push_back(m_logdir + "/" + entry);
                 }
             }
