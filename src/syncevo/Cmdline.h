@@ -144,7 +144,8 @@ protected:
                      bool printRank = false);
 
     void dumpProperties(const ConfigNode &configuredProps,
-                        const ConfigPropertyRegistry &allProps);
+                        const ConfigPropertyRegistry &allProps,
+                        bool hideLegend);
 
     void copyProperties(const ConfigNode &fromProps,
                         ConfigNode &toProps,

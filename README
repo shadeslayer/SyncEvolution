@@ -18,10 +18,10 @@ which makes SyncEvolution compatible with the majority of SyncML
 servers. Full, one-way and incremental synchronization of items are
 supported.
 
-SyncEvolution does not synchronize with another SyncML capable device
-or another computer directly. A SyncML server that that device and
-SyncEvolution can talk to is needed. There are several options for
-that:
+Normally, SyncEvolution does not synchronize with another SyncML
+capable device or another computer directly. A SyncML server that that
+device and SyncEvolution can talk to is needed. There are several
+options for that:
 - using a web service like ScheduleWorld or myFUNAMBOL which store
   the data to be synchronized on a server and provide access to it
   via SyncML
@@ -29,6 +29,10 @@ that:
   one's own server
 - installing a SyncML server on the desktop
 
+Since 1.0, SyncEvolution is also capable of synchronizing with another
+device via Bluetooth directly. There is also a SyncEvolution HTTP
+server which works for single-user scenarios. This is both still a bit
+experimental and not explained further here.
 
 The recommended solution is ScheduleWorld because it is easier than
 setting up a server and provides better support for vCard and
@@ -98,16 +102,18 @@ directories before running SyncEvolution for the first time with
 Evolution. In older Evolution versions the same data is found in
 $HOME/evolution.
 
-Configuration templates for SyncML servers are searched in the following
+Configuration templates for SyncML peers are searched in the following
 order:
-- "default/syncevolution" inside --sysconfdir DIR, usually
-  /etc/default/syncevolution (when packaged for a distribution) or
-  /usr/local/etc/default/syncevolution (when compiling from source)
+- $SYNCEVOLUTION_TEMPLATE_DIR
+- "/usr/share/syncevolution/templates" (prefix may be different,
+  depending on compilation)
 - built-in templates
 
 The properties defined in a template override the default properties,
 so usually only those properties which specifically need to be set for
-a certain server should be listed in its template config.
+a certain peer should be listed in its template config. Don't copy
+these files, they are not complete! Use the command line or a GUI
+instead, which reads the files and produces complete configurations.
 
 
 Usage
@@ -117,14 +123,38 @@ Currently SyncEvolution comes as a simple command line tool which is
 configured via files. The general synopsis of the command line
 parameters is:
 
-   syncevolution [<options>] [<server>] [<source> ...]
+   syncevolution [<options>] [<config>] [<source> ...]
 
-The <server> and the <source> strings are used to find the
+The <config> and the <source> strings are used to find the
 configuration files which determine how synchronization is going to
 proceed. Each source corresponds to one local address book, calendar,
 task list or set of memos and the corresponding database on the
-server. Depending on which parameters are given, different operations
+peer. Depending on which parameters are given, different operations
 are executed.
+
+Starting with SyncEvolution 1.0, <config> strings can have different
+meanings. Typically, a simple string like "scheduleworld" refers to
+the configuration for that peer, as it did in previous releases. A
+peer is either a SyncML server (the traditional usage of
+SyncEvolution) or a client (the new feature in 1.0).
+
+Each peer configuration exists inside a specific context, typically
+the "@default" context. All peers in the same context share some parts
+of their configuration, for example, which local databases are to be
+synchronized.  In that sense, a configuration context can be seen as a
+set of local databases plus the peer configurations that are
+synchronized against those databases.
+
+When different peers are meant to synchronize different local
+databases, then different contexts have to be used when setting up the
+peers by appending a context name after the "at" sign, as in
+"scheduleworld2@other-context". Later on, if "scheduleworld2" is
+unique, the "@other-context" suffix becomes optional.
+
+Sometimes it is also useful to change configuration options of a
+context, without modifying a specific peer. This can be done by using
+"@default" (or some other context name) without anything before the
+"at" sign. The empty string "" is the same as "@default".
 
    syncevolution
 
@@ -134,12 +164,12 @@ or not. The output includes the identifiers which can then be used to
 select those sources in a configuration file. For each source one can
 set a different synchronization mode in its configuration file.
 
-   syncevolution <server>
+   syncevolution <config>
 
 Without the optional list of sources all sources which are enabled in
 their configuration file are synchronized.
 
-   syncevolution <server> <source> ...
+   syncevolution <config> <source> ...
 
 Otherwise only the ones mentioned on the command line are active. It
 is possible to configure sources without activating their
@@ -176,7 +206,7 @@ associated with this is that the server might not recognize items that
 it already has stored previously which then would lead to duplication
 of items.
 
-   syncevolution --configure <options for configuration> <server> [<source> ...]
+   syncevolution --configure <options for configuration> <config> [<source> ...]
 
 Options in the configuration can be modified via the command
 line. Source properties are changed for all sources unless sources are
@@ -184,13 +214,17 @@ listed explicitly.  Some source properties have to be different for
 each source, in which case syncevolution must be called multiple times
 with one source listed in each invocation.
 
-   syncevolution --remove <server>
+   syncevolution --remove <config>
 
-Deletes the configuration of the selected server. Note that there is
-no confirmation question. Neither local data referenced by the
-configuration nor the content of log dirs are deleted.
+Deletes the configuration. If the <config> refers to a specific
+peer, only that peer's configuration is removed. If it refers to
+a context, that context and all peers inside it are removed.
 
-   syncevolution --run <options for run> <server> [<source> ...]
+Note that there is no confirmation question. Neither local data
+referenced by the configuration nor the content of log dirs are
+deleted.
+
+   syncevolution --run <options for run> <config> [<source> ...]
 
 Options can also be overridden for just the current run, without
 changing the configuration. In order to prevent accidentally running a
@@ -198,29 +232,29 @@ sync session when a configuration change was intended, either
 --configure or --run must be given explicitly if options are specified
 on the command line.
 
-   syncevolution --status <server> [<source> ...]
+   syncevolution --status <config> [<source> ...]
 
 Prints what changes were made locally since the last synchronization.
 Depends on access to database dumps from the last run, so using the
 "logdir" option is recommended.
 
-   syncevolution --print-servers
-   syncevolution --print-config [--quiet] <server> [sync|<source> ...]
-   syncevolution --print-sessions [--quiet] <server>
+   syncevolution --print-servers|--print-configs|--print-peers
+   syncevolution --print-config [--quiet] <config> [main|<source> ...]
+   syncevolution --print-sessions [--quiet] <config>
 
 These commands print information about existing configurations. When
 printing a configuration a short version without comments can be
 selected with --quiet. When sources are listed, only their
-configuration is shown. "Sync" instead or in combination with sources
-lists only the main server configuration.
+configuration is shown. "Main" instead or in combination with sources
+lists only the main peer configuration.
 
-With --print-session information about previous synchronization sessions
-for the selected server are printed. This depends on the "logdir" option.
-The information includes the log directory name (useful for --restore)
-and the synchronization report. In combination with --quiet, only the
-paths are listed.
+With --print-session information about previous synchronization
+sessions for the selected peer or context are printed. This depends on
+the "logdir" option.  The information includes the log directory name
+(useful for --restore) and the synchronization report. In combination
+with --quiet, only the paths are listed.
 
-   syncevolution --restore <session directory> --before|--after [--dry-run] <server> <source> ...
+   syncevolution --restore <session directory> --before|--after [--dry-run] <config> <source> ...
 
 This restores local data from the backups made before or after a
 synchronization session. The --print-sessions command can be used to
@@ -252,24 +286,25 @@ a list of valid values.
   for a "refresh-from-server" or "refresh-from-client" sync which
   clears all data at one end and copies all items from the other.
 
---print-servers
-  Prints the names of all configured servers to stdout.
+--print-servers|--print-configs|--print-peers
+  Prints the names of all configured peers to stdout. There is no
+  difference between these options, the are just aliases.
 
 --print-config|-p
-  Prints the complete configuration for the selected server
+  Prints the complete configuration for the selected <config>
   to stdout, including up-to-date comments for all properties. The
   format is the normal .ini format with source configurations in
   different sections introduced with [<source>] lines. Can be combined
   with --sync-property and --source-property to modify the configuration
-  on-the-fly. When one or more sources are listed after the <server>
+  on-the-fly. When one or more sources are listed after the <config>
   name on the command line, then only the configs of those sources are
-  printed. "Sync" selects the main configuration instead of source
+  printed. "main" selects the main configuration instead of source
   configurations. Using --quiet suppresses the comments for each property.
   When setting a --template, then the reference configuration for
-  that server is printed instead of an existing configuration.
+  that peer is printed instead of an existing configuration.
 
 --configure|-c
-  Modify the configuration files for the selected server. If no such
+  Modify the configuration files for the selected peer. If no such
   configuration exists, then a new one is created using one of the
   template configurations (see --template option). When creating
   a new configuration only the active sources will be set to active
@@ -287,27 +322,36 @@ a list of valid values.
   session triggered by the invocation.
 
 --migrate
-  In SyncEvolution <= 0.7 a different layout of configuration files
+  In older SyncEvolution releases a different layout of configuration files
   was used. Using --migrate will automatically migrate to the new
-  layout and rename the old directory $HOME/.sync4j/evolution/<server> 
-  into $HOME/.sync4j/evolution/<server>.old to prevent accidental use
+  layout and rename the <config> into <config>.old to prevent accidental use
   of the old configuration. WARNING: old SyncEvolution releases cannot
   use the new configuration!
+
   The switch can also be used to migrate a configuration in the current
   configuration directory: this preserves all property values, discards
   obsolete properties and sets all comments exactly as if the configuration
   had been created from scratch. WARNING: custom comments in the
   configuration are not preserved.
+
   --migrate implies --configure and can be combined with modifying
   properties.
 
 --sync-property|-y <property>=<value>
 --sync-property|-y ?
 --sync-property|-y <property>=?
-  Overrides a configuration property in the <server>/config.ini file
-  for the current synchronization run or permanently when --configure
-  is used to update the configuration. Can be used multiple times.
-  Specifying an unused property will trigger an error message.
+  Overrides a source-independent configuration property for the
+  current synchronization run or permanently when --configure is used
+  to update the configuration. Can be used multiple times.  Specifying
+  an unused property will trigger an error message.
+
+  When using the configuration layout introduced with 1.0, some of the
+  sync properties are shared between peers, for example the directory
+  where sessions are logged. Permanently changing such a shared
+  property for one peer will automatically update the property for all
+  other peers in the same context because the property is stored in a
+  shared config file. When printing a config in verbose mode, a summary
+  comment shows which properties are shared in which way.
 
 --source-property|-z <property>=<value>
 --source-property|-z ?
@@ -320,22 +364,28 @@ a list of valid values.
   sources, so if you want to change a source property of just one specific
   sync source, then use "--configure --source-property ... <server> <source>".
 
---template|-l <server name>|default|?<device>
+  As with sync properties, some properties are shared between peers,
+  in particular the selection of which local data to synchronize.
+
+--template|-l <peer name>|default|?<device>
   Can be used to select from one of the built-in default configurations
-  for known SyncML servers. Defaults to the <server> name, so --template
+  for known SyncML peers. Defaults to the <config> name, so --template
   only has to be specified when creating multiple different configurations
-  for the same server. "default" is an alias for "scheduleworld" and can be
+  for the same peer, or when using a template that is named differently
+  than the peer. "default" is an alias for "scheduleworld" and can be
   used as the starting point for servers which do not have a built-in
-  configuration.
+  template.
+
   Each template contains a pseudo-random device ID. Therefore setting the
   "deviceId" sync property is only necessary when manually recreating a
   configuration or when a more descriptive name is desired.
+
   The available templates for different known SyncML servers are listed when
   using a single question mark instead of template name. When using the
-  ?<desireddevice> format, a fuzzy search for a template that might be
+  ?<device> format, a fuzzy search for a template that might be
   suitable for talking to such a device is done. The matching works best
   when using <device> = <Manufacturer>_<Model>. If you don't know the
-  Manufacturer, you can just keep it as empty. The output in this mode
+  manufacturer, you can just keep it as empty. The output in this mode
   gives the template name followed by a short description and a rating how well
   the template matches the device (higher is better).
 
@@ -402,15 +452,26 @@ Set up another configuration for scheduleworld under a different name:
 Configuration
 -------------
 
-The configuration file of a certain <server> is stored in
-   $XDG_CONFIG_HOME/syncevolution/<server>/config.ini
+The configuration file of a certain <peer>@<context> is stored in
+   $XDG_CONFIG_HOME/syncevolution/<context>/peers/<peer>/config.ini
 with " $HOME/.config" as fallback if XDG_CONFIG_HOME is not
-set. Each data source is configured in
-   $XDG_CONFIG_HOME/syncevolution/<server>/sources/<source>/config.ini
+set. The per-peer data source properties are configured in
+   $XDG_CONFIG_HOME/syncevolution/<context>/peers/<peer>/sources/<source>/config.ini
+
+The shared properties are in:
+   $XDG_CONFIG_HOME/syncevolution/config.ini
+   $XDG_CONFIG_HOME/syncevolution/<context>/config.ini
+   $XDG_CONFIG_HOME/syncevolution/<context>/sources/
+
+There are also some hidden .synthesis, .internal.ini and
+.server.ini directories resp. files. These are used internally
+and are not meant to be edited manually.
 
 The configuration of older SyncEvolution releases in the
-following directory is also still supported:
+following directory is also still supported for reading and
+updating, but cannot be created anymore from scratch:
    $HOME/.sync4j/evolution/<server>/spds/syncml/config.txt
+   $XDG_CONFIG_HOME/syncevolution/<server>/
 
 The format is a simple list of
    <property> = <value>
@@ -425,19 +486,19 @@ All supported properties are listed in the template configurations.
 Those which have reasonable defaults do not have to be set and are
 commented out in the template configurations. Normally at least the
 following configuration options need to be adapted:
-  config.ini
+  <peer>/config.ini
       syncURL
       username
       password
-  sources/*/config.ini
+  <peer>/sources/*/config.ini
       uri
       type
 
-See "syncevolution --sync-property ?" for options in the server
+See "syncevolution --sync-property ?" for options in the peer
 configuration and "syncevolution --source-property ?"
 for options in each data source configuration.
 
-Each data source corresponds to one database at the SyncML server.
+Each data source corresponds to one database at the SyncML peer.
 The local data source is determined by the type of data given in
 "type" and uniquely identified with the "evolutionsource" property.
 To get a list of available data sources, run SyncEvolution with no
@@ -454,7 +515,7 @@ same server database can only be accessed once. To synchronize the
 same server database with multiple local data sources, one
 has to setup two independent configurations with different "deviceId"
 settings and synchronize them separately. To create such a setup simply
-copy the whole configuration tree of the server, e.g.:
+copy the whole configuration context, e.g.:
   cp -r ~/.config/syncevolution/localhost ~/.config/syncevolution/localhost_copy
 and then edit ~/.config/syncevolution/localhost_copy/config.ini
 to update the "deviceId" and the sources/*/config.ini files to update
@@ -465,7 +526,8 @@ If an Evolution data source requires authentication, the
 In this case the directory that contains the source's config.ini should
 only be accessible by the user. Usually these fields can be left
 empty. Specifying a single hyphen ("-") as value for a password
-instructs SyncEvolution to ask for the password at runtime. The
+instructs SyncEvolution to look for the password in an encrypted
+keyring (see --keyring) or to ask for the password at runtime. The
 value "${<name of environment variable>}" takes the password from
 the named environment variable. Entering the password manually
 is the most secure method.
@@ -507,7 +569,7 @@ can create the following files during a synchronization:
 If the server configuration option "logdir" is set, then
 a new directory will be created for each synchronization
 in that directory, using the format
-  <server>-<yyyy>-<mm>-<dd>-<hh>-<mm>[-<seq>]
+  <peer>-<yyyy>-<mm>-<dd>-<hh>-<mm>[-<seq>]
 with the various fields filled in with the time when the
 synchronization started. The sequence suffix will only be
 used when necessary to make the name unique. By default,
@@ -555,7 +617,8 @@ calendars. They are adressed in a source config with
   uri = card
 for contacts and
   uri = cal
-for calendars. Tasks (aka todos) are not supported directly.
+for calendars. Tasks (aka todos) are supported but not shown on
+the myFUNAMBOL web site.
 
 At some point the Funambol server started supporting iCalendar 2.0 for
 calendars. This is the more capable (and recommended!) format, but the
@@ -764,9 +827,18 @@ of time went into it.
 - Donations are not necessary and cannot be accepted either.
 
 
-Author
-------
+Authors
+-------
 
 Patrick Ohly
-patrick.ohly@gmx.de
+patrick.ohly@intel.com
 http://www.estamos.de/
+
+... plus several others:
+http://syncevolution.org/about/contributors
+
+To contact the project publicly (preferred):
+syncevolution@syncevolution.org
+
+For confidential emails there is a team mailing list:
+syncevolution@lists.intel.com
