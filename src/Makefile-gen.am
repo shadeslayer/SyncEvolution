@@ -146,8 +146,7 @@ syncevo_dbus_server_SOURCES = \
 	syncevo-dbus-server.cpp \
 	$(CORE_SOURCES)
 if ENABLE_UNIT_TESTS
-nodist_syncevo_dbus_server_SOURCES =
-	../test/test.cpp
+nodist_syncevo_dbus_server_SOURCES = ../test/test.cpp
 endif
 
 syncevo_dbus_server_LDADD = gdbus/libgdbus.la $(CORE_LDADD) $(KEYRING_LIBS)
