@@ -16,5 +16,7 @@ EXTRA_DIST = \
         testcases/vcard21.vcf \
         testcases/vcard30.vcf \
         testcases/imemo20.ics \
+	testcases/lcs/file1.txt \
+	testcases/lcs/file2.txt \
 	$(wildcard testcases/*.patch) \
         synccompare.pl
