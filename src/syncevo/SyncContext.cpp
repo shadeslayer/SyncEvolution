@@ -186,7 +186,7 @@ class LogDir : public LoggerBase {
     void setLogdir(const string &logdir) {
         m_logdir = boost::trim_right_copy_if(logdir, boost::is_any_of("/"));
 
-        string peer = SyncConfig::normalizeConfigString(m_client.getServer());
+        string peer = SyncConfig::normalizeConfigString(m_client.getConfigName());
 
         // escape "_" and "-" the peer name
         peer = escapePeerName(peer);

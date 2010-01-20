@@ -78,7 +78,13 @@ SuspendFlags():state(CLIENT_NORMAL),last_suspend(0),message(NULL)
  *
  */
 class SyncContext : public SyncConfig, public ConfigUserInterface {
+    /**
+     * the string used to request a config,
+     * *not* the normalized config name itself;
+     * for that use SyncConfig::getConfigName()
+     */
     const string m_server;
+
     bool m_doLogging;
     bool m_quiet;
     bool m_dryrun;
@@ -357,7 +363,17 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     const SharedEngine getEngine() const { return m_engine; }
 
     bool getDoLogging() { return m_doLogging; }
-    std::string getServer() { return m_server; }
+
+    /**
+     * Returns the string used to select the peer config
+     * used by this instance.
+     *
+     * Note that this is not the same as a valid configuration
+     * name. For example "foo" might be matched against a
+     * "foo@bar" config by SyncConfig. Use SyncConfig::getConfigName()
+     * to get the underlying config.
+     */
+    std::string getPeer() { return m_server; }
 
     /**
      * Handle for active session, may be NULL.

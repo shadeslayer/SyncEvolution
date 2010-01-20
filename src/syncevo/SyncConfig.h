@@ -937,6 +937,12 @@ class SyncConfig {
     bool exists() const;
 
     /**
+     * The normalized, unique config name used by this instance.
+     * Empty if not backed up by a real config.
+     */
+    string getConfigName() const { return m_peer; }
+
+    /**
      * Do something before doing flush to files. This is particularly
      * useful when user interface wants to do preparation jobs, such
      * as savePassword and others.
@@ -1313,6 +1319,9 @@ private:
     /**
      * String that identifies the peer, see constructor.
      * This is a normalized string (normalizePeerString()).
+     * The name is a bit of a misnomer, because the config
+     * might also reference just a context without any
+     * peer-specific properties ("@some-context", or "@default").
      */
     string m_peer;
 
