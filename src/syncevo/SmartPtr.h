@@ -204,8 +204,10 @@ template <class T> class arrayptr : public eptr<T, T, ArrayUnref<T> > {
     };
 };
 
+#ifdef HAVE_GLIB
 /** eptr for glib event handle */
 typedef SmartPtr<guint, guint, UnrefGLibEvent> GLibEvent;
+#endif
 
 SE_END_CXX
 #endif
