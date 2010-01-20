@@ -1514,6 +1514,12 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
             SyncReport report;
             // peerName is also extracted from the dir 
             string peerName = client.readSessionInfo(dir,report);
+            boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
+            string storedPeerName = config->getPeerName();
+            //if can't find peer name, use the peer name from the log dir
+            if(!storedPeerName.empty()) {
+                peerName = storedPeerName;
+            }
 
             /** serialize report to ConfigProps and then copy them to reports */
             HashFileConfigNode node("/dev/null","",true);

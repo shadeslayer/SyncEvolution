@@ -187,20 +187,22 @@ class LogDir : public LoggerBase {
         m_logdir = boost::trim_right_copy_if(logdir, boost::is_any_of("/"));
 
         string lower = m_client.getServer();
-        string context, peer;
-        SyncConfig::splitConfigString(lower, peer, context);
+        string context, peer, normal;
+        SyncConfig::normalizeConfigString(lower, normal, context);
+        SyncConfig::splitConfigString(normal, peer, context);
 
-        boost::to_lower(peer);
         // escape "_" and "-" the peer name
         peer = escapePeerName(peer);
+        string full = peer + "@";
+        full += context;
 
         if (boost::iends_with(m_logdir, "syncevolution")) {
             // use just the server name as prefix
-            m_prefix = peer;
+            m_prefix = full;
         } else {
             // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
             m_prefix = DIR_PREFIX;
-            m_prefix += peer;
+            m_prefix += full;
         }
     }
 
@@ -567,7 +569,7 @@ private:
 
     /**
      * parse a directory name into dirPrefix(empty or DIR_PREFIX), peerName, dateTime.
-     * If directory name is in the format of '[DIR_PREFIX]-peerName-year-month-day-hour-min'
+     * If directory name is in the format of '[DIR_PREFIX]-peerName@context-year-month-day-hour-min'
      * then parsing is sucessful and these 3 strings are correctly set and true is returned. 
      * Otherwise, false is returned. 
      * Here we don't check whether the dir name is matching peer name
@@ -605,7 +607,8 @@ private:
             // if directory name could not be parsed, ignore it
             if(parseDirName(entry, dirPrefix, peerName, dateTime)) {
                 // if directory name is not satisfied with m_prefix, ignore it
-                if (m_prefix == dirPrefix || m_prefix == (dirPrefix + peerName)) {
+                if (m_prefix == dirPrefix || m_prefix == (dirPrefix + peerName) 
+                            || m_prefix == (dirPrefix + peerName + "@default")) {
                     dirs.push_back(m_logdir + "/" + entry);
                 }
             }
