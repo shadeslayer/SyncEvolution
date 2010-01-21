@@ -1701,6 +1701,10 @@ get_reports_cb (SyncevoServer *server,
                 status = strtol (val, NULL, 10);
             } else if (strcmp (strs[0], "peer") == 0) {
                 /* not used */
+            } else if (strcmp (strs[0], "error") == 0) {
+                /* not used */
+            } else if (strcmp (strs[0], "dir") == 0) {
+                /* not used */
             } else {
                 g_warning ("Unidentified sync report item: %s=%s",
                            key, val);
@@ -2062,6 +2066,7 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
 
     switch (error_code) {
     case 0:
+    case 200:
     case LOCERR_USERABORT:
     case LOCERR_USERSUSPEND:
         return NULL;
