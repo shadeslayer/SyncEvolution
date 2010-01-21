@@ -26,13 +26,14 @@ G_BEGIN_DECLS
 #define SYNC_CONFIG_WIDGET_GET_CLASS(obj) \
     (G_TYPE_INSTANCE_GET_CLASS ((obj), SYNC_TYPE_CONFIG_WIDGET, SyncConfigWidgetClass))
 
+
 typedef struct {
     GtkContainer parent;
     GtkWidget *expando_box;
     GtkWidget *label_box;
 
     gboolean current; /* is this currently used config */
-    gboolean unset; /* is there a current config at all */
+    char *current_service_name; /* name of the current service */
     gboolean configured; /* actual service configuration exists on server */
     gboolean has_template; /* this service configuration has a matching template */
     gboolean showing;
@@ -54,15 +55,24 @@ typedef struct {
     GtkWidget *description_label;
     GtkWidget *name_label;
     GtkWidget *name_entry;
+    GtkWidget *complex_config_info_bar;
+    GtkWidget *mode_table;
+    GtkWidget *send_check;
+    GtkWidget *receive_check;
     GtkWidget *username_entry;
     GtkWidget *password_entry;
+    GtkWidget *source_toggle_label;
     GtkWidget *baseurl_entry;
     GtkWidget *expander;
+    GtkWidget *fake_expander;
     GtkWidget *server_settings_table;
     GtkWidget *reset_delete_button;
     GtkWidget *stop_button;
     GtkWidget *use_button;
-    GHashTable *uri_entries;
+
+    GHashTable *sources;   /* key is source name, value is source_widgets */
+
+    gboolean mode_changed;
 } SyncConfigWidget;
 
 typedef struct {
@@ -76,7 +86,7 @@ GType sync_config_widget_get_type (void);
 GtkWidget *sync_config_widget_new (SyncevoServer *server,
                                    const char *name,
                                    gboolean current,
-                                   gboolean unset,
+                                   const char *current_service_name,
                                    gboolean configured,
                                    gboolean has_template);
 

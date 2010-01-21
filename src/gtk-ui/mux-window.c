@@ -21,7 +21,6 @@
 #include "mux-icon-button.h"
 
 static GdkColor mux_window_default_title_bar_bg = { 0, 0x3300, 0x3300, 0x3300 };
-static GdkColor mux_window_default_title_bar_fg = { 0, 0x2c00, 0x2c00, 0x2c00 };
 
 #define MUX_WINDOW_DEFAULT_TITLE_BAR_HEIGHT 63
 
@@ -98,17 +97,13 @@ static void
 mux_window_update_style (MuxWindow *win)
 {
     GdkColor *title_bar_bg = NULL;
-    GdkColor *title_bar_fg = NULL;
     guint title_bar_height;
-    char *title_bar_font = NULL;
 
-    g_return_if_fail (win->title_bar && win->title_label);
+    g_return_if_fail (win->title_bar);
 
     gtk_widget_style_get (GTK_WIDGET (win),
                           "title-bar-height", &title_bar_height, 
                           "title-bar-bg", &title_bar_bg,
-                          "title-bar-fg", &title_bar_fg,
-                          "title-bar-font", &title_bar_font,
                           NULL);
 
     if (title_bar_bg) {
@@ -119,24 +114,7 @@ mux_window_update_style (MuxWindow *win)
                               &mux_window_default_title_bar_bg);
     }
 
-    if (title_bar_fg) {
-        gtk_widget_modify_fg (win->title_label, GTK_STATE_NORMAL, title_bar_fg);
-        gdk_color_free (title_bar_fg);
-    } else {
-        gtk_widget_modify_fg (win->title_label, GTK_STATE_NORMAL, 
-                              &mux_window_default_title_bar_fg);
-    }
-
-    if (title_bar_font) {
-        PangoFontDescription *desc;
-        desc = pango_font_description_from_string (title_bar_font);
-        gtk_widget_modify_font (win->title_label, desc);
-        pango_font_description_free (desc);
-        g_free (title_bar_font);
-    }
-    
     gtk_widget_set_size_request (win->title_bar, -1, title_bar_height);
-    gtk_misc_set_padding (GTK_MISC (win->title_label), title_bar_height / 3, 0);
 }
 
 static void 
@@ -165,8 +143,8 @@ mux_window_forall (GtkContainer *container,
 
     if (mux_win->title_bar)
         (* callback) (mux_win->title_bar, callback_data);
-    if (mux_win->settings)
-        (* callback) (mux_win->settings, callback_data);
+    if (mux_win->notebook)
+        (* callback) (mux_win->notebook, callback_data);
 }
 
 static void
@@ -175,21 +153,11 @@ mux_window_add (GtkContainer *container,
 {
     MuxWindowClass *klass;
     GtkContainerClass *parent_container_class;
-    GtkBin *bin = GTK_BIN (container);
 
     klass = MUX_WINDOW_GET_CLASS (container);
     parent_container_class = GTK_CONTAINER_CLASS (g_type_class_peek_parent (klass));
 
-    if (!bin->child) {
-        GtkWidget *w;
-        /* create a dummy container so we can hide the contents when settings 
-         * are shown */
-        w = gtk_vbox_new (FALSE, 0);
-        parent_container_class->add (container, w);
-        if (!MUX_WINDOW (container)->settings_visible)
-            gtk_widget_show (w);
-    }
-    gtk_container_add (GTK_CONTAINER (bin->child), widget);
+    parent_container_class->add (container, widget);
 }
 
 static void
@@ -202,17 +170,14 @@ mux_window_remove (GtkContainer *container,
     if (child == win->title_bar) {
         gtk_widget_unparent (win->title_bar);
         win->title_bar = NULL;
-        win->title_label = NULL;
-    } else if (child == win->settings) {
-        gtk_widget_unparent (win->settings);
-        win->settings = NULL;
+    } else if (child == win->notebook) {
+        gtk_widget_unparent (win->notebook);
+        win->notebook = NULL;
     } else if (bin->child) {
         if (bin->child == child) {
             /* should call parents remove... */
             gtk_widget_unparent (child);
             bin->child = NULL;
-        } else {
-            gtk_container_remove (GTK_CONTAINER (bin->child), child);
         }
     }
 }
@@ -232,8 +197,8 @@ mux_window_size_request (GtkWidget *widget,
         gtk_widget_size_request (mux_win->title_bar, &req);
     if (bin->child && GTK_WIDGET_VISIBLE (bin->child))
         gtk_widget_size_request (bin->child, &req);
-    if (mux_win->settings && GTK_WIDGET_VISIBLE (mux_win->settings))
-        gtk_widget_size_request (mux_win->settings, &req);
+    if (mux_win->notebook && GTK_WIDGET_VISIBLE (mux_win->notebook))
+        gtk_widget_size_request (mux_win->notebook, &req);
 
     requisition->width = 1024;
     requisition->height = 600;
@@ -286,8 +251,8 @@ mux_window_size_allocate (GtkWidget *widget,
         gtk_widget_size_allocate (bin->child, &child_allocation);
     }
 
-    if (mux_win->settings && GTK_WIDGET_VISIBLE (mux_win->settings)) {
-        gtk_widget_size_allocate (mux_win->settings, &child_allocation);
+    if (mux_win->notebook && GTK_WIDGET_VISIBLE (mux_win->notebook)) {
+        gtk_widget_size_allocate (mux_win->notebook, &child_allocation);
     }
 
     mux_win->child_allocation = child_allocation;
@@ -326,18 +291,6 @@ mux_window_class_init (MuxWindowClass *klass)
                                 GDK_TYPE_COLOR,
                                 G_PARAM_READWRITE);
     gtk_widget_class_install_style_property(widget_class, pspec);
-    pspec = g_param_spec_boxed ("title-bar-fg",
-                                "Title bar fg color",
-                                "Color of the title bar foreground (text)",
-                                GDK_TYPE_COLOR,
-                                G_PARAM_READWRITE);
-    gtk_widget_class_install_style_property(widget_class, pspec);
-    pspec = g_param_spec_string ("title-bar-font",
-                                 "Title bar font",
-                                 "Pango font description string for title bar text",
-                                 "Bold 25",
-                                 G_PARAM_READWRITE);
-    gtk_widget_class_install_style_property(widget_class, pspec);
 
     pspec = g_param_spec_flags ("decorations", 
                                NULL,
@@ -361,47 +314,11 @@ mux_window_class_init (MuxWindowClass *klass)
 }
 
 static void
-update_show_settings (MuxWindow *window)
-{
-    GtkBin *bin = GTK_BIN (window);
-
-    if (window->settings_visible) {
-        if (bin->child) {
-            gtk_widget_hide (bin->child);
-        }
-        if (window->settings){
-            gtk_widget_show (window->settings);
-            gtk_widget_map (window->settings);
-            if (window->settings_title) {
-                gtk_label_set_text (GTK_LABEL (window->title_label), 
-                                    window->settings_title);
-            }
-        }
-    } else {
-        if (window->settings) {
-            gtk_widget_hide (window->settings);
-        }
-        if (bin->child) {
-            gtk_widget_show (bin->child);
-        }
-        /* reset the window title */
-        gtk_label_set_text (GTK_LABEL (window->title_label), 
-                            gtk_window_get_title(GTK_WINDOW (window)));
-    }
-    g_signal_emit (window, mux_window_signals[SETTINGS_VISIBILITY_CHANGED], 0);
-}
-
-static void
 mux_window_settings_clicked (MuxIconButton *button, MuxWindow *window)
 {
     gboolean active;
-    active = mux_icon_button_get_active (button);;
-
-    if (window->settings_visible != active) {
-        window->settings_visible = active;
-
-        update_show_settings (window);
-    }
+    active = mux_icon_button_get_active (button);
+    mux_window_set_settings_visible (window, active);
 }
 
 static void
@@ -454,10 +371,17 @@ load_icon (MuxWindow *window, const char *icon_name)
 }
 
 static void
+bread_crumb_clicked_cb (GtkButton *btn, MuxWindow *window)
+{
+    mux_window_set_current_page (window, -1);
+}
+
+static void
 mux_window_build_title_bar (MuxWindow *window)
 {
-    GtkWidget *box, *btn;
+    GtkWidget *box, *button_box, *btn, *align;
     GdkPixbuf *pixbuf, *pixbuf_hover;
+    gint index;
 
     if (window->title_bar) {
         gtk_widget_unparent (window->title_bar);
@@ -472,10 +396,52 @@ mux_window_build_title_bar (MuxWindow *window)
     gtk_container_add (GTK_CONTAINER (window->title_bar), box);
     gtk_widget_show (box);
 
-    window->title_label = gtk_label_new (gtk_window_get_title (GTK_WINDOW (window)));
+    align = gtk_alignment_new (0, 0.5, 0, 0);
+    gtk_box_pack_start (GTK_BOX (box), align, FALSE, FALSE, 4);
+    gtk_widget_show (align);
+
+    button_box = gtk_hbox_new (FALSE, 0);
+    gtk_widget_set_name (window->title_bar, "mux_window_bread_crumbs");
+    gtk_container_add (GTK_CONTAINER (align), button_box);
+    gtk_widget_show (button_box);
+
+    btn = gtk_button_new_with_label (gtk_window_get_title (GTK_WINDOW (window)));
+    gtk_box_pack_start (GTK_BOX (button_box), btn,
+                        FALSE, FALSE, 4);
+    g_signal_connect (btn, "clicked",
+                      G_CALLBACK (bread_crumb_clicked_cb), window);
+    gtk_widget_show (btn);
+
+    index = mux_window_get_current_page (window);
+    if (index > -1) {
+        char *title;
+        GtkWidget *page;
+
+        page = gtk_notebook_get_nth_page (GTK_NOTEBOOK (window->notebook), index);
+        title = g_object_get_data (G_OBJECT (page), "title");
+        if (title) {
+            GtkWidget *img;
+            img = gtk_image_new_from_stock (GTK_STOCK_GO_FORWARD,
+                                            GTK_ICON_SIZE_SMALL_TOOLBAR);
+            gtk_box_pack_start (GTK_BOX (button_box), img,
+                                FALSE, FALSE, 4);
+            gtk_widget_show (img);
+
+            btn = gtk_button_new_with_label (title);
+            gtk_box_pack_start (GTK_BOX (button_box), btn,
+                                FALSE, FALSE, 4);
+            gtk_widget_show (btn);
+        }
+    }
+
+    /*window->title_label = gtk_label_new (gtk_window_get_title (GTK_WINDOW (window)));
     gtk_box_pack_start (GTK_BOX (box), window->title_label,
                         FALSE, FALSE, 0);
-    gtk_widget_show (window->title_label);
+    gtk_widget_show (window->title_label);*/
+
+    button_box = gtk_hbox_new (TRUE, 0);
+    gtk_box_pack_end (GTK_BOX (box), button_box, FALSE, FALSE, 4);
+    gtk_widget_show (button_box);
 
     if (window->decorations & MUX_DECOR_CLOSE) {
         pixbuf = load_icon (window, "close");
@@ -487,7 +453,7 @@ mux_window_build_title_bar (MuxWindow *window)
         gtk_widget_set_name (btn, "mux_icon_button_close");
         g_signal_connect_swapped (btn, "clicked", 
                                   G_CALLBACK (mux_window_close_clicked), window);
-        gtk_box_pack_end (GTK_BOX (box), btn, FALSE, FALSE, 0);
+        gtk_box_pack_end (GTK_BOX (button_box), btn, FALSE, FALSE, 0);
         gtk_widget_show (btn);
     }
 
@@ -503,7 +469,7 @@ mux_window_build_title_bar (MuxWindow *window)
         gtk_widget_set_name (window->settings_button, "mux_icon_button_settings");
         g_signal_connect (window->settings_button, "clicked", 
                           G_CALLBACK (mux_window_settings_clicked), window);
-        gtk_box_pack_end (GTK_BOX (box), window->settings_button, FALSE, FALSE, 0);
+        gtk_box_pack_end (GTK_BOX (button_box), window->settings_button, FALSE, FALSE, 0);
         gtk_widget_show (window->settings_button);
     }
 
@@ -520,10 +486,7 @@ mux_window_title_changed (MuxWindow *window,
                           GParamSpec *pspec,
                           gpointer user_data)
 {
-    if (window->title_label && !window->settings_visible) {
-        gtk_label_set_text (GTK_LABEL (window->title_label), 
-                            gtk_window_get_title (GTK_WINDOW (window)));
-    }
+    mux_window_build_title_bar (window);
 }
 
 /* For some reason metacity sometimes won't maximize but will if asked 
@@ -550,6 +513,13 @@ mux_window_init (MuxWindow *self)
                       G_CALLBACK (mux_window_title_changed), NULL);
 
     mux_window_build_title_bar (self);
+
+    self->notebook = gtk_notebook_new ();
+    gtk_notebook_set_show_tabs (GTK_NOTEBOOK (self->notebook), FALSE);
+    gtk_notebook_set_show_border (GTK_NOTEBOOK (self->notebook), FALSE);
+    gtk_widget_set_parent (self->notebook, GTK_WIDGET (self));
+    self->settings_index = -2;
+
 
     gtk_window_maximize (GTK_WINDOW (self));
     g_timeout_add (10, (GSourceFunc)mux_window_try_maximize, self);
@@ -582,64 +552,78 @@ mux_window_get_decorations (MuxWindow *window)
 }
 
 void
-mux_window_set_settings_widget (MuxWindow *window, GtkWidget *widget)
+mux_window_set_settings_visible (MuxWindow *window, gboolean show)
 {
-    if (widget != window->settings) {
-        if (window->settings) {
-            gtk_widget_unparent (window->settings);
+    gboolean visible;
+
+    visible = (mux_window_get_current_page (window) == window->settings_index);
+    if (visible != show) {
+        if (show) {
+            mux_window_set_current_page (window, window->settings_index);
+        } else {
+            mux_window_set_current_page (window, -1);
         }
 
-        window->settings = widget;
-
-        if (widget) {
-            gtk_widget_set_parent (widget, GTK_WIDGET (window));
-        }
-    }
-}
-
-GtkWidget*
-mux_window_get_settings_widget (MuxWindow *window)
-{
-    return window->settings;
-}
-
-void
-mux_window_set_settings_visible (MuxWindow *window, gboolean visible)
-{
-    if (window->settings_visible != visible) {
-        window->settings_visible = visible;
-
-        update_show_settings (window);
+        g_signal_emit (window, mux_window_signals[SETTINGS_VISIBILITY_CHANGED], 0);
 
         if (window->settings_button)
             mux_icon_button_set_active (MUX_ICON_BUTTON (window->settings_button),
-                                        visible);
+                                        show);
     }
 }
 
 gboolean
 mux_window_get_settings_visible (MuxWindow *window)
 {
-    return window->settings_visible;
+    return (mux_window_get_current_page (window) == window->settings_index);
 }
 
-void
-mux_window_set_settings_title (MuxWindow *window, const char *title)
+gint
+mux_window_append_page (MuxWindow *window,
+                        const char *title,
+                        GtkWidget *page,
+                        gboolean is_settings)
 {
-    if (window->settings_title) {
-        g_free (window->settings_title);
-    }
+    gint index;
 
-    window->settings_title = g_strdup (title);
+    index = gtk_notebook_append_page (GTK_NOTEBOOK (window->notebook), page, NULL);
+    g_object_set_data_full (G_OBJECT (page), "title", g_strdup (title), g_free);
 
-    if (window->settings_visible) {
-        gtk_label_set_text (GTK_LABEL (window->title_label), 
-                            window->settings_title);
+    if (is_settings) {
+        window->settings_index = index;
     }
+    return index;
 }
 
-const char*
-mux_window_get_settings_title (MuxWindow *window)
+void mux_window_set_current_page (MuxWindow *window, gint index)
 {
-    return window->settings_title;
+    GtkBin *bin = GTK_BIN (window);
+
+    if (index == -1) {
+        gtk_widget_hide (window->notebook);
+        if (bin->child) {
+            gtk_widget_show (bin->child);
+        }
+    } else {
+        gtk_notebook_set_current_page (GTK_NOTEBOOK (window->notebook), index);
+        if (bin->child) {
+            gtk_widget_hide (bin->child);
+        }
+        gtk_widget_show (window->notebook);
+        gtk_widget_map (window->notebook);
+    }    
+    mux_window_build_title_bar (window);
+}
+
+gint
+mux_window_get_current_page (MuxWindow *window)
+{
+    GtkBin *bin = GTK_BIN (window);
+
+    if (bin->child && GTK_WIDGET_VISIBLE (bin->child)) {
+        return -1;
+    } else if (window->notebook) {
+        return gtk_notebook_get_current_page (GTK_NOTEBOOK (window->notebook));
+    }
+    return -1;
 }

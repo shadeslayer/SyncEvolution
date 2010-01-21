@@ -44,3 +44,8 @@ style "big-button" {
     font_name = "Bold 11"
 }
 widget "*.sync_btn*" style "big-button"
+
+style "bread-crumb-button" {
+    GtkButton::inner-border = { 5,5,0,0 }
+}
+widget "*.mux_window_bread_crumbs.*GtkButton*" style "bread-crumb-button"

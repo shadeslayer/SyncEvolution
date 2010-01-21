@@ -62,13 +62,14 @@ typedef enum app_state {
 
 typedef struct app_data {
     GtkWidget *sync_win;
-    GtkWidget *services_win; /* will be NULL when USE_MOBLIN_UX is set*/
 
-    GtkWidget *server_box;
-    GtkWidget *server_failure_box;
-    GtkWidget *no_server_box;
-    GtkWidget *error_box;
-    GtkWidget *errors_box;
+    GtkWidget *services_win; /* will be NULL when USE_MOBLIN_UX is set*/
+    GtkWidget *emergency_win; /* will be NULL when USE_MOBLIN_UX is set*/
+
+    gint emergency_index; /* for use in mux_window_set_current_page() */
+
+    GtkWidget *service_box;
+    GtkWidget *info_bar;
     GtkWidget *no_connection_box;
     GtkWidget *main_frame;
     GtkWidget *log_frame;
@@ -78,8 +79,8 @@ typedef struct app_data {
     GtkWidget *progress;
     GtkWidget *sync_status_label;
     GtkWidget *sync_btn;
-    GtkWidget *edit_service_btn;
     GtkWidget *change_service_btn;
+    GtkWidget *emergency_btn;
 
     GtkWidget *server_label;
     GtkWidget *last_synced_label;
@@ -98,8 +99,6 @@ typedef struct app_data {
     int last_sync;
     guint last_sync_src_id;
 
-    SyncevoSyncMode mode;
-
     server_config *current_service;
     app_state current_state;
     gboolean open_current; /* should the service list open the current 
@@ -113,17 +112,28 @@ typedef struct app_data {
 typedef struct operation_data {
     app_data *data;
     enum op {
-        OP_SYNC,
+        OP_SYNC, /* use sync mode from config */
+        OP_SYNC_SLOW,
+        OP_SYNC_REFRESH_FROM_CLIENT,
+        OP_SYNC_REFRESH_FROM_SERVER,
         OP_SAVE,
     } operation;
     gboolean started;
 } operation_data;
 
+typedef enum SyncInfoBarResponse {
+    RESPONSE_NONE,
+    RESPONSE_SETTINGS,
+    RESPONSE_EMERGENCY,
+} SyncInfoBarResponse;
+
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
 static void show_main_view (app_data *data);
+static void show_emergency_view (app_data *data);
 static void show_services_list (app_data *data);
 static void update_services_list (app_data *data);
+static void update_service_ui (app_data *data);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
 static void get_presence_cb (SyncevoServer *server, char *status, char *transport,
                              GError *error, app_data *data);
@@ -160,27 +170,16 @@ remove_child (GtkWidget *widget, GtkContainer *container)
 static void 
 change_service_clicked_cb (GtkButton *btn, app_data *data)
 {
+    /* data->open_current = TRUE; */
     show_services_list (data);
 }
 
 static void 
-edit_service_clicked_cb (GtkButton *btn, app_data *data)
+emergency_clicked_cb (GtkButton *btn, app_data *data)
 {
-    g_assert (data);
-
-    data->open_current = TRUE;
-    show_services_list (data);
+    show_emergency_view (data);
 }
 
-static void
-clear_error_info (app_data *data)
-{
-    gtk_container_foreach (GTK_CONTAINER(data->error_box),
-                           (GtkCallback)remove_child,
-                           data->error_box);
-
-    gtk_widget_hide (data->errors_box);
-}
 
 char*
 get_pretty_source_name (const char *source_name)
@@ -204,14 +203,14 @@ get_pretty_source_name (const char *source_name)
     }
 }
 
+/*
 static void
 add_error_info (app_data *data, const char *message, const char *external_reason)
 {
     GtkWidget *lbl;
     GList *l, *children;
 
-    /* synthesis may emit same error several times, work around that: */
-    children = gtk_container_get_children (GTK_CONTAINER (data->error_box));
+    children = gtk_container_get_children (GTK_CONTAINER (data->service_error_box));
     for (l = children; l; l = l->next) {
         GtkLabel *old_lbl = GTK_LABEL (l->data);
 
@@ -226,11 +225,11 @@ add_error_info (app_data *data, const char *message, const char *external_reason
 
     lbl = gtk_label_new (message);
     gtk_label_set_line_wrap (GTK_LABEL (lbl), TRUE);
-    /* FIXME ugly hard coding*/
+
     gtk_widget_set_size_request (lbl, 160, -1);
     gtk_widget_show (lbl);
     gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
-    gtk_box_pack_start (GTK_BOX (data->error_box), lbl, FALSE, FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (data->service_error_box), lbl, FALSE, FALSE, 0);
 
     if (external_reason) {
         g_warning ("%s: %s", message, external_reason);
@@ -238,6 +237,7 @@ add_error_info (app_data *data, const char *message, const char *external_reason
         g_warning ("%s", message);
     }
 }
+*/
 
 static void
 reload_config (app_data *data, const char *server)
@@ -245,8 +245,9 @@ reload_config (app_data *data, const char *server)
     server_config_free (data->current_service);
 
     if (!server || strlen (server) == 0) {
-        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
         data->current_service = NULL;
+        update_service_ui (data);
+        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
     } else {
         data->synced_this_session = FALSE;
         data->current_service = g_slice_new0 (server_config);
@@ -270,7 +271,6 @@ abort_sync_cb (SyncevoSession *session,
 {
     if (error) {
         /* TODO show in UI: failed to abort sync (while syncing) */
-        add_error_info (data, _("Failed to abort sync"), error->message);
         g_error_free (error);
     }
 
@@ -284,7 +284,6 @@ sync_cb (SyncevoSession *session,
 {
     if (error) {
         /* TODO show in UI: sync failed (failed to even start) */
-        add_error_info (data, _("Failed to start sync"), error->message);
         g_error_free (error);
         g_object_unref (session);
         return;
@@ -297,7 +296,111 @@ sync_cb (SyncevoSession *session,
     set_app_state (data, SYNC_UI_STATE_SYNCING);
 }
 
-static void 
+static gboolean
+confirm (app_data *data, const char *message, const char *yes)
+{
+    GtkWidget *w;
+    int ret;
+
+    w = gtk_message_dialog_new (GTK_WINDOW (data->sync_win),
+                                GTK_DIALOG_MODAL,
+                                GTK_MESSAGE_QUESTION,
+                                GTK_BUTTONS_NONE,
+                                "%s",
+                                message);
+    gtk_dialog_add_buttons (GTK_DIALOG (w),
+                            _("No, cancel sync"),
+                            GTK_RESPONSE_NO,
+                            yes,
+                            GTK_RESPONSE_YES,
+                            NULL);
+    ret = gtk_dialog_run (GTK_DIALOG (w));
+    gtk_widget_destroy (w);
+
+    return (ret == GTK_RESPONSE_YES);
+}
+static void
+slow_sync_clicked_cb (GtkButton *btn, app_data *data)
+{
+    operation_data *op_data;
+    char *message;
+
+    message = g_strdup_printf (_("Do you want to slow sync with %s?"),
+                               data->current_service->name);
+    if (!confirm (data, message, _("Yes, do slow sync"))) {
+        g_free (message);
+        return;
+    }
+    g_free (message);
+
+    op_data = g_slice_new (operation_data);
+    op_data->data = data;
+    op_data->operation = OP_SYNC_SLOW;
+    op_data->started = FALSE;
+    syncevo_server_start_session (data->server,
+                                  data->current_service->name,
+                                  (SyncevoServerStartSessionCb)start_session_cb,
+                                  op_data);
+
+    show_main_view (data);
+}
+
+
+static void
+refresh_from_server_clicked_cb (GtkButton *btn, app_data *data)
+{
+    operation_data *op_data;
+    char *message;
+
+    message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
+                                 "data from %s? This is not usually advised."),
+                               data->current_service->name);
+    if (!confirm (data, message, _("Yes, delete and replace"))) {
+        g_free (message);
+        return;
+    }
+    g_free (message);
+
+    op_data = g_slice_new (operation_data);
+    op_data->data = data;
+    op_data->operation = OP_SYNC_REFRESH_FROM_SERVER;
+    op_data->started = FALSE;
+    syncevo_server_start_session (data->server,
+                                  data->current_service->name,
+                                  (SyncevoServerStartSessionCb)start_session_cb,
+                                  op_data);
+
+    show_main_view (data);
+}
+
+static void
+refresh_from_client_clicked_cb (GtkButton *btn, app_data *data)
+{
+    operation_data *op_data;
+    char *message;
+
+    message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
+                                 "your local data? This is not usually advised."),
+                               data->current_service->name);
+    if (!confirm (data, message, _("Yes, delete and replace"))) {
+        g_free (message);
+        return;
+    }
+    g_free (message);
+
+    op_data = g_slice_new (operation_data);
+    op_data->data = data;
+    op_data->operation = OP_SYNC_REFRESH_FROM_CLIENT;
+    op_data->started = FALSE;
+    syncevo_server_start_session (data->server,
+                                  data->current_service->name,
+                                  (SyncevoServerStartSessionCb)start_session_cb,
+                                  op_data);
+
+    show_main_view (data);
+}
+
+static void
 sync_clicked_cb (GtkButton *btn, app_data *data)
 {
     operation_data *op_data;
@@ -308,45 +411,6 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
                                data);
         set_sync_progress (data, -1.0, _("Trying to cancel sync"));
     } else {
-        char *message = NULL;
-
-        /* confirmation dialog for destructive sync options */
-        switch (data->mode) {
-        case SYNCEVO_SYNC_REFRESH_FROM_SERVER:
-            message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
-                                         "data from %s? This is not usually advised."),
-                                       data->current_service->name);
-            break;
-        case SYNCEVO_SYNC_REFRESH_FROM_CLIENT:
-            message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
-                                         "your local data? This is not usually advised."),
-                                       data->current_service->name);
-            break;
-        default:
-            ;
-        }
-        if (message) {
-            GtkWidget *w;
-            int ret;
-            w = gtk_message_dialog_new (GTK_WINDOW (data->sync_win),
-                                        GTK_DIALOG_MODAL,
-                                        GTK_MESSAGE_QUESTION,
-                                        GTK_BUTTONS_NONE,
-                                        "%s",
-                                        message);
-            gtk_dialog_add_buttons (GTK_DIALOG (w), 
-                                    _("No, cancel sync"),
-                                    GTK_RESPONSE_NO,
-                                    _("Yes, delete and replace"),
-                                    GTK_RESPONSE_YES,
-                                    NULL);
-            ret = gtk_dialog_run (GTK_DIALOG (w));
-            gtk_widget_destroy (w);
-            g_free (message);
-            if (ret != GTK_RESPONSE_YES) {
-                return;
-            }
-        }
 
         op_data = g_slice_new (operation_data);
         op_data->data = data;
@@ -370,33 +434,48 @@ refresh_last_synced_label (app_data *data)
     g_get_current_time (&val);
     diff = val.tv_sec - data->last_sync;
 
-    if (data->last_sync <= 0) {
-        msg = g_strdup (""); /* we don't know */
+    if (!data->current_service) {
+        msg = g_strdup (_("No service selected"));
+        delay = -1;
+    } else if (data->last_sync <= 0) {
+        msg = g_strdup (data->current_service->name); /* we don't know */
         delay = -1;
     } else if (diff < 30) {
-        msg = g_strdup (_("Last synced just seconds ago"));
+        /* TRANSLATORS: This is the title on main view. Placeholder is 
+         * the service name. Example: "Google - synced just now" */
+        msg = g_strdup_printf (_("%s - synced just now"),
+                               data->current_service->name);
         delay = 30;
     } else if (diff < 90) {
-        msg = g_strdup (_("Last synced a minute ago"));
+        msg = g_strdup_printf (_("%s - synced a minute ago"),
+                               data->current_service->name);
         delay = 60;
     } else if (diff < 60 * 60) {
-        msg = g_strdup_printf (_("Last synced %ld minutes ago"), (diff + 30) / 60);
+        msg = g_strdup_printf (_("%s - synced %ld minutes ago"),
+                               data->current_service->name,
+                               (diff + 30) / 60);
         delay = 60;
     } else if (diff < 60 * 90) {
-        msg = g_strdup (_("Last synced an hour ago"));
+        msg = g_strdup_printf (_("%s - synced an hour ago"),
+                               data->current_service->name);
         delay = 60 * 60;
     } else if (diff < 60 * 60 * 24) {
-        msg = g_strdup_printf (_("Last synced %ld hours ago"), (diff + 60 * 30) / (60 * 60));
+        msg = g_strdup_printf (_("%s - synced %ld hours ago"),
+                               data->current_service->name,
+                               (diff + 60 * 30) / (60 * 60));
         delay = 60 * 60;
     } else if (diff < 60 * 60 * 24 - (60 * 30)) {
-        msg = g_strdup (_("Last synced a day ago"));
+        msg = g_strdup_printf (_("%s - synced a day ago"),
+                               data->current_service->name);
         delay = 60 * 60 * 24;
     } else {
-        msg = g_strdup_printf (_("Last synced %ld days ago"), (diff + 24 * 60 * 30) / (60 * 60 * 24));
+        msg = g_strdup_printf (_("%s - synced %ld days ago"),
+                               data->current_service->name,
+                               (diff + 24 * 60 * 30) / (60 * 60 * 24));
         delay = 60 * 60 * 24;
     }
 
-    gtk_label_set_text (GTK_LABEL (data->last_synced_label), msg);
+    gtk_label_set_text (GTK_LABEL (data->server_label), msg);
     g_free (msg);
 
     if (data->last_sync_src_id > 0)
@@ -418,6 +497,51 @@ set_sync_progress (app_data *data, float progress, char *status)
 }
 
 static void
+set_info_bar (app_data *data,
+              GtkMessageType type,
+              SyncInfoBarResponse response_id,
+              const char *message)
+{
+    GtkWidget *container, *label;
+
+    if (!message) {
+        gtk_widget_hide (data->info_bar);
+        return;
+    }
+
+    container = gtk_info_bar_get_action_area (GTK_INFO_BAR (data->info_bar));
+    gtk_container_foreach (GTK_CONTAINER (container),
+                           (GtkCallback)remove_child,
+                           container);
+    switch (response_id) {
+    case RESPONSE_EMERGENCY:
+        gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
+                                 _("Fix it"),
+                                 response_id);
+        break;
+    case RESPONSE_SETTINGS:
+        gtk_info_bar_add_button (GTK_INFO_BAR (data->info_bar),
+                                 _("Select sync service"),
+                                 response_id);
+        break;
+    default:
+        g_warn_if_reached ();
+    }
+
+    gtk_info_bar_set_message_type (GTK_INFO_BAR (data->info_bar), type);
+    container = gtk_info_bar_get_content_area (GTK_INFO_BAR (data->info_bar));
+    gtk_container_foreach (GTK_CONTAINER (container),
+                           (GtkCallback)remove_child,
+                           container);
+
+    label = gtk_label_new (message);
+    gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
+    gtk_container_add (GTK_CONTAINER (container),
+                       label);
+    gtk_widget_show (label);
+}
+
+static void
 set_app_state (app_data *data, app_state state)
 {
 
@@ -429,44 +553,52 @@ set_app_state (app_data *data, app_state state)
 
     switch (data->current_state) {
     case SYNC_UI_STATE_GETTING_SERVER:
-        clear_error_info (data);
-        gtk_widget_show (data->server_box);
-        gtk_widget_hide (data->server_failure_box);
-        gtk_widget_hide (data->no_server_box);
+        gtk_widget_hide (data->service_box);
+        gtk_widget_hide (data->info_bar);
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
+        refresh_last_synced_label (data);
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
-        gtk_widget_set_sensitive (data->change_service_btn, TRUE);
+        gtk_widget_set_sensitive (data->change_service_btn, FALSE);
+        gtk_widget_set_sensitive (data->emergency_btn, FALSE);
         break;
     case SYNC_UI_STATE_NO_SERVER:
-        clear_error_info (data);
-        gtk_widget_hide (data->server_box);
-        gtk_widget_hide (data->server_failure_box);
-        gtk_widget_show (data->no_server_box);
+        gtk_widget_hide (data->service_box);
+        set_info_bar (data, GTK_MESSAGE_INFO, RESPONSE_SETTINGS,
+                      _("You haven't selected a sync service yet. "
+                        "Sync services let you synchronize your data "
+                        "between your netbook and a web service"));
+
+        gtk_widget_show (data->info_bar);
+        refresh_last_synced_label (data);
+
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
+        gtk_widget_set_sensitive (data->emergency_btn, FALSE);
         gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->change_service_btn);
         break;
     case SYNC_UI_STATE_SERVER_FAILURE:
-        clear_error_info (data);
-        gtk_widget_hide (data->server_box);
-        gtk_widget_hide (data->no_server_box);
-        gtk_widget_show (data->server_failure_box);
+        gtk_widget_hide (data->service_box);
+        refresh_last_synced_label (data);
+
+        /* info bar content should be set earlier */
+        gtk_widget_show (data->info_bar);
+
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
 
         gtk_widget_set_sensitive (data->main_frame, FALSE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
+        gtk_widget_set_sensitive (data->emergency_btn, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
         break;
     case SYNC_UI_STATE_SERVER_OK:
         /* we have a active, idle session */
-        gtk_widget_show (data->server_box);
-        gtk_widget_hide (data->server_failure_box);
-        gtk_widget_hide (data->no_server_box);
+        gtk_widget_show (data->service_box);
+        gtk_widget_hide (data->info_bar);
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         if (data->online) {
@@ -476,6 +608,9 @@ set_app_state (app_data *data, app_state state)
         }
         gtk_widget_set_sensitive (data->sync_btn, data->online);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
+        gtk_widget_set_sensitive (data->emergency_btn, TRUE);
+        /* TRANSLATORS: These are for the button in main view, right side.
+           Keep line length below ~20 characters, use two lines if needed */
         if (data->synced_this_session)
             gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync again"));
         else
@@ -484,18 +619,20 @@ set_app_state (app_data *data, app_state state)
 
         data->syncing = FALSE;
         break;
-        
+
     case SYNC_UI_STATE_SYNCING:
         /* we have a active session, and a session is running
            (the running session may or may not be ours) */
-        clear_error_info (data);
         gtk_widget_show (data->progress);
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Syncing"));
         gtk_widget_set_sensitive (data->main_frame, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
+        gtk_widget_set_sensitive (data->emergency_btn, FALSE);
 
         gtk_widget_set_sensitive (data->sync_btn, support_canceling);
         if (support_canceling) {
+            /* TRANSLATORS: This is for the button in main view, right side.
+               Keep line length below ~20 characters, use two lines if needed */
             gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Cancel sync"));
         }
 
@@ -503,14 +640,6 @@ set_app_state (app_data *data, app_state state)
         break;
     default:
         g_assert_not_reached ();
-    }
-}
-
-static void
-sync_type_toggled_cb (GObject *radio, app_data *data)
-{
-    if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (radio))) {
-        data->mode = GPOINTER_TO_INT (g_object_get_data (radio, "mode"));
     }
 }
 
@@ -555,47 +684,53 @@ switch_dummy_to_mux_frame (GtkWidget *dummy)
     return frame;
 }
 
-/* truly stupid, but glade doesn't allow custom containers.
-   Now glade file has dummy containers that will be replaced here.
-   The dummy should be a gtkwindow */ 
-static GtkWidget*
-switch_dummy_to_mux_window (GtkWidget *dummy)
-{
-    GtkWidget *window;
-
-    g_assert (GTK_IS_WINDOW (dummy));
-
-    window = mux_window_new ();
-    gtk_window_set_default_size (GTK_WINDOW (window), 1024, 600);
-    gtk_widget_set_name (window, gtk_widget_get_name (dummy));
-    gtk_window_set_modal (GTK_WINDOW (window),
-                          gtk_window_get_modal (GTK_WINDOW (dummy)));
-
-    mux_window_set_decorations (MUX_WINDOW (window), MUX_DECOR_CLOSE);
-    gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (dummy)), window);
-
-    return window;
-}
-
 static void
-switch_main_and_settings_to_mux_window (app_data *data,
-                                        GtkWidget *main, GtkWidget *settings)
+setup_windows (app_data *data,
+               GtkWidget *main,
+               GtkWidget *settings,
+               GtkWidget *emergency)
 {
     GtkWidget *mux_main;
     GtkWidget *tmp;
 
-    mux_main = switch_dummy_to_mux_window (main);
+    g_assert (GTK_IS_WINDOW (main));
+    g_assert (GTK_IS_WINDOW (settings));
+    g_assert (GTK_IS_WINDOW (emergency));
+
+    mux_main = mux_window_new ();
+    gtk_window_set_title (GTK_WINDOW (mux_main),
+                          gtk_window_get_title (GTK_WINDOW (main)));
+    gtk_window_set_default_size (GTK_WINDOW (mux_main), 1024, 600);
+    gtk_widget_set_name (mux_main, gtk_widget_get_name (main));
+
+
+    mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_CLOSE);
+    gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (main)), mux_main);
+
     mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_SETTINGS|MUX_DECOR_CLOSE);
     g_signal_connect (mux_main, "settings-visibility-changed",
                       G_CALLBACK (settings_visibility_changed_cb), data);
 
     tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (settings)));
     gtk_container_remove (GTK_CONTAINER (settings), tmp);
-    mux_window_set_settings_widget (MUX_WINDOW (mux_main), tmp);
+    mux_window_append_page (MUX_WINDOW (mux_main),
+                                        gtk_window_get_title (GTK_WINDOW (settings)),
+                                        tmp,
+                                        TRUE);
+    g_object_unref (tmp);
+
+    tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (emergency)));
+    gtk_container_remove (GTK_CONTAINER (emergency), tmp);
+    data->emergency_index =
+        mux_window_append_page (MUX_WINDOW (mux_main),
+                                gtk_window_get_title (GTK_WINDOW (emergency)),
+                                tmp,
+                                FALSE);
     g_object_unref (tmp);
 
     data->sync_win = mux_main;
     data->services_win = NULL;
+    data->emergency_win = NULL;
 }
 
 
@@ -607,14 +742,21 @@ switch_dummy_to_mux_frame (GtkWidget *dummy) {
     return dummy;
 }
 static void
-switch_main_and_settings_to_mux_window (app_data *data,
-                                        GtkWidget *main, GtkWidget *settings)
+setup_windows (app_data *data,
+               GtkWidget *main,
+               GtkWidget *settings,
+               GtkWidget *emergency)
 {
     data->sync_win = main;
     data->services_win = settings;
+    data->emergency_win = emergency;
     gtk_window_set_transient_for (GTK_WINDOW (data->services_win),
                                   GTK_WINDOW (data->sync_win));
+    gtk_window_set_transient_for (GTK_WINDOW (data->emergency_win),
+                                  GTK_WINDOW (data->sync_win));
     g_signal_connect (data->services_win, "delete-event",
+                      G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+    g_signal_connect (data->emergency_win, "delete-event",
                       G_CALLBACK (gtk_widget_hide_on_delete), NULL);
 }
 #endif
@@ -625,7 +767,7 @@ services_box_allocate_cb (GtkWidget     *widget,
                           GtkAllocation *allocation,
                           app_data *data)
 {
-    if (data->expanded_config) {
+    if (GTK_IS_WIDGET (data->expanded_config)) {
         int y, height;
         GtkAdjustment *adj;
 
@@ -637,6 +779,25 @@ services_box_allocate_cb (GtkWidget     *widget,
         adj = gtk_scrolled_window_get_vadjustment
                 (GTK_SCROLLED_WINDOW (data->scrolled_window));
         gtk_adjustment_clamp_page (adj, y, y + height);
+
+        data->expanded_config = NULL;
+    }
+}
+
+static void
+info_bar_response_cb (GtkInfoBar          *info_bar,
+                      SyncInfoBarResponse  response_id,
+                      app_data            *data)
+{
+    switch (response_id) {
+    case RESPONSE_EMERGENCY:
+        show_emergency_view (data);
+        break;
+    case RESPONSE_SETTINGS:
+        show_services_list (data);
+        break;
+    default:
+        g_warn_if_reached ();
     }
 }
 
@@ -645,8 +806,8 @@ init_ui (app_data *data)
 {
     GtkBuilder *builder;
     GError *error = NULL;
-    GObject *radio;
-    GtkWidget *frame, *setup_service_btn , *image;
+    GtkWidget *frame, * service_error_box, *btn;
+    GtkAdjustment *adj;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -661,24 +822,22 @@ init_ui (app_data *data)
         return FALSE;
     }
 
-    data->server_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_box"));
-    data->no_server_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_server_box"));
-    data->server_failure_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_failure_box"));
-    data->errors_box = GTK_WIDGET (gtk_builder_get_object (builder, "errors_box"));
-    data->no_connection_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_connection_box"));
-    data->error_box = GTK_WIDGET (gtk_builder_get_object (builder, "error_box"));
-    data->server_icon_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_icon_box"));
+    data->service_box = GTK_WIDGET (gtk_builder_get_object (builder, "service_box"));
+    service_error_box = GTK_WIDGET (gtk_builder_get_object (builder, "service_error_box"));
+    data->info_bar = gtk_info_bar_new ();
+    gtk_widget_set_no_show_all (data->info_bar, TRUE);
+    g_signal_connect (data->info_bar, "response",
+                      G_CALLBACK (info_bar_response_cb), data);
+    gtk_box_pack_start (GTK_BOX (service_error_box), data->info_bar,
+                        FALSE, FALSE, 16);
 
-    image = GTK_WIDGET (gtk_builder_get_object (builder, "sync_failure_image"));
-    gtk_image_set_from_file (GTK_IMAGE (image), THEMEDIR "sync-generic.png");
-    image = GTK_WIDGET (gtk_builder_get_object (builder, "no_server_image"));
-    gtk_image_set_from_file (GTK_IMAGE (image), THEMEDIR "sync-generic.png");
-    setup_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "setup_sync_service_btn"));
+    data->no_connection_box = GTK_WIDGET (gtk_builder_get_object (builder, "no_connection_box"));
+    data->server_icon_box = GTK_WIDGET (gtk_builder_get_object (builder, "server_icon_box"));
 
     data->offline_label = GTK_WIDGET (gtk_builder_get_object (builder, "offline_label"));
     data->progress = GTK_WIDGET (gtk_builder_get_object (builder, "progressbar"));
-    data->edit_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "edit_service_btn"));
     data->change_service_btn = GTK_WIDGET (gtk_builder_get_object (builder, "change_service_btn"));
+    data->emergency_btn = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_btn"));
     data->sync_btn = GTK_WIDGET (gtk_builder_get_object (builder, "sync_btn"));
     data->sync_status_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_status_label"));
 
@@ -692,34 +851,37 @@ init_ui (app_data *data)
     g_signal_connect (data->new_service_btn, "clicked",
                       G_CALLBACK (setup_new_service_clicked), data);
 
+    /* service list view */
     data->scrolled_window = GTK_WIDGET (gtk_builder_get_object (builder, "scrolledwindow"));
+    adj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (data->scrolled_window));
     data->services_box = GTK_WIDGET (gtk_builder_get_object (builder, "services_box"));
+    gtk_container_set_focus_vadjustment (GTK_CONTAINER (data->services_box), adj);
     g_signal_connect(data->services_box, "size-allocate",
                      G_CALLBACK (services_box_allocate_cb), data);
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
-    radio = gtk_builder_get_object (builder, "two_way_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_TWO_WAY));
-    g_signal_connect (radio, "toggled",
-                      G_CALLBACK (sync_type_toggled_cb), data);
-    radio = gtk_builder_get_object (builder, "one_way_from_remote_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_REFRESH_FROM_SERVER));
-    g_signal_connect (radio, "toggled",
-                      G_CALLBACK (sync_type_toggled_cb), data);
-    radio = gtk_builder_get_object (builder, "one_way_from_local_radio");
-    g_object_set_data (radio, "mode", GINT_TO_POINTER (SYNCEVO_SYNC_REFRESH_FROM_CLIENT));
-    g_signal_connect (radio, "toggled",
-                      G_CALLBACK (sync_type_toggled_cb), data);
+    /* emergency view */
+    btn = GTK_WIDGET (gtk_builder_get_object (builder, "slow_sync_btn"));
+    g_signal_connect (btn, "clicked",
+                      G_CALLBACK (slow_sync_clicked_cb), data);
+    btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_server_btn"));
+    g_signal_connect (btn, "clicked",
+                      G_CALLBACK (refresh_from_server_clicked_cb), data);
+    btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_client_btn"));
+    g_signal_connect (btn, "clicked",
+                      G_CALLBACK (refresh_from_client_clicked_cb), data);
 
     /* No (documented) way to add own widgets to gtkbuilder it seems...
        swap the all dummy widgets with Muxwidgets */
-    switch_main_and_settings_to_mux_window (data,
-                                            GTK_WIDGET (gtk_builder_get_object (builder, "sync_win")),
-                                            GTK_WIDGET (gtk_builder_get_object (builder, "services_win")));
+    setup_windows (data,
+                   GTK_WIDGET (gtk_builder_get_object (builder, "sync_win")),
+                   GTK_WIDGET (gtk_builder_get_object (builder, "services_win")),
+                   GTK_WIDGET (gtk_builder_get_object (builder, "emergency_win")));
 
     data->main_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
     data->log_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
     frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
+    frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "emergency_frame")));
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
@@ -727,10 +889,8 @@ init_ui (app_data *data)
                       G_CALLBACK (show_main_view), data);
     g_signal_connect (data->change_service_btn, "clicked",
                       G_CALLBACK (change_service_clicked_cb), data);
-    g_signal_connect (setup_service_btn, "clicked",
-                      G_CALLBACK (change_service_clicked_cb), data);
-    g_signal_connect (data->edit_service_btn, "clicked",
-                      G_CALLBACK (edit_service_clicked_cb), data);
+    g_signal_connect (data->emergency_btn, "clicked",
+                      G_CALLBACK (emergency_clicked_cb), data);
     g_signal_connect (data->sync_btn, "clicked", 
                       G_CALLBACK (sync_clicked_cb), data);
 
@@ -803,7 +963,7 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
 static void
 update_service_source_ui (const char *name, source_config *conf, app_data *data)
 {
-    GtkWidget *check, *box, *lbl;
+    GtkWidget *check, *box, *hbox, *lbl;
     char *pretty_name;
     const char *source_uri, *sync;
     gboolean enabled;
@@ -857,9 +1017,19 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
     gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
     gtk_box_pack_start_defaults (GTK_BOX (box), lbl);
 
+
+    hbox = gtk_hbox_new (FALSE, 0);
+    gtk_box_pack_start_defaults (GTK_BOX (box), hbox);
+
+    conf->error_image = gtk_image_new_from_stock (GTK_STOCK_DIALOG_ERROR,
+                                                  GTK_ICON_SIZE_SMALL_TOOLBAR);
+    gtk_box_pack_start (GTK_BOX (hbox), conf->error_image, FALSE, FALSE, 8);
+    gtk_widget_set_no_show_all (conf->error_image, TRUE);
+
+
     conf->label = gtk_label_new (NULL);
     gtk_misc_set_alignment (GTK_MISC (conf->label), 0.0, 0.5);
-    gtk_box_pack_start_defaults (GTK_BOX (box), conf->label);
+    gtk_box_pack_start_defaults (GTK_BOX (hbox), conf->label);
 
     source_config_update_label (conf);
 
@@ -901,30 +1071,26 @@ check_source_cb (SyncevoSession *session,
 static void
 update_service_ui (app_data *data)
 {
-    char *icon_uri;
+    char *icon_uri = NULL;
 
-    g_assert (data->current_service && data->current_service->config);
 
     gtk_container_foreach (GTK_CONTAINER (data->sources_box),
                            (GtkCallback)remove_child,
                            data->sources_box);
 
-    syncevo_config_get_value (data->current_service->config,
-                              NULL, "IconURI", &icon_uri);
+    if (data->current_service && data->current_service->config) {
+        syncevo_config_get_value (data->current_service->config,
+                                  NULL, "IconURI", &icon_uri);
 
-    if (data->current_service->name){
-        gtk_label_set_markup (GTK_LABEL (data->server_label), 
-                              data->current_service->name);
+        g_hash_table_foreach (data->current_service->source_configs,
+                              (GHFunc)update_service_source_ui,
+                              data);
     }
-    if (icon_uri) {
-        load_icon (icon_uri,
-                   GTK_BOX (data->server_icon_box),
-                   SYNC_UI_ICON_SIZE);
-    }
+    load_icon (icon_uri,
+               GTK_BOX (data->server_icon_box),
+               SYNC_UI_ICON_SIZE);
 
-    g_hash_table_foreach (data->current_service->source_configs,
-                          (GHFunc)update_service_source_ui,
-                          data);
+    refresh_last_synced_label (data);
 
 /* TODO: make sure all default sources are visible
  * (iow add missing sources as insensitive) */
@@ -956,7 +1122,6 @@ config_widget_changed_cb (GtkWidget *widget, app_data *data)
 {
     if (sync_config_widget_get_current (SYNC_CONFIG_WIDGET (widget))) {
         const char *name = NULL;
-
         name = sync_config_widget_get_name (SYNC_CONFIG_WIDGET (widget));
         reload_config (data, name);
         show_main_view (data);
@@ -975,16 +1140,19 @@ add_server_to_box (GtkBox *box,
 {
     GtkWidget *item = NULL;
     gboolean current = FALSE;
-    gboolean unset;
+    const char *current_name = NULL;
 
-    if (data->current_service && data->current_service->name &&
-        name && strcmp (name, data->current_service->name) == 0) {
-        current = TRUE;
+    if (data->current_service) {
+        current_name = data->current_service->name;
+        if (data->current_service->name && name && 
+            strcmp (name, data->current_service->name) == 0) {
+            current = TRUE;
+        }
      }
-    unset = !data->current_service;
 
     item = sync_config_widget_new (data->server, name,
-                                   current, unset, configured, has_template);
+                                   current, current_name,
+                                   configured, has_template);
     g_signal_connect (item, "changed",
                       G_CALLBACK (config_widget_changed_cb), data);
     g_signal_connect (item, "notify::expanded",
@@ -1001,21 +1169,37 @@ add_server_to_box (GtkBox *box,
     return item;
 }
 
+static void
+find_new_service_config (SyncConfigWidget *w, GtkWidget **found)
+{
+    if (SYNC_IS_CONFIG_WIDGET (w)) {
+        if (!sync_config_widget_get_configured (w) &&
+            !sync_config_widget_get_has_template (w)) {
+            *found = GTK_WIDGET (w);
+        }
+    }
+}
 
 static void
 setup_new_service_clicked (GtkButton *btn, app_data *data)
 {
-
-    GtkWidget *widget;
+    GtkWidget *widget = NULL;
 
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)unexpand_config_widget,
                            NULL);
 
-    widget = add_server_to_box (GTK_BOX (data->services_box),
-                                "default",
-                                FALSE, TRUE,
-                                data);
+    /* if a new service config has already been added, use that.
+     * Otherwise add one. */
+    gtk_container_foreach (GTK_CONTAINER (data->services_box),
+                           (GtkCallback)find_new_service_config,
+                           &widget);
+    if (!widget) {
+        widget = add_server_to_box (GTK_BOX (data->services_box),
+                                    "default",
+                                    FALSE, TRUE,
+                                    data);
+    }
     sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (widget), TRUE);
 }
 
@@ -1041,9 +1225,8 @@ get_configs_cb (SyncevoServer *server,
 
     if (error) {
         show_main_view (data);
+
         /* TODO show in UI: failed to show service list */
-        show_error_dialog (data->sync_win, 
-                           _("Failed to get list of configured services from SyncEvolution"));
         g_warning ("Server.GetConfigs() failed: %s", error->message);
         g_strfreev (templates);
         g_error_free (error);
@@ -1059,7 +1242,6 @@ get_configs_cb (SyncevoServer *server,
                 g_ascii_strncasecmp (*template_iter,
                                      *config_iter,
                                      strlen (*config_iter)) == 0) {
-
                 widget = add_server_to_box (GTK_BOX (data->services_box),
                                             *template_iter,
                                             TRUE, TRUE,
@@ -1236,12 +1418,23 @@ update_source_status (char *name,
                       app_data *data)
 {
     char *error;
-    
+    static char *waiting_source = NULL;
+
     error = get_error_string_for_code (error_code);
     if (error) {
         /* TODO show sync error in UI -- but not duplicates */
         g_warning ("Source '%s' error: %s", name, error);
         g_free (error);
+    }
+
+    if (status & SYNCEVO_SOURCE_WAITING) {
+        g_free (waiting_source);
+        waiting_source = g_strdup (name);
+        /* TODO: start spinner */
+    } else if (waiting_source && strcmp (waiting_source, name) == 0) {
+        g_free (waiting_source);
+        waiting_source = NULL;
+        /* TODO: stop spinner */
     }
 }
 
@@ -1490,7 +1683,6 @@ get_reports_cb (SyncevoServer *server,
             source_conf->local_rejections = stats->local_rejections;
             source_conf->remote_rejections = stats->remote_rejections;
             source_conf->status = stats->status;
-
             /* if ui has been constructed already, update it */
             source_config_update_label (source_conf);
         }
@@ -1527,29 +1719,46 @@ save_config (app_data *data, SyncevoSession *session)
 }
 
 static void
-sync (app_data *data, SyncevoSession *session)
+sync (operation_data *op_data, SyncevoSession *session)
 {
     GHashTable *source_modes;
     GHashTableIter iter;
     source_config *source;
+    SyncevoSyncMode mode;
 
-   /* override the sync mode in config with data->mode,
-     * then override all non-supported sources with "none".  */
+    app_data *data = op_data->data;
+
+   /* override all non-supported with "none".  */
     source_modes = syncevo_source_modes_new ();
 
     g_hash_table_iter_init (&iter, data->current_service->source_configs);
     while (g_hash_table_iter_next (&iter, NULL, (gpointer)&source)) {
-        if (!source->supported_locally ||
-            !source_config_is_enabled (source)) {
-
+        if (!source->supported_locally) {
             syncevo_source_modes_add (source_modes,
                                       source->name,
                                       SYNCEVO_SYNC_NONE);
         }
     }
 
+    /* use given mode or use default for normal syncs */
+    switch (op_data->operation) {
+    case OP_SYNC:
+        mode = SYNCEVO_SYNC_DEFAULT;
+        break;
+    case OP_SYNC_SLOW:
+        mode = SYNCEVO_SYNC_SLOW;
+        break;
+    case OP_SYNC_REFRESH_FROM_CLIENT:
+        mode = SYNCEVO_SYNC_REFRESH_FROM_CLIENT;
+        break;
+    case OP_SYNC_REFRESH_FROM_SERVER:
+        mode = SYNCEVO_SYNC_REFRESH_FROM_SERVER;
+        break;
+    default:
+        g_warn_if_reached();
+    }
     syncevo_session_sync (session,
-                          data->mode,
+                          mode,
                           source_modes,
                           (SyncevoSessionGenericCb)sync_cb,
                           data);
@@ -1559,7 +1768,7 @@ sync (app_data *data, SyncevoSession *session)
 static void
 set_config_for_sync_cb (SyncevoSession *session,
                         GError *error,
-                        app_data *data)
+                        operation_data *op_data)
 {
     if (error) {
         g_warning ("Error in Session.SetConfig: %s", error->message);
@@ -1568,12 +1777,14 @@ set_config_for_sync_cb (SyncevoSession *session,
         return;
     }
 
-    sync (data, session);
+    sync (op_data, session);
 }
 
 static void
 run_operation (operation_data *op_data, SyncevoSession *session)
 {
+  SyncevoConfig *config; 
+
     /* when we first get idle, start the operation */
     if (op_data->started) {
         return;
@@ -1583,15 +1794,20 @@ run_operation (operation_data *op_data, SyncevoSession *session)
     /* time for business */
     switch (op_data->operation) {
     case OP_SYNC:
+    case OP_SYNC_SLOW:
+    case OP_SYNC_REFRESH_FROM_CLIENT:
+    case OP_SYNC_REFRESH_FROM_SERVER:
         /* Make sure we don't get change diffs printed out, then sync */
-        syncevo_config_set_value (op_data->data->current_service->config,
+        config = g_hash_table_new (g_str_hash, g_str_equal);
+        syncevo_config_set_value (config,
                                   NULL, "printChanges", "0");
         syncevo_session_set_config (session,
                                     TRUE,
                                     TRUE,
-                                    op_data->data->current_service->config,
+                                    config,
                                     (SyncevoSessionGenericCb)set_config_for_sync_cb,
-                                    op_data->data);
+                                    op_data);
+        syncevo_config_free (config);
 
         break;
     case OP_SAVE:
@@ -1717,6 +1933,17 @@ start_session_cb (SyncevoServer *server,
 }
 
 static void
+show_emergency_view (app_data *data)
+{
+#ifdef USE_MOBLIN_UX
+    mux_window_set_current_page (MUX_WINDOW (data->sync_win),
+                                 data->emergency_index);
+#else
+    gtk_window_present (GTK_WINDOW (data->emergency_win));
+#endif
+}
+
+static void
 show_services_list (app_data *data)
 {
 #ifdef USE_MOBLIN_UX
@@ -1731,7 +1958,7 @@ static void
 show_main_view (app_data *data)
 {
 #ifdef USE_MOBLIN_UX
-    mux_window_set_settings_visible (MUX_WINDOW (data->sync_win), FALSE);
+    mux_window_set_current_page (MUX_WINDOW (data->sync_win), -1);
 #else
     gtk_widget_hide (data->services_win);
 #endif
@@ -1753,6 +1980,7 @@ get_error_string_for_code (int error_code)
     case DB_NotFound:
         return g_strdup(_("Not found"));
     case DB_Fatal:
+        /* This can happen when EDS is borked, restart may help... */
         return g_strdup(_("Fatal database error"));
     case DB_Error:
         return g_strdup(_("Database error"));
@@ -1799,8 +2027,6 @@ server_shutdown_cb (SyncevoServer *server,
 {
     if (data->syncing) {
         /* TODO show in UI: server disappeared */
-
-        add_error_info (data, _("Syncevolution.Server D-Bus service exited unexpectedly"), NULL);
 
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
                             _("Sync Failed"));
@@ -1924,6 +2150,7 @@ get_sessions_cb (SyncevoServer *server,
     if (error) {
         g_warning ("Server.GetSessions failed: %s", error->message);
         g_error_free (error);
+
         /* TODO show in UI: failed first syncevo call (unexpected, fatal?) */
         return;
     }
