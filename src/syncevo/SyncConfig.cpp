@@ -414,7 +414,7 @@ static string SyncEvolutionTemplateDir()
     return templateDir;
 }
 
-SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers)
+SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers, bool fuzzyMatch)
 {
     TemplateList result;
     // match against all possible templates without any assumption on directory
@@ -439,10 +439,17 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers)
             TemplateConfig templateConf (sDir);
             BOOST_FOREACH (const DeviceList::value_type &entry, peers){
                 int rank = templateConf.metaMatch (entry.first, entry.second);
-                if (rank > TemplateConfig::NO_MATCH) {
+                if (fuzzyMatch){
+                    if (rank > TemplateConfig::NO_MATCH) {
+                        result.push_back (boost::shared_ptr<TemplateDescription>(
+                                    new TemplateDescription(templateConf.getName(),
+                                        templateConf.getDescription(), rank, entry.first, sDir, templateConf.getFingerprint())));
+                    }
+                } else if (rank == TemplateConfig::BEST_MATCH){
                     result.push_back (boost::shared_ptr<TemplateDescription>(
                                 new TemplateDescription(templateConf.getName(),
                                     templateConf.getDescription(), rank, entry.first, sDir, templateConf.getFingerprint())));
+                    break;
                 }
             }
         }
@@ -471,36 +478,13 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
     if (isDir (server) && TemplateConfig::isTemplateConfig(server)) {
         templateConfig = server;
     } else {
-        std::queue <std::string, std::list<std::string> > directories;
-        if (isDir(templateConfig)) {
-            directories.push (templateConfig);
-        } 
+        SyncConfig::DeviceList devices;
+        devices.push_back (std::make_pair(server, MATCH_ALL));
         templateConfig = "";
-        int maxmatch = TemplateConfig::NO_MATCH;
-        while (!directories.empty()) {
-            string sDir = directories.front();
-            directories.pop();
-            if (!TemplateConfig::isTemplateConfig(sDir)) {
-                ReadDir dir(sDir);
-                //not a template folder, check all sub directories
-                BOOST_FOREACH(const string &entry, dir) {
-                    if (isDir(sDir + "/" + entry)) {
-                        directories.push (sDir + "/" + entry);
-                    }
-                }
-            } else {
-                TemplateConfig templateConf (sDir);
-                int rank = templateConf.metaMatch (server, MATCH_ALL);
-                if (rank > maxmatch){
-                    maxmatch = rank;
-                    templateConfig = sDir;
-                    if (maxmatch == TemplateConfig::BEST_MATCH){
-                        break;
-                    }
-                }
-            }
+        TemplateList templates = matchPeerTemplates (devices, false);
+        if (!templates.empty()) {
+            templateConfig = templates.front()->m_path;
         }
-
         if (templateConfig.empty()) {
             // not found, avoid reading current directory by using one which doesn't exist
             templateConfig = "/dev/null";

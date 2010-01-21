@@ -915,7 +915,7 @@ class SyncConfig {
      * match the built-in templates against @param fingerprint, return a list of
      * servers sorted by the matching rank.
      * */
-    static TemplateList matchPeerTemplates(const DeviceList &peers);
+    static TemplateList matchPeerTemplates(const DeviceList &peers, bool fuzzyMatch = true);
 
     /**
      * get the built-in default templates
@@ -1376,6 +1376,7 @@ private:
         return xdg_root_str ? string(xdg_root_str) + "/syncevolution" :
             getHome() + "/.config/syncevolution";
     }
+ 
 };
 
 /**
