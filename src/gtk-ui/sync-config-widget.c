@@ -1317,12 +1317,14 @@ sync_config_widget_show (GtkWidget *widget)
     char *ready;
     SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
 
+    /* this is a bit dirty... might be better to show the widget
+     * in any case and handle removing non-ready templates otherwise */
     self->showing = TRUE;
     if (self->config && self->config->config) {
         syncevo_config_get_value (self->config->config,
                                   NULL, "ConsumerReady", &ready);
 
-        if (ready && strcmp ("1", ready) == 0) {
+        if (self->configured || g_strcmp0 ("1", ready) == 0) {
             GTK_WIDGET_CLASS (sync_config_widget_parent_class)->show (widget);
         }
     }
