@@ -186,10 +186,11 @@ class LogDir : public LoggerBase {
     void setLogdir(const string &logdir) {
         m_logdir = boost::trim_right_copy_if(logdir, boost::is_any_of("/"));
 
-        string peer = SyncConfig::normalizeConfigString(m_client.getConfigName());
+        // the config name has been normalized
+        string peer = m_client.getConfigName();
 
         // escape "_" and "-" the peer name
-        peer = escapePeerName(peer);
+        peer = escapePeer(peer);
 
         if (boost::iends_with(m_logdir, "syncevolution")) {
             // use just the server name as prefix
@@ -278,7 +279,7 @@ public:
         // extract the peer name from the dir name
         string dirPrefix, peerName, dateTime;
         if(parseDirName(iDirName, dirPrefix, peerName, dateTime)) {
-            return unescapePeerName(peerName);
+            return unescapePeer(peerName);
         }
         return "";
     }
@@ -547,7 +548,7 @@ private:
     }
 
     // escape '-' and '_' for peer name 
-    static string escapePeerName(const string &prefix) {
+    static string escapePeer(const string &prefix) {
         string escaped = prefix;
         boost::replace_all(escaped, "_", "__");
         boost::replace_all(escaped, "-", "_+");
@@ -555,7 +556,7 @@ private:
     }
 
     // un-escape '_+' and '__' for peer name 
-    static string unescapePeerName(const string &escaped) {
+    static string unescapePeer(const string &escaped) {
         string prefix = escaped;
         boost::replace_all(prefix, "_+", "-");
         boost::replace_all(prefix, "__", "_");
@@ -596,14 +597,25 @@ private:
         if (!isDir(m_logdir)) {
             return;
         }
+        string peer = m_client.getConfigName();
+        string peerName, context;
+        SyncConfig::splitConfigString(peer, peerName, context);
+
         ReadDir dir(m_logdir);
         BOOST_FOREACH(const string &entry, dir) {
-            string dirPrefix, peerName, dateTime;
+            string tmpDirPrefix, tmpPeer, tmpDateTime;
             // if directory name could not be parsed, ignore it
-            if(parseDirName(entry, dirPrefix, peerName, dateTime)) {
-                // if directory name is not satisfied with m_prefix, ignore it
-                if (m_prefix == dirPrefix || m_prefix == (dirPrefix + peerName)) {
+            if(parseDirName(entry, tmpDirPrefix, tmpPeer, tmpDateTime)) {
+                if(!peerName.empty() && (m_prefix == (tmpDirPrefix + tmpPeer))) {
+                    // if peer name exists, match the logs for the given peer
                     dirs.push_back(m_logdir + "/" + entry);
+                } else if(peerName.empty()) {
+                    // if no peer name and only context, match for all logs under the given context
+                    string tmpName, tmpContext;
+                    SyncConfig::splitConfigString(tmpPeer, tmpName, tmpContext);
+                    if( context == tmpContext && boost::starts_with(m_prefix, tmpDirPrefix)) {
+                        dirs.push_back(m_logdir + "/" + entry);
+                    }
                 }
             }
         }
