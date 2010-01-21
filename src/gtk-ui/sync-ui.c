@@ -179,17 +179,22 @@ emergency_clicked_cb (GtkButton *btn, app_data *data)
 char*
 get_pretty_source_name (const char *source_name)
 {
+    /* TRANSLATORS: There have been name changes to keep things in line with 
+     * the rest of the moblin UI. Please make sure the name you use matches 
+     * the ones in e.g. the panels. */
     if (strcmp (source_name, "addressbook") == 0) {
-        /* TRANSLATORS: The name was changed from 'Addressbook' to
-           'Contacts' to match naming in rest of moblin. Please make sure the
-           name you use matches the name in the panel and Contacts application. */
         return g_strdup (_("Contacts"));
     } else if (strcmp (source_name, "calendar") == 0) {
-        return g_strdup (_("Calendar"));
+        return g_strdup (_("Appointments"));
     } else if (strcmp (source_name, "todo") == 0) {
-        return g_strdup (_("Todo"));
+        return g_strdup (_("Tasks"));
     } else if (strcmp (source_name, "memo") == 0) {
         return g_strdup (_("Memo"));
+    } else if (strcmp (source_name, "calendar+todo") == 0) {
+        /* TRANSLATORS: This is a "combination source" for syncing with devices
+         * that combine appointments and tasks. the name should match the ones
+         * used for calendar and todo above */
+        return g_strdup (_("Appointments & Tasks"));
     } else {
         char *tmp;
         tmp =  g_strdup (source_name);

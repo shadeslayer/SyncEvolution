@@ -574,7 +574,7 @@ init_source (char *name,
 
     /* TRANSLATORS: label for an entry in service configuration form.
      * Placeholder is a source  name.
-     * Example: "Calendar URI" */
+     * Example: "Appointments URI" */
     str = g_strdup_printf (_("%s URI"), pretty_name);
     widgets->label = gtk_label_new (str);
     g_free (str);
