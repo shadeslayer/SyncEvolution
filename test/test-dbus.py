@@ -49,7 +49,7 @@ debugger = "" # "gdb"
 server = ["syncevo-dbus-server"]
 monitor = ["dbus-monitor"]
 xdg_root = "test-dbus"
-config = "scheduleworld_1"
+configName = "dbus_unittest"
 
 def timeout(seconds):
     """Function decorator which sets a non-default timeout for a test.
@@ -522,9 +522,12 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         configs.sort()
         self.failUnlessEqual(configs, ["Funambol",
                                        "Google",
+                                       "Goosync",
                                        "Memotoo",
                                        "Mobical",
+                                       "Oracle",
                                        "ScheduleWorld",
+                                       "SyncEvolution",
                                        "Synthesis",
                                        "ZYB"])
 
@@ -789,14 +792,14 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.setUpSession("dummy-test")
         # default config
         self.config = { 
-                         "" : { "syncURL" : "http://my.funambol.com/sync",
+                         "" : { "syncURL" : "http://impossible-syncurl-just-for-testing-to-avoid-conflict",
                                 "username" : "unknown",
                                 "password" : "-",
                                 "deviceId" : "foo",
-                                "RetryInterval" : "1",
-                                "RetryDuration" : "1"
+                                "RetryInterval" : "10",
+                                "RetryDuration" : "20"
                               },
-                         "source/addressbook" : { "sync" : "two-way",
+                         "source/addressbook" : { "sync" : "slow",
                                                   "type" : "addressbook",
                                                   "uri" : "card"
                                                 },
@@ -804,11 +807,11 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                                   "type" : "calendar",
                                                   "uri" : "cal"
                                                 },
-                         "source/todo"        : { "sync" : "two-way",
+                         "source/todo"        : { "sync" : "disabled",
                                                   "type" : "todo",
                                                   "uri" : "task"
                                                 },
-                         "source/memo"        : { "sync" : "two-way",
+                         "source/memo"        : { "sync" : "disabled",
                                                   "type" : "memo",
                                                   "uri" : "text"
                                                 }
@@ -1311,16 +1314,38 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         Thus we need a real server configuration to confirm sync could be run successfully.
         Typically we need make sure that at least one sync has been done before testing our
         desired unit tests. Note that it also covers session.Sync API itself """
+    """ All unit tests in this class have a dependency on a real sync config named 'dbus_unittest',
+        which should works correctly. """
 
     def setUp(self):
         self.setUpServer()
-        self.setUpSession(config)
+        self.setUpSession(configName)
         self.operation = "" 
 
     def run(self, result):
         self.runTest(result, own_xdg=False)
 
+    def setupConfig(self):
+        """ Apply for user settings. Used internally. """
+        configProps = { }
+        # check whether 'dbus_unittest' is configured.
+        try:
+            configProps = self.session.GetConfig(False, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.fail(str(ex) + 
+                      ". To test this case, please first set up a correct config named 'dbus_unittest'.")
+        prefix = os.getenv("CLIENT_TEST_EVOLUTION_PREFIX")
+        if prefix != None:
+            updateProps = { }
+            for key, value in configProps.items():
+                if key != "":
+                    tmpdict = { }
+                    tmpdict["evolutionsource"] = prefix
+                    updateProps[key] = tmpdict
+            self.session.SetConfig(True, True, updateProps, utf8_strings=True)
+
     def doSync(self):
+        self.setupConfig()
         self.setUpListeners(self.sessionpath)
         self.session.Sync("", {})
         loop.run()
@@ -1432,7 +1457,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
 class TestDBusSyncError(unittest.TestCase, DBusUtil):
     def setUp(self):
         self.setUpServer()
-        self.setUpSession(config)
+        self.setUpSession(configName)
 
     def run(self, result):
         self.runTest(result, own_xdg=True)
@@ -1445,7 +1470,7 @@ class TestDBusSyncError(unittest.TestCase, DBusUtil):
         # TODO: check recorded events in DBusUtil.events
         status, error, sources = self.session.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "done")
-        self.failUnlessEqual(error, 500)
+        self.failUnlessEqual(error, 10500)
 
 class TestConnection(unittest.TestCase, DBusUtil):
     """Tests Server.Connect(). Tests depend on getting one Abort signal to terminate."""
@@ -1456,9 +1481,40 @@ class TestConnection(unittest.TestCase, DBusUtil):
     def setUp(self):
         self.setUpServer()
         self.setUpListeners(None)
+        # default config
+        self.config = { 
+                         "" : { "remoteDeviceId" : "sc-api-nat",
+                                "password" : "test",
+                                "username" : "test",
+                                "PeerIsClient" : "1",
+                                "RetryInterval" : "1",
+                                "RetryDuration" : "10"
+                              },
+                         "source/addressbook" : { "sync" : "two-way",
+                                                  "type" : "addressbook",
+                                                  "uri" : "card"
+                                                },
+                         "source/calendar"    : { "sync" : "two-way",
+                                                  "type" : "calendar",
+                                                  "uri" : "cal"
+                                                },
+                         "source/todo"        : { "sync" : "two-way",
+                                                  "type" : "todo",
+                                                  "uri" : "task"
+                                                },
+                         "source/memo"        : { "sync" : "two-way",
+                                                  "type" : "memo",
+                                                  "uri" : "text"
+                                                }
+                       }
+    def setupConfig(self, name="dummy-test", deviceId="sc-api-nat"):
+        self.setUpSession(name)
+        self.config[""]["remoteDeviceId"] = deviceId
+        self.session.SetConfig(False, False, self.config, utf8_strings=True)
+        self.session.Detach()
 
     def run(self, result):
-        self.runTest(result, own_xdg=False)
+        self.runTest(result, own_xdg=True)
 
     def getConnection(self, must_authenticate=False):
         conpath = self.server.Connect({'description': 'test-dbus.py',
@@ -1480,6 +1536,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
 
     def testInvalidConnect(self):
         """get connection, send invalid initial message"""
+        self.setupConfig()
         conpath, connection = self.getConnection()
         try:
             connection.Process('1234', 'invalid message type')
@@ -1489,10 +1546,12 @@ class TestConnection(unittest.TestCase, DBusUtil):
         else:
             self.fail("no exception thrown")
         loop.run()
-        self.failUnlessEqual(DBusUtil.events, [('abort',)])
+        # 'idle' status doesn't be checked
+        self.failUnless(('abort',) in DBusUtil.events)
 
     def testStartSync(self):
         """send a valid initial SyncML message"""
+        self.setupConfig()
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
@@ -1515,6 +1574,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
 
     def testCredentialsWrong(self):
         """send invalid credentials"""
+        self.setupConfig()
         conpath, connection = self.getConnection(must_authenticate=True)
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
@@ -1539,6 +1599,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
 
     def testCredentialsRight(self):
         """send correct credentials"""
+        self.setupConfig()
         conpath, connection = self.getConnection(must_authenticate=True)
         plain_auth = TestConnection.message1.replace("<Type xmlns='syncml:metinf'>syncml:auth-md5</Type></Meta><Data>kHzMn3RWFGWSKeBpXicppQ==</Data>",
                                                      "<Type xmlns='syncml:metinf'>syncml:auth-basic</Type></Meta><Data>dGVzdDp0ZXN0</Data>")
@@ -1561,6 +1622,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
 
     def testStartSyncTwice(self):
         """send the same SyncML message twice, starting two sessions"""
+        self.setupConfig()
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
@@ -1607,6 +1669,9 @@ class TestConnection(unittest.TestCase, DBusUtil):
 
     def testKillInactive(self):
         """block server with client A, then let client B connect twice"""
+        #set up 2 configs
+        self.setupConfig()
+        self.setupConfig("dummy", "sc-pim-ppc")
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
@@ -1648,6 +1713,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         
         The server-side configuration for sc-api-nat must contain a retryDuration=10
         because this test itself will time out with a failure after 20 seconds."""
+        self.setupConfig()
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
