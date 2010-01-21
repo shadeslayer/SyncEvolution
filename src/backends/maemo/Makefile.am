@@ -19,4 +19,4 @@ SYNCMAEMOCAL_SOURCES = \
 syncmaemocal_la_SOURCES = $(SYNCMAEMOCAL_SOURCES)
 syncmaemocal_la_LIBADD = $(MCALB_LIBS)
 syncmaemocal_la_LDFLAGS = -module -avoid-version
-syncmaemocal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) -DENABLE_INTEGRATION_TESTS
+syncmaemocal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
