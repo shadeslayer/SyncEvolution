@@ -30,6 +30,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 #include <synthesis/syerror.h>
 
@@ -737,6 +738,43 @@ std::string SyncReport::formatSyncTimes() const
         }
     }
     return out.str();
+}
+
+std::string SyncReport::slowSyncExplanation(const std::string &peer,
+                                            const std::list<std::string> &sources)
+{
+    if (sources.empty()) {
+        return "";
+    }
+
+    string sourceparam = boost::join(sources, " ");
+    std::string explanation =
+        StringPrintf("Doing a slow synchronization may lead to duplicated items or\n"
+                     "lost data when the server merges items incorrectly. Choosing\n"
+                     "a different synchronization mode may be the better alternative.\n"
+                     "Restart synchronization of affected source(s) with one of the\n"
+                     "following sync modes to recover from this problem:\n"
+                     "    slow, refresh-from-server, refresh-from-client\n\n"
+                     "Analyzing the current state:\n"
+                     "    syncevolution --status %s %s\n\n"
+                     "Running with one of the three modes:\n"
+                     "    syncevolution --sync [slow|refresh-from-server|refresh-from-client] %s %s\n",
+                     peer.c_str(), sourceparam.c_str(),
+                     peer.c_str(), sourceparam.c_str());
+    return explanation;
+}
+
+std::string SyncReport::slowSyncExplanation(const std::string &peer) const
+{
+    std::list<std::string> sources;
+    BOOST_FOREACH(const SyncReport::value_type &entry, *this) {
+        const std::string &name = entry.first;
+        const SyncSourceReport &source = entry.second;
+        if (source.getStatus() == STATUS_UNEXPECTED_SLOW_SYNC) {
+            sources.push_back(name);
+        }
+    }
+    return slowSyncExplanation(peer, sources);
 }
 
 ConfigNode &operator << (ConfigNode &node, const SyncReport &report)

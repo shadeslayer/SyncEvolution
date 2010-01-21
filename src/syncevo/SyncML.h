@@ -23,6 +23,7 @@
 
 #include <string>
 #include <map>
+#include <list>
 #include <ostream>
 #include <string.h>
 
@@ -311,6 +312,27 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
         WITHOUT_REJECTS = 1 << 4,
         WITH_TOTAL = 1 << 5
     };
+
+    /**
+     * Produces a non-localized explanation for recovering from unexpected 
+     * slow syncs, targeted towards command line users.
+     *
+     * @param peer     config name used to select the affected peer (nor necessarily normalized)
+     * @param sources  list of affected sources
+     * @return explanation, empty string if list of sources is empty
+     */
+    static std::string slowSyncExplanation(const std::string &peer,
+                                           const std::list<std::string> &sources);
+
+    /**
+     * Produces a non-localized explanation for recovering from unexpected 
+     * slow syncs, targeted towards command line users. Uses the information
+     * about sources stored in the report.
+     *
+     * @param peer     config name used to select the affected peer (nor necessarily normalized)
+     * @return explanation, empty string if list of sources is empty
+     */
+    std::string slowSyncExplanation(const std::string &peer) const;
 };
 
 /** pretty-print the report as an ASCII table */

@@ -716,6 +716,7 @@ public:
     std::map<std::string, SourceConfigSpecials > m_configSpecials; /*Indicating whether the corresponding sync source is forced slow*/
 private:
     LogDir m_logdir;     /**< our logging directory */
+    SyncContext &m_client; /**< the context in which we were instantiated */
     bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
     bool m_doLogging;    /**< true iff the normal logdir handling is enabled
                             (creating and expiring directoties, before/after comparison) */
@@ -771,6 +772,7 @@ public:
 
     SourceList(SyncContext &client, bool doLogging) :
         m_logdir(client),
+        m_client(client),
         m_prepared(false),
         m_doLogging(doLogging),
         m_reportTodo(true),
@@ -909,6 +911,10 @@ public:
                 }
                 if (m_logLevel > LOGGING_QUIET && report) {
                     cout << *report;
+                    std::string slowSync = report->slowSyncExplanation(m_client.getPeer());
+                    if (!slowSync.empty()) {
+                        cout << endl << slowSync;
+                    }
                 }
 
                 // compare databases?
@@ -2557,24 +2563,14 @@ SyncMLStatus SyncContext::doSync()
                         sources.push_back(source->getName());
                     }
                 }
-                if (!sources.empty()) {
+                string explanation = SyncReport::slowSyncExplanation(m_server,
+                                                                     sources);
+                if (!explanation.empty()) {
                     string sourceparam = boost::join(sources, " ");
                     SE_LOG_ERROR(NULL, NULL,
                                  "Aborting because of unexpected slow sync for source(s): %s",
                                  sourceparam.c_str());
-                    SE_LOG_INFO(NULL, NULL,
-                                "Doing a slow synchronization may lead to duplicated items or\n"
-                                "lost data when the server merges items incorrectly. Choosing\n"
-                                "a different synchronization mode may be the better alternative.\n"
-                                "Restart synchronization of affected source(s) with one of the\n"
-                                "following sync modes to recover from this problem:\n"
-                                "    slow, refresh-from-server, refresh-from-client\n\n"
-                                "Analyzing the current state:\n"
-                                "    syncevolution --status %s %s\n\n"
-                                "Running with one of the three modes:\n"
-                                "    syncevolution --sync [slow|refresh-from-server|refresh-from-client] %s %s\n",
-                                m_server.c_str(), sourceparam.c_str(),
-                                m_server.c_str(), sourceparam.c_str());
+                    SE_LOG_INFO(NULL, NULL, "%s", explanation.c_str());
                 } else {
                     // we should not get here, but if we do, at least log something
                     SE_LOG_ERROR(NULL, NULL, "aborting as requested by script");
