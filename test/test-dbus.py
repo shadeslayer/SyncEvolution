@@ -680,6 +680,15 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         for i in range(0, len(refPeers)):
             self.failUnlessEqual(reports[i]["peer"], refPeers[i])
 
+    def testGetReportsContext(self):
+        """Test reports from a context are returned when the peer name is empty for GetReports"""
+        self.setupFiles('reports')
+        self.session.Detach()
+        self.setUpSession("@context")
+        reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
+        self.failUnlessEqual(len(reports), 1)
+        self.failUnless(reports[0]["dir"].endswith("dummy_+test@context-2010-01-20-10-10"))
+
 
 class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     """Tests that work for GetConfig/SetConfig/CheckSource/GetDatabases/GetReports in Session.
