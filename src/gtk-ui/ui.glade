@@ -715,7 +715,6 @@ you can setup a service manually.</property>
                         </child>
                         <child>
                           <widget class="GtkExpander" id="expander1">
-                            <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <child>
                               <widget class="GtkAlignment" id="alignment19">
@@ -937,7 +936,6 @@ local information</property>
                     </child>
                     <child>
                       <widget class="GtkVBox" id="vbox21">
-                        <property name="visible">True</property>
                         <property name="orientation">vertical</property>
                         <property name="spacing">5</property>
                         <child>
