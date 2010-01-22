@@ -31,6 +31,7 @@
 #include "config.h"
 
 #ifndef GTK_2_18
+#include "gtkinfobar.h"
 
 #include <string.h>
 #include <stdlib.h>
