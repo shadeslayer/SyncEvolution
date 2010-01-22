@@ -1195,6 +1195,8 @@ class SyncConfig {
      */
     virtual void savePassword(ConfigUserInterface &ui); 
 
+    virtual bool getPreventSlowSync() const;
+    virtual void setPreventSlowSync(bool value, bool temporarily = false);
     virtual bool getUseProxy() const;
     virtual void setUseProxy(bool value, bool temporarily = false);
     virtual const char*  getProxyHost() const;

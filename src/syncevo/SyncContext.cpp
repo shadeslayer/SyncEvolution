@@ -1722,6 +1722,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                        mode != "refresh-from-server" && // is implemented as "delete local data" + "slow sync",
                                                         // so a slow sync is acceptable in this case
                        !m_serverMode &&
+                       getPreventSlowSync() &&
                        source->m_backupBefore.getNumItems() != 0) { // check is only relevant if we have local data;
                                                                     // if no backup was made (-1), better check
                 // We are not expecting a slow sync => refuse to execute one.

@@ -925,6 +925,36 @@ static PasswordConfigProperty syncPropPassword("password",
                                                "env variable: password = ${<name of environment variable>}\n",
                                                "",
                                                "SyncML server");
+static BoolConfigProperty syncPropPreventSlowSync("preventSlowSync",
+                                                  "During a slow sync, the SyncML server must match all items\n"
+                                                  "of the client with its own items and detect which ones it\n"
+                                                  "already has based on properties of the items. This is slow\n"
+                                                  "(client must send all its data) and can lead to duplicates\n"
+                                                  "(when the server fails to match correctly).\n"
+                                                  "It is therefore sometimes desirable to wipe out data on one\n"
+                                                  "side with a refresh-from-client/server sync instead of doing\n"
+                                                  "a slow sync.\n"
+                                                  "When this option is enabled, slow syncs that could cause problems\n"
+                                                  "are not allowed to proceed. Instead, the affected sources are\n"
+                                                  "skipped, allowing the user to choose a suitable sync mode in\n"
+                                                  "the next run (slow sync selected explicitly, refresh sync).\n"
+                                                  "The following situations are handled:\n"
+                                                  "- running as client with no local data => unproblematic,\n"
+                                                  "  slow sync is allowed to proceed automatically\n"
+                                                  "- running as client with local data => client has no\n"
+                                                  "  information about server, so slow sync might be problematic\n"
+                                                  "  and is prevented\n"
+                                                  "- client has data, server asks for slow sync because all its data\n"
+                                                  "  was deleted (done by Memotoo and Mobical, because they treat\n"
+                                                  "  this as 'user wants to start from scratch') => the sync would\n"
+                                                  "  recreate all the client's data, even if the user really wanted\n"
+                                                  "  to have it deleted, therefore slow sync is prevented\n"
+                                                  "Slow syncs are not yet detected when running as server and in the\n"
+                                                  "client when the server's anchor is wrong.\n"
+                                                  "This option is not enabled by default because it forces users\n"
+                                                  "to deal with slow syncs, which is a deviation from previous\n"
+                                                  "behavior.",
+                                                  "0");
 static BoolConfigProperty syncPropUseProxy("useProxy",
                                            "set to T to choose an HTTP proxy explicitly; otherwise the default\n"
                                            "proxy settings of the underlying HTTP transport mechanism are used;\n"
@@ -1110,6 +1140,7 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropLogLevel);
         registry.push_back(&syncPropPrintChanges);
         registry.push_back(&syncPropMaxLogDirs);
+        registry.push_back(&syncPropPreventSlowSync);
         registry.push_back(&syncPropUseProxy);
         registry.push_back(&syncPropProxyHost);
         registry.push_back(&syncPropProxyUsername);
@@ -1318,6 +1349,9 @@ ConfigPasswordKey ProxyPasswordConfigProperty::getPasswordKey(const string &desc
 }
 
 void SyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*getNode(syncPropPassword), value, temporarily); }
+
+bool SyncConfig::getPreventSlowSync() const { return syncPropPreventSlowSync.getPropertyValue(*getNode(syncPropPreventSlowSync)); }
+void SyncConfig::setPreventSlowSync(bool value, bool temporarily) { syncPropPreventSlowSync.setProperty(*getNode(syncPropPreventSlowSync), value, temporarily); }
 
 static const char *ProxyString = "http_proxy";
 
