@@ -1727,9 +1727,9 @@ get_reports_cb (SyncevoServer *server,
     /* ficure out if all sources have same status or if there's a slow sync */
     g_hash_table_iter_init (&iter, sources);
     while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
-        if (stats->status == 10001) {
+        if (stats->status == 22001) {
             /* ignore abort because of another source slow syncing */
-        } else if (stats->status == 10000) {
+        } else if (stats->status == 22000) {
             common_status = stats->status;
             slow_sync_sources = g_list_prepend (slow_sync_sources, source_conf);
         } else if (common_status == -1) {
@@ -2075,7 +2075,7 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
     case LOCERR_USERABORT:
     case LOCERR_USERSUSPEND:
         return NULL;
-    case 10000:
+    case 22000:
         if (response) {
             *response = SYNC_ERROR_RESPONSE_EMERGENCY;
         }
