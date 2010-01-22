@@ -369,6 +369,14 @@ if test $enable_gui != "no"; then
         gui_modules="$gui_modules unique-1.0" 
         AC_DEFINE(ENABLE_UNIQUE, 1, [enable single-app-instance functionality])
     fi
+
+    PKG_CHECK_MODULES(GTK_2_18, gtk+-2.0 >= 2.18,
+                      have_gtk_2_18="yes",
+                      have_gtk_2_18="no")
+    if test $have_gtk_2_18 == "yes"; then
+        AC_DEFINE(GTK_2_18, 1, [we have GTK+ 2.18 or better])
+    fi
+
     PKG_CHECK_MODULES(GUI, $gui_modules)
 
     AC_PATH_PROG([GTK_BUILDER_CONV], gtk-builder-convert)

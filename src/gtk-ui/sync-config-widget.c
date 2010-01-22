@@ -10,6 +10,9 @@
 #include "sync-ui.h"
 #include "sync-config-widget.h"
 
+/* local copy of GtkInfoBar, used when GTK+ < 2.18 */
+#include "gtkinfobar.h"
+
 
 #define INDICATOR_SIZE 16
 #define CHILD_PADDING 3
