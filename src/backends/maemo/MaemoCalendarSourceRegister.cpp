@@ -126,8 +126,6 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(MaemoCalendarSourceUnitTest);
 
 #endif // ENABLE_UNIT_TESTS
 
-#ifdef ENABLE_INTEGRATION_TESTS
-
 namespace {
 #if 0
 }
@@ -135,7 +133,7 @@ namespace {
 
 static class iCal20Test : public RegisterSyncSourceTest {
 public:
-    iCal20Test() : RegisterSyncSourceTest("ical20", "ical20") {}
+    iCal20Test() : RegisterSyncSourceTest("ical20_maemo", "ical20") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -145,7 +143,7 @@ public:
 
 static class iTodo20Test : public RegisterSyncSourceTest {
 public:
-    iTodo20Test() : RegisterSyncSourceTest("itodo20", "itodo20") {}
+    iTodo20Test() : RegisterSyncSourceTest("itodo20_maemo", "itodo20") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -155,7 +153,7 @@ public:
 
 static class MemoTest : public RegisterSyncSourceTest {
 public:
-    MemoTest() : RegisterSyncSourceTest("text", "text") {}
+    MemoTest() : RegisterSyncSourceTest("text_maemo", "text") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -164,7 +162,6 @@ public:
 } memoTest;
 
 }
-#endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_MAEMO_CALENDAR
 
