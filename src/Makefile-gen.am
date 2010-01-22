@@ -149,7 +149,7 @@ syncevo_dbus_server_SOURCES = \
 nodist_syncevo_dbus_server_SOURCES = \
 	dbus/interfaces/syncevo-marshal.c
 if ENABLE_UNIT_TESTS
-nodist_syncevo_dbus_server_SOURCES +=
+nodist_syncevo_dbus_server_SOURCES += \
 	../test/test.cpp
 endif
 
