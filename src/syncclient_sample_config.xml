@@ -284,6 +284,8 @@
       <field name="FN" type="string" compare="conflict" merge="fillempty"/>
       <field name="FILE-AS" type="string" compare="conflict" merge="fillempty"/>
 
+      <field name="GENDER" type="string" compare="conflict" merge="fillempty"/>
+
       <!-- categories and classification -->
       <field name="CATEGORIES" array="yes" type="string" compare="conflict"/>
 
@@ -351,6 +353,8 @@
       <field name="YAHOO_SLOT"          array="yes" type="string" compare="conflict"/>
       <field name="SKYPE_HANDLE"      array="yes" type="string" compare="conflict"/>
       <field name="SKYPE_SLOT"        array="yes" type="string" compare="conflict"/>
+      <field name="SIP_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="SIP_SLOT"          array="yes" type="string" compare="conflict"/>
 
       <!-- home address -->
       <field name="ADR_STREET"        array="yes" type="multiline" compare="conflict"/>
@@ -403,6 +407,10 @@
 
         <property name="X-EVOLUTION-FILE-AS">
           <value field="FILE-AS"/>
+        </property>
+
+        <property name="X-GENDER">
+          <value field="GENDER"/>
         </property>
 
         <!-- onlyformode="standard": not part of vCard 2.1, but some
@@ -604,6 +612,13 @@
           <value field="SKYPE_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="SKYPE_SLOT"/>
+          </parameter>
+        </property>
+
+        <property name="X-SIP" suppressempty="yes">
+          <value field="SIP_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="SIP_SLOT"/>
           </parameter>
         </property>
 
