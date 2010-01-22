@@ -101,8 +101,6 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(FileSyncSourceUnitTest);
 
 #endif // ENABLE_UNIT_TESTS
 
-#ifdef ENABLE_INTEGRATION_TESTS
-
 // The anonymous namespace ensures that we don't get
 // name clashes: although the classes and objects are
 // only defined in this file, the methods generated
@@ -174,7 +172,6 @@ public:
 } ITodo20Test;
 
 }
-#endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_FILE
 

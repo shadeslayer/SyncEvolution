@@ -302,8 +302,6 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(EvolutionCalendarTest);
 
 #endif // ENABLE_UNIT_TESTS
 
-#ifdef ENABLE_INTEGRATION_TESTS
-
 namespace {
 #if 0
 }
@@ -351,7 +349,6 @@ public:
 } memoTest;
 
 }
-#endif // ENABLE_INTEGRATION_TESTS
 
 #endif // ENABLE_ECAL
 
