@@ -412,12 +412,14 @@ struct ClientTestConfig{
  * exchange format can register one configuration for each format, but
  * not registering any configuration is also okay.
  *
- * This code depends on the C++ client library test framework and
- * therefore CPPUnit. To avoid a hard dependency on that in the normal
- * "syncevolution" binary, the actual usage of the test Config class
- * is limited to the *Register.cpp files when compiling them for
- * inclusion in the "client-test" binary, i.e., they are protected by
- * #ifdef ENABLE_UNIT_TESTS.
+ * *Using* the registered tests depends on the CPPUnit test framework.
+ * *Registering* does not. Therefore backends should always register *
+ * *themselves for testing and leave it to the test runner
+ * "client-test" whether tests are really executed.
+ *
+ * Unit tests are different. They create hard dependencies on CPPUnit
+ * inside the code that contains them, and thus should be encapsulated
+ * inside #ifdef ENABLE_UNIT_TESTS checks.
  *
  * Sync sources have to work stand-alone without a full SyncClient
  * configuration for all local tests. The minimal configuration prepared

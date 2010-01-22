@@ -172,17 +172,6 @@ client_test_SOURCES = \
 	$(CORE_SOURCES)
 nodist_client_test_SOURCES = ../test/test.cpp
 
-# Always compile the registry files into client-test because that is
-# the only place where they are compiled with
-# ENABLE_INTEGRATION_TESTS.  This works without undefined references
-# because client-test is linked against all shared backend libraries
-# (non-portable, but works).
-# Disabled now, the client test can also be dynamically loaded and registered
-# just the same as syncevolution
-# if ENABLE_MODULES
-# client_test_SOURCES += $(BACKEND_REGISTRIES)
-# endif
-
 # list of test file base files
 #
 # Generated files (testcases/ical20.ics.funambol.tem) are derived from
