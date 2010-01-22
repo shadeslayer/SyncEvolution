@@ -30,6 +30,10 @@
           <value field="FILE-AS"/>
         </property>
 
+        <property name="X-GENDER">
+          <value field="GENDER"/>
+        </property>
+
         <!-- onlyformode="standard": not part of vCard 2.1, but some
              peers (like the Funambol server) accept it anyway in
              vCard 2.1 -->
@@ -229,6 +233,13 @@
           <value field="SKYPE_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
             <value field="SKYPE_SLOT"/>
+          </parameter>
+        </property>
+
+        <property name="X-SIP" suppressempty="yes">
+          <value field="SIP_HANDLE"/>
+          <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
+            <value field="SIP_SLOT"/>
           </parameter>
         </property>
 

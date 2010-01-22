@@ -15,6 +15,8 @@
       <field name="FN" type="string" compare="conflict" merge="fillempty"/>
       <field name="FILE-AS" type="string" compare="conflict" merge="fillempty"/>
 
+      <field name="GENDER" type="string" compare="conflict" merge="fillempty"/>
+
       <!-- categories and classification -->
       <field name="CATEGORIES" array="yes" type="string" compare="conflict"/>
 
@@ -82,6 +84,8 @@
       <field name="YAHOO_SLOT"          array="yes" type="string" compare="conflict"/>
       <field name="SKYPE_HANDLE"      array="yes" type="string" compare="conflict"/>
       <field name="SKYPE_SLOT"        array="yes" type="string" compare="conflict"/>
+      <field name="SIP_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="SIP_SLOT"          array="yes" type="string" compare="conflict"/>
 
       <!-- home address -->
       <field name="ADR_STREET"        array="yes" type="multiline" compare="conflict"/>
