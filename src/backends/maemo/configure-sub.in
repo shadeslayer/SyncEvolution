@@ -7,7 +7,7 @@ AC_SUBST(MCALB_CFLAGS)
 AC_SUBST(MCALB_LIBS)
 BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $MCALB_CFLAGS"
 
-AC_ARG_ENABLE_BACKEND(maemo-calendar, maemo,
+AC_ARG_ENABLE_BACKEND(maemocal, maemo,
                       AS_HELP_STRING([--enable-maemo-calendar],
                                      [enable access to PIM data stored in Maemo 5 calendar application (default off)]),
 		      [enable_maemocal="$enableval"], [enable_maemocal="no"])
