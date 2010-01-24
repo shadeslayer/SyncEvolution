@@ -46,6 +46,7 @@
 #ifdef USE_MOBLIN_UX
 #include "mux-frame.h"
 #include "mux-window.h"
+#include <mx/mx-gtk.h>
 #endif
 
 static gboolean support_canceling = FALSE;
@@ -95,6 +96,15 @@ typedef struct app_data {
     GtkWidget *back_btn;
     GtkWidget *expanded_config;
 
+    GtkWidget *emergency_label;
+    GtkWidget *emergency_expander;
+    GtkWidget *emergency_source_table;
+    GtkWidget *emergency_from_client_btn;
+    GtkWidget *emergency_from_server_btn;
+
+    gboolean forced_emergency;
+    GHashTable *emergency_sources;
+
     gboolean online;
 
     gboolean syncing;
@@ -127,6 +137,7 @@ typedef struct operation_data {
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
 static void show_main_view (app_data *data);
+static void update_emergency_view (app_data *data);
 static void show_emergency_view (app_data *data);
 static void show_services_list (app_data *data);
 static void update_services_list (app_data *data);
@@ -246,6 +257,8 @@ static void
 reload_config (app_data *data, const char *server)
 {
     server_config_free (data->current_service);
+    data->forced_emergency = FALSE;
+    g_hash_table_remove_all (data->emergency_sources);
 
     if (!server || strlen (server) == 0) {
         data->current_service = NULL;
@@ -888,12 +901,16 @@ init_ui (app_data *data)
     btn = GTK_WIDGET (gtk_builder_get_object (builder, "slow_sync_btn"));
     g_signal_connect (btn, "clicked",
                       G_CALLBACK (slow_sync_clicked_cb), data);
-    btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_server_btn"));
-    g_signal_connect (btn, "clicked",
+    data->emergency_from_server_btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_server_btn"));
+    g_signal_connect (data->emergency_from_server_btn, "clicked",
                       G_CALLBACK (refresh_from_server_clicked_cb), data);
-    btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_client_btn"));
-    g_signal_connect (btn, "clicked",
+    data->emergency_from_client_btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_client_btn"));
+    g_signal_connect (data->emergency_from_client_btn, "clicked",
                       G_CALLBACK (refresh_from_client_clicked_cb), data);
+
+    data->emergency_label = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_label"));
+    data->emergency_expander = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_expander"));
+    data->emergency_source_table = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_source_table"));
 
     /* No (documented) way to add own widgets to gtkbuilder it seems...
        swap the all dummy widgets with Muxwidgets */
@@ -960,10 +977,180 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
     gtk_widget_show (image);
 }
 
-static void
-update_emergency_view (app_data *data, GList *slow_sync_sources)
+static GtkWidget*
+add_emergency_toggle_widget (app_data *data,
+                             const char *title,
+                             gboolean active,
+                             guint row, guint col)
 {
-    /* TODO set only slow_sync_sources enabled in emregency view */
+    GtkWidget *toggle;
+
+#ifdef USE_MOBLIN_UX
+    GtkWidget *label;
+    col = col * 2;
+    label = gtk_label_new (title);
+    gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+    gtk_widget_show (label);
+    gtk_table_attach (GTK_TABLE (data->emergency_source_table), label,
+                      col, col + 1, row, row + 1,
+                      GTK_FILL, GTK_FILL, 16, 0);
+    toggle = mx_gtk_light_switch_new ();
+#else
+    toggle = gtk_check_button_new_with_label (title);
+#endif
+    g_object_set (toggle, "active", active, NULL);
+    gtk_widget_show (toggle);
+    gtk_table_attach (GTK_TABLE (data->emergency_source_table), toggle,
+                      col + 1, col + 2, row, row + 1,
+                      GTK_FILL, GTK_FILL, 0, 0);
+    return toggle;
+}
+
+static void
+update_emergency_expander (app_data *data)
+{
+    char *text, *sources = NULL;
+    GHashTableIter iter;
+    char *name;
+
+    g_hash_table_iter_init (&iter, data->emergency_sources);
+    while (g_hash_table_iter_next (&iter, (gpointer)&name, NULL)) {
+        char *pretty, *tmp;
+        pretty = get_pretty_source_name (name);
+        if (sources) {
+            tmp = g_strdup_printf ("%s, %s", sources, pretty);
+            g_free (sources);
+            g_free (pretty);
+            sources = tmp;
+        } else {
+            sources = pretty;
+        }
+    }
+    if (sources) {
+        /* This is the expander label in emergency view. It summarizes the
+         * currently selected data sources. First placeholder is service/device
+         * name, second a comma separeted list of sources.
+         * E.g. "Affected data: Google Contacts, Appointments" */
+        text = g_strdup_printf (_("Affected data: %s %s"),
+                                data->current_service->name,
+                                sources);
+        g_free (sources);
+    } else {
+        text = g_strdup_printf (_("Affected data: none"));
+    }
+
+    gtk_expander_set_label (GTK_EXPANDER (data->emergency_expander), text);
+    g_free (text);
+}
+
+static void
+emergency_toggle_notify_active_cb (GtkWidget *widget,
+                                   GParamSpec *pspec,
+                                   app_data *data)
+{
+    gboolean active;
+    char *source;
+
+    g_object_get (G_OBJECT (widget), "active", &active, NULL);
+    source = g_object_get_data (G_OBJECT (widget), "source");
+
+    g_return_if_fail (source);
+
+    if (active) {
+        g_hash_table_insert (data->emergency_sources, g_strdup (source), "");
+    } else {
+        g_hash_table_remove (data->emergency_sources, source);
+    }
+    update_emergency_expander (data);
+}
+
+
+static void
+add_emergency_source (const char *name, source_config *conf, app_data *data)
+{
+    GtkWidget *toggle;
+    guint rows, cols;
+    guint row;
+    static guint col;
+    gboolean active = TRUE;
+    char *pretty_name;
+
+    g_object_get (data->emergency_source_table,
+                  "n-rows", &rows,
+                  "n-columns", &cols,
+                  NULL);
+    if (cols != 1 && col == 0){
+        col = 1;
+        row = rows - 1;
+    } else {
+        col = 0;
+        row = rows;
+    }
+
+    active = (g_hash_table_lookup (data->emergency_sources, name) != NULL);
+
+    pretty_name = get_pretty_source_name (name);
+    toggle = add_emergency_toggle_widget (data, pretty_name, active, row, col);
+    g_object_set_data_full (G_OBJECT (toggle), "source", g_strdup (name), g_free);
+    g_free (pretty_name);
+
+    g_signal_connect (toggle, "notify::active",
+                      G_CALLBACK (emergency_toggle_notify_active_cb), data);
+}
+
+static void
+update_emergency_view (app_data *data)
+{
+    char *text;
+
+    if (!data->current_service) {
+        g_warning ("no service defined in Emergency view");
+        return;
+    }
+
+    if (data->forced_emergency) {
+        text = g_strdup_printf (
+                /* TRANSLATORS: this is an explanation in Emergency view.
+                 * Placeholder is a service/device name */
+                _("A normal sync with %s is not possible at this time."
+                  "We can do a slow two-way sync, start from scratch or "
+                  "restore from backup."),
+                data->current_service->name);
+    } else {
+        /* TRANSLATORS: this is an explanation in Emergency view.
+         * Placeholder is a service/device name */
+        text = g_strdup_printf (
+                _("If something has gone horribly wrong with %s, we can try a "
+                  "slow sync, start from scratch or restore from backup."),
+                data->current_service->name);
+    }
+    gtk_label_set_text (GTK_LABEL (data->emergency_label), text);
+    g_free (text);
+
+    /* TRANSLATORS: These are a buttons in Emergency view. Placeholder is a 
+     * service/device name. Please don't use too long lines, but feel free to 
+     * use several lines. */
+    text = g_strdup_printf (_("Delete all your local\n"
+                              "data and replace with\n"
+                              "data from %s"),
+                            data->current_service->name);
+    gtk_button_set_label (GTK_BUTTON (data->emergency_from_server_btn), text);
+    g_free (text);
+    text = g_strdup_printf (_("Delete all data on\n"
+                              "%s and replace\n"
+                              "with your local data"),
+                            data->current_service->name);
+    gtk_button_set_label (GTK_BUTTON (data->emergency_from_client_btn), text);
+    g_free (text);
+
+    gtk_container_foreach (GTK_CONTAINER (data->emergency_source_table),
+                           (GtkCallback)remove_child,
+                           data->emergency_source_table);
+    gtk_table_resize (GTK_TABLE (data->emergency_source_table), 1, 1);
+    g_hash_table_foreach (data->current_service->source_configs,
+                          (GHFunc)add_emergency_source,
+                          data);
+    update_emergency_expander (data);
 }
 
 static void
@@ -1669,7 +1856,6 @@ get_reports_cb (SyncevoServer *server,
     GHashTableIter iter;
     const char *key, *val;
     source_config *source_conf;
-    GList *slow_sync_sources = NULL;
     char *error_msg;
     SyncErrorResponse response;
     gboolean have_source_errors;
@@ -1728,13 +1914,18 @@ get_reports_cb (SyncevoServer *server,
     /* sources now has all statistics we want */
 
     /* ficure out if all sources have same status or if there's a slow sync */
+    data->forced_emergency = FALSE;
+    g_hash_table_remove_all (data->emergency_sources);
+
     g_hash_table_iter_init (&iter, sources);
     while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&stats)) {
         if (stats->status == 22001) {
             /* ignore abort because of another source slow syncing */
         } else if (stats->status == 22000) {
             common_status = stats->status;
-            slow_sync_sources = g_list_prepend (slow_sync_sources, source_conf);
+            data->forced_emergency = TRUE;
+            g_hash_table_insert (data->emergency_sources,
+                                 g_strdup (key), "");
         } else if (common_status == -1) {
             common_status = stats->status;
         } else  if (common_status != stats->status) {
@@ -1742,9 +1933,14 @@ get_reports_cb (SyncevoServer *server,
         }
     }
 
-    if (slow_sync_sources) {
-        update_emergency_view (data, slow_sync_sources);
-        g_list_free (slow_sync_sources);
+    if (!data->forced_emergency) {
+        /* if user initiates a emergency sync wihtout forced_emergency, 
+           enable all sources by default*/
+        g_hash_table_iter_init (&iter, sources);
+        while (g_hash_table_iter_next (&iter, (gpointer)&key, NULL)) {
+            g_hash_table_insert (data->emergency_sources,
+                                 g_strdup (key), "");
+        }
     }
 
     /* get common error message */
@@ -1827,9 +2023,21 @@ sync (operation_data *op_data, SyncevoSession *session)
 
     app_data *data = op_data->data;
 
-   /* override all non-supported with "none".  */
     source_modes = syncevo_source_modes_new ();
 
+    if (op_data->operation != OP_SYNC) {
+        /* in an emergency sync, set non-emergency sources to not sync*/
+        g_hash_table_iter_init (&iter, data->current_service->source_configs);
+        while (g_hash_table_iter_next (&iter, NULL, (gpointer)&source)) {
+            if (g_hash_table_lookup (data->emergency_sources, source->name) == NULL) {
+                syncevo_source_modes_add (source_modes,
+                                          source->name,
+                                          SYNCEVO_SYNC_NONE);
+            }
+        }
+    }
+
+   /* override all non-supported with "none".  */
     g_hash_table_iter_init (&iter, data->current_service->source_configs);
     while (g_hash_table_iter_next (&iter, NULL, (gpointer)&source)) {
         if (!source->supported_locally) {
@@ -2034,6 +2242,7 @@ start_session_cb (SyncevoServer *server,
 static void
 show_emergency_view (app_data *data)
 {
+    update_emergency_view (data);
 #ifdef USE_MOBLIN_UX
     mux_window_set_current_page (MUX_WINDOW (data->sync_win),
                                  data->emergency_index);
@@ -2312,6 +2521,9 @@ sync_ui_create_main_window ()
     data = g_slice_new0 (app_data);
     data->online = TRUE;
     data->current_state = SYNC_UI_STATE_GETTING_SERVER;
+    data->forced_emergency = FALSE;
+    data->emergency_sources = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
     if (!init_ui (data)) {
         return NULL;
     }

@@ -702,11 +702,14 @@ you can setup a service manually.</property>
                       <widget class="GtkVBox" id="vbox39">
                         <property name="visible">True</property>
                         <property name="orientation">vertical</property>
+                        <property name="spacing">8</property>
                         <child>
                           <widget class="GtkLabel" id="emergency_label">
+                            <property name="width_request">800</property>
                             <property name="visible">True</property>
                             <property name="xalign">0</property>
-                            <property name="label" translatable="yes">If something has gone horribly wrong you can try a slow sync, start from scratch or restore from backup.</property>
+                            <property name="label">If something has gone horribly wrong you can try a slow sync, start from scratch or restore from backup.</property>
+                            <property name="wrap">True</property>
                           </widget>
                           <packing>
                             <property name="expand">False</property>
@@ -714,7 +717,8 @@ you can setup a service manually.</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkExpander" id="expander1">
+                          <widget class="GtkExpander" id="emergency_expander">
+                            <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <child>
                               <widget class="GtkAlignment" id="alignment19">
@@ -722,21 +726,9 @@ you can setup a service manually.</property>
                                 <property name="yscale">0</property>
                                 <property name="left_padding">20</property>
                                 <child>
-                                  <widget class="GtkVBox" id="vbox29">
+                                  <widget class="GtkTable" id="emergency_source_table">
                                     <property name="visible">True</property>
-                                    <property name="orientation">vertical</property>
-                                    <child>
-                                      <widget class="GtkCheckButton" id="checkbutton1">
-                                        <property name="label" translatable="yes">Contacts</property>
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <property name="receives_default">False</property>
-                                        <property name="draw_indicator">True</property>
-                                      </widget>
-                                      <packing>
-                                        <property name="position">0</property>
-                                      </packing>
-                                    </child>
+                                    <property name="n_rows">2</property>
                                     <child>
                                       <widget class="GtkCheckButton" id="checkbutton2">
                                         <property name="label" translatable="yes">Calendar</property>
@@ -745,9 +737,6 @@ you can setup a service manually.</property>
                                         <property name="receives_default">False</property>
                                         <property name="draw_indicator">True</property>
                                       </widget>
-                                      <packing>
-                                        <property name="position">1</property>
-                                      </packing>
                                     </child>
                                     <child>
                                       <widget class="GtkCheckButton" id="checkbutton3">
@@ -758,7 +747,8 @@ you can setup a service manually.</property>
                                         <property name="draw_indicator">True</property>
                                       </widget>
                                       <packing>
-                                        <property name="position">2</property>
+                                        <property name="top_attach">1</property>
+                                        <property name="bottom_attach">2</property>
                                       </packing>
                                     </child>
                                   </widget>
@@ -766,7 +756,7 @@ you can setup a service manually.</property>
                               </widget>
                             </child>
                             <child>
-                              <widget class="GtkLabel" id="source_expander">
+                              <widget class="GtkLabel" id="emergency_expander_label">
                                 <property name="visible">True</property>
                                 <property name="label">Affected data: ZYB Contacts, Calendar -- not implemented yet</property>
                               </widget>
