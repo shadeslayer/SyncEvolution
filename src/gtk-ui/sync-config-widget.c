@@ -527,19 +527,23 @@ add_toggle_widget (SyncConfigWidget *self,
 
 #ifdef USE_MOBLIN_UX
     GtkWidget *label;
+
+    col = col * 2;
     label = gtk_label_new (title);
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     gtk_widget_show (label);
-    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), label,
-                               col, col + 1, row, row + 1);
+    gtk_table_attach (GTK_TABLE (self->mode_table), label,
+                      col, col + 1, row, row + 1,
+                      GTK_FILL, GTK_FILL, 0, 0);
     toggle = mx_gtk_light_switch_new ();
 #else
     toggle = gtk_check_button_new_with_label (title);
 #endif
     g_object_set (toggle, "active", active, NULL);
     gtk_widget_show (toggle);
-    gtk_table_attach_defaults (GTK_TABLE (self->mode_table), toggle,
-                               col + 1, col + 2, row, row + 1);
+    gtk_table_attach (GTK_TABLE (self->mode_table), toggle,
+                      col + 1, col + 2, row, row + 1,
+                      GTK_FILL, GTK_FILL, 32, 0);
     g_signal_connect (toggle, "notify::active",
                       G_CALLBACK (mode_widget_notify_active_cb), self);
 
@@ -553,18 +557,30 @@ init_source (char *name,
 {
     char *str, *pretty_name;
     const char *uri;
+    guint rows;
     guint row;
+    static guint col = 0;
     source_widgets *widgets;
     SyncevoSyncMode mode;
+
+    g_object_get (self->mode_table,
+                  "n-rows", &rows,
+                  NULL);
+
+    if (!self->no_source_toggles && col == 0) {
+        col = 1;
+        row = rows - 1;
+    } else {
+        col = 0;
+        row = rows;
+    }
+    self->no_source_toggles = FALSE;
 
     widgets = g_slice_new (source_widgets);
     g_hash_table_insert (self->sources, name, widgets);
 
     widgets->source_toggle_label = self->source_toggle_label;
 
-    g_object_get (self->mode_table,
-                  "n-rows", &row,
-                  NULL);
     uri = g_hash_table_lookup (source_configuration, "uri");
     pretty_name = get_pretty_source_name (name);
     mode = syncevo_sync_mode_from_string
@@ -573,7 +589,7 @@ init_source (char *name,
     widgets->check = add_toggle_widget (self,
                                         pretty_name,
                                         (mode > SYNCEVO_SYNC_NONE),
-                                        row, 0);
+                                        row, col);
 
     /* TRANSLATORS: label for an entry in service configuration form.
      * Placeholder is a source  name.
@@ -581,8 +597,11 @@ init_source (char *name,
     str = g_strdup_printf (_("%s URI"), pretty_name);
     widgets->label = gtk_label_new (str);
     g_free (str);
-
     g_free (pretty_name);
+
+    g_object_get (self->server_settings_table,
+                  "n-rows", &row,
+                  NULL);
 
     gtk_misc_set_alignment (GTK_MISC (widgets->label), 0.0, 0.5);
     gtk_table_attach (GTK_TABLE (self->server_settings_table), widgets->label,
@@ -725,7 +744,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
 
     /* TRANSLATORS: check button (or toggle) in service configuration form */
     str = g_strdup_printf (_("Receive changes from %s"), self->config->name);
-    self->receive_check = add_toggle_widget (self, str, receive, 0, 2);
+    self->receive_check = add_toggle_widget (self, str, receive, 0, 1);
     g_free (str);
 
     align = gtk_alignment_new (0.0, 1.0, 0.0, 0.0);
@@ -781,6 +800,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                                            g_str_equal,
                                            NULL,
                                            (GDestroyNotify)source_widgets_free);
+    self->no_source_toggles = TRUE;
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)init_source,
                                    self);

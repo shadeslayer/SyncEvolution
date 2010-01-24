@@ -73,6 +73,8 @@ typedef struct {
     GHashTable *sources;   /* key is source name, value is source_widgets */
 
     gboolean mode_changed;
+
+    gboolean no_source_toggles;
 } SyncConfigWidget;
 
 typedef struct {
