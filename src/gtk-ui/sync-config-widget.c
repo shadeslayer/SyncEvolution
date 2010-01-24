@@ -657,7 +657,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     char *sync_url = "";
     const char *descr;
     char *str;
-    GtkWidget *label;
+    GtkWidget *label, *align;
     SyncevoSyncMode mode = SYNCEVO_SYNC_NONE;
     gboolean send, receive;
     SyncevoConfig *config = self->config->config;
@@ -728,17 +728,20 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     self->receive_check = add_toggle_widget (self, str, receive, 0, 2);
     g_free (str);
 
+    align = gtk_alignment_new (0.0, 1.0, 0.0, 0.0);
+    gtk_alignment_set_padding (GTK_ALIGNMENT (align), 10, 0, 0, 0);
+    gtk_widget_show (align);
+    gtk_table_attach (GTK_TABLE (self->mode_table), align,
+                      0, 1, 1, 2,
+                      GTK_FILL, GTK_FILL, 0, 0);
 
     self->source_toggle_label = gtk_label_new ("");
     /* TRANSLATORS: Label for the source toggles in configuration form.
        This is a verb, as in "Sync Calendar". */
     gtk_label_set_markup (GTK_LABEL (self->source_toggle_label),
                           _("<b>Sync</b>"));
-    gtk_misc_set_alignment (GTK_MISC (self->source_toggle_label), 0.0, 0.5);
     gtk_widget_show (self->source_toggle_label);
-    gtk_table_attach (GTK_TABLE (self->mode_table), self->source_toggle_label,
-                      0, 1, 1, 2,
-                      GTK_FILL, GTK_FILL, 20, 0);
+    gtk_container_add (GTK_CONTAINER (align), self->source_toggle_label);
 
     syncevo_config_get_value (config, NULL, "username", &username);
     syncevo_config_get_value (config, NULL, "password", &password);
