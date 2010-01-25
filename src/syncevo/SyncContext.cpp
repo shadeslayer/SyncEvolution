@@ -621,7 +621,7 @@ private:
         }
         // sort vector in ascending order
         // if no peer name
-        if(m_prefix.empty() || m_prefix == DIR_PREFIX){
+        if(peerName.empty()){
             sort(dirs.begin(), dirs.end(), *this);
         } else {
             sort(dirs.begin(), dirs.end());
