@@ -124,6 +124,13 @@ void syncevo_session_check_source (SyncevoSession *session,
                                    SyncevoSessionGenericCb callback,
                                    gpointer userdata);
 
+void syncevo_session_restore (SyncevoSession *session,
+                              const char *backup_dir,
+                              const gboolean before,
+                              const char **sources,
+                              SyncevoSessionGenericCb callback,
+                              gpointer userdata);
+
 const char *syncevo_session_get_path (SyncevoSession *session);
 
 SyncevoSession *syncevo_session_new (const char *path);

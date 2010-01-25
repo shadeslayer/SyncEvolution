@@ -670,6 +670,37 @@ syncevo_session_check_source (SyncevoSession *session,
              data);
 }
 
+void
+syncevo_session_restore (SyncevoSession *session,
+                         const char *backup_dir,
+                         const gboolean before,
+                         const char **sources,
+                         SyncevoSessionGenericCb callback,
+                         gpointer userdata)
+{
+    SessionAsyncData *data;
+    SyncevoSessionPrivate *priv;
+
+    priv = GET_PRIVATE (session);
+
+    data = session_async_data_new (session, G_CALLBACK (callback), userdata);
+
+    if (!priv->proxy) {
+        if (callback) {
+            g_idle_add ((GSourceFunc)generic_error, data);
+        }
+        return;
+    }
+
+    org_syncevolution_Session_restore_async
+            (priv->proxy,
+             backup_dir,
+             before,
+             sources,
+             (org_syncevolution_Session_check_source_reply) generic_callback,
+             data);
+}
+
 const char*
 syncevo_session_get_path (SyncevoSession *session)
 {
