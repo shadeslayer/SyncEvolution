@@ -1103,6 +1103,30 @@ add_emergency_source (const char *name, source_config *conf, app_data *data)
                       G_CALLBACK (emergency_toggle_notify_active_cb), data);
 }
 
+static void
+update_backup_visibilities (app_data *data)
+{
+    char *key;
+    GHashTableIter iter;
+    GList *l, *widgets;
+
+    widgets = gtk_container_get_children (
+        GTK_CONTAINER (data->emergency_backup_table));
+    gtk_widget_show_all (data->emergency_backup_table);
+
+    /* hide backup widgets that do not contain selected sources */
+    g_hash_table_iter_init (&iter, data->emergency_sources);
+    while (g_hash_table_iter_next (&iter, (gpointer)&key, NULL)) {
+        for (l = widgets; l; l = l->next) {
+            if (!g_object_get_data (G_OBJECT (l->data), key)) {
+                gtk_widget_hide (GTK_WIDGET (l->data));
+            }
+        }
+    }
+
+    g_list_free (widgets);
+}
+
 static void 
 restore_clicked_cb (GtkButton *btn, app_data *data)
 {
@@ -1139,7 +1163,8 @@ restore_clicked_cb (GtkButton *btn, app_data *data)
 }
 
 static void
-add_backup (app_data *data, const char *peername, const char *dir, long endtime)
+add_backup (app_data *data, const char *peername, const char *dir,
+            long endtime, GList *sources)
 {
     GtkWidget *label, *button;
     guint rows;
@@ -1161,7 +1186,6 @@ add_backup (app_data *data, const char *peername, const char *dir, long endtime)
     text = g_strdup_printf (_("Restore backup from before syncing with %s on %s"),
                             peername, time_str);
     label = gtk_label_new (text);
-    gtk_widget_show (label);
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     gtk_table_attach (GTK_TABLE (data->emergency_backup_table), label,
                       0, 1, rows, rows + 1,
@@ -1169,7 +1193,6 @@ add_backup (app_data *data, const char *peername, const char *dir, long endtime)
     g_free (text);
 
     button = gtk_button_new_with_label (_("Restore"));
-    gtk_widget_show (button);
     gtk_table_attach (GTK_TABLE (data->emergency_backup_table), button,
                       1, 2, rows, rows + 1,
                       GTK_FILL, GTK_FILL, 32, 0);
@@ -1177,6 +1200,11 @@ add_backup (app_data *data, const char *peername, const char *dir, long endtime)
     g_object_set_data_full (G_OBJECT (button), "time", g_strdup(time_str), g_free);
     g_signal_connect (button, "clicked",
                       G_CALLBACK (restore_clicked_cb), data);
+
+    for (; sources; sources = sources->next) {
+        g_object_set_data (G_OBJECT (label), (char *)sources->data, "");
+        g_object_set_data (G_OBJECT (button), (char *)sources->data, "");
+    }
 }
 
 static void
@@ -1203,6 +1231,7 @@ get_reports_for_backups_cb (SyncevoServer *server,
         long endtime = -1;
         char *peername = NULL;
         char *dir = NULL;
+        GList *backup_sources = NULL;
 
         g_hash_table_iter_init (&iter, report);
         while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&val)) {
@@ -1213,8 +1242,11 @@ get_reports_for_backups_cb (SyncevoServer *server,
                 continue;
             }
 
-            if (g_strcmp0 (strs[0], "source") == 0) {
-                /* needed? */
+            if (g_strcmp0 (strs[0], "source") == 0 &&
+                g_strcmp0 (strs[2], "backup") == 0 &&
+                g_strcmp0 (strs[3], "before") == 0) {
+                backup_sources = g_list_prepend (backup_sources,
+                                                 g_strdup (strs[1]));
             } else if (g_strcmp0 (strs[0], "end") == 0) {
                 endtime = strtol (val, NULL, 10);
             } else if (g_strcmp0 (strs[0], "status") == 0) {
@@ -1227,9 +1259,11 @@ get_reports_for_backups_cb (SyncevoServer *server,
             g_strfreev (strs);
         }
 
-        if (status == 200 && peername && dir && endtime > 0) {
-            add_backup (data, peername, dir, endtime);
+        if (peername && dir && endtime > 0) {
+            add_backup (data, peername, dir, endtime, backup_sources);
         }
+        g_list_foreach (backup_sources, (GFunc)g_free, NULL);
+        g_list_free (backup_sources);
     }
 
     data->backup_count += len;
@@ -1240,6 +1274,8 @@ get_reports_for_backups_cb (SyncevoServer *server,
                                     (SyncevoServerGetReportsCb)get_reports_for_backups_cb,
                                     data);
     }
+
+    update_backup_visibilities (data);
 }
 
 static void
