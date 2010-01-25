@@ -50,6 +50,7 @@
 #endif
 
 static gboolean support_canceling = FALSE;
+#define REPORTS_PER_CALL 10
 
 #define SYNC_UI_ICON_SIZE 48
 
@@ -101,9 +102,11 @@ typedef struct app_data {
     GtkWidget *emergency_source_table;
     GtkWidget *emergency_from_client_btn;
     GtkWidget *emergency_from_server_btn;
+    GtkWidget *emergency_backup_table;
 
     gboolean forced_emergency;
     GHashTable *emergency_sources;
+    guint backup_count;
 
     gboolean online;
 
@@ -130,8 +133,10 @@ typedef struct operation_data {
         OP_SYNC_REFRESH_FROM_CLIENT,
         OP_SYNC_REFRESH_FROM_SERVER,
         OP_SAVE,
+        OP_RESTORE,
     } operation;
     gboolean started;
+    const char *dir; /* for OP_RESTORE */
 } operation_data;
 
 static void set_sync_progress (app_data *data, float progress, char *status);
@@ -313,7 +318,8 @@ sync_cb (SyncevoSession *session,
 }
 
 static gboolean
-confirm (app_data *data, const char *message, const char *yes)
+confirm (app_data *data, const char *message,
+         const char *yes, const char *no)
 {
     GtkWidget *w;
     int ret;
@@ -325,10 +331,8 @@ confirm (app_data *data, const char *message, const char *yes)
                                 "%s",
                                 message);
     gtk_dialog_add_buttons (GTK_DIALOG (w),
-                            _("No, cancel sync"),
-                            GTK_RESPONSE_NO,
-                            yes,
-                            GTK_RESPONSE_YES,
+                            no, GTK_RESPONSE_NO,
+                            yes, GTK_RESPONSE_YES,
                             NULL);
     ret = gtk_dialog_run (GTK_DIALOG (w));
     gtk_widget_destroy (w);
@@ -343,7 +347,7 @@ slow_sync_clicked_cb (GtkButton *btn, app_data *data)
 
     message = g_strdup_printf (_("Do you want to slow sync with %s?"),
                                data->current_service->name);
-    if (!confirm (data, message, _("Yes, do slow sync"))) {
+    if (!confirm (data, message, _("Yes, do slow sync"), _("No, cancel sync"))) {
         g_free (message);
         return;
     }
@@ -371,7 +375,7 @@ refresh_from_server_clicked_cb (GtkButton *btn, app_data *data)
     message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
                                  "data from %s? This is not usually advised."),
                                data->current_service->name);
-    if (!confirm (data, message, _("Yes, delete and replace"))) {
+    if (!confirm (data, message, _("Yes, delete and replace"), _("No"))) {
         g_free (message);
         return;
     }
@@ -398,7 +402,7 @@ refresh_from_client_clicked_cb (GtkButton *btn, app_data *data)
     message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
                                  "your local data? This is not usually advised."),
                                data->current_service->name);
-    if (!confirm (data, message, _("Yes, delete and replace"))) {
+    if (!confirm (data, message, _("Yes, delete and replace"), _("No"))) {
         g_free (message);
         return;
     }
@@ -911,6 +915,7 @@ init_ui (app_data *data)
     data->emergency_label = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_label"));
     data->emergency_expander = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_expander"));
     data->emergency_source_table = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_source_table"));
+    data->emergency_backup_table = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_backup_table"));
 
     /* No (documented) way to add own widgets to gtkbuilder it seems...
        swap the all dummy widgets with Muxwidgets */
@@ -1098,6 +1103,145 @@ add_emergency_source (const char *name, source_config *conf, app_data *data)
                       G_CALLBACK (emergency_toggle_notify_active_cb), data);
 }
 
+static void 
+restore_clicked_cb (GtkButton *btn, app_data *data)
+{
+    const char *dir, *time_str;
+    operation_data *op_data;
+    char *message;
+
+    dir = g_object_get_data (G_OBJECT (btn), "dir");
+    time_str = g_object_get_data (G_OBJECT (btn), "time");
+    g_return_if_fail (dir && time_str);
+
+    /* TRANSLATORS: confirmation for restoring a backup. placeholder is the
+     * backup time string defined below */
+    message = g_strdup_printf (_("Do you want to restore the backup from %s? "
+                                 "All changes you have made since then will be lost."),
+                               time_str);
+    if (!confirm (data, message, _("Yes, restore"), _("No"))) {
+        g_free (message);
+        return;
+    }
+    g_free (message);
+
+    op_data = g_slice_new (operation_data);
+    op_data->data = data;
+    op_data->operation = OP_RESTORE;
+    op_data->dir = dir;
+    op_data->started = FALSE;
+    syncevo_server_start_session (data->server,
+                                  data->current_service->name,
+                                  (SyncevoServerStartSessionCb)start_session_cb,
+                                  op_data);
+
+    show_main_view (data);
+}
+
+static void
+add_backup (app_data *data, const char *peername, const char *dir, long endtime)
+{
+    GtkWidget *label, *button;
+    guint rows;
+    char *text;
+    char time_str[60];
+    struct tm *tim;
+
+    /* TRANSLATORS: date/time for strftime(), used in emergency view backup
+     * label. Any time format that shows date and time is good. */
+    tim = localtime (&endtime);
+    strftime (time_str, sizeof (time_str), _("%x %X"), tim);
+
+    g_object_get (data->emergency_backup_table,
+                  "n-rows", &rows,
+                  NULL);
+
+    /* TRANSLATORS: label for a backup in emergency view. First placeholder is 
+     * service or device name, second placeholder is the previous strftime string */
+    text = g_strdup_printf (_("Restore backup from before syncing with %s on %s"),
+                            peername, time_str);
+    label = gtk_label_new (text);
+    gtk_widget_show (label);
+    gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+    gtk_table_attach (GTK_TABLE (data->emergency_backup_table), label,
+                      0, 1, rows, rows + 1,
+                      GTK_FILL, GTK_FILL, 0, 0);
+    g_free (text);
+
+    button = gtk_button_new_with_label (_("Restore"));
+    gtk_widget_show (button);
+    gtk_table_attach (GTK_TABLE (data->emergency_backup_table), button,
+                      1, 2, rows, rows + 1,
+                      GTK_FILL, GTK_FILL, 32, 0);
+    g_object_set_data_full (G_OBJECT (button), "dir", g_strdup(dir), g_free);
+    g_object_set_data_full (G_OBJECT (button), "time", g_strdup(time_str), g_free);
+    g_signal_connect (button, "clicked",
+                      G_CALLBACK (restore_clicked_cb), data);
+}
+
+static void
+get_reports_for_backups_cb (SyncevoServer *server,
+                            SyncevoReports *reports,
+                            GError *error,
+                            app_data *data)
+{
+    guint len, i;
+
+    if (error) {
+        g_warning ("Error in Session.GetReports: %s", error->message);
+        g_error_free (error);
+        /* non-fatal, unknown error */
+        return;
+    }
+
+    len = syncevo_reports_get_length (reports);
+    for (i = 0; i < len; i++) {
+        GHashTable *report = syncevo_reports_index (reports, i);
+        GHashTableIter iter;
+        char *key, *val;
+        long status = -1;
+        long endtime = -1;
+        char *peername = NULL;
+        char *dir = NULL;
+
+        g_hash_table_iter_init (&iter, report);
+        while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&val)) {
+            char **strs;
+
+            strs = g_strsplit (key, "-", 6);
+            if (!strs) {
+                continue;
+            }
+
+            if (g_strcmp0 (strs[0], "source") == 0) {
+                /* needed? */
+            } else if (g_strcmp0 (strs[0], "end") == 0) {
+                endtime = strtol (val, NULL, 10);
+            } else if (g_strcmp0 (strs[0], "status") == 0) {
+                status = strtol (val, NULL, 10);
+            } else if (g_strcmp0 (strs[0], "peer") == 0) {
+                peername = val;
+            } else if (g_strcmp0 (strs[0], "dir") == 0) {
+                dir = val;
+            }
+            g_strfreev (strs);
+        }
+
+        if (status == 200 && peername && dir && endtime > 0) {
+            add_backup (data, peername, dir, endtime);
+        }
+    }
+
+    data->backup_count += len;
+    if (len == REPORTS_PER_CALL) {
+        syncevo_server_get_reports (data->server,
+                                    "",
+                                    data->backup_count, REPORTS_PER_CALL,
+                                    (SyncevoServerGetReportsCb)get_reports_for_backups_cb,
+                                    data);
+    }
+}
+
 static void
 update_emergency_view (app_data *data)
 {
@@ -1151,6 +1295,18 @@ update_emergency_view (app_data *data)
                           (GHFunc)add_emergency_source,
                           data);
     update_emergency_expander (data);
+
+    data->backup_count = 0;
+    gtk_container_foreach (GTK_CONTAINER (data->emergency_backup_table),
+                           (GtkCallback)remove_child,
+                           data->emergency_backup_table);
+    gtk_table_resize (GTK_TABLE (data->emergency_backup_table), 1, 1);
+    syncevo_server_get_reports (data->server,
+                                "",
+                                0, REPORTS_PER_CALL,
+                                (SyncevoServerGetReportsCb)get_reports_for_backups_cb,
+                                data);
+
 }
 
 static void
@@ -2006,6 +2162,51 @@ set_config_cb (SyncevoSession *session,
 }
 
 static void
+restore_cb (SyncevoSession *session,
+            GError *error,
+            app_data *data)
+{
+    operation_data *op_data;
+
+    g_object_unref (session);
+
+    if (error) {
+        g_warning ("Error in Session.Restore: %s", error->message);
+        g_error_free (error);
+        return;
+        /* TODO show in UI: restore failed */
+    }
+
+    /* update peer with the restore results */
+    op_data = g_slice_new (operation_data);
+    op_data->data = data;
+    op_data->operation = OP_SYNC_REFRESH_FROM_CLIENT;
+    op_data->started = FALSE;
+    syncevo_server_start_session (data->server,
+                                  data->current_service->name,
+                                  (SyncevoServerStartSessionCb)start_session_cb,                                  op_data);
+}
+
+static void
+restore_backup (app_data *data, SyncevoSession *session, const char *dir)
+{
+    const char **sources;
+    GHashTableIter iter;
+    int i = 0;
+
+    sources = g_malloc0 (sizeof (char*) * g_hash_table_size (data->emergency_sources));
+
+    g_hash_table_iter_init (&iter, data->emergency_sources);
+    while (g_hash_table_iter_next (&iter, (gpointer)&sources [i++], NULL))
+        ;
+
+    syncevo_session_restore (session, dir, TRUE, sources,
+                             (SyncevoSessionGenericCb)restore_cb,
+                             data);
+    g_free (sources);
+}
+
+static void
 save_config (app_data *data, SyncevoSession *session)
 {
     syncevo_session_set_config (session,
@@ -2122,6 +2323,9 @@ run_operation (operation_data *op_data, SyncevoSession *session)
         break;
     case OP_SAVE:
         save_config (op_data->data, session);
+        break;
+    case OP_RESTORE:
+        restore_backup (op_data->data, session, op_data->dir);
         break;
     default:
         g_warn_if_reached ();

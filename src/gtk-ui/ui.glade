@@ -753,7 +753,7 @@ you can setup a service manually.</property>
                             <child>
                               <widget class="GtkLabel" id="emergency_expander_label">
                                 <property name="visible">True</property>
-                                <property name="label">Affected data: ZYB Contacts, Calendar -- not implemented yet</property>
+                                <property name="label">Affected data:</property>
                               </widget>
                               <packing>
                                 <property name="type">label_item</property>
@@ -921,6 +921,7 @@ local information</property>
                     </child>
                     <child>
                       <widget class="GtkVBox" id="vbox21">
+                        <property name="visible">True</property>
                         <property name="orientation">vertical</property>
                         <property name="spacing">5</property>
                         <child>
@@ -951,7 +952,7 @@ local information</property>
                                     <property name="visible">True</property>
                                     <property name="resize_mode">queue</property>
                                     <child>
-                                      <widget class="GtkTable" id="table1">
+                                      <widget class="GtkTable" id="emergency_backup_table">
                                         <property name="visible">True</property>
                                         <property name="border_width">3</property>
                                         <property name="n_rows">10</property>
