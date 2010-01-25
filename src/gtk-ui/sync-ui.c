@@ -2128,6 +2128,11 @@ get_reports_cb (SyncevoServer *server,
         }
     }
 
+    if (status != 200) {
+        /* don't want to show a sync time for failed syncs */
+        data->last_sync = -1;
+    }
+
     if (!data->forced_emergency) {
         /* if user initiates a emergency sync wihtout forced_emergency, 
            enable all sources by default*/
