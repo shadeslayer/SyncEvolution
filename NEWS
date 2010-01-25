@@ -145,9 +145,16 @@ Upgrading from 0.9.x:
   above). Such configs cannot be used by older SyncEvolution releases.
 
 
-SyncEvolution 0.9.1 -> 0.9.2, not released yet
-==============================================
+SyncEvolution 0.9.1 -> 0.9.2, 23.01.2010
+========================================
 Synthesis SyncML Engine version: see src/synthesis/ChangeLog
+
+New Maemo 5/Nokia N900 calendar backend and packages, brought to you
+by Ove Kaaven. These packages are available via the Maemo extras-devel
+repository. Bug reports can be submitted both in http://bugs.maemo.org
+and http://bugzilla.moblin.org. The latter is the tracker that is
+monitored by the SyncEvolution team, which will also incorporate
+patches. In general, Ove is the main maintainer of the new backend.
 
 New XMLRPC backend, contributed by Franz Knipp/M-otion. It accesses
 data inside a web service via a SOUP API and thus allows synchronizing
@@ -159,6 +166,9 @@ part of the regular testing.
 In addition to that, 0.9.2 is an incremental update, with several
 updated translations and addressing all of the issues reported by
 users for 0.9.1:
+
+- vCard dialects: added "X-GENDER/X-SIP" (used by Maemo) and X-SKYPE
+  (used by Maemo and recent Evolution, MB #8948)
 
 - Evolution Address Book: avoid picking CouchDB by default (MB #7877, evolution-couchdb #479110)
 
