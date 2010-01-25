@@ -785,6 +785,8 @@ ConfigNode &operator << (ConfigNode &node, const SyncReport &report)
     string error = report.getError();
     if (!error.empty()) {
         node.setProperty("error", error);
+    } else {
+        node.removeProperty("error");
     }
 
     BOOST_FOREACH(const SyncReport::value_type &entry, report) {
