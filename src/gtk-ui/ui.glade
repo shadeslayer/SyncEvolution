@@ -133,12 +133,7 @@
                                                   </widget>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkLabel" id="label2">
-                                                    <property name="visible">True</property>
-                                                    <property name="xpad">5</property>
-                                                    <property name="label" translatable="yes">&lt;b&gt;Data&lt;/b&gt;</property>
-                                                    <property name="use_markup">True</property>
-                                                  </widget>
+                                                  <placeholder/>
                                                   <packing>
                                                     <property name="type">label_item</property>
                                                   </packing>

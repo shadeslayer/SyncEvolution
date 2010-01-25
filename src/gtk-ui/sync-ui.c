@@ -1157,7 +1157,7 @@ static void
 update_service_source_ui (const char *name, source_config *conf, app_data *data)
 {
     GtkWidget *lbl, *box;
-    char *pretty_name;
+    char *pretty_name, *title;
     const char *source_uri, *sync;
 
     source_uri = g_hash_table_lookup (conf->config, "uri");
@@ -1177,8 +1177,11 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
                         FALSE, FALSE, 8);
 
     pretty_name = get_pretty_source_name (name);
-    lbl = gtk_label_new (pretty_name);
+    title = g_strdup_printf ("<b>%s</b>", pretty_name);
+    lbl = gtk_label_new (NULL);
+    gtk_label_set_markup (GTK_LABEL (lbl), title);
     g_free (pretty_name);
+    g_free (title);
     gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
     gtk_box_pack_start_defaults (GTK_BOX (conf->box), lbl);
 
