@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
 "POT-Creation-Date: 2009-12-21 18:45+0000\n"
-"PO-Revision-Date: 2010-01-22 12:26+0100\n"
+"PO-Revision-Date: 2010-01-25 17:32+0100\n"
 "Last-Translator: Gergely Lónyai <aleph@mandriva.org>\n"
 "Language-Team: Hungarian <aleph@mandriva.org>\n"
 "MIME-Version: 1.0\n"
@@ -24,54 +24,45 @@ msgstr ""
 #: ../src/gtk-ui/main.c:31
 #: ../src/gtk-ui/ui.glade.h:20
 #: ../src/gtk-ui/sync.desktop.in.h:1
-#, fuzzy
 msgid "Sync"
-msgstr "Kategóriák szinkronizálása:"
+msgstr "Szinkronizálás"
 
 #. TRANSLATORS: The name was changed from 'Addressbook' to
 #. 'Contacts' to match naming in rest of moblin. Please make sure the
 #. name you use matches the name in the panel and Contacts application.
 #: ../src/gtk-ui/sync-ui.c:192
-#, fuzzy
 msgid "Contacts"
 msgstr "Kapcsolatok"
 
 #: ../src/gtk-ui/sync-ui.c:194
-#, fuzzy
 msgid "Calendar"
 msgstr "Naptár"
 
 #: ../src/gtk-ui/sync-ui.c:196
-#, fuzzy
 msgid "Todo"
 msgstr "Teendők listája"
 
 #: ../src/gtk-ui/sync-ui.c:198
-#, fuzzy
 msgid "Memo"
 msgstr "Feljegyzés"
 
 #. TODO show in UI: failed to abort sync (while syncing)
 #: ../src/gtk-ui/sync-ui.c:273
-#, fuzzy
 msgid "Failed to abort sync"
-msgstr "Nem sikerült %s elindítása.\n"
+msgstr "Nem sikerült a szinkronizálás"
 
 #. TODO show in UI: sync failed (failed to even start)
 #: ../src/gtk-ui/sync-ui.c:287
-#, fuzzy
 msgid "Failed to start sync"
-msgstr "Parancs indítása sikertelen"
+msgstr "Nem sikerült a szinkronizálás elindítása"
 
 #: ../src/gtk-ui/sync-ui.c:293
-#, fuzzy
 msgid "Starting sync"
-msgstr "Kategóriák szinkronizálása:"
+msgstr "Szinkronizálás elindítása"
 
 #: ../src/gtk-ui/sync-ui.c:309
-#, fuzzy
 msgid "Trying to cancel sync"
-msgstr "Kísérlet az X kiszolgáló újraindítására."
+msgstr "Kísérlet a szinkronizálás leállítására"
 
 #: ../src/gtk-ui/sync-ui.c:316
 #, c-format
@@ -84,76 +75,66 @@ msgid "Do you want to delete all data in %s and replace it with your local data?
 msgstr ""
 
 #: ../src/gtk-ui/sync-ui.c:338
-#, fuzzy
 msgid "No, cancel sync"
-msgstr "Bizalmi adatbázis: szinkronizáció sikertelen: %s.\n"
+msgstr "Állítsd le a szinkronizálást"
 
 #: ../src/gtk-ui/sync-ui.c:340
-#, fuzzy
 msgid "Yes, delete and replace"
-msgstr "Szöveg keresése és cseréje"
+msgstr "Töröld vagy cseréld le"
 
 #: ../src/gtk-ui/sync-ui.c:377
-#, fuzzy
 msgid "Last synced just seconds ago"
-msgstr "Hozzáférés megadva (utolsó hozzáférés %ld másodperce volt)."
+msgstr "Az utolsó szinkronizálás pár másodperce volt"
 
 #: ../src/gtk-ui/sync-ui.c:380
-#, fuzzy
 msgid "Last synced a minute ago"
-msgstr "%d órával és 1 perccel ezelőtt"
+msgstr "Az utolsó szinkronizálás egy perce volt"
 
 #: ../src/gtk-ui/sync-ui.c:383
-#, fuzzy, c-format
+#, c-format
 msgid "Last synced %ld minutes ago"
-msgstr "Hozzáférés megadva (utolsó hozzáférés %ld másodperce volt)."
+msgstr "Az utolsó szinkronizálás %ld perce volt"
 
 #: ../src/gtk-ui/sync-ui.c:386
-#, fuzzy
 msgid "Last synced an hour ago"
-msgstr "1 órával és %d perccel ezelőtt"
+msgstr "Az utolsó szinkronizálás pár órája volt"
 
 #: ../src/gtk-ui/sync-ui.c:389
-#, fuzzy, c-format
+#, c-format
 msgid "Last synced %ld hours ago"
-msgstr "Hozzáférés megadva (utolsó hozzáférés %ld másodperce volt)."
+msgstr "Az utolsó szinkronizálás %ld órája volt"
 
 #: ../src/gtk-ui/sync-ui.c:392
-#, fuzzy
 msgid "Last synced a day ago"
-msgstr "Az előző hónap utolsó napja"
+msgstr "Az utolsó szinkronizálás egy napja volt"
 
 #: ../src/gtk-ui/sync-ui.c:395
-#, fuzzy, c-format
+#, c-format
 msgid "Last synced %ld days ago"
-msgstr "Hozzáférés megadva (utolsó hozzáférés %ld másodperce volt)."
+msgstr "Az utolsó szinkronizálás %ld napja volt"
 
 #: ../src/gtk-ui/sync-ui.c:480
-#, fuzzy
 msgid "Sync again"
-msgstr "Jelszó (még egyszer)"
+msgstr "Szinkronizálás újra"
 
 #: ../src/gtk-ui/sync-ui.c:482
 #: ../src/gtk-ui/ui.glade.h:21
-#, fuzzy
 msgid "Sync now"
-msgstr "Deaktiválás most"
+msgstr "Szinkronizálás most"
 
 #: ../src/gtk-ui/sync-ui.c:493
-#, fuzzy
 msgid "Syncing"
-msgstr "Mappa szinkronizálása"
+msgstr "Szinkronizálás"
 
 #: ../src/gtk-ui/sync-ui.c:499
-#, fuzzy
 msgid "Cancel sync"
-msgstr "Kategóriák szinkronizálása:"
+msgstr "Szinkronizálás leállítása"
 
 #. TRANSLATORS: placeholder is a source name, shown with checkboxes in main window
 #: ../src/gtk-ui/sync-ui.c:849
-#, fuzzy, c-format
+#, c-format
 msgid "%s (not supported by this service)"
-msgstr "Ez a háttérprogram nem támogatja"
+msgstr "%s (nem támogatott ezen az eszközön)"
 
 #: ../src/gtk-ui/sync-ui.c:1046
 msgid "Failed to get list of configured services from SyncEvolution"
@@ -164,135 +145,113 @@ msgid "Failed to get list of supported services from SyncEvolution"
 msgstr ""
 
 #: ../src/gtk-ui/sync-ui.c:1221
-#, fuzzy
 msgid "Sync complete"
-msgstr "A kapcsolat létrejött."
+msgstr "A szinkronizálás kész"
 
 #: ../src/gtk-ui/sync-ui.c:1310
-#, fuzzy, c-format
+#, c-format
 msgid "Preparing '%s'"
-msgstr "Előkészítés..."
+msgstr "'%s' előkészítése"
 
 #: ../src/gtk-ui/sync-ui.c:1313
-#, fuzzy, c-format
+#, c-format
 msgid "Receiving '%s'"
-msgstr "Fogadás"
+msgstr "'%s' fogadása"
 
 #: ../src/gtk-ui/sync-ui.c:1316
-#, fuzzy, c-format
+#, c-format
 msgid "Sending '%s'"
-msgstr "Küldés"
+msgstr "'%s' küldése"
 
 #: ../src/gtk-ui/sync-ui.c:1705
-#, fuzzy
 msgid "Waiting for current operation to finish..."
-msgstr "Előzetesen betöltve, várakozás a pufferelés befejeződésére...\n"
+msgstr "Várakozás az aktuális művelet befejeződésére..."
 
 #: ../src/gtk-ui/sync-ui.c:1750
-#, fuzzy
 msgid "Not authorized"
 msgstr "Nincs jogosultság"
 
 #: ../src/gtk-ui/sync-ui.c:1752
-#, fuzzy
 msgid "Forbidden"
-msgstr "Tiltva"
+msgstr "Visszautasítva"
 
 #: ../src/gtk-ui/sync-ui.c:1754
-#, fuzzy
 msgid "Not found"
 msgstr "Nem található"
 
 #: ../src/gtk-ui/sync-ui.c:1756
-#, fuzzy
 msgid "Fatal database error"
-msgstr "Hiba az adatbázis betöltése közben."
+msgstr "Végzetes adatbázishiba"
 
 #: ../src/gtk-ui/sync-ui.c:1758
-#, fuzzy
 msgid "Database error"
 msgstr "Adatbázishiba"
 
 #: ../src/gtk-ui/sync-ui.c:1760
-#, fuzzy
 msgid "No space left"
-msgstr "Nincs több szabad hely a meghajtón."
+msgstr "Nincs több szabad hely"
 
 #. TODO identify problem item somehow ?
 #: ../src/gtk-ui/sync-ui.c:1763
-#, fuzzy
 msgid "Failed to process SyncML"
-msgstr "%s fájl feldolgozása sikertelen"
+msgstr "SyncML feldolgozása sikertelen"
 
 #: ../src/gtk-ui/sync-ui.c:1765
-#, fuzzy
 msgid "Server authorization failed"
-msgstr "A felhasználói azonosítás sikertelen. Újra?"
+msgstr "A szerver azonosítása sikertelen"
 
 #: ../src/gtk-ui/sync-ui.c:1767
-#, fuzzy
 msgid "Failed to parse configuration file"
-msgstr "A(z) „%s” XML-fájl feldolgozása sikertelen"
+msgstr "A konfigurációs fájl feldolgozása sikertelen"
 
 #: ../src/gtk-ui/sync-ui.c:1769
-#, fuzzy
 msgid "Failed to read configuration file"
-msgstr "Nem sikerült olvasni a(z) „%s” fájlból: %s"
+msgstr "Nem sikerült olvasni a konfigurációs fájlból"
 
 #: ../src/gtk-ui/sync-ui.c:1771
-#, fuzzy
 msgid "No configuration found"
-msgstr "Eszköz nem található"
+msgstr "A beállítások nem találhatóak"
 
 #: ../src/gtk-ui/sync-ui.c:1773
-#, fuzzy
 msgid "No configuration file found"
-msgstr "„%s” konfigurációs fájl nem található: %s"
+msgstr "A konfigurációs fájl nem található"
 
 #: ../src/gtk-ui/sync-ui.c:1775
-#, fuzzy
 msgid "Server sent bad content"
-msgstr "Rossz hitelesítési válasz a kiszolgálótól."
+msgstr "A kiszolgáló hibás tartalmat küldött"
 
 #: ../src/gtk-ui/sync-ui.c:1777
-#, fuzzy
 msgid "Transport failure (no connection?)"
-msgstr "Nincs beállítva internetkapcsolat"
+msgstr "Az átvitel nem sikerült (nincs kapcsolat?)"
 
 #: ../src/gtk-ui/sync-ui.c:1779
-#, fuzzy
 msgid "Connection timed out"
 msgstr "Időtúllépés a kapcsolatban"
 
 #: ../src/gtk-ui/sync-ui.c:1781
-#, fuzzy
 msgid "Connection certificate has expired"
-msgstr "  A kibocsátott tanúsítvány lejárt.\n"
+msgstr "A kapcsolat tanúsítványa lejárt"
 
 #: ../src/gtk-ui/sync-ui.c:1783
-#, fuzzy
 msgid "Connection certificate is invalid"
-msgstr "A bemutatott tanúsítványlánc érvénytelen."
+msgstr "A kapcsolat tanúsítványa érvénytelen."
 
 #: ../src/gtk-ui/sync-ui.c:1786
-#, fuzzy
 msgid "Connection failed"
 msgstr "A kapcsolódás sikertelen"
 
 #: ../src/gtk-ui/sync-ui.c:1788
-#, fuzzy
 msgid "URL is bad"
-msgstr "Az RPC struktúra hibás"
+msgstr "Az URL hibás"
 
 #: ../src/gtk-ui/sync-ui.c:1790
-#, fuzzy
 msgid "Server not found"
-msgstr "A távoli kiszolgáló nem található"
+msgstr "A kiszolgáló nem található"
 
 #: ../src/gtk-ui/sync-ui.c:1792
-#, fuzzy, c-format
+#, c-format
 msgid "Error %d"
-msgstr "HIBA     "
+msgstr "Hiba %d"
 
 #. TODO show in UI: server disappeared
 #: ../src/gtk-ui/sync-ui.c:1803
@@ -300,9 +259,8 @@ msgid "Syncevolution.Server D-Bus service exited unexpectedly"
 msgstr ""
 
 #: ../src/gtk-ui/sync-ui.c:1806
-#, fuzzy
 msgid "Sync Failed"
-msgstr "Bizalmi adatbázis: szinkronizáció sikertelen: %s.\n"
+msgstr "Szinkronizáció sikertelen"
 
 #: ../src/gtk-ui/sync-ui-config.c:95
 #, c-format
@@ -324,16 +282,16 @@ msgid "There were %d local rejections and %d remote rejections."
 msgstr ""
 
 #: ../src/gtk-ui/sync-ui-config.c:110
-#, fuzzy, c-format
+#, c-format
 msgid "Last time: No changes."
-msgstr "A mentés nem módosult."
+msgstr "Utolsó időpont: nincs változás."
 
 #: ../src/gtk-ui/sync-ui-config.c:112
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %d changes."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Utolsó bejegyzés: Egy változtatás elküldve."
+msgstr[1] "Utolsó bejegyzés: %d változtatás elküldve."
 
 #. This is about changes made to the local data. Not all of these
 #. changes were requested by the remote server, so "applied"
@@ -342,72 +300,65 @@ msgstr[1] ""
 #, c-format
 msgid "Last time: Applied one change."
 msgid_plural "Last time: Applied %d changes."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Utolsó bejegyzés: Egy változtatás alkalmazva."
+msgstr[1] "Utolsó bejegyzés: %d változtatás alkalmazva."
 
 #: ../src/gtk-ui/sync-ui-config.c:125
 #, c-format
 msgid "Last time: Applied %d changes and sent %d changes."
-msgstr ""
+msgstr "Utolsó bejegyzés: %d változtatás alkalmazva, %d változtatás elküldve"
 
 #: ../src/gtk-ui/ui.glade.h:1
-#, fuzzy
 msgid "<b>Data</b>"
-msgstr "Adat"
+msgstr "<b>Adat</b>"
 
 #: ../src/gtk-ui/ui.glade.h:2
 msgid "<b>No sync service in use</b>"
-msgstr ""
+msgstr "<b>Nincs használva sznkronizálás</b>"
 
 #: ../src/gtk-ui/ui.glade.h:3
-#, fuzzy
 msgid "<b>Sync failure</b>"
-msgstr "Hitelesítési hiba"
+msgstr "<b>Szinkronizáció sikertelen</b>"
 
 #: ../src/gtk-ui/ui.glade.h:4
-#, fuzzy
 msgid "<b>Type of Sync</b>"
-msgstr "Kategóriák szinkronizálása:"
+msgstr "<b>Szinkronizálás típusa</b>"
 
 #: ../src/gtk-ui/ui.glade.h:5
-#, fuzzy
 msgid "<big>Manual setup</big>"
-msgstr "Faxkiszolgáló-beállítás"
+msgstr "<big>Kézi beállítás</big>"
 
 #: ../src/gtk-ui/ui.glade.h:6
-#, fuzzy
 msgid "<big>Supported services</big>"
-msgstr "Közösség és szolgáltatások"
+msgstr "<big>Támogatott eszközök</big>"
 
 #: ../src/gtk-ui/ui.glade.h:7
-#, fuzzy
 msgid "Add new service"
-msgstr "Új szabály felvétele"
+msgstr "Új szolgáltatás felvétele"
 
 #: ../src/gtk-ui/ui.glade.h:8
-#, fuzzy
 msgid "Back to sync"
-msgstr "Hátulra helyezés"
+msgstr "Vissza a szinkronizációhoz"
 
 #: ../src/gtk-ui/ui.glade.h:9
-#, fuzzy
 msgid ""
 "Change sync\n"
 "service"
-msgstr "Bizalmi adatbázis: szinkronizáció sikertelen: %s.\n"
+msgstr ""
+"Szinkronizációs szolgáltatás\n"
+"megváltoztatása"
 
 #: ../src/gtk-ui/ui.glade.h:11
 msgid "Delete all local data and replace it with remote data"
-msgstr ""
+msgstr "Minden helyi adat törlése, és a távoli adatok letöltése"
 
 #: ../src/gtk-ui/ui.glade.h:12
 msgid "Delete all remote data and replace it with local data"
-msgstr ""
+msgstr "Minden távoli adat törlése, és minden helyi adat letöltése"
 
 #: ../src/gtk-ui/ui.glade.h:13
-#, fuzzy
 msgid "Edit service settings"
-msgstr "A GNOME speciális beállításainak módosítása"
+msgstr "A szolgáltatás beállításainak módosítása"
 
 #: ../src/gtk-ui/ui.glade.h:14
 msgid ""
@@ -417,27 +368,27 @@ msgstr ""
 
 #: ../src/gtk-ui/ui.glade.h:16
 msgid "Merge local and remote data (recommended)"
-msgstr ""
+msgstr "A helyi és távoli adatok összefésülése (ajánlott)"
 
 #: ../src/gtk-ui/ui.glade.h:17
-#, fuzzy
 msgid "Select sync service"
-msgstr "3G szolgáltatás kiválasztása"
+msgstr "Szinkronizációs szolgáltatás kiválasztása"
 
 #: ../src/gtk-ui/ui.glade.h:18
 msgid ""
 "Sorry, you need an internet\n"
 "connection to sync."
 msgstr ""
+"Bocsi, de kell egy internetkapcsolat\n"
+"a szinkronizáláshoz."
 
 #: ../src/gtk-ui/ui.glade.h:22
-#, fuzzy
 msgid "Sync settings"
-msgstr "Rendszerbeállítások"
+msgstr "Szinkronizációs beállítások"
 
 #: ../src/gtk-ui/ui.glade.h:23
 msgid "Synchronization is not available (D-Bus service does not answer), sorry."
-msgstr ""
+msgstr "Bocsi, a szinkronizálás jelenleg nem elérhető (a D-Bus szolgáltatás nem válaszol)."
 
 #: ../src/gtk-ui/ui.glade.h:24
 msgid ""
@@ -453,14 +404,12 @@ msgstr ""
 
 #: ../src/gtk-ui/sync.desktop.in.h:2
 #: ../src/gtk-ui/sync-gtk.desktop.in.h:2
-#, fuzzy
 msgid "Up to date"
-msgstr "Frissítések"
+msgstr "Friss"
 
 #: ../src/gtk-ui/sync-gtk.desktop.in.h:1
-#, fuzzy
 msgid "Sync (GTK)"
-msgstr "GTK Emacs"
+msgstr "Sync (GTK)"
 
 #: ../src/gtk-ui/sync-config-widget.c:48
 msgid "ScheduleWorld enables you to keep your contacts, events, tasks, and notes in sync."
@@ -479,86 +428,77 @@ msgstr ""
 
 #: ../src/gtk-ui/sync-config-widget.c:227
 msgid "Service must have a name and server URL"
-msgstr ""
+msgstr "A szolgáltatáshoz adj meg egy nevet és egy kiszolgáló URL címét"
 
 #: ../src/gtk-ui/sync-config-widget.c:271
-#, fuzzy
 msgid "Reset service"
-msgstr "Szolgáltatás támadása"
+msgstr "Szolgáltatás újraindítása"
 
 #: ../src/gtk-ui/sync-config-widget.c:274
-#, fuzzy
 msgid "Delete service"
-msgstr "Szolgáltatás támadása"
+msgstr "Szolgáltatás törlése"
 
 #: ../src/gtk-ui/sync-config-widget.c:284
-#, fuzzy
 msgid "Save and use"
-msgstr "mentés és kilépés"
+msgstr "Mentés és használat"
 
 #: ../src/gtk-ui/sync-config-widget.c:287
 msgid ""
 "Save and replace\n"
 "current service"
 msgstr ""
+"Elment és a jelenlegi\n"
+"szolgáltatás lecserélése"
 
 #. TRANSLATORS: label for an entry in service configuration.
 #. * Placeholder is a source  name in settings window.
 #. * Example: "Addressbook URI"
 #: ../src/gtk-ui/sync-config-widget.c:355
-#, fuzzy, c-format
+#, c-format
 msgid "%s URI"
 msgstr "URI: %s"
 
 #. TRANSLATORS: label of a entry in service configuration
 #: ../src/gtk-ui/sync-config-widget.c:419
-#, fuzzy
 msgid "Server URL"
-msgstr "A tükörkiszolgáló címe?"
+msgstr "Kiszolgáló URL"
 
 #. TRANSLATORS: this is the epander label for server settings
 #: ../src/gtk-ui/sync-config-widget.c:459
-#, fuzzy
 msgid "Hide server settings"
-msgstr "<b>Alapvető kiszolgáló-beállítások</b>"
+msgstr "Kiszolgáló beállítások elrejtése"
 
 #: ../src/gtk-ui/sync-config-widget.c:461
-#, fuzzy
 msgid "Show server settings"
-msgstr "<b>Alapvető kiszolgáló-beállítások</b>"
+msgstr "Kiszolgáló beállítások mutatása"
 
 #. TRANSLATORS: service title for services that are not based on a
 #. * template in service list, the placeholder is the name of the service
 #: ../src/gtk-ui/sync-config-widget.c:512
-#, fuzzy, c-format
+#, c-format
 msgid "%s - manually setup"
-msgstr "A Gcin beállítása"
+msgstr "%s - kézi beállítás"
 
 #. TRANSLATORS: linkbutton label
 #: ../src/gtk-ui/sync-config-widget.c:1189
-#, fuzzy
 msgid "Launch website"
-msgstr "Online weboldal"
+msgstr "Weboldal futtatása"
 
 #. TRANSLATORS: button label
 #: ../src/gtk-ui/sync-config-widget.c:1198
-#, fuzzy
 msgid "Setup now"
-msgstr "Deaktiválás most"
+msgstr "Beállítás most"
 
 #. TRANSLATORS: labels of entries
 #: ../src/gtk-ui/sync-config-widget.c:1236
-#, fuzzy
 msgid "Username"
 msgstr "Felhasználónév"
 
 #: ../src/gtk-ui/sync-config-widget.c:1251
-#, fuzzy
 msgid "Password"
 msgstr "Jelszó"
 
 #: ../src/gtk-ui/sync-config-widget.c:1295
-#, fuzzy
 msgid "Stop using service"
-msgstr "Proxykezelő szolgáltatás"
+msgstr "Szolgáltatás használatának leállítása"
 
