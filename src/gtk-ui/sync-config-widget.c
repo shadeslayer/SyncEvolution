@@ -715,7 +715,6 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
         break;
     default:
         gtk_widget_show (self->complex_config_info_bar);
-        g_warning ("sync mode config is more complex than UI can handle");
         send = FALSE;
         receive = FALSE;
     }

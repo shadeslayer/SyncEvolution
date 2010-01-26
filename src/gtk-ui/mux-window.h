@@ -50,6 +50,7 @@ typedef struct {
     GtkWindow parent;
 
     GtkWidget *title_bar;
+    GtkWidget *back_btn;
     GtkWidget *settings;
     GtkWidget *settings_button;
     GtkWidget *notebook;
@@ -61,6 +62,8 @@ typedef struct {
     MuxDecorations decorations;
     GdkColor title_bar_color;
     guint title_bar_height;
+    char *back_title;
+
 } MuxWindow;
 
 typedef struct {
@@ -71,7 +74,7 @@ typedef struct {
 
 GType mux_window_get_type (void);
 
-GtkWidget* mux_window_new (void);
+GtkWidget* mux_window_new (const char *back_title);
 
 void mux_window_set_decorations (MuxWindow *window, MuxDecorations decorations);
 MuxDecorations mux_window_get_decorations (MuxWindow *window);
@@ -79,7 +82,7 @@ MuxDecorations mux_window_get_decorations (MuxWindow *window);
 void mux_window_set_settings_visible (MuxWindow *window, gboolean visible);
 gboolean mux_window_get_settings_visible (MuxWindow *window);
 
-gint mux_window_append_page (MuxWindow *window, const char *title, GtkWidget *page, gboolean is_settings);
+gint mux_window_append_page (MuxWindow *window, GtkWidget *page, gboolean is_settings);
 
 void mux_window_set_current_page (MuxWindow *window, gint index);
 gint mux_window_get_current_page (MuxWindow *window);

@@ -735,7 +735,9 @@ setup_windows (app_data *data,
     g_assert (GTK_IS_WINDOW (settings));
     g_assert (GTK_IS_WINDOW (emergency));
 
-    mux_main = mux_window_new ();
+    /* TRANSLATORS: button in the Moblin window title bar when main view is 
+     * not visible */
+    mux_main = mux_window_new (_("Back to sync"));
     gtk_window_set_title (GTK_WINDOW (mux_main),
                           gtk_window_get_title (GTK_WINDOW (main)));
     gtk_window_set_default_size (GTK_WINDOW (mux_main), 1024, 600);
@@ -750,19 +752,13 @@ setup_windows (app_data *data,
 
     tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (settings)));
     gtk_container_remove (GTK_CONTAINER (settings), tmp);
-    mux_window_append_page (MUX_WINDOW (mux_main),
-                                        gtk_window_get_title (GTK_WINDOW (settings)),
-                                        tmp,
-                                        TRUE);
+    mux_window_append_page (MUX_WINDOW (mux_main), tmp, TRUE);
     g_object_unref (tmp);
 
     tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (emergency)));
     gtk_container_remove (GTK_CONTAINER (emergency), tmp);
     data->emergency_index =
-        mux_window_append_page (MUX_WINDOW (mux_main),
-                                gtk_window_get_title (GTK_WINDOW (emergency)),
-                                tmp,
-                                FALSE);
+        mux_window_append_page (MUX_WINDOW (mux_main), tmp, FALSE);
     g_object_unref (tmp);
 
     data->sync_win = mux_main;
@@ -931,8 +927,6 @@ init_ui (app_data *data)
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
-    g_signal_connect_swapped (data->back_btn, "clicked",
-                      G_CALLBACK (show_main_view), data);
     g_signal_connect (data->change_service_btn, "clicked",
                       G_CALLBACK (change_service_clicked_cb), data);
     g_signal_connect (data->emergency_btn, "clicked",

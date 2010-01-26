@@ -43,6 +43,7 @@ mux_decorations_get_type (void)
 enum {
   PROP_0,
   PROP_DECORATIONS,
+  PROP_BACK_TITLE,
 };
 
 enum {
@@ -73,6 +74,10 @@ mux_window_get_property (GObject *object, guint property_id,
     case PROP_DECORATIONS:
         g_value_set_uint (value, win->decorations);
         break;
+    case PROP_BACK_TITLE:
+        g_value_set_string (value,
+                            gtk_button_get_label (GTK_BUTTON (win->back_btn)));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
@@ -87,6 +92,13 @@ mux_window_set_property (GObject *object, guint property_id,
     switch (property_id) {
     case PROP_DECORATIONS:
         mux_window_set_decorations (win, g_value_get_uint (value));
+        break;
+    case PROP_BACK_TITLE:
+        g_free (win->back_title);
+        win->back_title = g_strdup (g_value_get_string (value));
+        if (win->back_btn) {
+            gtk_button_set_label (GTK_BUTTON (win->back_btn), win->back_title);
+        }
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -302,6 +314,15 @@ mux_window_class_init (MuxWindowClass *klass)
                                      PROP_DECORATIONS,
                                      pspec);
 
+    pspec = g_param_spec_string ("back-title", 
+                                 NULL,
+                                 "title of the back button in the window decoration",
+                                 "", 
+                                 G_PARAM_READWRITE);
+    g_object_class_install_property (object_class,
+                                     PROP_BACK_TITLE,
+                                     pspec);
+
     mux_window_signals[SETTINGS_VISIBILITY_CHANGED] = 
             g_signal_new ("settings-visibility-changed",
                           G_OBJECT_CLASS_TYPE (object_class),
@@ -381,7 +402,6 @@ mux_window_build_title_bar (MuxWindow *window)
 {
     GtkWidget *box, *button_box, *btn, *align;
     GdkPixbuf *pixbuf, *pixbuf_hover;
-    gint index;
 
     if (window->title_bar) {
         gtk_widget_unparent (window->title_bar);
@@ -405,35 +425,14 @@ mux_window_build_title_bar (MuxWindow *window)
     gtk_container_add (GTK_CONTAINER (align), button_box);
     gtk_widget_show (button_box);
 
-    btn = gtk_button_new_with_label (gtk_window_get_title (GTK_WINDOW (window)));
-    gtk_box_pack_start (GTK_BOX (button_box), btn,
+    window->back_btn = gtk_button_new_with_label (window->back_title);
+    gtk_box_pack_start (GTK_BOX (button_box), window->back_btn,
                         FALSE, FALSE, 4);
-    g_signal_connect (btn, "clicked",
+    g_signal_connect (window->back_btn, "clicked",
                       G_CALLBACK (bread_crumb_clicked_cb), window);
-    gtk_widget_show (btn);
-
-    index = mux_window_get_current_page (window);
-    if (index > -1) {
-        char *title;
-        GtkWidget *page;
-
-        page = gtk_notebook_get_nth_page (GTK_NOTEBOOK (window->notebook), index);
-        title = g_object_get_data (G_OBJECT (page), "title");
-        if (title) {
-            GtkWidget *img;
-            img = gtk_image_new_from_stock (GTK_STOCK_GO_FORWARD,
-                                            GTK_ICON_SIZE_SMALL_TOOLBAR);
-            gtk_box_pack_start (GTK_BOX (button_box), img,
-                                FALSE, FALSE, 4);
-            gtk_widget_show (img);
-
-            btn = gtk_button_new_with_label (title);
-            gtk_box_pack_start (GTK_BOX (button_box), btn,
-                                FALSE, FALSE, 4);
-            gtk_widget_show (btn);
-        }
+    if (mux_window_get_current_page (window) != -1) {
+        gtk_widget_show (window->back_btn);
     }
-
     /*window->title_label = gtk_label_new (gtk_window_get_title (GTK_WINDOW (window)));
     gtk_box_pack_start (GTK_BOX (box), window->title_label,
                         FALSE, FALSE, 0);
@@ -526,9 +525,11 @@ mux_window_init (MuxWindow *self)
 }
 
 GtkWidget*
-mux_window_new (void)
+mux_window_new (const char *back_title)
 {
-    return g_object_new (MUX_TYPE_WINDOW, NULL);
+    return g_object_new (MUX_TYPE_WINDOW,
+                         "back-title", back_title,
+                         NULL);
 }
 
 void 
@@ -580,14 +581,12 @@ mux_window_get_settings_visible (MuxWindow *window)
 
 gint
 mux_window_append_page (MuxWindow *window,
-                        const char *title,
                         GtkWidget *page,
                         gboolean is_settings)
 {
     gint index;
 
     index = gtk_notebook_append_page (GTK_NOTEBOOK (window->notebook), page, NULL);
-    g_object_set_data_full (G_OBJECT (page), "title", g_strdup (title), g_free);
 
     if (is_settings) {
         window->settings_index = index;
@@ -604,6 +603,7 @@ void mux_window_set_current_page (MuxWindow *window, gint index)
         if (bin->child) {
             gtk_widget_show (bin->child);
         }
+        gtk_widget_hide (window->back_btn);
     } else {
         gtk_notebook_set_current_page (GTK_NOTEBOOK (window->notebook), index);
         if (bin->child) {
@@ -611,8 +611,9 @@ void mux_window_set_current_page (MuxWindow *window, gint index)
         }
         gtk_widget_show (window->notebook);
         gtk_widget_map (window->notebook);
-    }    
-    mux_window_build_title_bar (window);
+
+        gtk_widget_show (window->back_btn);
+    }
 }
 
 gint
