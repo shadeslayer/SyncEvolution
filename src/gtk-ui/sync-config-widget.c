@@ -40,6 +40,7 @@ enum
   PROP_CONFIGURED,
   PROP_CURRENT_SERVICE_NAME,
   PROP_EXPANDED,
+  PROP_EXPAND_ID,
 };
 
 enum {
@@ -806,6 +807,15 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)init_source,
                                    self);
+
+    if (self->expand_id) {
+        if ((g_strcmp0 (sync_url, self->expand_id) == 0) ||
+            (self->config->name && g_strcasecmp (self->config->name, self->expand_id) == 0)) {
+            sync_config_widget_set_expanded (self, TRUE);
+            g_free (self->expand_id);
+            self->expand_id = NULL;
+        }
+    }
 }
 
 static void
@@ -1009,6 +1019,26 @@ sync_config_widget_set_name (SyncConfigWidget *self,
 }
 
 static void
+sync_config_widget_set_expand_id (SyncConfigWidget *self,
+                                  const char *id)
+{
+    
+    g_free (self->expand_id);
+    if (self->config && self->config->config && id) {
+        char *sync_url; 
+        syncevo_config_get_value (self->config->config, NULL, "syncURL", &sync_url);
+
+        if ((g_strcmp0 (sync_url, id) == 0) ||
+            (self->config->name && g_strcasecmp (self->config->name, id) == 0)) {
+            sync_config_widget_set_expanded (self, TRUE);
+        }
+        self->expand_id = NULL;
+    } else {
+        self->expand_id = g_strdup (id);
+    }
+}
+
+static void
 sync_config_widget_set_property (GObject      *object,
                                         guint         property_id,
                                         const GValue *value,
@@ -1037,6 +1067,9 @@ sync_config_widget_set_property (GObject      *object,
         break;
     case PROP_EXPANDED:
         sync_config_widget_set_expanded (self, g_value_get_boolean (value));
+        break;
+    case PROP_EXPAND_ID:
+        sync_config_widget_set_expand_id (self, g_value_get_string (value));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -1068,7 +1101,9 @@ sync_config_widget_get_property (GObject    *object,
     case PROP_CURRENT_SERVICE_NAME:
         g_value_set_string (value, self->current_service_name);
     case PROP_EXPANDED:
-      g_value_set_boolean (value, self->expanded);
+        g_value_set_boolean (value, self->expanded);
+    case PROP_EXPAND_ID:
+        g_value_set_string (value, self->expand_id);
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
@@ -1523,6 +1558,13 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
                                   FALSE,
                                   G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_EXPANDED, pspec);
+
+    pspec = g_param_spec_string ("expand-id",
+                                 "Expand id",
+                                 "when set, the widget should expand if syncurl or config name matches this",
+                                 NULL,
+                                 G_PARAM_READWRITE);
+    g_object_class_install_property (object_class, PROP_EXPAND_ID, pspec);
 
     pspec = g_param_spec_int ("expander-size",
                               "Expander Size",

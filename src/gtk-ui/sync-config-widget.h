@@ -44,6 +44,8 @@ typedef struct {
     
     char *running_session;
 
+    char *expand_id;
+
     /* label */
     GtkWidget *image;
     GtkWidget *label;

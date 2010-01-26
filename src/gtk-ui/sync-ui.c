@@ -65,7 +65,7 @@ typedef enum app_state {
     SYNC_UI_STATE_SYNCING,
 } app_state;
 
-typedef struct app_data {
+struct _app_data {
     GtkWidget *sync_win;
 
     GtkWidget *services_win; /* will be NULL when USE_MOBLIN_UX is set*/
@@ -119,11 +119,12 @@ typedef struct app_data {
     app_state current_state;
     gboolean open_current; /* should the service list open the current 
                               service when it populates next time*/
+    char *config_id_to_open;
 
     SyncevoServer *server;
 
     SyncevoSession *running_session; /* session that is currently active */
-} app_data;
+};
 
 typedef struct operation_data {
     app_data *data;
@@ -144,7 +145,7 @@ static void set_app_state (app_data *data, app_state state);
 static void show_main_view (app_data *data);
 static void update_emergency_view (app_data *data);
 static void show_emergency_view (app_data *data);
-static void show_services_list (app_data *data);
+static void show_services_list (app_data *data, const char *config_id_to_open);
 static void update_services_list (app_data *data);
 static void update_service_ui (app_data *data);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
@@ -185,7 +186,7 @@ static void
 change_service_clicked_cb (GtkButton *btn, app_data *data)
 {
     /* data->open_current = TRUE; */
-    show_services_list (data);
+    show_services_list (data, NULL);
 }
 
 static void 
@@ -667,13 +668,6 @@ set_app_state (app_data *data, app_state state)
 }
 
 #ifdef USE_MOBLIN_UX
-static void
-settings_visibility_changed_cb (GtkWidget *window, app_data *data)
-{
-    if (mux_window_get_settings_visible (MUX_WINDOW (window))) {
-        update_services_list (data);
-    }
-}
 
 /* truly stupid, but glade doesn't allow custom containers.
    Now glade file has dummy containers that will be replaced here.
@@ -744,8 +738,6 @@ setup_windows (app_data *data,
     gtk_widget_set_name (mux_main, gtk_widget_get_name (main));
     gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (main)), mux_main);
     mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_SETTINGS|MUX_DECOR_CLOSE);
-    g_signal_connect (mux_main, "settings-visibility-changed",
-                      G_CALLBACK (settings_visibility_changed_cb), data);
     g_signal_connect (mux_main, "key-press-event",
                       G_CALLBACK (key_press_cb), data);
 
@@ -828,10 +820,10 @@ info_bar_response_cb (GtkInfoBar          *info_bar,
         break;
     case SYNC_ERROR_RESPONSE_SETTINGS_OPEN:
         data->open_current = TRUE;
-        show_services_list (data);
+        show_services_list (data, NULL);
         break;
     case SYNC_ERROR_RESPONSE_SETTINGS_SELECT:
-        show_services_list (data);
+        show_services_list (data, NULL);
         break;
     default:
         g_warn_if_reached ();
@@ -1520,7 +1512,12 @@ add_server_to_box (GtkBox *box,
     if (current) {
         sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (item),
                                         data->open_current);
-        data->open_current = FALSE;
+    }
+
+    if (data->config_id_to_open) {
+        g_object_set (G_OBJECT (item),
+                      "expand-id", data->config_id_to_open,
+                      NULL);
     }
 
     return item;
@@ -2505,14 +2502,17 @@ show_emergency_view (app_data *data)
 }
 
 static void
-show_services_list (app_data *data)
+show_services_list (app_data *data, const char *config_id_to_open)
 {
+    g_free (data->config_id_to_open);
+    data->config_id_to_open = g_strdup (config_id_to_open);
+
 #ifdef USE_MOBLIN_UX
     mux_window_set_settings_visible (MUX_WINDOW (data->sync_win), TRUE);
 #else
     gtk_window_present (GTK_WINDOW (data->services_win));
-    update_services_list (data);
 #endif
+    update_services_list (data);
 }
 
 static void
@@ -2767,8 +2767,8 @@ get_config_for_default_peer_cb (SyncevoServer *syncevo,
     syncevo_config_free (config);
 }
 
-GtkWidget*
-sync_ui_create_main_window ()
+app_data*
+sync_ui_create ()
 {
     app_data *data;
 
@@ -2804,5 +2804,16 @@ sync_ui_create_main_window ()
 
     gtk_window_present (GTK_WINDOW (data->sync_win));
 
-    return data->sync_win;
+    return data;
+}
+
+void sync_ui_show_settings (app_data *data, const char *id)
+{
+    show_services_list (data, id);
+}
+
+GtkWindow*
+sync_ui_get_main_window (app_data *data)
+{
+    return GTK_WINDOW(data->sync_win);
 }

@@ -23,6 +23,15 @@
 #include "config.h"
 #include "sync-ui.h"
 
+static char *settings_id = NULL;
+
+static GOptionEntry entries[] =
+{
+  { "show-settings", 0, 0, G_OPTION_ARG_STRING, &settings_id, "Open sync settings for given sync url or configuration name", "url or config name" },
+  { NULL }
+};
+
+
 static void
 set_app_name_and_icon ()
 {
@@ -32,6 +41,26 @@ set_app_name_and_icon ()
     gtk_window_set_default_icon_name ("sync");
 }
 
+static void
+init (int argc, char *argv[])
+{
+    GError *error = NULL;
+    GOptionContext *context;
+
+    gtk_init (&argc, &argv);
+    bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
+    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+    textdomain (GETTEXT_PACKAGE);
+
+    context = g_option_context_new ("- synchronise PIM data with Syncevolution");
+    g_option_context_add_main_entries (context, entries, GETTEXT_PACKAGE);
+    g_option_context_add_group (context, gtk_get_option_group (TRUE));
+    if (!g_option_context_parse (context, &argc, &argv, &error)) {
+        g_warning ("option parsing failed: %s\n", error->message);
+    }
+}
+
+
 #ifdef ENABLE_UNIQUE
 #include <unique/unique.h>
 
@@ -39,6 +68,7 @@ enum
 {
     COMMAND_0, 
 
+    COMMAND_SHOW_CONFIGURATION
     /* no sync-ui specific commands */
 };
 
@@ -47,10 +77,12 @@ message_received_cb (UniqueApp         *app,
                      UniqueCommand      command,
                      UniqueMessageData *message,
                      guint              time_,
-                     GtkWindow         *main_win)
+                     app_data          *data)
 {
-    UniqueResponse res;
+    char *arg;
+    GtkWindow *main_win;
 
+    main_win = sync_ui_get_main_window (data);
     switch (command) {
     case UNIQUE_ACTIVATE:
         if (GTK_IS_WINDOW (main_win)) {
@@ -59,15 +91,21 @@ message_received_cb (UniqueApp         *app,
                                    unique_message_data_get_screen (message));
             gtk_window_present (GTK_WINDOW (main_win));
         }
-        res = UNIQUE_RESPONSE_OK;
         break;
-    /* handle any sync-ui specific commands here */
+    case COMMAND_SHOW_CONFIGURATION:
+        arg = unique_message_data_get_text (message);
+        if (GTK_IS_WINDOW (main_win) && arg) {
+            /* move the main window to the screen that sent us the command */
+            gtk_window_set_screen (GTK_WINDOW (main_win), 
+                                   unique_message_data_get_screen (message));
+            sync_ui_show_settings (data, arg);
+        }
+        break;
     default:
-        res = UNIQUE_RESPONSE_OK;
         break;
     }
 
-    return res;
+    return UNIQUE_RESPONSE_OK;
 }
 
 int
@@ -75,32 +113,40 @@ main (int argc, char *argv[])
 {
     UniqueApp *app;
 
-    gtk_init (&argc, &argv);
-    bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
-    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-    textdomain (GETTEXT_PACKAGE);
+    init (argc, argv);
 
-    app = unique_app_new ("org.Moblin.Sync", NULL);
+    app = unique_app_new_with_commands ("org.Moblin.Sync", NULL,
+                                        "show-configuration", COMMAND_SHOW_CONFIGURATION,
+                                        NULL);
 
     if (unique_app_is_running (app)) {
+        UniqueMessageData *message = NULL;
+        UniqueCommand command = UNIQUE_ACTIVATE;
 
-        unique_app_send_message (app, UNIQUE_ACTIVATE, NULL);
-        /* could handle the response here... */
+        if (settings_id) {
+            command = COMMAND_SHOW_CONFIGURATION;
+            message = unique_message_data_new ();
+            unique_message_data_set_text (message, settings_id, -1);
+        }
+        unique_app_send_message (app, command, message);
+        unique_message_data_free (message);
     } else {
-        GtkWidget *main_win;
+        app_data *data;
 
         set_app_name_and_icon ();
 
-        main_win = sync_ui_create_main_window ();
-        if (main_win) {
+        data = sync_ui_create ();
+        if (data) {
             /* UniqueApp watches the main window so it can terminate 
              * the startup notification sequence for us */
-            unique_app_watch_window (app, GTK_WINDOW (main_win));
+            unique_app_watch_window (app, sync_ui_get_main_window (data));
 
             /* handle notifications from new app launches */     
             g_signal_connect (app, "message-received", 
-                              G_CALLBACK (message_received_cb), main_win);
-
+                              G_CALLBACK (message_received_cb), data);
+            if (settings_id) {
+                sync_ui_show_settings (data, settings_id);
+            }
             gtk_main ();
         }
     }
@@ -119,9 +165,15 @@ main (int argc, char *argv[])
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
+    init ();
+
     set_app_name_and_icon ();
 
-    sync_ui_create_main_window ();
+    sync_ui_create ();
+    if (settings_id) {
+        sync_ui_show_settings (data, settings_id);
+    }
+
     gtk_main ();
     return 0;
 }
