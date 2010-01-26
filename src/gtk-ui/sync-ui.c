@@ -1272,6 +1272,18 @@ get_reports_for_backups_cb (SyncevoServer *server,
     update_backup_visibilities (data);
 }
 
+static const char*
+get_syncevo_context (const char *config_name)
+{
+    char *context;
+
+    context = g_strrstr (config_name, "@");
+    if (!context) {
+        context = "";
+    }
+    return context;
+}
+
 static void
 update_emergency_view (app_data *data)
 {
@@ -1331,7 +1343,7 @@ update_emergency_view (app_data *data)
                            data->emergency_backup_table);
     gtk_table_resize (GTK_TABLE (data->emergency_backup_table), 1, 1);
     syncevo_server_get_reports (data->server,
-                                "",
+                                get_syncevo_context (data->current_service->name),
                                 0, REPORTS_PER_CALL,
                                 (SyncevoServerGetReportsCb)get_reports_for_backups_cb,
                                 data);
