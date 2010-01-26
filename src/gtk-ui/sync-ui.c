@@ -1287,16 +1287,15 @@ update_emergency_view (app_data *data)
                 /* TRANSLATORS: this is an explanation in Emergency view.
                  * Placeholder is a service/device name */
                 _("A normal sync with %s is not possible at this time."
-                  "We can do a slow two-way sync, start from scratch or "
+                  "You can do a slow two-way sync, start from scratch or "
                   "restore from backup."),
                 data->current_service->name);
     } else {
         /* TRANSLATORS: this is an explanation in Emergency view.
          * Placeholder is a service/device name */
         text = g_strdup_printf (
-                _("If something has gone horribly wrong with %s, we can try a "
-                  "slow sync, start from scratch or restore from backup."),
-                data->current_service->name);
+                _("If something has gone horribly wrong, you can try a "
+                  "slow sync, start from scratch or restore from backup."));
     }
     gtk_label_set_text (GTK_LABEL (data->emergency_label), text);
     g_free (text);
