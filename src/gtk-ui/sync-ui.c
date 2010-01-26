@@ -1849,7 +1849,7 @@ get_reports_cb (SyncevoServer *server,
                 GError *error,
                 app_data *data)
 {
-    long status;
+    long status = -1;
     long common_status = -1;
     source_stats *stats;
     GHashTable *sources; /* key is source name, value is a source_stats */
@@ -2019,7 +2019,7 @@ sync (operation_data *op_data, SyncevoSession *session)
     GHashTable *source_modes;
     GHashTableIter iter;
     source_config *source;
-    SyncevoSyncMode mode;
+    SyncevoSyncMode mode = SYNCEVO_SYNC_NONE;
 
     app_data *data = op_data->data;
 

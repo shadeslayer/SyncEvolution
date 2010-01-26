@@ -505,7 +505,8 @@ gtk_info_bar_update_colors (GtkInfoBar *info_bar)
   GdkColor error_default_fill_color      = { 0, 0xf000, 0x3800, 0x3800 };
   GdkColor other_default_border_color    = { 0, 0xb800, 0xad00, 0x9d00 };
   GdkColor other_default_fill_color      = { 0, 0xff00, 0xff00, 0xbf00 };
-  GdkColor *fg, *bg;
+  GdkColor *fg = NULL;
+  GdkColor *bg = NULL;
   GdkColor sym_fg, sym_bg;
   GtkStyle *style;
   const char* fg_color_name[] = {

@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <string.h>
 #include <glib/gi18n.h>
 #include <dbus/dbus-glib.h>
 
@@ -508,9 +509,11 @@ source_entry_notify_text_cb (GObject *gobject,
                              source_widgets *widgets)
 {
     gboolean new_editable, old_editable;
+    const char *text;
 
-    new_editable = (gtk_entry_get_text_length (GTK_ENTRY (widgets->entry)) > 0);
-    old_editable = gtk_widget_get_sensitive (widgets->check);
+    text = gtk_entry_get_text (GTK_ENTRY (widgets->entry));
+    new_editable = (strlen (text) > 0);
+    old_editable = GTK_WIDGET_SENSITIVE (widgets->check);
     if (new_editable != old_editable) {
         gtk_widget_set_sensitive (widgets->check, new_editable);
         g_object_set (widgets->check, "active", new_editable, NULL);
