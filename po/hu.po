@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
 "POT-Creation-Date: 2009-12-21 18:45+0000\n"
-"PO-Revision-Date: 2010-01-25 17:32+0100\n"
+"PO-Revision-Date: 2010-01-26 16:07+0100\n"
 "Last-Translator: Gergely Lónyai <aleph@mandriva.org>\n"
 "Language-Team: Hungarian <aleph@mandriva.org>\n"
 "MIME-Version: 1.0\n"
@@ -417,14 +417,14 @@ msgstr ""
 
 #: ../src/gtk-ui/sync-config-widget.c:51
 msgid "Google Sync can backup and synchronize your Address Book with your Gmail contacts."
-msgstr ""
+msgstr "A Google Sync a Címjegyzéket szinkronizálja a Google kapcsolatokkal"
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
 #. in the future
 #: ../src/gtk-ui/sync-config-widget.c:57
 msgid "Backup your contacts and calendar. Sync with a singleclick, anytime, anywhere (DEMO)."
-msgstr ""
+msgstr "Kapcsolatok és a naptár mentése. Szinkronizálj egy klikkel bármikor, bárhol (DEMO)."
 
 #: ../src/gtk-ui/sync-config-widget.c:227
 msgid "Service must have a name and server URL"
