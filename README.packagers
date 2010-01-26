@@ -1,0 +1,7 @@
+Some of the advanced features of SyncEvolution depend on optional
+packages.  In addition to the more obvious dependencies of the
+backends there are more subtle dependencies:
+
+- for good time zone support, libsynthesis must have access to
+  either libical or libecal
+- direct sync with phones depends on bluez and openobex
