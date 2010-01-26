@@ -785,7 +785,7 @@ class DBusObjectHelper : public DBusObject
                   GDBusPropertyTable *properties,
                   const boost::function<void (void)> &callback) {
         if (!g_dbus_register_interface_with_callback(getConnection(), getPath(), getInterface(),
-                                       methods, signals, properties, this, NULL, intefaceCallback)) {
+                                       methods, signals, properties, this, NULL, interfaceCallback)) {
             throw std::runtime_error(std::string("g_dbus_register_interface() failed for ") + getPath() + " " + getInterface());
         }
         m_callback = callback;
@@ -794,7 +794,7 @@ class DBusObjectHelper : public DBusObject
 
     void activate() {
         if (!g_dbus_register_interface_with_callback(getConnection(), getPath(), getInterface(),
-                                       m_methods.get(), m_signals.get(), NULL, this, NULL, intefaceCallback)) {
+                                       m_methods.get(), m_signals.get(), NULL, this, NULL, interfaceCallback)) {
             throw std::runtime_error(std::string("g_dbus_register_interface() failed for ") + getPath() + " " + getInterface());
         }
         m_activated = true;
@@ -811,7 +811,7 @@ class DBusObjectHelper : public DBusObject
             m_activated = false;
         }
     }
-    static void intefaceCallback(void *userData) {
+    static void interfaceCallback(void *userData) {
         DBusObjectHelper* helper = static_cast<DBusObjectHelper*>(userData);
         if(!helper->m_callback.empty()) {
             helper->m_callback();
