@@ -787,12 +787,19 @@ you can setup a service manually.</property>
                             <child>
                               <widget class="GtkHBox" id="hbox19">
                                 <property name="visible">True</property>
+                                <property name="spacing">6</property>
                                 <child>
                                   <widget class="GtkButton" id="slow_sync_btn">
-                                    <property name="label" translatable="yes">Slow sync </property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="slow_sync_btn_label">
+                                        <property name="visible">True</property>
+                                        <property name="xpad">16</property>
+                                        <property name="label" translatable="yes">Slow sync</property>
+                                      </widget>
+                                    </child>
                                   </widget>
                                   <packing>
                                     <property name="position">0</property>
@@ -854,12 +861,18 @@ This may fail in some cases, leading to duplicates or lost information.</propert
                                 <property name="visible">True</property>
                                 <child>
                                   <widget class="GtkButton" id="refresh_from_server_btn">
-                                    <property name="label">Delete all your local
-information and replace
-with data from Zyb</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="refresh_from_server_btn_label">
+                                        <property name="visible">True</property>
+                                        <property name="xpad">16</property>
+                                        <property name="label" translatable="yes">Delete all your local
+information and replace
+with data from Zyb</property>
+                                      </widget>
+                                    </child>
                                   </widget>
                                   <packing>
                                     <property name="expand">False</property>
@@ -881,12 +894,18 @@ with data from Zyb</property>
                                 </child>
                                 <child>
                                   <widget class="GtkButton" id="refresh_from_client_btn">
-                                    <property name="label">Delete all data on Zyb 
-and replace with your
-local information</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="refresh_from_client_btn_label">
+                                        <property name="visible">True</property>
+                                        <property name="xpad">16</property>
+                                        <property name="label" translatable="yes">Delete all data on Zyb 
+and replace with your
+local information</property>
+                                      </widget>
+                                    </child>
                                   </widget>
                                   <packing>
                                     <property name="expand">False</property>
@@ -928,15 +947,16 @@ local information</property>
                         <child>
                           <widget class="GtkAlignment" id="alignment2">
                             <property name="visible">True</property>
+                            <property name="resize_mode">queue</property>
                             <property name="left_padding">40</property>
-                            <property name="right_padding">200</property>
+                            <property name="right_padding">40</property>
                             <child>
                               <widget class="GtkVBox" id="vbox22">
                                 <property name="visible">True</property>
                                 <property name="orientation">vertical</property>
                                 <child>
                                   <widget class="GtkLabel" id="label12">
-                                    <property name="width_request">760</property>
+                                    <property name="width_request">800</property>
                                     <property name="visible">True</property>
                                     <property name="xalign">0</property>
                                     <property name="label" translatable="yes" comments="explanation of &quot;Restore backup&quot; function">Backups are made before every time we Sync. Choose a backup to restore. Any changes you have made since then will be lost.</property>
@@ -961,10 +981,9 @@ local information</property>
                                         <child>
                                           <widget class="GtkTable" id="emergency_backup_table">
                                             <property name="visible">True</property>
-                                            <property name="border_width">3</property>
                                             <property name="n_rows">10</property>
                                             <property name="n_columns">2</property>
-                                            <property name="row_spacing">3</property>
+                                            <property name="row_spacing">16</property>
                                             <child>
                                               <widget class="GtkLabel" id="label59">
                                                 <property name="visible">True</property>
@@ -1062,8 +1081,7 @@ local information</property>
                                             </child>
                                             <child>
                                               <widget class="GtkButton" id="button1">
-                                                <property name="label">not implemented yet</property>
-                                                <property name="width_request">150</property>
+                                                <property name="label">Restore</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
                                                 <property name="receives_default">True</property>

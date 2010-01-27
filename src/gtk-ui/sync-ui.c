@@ -100,8 +100,8 @@ struct _app_data {
     GtkWidget *emergency_label;
     GtkWidget *emergency_expander;
     GtkWidget *emergency_source_table;
-    GtkWidget *emergency_from_client_btn;
-    GtkWidget *emergency_from_server_btn;
+    GtkWidget *refresh_from_server_btn_label;
+    GtkWidget *refresh_from_client_btn_label;
     GtkWidget *emergency_backup_table;
 
     gboolean forced_emergency;
@@ -893,11 +893,11 @@ init_ui (app_data *data)
     btn = GTK_WIDGET (gtk_builder_get_object (builder, "slow_sync_btn"));
     g_signal_connect (btn, "clicked",
                       G_CALLBACK (slow_sync_clicked_cb), data);
-    data->emergency_from_server_btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_server_btn"));
-    g_signal_connect (data->emergency_from_server_btn, "clicked",
+    data->refresh_from_server_btn_label = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_server_btn_label"));
+    g_signal_connect (GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_server_btn")), "clicked",
                       G_CALLBACK (refresh_from_server_clicked_cb), data);
-    data->emergency_from_client_btn = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_client_btn"));
-    g_signal_connect (data->emergency_from_client_btn, "clicked",
+    data->refresh_from_client_btn_label = GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_client_btn_label"));
+    g_signal_connect (GTK_WIDGET (gtk_builder_get_object (builder, "refresh_from_client_btn")), "clicked",
                       G_CALLBACK (refresh_from_client_clicked_cb), data);
 
     data->emergency_label = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_label"));
@@ -1152,7 +1152,7 @@ static void
 add_backup (app_data *data, const char *peername, const char *dir,
             long endtime, GList *sources)
 {
-    GtkWidget *label, *button;
+    GtkWidget *timelabel, *label, *blabel, *button, *box;;
     guint rows;
     char *text;
     char time_str[60];
@@ -1167,28 +1167,42 @@ add_backup (app_data *data, const char *peername, const char *dir,
                   "n-rows", &rows,
                   NULL);
 
-    /* TRANSLATORS: label for a backup in emergency view. First placeholder is 
-     * service or device name, second placeholder is the previous strftime string */
-    text = g_strdup_printf (_("Restore backup from before syncing with %s on %s"),
-                            peername, time_str);
+    box = gtk_vbox_new (TRUE, 6);
+    gtk_table_attach (GTK_TABLE (data->emergency_backup_table), box,
+                      0, 1, rows, rows + 1,
+                      GTK_EXPAND|GTK_FILL, GTK_FILL, 16, 0);
+
+    timelabel = gtk_label_new (time_str);
+    gtk_misc_set_alignment (GTK_MISC (timelabel), 0.0, 0.5);
+    gtk_label_set_line_wrap (GTK_LABEL (timelabel), TRUE);
+    gtk_widget_set_size_request (timelabel, 600, -1);
+    gtk_box_pack_start_defaults (GTK_BOX (box), timelabel);
+
+    /* TRANSLATORS: label for a backup in emergency view. Placeholder is 
+     * service or device name */
+    text = g_strdup_printf (_("Backed up before syncing with %s"), peername);
     label = gtk_label_new (text);
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-    gtk_table_attach (GTK_TABLE (data->emergency_backup_table), label,
-                      0, 1, rows, rows + 1,
-                      GTK_FILL, GTK_FILL, 0, 0);
+    gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
+    gtk_widget_set_size_request (label, 600, -1);
+    gtk_box_pack_start_defaults (GTK_BOX (box), label);
     g_free (text);
 
-    button = gtk_button_new_with_label (_("Restore"));
+    button = gtk_button_new ();
     gtk_table_attach (GTK_TABLE (data->emergency_backup_table), button,
                       1, 2, rows, rows + 1,
-                      GTK_FILL, GTK_FILL, 32, 0);
+                      GTK_FILL, GTK_SHRINK, 32, 0);
     g_object_set_data_full (G_OBJECT (button), "dir", g_strdup(dir), g_free);
     g_object_set_data_full (G_OBJECT (button), "time", g_strdup(time_str), g_free);
     g_signal_connect (button, "clicked",
                       G_CALLBACK (restore_clicked_cb), data);
 
+    blabel = gtk_label_new (_("Restore"));
+    gtk_misc_set_padding (GTK_MISC (blabel), 32, 0);
+    gtk_container_add (GTK_CONTAINER (button), blabel);
+
     for (; sources; sources = sources->next) {
-        g_object_set_data (G_OBJECT (label), (char *)sources->data, "");
+        g_object_set_data (G_OBJECT (box), (char *)sources->data, "");
         g_object_set_data (G_OBJECT (button), (char *)sources->data, "");
     }
 }
@@ -1290,7 +1304,7 @@ update_emergency_view (app_data *data)
         text = g_strdup_printf (
                 /* TRANSLATORS: this is an explanation in Emergency view.
                  * Placeholder is a service/device name */
-                _("A normal sync with %s is not possible at this time."
+                _("A normal sync with %s is not possible at this time. "
                   "You can do a slow two-way sync, start from scratch or "
                   "restore from backup."),
                 data->current_service->name);
@@ -1311,13 +1325,13 @@ update_emergency_view (app_data *data)
                               "data and replace with\n"
                               "data from %s"),
                             data->current_service->name);
-    gtk_button_set_label (GTK_BUTTON (data->emergency_from_server_btn), text);
+    gtk_label_set_text (GTK_LABEL (data->refresh_from_server_btn_label), text);
     g_free (text);
     text = g_strdup_printf (_("Delete all data on\n"
                               "%s and replace\n"
                               "with your local data"),
                             data->current_service->name);
-    gtk_button_set_label (GTK_BUTTON (data->emergency_from_client_btn), text);
+    gtk_label_set_text (GTK_LABEL (data->refresh_from_client_btn_label), text);
     g_free (text);
 
     gtk_container_foreach (GTK_CONTAINER (data->emergency_source_table),
