@@ -347,7 +347,7 @@ slow_sync_clicked_cb (GtkButton *btn, app_data *data)
     char *message;
 
     message = g_strdup_printf (_("Do you want to slow sync with %s?"),
-                               data->current_service->name);
+                               data->current_service->pretty_name);
     if (!confirm (data, message, _("Yes, do slow sync"), _("No, cancel sync"))) {
         g_free (message);
         return;
@@ -375,7 +375,7 @@ refresh_from_server_clicked_cb (GtkButton *btn, app_data *data)
 
     message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
                                  "data from %s? This is not usually advised."),
-                               data->current_service->name);
+                               data->current_service->pretty_name);
     if (!confirm (data, message, _("Yes, delete and replace"), _("No"))) {
         g_free (message);
         return;
@@ -402,7 +402,7 @@ refresh_from_client_clicked_cb (GtkButton *btn, app_data *data)
 
     message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
                                  "your local data? This is not usually advised."),
-                               data->current_service->name);
+                               data->current_service->pretty_name);
     if (!confirm (data, message, _("Yes, delete and replace"), _("No"))) {
         g_free (message);
         return;
@@ -459,39 +459,39 @@ refresh_last_synced_label (app_data *data)
         msg = g_strdup (_("No service selected"));
         delay = -1;
     } else if (data->last_sync <= 0) {
-        msg = g_strdup (data->current_service->name); /* we don't know */
+        msg = g_strdup (data->current_service->pretty_name); /* we don't know */
         delay = -1;
     } else if (diff < 30) {
         /* TRANSLATORS: This is the title on main view. Placeholder is 
          * the service name. Example: "Google - synced just now" */
         msg = g_strdup_printf (_("%s - synced just now"),
-                               data->current_service->name);
+                               data->current_service->pretty_name);
         delay = 30;
     } else if (diff < 90) {
         msg = g_strdup_printf (_("%s - synced a minute ago"),
-                               data->current_service->name);
+                               data->current_service->pretty_name);
         delay = 60;
     } else if (diff < 60 * 60) {
         msg = g_strdup_printf (_("%s - synced %ld minutes ago"),
-                               data->current_service->name,
+                               data->current_service->pretty_name,
                                (diff + 30) / 60);
         delay = 60;
     } else if (diff < 60 * 90) {
         msg = g_strdup_printf (_("%s - synced an hour ago"),
-                               data->current_service->name);
+                               data->current_service->pretty_name);
         delay = 60 * 60;
     } else if (diff < 60 * 60 * 24) {
         msg = g_strdup_printf (_("%s - synced %ld hours ago"),
-                               data->current_service->name,
+                               data->current_service->pretty_name,
                                (diff + 60 * 30) / (60 * 60));
         delay = 60 * 60;
     } else if (diff < 60 * 60 * 24 - (60 * 30)) {
         msg = g_strdup_printf (_("%s - synced a day ago"),
-                               data->current_service->name);
+                               data->current_service->pretty_name);
         delay = 60 * 60 * 24;
     } else {
         msg = g_strdup_printf (_("%s - synced %ld days ago"),
-                               data->current_service->name,
+                               data->current_service->pretty_name,
                                (diff + 24 * 60 * 30) / (60 * 60 * 24));
         delay = 60 * 60 * 24;
     }
@@ -1023,7 +1023,7 @@ update_emergency_expander (app_data *data)
          * name, second a comma separeted list of sources.
          * E.g. "Affected data: Google Contacts, Appointments" */
         text = g_strdup_printf (_("Affected data: %s %s"),
-                                data->current_service->name,
+                                data->current_service->pretty_name,
                                 sources);
         g_free (sources);
     } else {
@@ -1307,7 +1307,7 @@ update_emergency_view (app_data *data)
                 _("A normal sync with %s is not possible at this time. "
                   "You can do a slow two-way sync, start from scratch or "
                   "restore from backup."),
-                data->current_service->name);
+                data->current_service->pretty_name);
     } else {
         /* TRANSLATORS: this is an explanation in Emergency view.
          * Placeholder is a service/device name */
@@ -1324,13 +1324,13 @@ update_emergency_view (app_data *data)
     text = g_strdup_printf (_("Delete all your local\n"
                               "data and replace with\n"
                               "data from %s"),
-                            data->current_service->name);
+                            data->current_service->pretty_name);
     gtk_label_set_text (GTK_LABEL (data->refresh_from_server_btn_label), text);
     g_free (text);
     text = g_strdup_printf (_("Delete all data on\n"
                               "%s and replace\n"
                               "with your local data"),
-                            data->current_service->name);
+                            data->current_service->pretty_name);
     gtk_label_set_text (GTK_LABEL (data->refresh_from_client_btn_label), text);
     g_free (text);
 
@@ -1506,9 +1506,9 @@ add_server_to_box (GtkBox *box,
     const char *current_name = NULL;
 
     if (data->current_service) {
-        current_name = data->current_service->name;
+        current_name = data->current_service->pretty_name;
         if (data->current_service->name && name && 
-            strcmp (name, data->current_service->name) == 0) {
+            g_strcasecmp (name, data->current_service->name) == 0) {
             current = TRUE;
         }
      }

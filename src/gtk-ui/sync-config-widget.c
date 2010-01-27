@@ -239,7 +239,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
     SyncevoConfig *config;
     save_config_data *data;
-    const char *username, *password, *sync_url;
+    const char *username, *password, *sync_url, *pretty_name;
     char *real_url;
     gboolean send, receive;
     SyncevoSyncMode mode;
@@ -289,7 +289,9 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     }
 
     config = self->config->config;
-    self->config->name = g_strdup (gtk_entry_get_text (GTK_ENTRY (self->entry)));
+    if (strlen (self->config->name) == 0) {
+        self->config->name = g_strdup (gtk_entry_get_text (GTK_ENTRY (self->entry)));
+    }
 
     if (self->mode_changed) {
         GHashTableIter iter;
@@ -352,6 +354,9 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
                                    (ConfigFunc)update_source_uri,
                                    self);
 
+    pretty_name = gtk_entry_get_text (GTK_ENTRY (self->entry));
+    syncevo_config_set_value (config, NULL, "PeerName", pretty_name);
+    syncevo_config_get_value (config, NULL, "PeerName", &self->config->pretty_name);
     syncevo_config_set_value (config, NULL, "defaultPeer", self->config->name);
     sync_config_widget_set_current (self, TRUE);
 
@@ -384,7 +389,7 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         msg = g_strdup_printf
             (_("Do you want to reset the settings for %s?\n"
                "This will not remove any synced information on either end."),
-             self->config->name);
+             self->config->pretty_name);
         /*TRANSLATORS: accept button in warning dialog */
         yes = _("Yes, reset");
     } else {
@@ -394,7 +399,7 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
             (_("Do you want to delete the settings for %s?\n"
                "This will not remove any synced information on either\n"
                "end but it will remove this service configuration."),
-             self->config->name);
+             self->config->pretty_name);
         /*TRANSLATORS: accept button in warning dialog */
         yes = _("Yes, delete");
     }
@@ -722,8 +727,8 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     self->mode_changed = FALSE;
 
 
-    if (self->config->name) {
-        gtk_entry_set_text (GTK_ENTRY (self->entry), self->config->name);
+    if (self->config->pretty_name) {
+        gtk_entry_set_text (GTK_ENTRY (self->entry), self->config->pretty_name);
     }
     if (!self->config->name || strlen (self->config->name) == 0) {
         gtk_expander_set_expanded (GTK_EXPANDER (self->expander), TRUE);
@@ -740,13 +745,13 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
 
     update_buttons (self);
 
-    /* TRANSLATORS: check button (or toggle) in service configuration form */
-    str = g_strdup_printf (_("Send changes to %s"), self->config->name);
+    /* TRANSLATORS: toggles in service configuration form, placeholder is service
+     * or device name */
+    str = g_strdup_printf (_("Send changes to %s"), self->config->pretty_name);
     self->send_check = add_toggle_widget (self, str, send, 0, 0);
     g_free (str);
 
-    /* TRANSLATORS: check button (or toggle) in service configuration form */
-    str = g_strdup_printf (_("Receive changes from %s"), self->config->name);
+    str = g_strdup_printf (_("Receive changes from %s"), self->config->pretty_name);
     self->receive_check = add_toggle_widget (self, str, receive, 0, 1);
     g_free (str);
 
@@ -888,16 +893,16 @@ load_icon (const char *uri, guint icon_size)
 static void
 sync_config_widget_update_label (SyncConfigWidget *self)
 {
-    if (self->config && self->config->name && self->config->config) {
+    if (self->config && self->config->pretty_name && self->config->config) {
         char *url;
         char *str;
 
         syncevo_config_get_value (self->config->config, NULL, "WebURL", &url);
 
         if (self->current) {
-            str = g_strdup_printf ("<b>%s</b>", self->config->name);
+            str = g_strdup_printf ("<b>%s</b>", self->config->pretty_name);
         } else {
-            str = g_strdup_printf ("%s", self->config->name);
+            str = g_strdup_printf ("%s", self->config->pretty_name);
         }
         if (!self->has_template) {
             /* TRANSLATORS: service title for services that are not based on a 
@@ -1016,6 +1021,7 @@ sync_config_widget_set_name (SyncConfigWidget *self,
 {
     self->config = g_slice_new0 (server_config);
     self->config->name = g_strdup (name);
+    self->config->pretty_name = self->config->name;
 }
 
 static void
@@ -1124,6 +1130,7 @@ init_default_config (server_config *config)
 {
     g_free (config->name);
     config->name = g_strdup ("");
+    config->pretty_name = config->name;
 
     syncevo_config_set_value (config->config, NULL, "username", "");
     syncevo_config_set_value (config->config, NULL, "password", "");

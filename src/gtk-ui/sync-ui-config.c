@@ -82,7 +82,9 @@ server_config_init (server_config *server, SyncevoConfig *config)
     syncevo_config_foreach_source (config,
                                    (ConfigFunc)add_source_config,
                                    server->source_configs);
-
+    if (!syncevo_config_get_value (config, NULL, "PeerName", &server->pretty_name)) {
+        server->pretty_name = server->name;
+    }
 }
 
 
