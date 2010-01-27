@@ -230,6 +230,42 @@ AC_ARG_ENABLE(bluetooth,
 		   bluetooth_disabled="yes"
                 fi ])
 
+if test "$have_bluetooth"; then
+   AC_LANG(C)
+   CFLAGS_old="$CFLAGS"
+   CFLAGS="$CPPFLAGS $BLUEZ_CFLAGS"
+   # test in this order:
+   # - recent libbluetooth (no _safe variant, base function has bufsize)
+   # - intermediate with _safe
+   # - else assume old-style (no bufsize, no _safe)
+   #
+   # The source code checks the signature both by via pointer assignment and calling
+   # it (better safe than sorry). One these should fail if the signature is not right.
+   AC_COMPILE_IFELSE([#include <bluetooth/sdp.h>
+                      #include <bluetooth/sdp_lib.h>
+                      sdp_record_t *(*extract_pdu)(const uint8_t *pdata, int bufsize, int *scanned) =
+                           sdp_extract_pdu;
+                      void foo(void) {
+                          uint8_t *pdata = NULL;
+                          int scanned;
+                          sdp_extract_pdu(pdata, 100, &scanned);
+                      }
+                     ],
+                     AC_DEFINE(HAVE_BLUEZ_BUFSIZE, 1, [base libbluetooth functions accept bufsize parameter]),
+                     AC_COMPILE_IFELSE([#include <bluetooth/sdp.h>
+                                        #include <bluetooth/sdp_lib.h>
+                                        sdp_record_t *(*extract_pdu)(const uint8_t *pdata, int bufsize, int *scanned) =
+                                               sdp_extract_pdu_safe;
+                                        void foo(void) {
+                                            uint8_t *pdata = NULL;
+                                            int scanned;        
+                                            sdp_extract_pdu_safe(pdata, 100, &scanned);
+                                        }
+                                       ],
+                                       AC_DEFINE(HAVE_BLUEZ_SAFE, 1, [libbluetooth has _safe variants])))
+   CFLAGS="$CFLAGS_old"
+fi
+
 
 if test ! "$TRANSPORT" &&
    test "$libsoup_disabled" != "yes" &&

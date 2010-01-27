@@ -502,7 +502,13 @@ void ObexTransportAgent::sdp_callback_impl (uint8_t type, uint16_t status, uint8
 
 	    int seqSize = 0;
         uint8_t dtdp;
+#ifdef HAVE_BLUEZ_BUFSIZE
         scanned = sdp_extract_seqtype(rsp, bufSize, &dtdp, &seqSize);
+#elif defined(HAVE_BLUEZ_SAFE)
+        scanned = sdp_extract_seqtype_safe(rsp, bufSize, &dtdp, &seqSize);
+#else
+        scanned = sdp_extract_seqtype(rsp, &dtdp, &seqSize);
+#endif
         if (!scanned || !seqSize) {
             SE_THROW_EXCEPTION (TransportException, "ObexTransportAgent: Bluetooth service search failed");
         }
@@ -515,7 +521,13 @@ void ObexTransportAgent::sdp_callback_impl (uint8_t type, uint16_t status, uint8
             int recSize;
 
             recSize = 0;
+#ifdef HAVE_BLUEZ_BUFSIZE
             rec = sdp_extract_pdu(rsp, bufSize, &recSize);
+#elif defined(HAVE_BLUEZ_SAFE)
+            rec = sdp_extract_pdu_safe(rsp, bufSize, &recSize);
+#else
+            rec = sdp_extract_pdu(rsp, &recSize);
+#endif
             if (!rec) {
                 SE_THROW_EXCEPTION (TransportException, "ObexTransportAgent: sdp_extract_pdu failed");
             }
