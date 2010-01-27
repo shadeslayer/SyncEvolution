@@ -35,6 +35,8 @@ syncevo_config_get_value (SyncevoConfig *config,
     g_return_val_if_fail (config, FALSE);
     g_return_val_if_fail (value, FALSE);
 
+    *value = NULL;
+
     if (!source || strlen (source) == 0) {
         name = g_strdup ("");
     } else {
@@ -45,10 +47,9 @@ syncevo_config_get_value (SyncevoConfig *config,
     g_free (name);
 
     if (source_config) {
-        *value = (char*)g_hash_table_lookup (source_config, key);
-        return TRUE;
+        return g_hash_table_lookup_extended (source_config, key,
+                                             NULL, (gpointer*)value);
     }
-    
     return FALSE;
 }
 
