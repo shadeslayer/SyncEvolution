@@ -2282,6 +2282,7 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
     }
 
     switch (error_code) {
+    case -1: /* no errorcode */
     case 0:
     case 200:
     case LOCERR_USERABORT:
