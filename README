@@ -771,6 +771,9 @@ Necessary on some distros due to bad dependencies (not needed by SyncEvolution i
 Optional (enables reading proxy settings from GNOME preferences):
    apt-get install libsoup-gnome2.4-dev
 
+Optional (enables direct sync with phones):
+   apt-get install libopenobex-dev libbluetooth-dev
+
 For compiling libsynthesis:
    apt-get install libpcre3-dev libsqlite3-dev libexpat-dev libz-dev
 
