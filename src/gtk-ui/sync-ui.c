@@ -1713,15 +1713,25 @@ get_config_for_main_win_cb (SyncevoServer *server,
 }
 
 static void
-set_running_session_status (app_data *data, SyncevoSessionStatus status)
+set_running_session_status (app_data *data,
+                            SyncevoSessionStatus status,
+                            int error_code)
 {
     if (status & SYNCEVO_STATUS_QUEUEING) {
         g_warning ("Running session is queued, this shouldn't happen...");
     } else if (status & SYNCEVO_STATUS_IDLE) {
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
     } else if (status & SYNCEVO_STATUS_DONE) {
-        gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
-                            _("Sync complete"));
+        char *err;
+        err = get_error_string_for_code (error_code, NULL);
+        if (err) {
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label),
+                                _("Sync failed"));
+            g_free (err);
+        } else {
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label),
+                                _("Sync complete"));
+        }
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
         set_sync_progress (data, 1.0, "");
     } else if (status & SYNCEVO_STATUS_RUNNING ||
@@ -1744,7 +1754,7 @@ running_session_status_changed_cb (SyncevoSession *session,
                                    SyncevoSourceStatuses *source_statuses,
                                    app_data *data)
 {
-    set_running_session_status (data, status);
+    set_running_session_status (data, status, error_code);
 }
 
 static void
@@ -1762,7 +1772,7 @@ get_running_session_status_cb (SyncevoSession *session,
         return;
     }
 
-    set_running_session_status (data, status);
+    set_running_session_status (data, status, error_code);
 }
 
 static void
@@ -2504,8 +2514,11 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
         return g_strdup(_("The source could not be found. Could there be a "
                           "problem with the server settings?"));
     case DB_Fatal:
-        /* This can happen when EDS is borked, restart may help... */
         return g_strdup(_("Fatal database error"));
+    case LOCAL_STATUS_CODE + DB_Fatal:
+        /* This can happen when EDS is borked, restart it may help... */
+        return g_strdup(_("There is a problem with the local database. "
+                          "Syncing again or rebooting may help."));
     case DB_Error:
         return g_strdup(_("Database error"));
     case DB_Full:
