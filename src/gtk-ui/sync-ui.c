@@ -682,6 +682,12 @@ key_press_cb (GtkWidget *widget,
 }
 
 static void
+settings_visibility_changed_cb (MuxWindow *win, app_data *data)
+{
+    update_services_list (data);
+}
+
+static void
 setup_windows (app_data *data,
                GtkWidget *main,
                GtkWidget *settings,
@@ -705,6 +711,8 @@ setup_windows (app_data *data,
     mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_SETTINGS|MUX_DECOR_CLOSE);
     g_signal_connect (mux_main, "key-press-event",
                       G_CALLBACK (key_press_cb), data);
+    g_signal_connect (mux_main, "settings-visibility-changed",
+                      G_CALLBACK (settings_visibility_changed_cb), data);
 
 
     tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (settings)));
@@ -2492,8 +2500,8 @@ show_services_list (app_data *data, const char *config_id_to_open)
     mux_window_set_settings_visible (MUX_WINDOW (data->sync_win), TRUE);
 #else
     gtk_window_present (GTK_WINDOW (data->services_win));
-#endif
     update_services_list (data);
+#endif
 }
 
 static void
