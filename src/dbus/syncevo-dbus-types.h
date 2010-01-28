@@ -40,28 +40,20 @@ typedef enum {
   SYNCEVO_SYNC_ONE_WAY_FROM_SERVER,
 } SyncevoSyncMode;
 
+/* SyncevoSessionStatus is a bitfield, although most value are exclusive */
 typedef enum {
-  SYNCEVO_STATUS_UNKNOWN,
-  SYNCEVO_STATUS_QUEUEING,
-  SYNCEVO_STATUS_IDLE,
-  SYNCEVO_STATUS_RUNNING,
-  SYNCEVO_STATUS_ABORTING,
-  SYNCEVO_STATUS_SUSPENDING,
-  SYNCEVO_STATUS_DONE,
-} SyncevoSessionStatus;
-
-
-/* SyncevoSourceStatus is a bitfield, but only one of four first values 
- * will be present */
-typedef enum {
-  SYNCEVO_SOURCE_UNKNOWN = 0,
-  SYNCEVO_SOURCE_IDLE = 1 << 0,
-  SYNCEVO_SOURCE_RUNNING = 1 << 1,
-  SYNCEVO_SOURCE_DONE = 1 << 2,
+  SYNCEVO_STATUS_UNKNOWN = 0,
+  SYNCEVO_STATUS_QUEUEING = 1 << 0,
+  SYNCEVO_STATUS_IDLE = 1 << 1,
+  SYNCEVO_STATUS_RUNNING = 1 << 2,
+  SYNCEVO_STATUS_ABORTING = 1 << 3,
+  SYNCEVO_STATUS_SUSPENDING = 1 << 4,
+  SYNCEVO_STATUS_DONE = 1 << 5,
 
   /* the ones below are modifiers */
-  SYNCEVO_SOURCE_WAITING = 1 << 3,
-} SyncevoSourceStatus;
+  SYNCEVO_STATUS_WAITING =  1 << 6
+} SyncevoSessionStatus;
+
 
 typedef enum {
   SYNCEVO_PHASE_NONE,
@@ -126,7 +118,7 @@ SyncevoSessionStatus syncevo_session_status_from_string (const char *status_str)
 
 typedef void (*SourceStatusFunc) (char *name,
                                   SyncevoSyncMode mode,
-                                  SyncevoSourceStatus status,
+                                  SyncevoSessionStatus status,
                                   guint error_code,
                                   gpointer user_data);
 void

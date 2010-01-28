@@ -83,6 +83,7 @@ struct _app_data {
     GtkWidget *offline_label;
     GtkWidget *progress;
     GtkWidget *sync_status_label;
+    GtkWidget *spinner_image;
     GtkWidget *sync_btn;
     GtkWidget *change_service_btn;
     GtkWidget *emergency_btn;
@@ -222,42 +223,6 @@ get_pretty_source_name (const char *source_name)
         return tmp;
     }
 }
-
-/*
-static void
-add_error_info (app_data *data, const char *message, const char *external_reason)
-{
-    GtkWidget *lbl;
-    GList *l, *children;
-
-    children = gtk_container_get_children (GTK_CONTAINER (data->service_error_box));
-    for (l = children; l; l = l->next) {
-        GtkLabel *old_lbl = GTK_LABEL (l->data);
-
-        if (strcmp (message, gtk_label_get_text (old_lbl)) == 0) {
-            g_list_free (children);
-            return;
-        }
-    }
-    g_list_free (children);
-
-    gtk_widget_show (data->errors_box);
-
-    lbl = gtk_label_new (message);
-    gtk_label_set_line_wrap (GTK_LABEL (lbl), TRUE);
-
-    gtk_widget_set_size_request (lbl, 160, -1);
-    gtk_widget_show (lbl);
-    gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
-    gtk_box_pack_start (GTK_BOX (data->service_error_box), lbl, FALSE, FALSE, 0);
-
-    if (external_reason) {
-        g_warning ("%s: %s", message, external_reason);
-    } else {
-        g_warning ("%s", message);
-    }
-}
-*/
 
 static void
 reload_config (app_data *data, const char *server)
@@ -869,6 +834,10 @@ init_ui (app_data *data)
     data->emergency_btn = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_btn"));
     data->sync_btn = GTK_WIDGET (gtk_builder_get_object (builder, "sync_btn"));
     data->sync_status_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_status_label"));
+    data->spinner_image = GTK_WIDGET (gtk_builder_get_object (builder, "spinner_image"));
+    gtk_image_set_from_file (GTK_IMAGE (data->spinner_image), THEMEDIR "sync-spinner.gif");
+    gtk_widget_set_no_show_all (data->spinner_image, TRUE);
+    gtk_widget_hide (data->spinner_image);
 
     data->server_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_service_label"));
     data->last_synced_label = GTK_WIDGET (gtk_builder_get_object (builder, "last_synced_label"));
@@ -1746,55 +1715,25 @@ get_config_for_main_win_cb (SyncevoServer *server,
 static void
 set_running_session_status (app_data *data, SyncevoSessionStatus status)
 {
-    switch (status) {
-    case SYNCEVO_STATUS_QUEUEING:
+    if (status & SYNCEVO_STATUS_QUEUEING) {
         g_warning ("Running session is queued, this shouldn't happen...");
-        break;
-    case SYNCEVO_STATUS_IDLE:
+    } else if (status & SYNCEVO_STATUS_IDLE) {
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
-        break;
-    case SYNCEVO_STATUS_RUNNING:
-    case SYNCEVO_STATUS_SUSPENDING:
-    case SYNCEVO_STATUS_ABORTING:
-        set_app_state (data, SYNC_UI_STATE_SYNCING);
-        break;
-    case SYNCEVO_STATUS_DONE:
+    } else if (status & SYNCEVO_STATUS_DONE) {
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), 
                             _("Sync complete"));
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
         set_sync_progress (data, 1.0, "");
-        
-        break;
-    default:
-        g_warning ("unknown session status  %d used!", status);
-    }
-}
-
-static void
-update_source_status (char *name,
-                      SyncevoSyncMode mode,
-                      SyncevoSourceStatus status,
-                      guint error_code,
-                      app_data *data)
-{
-    char *error;
-    static char *waiting_source = NULL;
-
-    error = get_error_string_for_code (error_code, NULL);
-    if (error) {
-        /* TODO show sync error in UI -- but not duplicates */
-        g_warning ("Source '%s' error: %s", name, error);
-        g_free (error);
+    } else if (status & SYNCEVO_STATUS_RUNNING ||
+               status & SYNCEVO_STATUS_SUSPENDING ||
+               status & SYNCEVO_STATUS_ABORTING) {
+        set_app_state (data, SYNC_UI_STATE_SYNCING);
     }
 
-    if (status & SYNCEVO_SOURCE_WAITING) {
-        g_free (waiting_source);
-        waiting_source = g_strdup (name);
-        /* TODO: start spinner */
-    } else if (waiting_source && strcmp (waiting_source, name) == 0) {
-        g_free (waiting_source);
-        waiting_source = NULL;
-        /* TODO: stop spinner */
+    if (status & SYNCEVO_STATUS_WAITING) {
+        gtk_widget_show (data->spinner_image);
+    } else {
+        gtk_widget_hide (data->spinner_image);
     }
 }
 
@@ -1806,10 +1745,6 @@ running_session_status_changed_cb (SyncevoSession *session,
                                    app_data *data)
 {
     set_running_session_status (data, status);
-
-    syncevo_source_statuses_foreach (source_statuses,
-                                     (SourceStatusFunc)update_source_status,
-                                     data);
 }
 
 static void

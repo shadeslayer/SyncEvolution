@@ -211,6 +211,10 @@ syncevo_session_status_from_string (const char *status_str)
         status = SYNCEVO_STATUS_UNKNOWN;
     }
 
+    if (status_str && strstr (status_str, ";waiting")) {
+        status |= SYNCEVO_STATUS_WAITING;
+    }
+
     return status;
 }
 
@@ -239,26 +243,26 @@ syncevo_sync_mode_from_string (const char *mode_str)
     }
 }
 
-static SyncevoSourceStatus
+static SyncevoSessionStatus
 syncevo_source_status_from_string (const char *status_str)
 {
-    SyncevoSourceStatus status;
+    SyncevoSessionStatus status;
 
     if (!status_str) {
-        status = SYNCEVO_SOURCE_UNKNOWN;
+        status = SYNCEVO_STATUS_UNKNOWN;
     } else if (g_str_has_prefix (status_str, "idle")) {
-        status = SYNCEVO_SOURCE_IDLE;
+        status = SYNCEVO_STATUS_IDLE;
     } else if (g_str_has_prefix (status_str, "running")) {
-        status = SYNCEVO_SOURCE_RUNNING;
+        status = SYNCEVO_STATUS_RUNNING;
     } else if (g_str_has_prefix (status_str, "done")) {
-        status = SYNCEVO_SOURCE_DONE;
+        status = SYNCEVO_STATUS_DONE;
     } else {
-        status = SYNCEVO_SOURCE_UNKNOWN;
+        status = SYNCEVO_STATUS_UNKNOWN;
     }
 
     /* check modifiers */
     if (status_str && strstr (status_str, ";waiting")) {
-        status |= SYNCEVO_SOURCE_WAITING;
+        status |= SYNCEVO_STATUS_WAITING;
     }
 
     return status;
@@ -281,7 +285,7 @@ syncevo_source_statuses_foreach (SyncevoSourceStatuses *source_statuses,
         const char *mode_str;
         const char *status_str;
         SyncevoSyncMode mode;
-        SyncevoSourceStatus status;
+        SyncevoSessionStatus status;
         guint error_code;
 
         mode_str = g_value_get_string (g_value_array_get_nth (source_status, 0));
