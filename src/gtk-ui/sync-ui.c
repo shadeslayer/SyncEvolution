@@ -1775,44 +1775,73 @@ get_running_session_status_cb (SyncevoSession *session,
     set_running_session_status (data, status, error_code);
 }
 
+typedef struct source_progress_data {
+    app_data *data;
+    SyncevoSourcePhase phase;
+    const char *source;
+} source_progress_data;
+
+static void
+find_updated_source_progress (const char *name,
+                              SyncevoSourcePhase phase,
+                              source_progress_data *prog_data)
+{
+    GHashTable *configs = prog_data->data->current_service->source_configs;
+    source_config *config;
+    config = g_hash_table_lookup (configs, name);
+    if (config) {
+        if (phase != config->phase) {
+            config->phase = phase;
+            prog_data->phase = config->phase;
+            prog_data->source = name;
+        }
+    }
+}
+
 static void
 running_session_progress_changed_cb (SyncevoSession *session,
                                      int progress,
                                      SyncevoSourceProgresses *source_progresses,
                                      app_data *data)
 {
-    SyncevoSourceProgress *s_progress;
-    char *name;
-    char *msg = NULL;
+    source_progress_data *prog_data = g_slice_new0 (source_progress_data);
+    prog_data->data = data;
+    prog_data->phase = SYNCEVO_PHASE_NONE;
+    prog_data->source = NULL;
 
-    s_progress = syncevo_source_progresses_get_current (source_progresses);
-    if (!s_progress) {
-        return;
-    }
+    syncevo_source_progresses_foreach (source_progresses,
+                                       (SourceProgressFunc)find_updated_source_progress,
+                                       prog_data);
+    if (!prog_data->source) {
+        set_sync_progress (data, ((float)progress) / 100, NULL);
+    } else {
+        char *name;
+        char *msg = NULL;
 
-    name = get_pretty_source_name (s_progress->name);
+        name = get_pretty_source_name (prog_data->source);
+        switch (prog_data->phase) {
+        case SYNCEVO_PHASE_PREPARING:
+            msg = g_strdup_printf (_("Preparing '%s'"), name);
+            break;
+        case SYNCEVO_PHASE_RECEIVING:
+            msg = g_strdup_printf (_("Receiving '%s'"), name);
+            break;
+        case SYNCEVO_PHASE_SENDING:
+            msg = g_strdup_printf (_("Sending '%s'"), name);
+            break;
+        default:
+            ;
+        }
 
-    switch (s_progress->phase) {
-    case SYNCEVO_PHASE_PREPARING:
-        msg = g_strdup_printf (_("Preparing '%s'"), name);
-        break;
-    case SYNCEVO_PHASE_RECEIVING:
-        msg = g_strdup_printf (_("Receiving '%s'"), name);
-        break;
-    case SYNCEVO_PHASE_SENDING:
-        msg = g_strdup_printf (_("Sending '%s'"), name);
-        break;
-    default:
-        ;
-    }
-    g_free (name);
-
-    if (msg) {
-        set_sync_progress (data, ((float)progress) / 100, msg);
+        if (msg) {
+            set_sync_progress (data, ((float)progress) / 100, msg);
+        }
         g_free (msg);
+        g_free (name);
+        
     }
 
-    syncevo_source_progress_free (s_progress);
+    g_slice_free (source_progress_data, prog_data);
 }
 
 typedef struct source_stats {

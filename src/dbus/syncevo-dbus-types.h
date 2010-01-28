@@ -62,17 +62,6 @@ typedef enum {
   SYNCEVO_PHASE_RECEIVING,
 } SyncevoSourcePhase;
 
-typedef struct {
-  char *name;
-  SyncevoSourcePhase phase;
-  int prepare_current;
-  int prepare_total;
-  int send_current;
-  int send_total;
-  int receive_current;
-  int receive_total;
-} SyncevoSourceProgress;  
-
 #define SYNCEVO_TYPE_SOURCE_STATUS (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_INVALID))
 #define SYNCEVO_TYPE_SOURCE_STATUSES (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, SYNCEVO_TYPE_SOURCE_STATUS))
 #define SYNCEVO_TYPE_SOURCE_PROGRESS (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID))
@@ -128,13 +117,13 @@ syncevo_source_statuses_foreach (SyncevoSourceStatuses *source_statuses,
 
 void syncevo_source_statuses_free (SyncevoSourceStatuses *source_statuses);
 
-
-SyncevoSourceProgress* syncevo_source_progresses_get_current (SyncevoSourceProgresses *source_progresses);
-
+typedef void (*SourceProgressFunc) (const char *name,
+                                    SyncevoSourcePhase phase,
+                                    gpointer user_data);
+void syncevo_source_progresses_foreach (SyncevoSourceProgresses *source_progresses,
+                                        SourceProgressFunc func,
+                                        gpointer userdata);
 void syncevo_source_progresses_free (SyncevoSourceProgresses *source_progresses);
-
-void syncevo_source_progress_free (SyncevoSourceProgress *progress);
-
 
 GHashTable* syncevo_reports_index (SyncevoReports *reports,
                                    guint index);

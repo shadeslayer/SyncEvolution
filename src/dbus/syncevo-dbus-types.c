@@ -317,23 +317,21 @@ syncevo_source_statuses_free (SyncevoSourceStatuses *source_statuses)
     g_hash_table_destroy (source_statuses);
 }
 
-/* The return value contents are only valid as long as the
- * SyncevoSourceProgresses is. */
-SyncevoSourceProgress*
-syncevo_source_progresses_get_current (SyncevoSourceProgresses *source_progresses)
+void
+syncevo_source_progresses_foreach (SyncevoSourceProgresses *source_progresses,
+                                   SourceProgressFunc func,
+                                   gpointer userdata)
 {
     const char *phase_str, *name;
     GHashTableIter iter;
     GValueArray *progress_array;
-    GValue *val;
-    SyncevoSourceProgress *progress = NULL;
 
-    g_return_val_if_fail (source_progresses, FALSE);
+    g_return_if_fail (source_progresses);
 
     g_hash_table_iter_init (&iter, source_progresses);
     while (g_hash_table_iter_next (&iter, (gpointer)&name, (gpointer)&progress_array)) {
         SyncevoSourcePhase phase;
-        phase_str = g_value_get_string (g_value_array_get_nth (progress_array, 0));
+        phase_str = g_value_get_string (g_value_array_get_nth (progress_array, 0));    
 
         if (!phase_str) {
             phase = SYNCEVO_PHASE_NONE;
@@ -347,14 +345,7 @@ syncevo_source_progresses_get_current (SyncevoSourceProgresses *source_progresse
             phase = SYNCEVO_PHASE_NONE;
         }
 
-        if (phase == SYNCEVO_PHASE_NONE) {
-            continue;
-        }
-
-        progress = g_slice_new (SyncevoSourceProgress);
-        progress->name = g_strdup (name);
-        progress->phase = phase;
-
+/*
         val = g_value_array_get_nth (progress_array, 1);
         progress->prepare_current = g_value_get_int (val);
         val = g_value_array_get_nth (progress_array, 2);
@@ -367,18 +358,12 @@ syncevo_source_progresses_get_current (SyncevoSourceProgresses *source_progresse
         progress->receive_current = g_value_get_int (val);
         val = g_value_array_get_nth (progress_array, 6);
         progress->receive_total = g_value_get_int (val);
+*/
 
-        break;
+        func (name, phase, userdata);
     }
-    return progress;
 }
 
-void
-syncevo_source_progress_free (SyncevoSourceProgress *progress)
-{
-    g_free (progress->name);
-    g_slice_free (SyncevoSourceProgress, progress);
-}
 static void
 free_source_progress_item (char *source,
                            GValueArray *progress_array)
