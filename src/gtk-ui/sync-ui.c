@@ -1082,6 +1082,7 @@ add_emergency_source (const char *name, source_config *conf, app_data *data)
 
     pretty_name = get_pretty_source_name (name);
     toggle = add_emergency_toggle_widget (data, pretty_name, active, row, col);
+    gtk_widget_set_sensitive (toggle, source_config_is_usable (conf));
     g_object_set_data_full (G_OBJECT (toggle), "source", g_strdup (name), g_free);
     g_free (pretty_name);
 
@@ -1361,17 +1362,8 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
 {
     GtkWidget *lbl, *box;
     char *pretty_name, *title;
-    const char *source_uri, *sync;
 
-    source_uri = g_hash_table_lookup (conf->config, "uri");
-    sync = g_hash_table_lookup (conf->config, "sync");
-
-    if (!sync || 
-        strcmp (sync, "disabled") == 0 ||
-        strcmp (sync, "none") == 0 ||
-        !source_uri ||
-        strlen (source_uri) == 0 ||
-        !conf->supported_locally) {
+    if (!source_config_is_usable (conf)) {
         return;
     }
 
@@ -2152,10 +2144,11 @@ get_reports_cb (SyncevoServer *server,
     if (!data->forced_emergency) {
         /* if user initiates a emergency sync wihtout forced_emergency, 
            enable all sources by default*/
-        g_hash_table_iter_init (&iter, sources);
-        while (g_hash_table_iter_next (&iter, (gpointer)&key, NULL)) {
-            g_hash_table_insert (data->emergency_sources,
-                                 g_strdup (key), "");
+        g_hash_table_iter_init (&iter, data->current_service->source_configs);
+        while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&source_conf)) {
+            if (source_config_is_usable (source_conf)) {
+                g_hash_table_insert (data->emergency_sources, g_strdup (key), "");
+            }
         }
     }
 

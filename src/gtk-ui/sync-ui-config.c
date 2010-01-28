@@ -87,6 +87,21 @@ server_config_init (server_config *server, SyncevoConfig *config)
     }
 }
 
+gboolean
+source_config_is_usable (source_config *source)
+{
+    const char *source_uri;
+
+    source_uri = g_hash_table_lookup (source->config, "uri");
+
+    if (!source_config_is_enabled (source) ||
+        !source_uri ||
+        strlen (source_uri) == 0 ||
+        !source->supported_locally) {
+        return FALSE;
+    }
+    return TRUE;
+}
 
 gboolean
 source_config_is_enabled (source_config *source)
@@ -94,7 +109,6 @@ source_config_is_enabled (source_config *source)
     char *mode;
 
     mode = g_hash_table_lookup (source->config, "sync");
-
     if (mode &&
         (strcmp (mode, "none") == 0 ||
          strcmp (mode, "disabled") == 0)) {
