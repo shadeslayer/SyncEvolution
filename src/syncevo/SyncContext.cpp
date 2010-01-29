@@ -706,16 +706,7 @@ public:
         LOGGING_FULL      /**< everything */
     };
 
-    struct SourceConfigSpecials{
-        string m_alias;
-        SourceConfigSpecials ():
-            m_alias("")
-        {
-        }
-    };
-
     std::vector<boost::shared_ptr<VirtualSyncSource> >m_virtualDS; /**All configured virtual datastores*/
-    std::map<std::string, SourceConfigSpecials > m_configSpecials; /*Indicating whether the corresponding sync source is forced slow*/
 private:
     LogDir m_logdir;     /**< our logging directory */
     SyncContext &m_client; /**< the context in which we were instantiated */
@@ -1547,7 +1538,6 @@ void SyncContext::initSources(SourceList &sourceList)
                 }
                 sourceList.push_back(syncSource);
             }
-            sourceList.m_configSpecials[name].m_alias = sc->getURI();
         } else {
             // the Synthesis engine is never going to see this source,
             // therefore we have to mark it as 100% complete and
@@ -1923,8 +1913,6 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 fragment;
 
             string mode = source->getSync();
-            const struct SourceList::SourceConfigSpecials &special =
-                m_sourceListPtr->m_configSpecials[source->getName()];
             if (source->getForceSlowSync()) {
                 // we *want* a slow sync, but couldn't tell the client -> force it server-side
                 datastores << "      <alertscript> FORCESLOWSYNC(); </alertscript>\n";
@@ -1950,8 +1938,11 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                     "      ]]></datastoreinitscript>\n";
             }
 
-            if (m_serverMode && !special.m_alias.empty()) {
-                datastores << " <alias name='" << special.m_alias << "'/>";
+            if (m_serverMode) {
+                string uri = source->getURI();
+                if (!uri.empty()) {
+                    datastores << " <alias name='" << uri << "'/>";
+                }
             }
 
             datastores << "    </datastore>\n\n";
