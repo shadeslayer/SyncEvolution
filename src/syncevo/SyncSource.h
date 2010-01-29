@@ -735,7 +735,8 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
  public:
     SyncSource(const SyncSourceParams &params) :
         SyncSourceConfig(params.m_name, params.m_nodes),
-        m_numDeleted(0)
+        m_numDeleted(0),
+        m_forceSlowSync(false)
         {
         }
     virtual ~SyncSource() {}
@@ -1032,6 +1033,16 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
     virtual void setNumDeleted(long num) { m_numDeleted = num; }
     virtual void incrementNumDeleted() { m_numDeleted++; }
 
+    /**
+     * Set to true in SyncContext::initSAN() when a SyncML server has
+     * to force a client into slow sync mode. This is necessary because
+     * the server cannot request that mode (missing in the standard).
+     * Forcing the slow sync mode is done via a FORCESLOWSYNC() macro
+     * call in an <alertscript>.
+     */
+    void setForceSlowSync(bool forceSlowSync) { m_forceSlowSync = forceSlowSync; }
+    bool getForceSlowSync() const { return m_forceSlowSync; }
+
  protected:
     Operations m_operations;
 
@@ -1044,6 +1055,8 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
      * (RemoveAllItems()) count the removals itself.
      */
     long m_numDeleted;
+
+    bool m_forceSlowSync;
 
     /**
      * Interface pointer for this sync source, allocated for us by the

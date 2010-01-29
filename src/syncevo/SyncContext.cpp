@@ -707,10 +707,8 @@ public:
     };
 
     struct SourceConfigSpecials{
-        bool m_forceSlow;
         string m_alias;
         SourceConfigSpecials ():
-            m_forceSlow(false),
             m_alias("")
         {
         }
@@ -1927,7 +1925,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             string mode = source->getSync();
             const struct SourceList::SourceConfigSpecials &special =
                 m_sourceListPtr->m_configSpecials[source->getName()];
-            if (special.m_forceSlow) {
+            if (source->getForceSlowSync()) {
                 // we *want* a slow sync, but couldn't tell the client -> force it server-side
                 datastores << "      <alertscript> FORCESLOWSYNC(); </alertscript>\n";
             } else if (mode != "slow" &&
@@ -2410,7 +2408,9 @@ bool SyncContext::initSAN()
             BOOST_FOREACH (std::string source, mappedSources) {
                 dataSources.erase (source);
                 if (mode == SYNC_SLOW) {
-                    m_sourceListPtr->m_configSpecials[source].m_forceSlow = true;
+                    // We force a source which the client is not expected to use into slow mode.
+                    // Shouldn't we rather reject attempts to synchronize it?
+                    (*m_sourceListPtr)[source]->setForceSlowSync(true);
                 }
             }
             dataSources.insert (vSource->getName());
@@ -2421,7 +2421,7 @@ bool SyncContext::initSAN()
         string sync = sc->getSync();
         int mode = StringToSyncMode (sync, true);
         if (mode == SYNC_SLOW) {
-            m_sourceListPtr->m_configSpecials[name].m_forceSlow = true;
+            (*m_sourceListPtr)[name]->setForceSlowSync(true);
             mode = SA_SYNC_TWO_WAY;
         }
         if (mode <SYNC_FIRST || mode >SYNC_LAST) {
