@@ -241,6 +241,20 @@ inline string getHome() {
  * */
 std::vector<std::string> unescapeJoinedString (const std::string &src, char separator);
 
+/**
+ * Temporarily set env variable, restore old value on destruction.
+ * Useful for unit tests which depend on the environment.
+ */
+class ScopedEnvChange
+{
+ public:
+    ScopedEnvChange(const string &var, const string &value);
+    ~ScopedEnvChange();
+ private:
+    string m_var, m_oldval;
+    bool m_oldvalset;
+};
+
 /** throw a normal SyncEvolution Exception, including source information */
 #define SE_THROW(_what) \
     SE_THROW_EXCEPTION(Exception, _what)

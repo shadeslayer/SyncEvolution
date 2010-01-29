@@ -2532,36 +2532,7 @@ private:
                              "todo/config.ini:sync = disabled");
 
         return config;
-    }
-
-    /** temporarily set env variable, restore old value on destruction */
-    class ScopedEnvChange {
-    public:
-        ScopedEnvChange(const string &var, const string &value) :
-            m_var(var)
-        {
-            const char *oldval = getenv(var.c_str());
-            if (oldval) {
-                m_oldvalset = true;
-                m_oldval = oldval;
-            } else {
-                m_oldvalset = false;
-            }
-            setenv(var.c_str(), value.c_str(), 1);
-        }
-        ~ScopedEnvChange()
-        {
-            if (m_oldvalset) {
-                setenv(m_var.c_str(), m_oldval.c_str(), 1);
-            } else {
-                unsetenv(m_var.c_str());
-            } 
-        }
-    private:
-        string m_var, m_oldval;
-        bool m_oldvalset;
-    };
-            
+    }          
 
     /** create directory hierarchy, overwriting previous content */
     void createFiles(const string &root, const string &content, bool append = false) {

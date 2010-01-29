@@ -416,5 +416,26 @@ std::vector<std::string> unescapeJoinedString (const std::string& src, char sep)
     return splitStrings;
 }
 
+ScopedEnvChange::ScopedEnvChange(const string &var, const string &value) :
+    m_var(var)
+{
+    const char *oldval = getenv(var.c_str());
+    if (oldval) {
+        m_oldvalset = true;
+        m_oldval = oldval;
+    } else {
+        m_oldvalset = false;
+    }
+    setenv(var.c_str(), value.c_str(), 1);
+}
+
+ScopedEnvChange::~ScopedEnvChange()
+{
+    if (m_oldvalset) {
+        setenv(m_var.c_str(), m_oldval.c_str(), 1);
+    } else {
+        unsetenv(m_var.c_str());
+    } 
+}
 
 SE_END_CXX
