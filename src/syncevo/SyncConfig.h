@@ -1200,8 +1200,9 @@ class SyncConfig {
     virtual void checkProxyPassword(ConfigUserInterface &ui);
     virtual void saveProxyPassword(ConfigUserInterface &ui);
     virtual void setProxyPassword(const string &value, bool temporarily = false);
-    virtual const char*  getSyncURL() const;
+    virtual vector<string>  getSyncURL() const;
     virtual void setSyncURL(const string &value, bool temporarily = false);
+    virtual void setSyncURL(const vector<string> &value, bool temporarily = false);
     virtual const char*  getClientAuthType() const;
     virtual void setClientAuthType(const string &value, bool temporarily = false);
     virtual unsigned long getMaxMsgSize() const;

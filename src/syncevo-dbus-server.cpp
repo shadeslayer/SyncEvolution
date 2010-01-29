@@ -570,7 +570,7 @@ class DBusServer : public DBusObjectHelper
             //only if all transports are unavailable can we declare the peer
             //status as unavailable
             BOOST_FOREACH (PeerStatusPair &mytransport, mytransports) {
-                if (mytransport.second == MIGHTWORK){
+                if (mytransport.second == MIGHTWORK) {
                     transport.push_back (mytransport.first);
                 }
             }
@@ -586,9 +586,12 @@ class DBusServer : public DBusObjectHelper
                 map<string,string> localConfigs = (*iter).second;
                 BOOST_FOREACH (const StringPair &entry, localConfigs) {
                     if (boost::iequals ("SyncURL", entry.first)) {
-                        //TODO handling multiple urls
                         m_peers[peer].clear();
-                        m_peers[peer].push_back(make_pair(entry.second,MIGHTWORK));
+                        vector<string> urls;
+                        boost::split (urls, entry.second, boost::is_any_of (" \t"));
+                        BOOST_FOREACH (const string &url, urls) {
+                            m_peers[peer].push_back(make_pair(url,MIGHTWORK));
+                        }
                         //As a simple approach, just reinitialize the whole STATUSMAP
                         //it will cause later updatePresenceStatus resend all signals
                         m_initiated = false;
@@ -617,8 +620,12 @@ class DBusServer : public DBusObjectHelper
                     m_server.getConfig(server.first, false, config);
                     BOOST_FOREACH (const StringPair &entry, config[""]) {
                         if (boost::iequals ("SyncURL", entry.first)) {
-                            //TODO handling multiple urls
-                            m_peers[server.first].push_back(make_pair(entry.second,MIGHTWORK));
+                            vector<string> urls;
+                            boost::split (urls, entry.second, boost::is_any_of (" \t"));
+                            m_peers[server.first].clear();
+                            BOOST_FOREACH (const string &url, urls) {
+                                m_peers[server.first].push_back(make_pair(url,MIGHTWORK));
+                            }
                             break;
                         }
                     }
@@ -3003,8 +3010,14 @@ void Connection::process(const Caller_t &caller,
                     BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server,
                             servers) {
                         SyncConfig conf(server.first);
-                        if (conf.getSyncURL() == serverID) {
-                            config = server.first;
+                        vector<string> urls = conf.getSyncURL();
+                        BOOST_FOREACH (const string &url, urls) {
+                            if (url == serverID) {
+                                config = server.first;
+                                break;
+                            }
+                        }
+                        if (!config.empty()) {
                             break;
                         }
                     }
@@ -3018,14 +3031,18 @@ void Connection::process(const Caller_t &caller,
                             BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server,
                                     servers) {
                                 SyncConfig conf(server.first);
-                                string url = conf.getSyncURL();
-                                url = url.substr (0, url.find("+"));
-                                SE_LOG_DEBUG (NULL, NULL, "matching against %s",url.c_str());
-                                //TODO working with multiple SyncURLs
-                                if (url.find ("obex-bt://") ==0 && url.substr(strlen("obex-bt://"), url.npos) == btAddr) {
-                                    config = server.first;
+                                vector<string> urls = conf.getSyncURL();
+                                BOOST_FOREACH (string &url, urls){
+                                    url = url.substr (0, url.find("+"));
+                                    SE_LOG_DEBUG (NULL, NULL, "matching against %s",url.c_str());
+                                    if (url.find ("obex-bt://") ==0 && url.substr(strlen("obex-bt://"), url.npos) == btAddr) {
+                                        config = server.first;
+                                        break;
+                                    } 
+                                }
+                                if (!config.empty()){
                                     break;
-                                } 
+                                }
                             }
                         }
                     }

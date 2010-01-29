@@ -153,6 +153,11 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
         }
     };
 
+    /*
+     * The URL this SyncContext is actually using, since we may support multiple
+     * urls in the configuration.
+     * */
+    string m_usedSyncURL;
   public:
     /**
      * SyncContext using a volatile config
@@ -706,6 +711,8 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
 public:
     static bool transport_cb (void *data);
     void setTransportCallback(int seconds);
+
+    string getUsedSyncURL();
 };
 
 SE_END_CXX

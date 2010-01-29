@@ -884,6 +884,8 @@ ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
 
 static ConfigProperty syncPropSyncURL("syncURL",
                                       "Identifies how to contact the peer,\n"
+                                      "it is possible to set multiple transports contacting,\n"
+                                      "the peer, they should be splitted via space or tab,\n"
                                       "best explained with some examples.\n"
                                       "HTTP(S) SyncML servers:\n"
                                       "  http://my.funambol.com/sync\n"
@@ -893,7 +895,10 @@ static ConfigProperty syncPropSyncURL("syncURL",
                                       "the channel chosen automatically:\n"
                                       "  obex-bt://00:0A:94:03:F3:7E\n"
                                       "If the automatism fails, the channel can also be specified:\n"
-                                      "  obex-bt://00:0A:94:03:F3:7E+16\n");
+                                      "  obex-bt://00:0A:94:03:F3:7E+16\n"
+                                      "A peer with both HTTP and Bluetooth transport:\n"
+                                      "  obex-bt://00:0A:94:03:F3:7E+16 http://IP/SyncEvolution\n"
+                                      );
 
 static ConfigProperty syncPropDevID("deviceId",
                                     "The SyncML server gets this string and will use it to keep track of\n"
@@ -1385,8 +1390,20 @@ void SyncConfig::saveProxyPassword(ConfigUserInterface &ui) {
     syncPropProxyPassword.savePassword(ui, m_peer, *getNode(syncPropProxyPassword), "", boost::shared_ptr<FilterConfigNode>());
 }
 void SyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cachedProxyPassword = ""; syncPropProxyPassword.setProperty(*getNode(syncPropProxyPassword), value, temporarily); }
-const char *SyncConfig::getSyncURL() const { return m_stringCache.getProperty(*getNode(syncPropSyncURL), syncPropSyncURL); }
+vector<string> SyncConfig::getSyncURL() const { 
+    string s = m_stringCache.getProperty(*getNode(syncPropSyncURL), syncPropSyncURL);
+    vector<string> urls;
+    boost::split (urls, s, boost::is_any_of (" \t"));
+    return urls;
+}
 void SyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*getNode(syncPropSyncURL), value, temporarily); }
+void SyncConfig::setSyncURL(const vector<string> &value, bool temporarily) { 
+    stringstream urls;
+    BOOST_FOREACH (string url, value) {
+        urls<<url<<" ";
+    }
+    return setSyncURL (urls.str(), temporarily);
+}
 const char *SyncConfig::getClientAuthType() const { return m_stringCache.getProperty(*getNode(syncPropClientAuthType), syncPropClientAuthType); }
 void SyncConfig::setClientAuthType(const string &value, bool temporarily) { syncPropClientAuthType.setProperty(*getNode(syncPropClientAuthType), value, temporarily); }
 unsigned long  SyncConfig::getMaxMsgSize() const { return syncPropMaxMsgSize.getPropertyValue(*getNode(syncPropMaxMsgSize)); }

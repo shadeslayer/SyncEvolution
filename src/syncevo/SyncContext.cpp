@@ -1005,9 +1005,28 @@ string SyncContext::askPassword(const string &passwordName, const string &descr,
     }
 }
 
+string SyncContext::getUsedSyncURL() {
+    vector<string> urls = getSyncURL();
+    BOOST_FOREACH (string url, urls) {
+        if (boost::starts_with(url, "http://") ||
+                boost::starts_with(url, "https://")) {
+#ifdef ENABLE_LIBSOUP
+            return url;
+#elif defined(ENABLE_LIBCURL)
+            return url;
+#endif
+        } else if (url.find("obex-bt://") ==0) {
+#ifdef ENABLE_BLUETOOTH
+            return url;
+#endif
+        }
+    }
+    return "";
+}
+
 boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent()
 {
-    std::string url = getSyncURL();
+    string url = getUsedSyncURL();
     if (boost::starts_with(url, "http://") ||
         boost::starts_with(url, "https://")) {
 #ifdef ENABLE_LIBSOUP
@@ -1451,7 +1470,6 @@ void SyncContext::initSources(SourceList &sourceList)
         bool enabled = sync != "disabled";
         if (enabled) {
             if (sourceType.m_backend != "virtual") {
-                string url = getSyncURL();
                 SyncSourceParams params(name,
                         source);
                 SyncSource *syncSource =
@@ -2503,7 +2521,7 @@ SyncMLStatus SyncContext::doSync()
             profile = m_engine.OpenSubkey(profiles, sysync::KEYVAL_ID_NEW_DEFAULT);
         }
          
-        m_engine.SetStrValue(profile, "serverURI", getSyncURL());
+        m_engine.SetStrValue(profile, "serverURI", getUsedSyncURL());
         m_engine.SetStrValue(profile, "serverUser", getUsername());
         m_engine.SetStrValue(profile, "serverPassword", getPassword());
         m_engine.SetInt32Value(profile, "encoding",
