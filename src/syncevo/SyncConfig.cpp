@@ -73,15 +73,7 @@ void ConfigProperty::throwValueError(const ConfigNode &node, const string &name,
 
 string SyncConfig::normalizeConfigString(const string &config)
 {
-    string normal, context;
-    normalizeConfigString(config, normal, context);
-    return normal;
-}
-
-void SyncConfig::normalizeConfigString(const string &config, string &normal, string &context)
-{
-    context = "";
-    normal = config;
+    string normal = config;
     boost::to_lower(normal);
     BOOST_FOREACH(char &character, normal) {
         if (!isprint(character) ||
@@ -92,21 +84,35 @@ void SyncConfig::normalizeConfigString(const string &config, string &normal, str
         }
     }
     if (boost::ends_with(normal, "@default")) {
-        context = "default";
         normal.resize(normal.size() - strlen("@default"));
     } else if (boost::ends_with(normal, "@")) {
         normal.resize(normal.size() - 1);
     } else {
-        // context specified?
         size_t at = normal.rfind('@');
-        if (at != normal.npos) {
-            context = normal.substr(at + 1);
+        if (at == normal.npos) {
+            // No explicit context. Pick the first server which matches
+            // when ignoring their context. Peer list is sorted by name,
+            // therefore shorter config names (= without context) are
+            // found first, as intended.
+            BOOST_FOREACH(const StringPair &entry, getConfigs()) {
+                string entry_peer, entry_context;
+                splitConfigString(entry.first, entry_peer, entry_context);
+                if (normal == entry_peer) {
+                    // found a matching, existing config, use it
+                    normal = entry.first;
+                    break;
+                }
+            }
         }
     }
+
     if (normal.empty()) {
-        // leave context empty, it wasn't set explicitly
+        // default context is meant with the empty string,
+        // better make that explicit
         normal = "@default";
     }
+
+    return normal;
 }
 
 void SyncConfig::splitConfigString(const string &config, string &peer, string &context)
@@ -155,23 +161,7 @@ SyncConfig::SyncConfig(const string &peer,
 
     string root;
 
-    string context;
-    normalizeConfigString(peer, m_peer, context);
-    if (context.empty()) {
-        // No explicit context. Pick the first server which matches
-        // when ignoring their context. Peer list is sorted by name,
-        // therefore shorter config names (= without context) are
-        // found first, as intended.
-        BOOST_FOREACH(const StringPair &entry, getConfigs()) {
-            string entry_peer, entry_context;
-            splitConfigString(entry.first, entry_peer, entry_context);
-            if (m_peer == entry_peer) {
-                // found a matching, existing config, use it
-                m_peer = entry.first;
-                break;
-            }
-        }
-    }
+    m_peer = normalizeConfigString(peer);
 
     // except for SHARED_LAYOUT (set below),
     // everything is below the directory called like
@@ -2164,6 +2154,9 @@ class SyncConfigTest : public CppUnit::TestFixture {
 private:
     void normalize()
     {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", "/dev/null");
+        ScopedEnvChange home("HOME", "/dev/null");
+
         CPPUNIT_ASSERT_EQUAL(std::string("@default"),
                              SyncConfig::normalizeConfigString(""));
         CPPUNIT_ASSERT_EQUAL(std::string("@default"),

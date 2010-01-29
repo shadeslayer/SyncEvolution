@@ -975,20 +975,12 @@ class SyncConfig {
      * - lower case
      * - non-printable and unsafe characters (colon, slash, backslash)
      *   replaced by underscore
+     * - when no context specified: search for peer config first in @default,
+     *   then also in other contexts in alphabetical order
      * - @default stripped
      * - empty string replaced with "@default"
      */
     static string normalizeConfigString(const string &config);
-
-    /**
-     * Normalize and in addition, set original context.
-     *
-     * @param config      one of the various ways of selecting a configuration
-     *                    (@default, scheduleworld, scheduleworld@foo, ...)
-     * @retval normal     normalized form of config string       
-     * @retval context    empty if no specified, otherwise normalized value
-     */
-    static void normalizeConfigString(const string &config, string &normal, string &context);
 
     /**
      * Split a config string (normalized or not) into the peer part
