@@ -1884,7 +1884,7 @@ protected:
             string expected = ScheduleWorldConfig();
             expected += "\n"
                 "peers/scheduleworld/sources/xyz/.internal.ini:# adminData = \n"
-                "peers/scheduleworld/sources/xyz/config.ini:# sync = two-way\n"
+                "peers/scheduleworld/sources/xyz/config.ini:# sync = disabled\n"
                 "peers/scheduleworld/sources/xyz/config.ini:# type = select backend\n"
                 "peers/scheduleworld/sources/xyz/config.ini:uri = dummy\n"
                 "sources/xyz/config.ini:# type = select backend\n"

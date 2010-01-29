@@ -1689,7 +1689,7 @@ StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
                                            "  one-way-from-client = transmit changes from client\n"
                                            "  one-way-from-server = transmit changes from server\n"
                                            "  none (or disabled)  = synchronization disabled",
-                                           "two-way",
+                                           "disabled",
                                            "",
                                            Values() +
                                            (Aliases("two-way")) +
