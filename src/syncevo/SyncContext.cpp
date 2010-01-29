@@ -1935,21 +1935,19 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                        getPreventSlowSync() &&
                        source->m_backupBefore.getNumItems() != 0) { // check is only relevant if we have local data;
                                                                     // if no backup was made (-1), better check
+                                                                    // TODO (MB : don't depend on backup for this
                 // We are not expecting a slow sync => refuse to execute one.
                 // This is the client check for this, server must be handled
                 // differently (TODO, MB #2416).
                 datastores <<
-                    "      <alertscript><![CDATA[\n"
-                    "INTEGER alertcode;\n"
-                    "alertcode = ALERTCODE();\n"
-                    "if (alertcode == 201) {\n" // SLOWSYNC() cannot be used here, refresh-from-client also sets it
-                    "   DEBUGMESSAGE(\"slow sync not expected by SyncEvolution, disabling datastore\");\n"
-                    "   ABORTDATASTORE(" << STATUS_UNEXPECTED_SLOW_SYNC <<
-                    ");\n"
-                    "   // tell UI to abort instead of sending the next message\n"
-                    "   SETSESSIONVAR(\"delayedabort\", 1);\n"
-                    "}\n"
-                    "]]></alertscript>\n";
+                    "      <datastoreinitscript><![CDATA[\n"
+                    "           if (SLOWSYNC() && ALERTCODE() != 203) {\n" // SLOWSYNC() is true for acceptable refresh-from-client, check for that
+                    "              DEBUGMESSAGE(\"slow sync not expected by SyncEvolution, disabling datastore\");\n"
+                    "              ABORTDATASTORE(" << STATUS_UNEXPECTED_SLOW_SYNC << ");\n"
+                    "              // tell UI to abort instead of sending the next message\n"
+                    "              SETSESSIONVAR(\"delayedabort\", 1);\n"
+                    "           }\n"
+                    "      ]]></datastoreinitscript>\n";
             }
 
             if (m_serverMode && !special.m_alias.empty()) {
