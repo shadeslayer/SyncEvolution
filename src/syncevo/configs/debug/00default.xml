@@ -1,0 +1,31 @@
+    <!-- path where logfiles are stored -->
+    <!-- <logpath platform="linux">/your/log/directory</logpath> -->
+    <logflushmode>buffered</logflushmode> <!-- buffered is fastest mode, but may loose data on process abort. Other options: "flush" (after every line) or "openclose" (safest, slowest, like in 2.x server) -->
+    <!-- per session log -->
+    <sessionlogs>yes</sessionlogs> <!-- by default, create a session log file for every sync session (might be disabled for special users/devices in scripts) -->
+    <!-- debug format options -->
+    <logformat>html</logformat> <!-- html is nicely colored and easily viewable with a web browser. Other options: "xml", "text" -->
+    <folding>auto</folding> <!-- dynamic folding of blocks enabled, automatically expanded or collapsed default. Other options: "none", "expanded", "collapsed" -->
+    <timestamp>yes</timestamp> <!-- show timestamps for structure elements in log -->
+    <timestampall>no</timestampall> <!-- don't show timestamp for every log line -->
+    <timedsessionlognames>yes</timedsessionlognames> <!-- session logs also have the session start timestamp in the filename - makes them more easily sortable -->
+    <!-- thread logging mode -->
+    <subthreadmode>separate</subthreadmode> <!-- write log info from subthreads into separate log files. Other options: "suppress" -->
+    <!-- basic debug level selection -->
+    <enable option="extended"/> <!-- "extended" is a good choice for start testing. For production, use "normal" or "minimal" -->
+    <!-- <enable option="normal"/> --> <!-- "normal" provides rich debug info, but still in reasonable size  -->
+    <!-- <enable option="minimal"/> --> <!-- "minimal" just shows basic flow and error. Not suitable for debugging -->
+    <!-- <enable option="maximal"/> --> <!-- "maximal" can create VERY LARGE logs and cause HEAVY SLOWDOWN. Only for detail debugging  -->
+    <!-- <enable option="all"/> --> <!-- "all" shows EVERYTHING possible, and way too much for any normal situation. For hardcore debugging ONLY! -->
+    <!-- additional debug info switches -->
+    <enable option="userdata"/> <!-- Make this <disable ...> if you don't want user data in the logs -->
+    <disable option="scripts"/> <!-- Make this <enable ...> to show script execution in logs  -->
+    <disable option="match"/> <!-- Make this <enable ...> to show slow sync matching. CAN PRODUCE ENORMOUS LOGS and HEAVILY IMPACT PERFORMANCE for large slow syncs - use with care!  -->
+    <disable option="exotic"/> <!-- Make this <enable ...> to include very in-detail info. CAN PRODUCE ENORMOUS LOGS and HEAVILY IMPACT PERFORMANCE for large slow syncs - use with care!  -->
+    <!-- see manual for more debug info switches -->
+    <!-- global log options -->
+    <globallogs>no</globallogs> <!-- by default, do not log global session dispatching, creation etc. (not useful in multi-user operation) -->
+    <singlegloballog>no</singlegloballog> <!-- a new global log will be started for every start of the server/application -->
+    <!-- SyncML message dumping options -->
+    <msgdump>no</msgdump> <!-- do not dump syncml traffic 1:1 to files -->
+    <xmltranslate>no</xmltranslate> <!-- do not try to translate syncml traffic into XML (DO NOT SET THIS OPTION IN PRODUCTIVE SERVERS!) -->

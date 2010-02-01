@@ -1,0 +1,38 @@
+    <!-- vBookmark profile -->
+    <mimeprofile name="vBookmark" fieldlist="bookmarks">
+
+      <profile name="VBKM" nummandatory="0">
+        <property name="VERSION">
+          <value conversion="version"/>
+        </property>
+
+        <property name="X-LAST-MODIFIED">
+          <value field="REV"/>
+        </property>
+
+        <property name="TITLE">
+          <value field="TITLE"/>
+        </property>
+
+        <property name="URL">
+          <value field="URL"/>
+        </property>
+
+        <!-- non-standard properties -->
+
+        <!-- inherit CATEGORIES from vCard 3.0, i.e. comma separated -->
+        <property name="CATEGORIES" values="list" valueseparator="," altvalueseparator=";">
+          <value field="CATEGORIES" combine=","/>
+        </property>
+
+        <property name="CLASS" suppressempty="yes">
+          <value field="CLASS"/>
+        </property>
+
+        <property name="NOTE" filter="no">
+          <value field="NOTE"/>
+        </property>
+
+      </profile>
+    </mimeprofile>
+

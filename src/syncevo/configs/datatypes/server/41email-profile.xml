@@ -1,0 +1,96 @@
+    <!-- this is the text profile used to generate and decode RFC2822/MIME-Multipart
+         email messages. -->
+    <textprofile name="rfc2822_email" fieldlist="email">
+
+      <mimemail>true</mimemail>
+      <!-- attachment configuration -->
+      <maxattachments>100</maxattachments>
+      <attachmentcountfield>ATT_COUNT</attachmentcountfield>
+      <attachmentmimetypesfield>ATT_MIMETYPES</attachmentmimetypesfield>
+      <attachmentsfield>ATT_CONTENTS</attachmentsfield>
+      <attachmentsizesfield>ATT_SIZES</attachmentsizesfield>
+      <attachmentnamesfield>ATT_NAMES</attachmentnamesfield>
+      <sizelimitfield>LIMIT</sizelimitfield>
+
+
+      <linemap field="SENDER">
+        <headertag>From:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>FROM</filterkeyword>
+      </linemap>
+
+      <linemap field="RECEIVER">
+        <headertag>To:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>TO</filterkeyword>
+      </linemap>
+
+      <linemap field="CARBONCOPY">
+        <headertag>Cc:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>CC</filterkeyword>
+      </linemap>
+
+      <linemap field="BLINDCARBONCOPY">
+        <headertag>Bcc:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>BCC</filterkeyword>
+      </linemap>
+
+      <linemap field="REPLY_TO">
+        <headertag>Reply-To:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="SUBJECT">
+        <headertag>Subject:</headertag>
+        <valuetype>rfc2047</valuetype>
+        <inheader>true</inheader>
+        <filterkeyword>SUBJECT</filterkeyword>
+      </linemap>
+
+      <linemap field="PRIORITY">
+        <headertag>X-Priority:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="MAILDATE">
+        <valuetype>date</valuetype>
+        <headertag>Date:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="STATUS">
+        <headertag>Status:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="FOLDER">
+        <headertag>X-Sync-Parent-Folder:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="ISREAD">
+        <headertag>X-Sync-Message-Read:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="MODIFIED">
+        <!-- note that this is a ISO8601 date -->
+        <headertag>X-Sync-Lastmodified:</headertag>
+        <inheader>true</inheader>
+      </linemap>
+
+      <linemap field="BODY">
+        <valuetype>body</valuetype>
+        <numlines>0</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+      </linemap>
+    </textprofile>
+

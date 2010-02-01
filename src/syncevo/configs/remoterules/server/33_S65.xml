@@ -1,0 +1,10 @@
+    <remoterule name="S65">
+      <manufacturer>SIEMENS</manufacturer>
+      <model>S65</model>
+
+      <forcelocaltime>yes</forcelocaltime>
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <descriptivename>Siemens S65</descriptivename>
+    </remoterule>
+
+

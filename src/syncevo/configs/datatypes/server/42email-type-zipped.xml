@@ -1,0 +1,43 @@
+    <!-- Note: This is a proprietary extension datatype for Synthesis AG Windows Mobile SyncML clients.
+         This format is a compressed form of the standard RFC2822 format. For one, the entire data
+         is compressed using the zip algorithm (<zippedbindata>), and secondly attachments are included
+         in binary form in the RFC2822 data stream rather than bandwidth wasting B64, adding a
+         "Content-Length:" header for each MIME part (<binaryparts>). -->
+
+    <datatype name="email_zipbin" basetype="text">
+      <use profile="rfc2822_email"/>
+      <typestring>application/x-zip-message</typestring> <!-- our own private zipped binary optimized format -->
+      <versionstring>1.1</versionstring>
+      <binaryparts>yes</binaryparts>
+      <zippedbindata>yes</zippedbindata>
+      <zipcompressionlevel>9</zipcompressionlevel> <!-- -1=default, 0=no compression, 1=fast & least effective ... 9=slow and most effective -->
+
+      <initscript><![CDATA[
+        $EMAIL_INIT_SCRIPT
+      ]]></initscript>
+
+      <processitemscript><![CDATA[
+        $EMAIL_PROCESSITEM_SCRIPT
+      ]]></processitemscript>
+
+
+      <mergescript><![CDATA[
+        $EMAIL_MERGE_SCRIPT
+      ]]></mergescript>
+
+
+      <outgoingscript><![CDATA[
+        $EMAIL_OUTGOING_SCRIPT
+      ]]></outgoingscript>
+
+      <filterinitscript><![CDATA[
+        $EMAIL_FILTERINIT_SCRIPT
+      ]]></filterinitscript>
+
+
+      <filterscript><![CDATA[
+        $EMAIL_FILTER_SCRIPT
+      ]]></filterscript>
+
+    </datatype>
+

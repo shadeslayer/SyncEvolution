@@ -1,0 +1,13 @@
+    <remoterule name="V3i">
+      <!-- Rule for Motorola V3i -->
+      <manufacturer>Motorola*</manufacturer>
+      <model>V3i</model>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <quote8bitcontent>yes</quote8bitcontent>
+      <nocontentfolding>yes</nocontentfolding>
+      <outputcharset>ANSI</outputcharset>
+      <descriptivename>Motorola V3i</descriptivename>
+    </remoterule>
+
+

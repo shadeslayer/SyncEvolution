@@ -1,0 +1,11 @@
+    <remoterule name="t68">
+      <!-- Rule for Ericsson T68 client -->
+      <manufacturer>Ericsson</manufacturer>
+      <software>R1B</software>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <inputcharset>ANSI</inputcharset>
+      <descriptivename>Ericsson T68</descriptivename>
+    </remoterule>
+
+

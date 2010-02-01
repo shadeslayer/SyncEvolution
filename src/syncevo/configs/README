@@ -1,0 +1,22 @@
+The sample configs contain common elements (datatypes, scripts, remote
+rules, debug settings) which are maintained as separate files in the
+corresponding directories. When modifying those common elements, run
+"update-samples.pl" in this directory to update the sample configs.
+
+The complete samples are under version control for several reasons:
+1. avoid dependency on Perl unless common elements need to be updated
+2. effect of changes on complete config show up in patches
+3. the file layout and unshared parts (<client> and <server>) are
+   determined by the sample configs
+
+The naming of common elements determines the order in which they get
+inserted. Files not ending in .xml are ignored. Elements that only
+apply to a client or server are stored in the corresponding sub
+directories, while the shared elements are in the
+"debug/scripting/datatypes/remoterules".
+
+It is a somewhat subjective choice which elements are stored in one
+file and which ones are split up. The three elements of a datatype
+definition (field list, profile, datatype) where split up because
+there might be multiple different profiles using the same field list
+and some users of these files might want to replace the default one.

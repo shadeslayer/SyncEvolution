@@ -1,0 +1,138 @@
+    <!-- vCard profile -->
+    <mimeprofile name="vCard" fieldlist="contacts">
+
+      <profile name="VCARD" nummandatory="0"> <!-- we allow records without "N" as Address book can store them -->
+        <property name="VERSION">
+          <value conversion="version"/>
+        </property>
+
+        <property onlyformode="standard" name="PRODID" mandatory="no">
+          <value conversion="prodid"/>
+        </property>
+
+        <property name="REV">
+          <value field="REV"/>
+        </property>
+
+        <property name="N" values="5" mandatory="yes"> <!-- Note: makes N parse and generate even if not in remote's CTCap -->
+          <value index="0" field="N_LAST"/>
+          <value index="1" field="N_FIRST"/>
+          <value index="2" field="N_MIDDLE"/>
+          <value index="3" field="N_PREFIX"/>
+          <value index="4" field="N_SUFFIX"/>
+        </property>
+
+        <property name="FN">
+          <value field="FN"/>
+        </property>
+
+        <property name="NICKNAME" onlyformode="standard">
+          <value field="NICKNAME"/>
+        </property>
+
+        <property name="TITLE">
+          <value field="TITLE"/>
+        </property>
+
+        <property name="CATEGORIES" values="list" valueseparator="," altvalueseparator=";" > <!-- non-standard, but 1:1 as in vCard 3.0 (NOT like in vCalendar 1.0, where separator is ";") -->
+          <value field="CATEGORIES"/>
+          <position field="CATEGORIES" repeat="array" increment="1" minshow="0"/>
+        </property>
+
+        <property name="ORG" values="2">
+          <value index="0" field="ORG_NAME"/>
+          <value index="1" field="ORG_DIVISION"/>
+        </property>
+
+        <property name="TEL">
+          <value field="TEL"/>
+          <position field="TEL" repeat="array" increment="1" minshow="1"/>
+          <parameter name="TYPE" default="yes" positional="no" show="yes">
+            <value field="TEL_FLAGS" conversion="multimix" combine=",">
+              <enum name="HOME"     value="B0"/>
+              <enum name="WORK"     value="B1"/>
+              <enum mode="ignore"   value="B2"/> <!-- OTHER -->
+              <enum name="VOICE"    value="B3"/>
+              <enum name="CELL"     value="B4"/>
+              <enum name="FAX"      value="B5"/>
+              <enum name="PAGER"    value="B6"/>
+              <enum name="PREF"     value="B7"/>
+
+              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
+              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+            </value>
+          </parameter>
+        </property>
+
+        <property name="EMAIL">
+          <value field="EMAIL"/>
+          <position field="EMAIL" repeat="array" increment="1" minshow="1"/>
+          <parameter name="TYPE" default="yes" positional="no" show="yes">
+            <value field="EMAIL_FLAGS" conversion="multimix" combine=",">
+              <enum name="HOME"     value="B0"/>
+              <enum name="WORK"     value="B1"/>
+              <enum mode="ignore"   value="B2"/> <!-- OTHER -->
+              <enum name="INTERNET" value="B3"/>
+
+              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
+              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+            </value>
+          </parameter>
+        </property>
+
+        <property name="URL">
+          <value field="WEB"/>
+          <position field="WEB" repeat="array" increment="1" minshow="1"/>
+          <parameter name="TYPE" default="yes" positional="no" show="yes">
+            <value field="WEB_FLAGS" conversion="multimix" combine=",">
+              <enum name="HOME"     value="B0"/>
+              <enum name="WORK"     value="B1"/>
+              <enum mode="ignore"   value="B2"/> <!-- OTHER -->
+              <enum name="PREF"     value="B3"/>
+
+              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
+              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+            </value>
+          </parameter>
+        </property>
+
+        <property name="ADR" values="7">
+          <value index="0" field="ADR_POBOX"/>
+          <value index="1" field="ADR_ADDTL"/>
+          <value index="2" field="ADR_STREET"/>
+          <value index="3" field="ADR_CITY"/>
+          <value index="4" field="ADR_REG"/>
+          <value index="5" field="ADR_ZIP"/>
+          <value index="6" field="ADR_COUNTRY"/>
+          <position field="ADR_POBOX" repeat="array" increment="1" minshow="1"/>
+          <parameter name="TYPE" default="yes" positional="no" show="yes">
+            <value field="ADR_STREET_FLAGS" conversion="multimix" combine=",">
+              <enum name="HOME"     value="B0"/>
+              <enum name="WORK"     value="B1"/>
+              <enum mode="ignore"   value="B2"/> <!-- OTHER -->
+
+              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
+              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+            </value>
+          </parameter>
+        </property>
+
+        <property name="BDAY">
+          <value field="BDAY"/>
+        </property>
+
+        <property name="NOTE" filter="no">
+          <value field="NOTE"/>
+        </property>
+
+        <property name="PHOTO" filter="no">
+          <value field="PHOTO" conversion="BLOB_B64"/>
+          <parameter name="TYPE" default="no" show="yes">
+            <value field="PHOTO_TYPE">
+              <enum name="JPEG" value="0"/>
+            </value>
+          </parameter>
+        </property>
+
+      </profile>
+    </mimeprofile>

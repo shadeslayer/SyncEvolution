@@ -1,0 +1,8 @@
+    <function><![CDATA[
+      // create a UID
+      string newuid() {
+        return "syuid" + NUMFORMAT(RANDOM(1000000),6,"0") + "." + (string)MILLISECONDS(NOW());
+      }
+    ]]></function>
+
+

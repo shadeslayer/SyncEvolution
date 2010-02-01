@@ -1,0 +1,12 @@
+    <datatype name="note10" basetype="text">
+      <use profile="Note"/>
+      <typestring>text/plain</typestring>
+      <versionstring>1.0</versionstring>
+    </datatype>
+
+    <datatype name="note11" basetype="text">
+      <use profile="Note"/>
+      <typestring>text/plain</typestring>
+      <versionstring>1.1</versionstring>
+    </datatype>
+

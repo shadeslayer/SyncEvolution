@@ -1,0 +1,65 @@
+    <!-- common field list for events and todos (both represented by vCalendar/iCalendar) -->
+    <fieldlist name="calendar">
+      <field name="SYNCLVL" type="integer" compare="never"/>
+      <field name="ISEVENT" type="integer" compare="always"/>
+
+      <field name="DMODIFIED" type="timestamp" compare="never" age="yes"/>
+      <field name="DCREATED" type="timestamp" compare="never"/>
+
+      <field name="DGENERATED" type="timestamp" compare="never"/>
+
+      <field name="UID" type="string" compare="never"/>
+
+      <field name="CATEGORIES" array="yes" type="string" compare="conflict" merge="fillempty"/>
+      <field name="CLASS" type="integer" compare="conflict" merge="fillempty"/>
+      <field name="TRANSP" type="integer" compare="conflict" merge="fillempty"/>
+
+      <field name="SUMMARY" type="multiline" compare="always"/>
+      <field name="DESCRIPTION" type="multiline" compare="slowsync" merge="lines"/>
+      <field name="LOCATION" type="multiline" compare="slowsync" merge="lines"/>
+
+      <!-- recurrence rule block, fields must be in that order, including
+           DTSTART as last field !! -->
+      <field name="RR_FREQ" type="string" compare="conflict"/>
+      <field name="RR_INTERVAL" type="integer" compare="conflict"/>
+      <field name="RR_FMASK" type="integer" compare="conflict"/>
+      <field name="RR_LMASK" type="integer" compare="conflict"/>
+      <field name="RR_END" type="timestamp" compare="conflict"/>
+
+      <!-- Note: DTSTART/DTEND are compared in the <comparescript>,
+                 therefore compare is set no "never" here -->
+      <field name="DTSTART" type="timestamp" compare="never"/>
+      <field name="DTEND" type="timestamp" compare="never"/>
+      <field name="DURATION" type="timestamp" compare="never"/>
+      <field name="COMPLETED" type="timestamp" compare="never"/>
+      <field name="DUE" type="timestamp" compare="never"/>
+
+      <field name="GEO_LAT" type="string" compare="never"/>
+      <field name="GEO_LONG" type="string" compare="never"/>
+
+      <field name="PRIORITY" type="integer" compare="conflict"/>
+      <field name="STATUS" type="integer" compare="conflict" merge="fillempty"/>
+
+      <field name="ALARM_TIME" type="timestamp" compare="conflict"/>
+      <field name="ALARM_SNOOZE" type="string" compare="conflict"/>
+      <field name="ALARM_REPEAT" type="string" compare="conflict"/>
+      <field name="ALARM_MSG" type="string" compare="conflict"/>
+      <field name="ALARM_ACTION" type="string" compare="conflict"/>
+      <field name="ALARM_REL" type="integer" compare="never"/>
+
+      <!-- non-standard -->
+      <field name="PARENT_UID" type="string" compare="never"/>
+
+      <!-- for events -->
+      <field name="EXDATES" array="yes" type="timestamp" compare="never"/>
+
+      <field name="ORIGSTART" array="no" type="timestamp" compare="never"/>
+      <field name="SEQNO" array="no" type="integer" compare="never"/>
+
+      <field name="ATTENDEES" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_CNS" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_PARTSTATS" array="yes" type="integer" compare="never"/>
+      <field name="ORGANIZER" array="no" type="string" compare="never"/>
+      <field name="ORGANIZER_CN" array="no" type="string" compare="never"/>
+
+    </fieldlist>

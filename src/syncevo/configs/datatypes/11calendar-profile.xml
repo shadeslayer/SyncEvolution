@@ -1,0 +1,456 @@
+    <!-- vCalendar with VTODO and VEVENT variants -->
+    <mimeprofile name="vCalendar" fieldlist="calendar">
+
+      <vtimezonegenmode>current</vtimezonegenmode>
+      <tzidgenmode>olson</tzidgenmode>
+
+      <profile name="VCALENDAR" nummandatory="1">
+
+        <property name="VERSION" mandatory="yes">
+          <value conversion="version"/>
+        </property>
+
+        <property onlyformode="standard" name="PRODID" mandatory="no">
+          <value conversion="prodid"/>
+        </property>
+
+        <property onlyformode="old" name="TZ" filter="false" suppressempty="yes">
+          <value field="DTSTART" conversion="tz"/>
+        </property>
+
+        <property onlyformode="old" name="DAYLIGHT" mode="daylight" filter="false" suppressempty="yes">
+          <value field="DTSTART" conversion="daylight"/>
+        </property>
+
+        <property name="GEO" values="2" suppressempty="yes" onlyformode="old" valueseparator=",">
+          <!-- LON,LAT in vCalendar 1.0 -->
+          <value index="0" field="GEO_LAT"/>
+          <value index="1" field="GEO_LONG"/>
+        </property>
+
+        <subprofile onlyformode="standard" name="VTIMEZONE" mode="vtimezones"/>
+
+        <!-- sub-profile for tasks -->
+        <subprofile name="VTODO" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="0">
+
+          <property name="LAST-MODIFIED">
+            <value field="DMODIFIED"/>
+          </property>
+
+          <property name="DTSTAMP" suppressempty="yes" onlyformode="standard">
+            <value field="DGENERATED"/>
+          </property>
+
+          <property name="DCREATED" suppressempty="yes" onlyformode="old">
+            <value field="DCREATED"/>
+          </property>
+          <property name="CREATED" suppressempty="yes" onlyformode="standard">
+            <value field="DCREATED"/>
+          </property>
+
+          <property name="UID" suppressempty="yes">
+            <value field="UID"/>
+          </property>
+
+          <property name="SEQUENCE" suppressempty="yes">
+            <value field="SEQNO"/>
+          </property>
+
+          <property name="GEO" values="2" suppressempty="yes" onlyformode="standard" valueseparator=";">
+            <!-- LAT;LON in iCalendar 2.0 -->
+            <value index="0" field="GEO_LONG"/>
+            <value index="1" field="GEO_LAT"/>
+          </property>
+
+          <property onlyformode="standard" name="CATEGORIES" values="list" valueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property onlyformode="old" name="CATEGORIES" values="list" valueseparator=";" altvalueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property name="CLASS" suppressempty="yes">
+            <value field="CLASS">
+              <enum name="PUBLIC"       value="0"/>
+              <enum name="PRIVATE"      value="1"/>
+              <enum name="CONFIDENTIAL" value="2"/>
+            </value>
+          </property>
+
+          <property name="SUMMARY" mandatory="yes">
+            <value field="SUMMARY"/>
+          </property>
+
+          <property name="DESCRIPTION" mandatory="yes">
+            <value field="DESCRIPTION"/>
+          </property>
+
+          <property name="LOCATION" mandatory="no">
+            <value field="LOCATION"/>
+          </property>
+
+          <property name="DTSTART" suppressempty="yes" delayedparsing="1">
+            <value field="DTSTART" conversion="autodate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="DTSTART" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="DTSTART" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="COMPLETED" suppressempty="yes" delayedparsing="1">
+            <value field="COMPLETED" conversion="autoenddate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="COMPLETED" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="COMPLETED" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="DUE" suppressempty="yes" delayedparsing="1">
+            <value field="DUE" conversion="autodate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="DUE" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="DUE" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="PRIORITY" suppressempty="yes">
+            <value field="PRIORITY"/>
+          </property>
+
+          <property name="STATUS" onlyformode="standard" suppressempty="yes">
+            <value field="STATUS" conversion="emptyonly">
+              <enum name="COMPLETED"      value="0"/>
+              <enum name="NEEDS-ACTION"   value="1"/>
+              <enum name="IN-PROCESS"     value="2"/>
+              <enum name="CANCELLED"      value="3"/>
+              <enum name="ACCEPTED"       value="4"/>
+              <enum name="TENTATIVE"      value="5"/>
+              <enum name="DELEGATED"      value="6"/>
+              <enum name="DECLINED"       value="7"/>
+              <enum name="SENT"           value="8"/>
+              <enum name="CONFIRMED"      value="9"/>
+              <enum name="DRAFT"          value="10"/>
+              <enum name="FINAL"          value="11"/>
+            </value>
+          </property>
+
+          <property name="STATUS" onlyformode="old" suppressempty="yes">
+            <value field="STATUS" conversion="emptyonly">
+              <enum name="COMPLETED"      value="0"/>
+              <enum name="NEEDS ACTION"   value="1"/>
+              <enum mode="defaultvalue"   value="1"/> <!-- catch unknown, but also non-conformant NEEDS_ACTION -->
+              <enum name="IN PROCESS"     value="2"/>
+              <enum name="CANCELLED"      value="3"/>
+              <enum name="ACCEPTED"       value="4"/>
+              <enum name="TENTATIVE"      value="5"/>
+              <enum name="DELEGATED"      value="6"/>
+              <enum name="DECLINED"       value="7"/>
+              <enum name="SENT"           value="8"/>
+              <enum name="CONFIRMED"      value="9"/>
+              <enum name="DRAFT"          value="10"/>
+              <enum name="FINAL"          value="11"/>
+            </value>
+          </property>
+
+
+          <!-- AALARM and DALARM both use the same fields -->
+          <property name="AALARM" onlyformode="old" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+          <property name="DALARM" onlyformode="old" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+
+          <subprofile onlyformode="standard" name="VALARM" nummandatory="1" field="ALARM_TIME">
+            <property name="TRIGGER" suppressempty="no" mandatory="yes">
+              <value field="ALARM_TIME"/>
+              <parameter name="VALUE" default="no" show="yes">
+                <value field="ALARM_TIME" conversion="FULLVALUETYPE"/>
+              </parameter>
+              <parameter name="RELATED" default="no" show="yes">
+                <value field="ALARM_REL">
+                  <enum mode="ignore" value="0"/>
+                  <enum name="START" value="1"/>
+                  <enum name="END"   value="2"/>
+                </value>
+              </parameter>
+            </property>
+            <property name="ACTION" suppressempty="yes" mandatory="yes">
+              <value field="ALARM_ACTION"/>
+            </property>
+            <property name="DESCRIPTION" suppressempty="yes">
+              <value field="ALARM_MSG"/>
+            </property>
+            <property name="REPEAT" suppressempty="yes">
+              <value field="ALARM_REPEAT"/>
+            </property>
+          </subprofile>
+
+          <property onlyformode="old" name="RELATED-TO" suppressempty="yes">
+            <value field="PARENT_UID"/>
+          </property>
+
+          <property onlyformode="standard" name="RELATED-TO" suppressempty="yes">
+            <value field="PARENT_UID"/>
+            <parameter onlyformode="standard" name="RELTYPE" default="no" positional="yes" show="yes">
+              <value>
+                <enum name="PARENT"/>
+                <enum mode="defaultvalue" name="other"/>
+              </value>
+              <position hasnot="other" shows="PARENT" field="PARENT_UID"/>
+            </parameter>
+          </property>
+
+        </subprofile>
+
+        <!-- sub-profile for event -->
+        <subprofile name="VEVENT" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="1">
+
+          <property name="LAST-MODIFIED">
+            <value field="DMODIFIED"/>
+          </property>
+
+          <property name="DTSTAMP" suppressempty="yes" onlyformode="standard">
+            <value field="DGENERATED"/>
+          </property>
+
+          <property name="DCREATED" suppressempty="yes" onlyformode="old">
+            <value field="DCREATED"/>
+          </property>
+          <property name="CREATED" suppressempty="yes" onlyformode="standard">
+            <value field="DCREATED"/>
+          </property>
+
+
+          <property name="UID" suppressempty="yes">
+            <value field="UID"/>
+          </property>
+
+          <property name="SEQUENCE" suppressempty="yes">
+            <value field="SEQNO"/>
+          </property>
+
+          <property name="GEO" values="2" suppressempty="yes" onlyformode="standard" valueseparator=";">
+            <!-- LAT;LON in iCalendar 2.0 -->
+            <value index="0" field="GEO_LONG"/>
+            <value index="1" field="GEO_LAT"/>
+          </property>
+
+          <property onlyformode="standard" name="CATEGORIES" values="list" valueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property onlyformode="old" name="CATEGORIES" values="list" valueseparator=";" altvalueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property name="CLASS" suppressempty="yes">
+            <value field="CLASS">
+              <enum name="PUBLIC"       value="0"/>
+              <enum name="PRIVATE"      value="1"/>
+              <enum name="CONFIDENTIAL" value="2"/>
+            </value>
+          </property>
+
+
+          <property name="TRANSP" suppressempty="yes" onlyformode="standard">
+            <value field="TRANSP">
+              <enum name="OPAQUE"       value="0"/>
+              <enum name="TRANSPARENT"  value="1"/>
+              <enum name="TENTATIVE"     value="2"/> <!-- according to Oracle de facto usage in vCalendar 1.0 -->
+              <enum name="OUT_OF_OFFICE" value="3"/> <!-- according to Oracle de facto usage in vCalendar 1.0 -->
+              <enum mode="defaultvalue" value="0"/>
+            </value>
+          </property>
+          <property name="TRANSP" suppressempty="yes" onlyformode="old">
+            <value field="TRANSP"/> <!-- directly numeric in vCalendar 1.0 -->
+          </property>
+
+
+          <property name="PRIORITY" suppressempty="yes">
+            <value field="PRIORITY"/>
+          </property>
+
+          <property name="SUMMARY" mandatory="yes">
+            <value field="SUMMARY"/>
+          </property>
+
+          <property name="DESCRIPTION" mandatory="yes">
+            <value field="DESCRIPTION"/>
+          </property>
+
+          <property name="LOCATION" mandatory="no">
+            <value field="LOCATION"/>
+          </property>
+
+          <property name="DTSTART" suppressempty="yes" delayedparsing="1">
+            <value field="DTSTART" conversion="autodate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="DTSTART" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="DTSTART" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <!-- recurrence rule (with delayed parsing, as it is dependent on DTSTART) -->
+          <property name="RRULE" suppressempty="yes" delayedparsing="2">
+            <!-- Note: RR_FREQ is the beginning of a block of fields
+                 suitable for the "rrule" conversion mode -->
+            <value field="RR_FREQ" conversion="rrule"/>
+          </property>
+
+          <!-- Symbian uses this, so it might make the client work with symbian-prepared servers better -->
+          <property name="X-RECURRENCE-ID" suppressempty="yes" onlyformode="old">
+            <value field="ORIGSTART" conversion="autodate"/>
+          </property>
+
+          <property name="RECURRENCE-ID" suppressempty="yes" onlyformode="standard" delayedparsing="1">
+            <value field="ORIGSTART" conversion="autodate"/>
+            <parameter name="TZID" default="no" show="yes">
+              <value field="ORIGSTART" conversion="TZID"/>
+            </parameter>
+            <parameter name="VALUE" default="no" show="yes">
+              <value field="ORIGSTART" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="EXDATE" values="list" suppressempty="yes" onlyformode="standard" delayedparsing="1" valueseparator="," altvalueseparator=";">
+            <value field="EXDATES"/>
+            <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
+            <parameter name="TZID" default="no" show="yes">
+              <value field="EXDATES" conversion="TZID"/>
+            </parameter>
+          </property>
+
+          <property name="EXDATE" values="list" suppressempty="yes" onlyformode="old" delayedparsing="1" valueseparator=";" altvalueseparator=",">
+            <value field="EXDATES"/>
+            <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
+          </property>
+
+
+          <property name="DTEND" suppressempty="yes" delayedparsing="1">
+            <value field="DTEND" conversion="autoenddate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="DTEND" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="DTEND" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="DURATION" suppressempty="yes" delayedparsing="1" onlyformode="standard">
+            <value field="DURATION"/>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="no">
+              <value field="DURATION" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="ATTENDEE" suppressempty="yes" onlyformode="old">
+            <value field="ATTENDEES"/>
+            <parameter name="ROLE" default="no" positional="yes" show="yes">
+              <value>
+                <enum name="ORGANIZER"/>
+              </value>
+              <position has="ORGANIZER" field="ORGANIZER" overwriteempty="yes"/>
+              <position hasnot="ORGANIZER" field="ATTENDEES" repeat="array" increment="1" overwriteempty="yes"/>
+            </parameter>
+            <parameter name="STATUS" default="no" show="yes">
+              <value field="ATTENDEE_PARTSTATS">
+                <enum name="NEEDS ACTION"   value="1"/>
+                <enum mode="defaultvalue"   value="1"/> <!-- catch unknown, but also non-conformant NEEDS_ACTION -->
+                <enum name="ACCEPTED"       value="4"/>
+                <enum name="DECLINED"       value="7"/>
+                <enum name="TENTATIVE"      value="5"/>
+                <enum name="DELEGATED"      value="6"/>
+              </value>
+            </parameter>
+          </property>
+
+          <property name="ATTENDEE" suppressempty="yes" onlyformode="standard">
+            <value field="ATTENDEES" conversion="mailto"/>
+            <position field="ATTENDEES" repeat="array" increment="1" minshow="0"/>
+            <parameter name="CN" default="no" show="yes" shownonempty="yes">
+              <value field="ATTENDEE_CNS"/>
+            </parameter>
+            <parameter name="PARTSTAT" default="no" show="yes">
+              <value field="ATTENDEE_PARTSTATS">
+                <enum name="NEEDS-ACTION"   value="1"/>
+                <enum mode="defaultvalue"   value="1"/> <!-- catch unknown, but also non-conformant NEEDS_ACTION -->
+                <enum name="ACCEPTED"       value="4"/>
+                <enum name="DECLINED"       value="7"/>
+                <enum name="TENTATIVE"      value="5"/>
+                <enum name="DELEGATED"      value="6"/>
+              </value>
+            </parameter>
+          </property>
+
+          <property name="ORGANIZER" suppressempty="yes" onlyformode="standard">
+            <value field="ORGANIZER" conversion="mailto"/>
+            <parameter name="CN" default="no" show="yes">
+              <value field="ORGANIZER_CN"/>
+            </parameter>
+          </property>
+
+
+          <!-- AALARM and DALARM both use the same fields -->
+          <property name="AALARM" onlyformode="old" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+          <property name="DALARM" onlyformode="old" values="4" suppressempty="yes">
+            <value index="0" field="ALARM_TIME" conversion="emptyonly"/>
+            <value index="1" field="ALARM_SNOOZE" conversion="emptyonly"/>
+            <value index="2" field="ALARM_REPEAT" conversion="emptyonly"/>
+            <value index="3" field="ALARM_MSG" conversion="emptyonly"/>
+          </property>
+
+          <subprofile onlyformode="standard" name="VALARM" nummandatory="1" field="ALARM_TIME">
+            <property name="TRIGGER" suppressempty="no" mandatory="yes">
+              <value field="ALARM_TIME"/>
+              <parameter name="VALUE" default="no" show="yes">
+                <value field="ALARM_TIME" conversion="FULLVALUETYPE"/>
+              </parameter>
+              <parameter name="RELATED" default="no" show="yes">
+                <value field="ALARM_REL">
+                  <enum mode="ignore" value="0"/>
+                  <enum name="START" value="1"/>
+                  <enum name="END"   value="2"/>
+                </value>
+              </parameter>
+            </property>
+            <property name="ACTION" suppressempty="yes" mandatory="yes">
+              <value field="ALARM_ACTION"/>
+            </property>
+            <property name="DESCRIPTION" suppressempty="yes">
+              <value field="ALARM_MSG"/>
+            </property>
+            <property name="REPEAT" suppressempty="yes">
+              <value field="ALARM_REPEAT"/>
+            </property>
+          </subprofile>
+
+        </subprofile>
+
+      </profile>
+    </mimeprofile>
+

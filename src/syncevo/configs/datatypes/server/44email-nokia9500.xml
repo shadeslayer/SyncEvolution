@@ -1,0 +1,135 @@
+    <datatype name="email_nokia9500" basetype="text">
+      <use profile="rfc2822_email"/>
+      <typestring>message/x-rfc822</typestring> <!-- this is Nokia 9500/9300-like -->
+      <versionstring>1.0</versionstring>
+
+      <initscript><![CDATA[
+        INTEGER ITEMLIMIT;
+        // default limit is limit of session
+        ITEMLIMIT = SIZELIMIT();
+      ]]></initscript>
+
+      <processitemscript><![CDATA[
+        INTEGER n;
+
+        // For Nokia Email, we must derive folder ID from source LocURI
+        // which has form "./somestrangenumber/folder/itemid"
+        // where folder can be "Inbox" or "Outbox"
+        if (FIND(REMOTEID(),"Inbox",0)!=UNASSIGNED) {
+          FOLDER="INBOX";
+        }
+        else if (FIND(REMOTEID(),"Outbox",0)!=UNASSIGNED) {
+          FOLDER="OUTBOX";
+        }
+        // pre-process item
+        if (UPPERCASE(FOLDER)=="INBOX") {
+          // In any case, prevent adding to inbox (delete remote items instead)
+          PREVENTADD();
+          // server always wins for inbox
+          CONFLICTSTRATEGY("server-wins");
+          if (SLOWSYNC()) {
+            // also prevent modifications in server
+            IGNOREUPDATE();
+          }
+          else {
+            // normal sync items going to inbox from client need special treatment
+            if (SYNCOP()=="add" || SYNCOP()=="replace") {
+              // make sure that existing server item will conflict with this item
+              if (LIMIT!=EMPTY && (LIMIT<0 || LIMIT>SIZELIMIT())) {
+                // force conflict only if this is a reload
+                FORCECONFLICT();
+              }
+              // make sure we never overwrite a body in the inbox
+              BODY = UNASSIGNED;
+              // delete always wins over replace in inbox (to avoid adds to inbox)
+              DELETEWINS();
+            }
+          }
+        }
+        else if (UPPERCASE(FOLDER)=="OUTBOX") {
+          // never try to change something in outbox
+          IGNOREUPDATE();
+          if (SYNCOP()!="delete") {
+            // - date of mail is NOW, set it such that a correct date is written to the DB
+            MAILDATE = DBNOW();
+            // MAILDATE = (INTEGER)DBNOW() - TIMEUNITS(120); // %%% backdate it 2 mins to make sure it does not get retransmitted
+            // - echo item as delete (this causes that it is moved to the "sent" folder in the 9500)
+            ECHOITEM("delete");
+          }
+          CONFLICTSTRATEGY("client-wins");
+        }
+        else {
+          // Other folder
+          // - silently discard incoming item for other folder than the above
+          //   except if it is a delete
+          if (SYNCOP()!="delete")
+            REJECTITEM(0);
+        }
+      ]]></processitemscript>
+
+
+      <mergescript><![CDATA[
+        // pre-process item
+        if (UPPERCASE(LOOSING.FOLDER)!="OUTBOX") {
+          // non-outbox (especially inbox) needs special merge to accomplish reload feature
+          // - loosing item is client's, winning is server's
+          if (LOOSING.LIMIT!=EMPTY) {
+            // loosing (remote) item specifies a new limit, override winning's default
+            WINNING.LIMIT=LOOSING.LIMIT;
+            SETWINNINGCHANGED(TRUE);
+          }
+          // make sure winning has right folder
+          WINNING.FOLDER=LOOSING.FOLDER;
+          // make sure a set read-flag gets propagated to server
+          if (LOOSING.ISREAD=="true") WINNING.ISREAD="true";
+          // merge other fields normally
+          MERGEFIELDS();
+          // make sure body does not get re-written to local DB even if merge would cause local update
+          LOOSING.BODY=UNASSIGNED;
+        }
+        else {
+          // normal merging in other folders
+          MERGEFIELDS();
+        }
+      ]]></mergescript>
+
+
+      <outgoingscript><![CDATA[
+        // we can only send to inbox or outbox
+        // - If we have no remote ID (=add command) prepare special Target item ID
+        //   containing target folder.
+        if (REMOTEID()==EMPTY) {
+        if (UPPERCASE(FOLDER)=="INBOX") {
+            SETREMOTEID(REMOTEDBNAME()+"/Inbox/");
+        }
+        else if (UPPERCASE(FOLDER)=="OUTBOX") {
+            SETREMOTEID(REMOTEDBNAME()+"/Outbox/");
+          }
+        }
+      ]]></outgoingscript>
+
+      <filterinitscript><![CDATA[
+        // check if we need to filter
+        INTEGER NEEDFILTER;
+
+        NEEDFILTER =
+          !DBHANDLESOPTS() && // only if DB cannot handle it
+          (STARTDATE()!=EMPTY); // and only if a start date is set (end date not needed as there are never future emails today)
+        SETFILTERALL(NEEDFILTER);
+        RETURN NEEDFILTER;
+      ]]></filterinitscript>
+
+
+      <filterscript><![CDATA[
+        INTEGER PASSES;
+
+        // check if item passes filter
+        PASSES=FALSE;
+        // Filter out anything not for Inbox or Outbox
+        if (UPPERCASE(FOLDER)!="INBOX" && UPPERCASE(FOLDER)!="OUTBOX") RETURN FALSE;
+        // Emails pass if they have a MAILDATE on or later than start date
+        PASSES = MAILDATE>=STARTDATE();
+        RETURN PASSES;
+      ]]></filterscript>
+
+    </datatype>

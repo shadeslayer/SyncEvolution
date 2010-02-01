@@ -1,0 +1,11 @@
+    <remoterule name="t68i">
+      <!-- Rule for SonyEricsson T68i client -->
+      <manufacturer>SonyEricsson</manufacturer>
+      <software>R2A</software>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <inputcharset>ANSI</inputcharset>
+      <descriptivename>SonyEricsson T68i</descriptivename>
+    </remoterule>
+
+

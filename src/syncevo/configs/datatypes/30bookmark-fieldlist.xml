@@ -1,0 +1,20 @@
+    <!-- list of internal fields representing vBookmark data -->
+    <fieldlist name="bookmarks">
+      <field name="REV" type="timestamp" compare="never" age="yes"/>
+      <field name="SYNCLVL" type="integer" compare="never"/>
+
+      <!-- Name -->
+      <field name="TITLE" type="string" compare="always"/>
+
+      <!-- categories and classification -->
+      <field name="CATEGORIES" type="string" compare="conflict" merge="fillempty"/>
+      <field name="CLASS" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- web addresses -->
+      <field name="URL" type="url" compare="slowsync" merge="fillempty"/>
+
+      <!-- Note -->
+      <field name="NOTE" type="multiline" compare="conflict" merge="lines"/>
+
+    </fieldlist>
+

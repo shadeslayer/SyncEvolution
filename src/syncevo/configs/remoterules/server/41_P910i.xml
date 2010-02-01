@@ -1,0 +1,32 @@
+    <remoterule name="P910i">
+      <manufacturer>Sony Ericsson</manufacturer>
+      <model>P910i</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980
+        mindate=(TIMESTAMP)"19800101T000000Z";
+        // retransfer body when items are moved to sent box
+        retransfer_body=TRUE;
+      ]]></rulescript>
+
+      <treataslocaltime>no</treataslocaltime> <!-- can be set to yes to have /o(Z) mode (see comment above) as default, otherwise /o(z) is default -->
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>SonyEricsson P910i</descriptivename>
+    </remoterule>
+
+
+    <!-- Due to a problem in P990i vCalendar implementation,
+         the device does not calculate time zones correctly
+         in all cases.
+         If your P990i is brand new, you need to specify
+         "calendar?/o(Z)" as database path instead of just
+         "calendar". If your P990i has already been synced
+         at least once via the cradle and the software
+         delivered with the device, you must omit the
+         "?/o(Z)" appendix and specify just "calendar" instead.
+         Please also note that the o(Z) option for never-synced
+         P990i devices only works if your server's config is
+         derived from a recent version of our sample config.
+         Otherwise, just make sure the P990i is synced once
+         in the cradle before using SyncML.
+    -->

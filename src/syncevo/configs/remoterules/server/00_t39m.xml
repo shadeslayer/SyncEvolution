@@ -1,0 +1,11 @@
+    <remoterule name="t39m">
+      <!-- Rule for Ericsson T39m client -->
+      <manufacturer>Ericsson</manufacturer>
+      <software>R1A</software>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <inputcharset>ANSI</inputcharset>
+      <descriptivename>Ericsson T39m</descriptivename>
+    </remoterule>
+
+

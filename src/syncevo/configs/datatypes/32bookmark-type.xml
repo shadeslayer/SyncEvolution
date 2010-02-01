@@ -1,0 +1,7 @@
+    <!-- vBookmark datatype, using vBookmark profile defined above -->
+    <datatype name="vBookmark10" basetype="mimedir">
+      <typestring>text/x-vbookmark</typestring>
+      <versionstring>1.0</versionstring>
+      <use profile="vBookmark"/>
+    </datatype>
+

@@ -1,0 +1,15 @@
+    <remoterule name="N-Gage QD">
+      <manufacturer>NOKIA</manufacturer>
+      <model>N-Gage QD</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia N-Gage QD</descriptivename>
+    </remoterule>
+
+

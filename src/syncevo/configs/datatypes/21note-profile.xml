@@ -1,0 +1,14 @@
+    <textprofile name="Note" fieldlist="Note">
+      <linemap field="SUBJECT">
+        <numlines>1</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+        <filterkeyword>SUBJECT</filterkeyword>
+      </linemap>
+      <linemap field="TEXT">
+        <numlines>0</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+      </linemap>
+    </textprofile>
+

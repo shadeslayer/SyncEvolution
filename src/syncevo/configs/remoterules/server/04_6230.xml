@@ -1,0 +1,10 @@
+    <remoterule name="6230">
+      <manufacturer>NOKIA</manufacturer>
+      <model>6230</model>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 6230</descriptivename>
+    </remoterule>
+
+

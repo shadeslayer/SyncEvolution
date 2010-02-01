@@ -1,0 +1,34 @@
+    <datatype name="email_sonyericsson" basetype="text">
+      <use profile="rfc2822_email"/>
+      <typestring>message/rfc822</typestring> <!-- this is M600i/P990-like -->
+      <versionstring>1.0</versionstring>
+
+      <initscript><![CDATA[
+        $EMAIL_INIT_SCRIPT
+      ]]></initscript>
+
+      <processitemscript><![CDATA[
+        $EMAIL_PROCESSITEM_SCRIPT
+      ]]></processitemscript>
+
+
+      <mergescript><![CDATA[
+        $EMAIL_MERGE_SCRIPT
+      ]]></mergescript>
+
+
+      <outgoingscript><![CDATA[
+        $EMAIL_OUTGOING_SCRIPT
+      ]]></outgoingscript>
+
+      <filterinitscript><![CDATA[
+        $EMAIL_FILTERINIT_SCRIPT
+      ]]></filterinitscript>
+
+
+      <filterscript><![CDATA[
+        $EMAIL_FILTER_SCRIPT
+      ]]></filterscript>
+
+    </datatype>
+

@@ -1,0 +1,7 @@
+    <!-- list of internal fields representing plain text note data -->
+    <fieldlist name="Note">
+      <field name="SYNCLVL" type="integer" compare="never"/>
+      <field name="SUBJECT" type="multiline" compare="always"/>
+      <field name="TEXT" type="multiline" compare="conflict" merge="lines"/>
+    </fieldlist>
+

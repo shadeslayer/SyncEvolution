@@ -1,0 +1,162 @@
+    <!-- The following email handling scripts are defined as script MACROS because they
+         are used in multiple <datatype> definitions below. This avoids duplicating these
+         script's source code in the config file -->
+
+    <macro name="EMAIL_INIT_SCRIPT"><![CDATA[
+      INTEGER ITEMLIMIT;
+      // default limit is limit of session
+      ITEMLIMIT = SIZELIMIT();
+    ]]></macro>
+
+
+    <macro name="EMAIL_PROCESSITEM_SCRIPT"><![CDATA[
+      // pre-process item
+      if (UPPERCASE(FOLDER)=="INBOX") {
+        // In any case, prevent adding to inbox (delete remote items instead)
+        PREVENTADD();
+        // server always wins for inbox
+        CONFLICTSTRATEGY("server-wins");
+        if (SLOWSYNC()) {
+          // also prevent modifications in server
+          IGNOREUPDATE();
+        }
+        else {
+          // normal sync items going to inbox from client need special treatment
+          if (SYNCOP()=="add" || SYNCOP()=="replace") {
+            // make sure that existing server item will conflict with this item
+            if (LIMIT!=EMPTY && (LIMIT<0 || LIMIT>SIZELIMIT())) {
+              // force conflict only if this is a reload
+              FORCECONFLICT();
+            }
+            // make sure we never overwrite a body in the inbox
+            BODY = UNASSIGNED;
+            // delete always wins over replace in inbox (to avoid adds to inbox)
+            DELETEWINS();
+          }
+        }
+      }
+      else if (UPPERCASE(FOLDER)=="OUTBOX") {
+        // never try to change something in outbox
+        IGNOREUPDATE();
+        if (SYNCOP()!="delete") {
+          // - date of mail is NOW, set it such that a correct date is written to the DB
+          MAILDATE = DBNOW();
+          // MAILDATE = (INTEGER)DBNOW() - TIMEUNITS(120); // %%% backdate it 2 mins to make sure it does not get retransmitted
+          // - echo item as replace (to force-move it to the sent folder)
+          ECHOITEM("replace");
+        }
+        CONFLICTSTRATEGY("client-wins");
+      }
+      else if (UPPERCASE(FOLDER)=="SENT") {
+        // never try to change something in sent folder
+        IGNOREUPDATE();
+        // Server has precedence in case of conflicts
+        CONFLICTSTRATEGY("server-wins");
+        // Implement reload capability for sent items as well
+        if (SLOWSYNC()) {
+          // do not add new sent items to the server in slowsync
+          PREVENTADD(); // causes extra sent items on the client to be deleted
+        }
+        else {
+          // make sure that existing server item will conflict with this item
+          if (SYNCOP()=="replace") {
+            if (LIMIT!=EMPTY && (LIMIT<0 || LIMIT>SIZELIMIT())) {
+              // force conflict only if this is a reload
+              FORCECONFLICT();
+              REJECTITEM(200); // but do not process the item further
+            }
+            else {
+              // silently ignore other types of changes
+              REJECTITEM(200);
+            }
+            // make sure we never overwrite a body in the sent folder
+            BODY = UNASSIGNED;
+          }
+        }
+      }
+      else {
+        // Other folder
+        // - silently discard incoming item for other folder than the above
+        //   except if it is a delete
+        if (SYNCOP()!="delete")
+          REJECTITEM(0);
+      }
+    ]]></macro>
+
+
+    <macro name="EMAIL_MERGE_SCRIPT"><![CDATA[
+      // pre-process item
+      if (UPPERCASE(LOOSING.FOLDER)!="OUTBOX") {
+        // non-outbox (especially inbox) needs special merge to accomplish reload feature
+        // - loosing item is client's, winning is server's
+        if (LOOSING.LIMIT!=EMPTY) {
+          // loosing (remote) item specifies a new limit, override winning's default
+          WINNING.LIMIT=LOOSING.LIMIT;
+          SETWINNINGCHANGED(TRUE);
+        }
+        // make sure winning has right folder
+        WINNING.FOLDER=LOOSING.FOLDER;
+        // make sure a set read-flag gets propagated to server
+        if (LOOSING.ISREAD=="true") WINNING.ISREAD="true";
+        // merge other fields normally
+        MERGEFIELDS();
+        // make sure body does not get re-written to local DB even if merge would cause local update
+        LOOSING.BODY=UNASSIGNED;
+      }
+      else {
+        // normal merging in other folders
+        MERGEFIELDS();
+      }
+    ]]></macro>
+
+    <macro name="EMAIL_OUTGOING_SCRIPT"><![CDATA[
+      // pre-process item
+      if (UPPERCASE(FOLDER)=="OUTBOX") {
+        // writing to outbox is always the ECHOITEM
+        // - cause item to move into "sent" folder
+        FOLDER = "sent";
+        if (!SESSIONVAR("retransfer_body")) {
+          // - prevent body retransfer, but not for dumb P800/P900/M600/P990 clients
+          BODY = UNASSIGNED; // prevent body transfer
+          ATT_COUNT = 0; // prevent attachment transfer
+          ATT_CONTENTS = UNASSIGNED;
+          // basically, this item is not limited (already complete on the client)
+          // even if contents are not sent
+          LIMIT = -1;
+          SETSIZELIMIT(-1);
+        }
+      }
+      else {
+        // outgoing item to any folder of of remote (inbox, sent...)
+        // - limit body to what is set in the LIMIT field
+        // %%% probably obsolete, as textitem will handle limit field automatically for >=V1.0.8.21
+        IF (LIMIT==EMPTY)
+          LIMIT = SIZELIMIT(); // if none set already, use default for this item (=default of datastore, if not SETSIZELIMIT() called before for this item generation)
+      }
+      // set limit for item generator
+      if (LIMIT!=EMPTY)
+        SETSIZELIMIT(LIMIT);
+    ]]></macro>
+
+
+    <macro name="EMAIL_FILTERINIT_SCRIPT"><![CDATA[
+      // check if we need to filter
+      INTEGER NEEDFILTER;
+
+      NEEDFILTER =
+        !DBHANDLESOPTS() && // only if DB cannot handle it
+        (STARTDATE()!=EMPTY); // and only if a start date is set (end date not needed as there are never future emails today)
+      SETFILTERALL(NEEDFILTER);
+      RETURN NEEDFILTER;
+    ]]></macro>
+
+
+    <macro name="EMAIL_FILTER_SCRIPT"><![CDATA[
+      INTEGER PASSES;
+
+      // check if item passes filter
+      PASSES=FALSE;
+      // Emails pass if they have a MAILDATE on or later than start date
+      PASSES = MAILDATE>=STARTDATE();
+      RETURN PASSES;
+    ]]></macro>

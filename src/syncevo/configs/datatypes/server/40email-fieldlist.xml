@@ -1,0 +1,24 @@
+    <!-- list of internal fields representing email data -->
+    <fieldlist name="email">
+      <field name="SYNCLVL" type="integer" compare="never"/>
+      <field name="MODIFIED" type="timestamp" compare="never" age="yes"/>
+      <field name="SENDER" type="multiline" compare="always"/>
+      <field name="RECEIVER" type="multiline" compare="always"/>
+      <field name="CARBONCOPY" type="multiline" compare="always"/>
+      <field name="BLINDCARBONCOPY" type="multiline" compare="always"/>
+      <field name="REPLY_TO" type="multiline" compare="never"/>
+      <field name="SUBJECT" type="multiline" compare="always"/>
+      <field name="PRIORITY" type="integer" compare="never"/>
+      <field name="MAILDATE" type="timestamp" compare="never"/>
+      <field name="STATUS" type="string" compare="never"/>
+      <field name="FOLDER" type="string" compare="conflict"/>
+      <field name="ISREAD" type="string" compare="never"/>
+      <field name="LIMIT" type="integer" compare="never"/>
+      <field name="BODY" type="multiline" compare="never"/>
+      <field name="ATT_COUNT" type="integer" compare="never"/>
+      <field name="ATT_NAMES" array="yes" type="string" compare="never"/>
+      <field name="ATT_MIMETYPES" array="yes" type="string" compare="never"/>
+      <field name="ATT_SIZES" array="yes" type="integer" compare="never"/>
+      <field name="ATT_CONTENTS" array="yes" type="blob" compare="never"/>
+    </fieldlist>
+

@@ -1,0 +1,17 @@
+    <remoterule name="P990i">
+      <manufacturer>Sony Ericsson</manufacturer>
+      <model>P990i</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980
+        mindate=(TIMESTAMP)"19800101T000000Z";
+        // retransfer body when items are moved to sent box
+        retransfer_body=TRUE;
+      ]]></rulescript>
+
+      <treataslocaltime>no</treataslocaltime> <!-- can be set to yes to have /o(Z) mode (see comment above) as default, otherwise /o(z) is default -->
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>SonyEricsson P990i</descriptivename>
+    </remoterule>
+
+

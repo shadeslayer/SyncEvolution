@@ -1,0 +1,64 @@
+    <!-- list of internal fields representing vCard data -->
+    <fieldlist name="contacts">
+      <field name="SYNCLVL" type="integer" compare="never"/>
+      <field name="REV" type="timestamp" compare="never" age="yes"/>
+
+      <!-- Name elements -->
+      <field name="N_LAST" type="string" compare="always"/>
+      <field name="N_FIRST" type="string" compare="always"/>
+      <field name="N_MIDDLE" type="string" compare="always"/>
+      <field name="N_PREFIX" type="string" compare="conflict"/>
+      <field name="N_SUFFIX" type="string" compare="conflict"/>
+      <field name="NICKNAME" type="string" compare="conflict"/>
+      <field name="TITLE" type="string" compare="conflict" merge="fillempty"/>
+
+      <field name="FN" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- categories and classification -->
+      <field name="CATEGORIES" array="yes" type="string" compare="conflict"/>
+
+      <!-- organisation -->
+      <field name="ORG_NAME" type="string" compare="slowsync" merge="fillempty"/>
+      <field name="ORG_DIVISION" type="string" compare="conflict" merge="fillempty"/>
+
+      <!-- birthday -->
+      <field name="BDAY" type="date" compare="conflict" merge="fillempty"/>
+
+      <!-- telephone numbers -->
+      <field name="TEL"         array="yes" type="telephone" compare="conflict"/>
+      <field name="TEL_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
+      <field name="TEL_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
+      <field name="TEL_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+
+      <!-- emails -->
+      <field name="EMAIL"       array="yes" type="multiline" compare="conflict"/>
+      <field name="EMAIL_FLAGS" array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
+      <field name="EMAIL_LABEL" array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
+      <field name="EMAIL_ID"    array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+
+      <!-- web addresses -->
+      <field name="WEB"         array="yes" type="url" compare="conflict"/>
+      <field name="WEB_FLAGS"   array="yes" type="integer"   compare="conflict"/> <!-- offset 0 -->
+      <field name="WEB_LABEL"   array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
+      <field name="WEB_ID"      array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+
+      <!-- home address -->
+      <field name="ADR_STREET"        array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_ADDTL"         array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_STREET_FLAGS"  array="yes" type="integer"   compare="conflict"/> <!-- offset 0 (from ADR_STREET_FLAGS) -->
+      <field name="ADR_STREET_LABEL"  array="yes" type="string"    compare="conflict"/> <!-- offset 1 -->
+      <field name="ADR_STREET_ID"     array="yes" type="integer"   compare="conflict"/> <!-- offset 2 -->
+      <field name="ADR_POBOX"         array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_CITY"          array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_REG"           array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_ZIP"           array="yes" type="multiline" compare="conflict"/>
+      <field name="ADR_COUNTRY"       array="yes" type="multiline" compare="conflict"/>
+
+      <!-- Note -->
+      <field name="NOTE" type="multiline" compare="conflict" merge="lines"/>
+
+      <!-- Photo -->
+      <field name="PHOTO" type="blob" compare="never" merge="fillempty"/>
+      <field name="PHOTO_TYPE" type="integer" compare="never" merge="fillempty"/>
+
+    </fieldlist>

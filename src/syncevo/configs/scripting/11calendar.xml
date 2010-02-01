@@ -1,0 +1,127 @@
+    <!-- define script macros for scripts that are used by both vCalendar 1.0 and iCalendar 2.0 -->
+
+    <macro name="VCALENDAR_INCOMING_SCRIPT"><![CDATA[
+      STRING MATCHES[];
+      STRING CAT,CN,EM;
+      INTEGER i;
+      TIMESTAMP ts;
+      // make sure we have all trailing and leading spaces eliminated
+      DESCRIPTION=NORMALIZED(DESCRIPTION);
+      SUMMARY=NORMALIZED(SUMMARY);
+      // eliminate description that is the same as summary
+      if (DESCRIPTION==SUMMARY) DESCRIPTION=EMPTY;
+      // calendar or todo
+      if (ISEVENT) {
+        // VEVENT
+        // - handle duration cases
+        if (ISDURATION(DURATION)) {
+          if (DTEND==EMPTY) DTEND = DTSTART + DURATION;
+          if (DTSTART==EMPTY) DTSTART = DTEND - DURATION;
+        }
+        // - detect alldays in vCalendar 1.0 (0:00-0:00 or 23:59 localtime)
+        i = ALLDAYCOUNT(DTSTART,DTEND,TRUE);
+        if (ITEMDATATYPE()=="vCalendar10" && i>0) {
+          // DTSTART and DTEND represent allday event, make them date-only values
+          // - convert start to user zone (or floating) so it represents midnight
+          DTSTART = CONVERTTOUSERZONE(DTSTART);
+          MAKEALLDAY(DTSTART,DTEND,i);
+        }
+        else {
+          // iCalendar 2.0 - only if DTSTART is a date-only value this really is an allday
+          if (ISDATEONLY(DTSTART)) {
+            // reshape to make sure we don't have invalid zero-duration alldays (old OCS 9 servers)
+            MAKEALLDAY(DTSTART,DTEND,i);
+          }
+        }
+        // - shape attendees (and make sure ATTENDEES[] is assigned even for empty email addresses)
+        i=0;
+        while(i<SIZE(ATTENDEES) || i<SIZE(ATTENDEE_CNS)) {
+          PARSEEMAILSPEC(ATTENDEES[i], CN, EM);
+          ATTENDEES[i] = EM; // pure email address
+          // in case we have no specific common name, use the one extracted from the email
+          // This catches the vCalendar 1.0 case and eventually ill-formed iCalendar 2.0 as well
+          if (ATTENDEE_CNS[i]==EMPTY)
+            ATTENDEE_CNS[i]=CN;
+          // default participation status to needs-action
+          if (ATTENDEE_PARTSTATS[i]==EMPTY)
+            ATTENDEE_PARTSTATS[i]=1; // 1=needs action
+          i=i+1;
+        }
+        // - shape organizer
+        PARSEEMAILSPEC(ORGANIZER, CN, EM);
+        ORGANIZER = EM; // pure email address
+        if (ORGANIZER_CN==EMPTY)
+          ORGANIZER_CN=CN;
+      }
+      else {
+        // VTODO
+        // - make sure we have at least a summary
+        if (SUMMARY==EMPTY) SUMMARY=DESCRIPTION; // use description if we don't have a summary
+        if (SUMMARY==EMPTY) SUMMARY="unnamed"; // set dummy summary if we still don't have one
+        // due shaping for non-iCalendar 2.0
+        if (ITEMDATATYPE()=="vCalendar10" && ALLDAYCOUNT(DUE,DUE,TRUE,TRUE)>0) {
+          DUE = DATEONLY(DUE);
+        }
+      }
+      // Common alarm handling
+      // - handle relative alarm time (as possible with VALARM TRIGGER)
+      if (ISDURATION(ALARM_TIME)) {
+        if (ALARM_REL==2)
+          ts = DTEND; // relative to end
+        else {
+          if (ISEVENT)
+            ts = DTSTART; // relative to start for events
+          else
+            ts = DUE; // relative to due for todos
+        }
+        // for now, make ALARM user(=system) zone in all cases
+        ALARM_TIME = CONVERTTOUSERZONE(POINTINTIME(ts),TRUE) + ALARM_TIME;
+      }
+    ]]></macro>
+
+
+    <macro name="VCALENDAR_OUTGOING_SCRIPT"><![CDATA[
+      // set UTC time of generation for iCalendar 2.0 DTSTAMP
+      DGENERATED = NOW();
+      // make sure we have all trailing and leading spaces eliminated
+      DESCRIPTION=NORMALIZED(DESCRIPTION);
+      SUMMARY=NORMALIZED(SUMMARY);
+      if (ISEVENT) {
+        // VEVENT
+        // - combine attendee email address and common name into single string for vCalendar 1.0
+        if (ITEMDATATYPE()=="vCalendar10") {
+          i=0;
+          while(i<SIZE(ATTENDEES)) {
+            ATTENDEES[i] = MAKEEMAILSPEC(ATTENDEE_CNS[i], ATTENDEES[i]);
+            i=i+1;
+          }
+          ORGANIZER = MAKEEMAILSPEC(ORGANIZER_CN, ORGANIZER);
+        }
+      }
+      else {
+        // VTODO
+        // - Nothing special so far
+      }
+      // make sure we have at least a summary
+      if (SUMMARY==EMPTY) SUMMARY=SUBSTR(DESCRIPTION,0,32); // derive from description
+      if (SUMMARY==EMPTY) SUMMARY="unnamed"; // in case description is empty as well
+      // do NOT send duration (some servers crash when doing so)
+      DURATION = UNASSIGNED;
+      // shape alarm
+      if (ALARM_TIME!=EMPTY) {
+        if (ITEMDATATYPE()=="iCalendar20") {
+          if (ALARM_ACTION==EMPTY) ALARM_ACTION = "AUDIO";
+          ALARM_TIME = CONVERTTOUSERZONE(ALARM_TIME,TRUE); // unfloat into user (system) zone, in case it is floating
+          ALARM_TIME = CONVERTTOZONE(ALARM_TIME,"UTC"); // must always be UTC by iCalendar 2.0 specs
+          // send as duration if we have non-empty non-date DTSTART
+          if (DTSTART!=EMPTY && !ISDATEONLY(DTSTART)) {
+            // make a duration (unfloat DTSTART into system zone in case it is floating first!)
+            ALARM_TIME = ALARM_TIME-CONVERTTOZONE(CONVERTTOUSERZONE(DTSTART,TRUE),"UTC");
+            ALARM_REL = 1; // relative to start
+          }
+        }
+        else {
+          if (ALARM_MSG==EMPTY) ALARM_MSG="alarm";
+        }
+      }
+    ]]></macro>

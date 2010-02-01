@@ -1,0 +1,17 @@
+    <remoterule name="SX1">
+      <manufacturer>SIEMENS</manufacturer>
+      <model>SX1</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <!-- Note: SX1 crashes on contacts with empty properties -->
+      <noemptyproperties>yes</noemptyproperties>
+      <descriptivename>Siemens SX1</descriptivename>
+    </remoterule>
+
+

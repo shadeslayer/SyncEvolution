@@ -1,0 +1,13 @@
+
+
+    <!-- vCard 2.1 datatype, using vCard profile defined above -->
+    <datatype name="vCard21" basetype="vcard">
+      <version>2.1</version>
+      <use mimeprofile="vCard"/>
+    </datatype>
+
+    <!-- vCard 3.0 datatype, using vCard profile defined above -->
+    <datatype name="vCard30" basetype="vcard">
+      <version>3.0</version>
+      <use mimeprofile="vCard"/>
+    </datatype>

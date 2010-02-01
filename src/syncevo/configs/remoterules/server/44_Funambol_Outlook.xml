@@ -1,0 +1,9 @@
+    <remoterule name="Funambol_Outlook">
+      <!-- Rule for Funambol Outlook Sync Client -->
+      <model>Funambol Outlook Sync Client</model>
+
+      <lenientmode>yes</lenientmode> <!-- some status messages are missing at end of session -->
+      <descriptivename>Funambol Outlook Sync Client</descriptivename>
+    </remoterule>
+
+

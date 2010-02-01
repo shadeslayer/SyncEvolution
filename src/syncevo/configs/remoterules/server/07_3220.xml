@@ -1,0 +1,15 @@
+    <remoterule name="3220">
+      <manufacturer>NOKIA</manufacturer>
+      <model>3220</model>
+
+      <rulescript><![CDATA[
+        // no dates before 1980
+        mindate=(TIMESTAMP)"19800101T000000Z";
+      ]]></rulescript>
+
+      <limitedfieldlengths>yes</limitedfieldlengths>
+      <forcelocaltime>yes</forcelocaltime>
+      <descriptivename>Nokia 3220</descriptivename>
+    </remoterule>
+
+
