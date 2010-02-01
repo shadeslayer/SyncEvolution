@@ -80,6 +80,7 @@ class Session;
 class Connection;
 class Client;
 class DBusTransportAgent;
+class DBusUserInterface;
 
 class DBusSyncException : public DBusCXXException, public Exception
 {
@@ -221,7 +222,7 @@ private:
     virtual bool setFilters(SyncConfig &config) { return false; }
 
     /** utility method which constructs a SyncConfig which references a local configuration (never a template) */
-    boost::shared_ptr<SyncConfig> getLocalConfig(const std::string &configName);
+    boost::shared_ptr<DBusUserInterface> getLocalConfig(const std::string &configName);
 };
 
 /**
@@ -718,10 +719,34 @@ template<> struct dbus_traits<SourceProgress> :
 {};
 
 /**
+ * This class is mainly to implement two virtual functions 'askPassword'
+ * and 'savePassword' of ConfigUserInterface. The main functionality is
+ * to only get and save passwords in the gnome keyring.
+ */
+class DBusUserInterface : public SyncContext
+{
+public:
+    DBusUserInterface(const std::string &config);
+
+    /*
+     * Ask password from gnome keyring, if not found, empty string
+     * is returned
+     */
+    string askPassword(const string &passwordName, 
+                       const string &descr, 
+                       const ConfigPasswordKey &key);
+
+    //save password to gnome keyring, if not successful, false is returned.
+    bool savePassword(const string &passwordName, 
+                      const string &password, 
+                      const ConfigPasswordKey &key);
+};
+
+/**
  * A running sync engine which keeps answering on D-Bus whenever
  * possible and updates the Session while the sync runs.
  */
-class DBusSync : public SyncContext
+class DBusSync : public DBusUserInterface 
 {
     Session &m_session;
 
@@ -752,15 +777,12 @@ protected:
     virtual int sleep(int intervals);
 
     /**
-     * Implement askPassword and savePassword to retrieve
-     * or save password in DBusSync. 
+     * Implement askPassword to retrieve password in gnome-keyring.
+     * If not found, then ask it from dbus clients. 
      */
     string askPassword(const string &passwordName, 
                        const string &descr, 
                        const ConfigPasswordKey &key);
-    bool savePassword(const string &passwordName, 
-                      const string &password, 
-                      const ConfigPasswordKey &key);
 };
 
 /**
@@ -1511,13 +1533,13 @@ void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &con
     }
 }
 
-boost::shared_ptr<SyncConfig> ReadOperations::getLocalConfig(const string &configName)
+boost::shared_ptr<DBusUserInterface> ReadOperations::getLocalConfig(const string &configName)
 {
     string peer, context;
     SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configName),
                                   peer, context);
 
-    boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(configName));
+    boost::shared_ptr<DBusUserInterface> syncConfig(new DBusUserInterface(configName));
 
     /** if config was not set temporarily */
     if (!setFilters(*syncConfig)) {
@@ -1535,33 +1557,52 @@ void ReadOperations::getConfig(bool getTemplate,
                                Config_t &config)
 {
     map<string, string> localConfigs;
-    boost::shared_ptr<SyncConfig> syncConfig;
+    boost::shared_ptr<SyncConfig> dbusConfig;
+    boost::shared_ptr<DBusUserInterface> dbusUI;
+    SyncConfig *syncConfig;
     /** get server template */
     if(getTemplate) {
         string peer, context;
         SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_configName),
                                       peer, context);
 
-        syncConfig = SyncConfig::createPeerTemplate(peer);
-        if(!syncConfig.get()) {
+        dbusConfig = SyncConfig::createPeerTemplate(peer);
+        if(!dbusConfig.get()) {
             SE_THROW_EXCEPTION(NoSuchConfig, "No template '" + m_configName + "' found");
         }
 
         // use the shared properties from the right context as filter
         // so that the returned template preserves existing properties
-        boost::shared_ptr<SyncConfig> shared = getLocalConfig(string("@") + context);
+        boost::shared_ptr<DBusUserInterface> shared = getLocalConfig(string("@") + context);
 
         ConfigProps props;
         shared->getProperties()->readProperties(props);
-        syncConfig->setConfigFilter(true, "", props);
+        dbusConfig->setConfigFilter(true, "", props);
         BOOST_FOREACH(std::string source, shared->getSyncSources()) {
             SyncSourceNodes nodes = shared->getSyncSourceNodes(source, "");
             props.clear();
             nodes.getProperties()->readProperties(props);
-            syncConfig->setConfigFilter(false, source, props);
+            dbusConfig->setConfigFilter(false, source, props);
         }
+        syncConfig = dbusConfig.get();
     } else {
-        syncConfig = getLocalConfig(m_configName);
+        dbusUI = getLocalConfig(m_configName);
+        //try to check password and read password from gnome keyring if possible
+        ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
+        BOOST_FOREACH(const ConfigProperty *prop, registry) {
+            prop->checkPassword(*dbusUI, m_configName, *dbusUI->getProperties());
+        }
+        list<string> configuredSources = dbusUI->getSyncSources();
+        BOOST_FOREACH(const string &sourceName, configuredSources) {
+            ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
+            SyncSourceNodes sourceNodes = dbusUI->getSyncSourceNodes(sourceName);
+
+            BOOST_FOREACH(const ConfigProperty *prop, registry) {
+                prop->checkPassword(*dbusUI, m_configName, *dbusUI->getProperties(),
+                        sourceName, sourceNodes.getProperties());
+            }
+        }
+        syncConfig = dbusUI.get();
     }
 
     /** get sync properties and their values */
@@ -1693,11 +1734,96 @@ void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &d
     SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' has no '" + sourceName + "' source");
 }
 
+/***************** DBusUserInterface implementation   **********************/
+DBusUserInterface::DBusUserInterface(const std::string &config):
+    SyncContext(config, true)
+{
+}
+
+inline const char *passwdStr(const std::string &str)
+{
+    return str.empty() ? NULL : str.c_str();
+}
+
+string DBusUserInterface::askPassword(const string &passwordName, 
+                                      const string &descr, 
+                                      const ConfigPasswordKey &key) 
+{
+    string password;
+#ifdef USE_GNOME_KEYRING
+    /** here we use server sync url without protocol prefix and
+     * user account name as the key in the keyring */
+    /* It is possible to let CmdlineSyncClient decide which of fields in ConfigPasswordKey it would use
+     * but currently only use passed key instead */
+    GnomeKeyringResult result;
+    GList* list;
+
+    result = gnome_keyring_find_network_password_sync(passwdStr(key.user),
+                                                      passwdStr(key.domain),
+                                                      passwdStr(key.server),
+                                                      passwdStr(key.object),
+                                                      passwdStr(key.protocol),
+                                                      passwdStr(key.authtype),
+                                                      key.port,
+                                                      &list);
+
+    /** if find password stored in gnome keyring */
+    if(result == GNOME_KEYRING_RESULT_OK && list && list->data ) {
+        GnomeKeyringNetworkPasswordData *key_data;
+        key_data = (GnomeKeyringNetworkPasswordData*)list->data;
+        password = key_data->password;
+        gnome_keyring_network_password_list_free(list);
+        return password;
+    }
+#endif
+    //if not found, return empty
+    return "";
+}
+
+bool DBusUserInterface::savePassword(const string &passwordName, 
+                                     const string &password, 
+                                     const ConfigPasswordKey &key)
+{
+#ifdef USE_GNOME_KEYRING
+    /* It is possible to let CmdlineSyncClient decide which of fields in ConfigPasswordKey it would use
+     * but currently only use passed key instead */
+    guint32 itemId;
+    GnomeKeyringResult result;
+    // write password to keyring
+    result = gnome_keyring_set_network_password_sync(NULL,
+                                                     passwdStr(key.user),
+                                                     passwdStr(key.domain),
+                                                     passwdStr(key.server),
+                                                     passwdStr(key.object),
+                                                     passwdStr(key.protocol),
+                                                     passwdStr(key.authtype),
+                                                     key.port,
+                                                     password.c_str(),
+                                                     &itemId);
+    /* if set operation is failed */
+    if(result != GNOME_KEYRING_RESULT_OK) {
+#ifdef GNOME_KEYRING_220
+        SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. " + gnome_keyring_result_to_message(result));
+#else
+        /** if gnome-keyring version is below 2.20, it doesn't support 'gnome_keyring_result_to_message'. */
+        stringstream value;
+        value << (int)result;
+        SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. The gnome-keyring error code is " + value.str() + ".");
+#endif
+    } 
+    return true;
+#else
+    /** if no support of gnome-keyring, don't save anything */
+    return false;
+#endif
+}
+
+
 /***************** DBusSync implementation **********************/
 
 DBusSync::DBusSync(const std::string &config,
                    Session &session) :
-    SyncContext(config, true),
+    DBusUserInterface(config),
     m_session(session)
 {
 }
@@ -1775,86 +1901,16 @@ int DBusSync::sleep(int intervals)
     }
 }
 
-inline const char *passwdStr(const std::string &str)
-{
-    return str.empty() ? NULL : str.c_str();
-}
-
 string DBusSync::askPassword(const string &passwordName, 
                              const string &descr, 
                              const ConfigPasswordKey &key) 
 {
-    string password;
-#ifdef USE_GNOME_KEYRING
-    /** here we use server sync url without protocol prefix and
-     * user account name as the key in the keyring */
-    /* It is possible to let CmdlineSyncClient decide which of fields in ConfigPasswordKey it would use
-     * but currently only use passed key instead */
-    GnomeKeyringResult result;
-    GList* list;
+    string password = DBusUserInterface::askPassword(passwordName, descr, key);
 
-    result = gnome_keyring_find_network_password_sync(passwdStr(key.user),
-                                                      passwdStr(key.domain),
-                                                      passwdStr(key.server),
-                                                      passwdStr(key.object),
-                                                      passwdStr(key.protocol),
-                                                      passwdStr(key.authtype),
-                                                      key.port,
-                                                      &list);
-
-    /** if find password stored in gnome keyring */
-    if(result == GNOME_KEYRING_RESULT_OK && list && list->data ) {
-        GnomeKeyringNetworkPasswordData *key_data;
-        key_data = (GnomeKeyringNetworkPasswordData*)list->data;
-        password = key_data->password;
-        gnome_keyring_network_password_list_free(list);
-        return password;
+    if(password.empty()) {
+        password = m_session.askPassword(passwordName, descr, key);
     }
-    //if not found, then ask user to interactively input password
-#endif
-    /** 
-     * if not built with gnome_keyring support, directly send password request 
-     * to dbus clients
-     */
-    return m_session.askPassword(passwordName, descr, key);
-}
-
-bool DBusSync::savePassword(const string &passwordName, 
-                            const string &password, 
-                            const ConfigPasswordKey &key)
-{
-#ifdef USE_GNOME_KEYRING
-    /* It is possible to let CmdlineSyncClient decide which of fields in ConfigPasswordKey it would use
-     * but currently only use passed key instead */
-    guint32 itemId;
-    GnomeKeyringResult result;
-    // write password to keyring
-    result = gnome_keyring_set_network_password_sync(NULL,
-                                                     passwdStr(key.user),
-                                                     passwdStr(key.domain),
-                                                     passwdStr(key.server),
-                                                     passwdStr(key.object),
-                                                     passwdStr(key.protocol),
-                                                     passwdStr(key.authtype),
-                                                     key.port,
-                                                     password.c_str(),
-                                                     &itemId);
-    /* if set operation is failed */
-    if(result != GNOME_KEYRING_RESULT_OK) {
-#ifdef GNOME_KEYRING_220
-        SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. " + gnome_keyring_result_to_message(result));
-#else
-        /** if gnome-keyring version is below 2.20, it doesn't support 'gnome_keyring_result_to_message'. */
-        stringstream value;
-        value << (int)result;
-        SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. The gnome-keyring error code is " + value.str() + ".");
-#endif
-    } 
-    return true;
-#else
-    /** if no support of gnome-keyring, don't save anything */
-    return false;
-#endif
+    return password;
 }
 
 /***************** Session implementation ***********************/

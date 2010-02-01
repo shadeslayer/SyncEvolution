@@ -849,6 +849,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def testCreateGetConfig(self):
         """ test the config is created successfully. """
+        self.config[""]["username"] = "creategetconfig"
+        self.config[""]["password"] = "112233445566778"
         self.setupConfig()
         """ get config and compare """
         config = self.session.GetConfig(False, utf8_strings=True)
