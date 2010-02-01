@@ -539,6 +539,8 @@ add_toggle_widget (SyncConfigWidget *self,
 
     col = col * 2;
     label = gtk_label_new (title);
+    gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_END);
+    gtk_widget_set_size_request (label, 260, -1);
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     gtk_widget_show (label);
     gtk_table_attach (GTK_TABLE (self->mode_table), label,
@@ -547,6 +549,7 @@ add_toggle_widget (SyncConfigWidget *self,
     toggle = mx_gtk_light_switch_new ();
 #else
     toggle = gtk_check_button_new_with_label (title);
+    gtk_widget_set_size_request (toggle, 260, -1);
 #endif
     g_object_set (toggle, "active", active, NULL);
     gtk_widget_show (toggle);
@@ -1667,6 +1670,8 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_box_pack_start (GTK_BOX (hbox), tmp_box, FALSE, FALSE, 8);
 
     self->label = gtk_label_new ("");
+    gtk_label_set_max_width_chars (GTK_LABEL (self->label), 60);
+    gtk_label_set_ellipsize (GTK_LABEL (self->label), PANGO_ELLIPSIZE_END);
     gtk_misc_set_alignment (GTK_MISC (self->label), 0.0, 0.5);
     gtk_widget_show (self->label);
     gtk_box_pack_start (GTK_BOX (tmp_box), self->label, FALSE, FALSE, 0);

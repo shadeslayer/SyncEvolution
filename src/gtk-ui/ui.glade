@@ -508,7 +508,7 @@ We support the following services: </property>
                           <widget class="GtkScrolledWindow" id="scrolledwindow">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="hscrollbar_policy">never</property>
+                            <property name="hscrollbar_policy">automatic</property>
                             <property name="vscrollbar_policy">automatic</property>
                             <child>
                               <widget class="GtkViewport" id="viewport1">
