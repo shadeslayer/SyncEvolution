@@ -681,6 +681,30 @@ source_widgets_free (source_widgets *widgets)
 
 
 static void
+sync_config_widget_expand_if_id_matches (SyncConfigWidget *self)
+{
+    if (self->expand_id && self->config && self->config->config) {
+        char *sync_url;
+
+        if (syncevo_config_get_value (self->config->config, NULL,
+                                  "syncURL", &sync_url) &&
+            strncmp (sync_url, self->expand_id, strlen (self->expand_id)) == 0) {
+
+            sync_config_widget_set_expanded (self, TRUE);
+            g_free (self->expand_id);
+            self->expand_id = NULL;
+
+        } else if (self->config->name &&
+                   g_strcasecmp (self->config->name, self->expand_id) == 0) {
+
+            sync_config_widget_set_expanded (self, TRUE);
+            g_free (self->expand_id);
+            self->expand_id = NULL;
+        }
+    }
+}
+
+static void
 sync_config_widget_update_expander (SyncConfigWidget *self)
 {
     char *username = "";
@@ -816,14 +840,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                                    (ConfigFunc)init_source,
                                    self);
 
-    if (self->expand_id) {
-        if ((g_strcmp0 (sync_url, self->expand_id) == 0) ||
-            (self->config->name && g_strcasecmp (self->config->name, self->expand_id) == 0)) {
-            sync_config_widget_set_expanded (self, TRUE);
-            g_free (self->expand_id);
-            self->expand_id = NULL;
-        }
-    }
+    sync_config_widget_expand_if_id_matches (self);
 }
 
 static void
@@ -1031,20 +1048,10 @@ static void
 sync_config_widget_set_expand_id (SyncConfigWidget *self,
                                   const char *id)
 {
-    
     g_free (self->expand_id);
-    if (self->config && self->config->config && id) {
-        char *sync_url; 
-        syncevo_config_get_value (self->config->config, NULL, "syncURL", &sync_url);
+    self->expand_id = g_strdup (id);
 
-        if ((g_strcmp0 (sync_url, id) == 0) ||
-            (self->config->name && g_strcasecmp (self->config->name, id) == 0)) {
-            sync_config_widget_set_expanded (self, TRUE);
-        }
-        self->expand_id = NULL;
-    } else {
-        self->expand_id = g_strdup (id);
-    }
+    sync_config_widget_expand_if_id_matches (self);
 }
 
 static void
