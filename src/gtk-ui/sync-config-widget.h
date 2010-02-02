@@ -5,7 +5,6 @@
 #include <gtk/gtk.h>
 
 #include "syncevo-server.h"
-#include "sync-ui-config.h"
 
 G_BEGIN_DECLS
 
@@ -36,12 +35,13 @@ typedef struct {
     char *current_service_name; /* name of the current service */
     gboolean configured; /* actual service configuration exists on server */
     gboolean has_template; /* this service configuration has a matching template */
-    gboolean showing;
     gboolean expanded;
 
     SyncevoServer *server;
-    server_config *config;
-    
+    SyncevoConfig *config;
+    char *config_name;
+    char *pretty_name;
+
     char *running_session;
 
     char *expand_id;
@@ -89,6 +89,7 @@ GType sync_config_widget_get_type (void);
 
 GtkWidget *sync_config_widget_new (SyncevoServer *server,
                                    const char *name,
+                                   SyncevoConfig *config,
                                    gboolean current,
                                    const char *current_service_name,
                                    gboolean configured,
@@ -107,6 +108,8 @@ void sync_config_widget_set_configured (SyncConfigWidget *self, gboolean configu
 gboolean sync_config_widget_get_configured (SyncConfigWidget *self);
 
 const char *sync_config_widget_get_name (SyncConfigWidget *widget);
+
+void sync_config_widget_expand_id (SyncConfigWidget *self, const char *id);
 G_END_DECLS
 
 

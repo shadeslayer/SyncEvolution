@@ -1464,11 +1464,12 @@ config_widget_changed_cb (GtkWidget *widget, app_data *data)
 }
 
 static GtkWidget*
-add_server_to_box (GtkBox *box,
-                   const char *name,
-                   gboolean configured,
-                   gboolean has_template,
-                   app_data *data)
+add_configuration_to_box (GtkBox *box,
+                          SyncevoConfig *config,
+                          const char *name,
+                          gboolean has_template,
+                          gboolean has_configuration,
+                          app_data *data)
 {
     GtkWidget *item = NULL;
     gboolean current = FALSE;
@@ -1483,8 +1484,9 @@ add_server_to_box (GtkBox *box,
      }
 
     item = sync_config_widget_new (data->server, name,
+                                   config,
                                    current, current_name,
-                                   configured, has_template);
+                                   has_configuration, has_template);
     g_signal_connect (item, "changed",
                       G_CALLBACK (config_widget_changed_cb), data);
     g_signal_connect (item, "notify::expanded",
@@ -1496,14 +1498,18 @@ add_server_to_box (GtkBox *box,
         sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (item),
                                         data->open_current);
     }
+    if (g_strcmp0 (name, "default") == 0) {
+        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (item),
+                                         TRUE);
+    }
 
     if (data->config_id_to_open) {
-        g_object_set (G_OBJECT (item),
-                      "expand-id", data->config_id_to_open,
-                      NULL);
+        sync_config_widget_expand_id (SYNC_CONFIG_WIDGET (item),
+                                      data->config_id_to_open);
     }
 
     return item;
+
 }
 
 static void
@@ -1515,6 +1521,64 @@ find_new_service_config (SyncConfigWidget *w, GtkWidget **found)
             *found = GTK_WIDGET (w);
         }
     }
+}
+
+typedef struct config_data {
+    app_data *data;
+    char *name;
+    gboolean has_configuration;
+    gboolean has_template;
+} config_data;
+
+static void
+get_config_for_config_widget_cb (SyncevoServer *server,
+                                 SyncevoConfig *config,
+                                 GError *error,
+                                 config_data *c_data)
+{
+    char *ready;
+
+    if (error) {
+        /* show in UI? */
+        g_warning ("Server.GetConfig() failed: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    syncevo_config_get_value (config, NULL, "ConsumerReady", &ready);
+
+    if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
+        add_configuration_to_box (GTK_BOX (c_data->data->services_box),
+                                  config,
+                                  c_data->name,
+                                  c_data->has_template,
+                                  c_data->has_configuration,
+                                  c_data->data);
+    }
+
+    g_free (c_data->name);
+    g_slice_free (config_data, c_data);
+}
+
+static void
+get_config_for_config_widget (app_data *data,
+                              const char *config,
+                              gboolean has_template,
+                              gboolean has_configuration)
+
+{
+    config_data *c_data;
+
+    c_data = g_slice_new0 (config_data);
+    c_data->data = data;
+    c_data->name = g_strdup (config);
+    c_data->has_template = has_template;
+    c_data->has_configuration = has_configuration;
+    syncevo_server_get_config (data->server,
+                               config,
+                               !has_configuration,
+                               (SyncevoServerGetConfigCb)get_config_for_config_widget_cb,
+                               c_data);
 }
 
 static void
@@ -1532,14 +1596,11 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
                            (GtkCallback)find_new_service_config,
                            &widget);
     if (!widget) {
-        widget = add_server_to_box (GTK_BOX (data->services_box),
-                                    "default",
-                                    FALSE, TRUE,
-                                    data);
+        get_config_for_config_widget (data, "default", TRUE, FALSE);
+    } else {
+        sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (widget), TRUE);
     }
-    sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (widget), TRUE);
 }
-
 
 typedef struct templates_data {
     app_data *data;
@@ -1554,7 +1615,6 @@ get_configs_cb (SyncevoServer *server,
 {
     char **config_iter, **template_iter, **templates;
     app_data *data;
-    GtkWidget *widget;
 
     templates = templ_data->templates;
     data = templ_data->data;
@@ -1574,24 +1634,19 @@ get_configs_cb (SyncevoServer *server,
         gboolean found_config = FALSE;
 
         for (config_iter = configs; *config_iter; config_iter++) {
-            if (*template_iter && 
-                *config_iter && 
+            if (*template_iter && *config_iter && 
                 g_ascii_strncasecmp (*template_iter,
                                      *config_iter,
                                      strlen (*config_iter)) == 0) {
-                widget = add_server_to_box (GTK_BOX (data->services_box),
-                                            *template_iter,
-                                            TRUE, TRUE,
-                                            data);
+                /* have template and config */
+                get_config_for_config_widget (data, *config_iter, TRUE, TRUE);
                 found_config = TRUE;
                 break;
             }
         }
         if (!found_config) {
-            widget = add_server_to_box (GTK_BOX (data->services_box),
-                                        *template_iter,
-                                        FALSE, TRUE,
-                                        data);
+            /* have template, no config */
+            get_config_for_config_widget (data, *template_iter, TRUE, FALSE);
         }
     }
 
@@ -1610,10 +1665,8 @@ get_configs_cb (SyncevoServer *server,
             }
         }
         if (!found_template) {
-            widget = add_server_to_box (GTK_BOX (data->services_box),
-                                        *config_iter,
-                                        TRUE, FALSE,
-                                        data);
+            /* have config, no template */
+            get_config_for_config_widget (data, *config_iter, FALSE, TRUE);
         }
     }
 
