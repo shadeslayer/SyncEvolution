@@ -502,6 +502,26 @@ class DBusUtil(Timeout):
             if os.access(sourcepath, os.F_OK):
                 shutil.copytree(sourcepath, destpath)
 
+    def getDatabaseName(self, configName):
+        # get database names with the environment variable
+        prefix = os.getenv("CLIENT_TEST_EVOLUTION_PREFIX")
+        source = configName + '_1'
+        if prefix == None:
+            prefix = 'SyncEvolution_Test_'
+        return prefix + source;
+
+    def getEvolutionSources(self, config):
+        # get 'evolutionsource' for each source
+        updateProps = { }
+        for key, value in config.items():
+            if key != "":
+                tmpdict = { }
+                [source, sep, name] = key.partition('/')
+                if sep == '/':
+                    tmpdict["evolutionsource"] = self.getDatabaseName(name)
+                updateProps[key] = tmpdict
+        return updateProps
+
 class TestDBusServer(unittest.TestCase, DBusUtil):
     """Tests for the read-only Server API."""
 
@@ -822,6 +842,11 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                "source/addressbook" : { "sync" : "slow"}
                             }
         self.sources = ['addressbook', 'calendar', 'todo', 'memo']
+
+        #create default or user settings evolutionsource
+        updateProps = self.getEvolutionSources(self.config)
+        for key, dict in updateProps.items():
+            self.config[key]["evolutionsource"] = dict["evolutionsource"]
 
     def run(self, result):
         self.runTest(result)
@@ -1336,15 +1361,9 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.fail(str(ex) + 
                       ". To test this case, please first set up a correct config named 'dbus_unittest'.")
-        prefix = os.getenv("CLIENT_TEST_EVOLUTION_PREFIX")
-        if prefix != None:
-            updateProps = { }
-            for key, value in configProps.items():
-                if key != "":
-                    tmpdict = { }
-                    tmpdict["evolutionsource"] = prefix
-                    updateProps[key] = tmpdict
-            self.session.SetConfig(True, True, updateProps, utf8_strings=True)
+        updateProps = self.getEvolutionSources(configProps)
+        # temporarily set evolutionsource and don't change them
+        self.session.SetConfig(True, True, updateProps, utf8_strings=True)
 
     def doSync(self):
         self.setupConfig()
@@ -1509,6 +1528,12 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                                   "uri" : "text"
                                                 }
                        }
+
+        #create default or user settings evolutionsource
+        updateProps = self.getEvolutionSources(self.config)
+        for key, dict in updateProps.items():
+            self.config[key]["evolutionsource"] = dict["evolutionsource"]
+
     def setupConfig(self, name="dummy-test", deviceId="sc-api-nat"):
         self.setUpSession(name)
         self.config[""]["remoteDeviceId"] = deviceId
