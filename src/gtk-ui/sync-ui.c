@@ -210,7 +210,7 @@ get_pretty_source_name (const char *source_name)
     } else if (strcmp (source_name, "todo") == 0) {
         return g_strdup (_("Tasks"));
     } else if (strcmp (source_name, "memo") == 0) {
-        return g_strdup (_("Memo"));
+        return g_strdup (_("Notes"));
     } else if (strcmp (source_name, "calendar+todo") == 0) {
         /* TRANSLATORS: This is a "combination source" for syncing with devices
          * that combine appointments and tasks. the name should match the ones
