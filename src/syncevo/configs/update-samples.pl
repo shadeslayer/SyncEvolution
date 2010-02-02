@@ -52,9 +52,12 @@ sub update {
     close(IN) || die "closing $file: $!";
 
     s;(<debug>\n).*(\n *</debug>);$1 . readfragments("debug", $subdir) . $2;se;
-    s;(<scripting>\n).*(\n *</scripting>);$1 . readfragments("scripting", $subdir) . $2;se;
-    s;(<datatypes>\n).*(\n *</datatypes>);$1 . readfragments("datatypes", $subdir) . $2;se;
-    s;(\n *)<remoterule>.*</remoterule>;$1 . readfragments("remoterules", $subdir);se;
+    s;(<scripting>\n).*(\n *</scripting>);$1 . readfragments("scripting", $subdir) . $2;se ||
+        s;(\n *)<scripting/>;$1 . "<scripting>\n" . readfragments("scripting", $subdir) . $1 . "</scripting>";se;
+    s;(<datatypes>\n).*(\n *</datatypes>);$1 . readfragments("datatypes", $subdir) . $2;se ||
+        s;(\n *)<datatypes/>;$1 . "<datatypes>\n" . readfragments("datatypes", $subdir) . $1 . "</datatypes>";se;
+    s;(\n *)<remoterule>.*</remoterule>;$1 . readfragments("remoterules", $subdir);se ||
+        s;(\n *)<remoterules/>;readfragments("remoterules", $subdir);se;
 
     if ($write) {
         open(OUT, ">$file") || die "cannot write $file: $!";

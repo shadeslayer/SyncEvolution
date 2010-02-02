@@ -1505,9 +1505,12 @@ void SyncContext::setTransportCallback(int seconds)
                          seconds);
 }
 
-// XML configuration converted to C string constant
+// XML configuration converted to C string constants
 extern "C" {
-    extern const char *SyncEvolutionXML;
+    // including all known fragments for a client
+    extern const char *SyncEvolutionXMLClient;
+    // the remote rules for a client
+    extern const char *SyncEvolutionXMLClientRules;
 }
 
 void SyncContext::setSyncModes(const std::vector<SyncSource *> &sources,
@@ -1522,23 +1525,114 @@ void SyncContext::setSyncModes(const std::vector<SyncSource *> &sources,
     }
 }
 
-void SyncContext::getConfigTemplateXML(string &xml, string &configname)
+/**
+ * helper class which scans directories for
+ * XML config files
+ */
+class XMLFiles
 {
-    try {
-        configname = "syncclient_sample_config.xml";
-        if (ReadFile(configname, xml)) {
-            return;
-        }
-    } catch (...) {
-        Exception::handle();
-    }
+public:
+    enum Category {
+        MAIN,           /**< files directly under searched directories */
+        DATATYPES,      /**< inside datatypes and datatypes/<mode> */
+        SCRIPTING,      /**< inside scripting and scripting/<mode> */
+        REMOTERULES,    /**< inside remoterules and remoterules/<mode> */
+        MAX_CATEGORY
+    };
+
+    /** search file system for XML config fragments */
+    void scan(const string &mode);
+    /** datatypes, scripts and rules concatenated, empty if none found */
+    string get(Category category);
+    /** main file, typically "syncevolution.xml", empty if not found */
+    string get(const string &file);
+
+    static const string m_syncevolutionXML;
+
+private:
+    /* base name as sort key + full file path, iterating is done in lexical order */
+    StringMap m_files[MAX_CATEGORY];
 
     /**
-     * @TODO read from config directory
+     * scan a specific directory for main files directly inside it
+     * and inside datatypes, scripting, remoterules;
+     * it is not an error when it does not exist or is not a directory
      */
+    void scanRoot(const string &mode, const string &dir);
 
-    configname = "builtin XML configuration";
-    xml = SyncEvolutionXML;
+    /**
+     * scan a datatypes/scripting/remoterules sub directory,
+     * including the <mode> sub-directory
+     */
+    void scanFragments(const string &mode, const string &dir, Category category);
+
+    /**
+     * add all .xml files to the right hash, overwriting old entries
+     */
+    void addFragments(const string &dir, Category category);
+};
+
+const string XMLFiles::m_syncevolutionXML("syncevolution.xml");
+
+void XMLFiles::scan(const string &mode)
+{
+    const char *dir = getenv("SYNCEVOLUTION_XML_CONFIG_DIR");
+    /*
+     * read either one or the other, so that testing can run without
+     * accidentally reading installed files
+     */
+    if (dir) {
+        scanRoot(mode, dir);
+    } else {
+        scanRoot(mode, XML_CONFIG_DIR);
+        scanRoot(mode, SubstEnvironment("${XDG_CONFIG_HOME}/syncevolution-xml"));
+    }
+}
+
+void XMLFiles::scanRoot(const string &mode, const string &dir)
+{
+    addFragments(dir, MAIN);
+    scanFragments(mode, dir + "/scripting", SCRIPTING);
+    scanFragments(mode, dir + "/datatypes", DATATYPES);
+    scanFragments(mode, dir + "/remoterules", REMOTERULES);
+}
+
+void XMLFiles::scanFragments(const string &mode, const string &dir, Category category)
+{
+    addFragments(dir, category);
+    addFragments(dir + "/" + mode, category);
+}
+
+void XMLFiles::addFragments(const string &dir, Category category)
+{
+    ReadDir content(dir, false);
+    BOOST_FOREACH(const string &file, content) {
+        if (boost::ends_with(file, ".xml")) {
+            m_files[category][file] = dir + "/" + file;
+        }
+    }
+}
+
+string XMLFiles::get(Category category)
+{
+    string res;
+
+    BOOST_FOREACH(const StringPair &entry, m_files[category]) {
+        string content;
+        ReadFile(entry.second, content);
+        res += content;
+    }
+    return res;
+}
+
+string XMLFiles::get(const string &file)
+{
+    string res;
+    StringMap::const_iterator entry = m_files[MAIN].find(file);
+    if (entry != m_files[MAIN].end()) {
+        ReadFile(entry->second, res);
+    }
+    return res;
 }
 
 static void substTag(string &xml, const string &tagname, const string &replacement, bool replaceElement = false)
@@ -1582,9 +1676,39 @@ template <class T> void substTag(string &xml, const string &tagname, const T rep
     substTag(xml, tagname, str.str(), replaceElement);
 }
 
+void SyncContext::getConfigTemplateXML(const string &mode,
+                                       string &xml,
+                                       string &rules,
+                                       string &configname)
+{
+    XMLFiles files;
+
+    files.scan(mode);
+    xml = files.get(files.m_syncevolutionXML);
+    if (xml.empty()) {
+        if (mode != "client") {
+            SE_THROW(files.m_syncevolutionXML + " not found");
+        }
+        configname = "builtin XML configuration";
+        xml = SyncEvolutionXMLClient;
+        rules = SyncEvolutionXMLClientRules;
+    } else {
+        configname = "XML configuration files";
+        rules = files.get(XMLFiles::REMOTERULES);
+        substTag(xml, "datatypes",
+                 files.get(XMLFiles::DATATYPES) +
+                 "    <fieldlists/>\n    <profiles/>\n    <datatypedefs/>\n");
+        substTag(xml, "scripting", files.get(XMLFiles::SCRIPTING));
+    }
+}
+
 void SyncContext::getConfigXML(string &xml, string &configname)
 {
-    getConfigTemplateXML(xml, configname);
+    string rules;
+    getConfigTemplateXML(m_serverMode ? "server" : "client",
+                         xml,
+                         rules,
+                         configname);
 
     string tag;
     size_t index;
@@ -1825,9 +1949,9 @@ void SyncContext::getConfigXML(string &xml, string &configname)
 
     substTag(xml, "fieldlists", fragments.m_fieldlists.join(), true);
     substTag(xml, "profiles", fragments.m_profiles.join(), true);
-    substTag(xml, "datatypes", fragments.m_datatypes.join(), true);
+    substTag(xml, "datatypedefs", fragments.m_datatypes.join(), true);
     substTag(xml, "remoterules",
-             string("<remoterule name='EVOLUTION'><deviceid>none - this rule is activated via its name in MAKE/PARSETEXTWITHPROFILE() macro calls</deviceid></remoterule>\n") +
+             rules +
              fragments.m_remoterules.join(),
              true);
 

@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!-- SYNTHESIS SYNCML CLIENT Version 3.2 Configuration file -->
+
+<sysync_config version="1.0">
+
+  <configvar name="logpath" value="$(defout_path)"/>
+
+  <!-- this string is output to every session debug logfile to identify the config in use -->
+  <configidstring>SyncEvolution client config</configidstring>
+
+  <!-- information about maximum supported message and object size (in bytes) -->
+  <maxmsgsize/>
+  <maxobjsize/>
+
+  <!-- information for DevInf -->
+  <model/>
+  <manufacturer/>
+  <hardwareversion/>
+  <firmwareversion/>
+  <devicetype/>
+  <configdate/>
+
+  <debug/>
+
+  <transport type="xpt">
+    <!-- allow HTTP 1.1 kepp-alive (multiple request-answer-exchanges in single TCP connection) -->
+    <keepconnection>true</keepconnection>
+  </transport>
+
+  <scripting/>
+
+  <datatypes/>
+
+  <clientorserver/>
+</sysync_config>

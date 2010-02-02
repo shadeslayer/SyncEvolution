@@ -39,7 +39,7 @@ else
 SYNCEVOLUTION_LDADD += $(SYNCSOURCES)
 SYNCEVOLUTION_DEP += $(SYNCSOURCES)
 endif
-EXTRA_DIST = shlibs.local Makefile-gen.am syncclient_sample_config.xml $(service_in_files)
+EXTRA_DIST = shlibs.local Makefile-gen.am $(service_in_files)
 
 TEMPLATE_FILES = @TEMPLATE_FILES@
 templatedir = $(datadir)/syncevolution/
