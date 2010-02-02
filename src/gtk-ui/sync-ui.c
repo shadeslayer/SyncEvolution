@@ -1536,7 +1536,7 @@ get_config_for_config_widget_cb (SyncevoServer *server,
                                  GError *error,
                                  config_data *c_data)
 {
-    char *ready;
+    char *ready, *device;
 
     if (error) {
         /* show in UI? */
@@ -1546,14 +1546,20 @@ get_config_for_config_widget_cb (SyncevoServer *server,
     }
 
     syncevo_config_get_value (config, NULL, "ConsumerReady", &ready);
+    syncevo_config_get_value (config, NULL, "deviceName", &device);
 
     if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
-        add_configuration_to_box (GTK_BOX (c_data->data->services_box),
-                                  config,
-                                  c_data->name,
-                                  c_data->has_template,
-                                  c_data->has_configuration,
-                                  c_data->data);
+        if (device && strlen (device) > 0) {
+            /* we have a device name, add to device list*/
+            g_debug ("TODO: handle device %s", device);
+        } else {
+            add_configuration_to_box (GTK_BOX (c_data->data->services_box),
+                                      config,
+                                      c_data->name,
+                                      c_data->has_template,
+                                      c_data->has_configuration,
+                                      c_data->data);
+        }
     }
 
     g_free (c_data->name);

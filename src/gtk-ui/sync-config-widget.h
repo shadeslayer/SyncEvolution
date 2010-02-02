@@ -55,6 +55,7 @@ typedef struct {
 
     /* content */
     GtkWidget *description_label;
+    GtkWidget *userinfo_table;
     GtkWidget *name_label;
     GtkWidget *name_entry;
     GtkWidget *complex_config_info_bar;

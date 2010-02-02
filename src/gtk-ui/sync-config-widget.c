@@ -703,7 +703,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     char *password = "";
     char *sync_url = "";
     const char *descr;
-    char *str;
+    char *str, *device;
     GtkWidget *label, *align;
     SyncevoSyncMode mode = SYNCEVO_SYNC_NONE;
     gboolean send, receive;
@@ -718,6 +718,16 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                            self->mode_table);
     gtk_table_resize (GTK_TABLE (self->mode_table),
                       2, 1);
+
+    syncevo_config_get_value (self->config, NULL, "deviceName", &device);
+    if (device && strlen (device) > 0) {
+        gtk_widget_hide (self->userinfo_table);
+        gtk_widget_hide (self->fake_expander);
+    } else {
+        gtk_widget_show (self->userinfo_table);
+        gtk_widget_show (self->fake_expander);
+    }
+
 
     /* TODO: sources that are not supported locally will trigger the complex
      * config warning for no real reason... should do get_common_mode only after
@@ -1575,7 +1585,7 @@ label_button_release_cb (GtkWidget *widget,
 static void
 sync_config_widget_init (SyncConfigWidget *self)
 {
-    GtkWidget *tmp_box, *hbox, *cont, *vbox, *table, *label;
+    GtkWidget *tmp_box, *hbox, *cont, *vbox, *label;
 
     GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
 
@@ -1664,17 +1674,17 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (tmp_box);
     gtk_box_pack_start (GTK_BOX (vbox), tmp_box, FALSE, FALSE, 0);
 
-    table = gtk_table_new (4, 2, FALSE);
-    gtk_table_set_row_spacings (GTK_TABLE (table), 2);
-    gtk_table_set_col_spacings (GTK_TABLE (table), 5);
-    gtk_widget_show (table);
-    gtk_box_pack_start (GTK_BOX (tmp_box), table, FALSE, FALSE, 0);
+    self->userinfo_table = gtk_table_new (4, 2, FALSE);
+    gtk_table_set_row_spacings (GTK_TABLE (self->userinfo_table), 2);
+    gtk_table_set_col_spacings (GTK_TABLE (self->userinfo_table), 5);
+    gtk_widget_show (self->userinfo_table);
+    gtk_box_pack_start (GTK_BOX (tmp_box), self->userinfo_table, FALSE, FALSE, 0);
 
     /* TRANSLATORS: labels of entries in service configuration form */
     label = gtk_label_new (_("Username"));
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     gtk_widget_show (label);
-    gtk_table_attach_defaults (GTK_TABLE (table), label,
+    gtk_table_attach_defaults (GTK_TABLE (self->userinfo_table), label,
                                0, 1,
                                0, 1);
 
@@ -1682,14 +1692,14 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (self->username_entry);
     gtk_entry_set_width_chars (GTK_ENTRY (self->username_entry), 40);
     gtk_entry_set_max_length (GTK_ENTRY (self->username_entry), 99);
-    gtk_table_attach_defaults (GTK_TABLE (table), self->username_entry,
+    gtk_table_attach_defaults (GTK_TABLE (self->userinfo_table), self->username_entry,
                                1, 2,
                                0, 1);
 
     label = gtk_label_new (_("Password"));
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     gtk_widget_show (label);
-    gtk_table_attach_defaults (GTK_TABLE (table), label,
+    gtk_table_attach_defaults (GTK_TABLE (self->userinfo_table), label,
                                0, 1,
                                1, 2);
 
@@ -1698,7 +1708,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_entry_set_width_chars (GTK_ENTRY (self->password_entry), 40);
     gtk_entry_set_visibility (GTK_ENTRY (self->password_entry), FALSE);
     gtk_entry_set_max_length (GTK_ENTRY (self->password_entry), 99);
-    gtk_table_attach_defaults (GTK_TABLE (table), self->password_entry,
+    gtk_table_attach_defaults (GTK_TABLE (self->userinfo_table), self->password_entry,
                                1, 2,
                                1, 2);
 
