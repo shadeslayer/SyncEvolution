@@ -66,12 +66,16 @@
 #include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/variant.hpp>
+#include <boost/variant/get.hpp>
 
 namespace boost {
     void intrusive_ptr_add_ref(DBusConnection *con) { dbus_connection_ref(con); }
     void intrusive_ptr_release(DBusConnection *con) { dbus_connection_unref(con); }
     void intrusive_ptr_add_ref(DBusMessage *msg) { dbus_message_ref(msg); }
     void intrusive_ptr_release(DBusMessage *msg) { dbus_message_unref(msg); }
+    void intrusive_ptr_add_ref(DBusPendingCall *call) {dbus_pending_call_ref (call); }
+    void intrusive_ptr_release(DBusPendingCall *call) {dbus_pending_call_unref (call); }
 }
 
 class DBusConnectionPtr : public boost::intrusive_ptr<DBusConnection>
@@ -107,6 +111,21 @@ class DBusMessagePtr : public boost::intrusive_ptr<DBusMessage>
         DBusMessage *msg = get();
         dbus_message_ref(msg);
         return msg;
+    }
+};
+
+class DBusPendingCallPtr : public boost::intrusive_ptr<DBusPendingCall>
+{
+public:
+    DBusPendingCallPtr(DBusPendingCall *call, bool add_ref = false) :
+        boost::intrusive_ptr<DBusPendingCall>(call, add_ref)
+    {}
+
+    DBusPendingCall *reference(void) throw()
+    {
+        DBusPendingCall *call = get();
+        dbus_pending_call_ref(call);
+        return call;
     }
 };
 
@@ -1239,6 +1258,49 @@ template<class V> struct dbus_traits< std::vector<V> > : public dbus_traits_base
             throw std::runtime_error("out of memory");
         }
     }
+};
+
+/**
+ * A boost::variant <V> maps to a dbus variant, only care about values of
+ * type V but will not throw error if type is not matched, this is useful if
+ * application is interested on only a sub set of possible value types
+ * in variant.
+ */
+template <class V> struct dbus_traits <boost::variant <V> > : public dbus_traits_base
+{
+    static std::string getType() { return "v"; }
+    static std::string getSignature() { return getType(); }
+    static std::string getReply() { return ""; }
+    static const int dbus = DBUS_TYPE_VARIANT;
+
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, boost::variant <V> &value)
+    {
+        if (dbus_message_iter_get_arg_type(&iter) != dbus) {
+            throw std::runtime_error("invalid argument");
+            return;
+        }
+        DBusMessageIter sub;
+        dbus_message_iter_recurse(&iter, &sub);
+        if (dbus_message_iter_get_signature(&sub) != dbus_traits<V>::getSignature()){
+            //ignore unrecognized sub type in variant
+            return;
+        }
+        V val;
+        dbus_traits<V>::get (conn, msg, sub, val);
+        value = val;
+    }
+
+    static void append(DBusMessageIter &iter, const boost::variant <V>  &value) {
+    }
+
+    //append_retval not implemented
+    //static void append_retval(DBusMessageIter &iter, arg_type array)
+    //{
+    //}
+
+    typedef boost::variant<V> host_type;
+    typedef const boost::variant<V> &arg_type;
 };
 
 /**
@@ -3897,6 +3959,90 @@ struct MakeMethodEntry< boost::function<void ()> >
         entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA);
         entry.method_data = new M(m);
         return entry;
+    }
+};
+
+/**
+ * interface expected by DBusClient
+ */
+class DBusCallObject : public DBusObject
+{
+public:
+    virtual const char *getDestination() const = 0;
+    /* The method name for the calling dbus method */
+    virtual const char *getMethod() const =0;
+    virtual ~DBusCallObject() {}
+};
+
+/*
+ * A DBus Client Call object handling 0 argument and 1 return value.
+ */
+template <class R>
+class DBusClientCall0
+{
+    const DBusCallObject& m_object;
+
+    /** called by libdbus on error or completion of call */
+    static void dbusCallback (DBusPendingCall *call, void *user_data)
+    {
+        DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
+        const char* errname = dbus_message_get_error_name (reply.get());
+        std::string error;
+        typename dbus_traits<R>::host_type r;
+        if (!errname) {
+            DBusMessageIter iter;
+            dbus_message_iter_init(reply.get(), &iter);
+            //why need connection?
+            dbus_traits<R>::get(NULL, reply.get(), iter, r);
+        } else {
+            error = errname;
+        }
+        //unmarshal the return results and call user callback
+        (*static_cast <Callback_t *>(user_data))(r, error);
+    }
+
+    /**
+     * called by libdbus to free the user_data pointer set in 
+     * dbus_pending_call_set_notify()
+     */
+    static void callDataUnref(void *user_data) {
+        delete static_cast <Callback_t *>(user_data);
+    }
+
+public:
+    /**
+     * called when result of call is available (R) or an error occurred (non-empty string)
+     */
+    typedef boost::function<void (const R &, const std::string &)> Callback_t;
+
+    DBusClientCall0 (const DBusCallObject &object)
+        :m_object (object)
+    {
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        DBusPendingCall *call;
+        DBusMessagePtr msg(dbus_message_new_method_call(
+                    m_object.getDestination(),
+                    m_object.getPath(),
+                    m_object.getInterface(),
+                    m_object.getMethod()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_method_call() failed");
+        }
+
+        //parameter marshaling (none)
+        if (!dbus_connection_send_with_reply(m_object.getConnection(), msg.get(), &call, -1)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+
+        DBusPendingCallPtr mCall (call);
+        Callback_t *data = new Callback_t(callback);
+        dbus_pending_call_set_notify(mCall.get(),
+                                     dbusCallback,
+                                     data,
+                                     callDataUnref);
     }
 };
 
