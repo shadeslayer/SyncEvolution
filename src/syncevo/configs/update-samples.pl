@@ -45,6 +45,7 @@ sub readfragments {
 sub update {
     my $file = shift;
     my $subdir = shift;
+    my $write = shift;
 
     open(IN, "<$file") || die "cannot read $file: $!";
     $_ = join("", <IN>);
@@ -55,10 +56,18 @@ sub update {
     s;(<datatypes>\n).*(\n *</datatypes>);$1 . readfragments("datatypes", $subdir) . $2;se;
     s;(\n *)<remoterule>.*</remoterule>;$1 . readfragments("remoterules", $subdir);se;
 
-    open(OUT, ">$file") || die "cannot write $file: $!";
-    print OUT;
-    close(OUT) || die "closing $file: $!";
+    if ($write) {
+        open(OUT, ">$file") || die "cannot write $file: $!";
+        print OUT;
+        close(OUT) || die "closing $file: $!";
+    } else {
+        print;
+    }
 }
 
-update("syncclient_sample_config.xml", "client");
-update("syncserv_sample_config.xml", "server");
+if ($#ARGV == -1) {
+    update("syncclient_sample_config.xml", "client", 1);
+    update("syncserv_sample_config.xml", "server", 1);
+} else {
+    update($ARGV[0], $ARGV[1], 0);
+}
