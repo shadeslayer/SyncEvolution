@@ -37,20 +37,20 @@ git checkout $TARGET_BRANCH
 revisions=master
 for i in $TARGET; do 
     if [ -f $i ]; then
-        revisions="`git log -n 1 $TARGET | tail -1`..master"
+        revisions="`git log -n 1 -- $TARGET | tail -1`..master"
         break
     fi
 done
 
-count=`(cd "$FOREIGN" && git log -p $revisions $SOURCE) | grep '^commit' | wc -l`
+count=`(cd "$FOREIGN" && git log -p $revisions -- $SOURCE) | grep '^commit' | wc -l`
 
 # iterate over all commits from oldest to newest
 i=1
 while [ $i -le $count ]; do
     # get complete patch
-    (cd "$FOREIGN" && git log -p --max-count=1 --skip=`expr $count - $i` $revisions $SOURCE) >$PATCH
+    (cd "$FOREIGN" && git log -p --max-count=1 --skip=`expr $count - $i` $revisions -- $SOURCE) >$PATCH
     # get just the commit message
-    (cd "$FOREIGN" && git log --max-count=1 --skip=`expr $count - $i` $revisions $SOURCE) >$MSG
+    (cd "$FOREIGN" && git log --max-count=1 --skip=`expr $count - $i` $revisions -- $SOURCE) >$MSG
     # apply patch to file: enter directory and skip pathname from patch
     (cd $TARGET_DIR && patch -p`expr $SOURCE_LEVELS + 1` <$PATCH)
     # now commit it (can't use commit because we want to preserve date):
