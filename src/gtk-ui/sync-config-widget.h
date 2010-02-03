@@ -31,14 +31,22 @@ typedef struct {
     GtkWidget *expando_box;
     GtkWidget *label_box;
 
+    GtkWidget *device_selector_box;
+    GtkWidget *combo;
+
+    GtkWidget *settings_box;
+
     gboolean current; /* is this currently used config */
     char *current_service_name; /* name of the current service */
     gboolean configured; /* actual service configuration exists on server */
+    gboolean device_template_selected;
     gboolean has_template; /* this service configuration has a matching template */
     gboolean expanded;
 
     SyncevoServer *server;
     SyncevoConfig *config;
+    GList *configs; /* list of possible configs. config above is one of these */
+
     char *config_name;
     char *pretty_name;
 
@@ -111,6 +119,7 @@ gboolean sync_config_widget_get_configured (SyncConfigWidget *self);
 const char *sync_config_widget_get_name (SyncConfigWidget *widget);
 
 void sync_config_widget_expand_id (SyncConfigWidget *self, const char *id);
+void sync_config_widget_add_alternative_config (SyncConfigWidget *self, SyncevoConfig *config, gboolean configured);
 G_END_DECLS
 
 

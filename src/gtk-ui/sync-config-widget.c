@@ -122,6 +122,8 @@ set_config_cb (SyncevoSession *session,
         return;
     }
 
+    self->configured = TRUE;
+
     g_object_unref (session);
     g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
 }
@@ -721,10 +723,23 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                       2, 1);
 
     syncevo_config_get_value (self->config, NULL, "deviceName", &device);
-    if (device && strlen (device) > 0) {
-        gtk_widget_hide (self->userinfo_table);
-        gtk_widget_hide (self->fake_expander);
+
+//    if (device && strlen (device) > 0) {
+    if (TRUE) {
+        if (!self->device_template_selected) {
+            gtk_widget_hide (self->settings_box);
+            gtk_widget_show (self->device_selector_box);
+            /* temporary solution for device template selection:
+             * show list of templates only */
+        } else {
+            gtk_widget_show (self->settings_box);
+            gtk_widget_hide (self->device_selector_box);
+            gtk_widget_hide (self->userinfo_table);
+            gtk_widget_hide (self->fake_expander);
+        }
     } else {
+        gtk_widget_show (self->settings_box);
+        gtk_widget_hide (self->device_selector_box);
         gtk_widget_show (self->userinfo_table);
         gtk_widget_show (self->fake_expander);
     }
@@ -841,12 +856,64 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     syncevo_config_foreach_source (self->config,
                                    (ConfigFunc)init_source,
                                    self);
+
 }
+
+/* only adds config to list and combo */
+static void
+sync_config_widget_add_config (SyncConfigWidget *self,
+                               SyncevoConfig *config)
+{
+    /* TODO check if config is already there */
+    self->configs = g_list_prepend (self->configs, config);
+    gtk_combo_box_prepend_text (GTK_COMBO_BOX (self->combo), "Template Foo");
+}
+
+static void
+sync_config_widget_update_pretty_name (SyncConfigWidget *self)
+{
+    self->pretty_name = NULL;
+
+    if (self->config) {
+        syncevo_config_get_value (self->config, NULL,
+                                  "PeerName", &self->pretty_name);
+        if (!self->pretty_name) {
+            syncevo_config_get_value (self->config, NULL,
+                                      "deviceName", &self->pretty_name);
+        }
+    }
+
+    if (!self->pretty_name) {
+        self->pretty_name = self->config_name;
+    }
+}
+
+static void
+sync_config_widget_set_config (SyncConfigWidget *self,
+                               SyncevoConfig *config)
+{
+    self->config = config;
+    sync_config_widget_add_config (self, config);
+    sync_config_widget_update_pretty_name (self);
+}
+
 
 static void
 setup_service_clicked (GtkButton *btn, SyncConfigWidget *self)
 {
     sync_config_widget_set_expanded (self, TRUE);
+}
+
+static void
+device_selection_btn_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
+{
+    self->device_template_selected = TRUE;
+
+    /* TODO 
+    sync_config_widget_set_config (self, config);
+    */
+    sync_config_widget_set_configured (self, TRUE);    
+    sync_config_widget_update_expander (self);
 }
 
 static void
@@ -1035,34 +1102,11 @@ sync_config_widget_set_server (SyncConfigWidget *self,
 }
 
 static void
-sync_config_widget_update_pretty_name (SyncConfigWidget *self)
-{
-    self->pretty_name = NULL;
-
-    if (self->config) {
-        syncevo_config_get_value (self->config, NULL,
-                                  "PeerName", &self->pretty_name);
-    }
-
-    if (!self->pretty_name) {
-        self->pretty_name = self->config_name;
-    }
-}
-
-static void
 sync_config_widget_set_name (SyncConfigWidget *self,
                              const char *name)
 {
     g_free (self->config_name);
     self->config_name = g_strdup (name);
-    sync_config_widget_update_pretty_name (self);
-}
-
-static void
-sync_config_widget_set_config (SyncConfigWidget *self,
-                               SyncevoConfig *config)
-{
-    self->config = config;
     sync_config_widget_update_pretty_name (self);
 }
 
@@ -1144,6 +1188,9 @@ sync_config_widget_dispose (GObject *object)
         syncevo_config_free (self->config);
     }
     self->config = NULL;
+
+    g_list_free (self->configs);
+    self->configs = NULL;
     g_free (self->config_name);
     self->config_name = NULL;
     g_free (self->current_service_name);
@@ -1406,18 +1453,6 @@ sync_config_widget_unmap (GtkWidget *widget)
 }
 
 static void
-sync_config_widget_realize (GtkWidget *widget)
-{
-    GTK_WIDGET_CLASS (sync_config_widget_parent_class)->realize (widget);
-}
-
-static void
-sync_config_widget_unrealize (GtkWidget *widget)
-{
-    GTK_WIDGET_CLASS (sync_config_widget_parent_class)->unrealize (widget);
-}
-
-static void
 sync_config_widget_add (GtkContainer *container,
                         GtkWidget    *widget)
 {
@@ -1476,8 +1511,6 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
     w_class->size_allocate = sync_config_widget_size_allocate;
     w_class->map = sync_config_widget_map;
     w_class->unmap = sync_config_widget_unmap;
-    w_class->realize = sync_config_widget_realize;
-    w_class->unrealize = sync_config_widget_unrealize;
 
     c_class->add = sync_config_widget_add;
     c_class->remove = sync_config_widget_remove;
@@ -1586,7 +1619,7 @@ label_button_release_cb (GtkWidget *widget,
 static void
 sync_config_widget_init (SyncConfigWidget *self)
 {
-    GtkWidget *tmp_box, *hbox, *cont, *vbox, *label;
+    GtkWidget *tmp_box, *hbox, *cont, *vbox, *label, *btn;
 
     GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
 
@@ -1658,9 +1691,36 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_set_no_show_all (self->expando_box, TRUE);
     gtk_widget_set_parent (self->expando_box, GTK_WIDGET (self));
 
+    /* device_selector_box does device template selection */
+    self->device_selector_box = gtk_vbox_new (FALSE, 0);
+    gtk_box_pack_start (GTK_BOX (self->expando_box), self->device_selector_box,
+                        TRUE, TRUE, 16);
+
+    hbox = gtk_hbox_new (FALSE, 8);
+    gtk_widget_show (hbox);
+    gtk_box_pack_start (GTK_BOX (self->device_selector_box), hbox,
+                        FALSE, TRUE, 16);
+    self->combo = gtk_combo_box_new_text ();
+    gtk_widget_set_size_request (self->combo, 200, -1);
+    gtk_widget_show (self->combo);
+    gtk_box_pack_start (GTK_BOX (hbox), self->combo,
+                        FALSE, TRUE, 0);
+    btn = gtk_button_new_with_label ("Use these settings");
+    gtk_widget_show (btn);
+    gtk_box_pack_start (GTK_BOX (hbox), btn,
+                        FALSE, TRUE, 0);
+    g_signal_connect (btn, "clicked",
+                      G_CALLBACK (device_selection_btn_clicked_cb), self);
+
+    /* settings_box has normal expander contents */
+    self->settings_box = gtk_vbox_new (FALSE, 0);
+    gtk_widget_show (self->settings_box);
+    gtk_box_pack_start (GTK_BOX (self->expando_box), self->settings_box,
+                        TRUE, TRUE, 16);
+
     vbox = gtk_vbox_new (FALSE, 8);
     gtk_widget_show (vbox);
-    gtk_box_pack_start (GTK_BOX (self->expando_box), vbox, TRUE, TRUE, 16);
+    gtk_box_pack_start (GTK_BOX (self->settings_box), vbox, TRUE, TRUE, 0);
 
     tmp_box = gtk_vbox_new (FALSE, 0);
     gtk_widget_show (tmp_box);
@@ -1857,6 +1917,7 @@ sync_config_widget_set_configured (SyncConfigWidget *self, gboolean configured)
 {
     if (self->configured != configured) {
         self->configured = configured;
+        self->device_template_selected = configured;
         update_buttons (self);
     }
 }
@@ -1878,4 +1939,18 @@ const char*
 sync_config_widget_get_name (SyncConfigWidget *widget)
 {
     return widget->config_name;
+}
+
+void
+sync_config_widget_add_alternative_config (SyncConfigWidget *self,
+                                           SyncevoConfig *config,
+                                           gboolean configured)
+{
+    if (configured) {
+        sync_config_widget_set_config (self, config);
+        sync_config_widget_set_configured (self, TRUE);    
+    } else  {
+        sync_config_widget_add_config (self, config);
+    }
+    sync_config_widget_update_expander (self);
 }

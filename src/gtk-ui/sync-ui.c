@@ -94,6 +94,7 @@ struct _app_data {
 
     GtkWidget *new_service_btn;
     GtkWidget *services_box;
+    GtkWidget *devices_box;
     GtkWidget *scrolled_window;
     GtkWidget *back_btn;
     GtkWidget *expanded_config;
@@ -678,7 +679,7 @@ key_press_cb (GtkWidget *widget,
         show_main_view (data);
     }
 
-    return FALSE;
+    return TRUE;
 }
 
 static void
@@ -864,6 +865,9 @@ init_ui (app_data *data)
     gtk_container_set_focus_vadjustment (GTK_CONTAINER (data->services_box), adj);
     g_signal_connect(data->services_box, "size-allocate",
                      G_CALLBACK (services_box_allocate_cb), data);
+
+    data->devices_box = GTK_WIDGET (gtk_builder_get_object (builder, "devices_box"));
+
     data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
 
     /* emergency view */
@@ -1463,7 +1467,7 @@ config_widget_changed_cb (GtkWidget *widget, app_data *data)
     }
 }
 
-static GtkWidget*
+static SyncConfigWidget*
 add_configuration_to_box (GtkBox *box,
                           SyncevoConfig *config,
                           const char *name,
@@ -1508,7 +1512,7 @@ add_configuration_to_box (GtkBox *box,
                                       data->config_id_to_open);
     }
 
-    return item;
+    return SYNC_CONFIG_WIDGET (item);
 
 }
 
@@ -1528,6 +1532,8 @@ typedef struct config_data {
     char *name;
     gboolean has_configuration;
     gboolean has_template;
+    GHashTable *device_templates;
+
 } config_data;
 
 static void
@@ -1548,11 +1554,28 @@ get_config_for_config_widget_cb (SyncevoServer *server,
     syncevo_config_get_value (config, NULL, "ConsumerReady", &ready);
     syncevo_config_get_value (config, NULL, "deviceName", &device);
 
-    if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
-        if (device && strlen (device) > 0) {
-            /* we have a device name, add to device list*/
-            g_debug ("TODO: handle device %s", device);
+    if (device && strlen (device) > 0) {
+        SyncConfigWidget *w;
+
+        /* keep a list of added devices */
+        w = g_hash_table_lookup (c_data->device_templates, device);
+        if (!w) {
+            if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
+                w = add_configuration_to_box (GTK_BOX (c_data->data->devices_box),
+                                                       config,
+                                                       device,
+                                                       c_data->has_template,
+                                                       c_data->has_configuration,
+                                                       c_data->data);
+                g_hash_table_insert (c_data->device_templates, device, w);
+            }
         } else {
+            /* there is a widget for this device already, add this info there*/
+            sync_config_widget_add_alternative_config (w, config, 
+                                                       c_data->has_configuration);
+        }
+    } else {
+        if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
             add_configuration_to_box (GTK_BOX (c_data->data->services_box),
                                       config,
                                       c_data->name,
@@ -1563,6 +1586,7 @@ get_config_for_config_widget_cb (SyncevoServer *server,
     }
 
     g_free (c_data->name);
+    g_hash_table_unref (c_data->device_templates);
     g_slice_free (config_data, c_data);
 }
 
@@ -1570,7 +1594,8 @@ static void
 get_config_for_config_widget (app_data *data,
                               const char *config,
                               gboolean has_template,
-                              gboolean has_configuration)
+                              gboolean has_configuration,
+                              GHashTable *device_templates)
 
 {
     config_data *c_data;
@@ -1580,6 +1605,10 @@ get_config_for_config_widget (app_data *data,
     c_data->name = g_strdup (config);
     c_data->has_template = has_template;
     c_data->has_configuration = has_configuration;
+    if (device_templates) {
+        c_data->device_templates = g_hash_table_ref (device_templates);
+    }
+
     syncevo_server_get_config (data->server,
                                config,
                                !has_configuration,
@@ -1602,7 +1631,7 @@ setup_new_service_clicked (GtkButton *btn, app_data *data)
                            (GtkCallback)find_new_service_config,
                            &widget);
     if (!widget) {
-        get_config_for_config_widget (data, "default", TRUE, FALSE);
+        get_config_for_config_widget (data, "default", TRUE, FALSE, NULL);
     } else {
         sync_config_widget_set_expanded (SYNC_CONFIG_WIDGET (widget), TRUE);
     }
@@ -1621,6 +1650,7 @@ get_configs_cb (SyncevoServer *server,
 {
     char **config_iter, **template_iter, **templates;
     app_data *data;
+    GHashTable *device_templates;
 
     templates = templ_data->templates;
     data = templ_data->data;
@@ -1636,6 +1666,8 @@ get_configs_cb (SyncevoServer *server,
         return;
     }
 
+    device_templates = g_hash_table_new (g_str_hash, g_str_equal);
+
     for (template_iter = templates; *template_iter; template_iter++){
         gboolean found_config = FALSE;
 
@@ -1645,14 +1677,16 @@ get_configs_cb (SyncevoServer *server,
                                      *config_iter,
                                      strlen (*config_iter)) == 0) {
                 /* have template and config */
-                get_config_for_config_widget (data, *config_iter, TRUE, TRUE);
+                get_config_for_config_widget (data, *config_iter,
+                                              TRUE, TRUE, device_templates);
                 found_config = TRUE;
                 break;
             }
         }
         if (!found_config) {
             /* have template, no config */
-            get_config_for_config_widget (data, *template_iter, TRUE, FALSE);
+            get_config_for_config_widget (data, *template_iter,
+                                          TRUE, FALSE, device_templates);
         }
     }
 
@@ -1672,10 +1706,13 @@ get_configs_cb (SyncevoServer *server,
         }
         if (!found_template) {
             /* have config, no template */
-            get_config_for_config_widget (data, *config_iter, FALSE, TRUE);
+            get_config_for_config_widget (data, *config_iter,
+                                          FALSE, TRUE, device_templates);
         }
     }
 
+    /* config initialization might ref/unref as well... */
+    g_hash_table_unref (device_templates);
     g_strfreev (configs);
     g_strfreev (templates);
 }
@@ -1717,6 +1754,9 @@ update_services_list (app_data *data)
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)remove_child,
                            data->services_box);
+    gtk_container_foreach (GTK_CONTAINER (data->devices_box),
+                           (GtkCallback)remove_child,
+                           data->devices_box);
 
     syncevo_server_get_configs (data->server,
                                 TRUE,
