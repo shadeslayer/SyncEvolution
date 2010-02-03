@@ -29,6 +29,7 @@ import heapq
 
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
+import dbus.service
 import gobject
 import sys
 
@@ -655,6 +656,179 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
             pass
         else:
             self.fail("no exception thrown")
+
+class Connman (dbus.service.Object):
+    count = 0
+    @dbus.service.method(dbus_interface='org.moblin.connman.Manager', in_signature='', out_signature='a{sv}')
+    def GetProperties(self):
+        self.count = self.count+1
+        if (self.count == 1):
+            loop.quit()
+            return {"ConnectedTechnologies":["ethernet", "some other stuff"],
+                    "EnabledTechnologies": ["bluetooth"]}
+        elif (self.count == 2):
+            """ unplug the ethernet cable """
+            loop.quit()
+            return {"ConnectedTechnologies":["some other stuff"],
+                    "EnabledTechnologies": ["bluetooth"]}
+        elif (self.count == 3):
+            """ replug the ethernet cable """
+            loop.quit()
+            return {"ConnectedTechnologies":["ethernet", "some other stuff"],
+                    "EnabledTechnologies": ["bluetooth"]}
+        elif (self.count == 4):
+            """ nothing presence """
+            loop.quit()
+            return {"ConnectedTechnologies":[""],
+                    "EnabledTechnologies": [""]}
+        elif (self.count == 5):
+            """ come back the same time """
+            loop.quit()
+            return {"ConnectedTechnologies":["ethernet", "some other stuff"],
+                    "EnabledTechnologies": ["bluetooth"]}
+    def reset(self):
+        self.count = 0
+
+class TestDBusServerPresence(unittest.TestCase, DBusUtil):
+    """Tests Presence signal and checkPresence API"""
+    name = dbus.service.BusName ("org.moblin.connman", bus);
+    conn = Connman (bus, "/")
+
+    def setUp(self):
+        self.setUpServer()
+
+    @timeout(100)
+    def testPresenceSignal(self):
+        self.conn.reset()
+        self.setUpSession("foo")
+        self.session.SetConfig(False, False, {"" : {"syncURL":
+        "http://http-only-1"}})
+        self.session.Detach()
+        def cb_http_presence(server, status, transport):
+            self.failUnlessEqual (status, "")
+            self.failUnlessEqual (server, "foo")
+            self.failUnlessEqual (transport, "http://http-only-1")
+
+        match = bus.add_signal_receiver(cb_http_presence,
+                                'Presence',
+                                'org.syncevolution.Server',
+                                'org.syncevolution',
+                                None,
+                                byte_arrays=True,
+                                utf8_strings=True)
+        loop.run()
+        time.sleep(1)
+        self.setUpSession("foo")
+        self.session.SetConfig(True, True, {"" : {"syncURL":
+        "obex-bt://temp-bluetooth-peer-changed-from-http"}})
+        def cb_bt_presence(server, status, transport):
+            self.failUnlessEqual (status, "")
+            self.failUnlessEqual (server, "foo")
+            self.failUnlessEqual (transport,
+                    "obex-bt://temp-bluetooth-peer-changed-from-http")
+        match.remove()
+        match = bus.add_signal_receiver(cb_bt_presence,
+                                'Presence',
+                                'org.syncevolution.Server',
+                                'org.syncevolution',
+                                None,
+                                byte_arrays=True,
+                                utf8_strings=True)
+        loop.run()
+        time.sleep(1)
+        self.session.Detach()
+        self.setUpSession("bar")
+        self.session.SetConfig(False, False, {"" : {"syncURL":
+            "http://http-client-2"}})
+        self.session.Detach()
+        self.foo = "random string"
+        self.bar = "random string"
+        def cb_bt_http_presence(server, status, transport):
+            if (server == "foo"):
+                self.foo = status
+            elif (server == "bar"):
+                self.bar = status
+            else:
+                self.fail("wrong server config")
+
+        match.remove()
+        match = bus.add_signal_receiver(cb_bt_http_presence,
+                                'Presence',
+                                'org.syncevolution.Server',
+                                'org.syncevolution',
+                                None,
+                                byte_arrays=True,
+                                utf8_strings=True)
+        loop.run()
+        loop.run()
+        time.sleep(1)
+        self.failUnlessEqual (self.foo, "")
+        self.failUnlessEqual (self.bar, "")
+        match.remove()
+
+    @timeout(100)
+    def testServerCheckPresence(self):
+        self.conn.reset()
+        self.setUpSession("foo")
+        self.session.SetConfig(False, False, {"" : {"syncURL":
+        "http://http-client"}})
+        self.session.Detach()
+        self.setUpSession("bar")
+        self.session.SetConfig(False, False, {"" : {"syncURL":
+            "obex-bt://bt-client"}})
+        self.session.Detach()
+        self.setUpSession("foobar")
+        self.session.SetConfig(False, False, {"" : {"syncURL":
+            "obex-bt://bt-client-mixed http://http-client-mixed"}})
+        self.session.Detach()
+
+        #let dbus server get the first presence
+        loop.run()
+        time.sleep(1)
+        (status, transports) = self.server.CheckPresence ("foo")
+        self.failUnlessEqual (status, "")
+        self.failUnlessEqual (transports, ["http://http-client"])
+        (status, transports) = self.server.CheckPresence ("bar")
+        self.failUnlessEqual (status, "")
+        self.failUnlessEqual (transports, ["obex-bt://bt-client"])
+        (status, transports) = self.server.CheckPresence ("foobar")
+        self.failUnlessEqual (status, "")
+        self.failUnlessEqual (transports, ["obex-bt://bt-client-mixed",
+        "http://http-client-mixed"])
+
+        #count = 2
+        loop.run()
+        time.sleep(1)
+        (status, transports) = self.server.CheckPresence ("foo")
+        self.failUnlessEqual (status, "no transport")
+        (status, transports) = self.server.CheckPresence ("bar")
+        self.failUnlessEqual (status, "")
+        self.failUnlessEqual (transports, ["obex-bt://bt-client"])
+        (status, transports) = self.server.CheckPresence ("foobar")
+        self.failUnlessEqual (status, "")
+        self.failUnlessEqual (transports, ["obex-bt://bt-client-mixed"])
+
+    @timeout(100)
+    def testSessionCheckPresence(self):
+        self.conn.reset()
+        self.setUpSession("foobar")
+        self.session.SetConfig(False, False, {"" : {"syncURL":
+            "obex-bt://bt-client-mixed http://http-client-mixed"}})
+        loop.run()
+        time.sleep(1)
+        status = self.session.checkPresence()
+        self.failUnlessEqual (status, "")
+        loop.run()
+        loop.run()
+        loop.run()
+        #count = 4
+        time.sleep(1)
+        status = self.session.checkPresence()
+        self.failUnlessEqual (status, "no transport")
+
+    def run(self, result):
+        os.environ["DBUS_TEST_CONNMAN"] = "session"
+        self.runTest(result, True)
 
 class TestDBusSession(unittest.TestCase, DBusUtil):
     """Tests that work with an active session."""

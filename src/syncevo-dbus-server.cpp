@@ -337,6 +337,9 @@ class DBusServer : public DBusObjectHelper
      */
     std::list<std::pair<Caller_t, int> > m_attachedClients;
 
+    /* Event source that regurally pool network manager
+     * */
+    GLibEvent m_pollConnman;
     /**
      * The session which currently holds the main lock on the server.
      * To avoid issues with concurrent modification of data or configs,
@@ -504,6 +507,152 @@ class DBusServer : public DBusObjectHelper
                 const std::string &,
                 const std::map<string, string> &> infoRequest;
 
+    static gboolean connman_poll (gpointer dbus_server);
+    DBusConnectionPtr m_connmanConn;
+
+    friend class Session;
+    class PresenceStatus {
+        bool m_httpPresence;
+        bool m_btPresence;
+        bool m_initiated;
+        DBusServer &m_server;
+       
+        enum PeerStatus {
+            /* The transport is not available (local problem) */
+            NOTRANSPORT,
+            /* The peer is not contactable (remote problem) */
+            UNREACHABLE,
+            /* Not for sure whether the peer is presence but likely*/
+            MIGHTWORK,
+
+            INVALID
+        };
+
+        typedef map<string, vector<pair <string, PeerStatus> > > StatusMap;
+        typedef pair<const string, vector<pair <string, PeerStatus> > > StatusPair;
+        typedef pair <string, PeerStatus> PeerStatusPair;
+        StatusMap m_peers;
+
+        static std::string status2string (PeerStatus status) {
+            switch (status) {
+                case NOTRANSPORT:
+                    return "no transport";
+                    break;
+                case UNREACHABLE:
+                    return "not present";
+                    break;
+                case MIGHTWORK:
+                    return "";
+                    break;
+                case INVALID:
+                    return "invalid transport status";
+            }
+            // not reached, keep compiler happy
+            return "";
+        }
+
+        public:
+        PresenceStatus (DBusServer &server)
+            :m_httpPresence (false), m_btPresence (false), m_initiated (false), m_server (server)
+        {}
+        
+        /* Implement DBusServer::checkPresence*/
+        void checkPresence (const string &peer, string& status, std::vector<std::string> &transport) {
+            vector< pair<string, PeerStatus> > mytransports = m_peers[peer];
+            if (mytransports.empty()) {
+                //wrong config name?
+                status = status2string(NOTRANSPORT);
+                transport.clear();
+                return;
+            }
+            PeerStatus mystatus = MIGHTWORK;
+            transport.clear();
+            //only if all transports are unavailable can we declare the peer
+            //status as unavailable
+            BOOST_FOREACH (PeerStatusPair &mytransport, mytransports) {
+                if (mytransport.second == MIGHTWORK){
+                    transport.push_back (mytransport.first);
+                }
+            }
+            if (transport.empty()) {
+                mystatus = NOTRANSPORT;
+            }
+            status = status2string(mystatus);
+        }
+
+        void updateConfigPeers (const std::string &peer, const ReadOperations::Config_t &config) {
+            ReadOperations::Config_t::const_iterator iter = config.find ("");
+            if (iter != config.end()) {
+                map<string,string> localConfigs = (*iter).second;
+                BOOST_FOREACH (const StringPair &entry, localConfigs) {
+                    if (boost::iequals ("SyncURL", entry.first)) {
+                        //TODO handling multiple urls
+                        m_peers[peer].clear();
+                        m_peers[peer].push_back(make_pair(entry.second,MIGHTWORK));
+                        //As a simple approach, just reinitialize the whole STATUSMAP
+                        //it will cause later updatePresenceStatus resend all signals
+                        m_initiated = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        void updatePresenceStatus (bool httpPresence, bool btPresence) {
+            bool httpChanged = (m_httpPresence != httpPresence);
+            bool btChanged = (m_btPresence != btPresence);
+            m_httpPresence = httpPresence;
+            m_btPresence = btPresence;
+
+            if (m_initiated && !httpChanged && !btChanged) {
+                //nothing changed
+                return;
+            }
+
+            //initialize the configured peer list
+            if (!m_initiated) {
+                SyncConfig::ConfigList list = SyncConfig::getConfigs();
+                BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server, list) {
+                    ReadOperations::Config_t config;
+                    m_server.getConfig(server.first, false, config);
+                    BOOST_FOREACH (const StringPair &entry, config[""]) {
+                        if (boost::iequals ("SyncURL", entry.first)) {
+                            //TODO handling multiple urls
+                            m_peers[server.first].push_back(make_pair(entry.second,MIGHTWORK));
+                            break;
+                        }
+                    }
+                }
+            }
+
+            //iterate all configured peers and fire singals
+            BOOST_FOREACH (StatusPair &peer, m_peers) {
+                //iterate all possible transports
+                //TODO One peer might got more than one signals, avoid this
+                std::vector<pair<string, PeerStatus> > &transports = peer.second;
+                BOOST_FOREACH (PeerStatusPair &entry, transports) {
+                    string url = entry.first;
+                    if (boost::starts_with (url, "http") && (httpChanged || !m_initiated)) {
+                        entry.second = m_httpPresence ? MIGHTWORK: NOTRANSPORT;
+                        m_server.presence (peer.first, status2string (entry.second), entry.first);
+                        SE_LOG_DEBUG(NULL, NULL,
+                                     "http presence signal %s,%s,%s",
+                                     peer.first.c_str(),
+                                     status2string (entry.second).c_str(), entry.first.c_str());
+                    } else if (boost::starts_with (url, "obex-bt") && (btChanged || !m_initiated)) {
+                        entry.second = m_btPresence ? MIGHTWORK: NOTRANSPORT;
+                        m_server.presence (peer.first, status2string (entry.second), entry.first);
+                        SE_LOG_DEBUG(NULL, NULL,
+                                    "bluetooth presence signal %s,%s,%s",
+                                    peer.first.c_str(),
+                                    status2string (entry.second).c_str(), entry.first.c_str());
+                    }
+                }
+            }
+            m_initiated = true;
+        }
+    }m_presence;
+
 public:
     DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration);
     ~DBusServer();
@@ -567,6 +716,13 @@ public:
 
     /** callback to reset for auto termination checking */
     void autoTermCallback() { m_autoTerm.reset(); }
+
+    /** poll_nm callback for connman, used for presence detection*/
+    void connman_cb(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error);
+
+    PresenceStatus& getPresenceStatus() {return m_presence;}
+
+    DBusConnectionPtr getConnmanConnection() {return m_connmanConn;}
 };
 
 
@@ -1102,6 +1258,9 @@ class Session : public DBusObjectHelper,
 
     /** Session.Restore() */
     void restore(const string &dir, bool before,const std::vector<std::string> &sources);
+
+    /** Session.checkPresence() */
+    void checkPresence (string &status);
 
     /**
      * Must be called each time that properties changing the
@@ -1958,6 +2117,7 @@ void Session::setConfig(bool update, bool temporary,
         throw std::runtime_error("Clearing existing configuration and temporary configuration changes which only affects the duration of the session are mutually exclusive");
     }
 
+    m_server.getPresenceStatus().updateConfigPeers (m_configName, config);
     /** check whether we need remove the entire configuration */
     if(!update && config.empty()) {
         boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(getConfigName()));
@@ -2221,6 +2381,7 @@ Session::Session(DBusServer &server,
     add(this, &Session::getStatus, "GetStatus");
     add(this, &Session::getProgress, "GetProgress");
     add(this, &Session::restore, "Restore");
+    add(this, &Session::checkPresence, "checkPresence");
     add(emitStatus);
     add(emitProgress);
 }
@@ -2530,6 +2691,13 @@ string Session::askPassword(const string &passwordName,
 
     SyncContext::throwError("can't get the password from clients. The password request is '" + req->getStatusStr() + "'");
     return "";
+}
+
+/*Implementation of Session.CheckPresence */
+void Session::checkPresence (string &status)
+{
+    vector<string> transport;
+    m_server.m_presence.checkPresence (m_configName, status, transport);
 }
 
 /************************ ProgressData implementation *****************/
@@ -3454,7 +3622,7 @@ void DBusServer::checkPresence(const std::string &server,
                                std::string &status,
                                std::vector<std::string> &transports)
 {
-    // TODO: implement this, right now always return status = "" = available
+    return m_presence.checkPresence(server, status, transports);
 }
 
 void DBusServer::getSessions(std::vector<std::string> &sessions)
@@ -3483,7 +3651,8 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     m_autoTerm(duration),
     sessionChanged(*this, "SessionChanged"),
     presence(*this, "Presence"),
-    infoRequest(*this, "InfoRequest")
+    infoRequest(*this, "InfoRequest"),
+    m_presence(*this)
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -3503,6 +3672,13 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     add(sessionChanged);
     add(presence);
     add(infoRequest);
+
+    const char *connmanTest = getenv ("DBUS_TEST_CONNMAN");
+    m_connmanConn = g_dbus_setup_bus (connmanTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
+    if (m_connmanConn) {
+        m_pollConnman =  g_timeout_add_seconds (10, connman_poll, static_cast <gpointer> (this));
+    }
+
 }
 
 DBusServer::~DBusServer()
@@ -3740,6 +3916,70 @@ void DBusServer::removeInfoReq(const InfoReq &req)
     if(it != m_infoReqMap.end()) {
         m_infoReqMap.erase(it);
     }
+}
+
+gboolean DBusServer::connman_poll (gpointer dbusserver)
+{
+    DBusServer *me = static_cast<DBusServer *>(dbusserver);
+    DBusConnectionPtr conn = me->getConnmanConnection();
+    struct ConnmanClient : public DBusCallObject
+    {
+        DBusConnectionPtr m_connection;
+        ConnmanClient (DBusConnectionPtr conn ) : m_connection (conn) {}
+        virtual const char *getDestination() const {return "org.moblin.connman";}
+        virtual const char *getPath() const {return "/";}
+        virtual const char *getInterface() const {return "org.moblin.connman.Manager";}
+        virtual const char *getMethod() const {return "GetProperties"; }
+        virtual DBusConnection *getConnection() const {return m_connection.get();}
+    }connman (conn);
+
+    typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
+    DBusClientCall0<PropDict>  getProp(connman);
+    getProp (boost::bind(&DBusServer::connman_cb, me, _1, _2));
+    return TRUE;
+}
+
+
+void DBusServer::connman_cb (const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error)
+{
+    if (!error.empty()) {
+        if (error == "org.freedesktop.DBus.Error.ServiceUnknown") {
+            // no connman available, remove connman_poll.
+            m_pollConnman.set(0);
+            SE_LOG_DEBUG (NULL, NULL, "No connman service available %s", error.c_str());
+            return;
+        }
+        SE_LOG_DEBUG (NULL, NULL, "error in connman_cb %s", error.c_str());
+        return;
+    }
+
+    typedef std::pair <std::string, boost::variant <std::vector <std::string> > > element;
+    bool httpPresence = false, btPresence = false;
+    BOOST_FOREACH (element entry, props) {
+        //match connected for HTTP based peers (wifi/wimax/ethernet)
+        if (entry.first == "ConnectedTechnologies") {
+            std::vector <std::string> connected = boost::get <std::vector <std::string> > (entry.second);
+            BOOST_FOREACH (std::string tech, connected) {
+                if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet") 
+                || boost::iequals (tech, "wimax")) {
+                    httpPresence = true;
+                    break;
+                }
+            }
+        } else if (entry.first == "EnabledTechnologies") {
+            std::vector <std::string> enabled = boost::get <std::vector <std::string> > (entry.second);
+            BOOST_FOREACH (std::string tech, enabled){
+                if (boost::iequals (tech, "bluetooth")) {
+                    btPresence = true;
+                    break;
+                }
+            }
+        } else {
+            continue;
+        }
+    }
+    //now delivering the signals
+    m_presence.updatePresenceStatus (httpPresence, btPresence);
 }
 
 /********************** InfoReq implementation ******************/
