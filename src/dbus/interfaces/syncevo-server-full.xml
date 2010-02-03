@@ -74,6 +74,21 @@
     <method name ="GetConfigs">
       <doc:doc><doc:description>
         Get an array of all configured servers (or templates)
+
+        In getting templates mode, the dbus server checks the paired devices
+        from bluez and returns the matched templates. Templates for each device
+        are re-named with 'Bluetooth_&lt;mac address&gt;_&lt;number&gt;', where number
+        enumerates the templates created for the device.
+
+        Get these templates latter when calling GetConfig with additional new
+        properties: 
+            description - the description for the template
+            score - the calculated score based on the device name and template
+            deviceName - the device name that the template is for
+            fingerPrint - the fingerPrint of the template, used for dbus
+                          clients to re-match with user input device info
+        Also a property value is changed: 'syncURL' is replaced with the device 
+        mac address.
       </doc:description></doc:doc>
       <arg type="b" name="template" direction="in">
         <doc:doc><doc:summary>

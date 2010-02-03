@@ -81,6 +81,7 @@ class Connection;
 class Client;
 class DBusTransportAgent;
 class DBusUserInterface;
+class DBusServer;
 
 class DBusSyncException : public DBusCXXException, public Exception
 {
@@ -183,7 +184,9 @@ class ReadOperations
 public:
     const std::string m_configName;
 
-    ReadOperations(const std::string &config_name);
+    DBusServer &m_server;
+
+    ReadOperations(const std::string &config_name, DBusServer &server);
 
     /** the double dictionary used to represent configurations */
     typedef std::map< std::string, StringMap > Config_t;
@@ -196,7 +199,7 @@ public:
     typedef SyncSource::Databases SourceDatabases_t;
 
     /** implementation of D-Bus GetConfigs() */
-    static void getConfigs(bool getTemplates, std::vector<std::string> &configNames);
+    void getConfigs(bool getTemplates, std::vector<std::string> &configNames);
 
     /** implementation of D-Bus GetConfig() for m_configName as server configuration */
     void getConfig(bool getTemplate,
@@ -316,6 +319,82 @@ class AutoTerm {
 class InfoReq;
 
 /**
+ * Query bluetooth devices from bluez
+ */
+class BtDeviceQueryer{
+public:
+    BtDeviceQueryer(DBusServer &server); 
+
+    typedef std::map <std::string, boost::variant <std::vector <std::string>, string > > PropDict;
+
+    /**
+     * get devices which has sync services
+     */
+    void getSyncDevices(SyncConfig::DeviceList &devices);
+
+private:
+
+    struct BluezClient : public DBusCallObject
+    {
+        DBusConnectionPtr m_connection;
+        BluezClient (DBusConnectionPtr conn) : m_connection (conn) {}
+        virtual const char *getDestination() const {return "org.bluez";}
+        virtual const char *getPath() const {return "/";}
+        virtual const char *getInterface() const {return "org.bluez.Manager";}
+        virtual const char *getMethod() const {return "DefaultAdapter"; }
+        virtual DBusConnection *getConnection() const {return m_connection.get();}
+    };
+
+    struct BluezAdapter: public DBusCallObject
+    {
+        DBusConnectionPtr m_connection;
+        std::string m_path;
+        BluezAdapter (DBusConnectionPtr conn, const string &path) : m_connection (conn), m_path(path) {}
+        virtual const char *getDestination() const {return "org.bluez";}
+        virtual const char *getPath() const {return m_path.c_str();}
+        virtual const char *getInterface() const {return "org.bluez.Adapter";}
+        virtual const char *getMethod() const {return "ListDevices"; }
+        virtual DBusConnection *getConnection() const {return m_connection.get();}
+    };
+
+    struct BluezDevice: public DBusCallObject
+    {
+        DBusConnectionPtr m_connection;
+        string m_path;
+        BluezDevice (DBusConnectionPtr conn, const string &path) : m_connection (conn), m_path(path) {}
+        virtual const char *getDestination() const {return "org.bluez";}
+        virtual const char *getPath() const {return m_path.c_str();}
+        virtual const char *getInterface() const {return "org.bluez.Device";}
+        virtual const char *getMethod() const {return "GetProperties"; }
+        virtual DBusConnection *getConnection() const {return m_connection.get();}
+    };
+
+    void reset();
+
+    /*
+     * check whether the data is generated. If errors, force initilization done
+     */
+    void check(bool forceDone = false);
+
+    void defaultAdapterCb(const DBusObject_t &adapter, const string &error);
+
+    void listDevicesCb(const std::vector<DBusObject_t> &devices, const string &error);
+
+    void getPropertiesCb(const PropDict &props, const string &error);
+
+    DBusServer &m_server;
+
+    DBusConnectionPtr m_bluezConn;
+    bool m_done;
+    // the number of device for the default adapter
+    int m_devNo;
+    // the number of devices having reply
+    int m_devReplies;
+    // devices have sync capability
+    SyncConfig::DeviceList m_devices;
+};
+
+/**
  * Implements the main org.syncevolution.Server interface.
  *
  * All objects created by it get a reference to the creating
@@ -391,6 +470,14 @@ class DBusServer : public DBusObjectHelper
     //automatic termination
     AutoTerm m_autoTerm;
 
+    // a hash to represent matched templates for devices, the key is
+    // the peer name
+    typedef std::map<string, boost::shared_ptr<SyncConfig::TemplateDescription> > MatchedTemplates;
+
+    MatchedTemplates m_matchedTempls;
+
+    BtDeviceQueryer m_btQueryer;
+
     /**
      * Watch callback for a specific client or connection.
      */
@@ -429,7 +516,7 @@ class DBusServer : public DBusObjectHelper
                    bool getTemplate,
                    ReadOperations::Config_t &config)
     {
-        ReadOperations ops(config_name);
+        ReadOperations ops(config_name, *this);
         ops.getConfig(getTemplate , config);
     }
 
@@ -438,7 +525,7 @@ class DBusServer : public DBusObjectHelper
                     uint32_t start, uint32_t count,
                     ReadOperations::Reports_t &reports)
     {
-        ReadOperations ops(config_name);
+        ReadOperations ops(config_name, *this);
         ops.getReports(start, count, reports);
     }
 
@@ -446,7 +533,7 @@ class DBusServer : public DBusObjectHelper
     void checkSource(const std::string &configName,
                      const std::string &sourceName)
     {
-        ReadOperations ops(configName);
+        ReadOperations ops(configName, *this);
         ops.checkSource(sourceName);
     }
 
@@ -455,8 +542,15 @@ class DBusServer : public DBusObjectHelper
                       const string &sourceName,
                       ReadOperations::SourceDatabases_t &databases)
     {
-        ReadOperations ops(configName);
+        ReadOperations ops(configName, *this);
         ops.getDatabases(sourceName, databases);
+    }
+
+    void getConfigs(bool getTemplates, 
+                    std::vector<std::string> &configNames)
+    {
+        ReadOperations ops("", *this);
+        ops.getConfigs(getTemplates, configNames);
     }
 
     /** Server.CheckPresence() */
@@ -729,6 +823,12 @@ public:
     PresenceStatus& getPresenceStatus() {return m_presence;}
 
     DBusConnectionPtr getConnmanConnection() {return m_connmanConn;}
+
+    void getDeviceList(SyncConfig::DeviceList &devices);
+
+    void addPeerTempl(const string &templName, const boost::shared_ptr<SyncConfig::TemplateDescription> peerTempl);
+
+    boost::shared_ptr<SyncConfig::TemplateDescription> getPeerTempl(const string &peer);
 };
 
 
@@ -1677,18 +1777,40 @@ private:
 
 /***************** ReadOperations implementation ****************/
 
-ReadOperations::ReadOperations(const std::string &config_name) :
-    m_configName(config_name)
+ReadOperations::ReadOperations(const std::string &config_name, DBusServer &server) :
+    m_configName(config_name), m_server(server)
 {}
 
 void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &configNames)
 {
     if (getTemplates) {
+        // get device list from dbus server, currently only bluetooth devices
         SyncConfig::DeviceList devices;
+        m_server.getDeviceList(devices);
+
         SyncConfig::TemplateList list = SyncConfig::getPeerTemplates(devices);
-        BOOST_FOREACH(const boost::shared_ptr<SyncConfig::TemplateDescription> server, list) {
-            configNames.push_back(server->m_name);
-        //TODO create the template filters
+        std::map<std::string, int> numbers;
+        BOOST_FOREACH(const boost::shared_ptr<SyncConfig::TemplateDescription> peer, list) {
+            //if it is not a template for device
+            if(peer->m_fingerprint.empty()) {
+                configNames.push_back(peer->m_name);
+            } else {
+                string templName = "Bluetooth_";
+                templName += peer->m_id;
+                templName += "_";
+                std::map<std::string, int>::iterator it = numbers.find(peer->m_id);
+                if(it == numbers.end()) {
+                    numbers.insert(std::make_pair(peer->m_id, 1));
+                    templName += "1";
+                } else {
+                    it->second++;
+                    stringstream seq;
+                    seq << it->second;
+                    templName += seq.str();
+                }
+                configNames.push_back(templName);
+                m_server.addPeerTempl(templName, peer);
+            }
         }
     } else {
         SyncConfig::ConfigList list = SyncConfig::getConfigs();
@@ -1725,13 +1847,38 @@ void ReadOperations::getConfig(bool getTemplate,
     boost::shared_ptr<SyncConfig> dbusConfig;
     boost::shared_ptr<DBusUserInterface> dbusUI;
     SyncConfig *syncConfig;
+    string syncURL;
     /** get server template */
     if(getTemplate) {
         string peer, context;
-        SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_configName),
-                                      peer, context);
 
-        dbusConfig = SyncConfig::createPeerTemplate(peer);
+        boost::shared_ptr<SyncConfig::TemplateDescription> peerTemplate =
+            m_server.getPeerTempl(m_configName);
+        if(peerTemplate) {
+            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(peerTemplate->m_name),
+                    peer, context);
+            dbusConfig = SyncConfig::createPeerTemplate(peerTemplate->m_path);
+            // if we have cached template information, add match information for it
+            localConfigs.insert(pair<string, string>("description", peerTemplate->m_description));
+
+            stringstream score;
+            score << peerTemplate->m_rank;
+            localConfigs.insert(pair<string, string>("score", score.str()));
+            // Actually this fingerprint is transferred by getConfigs, which refers to device name
+            localConfigs.insert(pair<string, string>("deviceName", peerTemplate->m_fingerprint));
+            // This is the fingerprint of the template
+            localConfigs.insert(pair<string, string>("fingerPrint", peerTemplate->m_matchedModel));
+
+            // if the peer is client, then replace syncURL with bluetooth
+            // MAC address
+            syncURL = "obex-bt://";
+            syncURL += peerTemplate->m_id;
+        } else {
+            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_configName),
+                    peer, context);
+            dbusConfig = SyncConfig::createPeerTemplate(peer);
+        }
+
         if(!dbusConfig.get()) {
             SE_THROW_EXCEPTION(NoSuchConfig, "No template '" + m_configName + "' found");
         }
@@ -1775,7 +1922,9 @@ void ReadOperations::getConfig(bool getTemplate,
     BOOST_FOREACH(const ConfigProperty *prop, syncRegistry) {
         bool isDefault = false;
         string value = prop->getProperty(*syncConfig->getProperties(), &isDefault);
-        if(!isDefault) {
+        if(boost::iequals(prop->getName(), "syncURL") && !syncURL.empty() ) {
+            localConfigs.insert(pair<string, string>(prop->getName(), syncURL));
+        } else if(!isDefault) {
             localConfigs.insert(pair<string, string>(prop->getName(), value));
         }
     }
@@ -2351,7 +2500,7 @@ Session::Session(DBusServer &server,
                      std::string("/org/syncevolution/Session/") + session,
                      "org.syncevolution.Session",
                      boost::bind(&DBusServer::autoTermCallback, &server)),
-    ReadOperations(config_name),
+    ReadOperations(config_name, server),
     m_server(server),
     m_sessionID(session),
     m_peerDeviceID(peerDeviceID),
@@ -2375,7 +2524,7 @@ Session::Session(DBusServer &server,
     emitProgress(*this, "ProgressChanged")
 {
     add(this, &Session::detach, "Detach");
-    add(&ReadOperations::getConfigs, "GetConfigs");
+    add(static_cast<ReadOperations *>(this), &ReadOperations::getConfigs, "GetConfigs");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getConfig, "GetConfig");
     add(this, &Session::setConfig, "SetConfig");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getReports, "GetReports");
@@ -3665,6 +3814,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     m_activeSession(NULL),
     m_lastInfoReq(0),
     m_autoTerm(duration),
+    m_btQueryer(*this),
     sessionChanged(*this, "SessionChanged"),
     presence(*this, "Presence"),
     infoRequest(*this, "InfoRequest"),
@@ -3677,7 +3827,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     add(this, &DBusServer::detachClient, "Detach");
     add(this, &DBusServer::connect, "Connect");
     add(this, &DBusServer::startSession, "StartSession");
-    add(&ReadOperations::getConfigs, "GetConfigs");
+    add(this, &DBusServer::getConfigs, "GetConfigs");
     add(this, &DBusServer::getConfig, "GetConfig");
     add(this, &DBusServer::getReports, "GetReports");
     add(this, &DBusServer::checkSource, "CheckSource");
@@ -4001,6 +4151,31 @@ void DBusServer::connmanCallback (const std::map <std::string, boost::variant <s
     m_presence.updatePresenceStatus (httpPresence, btPresence);
 }
 
+void DBusServer::getDeviceList(SyncConfig::DeviceList &devices)
+{
+    m_btQueryer.getSyncDevices(devices);
+}
+
+void DBusServer::addPeerTempl(const string &templName, 
+                              const boost::shared_ptr<SyncConfig::TemplateDescription> peerTempl)
+{
+    std::string lower = templName;
+    boost::to_lower(lower);
+    m_matchedTempls.insert(MatchedTemplates::value_type(lower, peerTempl));
+}
+
+boost::shared_ptr<SyncConfig::TemplateDescription> DBusServer::getPeerTempl(const string &peer)
+{
+    std::string lower = peer;
+    boost::to_lower(lower);
+    MatchedTemplates::iterator it = m_matchedTempls.find(lower);
+    if(it != m_matchedTempls.end()) {
+        return it->second;
+    } else {
+        return boost::shared_ptr<SyncConfig::TemplateDescription>();
+    }
+}
+
 /********************** InfoReq implementation ******************/
 InfoReq::InfoReq(DBusServer &server,
                  const string &type,
@@ -4151,6 +4326,105 @@ void InfoReq::done()
         m_infoState = IN_DONE;
         m_server.emitInfoReq(*this);
     }
+}
+
+/********************** BtDeviceQueryer implementation ******************/
+BtDeviceQueryer::BtDeviceQueryer(DBusServer &server) :
+    m_server(server)
+{
+    reset();
+    m_bluezConn = g_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
+    if(m_bluezConn) {
+        BluezClient bluez(m_bluezConn);
+        DBusClientCall0<DBusObject_t> getAdapter(bluez);
+        getAdapter(boost::bind(&BtDeviceQueryer::defaultAdapterCb, this, _1, _2 ));
+    } else {
+        m_done = true;
+    }
+}
+
+void BtDeviceQueryer::reset()
+{
+    m_done = false;
+    m_devNo = 0;
+    m_devReplies = 0;
+    m_devices.clear();
+}
+
+void BtDeviceQueryer::getSyncDevices(SyncConfig::DeviceList &devices)
+{
+    // if not initial, waiting for data
+    while(!m_done) {
+        g_main_loop_run(m_server.getLoop());
+    }
+    devices = m_devices;
+}
+
+void BtDeviceQueryer::check(bool forceDone)
+{
+    if(forceDone || (m_devReplies == m_devNo)) {
+        m_done = true;
+    }
+}
+
+void BtDeviceQueryer::defaultAdapterCb(const DBusObject_t &adapter, const string &error)
+{
+    if(!error.empty()) {
+        SE_LOG_DEBUG (NULL, NULL, "Error in calling DefaultAdapter of Interface org.bluez.Manager: %s", error.c_str());
+        check(true);
+        return;
+    }
+    BluezAdapter bluezAdapter(m_bluezConn, adapter); 
+    DBusClientCall0<std::vector<DBusObject_t> > listDevices(bluezAdapter);
+    listDevices(boost::bind(&BtDeviceQueryer::listDevicesCb, this, _1, _2));
+}
+
+void BtDeviceQueryer::listDevicesCb(const std::vector<DBusObject_t> &devices, const string &error)
+{
+    if(!error.empty()) {
+        SE_LOG_DEBUG (NULL, NULL, "Error in calling ListDevices of Interface org.bluez.Adapter: %s", error.c_str());
+        check(true);
+        return;
+    }
+    m_devNo = devices.size();
+    BOOST_FOREACH(const DBusObject_t &device, devices) {
+       BluezDevice bluezDevice(m_bluezConn, device);
+       DBusClientCall0<PropDict> getProperties(bluezDevice);
+       getProperties(boost::bind(&BtDeviceQueryer::getPropertiesCb, this, _1, _2));
+    }
+}
+
+void BtDeviceQueryer::getPropertiesCb(const PropDict &props, const string &error)
+{
+    m_devReplies++;
+    if(!error.empty()) {
+        SE_LOG_DEBUG (NULL, NULL, "Error in calling GetProperties of Interface org.bluez.Device: %s", error.c_str());
+        check(true);
+        return;
+    }
+    const char * SYNCML_CLIENT_UUID = "00000002-0000-1000-8000-0002ee000002";
+    PropDict::const_iterator uuids = props.find("UUIDs");
+    if(uuids != props.end()) {
+        const std::vector<std::string> uuidVec = boost::get<std::vector<std::string> >(uuids->second);
+        BOOST_FOREACH(const string &uuid, uuidVec) {
+            //if the device has sync services, add it to the device list
+            if(boost::iequals(uuid, SYNCML_CLIENT_UUID)) {
+                PropDict::const_iterator it = props.find("Name");
+                string name;
+                if(it != props.end()) {
+                    name = boost::get<string>(it->second);
+                }
+                it = props.find("Address");
+                string address;
+                if(it != props.end()) {
+                    address = boost::get<string>(it->second);
+                }
+                m_devices.push_back(std::make_pair(address, std::make_pair(name, SyncConfig::MATCH_FOR_SERVER_MODE)));
+                break;
+            }
+        }
+    }
+    check();
 }
 
 /**************************** main *************************/

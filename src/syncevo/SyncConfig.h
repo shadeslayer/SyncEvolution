@@ -851,6 +851,9 @@ class SyncConfig {
         // The matched percentage of the template, larger the better.
         int m_rank;
 
+        //a unique identity of the device that the template is for, used by caller
+        std::string m_id;
+
         // A string identify which fingerprint the template is matched with.
         std::string m_fingerprint;
 
@@ -863,10 +866,11 @@ class SyncConfig {
         std::string m_matchedModel;
 
         TemplateDescription (const std::string &name, const std::string &description, 
-                const int rank, const std::string &fingerprint, const std::string &path, const std::string &model)
+                const int rank, const std::string id, const std::string &fingerprint, const std::string &path, const std::string &model)
             :   m_name (name),
                 m_description (description),
                 m_rank (rank),
+                m_id (id),
                 m_fingerprint (fingerprint),
                 m_path (path),
                 m_matchedModel(model)
@@ -889,7 +893,9 @@ class SyncConfig {
     };
 
     typedef list<boost::shared_ptr <TemplateDescription> > TemplateList;
-    typedef list<std::pair <std::string, SyncConfig::MatchMode> > DeviceList;
+
+    // the 3 parameters here are: the id of the device, the fingerprint of the device and the match mode
+    typedef list<std::pair<std::string, std::pair <std::string, SyncConfig::MatchMode> > > DeviceList;
 
     /**
      * returns list of servers in either the old (.sync4j) or

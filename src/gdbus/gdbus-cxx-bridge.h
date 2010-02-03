@@ -1304,6 +1304,50 @@ template <class V> struct dbus_traits <boost::variant <V> > : public dbus_traits
 };
 
 /**
+ * A boost::variant <V1, V2> maps to a dbus variant, only care about values of
+ * type V1, V2 but will not throw error if type is not matched, this is useful if
+ * application is interested on only a sub set of possible value types
+ * in variant.
+ */
+template <class V1, class V2> struct dbus_traits <boost::variant <V1, V2> > : public dbus_traits_base
+{
+    static std::string getType() { return "v"; }
+    static std::string getSignature() { return getType(); }
+    static std::string getReply() { return ""; }
+    static const int dbus = DBUS_TYPE_VARIANT;
+
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, boost::variant <V1, V2> &value)
+    {
+        if (dbus_message_iter_get_arg_type(&iter) != dbus) {
+            throw std::runtime_error("invalid argument");
+            return;
+        }
+        DBusMessageIter sub;
+        dbus_message_iter_recurse(&iter, &sub);
+        if (dbus_message_iter_get_signature(&sub) != dbus_traits<V1>::getSignature()
+                && dbus_message_iter_get_signature(&sub) != dbus_traits<V2>::getSignature()){
+            //ignore unrecognized sub type in variant
+            return;
+        } else if (dbus_message_iter_get_signature(&sub) == dbus_traits<V1>::getSignature()) {
+            V1 val;
+            dbus_traits<V1>::get (conn, msg, sub, val);
+            value = val;
+        } else {
+            V2 val;
+            dbus_traits<V2>::get (conn, msg, sub, val);
+            value = val;
+        }
+    }
+
+    static void append(DBusMessageIter &iter, const boost::variant <V1, V2>  &value) {
+    }
+
+    typedef boost::variant<V1, V2> host_type;
+    typedef const boost::variant<V1, V2> &arg_type;
+};
+
+/**
  * a single member m of type V in a struct K
  */
 template<class K, class V, V K::*m> struct dbus_member_single
