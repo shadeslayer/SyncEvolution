@@ -160,14 +160,12 @@ main (int argc, char *argv[])
 int
 main (int argc, char *argv[])
 {
-    gtk_init (&argc, &argv);
-    bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
-    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-    textdomain (GETTEXT_PACKAGE);
+    app_data *data;
 
     init (argc, argv);
 
     set_app_name_and_icon ();
+    data = sync_ui_create ();
 
     sync_ui_create ();
     if (settings_id) {
