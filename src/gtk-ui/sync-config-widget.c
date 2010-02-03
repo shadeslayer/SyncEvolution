@@ -236,7 +236,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
     save_config_data *data;
     const char *username, *password, *sync_url, *pretty_name;
-    char *real_url;
+    char *real_url, *device;
     gboolean send, receive;
     SyncevoSyncMode mode;
 
@@ -337,13 +337,14 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     password = gtk_entry_get_text (GTK_ENTRY (self->password_entry));
     syncevo_config_set_value (self->config, NULL, "password", password);
 
-
-    if (!self->config_name || strlen (self->config_name) == 0 ||
-        !sync_url || strlen (sync_url) == 0) {
-        /* TODO show in UI: service settings missing name or url */
-        show_error_dialog (GTK_WIDGET (self), 
-                           _("Service must have a name and server URL"));
-        return;
+    syncevo_config_get_value (self->config, NULL, "deviceName", &device);
+    if (!device || strlen (device) == 0) {
+        if (!self->config_name || strlen (self->config_name) == 0 ||
+            !sync_url || strlen (sync_url) == 0) {
+            show_error_dialog (GTK_WIDGET (self), 
+                               _("Service must have a name and server URL"));
+            return;
+        }
     }
 
     syncevo_config_foreach_source (self->config,
