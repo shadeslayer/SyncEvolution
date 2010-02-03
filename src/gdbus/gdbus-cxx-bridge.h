@@ -3980,7 +3980,11 @@ public:
 template <class R>
 class DBusClientCall0
 {
-    const DBusCallObject& m_object;
+    const std::string m_destination;
+    const std::string m_path;
+    const std::string m_interface;
+    const std::string m_method;
+    const DBusConnectionPtr m_conn;
 
     /** called by libdbus on error or completion of call */
     static void dbusCallback (DBusPendingCall *call, void *user_data)
@@ -4016,7 +4020,11 @@ public:
     typedef boost::function<void (const R &, const std::string &)> Callback_t;
 
     DBusClientCall0 (const DBusCallObject &object)
-        :m_object (object)
+        :m_destination (object.getDestination()),
+         m_path (object.getPath()),
+         m_interface (object.getInterface()),
+         m_method (object.getMethod()),
+         m_conn (object.getConnection())
     {
     }
 
@@ -4024,16 +4032,16 @@ public:
     {
         DBusPendingCall *call;
         DBusMessagePtr msg(dbus_message_new_method_call(
-                    m_object.getDestination(),
-                    m_object.getPath(),
-                    m_object.getInterface(),
-                    m_object.getMethod()));
+                    m_destination.c_str(),
+                    m_path.c_str(),
+                    m_interface.c_str(),
+                    m_method.c_str()));
         if (!msg) {
             throw std::runtime_error("dbus_message_new_method_call() failed");
         }
 
         //parameter marshaling (none)
-        if (!dbus_connection_send_with_reply(m_object.getConnection(), msg.get(), &call, -1)) {
+        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
 
