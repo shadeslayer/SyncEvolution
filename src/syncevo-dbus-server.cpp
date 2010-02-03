@@ -507,7 +507,7 @@ class DBusServer : public DBusObjectHelper
                 const std::string &,
                 const std::map<string, string> &> infoRequest;
 
-    static gboolean connman_poll (gpointer dbus_server);
+    static gboolean connmanPoll (gpointer dbus_server);
     DBusConnectionPtr m_connmanConn;
 
     friend class Session;
@@ -725,7 +725,7 @@ public:
     void autoTermCallback() { m_autoTerm.reset(); }
 
     /** poll_nm callback for connman, used for presence detection*/
-    void connman_cb(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error);
+    void connmanCallback(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error);
 
     PresenceStatus& getPresenceStatus() {return m_presence;}
 
@@ -3693,7 +3693,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     const char *connmanTest = getenv ("DBUS_TEST_CONNMAN");
     m_connmanConn = g_dbus_setup_bus (connmanTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
     if (m_connmanConn) {
-        m_pollConnman =  g_timeout_add_seconds (10, connman_poll, static_cast <gpointer> (this));
+        m_pollConnman =  g_timeout_add_seconds (10, connmanPoll, static_cast <gpointer> (this));
     }
 
 }
@@ -3935,7 +3935,7 @@ void DBusServer::removeInfoReq(const InfoReq &req)
     }
 }
 
-gboolean DBusServer::connman_poll (gpointer dbusserver)
+gboolean DBusServer::connmanPoll (gpointer dbusserver)
 {
     DBusServer *me = static_cast<DBusServer *>(dbusserver);
     DBusConnectionPtr conn = me->getConnmanConnection();
@@ -3952,21 +3952,21 @@ gboolean DBusServer::connman_poll (gpointer dbusserver)
 
     typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
     DBusClientCall0<PropDict>  getProp(connman);
-    getProp (boost::bind(&DBusServer::connman_cb, me, _1, _2));
+    getProp (boost::bind(&DBusServer::connmanCallback, me, _1, _2));
     return TRUE;
 }
 
 
-void DBusServer::connman_cb (const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error)
+void DBusServer::connmanCallback (const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error)
 {
     if (!error.empty()) {
         if (error == "org.freedesktop.DBus.Error.ServiceUnknown") {
-            // no connman available, remove connman_poll.
+            // no connman available, remove connmanPoll.
             m_pollConnman.set(0);
             SE_LOG_DEBUG (NULL, NULL, "No connman service available %s", error.c_str());
             return;
         }
-        SE_LOG_DEBUG (NULL, NULL, "error in connman_cb %s", error.c_str());
+        SE_LOG_DEBUG (NULL, NULL, "error in connmanCallback %s", error.c_str());
         return;
     }
 
