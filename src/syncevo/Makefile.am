@@ -61,7 +61,6 @@ SYNCEVOLUTION_SOURCES  = \
 	\
 	SynthesisDBPlugin.cpp \
 	\
-	SyncEvolutionXML.c \
         SyncContext.h \
 	SyncContext.cpp \
 	\
@@ -124,6 +123,8 @@ DISTCLEANFILES =syncevolution.pc
 EXTRA_DIST =syncevolution.pc.in
 
 libsyncevolution_la_SOURCES = $(SYNCEVOLUTION_SOURCES)
+nodist_libsyncevolution_la_SOURCES = SyncEvolutionXML.c
+CLEANFILES = SyncEvolutionXML.c
 libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GLIB_LIBS@ $(SYNTHESIS_LIBS) $(TRANSPORT_LIBS) @LIBS@ $(SYNCEVOLUTION_LDADD)
 libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS)
 libsyncevolution_la_CPPFLAGS = $(AM_CPPFLAGS) \
