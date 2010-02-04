@@ -554,11 +554,36 @@ class DBusServer : public DBusObjectHelper
         public:
         PresenceStatus (DBusServer &server)
             :m_httpPresence (false), m_btPresence (false), m_initiated (false), m_server (server)
-        {}
+        {
+            init();
+        }
         
+        void init(){
+            //initialize the configured peer list
+            if (!m_initiated) {
+                SyncConfig::ConfigList list = SyncConfig::getConfigs();
+                BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server, list) {
+                    SyncConfig config (server.first);
+                    vector<string> urls = config.getSyncURL();
+                    m_peers[server.first].clear();
+                    BOOST_FOREACH (const string &url, urls) {
+                        m_peers[server.first].push_back(make_pair(url,MIGHTWORK));
+                    }
+                }
+                m_initiated = true;
+            }
+        }
+
         /* Implement DBusServer::checkPresence*/
         void checkPresence (const string &peer, string& status, std::vector<std::string> &transport) {
-            vector< pair<string, PeerStatus> > mytransports = m_peers[peer];
+
+            if (!m_initiated) {
+                //might triggered by updateConfigPeers
+                init();
+            }
+
+            string peerName = SyncConfig::normalizeConfigString (peer);
+            vector< pair<string, PeerStatus> > mytransports = m_peers[peerName];
             if (mytransports.empty()) {
                 //wrong config name?
                 status = status2string(NOTRANSPORT);
@@ -583,21 +608,10 @@ class DBusServer : public DBusObjectHelper
         void updateConfigPeers (const std::string &peer, const ReadOperations::Config_t &config) {
             ReadOperations::Config_t::const_iterator iter = config.find ("");
             if (iter != config.end()) {
-                map<string,string> localConfigs = (*iter).second;
-                BOOST_FOREACH (const StringPair &entry, localConfigs) {
-                    if (boost::iequals ("SyncURL", entry.first)) {
-                        m_peers[peer].clear();
-                        vector<string> urls;
-                        boost::split (urls, entry.second, boost::is_any_of (" \t"));
-                        BOOST_FOREACH (const string &url, urls) {
-                            m_peers[peer].push_back(make_pair(url,MIGHTWORK));
-                        }
-                        //As a simple approach, just reinitialize the whole STATUSMAP
-                        //it will cause later updatePresenceStatus resend all signals
-                        m_initiated = false;
-                        break;
-                    }
-                }
+                //As a simple approach, just reinitialize the whole STATUSMAP
+                //it will cause later updatePresenceStatus resend all signals
+                //and a reload in checkPresence
+                m_initiated = false;
             }
         }
 
@@ -613,23 +627,9 @@ class DBusServer : public DBusObjectHelper
             }
 
             //initialize the configured peer list
+            bool initiated = m_initiated;
             if (!m_initiated) {
-                SyncConfig::ConfigList list = SyncConfig::getConfigs();
-                BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server, list) {
-                    ReadOperations::Config_t config;
-                    m_server.getConfig(server.first, false, config);
-                    BOOST_FOREACH (const StringPair &entry, config[""]) {
-                        if (boost::iequals ("SyncURL", entry.first)) {
-                            vector<string> urls;
-                            boost::split (urls, entry.second, boost::is_any_of (" \t"));
-                            m_peers[server.first].clear();
-                            BOOST_FOREACH (const string &url, urls) {
-                                m_peers[server.first].push_back(make_pair(url,MIGHTWORK));
-                            }
-                            break;
-                        }
-                    }
-                }
+                init();
             }
 
             //iterate all configured peers and fire singals
@@ -639,14 +639,14 @@ class DBusServer : public DBusObjectHelper
                 std::vector<pair<string, PeerStatus> > &transports = peer.second;
                 BOOST_FOREACH (PeerStatusPair &entry, transports) {
                     string url = entry.first;
-                    if (boost::starts_with (url, "http") && (httpChanged || !m_initiated)) {
+                    if (boost::starts_with (url, "http") && (httpChanged || !initiated)) {
                         entry.second = m_httpPresence ? MIGHTWORK: NOTRANSPORT;
                         m_server.presence (peer.first, status2string (entry.second), entry.first);
                         SE_LOG_DEBUG(NULL, NULL,
                                      "http presence signal %s,%s,%s",
                                      peer.first.c_str(),
                                      status2string (entry.second).c_str(), entry.first.c_str());
-                    } else if (boost::starts_with (url, "obex-bt") && (btChanged || !m_initiated)) {
+                    } else if (boost::starts_with (url, "obex-bt") && (btChanged || !initiated)) {
                         entry.second = m_btPresence ? MIGHTWORK: NOTRANSPORT;
                         m_server.presence (peer.first, status2string (entry.second), entry.first);
                         SE_LOG_DEBUG(NULL, NULL,
@@ -656,7 +656,6 @@ class DBusServer : public DBusObjectHelper
                     }
                 }
             }
-            m_initiated = true;
         }
     }m_presence;
 
@@ -3963,6 +3962,9 @@ void DBusServer::connmanCallback (const std::map <std::string, boost::variant <s
         if (error == "org.freedesktop.DBus.Error.ServiceUnknown") {
             // no connman available, remove connmanPoll.
             m_pollConnman.set(0);
+            // ensure there is still first set of singal set in case of no
+            // connman available
+            m_presence.updatePresenceStatus (true, true);
             SE_LOG_DEBUG (NULL, NULL, "No connman service available %s", error.c_str());
             return;
         }
