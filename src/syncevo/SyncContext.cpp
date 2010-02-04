@@ -1282,6 +1282,10 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
             break;
         case 0:
             break;
+        case sysync::LOCERR_DATASTORE_ABORT:
+            // this can mean only one thing in SyncEvolution: unexpected slow sync
+            extra1 = STATUS_UNEXPECTED_SLOW_SYNC;
+            // no break!
         default:
             // Printing unknown status codes here is of somewhat questionable value,
             // because even "good" sources will get a bad status when the overall
@@ -1931,7 +1935,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                     "      <datastoreinitscript><![CDATA[\n"
                     "           if (SLOWSYNC() && ALERTCODE() != 203) {\n" // SLOWSYNC() is true for acceptable refresh-from-client, check for that
                     "              DEBUGMESSAGE(\"slow sync not expected by SyncEvolution, disabling datastore\");\n"
-                    "              ABORTDATASTORE(" << STATUS_UNEXPECTED_SLOW_SYNC << ");\n"
+                    "              ABORTDATASTORE(" << sysync::LOCERR_DATASTORE_ABORT << ");\n"
                     "              // tell UI to abort instead of sending the next message\n"
                     "              SETSESSIONVAR(\"delayedabort\", 1);\n"
                     "           }\n"
