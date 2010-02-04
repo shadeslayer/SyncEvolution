@@ -884,9 +884,7 @@ ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
 
 static ConfigProperty syncPropSyncURL("syncURL",
                                       "Identifies how to contact the peer,\n"
-                                      "it is possible to set multiple transports contacting,\n"
-                                      "the peer, they should be splitted via space or tab,\n"
-                                      "best explained with some examples.\n"
+                                      "best explained with some examples:\n"
                                       "HTTP(S) SyncML servers:\n"
                                       "  http://my.funambol.com/sync\n"
                                       "  http://sync.scheduleworld.com/funambol/ds\n"
@@ -896,8 +894,13 @@ static ConfigProperty syncPropSyncURL("syncURL",
                                       "  obex-bt://00:0A:94:03:F3:7E\n"
                                       "If the automatism fails, the channel can also be specified:\n"
                                       "  obex-bt://00:0A:94:03:F3:7E+16\n"
-                                      "A peer with both HTTP and Bluetooth transport:\n"
-                                      "  obex-bt://00:0A:94:03:F3:7E+16 http://IP/SyncEvolution\n"
+                                      "For peers contacting us via Bluetooth, the MAC address is\n"
+                                      "used to identify it before the sync starts. Multiple\n"
+                                      "urls can be specified in one syncURL property:\n"
+                                      "  obex-bt://00:0A:94:03:F3:7E obex-bt://00:01:02:03:04:05\n"
+                                      "In the future this might be used to contact the peer\n"
+                                      "via one of several transports; right now, only the first\n"
+                                      "one is tried." // MB #9446
                                       );
 
 static ConfigProperty syncPropDevID("deviceId",
