@@ -167,7 +167,6 @@ main (int argc, char *argv[])
     set_app_name_and_icon ();
     data = sync_ui_create ();
 
-    sync_ui_create ();
     if (settings_id) {
         sync_ui_show_settings (data, settings_id);
     }
