@@ -795,6 +795,12 @@ Optional packages for GUI:
 
 libunique = ensure that GTK GUI only runs once per user
 
+Optional packages for GNOME Bluetooth Panel plugin:
+   apt-get install libgnome-bluetooth-dev
+
+The plugin adds a button to invoke sync-UI after a device
+was paired which supports SyncML.
+
 The build system is the normal autotools system. See INSTALL for
 general instructions how to use that and "./configure --help" for
 SyncEvolution specific options.

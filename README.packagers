@@ -5,3 +5,5 @@ backends there are more subtle dependencies:
 - for good time zone support, libsynthesis must have access to
   either libical or libecal
 - direct sync with phones depends on bluez and openobex
+- GNOME Bluetooth Panel needs libgnome-bluetooth-dev *AND*
+  --enable-gnome-bluetooth-panel

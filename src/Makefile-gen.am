@@ -19,7 +19,7 @@ if COND_GUI
 GUI_DIR = gtk-ui
 endif
 
-SUBDIRS = $(SYNTHESIS_SUBDIR) $(DBUS_DIRS) syncevo $(BACKENDS) $(GUI_DIR)
+SUBDIRS = $(SYNTHESIS_SUBDIR) $(DBUS_DIRS) syncevo $(BACKENDS) $(GUI_DIR) gnome-bluetooth
 DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui
 BUILT_SOURCES =
 

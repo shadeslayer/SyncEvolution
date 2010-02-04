@@ -115,4 +115,5 @@ done
 echo "DBus service: $enable_dbus_service"
 echo "UI (DBus client): $enable_gui"
 echo "Bluetooth transport: $have_bluetooth"
+echo "GNOME Bluetooth panel plugin: $enable_gnome_bluetooth_panel"
 echo
