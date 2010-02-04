@@ -20,7 +20,7 @@ GUI_DIR = gtk-ui
 endif
 
 SUBDIRS = $(SYNTHESIS_SUBDIR) $(DBUS_DIRS) syncevo $(BACKENDS) $(GUI_DIR) gnome-bluetooth
-DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui
+DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui gnome-bluetooth
 BUILT_SOURCES =
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS)
