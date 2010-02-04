@@ -2222,20 +2222,25 @@ restore_cb (SyncevoSession *session,
 static void
 restore_backup (app_data *data, SyncevoSession *session, const char *dir)
 {
-    const char **sources;
+    char **sources;
     GHashTableIter iter;
     int i = 0;
+    char *source;
 
-    sources = g_malloc0 (sizeof (char*) * g_hash_table_size (data->emergency_sources));
+    sources = g_malloc0 (sizeof (char*) *
+                         (g_hash_table_size (data->emergency_sources) + 1));
 
     g_hash_table_iter_init (&iter, data->emergency_sources);
-    while (g_hash_table_iter_next (&iter, (gpointer)&sources [i++], NULL))
-        ;
+    while (g_hash_table_iter_next (&iter, (gpointer)&source, NULL)) {
+        sources[i++] = g_strdup (source);
+    }
+    sources[i] = NULL;
 
-    syncevo_session_restore (session, dir, TRUE, sources,
+    syncevo_session_restore (session, dir, TRUE, (const char**)sources,
                              (SyncevoSessionGenericCb)restore_cb,
                              data);
-    g_free (sources);
+
+    g_strfreev (sources);
 }
 
 static void
