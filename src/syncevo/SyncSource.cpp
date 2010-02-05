@@ -555,7 +555,9 @@ void SyncSourceSerialize::init(SyncSource::Operations &ops)
 }
 
 
-void SyncSourceRevisions::backupData(const string &dir, ConfigNode &node, BackupReport &report)
+void SyncSourceRevisions::backupData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
+                                     const SyncSource::Operations::BackupInfo &newBackup,
+                                     BackupReport &report)
 {
     RevisionMap_t revisions;
     listAllItems(revisions);
@@ -569,7 +571,7 @@ void SyncSourceRevisions::backupData(const string &dir, ConfigNode &node, Backup
         m_raw->readItemRaw(uid, item);
 
         stringstream filename;
-        filename << dir << "/" << counter;
+        filename << newBackup.m_dirname << "/" << counter;
 
         ofstream out(filename.str().c_str());
         out.write(item.c_str(), item.size());
@@ -580,40 +582,42 @@ void SyncSourceRevisions::backupData(const string &dir, ConfigNode &node, Backup
 
         stringstream key;
         key << counter << "-uid";
-        node.setProperty(key.str(), uid);
+        newBackup.m_node->setProperty(key.str(), uid);
         key.clear();
         key << counter << "-rev";
-        node.setProperty(key.str(), rev);
+        newBackup.m_node->setProperty(key.str(), rev);
 
         counter++;
     }
 
     stringstream value;
     value << counter - 1;
-    node.setProperty("numitems", value.str());
-    node.flush();
+    newBackup.m_node->setProperty("numitems", value.str());
+    newBackup.m_node->flush();
 
     report.setNumItems(counter - 1);
 }
 
-void SyncSourceRevisions::restoreData(const string &dir, const ConfigNode &node, bool dryrun, SyncSourceReport &report)
+void SyncSourceRevisions::restoreData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
+                                      bool dryrun,
+                                      SyncSourceReport &report)
 {
     RevisionMap_t revisions;
     listAllItems(revisions);
 
     long numitems;
     string strval;
-    strval = node.readProperty("numitems");
+    strval = oldBackup.m_node->readProperty("numitems");
     stringstream stream(strval);
     stream >> numitems;
 
     for (long counter = 1; counter <= numitems; counter++) {
         stringstream key;
         key << counter << "-uid";
-        string uid = node.readProperty(key.str());
+        string uid = oldBackup.m_node->readProperty(key.str());
         key.clear();
         key << counter << "-rev";
-        string rev = node.readProperty(key.str());
+        string rev = oldBackup.m_node->readProperty(key.str());
         RevisionMap_t::iterator it = revisions.find(uid);
         report.incrementItemStat(report.ITEM_LOCAL,
                                  report.ITEM_ANY,
@@ -625,7 +629,7 @@ void SyncSourceRevisions::restoreData(const string &dir, const ConfigNode &node,
         } else {
             // add or update, so need item
             stringstream filename;
-            filename << dir << "/" << counter;
+            filename << oldBackup.m_dirname << "/" << counter;
             string data;
             if (!ReadFile(filename.str(), data)) {
                 throwError(StringPrintf("restoring %s from %s failed: could not read file",
@@ -777,7 +781,7 @@ void SyncSourceRevisions::init(SyncSourceRaw *raw,
     }
     if (raw && del) {
         ops.m_restoreData = boost::bind(&SyncSourceRevisions::restoreData,
-                                        this, _1, _2, _3, _4);
+                                        this, _1, _2, _3);
     }
     ops.m_endSession.push_back(boost::bind(&SyncSourceRevisions::sleepSinceModification,
                                            this));

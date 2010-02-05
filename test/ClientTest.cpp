@@ -3240,12 +3240,14 @@ SyncTests *ClientTest::createSyncTests(const std::string &name, std::vector<int>
 int ClientTest::dump(ClientTest &client, TestingSyncSource &source, const char *file)
 {
     BackupReport report;
-    VolatileConfigNode node;
+    boost::shared_ptr<ConfigNode> node(new VolatileConfigNode);
 
     rm_r(file);
     mkdir_p(file);
     CPPUNIT_ASSERT(source.getOperations().m_backupData);
-    source.getOperations().m_backupData(file, node, report);
+    source.getOperations().m_backupData(SyncSource::Operations::ConstBackupInfo(),
+                                        SyncSource::Operations::BackupInfo(file, node),
+                                        report);
     return 0;
 }
 

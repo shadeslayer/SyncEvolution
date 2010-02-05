@@ -775,22 +775,65 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
      */
     struct Operations {
         /**
-         * Dump all data from source unmodified into the given directory.
-         * The ConfigNode can be used to store meta information needed for
-         * restoring that state. Both directory and node are empty.
+         * The caller determines where item data is stored (m_dirname)
+         * and where meta information about them (m_node). The callee
+         * then can use both arbitrarily.
+         */
+        struct BackupInfo {
+            string m_dirname;
+            boost::shared_ptr<ConfigNode> m_node;
+            BackupInfo() {}
+            BackupInfo(const string &dirname,
+                       const boost::shared_ptr<ConfigNode> &node) :
+                m_dirname(dirname),
+                m_node(node)
+            {}
+        };
+        struct ConstBackupInfo {
+            string m_dirname;
+            boost::shared_ptr<const ConfigNode> m_node;
+            ConstBackupInfo() {}
+            ConstBackupInfo(const string &dirname,
+                            const boost::shared_ptr<const ConfigNode> &node) :
+                m_dirname(dirname),
+                m_node(node)
+            {}
+        };
+
+        /**
+         * Dump all data from source unmodified into the given backup location.
          * Information about the created backup is added to the
          * report.
          *
-         * Required for the backup/restore functionality in SyncEvolution,
-         * not for syncing itself.
+         * Required for the backup/restore functionality in
+         * SyncEvolution, not for syncing itself. But typically it is
+         * called before syncing (can be turned off by users), so
+         * implementations can reuse the information gathered while
+         * making a backup in later operations.
+         *
+         * @param previous     the most recent backup, empty m_dirname if none
+         * @param next         the backup which is to be created, directory and node are empty
+         * @param report       to be filled with information about backup (number of items, etc.)
          */
-        typedef void (BackupData_t)(const string &dirname, ConfigNode &node, BackupReport &report);
+        typedef void (BackupData_t)(const ConstBackupInfo &oldBackup,
+                                    const BackupInfo &newBackup,
+                                    BackupReport &report);
         boost::function<BackupData_t> m_backupData;
 
         /**
          * Restore database from data stored in backupData().
+         * If possible don't touch items which are the same as in the
+         * backup, to mimimize impact on future incremental syncs.
+         *
+         * @param oldBackup    the backup which is to be restored
+         * @param dryrun       pretend to restore and fill in report, without
+         *                     actually touching backend data
+         * @param report       to be filled with information about restore
+         *                     (number of total items and changes)
          */
-        typedef void (RestoreData_t)(const string &dirname, const ConfigNode &node, bool dryrun, SyncSourceReport &report);
+        typedef void (RestoreData_t)(const ConstBackupInfo &oldBackup,
+                                     bool dryrun,
+                                     SyncSourceReport &report);
         boost::function<RestoreData_t> m_restoreData;
 
         /**
@@ -1443,13 +1486,17 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
      * The ConfigNode can be used to store meta information needed for
      * restoring that state. Both directory and node are empty.
      */
-    void backupData(const string &dirname, ConfigNode &node, BackupReport &report);
+    void backupData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
+                    const SyncSource::Operations::BackupInfo &newBackup,
+                    BackupReport &report);
 
     /**
      * Restore database from data stored in backupData(). Will be
      * called inside open()/close() pair. beginSync() is *not* called.
      */
-    void restoreData(const string &dirname, const ConfigNode &node, bool dryrun, SyncSourceReport &report);
+    void restoreData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
+                     bool dryrun,
+                     SyncSourceReport &report);
 
     /**
      * Increments the time stamp of the latest database modification,

@@ -754,7 +754,8 @@ public:
             mkdir_p(dir);
             BackupReport dummy;
             if (source->getOperations().m_backupData) {
-                source->getOperations().m_backupData(dir, *node,
+                source->getOperations().m_backupData(SyncSource::Operations::ConstBackupInfo(),
+                                                     SyncSource::Operations::BackupInfo(dir, node),
                                                      report ? source->*report : dummy);
                 SE_LOG_DEBUG(NULL, NULL, "%s created", dir.c_str());
             }
@@ -769,7 +770,8 @@ public:
             SyncContext::throwError(dir + ": no such database backup found");
         }
         if (source.getOperations().m_restoreData) {
-            source.getOperations().m_restoreData(dir, *node, dryrun, report);
+            source.getOperations().m_restoreData(SyncSource::Operations::ConstBackupInfo(dir, node),
+                                                 dryrun, report);
         }
     }
 
