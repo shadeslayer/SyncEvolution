@@ -306,8 +306,9 @@ confirm (app_data *data, const char *message,
 
     return (ret == GTK_RESPONSE_YES);
 }
+
 static void
-slow_sync_clicked_cb (GtkButton *btn, app_data *data)
+slow_sync (app_data *data)
 {
     operation_data *op_data;
     char *message;
@@ -330,6 +331,12 @@ slow_sync_clicked_cb (GtkButton *btn, app_data *data)
                                   op_data);
 
     show_main_view (data);
+}
+
+static void
+slow_sync_clicked_cb (GtkButton *btn, app_data *data)
+{
+    slow_sync (data);
 }
 
 
@@ -503,8 +510,9 @@ set_info_bar (GtkWidget *widget,
                            container);
     switch (response_id) {
     case SYNC_ERROR_RESPONSE_EMERGENCY:
-        /* TRANSLATORS: Buttons in error/info bars. */
-        gtk_info_bar_add_button (bar, _("Fix it"), response_id);
+        /* TRANSLATORS: Action buttons in error/info bars in main view. */
+        gtk_info_bar_add_button (bar, _("Slow sync"), SYNC_ERROR_RESPONSE_EMERGENCY_SLOW_SYNC);
+        gtk_info_bar_add_button (bar, _("Other options..."), response_id);
         break;
     case SYNC_ERROR_RESPONSE_SETTINGS_SELECT:
         gtk_info_bar_add_button (bar, _("Select sync service"), response_id);
@@ -789,6 +797,9 @@ info_bar_response_cb (GtkInfoBar          *info_bar,
                       app_data            *data)
 {
     switch (response_id) {
+    case SYNC_ERROR_RESPONSE_EMERGENCY_SLOW_SYNC:
+        slow_sync (data);
+        break;
     case SYNC_ERROR_RESPONSE_EMERGENCY:
         show_emergency_view (data);
         break;
@@ -2143,6 +2154,8 @@ get_reports_cb (SyncevoServer *server,
     char *error_msg;
     SyncErrorResponse response;
     gboolean have_source_errors;
+    GHashTable *report = NULL;
+    guint len;
 
     if (error) {
         g_warning ("Error in Session.GetReports: %s", error->message);
@@ -2154,10 +2167,22 @@ get_reports_cb (SyncevoServer *server,
     sources = g_hash_table_new_full (g_str_hash, g_str_equal,
                                      g_free, (GDestroyNotify)free_source_stats);
 
+    len = syncevo_reports_get_length (reports);
 
-    if (syncevo_reports_get_length (reports) > 0) {
-        GHashTable *report = syncevo_reports_index (reports, 0);
+    if (len > 0) {
+        report = syncevo_reports_index (reports, 0);
+        val = g_hash_table_lookup (report, "dir");
+        if (!val || strlen (val) == 0) {
+            /* dummy report for first time sync info*/
+            if (len > 1) {
+                report = syncevo_reports_index (reports, 1);
+            } else {
+                report = NULL;
+            }
+        }
+    }
 
+    if (report) {
         g_hash_table_iter_init (&iter, report);
         while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&val)) {
             char **strs;
@@ -2270,9 +2295,13 @@ get_reports_cb (SyncevoServer *server,
     /* update service UI */
     refresh_last_synced_label (data);
     if (error_msg) {
-        set_info_bar (data->info_bar,
-                      GTK_MESSAGE_ERROR, response,
-                      error_msg);
+        GtkMessageType type = GTK_MESSAGE_ERROR;
+
+        if (response == SYNC_ERROR_RESPONSE_EMERGENCY) {
+            type = GTK_MESSAGE_QUESTION;
+        }
+
+        set_info_bar (data->info_bar, type, response, error_msg);
         g_free (error_msg);
     }
 
@@ -2638,8 +2667,9 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
         if (response) {
             *response = SYNC_ERROR_RESPONSE_EMERGENCY;
         }
-        return g_strdup (_("A normal sync is not possible at this time. You "
-                           "will need to fix things before we can sync again."));
+        return g_strdup (_("A normal sync is not possible at this time. The server "
+                           "suggests a slow sync, but this might not always be "
+                           "what you want if both ends already have data."));
     case DB_Unauthorized:
         if (response) {
             *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
