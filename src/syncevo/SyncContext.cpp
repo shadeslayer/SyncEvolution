@@ -568,6 +568,7 @@ private:
 
     /**
      * parse a directory name into dirPrefix(empty or DIR_PREFIX), peerName, dateTime.
+     * peerName must be unescaped by the caller to get the real string.
      * If directory name is in the format of '[DIR_PREFIX]-peer[@context]-year-month-day-hour-min'
      * then parsing is sucessful and these 3 strings are correctly set and true is returned. 
      * Otherwise, false is returned. 
@@ -615,7 +616,7 @@ private:
                 } else if(peerName.empty()) {
                     // if no peer name and only context, match for all logs under the given context
                     string tmpName, tmpContext;
-                    SyncConfig::splitConfigString(tmpPeer, tmpName, tmpContext);
+                    SyncConfig::splitConfigString(unescapePeer(tmpPeer), tmpName, tmpContext);
                     if( context == tmpContext && boost::starts_with(m_prefix, tmpDirPrefix)) {
                         dirs.push_back(m_logdir + "/" + entry);
                     }
