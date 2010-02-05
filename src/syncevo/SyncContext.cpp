@@ -747,15 +747,47 @@ public:
      */
     void dumpDatabases(const string &suffix,
                        BackupReport SyncSourceReport::*report) {
+        // Identify all logdirs of current context, of any peer.  Used
+        // to search for previous backups of each source, if
+        // necessary.
+        string peer = m_client.getConfigName();
+        string peerName, contextName;
+        SyncConfig::splitConfigString(peer, peerName, contextName);
+        SyncContext context(string("@") + contextName);
+        LogDir logdir(context);
+        vector<string> dirs;
+        logdir.previousLogdirs(dirs);
+
         BOOST_FOREACH(SyncSource *source, *this) {
             string dir = databaseName(*source, suffix);
             boost::shared_ptr<ConfigNode> node = ConfigNode::createFileNode(dir + ".ini");
             SE_LOG_DEBUG(NULL, NULL, "creating %s", dir.c_str());
             rm_r(dir);
-            mkdir_p(dir);
             BackupReport dummy;
             if (source->getOperations().m_backupData) {
-                source->getOperations().m_backupData(SyncSource::Operations::ConstBackupInfo(),
+                SyncSource::Operations::ConstBackupInfo oldBackup;
+                // Now look for a backup of the current source,
+                // starting with the most recent one.
+                for (vector<string>::const_reverse_iterator it = dirs.rbegin();
+                     it != dirs.rend();
+                     ++it) {
+                    const string &sessiondir = *it;
+                    string oldBackupDir;
+                    oldBackupDir = databaseName(*source, "after", sessiondir);
+                    if (!isDir(oldBackupDir)) {
+                        oldBackupDir = databaseName(*source, "before", sessiondir);
+                        if (!isDir(oldBackupDir)) {
+                            // try next session
+                            continue;
+                        }
+                    }
+                        
+                    oldBackup.m_dirname = oldBackupDir;
+                    oldBackup.m_node = ConfigNode::createFileNode(oldBackupDir + ".ini");
+                    break;
+                }
+                mkdir_p(dir);
+                source->getOperations().m_backupData(oldBackup,
                                                      SyncSource::Operations::BackupInfo(dir, node),
                                                      report ? source->*report : dummy);
                 SE_LOG_DEBUG(NULL, NULL, "%s created", dir.c_str());
