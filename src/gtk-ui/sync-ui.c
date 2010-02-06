@@ -225,6 +225,17 @@ get_pretty_source_name (const char *source_name)
     }
 }
 
+char*
+get_pretty_source_name_markup (const char *source_name)
+{
+    char *plain, *markup;
+
+    plain = get_pretty_source_name (source_name);
+    markup = g_markup_escape_text (plain, -1);
+    g_free (plain);
+    return markup;
+}
+
 static void
 reload_config (app_data *data, const char *server)
 {
@@ -1363,7 +1374,7 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
     gtk_box_pack_start (GTK_BOX (data->sources_box), conf->box,
                         FALSE, FALSE, 8);
 
-    pretty_name = get_pretty_source_name (name);
+    pretty_name = get_pretty_source_name_markup (name);
     title = g_strdup_printf ("<b>%s</b>", pretty_name);
     lbl = gtk_label_new (NULL);
     gtk_label_set_markup (GTK_LABEL (lbl), title);
