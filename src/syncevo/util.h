@@ -111,6 +111,7 @@ bool ReadFile(const string &filename, string &content);
  * Simple string hash function, derived from Dan Bernstein's algorithm.
  */
 unsigned long Hash(const char *str);
+unsigned long Hash(const std::string &str);
 
 /**
  * This is a simplified implementation of a class representing and calculating

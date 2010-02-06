@@ -268,6 +268,17 @@ unsigned long Hash(const char *str)
     return hashval;
 }
 
+unsigned long Hash(const std::string &str)
+{
+    unsigned long hashval = 5381;
+
+    BOOST_FOREACH(int c, str) {
+        hashval = ((hashval << 5) + hashval) + c;
+    }
+
+    return hashval;
+}
+
 std::string StringPrintf(const char *format, ...)
 {
     va_list ap;
