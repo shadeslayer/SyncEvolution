@@ -493,6 +493,10 @@ check_source_cb (SyncevoServer *server,
     }
 
     if (show) {
+        /* TODO: with the new two sources per row layout this won't look good...
+         * should just not insert the widgets into the tables in the first place.
+         * Need to hide the virtual sources real counterparts as well... 
+         */
         gtk_widget_show (widgets->source_toggle_label);
         gtk_widget_show (widgets->label);
         gtk_widget_show (widgets->entry);
@@ -567,12 +571,17 @@ init_source (char *name,
              SyncConfigWidget *self)
 {
     char *str, *pretty_name;
-    const char *uri;
+    const char *uri, *type;
     guint rows;
     guint row;
     static guint col = 0;
     source_widgets *widgets;
     SyncevoSyncMode mode;
+
+    type = g_hash_table_lookup (source_configuration, "type");
+    if (!type || strlen (type) == 0) {
+        return;
+    }
 
     g_object_get (self->mode_table,
                   "n-rows", &rows,
@@ -654,7 +663,12 @@ get_common_mode (char *name,
                  SyncevoSyncMode *common_mode)
 {
     SyncevoSyncMode mode;
-    char *mode_str;
+    char *mode_str, *type;
+
+    type = g_hash_table_lookup (source_configuration, "type");
+    if (!type || strlen (type) == 0) {
+        return;
+    }
 
     mode_str = g_hash_table_lookup (source_configuration, "sync");
     mode = syncevo_sync_mode_from_string (mode_str);
@@ -722,10 +736,8 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     gtk_table_resize (GTK_TABLE (self->mode_table),
                       2, 1);
 
-    syncevo_config_get_value (self->config, NULL, "deviceName", &device);
-
-//    if (device && strlen (device) > 0) {
-    if (TRUE) {
+    syncevo_config_get_value (self->config, NULL, "PeerIsClient", &device);
+    if (device && g_strcmp0 (device, "1") == 0) {
         if (!self->device_template_selected) {
             gtk_widget_hide (self->settings_box);
             gtk_widget_show (self->device_selector_box);
@@ -857,6 +869,7 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
                                    (ConfigFunc)init_source,
                                    self);
 
+    /* TODO hide the "real" sources corresponding to any virtual sources */
 }
 
 /* only adds config to list and combo */
@@ -864,7 +877,7 @@ static void
 sync_config_widget_add_config (SyncConfigWidget *self,
                                SyncevoConfig *config)
 {
-    /* TODO check if config is already there */
+    /* TODO show the real name */
     self->configs = g_list_prepend (self->configs, config);
     gtk_combo_box_prepend_text (GTK_COMBO_BOX (self->combo), "Template Foo");
 }
