@@ -554,11 +554,80 @@ void SyncSourceSerialize::init(SyncSource::Operations &ops)
                                         this, _1, _2, _3);
 }
 
+/**
+ * Mapping from Hash() value to file.
+ */
+class ItemCache
+{
+public:
+    typedef unsigned long Hash_t;
+    typedef unsigned long Counter_t;
+
+    /**
+     * Collect information about stored hashes. Provides
+     * access to file name via hash.
+     *
+     * If no hashes were written (as in an old SyncEvoltion
+     * version), we could read the files to recreate the
+     * hashes. This is not done because it won't occur
+     * often enough.
+     *
+     * Hashes are also not verified. Users should better
+     * not edit them or file contents...
+     *
+     * @param oldBackup     existing backup to read; may be empty
+     */
+    void init(const SyncSource::Operations::ConstBackupInfo &oldBackup)
+    {
+        m_hash2counter.clear();
+        m_dirname = oldBackup.m_dirname;
+        if (m_dirname.empty() || !oldBackup.m_node) {
+            return;
+        }
+
+        long numitems;
+        if (!oldBackup.m_node->getProperty("numitems", numitems)) {
+            return;
+        }
+        for (long counter = 1; counter <= numitems; counter++) {
+            stringstream key;
+            key << counter << "-hash";
+            Hash_t hash;
+            if (oldBackup.m_node->getProperty(key.str(), hash)) {
+                m_hash2counter[hash] = counter;
+            }
+        }
+    }
+
+    /**
+     * create file name for a specific hash, empty if no such hash
+     */
+    string getFilename(Hash_t hash)
+    {
+        Map_t::const_iterator it = m_hash2counter.find(hash);
+        if (it != m_hash2counter.end()) {
+            stringstream dirname;
+            dirname << m_dirname << "/" << it->second;
+            return dirname.str();
+        } else {
+            return "";
+        }
+    }
+
+private:
+    typedef std::map<Hash_t, Counter_t> Map_t;
+    Map_t m_hash2counter;
+    string m_dirname;
+};
+
 
 void SyncSourceRevisions::backupData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
                                      const SyncSource::Operations::BackupInfo &newBackup,
                                      BackupReport &report)
 {
+    ItemCache cache;
+    cache.init(oldBackup);
+
     RevisionMap_t revisions;
     listAllItems(revisions);
 
@@ -573,19 +642,46 @@ void SyncSourceRevisions::backupData(const SyncSource::Operations::ConstBackupIn
         stringstream filename;
         filename << newBackup.m_dirname << "/" << counter;
 
-        ofstream out(filename.str().c_str());
-        out.write(item.c_str(), item.size());
-        out.close();
-        if (out.fail()) {
-            throwError(string("error writing ") + filename.str() + ": " + strerror(errno));
+        ItemCache::Hash_t hash = Hash(item);
+        string oldfilename = cache.getFilename(hash);
+        if (!oldfilename.empty()) {
+            // found old file with same content, reuse it via hardlink
+            if (link(oldfilename.c_str(), filename.str().c_str())) {
+                // Hard linking failed. Record this, then continue
+                // by ignoring the old file.
+                SE_LOG_DEBUG(NULL, NULL, "hard linking old %s new %s: %s",
+                             oldfilename.c_str(),
+                             filename.str().c_str(),
+                             strerror(errno));
+                oldfilename.clear();
+            }
+        }
+
+        if (oldfilename.empty()) {
+            // write new file instead of reusing old one
+            ofstream out(filename.str().c_str());
+            out.write(item.c_str(), item.size());
+            out.close();
+            if (out.fail()) {
+                throwError(string("error writing ") + filename.str() + ": " + strerror(errno));
+            }
         }
 
         stringstream key;
         key << counter << "-uid";
         newBackup.m_node->setProperty(key.str(), uid);
+        // clear() does not remove the existing content, which was
+        // intended here. This should have been key.str(""). As a
+        // result, keys for -rev are longer than intended because they
+        // start with the -uid part. We cannot change it now, because
+        // that would break compatibility with nodes that use the
+        // older, longer keys for -rev.
         key.clear();
         key << counter << "-rev";
         newBackup.m_node->setProperty(key.str(), rev);
+        key.str("");
+        key << counter << "-hash";
+        newBackup.m_node->setProperty(key.str(), hash);
 
         counter++;
     }
