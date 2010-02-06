@@ -107,13 +107,13 @@ class ConfigNode {
     }
 
     bool getProperty(const string &property,
-                     string &value) {
+                     string &value) const {
         value = readProperty(property);
         return !value.empty();
     }
 
     bool getProperty(const string &property,
-                     bool &value) {
+                     bool &value) const {
         std::string str = readProperty(property);
         if (str.empty()) {
             return false;
@@ -144,7 +144,7 @@ class ConfigNode {
     }
 
     template <class T> bool getProperty(const string &property,
-                                        T &value) {
+                                        T &value) const {
         std::string str = readProperty(property);
         if (str.empty()) {
             return false;
