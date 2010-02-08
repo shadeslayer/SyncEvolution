@@ -849,25 +849,53 @@ public:
      * If possible (directory to compare against available) and enabled,
      * then dump changes applied locally.
      *
+     * @param oldSession     directory to compare against; "" searches in sessions of current peer
+     *                       as selected by context for the lastest one involving each source
      * @param oldSuffix      suffix of old database dump: usually "after"
      * @param currentSuffix  the current database dump suffix: "current"
      *                       when not doing a sync, otherwise "before"
      */
-    bool dumpLocalChanges(const string &oldDir,
+    bool dumpLocalChanges(const string &oldSession,
                           const string &oldSuffix, const string &newSuffix,
                           const string &intro = "Local data changes to be applied to server during synchronization:\n",
                           const string &config = "CLIENT_TEST_LEFT_NAME='after last sync' CLIENT_TEST_RIGHT_NAME='current data' CLIENT_TEST_REMOVED='removed since last sync' CLIENT_TEST_ADDED='added since last sync'") {
-        if (m_logLevel <= LOGGING_SUMMARY || oldDir.empty()) {
+        if (m_logLevel <= LOGGING_SUMMARY) {
             return false;
+        }
+
+        vector<string> dirs;
+        if (oldSession.empty()) {
+            m_logdir.previousLogdirs(dirs);
         }
 
         cout << intro;
         BOOST_FOREACH(SyncSource *source, *this) {
-            string oldFile = databaseName(*source, oldSuffix, oldDir);
-            string newFile = databaseName(*source, newSuffix);
+            string oldDir;
+            if (oldSession.empty()) {
+                // Now look for the latest session involving the current source,
+                // starting with the most recent one.
+                for (vector<string>::const_reverse_iterator it = dirs.rbegin();
+                     it != dirs.rend();
+                     ++it) {
+                    const string &sessiondir = *it;
+                    LogDir oldsession(m_client);
+                    oldsession.openLogdir(sessiondir);
+                    SyncReport report;
+                    oldsession.readReport(report);
+                    if (report.find(source->getName()) != report.end())  {
+                        // source was active in that session, use dump
+                        // made there
+                        oldDir = databaseName(*source, oldSuffix, sessiondir);
+                        break;
+                    }
+                }
+            } else {
+                oldDir = databaseName(*source, oldSuffix, oldSession);
+            }
+            string newDir = databaseName(*source, newSuffix);
             cout << "*** " << source->getName() << " ***\n" << flush;
             string cmd = string("env CLIENT_TEST_COMPARISON_FAILED=10 " + config + " synccompare 2>/dev/null '" ) +
-                oldFile + "' '" + newFile + "'";
+                oldDir + "' '" + newDir + "'";
             int ret = system(cmd.c_str());
             switch (ret == -1 ? ret : WEXITSTATUS(ret)) {
             case 0:
@@ -892,7 +920,7 @@ public:
             // dump initial databases
             dumpDatabases("before", &SyncSourceReport::m_backupBefore);
             // compare against the old "after" database dump
-            dumpLocalChanges(getPrevLogdir(), "after", "before");
+            dumpLocalChanges("", "after", "before");
 
             m_prepared = true;
         }
@@ -3078,7 +3106,7 @@ void SyncContext::status()
         try {
             sourceList.setPath(prevLogdir);
             sourceList.dumpDatabases("current", NULL);
-            sourceList.dumpLocalChanges(sourceList.getPrevLogdir(), "after", "current");
+            sourceList.dumpLocalChanges("", "after", "current");
         } catch(...) {
             Exception::handle();
         }
