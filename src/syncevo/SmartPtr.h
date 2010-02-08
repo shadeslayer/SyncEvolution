@@ -83,6 +83,10 @@ class UnrefGLibEvent {
  public:
     static void unref(guint event) { g_source_remove(event); }
 };
+class UnrefGString {
+ public:
+    static void unref(gchar *ptr) { g_free(ptr); }
+};
 #endif // HAVE_GLIB
 
 /**
@@ -207,6 +211,7 @@ template <class T> class arrayptr : public eptr<T, T, ArrayUnref<T> > {
 #ifdef HAVE_GLIB
 /** eptr for glib event handle */
 typedef SmartPtr<guint, guint, UnrefGLibEvent> GLibEvent;
+typedef SmartPtr<gchar *, gchar *, UnrefGString> GString;
 #endif
 
 SE_END_CXX
