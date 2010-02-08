@@ -45,7 +45,7 @@ typedef struct {
 
     SyncevoServer *server;
     SyncevoConfig *config;
-    GList *configs; /* list of possible configs. config above is one of these */
+    GHashTable *configs; /* possible configs. config above is one of these */
 
     char *config_name;
     char *pretty_name;
@@ -119,7 +119,7 @@ gboolean sync_config_widget_get_configured (SyncConfigWidget *self);
 const char *sync_config_widget_get_name (SyncConfigWidget *widget);
 
 void sync_config_widget_expand_id (SyncConfigWidget *self, const char *id);
-void sync_config_widget_add_alternative_config (SyncConfigWidget *self, SyncevoConfig *config, gboolean configured);
+void sync_config_widget_add_alternative_config (SyncConfigWidget *self, const char *name, SyncevoConfig *config, gboolean configured);
 G_END_DECLS
 
 

@@ -27,6 +27,8 @@ typedef struct source_widgets {
     GtkWidget *check;
 
     GtkWidget *source_toggle_label;
+
+    guint count;
 } source_widgets;
 
 enum
@@ -468,6 +470,23 @@ static void update_buttons (SyncConfigWidget *self)
     }
 }
 
+static void
+source_widgets_ref (source_widgets *widgets)
+{
+    if (widgets) {
+        widgets->count++;
+    }
+}
+
+static void
+source_widgets_unref (source_widgets *widgets)
+{
+    if (widgets) {
+        widgets->count--;
+        if (widgets->count == 0)
+            g_slice_free (source_widgets, widgets);
+    }
+}
 
 static void
 check_source_cb (SyncevoServer *server,
@@ -475,6 +494,7 @@ check_source_cb (SyncevoServer *server,
                  source_widgets *widgets)
 {
     gboolean show = TRUE;
+
     if (error) {
         if(error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
            dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_SOURCE_UNUSABLE)) {
@@ -492,7 +512,7 @@ check_source_cb (SyncevoServer *server,
         g_error_free (error);
     }
 
-    if (show) {
+    if (show && widgets->count > 1) {
         /* TODO: with the new two sources per row layout this won't look good...
          * should just not insert the widgets into the tables in the first place.
          * Need to hide the virtual sources real counterparts as well... 
@@ -502,6 +522,7 @@ check_source_cb (SyncevoServer *server,
         gtk_widget_show (widgets->entry);
         gtk_widget_show (widgets->check);
     }
+    source_widgets_unref (widgets);
 }
 
 static void
@@ -596,7 +617,8 @@ init_source (char *name,
     }
     self->no_source_toggles = FALSE;
 
-    widgets = g_slice_new (source_widgets);
+    widgets = g_slice_new0 (source_widgets);
+    widgets->count = 1;
     g_hash_table_insert (self->sources, name, widgets);
 
     widgets->source_toggle_label = self->source_toggle_label;
@@ -643,13 +665,14 @@ init_source (char *name,
                               uri && strlen (uri) > 0);
 
     if (self->configured) {
+        source_widgets_ref (widgets);
         syncevo_server_check_source (self->server,
                                      self->config_name,
                                      name,
                                      (SyncevoServerGenericCb)check_source_cb,
                                      widgets);
     } else {
-        /* TODO: should do a temp config to test eve n template sources */
+        /* TODO: should do a temp config to test even template sources */
         gtk_widget_show (widgets->source_toggle_label);
         gtk_widget_show (widgets->label);
         gtk_widget_show (widgets->entry);
@@ -683,15 +706,6 @@ get_common_mode (char *name,
         *common_mode = SYNCEVO_SYNC_UNKNOWN;
     }
 }
-
-static void
-source_widgets_free (source_widgets *widgets)
-{
-    if (widgets) {
-        g_slice_free (source_widgets, widgets);
-    }
-}
-
 
 void
 sync_config_widget_expand_id (SyncConfigWidget *self,
@@ -756,10 +770,6 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
         gtk_widget_show (self->fake_expander);
     }
 
-
-    /* TODO: sources that are not supported locally will trigger the complex
-     * config warning for no real reason... should do get_common_mode only after
-     * check_source calls, and make sure unsupported sources do not get edited */
     syncevo_config_foreach_source (self->config,
                                    (ConfigFunc)get_common_mode,
                                    &mode);
@@ -860,10 +870,12 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     if (self->sources) {
         g_hash_table_destroy (self->sources);
     }
+    /* TODO need to destroy the values (source_widgets) but so that check_source
+     * still works */
     self->sources = g_hash_table_new_full (g_str_hash,
                                            g_str_equal,
                                            NULL,
-                                           (GDestroyNotify)source_widgets_free);
+                                           (GDestroyNotify)source_widgets_unref);
     self->no_source_toggles = TRUE;
     syncevo_config_foreach_source (self->config,
                                    (ConfigFunc)init_source,
@@ -872,14 +884,14 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     /* TODO hide the "real" sources corresponding to any virtual sources */
 }
 
-/* only adds config to list and combo */
+/* only adds config to hashtable and combo */
 static void
 sync_config_widget_add_config (SyncConfigWidget *self,
+                               const char *name,
                                SyncevoConfig *config)
 {
-    /* TODO show the real name */
-    self->configs = g_list_prepend (self->configs, config);
-    gtk_combo_box_prepend_text (GTK_COMBO_BOX (self->combo), "Template Foo");
+    g_hash_table_insert (self->configs, g_strdup (name), config);
+    gtk_combo_box_prepend_text (GTK_COMBO_BOX (self->combo), name);
 }
 
 static void
@@ -906,7 +918,6 @@ sync_config_widget_set_config (SyncConfigWidget *self,
                                SyncevoConfig *config)
 {
     self->config = config;
-    sync_config_widget_add_config (self, config);
     sync_config_widget_update_pretty_name (self);
 }
 
@@ -1202,8 +1213,10 @@ sync_config_widget_dispose (GObject *object)
     }
     self->config = NULL;
 
-    g_list_free (self->configs);
-    self->configs = NULL;
+    if (self->configs) {
+        g_hash_table_destroy (self->configs);
+        self->configs = NULL;
+    }
     g_free (self->config_name);
     self->config_name = NULL;
     g_free (self->current_service_name);
@@ -1400,6 +1413,8 @@ sync_config_widget_constructor (GType                  gtype,
         g_warning ("No SyncevoServer or Syncevoconfig set for SyncConfigWidget");
         return G_OBJECT (self);
     }
+
+    sync_config_widget_add_config (self, self->config_name, self->config);
 
     if (g_strcmp0 (self->config_name, "default") == 0) {
 
@@ -1635,6 +1650,10 @@ sync_config_widget_init (SyncConfigWidget *self)
     GtkWidget *tmp_box, *hbox, *cont, *vbox, *label, *btn;
 
     GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
+
+    /* should free the config? */
+    self->configs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                           g_free, NULL);
 
     self->label_box = gtk_event_box_new ();
     gtk_widget_set_app_paintable (self->label_box, TRUE);
@@ -1956,6 +1975,7 @@ sync_config_widget_get_name (SyncConfigWidget *widget)
 
 void
 sync_config_widget_add_alternative_config (SyncConfigWidget *self,
+                                           const char *name,
                                            SyncevoConfig *config,
                                            gboolean configured)
 {
@@ -1963,7 +1983,7 @@ sync_config_widget_add_alternative_config (SyncConfigWidget *self,
         sync_config_widget_set_config (self, config);
         sync_config_widget_set_configured (self, TRUE);    
     } else  {
-        sync_config_widget_add_config (self, config);
+        sync_config_widget_add_config (self, name, config);
     }
     sync_config_widget_update_expander (self);
 }

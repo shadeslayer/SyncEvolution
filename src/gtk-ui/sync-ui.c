@@ -1564,7 +1564,7 @@ get_config_for_config_widget_cb (SyncevoServer *server,
                                  GError *error,
                                  config_data *c_data)
 {
-    char *ready, *device;
+    char *ready, *is_peer, *url;
 
     if (error) {
         /* show in UI? */
@@ -1574,27 +1574,30 @@ get_config_for_config_widget_cb (SyncevoServer *server,
     }
 
     syncevo_config_get_value (config, NULL, "ConsumerReady", &ready);
-    syncevo_config_get_value (config, NULL, "deviceName", &device);
+    syncevo_config_get_value (config, NULL, "PeerIsClient", &is_peer);
+    syncevo_config_get_value (config, NULL, "syncURL", &url);
 
-    if (device && strlen (device) > 0) {
+    if (is_peer && g_strcmp0 ("1", is_peer) == 0) {
         SyncConfigWidget *w;
 
-        /* keep a list of added devices */
-        w = g_hash_table_lookup (c_data->device_templates, device);
-        if (!w) {
-            if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
-                w = add_configuration_to_box (GTK_BOX (c_data->data->devices_box),
-                                                       config,
-                                                       device,
-                                                       c_data->has_template,
-                                                       c_data->has_configuration,
-                                                       c_data->data);
-                g_hash_table_insert (c_data->device_templates, device, w);
+        if (url) {
+            /* keep a list of added devices */
+            w = g_hash_table_lookup (c_data->device_templates, url);
+            if (!w) {
+                if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
+                    w = add_configuration_to_box (GTK_BOX (c_data->data->devices_box),
+                                                           config,
+                                                           c_data->name,
+                                                           c_data->has_template,
+                                                           c_data->has_configuration,
+                                                           c_data->data);
+                    g_hash_table_insert (c_data->device_templates, url, w);
+                }
+            } else {
+                /* there is a widget for this device already, add this info there*/
+                sync_config_widget_add_alternative_config (w, c_data->name, config, 
+                                                           c_data->has_configuration);
             }
-        } else {
-            /* there is a widget for this device already, add this info there*/
-            sync_config_widget_add_alternative_config (w, config, 
-                                                       c_data->has_configuration);
         }
     } else {
         if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
