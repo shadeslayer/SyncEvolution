@@ -498,7 +498,6 @@ check_source_cb (SyncevoServer *server,
     if (error) {
         if(error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
            dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_SOURCE_UNUSABLE)) {
-
             show = FALSE;
         } else if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
                    dbus_g_error_has_name (error,
@@ -513,10 +512,8 @@ check_source_cb (SyncevoServer *server,
     }
 
     if (show && widgets->count > 1) {
-        /* TODO: with the new two sources per row layout this won't look good...
-         * should just not insert the widgets into the tables in the first place.
-         * Need to hide the virtual sources real counterparts as well... 
-         */
+        /* TODO: with the new two sources per row layout not showing things
+         * probably won't look good... */
         gtk_widget_show (widgets->source_toggle_label);
         gtk_widget_show (widgets->label);
         gtk_widget_show (widgets->entry);
@@ -566,17 +563,19 @@ add_toggle_widget (SyncConfigWidget *self,
     gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_END);
     gtk_widget_set_size_request (label, 260, -1);
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-    gtk_widget_show (label);
     gtk_table_attach (GTK_TABLE (self->mode_table), label,
                       col, col + 1, row, row + 1,
                       GTK_FILL, GTK_FILL, 0, 0);
     toggle = mx_gtk_light_switch_new ();
+    g_signal_connect_swapped (toggle, "hide",
+                              G_CALLBACK (gtk_widget_hide), label);
+    g_signal_connect_swapped (toggle, "show",
+                              G_CALLBACK (gtk_widget_show), label);
 #else
     toggle = gtk_check_button_new_with_label (title);
     gtk_widget_set_size_request (toggle, 260, -1);
 #endif
     g_object_set (toggle, "active", active, NULL);
-    gtk_widget_show (toggle);
     gtk_table_attach (GTK_TABLE (self->mode_table), toggle,
                       col + 1, col + 2, row, row + 1,
                       GTK_FILL, GTK_FILL, 32, 0);
@@ -584,6 +583,50 @@ add_toggle_widget (SyncConfigWidget *self,
                       G_CALLBACK (mode_widget_notify_active_cb), self);
 
     return toggle;
+}
+
+
+/* check if config includes a virtual source that covers the given 
+ * source */
+static gboolean
+virtual_source_exists (SyncevoConfig *config, const char *name)
+{
+    GHashTableIter iter;
+    const char *source_string;
+    GHashTable *source_config;
+
+    g_hash_table_iter_init (&iter, config);
+    while (g_hash_table_iter_next (&iter,
+                                   (gpointer)&source_string,
+                                   (gpointer)&source_config)) {
+        char **strs;
+
+        if (g_str_has_prefix (source_string, "source/")) {
+            const char *uri, *type;
+            type = g_hash_table_lookup (source_config, "type");
+            uri = g_hash_table_lookup (source_config, "uri");
+
+            if (!uri || !type || !g_str_has_prefix (type, "virtual:")) {
+                /* this source is not defined, or not virtual */
+                continue;
+            }
+
+            strs = g_strsplit (source_string + 7, "+", 0);
+            if (g_strv_length (strs) > 1) {
+                int i;
+
+                for (i = 0; strs[i]; i++) {
+                    if (g_strcmp0 (name, strs[i]) == 0) {
+                        g_strfreev (strs);
+                        return TRUE;
+                    }
+                }
+            }
+            g_strfreev (strs);
+        }
+    }
+
+    return FALSE;
 }
 
 static void
@@ -600,7 +643,17 @@ init_source (char *name,
     SyncevoSyncMode mode;
 
     type = g_hash_table_lookup (source_configuration, "type");
+    uri = g_hash_table_lookup (source_configuration, "uri");
     if (!type || strlen (type) == 0) {
+        return;
+    }
+
+    if (g_str_has_prefix (type, "virtual:") && !uri) {
+        /* undefined virtual source */
+        return;
+    }
+
+    if (virtual_source_exists (self->config, name)) {
         return;
     }
 
@@ -623,7 +676,6 @@ init_source (char *name,
 
     widgets->source_toggle_label = self->source_toggle_label;
 
-    uri = g_hash_table_lookup (source_configuration, "uri");
     pretty_name = get_pretty_source_name (name);
     mode = syncevo_sync_mode_from_string
         (g_hash_table_lookup (source_configuration, "sync"));
@@ -664,6 +716,8 @@ init_source (char *name,
     gtk_widget_set_sensitive (widgets->check,
                               uri && strlen (uri) > 0);
 
+    /* TODO: template sources cannot be checked. Should set a temporary config
+     * to check sources */
     if (self->configured) {
         source_widgets_ref (widgets);
         syncevo_server_check_source (self->server,
@@ -672,7 +726,6 @@ init_source (char *name,
                                      (SyncevoServerGenericCb)check_source_cb,
                                      widgets);
     } else {
-        /* TODO: should do a temp config to test even template sources */
         gtk_widget_show (widgets->source_toggle_label);
         gtk_widget_show (widgets->label);
         gtk_widget_show (widgets->entry);
@@ -870,8 +923,6 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     if (self->sources) {
         g_hash_table_destroy (self->sources);
     }
-    /* TODO need to destroy the values (source_widgets) but so that check_source
-     * still works */
     self->sources = g_hash_table_new_full (g_str_hash,
                                            g_str_equal,
                                            NULL,
@@ -880,8 +931,6 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     syncevo_config_foreach_source (self->config,
                                    (ConfigFunc)init_source,
                                    self);
-
-    /* TODO hide the "real" sources corresponding to any virtual sources */
 }
 
 /* only adds config to hashtable and combo */
@@ -929,14 +978,31 @@ setup_service_clicked (GtkButton *btn, SyncConfigWidget *self)
 }
 
 static void
+sync_config_widget_set_name (SyncConfigWidget *self,
+                             const char *name)
+{
+    g_free (self->config_name);
+    self->config_name = g_strdup (name);
+    sync_config_widget_update_pretty_name (self);
+}
+
+
+static void
 device_selection_btn_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
+    const char *name;
+    SyncevoConfig *config;
+
     self->device_template_selected = TRUE;
 
-    /* TODO 
+    name = gtk_combo_box_get_active_text (GTK_COMBO_BOX (self->combo));
+    config = g_hash_table_lookup (self->configs, name);
+
+    g_return_if_fail (config);
+
     sync_config_widget_set_config (self, config);
-    */
-    sync_config_widget_set_configured (self, TRUE);    
+    sync_config_widget_set_name (self, name);
+
     sync_config_widget_update_expander (self);
 }
 
@@ -1005,17 +1071,22 @@ static void
 sync_config_widget_update_label (SyncConfigWidget *self)
 {
     if (self->config && self->pretty_name) {
-        char *url;
+        char *url, *sync_url;
         char *str;
 
         syncevo_config_get_value (self->config, NULL, "WebURL", &url);
+        syncevo_config_get_value (self->config, NULL, "syncURL", &sync_url);
 
         if (self->current) {
             str = g_strdup_printf ("<b>%s</b>", self->pretty_name);
         } else {
             str = g_strdup_printf ("%s", self->pretty_name);
         }
-        if (!self->has_template) {
+        if (g_str_has_prefix (sync_url, "obex-bt://")) {
+            char *tmp = g_strdup_printf (_("%s - Bluetooth device"), str);
+            g_free (str);
+            str = tmp;
+        } else if (!self->has_template) {
             /* TRANSLATORS: service title for services that are not based on a 
              * template in service list, the placeholder is the name of the service */
             char *tmp = g_strdup_printf (_("%s - manually setup"), str);
@@ -1123,15 +1194,6 @@ sync_config_widget_set_server (SyncConfigWidget *self,
     syncevo_server_get_sessions (self->server,
                                  (SyncevoServerGetSessionsCb)get_sessions_cb,
                                  self);
-}
-
-static void
-sync_config_widget_set_name (SyncConfigWidget *self,
-                             const char *name)
-{
-    g_free (self->config_name);
-    self->config_name = g_strdup (name);
-    sync_config_widget_update_pretty_name (self);
 }
 
 static void

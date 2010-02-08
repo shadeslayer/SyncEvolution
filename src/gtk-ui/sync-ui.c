@@ -1450,9 +1450,6 @@ update_service_ui (app_data *data)
 
     refresh_last_synced_label (data);
 
-/* TODO: make sure all default sources are visible
- * (iow add missing sources as insensitive) */
-
     gtk_widget_show_all (data->sources_box);
 }
 
@@ -1684,7 +1681,6 @@ get_configs_cb (SyncevoServer *server,
     if (error) {
         show_main_view (data);
 
-        /* TODO show in UI: failed to show service list */
         g_warning ("Server.GetConfigs() failed: %s", error->message);
         g_strfreev (templates);
         g_error_free (error);
@@ -1752,7 +1748,7 @@ get_template_configs_cb (SyncevoServer *server,
 
     if (error) {
         show_main_view (data);
-        /* TODO show in UI: failed to show service list */
+
         show_error_dialog (data->sync_win, 
                            _("Failed to get list of supported services from SyncEvolution"));
         g_warning ("Server.GetConfigs() failed: %s", error->message);
@@ -2135,7 +2131,6 @@ source_config_update_widget (source_config *source)
         return TRUE;
     }
 
-    /* TODO improve error visibility */
     msg = get_error_string_for_code (source->status, &response);
     if (msg) {
         show_error = TRUE;
