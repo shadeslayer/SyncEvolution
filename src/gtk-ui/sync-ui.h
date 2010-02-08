@@ -42,6 +42,7 @@ typedef enum SyncErrorResponse {
 char* get_pretty_source_name (const char *source_name);
 char* get_error_string_for_code (int error_code, SyncErrorResponse *response);
 void show_error_dialog (GtkWidget *widget, const char* message);
+gboolean show_confirmation (GtkWidget *widget, const char *message, const char *yes, const char *no);
 
 app_data *sync_ui_create ();
 GtkWindow *sync_ui_get_main_window (app_data *data);

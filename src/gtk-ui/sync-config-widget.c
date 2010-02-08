@@ -249,41 +249,35 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     }
 
     if (self->current_service_name && !self->current) {
-        GtkWidget *w, *top_level;
-        int ret;
-        char *msg, *yes, *no;
+        gboolean ret;
+        char *msg, *yes, *no, *new_name, *old_name;
 
         /*TRANSLATORS: warning dialog text for changing current service */
         msg = g_strdup_printf
-            (_("Do you want to replace %s with %s? This\n"
-               "will not remove any synced information on either\n"
-               "end but you will no longer be able to sync with\n"
-               "%s."),
+            (_("Do you want to replace %s with %s? This "
+               "will not remove any synced information on either "
+               "end but you will no longer be able to sync with %s."),
              self->current_service_name,
              gtk_entry_get_text (GTK_ENTRY (self->entry)),
              self->current_service_name);
+
+        new_name = g_strndup (gtk_entry_get_text (GTK_ENTRY (self->entry)), 40);
+        old_name = g_strndup (self->current_service_name, 40);
+
         /* TRANSLATORS: decline/accept buttons in warning dialog.
            Placeholder is service name */
-        yes = g_strdup_printf (_("Yes, use %s"),
-                               gtk_entry_get_text (GTK_ENTRY (self->entry)));
-        no = g_strdup_printf (_("No, use %s"), self->current_service_name);
-        top_level = gtk_widget_get_toplevel (GTK_WIDGET (self));
-        w = gtk_message_dialog_new (GTK_WINDOW (top_level),
-                                    GTK_DIALOG_MODAL,
-                                    GTK_MESSAGE_QUESTION,
-                                    GTK_BUTTONS_NONE,
-                                    msg);
-        gtk_dialog_add_buttons (GTK_DIALOG (w),
-                                no, GTK_RESPONSE_NO,
-                                yes, GTK_RESPONSE_YES,
-                                NULL);
-        ret = gtk_dialog_run (GTK_DIALOG (w));
-        gtk_widget_destroy (w);
+        yes = g_strdup_printf (_("Yes, use %s"), new_name);
+        no = g_strdup_printf (_("No, use %s"), old_name);
+
+        ret = show_confirmation (GTK_WIDGET (self), msg, yes, no);
+
         g_free (msg);
         g_free (yes);
         g_free (no);
+        g_free (new_name);
+        g_free (old_name);
 
-        if (ret != GTK_RESPONSE_YES) {
+        if (!ret) {
             return;
         }
     }
@@ -375,9 +369,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 static void
 reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
-    GtkWidget *w, *top_level;
-    int ret;
-    char *msg, *yes;
+    char *msg, *yes, *no;
     save_config_data *data;
 
     if (!self->config) {
@@ -388,43 +380,31 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         /*TRANSLATORS: warning dialog text for resetting pre-defined
           services */
         msg = g_strdup_printf
-            (_("Do you want to reset the settings for %s?\n"
+            (_("Do you want to reset the settings for %s? "
                "This will not remove any synced information on either end."),
              self->pretty_name);
-        /*TRANSLATORS: accept button in warning dialog */
+        /*TRANSLATORS: buttons in reset-service warning dialog */
         yes = _("Yes, reset");
+        no = _("No, keep settings");
     } else {
         /*TRANSLATORS: warning dialog text for deleting user-defined
           services */
         msg = g_strdup_printf
-            (_("Do you want to delete the settings for %s?\n"
-               "This will not remove any synced information on either\n"
+            (_("Do you want to delete the settings for %s? "
+               "This will not remove any synced information on either "
                "end but it will remove this service configuration."),
              self->pretty_name);
-        /*TRANSLATORS: accept button in warning dialog */
+        /*TRANSLATORS: buttons in delete-service warning dialog */
         yes = _("Yes, delete");
+        no = _("No, keep settings");
     }
 
-    top_level = gtk_widget_get_toplevel (GTK_WIDGET (self));
-    w = gtk_message_dialog_new (GTK_WINDOW (top_level),
-                                GTK_DIALOG_MODAL,
-                                GTK_MESSAGE_QUESTION,
-                                GTK_BUTTONS_NONE,
-                                msg);
-    /*TRANSLATORS: decline button in warning dialog */
-    gtk_dialog_add_buttons (GTK_DIALOG (w),
-                            _("No, keep settings"),
-                            GTK_RESPONSE_NO,
-                            yes,
-                            GTK_RESPONSE_YES,
-                            NULL);
-    ret = gtk_dialog_run (GTK_DIALOG (w));
-    gtk_widget_destroy (w);
-    g_free (msg);
-
-    if (ret != GTK_RESPONSE_YES) {
+    /*TRANSLATORS: decline button in "Reset/delete service" warning dialogs */
+    if (!show_confirmation (GTK_WIDGET (self), msg, yes, no)) {
+        g_free (msg);
         return;
     }
+    g_free (msg);
 
     if (self->current) {
         sync_config_widget_set_current (self, FALSE);

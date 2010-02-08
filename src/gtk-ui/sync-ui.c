@@ -295,14 +295,14 @@ sync_cb (SyncevoSession *session,
     set_app_state (data, SYNC_UI_STATE_SYNCING);
 }
 
-static gboolean
-confirm (app_data *data, const char *message,
-         const char *yes, const char *no)
+gboolean
+show_confirmation (GtkWidget *widget, const char *message,
+                   const char *yes, const char *no)
 {
     GtkWidget *w;
     int ret;
 
-    w = gtk_message_dialog_new (GTK_WINDOW (data->sync_win),
+    w = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (widget)),
                                 GTK_DIALOG_MODAL,
                                 GTK_MESSAGE_QUESTION,
                                 GTK_BUTTONS_NONE,
@@ -324,9 +324,13 @@ slow_sync (app_data *data)
     operation_data *op_data;
     char *message;
 
+    /* TRANSLATORS: slow sync confirmation dialog message. Placeholder
+     * is service/device name */
     message = g_strdup_printf (_("Do you want to slow sync with %s?"),
                                data->current_service->pretty_name);
-    if (!confirm (data, message, _("Yes, do slow sync"), _("No, cancel sync"))) {
+    /* TRANSLATORS: slow sync confirmation dialog buttons */
+    if (!show_confirmation (data->sync_win, message,
+                            _("Yes, do slow sync"), _("No, cancel sync"))) {
         g_free (message);
         return;
     }
@@ -357,10 +361,14 @@ refresh_from_server_clicked_cb (GtkButton *btn, app_data *data)
     operation_data *op_data;
     char *message;
 
+    /* TRANSLATORS: confirmation dialog for refresh-from-server. Placeholder
+     * is service/device name */
     message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
                                  "data from %s? This is not usually advised."),
                                data->current_service->pretty_name);
-    if (!confirm (data, message, _("Yes, delete and replace"), _("No"))) {
+    /* TRANSLATORS: refresh-from-server confirmation dialog buttons */
+    if (!show_confirmation (data->sync_win, message,
+                            _("Yes, delete and replace"), _("No"))) {
         g_free (message);
         return;
     }
@@ -384,10 +392,14 @@ refresh_from_client_clicked_cb (GtkButton *btn, app_data *data)
     operation_data *op_data;
     char *message;
 
+    /* TRANSLATORS: confirmation dialog for refresh-from-client. Placeholder
+     * is service/device name */
     message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
                                  "your local data? This is not usually advised."),
                                data->current_service->pretty_name);
-    if (!confirm (data, message, _("Yes, delete and replace"), _("No"))) {
+    /* TRANSLATORS: refresh-from-client confirmation dialog buttons */
+    if (!show_confirmation (data->sync_win, message,
+                            _("Yes, delete and replace"), _("No"))) {
         g_free (message);
         return;
     }
@@ -1133,7 +1145,7 @@ restore_clicked_cb (GtkButton *btn, app_data *data)
     message = g_strdup_printf (_("Do you want to restore the backup from %s? "
                                  "All changes you have made since then will be lost."),
                                time_str);
-    if (!confirm (data, message, _("Yes, restore"), _("No"))) {
+    if (!show_confirmation (data->sync_win, message, _("Yes, restore"), _("No"))) {
         g_free (message);
         return;
     }
