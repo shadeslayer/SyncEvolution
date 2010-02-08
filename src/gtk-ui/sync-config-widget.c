@@ -292,8 +292,8 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         source_widgets *widgets;
         char *name;
 
-        g_object_get (self->send_check, "active", &send, NULL);
-        g_object_get (self->receive_check, "active", &receive, NULL);
+        send = toggle_get_active (self->send_check);
+        receive = toggle_get_active (self->receive_check);
 
         if (send && receive) {
             mode = SYNCEVO_SYNC_TWO_WAY;
@@ -310,7 +310,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
             const char *mode_str;
             gboolean active;
 
-            g_object_get (widgets->check, "active", &active, NULL);
+            active = toggle_get_active (widgets->check);
             if (active) {
                 mode_str = syncevo_sync_mode_to_string (mode);
             } else {
@@ -523,7 +523,7 @@ source_entry_notify_text_cb (GObject *gobject,
     old_editable = GTK_WIDGET_SENSITIVE (widgets->check);
     if (new_editable != old_editable) {
         gtk_widget_set_sensitive (widgets->check, new_editable);
-        g_object_set (widgets->check, "active", new_editable, NULL);
+        toggle_set_active (widgets->check, new_editable);
     }
 }
 
@@ -551,16 +551,19 @@ add_toggle_widget (SyncConfigWidget *self,
                               G_CALLBACK (gtk_widget_hide), label);
     g_signal_connect_swapped (toggle, "show",
                               G_CALLBACK (gtk_widget_show), label);
+    toggle_set_active (toggle, active);
+    g_signal_connect (toggle, "switch-flipped",
+                      G_CALLBACK (mode_widget_notify_active_cb), self);
 #else
     toggle = gtk_check_button_new_with_label (title);
     gtk_widget_set_size_request (toggle, 260, -1);
+    toggle_set_active (toggle, active);
+    g_signal_connect (toggle, "notify::active",
+                      G_CALLBACK (mode_widget_notify_active_cb), self);
 #endif
-    g_object_set (toggle, "active", active, NULL);
     gtk_table_attach (GTK_TABLE (self->mode_table), toggle,
                       col + 1, col + 2, row, row + 1,
                       GTK_FILL, GTK_FILL, 32, 0);
-    g_signal_connect (toggle, "notify::active",
-                      G_CALLBACK (mode_widget_notify_active_cb), self);
 
     return toggle;
 }

@@ -48,4 +48,7 @@ app_data *sync_ui_create ();
 GtkWindow *sync_ui_get_main_window (app_data *data);
 void sync_ui_show_settings (app_data *data, const char *id);
 
+void toggle_set_active (GtkWidget *toggle, gboolean active);
+gboolean toggle_get_active (GtkWidget *toggle);
+
 #endif

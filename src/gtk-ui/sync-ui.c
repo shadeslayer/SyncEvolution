@@ -146,6 +146,7 @@ static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
 static void show_main_view (app_data *data);
 static void update_emergency_view (app_data *data);
+static void update_emergency_expander (app_data *data);
 static void show_emergency_view (app_data *data);
 static void show_services_list (app_data *data, const char *config_id_to_open);
 static void update_services_list (app_data *data);
@@ -160,6 +161,31 @@ static void start_session_cb (SyncevoServer *server, char *path,
                               GError *error, operation_data *op_data);
 static void get_config_for_main_win_cb (SyncevoServer *server, SyncevoConfig *config,
                                         GError *error, app_data *data);
+
+
+void
+toggle_set_active (GtkWidget *toggle, gboolean active)
+{
+#ifdef USE_MOBLIN_UX
+    /* MxGtkLightSwitch does not have "active" property yet */
+    mx_gtk_light_switch_set_active (MX_GTK_LIGHT_SWITCH (toggle), active);
+#else
+    g_object_set (toggle, "active", active, NULL);
+#endif
+}
+
+gboolean
+toggle_get_active (GtkWidget *toggle)
+{
+#ifdef USE_MOBLIN_UX
+    /* MxGtkLightSwitch does not have "active" property yet */
+    return mx_gtk_light_switch_get_active (MX_GTK_LIGHT_SWITCH (toggle));
+#else
+    gboolean active;
+    g_object_get (toggle, "active", &active, NULL);
+    return active;
+#endif
+}
 
 void
 show_error_dialog (GtkWidget *widget, const char* message)
@@ -983,6 +1009,27 @@ load_icon (const char *uri, GtkBox *icon_box, guint icon_size)
     gtk_widget_show (image);
 }
 
+static void
+emergency_toggle_notify_active_cb (GtkWidget *widget,
+                                   gpointer p,
+                                   app_data *data)
+{
+    gboolean active;
+    char *source;
+
+    active = toggle_get_active (widget);
+    source = g_object_get_data (G_OBJECT (widget), "source");
+
+    g_return_if_fail (source);
+
+    if (active) {
+        g_hash_table_insert (data->emergency_sources, g_strdup (source), "");
+    } else {
+        g_hash_table_remove (data->emergency_sources, source);
+    }
+    update_emergency_expander (data);
+}
+
 static GtkWidget*
 add_emergency_toggle_widget (app_data *data,
                              const char *title,
@@ -1001,10 +1048,15 @@ add_emergency_toggle_widget (app_data *data,
                       col, col + 1, row, row + 1,
                       GTK_FILL, GTK_FILL, 16, 0);
     toggle = mx_gtk_light_switch_new ();
+    toggle_set_active (toggle, active);
+    g_signal_connect (toggle, "switch-flipped",
+                      G_CALLBACK (emergency_toggle_notify_active_cb), data);
 #else
     toggle = gtk_check_button_new_with_label (title);
+    toggle_set_active (toggle, active);
+    g_signal_connect (toggle, "notify::active",
+                      G_CALLBACK (emergency_toggle_notify_active_cb), data);
 #endif
-    g_object_set (toggle, "active", active, NULL);
     gtk_widget_show (toggle);
     gtk_table_attach (GTK_TABLE (data->emergency_source_table), toggle,
                       col + 1, col + 2, row, row + 1,
@@ -1050,28 +1102,6 @@ update_emergency_expander (app_data *data)
 }
 
 static void
-emergency_toggle_notify_active_cb (GtkWidget *widget,
-                                   GParamSpec *pspec,
-                                   app_data *data)
-{
-    gboolean active;
-    char *source;
-
-    g_object_get (G_OBJECT (widget), "active", &active, NULL);
-    source = g_object_get_data (G_OBJECT (widget), "source");
-
-    g_return_if_fail (source);
-
-    if (active) {
-        g_hash_table_insert (data->emergency_sources, g_strdup (source), "");
-    } else {
-        g_hash_table_remove (data->emergency_sources, source);
-    }
-    update_emergency_expander (data);
-}
-
-
-static void
 add_emergency_source (const char *name, source_config *conf, app_data *data)
 {
     GtkWidget *toggle;
@@ -1100,9 +1130,6 @@ add_emergency_source (const char *name, source_config *conf, app_data *data)
     gtk_widget_set_sensitive (toggle, source_config_is_usable (conf));
     g_object_set_data_full (G_OBJECT (toggle), "source", g_strdup (name), g_free);
     g_free (pretty_name);
-
-    g_signal_connect (toggle, "notify::active",
-                      G_CALLBACK (emergency_toggle_notify_active_cb), data);
 }
 
 static void
