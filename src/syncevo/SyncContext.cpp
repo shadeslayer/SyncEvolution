@@ -182,26 +182,6 @@ class LogDir : public LoggerBase {
     // internal prefix for backup directory name: "SyncEvolution-"
     static const char* const DIR_PREFIX;
 
-    /** set m_logdir and adapt m_prefix accordingly */
-    void setLogdir(const string &logdir) {
-        m_logdir = boost::trim_right_copy_if(logdir, boost::is_any_of("/"));
-
-        // the config name has been normalized
-        string peer = m_client.getConfigName();
-
-        // escape "_" and "-" the peer name
-        peer = escapePeer(peer);
-
-        if (boost::iends_with(m_logdir, "syncevolution")) {
-            // use just the server name as prefix
-            m_prefix = peer;
-        } else {
-            // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
-            m_prefix = DIR_PREFIX;
-            m_prefix += peer;
-        }
-    }
-
 public:
     LogDir(SyncContext &client) : m_client(client), m_parentLogger(LoggerBase::instance()), m_info(NULL), m_readonly(false), m_report(NULL)
     {
@@ -218,27 +198,20 @@ public:
         rename(SubstEnvironment("${XDG_DATA_HOME}/applications/syncevolution").c_str(),
                SubstEnvironment("${XDG_CACHE_HOME}/syncevolution").c_str());
 
-        setLogdir(SubstEnvironment("${XDG_CACHE_HOME}/syncevolution"));
+        const char *path = m_client.getLogDir();
+        setLogdir(!path || !path[0] ?
+                  "${XDG_CACHE_HOME}/syncevolution" :
+                  path);
     }
 
     /**
-     * Finds previous log directories. Reports errors via exceptions.
+     * Finds previous log directories for context. Reports errors via exceptions.
      *
-     * @param path        path to configured backup directy, NULL if defaulting to /tmp, "none" if not creating log file
      * @retval dirs       vector of full path names, oldest first
      */
-    void previousLogdirs(const char *path, vector<string> &dirs) {
-        string logdir;
-
+    void previousLogdirs(vector<string> &dirs) {
         dirs.clear();
-        if (path && !strcasecmp(path, "none")) {
-            return;
-        } else {
-            if (path && path[0]) {
-                setLogdir(SubstEnvironment(path));
-            }
-            getLogdirs(dirs);
-        }
+        getLogdirs(dirs);
     }
 
     /**
@@ -247,14 +220,47 @@ public:
      * @param path        path to configured backup directy, NULL if defaulting to /tmp, "none" if not creating log file
      * @return full path of previous log directory, empty string if not found
      */
-    string previousLogdir(const char *path) throw() {
+    string previousLogdir() throw() {
         try {
             vector<string> dirs;
-            previousLogdirs(path, dirs);
+            previousLogdirs(dirs);
             return dirs.empty() ? "" : dirs.back();
         } catch (...) {
             Exception::handle();
             return "";
+        }
+    }
+
+    /**
+     * Set log dir and base name used for searching and creating sessions.
+     * Default if not called is the getLogDir() value of the context.
+     *
+     * @param logdir     "none" to disable sessions, NULL/"" for default, may contain ${}
+     *                   for environment variables
+     */
+    void setLogdir(const char *logdir) {
+        if (!logdir || !logdir[0]) {
+            return;
+        }
+        m_logdir = SubstEnvironment(logdir);
+        m_logdir = boost::trim_right_copy_if(m_logdir, boost::is_any_of("/"));
+        if (m_logdir == "none") {
+            return;
+        }
+
+        // the config name has been normalized
+        string peer = m_client.getConfigName();
+
+        // escape "_" and "-" the peer name
+        peer = escapePeer(peer);
+
+        if (boost::iends_with(m_logdir, "syncevolution")) {
+            // use just the server name as prefix
+            m_prefix = peer;
+        } else {
+            // SyncEvolution-<server>-<yyyy>-<mm>-<dd>-<hh>-<mm>
+            m_prefix = DIR_PREFIX;
+            m_prefix += peer;
         }
     }
 
@@ -322,10 +328,7 @@ public:
         if (path && !strcasecmp(path, "none")) {
             m_path = "";
         } else {
-            if (path && path[0]) {
-                setLogdir(SubstEnvironment(path));
-            }
-
+            setLogdir(path);
             if (!usePath) {
                 // create unique directory name in the given directory
                 time_t ts = time(NULL);
@@ -594,7 +597,7 @@ private:
      * logdir are returned.
      */
     void getLogdirs(vector<string> &dirs) {
-        if (!isDir(m_logdir)) {
+        if (m_logdir != "none" && !isDir(m_logdir)) {
             return;
         }
         string peer = m_client.getConfigName();
@@ -783,7 +786,8 @@ public:
     // call as soon as logdir settings are known
     void startSession(const char *logDirPath, int maxlogdirs, int logLevel, SyncReport *report,
                       const string &logname) {
-        m_previousLogdir = m_logdir.previousLogdir(logDirPath);
+        m_logdir.setLogdir(logDirPath);
+        m_previousLogdir = m_logdir.previousLogdir();
         if (m_doLogging) {
             m_logdir.startSession(logDirPath, maxlogdirs, logLevel, false, report, logname);
         } else {
@@ -3192,7 +3196,7 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
 void SyncContext::getSessions(vector<string> &dirs)
 {
     LogDir logging(*this);
-    logging.previousLogdirs(getLogDir(), dirs);
+    logging.previousLogdirs(dirs);
 }
 
 string SyncContext::readSessionInfo(const string &dir, SyncReport &report)
