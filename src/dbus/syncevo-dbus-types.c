@@ -221,10 +221,9 @@ syncevo_session_status_from_string (const char *status_str)
 SyncevoSyncMode
 syncevo_sync_mode_from_string (const char *mode_str)
 {
-    if (!mode_str) {
-        return SYNCEVO_SYNC_UNKNOWN;
-    } else if (g_str_has_prefix (mode_str, "none") ||
-               g_str_has_prefix (mode_str, "disabled")) {
+    if (!mode_str ||
+        g_str_has_prefix (mode_str, "none") ||
+        g_str_has_prefix (mode_str, "disabled")) {
         return SYNCEVO_SYNC_NONE;
     } else if (g_str_has_prefix (mode_str, "two-way")) {
         return SYNCEVO_SYNC_TWO_WAY;
