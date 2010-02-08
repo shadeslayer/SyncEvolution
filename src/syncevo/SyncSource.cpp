@@ -560,8 +560,17 @@ void SyncSourceSerialize::init(SyncSource::Operations &ops)
 class ItemCache
 {
 public:
+#ifdef USE_SHA256
+    typedef std::string Hash_t;
+    Hash_t hashFunc(const std::string &data) { return SHA_256(data); }
+#else
     typedef unsigned long Hash_t;
+    Hash_t hashFunc(const std::string &data) { return Hash(data); }
+#endif
     typedef unsigned long Counter_t;
+
+    /** mark the algorithm used for the hash via different suffices */
+    static const char *m_hashSuffix;
 
     /**
      * Collect information about stored hashes. Provides
@@ -591,7 +600,7 @@ public:
         }
         for (long counter = 1; counter <= numitems; counter++) {
             stringstream key;
-            key << counter << "-hash";
+            key << counter << m_hashSuffix;
             Hash_t hash;
             if (oldBackup.m_node->getProperty(key.str(), hash)) {
                 m_hash2counter[hash] = counter;
@@ -620,6 +629,14 @@ private:
     string m_dirname;
 };
 
+const char *ItemCache::m_hashSuffix =
+#ifdef USE_SHA256
+    "-sha256"
+#else
+    "-hash"
+#endif
+;
+
 
 void SyncSourceRevisions::backupData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
                                      const SyncSource::Operations::BackupInfo &newBackup,
@@ -642,7 +659,7 @@ void SyncSourceRevisions::backupData(const SyncSource::Operations::ConstBackupIn
         stringstream filename;
         filename << newBackup.m_dirname << "/" << counter;
 
-        ItemCache::Hash_t hash = Hash(item);
+        ItemCache::Hash_t hash = cache.hashFunc(item);
         string oldfilename = cache.getFilename(hash);
         if (!oldfilename.empty()) {
             // found old file with same content, reuse it via hardlink
@@ -680,7 +697,7 @@ void SyncSourceRevisions::backupData(const SyncSource::Operations::ConstBackupIn
         key << counter << "-rev";
         newBackup.m_node->setProperty(key.str(), rev);
         key.str("");
-        key << counter << "-hash";
+        key << counter << ItemCache::m_hashSuffix;
         newBackup.m_node->setProperty(key.str(), hash);
 
         counter++;
