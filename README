@@ -774,6 +774,9 @@ Optional (enables reading proxy settings from GNOME preferences):
 Optional (enables direct sync with phones):
    apt-get install libopenobex-dev libbluetooth-dev
 
+Optional (only used for SHA-256 when glib is not already a dependency):
+   apt-get install libnss3-dev
+
 For compiling libsynthesis:
    apt-get install libpcre3-dev libsqlite3-dev libexpat-dev libz-dev
 

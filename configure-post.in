@@ -51,6 +51,22 @@ if test "$need_glib" = "yes"; then
         BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $GLIB_CFLAGS $GTHREAD_CFLAGS $GOBJECT_CFLAGS"
 fi
 
+# determine from where we can get a SHA-256 implementation
+have_sha="no"
+if test "$GLIBFOUND" = "yes"; then
+   # only use glib if we need it anyway, also has to be at lease 2.16
+   PKG_CHECK_MODULES(GLIB, "glib-2.0>=2.16",
+                     [AC_DEFINE(USE_SHA256, 1, [choose implementation of SHA-256])
+                      have_sha="glib"])
+fi
+if test "$have_sha" = "no"; then
+   # Fallback is Mozilla NSS. In contrast to libgcrypt it has a .pc
+   # file and a simple API.
+   PKG_CHECK_MODULES(NSS, "nss",
+                     [AC_DEFINE(USE_SHA256, 2, [choose implementation of SHA-256])
+                      have_sha="nss"])
+fi
+
 dnl figure out whether we link all code statically or as modules
 AM_CONDITIONAL([ENABLE_MODULES], [test "$enable_shared" == "yes"])
 if test "$enable_shared" == "yes"; then
@@ -116,4 +132,5 @@ echo "DBus service: $enable_dbus_service"
 echo "UI (DBus client): $enable_gui"
 echo "Bluetooth transport: $have_bluetooth"
 echo "GNOME Bluetooth panel plugin: $enable_gnome_bluetooth_panel"
+echo "SHA-256: $have_sha"
 echo

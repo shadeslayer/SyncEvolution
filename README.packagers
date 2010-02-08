@@ -7,3 +7,8 @@ backends there are more subtle dependencies:
 - direct sync with phones depends on bluez and openobex
 - GNOME Bluetooth Panel needs libgnome-bluetooth-dev *AND*
   --enable-gnome-bluetooth-panel
+- either glib or libnss should be available, so that
+  SyncEvolution can use SHA-256 hashes instead of a
+  weaker built-in algorithm for hashes in the database dump
+  .ini files
+  

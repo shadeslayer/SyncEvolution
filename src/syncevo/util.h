@@ -114,6 +114,12 @@ unsigned long Hash(const char *str);
 unsigned long Hash(const std::string &str);
 
 /**
+ * SHA-256 implementation, returning hash as lowercase hex string (like sha256sum).
+ * Might not be available, in which case it raises an exception.
+ */
+std::string SHA_256(const std::string &in);
+
+/**
  * This is a simplified implementation of a class representing and calculating
  * UUIDs v4 inspired from RFC 4122. We do not use cryptographic pseudo-random
  * numbers, instead we rely on rand/srand.

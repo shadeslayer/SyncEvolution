@@ -37,6 +37,13 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+#if USE_SHA256 == 1
+# include <glib.h>
+#elif USE_SHA256 == 2
+# include <nss/sechash.h>
+# include <nss/hasht.h>
+#endif
+
 #ifdef ENABLE_UNIT_TESTS
 #include "test.h"
 CPPUNIT_REGISTRY_ADD_TO_DEFAULT("SyncEvolution");
@@ -278,6 +285,30 @@ unsigned long Hash(const std::string &str)
 
     return hashval;
 }
+
+std::string SHA_256(const std::string &data)
+{
+#if USE_SHA256 == 1
+    GString hash(g_compute_checksum_for_data(G_CHECKSUM_SHA256, (guchar *)data.c_str(), data.size()),
+                 "g_compute_checksum_for_data() failed");
+    return std::string(hash.get());
+#elif USE_SHA256 == 2
+    std::string res;
+    unsigned char hash[SHA256_LENGTH];
+    if (HASH_HashBuf(HASH_AlgSHA256, hash, (unsigned char *)data.c_str(), data.size()) != SECSuccess) {
+        SE_THROW("NSS HASH_HashBuf() failed");
+    }
+    res.reserve(SHA256_LENGTH * 2);
+    BOOST_FOREACH(unsigned char value, hash) {
+        res += StringPrintf("%02x", value);
+    }
+    return res;
+#else
+    SE_THROW("Hash256() not implemented");
+    return "";
+#endif
+}
+
 
 std::string StringPrintf(const char *format, ...)
 {
