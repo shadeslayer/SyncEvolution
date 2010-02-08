@@ -3,6 +3,7 @@
   <!-- interface-requires gtk+ 2.10 -->
   <!-- interface-naming-policy toplevel-contextual -->
   <widget class="GtkWindow" id="sync_win">
+    <property name="width_request">1024</property>
     <property name="border_width">5</property>
     <property name="title" translatable="yes">Sync</property>
     <property name="default_width">800</property>
@@ -446,6 +447,7 @@ emergency</property>
     </child>
   </widget>
   <widget class="GtkWindow" id="services_win">
+    <property name="width_request">1024</property>
     <property name="border_width">5</property>
     <property name="title" translatable="yes">Settings</property>
     <property name="modal">True</property>
@@ -732,6 +734,7 @@ you can setup a service manually.</property>
     </child>
   </widget>
   <widget class="GtkWindow" id="emergency_win">
+    <property name="width_request">1024</property>
     <property name="border_width">5</property>
     <property name="title" translatable="yes">Sync Emergency</property>
     <property name="modal">True</property>
