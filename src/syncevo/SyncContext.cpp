@@ -1498,9 +1498,8 @@ void SyncContext::initSources(SourceList &sourceList)
                 //sub syncsources here
                 SyncSourceParams params(name, source);
                 boost::shared_ptr<VirtualSyncSource> vSource = boost::shared_ptr<VirtualSyncSource> (new VirtualSyncSource (params));
-                std::string evoSyncSource = vSource->getDatabaseID();
                 bool valid = true;
-                std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
+                std::vector<std::string> mappedSources = vSource->getMappedSources();
                 BOOST_FOREACH (std::string source, mappedSources) {
                     //check whether the mapped source is really available
                     boost::shared_ptr<PersistentSyncSourceConfig> source_config 
@@ -2006,9 +2005,6 @@ void SyncContext::getConfigXML(string &xml, string &configname)
 
             std::string typesupport;
             typesupport = vSource->getDataTypeSupport();
-            if (typesupport.empty()) {
-                SE_THROW ("datatype format is not set in virtual datasource configuration");
-            } 
             datastores << "      <typesupport>\n"
                 << typesupport 
                 << "      </typesupport>\n";

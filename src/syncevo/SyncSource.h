@@ -700,6 +700,21 @@ class SyncSourceBase : public Logger {
      */
     virtual void getSynthesisInfo(SynthesisInfo &info,
                                   XMLConfigFragments &fragments) = 0;
+
+    /**
+     * utility code: creates Synthesis <use datatype=...>
+     * statements, using the predefined vCard21/vCard30/vcalendar10/icalendar20
+     * types. Throws an error if no suitable result can be returned (empty or invalid type)
+     *
+     * @param type         the format specifier as used in SyncEvolution configs, with and without version
+     *                     (text/x-vcard:2.1, text/x-vcard, text/x-vcalendar, text/calendar, text/plain, ...);
+     *                     see SourceType::m_format
+     * @param forceFormat  if true, then don't allow alternative formats (like vCard 3.0 in addition to 2.1);
+     *                     see SourceType::m_force
+     * @return generated XML fragment
+     */
+    std::string getDataTypeSupport(const std::string &type,
+                                   bool forceFormat);
 };
 
 /**
@@ -969,10 +984,12 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
      * source type specified in the params.m_nodes.m_configNode
      *
      * @param error    throw a runtime error describing what the problem is if no matching source is found
-     * @return NULL if no source can handle the given type
+     * @param config   optional, needed for intantiating virtual sources
+     * @return valid instance, NULL if no source can handle the given type (only when error==false)
      */
     static SyncSource *createSource(const SyncSourceParams &params,
-                                    bool error = true);
+                                    bool error = true,
+                                    SyncConfig *config = NULL);
 
     /**
      * Factory function for a SyncSource with the given name
@@ -1061,60 +1078,39 @@ class DummySyncSource : public SyncSource
 };
 
 /**
- * Virtual SyncSources
+ * A special source which combines one or more real sources.
+ * Most of the special handling for that is in SyncContext.cpp.
+ *
+ * This class can be instantiated, opened and closed if and only if
+ * the underlying sources also support that.
  */
 class VirtualSyncSource : public DummySyncSource 
 {
+    std::vector< boost::shared_ptr<SyncSource> > m_sources;
+
 public:
-    VirtualSyncSource(const SyncSourceParams &params) :
-       DummySyncSource(params) {}
+    /**
+     * @param config   optional: when given, the constructor will instantiate the
+     *                 referenced underlying sources and check them in open()
+     */
+    VirtualSyncSource(const SyncSourceParams &params, SyncConfig *config = NULL);
 
-    std::string getDataTypeSupport() {
-        string datatypes;
-        SourceType sourceType = getSourceType();
-        string type = sourceType.m_format;
+    /** opens underlying sources and checks config by calling getDataTypeSupport() */
+    virtual void open();
+    virtual void close();
 
-        if (type.empty()) {
-            return "";
-        } else if (type == "text/x-vcard:2.1" || type == "text/x-vcard") {
-            datatypes =
-                "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n";
-            if (!sourceType.m_forceFormat) {
-                datatypes +=
-                    "        <use datatype='vCard30' mode='rw'/>\n";
-            }
-        } else if (type == "text/vcard:3.0" || type == "text/vcard") {
-            datatypes =
-                "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
-            if (!sourceType.m_forceFormat) {
-                datatypes +=
-                    "        <use datatype='vCard21' mode='rw'/>\n";
-            }
-        } else if (type == "text/x-vcalendar:1.0" || type == "text/x-vcalendar" 
-                  || type == "text/x-calendar:1.0" || type == "text/x-calendar") {
-            datatypes =
-                "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n";
-            if (!sourceType.m_forceFormat) {
-                datatypes +=
-                    "        <use datatype='icalendar20' mode='rw'/>\n";
-            }
-        } else if (type == "text/calendar:2.0" || type == "text/calendar") {
-            datatypes =
-                "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
-            if (!sourceType.m_forceFormat) {
-                datatypes +=
-                    "        <use datatype='vcalendar10' mode='rw'/>\n";
-            }
-        } else if (type == "text/plain:1.0" || type == "text/plain") {
-            // note10 are the same as note11, so ignore force format
-            datatypes =
-                "        <use datatype='note10' mode='rw' preferred='yes'/>\n"
-                "        <use datatype='note11' mode='rw'/>\n";
-        } else {
-            throwError(string("configured MIME type not supported: ") + type);
-        }
-        return datatypes;
-    }
+    /**
+     * returns array with source names that are referenced by this
+     * virtual source
+     */
+    std::vector<std::string> getMappedSources();
+
+    /**
+     * returns <use datatype=...> statements for XML config,
+     * throws error if not configured correctly
+     */
+    std::string getDataTypeSupport();
+    using SyncSourceBase::getDataTypeSupport;
 };
 
 /**

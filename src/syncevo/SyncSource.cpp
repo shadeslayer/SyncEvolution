@@ -309,10 +309,19 @@ string SyncSource::backendsDebug() {
     return scannedModules.debug.str();
 }
 
-SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error)
+SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error, SyncConfig *config)
 {
     string sourceTypeString = getSourceTypeString(params.m_nodes);
     SourceType sourceType = getSourceType(params.m_nodes);
+
+    if (sourceType.m_backend == "virtual") {
+        SyncSource *source = NULL;
+        source = new VirtualSyncSource(params, config);
+        if (error && !source) {
+            SyncContext::throwError(params.m_name + ": virtual source cannot be instantiated");
+        }
+        return source;
+    }
 
     const SourceRegistry &registry(getSourceRegistry());
     BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
@@ -351,6 +360,51 @@ SyncSource *SyncSource::createTestingSource(const string &name, const string &ty
         sourceconfig.setDatabaseID(string(prefix) + name + "_1");
     }
     return createSource(params, error);
+}
+
+VirtualSyncSource::VirtualSyncSource(const SyncSourceParams &params, SyncConfig *config) :
+    DummySyncSource(params)
+{
+    if (config) {
+        BOOST_FOREACH(std::string name, getMappedSources()) {
+            SyncSourceNodes source = config->getSyncSourceNodes(name);
+            SyncSourceParams params(name, source);
+            boost::shared_ptr<SyncSource> syncSource(createSource(params, true, config));
+            m_sources.push_back(syncSource);
+        }
+    }
+}
+
+void VirtualSyncSource::open()
+{
+    getDataTypeSupport();
+    BOOST_FOREACH(boost::shared_ptr<SyncSource> &source, m_sources) {
+        source->open();
+    }
+}
+
+void VirtualSyncSource::close()
+{
+    BOOST_FOREACH(boost::shared_ptr<SyncSource> &source, m_sources) {
+        source->close();
+    }
+}
+
+std::vector<std::string> VirtualSyncSource::getMappedSources()
+{
+    std::string evoSyncSource = getDatabaseID();
+    std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
+    return mappedSources;
+}
+
+std::string VirtualSyncSource::getDataTypeSupport()
+{
+    string datatypes;
+    SourceType sourceType = getSourceType();
+    string type = sourceType.m_format;
+
+    datatypes = getDataTypeSupport(type, sourceType.m_forceFormat);
+    return datatypes;
 }
 
 void SyncSourceSession::init(SyncSource::Operations &ops)
@@ -481,44 +535,55 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
     if (!sourceType.m_format.empty()) {
         type = sourceType.m_format;
     }
+    info.m_datatypes = getDataTypeSupport(type, sourceType.m_forceFormat);
+}
+
+std::string SyncSourceBase::getDataTypeSupport(const std::string &type,
+                                               bool forceFormat)
+{
+    std::string datatypes;
 
     if (type == "text/x-vcard:2.1" || type == "text/x-vcard") {
-        info.m_datatypes =
+        datatypes =
             "        <use datatype='vCard21' mode='rw' preferred='yes'/>\n";
-        if (!sourceType.m_forceFormat) {
-            info.m_datatypes +=
+        if (!forceFormat) {
+            datatypes +=
                 "        <use datatype='vCard30' mode='rw'/>\n";
         }
     } else if (type == "text/vcard:3.0" || type == "text/vcard") {
-        info.m_datatypes =
+        datatypes =
             "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
-        if (!sourceType.m_forceFormat) {
-            info.m_datatypes +=
+        if (!forceFormat) {
+            datatypes +=
                 "        <use datatype='vCard21' mode='rw'/>\n";
         }
     } else if (type == "text/x-vcalendar:1.0" || type == "text/x-vcalendar"
              || type == "text/x-calendar:1.0" || type == "text/x-calendar") {
-        info.m_datatypes =
+        datatypes =
             "        <use datatype='vcalendar10' mode='rw' preferred='yes'/>\n";
-        if (!sourceType.m_forceFormat) {
-            info.m_datatypes +=
+        if (!forceFormat) {
+            datatypes +=
                 "        <use datatype='icalendar20' mode='rw'/>\n";
         }
     } else if (type == "text/calendar:2.0" || type == "text/calendar") {
-        info.m_datatypes =
+        datatypes =
             "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n";
-        if (!sourceType.m_forceFormat) {
-            info.m_datatypes +=
+        if (!forceFormat) {
+            datatypes +=
                 "        <use datatype='vcalendar10' mode='rw'/>\n";
         }
     } else if (type == "text/plain:1.0" || type == "text/plain") {
         // note10 are the same as note11, so ignore force format
-        info.m_datatypes =
+        datatypes =
             "        <use datatype='note10' mode='rw' preferred='yes'/>\n"
             "        <use datatype='note11' mode='rw'/>\n";
+    } else if (type.empty()) {
+        throwError("no MIME type configured");
     } else {
         throwError(string("configured MIME type not supported: ") + type);
     }
+
+    return datatypes;
 }
 
 sysync::TSyError SyncSourceSerialize::readItemAsKey(sysync::cItemID aID, sysync::KeyH aItemKey)

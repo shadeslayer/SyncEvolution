@@ -2010,7 +2010,7 @@ void ReadOperations::checkSource(const std::string &sourceName)
     try {
         // this can already throw exceptions when the config is invalid
         SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
-        auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
+        auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false, config.get()));
 
         if (syncSource.get()) {
             syncSource->open();
