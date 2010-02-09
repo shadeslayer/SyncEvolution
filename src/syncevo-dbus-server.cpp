@@ -4387,6 +4387,9 @@ void BtDeviceQueryer::listDevicesCb(const std::vector<DBusObject_t> &devices, co
         return;
     }
     m_devNo = devices.size();
+    if(m_devNo == 0) {
+        m_done = true;
+    }
     BOOST_FOREACH(const DBusObject_t &device, devices) {
        BluezDevice bluezDevice(m_bluezConn, device);
        DBusClientCall0<PropDict> getProperties(bluezDevice);
