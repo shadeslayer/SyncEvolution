@@ -79,6 +79,11 @@ public:
  */
 class ObexTransportAgent : public TransportAgent 
 {
+    class ContextUnref {
+    public:
+        static void unref(GMainContext *context) { g_main_context_unref(context); }
+    };
+
     public:
         enum OBEX_TRANS_TYPE{
             OBEX_BLUETOOTH,
@@ -86,7 +91,12 @@ class ObexTransportAgent : public TransportAgent
             INVALID
         };
 
-        ObexTransportAgent(OBEX_TRANS_TYPE type);
+        /**
+         * @param loop     the glib loop to use when waiting for IO;
+         *                 transport will increase the reference count;
+         *                 if NULL a new loop in the default context is used
+         */
+        ObexTransportAgent(OBEX_TRANS_TYPE type, GMainLoop *loop);
         ~ObexTransportAgent();
 
         virtual void setURL (const std::string &url);
@@ -138,6 +148,9 @@ class ObexTransportAgent : public TransportAgent
          * The underlying transport type: Bluetooth, USB.
          */
         OBEX_TRANS_TYPE m_transType;
+
+        /** context that needs to be kept alive while waiting for OBEX */
+        eptr<GMainContext, GMainContext, ContextUnref> m_context;
 
         /* The address of the remote device  
          * macadd for Bluetooth; device name for usb; host name for

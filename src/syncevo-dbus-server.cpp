@@ -2152,9 +2152,7 @@ boost::shared_ptr<TransportAgent> DBusSync::createTransportAgent()
     } else {
         // no connection, use HTTP via libsoup/GMainLoop
         GMainLoop *loop = m_session.getServer().getLoop();
-        g_main_loop_ref(loop);
-        boost::shared_ptr<HTTPTransportAgent> agent(new SoupTransportAgent(loop));
-        agent->setConfig(*this);
+        boost::shared_ptr<TransportAgent> agent = SyncContext::createTransportAgent(loop);
         return agent;
     }
 }

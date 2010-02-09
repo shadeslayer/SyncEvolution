@@ -581,9 +581,13 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * The default implementation instantiates one of the builtin
      * transport agents, depending on how it was compiled.
      *
+     * @param gmainloop    the GMainLoop to be used by transports, if not NULL;
+     *                     transports not supporting that should not be created;
+     *                     transports will increase the reference count for the loop
      * @return transport agent
      */
-    virtual boost::shared_ptr<TransportAgent> createTransportAgent();
+    virtual boost::shared_ptr<TransportAgent> createTransportAgent(void *gmainloop);
+    virtual boost::shared_ptr<TransportAgent> createTransportAgent() { return createTransportAgent(NULL); }
 
     /**
      * display a text message from the server

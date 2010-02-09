@@ -36,7 +36,7 @@ SE_BEGIN_CXX
 SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
     m_session(soup_session_async_new()),
     m_loop(loop ?
-           loop :
+           g_main_loop_ref(loop) :
            g_main_loop_new(NULL, TRUE),
            "Soup main loop"),
     m_status(INACTIVE),

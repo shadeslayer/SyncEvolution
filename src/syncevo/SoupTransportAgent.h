@@ -52,7 +52,7 @@ class SoupTransportAgent : public HTTPTransportAgent
  public:
     /**
      *  @param loop     the glib loop to use when waiting for IO;
-     *                  will be owned and unref'ed by the new instance;
+     *                  transport will increase the reference count;
      *                  if NULL a new loop in the default context is used
      */
     SoupTransportAgent(GMainLoop *loop = NULL);

@@ -1091,24 +1091,28 @@ string SyncContext::getUsedSyncURL() {
     return "";
 }
 
-boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent()
+boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainloop)
 {
     string url = getUsedSyncURL();
     if (boost::starts_with(url, "http://") ||
         boost::starts_with(url, "https://")) {
 #ifdef ENABLE_LIBSOUP
-        boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent());
+        
+        boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent(static_cast<GMainLoop *>(gmainloop)));
         agent->setConfig(*this);
         return agent;
 #elif defined(ENABLE_LIBCURL)
-        boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
-        agent->setConfig(*this);
-        return agent;
+        if (!gmainloop) {
+            boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
+            agent->setConfig(*this);
+            return agent;
+        }
 #endif
     } else if (url.find("obex-bt://") ==0) {
 #ifdef ENABLE_BLUETOOTH
         std::string btUrl = url.substr (strlen ("obex-bt://"), std::string::npos);
-        boost::shared_ptr<ObexTransportAgent> agent(new ObexTransportAgent(ObexTransportAgent::OBEX_BLUETOOTH));
+        boost::shared_ptr<ObexTransportAgent> agent(new ObexTransportAgent(ObexTransportAgent::OBEX_BLUETOOTH,
+                                                                           static_cast<GMainLoop *>(gmainloop)));
         agent->setURL (btUrl);
         agent->connect();
         return agent;

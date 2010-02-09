@@ -39,9 +39,12 @@
 
 SE_BEGIN_CXX
 
-ObexTransportAgent::ObexTransportAgent (OBEX_TRANS_TYPE type) :
+ObexTransportAgent::ObexTransportAgent (OBEX_TRANS_TYPE type, GMainLoop *loop) :
     m_status(INACTIVE),
     m_transType(type),
+    m_context(g_main_context_ref(loop ?
+                                 g_main_loop_get_context(loop) :
+                                 g_main_context_default())),
     m_address(""),
     m_port(-1),
     m_buffer(NULL),
@@ -351,7 +354,7 @@ TransportAgent::Status ObexTransportAgent::wait(bool noReply) {
     cxxptr<Channel> channel;
 
     while (!m_obexReady) {
-        g_main_context_iteration (NULL, TRUE);
+        g_main_context_iteration (m_context, TRUE);
         if (m_status == FAILED) {
             if (m_obexEvent) {
                 obexEvent = m_obexEvent;
@@ -391,7 +394,7 @@ TransportAgent::Status ObexTransportAgent::wait(bool noReply) {
         }
 
         while (!m_obexReady) {
-            g_main_context_iteration (NULL, FALSE);
+            g_main_context_iteration (m_context, FALSE);
             if (m_status == FAILED) {
                 SE_THROW_EXCEPTION (TransportException, 
                         "ObexTransprotAgent: Underlying transport error");
