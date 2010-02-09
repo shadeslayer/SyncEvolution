@@ -118,7 +118,9 @@ void
 syncevo_config_free (SyncevoConfig *config)
 {
     /* NOTE: Hashtables gcreated by dbus-glib should free their contents */
-    g_hash_table_destroy (config);
+    if (config) {
+        g_hash_table_destroy (config);
+    }
 }
 
 const char*

@@ -103,7 +103,6 @@ update_source_uri (char *name,
 
     widgets = (source_widgets*)g_hash_table_lookup (self->sources, name);
     if (!widgets) {
-        g_warning ("No widgets found for source %s", name);
         return;
     }
 
@@ -139,7 +138,6 @@ sync_config_widget_save_config (SyncConfigWidget *self,
         syncevo_config_free (self->config);
         self->config = g_hash_table_new (g_str_hash, g_str_equal);
     }
-
     syncevo_session_set_config (session,
                                 FALSE,
                                 FALSE,
