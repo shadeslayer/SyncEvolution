@@ -864,13 +864,45 @@ info_bar_response_cb (GtkInfoBar          *info_bar,
     }
 }
 
+static void
+child_watch_cb (GPid pid, int status, app_data *data)
+{
+    g_spawn_close_pid (pid);
+    update_services_list (data);
+}
+
+static void
+new_device_clicked_cb (GtkButton *btn, app_data *data)
+{
+    char *argv[2] = {"bluetooth-wizard", NULL};
+    GError *error;
+    int pid;
+
+    if (!gdk_spawn_on_screen (gtk_window_get_screen (GTK_WINDOW (data->sync_win)),
+                              NULL,
+                              argv,
+                              NULL,
+                              G_SPAWN_DO_NOT_REAP_CHILD|G_SPAWN_SEARCH_PATH,
+                              NULL,
+                              NULL,
+                              &pid,
+                              &error)) {
+        g_warning ("Failed to spawn bluetooth-wizard: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    g_child_watch_add (pid, (GChildWatchFunc)child_watch_cb, data);
+}
+
 static gboolean
 init_ui (app_data *data)
 {
     GtkBuilder *builder;
     GError *error = NULL;
-    GtkWidget *frame, * service_error_box, *btn;
+    GtkWidget *frame, * service_error_box, *btn, *new_device_btn;
     GtkAdjustment *adj;
+    char *bt_wizard;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -967,7 +999,17 @@ init_ui (app_data *data)
     g_signal_connect (data->sync_btn, "clicked", 
                       G_CALLBACK (sync_clicked_cb), data);
 
+    new_device_btn = GTK_WIDGET (gtk_builder_get_object (builder, "new_device_btn"));
+    g_signal_connect (new_device_btn, "clicked", 
+                      G_CALLBACK (new_device_clicked_cb), data);    
+    bt_wizard = g_find_program_in_path ("bluetooth-wizard");
+    if (bt_wizard) {
+        gtk_widget_show (new_device_btn);
+        g_free (bt_wizard);
+    }
+
     g_object_unref (builder);
+
     return TRUE;
 }
 

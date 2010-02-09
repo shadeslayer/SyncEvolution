@@ -664,7 +664,7 @@ you can setup a service manually.</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkHBox" id="hbox_2">
+                                      <widget class="GtkHBox" id="add_bt_device_box">
                                         <property name="visible">True</property>
                                         <child>
                                           <widget class="GtkLabel" id="label_4">
@@ -680,7 +680,6 @@ you can setup a service manually.</property>
                                           <widget class="GtkButton" id="new_device_btn">
                                             <property name="label" translatable="yes">Add new device</property>
                                             <property name="width_request">150</property>
-                                            <property name="visible">True</property>
                                             <property name="can_focus">True</property>
                                             <property name="receives_default">True</property>
                                           </widget>
