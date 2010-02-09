@@ -55,9 +55,10 @@ fi
 have_sha="no"
 if test "$GLIBFOUND" = "yes"; then
    # only use glib if we need it anyway, also has to be at lease 2.16
-   PKG_CHECK_MODULES(GLIB, "glib-2.0>=2.16",
+   PKG_CHECK_MODULES(GLIB216, [glib-2.0 >= 2.16],
                      [AC_DEFINE(USE_SHA256, 1, [choose implementation of SHA-256])
-                      have_sha="glib"])
+                      have_sha="glib"],
+                     [true])
 fi
 if test "$have_sha" = "no"; then
    # Fallback is Mozilla NSS. In contrast to libgcrypt it has a .pc
