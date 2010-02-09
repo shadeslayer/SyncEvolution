@@ -393,6 +393,7 @@ SyncConfig::TemplateList SyncConfig::getBuiltInTemplates()
     result.addDefaultTemplate("Oracle", "http://www.oracle.com/technology/products/beehive/index.html");
     result.addDefaultTemplate("Goosync", "http://www.goosync.com/");
     result.addDefaultTemplate("SyncEvolution", "http://www.syncevolution.org");
+    result.addDefaultTemplate("Ovi", "http://www.ovi.com");
 
     result.sort (TemplateDescription::compare_op);
     return result;
@@ -678,6 +679,33 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         source->setURI("./calendar/tasks");
         source = config->getSyncSourceConfig("memo");
         source->setURI("./notes");
+    } else if (boost::iequals(server, "Ovi")) {
+        config->setSyncURL("https://sync.ovi.com/services/syncml");
+        config->setWebURL("http://www.ovi.com");
+        //prefer vcard 3.0
+        source = config->getSyncSourceConfig("addressbook");
+        source->setSourceType("addressbook:text/vcard");
+        source->setURI("./Contact/Unfiled");
+        source = config->getSyncSourceConfig("calendar");
+        source->setSync("none");
+        source->setURI("");
+        //prefer vcalendar 1.0
+        source->setSourceType("Calendar:text/x-vcalendar");
+        source = config->getSyncSourceConfig("todo");
+        source->setSync("none");
+        source->setURI("");
+        //prefer vcalendar 1.0
+        source->setSourceType("Calendar:text/x-vcalendar");
+        //A virtual datastore combining calendar and todo
+        source = config->getSyncSourceConfig("calendar+todo");
+        source->setURI("./EventTask/Tasks");
+        source->setSourceType("virtual:text/x-vcalendar");
+        source->setDatabaseID("calendar,todo");
+        source->setSync("two-way");
+        //Memo is disabled
+        source = config->getSyncSourceConfig("memo");
+        source->setSync("none");
+        source->setURI("");
     } else if (boost::iequals(server, "goosync")) {
         config->setSyncURL("http://sync2.goosync.com/");
         config->setWebURL("http://www.goosync.com/");

@@ -546,6 +546,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
                                        "Goosync",
                                        "Memotoo",
                                        "Mobical",
+                                       "Ovi",
                                        "Oracle",
                                        "ScheduleWorld",
                                        "SyncEvolution",

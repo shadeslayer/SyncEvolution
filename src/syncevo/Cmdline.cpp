@@ -1680,6 +1680,7 @@ protected:
                                   "   Memotoo = http://www.memotoo.com\n"
                                   "   Mobical = http://www.mobical.net\n"
                                   "   Oracle = http://www.oracle.com/technology/products/beehive/index.html\n"
+                                  "   Ovi = http://www.ovi.com\n"
                                   "   ScheduleWorld = http://www.scheduleworld.com\n"
                                   "   SyncEvolution = http://www.syncevolution.org\n"
                                   "   Synthesis = http://www.synthesis.ch\n"
