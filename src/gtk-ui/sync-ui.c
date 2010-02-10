@@ -65,6 +65,22 @@ typedef enum app_state {
     SYNC_UI_STATE_SYNCING,
 } app_state;
 
+typedef enum ui_operation {
+    OP_SYNC, /* use sync mode from config */
+    OP_SYNC_SLOW,
+    OP_SYNC_REFRESH_FROM_CLIENT,
+    OP_SYNC_REFRESH_FROM_SERVER,
+    OP_SAVE,
+    OP_RESTORE,
+} ui_operation;
+
+typedef struct operation_data {
+    app_data *data;
+    ui_operation operation;
+    gboolean started;
+    const char *dir; /* for OP_RESTORE */
+} operation_data;
+
 struct _app_data {
     GtkWidget *sync_win;
 
@@ -117,6 +133,7 @@ struct _app_data {
     int last_sync;
     guint last_sync_src_id;
 
+    ui_operation current_operation;
     server_config *current_service;
     app_state current_state;
     gboolean open_current; /* should the service list open the current 
@@ -127,20 +144,6 @@ struct _app_data {
 
     SyncevoSession *running_session; /* session that is currently active */
 };
-
-typedef struct operation_data {
-    app_data *data;
-    enum op {
-        OP_SYNC, /* use sync mode from config */
-        OP_SYNC_SLOW,
-        OP_SYNC_REFRESH_FROM_CLIENT,
-        OP_SYNC_REFRESH_FROM_SERVER,
-        OP_SAVE,
-        OP_RESTORE,
-    } operation;
-    gboolean started;
-    const char *dir; /* for OP_RESTORE */
-} operation_data;
 
 static void set_sync_progress (app_data *data, float progress, char *status);
 static void set_app_state (app_data *data, app_state state);
@@ -444,7 +447,7 @@ refresh_from_client_clicked_cb (GtkButton *btn, app_data *data)
 }
 
 static void
-sync_clicked_cb (GtkButton *btn, app_data *data)
+start_sync (app_data *data)
 {
     operation_data *op_data;
 
@@ -464,6 +467,13 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
                                       (SyncevoServerStartSessionCb)start_session_cb,
                                       op_data);
     }
+}
+
+
+static void
+sync_clicked_cb (GtkButton *btn, app_data *data)
+{
+    start_sync (data);
 }
 
 static gboolean
@@ -558,15 +568,27 @@ set_info_bar (GtkWidget *widget,
                            (GtkCallback)remove_child,
                            container);
     switch (response_id) {
+    case SYNC_ERROR_RESPONSE_SYNC:
+        /* TRANSLATORS: Action button in info bar in main view. Shown with e.g.
+         * "You've just restored a backup. The changes have not been "
+         * "synced with %s yet" */
+        gtk_info_bar_add_button (bar, _("Sync now"), response_id);
+        break;
     case SYNC_ERROR_RESPONSE_EMERGENCY:
-        /* TRANSLATORS: Action buttons in error/info bars in main view. */
+        /* TRANSLATORS: Action button in info bar in main view. Shown with e.g.
+         * "A normal sync is not possible at this time..." message.
+         * "Other options" will open Emergency view */
         gtk_info_bar_add_button (bar, _("Slow sync"), SYNC_ERROR_RESPONSE_EMERGENCY_SLOW_SYNC);
         gtk_info_bar_add_button (bar, _("Other options..."), response_id);
         break;
     case SYNC_ERROR_RESPONSE_SETTINGS_SELECT:
+        /* TRANSLATORS: Action button in info bar in main view. Shown e.g.
+         * when no service is selected. Will open configuration view */
         gtk_info_bar_add_button (bar, _("Select sync service"), response_id);
         break;
     case SYNC_ERROR_RESPONSE_SETTINGS_OPEN:
+        /* TRANSLATORS: Action button in info bar in main view. Shown e.g. 
+         * login to service fails. Will open configuration view for this service */
         gtk_info_bar_add_button (bar, _("Edit service settings"), response_id);
         break;
     case SYNC_ERROR_RESPONSE_NONE:
@@ -658,7 +680,7 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->emergency_btn, TRUE);
         /* TRANSLATORS: These are for the button in main view, right side.
            Keep line length below ~20 characters, use two lines if needed */
-        if (data->synced_this_session)
+        if (data->synced_this_session && data->current_operation != OP_RESTORE)
             gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync again"));
         else
             gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync now"));
@@ -671,13 +693,18 @@ set_app_state (app_data *data, app_state state)
         /* we have a active session, and a session is running
            (the running session may or may not be ours) */
         gtk_widget_show (data->progress);
-        gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Syncing"));
+        if (data->current_operation == OP_RESTORE) {
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Restoring"));
+        } else {
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label), _("Syncing"));
+        }
         gtk_widget_set_sensitive (data->main_frame, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
         gtk_widget_set_sensitive (data->emergency_btn, FALSE);
 
-        gtk_widget_set_sensitive (data->sync_btn, support_canceling);
-        if (support_canceling) {
+        gtk_widget_set_sensitive (data->sync_btn, 
+                                  support_canceling && data->current_operation != OP_RESTORE);
+        if (support_canceling && support_canceling && data->current_operation != OP_RESTORE) {
             /* TRANSLATORS: This is for the button in main view, right side.
                Keep line length below ~20 characters, use two lines if needed */
             gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Cancel sync"));
@@ -846,6 +873,9 @@ info_bar_response_cb (GtkInfoBar          *info_bar,
                       app_data            *data)
 {
     switch (response_id) {
+    case SYNC_ERROR_RESPONSE_SYNC:
+        start_sync (data);
+        break;
     case SYNC_ERROR_RESPONSE_EMERGENCY_SLOW_SYNC:
         slow_sync (data);
         break;
@@ -1390,8 +1420,10 @@ update_emergency_view (app_data *data)
                 /* TRANSLATORS: this is an explanation in Emergency view.
                  * Placeholder is a service/device name */
                 _("A normal sync with %s is not possible at this time. "
-                  "You can do a slow two-way sync, start from scratch or "
-                  "restore from backup."),
+                  "You can do a slow two-way sync or start from scratch. You "
+                  "can also restore a backup, but a slow sync or starting from "
+                  "scratch will still be required before normal sync is "
+                  "possible."),
                 data->current_service->pretty_name);
     } else {
         /* TRANSLATORS: this is an explanation in Emergency view.
@@ -1954,13 +1986,24 @@ set_running_session_status (app_data *data,
         char *err;
         err = get_error_string_for_code (error_code, NULL);
         if (err) {
-            gtk_label_set_text (GTK_LABEL (data->sync_status_label),
-                                _("Sync failed"));
+            if (data->current_operation == OP_RESTORE) {
+                gtk_label_set_text (GTK_LABEL (data->sync_status_label),
+                                    _("Restore failed"));
+            } else {
+                gtk_label_set_text (GTK_LABEL (data->sync_status_label),
+                                    _("Sync failed"));
+            }
             g_free (err);
         } else {
-            gtk_label_set_text (GTK_LABEL (data->sync_status_label),
-                                _("Sync complete"));
+            if (data->current_operation == OP_RESTORE) {
+                gtk_label_set_text (GTK_LABEL (data->sync_status_label),
+                                    _("Restore complete"));
+            } else {
+                gtk_label_set_text (GTK_LABEL (data->sync_status_label),
+                                    _("Sync complete"));
+            }
         }
+        g_free (err);
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
         set_sync_progress (data, 1.0, "");
     } else if (status & SYNCEVO_STATUS_RUNNING ||
@@ -2413,6 +2456,15 @@ get_reports_cb (SyncevoServer *server,
 
         set_info_bar (data->info_bar, type, response, error_msg);
         g_free (error_msg);
+    } else if (data->current_operation == OP_RESTORE) {
+        /* special case for just after restoring */
+        error_msg = g_strdup_printf
+            (_("You've just restored a backup. The changes have not been "
+               "synced with %s yet"), data->current_service->pretty_name);
+        set_info_bar (data->info_bar,
+                      GTK_MESSAGE_INFO,
+                      SYNC_ERROR_RESPONSE_SYNC,
+                      error_msg);
     }
 
     g_hash_table_destroy (sources);
@@ -2436,26 +2488,12 @@ restore_cb (SyncevoSession *session,
             GError *error,
             app_data *data)
 {
-    operation_data *op_data;
-
-    g_object_unref (session);
-
     if (error) {
         g_warning ("Error in Session.Restore: %s", error->message);
         g_error_free (error);
-        return;
-        /* TODO show in UI: restore failed */
-    }
 
-    /* update peer with the restore results */
-    op_data = g_slice_new (operation_data);
-    op_data->data = data;
-    op_data->operation = OP_SYNC_REFRESH_FROM_CLIENT;
-    op_data->started = FALSE;
-    syncevo_server_start_session (data->server,
-                                  data->current_service->name,
-                                  (SyncevoServerStartSessionCb)start_session_cb,                                  op_data);
-    show_main_view (data);
+        return;
+    }
 }
 
 static void
@@ -2577,6 +2615,7 @@ run_operation (operation_data *op_data, SyncevoSession *session)
         return;
     }
     op_data->started = TRUE;
+    op_data->data->current_operation = op_data->operation;
 
     /* time for business */
     switch (op_data->operation) {
