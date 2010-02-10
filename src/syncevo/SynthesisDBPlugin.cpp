@@ -637,6 +637,10 @@ TSyError SyncEvolution_StartDataRead( CContext aContext, cAppCharP   lastToken,
     }
     TSyError res = LOCERR_OK;
     try {
+        BOOST_FOREACH(const SyncSource::Operations::CallbackFunctor_t &callback,
+                      source->getOperations().m_startAccess) {
+            callback();
+        }
         if (source->getOperations().m_startDataRead) {
             res = source->getOperations().m_startDataRead(lastToken, resumeToken);
         }

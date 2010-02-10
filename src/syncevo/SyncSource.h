@@ -876,14 +876,20 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
          * to be part of a sync session.
          */
         /**@{*/
+        typedef void (Callback_t)();
+        typedef boost::function<Callback_t> CallbackFunctor_t;
+        typedef std::list<CallbackFunctor_t> Callbacks_t;
+
+        /** all of these functions will be called before accessing
+            the source's data for the first time, i.e., before m_startDataRead */
+        Callbacks_t m_startAccess;
+
         typedef sysync::TSyError (StartDataRead_t)(const char *lastToken, const char *resumeToken);
         boost::function<StartDataRead_t> m_startDataRead;
 
-        typedef void (Callback_t)();
-        typedef boost::function<Callback_t> CallbackFunctor_t;
         /** all of these functions will be called directly after
             m_startDataRead() returned successfully */
-        std::list<CallbackFunctor_t> m_startSession;
+        Callbacks_t m_startSession;
 
         typedef sysync::TSyError (EndDataRead_t)();
         boost::function<EndDataRead_t> m_endDataRead;
@@ -953,6 +959,12 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
         /**@}*/
     };
     const Operations &getOperations() { return m_operations; }
+
+    /**
+     * outside users of the source are only allowed to add callbacks,
+     * not overwrite arbitrary operations
+     */
+    void addCallback(Operations::CallbackFunctor_t callback, Operations::Callbacks_t Operations::* where) { (m_operations.*where).push_back(callback); }
         
     /**
      * closes the data source so that it can be reopened
