@@ -2455,6 +2455,7 @@ restore_cb (SyncevoSession *session,
     syncevo_server_start_session (data->server,
                                   data->current_service->name,
                                   (SyncevoServerStartSessionCb)start_session_cb,                                  op_data);
+    show_main_view (data);
 }
 
 static void
@@ -2729,6 +2730,7 @@ show_emergency_view (app_data *data)
     mux_window_set_current_page (MUX_WINDOW (data->sync_win),
                                  data->emergency_index);
 #else
+    gtk_widget_hide (data->services_win);
     gtk_window_present (GTK_WINDOW (data->emergency_win));
 #endif
 }
@@ -2742,6 +2744,7 @@ show_services_list (app_data *data, const char *config_id_to_open)
 #ifdef USE_MOBLIN_UX
     mux_window_set_settings_visible (MUX_WINDOW (data->sync_win), TRUE);
 #else
+    gtk_widget_hide (data->emergency_win);
     gtk_window_present (GTK_WINDOW (data->services_win));
     update_services_list (data);
 #endif
@@ -2754,6 +2757,7 @@ show_main_view (app_data *data)
     mux_window_set_current_page (MUX_WINDOW (data->sync_win), -1);
 #else
     gtk_widget_hide (data->services_win);
+    gtk_widget_hide (data->emergency_win);
 #endif
     gtk_window_present (GTK_WINDOW (data->sync_win));
 }
