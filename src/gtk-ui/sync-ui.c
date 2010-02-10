@@ -122,6 +122,9 @@ struct _app_data {
     GtkWidget *refresh_from_client_btn_label;
     GtkWidget *emergency_backup_table;
 
+    GtkWidget *password_dialog_entry;
+    char *password_dialog_id;
+
     gboolean forced_emergency;
     GHashTable *emergency_sources;
     guint backup_count;
@@ -2961,16 +2964,104 @@ get_presence_cb (SyncevoServer *server,
 }
 
 static void
+password_dialog_response_cb (GtkWidget *dialog, int response, app_data *data)
+{
+    const char *password;
+    GHashTable *return_dict;
+
+    return_dict = g_hash_table_new (g_str_hash, g_str_equal);
+
+    if (response == GTK_RESPONSE_OK) {
+        password = gtk_entry_get_text (GTK_ENTRY (data->password_dialog_entry));
+        g_hash_table_insert (return_dict, "password", (gpointer)password);
+    }
+
+    syncevo_server_info_response (data->server, data->password_dialog_id,
+                                  "response", return_dict, NULL, NULL);
+
+    g_hash_table_destroy (return_dict);
+
+    g_free (data->password_dialog_id);
+    data->password_dialog_id = NULL;
+    gtk_widget_destroy (dialog);
+}
+
+static void
 info_request_cb (SyncevoServer *syncevo,
                  char *id,
                  char *session_path,
                  char *state,
                  char *handler_path,
                  char *type,
+                 GHashTable *parameters,
                  app_data *data)
 {
-    /* Implementation waiting for moblin bug #6376*/
-    g_warning ("InfoRequest handler not implemented yet");
+    GHashTable *t;
+    GtkWidget *dialog, *content, *label, *align;
+    char *msg;
+
+    if (g_strcmp0 (state, "request") != 0 ||
+        g_strcmp0 (type, "password") != 0) {
+        /* not handling other stuff */
+        return;
+    }
+
+    if (!data->running_session ||
+        g_strcmp0 (session_path,
+                   syncevo_session_get_path (data->running_session)) != 0) {
+        /* not our problem */
+        return;
+    }
+
+    t = g_hash_table_new (g_str_hash, g_str_equal);
+    syncevo_server_info_response (syncevo, id, "working", t, NULL, NULL);
+    g_hash_table_destroy (t);
+
+    data->password_dialog_id = g_strdup (id);
+
+    /* TRANSLATORS: password request dialog contents: title, cancel button
+     * and ok button */
+    dialog = gtk_dialog_new_with_buttons (_("Password is required for sync"),
+                                          GTK_WINDOW (data->sync_win),
+                                          GTK_DIALOG_DESTROY_WITH_PARENT,
+                                          _("Cancel sync"), GTK_RESPONSE_CANCEL,
+                                          _("Sync with password"), GTK_RESPONSE_OK,
+                                          NULL);
+    content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+
+    align = gtk_alignment_new (0.0, 0.5, 0.0, 0.0);
+    gtk_alignment_set_padding (GTK_ALIGNMENT (align), 0, 0, 16, 16);
+    gtk_widget_show (align);
+    gtk_box_pack_start (GTK_BOX (content), align, FALSE, FALSE, 6);
+
+    /* TRANSLATORS: password request dialog message, placeholder is service name */
+    msg = g_strdup_printf (_("Please enter password for syncing with %s:"),
+                           data->current_service->pretty_name);
+    label = gtk_label_new (msg);
+    gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_END);
+    gtk_widget_set_size_request (label, 500, -1);
+
+    gtk_widget_show (label);
+    gtk_container_add (GTK_CONTAINER (align), label);
+    g_free (msg);
+
+    align = gtk_alignment_new (0.0, 0.5, 0.0, 0.0);
+    gtk_alignment_set_padding (GTK_ALIGNMENT (align), 0, 0, 16, 16);
+    gtk_widget_show (align);
+    gtk_box_pack_start (GTK_BOX (content), align, FALSE, FALSE, 6);
+
+    data->password_dialog_entry = gtk_entry_new_with_max_length (99);
+    gtk_entry_set_width_chars (GTK_ENTRY (data->password_dialog_entry), 30);
+    gtk_entry_set_visibility (GTK_ENTRY (data->password_dialog_entry), FALSE);
+
+    gtk_widget_show (data->password_dialog_entry);
+    gtk_container_add (GTK_CONTAINER (align), data->password_dialog_entry);
+
+    g_signal_connect (dialog, "response",
+                      G_CALLBACK (password_dialog_response_cb), data);
+
+    gtk_window_present (GTK_WINDOW (dialog));
+    gtk_widget_grab_focus (data->password_dialog_entry);
 }
 
 static void
