@@ -1546,7 +1546,12 @@ void SyncContext::initSources(SourceList &sourceList)
                 }
                 FilterConfigNode::ConfigFilter vFilter;
                 vFilter["sync"] = sync;
-                vFilter["uri"] = sc->getURI();
+                if (!m_serverMode) {
+                    // must set special URI for clients so that
+                    // engine knows about superdatastore and its
+                    // URI
+                    vFilter["uri"] = string("<") + vSource->getName() + ">" + vSource->getURI();
+                }
                 BOOST_FOREACH (std::string source, mappedSources) {
                     setConfigFilter (false, source, vFilter);
                 }
