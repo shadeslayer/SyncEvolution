@@ -4,15 +4,10 @@
 # syncevolution git repository. Pass the path
 # to a gdbus repository (default: ../libgdbus).
 #
-# The script switches to the "gdbus" branch
-# in the syncevolution repo and then merges all
-# patches committed to the "master" branch in the
-# gdbus repo, updating the "gdbus" branch
-# as it goes along.
-#
-# The original commit IDs are recorded
-# at the end of each commit message.
-
+# The script generates .patch files for all changes
+# made in the current branch to files which are
+# shared with gdbus. The resulting files can
+# be imported with "git am".
 
 set -e
 set -x
