@@ -394,7 +394,7 @@ TransportAgent::Status ObexTransportAgent::wait(bool noReply) {
         }
 
         while (!m_obexReady) {
-            g_main_context_iteration (m_context, FALSE);
+            g_main_context_iteration (m_context, TRUE);
             if (m_status == FAILED) {
                 SE_THROW_EXCEPTION (TransportException, 
                         "ObexTransprotAgent: Underlying transport error");
