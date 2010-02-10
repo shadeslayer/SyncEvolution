@@ -52,6 +52,7 @@ using namespace std;
 #include <boost/algorithm/string/join.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/bind.hpp>
 
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -693,11 +694,26 @@ private:
 
 const char* const LogDir::DIR_PREFIX = "SyncEvolution-";
 
-// this class owns the sync sources and (together with
-// a logdir) handles writing of per-sync files as well
-// as the final report 
-// It also handles the virtual syncsources that is a combination of several
-// real syncsources.
+/**
+ * This class owns the sync sources and (together with a logdir)
+ * handles writing of per-sync files as well as the final report.
+ * It is not stateless. The expectation is that it is instantiated
+ * together with a SyncContext for one particular operation (sync
+ * session, status check, restore). In contrast to a SyncContext,
+ * this class has to be recreated for another operation.
+ *
+ * When running as client, only the active sources get added. They can
+ * be dumped one after the other before running a sync.
+ *
+ * As a server, all sources get added, regardless whether they are
+ * active. This implies that at least their "type" must be valid. Then
+ * later when a client really starts using them, they are opened() and
+ * database dumps are made.
+ *
+ * Virtual datastores are stored here because they get initialized
+ * together with the normal sources by the user of SourceList, but
+ * this class never does anything with them.
+ */
 class SourceList : public vector<SyncSource *> {
 public:
     enum LogLevel {
@@ -710,7 +726,9 @@ public:
 private:
     LogDir m_logdir;     /**< our logging directory */
     SyncContext &m_client; /**< the context in which we were instantiated */
-    bool m_prepared;     /**< remember whether syncPrepare() dumped databases successfully */
+    set<string> m_prepared;   /**< remember for which source we dumped databases successfully */
+    string m_intro;      /**< remembers the dumpLocalChanges() intro and only prints it again
+                            when different from last dumpLocalChanges() call */
     bool m_doLogging;    /**< true iff the normal logdir handling is enabled
                             (creating and expiring directoties, before/after comparison) */
     bool m_reportTodo;   /**< true if syncDone() shall print a final report */
@@ -731,11 +749,16 @@ public:
     void setLogLevel(LogLevel logLevel) { m_logLevel = logLevel; }
 
     /**
-     * dump into files with a certain suffix,
-     * optionally store report in member of SyncSourceReport
+     * Dump into files with a certain suffix, optionally store report
+     * in member of SyncSourceReport. Remembers which sources were
+     * dumped before a sync and only dumps those again afterward.
+     *
+     * @param suffix        "before/after/current" - before sync, after sync, during status check
+     * @param excludeSource when not empty, only dump that source
      */
     void dumpDatabases(const string &suffix,
-                       BackupReport SyncSourceReport::*report) {
+                       BackupReport SyncSourceReport::*report,
+                       const string &excludeSource = "") {
         // Identify all logdirs of current context, of any peer.  Used
         // to search for previous backups of each source, if
         // necessary.
@@ -748,6 +771,11 @@ public:
         logdir.previousLogdirs(dirs);
 
         BOOST_FOREACH(SyncSource *source, *this) {
+            if ((!excludeSource.empty() && excludeSource != source->getName()) ||
+                (suffix == "after" && m_prepared.find(source->getName()) == m_prepared.end())) {
+                continue;
+            }
+
             string dir = databaseName(*source, suffix);
             boost::shared_ptr<ConfigNode> node = ConfigNode::createFileNode(dir + ".ini");
             SE_LOG_DEBUG(NULL, NULL, "creating %s", dir.c_str());
@@ -780,6 +808,11 @@ public:
                                                      SyncSource::Operations::BackupInfo(dir, node),
                                                      report ? source->*report : dummy);
                 SE_LOG_DEBUG(NULL, NULL, "%s created", dir.c_str());
+
+                // remember that we have dumped at the beginning of a sync
+                if (suffix == "before") {
+                    m_prepared.insert(source->getName());
+                }
             }
         }
     }
@@ -800,7 +833,6 @@ public:
     SourceList(SyncContext &client, bool doLogging) :
         m_logdir(client),
         m_client(client),
-        m_prepared(false),
         m_doLogging(doLogging),
         m_reportTodo(true),
         m_logLevel(LOGGING_FULL)
@@ -843,10 +875,12 @@ public:
      * @param oldSuffix      suffix of old database dump: usually "after"
      * @param currentSuffix  the current database dump suffix: "current"
      *                       when not doing a sync, otherwise "before"
+     * @param excludeSource  when not empty, only dump that source
      */
     bool dumpLocalChanges(const string &oldSession,
                           const string &oldSuffix, const string &newSuffix,
-                          const string &intro = "Local data changes to be applied to server during synchronization:\n",
+                          const string &excludeSource,
+                          const string &intro = "Local data changes to be applied remotely during synchronization:\n",
                           const string &config = "CLIENT_TEST_LEFT_NAME='after last sync' CLIENT_TEST_RIGHT_NAME='current data' CLIENT_TEST_REMOVED='removed since last sync' CLIENT_TEST_ADDED='added since last sync'") {
         if (m_logLevel <= LOGGING_SUMMARY) {
             return false;
@@ -857,8 +891,18 @@ public:
             m_logdir.previousLogdirs(dirs);
         }
 
-        cout << intro;
         BOOST_FOREACH(SyncSource *source, *this) {
+            if ((!excludeSource.empty() && excludeSource != source->getName()) ||
+                (newSuffix == "after" && m_prepared.find(source->getName()) == m_prepared.end())) {
+                continue;
+            }
+
+            // dump only if not done before or changed
+            if (m_intro != intro) {
+                cout << intro;
+                m_intro = intro;
+            }
+
             string oldDir;
             if (oldSession.empty()) {
                 // Now look for the latest session involving the current source,
@@ -903,15 +947,14 @@ public:
 
     // call when all sync sources are ready to dump
     // pre-sync databases
-    void syncPrepare() {
+    // @param excludeSource   when non-empty, limit preparation to that source
+    void syncPrepare(const string &excludeSource = "") {
         if (m_logdir.getLogfile().size() &&
             m_doLogging) {
             // dump initial databases
-            dumpDatabases("before", &SyncSourceReport::m_backupBefore);
+            dumpDatabases("before", &SyncSourceReport::m_backupBefore, excludeSource);
             // compare against the old "after" database dump
-            dumpLocalChanges("", "after", "before");
-
-            m_prepared = true;
+            dumpLocalChanges("", "after", "before", excludeSource);
         }
     }
 
@@ -926,12 +969,14 @@ public:
 
         if (m_doLogging) {
             // dump database after sync, but not if already dumping it at the beginning didn't complete
-            if (m_reportTodo && m_prepared) {
+            if (m_reportTodo && !m_prepared.empty()) {
                 try {
                     dumpDatabases("after", &SyncSourceReport::m_backupAfter);
                 } catch (...) {
                     Exception::handle();
-                    m_prepared = false;
+                    // not exactly sure what the problem was, but don't
+                    // try it again
+                    m_prepared.clear();
                 }
                 if (report) {
                     // update report with more recent information about m_backupAfter
@@ -974,22 +1019,10 @@ public:
                 }
 
                 // compare databases?
-                if (m_logLevel > LOGGING_SUMMARY && m_prepared) {
-                    cout << "\nChanges applied to client during synchronization:\n";
-                    BOOST_FOREACH(SyncSource *source, *this) {
-                        cout << "*** " << source->getName() << " ***\n" << flush;
-
-                        string before = databaseName(*source, "before");
-                        string after = databaseName(*source, "after");
-                        string cmd = string("synccompare '" ) +
-                            before + "' '" + after +
-                            "' && echo 'no changes'";
-                        if (system(cmd.c_str())) {
-                            // ignore error
-                        }
-                    }
-                    cout << "\n";
-                }
+                dumpLocalChanges(m_logdir.getLogdir(),
+                                 "before", "after", "",
+                                 "\nData modified locally during synchronization:\n",
+                                 "CLIENT_TEST_LEFT_NAME='before sync' CLIENT_TEST_RIGHT_NAME='after sync' CLIENT_TEST_REMOVED='removed during sync' CLIENT_TEST_ADDED='added during sync'");
 
                 if (status == STATUS_OK) {
                     m_logdir.expire();
@@ -1564,6 +1597,16 @@ void SyncContext::initSources(SourceList &sourceList)
                                   source,
                                   0, 0, 0);
         }
+    }
+}
+
+void SyncContext::startSourceAccess(SyncSource *source)
+{
+    if (m_serverMode) {
+        // source is active in sync, now open it and dump
+        // database
+        source->open();
+        m_sourceListPtr->syncPrepare(source->getName());
     }
 }
 
@@ -2309,21 +2352,28 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             }
 
             // open each source - failing now is still safe
+            // in clients; in servers we wait until the source
+            // is really needed
             BOOST_FOREACH(SyncSource *source, sourceList) {
                 if (m_serverMode) {
                     source->enableServerMode();
+                } else {
+                    source->open();
                 }
-                source->open();
+
+                // request callback when starting to use source
+                source->addCallback(boost::bind(&SyncContext::startSourceAccess, this, source), &SyncSource::Operations::m_startAccess);
             }
 
             // give derived class also a chance to update the configs
             prepare(sourceList);
 
-            // TODO: in server mode don't dump all databases. Wait until
-            // the client is logged in successfully and we know which
-            // sources it needs.
             // ready to go: dump initial databases and prepare for final report
-            sourceList.syncPrepare();
+            // In a server open/prepare are delayed until a client really
+            // accesses the source, see SyncContext::startSourceAccess().
+            if (!m_serverMode) {
+                sourceList.syncPrepare();
+            }
             status = doSync();
         } catch (...) {
             // handle the exception here while the engine (and logging!) is still alive
@@ -3099,7 +3149,7 @@ void SyncContext::status()
         try {
             sourceList.setPath(prevLogdir);
             sourceList.dumpDatabases("current", NULL);
-            sourceList.dumpLocalChanges("", "after", "current");
+            sourceList.dumpLocalChanges("", "after", "current", "");
         } catch(...) {
             Exception::handle();
         }
@@ -3139,7 +3189,7 @@ static void logRestoreReport(const SyncReport &report, bool dryrun)
     if (!report.empty()) {
         stringstream out;
         report.prettyPrint(out, SyncReport::WITHOUT_SERVER|SyncReport::WITHOUT_CONFLICTS|SyncReport::WITH_TOTAL);
-        SE_LOG_INFO(NULL, NULL, "Item changes %s applied to client during restore:\n%s",
+        SE_LOG_INFO(NULL, NULL, "Item changes %s applied locally during restore:\n%s",
                     dryrun ? "to be" : "that were",
                     out.str().c_str());
         SE_LOG_INFO(NULL, NULL, "The same incremental changes will be applied to the server during the next sync.");
@@ -3216,8 +3266,8 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
 
     if (!m_quiet) {
         sourceList.dumpDatabases("current", NULL);
-        sourceList.dumpLocalChanges(dirname, "current", datadump,
-                                    "Data changes to be applied to local data during restore:\n",
+        sourceList.dumpLocalChanges(dirname, "current", datadump, "",
+                                    "Data changes to be applied locally during restore:\n",
                                     "CLIENT_TEST_LEFT_NAME='current data' "
                                     "CLIENT_TEST_REMOVED='after restore' " 
                                     "CLIENT_TEST_REMOVED='to be removed' "

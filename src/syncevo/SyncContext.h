@@ -675,6 +675,11 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     void initSources(SourceList &sourceList);
 
     /**
+     * called by SynthesDBPlugin in SyncEvolution_StartDataRead()
+     */
+    void startSourceAccess(SyncSource *source);
+
+    /**
      * utility function for status() and getChanges():
      * iterate over sources, check for changes and copy result
      */
