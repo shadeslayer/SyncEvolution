@@ -124,10 +124,11 @@ info_request_cb (DBusGProxy *proxy,
                  char *state,
                  char *handler_path,
                  char *type,
+                 GHashTable *parameters,
                  SyncevoServer *server)
 {
     g_signal_emit (server, signals[INFO_REQUEST], 0, 
-                   id, session_path, state, handler_path, type);
+                   id, session_path, state, handler_path, type, parameters);
 }
 
 static void
@@ -259,8 +260,9 @@ syncevo_server_get_new_proxy (SyncevoServer *server)
                              G_TYPE_STRING,
                              DBUS_TYPE_G_OBJECT_PATH,
                              G_TYPE_STRING,
-                             DBUS_TYPE_G_OBJECT_PATH,
                              G_TYPE_STRING,
+                             G_TYPE_STRING,
+                             DBUS_TYPE_G_STRING_STRING_HASHTABLE,
                              G_TYPE_INVALID);
     dbus_g_proxy_connect_signal (priv->proxy, "InfoRequest",
                                  G_CALLBACK (info_request_cb), server, NULL);
@@ -296,13 +298,14 @@ syncevo_server_init (SyncevoServer *server)
                                        G_TYPE_STRING,
                                        G_TYPE_INVALID);
     /* InfoRequest */
-    dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_STRING_STRING_STRING_STRING,
+    dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_STRING_STRING_STRING_STRING_BOXED,
                                        G_TYPE_NONE,
                                        G_TYPE_STRING,
                                        DBUS_TYPE_G_OBJECT_PATH,
                                        G_TYPE_STRING,
-                                       DBUS_TYPE_G_OBJECT_PATH,
                                        G_TYPE_STRING,
+                                       G_TYPE_STRING,
+                                       DBUS_TYPE_G_STRING_STRING_HASHTABLE,
                                        G_TYPE_INVALID);
 
     syncevo_server_get_new_proxy (server);
@@ -341,9 +344,9 @@ syncevo_server_class_init (SyncevoServerClass *klass)
                           G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
                           G_STRUCT_OFFSET (SyncevoServerClass, info_request),
                           NULL, NULL,
-                          syncevo_marshal_VOID__STRING_STRING_STRING_STRING_STRING,
+                          syncevo_marshal_VOID__STRING_STRING_STRING_STRING_STRING_BOXED,
                           G_TYPE_NONE,
-                          5, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+                          6, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, DBUS_TYPE_G_STRING_STRING_HASHTABLE);
     signals[SHUTDOWN] =
             g_signal_new ("shutdown",
                           G_TYPE_FROM_CLASS (klass),
