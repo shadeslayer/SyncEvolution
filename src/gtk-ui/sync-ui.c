@@ -736,7 +736,7 @@ key_press_cb (GtkWidget *widget,
         show_main_view (data);
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 static void
