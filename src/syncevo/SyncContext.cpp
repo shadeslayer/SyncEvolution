@@ -1573,6 +1573,9 @@ void SyncContext::initSources(SourceList &sourceList)
                 if (!syncSource) {
                     throwError(name + ": type unknown" );
                 }
+                if (subSources.find(name) != subSources.end()) {
+                    syncSource->recordVirtualSource(subSources[name]);
+                }
                 sourceList.push_back(syncSource);
             }
         } else {
@@ -2810,10 +2813,14 @@ SyncMLStatus SyncContext::doSync()
 
                 // Catch outgoing message and abort if requested by script.
                 // Report which sources are affected, based on their status code.
-                list<string> sources;
+                set<string> sources;
                 BOOST_FOREACH(SyncSource *source, *m_sourceListPtr) {
                     if (source->getStatus() == STATUS_UNEXPECTED_SLOW_SYNC) {
-                        sources.push_back(source->getName());
+                        string name = source->getVirtualSource();
+                        if (name.empty()) {
+                            name = source->getName();
+                        }
+                        sources.insert(name);
                     }
                 }
                 string explanation = SyncReport::slowSyncExplanation(m_server,

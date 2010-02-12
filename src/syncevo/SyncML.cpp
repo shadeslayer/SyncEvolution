@@ -741,7 +741,7 @@ std::string SyncReport::formatSyncTimes() const
 }
 
 std::string SyncReport::slowSyncExplanation(const std::string &peer,
-                                            const std::list<std::string> &sources)
+                                            const std::set<std::string> &sources)
 {
     if (sources.empty()) {
         return "";
@@ -766,12 +766,15 @@ std::string SyncReport::slowSyncExplanation(const std::string &peer,
 
 std::string SyncReport::slowSyncExplanation(const std::string &peer) const
 {
-    std::list<std::string> sources;
+    std::set<std::string> sources;
     BOOST_FOREACH(const SyncReport::value_type &entry, *this) {
         const std::string &name = entry.first;
         const SyncSourceReport &source = entry.second;
         if (source.getStatus() == STATUS_UNEXPECTED_SLOW_SYNC) {
-            sources.push_back(name);
+            string virtualsource = source.getVirtualSource();
+            sources.insert(virtualsource.empty() ?
+                           name :
+                           virtualsource);
         }
     }
     return slowSyncExplanation(peer, sources);
@@ -807,6 +810,11 @@ ConfigNode &operator << (ConfigNode &node, const SyncReport &report)
         node.setProperty(key, source.isResumeSync());
         key = prefix + "-status";
         node.setProperty(key, static_cast<long>(source.getStatus()));
+        string virtualsource = source.getVirtualSource();
+        if (!virtualsource.empty()) {
+            key = prefix + "-virtualsource";
+            node.setProperty(key, virtualsource);
+        }
         key = prefix + "-backup-before";
         node.setProperty(key, source.m_backupBefore.getNumItems());
         key = prefix + "-backup-after";
@@ -897,6 +905,8 @@ ConfigNode &operator >> (ConfigNode &node, SyncReport &report)
                     if (node.getProperty(prop.first, value)) {
                         source.recordStatus(static_cast<SyncMLStatus>(value));
                     }
+                } else if (key == "virtualsource") {
+                    source.recordVirtualSource(node.readProperty(prop.first));
                 } else if (key == "backup-before") {
                     long value;
                     if (node.getProperty(prop.first, value)) {

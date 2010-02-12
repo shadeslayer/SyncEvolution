@@ -24,6 +24,7 @@
 #include <string>
 #include <map>
 #include <list>
+#include <set>
 #include <ostream>
 #include <string.h>
 
@@ -237,6 +238,13 @@ class SyncSourceReport {
     void recordStatus(SyncMLStatus status ) { m_status = status; }
     SyncMLStatus getStatus() const { return m_status; }
 
+    /**
+     * if not empty, then this was the virtual source which cause the
+     * current one to be included in the sync
+     */
+    void recordVirtualSource(const std::string &virtualsource) { m_virtualSource = virtualsource; }
+    std::string getVirtualSource() const { return m_virtualSource; }
+
     /** information about database dump before and after session */
     BackupReport m_backupBefore, m_backupAfter;
 
@@ -248,6 +256,7 @@ class SyncSourceReport {
     bool m_first;
     bool m_resume;
     SyncMLStatus m_status;
+    std::string m_virtualSource;
 };
 
 class SyncReport : public std::map<std::string, SyncSourceReport> {
@@ -322,7 +331,7 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
      * @return explanation, empty string if list of sources is empty
      */
     static std::string slowSyncExplanation(const std::string &peer,
-                                           const std::list<std::string> &sources);
+                                           const std::set<std::string> &sources);
 
     /**
      * Produces a non-localized explanation for recovering from unexpected 
