@@ -1682,7 +1682,7 @@ void SyncTests::testDeleteAllRefresh() {
     doSync("insert", SyncOptions(SYNC_SLOW));
 
     // now ensure we can delete it
-    deleteAll(DELETE_ALL_SYNC);
+    deleteAll(DELETE_ALL_REFRESH);
 
     // nothing stored locally?
     for (it = sources.begin(); it != sources.end(); ++it) {
