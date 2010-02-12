@@ -1513,6 +1513,7 @@ SyncContext *SyncContext::findContext(const char *sessionName)
 void SyncContext::initSources(SourceList &sourceList)
 {
     list<string> configuredSources = getSyncSources();
+    map<string, string> subSources;
 
     // Phase 1, check all virtual sync soruces
     BOOST_FOREACH(const string &name, configuredSources) {
@@ -1528,29 +1529,28 @@ void SyncContext::initSources(SourceList &sourceList)
                 //sub syncsources here
                 SyncSourceParams params(name, source);
                 boost::shared_ptr<VirtualSyncSource> vSource = boost::shared_ptr<VirtualSyncSource> (new VirtualSyncSource (params));
-                bool valid = true;
                 std::vector<std::string> mappedSources = vSource->getMappedSources();
                 BOOST_FOREACH (std::string source, mappedSources) {
                     //check whether the mapped source is really available
                     boost::shared_ptr<PersistentSyncSourceConfig> source_config 
                         = getSyncSourceConfig(source);
                     if (!source_config || !source_config->exists()) {
-                        SE_LOG_ERROR (NULL, NULL, 
-                                "Virtual datasource %s referenced a non-existed datasource %s, check your configuration!",
-                                vSource->getName(), source.c_str());
-                        valid = false;
-                        break;
+                        throwError(StringPrintf("Virtual data source \"%s\" references a nonexistent datasource \"%s\".", name.c_str(), source.c_str()));
                     }
-                }
-                if (valid) {
-                    FilterConfigNode::ConfigFilter vFilter;
-                    vFilter["sync"] = sync;
-                    vFilter["uri"] = sc->getURI();
-                    BOOST_FOREACH (std::string source, mappedSources) {
-                        setConfigFilter (false, source, vFilter);
+                    pair< map<string, string>::iterator, bool > res = subSources.insert(make_pair(source, name));
+                    if (!res.second) {
+                        throwError(StringPrintf("Data source \"%s\" included in the virtual sources \"%s\" and \"%s\". It can only be included in one virtual source at a time.",
+                                                source.c_str(), res.first->second.c_str(), name.c_str()));
                     }
+
                 }
-                sourceList.m_virtualDS.push_back (vSource);
+                FilterConfigNode::ConfigFilter vFilter;
+                vFilter["sync"] = sync;
+                vFilter["uri"] = sc->getURI();
+                BOOST_FOREACH (std::string source, mappedSources) {
+                    setConfigFilter (false, source, vFilter);
+                }
+                sourceList.m_virtualDS.push_back(vSource);
             }
         }
     }
@@ -2019,7 +2019,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                     }
                     if (superType != subType) {
                         SE_LOG_WARNING (NULL, NULL, 
-                                "Virtual datasource %s and sub datasource %s has different data format, will use the format in virtual datasource",
+                                "Virtual data source \"%s\" and sub datasource \"%s\" have different data format. Will use the format in virtual datasource.",
                                 vSource->getName(), source.c_str());
                         break;
                     }
@@ -2028,7 +2028,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             }
 
             if (mappedSources.size() !=2) {
-                vSource->throwError ("virtual data source now only supports events+tasks case");
+                vSource->throwError ("virtual data source currently only supports events+tasks combinations");
             } 
 
             datastores << "    <superdatastore name= '" << vSource->getName() <<"'> \n";
