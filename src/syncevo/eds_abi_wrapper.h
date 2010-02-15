@@ -18,7 +18,7 @@
  */
 
 /**
- * The purpose of this file is to separate SyncEvolution from
+ * The main purpose of this file is to separate SyncEvolution from
  * Evolution Dataserver ABI changes by never depending directly
  * on any symbol in its libraries. Instead all functions are
  * called via function pointers found via dlopen/dlsym.
@@ -28,8 +28,15 @@
  * may fail when the functions needed by SyncEvolution change.
  *
  * History shows that this has not happened for a long time whereas
- * the version of libs had to be bumped quite a few times due to other
+ * the versions of EDS libs had to be bumped quite a few times due to other
  * changes.
+ *
+ * A similar problem came up with an API and ABI change in
+ * libbluetooth.so.3: the sdp_extract_seqtype() and sdp_extract_pdu()
+ * gained one more parameter (a buffer size for the buffer being
+ * written into). When compatibility mode is enabled, this header
+ * file provides the extended version and maps it back to the older
+ * version if necessary.
  *
  * To use the wrappers, include this header file. It overrides
  * the normal C API functions with the function pointers via
@@ -56,6 +63,10 @@
 #include <libecal/e-cal.h>
 #endif
 #endif
+#ifdef ENABLE_BLUETOOTH
+#include <bluetooth/sdp.h>
+#include <bluetooth/sdp_lib.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,6 +74,9 @@ extern "C" {
 
 /** libebook, libecal, libedataserver available (currently checks for e_book_new/e_cal_new/e_source_group_peek_sources) */
 extern int EDSAbiHaveEbook, EDSAbiHaveEcal, EDSAbiHaveEdataserver;
+
+/** libbluetooth available (checks sdp_connect()) */
+extern int SyncEvoHaveLibbluetooth;
 
 #ifdef EVOLUTION_COMPATIBILITY
 
@@ -174,6 +188,29 @@ struct EDSAbiWrapper {
     int (*icaltimezone_set_component) (icaltimezone *zone, icalcomponent *comp);
 # endif /* ENABLE_ECAL */
 
+# ifdef ENABLE_BLUETOOTH
+    int (*sdp_close)(sdp_session_t *session);
+    sdp_session_t *(*sdp_connect)(const bdaddr_t *src, const bdaddr_t *dst, uint32_t flags);
+    /** libbluetooth.so.2 version of sdp_extract_pdu() */
+    sdp_record_t *(*sdp_extract_pdu)(const uint8_t *pdata, int *scanned);
+    /** alternate version of sdp_extract_pdu() only found in some releases of libbluetooth.so.2 */
+    sdp_record_t *(*sdp_extract_pdu_safe)(const uint8_t *pdata, int bufsize, int *scanned);
+    /** libbluetooth.so.2 version of sdp_extract_seqtype() */
+    int (*sdp_extract_seqtype)(const uint8_t *buf, uint8_t *dtdp, int *size);
+    /** alternate version of sdp_extract_seqtype() only found in some releases of libbluetooth.so.2 */
+    int (*sdp_extract_seqtype_safe)(const uint8_t *buf, int bufsize, uint8_t *dtdp, int *size);
+    int (*sdp_get_access_protos)(const sdp_record_t *rec, sdp_list_t **protos);
+    int (*sdp_get_proto_port)(const sdp_list_t *list, int proto);
+    int (*sdp_get_socket)(const sdp_session_t *session);
+    sdp_list_t *(*sdp_list_append)(sdp_list_t *list, void *d);
+    void        (*sdp_list_free)(sdp_list_t *list, sdp_free_func_t f);
+    int (*sdp_process)(sdp_session_t *session);
+    void (*sdp_record_free)(sdp_record_t *rec);
+    int (*sdp_service_search_attr_async)(sdp_session_t *session, const sdp_list_t *search, sdp_attrreq_type_t reqtype, const sdp_list_t *attrid_list);
+    int (*sdp_set_notify)(sdp_session_t *session, sdp_callback_t *func, void *udata);
+    uuid_t *(*sdp_uuid128_create)(uuid_t *uuid, const void *data);
+# endif /* ENABLE_BLUETOOTH */
+
     int initialized;
 };
 
@@ -278,6 +315,24 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icaltimezone_new EDSAbiWrapperSingleton.icaltimezone_new
 #   define icaltimezone_set_component EDSAbiWrapperSingleton.icaltimezone_set_component
 #  endif /* ENABLE_ECAL */
+#  ifdef ENABLE_BLUETOOTH
+#   define sdp_close EDSAbiWrapperSingleton.sdp_close
+#   define sdp_connect EDSAbiWrapperSingleton.sdp_connect
+#   define sdp_extract_pdu do_not_use_sdp_extract_pdu
+#   define sdp_extract_pdu_safe EDSAbiWrapperSingleton.sdp_extract_pdu_safe
+#   define sdp_extract_seqtype do_not_use_sdp_extract_seqtype
+#   define sdp_extract_seqtype_safe EDSAbiWrapperSingleton.sdp_extract_seqtype_safe
+#   define sdp_get_access_protos EDSAbiWrapperSingleton.sdp_get_access_protos
+#   define sdp_get_proto_port EDSAbiWrapperSingleton.sdp_get_proto_port
+#   define sdp_get_socket EDSAbiWrapperSingleton.sdp_get_socket
+#   define sdp_list_append EDSAbiWrapperSingleton.sdp_list_append
+#   define sdp_list_free EDSAbiWrapperSingleton.sdp_list_free
+#   define sdp_process EDSAbiWrapperSingleton.sdp_process
+#   define sdp_record_free EDSAbiWrapperSingleton.sdp_record_free
+#   define sdp_service_search_attr_async EDSAbiWrapperSingleton.sdp_service_search_attr_async
+#   define sdp_set_notify EDSAbiWrapperSingleton.sdp_set_notify
+#   define sdp_uuid128_create EDSAbiWrapperSingleton.sdp_uuid128_create
+#  endif /* ENABLE_BLUETOOTH */
 # endif /* EDS_ABI_WRAPPER_NO_REDEFINE */
 
 #endif /* EVOLUTION_COMPATIBILITY */

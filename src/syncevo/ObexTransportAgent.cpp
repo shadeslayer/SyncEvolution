@@ -106,6 +106,14 @@ void ObexTransportAgent::connect() {
     m_obexReady = false;
     if(m_transType == OBEX_BLUETOOTH) {
         if(m_port == -1) {
+            EDSAbiWrapperInit();
+            // sdp_connect may be a pointer when EVOLUTION_COMPATIBILITY is enabled.
+            // Must check whether we really have an implementation of the sdp_ calls
+            // before using them.
+            if (!SyncEvoHaveLibbluetooth) {
+                SE_THROW_EXCEPTION (TransportException, "no suitable libbluetooth found, try setting Bluetooth channel manually (obex-bt://<mac>+<channel>)");
+            }
+            
             //use sdp to detect the appropriate channel
             //Do not use BDADDR_ANY to avoid a warning
             bdaddr_t bdaddr, anyaddr ={{0,0,0,0,0,0}};
@@ -505,10 +513,10 @@ void ObexTransportAgent::sdp_callback_impl (uint8_t type, uint16_t status, uint8
 
 	    int seqSize = 0;
         uint8_t dtdp;
-#ifdef HAVE_BLUEZ_BUFSIZE
-        scanned = sdp_extract_seqtype(rsp, bufSize, &dtdp, &seqSize);
-#elif defined(HAVE_BLUEZ_SAFE)
+#if defined(HAVE_BLUEZ_SAFE) || defined(EVOLUTION_COMPATIBILITY)
         scanned = sdp_extract_seqtype_safe(rsp, bufSize, &dtdp, &seqSize);
+#elif defined(HAVE_BLUEZ_BUFSIZE)
+        scanned = sdp_extract_seqtype(rsp, bufSize, &dtdp, &seqSize);
 #else
         scanned = sdp_extract_seqtype(rsp, &dtdp, &seqSize);
 #endif
@@ -524,10 +532,10 @@ void ObexTransportAgent::sdp_callback_impl (uint8_t type, uint16_t status, uint8
             int recSize;
 
             recSize = 0;
-#ifdef HAVE_BLUEZ_BUFSIZE
-            rec = sdp_extract_pdu(rsp, bufSize, &recSize);
-#elif defined(HAVE_BLUEZ_SAFE)
+#if defined(HAVE_BLUEZ_SAFE) || defined(EVOLUTION_COMPATIBILITY) 
             rec = sdp_extract_pdu_safe(rsp, bufSize, &recSize);
+#elif defined(HAVE_BLUEZ_BUFSIZE)
+            rec = sdp_extract_pdu(rsp, bufSize, &recSize);
 #else
             rec = sdp_extract_pdu(rsp, &recSize);
 #endif

@@ -35,12 +35,19 @@ std::string lookupDebug, lookupInfo;
 }
 
 int EDSAbiHaveEbook, EDSAbiHaveEcal, EDSAbiHaveEdataserver;
+int SyncEvoHaveLibbluetooth;
 
 #ifdef EVOLUTION_COMPATIBILITY
 
 struct EDSAbiWrapper EDSAbiWrapperSingleton;
 
 namespace {
+
+enum {
+    FIND_SYMBOLS_NEED_ALL = 1<<0,              /**< all symbols must be present for findSymbols() to succeed */
+    FIND_SYMBOLS_LENIENT_MAX_VERSION = 1<<1    /**< also allow libs with higher version, with extra warning */
+};
+    
 
 /**
  * Opens a <basename>.<num> shared object with <num> coming from a
@@ -56,15 +63,19 @@ namespace {
  * @param libname   full name including .so suffix; .<num> gets appended
  * @param minver    first known compatible version
  * @param maxver    last known compatible version
+ * @param flags     controls specific features
+ * @retval realver  found version
  * @return dlhandle which must be kept or freed by caller
  */
-void *findSymbols(const char *libname, int minver, int maxver, ... /* function pointer address, name, ..., (void *)0 */)
+void *findSymbols(const char *libname, int minver, int maxver,
+                  int flags, int *realver, ... /* function pointer address, name, ..., (void *)0 */)
 {
     void *dlhandle = NULL;
     std::ostringstream debug, info;
+    int ver;
 
     if (!dlhandle) {
-        for (int ver = maxver;
+        for (ver = maxver;
              ver >= minver;
              --ver) {
             std::ostringstream soname;
@@ -77,8 +88,8 @@ void *findSymbols(const char *libname, int minver, int maxver, ... /* function p
         }
     }
 
-    if (!dlhandle) {
-        for (int ver = maxver + 1;
+    if (!dlhandle && (flags & FIND_SYMBOLS_LENIENT_MAX_VERSION)) {
+        for (ver = maxver + 1;
              ver < maxver + 50;
              ++ver) {
             std::ostringstream soname;
@@ -90,14 +101,18 @@ void *findSymbols(const char *libname, int minver, int maxver, ... /* function p
             }
         }
     }
-    
+
+    if (realver) {
+        *realver = ver;
+    }
+
     if (!dlhandle) {
         debug << libname << " not found (tried major versions " << minver << " to " << maxver + 49 << ")" << std::endl;
     } else {
         bool allfound = true;
 
         va_list ap;
-        va_start(ap, maxver);
+        va_start(ap, realver);
         void **funcptr = va_arg(ap, void **);
         const char *symname = NULL;
         while (funcptr && allfound) {
@@ -111,9 +126,9 @@ void *findSymbols(const char *libname, int minver, int maxver, ... /* function p
         }
         va_end(ap);
 
-        if (!allfound) {
+        if (!allfound && (flags & FIND_SYMBOLS_NEED_ALL)) {
             /* unusable, clear symbols and free handle */
-            va_start(ap, maxver);
+            va_start(ap, realver);
             funcptr = va_arg(ap, void **);
             while (funcptr) {
                 va_arg(ap, const char *);
@@ -143,12 +158,18 @@ void *findSymbols(const char *libname, int minver, int maxver, ... /* function p
 # ifdef ENABLE_ECAL
     void *ecalhandle;
 # endif
+# ifdef ENABLE_BLUETOOTH
+    void *libbluetoothhandle;
+    sdp_record_t *wrap_sdp_extract_pdu(const uint8_t *pdata, int bufsize, int *scanned) { return EDSAbiWrapperSingleton.sdp_extract_pdu(pdata, scanned); }
+    int wrap_sdp_extract_seqtype(const uint8_t *buf, int bufsize, uint8_t *dtdp, int *size) { return EDSAbiWrapperSingleton.sdp_extract_seqtype(buf, dtdp, size); }
+# endif
 
 }
 
 #endif // EVOLUTION_COMPATIBILITY
 
 extern "C" int EDSAbiHaveEbook, EDSAbiHaveEcal, EDSAbiHaveEdataserver;
+extern "C" int SyncEvoHaveLibbluetooth;
 
 extern "C" void EDSAbiWrapperInit()
 {
@@ -164,6 +185,7 @@ extern "C" void EDSAbiWrapperInit()
 # ifdef HAVE_EDS
     edshandle =
     findSymbols("libedataserver-1.2.so", 7, 11,
+                FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.e_source_get_type, "e_source_get_type",
                 &EDSAbiWrapperSingleton.e_source_get_uri, "e_source_get_uri",
                 &EDSAbiWrapperSingleton.e_source_group_get_type, "e_source_group_get_type",
@@ -177,6 +199,7 @@ extern "C" void EDSAbiWrapperInit()
 # ifdef ENABLE_EBOOK
     ebookhandle =
     findSymbols("libebook-1.2.so", 5, 9,
+                FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.e_book_add_contact, "e_book_add_contact",
                 &EDSAbiWrapperSingleton.e_book_authenticate_user, "e_book_authenticate_user",
                 &EDSAbiWrapperSingleton.e_book_commit_contact, "e_book_commit_contact",
@@ -210,6 +233,7 @@ extern "C" void EDSAbiWrapperInit()
 # ifdef ENABLE_ECAL
     ecalhandle =
     findSymbols("libecal-1.2.so", 3, 7,
+                FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.e_cal_add_timezone, "e_cal_add_timezone",
                 &EDSAbiWrapperSingleton.e_cal_component_get_icalcomponent, "e_cal_component_get_icalcomponent",
                 &EDSAbiWrapperSingleton.e_cal_component_get_last_modified, "e_cal_component_get_last_modified",
@@ -271,6 +295,48 @@ extern "C" void EDSAbiWrapperInit()
                 (void *)0);
     EDSAbiHaveEcal = EDSAbiWrapperSingleton.e_cal_new != 0;
 # endif // ENABLE_ECAL
+
+# ifdef ENABLE_BLUETOOTH
+    int bluetooth_version;
+    libbluetoothhandle =
+    findSymbols("libbluetooth.so", 2, 3, 0, &bluetooth_version,
+                &EDSAbiWrapperSingleton.sdp_close, "sdp_close",
+                &EDSAbiWrapperSingleton.sdp_connect, "sdp_connect",
+                &EDSAbiWrapperSingleton.sdp_extract_pdu, "sdp_extract_pdu",
+                &EDSAbiWrapperSingleton.sdp_extract_pdu_safe, "sdp_extract_pdu_safe",
+                &EDSAbiWrapperSingleton.sdp_extract_seqtype, "sdp_extract_seqtype",
+                &EDSAbiWrapperSingleton.sdp_extract_seqtype_safe, "sdp_extract_seqtype_safe",
+                &EDSAbiWrapperSingleton.sdp_get_access_protos, "sdp_get_access_protos",
+                &EDSAbiWrapperSingleton.sdp_get_proto_port, "sdp_get_proto_port",
+                &EDSAbiWrapperSingleton.sdp_get_socket, "sdp_get_socket",
+                &EDSAbiWrapperSingleton.sdp_list_append, "sdp_list_append",
+                &EDSAbiWrapperSingleton.sdp_list_free, "sdp_list_free",
+                &EDSAbiWrapperSingleton.sdp_process, "sdp_process",
+                &EDSAbiWrapperSingleton.sdp_record_free, "sdp_record_free",
+                &EDSAbiWrapperSingleton.sdp_service_search_attr_async, "sdp_service_search_attr_async",
+                &EDSAbiWrapperSingleton.sdp_set_notify, "sdp_set_notify",
+                &EDSAbiWrapperSingleton.sdp_uuid128_create, "sdp_uuid128_create",
+                (void *)0);
+    if (bluetooth_version == 2) {
+        // libbluetooth.so.2's sdp_extract_pdu() and
+        // sdp_extract_seqtype() do not match our prototype (have no
+        // bufsize). Some versions have a _safe variant. If not, use
+        // wrappers which accept the bufsize parameter and drop it.
+        if (!EDSAbiWrapperSingleton.sdp_extract_pdu_safe) {
+            EDSAbiWrapperSingleton.sdp_extract_pdu_safe = wrap_sdp_extract_pdu;
+        }
+        if (!EDSAbiWrapperSingleton.sdp_extract_seqtype_safe) {
+            EDSAbiWrapperSingleton.sdp_extract_seqtype_safe = wrap_sdp_extract_seqtype;
+        }
+    } else {
+        // _safe variants were removed in favor of an API/ABI change. Redirect
+        // into normal versions. We know they have the right prototype because
+        // of that change.
+        EDSAbiWrapperSingleton.sdp_extract_pdu_safe = reinterpret_cast<typeof(EDSAbiWrapperSingleton.sdp_extract_pdu_safe)>(EDSAbiWrapperSingleton.sdp_extract_pdu);
+        EDSAbiWrapperSingleton.sdp_extract_seqtype_safe = reinterpret_cast<typeof(EDSAbiWrapperSingleton.sdp_extract_seqtype_safe)>(EDSAbiWrapperSingleton.sdp_extract_seqtype);
+    }
+    SyncEvoHaveLibbluetooth = EDSAbiWrapperSingleton.sdp_connect != 0;
+# endif
 #else // EVOLUTION_COMPATIBILITY
 # ifdef HAVE_EDS
     EDSAbiHaveEdataserver = true;
@@ -280,6 +346,9 @@ extern "C" void EDSAbiWrapperInit()
 # endif
 # ifdef ENABLE_ECAL
     EDSAbiHaveEcal = true;
+# endif
+# ifdef ENABLE_BLUETOOTH
+    SyncEvoHaveLibbluetooth = true;
 # endif
 #endif // EVOLUTION_COMPATIBILITY
 }
