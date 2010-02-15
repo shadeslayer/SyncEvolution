@@ -349,10 +349,14 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * session. Called by Synthesis DB plugin to find active
      * sources.
      *
+     * @param name     can be both <SyncSource::getName()> as well as <prefix>_<SyncSource::getName()>
+     *                 (necessary when renaming sources in the Synthesis XML config)
+     *
      * @TODO: roll SourceList into SyncContext and
      * make this non-static
      */
     static SyncSource *findSource(const char *name);
+    static const char m_findSourceSeparator = '@';
 
     /**
      * Find the active sync context for the given session.

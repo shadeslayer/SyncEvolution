@@ -1583,7 +1583,16 @@ void SyncContext::startLoopThread()
 
 SyncSource *SyncContext::findSource(const char *name)
 {
-    return m_sourceListPtr ? (*m_sourceListPtr)[name] : NULL;
+    if (!m_sourceListPtr) {
+        return NULL;
+    }
+    const char *realname = strrchr(name, m_findSourceSeparator);
+    if (realname) {
+        realname++;
+    } else {
+        realname = name;
+    }
+    return (*m_sourceListPtr)[realname];
 }
 
 SyncContext *SyncContext::findContext(const char *sessionName)
@@ -2038,8 +2047,19 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         BOOST_FOREACH(SyncSource *source, *m_sourceListPtr) {
             string fragment;
             source->getDatastoreXML(fragment, fragments);
+            string name;
 
-            datastores << "    <datastore name='" << source->getName() << "' type='plugin'>\n" <<
+            // Make sure that sub-datastores do not interfere with the global URI namespace
+            // by adding a <superdatastore>/ prefix. That way we can have a "calendar"
+            // alias for "calendar+todo" without conflicting with the underlying
+            // "calendar", which will be called "calendar+todo/calendar" in the XML config.
+            name = source->getVirtualSource();
+            if (!name.empty()) {
+                name += m_findSourceSeparator;
+            }
+            name += source->getName();
+
+            datastores << "    <datastore name='" << name << "' type='plugin'>\n" <<
                 "      <dbtypeid>" << source->getSynthesisID() << "</dbtypeid>\n" <<
                 fragment;
 
@@ -2115,12 +2135,13 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 vSource->throwError ("virtual data source currently only supports events+tasks combinations");
             } 
 
-            datastores << "    <superdatastore name= '" << vSource->getName() <<"'> \n";
-            datastores << "      <contains datastore = '" << mappedSources[0] <<"'>\n"
+            string name = vSource->getName();
+            datastores << "    <superdatastore name= '" << name << "'> \n";
+            datastores << "      <contains datastore = '" << name << m_findSourceSeparator << mappedSources[0] <<"'>\n"
                 << "        <dispatchfilter>F.ISEVENT:=1</dispatchfilter>\n"
                 << "        <guidprefix>e</guidprefix>\n"
                 << "      </contains>\n"
-                <<"\n      <contains datastore = '" << mappedSources[1] <<"'>\n"
+                << "\n      <contains datastore = '" << name << m_findSourceSeparator << mappedSources[1] <<"'>\n"
                 << "        <dispatchfilter>F.ISEVENT:=0</dispatchfilter>\n"
                 << "        <guidprefix>t</guidprefix>\n"
                 <<"      </contains>\n" ;
@@ -2735,7 +2756,7 @@ SyncMLStatus SyncContext::doSync()
             target;
             target = m_engine.OpenSubkey(targets, sysync::KEYVAL_ID_NEXT, true)) {
             s = m_engine.GetStrValue(target, "dbname");
-            SyncSource *source = (*m_sourceListPtr)[s];
+            SyncSource *source = findSource(s.c_str());
             if (source) {
                 m_engine.SetInt32Value(target, "enabled", 1);
                 int slow = 0;
