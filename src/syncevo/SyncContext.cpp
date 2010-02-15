@@ -2049,6 +2049,13 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 << "        <guidprefix>t</guidprefix>\n"
                 <<"      </contains>\n" ;
 
+            if (m_serverMode) {
+                string uri = vSource->getURI();
+                if (!uri.empty()) {
+                    datastores << " <alias name='" << uri << "'/>";
+                }
+            }
+
             std::string typesupport;
             typesupport = vSource->getDataTypeSupport();
             datastores << "      <typesupport>\n"
