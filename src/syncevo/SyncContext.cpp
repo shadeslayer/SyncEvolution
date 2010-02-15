@@ -2380,9 +2380,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                 source->addCallback(boost::bind(&SyncContext::startSourceAccess, this, source), &SyncSource::Operations::m_startAccess);
             }
 
-            // give derived class also a chance to update the configs
-            prepare(sourceList);
-
             // ready to go: dump initial databases and prepare for final report
             // In a server open/prepare are delayed until a client really
             // accesses the source, see SyncContext::startSourceAccess().

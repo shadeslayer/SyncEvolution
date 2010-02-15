@@ -558,15 +558,6 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     virtual void prepare() {}
 
     /**
-     * Callback for derived classes: called after setting up the client's
-     * and sources' configuration. Can be used to reconfigure sources before
-     * actually starting the synchronization.
-     *
-     * @param sources   a NULL terminated array of all active sources
-     */
-    virtual void prepare(const std::vector<SyncSource *> &sources) {}
-
-    /**
      * instantiate transport agent
      *
      * Called by engine when it needs to do HTTP POST requests.  The
