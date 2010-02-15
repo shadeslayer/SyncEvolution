@@ -1816,7 +1816,10 @@ void XMLFiles::scanFragments(const string &mode, const string &dir, Category cat
 
 void XMLFiles::addFragments(const string &dir, Category category)
 {
-    ReadDir content(dir, false);
+    if (!isDir(dir)) {
+        return;
+    }
+    ReadDir content(dir);
     BOOST_FOREACH(const string &file, content) {
         if (boost::ends_with(file, ".xml")) {
             m_files[category][file] = dir + "/" + file;
