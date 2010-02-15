@@ -1897,6 +1897,8 @@ static EvolutionPasswordConfigProperty sourcePropPassword("evolutionpassword", "
 static ConfigProperty sourcePropAdminData(SourceAdminDataName,
                                           "used by the Synthesis library internally; do not modify");
 
+static IntConfigProperty sourcePropSynthesisID("synthesisID", "unique integer ID, necessary for libsynthesis", "0");
+
 ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
@@ -1910,6 +1912,7 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
         registry.push_back(&sourcePropUser);
         registry.push_back(&sourcePropPassword);
         registry.push_back(&sourcePropAdminData);
+        registry.push_back(&sourcePropSynthesisID);
 
         // obligatory source properties
         SyncSourceConfig::m_sourcePropSync.setObligatory(true);
@@ -1918,6 +1921,7 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
         // non-shared properties (other hidden nodes don't
         // exist at the moment)
         sourcePropAdminData.setHidden(true);
+        sourcePropSynthesisID.setHidden(true);
 
         // No global source properties. Does not make sense
         // conceptually.
@@ -2033,6 +2037,9 @@ SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
 }
 SourceType SyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
 void SyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*getNode(sourcePropSourceType), value, temporarily); }
+
+const int SyncSourceConfig::getSynthesisID() const { return sourcePropSynthesisID.getPropertyValue(*getNode(sourcePropSynthesisID)); }
+void SyncSourceConfig::setSynthesisID(int value, bool temporarily) { sourcePropSynthesisID.setProperty(*getNode(sourcePropSynthesisID), value, temporarily); }
 
 ConfigPasswordKey EvolutionPasswordConfigProperty::getPasswordKey(const string &descr,
                                                                   const string &serverName,

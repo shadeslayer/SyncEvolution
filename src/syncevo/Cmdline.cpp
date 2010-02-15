@@ -1370,6 +1370,7 @@ public:
                               "peers/scheduleworld/config.ini:ConsumerReady = 1\n"
 
                               "peers/scheduleworld/sources/addressbook/.internal.ini:# adminData = \n"
+                              "peers/scheduleworld/sources/addressbook/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/addressbook/config.ini:sync = two-way\n"
                               "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
                               "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard\n"
@@ -1379,6 +1380,7 @@ public:
                               "sources/addressbook/config.ini:# evolutionpassword = \n"
 
                               "peers/scheduleworld/sources/calendar/.internal.ini:# adminData = \n"
+                              "peers/scheduleworld/sources/calendar/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/calendar/config.ini:sync = two-way\n"
                               "sources/calendar/config.ini:type = calendar\n"
                               "peers/scheduleworld/sources/calendar/config.ini:type = calendar\n"
@@ -1388,6 +1390,7 @@ public:
                               "sources/calendar/config.ini:# evolutionpassword = \n"
 
                               "peers/scheduleworld/sources/memo/.internal.ini:# adminData = \n"
+                              "peers/scheduleworld/sources/memo/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/memo/config.ini:sync = two-way\n"
                               "sources/memo/config.ini:type = memo\n"
                               "peers/scheduleworld/sources/memo/config.ini:type = memo\n"
@@ -1397,6 +1400,7 @@ public:
                               "sources/memo/config.ini:# evolutionpassword = \n"
 
                               "peers/scheduleworld/sources/todo/.internal.ini:# adminData = \n"
+                              "peers/scheduleworld/sources/todo/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/todo/config.ini:sync = two-way\n"
                               "sources/todo/config.ini:type = todo\n"
                               "peers/scheduleworld/sources/todo/config.ini:type = todo\n"
@@ -1884,6 +1888,7 @@ protected:
             string expected = ScheduleWorldConfig();
             expected += "\n"
                 "peers/scheduleworld/sources/xyz/.internal.ini:# adminData = \n"
+                "peers/scheduleworld/sources/xyz/.internal.ini:# synthesisID = 0\n"
                 "peers/scheduleworld/sources/xyz/config.ini:# sync = disabled\n"
                 "peers/scheduleworld/sources/xyz/config.ini:# type = select backend\n"
                 "peers/scheduleworld/sources/xyz/config.ini:uri = dummy\n"
@@ -2074,6 +2079,7 @@ protected:
             "ConfigDate" +
             "deviceData" +
             "adminData" +
+            "synthesisID" +
             "lastNonce" +
             "last";
         BOOST_FOREACH(string &prop, props) {

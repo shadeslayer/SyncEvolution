@@ -695,7 +695,23 @@ private:
 const char* const LogDir::DIR_PREFIX = "SyncEvolution-";
 
 /**
- * This class owns the sync sources and (together with a logdir)
+ * This class owns the sync sources. For historic reasons (required
+ * by Funambol) SyncSource instances are stored as plain pointers
+ * deleted by this class. Virtual sync sources were added later
+ * and are stored as shared pointers which are freed automatically.
+ * It is possible to iterate over the two classes of sources
+ * separately.
+ *
+ * The SourceList ensures that all sources (normal and virtual) have
+ * a valid and unique integer ID as needed for Synthesis. Traditionally
+ * this used to be a simple hash of the source name (which is unique
+ * by design), without checking for hash collisions. Now the ID is assigned
+ * the first time a source is added here and doesn't have one yet.
+ * For backward compatibility (the ID is stored in the .synthesis dir),
+ * the same Hash() value is tested first. Assuming that there were no
+ * hash conflicts, the same IDs will be generated as before.
+ *
+ * Together with a logdir, the SourceList
  * handles writing of per-sync files as well as the final report.
  * It is not stateless. The expectation is that it is instantiated
  * together with a SyncContext for one particular operation (sync
@@ -710,11 +726,14 @@ const char* const LogDir::DIR_PREFIX = "SyncEvolution-";
  * later when a client really starts using them, they are opened() and
  * database dumps are made.
  *
- * Virtual datastores are stored here because they get initialized
- * together with the normal sources by the user of SourceList, but
- * this class never does anything with them.
+ * Virtual datastores are stored here when they get initialized
+ * together with the normal sources by the user of SourceList.
+ *
+ * 
  */
-class SourceList : public vector<SyncSource *> {
+class SourceList : private vector<SyncSource *> {
+    typedef vector<SyncSource *> inherited;
+
 public:
     enum LogLevel {
         LOGGING_QUIET,    /**< avoid all extra output */
@@ -722,8 +741,25 @@ public:
         LOGGING_FULL      /**< everything */
     };
 
-    std::vector<boost::shared_ptr<VirtualSyncSource> >m_virtualDS; /**All configured virtual datastores*/
+    typedef std::vector< boost::shared_ptr<VirtualSyncSource> > VirtualSyncSources_t;
+
+    /** reading our set of virtual sources is okay, modifying it is not */
+    const VirtualSyncSources_t &getVirtualSources() { return m_virtualSources; }
+    void addSource(const boost::shared_ptr<VirtualSyncSource> &source) { checkSource(source.get()); m_virtualSources.push_back(source); }
+
+    using inherited::iterator;
+    using inherited::const_iterator;
+    using inherited::empty;
+    using inherited::begin;
+    using inherited::end;
+    using inherited::rbegin;
+    using inherited::rend;
+
+    /** transfers ownership (historic reasons for storing plain pointer...) */
+    void addSource(cxxptr<SyncSource> &source) { checkSource(source); push_back(source.release()); }
+
 private:
+    VirtualSyncSources_t m_virtualSources; /**< all configured virtual data sources (aka Synthesis <superdatastore>) */
     LogDir m_logdir;     /**< our logging directory */
     SyncContext &m_client; /**< the context in which we were instantiated */
     set<string> m_prepared;   /**< remember for which source we dumped databases successfully */
@@ -742,6 +778,39 @@ private:
         }
         return logdir + "/" +
             source.getName() + "." + suffix;
+    }
+
+    /** ensure that Synthesis ID is set and unique */
+    void checkSource(SyncSource *source) {
+        if (source->getSynthesisID()) {
+            return;
+        }
+        int id = Hash(source->getName()) % INT_MAX;
+        while (true) {
+            // avoid negative values
+            if (id < 0) {
+                id = -id;
+            }
+            // avoid zero, it means unset
+            if (!id) {
+                id = 1;
+            }
+            // check for collisions
+            bool collision = false;
+            BOOST_FOREACH(const string &other, m_client.getSyncSources()) {
+                boost::shared_ptr<PersistentSyncSourceConfig> sc(m_client.getSyncSourceConfig(other));
+                int other_id = sc->getSynthesisID();
+                if (other_id == id) {
+                    ++id;
+                    collision = true;
+                    break;
+                }
+            }
+            if (!collision) {
+                source->setSynthesisID(id);
+                return;
+            }
+        }
     }
 
 public:
@@ -1055,7 +1124,7 @@ public:
         }
     }
 
-    /** find sync source by name */
+    /** find sync source by name (only normal sources, not virtual ones) */
     SyncSource *operator [] (const string &name) {
         BOOST_FOREACH(SyncSource *source, *this) {
             if (name == source->getName()) {
@@ -1065,8 +1134,20 @@ public:
         return NULL;
     }
 
-    /** find by index */
-    SyncSource *operator [] (int index) { return vector<SyncSource *>::operator [] (index); }
+    /** find by XML <dbtypeid> (the ID used by Synthesis to identify sources in progress events) */
+    SyncSource *lookupBySynthesisID(int synthesisid) {
+        BOOST_FOREACH(SyncSource *source, *this) {
+            if (source->getSynthesisID() == synthesisid) {
+                return source;
+            }
+        }
+        BOOST_FOREACH(boost::shared_ptr<VirtualSyncSource> &source, m_virtualSources) {
+            if (source->getSynthesisID() == synthesisid) {
+                return source.get();
+            }
+        }
+        return NULL;
+    }
 };
 
 void unref(SourceList *sourceList)
@@ -1555,7 +1636,7 @@ void SyncContext::initSources(SourceList &sourceList)
                 BOOST_FOREACH (std::string source, mappedSources) {
                     setConfigFilter (false, source, vFilter);
                 }
-                sourceList.m_virtualDS.push_back(vSource);
+                sourceList.addSource(vSource);
             }
         }
     }
@@ -1573,15 +1654,14 @@ void SyncContext::initSources(SourceList &sourceList)
             if (sourceType.m_backend != "virtual") {
                 SyncSourceParams params(name,
                         source);
-                SyncSource *syncSource =
-                    SyncSource::createSource(params);
+                cxxptr<SyncSource> syncSource(SyncSource::createSource(params));
                 if (!syncSource) {
                     throwError(name + ": type unknown" );
                 }
                 if (subSources.find(name) != subSources.end()) {
                     syncSource->recordVirtualSource(subSources[name]);
                 }
-                sourceList.push_back(syncSource);
+                sourceList.addSource(syncSource);
             }
         } else {
             // the Synthesis engine is never going to see this source,
@@ -1955,16 +2035,9 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         BOOST_FOREACH(SyncSource *source, *m_sourceListPtr) {
             string fragment;
             source->getDatastoreXML(fragment, fragments);
-            hash = Hash(source->getName()) % INT_MAX;
 
-            /**
-             * @TODO handle hash collisions
-             */
-            if (!hash) {
-                hash = 1;
-            }
             datastores << "    <datastore name='" << source->getName() << "' type='plugin'>\n" <<
-                "      <dbtypeid>" << hash << "</dbtypeid>\n" <<
+                "      <dbtypeid>" << source->getSynthesisID() << "</dbtypeid>\n" <<
                 fragment;
 
             string mode = source->getSync();
@@ -2006,7 +2079,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         /*If there is super datastore, add it here*/
         //TODO generate specific superdatastore contents (MB #8753)
         //Now only works for synthesis built-in events+tasks
-        BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->m_virtualDS) {
+        BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->getVirtualSources()) {
             std::string superType = vSource->getSourceType().m_format;
             std::string evoSyncSource = vSource->getDatabaseID();
             std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
@@ -2455,7 +2528,7 @@ bool SyncContext::initSAN()
 
     /* For each virtual datasoruce, generate the SAN accoring to it and ignoring
      * sub datasource in the later phase*/
-    BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->m_virtualDS) {
+    BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->getVirtualSources()) {
             std::string evoSyncSource = vSource->getDatabaseID();
             std::string sync = vSource->getSync();
             int mode = StringToSyncMode (sync, true);
@@ -2888,9 +2961,7 @@ SyncMLStatus SyncContext::doSync()
                         if (!m_serverMode) {
                             // specific for a certain sync source:
                             // find it...
-                            target = m_engine.OpenSubkey(targets, progressInfo.targetID);
-                            s = m_engine.GetStrValue(target, "dbname");
-                            SyncSource *source = (*m_sourceListPtr)[s];
+                            SyncSource *source = m_sourceListPtr->lookupBySynthesisID(progressInfo.targetID);
                             if (source) {
                                 displaySourceProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
                                                       *source,

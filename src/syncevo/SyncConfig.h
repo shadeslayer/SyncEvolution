@@ -1542,8 +1542,16 @@ class SyncSourceConfig {
     /** same as SyncConfig::savePassword() */
     virtual void savePassword(ConfigUserInterface &ui, const string &serverName, FilterConfigNode& globalConfigNode);
 
+    /** selects the backend database to use */
     virtual const char *getDatabaseID() const;
     virtual void setDatabaseID(const string &value, bool temporarily = false);
+
+    /**
+     * internal property: unique integer ID for the source, needed by Synthesis XML <dbtypeid>,
+     * zero if unset
+     */
+    virtual const int getSynthesisID() const;
+    virtual void setSynthesisID(int value, bool temporarily = false);
 
     /**
      * Returns the data source type configured as part of the given
