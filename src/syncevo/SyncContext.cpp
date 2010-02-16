@@ -2086,9 +2086,8 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                                                         // so a slow sync is acceptable in this case
                        !m_serverMode &&
                        getPreventSlowSync() &&
-                       source->m_backupBefore.getNumItems() != 0) { // check is only relevant if we have local data;
-                                                                    // if no backup was made (-1), better check
-                                                                    // TODO (MB : don't depend on backup for this
+                       (!source->getOperations().m_isEmpty ||    // check is only relevant if we have local data;
+                        !source->getOperations().m_isEmpty())) { // if we cannot check, assume we have data
                 // We are not expecting a slow sync => refuse to execute one.
                 // This is the client check for this, server must be handled
                 // differently (TODO, MB #2416).

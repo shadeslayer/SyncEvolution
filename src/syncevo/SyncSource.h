@@ -881,6 +881,20 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
         boost::function<CheckStatus_t> m_checkStatus;
 
         /**
+         * A quick check whether the source currently has data.
+         *
+         * If this cannot be determined easily, don't provide the
+         * operation. The information is currently only used to
+         * determine whether a slow sync should be allowed. If
+         * the operation is not provided, the assumption is that
+         * there is local data, which disables the "allow slow
+         * sync for empty databases" heuristic and forces the user
+         * to choose.
+         */
+        typedef bool (IsEmpty_t)();
+        boost::function<IsEmpty_t> m_isEmpty;
+
+        /**
          * Synthesis DB API callbacks. For documentation see the
          * Synthesis API specification (PDF and/or sync_dbapi.h).
          *
