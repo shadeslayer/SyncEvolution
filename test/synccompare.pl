@@ -581,8 +581,8 @@ if($#ARGV > 1) {
       } else {
           open(IN2, "<:utf8", $file2) || die "$file2: $!";
       }
-      @normal1 = Normalize(join("", <*IN1{IO}>), $singlewidth);
-      @normal2 = Normalize(join("", <*IN2{IO}>), $singlewidth);
+      @normal1 = Normalize(join("", <IN1>), $singlewidth);
+      @normal2 = Normalize(join("", <IN2>), $singlewidth);
       close(IN1);
       close(IN2);
   }
