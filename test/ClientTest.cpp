@@ -3246,7 +3246,7 @@ int ClientTest::dump(ClientTest &client, TestingSyncSource &source, const char *
     mkdir_p(file);
     CPPUNIT_ASSERT(source.getOperations().m_backupData);
     source.getOperations().m_backupData(SyncSource::Operations::ConstBackupInfo(),
-                                        SyncSource::Operations::BackupInfo(file, node),
+                                        SyncSource::Operations::BackupInfo(SyncSource::Operations::BackupInfo::BACKUP_OTHER, file, node),
                                         report);
     return 0;
 }

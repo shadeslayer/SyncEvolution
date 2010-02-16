@@ -702,6 +702,14 @@ const char *ItemCache::m_hashSuffix =
 #endif
 ;
 
+void SyncSourceRevisions::initRevisions()
+{
+    if (!m_revisionsSet) {
+        listAllItems(m_revisions);
+        m_revisionsSet = true;
+    }
+}
+
 
 void SyncSourceRevisions::backupData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
                                      const SyncSource::Operations::BackupInfo &newBackup,
@@ -710,13 +718,21 @@ void SyncSourceRevisions::backupData(const SyncSource::Operations::ConstBackupIn
     ItemCache cache;
     cache.init(oldBackup);
 
-    RevisionMap_t revisions;
-    listAllItems(revisions);
+    bool startOfSync = newBackup.m_mode == SyncSource::Operations::BackupInfo::BACKUP_BEFORE;
+    RevisionMap_t buffer;
+    RevisionMap_t *revisions;
+    if (startOfSync) {
+        initRevisions();
+        revisions = &m_revisions;
+    } else {
+        listAllItems(buffer);
+        revisions = &buffer;
+    }
 
     unsigned long counter = 1;
     string item;
     errno = 0;
-    BOOST_FOREACH(const StringPair &mapping, revisions) {
+    BOOST_FOREACH(const StringPair &mapping, *revisions) {
         const string &uid = mapping.first;
         const string &rev = mapping.second;
         m_raw->readItemRaw(uid, item);
@@ -873,10 +889,9 @@ void SyncSourceRevisions::restoreData(const SyncSource::Operations::ConstBackupI
 
 void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode)
 {
-    RevisionMap_t revisions;
-    listAllItems(revisions);
+    initRevisions();
 
-    BOOST_FOREACH(const StringPair &mapping, revisions) {
+    BOOST_FOREACH(const StringPair &mapping, m_revisions) {
         const string &uid = mapping.first;
         const string &revision = mapping.second;
 
@@ -953,6 +968,7 @@ void SyncSourceRevisions::init(SyncSourceRaw *raw,
     m_del = del;
     m_modTimeStamp = 0;
     m_revisionAccuracySeconds = granularity;
+    m_revisionsSet = false;
     if (raw) {
         ops.m_backupData = boost::bind(&SyncSourceRevisions::backupData,
                                        this, _1, _2, _3);

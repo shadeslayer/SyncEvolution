@@ -793,24 +793,36 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
         /**
          * The caller determines where item data is stored (m_dirname)
          * and where meta information about them (m_node). The callee
-         * then can use both arbitrarily.
+         * then can use both arbitrarily. As an additional hint,
+         * m_mode specifies why and when the backup is made, which
+         * is useful to determine whether information can be reused.
          */
         struct BackupInfo {
+            enum Mode {
+                BACKUP_BEFORE,   /**< directly at start of sync */
+                BACKUP_AFTER,    /**< directly after sync */
+                BACKUP_OTHER
+            } m_mode;
             string m_dirname;
             boost::shared_ptr<ConfigNode> m_node;
             BackupInfo() {}
-            BackupInfo(const string &dirname,
+            BackupInfo(Mode mode,
+                       const string &dirname,
                        const boost::shared_ptr<ConfigNode> &node) :
+                m_mode(mode),
                 m_dirname(dirname),
                 m_node(node)
             {}
         };
         struct ConstBackupInfo {
+            BackupInfo::Mode m_mode;
             string m_dirname;
             boost::shared_ptr<const ConfigNode> m_node;
             ConstBackupInfo() {}
-            ConstBackupInfo(const string &dirname,
+            ConstBackupInfo(BackupInfo::Mode mode,
+                            const string &dirname,
                             const boost::shared_ptr<const ConfigNode> &node) :
+                m_mode(mode),
                 m_dirname(dirname),
                 m_node(node)
             {}
@@ -1448,6 +1460,10 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
      * should not throw errors when it cannot create a non-empty
      * string. The caller of this method will detect situations where
      * a non-empty string is necessary and none was provided.
+     *
+     * This call is typically only invoked only once during the
+     * lifetime of a source. The result returned in that invocation is
+     * used throught the session.
      */
     virtual void listAllItems(RevisionMap_t &revisions) = 0;
 
@@ -1501,6 +1517,11 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
     SyncSourceRaw *m_raw;
     SyncSourceDelete *m_del;
     int m_revisionAccuracySeconds;
+
+    /** buffers the result of the initial listAllItems() call */
+    RevisionMap_t m_revisions;
+    bool m_revisionsSet;
+    void initRevisions();
 
     /**
      * Dump all data from source unmodified into the given directory.

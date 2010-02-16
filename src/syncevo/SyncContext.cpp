@@ -859,22 +859,31 @@ public:
                      ++it) {
                     const string &sessiondir = *it;
                     string oldBackupDir;
+                    SyncSource::Operations::BackupInfo::Mode mode =
+                        SyncSource::Operations::BackupInfo::BACKUP_AFTER;
                     oldBackupDir = databaseName(*source, "after", sessiondir);
                     if (!isDir(oldBackupDir)) {
+                        mode = SyncSource::Operations::BackupInfo::BACKUP_BEFORE;
                         oldBackupDir = databaseName(*source, "before", sessiondir);
                         if (!isDir(oldBackupDir)) {
                             // try next session
                             continue;
                         }
                     }
-                        
+
+                    oldBackup.m_mode = mode;
                     oldBackup.m_dirname = oldBackupDir;
                     oldBackup.m_node = ConfigNode::createFileNode(oldBackupDir + ".ini");
                     break;
                 }
                 mkdir_p(dir);
-                source->getOperations().m_backupData(oldBackup,
-                                                     SyncSource::Operations::BackupInfo(dir, node),
+                SyncSource::Operations::BackupInfo newBackup(suffix == "before" ?
+                                                             SyncSource::Operations::BackupInfo::BACKUP_BEFORE :
+                                                             suffix == "after" ?
+                                                             SyncSource::Operations::BackupInfo::BACKUP_AFTER :
+                                                             SyncSource::Operations::BackupInfo::BACKUP_OTHER,
+                                                             dir, node);
+                source->getOperations().m_backupData(oldBackup, newBackup,
                                                      report ? source->*report : dummy);
                 SE_LOG_DEBUG(NULL, NULL, "%s created", dir.c_str());
 
@@ -894,7 +903,7 @@ public:
             SyncContext::throwError(dir + ": no such database backup found");
         }
         if (source.getOperations().m_restoreData) {
-            source.getOperations().m_restoreData(SyncSource::Operations::ConstBackupInfo(dir, node),
+            source.getOperations().m_restoreData(SyncSource::Operations::ConstBackupInfo(SyncSource::Operations::BackupInfo::BACKUP_OTHER, dir, node),
                                                  dryrun, report);
         }
     }
