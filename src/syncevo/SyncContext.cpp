@@ -1124,11 +1124,16 @@ public:
         }
     }
 
-    /** find sync source by name (only normal sources, not virtual ones) */
+    /** find sync source by name (both normal and virtual sources) */
     SyncSource *operator [] (const string &name) {
         BOOST_FOREACH(SyncSource *source, *this) {
             if (name == source->getName()) {
                 return source;
+            }
+        }
+        BOOST_FOREACH(boost::shared_ptr<VirtualSyncSource> &source, m_virtualSources) {
+            if (name == source->getName()) {
+                return source.get();
             }
         }
         return NULL;
