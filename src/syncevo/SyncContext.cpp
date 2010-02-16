@@ -1714,11 +1714,11 @@ void SyncContext::initSources(SourceList &sourceList)
 void SyncContext::startSourceAccess(SyncSource *source)
 {
     if (m_serverMode) {
-        // source is active in sync, now open it and dump
-        // database
+        // source is active in sync, now open it
         source->open();
-        m_sourceListPtr->syncPrepare(source->getName());
     }
+    // database dumping is delayed in both client and server
+    m_sourceListPtr->syncPrepare(source->getName());
 }
 
 bool SyncContext::transport_cb (void *udata)
@@ -2490,12 +2490,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                 source->addCallback(boost::bind(&SyncContext::startSourceAccess, this, source), &SyncSource::Operations::m_startAccess);
             }
 
-            // ready to go: dump initial databases and prepare for final report
-            // In a server open/prepare are delayed until a client really
-            // accesses the source, see SyncContext::startSourceAccess().
-            if (!m_serverMode) {
-                sourceList.syncPrepare();
-            }
+            // ready to go
             status = doSync();
         } catch (...) {
             // handle the exception here while the engine (and logging!) is still alive
