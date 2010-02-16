@@ -214,6 +214,17 @@ SQLiteContactSource::Databases SQLiteContactSource::getDatabases()
     return result;
 }
 
+bool SQLiteContactSource::isEmpty()
+{
+    // there are probably more efficient ways to do this, but this is just
+    // a proof-of-concept anyway
+    sqliteptr all(m_sqlite.prepareSQL("SELECT ROWID FROM ABPerson;"));
+    while (m_sqlite.checkSQL(sqlite3_step(all)) == SQLITE_ROW) {
+        return false;
+    }
+    return true;
+}
+
 void SQLiteContactSource::listAllItems(RevisionMap_t &revisions)
 {
     sqliteptr all(m_sqlite.prepareSQL("SELECT ROWID, CreationDate, ModificationDate FROM ABPerson;"));

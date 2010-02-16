@@ -70,6 +70,7 @@ class SQLiteContactSource : public SyncSource,
             SyncSourceRevisions::init(NULL, NULL, 1, m_operations);
             SyncSourceChanges::init(m_operations);
 
+            m_operations.m_isEmpty = boost::bind(&SQLiteContactSource::isEmpty, this);
             m_operations.m_readItemAsKey = boost::bind(&SQLiteContactSource::readItemAsKey, this, _1, _2);
             m_operations.m_insertItemAsKey = boost::bind(&SQLiteContactSource::insertItemAsKey, this, _1, (sysync::cItemID)NULL, _2);
             m_operations.m_updateItemAsKey = boost::bind(&SQLiteContactSource::insertItemAsKey, this, _1, _2, _3);
@@ -105,6 +106,9 @@ class SQLiteContactSource : public SyncSource,
     /** encapsulates access to database */
     boost::shared_ptr<ConfigNode> m_trackingNode;
     SQLiteUtil m_sqlite;
+
+    /** implements the m_isEmpty operation */
+    bool isEmpty();
 };
 
 #endif // ENABLE_SQLITE
