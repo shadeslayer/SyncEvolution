@@ -103,6 +103,14 @@ void MaemoCalendarSource::open()
     conv->setSyncing(true); // not sure what this does, but may as well tell the truth
 }
 
+bool MaemoCalendarSource::isEmpty()
+{
+    // TODO: provide a real implementation. Always returning false
+    // here disables the "allow slow sync when no local data" heuristic
+    // for preventSlowSync=1.
+    return false;
+}
+
 void MaemoCalendarSource::close()
 {
     delete conv;

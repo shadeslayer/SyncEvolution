@@ -64,6 +64,7 @@ class FileSyncSource : public TrackingSyncSource, private boost::noncopyable
  protected:
     /* implementation of SyncSource interface */
     virtual void open();
+    virtual bool isEmpty();
     virtual void close();
     virtual Databases getDatabases();
     virtual const char *getMimeType() const;

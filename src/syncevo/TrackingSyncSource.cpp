@@ -34,6 +34,7 @@ TrackingSyncSource::TrackingSyncSource(const SyncSourceParams &params,
                                         boost::shared_ptr<ConfigNode>(new SafeConfigNode(params.m_nodes.getTrackingNode()))))
 {
     m_operations.m_checkStatus = boost::bind(&TrackingSyncSource::checkStatus, this, _1);
+    m_operations.m_isEmpty = boost::bind(&TrackingSyncSource::isEmpty, this);
     SyncSourceRevisions::init(this, this, granularitySeconds, m_operations);
 }
 

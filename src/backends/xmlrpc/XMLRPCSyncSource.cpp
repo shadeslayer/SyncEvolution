@@ -64,6 +64,14 @@ void XMLRPCSyncSource::open()
 {
 }
 
+bool XMLRPCSyncSource::isEmpty()
+{
+    // TODO: provide a real implementation. Always returning false
+    // here disables the "allow slow sync when no local data" heuristic
+    // for preventSlowSync=1.
+    return false;
+}
+
 void XMLRPCSyncSource::close()
 {
 }

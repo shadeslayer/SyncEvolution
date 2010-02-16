@@ -60,6 +60,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
     //
     virtual Databases getDatabases();
     virtual void open();
+    virtual bool isEmpty();
     virtual void close(); 
     virtual const char *getMimeType() const { return "text/calendar"; }
     virtual const char *getMimeVersion() const { return "2.0"; }

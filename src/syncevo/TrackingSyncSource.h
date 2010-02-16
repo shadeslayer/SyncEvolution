@@ -96,6 +96,14 @@ class TrackingSyncSource : public TestingSyncSource,
     virtual void open() = 0;
 
     /**
+     * A quick check whether the source currently has data. Currently
+     * used as part of the "allow slow sync" checking after open() and
+     * before beginSync(). Returning false is acceptable when it is
+     * uncertain and too expensive to check.
+     */
+    virtual bool isEmpty() = 0;
+
+    /**
      * fills the complete mapping from LUID to revision string of all
      * currently existing items
      *

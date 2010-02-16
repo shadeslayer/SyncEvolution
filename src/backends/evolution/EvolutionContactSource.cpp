@@ -218,6 +218,14 @@ void EvolutionContactSource::open()
                            (void *)"Evolution Data Server has died unexpectedly, contacts no longer available.");
 }
 
+bool EvolutionContactSource::isEmpty()
+{
+    // TODO: add more efficient implementation which does not
+    // depend on actually pulling all items from EDS
+    RevisionMap_t revisions;
+    listAllItems(revisions);
+    return revisions.empty();
+}
 
 void EvolutionContactSource::listAllItems(RevisionMap_t &revisions)
 {

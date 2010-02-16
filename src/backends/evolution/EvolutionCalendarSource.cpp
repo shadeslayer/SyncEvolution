@@ -209,6 +209,15 @@ void EvolutionCalendarSource::open()
                            (void *)"Evolution Data Server has died unexpectedly, database no longer available.");
 }
 
+bool EvolutionCalendarSource::isEmpty()
+{
+    // TODO: add more efficient implementation which does not
+    // depend on actually pulling all items from EDS
+    RevisionMap_t revisions;
+    listAllItems(revisions);
+    return revisions.empty();
+}
+
 void EvolutionCalendarSource::listAllItems(RevisionMap_t &revisions)
 {
     GError *gerror = NULL;

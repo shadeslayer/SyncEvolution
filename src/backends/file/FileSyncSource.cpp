@@ -36,12 +36,14 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
 
 #include <syncevo/util.h>
 
 #include <sstream>
 #include <fstream>
 
+#include <syncevo/SyncContext.h>
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -99,6 +101,40 @@ void FileSyncSource::open()
 
     // success!
     m_basedir = basedir;
+}
+
+bool FileSyncSource::isEmpty()
+{
+    DIR *dir = NULL;
+    bool empty = true;
+
+    try {
+        dir = opendir(m_basedir.c_str());
+        if (!dir) {
+            SyncContext::throwError(m_basedir, errno);
+        }
+        errno = 0;
+        struct dirent *entry = readdir(dir);
+        while (entry) {
+            if (strcmp(entry->d_name, ".") &&
+                strcmp(entry->d_name, "..")) {
+                empty = false;
+                break;
+            }
+            entry = readdir(dir);
+        }
+        if (errno) {
+            SyncContext::throwError(m_basedir, errno);
+        }
+    } catch(...) {
+        if (dir) {
+            closedir(dir);
+        }
+        throw;
+    }
+
+    closedir(dir);
+    return empty;
 }
 
 void FileSyncSource::close()

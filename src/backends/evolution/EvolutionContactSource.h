@@ -51,6 +51,7 @@ class EvolutionContactSource : public EvolutionSyncSource,
     //
     virtual Databases getDatabases();
     virtual void open();
+    virtual bool isEmpty();
     virtual void close();
     virtual const char *getMimeType() const;
     virtual const char *getMimeVersion() const;
