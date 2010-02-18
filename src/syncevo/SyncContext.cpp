@@ -341,36 +341,46 @@ public:
                      << setw(2) << tm->tm_mday << "-"
                      << setw(2) << tm->tm_hour << "-"
                      << setw(2) << tm->tm_min;
-                // make sure no directory name has the same date time with others 
-                // even for different peers
-                std::vector<string> dateTimes;
-                if(isDir(m_logdir)) {
-                    ReadDir dir(m_logdir);
-                    BOOST_FOREACH(const string &entry, dir) {
-                        string dirPrefix, peerName, dateTime;
-                        if(parseDirName(entry, dirPrefix, peerName, dateTime)) {
-                            dateTimes.push_back(dateTime);
+                // If other sessions, regardless of which peer, have
+                // the same date and time, then append a sequence
+                // number to ensure correct sorting. Solve this by
+                // finding the maximum sequence number for any kind of
+                // date time. Backwards running clocks or changing the
+                // local time will still screw our ordering, though.
+                typedef std::map<string, int> SeqMap_t;
+                SeqMap_t dateTimes2Seq;
+                ReadDir dir(m_logdir);
+                BOOST_FOREACH(const string &entry, dir) {
+                    string dirPrefix, peerName, dateTime;
+                    if (parseDirName(entry, dirPrefix, peerName, dateTime)) {
+                        // dateTime = -2010-01-31-12-00[-rev]
+                        size_t off = 0;
+                        for (int i = 0; off != dateTime.npos && i < 5; i++) {
+                            off = dateTime.find('-', off + 1);
+                        }
+                        int sequence;
+                        if (off != dateTime.npos) {
+                            sequence = atoi(dateTime.substr(off + 1).c_str());
+                            dateTime.resize(off);
+                        } else {
+                            sequence = 0;
+                        }
+                        pair <SeqMap_t::iterator, bool> entry = dateTimes2Seq.insert(make_pair(dateTime, sequence));
+                        if (sequence > entry.first->second) {
+                            entry.first->second = sequence;
                         }
                     }
-                    sort(dateTimes.begin(), dateTimes.end());
                 }
-                int seq = 0;
-                while (true) {
-                    stringstream path;
-                    path << base.str();
-                    if (seq) {
-                        path << "-" << seq;
-                    }
-                    if (!binary_search(dateTimes.begin(), dateTimes.end(), path.str())) {
-                        m_path = m_logdir + "/";
-                        m_path += m_prefix;
-                        m_path += path.str();
-                        mkdir_p(m_path);
-                        break;
-                    } else {
-                        seq++;
-                    }
+                stringstream path;
+                path << base.str();
+                SeqMap_t::iterator it = dateTimes2Seq.find(path.str());
+                if (it != dateTimes2Seq.end()) {
+                    path << "-" << it->second + 1;
                 }
+                m_path = m_logdir + "/";
+                m_path += m_prefix;
+                m_path += path.str();
+                mkdir_p(m_path);
             } else {
                 m_path = m_logdir;
                 if (mkdir(m_path.c_str(), S_IRWXU) &&

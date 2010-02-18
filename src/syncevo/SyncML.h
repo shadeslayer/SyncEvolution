@@ -226,6 +226,9 @@ class SyncSourceReport {
         m_stat[location][state][success]++;
     }
 
+    /** true if statistics indicate that peer or local was modified during sync */
+    bool wasChanged(ItemLocation location);
+
     void recordFinalSyncMode(SyncMode mode) { m_mode = mode; }
     SyncMode getFinalSyncMode() const { return m_mode; }
 
@@ -270,6 +273,8 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
         m_end(0),
         m_status(STATUS_OK)
         {}
+
+    typedef std::pair<std::string, SyncSourceReport> SourceReport_t;
 
     void addSyncSourceReport(const std::string &name,
                              const SyncSourceReport &report) {

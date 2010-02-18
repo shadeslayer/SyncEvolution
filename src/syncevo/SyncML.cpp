@@ -380,6 +380,17 @@ void SyncSourceReport::StringToStatTuple(const std::string &str, ItemLocation &l
     result = tokens.size() > 2 ? StringToResult(tokens[2]) : ITEM_RESULT_MAX;
 }
 
+bool SyncSourceReport::wasChanged(ItemLocation location)
+{
+    for (int i = ITEM_ADDED; i < ITEM_ANY; i++) {
+        if (getItemStat(location, (ItemState)i, ITEM_TOTAL) > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 std::ostream &operator << (std::ostream &out, const SyncReport &report)
 {
     report.prettyPrint(out, 0);
