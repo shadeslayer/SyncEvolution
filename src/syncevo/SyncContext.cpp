@@ -68,6 +68,8 @@ using namespace std;
 #include <synthesis/SDK_util.h>
 #include <synthesis/san.h>
 
+#include "test.h"
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -3482,5 +3484,326 @@ string SyncContext::readSessionInfo(const string &dir, SyncReport &report)
     logging.readReport(report);
     return logging.getPeerNameFromLogdir(dir);
 }
+
+#ifdef ENABLE_UNIT_TESTS
+/**
+ * This class works LogDirTest as scratch directory.
+ * LogDirTest/[ical20|vcard30]_[one|two|empty] contain different
+ * sets of items for use in a FileSyncSource.
+ *
+ * With that setup and a fake SyncContext it is possible to simulate
+ * sessions and test the resulting logdirs.
+ */
+class LogDirTest : public CppUnit::TestFixture, private SyncContext
+{
+public:
+    LogDirTest() :
+        SyncContext("nosuchconfig@nosuchcontext"),
+        m_maxLogDirs(10)
+    {}
+
+    void setUp() {
+        static const char *vcard_1 =
+            "BEGIN:VCARD\n"
+            "VERSION:2.1\n"
+            "TITLE:tester\n"
+            "FN:John Doe\n"
+            "N:Doe;John;;;\n"
+            "X-MOZILLA-HTML:FALSE\n"
+            "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
+            "EMAIL:john.doe@work.com\n"
+            "X-AIM:AIM JOHN\n"
+            "END:VCARD\n";
+        static const char *vcard_2 =
+            "BEGIN:VCARD\n"
+            "VERSION:2.1\n"
+            "TITLE:developer\n"
+            "FN:John Doe\n"
+            "N:Doe;John;;;\n"
+            "X-MOZILLA-HTML:TRUE\n"
+            "BDAY:2006-01-08\n"
+            "END:VCARD\n";
+        static const char *ical_1 =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VEVENT\n"
+            "SUMMARY:phone meeting\n"
+            "DTEND:20060406T163000Z\n"
+            "DTSTART:20060406T160000Z\n"
+            "UID:1234567890!@#$%^&*()<>@dummy\n"
+            "DTSTAMP:20060406T211449Z\n"
+            "LAST-MODIFIED:20060409T213201\n"
+            "CREATED:20060409T213201\n"
+            "LOCATION:calling from home\n"
+            "DESCRIPTION:let's talk\n"
+            "CLASS:PUBLIC\n"
+            "TRANSP:OPAQUE\n"
+            "SEQUENCE:1\n"
+            "BEGIN:VALARM\n"
+            "DESCRIPTION:alarm\n"
+            "ACTION:DISPLAY\n"
+            "TRIGGER;VALUE=DURATION;RELATED=START:-PT15M\n"
+            "END:VALARM\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+        static const char *ical_2 =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VEVENT\n"
+            "SUMMARY:phone meeting\n"
+            "DTEND:20060406T163000Z\n"
+            "DTSTART:20060406T160000Z\n"
+            "UID:1234567890!@#$%^&*()<>@dummy\n"
+            "DTSTAMP:20060406T211449Z\n"
+            "LAST-MODIFIED:20060409T213201\n"
+            "CREATED:20060409T213201\n"
+            "LOCATION:my office\n"
+            "CATEGORIES:WORK\n"
+            "DESCRIPTION:what the heck\\, let's even shout a bit\n"
+            "CLASS:PUBLIC\n"
+            "TRANSP:OPAQUE\n"
+            "SEQUENCE:1\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR\n";
+        rm_r("LogDirTest");
+        dump("ical20.one", "1", ical_1);
+        dump("ical20.two", "1", ical_1);
+        dump("ical20.two", "2", ical_2);
+        mkdir_p(getLogData() + "/ical20.empty");
+        dump("vcard30.one", "1", vcard_1);
+        dump("vcard30.two", "1", vcard_1);
+        dump("vcard30.two", "2", vcard_2);
+        mkdir_p(getLogData() + "/vcard30.empty");
+
+        mkdir_p(getLogDir());
+        m_maxLogDirs = 0;
+    }
+
+private:
+
+    string getLogData() { return "LogDirTest/data"; }
+    virtual const char *getLogDir() { return "LogDirTest/cache/syncevolution"; }
+    int m_maxLogDirs;
+
+    void dump(const char *dir, const char *file, const char *data) {
+        string name = getLogData();
+        name += "/";
+        name += dir;
+        mkdir_p(name);
+        name += "/";
+        name += file;
+        ofstream out(name.c_str());
+        out << data;
+    }
+
+    CPPUNIT_TEST_SUITE(LogDirTest);
+    CPPUNIT_TEST(testQuickCompare);
+    CPPUNIT_TEST(testSessionNoChanges);
+    CPPUNIT_TEST(testSessionChanges);
+    CPPUNIT_TEST(testMultipleSessions);
+    CPPUNIT_TEST_SUITE_END();
+
+    /**
+     * Simulate a session involving one or more sources.
+     *
+     * @param changeServer   pretend that peer got changed
+     * @param status         result of session
+     * @param varargs        sourcename ("ical20"),
+     *                       statebefore (NULL for no dump, or suffix like "_one"),
+     *                       stateafter (NULL for same as before), ..., NULL
+     * @return logdir created for the session
+     */
+    string session(bool changeServer, SyncMLStatus status, ...) {
+        SourceList list(*this, true);
+        list.setLogLevel(SourceList::LOGGING_QUIET);
+        SyncReport report;
+        list.startSession(NULL, m_maxLogDirs, 0, &report);
+        va_list ap;
+        va_start(ap, status);
+        while (true) {
+            const char *sourcename = va_arg(ap, const char *);
+            if (!sourcename) {
+                break;
+            }
+            const char *type = NULL;
+            if (!strcmp(sourcename, "ical20")) {
+                type = "file:text/calendar:2.0";
+            } else if (!strcmp(sourcename, "vcard30")) {
+                type = "file:text/vcard:3.0";
+            }
+            CPPUNIT_ASSERT(type);
+            string datadir = getLogData() + "/";
+            cxxptr<SyncSource> source(SyncSource::createTestingSource(sourcename, type, true,
+                                                                      (string("file://") + datadir).c_str()));
+            datadir += sourcename;
+            datadir += "_1";
+            source->open();
+            if (changeServer) {
+                // fake one added item on server
+                source->setItemStat(SyncSourceReport::ITEM_REMOTE,
+                                    SyncSourceReport::ITEM_ADDED,
+                                    SyncSourceReport::ITEM_TOTAL,
+                                    1);
+            }
+            list.addSource(source);
+            const char *before = va_arg(ap, const char *);
+            const char *after = va_arg(ap, const char *);
+            if (before) {
+                // do a "before" dump after directing the source towards the desired data
+                rm_r(datadir);
+                CPPUNIT_ASSERT_EQUAL(0, symlink((string(sourcename) + before).c_str(),
+                                                datadir.c_str()));
+                list.syncPrepare(sourcename);
+                if (after) {
+                    rm_r(datadir);
+                    CPPUNIT_ASSERT_EQUAL(0, symlink((string(sourcename) + after).c_str(),
+                                                    datadir.c_str()));
+                }
+            }
+        }
+        list.syncDone(status, &report);
+
+        return list.getLogdir();
+    }
+
+    typedef vector<string> Sessions_t;
+    // full paths to all sessions, sorted
+    Sessions_t listSessions() {
+        Sessions_t sessions;
+        string logdir = getLogDir();
+        ReadDir dirs(logdir);
+        BOOST_FOREACH(const string &dir, dirs) {
+            sessions.push_back(logdir + "/" + dir);
+        }
+        sort(sessions.begin(), sessions.end());
+        return sessions;
+    }
+
+    void testQuickCompare() {
+        // identical dirs => identical files
+        CPPUNIT_ASSERT(!LogDir::haveDifferentContent("ical20",
+                                                     getLogData(), "empty",
+                                                     getLogData(), "empty"));
+        CPPUNIT_ASSERT(!LogDir::haveDifferentContent("ical20",
+                                                     getLogData(), "one",
+                                                     getLogData(), "one"));
+        CPPUNIT_ASSERT(!LogDir::haveDifferentContent("ical20",
+                                                     getLogData(), "two",
+                                                     getLogData(), "two"));
+        // some files shared
+        CPPUNIT_ASSERT(!system("cp -l -r LogDirTest/data/ical20.two LogDirTest/data/ical20.copy && rm LogDirTest/data/ical20.copy/2"));
+        CPPUNIT_ASSERT(LogDir::haveDifferentContent("ical20",
+                                                    getLogData(), "two",
+                                                    getLogData(), "copy"));
+        CPPUNIT_ASSERT(LogDir::haveDifferentContent("ical20",
+                                                    getLogData(), "copy",
+                                                    getLogData(), "one"));
+    }
+
+    void testSessionNoChanges() {
+        ScopedEnvChange config("XDG_CONFIG_HOME", "LogDirTest/config");
+        ScopedEnvChange cache("XDG_CACHE_HOME", "LogDirTest/cache");
+
+        // simple session with no changes
+        string dir = session(false, STATUS_OK, "ical20", ".one", ".one", (char *)0);
+        Sessions_t sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)1, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
+        FileConfigNode status(dir, "status.ini", true);
+        CPPUNIT_ASSERT(status.exists());
+        CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-ical20-backup-before"));
+        CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-ical20-backup-after"));
+        CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status"));
+        CPPUNIT_ASSERT(!LogDir::haveDifferentContent("ical20",
+                                                     dir, "before",
+                                                     dir, "after"));
+    }
+
+    void testSessionChanges() {
+        ScopedEnvChange config("XDG_CONFIG_HOME", "LogDirTest/config");
+        ScopedEnvChange cache("XDG_CACHE_HOME", "LogDirTest/cache");
+
+        // session with local changes
+        string dir = session(false, STATUS_OK, "ical20", ".one", ".two", (char *)0);
+        Sessions_t sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)1, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
+        FileConfigNode status(dir, "status.ini", true);
+        CPPUNIT_ASSERT(status.exists());
+        CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-ical20-backup-before"));
+        CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-ical20-backup-after"));
+        CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status"));
+        CPPUNIT_ASSERT(LogDir::haveDifferentContent("ical20",
+                                                    dir, "before",
+                                                    dir, "after"));
+    }
+
+    void testMultipleSessions() {
+        ScopedEnvChange config("XDG_CONFIG_HOME", "LogDirTest/config");
+        ScopedEnvChange cache("XDG_CACHE_HOME", "LogDirTest/cache");
+
+        // two sessions, starting with 1 item, adding 1 during the sync, then
+        // removing it again during the second
+        string dir = session(false, STATUS_OK,
+                             "ical20", ".one", ".two",
+                             "vcard30", ".one", ".two",
+                             (char *)0);
+        {
+            Sessions_t sessions = listSessions();
+            CPPUNIT_ASSERT_EQUAL((size_t)1, sessions.size());
+            CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
+            FileConfigNode status(dir, "status.ini", true);
+            CPPUNIT_ASSERT(status.exists());
+            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-ical20-backup-before"));
+            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-ical20-backup-after"));
+            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-vcard30-backup-before"));
+            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-vcard30-backup-after"));
+            CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status"));
+            CPPUNIT_ASSERT(LogDir::haveDifferentContent("ical20",
+                                                        dir, "before",
+                                                        dir, "after"));
+            CPPUNIT_ASSERT(LogDir::haveDifferentContent("vcard30",
+                                                        dir, "before",
+                                                        dir, "after"));
+        }
+
+        string seconddir = session(false, STATUS_OK,
+                                   "ical20", ".two", ".one",
+                                   "vcard30", ".two", ".one",
+                                   (char *)0);
+        {
+            Sessions_t sessions = listSessions();
+            CPPUNIT_ASSERT_EQUAL((size_t)2, sessions.size());
+            CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
+            CPPUNIT_ASSERT_EQUAL(seconddir, sessions[1]);
+            FileConfigNode status(seconddir, "status.ini", true);
+            CPPUNIT_ASSERT(status.exists());
+            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-ical20-backup-before"));
+            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-ical20-backup-after"));
+            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-vcard30-backup-before"));
+            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-vcard30-backup-after"));
+            CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status"));
+            CPPUNIT_ASSERT(LogDir::haveDifferentContent("ical20",
+                                                        seconddir, "before",
+                                                        seconddir, "after"));
+            CPPUNIT_ASSERT(LogDir::haveDifferentContent("vcard30",
+                                                        seconddir, "before",
+                                                        seconddir, "after"));
+        }
+
+        CPPUNIT_ASSERT(!LogDir::haveDifferentContent("ical20",
+                                                     dir, "after",
+                                                     seconddir, "before"));
+        CPPUNIT_ASSERT(!LogDir::haveDifferentContent("vcard30",
+                                                     dir, "after",
+                                                     seconddir, "before"));
+    }
+};
+SYNCEVOLUTION_TEST_SUITE_REGISTRATION(LogDirTest);
+#endif // ENABLE_UNIT_TESTS
 
 SE_END_CXX
