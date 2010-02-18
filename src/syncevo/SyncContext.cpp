@@ -321,8 +321,7 @@ public:
     // @param logLevel    0 = default, 1 = ERROR, 2 = INFO, 3 = DEBUG
     // @param usePath     write directly into path, don't create and manage subdirectories
     // @param report      record information about session here (may be NULL)
-    // @param logname     the basename to be used for logs, traditionally "client" for syncs
-    void startSession(const char *path, int maxlogdirs, int logLevel, bool usePath, SyncReport *report, const string &logname) {
+    void startSession(const char *path, int maxlogdirs, int logLevel, bool usePath, SyncReport *report) {
         m_maxlogdirs = maxlogdirs;
         m_report = report;
         m_logfile = "";
@@ -918,18 +917,17 @@ public:
     }
     
     // call as soon as logdir settings are known
-    void startSession(const char *logDirPath, int maxlogdirs, int logLevel, SyncReport *report,
-                      const string &logname) {
+    void startSession(const char *logDirPath, int maxlogdirs, int logLevel, SyncReport *report) {
         m_logdir.setLogdir(logDirPath);
         m_previousLogdir = m_logdir.previousLogdir();
         if (m_doLogging) {
-            m_logdir.startSession(logDirPath, maxlogdirs, logLevel, false, report, logname);
+            m_logdir.startSession(logDirPath, maxlogdirs, logLevel, false, report);
         } else {
             // Run debug session without paying attention to
             // the normal logdir handling. The log level here
             // refers to stdout. The log file will be as complete
             // as possible.
-            m_logdir.startSession(logDirPath, 0, 1, true, report, logname);
+            m_logdir.startSession(logDirPath, 0, 1, true, report);
         }
     }
 
@@ -2419,9 +2417,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
         sourceList.startSession(getLogDir(),
                                 getMaxLogDirs(),
                                 getLogLevel(),
-                                report,
-                                "client");
-
+                                report);
 
         /* Must detect server or client session before creating the
          * underlying SynthesisEngine 
@@ -3259,7 +3255,7 @@ void SyncContext::status()
     SE_LOG_INFO(NULL, NULL, "Local item changes:\n%s",
                 out.str().c_str());
 
-    sourceList.startSession(getLogDir(), 0, 0, NULL, "status");
+    sourceList.startSession(getLogDir(), 0, 0, NULL);
     LoggerBase::instance().setLevel(Logger::INFO);
     string prevLogdir = sourceList.getPrevLogdir();
     bool found = access(prevLogdir.c_str(), R_OK|X_OK) == 0;
@@ -3364,7 +3360,7 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
     }
 
     SourceList sourceList(*this, false);
-    sourceList.startSession(dirname.c_str(), 0, 0, NULL, "restore");
+    sourceList.startSession(dirname.c_str(), 0, 0, NULL);
     LoggerBase::instance().setLevel(Logger::INFO);
     initSources(sourceList);
     BOOST_FOREACH(SyncSource *source, sourceList) {
