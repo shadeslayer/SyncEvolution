@@ -2301,29 +2301,19 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             std::string superType = vSource->getSourceType().m_format;
             std::string evoSyncSource = vSource->getDatabaseID();
             std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
-            //only check the type when user uses forceFormat
-            if (vSource->getSourceType().m_forceFormat) {
-                if (superType.find_last_of (":") != superType.npos) {
-                    superType = superType.substr (superType.find_last_of (":"));
-                }
-                BOOST_FOREACH (std::string source, mappedSources) {
-                    //check the data type
-                    SyncSource *subSource = (*m_sourceListPtr)[source];
-                    std::string subType = subSource->getPeerMimeType();
-                    if (subType.empty()) {
-                        subType = subSource->getSourceType().m_format;
-                        if (subType.find_last_of (":") != subType.npos) {
-                            subType = subType.substr (subType.find_last_of (":"));
-                        }
-                    }
-                    if (superType != subType) {
-                        SE_LOG_WARNING (NULL, NULL, 
-                                "Virtual data source \"%s\" and sub datasource \"%s\" have different data format. Will use the format in virtual datasource.",
-                                vSource->getName(), source.c_str());
-                        break;
-                    }
-                }
 
+            // always check for a consistent config
+            SourceType sourceType = vSource->getSourceType();
+            BOOST_FOREACH (std::string source, mappedSources) {
+                //check the data type
+                SyncSource *subSource = (*m_sourceListPtr)[source];
+                SourceType subType = subSource->getSourceType();
+                if (sourceType.m_format != subType.m_format ||
+                    sourceType.m_forceFormat != subType.m_forceFormat) {
+                    SE_LOG_WARNING(NULL, NULL, 
+                                   "Virtual data source \"%s\" and sub data source \"%s\" have different data format. Will use the format in virtual data source.",
+                                   vSource->getName(), source.c_str());
+                }
             }
 
             if (mappedSources.size() !=2) {
