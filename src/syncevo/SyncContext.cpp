@@ -532,6 +532,51 @@ public:
         return dateTime1 < dateTime2;
     }
 
+    /**
+     * Compare two database dumps just based on their inodes.
+     * @return true    if inodes differ
+     */
+    static bool haveDifferentContent(const string &sourceName,
+                                     const string &firstDir,
+                                     const string &firstSuffix,
+                                     const string &secondDir,
+                                     const string &secondSuffix)
+    {
+        string first = firstDir + "/" + sourceName + "." + firstSuffix;
+        string second = secondDir + "/" + sourceName + "." + secondSuffix;
+        ReadDir firstContent(first);
+        ReadDir secondContent(second);
+        set<ino_t> firstInodes;
+        BOOST_FOREACH(const string &name, firstContent) {
+            struct stat buf;
+            string fullpath = first + "/" + name;
+            if (stat(fullpath.c_str(), &buf)) {
+                SyncContext::throwError(fullpath, errno);
+            }
+            firstInodes.insert(buf.st_ino);
+        }
+        BOOST_FOREACH(const string &name, secondContent) {
+            struct stat buf;
+            string fullpath = second + "/" + name;
+            if (stat(fullpath.c_str(), &buf)) {
+                SyncContext::throwError(fullpath, errno);
+            }
+            set<ino_t>::iterator it = firstInodes.find(buf.st_ino);
+            if (it == firstInodes.end()) {
+                // second dir has different file
+                return true;
+            } else {
+                firstInodes.erase(it);
+            }
+        }
+        if (!firstInodes.empty()) {
+            // first dir has different file
+            return true;
+        }
+        // exact match of inodes
+        return false;
+    }
+
 private:
     /**
      * extract backup directory name from a full backup path
