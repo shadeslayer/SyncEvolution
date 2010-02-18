@@ -453,20 +453,127 @@ public:
         return m_logfile;
     }
 
-    // remove oldest backup dirs if exceeding limit
+    /**
+     * remove backup dir(s) if exceeding limit
+     *
+     * Assign a priority to each session dir, with lower
+     * meaning "less important". Then sort by priority and (if
+     * equal) creation time (aka index) in ascending
+     * order. The sessions at the beginning of the sorted
+     * vector are then removed first.
+     *
+     * DUMPS = any kind of database dump was made
+     * ERROR = session failed
+     * CHANGES = local data modified since previous dump (based on dumps
+     *           of the current peer, for simplicity reasons),
+     *           dump created for the first time,
+     *           changes made during sync (detected with dumps and statistics)
+     *
+     * The goal is to preserve as many database dumps as possible
+     * and ideally those where something happened.
+     *
+     * Some criteria veto the removal of a session:
+     * - it is the only one holding a dump of a specific source
+     * - it is the last session
+     */
     void expire() {
         if (m_logdir.size() && m_maxlogdirs > 0 ) {
             vector<string> dirs;
             getLogdirs(dirs);
 
+            /** stores priority and index in "dirs"; after sorting, delete from the start */
+            vector< pair<Priority, size_t> > victims;
+            /** maps from source name to list of information about dump, oldest first */
+            typedef map< string, list<DumpInfo> > Dumps_t;
+            Dumps_t dumps;
+            for (size_t i = 0;
+                 i < dirs.size();
+                 i++) {
+                bool changes = false;
+                bool havedumps = false;
+                bool errors = false;
+
+                LogDir logdir(m_client);
+                logdir.openLogdir(dirs[i]);
+                SyncReport report;
+                logdir.readReport(report);
+                SyncMLStatus status = report.getStatus();
+                if (status != STATUS_OK && status != STATUS_HTTP_OK) {
+                    errors = true;
+                }
+                BOOST_FOREACH(SyncReport::SourceReport_t source, report) {
+                    string &sourcename = source.first;
+                    SyncSourceReport &sourcereport = source.second;
+                    list<DumpInfo> &dumplist = dumps[sourcename];
+                    if (sourcereport.m_backupBefore.isAvailable() ||
+                        sourcereport.m_backupAfter.isAvailable()) {
+                        // yes, we have backup dumps
+                        havedumps = true;
+
+                        DumpInfo info(i,
+                                      sourcereport.m_backupBefore.getNumItems(),
+                                      sourcereport.m_backupAfter.getNumItems());
+
+                        // now check for changes, if none found yet
+                        if (!changes) {
+                            if (dumplist.empty()) {
+                                // new backup dump
+                                changes = true;
+                            } else {
+                                DumpInfo &previous = dumplist.back();
+                                changes =
+                                    // item count changed -> items changed
+                                    previous.m_itemsDumpedAfter != info.m_itemsDumpedBefore ||
+                                    sourcereport.wasChanged(SyncSourceReport::ITEM_LOCAL) ||
+                                    sourcereport.wasChanged(SyncSourceReport::ITEM_REMOTE) ||
+                                    haveDifferentContent(sourcename,
+                                                         dirs[previous.m_dirIndex], "after",
+                                                         dirs[i], "before");
+                            }
+                        }
+
+                        dumplist.push_back(info);
+                    }
+                }
+                Priority pri =
+                    havedumps ?
+                    (changes ?
+                     HAS_DUMPS_WITH_CHANGES :
+                     errors ?
+                     HAS_DUMPS_NO_CHANGES_WITH_ERRORS :
+                     HAS_DUMPS_NO_CHANGES) :
+                    (changes ?
+                     NO_DUMPS_WITH_CHANGES :
+                     errors ?
+                     NO_DUMPS_WITH_ERRORS :
+                     NO_DUMPS_NO_ERRORS);
+                victims.push_back(make_pair(pri, i));
+            }
+            sort(victims.begin(), victims.end());
+
             int deleted = 0;
-            for (vector<string>::iterator it = dirs.begin();
-                 it != dirs.end() && (int)dirs.size() - deleted > m_maxlogdirs;
-                 ++it, ++deleted) {
-                string &path = *it;
-                string msg = "removing " + path;
-                SE_LOG_INFO(NULL, NULL, "%s", msg.c_str());
-                rm_r(path);
+            for (size_t e = 0;
+                 e < victims.size() && (int)dirs.size() - deleted > m_maxlogdirs;
+                 ++e) {
+                size_t index = victims[e].second;
+                string &path = dirs[index];
+                // preserve latest session
+                if (index != dirs.size() - 1) {
+                    bool mustkeep = false;
+                    // also check whether it holds the only backup of a source
+                    BOOST_FOREACH(Dumps_t::value_type dump, dumps) {
+                        if (dump.second.size() == 1 &&
+                            dump.second.front().m_dirIndex == index) {
+                            mustkeep = true;
+                            break;
+                        }
+                    }
+                    if (!mustkeep) {
+                        SE_LOG_DEBUG(NULL, NULL, "removing %s", path.c_str());
+                        rm_r(path);
+                        ++deleted;
+                    }
+                }
             }
         }
     }
@@ -590,6 +697,28 @@ public:
     }
 
 private:
+    enum Priority {
+        NO_DUMPS_NO_ERRORS,
+        NO_DUMPS_WITH_ERRORS,
+        NO_DUMPS_WITH_CHANGES,
+        HAS_DUMPS_NO_CHANGES,
+        HAS_DUMPS_NO_CHANGES_WITH_ERRORS,
+        HAS_DUMPS_WITH_CHANGES
+    };
+
+    struct DumpInfo {
+        size_t m_dirIndex;
+        int m_itemsDumpedBefore;
+        int m_itemsDumpedAfter;
+        DumpInfo(size_t dirIndex,
+                 int itemsDumpedBefore,
+                 int itemsDumpedAfter) :
+            m_dirIndex(dirIndex),
+            m_itemsDumpedBefore(itemsDumpedBefore),
+            m_itemsDumpedAfter(itemsDumpedAfter)
+        {}
+    };
+
     /**
      * extract backup directory name from a full backup path
      * for example, a full path "/home/xxx/.cache/syncevolution/default/funambol-2009-12-08-14-05"
@@ -1157,9 +1286,7 @@ public:
                                  "\nData modified locally during synchronization:\n",
                                  "CLIENT_TEST_LEFT_NAME='before sync' CLIENT_TEST_RIGHT_NAME='after sync' CLIENT_TEST_REMOVED='removed during sync' CLIENT_TEST_ADDED='added during sync'");
 
-                if (status == STATUS_OK) {
-                    m_logdir.expire();
-                }
+                m_logdir.expire();
             }
         }
     }
