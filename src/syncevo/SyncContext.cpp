@@ -3732,6 +3732,8 @@ private:
     CPPUNIT_TEST(testSessionNoChanges);
     CPPUNIT_TEST(testSessionChanges);
     CPPUNIT_TEST(testMultipleSessions);
+    CPPUNIT_TEST(testExpire);
+    CPPUNIT_TEST(testExpire2);
     CPPUNIT_TEST_SUITE_END();
 
     /**
@@ -3928,6 +3930,115 @@ private:
         CPPUNIT_ASSERT(!LogDir::haveDifferentContent("vcard30",
                                                      dir, "after",
                                                      seconddir, "before"));
+    }
+
+    void testExpire() {
+        ScopedEnvChange config("XDG_CONFIG_HOME", "LogDirTest/config");
+        ScopedEnvChange cache("XDG_CACHE_HOME", "LogDirTest/cache");
+
+        string dirs[5];
+        Sessions_t sessions;
+
+        m_maxLogDirs = 1;
+
+        // The latest session always must be preserved, even if it
+        // is normally considered less important (no error in this case).
+        dirs[0] = session(false, STATUS_FATAL, (char *)0);
+        dirs[0] = session(false, STATUS_OK, (char *)0);
+        sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)1, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dirs[0], sessions[0]);
+
+        // all things being equal, then expire the oldest session,
+        // leaving us with two here
+        m_maxLogDirs = 2;
+        dirs[0] = session(false, STATUS_OK, (char *)0);
+        dirs[1] = session(false, STATUS_OK, (char *)0);
+        sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)2, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dirs[0], sessions[0]);
+        CPPUNIT_ASSERT_EQUAL(dirs[1], sessions[1]);
+
+        // When syncing first ical20, then vcard30, both sessions
+        // must be preserved despite m_maxLogDirs = 1, otherwise
+        // we would loose the only existent backup of ical20.
+        dirs[0] = session(false, STATUS_OK, "ical20", ".two", ".one", (char *)0);
+        dirs[1] = session(false, STATUS_OK, "vcard30", ".two", ".one", (char *)0);
+        sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)2, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dirs[0], sessions[0]);
+        CPPUNIT_ASSERT_EQUAL(dirs[1], sessions[1]);
+
+        // after synchronizing both, we can expire both the old sessions
+        m_maxLogDirs = 1;
+        dirs[0] = session(false, STATUS_OK,
+                          "ical20", ".two", ".one",
+                          "vcard30", ".two", ".one",
+                          (char *)0);
+        sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)1, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dirs[0], sessions[0]);
+    }
+
+    void testExpire2() {
+        ScopedEnvChange config("XDG_CONFIG_HOME", "LogDirTest/config");
+        ScopedEnvChange cache("XDG_CACHE_HOME", "LogDirTest/cache");
+        string dirs[5];
+        Sessions_t sessions;
+
+        // Have to restart with clean log dir because our sequence counter
+        // runs over after 10 sessions. Continue where testExpire() stopped.
+        dirs[0] = session(false, STATUS_OK,
+                          "ical20", ".two", ".one",
+                          "vcard30", ".two", ".one",
+                          (char *)0);
+
+        // when doing multiple failed syncs without dumps, keep the sessions
+        // which have database dumps
+        m_maxLogDirs = 2;
+        dirs[1] = session(false, STATUS_FATAL, (char *)0);
+        dirs[1] = session(false, STATUS_FATAL, (char *)0);
+        sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)2, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dirs[0], sessions[0]);
+        CPPUNIT_ASSERT_EQUAL(dirs[1], sessions[1]);
+
+        // when doing syncs which don't change data, keep the sessions which
+        // did change something: keep oldest backup because it created the
+        // backups for the first time
+        dirs[1] = session(false, STATUS_OK,
+                          "ical20", ".one", ".one",
+                          "vcard30", ".one", ".one",
+                          (char *)0);
+        dirs[1] = session(false, STATUS_OK,
+                          "ical20", ".one", ".one",
+                          "vcard30", ".one", ".one",
+                          (char *)0);
+        sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)2, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dirs[0], sessions[0]);
+        CPPUNIT_ASSERT_EQUAL(dirs[1], sessions[1]);
+
+        // when making a change in each sync, we end up with the two
+        // most recent sessions eventually: first change server,
+        // then local
+        dirs[1] = session(true, STATUS_OK,
+                          "ical20", ".one", ".one",
+                          "vcard30", ".one", ".one",
+                          (char *)0);
+        sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)2, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dirs[0], sessions[0]);
+        CPPUNIT_ASSERT_EQUAL(dirs[1], sessions[1]);
+        dirs[0] = dirs[1];
+        dirs[1] = session(false, STATUS_OK,
+                          "ical20", ".one", ".two",
+                          "vcard30", ".one", ".two",
+                          (char *)0);
+        sessions = listSessions();
+        CPPUNIT_ASSERT_EQUAL((size_t)2, sessions.size());
+        CPPUNIT_ASSERT_EQUAL(dirs[0], sessions[0]);
+        CPPUNIT_ASSERT_EQUAL(dirs[1], sessions[1]);
     }
 };
 SYNCEVOLUTION_TEST_SUITE_REGISTRATION(LogDirTest);
