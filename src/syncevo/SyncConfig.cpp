@@ -487,11 +487,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
     boost::shared_ptr<PersistentSyncSourceConfig> source;
 
     config->setDefaults(false);
-    // The prefix is important: without it, myFUNAMBOL 6.x and 7.0 map
-    // all SyncEvolution instances to the single phone that they support,
-    // which leads to unwanted slow syncs when switching between multiple
-    // instances.
-    config->setDevID(string("sc-pim-") + UUID());
+    config->setDevID(string("syncevolution-") + UUID());
 
     // create sync source configs and set non-default values
     config->setSourceDefaults("addressbook", false);
