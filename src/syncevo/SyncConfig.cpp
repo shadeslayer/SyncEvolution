@@ -986,7 +986,7 @@ static ULongConfigProperty syncPropMaxMsgSize("maxMsgSize",
                                               "peer can be told to never sent items larger than a certain\n"
                                               "threshold (maxObjSize). Presumably the peer has to truncate or\n"
                                               "skip larger items. Sizes are specified as number of bytes.",
-                                              "20000");
+                                              "150000");
 static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "4000000");
 
 static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)");
