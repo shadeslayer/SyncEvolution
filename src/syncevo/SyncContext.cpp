@@ -2533,7 +2533,8 @@ void SyncContext::initEngine(bool logXML)
                      xml.c_str());
         throw;
     }
-    if (logXML) {
+    if (logXML &&
+        getLogLevel() >= 5) {
         SE_LOG_DEV(NULL, NULL, "Full XML configuration:\n%s", xml.c_str());
     }
 }
