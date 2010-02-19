@@ -1440,7 +1440,12 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
     case sysync::PEV_PREPARING:
         /* preparing (e.g. preflight in some clients), extra1=progress, extra2=total */
         /* extra2 might be zero */
-        if (source.getFinalSyncMode() == SYNC_NONE) {
+        /*
+         * At the moment, preparing items doesn't do any real work.
+         * Printing this progress just increases the output and slows
+         * us down. Disabled.
+         */
+        if (true || source.getFinalSyncMode() == SYNC_NONE) {
             // not active, suppress output
         } else if (extra2) {
             SE_LOG_INFO(NULL, NULL, "%s: preparing %d/%d",
