@@ -227,12 +227,12 @@ msgstr "還原"
 #: ../src/gtk-ui/sync-ui.c:1392
 #, c-format
 msgid "A normal sync with %s is not possible at this time. You can do a slow two-way sync, start from scratch or restore from backup."
-msgstr ""
+msgstr "與 %s 的一般同步目前無法使用。你可以嘗試慢速雙方同步、從零開始或是從備份中還原。"
 
 #: ../src/gtk-ui/sync-ui.c:1400
 #, c-format
 msgid "If something has gone horribly wrong, you can try a slow sync, start from scratch or restore from backup."
-msgstr ""
+msgstr "如果有東西發生可怕錯誤，你可以嘗試慢速同步、從零開始或是從備份還原。"
 
 #. TRANSLATORS: These are a buttons in Emergency view. Placeholder is a
 #. * service/device name. Please don't use too long lines, but feel free to
@@ -339,11 +339,11 @@ msgstr "正在等候目前的操作完成..."
 
 #: ../src/gtk-ui/sync-ui.c:2784
 msgid "A normal sync is not possible at this time. The server suggests a slow sync, but this might not always be what you want if both ends already have data."
-msgstr ""
+msgstr "一般同步目前無法使用。這台伺服器建議使用慢速同步，但這可能不總是你想要的，因為雙方可能都已經有資料。"
 
 #: ../src/gtk-ui/sync-ui.c:2791
 msgid "Failed to login. Could there be a problem with your username or password?"
-msgstr ""
+msgstr "登入失敗。你的使用者名稱或密碼是否有問題？"
 
 #: ../src/gtk-ui/sync-ui.c:2794
 msgid "Forbidden"
@@ -351,7 +351,7 @@ msgstr "禁止"
 
 #: ../src/gtk-ui/sync-ui.c:2799
 msgid "The source could not be found. Could there be a problem with the server settings?"
-msgstr ""
+msgstr "無法找到來源。伺服器設定是否有問題？"
 
 #: ../src/gtk-ui/sync-ui.c:2802
 msgid "Fatal database error"
@@ -360,7 +360,7 @@ msgstr "致命數據錯誤"
 #. This can happen when EDS is borked, restart it may help...
 #: ../src/gtk-ui/sync-ui.c:2805
 msgid "There is a problem with the local database. Syncing again or rebooting may help."
-msgstr ""
+msgstr "本機資料庫有問題。再次同步或是重新開機可能會有所幫助。"
 
 #: ../src/gtk-ui/sync-ui.c:2808
 msgid "Database error"
@@ -408,7 +408,7 @@ msgstr "連線憑證無效"
 
 #: ../src/gtk-ui/sync-ui.c:2836
 msgid "We were unable to connect to the server. The problem could be temporary or there could be something wrong with the server settings."
-msgstr ""
+msgstr "我們無法連接到伺服器。問題可能是暫時的，或是伺服器設定可能有問題。"
 
 #: ../src/gtk-ui/sync-ui.c:2840
 msgid "URL is bad"
@@ -461,6 +461,8 @@ msgid ""
 "A slow sync compares items from both sides and tries to merge them. \n"
 "This may fail in some cases, leading to duplicates or lost information."
 msgstr ""
+"慢速同步會比較兩邊的項目，並嘗試合併它們。\n"
+"這在某些情況下可能會失敗，並導致副本產生或是遺失資訊。"
 
 #: ../src/gtk-ui/ui.glade.h:15
 msgid "Add new device"
@@ -473,7 +475,7 @@ msgstr "新增服務"
 #. explanation of "Restore backup" function
 #: ../src/gtk-ui/ui.glade.h:18
 msgid "Backups are made before every time we Sync. Choose a backup to restore. Any changes you have made since then will be lost."
-msgstr ""
+msgstr "在我們每次同步前都會進行備份。選擇要還原的備份。所有你從那時起的變更都會喪失。"
 
 #: ../src/gtk-ui/ui.glade.h:19
 msgid "Calendar"
@@ -537,11 +539,11 @@ msgstr ""
 
 #: ../src/gtk-ui/ui.glade.h:41
 msgid "Use Bluetooth to Sync your data from one device to another."
-msgstr ""
+msgstr "使用藍牙從某裝置同步你的資料到另一個裝置去。"
 
 #: ../src/gtk-ui/ui.glade.h:42
 msgid "You will need to add Bluetooth devices before they can be synced."
-msgstr ""
+msgstr "在它們能被同步前，你需要先加入藍牙裝置。"
 
 #: ../src/gtk-ui/sync.desktop.in.h:2
 #: ../src/gtk-ui/sync-gtk.desktop.in.h:2
@@ -569,20 +571,20 @@ msgstr "備份你的連絡人與行事曆。一個按鍵就同步，任何時間
 
 #: ../src/gtk-ui/sync-config-widget.c:83
 msgid "Mobical Backup and Restore service allows you to securely backup your personal mobile data for free."
-msgstr ""
+msgstr "Mobical 備份與還原服務讓你可以安全地備份個人行動資料，而且免費。"
 
 #: ../src/gtk-ui/sync-config-widget.c:86
 msgid "ZYB is a simple way for people to store and share mobile information online."
-msgstr ""
+msgstr "ZYB 是人們儲存與線上分享行動資訊的一種簡單方法。"
 
 #: ../src/gtk-ui/sync-config-widget.c:89
 msgid "Memotoo lets you access your personal data from any computer connected to the Internet."
-msgstr ""
+msgstr "Memotoo 能讓你從任何連接到網路的電腦存取你的個人資料。"
 
 #: ../src/gtk-ui/sync-config-widget.c:255
 #, c-format
 msgid "Do you want to replace %s with %s? This will not remove any synced information on either end but you will no longer be able to sync with %s."
-msgstr ""
+msgstr "你想要把 %s 用 %s 取代掉嗎？這不會移除兩方任何同步過的資訊，但是你將無法再與 %s 進行同步。"
 
 #. TRANSLATORS: decline/accept buttons in warning dialog.
 #. Placeholder is service name
@@ -603,7 +605,7 @@ msgstr "服務項目必須要有一個名稱和伺服器網址"
 #: ../src/gtk-ui/sync-config-widget.c:381
 #, c-format
 msgid "Do you want to reset the settings for %s? This will not remove any synced information on either end."
-msgstr ""
+msgstr "你想要為 %s 重設設定嗎？這不會移除任何兩方同步過的資訊。"
 
 #. TRANSLATORS: buttons in reset-service warning dialog
 #: ../src/gtk-ui/sync-config-widget.c:385
@@ -618,7 +620,7 @@ msgstr "不，維持設定"
 #: ../src/gtk-ui/sync-config-widget.c:391
 #, c-format
 msgid "Do you want to delete the settings for %s? This will not remove any synced information on either end but it will remove this service configuration."
-msgstr ""
+msgstr "你想要為 %s 刪除設定值嗎？這不會移除任何兩方同步過的資訊，但是它會移除本服務設定檔。"
 
 #. TRANSLATORS: buttons in delete-service warning dialog
 #: ../src/gtk-ui/sync-config-widget.c:396
@@ -709,7 +711,7 @@ msgstr "密碼"
 #. who have modified the configuration via other means.
 #: ../src/gtk-ui/sync-config-widget.c:1858
 msgid "Current service configuration is more complex than what can be shown here. Changes to sync mode or synced data types will overwrite that configuration."
-msgstr ""
+msgstr "目前的服務設定檔比這裡能夠顯示的還要複雜許多。變更為同步模式或是同步過的資料類型將會覆蓋寫入那份設定檔。"
 
 #. TRANSLATORS: this is the epander label for server settings
 #. in service configuration form
