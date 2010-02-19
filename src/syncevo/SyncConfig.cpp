@@ -947,12 +947,8 @@ static BoolConfigProperty syncPropPreventSlowSync("preventSlowSync",
                                                   "  this as 'user wants to start from scratch') => the sync would\n"
                                                   "  recreate all the client's data, even if the user really wanted\n"
                                                   "  to have it deleted, therefore slow sync is prevented\n"
-                                                  "Slow syncs are not yet detected when running as server and in the\n"
-                                                  "client when the server's anchor is wrong.\n"
-                                                  "This option is not enabled by default because it forces users\n"
-                                                  "to deal with slow syncs, which is a deviation from previous\n"
-                                                  "behavior.",
-                                                  "0");
+                                                  "Slow syncs are not yet detected when running as server.\n",
+                                                  "1");
 static BoolConfigProperty syncPropUseProxy("useProxy",
                                            "set to T to choose an HTTP proxy explicitly; otherwise the default\n"
                                            "proxy settings of the underlying HTTP transport mechanism are used;\n"
