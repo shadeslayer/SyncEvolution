@@ -42,6 +42,7 @@
 #elif USE_SHA256 == 2
 # include <nss/sechash.h>
 # include <nss/hasht.h>
+# include <nss.h>
 #endif
 
 #ifdef ENABLE_UNIT_TESTS
@@ -295,6 +296,19 @@ std::string SHA_256(const std::string &data)
 #elif USE_SHA256 == 2
     std::string res;
     unsigned char hash[SHA256_LENGTH];
+    static bool initialized;
+    if (!initialized) {
+        // https://wiki.mozilla.org/NSS_Shared_DB_And_LINUX has
+        // some comments which indicate that calling init multiple
+        // times works, but http://www.mozilla.org/projects/security/pki/nss/ref/ssl/sslfnc.html#1234224
+        // says it must only be called once. How that is supposed
+        // to work when multiple, independent libraries have to
+        // use NSS is beyond me. Bad design. At least let's do the
+        // best we can here.
+        NSS_NoDB_Init(NULL);
+	initialized = true;
+    }
+
     if (HASH_HashBuf(HASH_AlgSHA256, hash, (unsigned char *)data.c_str(), data.size()) != SECSuccess) {
         SE_THROW("NSS HASH_HashBuf() failed");
     }
