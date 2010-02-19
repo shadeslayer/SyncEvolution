@@ -534,7 +534,7 @@ msgid ""
 "To sync you'll need a network connection and an account with a sync service.\n"
 "We support the following services: "
 msgstr ""
-"若要同步，你需要有網路連線以及使用同步服務的帳戶。\n"
+"若要同步，你需要有網路連線以及使用同步服務的帳號。\n"
 "我們支援下列服務："
 
 #: ../src/gtk-ui/ui.glade.h:41
