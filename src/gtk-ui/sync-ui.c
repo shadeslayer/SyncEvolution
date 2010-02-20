@@ -3027,7 +3027,7 @@ info_request_cb (SyncevoServer *syncevo,
                                           _("Cancel sync"), GTK_RESPONSE_CANCEL,
                                           _("Sync with password"), GTK_RESPONSE_OK,
                                           NULL);
-    content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+    content = GTK_DIALOG (dialog)->vbox;
 
     align = gtk_alignment_new (0.0, 0.5, 0.0, 0.0);
     gtk_alignment_set_padding (GTK_ALIGNMENT (align), 0, 0, 16, 16);
