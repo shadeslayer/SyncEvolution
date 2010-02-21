@@ -243,8 +243,10 @@ public:
 
             // always set these properties: they might have changed since the last run
             string database = getDatabaseName(test->m_configName);
-            if (test->m_configName!="super"){
+            if (test->m_configName!="calendar+todo"){
                 sc->setDatabaseID(database);
+            } else {
+                sc->setDatabaseID("ical20,itodo20");
             }
             sc->setUser(m_evoUser);
             sc->setPassword(m_evoPassword);
@@ -413,8 +415,10 @@ private:
                                                           "_" + (isSourceA ? "A" : "B"));
 
         // always set this property: the name might have changes since last test run
-        if (name != "super") {
+        if (name != "calendar+todo") {
             nodes.getProperties()->setProperty("evolutionsource", database.c_str());
+        } else {
+            nodes.getProperties()->setProperty("evolutionsource", "ical20,itodo20");
         }
         nodes.getProperties()->setProperty("evolutionuser", evClient.m_evoUser.c_str());
         nodes.getProperties()->setProperty("evolutionpassword", evClient.m_evoPassword.c_str());

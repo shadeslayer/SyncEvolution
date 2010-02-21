@@ -333,7 +333,7 @@ public:
 
 static class SuperTest : public RegisterSyncSourceTest {
 public:
-    SuperTest() : RegisterSyncSourceTest("super", "super") {}
+    SuperTest() : RegisterSyncSourceTest("calendar+todo", "calendar+todo") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {

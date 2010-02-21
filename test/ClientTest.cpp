@@ -3923,9 +3923,10 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.uniqueProperties = "SUMMARY:DESCRIPTION";
         config.sizeProperty = "DESCRIPTION";
         config.testcases = "testcases/imemo20.ics";
-    }else if (!strcmp (type, "super")) {
+    }else if (!strcmp (type, "calendar+todo")) {
         config.subConfigs = "ical20,itodo20";
         config.uri="";
+        config.sourceNameServerTemplate = "calendar+todo";
     }
 }
 
