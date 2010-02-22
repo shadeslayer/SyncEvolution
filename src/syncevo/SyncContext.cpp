@@ -434,7 +434,7 @@ public:
             m_info->setMode(false);
             // Create a status.ini which contains an error.
             // Will be overwritten later on, unless we crash.
-            m_info->setProperty("status", "500");
+            m_info->setProperty("status", STATUS_DIED_PREMATURELY);
             m_info->setProperty("error", "synchronization process died prematurely");
             writeTimestamp("start", start);
         }

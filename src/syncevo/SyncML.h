@@ -125,6 +125,15 @@ enum SyncMLStatus {
     /** no error at the SyncML level, but some items did not transfer correctly */
     STATUS_PARTIAL_FAILURE = 22001,
 
+    /**
+     * Set by SyncEvolution in status.ini before starting an sync.
+     * Replaced with the final status code if the sync completes.
+     * Finding this code here in a session report implies that
+     * the process responsible for the session died unexpectedly,
+     * for unknown reasons.
+     */
+    STATUS_DIED_PREMATURELY = 22002,
+
     STATUS_MAX = 0x7FFFFFF
 };
 
