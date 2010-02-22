@@ -99,7 +99,13 @@ PKGS = $(addprefix syncevolution-evolution-, 2.6 2.8 2.12)
 #
 # --replaces is necessary for migrating from syncevolution-evolution-<evover>
 # to syncevolution-evolution (as per http://wiki.debian.org/Renaming_a_Package)
+#
+# When we build shared objects, then conflict with the corresponding
+# system libs. The assumption is that the system library is named
+# after the lib and its major version, which holds for libsmltk and
+# libsynthesis in Debian.
 deb rpm : dist/$(distdir) dist/debian/control description-pak
+	conflicts=`ls -1 dist/$(distdir)/usr/lib/*.so.[0123456789] | sed -e 's;.*/;;' -e 's/\.so\.//' -e 's/$$/, /'` && \
 	tmpdir=`mktemp -d $$HOME/syncevolution.XXXXXXXXXX` && \
 	trap "rm -rf $$tmpdir" EXIT && \
 	fakeroot checkinstall </dev/null \
@@ -113,7 +119,7 @@ deb rpm : dist/$(distdir) dist/debian/control description-pak
 		--pkgarch=$(PKGARCH) \
 		--provides=syncevolution \
 	        --replaces="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'` (<< 1:0.8.1-2)'" \
-		--conflicts="'syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'` (<< 1:0.8.1-2)'" \
+		--conflicts="'$${conflicts}syncevolution, `echo $(filter-out $(PKGNAME), $(PKGS)) | sed -e 's/  */ (<< 1:0.8.1-2), /g'` (<< 1:0.8.1-2)'" \
 		--maintainer="'Patrick Ohly <patrick.ohly@gmx.de>'" \
 		--pkgsource='http://sourceforge.net/project/showfiles.php?group_id=146288' \
 		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
