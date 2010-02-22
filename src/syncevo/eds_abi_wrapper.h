@@ -341,7 +341,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 
 #else /* EVOLUTION_COMPATIBILITY */
 
-# ifndef EDS_ABI_WRAPPER_NO_REDEFINE
+# if !defined(EDS_ABI_WRAPPER_NO_REDEFINE) && defined(HAVE_LIBICAL_R)
 #  ifdef ENABLE_ECAL
 #   ifndef LIBICAL_MEMFIXES
      /* This changes the semantic of the normal functions the same way as libecal did. */
