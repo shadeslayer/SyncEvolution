@@ -84,7 +84,6 @@ EvolutionSyncSource::Databases EvolutionContactSource::getDatabases()
 
     Databases secondary;
     Databases result;
-    bool first = true;
     for (GSList *g = e_source_list_peek_groups (sources); g; g = g->next) {
         ESourceGroup *group = E_SOURCE_GROUP (g->data);
         for (GSList *s = e_source_group_peek_sources (group); s; s = s->next) {
@@ -96,7 +95,7 @@ EvolutionSyncSource::Databases EvolutionContactSource::getDatabases()
             }
             Database entry(e_source_peek_name(source),
                            uristr,
-                           first);
+                           false);
             if (boost::starts_with(uristr, "couchdb://")) {
                 // Append CouchDB address books at the end of the list,
                 // otherwise preserving the order of address books.
@@ -115,7 +114,6 @@ EvolutionSyncSource::Databases EvolutionContactSource::getDatabases()
             } else {
                 result.push_back(entry);
             }
-            first = false;
         }
     }
     result.insert(result.end(), secondary.begin(), secondary.end());
@@ -139,6 +137,9 @@ EvolutionSyncSource::Databases EvolutionContactSource::getDatabases()
             const char *uri = e_book_get_uri (book);
             result.push_back(Database(name, uri, true));
         }
+    } else {
+        //  the first DB found is the default
+        result[0].m_isDefault = true;
     }
     
     return result;

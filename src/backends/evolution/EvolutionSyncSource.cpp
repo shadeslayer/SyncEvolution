@@ -19,6 +19,7 @@
  */
 
 #include "EvolutionSyncSource.h"
+#include <syncevo/SmartPtr.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -27,16 +28,30 @@ SE_BEGIN_CXX
 
 ESource *EvolutionSyncSource::findSource( ESourceList *list, const string &id )
 {
+    string finalID;
+    if (!id.empty()) {
+        finalID = id;
+    } else {
+        // Nothing selected specifically, use the one marked as default
+        // by the backend. If none is marked, use the first one
+        // (not expected to happen, though).
+        BOOST_FOREACH(const Database &db, getDatabases()) {
+            if (db.m_isDefault) {
+                finalID = db.m_uri;
+                break;
+            }
+        }
+    }
+
     for (GSList *g = e_source_list_peek_groups (list); g; g = g->next) {
         ESourceGroup *group = E_SOURCE_GROUP (g->data);
         GSList *s;
         for (s = e_source_group_peek_sources (group); s; s = s->next) {
             ESource *source = E_SOURCE (s->data);
-            char *uri = e_source_get_uri(source);
-            bool found = id.empty() ||
-                !id.compare(e_source_peek_name(source)) ||
-                (uri && !id.compare(uri));
-            g_free(uri);
+            GString uri(e_source_get_uri(source));
+            bool found = finalID.empty() ||
+                !finalID.compare(e_source_peek_name(source)) ||
+                (uri && !finalID.compare(uri));
             if (found) {
                 return source;
             }
