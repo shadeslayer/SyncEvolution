@@ -25,6 +25,8 @@
 #endif
 #include <libical/ical.h>
 
+#include <syncevo/eds_abi_wrapper.h>
+
 #ifdef __cplusplus
 extern "C" {
 #pragma }

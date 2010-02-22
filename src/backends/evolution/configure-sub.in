@@ -81,6 +81,11 @@ else
         ECAL_LIBS=
 fi
 
+PKG_CHECK_MODULES(LIBICAL_AVAILABLE,
+                  libical >= 0.43,
+                  AC_DEFINE(HAVE_LIBICAL_R, 1, [have recent enough libical with _r variants]),
+                  pass)
+
 if test "$enable_evo" = "yes"; then
         need_glib="yes"
         if test "$EDSFOUND" = "yes"; then

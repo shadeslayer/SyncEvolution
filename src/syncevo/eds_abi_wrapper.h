@@ -186,6 +186,10 @@ struct EDSAbiWrapper {
     char* (*icaltimezone_get_tzid) (icaltimezone *zone);
     icaltimezone *(*icaltimezone_new) (void);
     int (*icaltimezone_set_component) (icaltimezone *zone, icalcomponent *comp);
+
+    // optional variants which allocate the returned string for us
+    const char* (*icaltime_as_ical_string_r) (const struct icaltimetype tt);
+    char* (*icalcomponent_as_ical_string_r) (icalcomponent* component);
 # endif /* ENABLE_ECAL */
 
 # ifdef ENABLE_BLUETOOTH
@@ -278,7 +282,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define e_cal_remove_object_with_mod EDSAbiWrapperSingleton.e_cal_remove_object_with_mod
 #   define e_cal_set_auth_func EDSAbiWrapperSingleton.e_cal_set_auth_func
 #   define icalcomponent_add_component EDSAbiWrapperSingleton.icalcomponent_add_component
-#   define icalcomponent_as_ical_string EDSAbiWrapperSingleton.icalcomponent_as_ical_string
+#   define icalcomponent_as_ical_string (EDSAbiWrapperSingleton.icalcomponent_as_ical_string_r ? EDSAbiWrapperSingleton.icalcomponent_as_ical_string_r : EDSAbiWrapperSingleton.icalcomponent_as_ical_string)
 #   define icalcomponent_free EDSAbiWrapperSingleton.icalcomponent_free
 #   define icalcomponent_get_first_component EDSAbiWrapperSingleton.icalcomponent_get_first_component
 #   define icalcomponent_get_first_property EDSAbiWrapperSingleton.icalcomponent_get_first_property
@@ -306,7 +310,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalproperty_new_summary EDSAbiWrapperSingleton.icalproperty_new_summary
 #   define icalproperty_set_value_from_string EDSAbiWrapperSingleton.icalproperty_set_value_from_string
 #   define icalproperty_remove_parameter_by_kind EDSAbiWrapperSingleton.icalproperty_remove_parameter_by_kind
-#   define icaltime_as_ical_string EDSAbiWrapperSingleton.icaltime_as_ical_string
+#   define icaltime_as_ical_string (EDSAbiWrapperSingleton.icaltime_as_ical_string_r ? EDSAbiWrapperSingleton.icaltime_as_ical_string_r : EDSAbiWrapperSingleton.icaltime_as_ical_string)
 #   define icaltimezone_free EDSAbiWrapperSingleton.icaltimezone_free
 #   define icaltimezone_get_builtin_timezone EDSAbiWrapperSingleton.icaltimezone_get_builtin_timezone
 #   define icaltimezone_get_builtin_timezone_from_tzid EDSAbiWrapperSingleton.icaltimezone_get_builtin_timezone_from_tzid
@@ -335,6 +339,18 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #  endif /* ENABLE_BLUETOOTH */
 # endif /* EDS_ABI_WRAPPER_NO_REDEFINE */
 
+#else /* EVOLUTION_COMPATIBILITY */
+
+# ifndef EDS_ABI_WRAPPER_NO_REDEFINE
+#  ifdef ENABLE_ECAL
+#   ifndef LIBICAL_MEMFIXES
+     /* This changes the semantic of the normal functions the same way as libecal did. */
+#    define LIBICAL_MEMFIXES 1
+#    define icaltime_as_ical_string icaltime_as_ical_string_r
+#    define icalcomponent_as_ical_string icalcomponent_as_ical_string_r
+#   endif /* LIBICAL_MEMFIXES */
+#  endif /* ENABLE_ECAL */
+# endif /* EDS_ABI_WRAPPER_NO_REDEFINE */
 #endif /* EVOLUTION_COMPATIBILITY */
 
 /** initialize pointers to EDS functions, if necessary; can be called multiple times */

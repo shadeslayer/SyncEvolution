@@ -18,6 +18,7 @@
  */
 
 #include "libical/icalstrdup.h"
+#include <syncevo/eds_abi_wrapper.h>
 
 #if !defined(LIBICAL_MEMFIXES) || defined(EVOLUTION_COMPATIBILITY)
 
@@ -35,6 +36,9 @@
 char *ical_strdup(const char *x)
 {
 #ifdef LIBICAL_RUNTIME_CHECK
+    // One situation when we must not dup strings is when
+    // running with a libecal with the modified string
+    // handling semantic. Check that here.
     static enum {
         PATCH_UNCHECKED,
         PATCH_FOUND,
@@ -48,6 +52,20 @@ char *ical_strdup(const char *x)
 
     if (patch_status == PATCH_FOUND) {
         /* patch applied, no need to copy */
+        return (char *)x;
+    }
+#endif
+
+#ifdef EVOLUTION_COMPATIBILITY
+    // Another situation is when we have a libical with the
+    // _r variants of the relevant calls. We can call that directly,
+    // which has the advantage that we get the saner implementation.
+    // There have been crashes on Debian testing with libical 0.43-2
+    // inside icalmemory_add_tmp_buffer/icaltime_as_ical_string.
+    //
+    // We assume here that if one _r variant was found, all of
+    // them are found. See also the wrappers in eds_abi_wrapper.h.
+    if (EDSAbiWrapperSingleton.icalcomponent_as_ical_string_r) {
         return (char *)x;
     }
 #endif

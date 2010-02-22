@@ -294,6 +294,12 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.icaltimezone_set_component, "icaltimezone_set_component",
                 (void *)0);
     EDSAbiHaveEcal = EDSAbiWrapperSingleton.e_cal_new != 0;
+    ecalhandle =
+    findSymbols("libecal-1.2.so", 3, 7,
+                FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
+                &EDSAbiWrapperSingleton.icalcomponent_as_ical_string_r, "icalcomponent_as_ical_string_r",
+                &EDSAbiWrapperSingleton.icaltime_as_ical_string_r, "icaltime_as_ical_string_r",
+                (void *)0);
 # endif // ENABLE_ECAL
 
 # ifdef ENABLE_BLUETOOTH
