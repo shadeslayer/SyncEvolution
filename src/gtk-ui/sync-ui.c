@@ -898,34 +898,24 @@ info_bar_response_cb (GtkInfoBar          *info_bar,
 }
 
 static void
-child_watch_cb (GPid pid, int status, app_data *data)
-{
-    g_spawn_close_pid (pid);
-    update_services_list (data);
-}
-
-static void
 new_device_clicked_cb (GtkButton *btn, app_data *data)
 {
     char *argv[2] = {"bluetooth-wizard", NULL};
     GError *error;
-    int pid;
 
     if (!gdk_spawn_on_screen (gtk_window_get_screen (GTK_WINDOW (data->sync_win)),
                               NULL,
                               argv,
                               NULL,
-                              G_SPAWN_DO_NOT_REAP_CHILD|G_SPAWN_SEARCH_PATH,
+                              G_SPAWN_SEARCH_PATH,
                               NULL,
                               NULL,
-                              &pid,
+                              NULL,
                               &error)) {
         g_warning ("Failed to spawn bluetooth-wizard: %s", error->message);
         g_error_free (error);
         return;
     }
-
-    g_child_watch_add (pid, (GChildWatchFunc)child_watch_cb, data);
 }
 
 static gboolean
@@ -1905,9 +1895,6 @@ get_template_configs_cb (SyncevoServer *server,
 static void
 update_services_list (app_data *data)
 {
-    /* NOTE: could get this on ui startup as well for instant action.
-       Downside is stale data.... */
-
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)remove_child,
                            data->services_box);
@@ -3080,6 +3067,15 @@ server_presence_changed_cb (SyncevoServer *server,
 }
 
 static void
+server_templates_changed_cb (SyncevoServer *server,
+                             app_data *data)
+{
+    if (GTK_WIDGET_VISIBLE (data->services_box)) {
+        update_services_list (data);
+    }
+}
+
+static void
 server_session_changed_cb (SyncevoServer *server,
                            char *path,
                            gboolean started,
@@ -3159,6 +3155,8 @@ sync_ui_create ()
                       G_CALLBACK (server_session_changed_cb), data);
     g_signal_connect (data->server, "presence_changed",
                       G_CALLBACK (server_presence_changed_cb), data);
+    g_signal_connect (data->server, "templates_changed",
+                      G_CALLBACK (server_templates_changed_cb), data);
     g_signal_connect (data->server, "info-request",
                       G_CALLBACK (info_request_cb), data);
 
