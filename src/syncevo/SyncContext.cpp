@@ -351,25 +351,27 @@ public:
                 // local time will still screw our ordering, though.
                 typedef std::map<string, int> SeqMap_t;
                 SeqMap_t dateTimes2Seq;
-                ReadDir dir(m_logdir);
-                BOOST_FOREACH(const string &entry, dir) {
-                    string dirPrefix, peerName, dateTime;
-                    if (parseDirName(entry, dirPrefix, peerName, dateTime)) {
-                        // dateTime = -2010-01-31-12-00[-rev]
-                        size_t off = 0;
-                        for (int i = 0; off != dateTime.npos && i < 5; i++) {
-                            off = dateTime.find('-', off + 1);
-                        }
-                        int sequence;
-                        if (off != dateTime.npos) {
-                            sequence = atoi(dateTime.substr(off + 1).c_str());
-                            dateTime.resize(off);
-                        } else {
-                            sequence = 0;
-                        }
-                        pair <SeqMap_t::iterator, bool> entry = dateTimes2Seq.insert(make_pair(dateTime, sequence));
-                        if (sequence > entry.first->second) {
-                            entry.first->second = sequence;
+                if (isDir(m_logdir)) {
+                    ReadDir dir(m_logdir);
+                    BOOST_FOREACH(const string &entry, dir) {
+                        string dirPrefix, peerName, dateTime;
+                        if (parseDirName(entry, dirPrefix, peerName, dateTime)) {
+                            // dateTime = -2010-01-31-12-00[-rev]
+                            size_t off = 0;
+                            for (int i = 0; off != dateTime.npos && i < 5; i++) {
+                                off = dateTime.find('-', off + 1);
+                            }
+                            int sequence;
+                            if (off != dateTime.npos) {
+                                sequence = atoi(dateTime.substr(off + 1).c_str());
+                                dateTime.resize(off);
+                            } else {
+                                sequence = 0;
+                            }
+                            pair <SeqMap_t::iterator, bool> entry = dateTimes2Seq.insert(make_pair(dateTime, sequence));
+                            if (sequence > entry.first->second) {
+                                entry.first->second = sequence;
+                            }
                         }
                     }
                 }
