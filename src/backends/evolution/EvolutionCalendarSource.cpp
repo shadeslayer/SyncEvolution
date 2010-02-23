@@ -564,6 +564,27 @@ void EvolutionCalendarSource::removeItem(const string &luid)
         }
     }
     m_allLUIDs.erase(luid);
+
+    if (!id.m_rid.empty()) {
+        // Removing the child may have modified the parent.
+        // We must record the new LAST-MODIFIED string,
+        // otherwise it might be reported as modified during
+        // the next sync (timing dependent: if the parent
+        // was updated before removing the child *and* the
+        // update and remove fall into the same second,
+        // then the modTime does not change again during the
+        // removal).
+        try {
+            ItemID parent(id.m_uid, "");
+            string modTime = getItemModTime(parent);
+            string parentLUID = parent.getLUID();
+            updateRevision(getTrackingNode(), parentLUID, parentLUID, modTime);
+        } catch (...) {
+            // There's no guarantee that the parent still exists.
+            // Instead of checking that, ignore errors (a bit hacky,
+            // but better than breaking the removal).
+        }
+    }
 }
 
 icalcomponent *EvolutionCalendarSource::retrieveItem(const ItemID &id)

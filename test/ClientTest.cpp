@@ -1038,7 +1038,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
 
     deleteAll(createSourceA);
     std::string parent, child;
-    TestingSyncSourcePtr copy;
+    TestingSyncSourcePtr source, copy;
 
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1060,10 +1060,19 @@ void LocalTests::testLinkedItemsRemoveNormal() {
 
     deleteItem(createSourceA, child);
 
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+    SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
+    CPPUNIT_ASSERT_NO_THROW(source.reset());
+
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
-    SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
+    // parent might have been updated
+    int updated = countUpdatedItems(copy.get());
+    SOURCE_ASSERT(copy.get(), 0 <= updated && updated <= 1);
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());

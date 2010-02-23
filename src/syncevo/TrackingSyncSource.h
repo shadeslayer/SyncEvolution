@@ -82,6 +82,14 @@ class TrackingSyncSource : public TestingSyncSource,
     ~TrackingSyncSource() {}
 
     /**
+     * ConfigNode used for change tracking in SyncSourceRevisions.
+     * Derived classes might need that when implementing operations
+     * which have side effects on other items (for example,
+     * EvolutionCalendarSource::removeItem()).
+     */
+    ConfigNode &getTrackingNode() { return *m_trackingNode; }
+
+    /**
      * returns a list of all know sources for the kind of items
      * supported by this sync source
      */
