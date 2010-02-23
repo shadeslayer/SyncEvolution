@@ -894,8 +894,23 @@ class SyncConfig {
 
     typedef list<boost::shared_ptr <TemplateDescription> > TemplateList;
 
-    // the 3 parameters here are: the id of the device, the fingerprint of the device and the match mode
-    typedef list<std::pair<std::string, std::pair <std::string, SyncConfig::MatchMode> > > DeviceList;
+    struct DeviceDescription {
+        /** the id of the device */
+        std::string m_deviceId;
+        /** the finger print of the device used for matching templates */
+        std::string m_fingerprint;
+        /** match mode used for matching templates */
+        MatchMode m_matchMode;
+        DeviceDescription(const std::string &deviceId,
+                          const std::string &fingerprint,
+                          MatchMode mode)
+            :m_deviceId(deviceId), m_fingerprint(fingerprint), m_matchMode(mode)
+        {}
+        DeviceDescription() : m_matchMode(INVALID)
+        {}
+    };
+
+    typedef list<DeviceDescription> DeviceList;
 
     /**
      * returns list of servers in either the old (.sync4j) or

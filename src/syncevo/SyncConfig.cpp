@@ -428,17 +428,17 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
         } else {
             TemplateConfig templateConf (sDir);
             BOOST_FOREACH (const DeviceList::value_type &entry, peers){
-                int rank = templateConf.metaMatch (entry.second.first, entry.second.second);
+                int rank = templateConf.metaMatch (entry.m_fingerprint, entry.m_matchMode);
                 if (fuzzyMatch){
                     if (rank > TemplateConfig::NO_MATCH) {
                         result.push_back (boost::shared_ptr<TemplateDescription>(
                                     new TemplateDescription(templateConf.getName(),
-                                        templateConf.getDescription(), rank, entry.first, entry.second.first, sDir, templateConf.getFingerprint())));
+                                        templateConf.getDescription(), rank, entry.m_deviceId, entry.m_fingerprint, sDir, templateConf.getFingerprint())));
                     }
                 } else if (rank == TemplateConfig::BEST_MATCH){
                     result.push_back (boost::shared_ptr<TemplateDescription>(
                                 new TemplateDescription(templateConf.getName(),
-                                    templateConf.getDescription(), rank, entry.first, entry.second.first, sDir, templateConf.getFingerprint())));
+                                    templateConf.getDescription(), rank, entry.m_deviceId, entry.m_fingerprint, sDir, templateConf.getFingerprint())));
                     break;
                 }
             }
@@ -469,7 +469,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         templateConfig = server;
     } else {
         SyncConfig::DeviceList devices;
-        devices.push_back (std::make_pair("", std::make_pair(server, MATCH_ALL)));
+        devices.push_back (DeviceDescription("", server, MATCH_ALL));
         templateConfig = "";
         TemplateList templates = matchPeerTemplates (devices, false);
         if (!templates.empty()) {

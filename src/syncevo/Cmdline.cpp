@@ -197,7 +197,7 @@ bool Cmdline::run() {
                     SyncConfig::getPeerTemplates(devices), false);
         } else {
             //limiting at templates for syncml clients only.
-            devices.push_back (SyncConfig::DeviceList::value_type ("", std::make_pair(m_template, SyncConfig::MATCH_FOR_SERVER_MODE)));
+            devices.push_back (SyncConfig::DeviceDescription("", m_template, SyncConfig::MATCH_FOR_SERVER_MODE));
             dumpConfigTemplates("Available configuration templates:",
                     SyncConfig::matchPeerTemplates(devices), true);
         }
