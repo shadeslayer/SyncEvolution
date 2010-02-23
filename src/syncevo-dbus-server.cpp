@@ -906,6 +906,7 @@ public:
 
     DBusConnectionPtr getConnmanConnection() {return m_connmanConn;}
 
+    void clearPeerTempls() { m_matchedTempls.clear(); }
     void addPeerTempl(const string &templName, const boost::shared_ptr<SyncConfig::TemplateDescription> peerTempl);
 
     boost::shared_ptr<SyncConfig::TemplateDescription> getPeerTempl(const string &peer);
@@ -1884,6 +1885,9 @@ void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &con
         // get device list from dbus server, currently only bluetooth devices
         SyncConfig::DeviceList devices;
         m_server.getDeviceList(devices);
+
+        //clear existing templates in dbus server
+        m_server.clearPeerTempls();
 
         SyncConfig::TemplateList list = SyncConfig::getPeerTemplates(devices);
         std::map<std::string, int> numbers;
