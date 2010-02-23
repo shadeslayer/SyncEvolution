@@ -321,76 +321,130 @@ class InfoReq;
 /**
  * Query bluetooth devices from bluez
  */
-class BtDeviceQueryer{
+class BluezManager : public DBusRemoteObject {
 public:
-    BtDeviceQueryer(DBusServer &server); 
+    BluezManager(DBusServer &server); 
 
-    typedef std::map <std::string, boost::variant <std::vector <std::string>, string > > PropDict;
+    typedef map<string, boost::variant<vector<string>, string > > PropDict;
 
-    /**
-     * get devices which has sync services
-     */
+    /** get devices which has sync services */
     void getSyncDevices(SyncConfig::DeviceList &devices);
+
+    virtual const char *getDestination() const {return "org.bluez";}
+    virtual const char *getPath() const {return "/";}
+    virtual const char *getInterface() const {return "org.bluez.Manager";}
+    virtual DBusConnection *getConnection() const {return m_bluezConn.get();}
 
 private:
 
-    struct BluezClient : public DBusCallObject
+    class BluezDevice;
+    class BluezAdapter: public DBusRemoteObject
     {
-        DBusConnectionPtr m_connection;
-        BluezClient (DBusConnectionPtr conn) : m_connection (conn) {}
-        virtual const char *getDestination() const {return "org.bluez";}
-        virtual const char *getPath() const {return "/";}
-        virtual const char *getInterface() const {return "org.bluez.Manager";}
-        virtual const char *getMethod() const {return "DefaultAdapter"; }
-        virtual DBusConnection *getConnection() const {return m_connection.get();}
-    };
+     public:
+        BluezAdapter (BluezManager &manager, const string &path); 
 
-    struct BluezAdapter: public DBusCallObject
-    {
-        DBusConnectionPtr m_connection;
-        std::string m_path;
-        BluezAdapter (DBusConnectionPtr conn, const string &path) : m_connection (conn), m_path(path) {}
         virtual const char *getDestination() const {return "org.bluez";}
         virtual const char *getPath() const {return m_path.c_str();}
         virtual const char *getInterface() const {return "org.bluez.Adapter";}
-        virtual const char *getMethod() const {return "ListDevices"; }
-        virtual DBusConnection *getConnection() const {return m_connection.get();}
+        virtual DBusConnection *getConnection() const {return m_manager.getConnection();}
+        void checkDone(bool forceDone = false)
+        {
+            if(forceDone || m_devReplies >= m_devNo) {
+                m_devReplies = m_devNo = 0;
+                m_manager.setDone(true);
+            } else {
+                m_manager.setDone(false);
+            }
+        }
+
+        //callback of 'ListDevices' signal
+        void listDevicesCb(const std::vector<DBusObject_t> &devices, const string &error);
+
+        //callback of 'DeviceRemoved' signal
+        void deviceRemoved(const DBusObject_t &object);
+
+        //callback of 'DeviceCreated' signal
+        void deviceCreated(const DBusObject_t &object);
+
+     private:
+        BluezManager &m_manager;
+        /** the object path of adapter */
+        std::string m_path;
+        /** the number of device for the default adapter */
+        int m_devNo;
+        /** the number of devices having reply */
+        int m_devReplies;
+
+        /** all available devices */
+        std::vector<boost::shared_ptr<BluezDevice> > m_devices;
+        /** devices which have sync services */
+        SyncConfig::DeviceList m_syncDevices;
+
+        boost::shared_ptr<SignalWatch1<DBusObject_t> > m_deviceRemoved;
+        boost::shared_ptr<SignalWatch1<DBusObject_t> > m_deviceAdded;
+
+        friend class BluezDevice;
+        friend class BluezManager;
     };
 
-    struct BluezDevice: public DBusCallObject
+    class BluezDevice: public DBusRemoteObject
     {
-        DBusConnectionPtr m_connection;
-        string m_path;
-        BluezDevice (DBusConnectionPtr conn, const string &path) : m_connection (conn), m_path(path) {}
+     public:
+        BluezDevice (BluezAdapter &adapter, const string &path);
+
         virtual const char *getDestination() const {return "org.bluez";}
         virtual const char *getPath() const {return m_path.c_str();}
         virtual const char *getInterface() const {return "org.bluez.Device";}
-        virtual const char *getMethod() const {return "GetProperties"; }
-        virtual DBusConnection *getConnection() const {return m_connection.get();}
-    };
+        virtual DBusConnection *getConnection() const {return m_adapter.m_manager.getConnection();}
 
-    void reset();
+        /**
+         * check whether the current device has sync service
+         * if yes, put it in the adapter's sync devices list
+         */
+        void checkSyncService(const std::vector<std::string> &uuids);
+
+        /** callback of 'GetProperties' method */
+        void getPropertiesCb(const PropDict &props, const string &error);
+
+        /** callback of 'PropertyChanged' signal */
+        void propertyChanged(const string &name, const boost::variant<vector<string>, string> &prop);
+
+     private:
+        BluezAdapter &m_adapter;
+        /** the object path of the device */
+        string m_path;
+        /** name of the device */
+        string m_name;
+        /** mac address of the device */
+        string m_mac;
+        /** whether the calling of 'GetProperties' is returned */
+        bool m_reply;
+
+        typedef SignalWatch2<string, boost::variant<vector<string>, string> > PropertySignal;
+        boost::shared_ptr<PropertySignal> m_propertyChanged;
+
+        friend class BluezAdapter;
+    };
 
     /*
      * check whether the data is generated. If errors, force initilization done
      */
-    void check(bool forceDone = false);
+    void setDone(bool done) { m_done = done; }
 
+    /** callback of 'DefaultAdapter' method */
     void defaultAdapterCb(const DBusObject_t &adapter, const string &error);
 
-    void listDevicesCb(const std::vector<DBusObject_t> &devices, const string &error);
-
-    void getPropertiesCb(const PropDict &props, const string &error);
+    /** callback of 'DefaultAdapterChanged' signal */
+    void defaultAdapterChanged(const DBusObject_t &adapter);
 
     DBusServer &m_server;
-
     DBusConnectionPtr m_bluezConn;
+    boost::shared_ptr<BluezAdapter> m_adapter;
+    boost::shared_ptr<SignalWatch1<DBusObject_t> > m_adapterChanged;
+
+    /** flag to indicate whether the calls are all returned */
     bool m_done;
-    // the number of device for the default adapter
-    int m_devNo;
-    // the number of devices having reply
-    int m_devReplies;
-    // devices have sync capability
+    /** devices have sync capability */
     SyncConfig::DeviceList m_devices;
 };
 
@@ -476,7 +530,7 @@ class DBusServer : public DBusObjectHelper
 
     MatchedTemplates m_matchedTempls;
 
-    BtDeviceQueryer m_btQueryer;
+    BluezManager m_bluezManager;
 
     /**
      * Watch callback for a specific client or connection.
@@ -3812,7 +3866,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     m_activeSession(NULL),
     m_lastInfoReq(0),
     m_autoTerm(duration),
-    m_btQueryer(*this),
+    m_bluezManager(*this),
     sessionChanged(*this, "SessionChanged"),
     presence(*this, "Presence"),
     infoRequest(*this, "InfoRequest"),
@@ -4151,7 +4205,7 @@ void DBusServer::connmanCallback (const std::map <std::string, boost::variant <s
 
 void DBusServer::getDeviceList(SyncConfig::DeviceList &devices)
 {
-    m_btQueryer.getSyncDevices(devices);
+    m_bluezManager.getSyncDevices(devices);
 }
 
 void DBusServer::addPeerTempl(const string &templName, 
@@ -4326,106 +4380,202 @@ void InfoReq::done()
     }
 }
 
-/********************** BtDeviceQueryer implementation ******************/
-BtDeviceQueryer::BtDeviceQueryer(DBusServer &server) :
+/********************** BluezManager implementation ******************/
+BluezManager::BluezManager(DBusServer &server) :
     m_server(server)
 {
-    reset();
     m_bluezConn = g_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
     if(m_bluezConn) {
-        BluezClient bluez(m_bluezConn);
-        DBusClientCall0<DBusObject_t> getAdapter(bluez);
-        getAdapter(boost::bind(&BtDeviceQueryer::defaultAdapterCb, this, _1, _2 ));
+        m_done = false;
+        DBusClientCall0<DBusObject_t> getAdapter(*this, "DefaultAdapter");
+        getAdapter(boost::bind(&BluezManager::defaultAdapterCb, this, _1, _2 ));
+        m_adapterChanged.reset(new SignalWatch1<DBusObject_t>(*this, "DefaultAdapterChanged"));
+        (*m_adapterChanged)(boost::bind(&BluezManager::defaultAdapterChanged, this, _1));
     } else {
         m_done = true;
     }
 }
 
-void BtDeviceQueryer::reset()
-{
-    m_done = false;
-    m_devNo = 0;
-    m_devReplies = 0;
-    m_devices.clear();
-}
-
-void BtDeviceQueryer::getSyncDevices(SyncConfig::DeviceList &devices)
+void BluezManager::getSyncDevices(SyncConfig::DeviceList &devices)
 {
     // if not initial, waiting for data
     while(!m_done) {
         g_main_loop_run(m_server.getLoop());
     }
-    devices = m_devices;
-}
 
-void BtDeviceQueryer::check(bool forceDone)
-{
-    if(forceDone || (m_devReplies == m_devNo)) {
-        m_done = true;
+    if(m_adapter) {
+        devices = m_adapter->m_syncDevices;
+    } else {
+        devices.clear();
     }
 }
 
-void BtDeviceQueryer::defaultAdapterCb(const DBusObject_t &adapter, const string &error)
+void BluezManager::defaultAdapterChanged(const DBusObject_t &adapter)
+{
+    string error;
+    defaultAdapterCb(adapter, error);
+}
+
+void BluezManager::defaultAdapterCb(const DBusObject_t &adapter, const string &error)
 {
     if(!error.empty()) {
         SE_LOG_DEBUG (NULL, NULL, "Error in calling DefaultAdapter of Interface org.bluez.Manager: %s", error.c_str());
-        check(true);
+        m_done = true;
         return;
     }
-    BluezAdapter bluezAdapter(m_bluezConn, adapter); 
-    DBusClientCall0<std::vector<DBusObject_t> > listDevices(bluezAdapter);
-    listDevices(boost::bind(&BtDeviceQueryer::listDevicesCb, this, _1, _2));
+    m_adapter.reset(new BluezAdapter(*this, adapter)); 
 }
 
-void BtDeviceQueryer::listDevicesCb(const std::vector<DBusObject_t> &devices, const string &error)
+BluezManager::BluezAdapter::BluezAdapter(BluezManager &manager, const string &path)
+    : m_manager(manager), m_path(path), m_devNo(0), m_devReplies(0) 
+{
+    DBusClientCall0<std::vector<DBusObject_t> > listDevices(*this, "ListDevices");
+    listDevices(boost::bind(&BluezAdapter::listDevicesCb, this, _1, _2));
+    m_deviceRemoved.reset(new SignalWatch1<DBusObject_t>(*this, "DeviceRemoved"));
+    (*m_deviceRemoved)(boost::bind(&BluezAdapter::deviceRemoved, this, _1));
+
+    m_deviceAdded.reset(new SignalWatch1<DBusObject_t>(*this, "DeviceCreated"));
+    (*m_deviceAdded)(boost::bind(&BluezAdapter::deviceCreated, this, _1));
+}
+
+void BluezManager::BluezAdapter::listDevicesCb(const std::vector<DBusObject_t> &devices, const string &error)
 {
     if(!error.empty()) {
         SE_LOG_DEBUG (NULL, NULL, "Error in calling ListDevices of Interface org.bluez.Adapter: %s", error.c_str());
-        check(true);
+        checkDone(true);
         return;
     }
     m_devNo = devices.size();
-    if(m_devNo == 0) {
-        m_done = true;
-    }
     BOOST_FOREACH(const DBusObject_t &device, devices) {
-       BluezDevice bluezDevice(m_bluezConn, device);
-       DBusClientCall0<PropDict> getProperties(bluezDevice);
-       getProperties(boost::bind(&BtDeviceQueryer::getPropertiesCb, this, _1, _2));
+        boost::shared_ptr<BluezDevice> bluezDevice(new BluezDevice(*this, device));
+        m_devices.push_back(bluezDevice);
+    }
+    checkDone();
+}
+
+void BluezManager::BluezAdapter::deviceRemoved(const DBusObject_t &object)
+{
+    string address;
+    std::vector<boost::shared_ptr<BluezDevice> >::iterator devIt;
+    for(devIt = m_devices.begin(); devIt != m_devices.end(); ++devIt) {
+        if(boost::equals((*devIt)->getPath(), object)) {
+            address = (*devIt)->m_mac;
+            if((*devIt)->m_reply) {
+                m_devReplies--;
+            }
+            m_devNo--;
+            m_devices.erase(devIt);
+            break;
+        }
+    }
+    SyncConfig::DeviceList::iterator syncDevIt;
+    for(syncDevIt = m_syncDevices.begin(); syncDevIt != m_syncDevices.end(); ++syncDevIt) {
+        if(boost::equals(syncDevIt->first, address)) {
+            m_syncDevices.erase(syncDevIt);
+            break;
+        }
     }
 }
 
-void BtDeviceQueryer::getPropertiesCb(const PropDict &props, const string &error)
+void BluezManager::BluezAdapter::deviceCreated(const DBusObject_t &object)
 {
-    m_devReplies++;
+    m_devNo++;
+    boost::shared_ptr<BluezDevice> bluezDevice(new BluezDevice(*this, object));
+    m_devices.push_back(bluezDevice);
+}
+
+BluezManager::BluezDevice::BluezDevice (BluezAdapter &adapter, const string &path)
+    : m_adapter(adapter), m_path(path), m_reply(false)
+{
+    DBusClientCall0<PropDict> getProperties(*this, "GetProperties");
+    getProperties(boost::bind(&BluezDevice::getPropertiesCb, this, _1, _2));
+
+    m_propertyChanged.reset(new PropertySignal(*this, "PropertyChanged"));
+    (*m_propertyChanged)(boost::bind(&BluezDevice::propertyChanged, this, _1, _2));
+}
+
+void BluezManager::BluezDevice::checkSyncService(const std::vector<std::string> &uuids)
+{
+    static const char * SYNCML_CLIENT_UUID = "00000002-0000-1000-8000-0002ee000002";
+    SyncConfig::DeviceList::iterator it;
+    for(it = m_adapter.m_syncDevices.begin(); it != m_adapter.m_syncDevices.end(); ++it) {
+        if(boost::iequals(it->first, m_mac)) {
+            break;
+        }
+    }
+    bool hasSyncService = false;
+    BOOST_FOREACH(const string &uuid, uuids) {
+        //if the device has sync service, add it to the device list
+        if(boost::iequals(uuid, SYNCML_CLIENT_UUID)) {
+            hasSyncService = true;
+            if(!m_mac.empty()) {
+                if(it == m_adapter.m_syncDevices.end()) {
+                    m_adapter.m_syncDevices.push_back(std::make_pair(m_mac, 
+                                                      std::make_pair(m_name, SyncConfig::MATCH_FOR_SERVER_MODE)));
+                }
+            }
+            break;
+        }
+    }
+    // if sync service is not available now
+    if(!hasSyncService && it != m_adapter.m_syncDevices.end()) {
+        m_adapter.m_syncDevices.erase(it);
+    }
+}
+
+void BluezManager::BluezDevice::getPropertiesCb(const PropDict &props, const string &error)
+{
+    m_adapter.m_devReplies++;
+    m_reply = true;
     if(!error.empty()) {
         SE_LOG_DEBUG (NULL, NULL, "Error in calling GetProperties of Interface org.bluez.Device: %s", error.c_str());
-        check(true);
-        return;
+    } else {
+        PropDict::const_iterator it = props.find("Name");
+        if(it != props.end()) {
+            m_name = boost::get<string>(it->second);
+        }
+        it = props.find("Address");
+        if(it != props.end()) {
+            m_mac = boost::get<string>(it->second);
+        }
+
+        PropDict::const_iterator uuids = props.find("UUIDs");
+        if(uuids != props.end()) {
+            const std::vector<std::string> uuidVec = boost::get<std::vector<std::string> >(uuids->second);
+            checkSyncService(uuidVec);
+        }
     }
-    const char * SYNCML_CLIENT_UUID = "00000002-0000-1000-8000-0002ee000002";
-    PropDict::const_iterator uuids = props.find("UUIDs");
-    if(uuids != props.end()) {
-        const std::vector<std::string> uuidVec = boost::get<std::vector<std::string> >(uuids->second);
-        BOOST_FOREACH(const string &uuid, uuidVec) {
-            //if the device has sync services, add it to the device list
-            if(boost::iequals(uuid, SYNCML_CLIENT_UUID)) {
-                PropDict::const_iterator it = props.find("Name");
-                string name;
-                if(it != props.end()) {
-                    name = boost::get<string>(it->second);
-                }
-                it = props.find("Address");
-                string address;
-                if(it != props.end()) {
-                    address = boost::get<string>(it->second);
-                }
-                m_devices.push_back(std::make_pair(address, std::make_pair(name, SyncConfig::MATCH_FOR_SERVER_MODE)));
+    m_adapter.checkDone();
+}
+
+void BluezManager::BluezDevice::propertyChanged(const string &name,
+                                                const boost::variant<vector<string>, string> &prop)
+{
+    if(boost::iequals(name, "Name")) {
+        m_name = boost::get<std::string>(prop);
+        SyncConfig::DeviceList::iterator it;
+        for(it = m_adapter.m_syncDevices.begin(); it != m_adapter.m_syncDevices.end(); ++it) {
+            if(boost::iequals(it->first, m_mac)) {
+                it->second.first = m_name;
                 break;
             }
         }
+    } else if(boost::iequals(name, "UUIDs")) {
+        const std::vector<std::string> uuidVec = boost::get<std::vector<std::string> >(prop);
+        checkSyncService(uuidVec);
+    } else if(boost::iequals(name, "Address")) {
+        string mac = boost::get<std::string>(prop);
+        if(!m_mac.empty()) {
+            SyncConfig::DeviceList::iterator it;
+            for(it = m_adapter.m_syncDevices.begin(); it != m_adapter.m_syncDevices.end(); ++it) {
+                if(boost::iequals(it->first, m_mac)) {
+                    it->first = mac;
+                    break;
+                }
+            }
+        }
+        m_mac = mac;
     }
-    check();
 }
 
 /**************************** main *************************/

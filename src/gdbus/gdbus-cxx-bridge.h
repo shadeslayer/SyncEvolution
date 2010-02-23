@@ -4007,12 +4007,20 @@ struct MakeMethodEntry< boost::function<void ()> >
 };
 
 /**
- * interface expected by DBusClient
+ * interface to refer to a remote object
  */
-class DBusCallObject : public DBusObject
+class DBusRemoteObject : public DBusObject
 {
 public:
     virtual const char *getDestination() const = 0;
+    virtual ~DBusRemoteObject() {}
+};
+/**
+ * interface expected by DBusClient
+ */
+class DBusCallObject : public DBusRemoteObject
+{
+public:
     /* The method name for the calling dbus method */
     virtual const char *getMethod() const =0;
     virtual ~DBusCallObject() {}
@@ -4072,6 +4080,15 @@ public:
     {
     }
 
+    DBusClientCall0 (const DBusRemoteObject &object, const std::string &method)
+        :m_destination (object.getDestination()),
+         m_path (object.getPath()),
+         m_interface (object.getInterface()),
+         m_method (method),
+         m_conn (object.getConnection())
+    {
+    }
+
     void operator () (const Callback_t &callback)
     {
         DBusPendingCall *call;
@@ -4095,6 +4112,148 @@ public:
                                      dbusCallback,
                                      data,
                                      callDataUnref);
+    }
+};
+
+class SignalWatch
+{
+ protected:
+    const DBusRemoteObject &m_object;
+    std::string m_signal;
+
+    std::string makeSignalRule() {
+        std::string rule;
+        rule = "type='signal',path='";
+        rule += m_object.getPath();
+        rule += "',interface='";
+        rule += m_object.getInterface();
+        rule += "',member='";
+        rule += m_signal;
+        rule += "'";
+        return rule;
+    }
+
+    static gboolean isMatched(DBusMessage *msg, void *data) {
+        SignalWatch *watch = static_cast<SignalWatch*>(data);
+        return dbus_message_has_path(msg, watch->m_object.getPath()) &&
+                dbus_message_is_signal(msg, watch->m_object.getInterface(), watch->m_signal.c_str());
+    }
+
+ public:
+    SignalWatch(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : m_object(object), m_signal(signal)
+    {
+    }
+
+    virtual ~SignalWatch() {}
+};
+
+template <typename A1>
+class SignalWatch1 : public SignalWatch
+{
+    typedef boost::function<void (const A1 &)> Callback_t;
+    guint m_tag;
+    Callback_t *m_callback;
+
+ public:
+    SignalWatch1(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+    {
+    }
+
+    ~SignalWatch1()
+    {
+        if(m_tag) {
+            g_dbus_remove_watch(m_object.getConnection(), m_tag);
+        }
+        if(m_callback) {
+            delete m_callback;
+        }
+    }
+
+    static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
+    {
+        if(isMatched(msg, data) == FALSE) {
+            return TRUE;
+        }
+        SignalWatch1<A1> *watch = static_cast<SignalWatch1<A1>* >(data);
+
+        typename dbus_traits<A1>::host_type a1;
+
+        DBusMessageIter iter;
+        dbus_message_iter_init(msg, &iter);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        (*watch->m_callback)(a1);
+
+        return TRUE;
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        m_callback = new Callback_t(callback);
+        std::string rule = makeSignalRule();
+        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
+                                        rule.c_str(),
+                                        internalCallback,
+                                        this,
+                                        NULL);
+    }
+};
+
+template <typename A1, typename A2>
+class SignalWatch2 : public SignalWatch
+{
+    typedef boost::function<void (const A1 &, const A2 &)> Callback_t;
+
+    guint m_tag;
+    Callback_t *m_callback;
+ public:
+    SignalWatch2(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+    {
+    }
+
+    ~SignalWatch2()
+    {
+        if(m_tag) {
+            g_dbus_remove_watch(m_object.getConnection(), m_tag);
+        }
+        if(m_callback) {
+            delete m_callback;
+        }
+    }
+
+    static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
+    {
+        if(isMatched(msg, data) == FALSE) {
+            return TRUE;
+        }
+        SignalWatch2<A1, A2> *watch = static_cast<SignalWatch2<A1, A2> *>(data);
+
+        typename dbus_traits<A1>::host_type a1;
+        typename dbus_traits<A2>::host_type a2;
+
+        DBusMessageIter iter;
+        dbus_message_iter_init(msg, &iter);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        (*watch->m_callback)(a1, a2);
+
+        return TRUE;
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        m_callback = new Callback_t(callback);
+        std::string rule = makeSignalRule();
+        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
+                                        rule.c_str(),
+                                        internalCallback,
+                                        this,
+                                        NULL);
     }
 };
 
