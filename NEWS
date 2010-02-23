@@ -1,3 +1,130 @@
+SyncEvolution 1.0 beta 1 -> beta 2, 23.02.2010
+==============================================
+
+Several new features and some bug fixing. Despite some open issues
+(see below), this release is ready for getting packaged in staging
+areas of distros as replacement for 0.9.2.
+
+As before, documentation for 1.0 is only available in the
+"Development" section of syncevolution.org, including HOWTOs for
+setting up the HTTP SyncML server and phones manually.
+
+Setting up a phone became a bit easier with beta 2, because
+SyncEvolution is now integrated with the GNOME Bluetooth panel: once a
+device with SyncML client support is paired, a button offers to bring
+up the sync-UI and configure or synchronize with that device. We do a
+fuzzy match against the Bluetooth device name to find a suitable
+template (not manufacturer/model, because that is not readily
+available). Still not many (read: hardly any) templates available,
+though.
+
+The binaries on syncevolution.org are compiled with Bluetooth support.
+libbluetooth2 or libbluetooth3 should be installed, but are not
+essential. If there is no suitable version of it, the Bluetooth
+channel has to be selected manually as part of the syncURL.
+
+Unexpected slow syncs are prevented by default, in contrast to beta 1
+where this feature was available but turned off. When an unexpected
+slow sync is detected in a client, users have to follow the
+instructions provided by the command line or sync-ui and choose how to
+proceed (explicitly request slow sync, refresh from server or client,
+restore from backup). SyncEvolution as server currently cannot prevent
+slow syncs, even when initiating the sync with a phone.
+
+In preparation for syncing automatically, logdir and database handling
+was improved considerably. Backups use less disk space because
+identical files share the same file content via hard links. This also
+speeds up the synccompare Perl script. Database dumps and the
+corresponding comparison are delayed until the session really runs,
+which avoids doing needless work a) when the server a client tries to
+contact is unreachable or down and b) by only including sources that
+are really in use during a sync on the server side.
+
+The Synthesis XML configuration was split up into different parts
+which are assembled from /usr/share/syncevolution/xml. Files in
+~/.config/syncevolution-xml override and extend the default files,
+which my be useful when adding support for a new phone.
+ 
+
+Summary of changes since 1.0 beta 1:
+
+* sync-ui: recovery dialog (MB #8050), device setup, config usable with
+  long strings (MB #9278), fixed displaying of source phases during sync
+  (MB #9320)
+* sync-ui + syncevo-dbus-server: integration with Bluez to detect paired
+  devices (MB #9216, MB #7089), select template based on device name (MB #7838),
+  detect network and Bluetooth connectivity (only with ConnMan, MB #7700),
+  passwords stored in GNOME keyring by syncevo-dbus-server are shown with
+  dots in sync-ui (MB #9169)
+* Evolution addressbook backend: avoid picking CouchDB, second try (MB #7877)
+* Evolution calendar backend: minor fix for change tracking when deleting
+  a single instance of a recurring event
+* build fixes: Bluetooth compatibility (MB #9289), use libical _r variant
+  of calls because 0.43 has issues in the normal version, conflict with
+  system libsynthesis and libsmltk (MB #9811)
+* Horde: avoid confusing the server with a deviceId that starts like the
+  ones used in old Funambol clients, helps with calendar sync (MB #9347)
+* better reporting when SyncEvolution dies during a sync (only happend once
+  when it wasn't installed properly, but still... MB #9844)
+* performance improvements: synccompare much faster/database dumps consume
+  less disk space/more intelligent about expiring obsolete session directories
+  and backups/database accesses are reduced in several backends (MB #7708),
+  shorter logs (MB #8092)
+* slow sync detection: now also works in the case where the client detects
+  an anchor mismatch and enabled by default (MB #2416)
+* OBEX transport: some error handling changes and removal of polling, now
+  also possible via sync-ui + syncevo-dbus-server (MB #9436)
+* API changes: SyncSource introduces an "isEmpty" operation which is
+  needed for the slow sync detection
+* SyncML: split up configuration (MB #7712), increased default message size
+  because the old one might have been too small for large DevInf structures
+* several fixes for virtual data sources ("calendar+todo"): now works
+  on client side, fixed naming on server (MB #9664), fixed error message
+  for slow sync detection, supported in combination with sync-UI (MB #9535)
+* fixes for shared configuration layout: finding sessions of peers in
+  non-default context, adding sources affected peers in the same context
+  (MB #9329), wrong context during --configure when using shortcut for peers
+  in non-default context (MB #9338)
+
+
+Known gaps for 1.0 final and beyond:
+
+Redesigned and reimplemented D-Bus API, required by sync-UI:
+- 'syncevolution' command line tool bypasses D-Bus server and runs
+  sync sessions itself (MB #5043)
+- availability of peers not detected when using NetworkManager
+  (connected for HTTP, paired for Bluetooth; MB #7700)
+
+SyncML server in general:
+- suspend/resume support is untested (MB #2425)
+- the progress events and statistics reported for a SyncML client
+  are not generated when running as SyncML server, will require
+  a fair amount of refactoring in the Synthesis engine (MB #7709)
+
+HTTP SyncML server:
+- a configuration must be created for each peer manually, including
+  a remoteDeviceId value that contains the peer's SyncML device ID
+  (MB #7838)
+
+OBEX SyncML server ("sync with phones"):
+- does not support phones which require a SAN 1.0 message (MB #9312)
+- determining a working configuration for an unknown phone requires
+  a bit of experimenting, which should be automated (MB #9862)
+
+OBEX SyncML client:
+- parsing of SAN message is rudimentary and depends on an existing local
+  configuration, needs to be refined depending on which SyncML server software
+  it is meant to work with (MB #6175)
+
+Automatic sync (MB #6378):
+- no support for the various server push notification mechanisms
+- no intelligent detection of local changes
+- no regular background sync, development is in progress
+
+Upgrading from 1.0 beta 1: moving back and forth should work seamlessly
+Upgrading from 0.9.x: see under beta 1
+
+
 SyncEvolution 0.9.2 -> 1.0 beta 1, 26.01.2010
 ==============================================
 
