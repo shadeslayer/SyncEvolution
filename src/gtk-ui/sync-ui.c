@@ -1697,6 +1697,9 @@ get_config_for_config_widget_cb (SyncevoServer *server,
                     device_name = fpv[0];
                 }
             }
+            if (!device_name) {
+                device_name = c_data->name;
+            }
 
             /* keep a list of added devices */
             w = g_hash_table_lookup (c_data->device_templates, url);
