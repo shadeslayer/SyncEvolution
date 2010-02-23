@@ -26,6 +26,7 @@
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 #include <dbus/dbus-glib.h>
+#include <dbus/dbus-glib-bindings.h>
 
 #include "syncevo-server.h"
 #include "syncevo-session.h"
@@ -55,6 +56,12 @@ static gboolean support_canceling = FALSE;
 #define SYNC_UI_ICON_SIZE 48
 
 #define STRING_VARIANT_HASHTABLE (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, G_TYPE_VALUE))
+
+typedef enum bluetooth_type {
+    SYNC_BLUETOOTH_NONE,
+    SYNC_BLUETOOTH_GNOME,
+    SYNC_BLUETOOTH_MOBLIN
+} bluetooth_type;
 
 typedef enum app_state {
     SYNC_UI_STATE_CURRENT_STATE,
@@ -109,6 +116,7 @@ struct _app_data {
     GtkWidget *sources_box;
 
     GtkWidget *new_service_btn;
+    GtkWidget *new_device_btn;
     GtkWidget *services_box;
     GtkWidget *devices_box;
     GtkWidget *scrolled_window;
@@ -146,6 +154,8 @@ struct _app_data {
     SyncevoServer *server;
 
     SyncevoSession *running_session; /* session that is currently active */
+
+    bluetooth_type bluetooth_wizard;
 };
 
 static void set_sync_progress (app_data *data, float progress, char *status);
@@ -897,24 +907,91 @@ info_bar_response_cb (GtkInfoBar          *info_bar,
     }
 }
 
+
 static void
 new_device_clicked_cb (GtkButton *btn, app_data *data)
 {
+    DBusGProxy *proxy;
+    DBusGConnection *bus;
     char *argv[2] = {"bluetooth-wizard", NULL};
-    GError *error;
+    GError *error = NULL;
 
-    if (!gdk_spawn_on_screen (gtk_window_get_screen (GTK_WINDOW (data->sync_win)),
-                              NULL,
-                              argv,
-                              NULL,
-                              G_SPAWN_SEARCH_PATH,
-                              NULL,
-                              NULL,
-                              NULL,
-                              &error)) {
-        g_warning ("Failed to spawn bluetooth-wizard: %s", error->message);
-        g_error_free (error);
-        return;
+    switch (data->bluetooth_wizard) {
+    case SYNC_BLUETOOTH_MOBLIN:
+
+        bus = dbus_g_bus_get (DBUS_BUS_SESSION, NULL);
+        if (bus) {
+            proxy = dbus_g_proxy_new_for_name (bus,
+                                               "org.moblin.UX.Shell.Toolbar",
+                                               "/org/moblin/UX/Shell/Toolbar",
+                                               "org.moblin.UX.Shell.Toolbar");
+            dbus_g_proxy_call_no_reply (proxy, "ShowPanel",
+                                        G_TYPE_STRING, "bluetooth-panel",
+                                        G_TYPE_INVALID,
+                                        G_TYPE_INVALID);
+            g_object_unref (proxy);
+        }
+        break;
+
+    case SYNC_BLUETOOTH_GNOME:
+        if (!gdk_spawn_on_screen (gtk_window_get_screen (GTK_WINDOW (data->sync_win)),
+                                  NULL,
+                                  argv,
+                                  NULL,
+                                  G_SPAWN_SEARCH_PATH,
+                                  NULL,
+                                  NULL,
+                                  NULL,
+                                  &error)) {
+            g_warning ("Failed to spawn bluetooth-wizard: %s", error->message);
+            g_error_free (error);
+            return;
+        }
+        break;
+    default:
+        ;
+    }
+}
+
+static void
+name_has_owner_cb (DBusGProxy *proxy, gboolean has_owner,
+                   GError *error, app_data *data)
+{
+    if (has_owner) {
+        gtk_widget_show (data->new_device_btn);
+        data->bluetooth_wizard = SYNC_BLUETOOTH_MOBLIN;
+    }
+    g_object_unref (proxy);
+}
+
+static void
+init_bluetooth_ui (app_data *data)
+{
+    char *bt_wizard;
+    DBusGConnection *bus;
+    DBusGProxy *proxy;
+
+    data->bluetooth_wizard = SYNC_BLUETOOTH_NONE;
+
+    /* look for gnome bluetooth wizard first */
+    bt_wizard = g_find_program_in_path ("bluetooth-wizard");
+    if (bt_wizard) {
+        gtk_widget_show (data->new_device_btn);
+        data->bluetooth_wizard = SYNC_BLUETOOTH_GNOME;
+        g_free (bt_wizard);
+    } else {
+        /* try Moblin shell next (bluetooth panel integrates bt wizard) */
+        bus = dbus_g_bus_get (DBUS_BUS_SESSION, NULL);
+        proxy = dbus_g_proxy_new_for_name (bus,
+                                           DBUS_SERVICE_DBUS,
+                                           DBUS_PATH_DBUS,
+                                           DBUS_INTERFACE_DBUS);
+        if (proxy) {
+            org_freedesktop_DBus_name_has_owner_async (proxy,
+                                                       "org.moblin.UX.Shell.Toolbar",
+                                                       (org_freedesktop_DBus_name_has_owner_reply)name_has_owner_cb,
+                                                       data);
+        }
     }
 }
 
@@ -923,9 +1000,8 @@ init_ui (app_data *data)
 {
     GtkBuilder *builder;
     GError *error = NULL;
-    GtkWidget *frame, * service_error_box, *btn, *new_device_btn;
+    GtkWidget *frame, * service_error_box, *btn;
     GtkAdjustment *adj;
-    char *bt_wizard;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
 
@@ -1022,14 +1098,11 @@ init_ui (app_data *data)
     g_signal_connect (data->sync_btn, "clicked", 
                       G_CALLBACK (sync_clicked_cb), data);
 
-    new_device_btn = GTK_WIDGET (gtk_builder_get_object (builder, "new_device_btn"));
-    g_signal_connect (new_device_btn, "clicked", 
+    data->new_device_btn = GTK_WIDGET (gtk_builder_get_object (builder, "new_device_btn"));
+    g_signal_connect (data->new_device_btn, "clicked", 
                       G_CALLBACK (new_device_clicked_cb), data);    
-    bt_wizard = g_find_program_in_path ("bluetooth-wizard");
-    if (bt_wizard) {
-        gtk_widget_show (new_device_btn);
-        g_free (bt_wizard);
-    }
+
+    init_bluetooth_ui (data);
 
     g_object_unref (builder);
 

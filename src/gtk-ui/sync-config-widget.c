@@ -1348,27 +1348,6 @@ sync_config_widget_expose_event (GtkWidget      *widget,
                    rect.width,
                    rect.height);
 
-    if (self->expanded) {
-        gint shadow_x, shadow_y;
-
-        shadow_x = rect.x + widget->style->xthickness;
-        shadow_y = rect.y + 2 * widget->style->ythickness +
-                   self->label_box->allocation.height;
-
-        gtk_paint_box (widget->style,
-                       widget->window,
-                       widget->state,
-                       GTK_SHADOW_IN,
-                       &rect,
-                       widget,
-                       NULL,
-                       shadow_x,
-                       shadow_y,
-                       rect.width - (shadow_x - rect.x) - widget->style->xthickness,
-                       rect.height - (shadow_y - rect.y) - widget->style->ythickness);
-    }
-
-
     gtk_container_propagate_expose (GTK_CONTAINER (self),
                                     self->label_box, event);
     gtk_container_propagate_expose (GTK_CONTAINER (self),
