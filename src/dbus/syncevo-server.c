@@ -34,6 +34,7 @@ enum {
     SESSION_CHANGED,
     PRESENCE_CHANGED,
     INFO_REQUEST,
+    TEMPLATES_CHANGED,
     SHUTDOWN,
     LAST_SIGNAL
 };
@@ -94,6 +95,13 @@ generic_error (ServerAsyncData *data)
     server_async_data_free (data);
 
     return FALSE;
+}
+
+static void
+templates_changed_cb (DBusGProxy *proxy,
+                      SyncevoServer *server)
+{
+    g_signal_emit (server, signals[TEMPLATES_CHANGED], 0);
 }
 
 static void
@@ -175,6 +183,9 @@ dispose (GObject *object)
                                         object);
         dbus_g_proxy_disconnect_signal (priv->proxy, "InfoRequest",
                                         G_CALLBACK (info_request_cb),
+                                        object);
+        dbus_g_proxy_disconnect_signal (priv->proxy, "TemplatesChanged",
+                                        G_CALLBACK (templates_changed_cb),
                                         object);
         dbus_g_proxy_disconnect_signal (priv->proxy, "destroy",
                                         G_CALLBACK (proxy_destroy_cb),
@@ -266,6 +277,9 @@ syncevo_server_get_new_proxy (SyncevoServer *server)
                              G_TYPE_INVALID);
     dbus_g_proxy_connect_signal (priv->proxy, "InfoRequest",
                                  G_CALLBACK (info_request_cb), server, NULL);
+    dbus_g_proxy_add_signal (priv->proxy, "TemplatesChanged", G_TYPE_INVALID);
+    dbus_g_proxy_connect_signal (priv->proxy, "TemplatesChanged",
+                                 G_CALLBACK (templates_changed_cb), server, NULL);
     g_signal_connect (priv->proxy, "destroy",
                       G_CALLBACK (proxy_destroy_cb), server);
 
@@ -308,6 +322,11 @@ syncevo_server_init (SyncevoServer *server)
                                        DBUS_TYPE_G_STRING_STRING_HASHTABLE,
                                        G_TYPE_INVALID);
 
+    /* TemplatesChanged */
+    dbus_g_object_register_marshaller (g_cclosure_marshal_VOID__VOID,
+                                       G_TYPE_NONE,
+                                       G_TYPE_INVALID);
+
     syncevo_server_get_new_proxy (server);
 }
 
@@ -347,6 +366,15 @@ syncevo_server_class_init (SyncevoServerClass *klass)
                           syncevo_marshal_VOID__STRING_STRING_STRING_STRING_STRING_BOXED,
                           G_TYPE_NONE,
                           6, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, DBUS_TYPE_G_STRING_STRING_HASHTABLE);
+    signals[TEMPLATES_CHANGED] =
+            g_signal_new ("templates-changed",
+                          G_TYPE_FROM_CLASS (klass),
+                          G_SIGNAL_RUN_FIRST | G_SIGNAL_NO_RECURSE,
+                          G_STRUCT_OFFSET (SyncevoServerClass, templates_changed),
+                          NULL, NULL,
+                          g_cclosure_marshal_VOID__VOID,
+                          G_TYPE_NONE,
+                          0);
     signals[SHUTDOWN] =
             g_signal_new ("shutdown",
                           G_TYPE_FROM_CLASS (klass),
