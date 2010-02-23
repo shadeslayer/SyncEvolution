@@ -1117,6 +1117,49 @@ static SafeConfigProperty syncPropDeviceData("deviceData",
 static SafeConfigProperty syncPropDefaultPeer("defaultPeer",
                                               "the peer which is used by default in some frontends, like the sync-UI");
 
+static StringConfigProperty syncPropAutoSync("autoSync",
+                                             "Controls automatic synchronization. Currently,\n"
+                                             "automatic synchronization is done by running\n"
+                                             "a synchronization at regular intervals. This\n"
+                                             "may drain the battery, in particular when\n"
+                                             "using Bluetooth!\n"
+                                             "Because a peer might be reachable via different\n"
+                                             "transports at some point, this option provides\n"
+                                             "detailed control over which transports may\n"
+                                             "be used for automatic synchronization:\n"
+                                             "0 - don't do auto sync\n"
+                                             "1 - do automatic sync, using whatever transport\n"
+                                             "    is available\n"
+                                             "http - only via HTTP transport\n"
+                                             "obex-bt - only via Bluetooth transport\n"
+                                             "http,obex-bt - pick one of these\n"
+                                             "0");
+
+static UIntConfigProperty syncPropAutoSyncInterval("autoSyncInterval",
+                                                   "This is the minimum number of minutes between two\n"
+                                                   "synchronizations that has to pass before starting\n"
+                                                   "an automatic synchronization.\n"
+                                                   "Before reducing this interval, consider that it will\n"
+                                                   "increase resource consumption on the local and remote\n"
+                                                   "side. Some SyncML server operators only allow a\n"
+                                                   "certain number of sessions per day.\n"
+                                                   "The value 0 has the effect of only running automatic\n"
+                                                   "synchronization when changes are detected (not\n"
+                                                   "implemented yet, therefore it basically disables\n"
+                                                   "automatic synchronization).\n"
+                                                   "30");
+
+static UIntConfigProperty syncPropAutoSyncDelay("autoSyncDelay",
+                                                "An automatic sync will not be started unless the peer\n"
+                                                "has been available for this number of minutes. This\n"
+                                                "prevents running a sync when network connectivity\n"
+                                                "is unreliable or was recently established for some\n"
+                                                "other purpose. It is also a heuristic that attempts\n"
+                                                "to predict how long connectivity be available in the\n"
+                                                "future, because it should better be available long\n"
+                                                "enough to complete the synchronization.\n"
+                                                "15");
+
 ConfigPropertyRegistry &SyncConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
@@ -1158,6 +1201,9 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropNonce);
         registry.push_back(&syncPropDeviceData);
         registry.push_back(&syncPropDefaultPeer);
+        registry.push_back(&syncPropAutoSync);
+        registry.push_back(&syncPropAutoSyncInterval);
+        registry.push_back(&syncPropAutoSyncDelay);
 
         // obligatory sync properties
         syncPropUsername.setObligatory(true);
@@ -1469,6 +1515,13 @@ string SyncConfig::getDeviceData() const { return syncPropDeviceData.getProperty
 void SyncConfig::setDeviceData(const string &value) { syncPropDeviceData.setProperty(*getNode(syncPropDeviceData), value); }
 string SyncConfig::getDefaultPeer() const { return syncPropDefaultPeer.getProperty(*getNode(syncPropDefaultPeer)); }
 void SyncConfig::setDefaultPeer(const string &value) { syncPropDefaultPeer.setProperty(*getNode(syncPropDefaultPeer), value); }
+
+string SyncConfig::getAutoSync() const { return syncPropAutoSync.getProperty(*getNode(syncPropAutoSync)); }
+void SyncConfig::setAutoSync(const string &value, bool temporarily) { syncPropAutoSync.setProperty(*getNode(syncPropAutoSync), value, temporarily); }
+unsigned int SyncConfig::getAutoSyncInterval() const { return syncPropAutoSyncInterval.getPropertyValue(*getNode(syncPropAutoSyncInterval)); }
+void SyncConfig::setAutoSyncInterval(unsigned int value, bool temporarily) { syncPropAutoSyncInterval.setProperty(*getNode(syncPropAutoSyncInterval), value, temporarily); }
+unsigned int SyncConfig::getAutoSyncDelay() const { return syncPropAutoSyncDelay.getPropertyValue(*getNode(syncPropAutoSyncDelay)); }
+void SyncConfig::setAutoSyncDelay(unsigned int value, bool temporarily) { syncPropAutoSyncDelay.setProperty(*getNode(syncPropAutoSyncDelay), value, temporarily); }
 
 std::string SyncConfig::findSSLServerCertificate()
 {

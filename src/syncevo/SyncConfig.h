@@ -1292,6 +1292,16 @@ class SyncConfig {
     virtual void setDeviceData(const string &value);
 
     /**
+     * Automatic sync related properties, used to control its behaviors
+     */
+    virtual string getAutoSync() const; 
+    virtual void setAutoSync(const string &value, bool temporarily = false);
+    virtual unsigned int getAutoSyncInterval() const;
+    virtual void setAutoSyncInterval(unsigned int value, bool temporarily = false);
+    virtual unsigned int getAutoSyncDelay() const;
+    virtual void setAutoSyncDelay(unsigned int value, bool temporarily = false);
+
+    /**
      * Specifies whether WBXML is to be used (default).
      * Otherwise XML is used.
      */
