@@ -420,6 +420,16 @@
       </arg>
     </signal>
 
+    <signal name="TemplatesChanged">
+      <doc:doc>
+        <doc:description>
+          Template added or removed, for example because a Bluetooth
+          peer was paired resp. removed. To find out more, request
+          list of templates anew.
+      </doc:description>
+      </doc:doc>
+    </signal>
+
     <signal name="Presence">
       <doc:doc>
         <doc:description>

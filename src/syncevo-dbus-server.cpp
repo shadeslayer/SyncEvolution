@@ -675,6 +675,12 @@ class DBusServer : public DBusObjectHelper
                 const std::string &,
                 const std::string &> presence;
 
+    /**
+     * Server.TemplatesChanged, triggered each time m_syncDevices, the
+     * input for the templates, is changed
+     */
+    EmitSignal0 templatesChanged;
+
     /** Server.InfoRequest */
     EmitSignal6<const std::string &,
                 const DBusObject_t &,
@@ -3916,6 +3922,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     m_bluezManager(*this),
     sessionChanged(*this, "SessionChanged"),
     presence(*this, "Presence"),
+    templatesChanged(*this, "TemplatesChanged"),
     infoRequest(*this, "InfoRequest"),
     m_presence(*this)
 {
@@ -3935,6 +3942,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     add(this, &DBusServer::getSessions, "GetSessions");
     add(this, &DBusServer::infoResponse, "InfoResponse");
     add(sessionChanged);
+    add(templatesChanged);
     add(presence);
     add(infoRequest);
 
@@ -4303,6 +4311,7 @@ void DBusServer::addDevice(const SyncConfig::DeviceDescription &device)
     }
     if(it == m_syncDevices.end()) {
         m_syncDevices.push_back(device);
+        templatesChanged();
     }
 }
 
@@ -4312,6 +4321,7 @@ void DBusServer::removeDevice(const string &deviceId)
     for(syncDevIt = m_syncDevices.begin(); syncDevIt != m_syncDevices.end(); ++syncDevIt) {
         if(boost::equals(syncDevIt->m_deviceId, deviceId)) {
             m_syncDevices.erase(syncDevIt);
+            templatesChanged();
             break;
         }
     }
@@ -4324,6 +4334,7 @@ void DBusServer::updateDevice(const string &deviceId,
     for(it = m_syncDevices.begin(); it != m_syncDevices.end(); ++it) {
         if(boost::iequals(it->m_deviceId, deviceId)) {
             (*it) = device; 
+            templatesChanged();
             break;
         }
     }
