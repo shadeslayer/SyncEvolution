@@ -2889,6 +2889,8 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
         return g_strdup (_("A normal sync is not possible at this time. The server "
                            "suggests a slow sync, but this might not always be "
                            "what you want if both ends already have data."));
+    case 22002:
+        return g_strdup (_("The sync service died unexpectedly."));
     case DB_Unauthorized:
         if (response) {
             *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
