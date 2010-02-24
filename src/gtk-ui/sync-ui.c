@@ -2069,7 +2069,6 @@ set_running_session_status (app_data *data,
                                     _("Sync complete"));
             }
         }
-        g_free (err);
         set_app_state (data, SYNC_UI_STATE_SERVER_OK);
         set_sync_progress (data, 1.0, "");
     } else if (status & SYNCEVO_STATUS_RUNNING ||
