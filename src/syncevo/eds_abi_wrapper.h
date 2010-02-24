@@ -213,6 +213,7 @@ struct EDSAbiWrapper {
     int (*sdp_service_search_attr_async)(sdp_session_t *session, const sdp_list_t *search, sdp_attrreq_type_t reqtype, const sdp_list_t *attrid_list);
     int (*sdp_set_notify)(sdp_session_t *session, sdp_callback_t *func, void *udata);
     uuid_t *(*sdp_uuid128_create)(uuid_t *uuid, const void *data);
+    int (*str2ba)(const char *str, bdaddr_t *ba);
 # endif /* ENABLE_BLUETOOTH */
 
     int initialized;
@@ -336,6 +337,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define sdp_service_search_attr_async EDSAbiWrapperSingleton.sdp_service_search_attr_async
 #   define sdp_set_notify EDSAbiWrapperSingleton.sdp_set_notify
 #   define sdp_uuid128_create EDSAbiWrapperSingleton.sdp_uuid128_create
+#   define str2ba EDSAbiWrapperSingleton.str2ba
 #  endif /* ENABLE_BLUETOOTH */
 # endif /* EDS_ABI_WRAPPER_NO_REDEFINE */
 

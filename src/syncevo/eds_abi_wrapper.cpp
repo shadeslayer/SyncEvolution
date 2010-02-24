@@ -322,6 +322,7 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.sdp_service_search_attr_async, "sdp_service_search_attr_async",
                 &EDSAbiWrapperSingleton.sdp_set_notify, "sdp_set_notify",
                 &EDSAbiWrapperSingleton.sdp_uuid128_create, "sdp_uuid128_create",
+                &EDSAbiWrapperSingleton.str2ba, "str2ba",
                 (void *)0);
     if (bluetooth_version == 2) {
         // libbluetooth.so.2's sdp_extract_pdu() and
