@@ -2836,8 +2836,8 @@ bool SyncContext::initSAN()
                 return true;
             }
         }
-    } catch (TransportException e) {
-        SE_LOG_ERROR (NULL, NULL, "TransportException while sending SAN package");
+    } catch (...) {
+	throw;
     }
     return false;
 }
