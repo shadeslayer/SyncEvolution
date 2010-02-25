@@ -1,0 +1,8 @@
+<remoterule name="N7210c">
+    <manufacturer>NOKIA</manufacturer> 
+    <model>Nokia 7210c</model>
+    <descriptivename>Nokia 7210c</descriptivename>
+    <forceutc>yes</forceutc>
+    <limitedfieldlengths>yes</limitedfieldlengths>
+    <include rule= "needsTZInVEVENT"/>
+</remoterule>
