@@ -1345,7 +1345,7 @@ public:
                               "peers/scheduleworld/config.ini:# loglevel = 0\n"
                               "peers/scheduleworld/config.ini:# printChanges = 1\n"
                               "config.ini:# maxlogdirs = 10\n"
-                              "peers/scheduleworld/config.ini:# preventSlowSync = 0\n"
+                              "peers/scheduleworld/config.ini:# preventSlowSync = 1\n"
                               "peers/scheduleworld/config.ini:# useProxy = 0\n"
                               "peers/scheduleworld/config.ini:# proxyHost = \n"
                               "peers/scheduleworld/config.ini:# proxyUsername = \n"
@@ -1359,7 +1359,7 @@ public:
                               "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
                               "peers/scheduleworld/config.ini:# remoteDeviceId = \n"
                               "peers/scheduleworld/config.ini:# enableWBXML = 1\n"
-                              "peers/scheduleworld/config.ini:# maxMsgSize = 20000\n"
+                              "peers/scheduleworld/config.ini:# maxMsgSize = 150000\n"
                               "peers/scheduleworld/config.ini:# maxObjSize = 4000000\n"
                               "peers/scheduleworld/config.ini:# enableCompression = 0\n"
                               "peers/scheduleworld/config.ini:# SSLServerCertificates = \n"
@@ -1445,7 +1445,7 @@ protected:
     }
 
     void removeRandomUUID(string &buffer) {
-        string uuidstr = "deviceId = sc-pim-";
+        string uuidstr = "deviceId = syncevolution-";
         size_t uuid = buffer.find(uuidstr);
         CPPUNIT_ASSERT(uuid != buffer.npos);
         size_t end = buffer.find("\n", uuid + uuidstr.size());
@@ -2400,7 +2400,7 @@ private:
             "spds/syncml/config.txt:# loglevel = 0\n"
             "spds/syncml/config.txt:# printChanges = 1\n"
             "spds/syncml/config.txt:# maxlogdirs = 10\n"
-            "spds/syncml/config.txt:# preventSlowSync = 0\n"
+            "spds/syncml/config.txt:# preventSlowSync = 1\n"
             "spds/syncml/config.txt:# useProxy = 0\n"
             "spds/syncml/config.txt:# proxyHost = \n"
             "spds/syncml/config.txt:# proxyUsername = \n"
@@ -2414,7 +2414,7 @@ private:
             "spds/syncml/config.txt:deviceId = fixed-devid\n" /* this is not the default! */
             "spds/syncml/config.txt:# remoteDeviceId = \n"
             "spds/syncml/config.txt:# enableWBXML = 1\n"
-            "spds/syncml/config.txt:# maxMsgSize = 20000\n"
+            "spds/syncml/config.txt:# maxMsgSize = 150000\n"
             "spds/syncml/config.txt:# maxObjSize = 4000000\n"
             "spds/syncml/config.txt:# enableCompression = 0\n"
 #ifdef ENABLE_LIBSOUP
