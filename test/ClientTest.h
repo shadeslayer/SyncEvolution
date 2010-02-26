@@ -680,13 +680,25 @@ protected:
 
     virtual void doInterruptResume(int changes,
                   boost::shared_ptr<TransportWrapper> wrapper); 
+
+    /**
+     * CLIENT_ = change made on client B before interrupting
+     * SERVER_ = change made on client A and applied to server before interrupting
+     *           while sending to B
+     * _ADD = new item added
+     * _REMOVE = existing item deleted
+     * _UPDATE = existing item replaced
+     * BIG = when adding or updating, make the new item so large that it does
+     *       not fit into a single message
+     */
     enum {
         CLIENT_ADD = (1<<0),
         CLIENT_REMOVE = (1<<1),
         CLIENT_UPDATE = (1<<2),
         SERVER_ADD = (1<<3),
         SERVER_REMOVE = (1<<4),
-        SERVER_UPDATE = (1<<5)
+        SERVER_UPDATE = (1<<5),
+        BIG = (1<<6)
     };
     virtual void testInterruptResumeClientAdd();
     virtual void testInterruptResumeClientRemove();
@@ -694,6 +706,10 @@ protected:
     virtual void testInterruptResumeServerAdd();
     virtual void testInterruptResumeServerRemove();
     virtual void testInterruptResumeServerUpdate();
+    virtual void testInterruptResumeClientAddBig();
+    virtual void testInterruptResumeClientUpdateBig();
+    virtual void testInterruptResumeServerAddBig();
+    virtual void testInterruptResumeServerUpdateBig();
     virtual void testInterruptResumeFull();
 
     virtual void testUserSuspendClientAdd();

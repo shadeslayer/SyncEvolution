@@ -1519,6 +1519,10 @@ void SyncTests::addTests() {
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeServerAdd);
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeServerRemove);
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeServerUpdate);
+            ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeClientAddBig);
+            ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeClientUpdateBig);
+            ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeServerAddBig);
+            ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeServerUpdateBig);
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeFull);
             addTest(FilterTest(retryTests));
         }
@@ -2829,6 +2833,13 @@ void SyncTests::doInterruptResume(int changes,
     bool equal = true;
     bool resend = dynamic_cast <TransportResendInjector *> (wrapper.get()) != NULL;
 
+    // better be large enough for complete DevInf, 20000 is already a
+    // bit small when running with many stores
+    size_t maxMsgSize = 20000;
+    size_t changedItemSize = (changes & BIG) ?
+        3 * maxMsgSize / 2 :
+        0;
+
     while (true) {
         char buffer[80];
         sprintf(buffer, "%d", interruptAtMessage);
@@ -2866,7 +2877,7 @@ void SyncTests::doInterruptResume(int changes,
         for (i = 0; i < sources.size(); i++) {
             if (changes & SERVER_ADD) {
                 sources[i].second->insertManyItems(sources[i].second->createSourceA,
-                                                   4, 1, 0);
+                                                   4, 1, changedItemSize);
             }
             if (changes & SERVER_REMOVE) {
                 // remove second item
@@ -2877,19 +2888,21 @@ void SyncTests::doInterruptResume(int changes,
                 // update third item
                 updateItem(sources[i].second->createSourceA,
                            *(++ ++clientAluids[i].begin()),
-                           sources[i].second->createItem(3, "updated", 0).c_str());
+                           sources[i].second->createItem(3, "updated", changedItemSize).c_str());
                                               
             }
         }
+
+        // send using the same mode as in the interrupted sync with client B
         if (changes & (SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE)) {
-            doSync("changesFromA", SyncOptions(SYNC_TWO_WAY));
+            doSync("changesFromA", SyncOptions(SYNC_TWO_WAY).setMaxMsgSize(maxMsgSize));
         }
 
         // make changes as requested on client B
         for (i = 0; i < sources.size(); i++) {
             if (changes & CLIENT_ADD) {
                 accessClientB->sources[i].second->insertManyItems(accessClientB->sources[i].second->createSourceA,
-                                                                  14, 1, 0);
+                                                                  14, 1, changedItemSize);
             }
             if (changes & CLIENT_REMOVE) {
                 // remove second item
@@ -2900,7 +2913,7 @@ void SyncTests::doInterruptResume(int changes,
                 // update third item
                 updateItem(accessClientB->sources[i].second->createSourceA,
                            *(++ ++clientBluids[i].begin()),
-                           accessClientB->sources[i].second->createItem(13, "updated", 0).c_str());
+                           accessClientB->sources[i].second->createItem(13, "updated", changedItemSize).c_str());
             }
         }
 
@@ -2913,7 +2926,8 @@ void SyncTests::doInterruptResume(int changes,
             accessClientB->doSync("changesFromB",
                                   SyncOptions(SYNC_TWO_WAY,
                                               CheckSyncReport(-1, -1, -1, -1,
-                                                  -1, -1, resend)).setTransportAgent(wrapper));
+                                                  -1, -1, resend)).setTransportAgent(wrapper)
+                                  .setMaxMsgSize(maxMsgSize));
             wasInterrupted = interruptAtMessage != -1 &&
                 wrapper->getMessageCount() <= interruptAtMessage;
             wrapper->rewind();
@@ -3017,6 +3031,26 @@ void SyncTests::testInterruptResumeServerRemove()
 void SyncTests::testInterruptResumeServerUpdate()
 {
     doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+}
+
+void SyncTests::testInterruptResumeClientAddBig()
+{
+    doInterruptResume(CLIENT_ADD|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+}
+
+void SyncTests::testInterruptResumeClientUpdateBig()
+{
+    doInterruptResume(CLIENT_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+}
+
+void SyncTests::testInterruptResumeServerAddBig()
+{
+    doInterruptResume(SERVER_ADD|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+}
+
+void SyncTests::testInterruptResumeServerUpdateBig()
+{
+    doInterruptResume(SERVER_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
 }
 
 void SyncTests::testInterruptResumeFull()
