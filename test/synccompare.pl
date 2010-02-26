@@ -568,8 +568,10 @@ if($#ARGV > 1) {
           open(IN, "<:utf8", "$fullname") || die "$fullname: $!";
           push @content1, <IN>;
       }
-      @normal1 = Normalize(join("", @content1), $singlewidth);
-      @normal2 = Normalize(join("", @content2), $singlewidth);
+      my $content1 = join("", @content1);
+      my $content2 = join("", @content2); 
+      @normal1 = Normalize($content1, $singlewidth);
+      @normal2 = Normalize($content2, $singlewidth);
   } else {
       if (-d $file1) {
           open(IN1, "-|:utf8", "find $file1 -type f -print0 | xargs -0 cat") || die "$file1: $!";
