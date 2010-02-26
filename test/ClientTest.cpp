@@ -3972,6 +3972,10 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
     SE_LOG_INFO(NULL, NULL, "sync report:\n%s\n", str.str().c_str());
 
     if (mustSucceed) {
+        // both STATUS_OK and STATUS_HTTP_OK map to the same
+        // string, so check the formatted status first, then
+        // the numerical one
+        CPPUNIT_ASSERT_EQUAL(string("no error (remote, status 0)"), Status2String(status));
         CPPUNIT_ASSERT_EQUAL(STATUS_OK, status);
     }
 
