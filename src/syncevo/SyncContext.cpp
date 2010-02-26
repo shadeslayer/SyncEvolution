@@ -3194,7 +3194,13 @@ SyncMLStatus SyncContext::doSync()
                 // to handle this. Skip the SessionStep() call
                 // and wait for response.
             } else {
+                if (getLogLevel() > 4) {
+                    SE_LOG_DEBUG(NULL, NULL, "before SessionStep: %s", Step2String(stepCmd).c_str());
+                }
                 m_engine.SessionStep(session, stepCmd, &progressInfo);
+                if (getLogLevel() > 4) {
+                    SE_LOG_DEBUG(NULL, NULL, "after SessionStep: %s", Step2String(stepCmd).c_str());
+                }
                 reportStepCmd(stepCmd);
             }
 
