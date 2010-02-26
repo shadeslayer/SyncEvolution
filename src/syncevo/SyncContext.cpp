@@ -363,10 +363,10 @@ public:
                             }
                             int sequence;
                             if (off != dateTime.npos) {
-                                sequence = atoi(dateTime.substr(off + 1).c_str());
+                                sequence = dateTime[off + 1] - 'a';
                                 dateTime.resize(off);
                             } else {
-                                sequence = 0;
+                                sequence = -1;
                             }
                             pair <SeqMap_t::iterator, bool> entry = dateTimes2Seq.insert(make_pair(dateTime, sequence));
                             if (sequence > entry.first->second) {
@@ -379,7 +379,7 @@ public:
                 path << base.str();
                 SeqMap_t::iterator it = dateTimes2Seq.find(path.str());
                 if (it != dateTimes2Seq.end()) {
-                    path << "-" << it->second + 1;
+                    path << "-" << (char)('a' + it->second + 1);
                 }
                 m_path = m_logdir + "/";
                 m_path += m_prefix;
@@ -3731,7 +3731,6 @@ private:
     CPPUNIT_TEST(testSessionChanges);
     CPPUNIT_TEST(testMultipleSessions);
     CPPUNIT_TEST(testExpire);
-    CPPUNIT_TEST(testExpire2);
     CPPUNIT_TEST_SUITE_END();
 
     /**
@@ -3976,20 +3975,6 @@ private:
         sessions = listSessions();
         CPPUNIT_ASSERT_EQUAL((size_t)1, sessions.size());
         CPPUNIT_ASSERT_EQUAL(dirs[0], sessions[0]);
-    }
-
-    void testExpire2() {
-        ScopedEnvChange config("XDG_CONFIG_HOME", "LogDirTest/config");
-        ScopedEnvChange cache("XDG_CACHE_HOME", "LogDirTest/cache");
-        string dirs[5];
-        Sessions_t sessions;
-
-        // Have to restart with clean log dir because our sequence counter
-        // runs over after 10 sessions. Continue where testExpire() stopped.
-        dirs[0] = session(false, STATUS_OK,
-                          "ical20", ".two", ".one",
-                          "vcard30", ".two", ".one",
-                          (char *)0);
 
         // when doing multiple failed syncs without dumps, keep the sessions
         // which have database dumps
