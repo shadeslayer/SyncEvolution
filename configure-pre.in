@@ -377,6 +377,10 @@ if test $enable_dbus_service == "yes"; then
                  AC_DEFINE(NEED_DBUS_WATCH_GET_UNIX_FD, 1,
                  [Define to 1 if you need the dbus_watch_get_unix_fd() function.]))
     need_glib=yes
+    PKG_CHECK_MODULES(LIBNOTIFY, [libnotify], HAVE_LIBNOTIFY=yes, HAVE_LIBNOTIFY=no)
+    if test $HAVE_LIBNOTIFY == "yes"; then
+        AC_DEFINE(HAS_NOTIFY, 1, [define if libnotify could be used in dbus service])
+    fi
 fi
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
@@ -384,6 +388,8 @@ AC_SUBST(DBUS_GLIB_CFLAGS)
 AC_SUBST(DBUS_GLIB_LIBS)
 AC_SUBST(KEYRING_CFLAGS) 
 AC_SUBST(KEYRING_LIBS) 
+AC_SUBST(LIBNOTIFY_CFLAGS)
+AC_SUBST(LIBNOTIFY_LIBS)
 AC_SUBST(LIBEXECDIR)
 
 DBUS_SERVICES_DIR="${datadir}/dbus-1/services"

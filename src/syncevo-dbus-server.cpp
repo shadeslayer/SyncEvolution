@@ -57,6 +57,10 @@ extern "C" {
 }
 #endif
 
+#ifdef HAS_NOTIFY
+#include <libnotify/notify.h>
+#endif
+
 class DBusMessage;
 static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
 #define DBUS_CXX_EXCEPTION_HANDLER SyncEvoHandleException
@@ -592,6 +596,11 @@ class AutoSyncManager
      */
     boost::shared_ptr<Session> m_session;
 
+#ifdef HAS_NOTIFY
+    /** flag to indicate whether libnotify is initalized successfully */
+    gboolean m_notify;
+#endif
+
     /** 
      * It reads all peers which are enabled to do auto sync and store them in
      * the m_peerMap and then add timeout sources in the main loop to schedule
@@ -626,6 +635,15 @@ class AutoSyncManager
         : m_server(server) 
     { 
         init();
+    }
+    ~AutoSyncManager() 
+    {
+#ifdef HAS_NOTIFY
+        // uninit notify
+        if(m_notify) {
+            notify_uninit();
+        }
+#endif
     }
 
     /**
@@ -4936,6 +4954,9 @@ void AutoSyncManager::init()
     BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server, list) {
         initConfig(server.first);
     }
+#ifdef HAS_NOTIFY
+    m_notify = notify_init("SyncEvolution");
+#endif
 }
 
 void AutoSyncManager::initConfig(const string &configName)
@@ -5138,10 +5159,20 @@ void AutoSyncManager::prepare()
 
 void AutoSyncManager::taskDone()
 {
-    SE_LOG_INFO(NULL, NULL, "Automatic sync for '%s' has been done.\n", m_activeTask->m_peer.c_str());
+    SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been done.\n", m_activeTask->m_peer.c_str());
+#ifdef HAS_NOTIFY
+    // send a notification to notification server
+    if(m_notify) {
+        string msg = StringPrintf("SyncEvolution: automatic synchronization for '%s' has been done.",
+                m_activeTask->m_peer.c_str());
+        NotifyNotification *notify = notify_notification_new(msg.c_str(), NULL, NULL, NULL);
+        GError *error;
+        notify_notification_show(notify, &error);
+        notify_notification_close(notify, &error);
+    }
+#endif
     m_session.reset();
     m_activeTask.reset();
-    //TODO: add notification for auto sync
 }
 
 void AutoSyncManager::AutoSyncTaskList::createTimeoutSource()
