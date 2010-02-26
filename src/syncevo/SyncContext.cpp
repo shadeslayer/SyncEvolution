@@ -2697,6 +2697,12 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
     }
 
  report:
+    if (status == SyncMLStatus(sysync::LOCERR_DATASTORE_ABORT)) {
+        // this can mean only one thing in SyncEvolution: unexpected slow sync
+        status = STATUS_UNEXPECTED_SLOW_SYNC;
+    }
+                            
+
     try {
         // Print final report before cleaning up.
         // Status was okay only if all sources succeeded.
