@@ -2628,6 +2628,16 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     compareDatabases();
 }
 
+/**
+ * Send message to server, then pretend that we timed out at exactly
+ * one specific message, specified via m_interruptAtMessage.  The
+ * caller is expected to resend the message, without aborting the
+ * session. That resend and all following message will get through
+ * again.
+ *
+ * Each send() is counted as one message, starting at 1 for the first
+ * message.
+ */
 class TransportResendInjector : public TransportWrapper{
 private:
     int timeout;
@@ -2669,6 +2679,14 @@ public:
     }
 };
 
+/**
+ * Stop sending at m_interruptAtMessage. The caller is forced to abort
+ * the current session and will recover by retrying in another
+ * session.
+ *
+ * Each send() increments the counter by two, so that 1 aborts before
+ * the first message and 2 after it.
+ */
 class TransportFaultInjector : public TransportWrapper{
 public:
     TransportFaultInjector()
@@ -2796,19 +2814,20 @@ public:
  *
  * Set the CLIENT_TEST_INTERRUPT_AT env variable to a message number
  * >= 0 to execute one uninterrupted run and then interrupt at that
- * message.
+ * message. Set to -1 to just do the uninterrupted run.
  */
 void SyncTests::doInterruptResume(int changes, 
                   boost::shared_ptr<TransportWrapper> wrapper)
 {
     int interruptAtMessage = -1;
     const char *t = getenv("CLIENT_TEST_INTERRUPT_AT");
-    int requestedInterruptAt = t ? atoi(t) : -1;
+    int requestedInterruptAt = t ? atoi(t) : -2;
     const char *s = getenv("CLIENT_TEST_INTERRUPT_SLEEP");
     int sleep_t = s ? atoi(s) : 0;
     size_t i;
     std::string refFileBase = getCurrentTest() + ".ref.";
     bool equal = true;
+    bool resend = dynamic_cast <TransportResendInjector *> (wrapper.get()) != NULL;
 
     while (true) {
         char buffer[80];
@@ -2894,7 +2913,7 @@ void SyncTests::doInterruptResume(int changes,
             accessClientB->doSync("changesFromB",
                                   SyncOptions(SYNC_TWO_WAY,
                                               CheckSyncReport(-1, -1, -1, -1,
-                                                  -1, -1, false)).setTransportAgent(wrapper));
+                                                  -1, -1, resend)).setTransportAgent(wrapper));
             wasInterrupted = interruptAtMessage != -1 &&
                 wrapper->getMessageCount() <= interruptAtMessage;
             wrapper->rewind();
@@ -2911,7 +2930,7 @@ void SyncTests::doInterruptResume(int changes,
                 sleep (sleep_t);
 
             // no need for resend tests 
-            if (!dynamic_cast <TransportResendInjector *> (wrapper.get())) {
+            if (!resend) {
                 accessClientB->doSync("retryB", SyncOptions(SYNC_TWO_WAY));
             }
         }
@@ -2950,8 +2969,11 @@ void SyncTests::doInterruptResume(int changes,
             }
         }
 
-        // pick next iterration
-        if (requestedInterruptAt != -1) {
+        // pick next iteration
+        if (requestedInterruptAt == -1) {
+            // user requested to stop after first iteration
+            break;
+        } else if (requestedInterruptAt >= 0) {
             // only do one interrupted run of the test
             if (requestedInterruptAt == interruptAtMessage) {
                 break;
