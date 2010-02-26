@@ -1049,6 +1049,22 @@ static SafeConfigProperty syncPropPeerName("PeerName",
                                            "An arbitrary name for the peer referenced by this config.\n"
                                            "Might be used by a GUI. The command line tool always uses the\n"
                                            "the configuration name.");
+static StringConfigProperty syncPropSyncMLVersion("SyncMLVersion",
+                                           "On a client, the latest commonly supported SyncML version \n"
+                                           "is used when contacting a server. one of '1.0/1.1/1.2' can\n"
+                                           "be used to pick a specific version explicitly.\n"
+                                           "\n"
+                                           "On a server, this option controls what kind of Server Alerted \n"
+                                           "Notification is sent to the client to start a synchronization.\n"
+                                           "By default, first the format from 1.2 is tried, then in case \n"
+                                           "of failure, the older one from 1.1. 1.2/1.1 can be choosen \n"
+                                           "explictely which disables the automatism\n",
+                                           "",
+                                           "",
+                                           Values() +
+                                           Aliases("1.0") + Aliases ("1.1") + Aliases ("1.2")
+                                           );
+
 static ConfigProperty syncPropRemoteIdentifier("remoteIdentifier",
                                       "the identifier sent to the remote peer for a server initiated sync.\n"
                                       "if not set, deviceId will be used instead\n",
@@ -1190,6 +1206,7 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropRetryInterval);
         registry.push_back(&syncPropRemoteIdentifier);
         registry.push_back(&syncPropPeerIsClient);
+        registry.push_back(&syncPropSyncMLVersion);
         registry.push_back(&syncPropPeerName);
         registry.push_back(&syncPropDevID);
         registry.push_back(&syncPropRemoteDevID);
@@ -1481,6 +1498,9 @@ void SyncConfig::setRemoteIdentifier (const string &value, bool temporarily) { r
 
 bool SyncConfig::getPeerIsClient() const { return syncPropPeerIsClient.getPropertyValue(*getNode(syncPropPeerIsClient)); }
 void SyncConfig::setPeerIsClient(bool value, bool temporarily) { syncPropPeerIsClient.setProperty(*getNode(syncPropPeerIsClient), value, temporarily); }
+
+const char* SyncConfig::getSyncMLVersion() const { return m_stringCache.getProperty(*getNode(syncPropSyncMLVersion), syncPropSyncMLVersion); }
+void SyncConfig::setSyncMLVersion(const string &value, bool temporarily) { syncPropSyncMLVersion.setProperty(*getNode(syncPropSyncMLVersion), value, temporarily); }
 
 string SyncConfig::getPeerName() const { return syncPropPeerName.getProperty(*getNode(syncPropPeerName)); }
 void SyncConfig::setPeerName(const string &name) { syncPropPeerName.setProperty(*getNode(syncPropPeerName), name); }

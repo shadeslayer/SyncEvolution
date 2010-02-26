@@ -2190,8 +2190,13 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             "  <client type='plugin'>\n"
             "    <binfilespath>$(binfilepath)</binfilespath>\n"
             "    <defaultauth/>\n"
-            "\n" <<
-            sessioninitscript <<
+            "\n" ;
+         string syncMLVersion (getSyncMLVersion());
+         if (!syncMLVersion.empty()) {
+             clientorserver << "<defaultsyncmlversion>"
+                 <<syncMLVersion.c_str()<<"</defaultsyncmlversion>\n";
+         }
+         clientorserver << sessioninitscript <<
             // SyncEvolution has traditionally not folded long lines in
             // vCard.  Testing showed that servers still have problems with
             // it, so avoid it by default
@@ -2735,23 +2740,22 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
     return status;
 }
 
-bool SyncContext::initSAN() 
+bool SyncContext::sendSAN(uint16_t version) 
 {
     sysync::SanPackage san;
+    bool legacy = version < 12;
     /* Should be nonce sent by the server in the preceeding sync session */
     string nonce = "SyncEvolution";
-    /* SyncML Version 1.2 */
-    uint16_t protoVersion = 12;
     string uauthb64 = san.B64_H (getUsername(), getPassword());
     /* Client is expected to conduct the sync in the backgroud */
     sysync::UI_Mode mode = sysync::UI_not_specified;
 
-    uint16_t sessionId = 0;
+    uint16_t sessionId = 1;
     string serverId = getRemoteIdentifier();
     if(serverId.empty()) {
         serverId = getDevID();
     }
-    san.PreparePackage( uauthb64, nonce, protoVersion, mode, 
+    san.PreparePackage( uauthb64, nonce, version, mode, 
             sysync::Initiator_Server, sessionId, serverId);
 
     san.CreateEmptyNotificationBody();
@@ -2776,6 +2780,10 @@ bool SyncContext::initSAN()
             }
             dataSources.insert (vSource->getName());
     }
+
+    int syncMode;
+    vector<pair <string, string> > alertedSources;
+
     /* For each source to be notified do the following: */
     BOOST_FOREACH (string name, dataSources) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
@@ -2789,6 +2797,7 @@ bool SyncContext::initSAN()
             SE_LOG_DEV (NULL, NULL, "Ignoring data source %s with an invalid sync mode", name.c_str());
             continue;
         }
+        syncMode = mode;
         hasSource = true;
         string uri = sc->getURI();
 
@@ -2798,16 +2807,20 @@ bool SyncContext::initSAN()
         if(sourceType.m_format.empty()) {
             sourceType.m_format = (*m_sourceListPtr)[name]->getPeerMimeType();
         }
-        /*If user did not use force type, we will always use the older type as
-         * this is what most phones support*/
-        int contentTypeB = StringToContentType (sourceType.m_format, sourceType.m_forceFormat);
-        if (contentTypeB == WSPCTC_UNKNOWN) {
-            contentTypeB = 0;
-            SE_LOG_DEBUG (NULL, NULL, "Unknown datasource mimetype, use 0 as default");
+        if (!legacy) {
+            /*If user did not use force type, we will always use the older type as
+             * this is what most phones support*/
+            int contentTypeB = StringToContentType (sourceType.m_format, sourceType.m_forceFormat);
+            if (contentTypeB == WSPCTC_UNKNOWN) {
+                contentTypeB = 0;
+                SE_LOG_DEBUG (NULL, NULL, "Unknown datasource mimetype, use 0 as default");
+            }
+            if ( san.AddSync(mode, (uInt32) contentTypeB, uri.c_str())) {
+                SE_LOG_ERROR(NULL, NULL, "SAN: adding server alerted sync element failed");
+            };
+        } else {
+            alertedSources.push_back (std::make_pair (GetLegacyMIMEType (sourceType.m_format, sourceType.m_forceFormat), uri));
         }
-        if ( san.AddSync(mode, (uInt32) contentTypeB, uri.c_str())) {
-            SE_LOG_ERROR(NULL, NULL, "SAN: adding server alerted sync element failed");
-        };
     }
 
     if (!hasSource) {
@@ -2817,50 +2830,58 @@ bool SyncContext::initSAN()
     /* Generate the SAN Package */
     void *buffer;
     size_t sanSize;
-    if (san.GetPackage(buffer, sanSize)){
-        SE_LOG_ERROR (NULL, NULL, "SAN package generating faield");
-        return false;
+    if (!legacy) {
+        if (san.GetPackage(buffer, sanSize)){
+            SE_LOG_ERROR (NULL, NULL, "SAN package generating failed");
+            return false;
+        }
+        //TODO log the binary SAN content
+    } else {
+        if (san.GetPackageLegacy(buffer, sanSize, alertedSources, syncMode, getWBXML())){
+            SE_LOG_ERROR (NULL, NULL, "SAN package generating failed");
+            return false;
+        }
+        //SE_LOG_DEBUG (NULL, NULL, "SAN package content: %s", (char*)buffer);
     }
 
-    try {
-        m_agent = createTransportAgent();
-        // Time out after the complete retry duration. This is the
-        // initial message of a sync, so we don't resend it (just as
-        // in a HTTP SyncML client trying to contact server).
-        if (m_retryDuration) {
-            setTransportCallback(m_retryDuration);
+    m_agent = createTransportAgent();
+    // Time out after the complete retry duration. This is the
+    // initial message of a sync, so we don't resend it (just as
+    // in a HTTP SyncML client trying to contact server).
+    if (m_retryDuration) {
+        setTransportCallback(m_retryDuration);
+    }
+
+    SE_LOG_INFO (NULL, NULL, "Server sending SAN");
+    m_agent->setContentType(!legacy ? 
+                           TransportAgent::m_contentTypeServerAlertedNotificationDS
+                           : (getWBXML() ? TransportAgent::m_contentTypeSyncWBXML :
+                            TransportAgent::m_contentTypeSyncML));
+    m_agent->send(reinterpret_cast <char *> (buffer), sanSize);
+    //change content type
+    m_agent->setContentType(getWBXML() ? TransportAgent::m_contentTypeSyncWBXML :
+                            TransportAgent::m_contentTypeSyncML);
+
+    TransportAgent::Status status;
+    do {
+        status = m_agent->wait();
+    } while(status == TransportAgent::ACTIVE);
+    if (status == TransportAgent::GOT_REPLY) {
+        const char *reply;
+        size_t replyLen;
+        string contentType;
+        m_agent->getReply (reply, replyLen, contentType);
+
+        //sanity check for the reply 
+        if (contentType.empty() || 
+            contentType.find(TransportAgent::m_contentTypeSyncML) != contentType.npos ||
+            contentType.find(TransportAgent::m_contentTypeSyncWBXML) != contentType.npos) {
+            SharedBuffer request (reply, replyLen);
+            //TODO should generate more reasonable sessionId here
+            string sessionId ="";
+            initServer (sessionId, request, contentType);
+            return true;
         }
-
-        SE_LOG_INFO (NULL, NULL, "Server sending SAN");
-        m_agent->setContentType(TransportAgent::m_contentTypeServerAlertedNotificationDS);
-        m_agent->send(reinterpret_cast <char *> (buffer), sanSize);
-        //change content type
-        m_agent->setContentType(getWBXML() ? TransportAgent::m_contentTypeSyncWBXML :
-                                TransportAgent::m_contentTypeSyncML);
-
-        TransportAgent::Status status;
-        do {
-            status = m_agent->wait();
-        } while(status == TransportAgent::ACTIVE);
-        if (status == TransportAgent::GOT_REPLY) {
-            const char *reply;
-            size_t replyLen;
-            string contentType;
-            m_agent->getReply (reply, replyLen, contentType);
-
-            //sanity check for the reply 
-            if (contentType.empty() || 
-                contentType.find(TransportAgent::m_contentTypeSyncML) != contentType.npos ||
-                contentType.find(TransportAgent::m_contentTypeSyncWBXML) != contentType.npos) {
-                SharedBuffer request (reply, replyLen);
-                //TODO should generate more reasonable sessionId here
-                string sessionId ="";
-                initServer (sessionId, request, contentType);
-                return true;
-            }
-        }
-    } catch (...) {
-	throw;
     }
     return false;
 }
@@ -2916,9 +2937,39 @@ SyncMLStatus SyncContext::doSync()
 
     if (m_serverMode && !m_initialMessage.size()) {
         //This is a server alerted sync !
-        if (! initSAN ()) {
-            // return a proper error code 
-            throwError ("Server Alerted Sync init failed");
+        string sanFormat (getSyncMLVersion());
+        uint16_t version = 12;
+        if (boost::iequals (sanFormat, "1.2")) {
+            version = 12;
+        } else if (boost::iequals (sanFormat, "1.1")) {
+            version = 11;
+        } else {
+            version = 10;
+        }
+
+        bool status = true;
+        try {
+            status = sendSAN (version);
+        } catch (TransportException e) {
+            if (!sanFormat.empty()){
+                throw;
+            }
+            status = false;
+            //by pass the exception if we will try again with legacy SANFormat
+        }
+
+        if (! status) {
+            if (sanFormat.empty()) {
+                SE_LOG_DEBUG (NULL, NULL, "Server Alerted Sync init with SANFormat %d failed, trying with legacy format", version);
+                version = 11;
+                if (!sendSAN (version)) {
+                    // return a proper error code 
+                    throwError ("Server Alerted Sync init failed");
+                }
+            } else {
+                // return a proper error code 
+                throwError ("Server Alerted Sync init failed");
+            }
         }
     }
 

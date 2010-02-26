@@ -187,14 +187,15 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     static const SuspendFlags &getSuspendFlags() { return s_flags; }
 
     /*
-     * Use initSAN as the first step is sync() if this is a server alerted sync.
+     * Use sendSAN as the first step is sync() if this is a server alerted sync.
      * Prepare the san package and send the SAN request to the peer.
      * Returns false if failed to get a valid client sync request
      * otherwise put the client sync request into m_initialMessage which will
      * be used to initalze the server via initServer(), then continue sync() to
      * start the real sync serssion.
+     * @version indicates the SAN protocal version used (1.2 or 1.1/1.0)
      */
-    bool initSAN();
+    bool sendSAN(uint16_t version);
 
     /**
      * Initializes the session so that it runs as SyncML server once

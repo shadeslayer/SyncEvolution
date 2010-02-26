@@ -87,6 +87,12 @@ SyncMode StringToSyncMode(const std::string &str, bool serverAlerted = false);
  */
 ContentType StringToContentType (const std::string &str, bool forceType);
 
+/*
+ * return string based MIME Type for PIM, always use legacy type unless
+ * forceType is set.
+ * */
+std::string GetLegacyMIMEType (const std::string &str, bool forceType);
+
 /**
  * result of SyncML operations, same codes as in HTTP and the Synthesis engine
  */

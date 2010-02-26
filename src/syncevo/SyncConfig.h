@@ -1258,10 +1258,12 @@ class SyncConfig {
     virtual void setDevID(const string &value, bool temporarily = false);
 
     /*Used for Server Alerted Sync*/
-    virtual const char*  getRemoteIdentifier() const;
+    virtual const char* getRemoteIdentifier() const;
     virtual void setRemoteIdentifier (const string &value, bool temporaritly = false);
     virtual bool getPeerIsClient () const;
     virtual void setPeerIsClient (bool value, bool temporarily = false);
+    virtual const char* getSyncMLVersion() const;
+    virtual void setSyncMLVersion (const string &value, bool temporarily = false);
 
     /**
      * An arbitrary name assigned to the peer configuration,
