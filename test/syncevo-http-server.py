@@ -21,6 +21,14 @@ from twisted.internet import reactor
 bus = dbus.SessionBus()
 loop = gobject.MainLoop()
 
+# cached information about previous POST and reply,
+# in case that we need to resend
+class OldRequest:
+    sessionid = None
+    data = None
+    reply = None
+    type = None
+
 def session_changed(object, ready):
     print "SessionChanged:", object, ready
 
@@ -66,6 +74,8 @@ class SyncMLSession:
         if data and len(data) > 0 and data != 'None':
             request = self.request
             self.request = None
+            OldRequest.reply = data
+            OldRequest.type = type
             if request:
                 request.setHeader('Content-Type', type)
                 request.setResponseCode(http.OK)
@@ -128,15 +138,16 @@ class SyncMLSession:
         self.request = request
         SyncMLSession.sessions.append(self)
 
-    def process(self, request):
+    def process(self, request, data):
         '''process next message by client in running session'''
         if self.request:
             # message resend?! Ignore old request.
+            print "message resend?!"
             self.request.finish()
             self.request = None
         deferred = request.notifyFinish()
         deferred.addCallback(self.done)
-        self.connection.Process(request.content.read(),
+        self.connection.Process(data,
                                 request.getHeader('content-type'))
         self.request = request
 
@@ -160,19 +171,39 @@ class SyncMLPost(resource.Resource):
         sessionid = request.args.get('sessionid')
         if sessionid:
             sessionid = sessionid[0]
-        print "POST from", request.getClientIP(), "config", config, "type", type, "session", sessionid, "args", request.args
-        # TODO: detect that a client is asking for a new session while
-        # an old one is still running and then abort the old session
+        print "POST from", request.getClientIP(), "config", config, "type", type, "session", sessionid, "args", request.args, "length", len
         if not sessionid:
             session = SyncMLSession()
             session.start(request, config,
                           urlparse.urljoin(self.url.geturl(), request.path))
             return server.NOT_DONE_YET
         else:
+            data = request.content.read()
+            # Detect resent message. We support that for
+            # independently from the session, because it
+            # might already be gone (server sends last reply
+            # in session, closes session, client doesn't
+            # get reply, reposts).
+            if sessionid == OldRequest.sessionid and \
+                    OldRequest.data == data and \
+                    OldRequest.reply:
+                print "resend reply session", sessionid
+                request.setHeader('Content-Type', OldRequest.type)
+                request.setResponseCode(http.OK)
+                request.write(OldRequest.reply)
+                request.finish()
+                return server.DONE
+            else:
+                # prepare resending, will be completed in
+                # SyncSession.reply()
+                OldRequest.sessionid = sessionid
+                OldRequest.data = data
+                OldRequest.reply = None
             for session in SyncMLSession.sessions:
                 if session.sessionid == sessionid:
-                    session.process(request)
+                    session.process(request, data)
                     return server.NOT_DONE_YET
+            print "unknown session", sessionid, "=>", http.NOT_FOUND
             raise twisted.web.Error(http.NOT_FOUND)
 
 
