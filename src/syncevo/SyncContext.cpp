@@ -870,7 +870,7 @@ private:
             char buffer[160];
             struct tm tm;
             // be nice and store a human-readable date in addition the seconds since the epoch
-            strftime(buffer, sizeof(buffer), "%s, %Y-%m-%d %H:%m:%S %z", localtime_r(&val, &tm));
+            strftime(buffer, sizeof(buffer), "%s, %Y-%m-%d %H:%M:%S %z", localtime_r(&val, &tm));
             m_info->setProperty(key, buffer);
             if (flush) {
                 m_info->flush();
