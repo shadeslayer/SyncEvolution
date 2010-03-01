@@ -317,13 +317,19 @@ public:
         }
     }
 
+    enum SessionMode {
+        SESSION_USE_PATH,      /**< write directly into path, don't create and manage subdirectories */
+        SESSION_READ_ONLY,     /**< access an existing session directory identified with path */
+        SESSION_CREATE         /**< create a new session directory inside the given path */
+    };
+
     // setup log directory and redirect logging into it
     // @param path        path to configured backup directy, empty for using default, "none" if not creating log file
+    // @param mode        determines how path is interpreted and which session is accessed
     // @param maxlogdirs  number of backup dirs to preserve in path, 0 if unlimited
     // @param logLevel    0 = default, 1 = ERROR, 2 = INFO, 3 = DEBUG
-    // @param usePath     write directly into path, don't create and manage subdirectories
     // @param report      record information about session here (may be NULL)
-    void startSession(const char *path, int maxlogdirs, int logLevel, bool usePath, SyncReport *report) {
+    void startSession(const char *path, SessionMode mode, int maxlogdirs, int logLevel, SyncReport *report) {
         m_maxlogdirs = maxlogdirs;
         m_report = report;
         m_logfile = "";
@@ -331,7 +337,7 @@ public:
             m_path = "";
         } else {
             setLogdir(path);
-            if (!usePath) {
+            if (mode == SESSION_CREATE) {
                 // create unique directory name in the given directory
                 time_t ts = time(NULL);
                 struct tm *tm = localtime(&ts);
@@ -420,7 +426,7 @@ public:
             }
             break;
         }
-        if (!usePath) {
+        if (mode != SESSION_USE_PATH) {
             LoggerBase::instance().setLevel(level);
         }
         setLevel(level);
@@ -430,15 +436,18 @@ public:
         if (m_report) {
             m_report->setStart(start);
         }
+        m_readonly = mode == SESSION_READ_ONLY;
         if (!m_path.empty()) {
-            boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(m_path, "status.ini", false));
+            boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(m_path, "status.ini", m_readonly));
             m_info = new SafeConfigNode(filenode);
             m_info->setMode(false);
-            // Create a status.ini which contains an error.
-            // Will be overwritten later on, unless we crash.
-            m_info->setProperty("status", STATUS_DIED_PREMATURELY);
-            m_info->setProperty("error", "synchronization process died prematurely");
-            writeTimestamp("start", start);
+            if (mode != SESSION_READ_ONLY) {
+                // Create a status.ini which contains an error.
+                // Will be overwritten later on, unless we crash.
+                m_info->setProperty("status", STATUS_DIED_PREMATURELY);
+                m_info->setProperty("error", "synchronization process died prematurely");
+                writeTimestamp("start", start);
+            }
         }
     }
 
@@ -1109,15 +1118,23 @@ public:
         m_logdir.setLogdir(logDirPath);
         m_previousLogdir = m_logdir.previousLogdir();
         if (m_doLogging) {
-            m_logdir.startSession(logDirPath, maxlogdirs, logLevel, false, report);
+            m_logdir.startSession(logDirPath, LogDir::SESSION_CREATE, maxlogdirs, logLevel, report);
         } else {
             // Run debug session without paying attention to
             // the normal logdir handling. The log level here
             // refers to stdout. The log file will be as complete
             // as possible.
-            m_logdir.startSession(logDirPath, 0, 1, true, report);
+            m_logdir.startSession(logDirPath, LogDir::SESSION_USE_PATH, 0, 1, report);
         }
     }
+
+    /** read-only access to existing session, identified in logDirPath */
+    void accessSession(const char *logDirPath) {
+        m_logdir.setLogdir(logDirPath);
+        m_previousLogdir = m_logdir.previousLogdir();
+        m_logdir.startSession(logDirPath, LogDir::SESSION_READ_ONLY, 0, 0, NULL);
+    }
+
 
     /** return log directory, empty if not enabled */
     const string &getLogdir() {
@@ -3437,7 +3454,7 @@ void SyncContext::status()
     SE_LOG_INFO(NULL, NULL, "Local item changes:\n%s",
                 out.str().c_str());
 
-    sourceList.startSession(getLogDir(), 0, 0, NULL);
+    sourceList.accessSession(getLogDir());
     LoggerBase::instance().setLevel(Logger::INFO);
     string prevLogdir = sourceList.getPrevLogdir();
     bool found = access(prevLogdir.c_str(), R_OK|X_OK) == 0;
@@ -3542,7 +3559,7 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
     }
 
     SourceList sourceList(*this, false);
-    sourceList.startSession(dirname.c_str(), 0, 0, NULL);
+    sourceList.accessSession(dirname.c_str());
     LoggerBase::instance().setLevel(Logger::INFO);
     initSources(sourceList);
     BOOST_FOREACH(SyncSource *source, sourceList) {
