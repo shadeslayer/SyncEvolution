@@ -259,11 +259,19 @@ bool Cmdline::run() {
             getFilters(context, syncFilter, sourceFilters);
         }
 
+        // determine whether we dump a peer or a context
+        int flags = DUMP_PROPS_NORMAL;
+        string peer, context;
+        SyncConfig::splitConfigString(config->getConfigName(), peer, context);
+        if (peer.empty()) {
+            flags |= HIDE_PER_PEER;
+        } 
+
         if (m_sources.empty() ||
             m_sources.find("main") != m_sources.end()) {
             boost::shared_ptr<FilterConfigNode> syncProps(config->getProperties());
             syncProps->setFilter(syncFilter);
-            dumpProperties(*syncProps, config->getRegistry(), false);
+            dumpProperties(*syncProps, config->getRegistry(), flags);
         }
 
         list<string> sources = config->getSyncSources();
@@ -281,7 +289,7 @@ bool Cmdline::run() {
                     sourceProps->setFilter(sourceFilters[""]);
                 }
                 dumpProperties(*sourceProps, SyncSourceConfig::getRegistry(),
-                               name != *(--sources.end()));
+                               flags | ((name != *(--sources.end())) ? HIDE_LEGEND : DUMP_PROPS_NORMAL));
             }
         }
     } else if (m_server == "" && m_argc > 1) {
@@ -814,12 +822,15 @@ void Cmdline::dumpConfigTemplates(const string &preamble,
 
 void Cmdline::dumpProperties(const ConfigNode &configuredProps,
                              const ConfigPropertyRegistry &allProps,
-                             bool hideLegend)
+                             int flags)
 {
     list<string> perPeer, perContext, global;
 
     BOOST_FOREACH(const ConfigProperty *prop, allProps) {
-        if (prop->isHidden()) {
+        if (prop->isHidden() ||
+            ((flags & HIDE_PER_PEER) &&
+             prop->getSharing() == ConfigProperty::NO_SHARING &&
+             !(prop->getFlags() & ConfigProperty::SHARED_AND_UNSHARED))) {
             continue;
         }
         if (!m_quiet) {
@@ -853,7 +864,7 @@ void Cmdline::dumpProperties(const ConfigNode &configuredProps,
         }
     }
 
-    if (!m_quiet && !hideLegend) {
+    if (!m_quiet && !(flags & HIDE_LEGEND)) {
         if (!perPeer.empty() ||
             !perContext.empty() ||
             !global.empty()) {

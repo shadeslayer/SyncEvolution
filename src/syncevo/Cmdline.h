@@ -143,9 +143,20 @@ protected:
                      const SyncConfig::TemplateList &templates,
                      bool printRank = false);
 
+    enum DumpPropertiesFlags {
+        DUMP_PROPS_NORMAL = 0,
+        HIDE_LEGEND = 1<<0,       /**<
+                                   * do not show the explanation which properties are shared,
+                                   * used while dumping any source which is not the last one
+                                   */
+        HIDE_PER_PEER = 1<<1      /**<
+                                   * config is for a context, not a peer, so do not show those
+                                   * properties which are only per-peer
+                                   */
+    };
     void dumpProperties(const ConfigNode &configuredProps,
                         const ConfigPropertyRegistry &allProps,
-                        bool hideLegend);
+                        int flags);
 
     void copyProperties(const ConfigNode &fromProps,
                         ConfigNode &toProps,
