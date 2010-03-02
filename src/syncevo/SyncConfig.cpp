@@ -284,6 +284,7 @@ SyncConfig::SyncConfig(const string &peer,
         mnode.reset(new MultiplexConfigNode(m_peerNode->getName(),
                                             getRegistry(),
                                             false));
+        mnode->setHavePeerNodes(!m_peerPath.empty());
         m_props[false] = mnode;
         mnode->setNode(false, ConfigProperty::GLOBAL_SHARING,
                        m_globalNode);
@@ -295,6 +296,7 @@ SyncConfig::SyncConfig(const string &peer,
         mnode.reset(new MultiplexConfigNode(m_hiddenPeerNode->getName(),
                                             getRegistry(),
                                             true));
+        mnode->setHavePeerNodes(!m_peerPath.empty());
         m_props[true] = mnode;
         mnode->setNode(true, ConfigProperty::SOURCE_SET_SHARING,
                        m_contextHiddenNode);
@@ -869,7 +871,7 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         }
     }
 
-    return SyncSourceNodes(sharedNode, peerNode, hiddenPeerNode, trackingNode, serverNode);
+    return SyncSourceNodes(!peerPath.empty(), sharedNode, peerNode, hiddenPeerNode, trackingNode, serverNode);
 }
 
 ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
@@ -1679,7 +1681,9 @@ static void copyProperties(const ConfigNode &fromProps,
 {
     BOOST_FOREACH(const ConfigProperty *prop, allProps) {
         if (prop->isHidden() == hidden &&
-            (unshared || prop->getSharing() != ConfigProperty::NO_SHARING)) {
+            (unshared ||
+             prop->getSharing() != ConfigProperty::NO_SHARING ||
+             (prop->getFlags() & ConfigProperty::SHARED_AND_UNSHARED))) {
             string name = prop->getName();
             bool isDefault;
             string value = prop->getProperty(fromProps, &isDefault);
@@ -1986,7 +1990,8 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
     return registry;
 }
 
-SyncSourceNodes::SyncSourceNodes(const boost::shared_ptr<FilterConfigNode> &sharedNode,
+SyncSourceNodes::SyncSourceNodes(bool havePeerNode,
+                                 const boost::shared_ptr<FilterConfigNode> &sharedNode,
                                  const boost::shared_ptr<FilterConfigNode> &peerNode,
                                  const boost::shared_ptr<ConfigNode> &hiddenPeerNode,
                                  const boost::shared_ptr<ConfigNode> &trackingNode,
@@ -2001,6 +2006,7 @@ SyncSourceNodes::SyncSourceNodes(const boost::shared_ptr<FilterConfigNode> &shar
     mnode.reset(new MultiplexConfigNode(m_peerNode->getName(),
                                         SyncSourceConfig::getRegistry(),
                                         false));
+    mnode->setHavePeerNodes(havePeerNode);
     m_props[false] = mnode;
     mnode->setNode(false, ConfigProperty::SOURCE_SET_SHARING,
                    m_sharedNode);

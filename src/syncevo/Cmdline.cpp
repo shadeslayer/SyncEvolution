@@ -211,7 +211,7 @@ bool Cmdline::run() {
         boost::shared_ptr<FilterConfigNode> hiddenNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> trackingNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> serverNode(new VolatileConfigNode());
-        SyncSourceNodes nodes(sharedNode, configNode, hiddenNode, trackingNode, serverNode);
+        SyncSourceNodes nodes(true, sharedNode, configNode, hiddenNode, trackingNode, serverNode);
         SyncSourceParams params("list", nodes);
         
         BOOST_FOREACH(const RegisterSyncSource *source, registry) {
@@ -1979,7 +1979,40 @@ protected:
 
         rm_r(m_testDir);
         testSetupScheduleWorld();
-        doConfigure(ScheduleWorldConfig(), "sources/addressbook/config.ini:");
+        string expected = doConfigure(ScheduleWorldConfig(), "sources/addressbook/config.ini:");
+
+        {
+            // updating type for peer must also update type for context
+            TestCmdline cmdline("--configure",
+                                "--source-property", "type=file:text/vcard:3.0",
+                                "scheduleworld", "addressbook",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            boost::replace_all(expected,
+                               "type = addressbook:text/vcard",
+                               "type = file:text/vcard:3.0");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      filterConfig(printConfig("scheduleworld")));
+            string shared = filterConfig(printConfig("@default"));
+            CPPUNIT_ASSERT(shared.find("type = file:text/vcard:3.0") != shared.npos);
+        }
+
+        {
+            // updating type for context must not affect peer
+            TestCmdline cmdline("--configure",
+                                "--source-property", "type=file:text/vcard:2.1",
+                                "@default", "addressbook",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      filterConfig(printConfig("scheduleworld")));
+            string shared = filterConfig(printConfig("@default"));
+            CPPUNIT_ASSERT(shared.find("type = file:text/vcard:2.1") != shared.npos);
+        }
 
         string syncProperties("syncURL:\n"
                               "\n"
@@ -2124,7 +2157,7 @@ protected:
         doConfigure(oldConfig, "spds/sources/addressbook/config.txt:");
     }
 
-    void doConfigure(const string &SWConfig, const string &addressbookPrefix) {
+    string doConfigure(const string &SWConfig, const string &addressbookPrefix) {
         string expected;
 
         {
@@ -2193,6 +2226,8 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
                                       filterConfig(printConfig("scheduleworld")));
         }
+
+        return expected;
     }
 
     void testListSources() {

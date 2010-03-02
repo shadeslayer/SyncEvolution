@@ -36,9 +36,10 @@ MultiplexConfigNode::getNode(const string &property,
                 m_nodes[prop->isHidden()][prop->getSharing()].get();
 
             // special case: fall back to shared node if no unshared
-            // node, and property isprimarily stored unshared, but
-            // also in the shared node
-            if (!node &&
+            // node or only dummy one, and property is primarily
+            // stored unshared, but also in the shared node
+            if ((!node || !m_havePeerNodes) &&
+                prop->getSharing() == ConfigProperty::NO_SHARING &&
                 (prop->getFlags() & ConfigProperty::SHARED_AND_UNSHARED)) {
                 node = m_nodes[prop->isHidden()][ConfigProperty::SOURCE_SET_SHARING].get();
             }

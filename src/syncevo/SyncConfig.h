@@ -1426,6 +1426,9 @@ class SyncSourceNodes {
     SyncSourceNodes() {}
 
     /**
+     * @param havePeerNode    false when peerNode is a dummy instance which has to
+     *                        be ignored for properties which may exist there as
+     *                        well as in the shared node (for example, "type")
      * @param sharedNode      node for user-visible properties, shared between peers
      * @param peerNode        node for user-visible, per-peer properties (the same
      *                        as sharedNode in SYNC4J_LAYOUT and HTTP_SERVER_LAYOUT)
@@ -1436,7 +1439,8 @@ class SyncSourceNodes {
      * @param serverNode      node for tracking items in a server (always different
      *                        than the other nodes)
      */
-    SyncSourceNodes(const boost::shared_ptr<FilterConfigNode> &sharedNode,
+    SyncSourceNodes(bool havePeerNode,
+                    const boost::shared_ptr<FilterConfigNode> &sharedNode,
                     const boost::shared_ptr<FilterConfigNode> &peerNode,
                     const boost::shared_ptr<ConfigNode> &hiddenPeerNode,
                     const boost::shared_ptr<ConfigNode> &trackingNode,

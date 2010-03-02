@@ -2036,6 +2036,35 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
         self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Work")
 
+    def testSharedType(self):
+        """'type' must be set per-peer and shared"""
+        self.setupConfigs()
+
+        # writing for peer modifies "type" in "foo" and context
+        self.setUpSession("Foo@deFAULT")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        config["source/addressbook"]["type"] = "file:text/vcard:3.0"
+        self.session.SetConfig(True, False,
+                               config,
+                               utf8_strings=True)
+        config = self.server.GetConfig("Foo", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        config = self.server.GetConfig("@default", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.session.Detach()
+
+        # writing in context only changes the context
+        self.setUpSession("@deFAULT")
+        config = self.session.GetConfig(False, utf8_strings=True)
+        config["source/addressbook"]["type"] = "file:text/x-vcard:2.1"
+        self.session.SetConfig(True, False,
+                               config,
+                               utf8_strings=True)
+        config = self.server.GetConfig("Foo", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        config = self.server.GetConfig("@default", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/x-vcard:2.1")
+
     def testOtherContext(self):
         """write into independent context"""
         self.setupConfigs()
