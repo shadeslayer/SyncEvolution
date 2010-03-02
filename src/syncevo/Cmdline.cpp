@@ -385,18 +385,20 @@ bool Cmdline::run() {
                     return false;
                 }
 
-                // Templates no longer contain these strings, because
-                // GUIs would have to localize them. For configs created
-                // via the command line, the extra hint that these
-                // properties need to be set is useful, so set these
-                // strings here. They'll get copied into the new
-                // config only if no other value was given on the
-                // command line.
-                if (!from->getUsername()[0]) {
-                    from->setUsername("your SyncML server account name");
-                }
-                if (!from->getPassword()[0]) {
-                    from->setPassword("your SyncML server password");
+                if (!from->getPeerIsClient()) {
+                    // Templates no longer contain these strings, because
+                    // GUIs would have to localize them. For configs created
+                    // via the command line, the extra hint that these
+                    // properties need to be set is useful, so set these
+                    // strings here. They'll get copied into the new
+                    // config only if no other value was given on the
+                    // command line.
+                    if (!from->getUsername()[0]) {
+                        from->setUsername("your SyncML server account name");
+                    }
+                    if (!from->getPassword()[0]) {
+                        from->setPassword("your SyncML server password");
+                    }
                 }
             }
         }
