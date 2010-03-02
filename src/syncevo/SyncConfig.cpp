@@ -1132,7 +1132,7 @@ static StringConfigProperty syncPropAutoSync("autoSync",
                                              "    is available\n"
                                              "http - only via HTTP transport\n"
                                              "obex-bt - only via Bluetooth transport\n"
-                                             "http,obex-bt - pick one of these\n"
+                                             "http,obex-bt - pick one of these\n",
                                              "0");
 
 static UIntConfigProperty syncPropAutoSyncInterval("autoSyncInterval",
@@ -1146,7 +1146,7 @@ static UIntConfigProperty syncPropAutoSyncInterval("autoSyncInterval",
                                                    "The value 0 has the effect of only running automatic\n"
                                                    "synchronization when changes are detected (not\n"
                                                    "implemented yet, therefore it basically disables\n"
-                                                   "automatic synchronization).\n"
+                                                   "automatic synchronization).\n",
                                                    "30");
 
 static UIntConfigProperty syncPropAutoSyncDelay("autoSyncDelay",
@@ -1157,7 +1157,7 @@ static UIntConfigProperty syncPropAutoSyncDelay("autoSyncDelay",
                                                 "other purpose. It is also a heuristic that attempts\n"
                                                 "to predict how long connectivity be available in the\n"
                                                 "future, because it should better be available long\n"
-                                                "enough to complete the synchronization.\n"
+                                                "enough to complete the synchronization.\n",
                                                 "15");
 
 ConfigPropertyRegistry &SyncConfig::getRegistry()
@@ -1173,6 +1173,9 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropLogLevel);
         registry.push_back(&syncPropPrintChanges);
         registry.push_back(&syncPropMaxLogDirs);
+        registry.push_back(&syncPropAutoSync);
+        registry.push_back(&syncPropAutoSyncInterval);
+        registry.push_back(&syncPropAutoSyncDelay);
         registry.push_back(&syncPropPreventSlowSync);
         registry.push_back(&syncPropUseProxy);
         registry.push_back(&syncPropProxyHost);
@@ -1201,9 +1204,6 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropNonce);
         registry.push_back(&syncPropDeviceData);
         registry.push_back(&syncPropDefaultPeer);
-        registry.push_back(&syncPropAutoSync);
-        registry.push_back(&syncPropAutoSyncInterval);
-        registry.push_back(&syncPropAutoSyncDelay);
 
         // obligatory sync properties
         syncPropUsername.setObligatory(true);

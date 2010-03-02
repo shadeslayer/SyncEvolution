@@ -647,6 +647,13 @@ class AutoSyncManager
     }
 
     /**
+     * prevent dbus server automatic termination when it has
+     * any auto sync task enabled in the configs.
+     * If returning true, prevent automatic termination.
+     */
+    bool preventTerm() { return !m_peerMap.empty(); }
+
+    /**
      * called when a config is changed. This causes re-loading the config 
      */
     void update(const string &configName);
@@ -870,9 +877,6 @@ class DBusServer : public DBusObjectHelper
     // the index of last info request
     uint32_t m_lastInfoReq;
 
-    //automatic termination
-    AutoTerm m_autoTerm;
-
     // a hash to represent matched templates for devices, the key is
     // the peer name
     typedef std::map<string, boost::shared_ptr<SyncConfig::TemplateDescription> > MatchedTemplates;
@@ -1015,6 +1019,10 @@ class DBusServer : public DBusObjectHelper
 
     /** manager to automatic sync */
     AutoSyncManager m_autoSync;
+
+    //automatic termination
+    AutoTerm m_autoTerm;
+
 public:
     DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration);
     ~DBusServer();
@@ -4174,14 +4182,14 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     m_lastSession(time(NULL)),
     m_activeSession(NULL),
     m_lastInfoReq(0),
-    m_autoTerm(duration),
     m_bluezManager(*this),
     sessionChanged(*this, "SessionChanged"),
     presence(*this, "Presence"),
     templatesChanged(*this, "TemplatesChanged"),
     infoRequest(*this, "InfoRequest"),
     m_presence(*this),
-    m_autoSync(*this)
+    m_autoSync(*this),
+    m_autoTerm(m_autoSync.preventTerm() ? -1 : duration) //if there is any task in auto sync, prevent auto termination
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -4992,7 +5000,6 @@ void AutoSyncManager::initConfig(const string &configName)
     unsigned int interval = config.getAutoSyncInterval();
     unsigned int duration = config.getAutoSyncDelay();
 
-    // TODO: add 'lastSyncTime' property and check time when server starts
     BOOST_FOREACH(string url, urls) {
         if((boost::istarts_with(url, "http") && http)
                 || (boost::istarts_with(url, "obex-bt") && bt)) {
@@ -5177,7 +5184,10 @@ void AutoSyncManager::taskDone()
 
 void AutoSyncManager::AutoSyncTaskList::createTimeoutSource()
 {
-    m_source = g_timeout_add_seconds(m_interval * 60, taskListTimeoutCb, static_cast<gpointer>(this));
+    //if interval is 0, only run auto sync when changes are detected.
+    if(m_interval) {
+        m_source = g_timeout_add_seconds(m_interval * 60, taskListTimeoutCb, static_cast<gpointer>(this));
+    }
 }
 
 gboolean AutoSyncManager::AutoSyncTaskList::taskListTimeoutCb(gpointer data)
