@@ -1007,8 +1007,10 @@ class SyncConfig {
      * Split a config string (normalized or not) into the peer part
      * (before final @) and the context (after that @, not including
      * it), return "default" as context if not specified otherwise.
+     *
+     * @return true when the context was specified explicitly
      */
-    static void splitConfigString(const string &config, string &peer, string &context);
+    static bool splitConfigString(const string &config, string &peer, string &context);
 
     /**
      * Replaces the property filter of either the sync properties or

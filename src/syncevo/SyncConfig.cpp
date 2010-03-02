@@ -115,15 +115,17 @@ string SyncConfig::normalizeConfigString(const string &config)
     return normal;
 }
 
-void SyncConfig::splitConfigString(const string &config, string &peer, string &context)
+bool SyncConfig::splitConfigString(const string &config, string &peer, string &context)
 {
     string::size_type at = config.rfind('@');
     if (at != config.npos) {
         peer = config.substr(0, at);
         context = config.substr(at + 1);
+        return true;
     } else {
         peer = config;
         context = "default";
+        return false;
     }    
 }
 

@@ -361,8 +361,22 @@ bool Cmdline::run() {
             if (!from->exists()) {
                 // creating from scratch, look for template
                 fromScratch = true;
-                string configTemplate = m_template.empty() ? m_server : m_template;
-                SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configTemplate), peer, context);
+                string configTemplate;
+                if (m_template.empty()) {
+                    // template is the peer name
+                    configTemplate = m_server;
+                    SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configTemplate), peer, context);
+                } else {
+                    // Template is specified explicitly. It must not contain a context,
+                    // because the context comes from the config name.
+                    configTemplate = m_template;
+                    if (SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configTemplate), peer, context)) {
+                        m_err << "ERROR: template " << configTemplate << " must not specify a context." << endl;
+                        return false;
+                    }
+                    string tmp;
+                    SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_server), tmp, context);
+                }
                 from = SyncConfig::createPeerTemplate(peer);
                 if (!from.get()) {
                     m_err << "ERROR: no configuration template for '" << configTemplate << "' available." << endl;
@@ -1776,6 +1790,15 @@ protected:
         }
 
         {
+            TestCmdline cmdline("--print-config", "--template", "scheduleworld@nosuchcontext", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            string actual = cmdline.m_out.str();
+            // deviceId must *not* be the one from Funambol because of the new context
+            CPPUNIT_ASSERT(!boost::contains(actual, "deviceId = fixed-devid"));
+        }
+
+        {
             TestCmdline cmdline("--print-config", "--template", "Default", NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
@@ -1854,6 +1877,39 @@ protected:
                                "evolutionsource = Personal");
             string actual = injectValues(filterConfig(cmdline.m_out.str()));
             CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      actual);
+        }
+
+        {
+            // print config => must not use settings from default context
+            TestCmdline cmdline("--print-config", "--template", "scheduleworld@nosuchcontext", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            // source settings *not* from modified Funambol config
+            string expected = filterConfig(internalToIni(ScheduleWorldConfig()));
+            string actual = injectValues(filterConfig(cmdline.m_out.str()));
+            CPPUNIT_ASSERT(!boost::contains(actual, "deviceId = fixed-devid"));
+            removeRandomUUID(actual);
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      actual);
+        }
+
+        {
+            // create config => again, must not use settings from default context
+            TestCmdline cmdline("--configure", "--template", "scheduleworld", "other@other", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+        }
+        {
+            TestCmdline cmdline("--print-config", "other@other", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            // source settings *not* from modified Funambol config
+            string expected = filterConfig(internalToIni(ScheduleWorldConfig()));
+            string actual = injectValues(filterConfig(cmdline.m_out.str()));
+            CPPUNIT_ASSERT(!boost::contains(actual, "deviceId = fixed-devid"));
+            removeRandomUUID(actual);
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
                                       actual);
         }
