@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Hidden=false
+Name=syncevo-dbus-server
+Comment=SyncEvolution D-Bus Server
+Exec=@libexecdir@/syncevo-dbus-server-startup.sh 
