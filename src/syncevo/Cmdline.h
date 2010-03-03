@@ -132,6 +132,13 @@ protected:
                     SourceFilters_t &sourceFilters);
 
     /**
+     * check that m_syncProps and m_sourceProps don't contain
+     * properties which only apply to peers, throw error
+     * if found
+     */
+    void checkForPeerProps();
+
+    /**
      * list all known data sources of a certain type
      */
     void listSources(SyncSource &syncSource, const string &header);

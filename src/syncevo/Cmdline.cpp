@@ -34,6 +34,7 @@
 #include <sstream>
 #include <memory>
 #include <set>
+#include <list>
 #include <algorithm>
 using namespace std;
 
@@ -265,6 +266,7 @@ bool Cmdline::run() {
         SyncConfig::splitConfigString(config->getConfigName(), peer, context);
         if (peer.empty()) {
             flags |= HIDE_PER_PEER;
+            checkForPeerProps();
         } 
 
         if (m_sources.empty() ||
@@ -312,6 +314,9 @@ bool Cmdline::run() {
         bool fromScratch = false;
         string peer, context;
         SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_server), peer, context);
+        if (peer.empty()) {
+            checkForPeerProps();
+        }
 
         // Both config changes and migration are implemented as copying from
         // another config (template resp. old one). Migration also moves
@@ -791,6 +796,32 @@ void Cmdline::getFilters(const string &context,
         }
     }
     sourceFilters[""] = m_sourceProps;
+}
+
+static void findPeerProps(FilterConfigNode::ConfigFilter &filter,
+                          ConfigPropertyRegistry &registry,
+                          list<string> &peerProps)
+{
+    BOOST_FOREACH(StringPair entry, filter) {
+        const ConfigProperty *prop = registry.find(entry.first);
+        if (prop &&
+            prop->getSharing() == ConfigProperty::NO_SHARING &&
+            !(prop->getFlags() & ConfigProperty::SHARED_AND_UNSHARED)) {
+            peerProps.push_back(entry.first);
+        }
+    }
+}
+
+void Cmdline::checkForPeerProps()
+{
+    list<string> peerProps;
+
+    findPeerProps(m_syncProps, SyncConfig::getRegistry(), peerProps);
+    findPeerProps(m_sourceProps, SyncSourceConfig::getRegistry(), peerProps);
+    if (!peerProps.empty()) {
+        SyncContext::throwError(string("per-peer (unshared) properties not allowed: ") +
+                                boost::join(peerProps, ", "));
+    }
 }
 
 void Cmdline::listSources(SyncSource &syncSource, const string &header)
