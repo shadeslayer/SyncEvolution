@@ -481,14 +481,12 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 		if (dbus_bus_request_name(connection, name,
 				DBUS_NAME_FLAG_DO_NOT_QUEUE, error) !=
 				DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER ) {
-			dbus_connection_unref(connection);
-			return NULL;
+			goto failed;
 		}
 
 		if (error != NULL) {
 			if (dbus_error_is_set(error) == TRUE) {
-				dbus_connection_unref(connection);
-				return NULL;
+				goto failed;
 			}
 		}
 	}
@@ -496,6 +494,12 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 	g_dbus_setup_connection(connection, unshared, NULL);
 
 	return connection;
+
+ failed:
+	if (unshared)
+		dbus_connection_close(connection);
+	dbus_connection_unref(connection);
+	return NULL;
 }
 
 /**
