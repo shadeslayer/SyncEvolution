@@ -794,6 +794,12 @@ void Cmdline::dumpConfigTemplates(const string &preamble,
                                        bool printRank)
 {
     m_out << preamble << endl;
+    m_out << "   "  << "template name" << " = " << "template description";
+    if (printRank) {
+        m_out << "    " << "matching score (1-5, with 5 be the exact match)";
+    }
+    m_out << endl;
+
     BOOST_FOREACH(const SyncConfig::TemplateList::value_type server,templates) {
         m_out << "   "  << server->m_name << " = " << server->m_description;
         if (printRank){
@@ -1633,6 +1639,7 @@ protected:
         TestCmdline help("--template", "? ", NULL);
         help.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                                  "   template name = template description\n"
                                   "   Funambol = http://my.funambol.com\n"
                                   "   Google = http://m.google.com/sync\n"
                                   "   Goosync = http://www.goosync.com/\n"
@@ -1653,6 +1660,7 @@ protected:
         TestCmdline help1("--template", "?nokia_7210c", NULL);
         help1.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                "   template name = template description    matching score (1-5, with 5 be the exact match)\n"
                 "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    5\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    2\n"
                 "   ServerDefault = server side default template    1\n",
@@ -1661,6 +1669,7 @@ protected:
         TestCmdline help2("--template", "?nokia", NULL);
         help2.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                "   template name = template description    matching score (1-5, with 5 be the exact match)\n"
                 "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    5\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    2\n"
                 "   ServerDefault = server side default template    1\n",
@@ -1669,14 +1678,16 @@ protected:
         TestCmdline help3("--template", "?7210c", NULL);
         help3.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                "   template name = template description    matching score (1-5, with 5 be the exact match)\n"
                 "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    3\n"
                 "   ServerDefault = server side default template    1\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    1\n",
                 help3.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help3.m_err.str());
-        TestCmdline help4("--template", "?syncevolution", NULL);
+        TestCmdline help4("--template", "?syncevolutionclient", NULL);
         help4.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+                "   template name = template description    matching score (1-5, with 5 be the exact match)\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    5\n"
                 "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    2\n"
                 "   ServerDefault = server side default template    2\n",
