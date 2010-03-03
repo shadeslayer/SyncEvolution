@@ -2372,6 +2372,11 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 }
             }
 
+            if (vSource->getForceSlowSync()) {
+                // we *want* a slow sync, but couldn't tell the client -> force it server-side
+                datastores << "      <alertscript> FORCESLOWSYNC(); </alertscript>\n";
+            }
+
             std::string typesupport;
             typesupport = vSource->getDataTypeSupport();
             datastores << "      <typesupport>\n"
