@@ -2995,7 +2995,11 @@ SyncMLStatus SyncContext::doSync()
                 m_engine.SetInt32Value(target, "forceslow", slow);
                 m_engine.SetInt32Value(target, "syncmode", direction);
 
-                m_engine.SetStrValue(target, "remotepath", source->getURI());
+                string uri = source->getURI();
+                if (uri.empty()) {
+                    source->throwError("uri not configured");
+                }
+                m_engine.SetStrValue(target, "remotepath", uri);
             } else {
                 m_engine.SetInt32Value(target, "enabled", 0);
             }
