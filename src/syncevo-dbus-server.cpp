@@ -5269,7 +5269,7 @@ int main(int argc, char **argv)
                                                   true,
                                                   &err);
         if (!conn) {
-            err.throwFailure("g_dbus_setup_bus()");
+            err.throwFailure("g_dbus_setup_bus()", " failed - server already running?");
         }
 
         DBusServer server(loop, conn, duration);

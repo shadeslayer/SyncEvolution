@@ -138,12 +138,12 @@ class DBusErrorCXX : public DBusError
 {
  public:
     DBusErrorCXX() { dbus_error_init(this); }
-    void throwFailure(const std::string &operation)
+    void throwFailure(const std::string &operation, const std::string &explanation = " failed")
     {
         if (dbus_error_is_set(this)) {
             throw std::runtime_error(operation + ": " + message);
         } else {
-            throw std::runtime_error(operation + " failed");
+            throw std::runtime_error(operation + explanation);
         }
     }
 
