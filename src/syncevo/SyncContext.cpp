@@ -2294,6 +2294,12 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 "      <dbtypeid>" << source->getSynthesisID() << "</dbtypeid>\n" <<
                 fragment;
 
+            datastores << "      <resumesupport>on</resumesupport>\n";
+            if (source->getOperations().m_writeBlob) {
+                // BLOB support is essential for caching partially received items.
+                datastores << "      <resumeitemsupport>on</resumeitemsupport>\n";
+            }
+
             string mode = source->getSync();
             if (source->getForceSlowSync()) {
                 // we *want* a slow sync, but couldn't tell the client -> force it server-side

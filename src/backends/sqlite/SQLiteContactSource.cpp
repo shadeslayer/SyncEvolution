@@ -363,6 +363,7 @@ void SQLiteContactSource::deleteItem(const string& uid)
 void SQLiteContactSource::enableServerMode()
 {
     SyncSourceAdmin::init(m_operations, this);
+    SyncSourceBlob::init(m_operations, getCacheDir());
 }
 
 bool SQLiteContactSource::serverModeEnabled() const

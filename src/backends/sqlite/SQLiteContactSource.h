@@ -54,6 +54,7 @@ SE_BEGIN_CXX
 class SQLiteContactSource : public SyncSource,
     virtual public SyncSourceSession,
     virtual public SyncSourceAdmin,
+    virtual public SyncSourceBlob,
     virtual public SyncSourceRevisions,
     virtual public SyncSourceDelete,
     virtual public SyncSourceLogging,

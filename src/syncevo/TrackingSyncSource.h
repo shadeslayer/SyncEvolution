@@ -65,6 +65,7 @@ using namespace std;
  */
 class TrackingSyncSource : public TestingSyncSource,
     virtual public SyncSourceRevisions,
+    virtual public SyncSourceBlob,
     virtual public SyncSourceAdmin
 {
   public:

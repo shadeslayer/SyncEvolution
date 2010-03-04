@@ -848,6 +848,7 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
     boost::shared_ptr<ConfigNode> hiddenPeerNode,
         serverNode,
         trackingNode;
+    string cacheDir;
 
     // store configs lower case even if the UI uses mixed case
     string lower = name;
@@ -877,6 +878,10 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
             trackingNode =
             serverNode = node;
     } else {
+        // Here we assume that m_tree is a FileConfigTree. Otherwise getRootPath()
+        // will not point into a normal file system.
+        cacheDir = m_tree->getRootPath() + "/" + peerPath + "/.cache";
+
         node = m_tree->open(peerPath, ConfigTree::visible);
         peerNode.reset(new FilterConfigNode(node, m_sourceFilter));
         SourceFilters_t::const_iterator filter = m_sourceFilters.find(name);
@@ -901,7 +906,7 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         }
     }
 
-    return SyncSourceNodes(!peerPath.empty(), sharedNode, peerNode, hiddenPeerNode, trackingNode, serverNode);
+    return SyncSourceNodes(!peerPath.empty(), sharedNode, peerNode, hiddenPeerNode, trackingNode, serverNode, cacheDir);
 }
 
 ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
@@ -2047,12 +2052,14 @@ SyncSourceNodes::SyncSourceNodes(bool havePeerNode,
                                  const boost::shared_ptr<FilterConfigNode> &peerNode,
                                  const boost::shared_ptr<ConfigNode> &hiddenPeerNode,
                                  const boost::shared_ptr<ConfigNode> &trackingNode,
-                                 const boost::shared_ptr<ConfigNode> &serverNode) :
+                                 const boost::shared_ptr<ConfigNode> &serverNode,
+                                 const string &cacheDir) :
     m_sharedNode(sharedNode),
     m_peerNode(peerNode),
     m_hiddenPeerNode(hiddenPeerNode),
     m_trackingNode(trackingNode),
-    m_serverNode(serverNode)
+    m_serverNode(serverNode),
+    m_cacheDir(cacheDir)
 {
     boost::shared_ptr<MultiplexConfigNode> mnode;
     mnode.reset(new MultiplexConfigNode(m_peerNode->getName(),

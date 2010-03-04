@@ -103,6 +103,7 @@ void TrackingSyncSource::deleteItem(const std::string &luid)
 void TrackingSyncSource::enableServerMode()
 {
     SyncSourceAdmin::init(m_operations, this);
+    SyncSourceBlob::init(m_operations, getCacheDir());
 }
 
 bool TrackingSyncSource::serverModeEnabled() const

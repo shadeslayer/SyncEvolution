@@ -27,6 +27,7 @@
 
 #include <synthesis/sync_declarations.h>
 #include <synthesis/syerror.h>
+#include <synthesis/blobs.h>
 
 #include <boost/function.hpp>
 
@@ -1688,6 +1689,46 @@ class SyncSourceAdmin : public virtual SyncSourceBase
      */
     void init(SyncSource::Operations &ops, SyncSource *source);
 };
+
+/**
+ * Implements Read/Write/DeleteBlob. Blobs are stored inside a
+ * configurable directory, which has to be unique for the current
+ * peer.
+ */
+class SyncSourceBlob : public virtual SyncSourceBase
+{
+    /**
+     * Only one blob is active at a time.
+     * This utility class provides the actual implementation.
+     */
+    sysync::TBlob m_blob;
+
+    sysync::TSyError readBlob(sysync::cItemID aID, const char *aBlobID,
+                              void **aBlkPtr, size_t *aBlkSize,
+                              size_t *aTotSize,
+                              bool aFirst, bool *aLast) {
+        return m_blob.ReadBlob(aID, aBlobID, aBlkPtr, aBlkSize, aTotSize, aFirst, aLast);
+    }
+    sysync::TSyError writeBlob(sysync::cItemID aID, const char *aBlobID,
+                               void *aBlkPtr, size_t aBlkSize,
+                               size_t aTotSize,
+                               bool aFirst, bool aLast) {
+        mkdir_p(m_blob.getBlobPath());
+        return m_blob.WriteBlob(aID, aBlobID, aBlkPtr, aBlkSize, aTotSize, aFirst, aLast);
+    }
+    sysync::TSyError deleteBlob(sysync::cItemID aID, const char *aBlobID) {
+        return m_blob.DeleteBlob(aID, aBlobID);
+    }
+
+    sysync::TSyError loadAdminData(sysync::cItemID aID, const char *aBlobID,
+                                   void **aBlkPtr, size_t *aBlkSize, size_t *aTotSize,
+                                   bool aFirst, bool *aLast);
+
+ public:
+    void init(SyncSource::Operations &ops,
+              const std::string &dir);
+};
+
 
 /**
  * This is an interface definition that is expected by the client-test

@@ -1442,13 +1442,17 @@ class SyncSourceNodes {
      *                        other nodes)
      * @param serverNode      node for tracking items in a server (always different
      *                        than the other nodes)
+     * @param cacheDir        a per-peer, per-source directory for exclusive use by
+     *                        the SyncSource, must be created if needed; not available
+     *                        when source is accessed independently of peer
      */
     SyncSourceNodes(bool havePeerNode,
                     const boost::shared_ptr<FilterConfigNode> &sharedNode,
                     const boost::shared_ptr<FilterConfigNode> &peerNode,
                     const boost::shared_ptr<ConfigNode> &hiddenPeerNode,
                     const boost::shared_ptr<ConfigNode> &trackingNode,
-                    const boost::shared_ptr<ConfigNode> &serverNode);
+                    const boost::shared_ptr<ConfigNode> &serverNode,
+                    const string &cacheDir);
 
     /** true if the peer-specific config node exists */
     bool exists() const { return m_peerNode->exists(); }
@@ -1472,12 +1476,15 @@ class SyncSourceNodes {
     /** read-write access to backend specific tracking node */
     boost::shared_ptr<ConfigNode> getTrackingNode() const { return m_trackingNode; }
 
+    string getCacheDir() const { return m_cacheDir; }
+
  protected:
     const boost::shared_ptr<FilterConfigNode> m_sharedNode;
     const boost::shared_ptr<FilterConfigNode> m_peerNode;
     const boost::shared_ptr<ConfigNode> m_hiddenPeerNode;
     const boost::shared_ptr<ConfigNode> m_trackingNode;
     const boost::shared_ptr<ConfigNode> m_serverNode;
+    const string m_cacheDir;
 
     /** multiplexer for the other nodes */
     boost::shared_ptr<FilterConfigNode> m_props[2];
@@ -1530,6 +1537,13 @@ class SyncSourceConfig {
     boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<SyncSourceConfig *>(this)->getProperties(hidden); }
 
     virtual const char*  getName() const { return m_name.c_str(); }
+
+    /**
+     * Directory to be used by source when it needs to store
+     * something per-peer in the file system. Currently not
+     * configurable, set via SyncSourceNodes.
+     */
+    string getCacheDir() const { return m_nodes.getCacheDir(); }
 
     /**
      * Returns the right config node for a certain property,

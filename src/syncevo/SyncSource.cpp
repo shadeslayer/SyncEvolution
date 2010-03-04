@@ -1242,5 +1242,19 @@ void SyncSourceAdmin::init(SyncSource::Operations &ops,
          source->getServerNode());
 }
 
+void SyncSourceBlob::init(SyncSource::Operations &ops,
+                          const std::string &dir)
+{
+    m_blob.Init(getSynthesisAPI(),
+                getName(),
+                dir, "", "", "");
+    ops.m_readBlob = boost::bind(&SyncSourceBlob::readBlob, this,
+                                 _1, _2, _3, _4, _5, _6, _7);
+    ops.m_writeBlob = boost::bind(&SyncSourceBlob::writeBlob, this,
+                                  _1, _2, _3, _4, _5, _6, _7);
+    ops.m_deleteBlob = boost::bind(&SyncSourceBlob::deleteBlob, this,
+                                   _1, _2);
+}
+
 SE_END_CXX
 
