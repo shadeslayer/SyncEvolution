@@ -2939,7 +2939,8 @@ SyncMLStatus SyncContext::doSync()
         //This is a server alerted sync !
         string sanFormat (getSyncMLVersion());
         uint16_t version = 12;
-        if (boost::iequals (sanFormat, "1.2")) {
+        if (boost::iequals (sanFormat, "1.2") ||
+            sanFormat == "") {
             version = 12;
         } else if (boost::iequals (sanFormat, "1.1")) {
             version = 11;

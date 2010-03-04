@@ -1062,7 +1062,7 @@ static StringConfigProperty syncPropSyncMLVersion("SyncMLVersion",
                                            "",
                                            "",
                                            Values() +
-                                           Aliases("1.0") + Aliases ("1.1") + Aliases ("1.2")
+                                           Aliases("") + Aliases("1.0") + Aliases ("1.1") + Aliases ("1.2")
                                            );
 
 static ConfigProperty syncPropRemoteIdentifier("remoteIdentifier",
