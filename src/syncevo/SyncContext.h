@@ -682,6 +682,14 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     void checkSourceChanges(SourceList &sourceList, SyncReport &changes);
 
     /**
+     * A method to report sync is really successfully started.
+     * It happens at the same time SynthesDBPlugin starts to access source.
+     * For each sync, it is only called at most one time.
+     * The default action is nothing.
+     */
+    virtual void syncSuccessStart() { }
+
+    /**
      * sets up Synthesis session and executes it
      */
     SyncMLStatus doSync();
@@ -712,6 +720,10 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     int m_retryInterval;
     // Current retry count
     int m_retries;
+
+    //a flag indicating whether it is the first time to start source access.
+    //It can be used to report infomation about a sync is successfully started.
+    bool m_firstSourceAccess;
 
 public:
     static bool transport_cb (void *data);

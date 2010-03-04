@@ -153,6 +153,7 @@ void SyncContext::init()
     m_quiet = false;
     m_dryrun = false;
     m_serverMode = false;
+    m_firstSourceAccess = true;
 }
 
 SyncContext::~SyncContext()
@@ -1919,6 +1920,10 @@ void SyncContext::initSources(SourceList &sourceList)
 
 void SyncContext::startSourceAccess(SyncSource *source)
 {
+    if(m_firstSourceAccess) {
+        syncSuccessStart();
+        m_firstSourceAccess = false;
+    }
     if (m_serverMode) {
         // source is active in sync, now open it
         source->open();

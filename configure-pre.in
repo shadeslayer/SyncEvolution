@@ -396,6 +396,14 @@ DBUS_SERVICES_DIR="${datadir}/dbus-1/services"
 AC_SUBST(DBUS_SERVICES_DIR)
 AC_DEFINE_UNQUOTED(DBUS_SERVICES_DIR, "$DBUS_SERVICES_DIR", [Location of D-Bus services directory])
 
+if test $enable_gui != "no" || test $enable_dbus_service == "yes"; then
+    IT_PROG_INTLTOOL([0.37.1])
+    GETTEXT_PACKAGE=syncevolution
+    AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [The gettext package name])
+    AM_GLIB_GNU_GETTEXT
+    SYNCEVOLUTION_LOCALEDIR=[${datadir}/locale]
+fi
+
 # decide which sync-ui(s) we are building:
 # sync-ui (in either GTK or Moblin mode) or both (in separate binaries)
 case $enable_gui in
@@ -432,11 +440,6 @@ if test $enable_gui != "no"; then
     PKG_CHECK_MODULES(GUI, $gui_modules)
 
     AC_PATH_PROG([GTK_BUILDER_CONV], gtk-builder-convert)
-    IT_PROG_INTLTOOL([0.37.1])
-    GETTEXT_PACKAGE=syncevolution
-    AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [The gettext package name])
-    AM_GLIB_GNU_GETTEXT
-    SYNCEVOLUTION_LOCALEDIR=[${datadir}/locale]
 else
     INTLTOOL_UPDATE="true"
     USE_NLS="no"

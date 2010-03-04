@@ -51,6 +51,7 @@
 #include <boost/noncopyable.hpp>
 
 #include <glib-object.h>
+#include <glib/gi18n.h>
 #ifdef USE_GNOME_KEYRING
 extern "C" {
 #include <gnome-keyring.h>
@@ -478,6 +479,29 @@ private:
 };
 
 /**
+ * a listener to listen changes of session 
+ * currently only used to track changes of running a sync in a session
+ */
+class SessionListener
+{
+public:
+    /**
+     * method is called when a sync is successfully started.
+     * Here 'successfully started' means the synthesis engine starts
+     * to access the sources.
+     */
+    virtual void syncSuccessStart() {}
+
+    /**
+     * method is called when a sync is done. Also
+     * sync status are passed.
+     */
+    virtual void syncDone(SyncMLStatus status) {}
+
+    virtual ~SessionListener() {}
+};
+
+/**
  * Manager to manage automatic sync.
  * Once a configuration is enabled with automatic sync, possibly http or obex-bt or both, one or more
  * tasks for different URLs are added in the task map, grouped by their intervals. 
@@ -496,7 +520,7 @@ private:
  * 2) Once users log in or resume and an interval has passed. Not implemented yet.
  * 3) Evolution data server notify any changes. Not implemented yet. 
  */
-class AutoSyncManager
+class AutoSyncManager : public SessionListener
 {
     DBusServer &m_server;
 
@@ -569,6 +593,40 @@ class AutoSyncManager
         void scheduleTaskList();
     };
 
+#ifdef HAS_NOTIFY
+    /**
+     * This class is to send notifications to notification server.
+     * Notifications are sent via 'send'. Once a new noficication is
+     * to be sent, the old notification will be closed and a new one
+     * is created for the new requirement.
+     */
+    class Notification
+    {
+    public:
+        Notification(); 
+        ~Notification();
+
+        /** callback of click button(actions) of notification */
+        static void notifyAction(NotifyNotification *notify, gchar *action, gpointer userData);
+
+        /**
+         * send a notification in the notification server
+         * Action for 'view' may pop up a sync-ui, but needs some
+         * parameters. 'viewParams' is the params used by sync-ui.
+         */
+        void send(const char *summary, const char *body, const char *viewParams = NULL);
+    private:
+        /** flag to indicate whether libnotify is initalized successfully */
+        bool m_init;
+
+        /** flag to indicate whether libnotify accepts actions */
+        bool m_actions;
+
+        /** the current notification */
+        NotifyNotification *m_notification;
+    };
+#endif
+
     /** init a config and set up auto sync task for it */
     void initConfig(const string &configName);
 
@@ -596,9 +654,12 @@ class AutoSyncManager
      */
     boost::shared_ptr<Session> m_session;
 
+    /** the current sync of session is successfully started */
+    bool m_syncSuccessStart;
+
 #ifdef HAS_NOTIFY
-    /** flag to indicate whether libnotify is initalized successfully */
-    gboolean m_notify;
+    /** used to send notifications */
+    Notification m_notify;
 #endif
 
     /** 
@@ -632,18 +693,9 @@ class AutoSyncManager
 
  public:
     AutoSyncManager(DBusServer &server)
-        : m_server(server) 
+        : m_server(server), m_syncSuccessStart(false) 
     { 
         init();
-    }
-    ~AutoSyncManager() 
-    {
-#ifdef HAS_NOTIFY
-        // uninit notify
-        if(m_notify) {
-            notify_uninit();
-        }
-#endif
     }
 
     /**
@@ -675,8 +727,13 @@ class AutoSyncManager
     /** set config and run sync to make the session ready to run */
     void prepare();
 
-    /** once the current task is done, do some pending jobs */
-    void taskDone();
+    /**
+     * Acts as a session listener to track sync statuses if the session is 
+     * belonged to auto sync manager to do auto sync. 
+     * Two methods to listen to session sync changes.
+     */
+    virtual void syncSuccessStart();
+    virtual void syncDone(SyncMLStatus status);
 };
 
 /**
@@ -1327,6 +1384,9 @@ protected:
 
     virtual void reportStepCmd(sysync::uInt16 stepCmd);
 
+    /** called when a sync is successfully started */
+    virtual void syncSuccessStart(); 
+
     /**
      * Implement checkForSuspend and checkForAbort.
      * They will check whether dbus clients suspend
@@ -1600,6 +1660,9 @@ class Session : public DBusObjectHelper,
 
     RunOperation m_runOperation;
 
+    /** listener to listen to changes of sync */
+    SessionListener *m_listener;
+
     /** Session.Detach() */
     void detach(const Caller_t &caller);
 
@@ -1736,6 +1799,14 @@ public:
      * see GetStatus documentation.
      */
     void setStepInfo(bool isWaiting); 
+
+    /** sync is successfully started */
+    void syncSuccessStart();
+
+    /**
+     * add a listener of the session. Old set listener is returned
+     */
+    SessionListener* addListener(SessionListener *listener);
 
 private:
     /** set m_syncFilter and m_sourceFilters to config */
@@ -2447,6 +2518,11 @@ void DBusSync::reportStepCmd(sysync::uInt16 stepCmd)
     }
 }
 
+void DBusSync::syncSuccessStart()
+{
+    m_session.syncSuccessStart();
+}
+
 bool DBusSync::checkForSuspend()
 {
     return m_session.isSuspend() || SyncContext::checkForSuspend();
@@ -2779,6 +2855,7 @@ Session::Session(DBusServer &server,
     m_restoreSrcTotal(0),
     m_restoreSrcEnd(0),
     m_runOperation(OP_SYNC),
+    m_listener(NULL),
     emitStatus(*this, "StatusChanged"),
     emitProgress(*this, "ProgressChanged")
 {
@@ -2984,6 +3061,10 @@ void Session::run()
                 if (c) {
                     c->shutdown();
                 }
+                // report 'sync done' event to listener
+                if(m_listener) {
+                    m_listener->syncDone(status);
+                }
                 break;
             }
             case OP_RESTORE:
@@ -3116,6 +3197,21 @@ void Session::checkPresence (string &status)
 {
     vector<string> transport;
     m_server.m_presence.checkPresence (m_configName, status, transport);
+}
+
+void Session::syncSuccessStart()
+{
+    // if listener, report 'sync started' to it
+    if(m_listener) {
+        m_listener->syncSuccessStart();
+    }
+}
+
+SessionListener* Session::addListener(SessionListener *listener)
+{
+    SessionListener *old = m_listener;
+    m_listener = listener;
+    return old;
 }
 
 /************************ ProgressData implementation *****************/
@@ -4259,11 +4355,6 @@ void DBusServer::run()
             } catch (...) {
                 SE_LOG_ERROR(NULL, NULL, "unknown error");
             }
-            // if auto sync is active, do pending steps
-            if (m_autoSync.hasActiveSession()) {
-                m_autoSync.taskDone();
-            }  
-
             session.swap(m_syncSession);
             dequeue(session.get());
         } 
@@ -4970,9 +5061,6 @@ void AutoSyncManager::init()
     BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server, list) {
         initConfig(server.first);
     }
-#ifdef HAS_NOTIFY
-    m_notify = notify_init("SyncEvolution");
-#endif
 }
 
 void AutoSyncManager::initConfig(const string &configName)
@@ -5146,6 +5234,7 @@ void AutoSyncManager::startTask()
                                     m_activeTask->m_peer,
                                     newSession));
         m_session->setPriority(Session::PRI_AUTOSYNC);
+        m_session->addListener(this);
         m_server.enqueue(m_session);
     }
 }
@@ -5172,23 +5261,112 @@ void AutoSyncManager::prepare()
     }
 }
 
-void AutoSyncManager::taskDone()
+void AutoSyncManager::syncSuccessStart()
+{
+    m_syncSuccessStart = true;
+    SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been successfully started.\n", m_activeTask->m_peer.c_str());
+#ifdef HAS_NOTIFY
+    string summary = StringPrintf(_("%s is syncing"), m_activeTask->m_peer.c_str());
+    string body = StringPrintf(_("We have just started to sync your computer with the %s sync service."), m_activeTask->m_peer.c_str());
+    //TODO: set config information for 'sync-ui'
+    m_notify.send(summary.c_str(), body.c_str());
+#endif
+}
+
+void AutoSyncManager::syncDone(SyncMLStatus status)
 {
     SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been done.\n", m_activeTask->m_peer.c_str());
 #ifdef HAS_NOTIFY
     // send a notification to notification server
-    if(m_notify) {
-        string msg = StringPrintf("SyncEvolution: automatic synchronization for '%s' has been done.",
-                m_activeTask->m_peer.c_str());
-        NotifyNotification *notify = notify_notification_new(msg.c_str(), NULL, NULL, NULL);
-        GError *error;
-        notify_notification_show(notify, &error);
-        notify_notification_close(notify, &error);
-    }
+    string summary, body;
+    if(m_syncSuccessStart && status == STATUS_OK) {
+        // if sync is successfully started and done
+        summary = StringPrintf(_("%s sync complete"), m_activeTask->m_peer.c_str());
+        body = StringPrintf(_("We have just finished syncing your computer with the %s sync service."), m_activeTask->m_peer.c_str());
+        //TODO: set config information for 'sync-ui'
+        m_notify.send(summary.c_str(), body.c_str());
+    } else if(m_syncSuccessStart || (!m_syncSuccessStart && status == STATUS_FATAL)) {
+        //if sync is successfully started and has errors, or not started successful with a fatal problem
+        summary = StringPrintf(_("Sync problem."));
+        body = StringPrintf(_("Sorry, there's a problem with your sync that you need to attend to."));
+        //TODO: set config information for 'sync-ui'
+        m_notify.send(summary.c_str(), body.c_str());
+    } 
 #endif
     m_session.reset();
     m_activeTask.reset();
+    m_syncSuccessStart = false;
 }
+
+#ifdef HAS_NOTIFY
+AutoSyncManager::Notification::Notification()
+{
+    bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
+    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+    textdomain (GETTEXT_PACKAGE);
+    m_init = notify_init("SyncEvolution");
+    m_actions = false;
+    m_notification = NULL;
+    // check whether 'actions' are supported by notification server 
+    if(m_init) {
+        GList *list = notify_get_server_caps();
+        if(list) {
+            for(; list != NULL; list = list->next) {
+                if(boost::iequals((char *)list->data, "actions")) {
+                    m_actions = true;
+                }
+            }
+        }
+    }
+}
+
+AutoSyncManager::Notification::~Notification()
+{
+    if(m_init) {
+        notify_uninit();
+    }
+}
+
+void AutoSyncManager::Notification::notifyAction(NotifyNotification *notify,
+                                                 gchar *action,
+                                                 gpointer userData)
+{
+    if(boost::iequals("view", action)) {
+        pid_t pid;
+        if((pid = fork()) == 0) {
+            //search sync-ui from $PATH
+            if(execlp("sync-ui", "sync-ui", (const char*)0) < 0) {
+                exit(0);
+            }
+        }
+    } 
+    //if dismiss, ignore
+}
+
+void AutoSyncManager::Notification::send(const char *summary,
+                                         const char *body,
+                                         const char *viewParams)
+{
+    if(!m_init)
+        return;
+
+    if(m_notification) {
+        notify_notification_clear_actions(m_notification);
+        notify_notification_close(m_notification, NULL);
+    }
+    m_notification = notify_notification_new(summary, body, NULL, NULL);
+    //if actions are not supported, don't add actions
+    //An example is Ubuntu Notify OSD. It uses an alert box
+    //instead of a bubble when a notification is appended with actions.
+    //the alert box won't be closed until user inputs.
+    //so disable it in case of no support of actions
+    if(m_actions) {
+        notify_notification_add_action(m_notification, "view", _("View"), notifyAction, (gpointer)viewParams, NULL);
+        notify_notification_add_action(m_notification, "dismiss", _("Dismiss"), notifyAction, (gpointer)viewParams, NULL);
+    }
+    notify_notification_show(m_notification, NULL);
+}
+#endif
 
 void AutoSyncManager::AutoSyncTaskList::createTimeoutSource()
 {
