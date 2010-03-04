@@ -1455,10 +1455,12 @@ void SyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cac
 vector<string> SyncConfig::getSyncURL() const { 
     string s = m_stringCache.getProperty(*getNode(syncPropSyncURL), syncPropSyncURL);
     vector<string> urls;
-    // workaround for g++ 4.3/4.4:
-    // http://stackoverflow.com/questions/1168525/c-gcc4-4-warning-array-subscript-is-above-array-bounds
-    static const string sep(" \t");
-    boost::split(urls, s, boost::is_any_of(sep));
+    if (!s.empty()) {
+        // workaround for g++ 4.3/4.4:
+        // http://stackoverflow.com/questions/1168525/c-gcc4-4-warning-array-subscript-is-above-array-bounds
+        static const string sep(" \t");
+        boost::split(urls, s, boost::is_any_of(sep));
+    }
     return urls;
 }
 void SyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*getNode(syncPropSyncURL), value, temporarily); }

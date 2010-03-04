@@ -399,6 +399,12 @@ bool Cmdline::run() {
                     if (!from->getPassword()[0]) {
                         from->setPassword("your SyncML server password");
                     }
+                } else {
+                    // uncomment SyncURL, so that it can be shown by
+                    // sync-ui
+                    if (from->getSyncURL().size() == 0) {
+                        from->setSyncURL ("input your peer address here");
+                    }
                 }
             }
         }
