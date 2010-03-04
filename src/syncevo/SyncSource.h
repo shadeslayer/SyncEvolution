@@ -991,6 +991,21 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
 
         typedef sysync::TSyError (DeleteMapItem_t)(sysync::cMapID mID);
         boost::function<DeleteMapItem_t> m_deleteMapItem;
+
+        typedef sysync::TSyError (ReadBlob_t)(sysync::cItemID aID, const char *aBlobID,
+                                              void **aBlkPtr, size_t *aBlkSize,
+                                              size_t *aTotSize,
+                                              bool aFirst, bool *aLast);
+        boost::function<ReadBlob_t> m_readBlob;
+
+        typedef sysync::TSyError (WriteBlob_t)(sysync::cItemID aID, const char *aBlobID,
+                                               void *aBlkPtr, size_t aBlkSize,
+                                               size_t aTotSize,
+                                               bool aFirst, bool aLast);
+        boost::function<WriteBlob_t> m_writeBlob;
+
+        typedef sysync::TSyError (DeleteBlob_t)(sysync::cItemID aID, const char *aBlobID);
+        boost::function<DeleteBlob_t> m_deleteBlob;
         /**@}*/
     };
     const Operations &getOperations() { return m_operations; }

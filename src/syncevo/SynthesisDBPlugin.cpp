@@ -112,7 +112,10 @@ TSyError SyncEvolution_Module_Capabilities( CContext mContext, appCharP *mCapabi
       << Plugin_DS_Data_Str << ":no\n"
       << Plugin_DS_Data_Key << ":yes\n"
       << CA_ItemAsKey << ":yes\n"
-      << Plugin_DS_Blob << ":no\n";
+      << Plugin_DS_Blob <<
+        ((source && source->getOperations().m_readBlob) ?
+         ":yes\n" :
+         ":no\n");
 
     if (source && source->getOperations().m_loadAdminData) {
         s << Plugin_DS_Admin << ":yes\n";
@@ -704,34 +707,34 @@ TSyError SyncEvolution_ReadItemAsKey( CContext aContext, cItemID aID, KeyH aItem
     return res;
 }
 
-#if 0
 extern "C"
-TSyError SyncEvolution_ReadBlob( CContext aContext, cItemID  aID,  cAppCharP  aBlobID,
-                                 appPointer *aBlkPtr, uInt32 *aBlkSize, 
-                                 uInt32 *aTotSize,
-                                 bool  aFirst,    bool *aLast )
+sysync::TSyError SyncEvolution_ReadBlob(CContext aContext, cItemID  aID,  cAppCharP  aBlobID,
+                                        appPointer *aBlkPtr, memSize *aBlkSize, 
+                                        memSize *aTotSize,
+                                        bool  aFirst,    bool *aLast)
 {
-  /**** CAN BE ADAPTED BY USER ****/ 
   SyncSource *source = DBC( aContext );
   if (!source) {
       return LOCERR_WRONGUSAGE;
   }
-  TSyError res = LOCERR_OK;
-  const int sz= sizeof(int);
-  
-  int* ip = (int*)malloc( sz ); /* example BLOB structure for test (=4 bytes) */ 
-      *ip = 231;
 
-  *aBlkPtr = (appPointer)ip; if (*aBlkSize==0 || *aBlkSize>=sz) *aBlkSize= sz;
-  *aTotSize= *aBlkSize;
-  *aLast   = true;
+  TSyError res;
+  if (source->getOperations().m_readBlob) {
+      try {
+          res = source->getOperations().m_readBlob(aID, aBlobID, (void **)aBlkPtr, aBlkSize,
+                                                   aTotSize, aFirst, aLast);
+      } catch (...) {
+          res = source->handleException();
+      }
+  } else {
+      res = LOCERR_NOTIMP;
+  }
 
-  SE_LOG_DEBUG(source, NULL, "ReadBlob aID=(%s,%s) aBlobID=(%s) aBlkPtr=%08X aBlkSize=%d aTotSize=%d aFirst=%s aLast=%s res=%d",
+  SE_LOG_DEBUG(source, NULL, "ReadBlob aID=(%s,%s) aBlobID=(%s) aBlkPtr=%p aBlkSize=%lu aTotSize=%lu aFirst=%s aLast=%s res=%d",
                aID->item,aID->parent, aBlobID, aBlkPtr, *aBlkSize, *aTotSize,
                aFirst? "true" : "false", *aLast ? "true" : "false", res);
   return res;
 } /* ReadBlob */
-#endif
 
 
 extern "C"
@@ -878,20 +881,30 @@ TSyError SyncEvolution_DeleteSyncSet( CContext aContext )
 }
 
 
-#if 0
 extern "C"
-TSyError SyncEvolution_WriteBlob( CContext aContext, cItemID aID,  cAppCharP aBlobID,
-                                  appPointer aBlkPtr, uInt32 aBlkSize, 
-                                  uInt32 aTotSize,
-                                  bool aFirst,    bool aLast )
+TSyError SyncEvolution_WriteBlob(CContext aContext, cItemID aID,  cAppCharP aBlobID,
+                                 appPointer aBlkPtr, memSize aBlkSize, 
+                                 memSize aTotSize,
+                                 bool aFirst,    bool aLast)
 {
     SyncSource *source = DBC( aContext );
     if (!source) {
         return LOCERR_WRONGUSAGE;
     }
-    TSyError res = LOCERR_NOTIMP;
-  
-    SE_LOG_DEBUG(source, NULL, "WriteBlob aID=(%s,%s) aBlobID=(%s) aBlkPtr=%08X aBlkSize=%d aTotSize=%d aFirst=%s aLast=%s res=%d",
+
+    TSyError res;
+    if (source->getOperations().m_writeBlob) {
+        try {
+            res = source->getOperations().m_writeBlob(aID, aBlobID, aBlkPtr, aBlkSize,
+                                                      aTotSize, aFirst, aLast);
+        } catch (...) {
+            res = source->handleException();
+        }
+    } else {
+        res = LOCERR_NOTIMP;
+    }
+    
+    SE_LOG_DEBUG(source, NULL, "WriteBlob aID=(%s,%s) aBlobID=(%s) aBlkPtr=%p aBlkSize=%lu aTotSize=%lu aFirst=%s aLast=%s res=%d",
                  aID->item,aID->parent, aBlobID, aBlkPtr, aBlkSize, aTotSize, 
                  aFirst ? "true" : "false", aLast ? "true" : "false", res);
     return res;
@@ -905,15 +918,22 @@ TSyError SyncEvolution_DeleteBlob( CContext aContext, cItemID aID, cAppCharP aBl
     if (!source) {
         return LOCERR_WRONGUSAGE;
     }
-    TSyError res = LOCERR_NOTIMP;
 
-    SE_LOG_DEBUG(source "DeleteBlob aID=(%s,%s) aBlobID=(%s) res=%d",
+    TSyError res;
+    if (source->getOperations().m_deleteBlob) {
+        try {
+            res = source->getOperations().m_deleteBlob(aID, aBlobID);
+        } catch (...) {
+            res = source->handleException();
+        }
+    } else {
+        res = LOCERR_NOTIMP;
+    }
+
+    SE_LOG_DEBUG(source, NULL, "DeleteBlob aID=(%s,%s) aBlobID=(%s) res=%d",
                  aID->item,aID->parent, aBlobID, res);
     return res;
 } /* DeleteBlob */
-
-#endif
-
 
 extern "C"
 TSyError SyncEvolution_EndDataWrite( CContext aContext, bool success, appCharP *newToken )
