@@ -115,6 +115,9 @@ struct SyncOptions {
     bool m_loSupport;
     /** enabled WBXML (default) */
     bool m_isWBXML;
+    /** overrides resend properties */
+    int m_retryDuration;
+    int m_retryInterval;
 
     bool m_isSuspended; 
     
@@ -146,6 +149,8 @@ struct SyncOptions {
         m_maxObjSize(maxObjSize),
         m_loSupport(loSupport),
         m_isWBXML(isWBXML),
+        m_retryDuration(300),
+        m_retryInterval(60),
         m_isSuspended(false),
         m_isAborted(false),
         m_startCallback(startCallback),
@@ -158,6 +163,8 @@ struct SyncOptions {
     SyncOptions &setMaxObjSize(long maxObjSize) { m_maxObjSize = maxObjSize; return *this; }
     SyncOptions &setLOSupport(bool loSupport) { m_loSupport = loSupport; return *this; }
     SyncOptions &setWBXML(bool isWBXML) { m_isWBXML = isWBXML; return *this; }
+    SyncOptions &setRetryDuration(int retryDuration) { m_retryDuration = retryDuration; return *this; }
+    SyncOptions &setRetryInterval(int retryInterval) { m_retryInterval = retryInterval; return *this; }
     SyncOptions &setStartCallback(const Callback_t &callback) { m_startCallback = callback; return *this; }
     SyncOptions &setTransportAgent(const boost::shared_ptr<TransportAgent> transport)
                                   {m_transport = transport; return *this;}

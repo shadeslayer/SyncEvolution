@@ -332,6 +332,8 @@ public:
                 setMaxObjSize(m_options.m_maxObjSize, true);
                 setMaxMsgSize(m_options.m_maxMsgSize, true);
                 setWBXML(m_options.m_isWBXML, true);
+                setRetryDuration(m_options.m_retryDuration, true);
+                setRetryInterval(m_options.m_retryInterval, true);
                 SyncContext::prepare();
             }
 

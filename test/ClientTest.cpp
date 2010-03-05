@@ -2922,12 +2922,17 @@ void SyncTests::doInterruptResume(int changes,
         // by overloading the delete operator.
         int wasInterrupted;
         {
+            SyncOptions options(SYNC_TWO_WAY,
+                                CheckSyncReport(-1, -1, -1, -1,
+                                                -1, -1, resend));
+            options.setTransportAgent(wrapper);
+            options.setMaxMsgSize(maxMsgSize);
+            if (!resend) {
+                // disable resending completely
+                options.setRetryInterval(0);
+            }
             wrapper->setInterruptAtMessage(interruptAtMessage);
-            accessClientB->doSync("changesFromB",
-                                  SyncOptions(SYNC_TWO_WAY,
-                                              CheckSyncReport(-1, -1, -1, -1,
-                                                  -1, -1, resend)).setTransportAgent(wrapper)
-                                  .setMaxMsgSize(maxMsgSize));
+            accessClientB->doSync("changesFromB", options);
             wasInterrupted = interruptAtMessage != -1 &&
                 wrapper->getMessageCount() <= interruptAtMessage;
             wrapper->rewind();
