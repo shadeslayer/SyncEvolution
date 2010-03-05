@@ -2840,6 +2840,14 @@ void SyncTests::doInterruptResume(int changes,
         3 * maxMsgSize / 2 :
         0;
 
+    // After running the uninterrupted sync, we remember the number
+    // of sent messages. We never interrupt between sending our
+    // own last message and receiving the servers last reply,
+    // because the server is unable to detect that we didn't get
+    // the reply. It will complete the session whereas the client
+    // suspends, leading to an unexpected slow sync the next time.
+    int maxMsgNum = 0;
+
     while (true) {
         char buffer[80];
         sprintf(buffer, "%d", interruptAtMessage);
@@ -2935,6 +2943,9 @@ void SyncTests::doInterruptResume(int changes,
             accessClientB->doSync("changesFromB", options);
             wasInterrupted = interruptAtMessage != -1 &&
                 wrapper->getMessageCount() <= interruptAtMessage;
+            if (!maxMsgNum) {
+                maxMsgNum = wrapper->getMessageCount();
+            }
             wrapper->rewind();
         }
 
@@ -3002,6 +3013,11 @@ void SyncTests::doInterruptResume(int changes,
         } else {
             // interrupt one message later than before
             interruptAtMessage++;
+            if (!resend &&
+                interruptAtMessage + 1 >= maxMsgNum) {
+                // don't interrupt before the server's last reply
+                break;
+            }
         }
     }
 
