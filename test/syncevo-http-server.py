@@ -192,7 +192,7 @@ class SyncMLPost(resource.Resource):
                 request.setResponseCode(http.OK)
                 request.write(OldRequest.reply)
                 request.finish()
-                return server.DONE
+                return server.NOT_DONE_YET
             else:
                 # prepare resending, will be completed in
                 # SyncSession.reply()
