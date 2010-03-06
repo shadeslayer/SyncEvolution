@@ -1143,11 +1143,14 @@ get_sessions_cb (SyncevoServer *server,
         g_warning ("Server.GetSessions failed: %s", error->message);
         g_error_free (error);
         /* non-fatal, ignore in UI */
+
+        g_object_unref (self);
         return;
     }
 
     set_session (self, syncevo_sessions_index (sessions, 0));
     syncevo_sessions_free (sessions);
+    g_object_unref (self);
 }
 
 void
@@ -1171,6 +1174,8 @@ sync_config_widget_set_server (SyncConfigWidget *self,
     g_signal_connect (self->server, "session-changed",
                       G_CALLBACK (session_changed_cb), self);
 
+    /* reference is released in callback */
+    g_object_ref (self);
     /* TODO: this is stupid, every widget running the same dbus call*/
     syncevo_server_get_sessions (self->server,
                                  (SyncevoServerGetSessionsCb)get_sessions_cb,

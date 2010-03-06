@@ -147,6 +147,7 @@ struct _app_data {
     ui_operation current_operation;
     server_config *current_service;
     app_state current_state;
+    guint service_list_updates_left;
     gboolean open_current; /* should the service list open the current 
                               service when it populates next time*/
     char *config_id_to_open;
@@ -1742,6 +1743,8 @@ get_config_for_config_widget_cb (SyncevoServer *server,
 {
     char *ready, *is_peer, *url;
 
+    c_data->data->service_list_updates_left--;
+
     if (error) {
         /* show in UI? */
         g_warning ("Server.GetConfig() failed: %s", error->message);
@@ -1824,6 +1827,8 @@ get_config_for_config_widget (app_data *data,
 {
     config_data *c_data;
 
+    data->service_list_updates_left++;
+
     c_data = g_slice_new0 (config_data);
     c_data->data = data;
     c_data->name = g_strdup (config);
@@ -1875,6 +1880,8 @@ get_configs_cb (SyncevoServer *server,
     char **config_iter, **template_iter, **templates;
     app_data *data;
     GHashTable *device_templates;
+
+    templ_data->data->service_list_updates_left = 0;
 
     templates = templ_data->templates;
     data = templ_data->data;
@@ -1949,6 +1956,7 @@ get_template_configs_cb (SyncevoServer *server,
     templates_data *templ_data;
 
     if (error) {
+        data->service_list_updates_left = 0;
         show_main_view (data);
 
         show_error_dialog (data->sync_win, 
@@ -1971,6 +1979,10 @@ get_template_configs_cb (SyncevoServer *server,
 static void
 update_services_list (app_data *data)
 {
+    if (data->service_list_updates_left > 0) {
+        return;
+    }
+
     gtk_container_foreach (GTK_CONTAINER (data->services_box),
                            (GtkCallback)remove_child,
                            data->services_box);
@@ -1978,6 +1990,8 @@ update_services_list (app_data *data)
                            (GtkCallback)remove_child,
                            data->devices_box);
 
+    /* set temp number before we know the real one */
+    data->service_list_updates_left = 1;
     syncevo_server_get_configs (data->server,
                                 TRUE,
                                 (SyncevoServerGetConfigsCb)get_template_configs_cb,
