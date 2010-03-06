@@ -502,7 +502,7 @@ refresh_last_synced_label (app_data *data)
     diff = val.tv_sec - data->last_sync;
 
     if (!data->current_service) {
-        msg = g_strdup (_("No service selected"));
+        msg = g_strdup (_("No service or device selected"));
         delay = -1;
     } else if (data->last_sync <= 0) {
         msg = g_strdup (data->current_service->pretty_name); /* we don't know */
@@ -651,9 +651,10 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_hide (data->service_box);
         set_info_bar (data->info_bar,
                       GTK_MESSAGE_INFO, SYNC_ERROR_RESPONSE_SETTINGS_SELECT,
-                      _("You haven't selected a sync service yet. "
+                      _("You haven't selected a sync service or device yet. "
                         "Sync services let you synchronize your data "
-                        "between your netbook and a web service"));
+                        "between your netbook and a web service. You can "
+                        "also sync directly with some devices."));
         refresh_last_synced_label (data);
 
         gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
@@ -1342,9 +1343,9 @@ add_backup (app_data *data, const char *peername, const char *dir,
     char time_str[60];
     struct tm *tim;
 
+    tim = localtime (&endtime);
     /* TRANSLATORS: date/time for strftime(), used in emergency view backup
      * label. Any time format that shows date and time is good. */
-    tim = localtime (&endtime);
     strftime (time_str, sizeof (time_str), _("%x %X"), tim);
 
     g_object_get (data->emergency_backup_table,
@@ -2901,6 +2902,7 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
         if (response) {
             *response = SYNC_ERROR_RESPONSE_EMERGENCY;
         }
+        /* TRANSLATORS: next strings are error messages. */
         return g_strdup (_("A normal sync is not possible at this time. The server "
                            "suggests a slow sync, but this might not always be "
                            "what you want if both ends already have data."));
@@ -2918,16 +2920,16 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
         if (response) {
             *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
         }
-        return g_strdup(_("The source could not be found. Could there be a "
-                          "problem with the server settings?"));
+        /* TRANSLATORS: data source means e.g. calendar or addressbook */
+        return g_strdup(_("A data source could not be found. Could there be a "
+                          "problem with the settings?"));
     case DB_Fatal:
-        return g_strdup(_("Fatal database error"));
+    case DB_Error:
+        return g_strdup(_("Remote database error"));
     case LOCAL_STATUS_CODE + DB_Fatal:
         /* This can happen when EDS is borked, restart it may help... */
         return g_strdup(_("There is a problem with the local database. "
                           "Syncing again or rebooting may help."));
-    case DB_Error:
-        return g_strdup(_("Database error"));
     case DB_Full:
         return g_strdup(_("No space left"));
     case LOCERR_PROCESSMSG:
@@ -2957,11 +2959,17 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
         }
         return g_strdup(_("We were unable to connect to the server. The problem "
                           "could be temporary or there could be something wrong "
-                          "with the server settings."));
+                          "with the settings."));
     case LOCERR_BADURL:
-        return g_strdup(_("URL is bad"));
+        if (response) {
+            *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
+        }
+        return g_strdup(_("The server URL is bad"));
     case LOCERR_SRVNOTFOUND:
-        return g_strdup(_("Server not found"));
+        if (response) {
+            *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
+        }
+        return g_strdup(_("The server was not found"));
     default:
         return g_strdup_printf (_("Error %d"), error_code);
     }

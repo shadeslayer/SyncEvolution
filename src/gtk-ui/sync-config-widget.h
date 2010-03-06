@@ -32,6 +32,7 @@ typedef struct {
     GtkWidget *label_box;
 
     GtkWidget *device_selector_box;
+    GtkWidget *device_text;
     GtkWidget *combo;
 
     GtkWidget *settings_box;

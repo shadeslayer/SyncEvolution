@@ -390,7 +390,7 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         msg = g_strdup_printf
             (_("Do you want to delete the settings for %s? "
                "This will not remove any synced information on either "
-               "end but it will remove this service configuration."),
+               "end but it will remove these settings."),
              self->pretty_name);
         /*TRANSLATORS: buttons in delete-service warning dialog */
         yes = _("Yes, delete");
@@ -422,10 +422,10 @@ static void update_buttons (SyncConfigWidget *self)
     if (self->has_template) {
         /* TRANSLATORS: button labels in service configuration form */
         gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
-                              _("Reset service"));
+                              _("Reset settings"));
     } else {
         gtk_button_set_label (GTK_BUTTON (self->reset_delete_button),
-                              _("Delete service"));
+                              _("Delete settings"));
     }
     if (self->configured) {
         gtk_widget_show (GTK_WIDGET (self->reset_delete_button));
@@ -433,15 +433,26 @@ static void update_buttons (SyncConfigWidget *self)
         gtk_widget_hide (GTK_WIDGET (self->reset_delete_button));
     }
 
-    if (self->current_service_name || self->current) {
+    if (self->current || !self->current_service_name) {
         gtk_button_set_label (GTK_BUTTON (self->use_button),
                               _("Save and use"));
-    } else { 
+    } else {
         gtk_button_set_label (GTK_BUTTON (self->use_button),
                               _("Save and replace\ncurrent service"));
     }
 
-    if (self->current) {
+
+
+    if (self->current && self->config) {
+        char *client;
+        syncevo_config_get_value (self->config, NULL, "PeerIsClient", &client);
+        if (client && g_strcmp0 (client, "1") == 0) {
+            gtk_button_set_label (GTK_BUTTON (self->stop_button),
+                                              _("Stop using device"));
+        } else {
+            gtk_button_set_label (GTK_BUTTON (self->stop_button),
+                                              _("Stop using service"));
+        }
         gtk_widget_show (self->stop_button);
     } else { 
         gtk_widget_hide (self->stop_button);
@@ -1750,10 +1761,23 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_set_no_show_all (self->expando_box, TRUE);
     gtk_widget_set_parent (self->expando_box, GTK_WIDGET (self));
 
-    /* device_selector_box does device template selection */
     self->device_selector_box = gtk_vbox_new (FALSE, 0);
     gtk_box_pack_start (GTK_BOX (self->expando_box), self->device_selector_box,
                         TRUE, TRUE, 16);
+
+    hbox = gtk_hbox_new (FALSE, 8);
+    gtk_widget_show (hbox);
+    gtk_box_pack_start (GTK_BOX (self->device_selector_box), hbox,
+                        FALSE, TRUE, 16);
+    self->device_text = gtk_label_new (("We don't know what this device is exactly. "
+                                        "Please take a look at the list of "
+                                        "supported devices and pick yours if it "
+                                        "is listed"));
+    gtk_widget_show (self->device_text);
+    gtk_widget_set_size_request (self->device_text, 600, -1);
+    gtk_box_pack_start (GTK_BOX (hbox), self->device_text,
+                        FALSE, TRUE, 0);
+
 
     hbox = gtk_hbox_new (FALSE, 8);
     gtk_widget_show (hbox);
@@ -1839,7 +1863,7 @@ sync_config_widget_init (SyncConfigWidget *self)
                         FALSE, FALSE, 0);
     /* TRANSLATORS: warning in service configuration form for people
        who have modified the configuration via other means. */
-    label = gtk_label_new (_("Current service configuration is more complex "
+    label = gtk_label_new (_("Current configuration is more complex "
                              "than what can be shown here. Changes to sync "
                              "mode or synced data types will overwrite that "
                              "configuration."));
@@ -1890,8 +1914,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     g_signal_connect (self->use_button, "clicked",
                       G_CALLBACK (use_clicked_cb), self);
 
-    /* TRANSLATORS: button in service configuration form */
-    self->stop_button = gtk_button_new_with_label (_("Stop using service"));
+    self->stop_button = gtk_button_new ();
     gtk_box_pack_end (GTK_BOX (tmp_box), self->stop_button, FALSE, FALSE, 8);
     g_signal_connect (self->stop_button, "clicked",
                       G_CALLBACK (stop_clicked_cb), self);
