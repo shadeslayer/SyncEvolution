@@ -783,7 +783,9 @@ key_press_cb (GtkWidget *widget,
 static void
 settings_visibility_changed_cb (MuxWindow *win, app_data *data)
 {
-    update_services_list (data);
+    if (mux_window_get_settings_visible (MUX_WINDOW (data->sync_win))) {
+        update_services_list (data);
+    }
 }
 
 static void

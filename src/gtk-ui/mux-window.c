@@ -565,11 +565,6 @@ mux_window_set_settings_visible (MuxWindow *window, gboolean show)
             mux_window_set_current_page (window, -1);
         }
 
-        g_signal_emit (window, mux_window_signals[SETTINGS_VISIBILITY_CHANGED], 0);
-
-        if (window->settings_button)
-            mux_icon_button_set_active (MUX_ICON_BUTTON (window->settings_button),
-                                        show);
     }
 }
 
@@ -597,6 +592,11 @@ mux_window_append_page (MuxWindow *window,
 void mux_window_set_current_page (MuxWindow *window, gint index)
 {
     GtkBin *bin = GTK_BIN (window);
+    gint old_index = mux_window_get_current_page (window);
+
+    if (old_index == index) {
+        return;
+    }
 
     if (index == -1) {
         gtk_widget_hide (window->notebook);
@@ -614,6 +614,17 @@ void mux_window_set_current_page (MuxWindow *window, gint index)
 
         gtk_widget_show (window->back_btn);
     }
+
+
+    if (window->settings_button) {
+        mux_icon_button_set_active (MUX_ICON_BUTTON (window->settings_button),
+                                    index == window->settings_index);
+    }
+
+    if (old_index == window->settings_index || index == window->settings_index) {
+        g_signal_emit (window, mux_window_signals[SETTINGS_VISIBILITY_CHANGED], 0);
+    }
+
 }
 
 gint
