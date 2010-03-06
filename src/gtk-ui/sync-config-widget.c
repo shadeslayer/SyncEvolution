@@ -988,8 +988,9 @@ device_selection_btn_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     self->device_template_selected = TRUE;
 
     name = gtk_combo_box_get_active_text (GTK_COMBO_BOX (self->combo));
-    config = g_hash_table_lookup (self->configs, name);
+    g_return_if_fail (name);
 
+    config = g_hash_table_lookup (self->configs, name);
     g_return_if_fail (config);
 
     sync_config_widget_set_config (self, config);
@@ -1671,6 +1672,16 @@ label_leave_notify_cb (GtkWidget *widget,
 }
 
 static void
+device_combo_changed (GtkComboBox *combo,
+                      SyncConfigWidget *self)
+{
+    char *selected;
+
+    selected = gtk_combo_box_get_active_text (GTK_COMBO_BOX (combo));
+    gtk_widget_set_sensitive (self->device_select_btn, selected != NULL);
+}
+
+static void
 label_button_release_cb (GtkWidget *widget,
                          GdkEventButton *event,
                          SyncConfigWidget *self)
@@ -1685,7 +1696,7 @@ label_button_release_cb (GtkWidget *widget,
 static void
 sync_config_widget_init (SyncConfigWidget *self)
 {
-    GtkWidget *tmp_box, *hbox, *cont, *vbox, *label, *btn;
+    GtkWidget *tmp_box, *hbox, *cont, *vbox, *label;
 
     GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
 
@@ -1774,6 +1785,7 @@ sync_config_widget_init (SyncConfigWidget *self)
                                         "supported devices and pick yours if it "
                                         "is listed"));
     gtk_widget_show (self->device_text);
+    gtk_label_set_line_wrap (GTK_LABEL (self->device_text), TRUE);
     gtk_widget_set_size_request (self->device_text, 600, -1);
     gtk_box_pack_start (GTK_BOX (hbox), self->device_text,
                         FALSE, TRUE, 0);
@@ -1788,11 +1800,15 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (self->combo);
     gtk_box_pack_start (GTK_BOX (hbox), self->combo,
                         FALSE, TRUE, 0);
-    btn = gtk_button_new_with_label ("Use these settings");
-    gtk_widget_show (btn);
-    gtk_box_pack_start (GTK_BOX (hbox), btn,
+    g_signal_connect (self->combo, "changed",
+                      G_CALLBACK (device_combo_changed), self);
+
+    self->device_select_btn = gtk_button_new_with_label ("Use these settings");
+    gtk_widget_set_sensitive (self->device_select_btn, FALSE);
+    gtk_widget_show (self->device_select_btn);
+    gtk_box_pack_start (GTK_BOX (hbox), self->device_select_btn,
                         FALSE, TRUE, 0);
-    g_signal_connect (btn, "clicked",
+    g_signal_connect (self->device_select_btn, "clicked",
                       G_CALLBACK (device_selection_btn_clicked_cb), self);
 
     /* settings_box has normal expander contents */
