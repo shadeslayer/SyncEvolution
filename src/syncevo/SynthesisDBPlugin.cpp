@@ -451,8 +451,8 @@ TSyError SyncEvolution_LoadAdminData( CContext aContext, cAppCharP aLocDB,
         res = source->handleException();
     }
 
-    SE_LOG_DEBUG(source, NULL, "LoadAdminData '%s' '%s', res=%d",
-                 aLocDB, aRemDB, res);
+    SE_LOG_DEBUG(source, NULL, "LoadAdminData '%s' '%s', '%s' res=%d",
+                 aLocDB, aRemDB, *adminData ? *adminData : "", res);
     return res;
 } /* LoadAdminData */
 
