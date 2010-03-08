@@ -202,8 +202,8 @@ dist-hook:
 if ENABLE_EVOLUTION_COMPATIBILITY
 installcheck-local:
 	for i in `find . -name *.so`; do \
-		if ldd $$i | grep -e libecal -e libebook -e libedata -e libical; then \
-			echo "$$i should not depend on EDS or libical"; \
+		if ldd $$i | grep -e libecal -e libebook -e libedata -e libical -e libbluetooth; then \
+			echo "$$i should not depend on EDS, libical or libbluetooth"; \
 			objdump -T -C $$i | grep -v :: | grep -e ical -e " e_"; \
 			exit 1; \
 		fi \

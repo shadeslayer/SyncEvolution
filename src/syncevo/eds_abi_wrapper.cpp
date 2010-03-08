@@ -115,7 +115,7 @@ void *findSymbols(const char *libname, int minver, int maxver,
         va_start(ap, realver);
         void **funcptr = va_arg(ap, void **);
         const char *symname = NULL;
-        while (funcptr && allfound) {
+        while (funcptr) {
             symname = va_arg(ap, const char *);
             *funcptr = dlsym(dlhandle, symname);
             if (!*funcptr) {
