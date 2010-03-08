@@ -1598,6 +1598,11 @@ void SyncTests::deleteAll(DeleteAllMode mode) {
     source_it it;
     SyncPrefix prefix("deleteall", *this);
 
+    const char *value = getenv ("CLIENT_TEST_DELETE_REFRESH");
+    if (value) {
+        mode = DELETE_ALL_REFRESH;
+    }
+
     switch(mode) {
      case DELETE_ALL_SYNC:
         // a refresh from server would slightly reduce the amount of data exchanged, but not all servers support it

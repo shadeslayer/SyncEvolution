@@ -1,0 +1,23 @@
+@@ -83,15 +83,14 @@
+ X-EVOLUTION-ASSISTANT:
+ NICKNAME:user2
+ X-EVOLUTION-SPOUSE:
+-NOTE:This user tests some of the advanced aspects of vcards:\n- non-ASCII c
+- haracters (with umlauts in the name)\n- line break (in this note and the
+-  mailing address)\n- long lines (in this note)\n- special characters (in
+-  this note)\n- tabs (in this note)\n\nVery long line\, very very long th
++NOTE:This user tests some of the advanced aspects of vcards:- non-ASCII c
++ haracters (with umlauts in the name)- line break (in this note and the
++  mailing address)- long lines (in this note)- special characters (in
++  this note)- tabs (in this note)Very long line\, very very long th
+  is time... still not finished... blah blah blah blah blah 1 2 3 4 5 6 7 
+- 8 9 10 11 12 13 14 15 16\n\ncomma \,\ncolon :\nsemicolon \;\nbackslash 
+- \\\n\nThe same\, in the middle of a line:\ncomma \, comma\ncolon : col
+- on\nsemicolon \; semicolon\nbackslash \\ backslash\n\nA tab 	tab done\n	
+- line starts with tab
++ 8 9 10 11 12 13 14 15 16comma \,colon :semicolon \;backslash 
++ \\The same\, in the middle of a line:comma \, commacolon : col
++ onsemicolon \; semicolonbackslash \\ backslash
+ FN:Umlaut Ä Ö Ü ß
+ N:Ü;Ä;Ö;Umlaut;ß
+ X-EVOLUTION-FILE-AS:Ü\, Ä

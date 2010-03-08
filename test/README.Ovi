@@ -1,0 +1,94 @@
+This document is used to show interoperability test information with Nokia Ovi server.
+http://bugzilla.moblin.org/show_bug.cgi?id=3182
+
+* How to get the password
+  Register your account at Ovi.com.
+  Add your phone by Ovi.com->Login->Add Device.
+  At the end of your adding device page, the synchronization configuration will
+  be sent to your phone by mms but it also provides a 'Manual Setting' link which
+  provides the synchronization password used to sync this device in case you
+  could not receive the mms.
+  Please use your Ovi user name and this per-device password for SyncEvolution.
+
+* The Ovi Server's device information 
+    Man=Intellisync
+    Mod=-
+    SwV=6.5.0.OVI.1033
+    HwV=-
+    OEM=-
+    DevID=Ovi.com
+    DevTyp=server
+    VerDTD=1.2
+    UTC=
+    SupportLargeObjs=true
+    SupportNumberOfChanges=true
+
+* Test Environment Variables Settings
+  CLIENT_TEST_SERVER=Ovi \
+  CLIENT_TEST_DELETE_REFRESH=1 \
+  CLIENT_TEST_NUM_ITEMS=50 \
+  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test/                             \
+  CLIENT_TEST_SKIP=Client::Sync::vcard30::testRefreshFromServerSync,         \
+  Client::Sync::vcard30::testOneWayFromClient,                               \
+  Client::Sync::vcard30::testOneWayFromServer,                               \
+  Client::Sync::vcard30::testSlowSyncSemantic,                               \
+  Client::Sync::vcard30::testComplexRefreshFromServerSemantic,               \
+  Client::Sync::vcard30::testDelete,                                        \
+  Client::Sync::vcard30::testManyDeletes,                                    \
+  Client::Sync::vcard30::testDeleteAllSync,                                  \
+  Client::Sync::vcard30::testRetry,Client::Sync::vcard30::Suspend
+
+
+* Data formats we need to test:
+Client::Sync::vcard30
+
+* Know Limitations in Ovi server:
+The server is unstable, during testing, it returns '400' error from time to
+time.
+The authentication process need 3 retries to success.
+Delete in normal sync (including two-way, one-way-from-client) does not 
+effectively delete the data in the server, we can only use
+(refresh-from-client). because of this limitation, many cases failed.
+
+VCard30
+  -- The server does not accept entries without an empty REV field.
+  -- Below properties are lost:
+     X-AIM X-EVOLUTION-UI-SLOT FBURL CALURI
+  -- 'FN' value mismatch
+  -- 'X-EVOLUTION-FILE-AS' mismatch, the server adds '\'
+  -- 'ADR' only support maximum two fields
+  -- Several fields is accepted by the server but do not send back to client (PHOTO, URL, EMAIL).
+  -- Character 'Tab' in Note will confuse the server and causing value mismatch
+
+* Known test failures:
+Client::Sync::vcard30
+  -- Client::Sync::vcard30::testRefreshFromServerSync,
+     Client::Sync::vcard30::testComplexRefreshFromServerSemantic,
+     Client::Sync::vcard30::testOneWayFromClient,
+     Client::Sync::vcard30::testOneWayFromServer,
+     Client::Sync::vcard30::testSlowSyncSemantic,
+     Client::Sync::vcard30::testManyDeletes,     
+     Client::Sync::vcard30::testDelete,     
+     Client::Sync::vcard30::testDeleteAllSync,          
+     Client::Sync::vcard30::testRetry,Client::Sync::vcard30::Suspend
+
+Client::Sync::calendar+todo (vcalendar1.0)
+EVENTS:
+ --All day event not supported
+ --Yearly recur and Monthly recur event not supported
+ --'attendee' not supported 
+ --The maxsize of an event items seems less than 512 (tested with
+   MAX_ITEM_SIZE=512)
+TODO:
+ --Lost properties: SEQUENCE, PERCENT-COMPLETE
+ --MISMATCH properties: DTSTART, COMPLETED; TODO only supports date not datetime
+
+Also tried with icalendar 2.0 format which also works badly (all day event
+recognized but with one additional day added, events with VTimeZone rejected by
+server, some events have the closing date wrongly calculatd (seems treating
+DTEND as inclusive).
+
+Client::Sync::text
+Reject contents, No devinfo. Items sent from client is rejected by server.
+Adding a note from the web interface and try testFreshFromServerSync, the
+server sends 1 item with empty content thus also rejected by our client.
