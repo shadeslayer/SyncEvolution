@@ -2781,7 +2781,7 @@ bool SyncContext::sendSAN(uint16_t version)
             dataSources.insert (vSource->getName());
     }
 
-    int syncMode;
+    int syncMode = 0;
     vector<pair <string, string> > alertedSources;
 
     /* For each source to be notified do the following: */
