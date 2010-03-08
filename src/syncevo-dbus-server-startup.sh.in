@@ -1,2 +1,3 @@
+#! /bin/sh
 sleep 120
 exec @libexecdir@/syncevo-dbus-server
