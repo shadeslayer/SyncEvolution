@@ -1197,11 +1197,10 @@ void SyncSourceAdmin::mapid2entry(sysync::cMapID mID, string &key, string &value
 
 void SyncSourceAdmin::entry2mapid(const string &key, const string &value, sysync::MapID mID)
 {
-    std::string rawkey = SafeConfigNode::unescape(key);
-    size_t found = rawkey.find_last_of ("-");
-    mID->localID = StrAlloc(rawkey.substr(0,found).c_str());
-    if (found != rawkey.npos) {
-        mID->ident =  strtol(rawkey.substr(found+1).c_str(), NULL, 16);
+    size_t found = key.rfind('-');
+    mID->localID = StrAlloc(SafeConfigNode::unescape(key.substr(0,found)).c_str());
+    if (found != key.npos) {
+        mID->ident =  strtol(key.substr(found+1).c_str(), NULL, 16);
     } else {
         mID->ident = 0;
     }
