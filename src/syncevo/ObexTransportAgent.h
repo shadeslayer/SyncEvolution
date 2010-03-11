@@ -169,7 +169,7 @@ class ObexTransportAgent : public TransportAgent
         cxxptr<Channel> m_channel;
 
         std::string m_contentType;
-        char *m_buffer;
+        arrayptr<char> m_buffer;
         int m_bufferSize;
 
         sdp_session_t *m_sdp;

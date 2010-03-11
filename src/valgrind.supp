@@ -74,3 +74,20 @@
    fun:__pthread_initialize_manager
    fun:pthread_create@@GLIBC_2.1
 }
+
+{
+   libical tzutil invalid access
+   Memcheck:Addr4
+   fun:icaltzutil_fetch_timezone
+   obj:/usr/lib/libical.so.0.43.0
+   fun:icaltimezone_get_component
+   fun:_ZN6sysync25loadSystemZoneDefinitionsEPNS_6GZonesE
+   fun:_ZN6sysync6GZones10initializeEv
+   fun:_ZN6sysync12TSyncAppBaseC2Ev
+   fun:_ZN6sysync22TEngineSessionDispatchC2Ev
+   fun:_ZN6sysync23TCustomServerEngineBaseC1Ev
+   fun:_ZN6sysync28TCustomServerEngineInterface14newSyncAppBaseEv
+   fun:_ZN6sysync16TEngineInterface4InitEv
+   fun:_ZN6sysync17TEngineModuleBase7ConnectESsmt
+   fun:_ZN6sysyncL22internal_ConnectEngineEbPPNS_17SDK_InterfaceTypeEtPmmt
+}

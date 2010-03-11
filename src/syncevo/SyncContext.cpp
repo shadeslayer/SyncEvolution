@@ -2858,10 +2858,10 @@ bool SyncContext::sendSAN(uint16_t version)
     // Time out after the complete retry duration. This is the
     // initial message of a sync, so we don't resend it (just as
     // in a HTTP SyncML client trying to contact server).
-    if (m_retryDuration) {
-        setTransportCallback(m_retryDuration);
+    int retryDuration = getRetryDuration();
+    if (retryDuration) {
+        setTransportCallback(retryDuration);
     }
-
     SE_LOG_INFO (NULL, NULL, "Server sending SAN");
     m_agent->setContentType(!legacy ? 
                            TransportAgent::m_contentTypeServerAlertedNotificationDS
