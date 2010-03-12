@@ -1598,6 +1598,11 @@ class Session : public DBusObjectHelper,
     bool m_active;
 
     /**
+     * Indicates whether this session was initiated by the peer or locally.
+     */
+    bool m_remoteInitiated;
+
+    /**
      * The SyncEvolution instance which currently prepares or runs a sync.
      */
     boost::shared_ptr<DBusSync> m_sync;
@@ -1808,6 +1813,7 @@ public:
      */
     SessionListener* addListener(SessionListener *listener);
 
+    void setRemoteInitiated (bool remote) { m_remoteInitiated = remote;}
 private:
     /** set m_syncFilter and m_sourceFilters to config */
     virtual bool setFilters(SyncConfig &config);
@@ -2698,6 +2704,10 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
         }
     }
 
+    if (m_remoteInitiated) {
+        m_sync->setRemoteInitiated (true);
+    }
+
     // Apply temporary config filters. The parameters of this function
     // override the source filters, if set.
     m_sync->setConfigFilter(true, "", m_syncFilter);
@@ -2843,6 +2853,7 @@ Session::Session(DBusServer &server,
     m_tempConfig(false),
     m_setConfig(false),
     m_active(false),
+    m_remoteInitiated(false),
     m_syncStatus(SYNC_QUEUEING),
     m_stepIsWaiting(false),
     m_priority(PRI_DEFAULT),

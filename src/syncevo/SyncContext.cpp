@@ -154,6 +154,7 @@ void SyncContext::init()
     m_dryrun = false;
     m_serverMode = false;
     m_firstSourceAccess = true;
+    m_remoteInitiated = false;
 }
 
 SyncContext::~SyncContext()
@@ -2301,6 +2302,9 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                        mode != "refresh-from-server" && // is implemented as "delete local data" + "slow sync",
                                                         // so a slow sync is acceptable in this case
                        !m_serverMode &&
+                       // The forceSlow should be disabled if the sync session is
+                       // initiated by a remote peer (eg. Server Alerted Sync)
+                       !m_remoteInitiated &&
                        getPreventSlowSync() &&
                        (!source->getOperations().m_isEmpty ||    // check is only relevant if we have local data;
                         !source->getOperations().m_isEmpty())) { // if we cannot check, assume we have data

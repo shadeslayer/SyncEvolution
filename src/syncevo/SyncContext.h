@@ -158,6 +158,11 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * urls in the configuration.
      * */
     string m_usedSyncURL;
+
+    /* Indicates whether current sync session is triggered by remote peer
+     * (such as server alerted sync)
+     */
+    bool m_remoteInitiated;
   public:
     /**
      * SyncContext using a volatile config
@@ -408,6 +413,9 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * react to it unless this function is called first.
      */
     static void resetSignals() { s_flags = SuspendFlags(); }
+
+    bool getRemoteInitiated() {return m_remoteInitiated;}
+    void setRemoteInitiated(bool remote) {m_remoteInitiated = remote;}
 
   protected:
     /** exchange active Synthesis engine */
