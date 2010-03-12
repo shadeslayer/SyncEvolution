@@ -262,6 +262,8 @@ class ScopedEnvChange
     bool m_oldvalset;
 };
 
+std::string getCurrentTime();
+
 /** throw a normal SyncEvolution Exception, including source information */
 #define SE_THROW(_what) \
     SE_THROW_EXCEPTION(Exception, _what)

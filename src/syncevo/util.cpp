@@ -494,4 +494,13 @@ ScopedEnvChange::~ScopedEnvChange()
     } 
 }
 
+std::string getCurrentTime()
+{
+    time_t seconds = time (NULL);
+    tm *data = localtime (&seconds);
+    arrayptr<char> buffer (new char [13]);
+    strftime (buffer.get(), 13, "%y%m%d%H%M%S", data);
+    return buffer.get();
+}
+
 SE_END_CXX

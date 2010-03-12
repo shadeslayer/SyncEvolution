@@ -1874,6 +1874,19 @@ class Connection : public DBusObjectHelper, public Resource
     SharedBuffer m_incomingMsg;
     std::string m_incomingMsgType;
 
+    struct SANContent {
+        std::vector <string> m_syncType;
+        std::vector <uint32_t> m_contentType;
+        std::vector <string> m_serverURI;
+    };
+
+    /**
+     * The content of a parsed SAN package to be processed via
+     * connection.ready
+     */
+    boost::shared_ptr <SANContent> m_SANContent;
+    std::string m_peerBtAddr;
+
     /**
      * records the reason for the failure, sends Abort signal and puts
      * the connection into the FAILED state.
@@ -3567,7 +3580,7 @@ void Connection::process(const Caller_t &caller,
                         m_server.killSessions(info.m_deviceID);
                         peerDeviceID = info.m_deviceID;
                     }  
-            	} else {
+            	} else { //Server alerted notification case
                     // Extract server ID and match it against a server
                     // configuration.  Multiple different peers might use the
                     // same serverID ("PC Suite"), so check properties of the
@@ -3594,7 +3607,7 @@ void Connection::process(const Caller_t &caller,
                         trans = m_peer.find("transport");
                     if (trans != m_peer.end() && id != m_peer.end()) {
                         if (trans->second == "org.openobex.obexd") {
-                            string btAddr = id->second.substr(0, id->second.find("+"));
+                            m_peerBtAddr = id->second.substr(0, id->second.find("+"));
                             BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server,
                                     servers) {
                                 SyncConfig conf(server.first);
@@ -3602,7 +3615,7 @@ void Connection::process(const Caller_t &caller,
                                 BOOST_FOREACH (string &url, urls){
                                     url = url.substr (0, url.find("+"));
                                     SE_LOG_DEBUG (NULL, NULL, "matching against %s",url.c_str());
-                                    if (url.find ("obex-bt://") ==0 && url.substr(strlen("obex-bt://"), url.npos) == btAddr) {
+                                    if (url.find ("obex-bt://") ==0 && url.substr(strlen("obex-bt://"), url.npos) == m_peerBtAddr) {
                                         config = server.first;
                                         break;
                                     } 
@@ -3624,24 +3637,27 @@ void Connection::process(const Caller_t &caller,
                         }
                     }
 
-                    // pick "default" as configuration name if none matched
+                    // create a default configuration name if none matched
                     if (config.empty()) {
-                        config = "default";
-                        SE_LOG_DEBUG(NULL, NULL, "SAN Server ID '%s' unknown, falling back to 'default' config", serverID.c_str());
+                        config = serverID+"_"+getCurrentTime();
+                        SE_LOG_DEBUG(NULL,
+                                     NULL,
+                                     "SAN Server ID '%s' unknown, falling back to automatically created '%s' config",
+                                     serverID.c_str(), config.c_str());
                     }
 
-                    // TODO: create a suitable configuration automatically?!
 
                     SE_LOG_DEBUG(NULL, NULL, "SAN sync with config %s", config.c_str());
 
+                    m_SANContent.reset (new SANContent ());
                     // extract number of sources
                     int numSources = san.fNSync;
                     int syncType;
                     uint32_t contentType;
                     std::string serverURI;
                     if (!numSources) {
-                        SE_LOG_DEBUG(NULL, NULL, "SAN message with no sources");
-                        // Synchronize all known sources with the selected mode.
+                        SE_LOG_DEBUG(NULL, NULL, "SAN message with no sources, using selected modes");
+                        // Synchronize all known sources with the default mode.
                         if (san.GetNthSync(0, syncType, contentType, serverURI)) {
                             SE_LOG_DEBUG(NULL, NULL, "SAN invalid header, using default modes");
                         } else if (syncType < SYNC_FIRST || syncType > SYNC_LAST) {
@@ -3651,12 +3667,6 @@ void Connection::process(const Caller_t &caller,
                             SE_LOG_DEBUG(NULL, NULL, "SAN sync mode for all configured sources: %s", m_syncMode.c_str());
                         }
                     } else {
-                        const SyncContext context(config);
-                        std::list<std::string> sources = context.getSyncSources();
-
-                        // check what the server wants us to synchronize
-                        // and only synchronize that
-                        m_syncMode = "disabled";
                         for (int sync = 1; sync <= numSources; sync++) {
                             if (san.GetNthSync(sync, syncType, contentType, serverURI)) {
                                 SE_LOG_DEBUG(NULL, NULL, "SAN invalid sync entry #%d", sync);
@@ -3664,38 +3674,13 @@ void Connection::process(const Caller_t &caller,
                                 SE_LOG_DEBUG(NULL, NULL, "SAN invalid sync type %d for entry #%d, ignoring entry", syncType, sync);
                             } else {
                                 std::string syncMode = PrettyPrintSyncMode(SyncMode(syncType), true);
-                                bool found = false;
-                                BOOST_FOREACH(const std::string &source, sources) {
-                                    boost::shared_ptr<const PersistentSyncSourceConfig> sourceConfig(context.getSyncSourceConfig(source));
-                                    // prefix match because the local
-                                    // configuration might contain
-                                    // additional parameters (like date
-                                    // range selection for events)
-                                    if (boost::starts_with(sourceConfig->getURI(), serverURI)) {
-                                        SE_LOG_DEBUG(NULL, NULL,
-                                                     "SAN entry #%d = source %s with mode %s",
-                                                     sync, source.c_str(), syncMode.c_str());
-                                        m_sourceModes[source] = syncMode;
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if (!found) {
-                                    SE_LOG_DEBUG(NULL, NULL,
-                                                 "SAN entry #%d with mode %s ignored because Server URI %s is unknown",
-                                                 sync, syncMode.c_str(), serverURI.c_str());
-                                }
+                                m_SANContent->m_syncType.push_back (syncMode);
+                                m_SANContent->m_serverURI.push_back (serverURI);
+                                m_SANContent->m_contentType.push_back (contentType);
                             }
-                        }
-
-                        if (m_sourceModes.empty()) {
-                            SE_LOG_DEBUG(NULL, NULL,
-                                         "SAN message with no known entries, falling back to default");
-                            m_syncMode = "";
                         }
                     }
                 }
-
                 // TODO: use the session ID set by the server if non-null
             } else {
                 throw runtime_error("message type not supported for starting a sync");
@@ -3859,6 +3844,64 @@ Connection::~Connection()
 
 void Connection::ready()
 {
+    //if configuration not yet created
+    std::string configName = m_session->getConfigName();
+    SyncConfig config (configName);
+    if (!config.exists() && m_SANContent) {
+        SE_LOG_DEBUG (NULL, NULL, "Configuration %s not exists for a runnable session in a SAN context, create it automatically", configName.c_str());
+        ReadOperations::Config_t from;
+        const std::string templateName = "SyncEvolution";
+        // TODO: support SAN from other well known servers
+        ReadOperations ops(templateName, m_server);
+        ops.getConfig(true , from);
+        if (!m_peerBtAddr.empty()){
+            from[""]["SyncURL"] = string ("obex-bt://") + m_peerBtAddr;
+        }
+        m_session->setConfig (false, false, from);
+    }
+    const SyncContext context (configName);
+    std::list<std::string> sources = context.getSyncSources();
+
+    if (m_SANContent && !m_SANContent->m_syncType.empty()) {
+        // check what the server wants us to synchronize
+        // and only synchronize that
+        m_syncMode = "disabled";
+        for (size_t sync=0; sync<m_SANContent->m_syncType.size(); sync++) {
+            std::string syncMode = m_SANContent->m_syncType[sync];
+            std::string serverURI = m_SANContent->m_serverURI[sync];
+            //uint32_t contentType = m_SANContent->m_contentType[sync];
+            bool found = false;
+            BOOST_FOREACH(const std::string &source, sources) {
+                boost::shared_ptr<const PersistentSyncSourceConfig> sourceConfig(context.getSyncSourceConfig(source));
+                // prefix match because the local
+                // configuration might contain
+                // additional parameters (like date
+                // range selection for events)
+                if (boost::starts_with(sourceConfig->getURI(), serverURI)) {
+                    SE_LOG_DEBUG(NULL, NULL,
+                            "SAN entry #%d = source %s with mode %s",
+                            sync, source.c_str(), syncMode.c_str());
+                    m_sourceModes[source] = syncMode;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                SE_LOG_DEBUG(NULL, NULL,
+                        "SAN entry #%d with mode %s ignored because Server URI %s is unknown",
+                        sync, syncMode.c_str(), serverURI.c_str());
+            }
+        }
+        if (m_sourceModes.empty()) {
+            SE_LOG_DEBUG(NULL, NULL,
+                    "SAN message with no known entries, falling back to default");
+            m_syncMode = "";
+        }
+    }
+
+    if (m_SANContent) {
+        m_session->setRemoteInited (true);
+    }
     // proceed with sync now that our session is ready
     m_session->sync(m_syncMode, m_sourceModes);
 }
