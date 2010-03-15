@@ -35,7 +35,7 @@ bin_PROGRAMS = syncevolution
 SYNCEVO_DBUS_SERVER_SCRIPT = syncevo-dbus-server-startup.sh
 SYNCEVO_DBUS_SERVER_SCRIPT_IN = $(SYNCEVO_DBUS_SERVER_SCRIPT).in
 
-autostartdir = /etc/xdg/autostart
+autostartdir = $(sysconfdir)/xdg/autostart
 SYNCEVO_DBUS_SERVER_DESKTOP = syncevo-dbus-server.desktop
 SYNCEVO_DBUS_SERVER_DESKTOP_IN = $(SYNCEVO_DBUS_SERVER_DESKTOP).in
 
