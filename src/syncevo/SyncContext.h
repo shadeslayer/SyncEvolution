@@ -421,6 +421,14 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      */
     static void resetSignals() { s_flags = SuspendFlags(); }
 
+    /**
+     * handleSignals() is called in a signal handler,
+     * which can only call reentrant functions. Our
+     * logging code is not reentrant and thus has
+     * to be called outside of the signal handler.
+     */
+    static void printSignals();
+
     bool getRemoteInitiated() {return m_remoteInitiated;}
     void setRemoteInitiated(bool remote) {m_remoteInitiated = remote;}
 
@@ -715,14 +723,6 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * peer
      */
     string getSynthesisDatadir() { return getRootPath() + "/.synthesis"; }
-
-    /**
-     * handleSignals() is called in a signal handler,
-     * which can only call reentrant functions. Our
-     * logging code is not reentrant and thus has
-     * to be called outside of the signal handler.
-     */
-    static void printSignals();
 
     /**
      * return true if "delayedabort" session variable is true

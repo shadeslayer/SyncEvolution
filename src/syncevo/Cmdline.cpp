@@ -55,6 +55,21 @@ Cmdline::Cmdline(int argc, const char * const * argv, ostream &out, ostream &err
     m_validSourceProps(SyncSourceConfig::getRegistry())
 {}
 
+Cmdline::Cmdline(const vector<string> &args, ostream &out, ostream &err) :
+    m_args(args),
+    m_out(out),
+    m_err(err),
+    m_validSyncProps(SyncConfig::getRegistry()),
+    m_validSourceProps(SyncSourceConfig::getRegistry())
+{
+    m_argc = args.size();
+    m_argvArray.reset(new const char *[args.size()]);
+    for(int i = 0; i < m_argc; i++) {
+        m_argvArray[i] = m_args[i].c_str();
+    }
+    m_argv = m_argvArray.get();
+}
+
 bool Cmdline::parse()
 {
     int opt = 1;
@@ -159,6 +174,22 @@ bool Cmdline::parse()
         } else if(boost::iequals(m_argv[opt], "--keyring")||
                 boost::iequals(m_argv[opt], "-k")) {
             m_keyring = true;
+        } else if(boost::iequals(m_argv[opt], "--use-daemon")) {
+            opt++;
+            if (opt >= m_argc) {
+                usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
+                return false;
+            }
+            if(boost::iequals(m_argv[opt], "yes")) {
+                m_useDaemon = "yes";
+            } else if(boost::iequals(m_argv[opt], "no")) {
+                m_useDaemon = "no";
+            } else {
+                usage(true, string("parameter '") + m_restore + "' for " + cmdOpt(m_argv[opt - 1]) + " must be 'yes' or 'no'");
+            }
+        } else if(boost::iequals(m_argv[opt], "--monitor")||
+                boost::iequals(m_argv[opt], "-m")) {
+            m_monitor = true;
         } else {
             usage(false, string(m_argv[opt]) + ": unknown parameter");
             return false;
@@ -173,6 +204,35 @@ bool Cmdline::parse()
         }
     }
 
+    return true;
+}
+
+bool Cmdline::isSync()
+{
+    //make sure command line arguments really try to run sync
+    if(m_usage || m_version) {
+        return false;
+    } else if(m_printServers || boost::trim_copy(m_server) == "?")  {
+        return false;
+    } else if(m_printTemplates || m_dontrun) {
+        return false;
+    } else if(m_argc == 1 || (!m_useDaemon.empty() && m_argc == 3)) {
+        return false;
+    } else if(m_printConfig || m_remove) {
+        return false;
+    } else if (m_server == "" && m_argc > 1) {
+        return false;
+    } else if(m_configure || m_migrate) {
+        return false;
+    } else if(m_status || m_printSessions) {
+        return false;
+    } else if(!m_restore.empty()) {
+        return false;
+    } else if(m_dryrun) {
+        return false;
+    } else if(!m_run && (m_syncProps.size() || m_sourceProps.size())) {
+        return false;
+    }
     return true;
 }
 
@@ -204,7 +264,7 @@ bool Cmdline::run() {
         }
     } else if (m_dontrun) {
         // user asked for information
-    } else if (m_argc == 1) {
+    } else if (m_argc == 1 || (!m_useDaemon.empty() && m_argc == 3)) {
         // no parameters: list databases and short usage
         const SourceRegistry &registry(SyncSource::getSourceRegistry());
         boost::shared_ptr<FilterConfigNode> sharedNode(new VolatileConfigNode());
@@ -1101,6 +1161,10 @@ void Cmdline::usage(bool full, const string &error, const string &param)
             "  password as follows moves the other passwords into the keyring, if" << endl <<
             "  they were not stored there already:" << endl <<
             "     --keyring --configure --sync-property proxyPassword=foo" << endl <<
+            "" << endl <<
+            "--use-daemon [yes/no]" << endl <<
+            "  Run operations in cooperation with the background sync daemon;" << endl <<
+            "  enabled by default if it is installed" << endl <<
             "" << endl <<
             "  When passwords were stored in the keyring, their value is set to '-'" << endl <<
             "  in the configuration. This means that when running a synchronization" << endl <<

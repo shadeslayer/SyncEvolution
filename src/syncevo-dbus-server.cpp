@@ -31,6 +31,7 @@
 #include <syncevo/SyncSource.h>
 #include <syncevo/SyncML.h>
 #include <syncevo/FileConfigNode.h>
+#include <syncevo/Cmdline.h>
 
 #include <synthesis/san.h>
 
@@ -1716,7 +1717,9 @@ class Session : public DBusObjectHelper,
 
     enum RunOperation {
         OP_SYNC = 0,
-        OP_RESTORE
+        OP_RESTORE = 1,
+        OP_CMDLINE = 2,
+        OP_NULL
     };
 
     static string runOpToString(RunOperation op);
@@ -1725,6 +1728,9 @@ class Session : public DBusObjectHelper,
 
     /** listener to listen to changes of sync */
     SessionListener *m_listener;
+
+    /** Cmdline to execute command line args */
+    boost::shared_ptr<CmdlineWrapper> m_cmdline;
 
     /** Session.Detach() */
     void detach(const Caller_t &caller);
@@ -1742,6 +1748,9 @@ class Session : public DBusObjectHelper,
 
     /** Session.checkPresence() */
     void checkPresence (string &status);
+
+    /** Session.Execute() */
+    void execute(const vector<string> &args);
 
     /**
      * Must be called each time that properties changing the
@@ -1776,6 +1785,7 @@ public:
     ~Session();
 
     enum {
+        PRI_CMDLINE = -10,
         PRI_DEFAULT = 0,
         PRI_CONNECTION = 10,
         PRI_AUTOSYNC = 20
@@ -1816,7 +1826,7 @@ public:
     /**
      * TRUE if the session is ready to take over control
      */
-    bool readyToRun() { return (m_syncStatus != SYNC_DONE) && m_sync; }
+    bool readyToRun() { return (m_syncStatus != SYNC_DONE) && (m_runOperation != OP_NULL); }
 
     /**
      * transfer control to the session for the duration of the sync,
@@ -1927,8 +1937,28 @@ class CmdlineWrapper
     /** stream for command line out and err arguments */
     std::ostream m_cmdlineOutStream;
 
+    /**
+     * implement factory method to create DBusSync instances
+     * This can check 'abort' and 'suspend' command from clients.
+     */
+    class DBusCmdline : public Cmdline {
+        Session &m_session;
+    public:
+        DBusCmdline(Session &session,
+                    const vector<string> &args,
+                    ostream &out,
+                    ostream &err)
+            :Cmdline(args, out, err), m_session(session)
+        {}
+
+        SyncContext* createSyncClient() {
+            return new DBusSync(m_server, m_session);
+        }
+    };
+
     /** instance to run command line arguments */
-    Cmdline m_cmdline;
+    DBusCmdline m_cmdline;
+
 public:
     /**
      * constructor to create cmdline instance.
@@ -1938,7 +1968,7 @@ public:
      */
     CmdlineWrapper(Session &session, const vector<string> &args)
         : m_cmdlineOutStream(&m_outStreamBuf),
-        m_cmdline(args, m_cmdlineOutStream, m_cmdlineOutStream)
+        m_cmdline(session, args, m_cmdlineOutStream, m_cmdlineOutStream)
     {}
 
     void parse() { m_cmdline.parse(); }
@@ -2407,6 +2437,9 @@ void ReadOperations::getConfig(bool getTemplate,
         }
     }
 
+    //insert 'configName'
+    localConfigs.insert(pair<string, string>("configName", m_configName));
+
     config.insert(pair<string,map<string, string> >("", localConfigs));
 
     /* get configurations from sources */
@@ -2746,8 +2779,9 @@ void Session::setConfig(bool update, bool temporary,
     if (!m_active) {
         SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
     }
-    if (m_sync) {
-        SE_THROW_EXCEPTION(InvalidCall, "sync started, cannot change configuration at this time");
+    if (m_runOperation != OP_NULL) {
+        string msg = StringPrintf("%s started, cannot change configuration at this time", runOpToString(m_runOperation).c_str());
+        SE_THROW_EXCEPTION(InvalidCall, msg);
     }
     if (!update && temporary) {
         throw std::runtime_error("Clearing existing configuration and temporary configuration changes which only affects the duration of the session are mutually exclusive");
@@ -2828,8 +2862,11 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
     if (!m_active) {
         SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
     }
-    if (m_sync) {
-        string msg = StringPrintf("%s started, cannot start(again)", runOpToString(m_runOperation).c_str());
+    if (m_runOperation == OP_SYNC) {
+        string msg = StringPrintf("%s started, cannot start again", runOpToString(m_runOperation).c_str());
+        SE_THROW_EXCEPTION(InvalidCall, msg);
+    } else if (m_runOperation != OP_NULL) {
+        string msg = StringPrintf("%s started, cannot start sync", runOpToString(m_runOperation).c_str());
         SE_THROW_EXCEPTION(InvalidCall, msg);
     }
 
@@ -2888,7 +2925,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
 
 void Session::abort()
 {
-    if (!m_sync) {
+    if (m_runOperation != OP_SYNC && m_runOperation != OP_CMDLINE) {
         SE_THROW_EXCEPTION(InvalidCall, "sync not started, cannot abort at this time");
     }
     m_syncStatus = SYNC_ABORT;
@@ -2900,7 +2937,7 @@ void Session::abort()
 
 void Session::suspend()
 {
-    if (!m_sync) {
+    if (m_runOperation != OP_SYNC && m_runOperation != OP_CMDLINE) {
         SE_THROW_EXCEPTION(InvalidCall, "sync not started, cannot suspend at this time");
     }
     m_syncStatus = SYNC_SUSPEND;
@@ -3007,7 +3044,7 @@ Session::Session(DBusServer &server,
     m_restoreBefore(true),
     m_restoreSrcTotal(0),
     m_restoreSrcEnd(0),
-    m_runOperation(OP_SYNC),
+    m_runOperation(OP_NULL),
     m_listener(NULL),
     emitStatus(*this, "StatusChanged"),
     emitProgress(*this, "ProgressChanged")
@@ -3026,6 +3063,7 @@ Session::Session(DBusServer &server,
     add(this, &Session::getProgress, "GetProgress");
     add(this, &Session::restore, "Restore");
     add(this, &Session::checkPresence, "checkPresence");
+    add(this, &Session::execute, "Execute");
     add(emitStatus);
     add(emitProgress);
 }
@@ -3193,7 +3231,7 @@ void Session::sourceProgress(sysync::TProgressEventEnum type,
 
 void Session::run()
 {
-    if (m_sync) {
+    if (m_runOperation != OP_NULL) {
         try {
             m_syncStatus = SYNC_RUNNING;
             fireStatus(true);
@@ -3224,6 +3262,8 @@ void Session::run()
                 m_sync->restore(m_restoreDir, 
                                 m_restoreBefore ? SyncContext::DATABASE_BEFORE_SYNC : SyncContext::DATABASE_AFTER_SYNC);
                 break;
+            case OP_CMDLINE:
+                m_cmdline->run();
             default:
                 break;
             };
@@ -3238,7 +3278,7 @@ void Session::run()
         m_syncStatus = SYNC_DONE;
         m_stepIsWaiting = false;
         fireStatus(true);
-    }
+    } 
 }
 
 bool Session::setFilters(SyncConfig &config)
@@ -3266,10 +3306,13 @@ void Session::restore(const string &dir, bool before, const std::vector<std::str
     if (!m_active) {
         SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
     }
-    if (m_sync) {
+    if (m_runOperation == OP_RESTORE) {
+        string msg = StringPrintf("restore started, cannot restore again");
+        SE_THROW_EXCEPTION(InvalidCall, msg);
+    } else if (m_runOperation != OP_NULL) {
         // actually this never happen currently, for during the real restore process, 
         // it never poll the sources in default main context 
-        string msg = StringPrintf("%s started, cannot restore(again)", runOpToString(m_runOperation).c_str());
+        string msg = StringPrintf("%s started, cannot restore", runOpToString(m_runOperation).c_str());
         SE_THROW_EXCEPTION(InvalidCall, msg);
     }
 
@@ -3308,9 +3351,30 @@ string Session::runOpToString(RunOperation op)
         return "sync";
     case OP_RESTORE:
         return "restore";
+    case OP_CMDLINE:
+        return "cmdline";
     default:
         return "";
     };
+}
+
+void Session::execute(const vector<string> &args)
+{
+    if (!m_active) {
+        SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
+    }
+    if (m_runOperation == OP_CMDLINE) {
+        SE_THROW_EXCEPTION(InvalidCall, "cmdline started, cannot start again");
+    } else if (m_runOperation != OP_NULL) {
+        string msg = StringPrintf("%s started, cannot start cmdline", runOpToString(m_runOperation).c_str());
+        SE_THROW_EXCEPTION(InvalidCall, msg);
+    }
+    //create ostream with a specified streambuf
+    m_cmdline.reset(new CmdlineWrapper(*this, args));
+    //args are checked before transferred to dbus server
+    m_cmdline->parse();
+    m_runOperation = OP_CMDLINE;
+    g_main_loop_quit(loop);
 }
 
 inline void insertPair(std::map<string, string> &params,
@@ -4781,7 +4845,7 @@ gboolean DBusServer::connmanPoll (gpointer dbusserver)
     }connman (conn);
 
     typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
-    DBusClientCall0<PropDict>  getProp(connman);
+    DBusClientCall1<PropDict>  getProp(connman);
     getProp (boost::bind(&DBusServer::connmanCallback, me, _1, _2));
     return TRUE;
 }
@@ -5094,7 +5158,7 @@ BluezManager::BluezManager(DBusServer &server) :
     m_bluezConn = g_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
     if(m_bluezConn) {
         m_done = false;
-        DBusClientCall0<DBusObject_t> getAdapter(*this, "DefaultAdapter");
+        DBusClientCall1<DBusObject_t> getAdapter(*this, "DefaultAdapter");
         getAdapter(boost::bind(&BluezManager::defaultAdapterCb, this, _1, _2 ));
         m_adapterChanged.reset(new SignalWatch1<DBusObject_t>(*this, "DefaultAdapterChanged"));
         (*m_adapterChanged)(boost::bind(&BluezManager::defaultAdapterChanged, this, _1));
@@ -5130,7 +5194,7 @@ BluezManager::BluezAdapter::BluezAdapter(BluezManager &manager, const string &pa
     : m_manager(manager), m_path(path), m_devNo(0), m_devReplies(0),
       m_deviceRemoved(*this,  "DeviceRemoved"), m_deviceAdded(*this, "DeviceCreated")
 {
-    DBusClientCall0<std::vector<DBusObject_t> > listDevices(*this, "ListDevices");
+    DBusClientCall1<std::vector<DBusObject_t> > listDevices(*this, "ListDevices");
     listDevices(boost::bind(&BluezAdapter::listDevicesCb, this, _1, _2));
     //m_deviceRemoved.reset(new SignalWatch1<DBusObject_t>(*this, "DeviceRemoved"));
     m_deviceRemoved(boost::bind(&BluezAdapter::deviceRemoved, this, _1));
@@ -5182,7 +5246,7 @@ void BluezManager::BluezAdapter::deviceCreated(const DBusObject_t &object)
 BluezManager::BluezDevice::BluezDevice (BluezAdapter &adapter, const string &path)
     : m_adapter(adapter), m_path(path), m_reply(false), m_propertyChanged(*this, "PropertyChanged")
 {
-    DBusClientCall0<PropDict> getProperties(*this, "GetProperties");
+    DBusClientCall1<PropDict> getProperties(*this, "GetProperties");
     getProperties(boost::bind(&BluezDevice::getPropertiesCb, this, _1, _2));
 
     m_propertyChanged(boost::bind(&BluezDevice::propertyChanged, this, _1, _2));

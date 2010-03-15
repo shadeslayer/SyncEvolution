@@ -4027,10 +4027,118 @@ public:
 };
 
 /*
- * A DBus Client Call object handling 0 argument and 1 return value.
+ * A DBus Client Call object handling zero or more parameter and
+ * zero return value.
  */
-template <class R>
 class DBusClientCall0
+{
+    const std::string m_destination;
+    const std::string m_path;
+    const std::string m_interface;
+    const std::string m_method;
+    const DBusConnectionPtr m_conn;
+
+    /** called by libdbus on error or completion of call */
+    static void dbusCallback (DBusPendingCall *call, void *user_data)
+    {
+        DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
+        const char* errname = dbus_message_get_error_name (reply.get());
+        std::string error;
+        if (errname) {
+            error = errname;
+        }
+        //unmarshal the return results and call user callback
+        (*static_cast <Callback_t *>(user_data))(error);
+    }
+
+    /**
+     * called by libdbus to free the user_data pointer set in 
+     * dbus_pending_call_set_notify()
+     */
+    static void callDataUnref(void *user_data) {
+        delete static_cast <Callback_t *>(user_data);
+    }
+
+public:
+    /**
+     * called when result of call is available or an error occurred (non-empty string)
+     */
+    typedef boost::function<void (const std::string &)> Callback_t;
+
+    DBusClientCall0 (const DBusCallObject &object)
+        :m_destination (object.getDestination()),
+         m_path (object.getPath()),
+         m_interface (object.getInterface()),
+         m_method (object.getMethod()),
+         m_conn (object.getConnection())
+    {
+    }
+
+    DBusClientCall0 (const DBusRemoteObject &object, const std::string &method)
+        :m_destination (object.getDestination()),
+         m_path (object.getPath()),
+         m_interface (object.getInterface()),
+         m_method (method),
+         m_conn (object.getConnection())
+    {
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        DBusPendingCall *call;
+        DBusMessagePtr msg(dbus_message_new_method_call(
+                    m_destination.c_str(),
+                    m_path.c_str(),
+                    m_interface.c_str(),
+                    m_method.c_str()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_method_call() failed");
+        }
+
+        //parameter marshaling (none)
+        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+
+        DBusPendingCallPtr mCall (call);
+        Callback_t *data = new Callback_t(callback);
+        dbus_pending_call_set_notify(mCall.get(),
+                                     dbusCallback,
+                                     data,
+                                     callDataUnref);
+    }
+
+    template <class A1>
+    void operator () (const A1 &a1, const Callback_t &callback)
+    {
+        DBusPendingCall *call;
+        DBusMessagePtr msg(dbus_message_new_method_call(
+                    m_destination.c_str(),
+                    m_path.c_str(),
+                    m_interface.c_str(),
+                    m_method.c_str()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_method_call() failed");
+        }
+        append_retvals(msg, a1);
+
+        //parameter marshaling (none)
+        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+
+        DBusPendingCallPtr mCall (call);
+        Callback_t *data = new Callback_t(callback);
+        dbus_pending_call_set_notify(mCall.get(),
+                                     dbusCallback,
+                                     data,
+                                     callDataUnref);
+    }
+};
+
+/** 1 return value and 0 or more parameters */
+template <class R>
+class DBusClientCall1
 {
     const std::string m_destination;
     const std::string m_path;
@@ -4067,11 +4175,11 @@ class DBusClientCall0
 
 public:
     /**
-     * called when result of call is available (R) or an error occurred (non-empty string)
+     * called when the call is returned or an error occurred (non-empty string)
      */
     typedef boost::function<void (const R &, const std::string &)> Callback_t;
 
-    DBusClientCall0 (const DBusCallObject &object)
+    DBusClientCall1 (const DBusCallObject &object)
         :m_destination (object.getDestination()),
          m_path (object.getPath()),
          m_interface (object.getInterface()),
@@ -4080,7 +4188,7 @@ public:
     {
     }
 
-    DBusClientCall0 (const DBusRemoteObject &object, const std::string &method)
+    DBusClientCall1 (const DBusRemoteObject &object, const std::string &method)
         :m_destination (object.getDestination()),
          m_path (object.getPath()),
          m_interface (object.getInterface()),
@@ -4100,6 +4208,207 @@ public:
         if (!msg) {
             throw std::runtime_error("dbus_message_new_method_call() failed");
         }
+
+        //parameter marshaling (none)
+        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+
+        DBusPendingCallPtr mCall (call);
+        Callback_t *data = new Callback_t(callback);
+        dbus_pending_call_set_notify(mCall.get(),
+                                     dbusCallback,
+                                     data,
+                                     callDataUnref);
+    }
+
+    template <class A1>
+    void operator () (const A1 &a1, const Callback_t &callback)
+    {
+        DBusPendingCall *call;
+        DBusMessagePtr msg(dbus_message_new_method_call(
+                    m_destination.c_str(),
+                    m_path.c_str(),
+                    m_interface.c_str(),
+                    m_method.c_str()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_method_call() failed");
+        }
+        append_retvals(msg, a1);
+
+        //parameter marshaling (none)
+        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+
+        DBusPendingCallPtr mCall (call);
+        Callback_t *data = new Callback_t(callback);
+        dbus_pending_call_set_notify(mCall.get(),
+                                     dbusCallback,
+                                     data,
+                                     callDataUnref);
+    }
+
+    template <class A1, class A2>
+    void operator () (const A1 &a1, const A2 &a2, const Callback_t &callback)
+    {
+        DBusPendingCall *call;
+        DBusMessagePtr msg(dbus_message_new_method_call(
+                    m_destination.c_str(),
+                    m_path.c_str(),
+                    m_interface.c_str(),
+                    m_method.c_str()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_method_call() failed");
+        }
+        append_retvals(msg, a1);
+        append_retvals(msg, a2);
+
+        //parameter marshaling (none)
+        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+
+        DBusPendingCallPtr mCall (call);
+        Callback_t *data = new Callback_t(callback);
+        dbus_pending_call_set_notify(mCall.get(),
+                                     dbusCallback,
+                                     data,
+                                     callDataUnref);
+    }
+};
+
+/** 3 return value and 0 or more parameters */
+template <class R1, class R2, class R3>
+class DBusClientCall3
+{
+    const std::string m_destination;
+    const std::string m_path;
+    const std::string m_interface;
+    const std::string m_method;
+    const DBusConnectionPtr m_conn;
+
+    /** called by libdbus on error or completion of call */
+    static void dbusCallback (DBusPendingCall *call, void *user_data)
+    {
+        DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
+        const char* errname = dbus_message_get_error_name (reply.get());
+        std::string error;
+        typename dbus_traits<R1>::host_type r1;
+        typename dbus_traits<R2>::host_type r2;
+        typename dbus_traits<R3>::host_type r3;
+        if (!errname) {
+            DBusMessageIter iter;
+            dbus_message_iter_init(reply.get(), &iter);
+            //why need connection?
+            dbus_traits<R1>::get(NULL, reply.get(), iter, r1);
+            dbus_traits<R2>::get(NULL, reply.get(), iter, r2);
+            dbus_traits<R3>::get(NULL, reply.get(), iter, r3);
+        } else {
+            error = errname;
+        }
+        //unmarshal the return results and call user callback
+        (*static_cast <Callback_t *>(user_data))(r1, r2, r3, error);
+    }
+
+    /**
+     * called by libdbus to free the user_data pointer set in 
+     * dbus_pending_call_set_notify()
+     */
+    static void callDataUnref(void *user_data) {
+        delete static_cast <Callback_t *>(user_data);
+    }
+
+public:
+    /**
+     * called when the call is returned or an error occurred (non-empty string)
+     */
+    typedef boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)> Callback_t;
+
+    DBusClientCall3 (const DBusCallObject &object)
+        :m_destination (object.getDestination()),
+         m_path (object.getPath()),
+         m_interface (object.getInterface()),
+         m_method (object.getMethod()),
+         m_conn (object.getConnection())
+    {
+    }
+
+    DBusClientCall3 (const DBusRemoteObject &object, const std::string &method)
+        :m_destination (object.getDestination()),
+         m_path (object.getPath()),
+         m_interface (object.getInterface()),
+         m_method (method),
+         m_conn (object.getConnection())
+    {
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        DBusPendingCall *call;
+        DBusMessagePtr msg(dbus_message_new_method_call(
+                    m_destination.c_str(),
+                    m_path.c_str(),
+                    m_interface.c_str(),
+                    m_method.c_str()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_method_call() failed");
+        }
+
+        //parameter marshaling (none)
+        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+
+        DBusPendingCallPtr mCall (call);
+        Callback_t *data = new Callback_t(callback);
+        dbus_pending_call_set_notify(mCall.get(),
+                                     dbusCallback,
+                                     data,
+                                     callDataUnref);
+    }
+
+    template <class A1>
+    void operator () (const A1 &a1, const Callback_t &callback)
+    {
+        DBusPendingCall *call;
+        DBusMessagePtr msg(dbus_message_new_method_call(
+                    m_destination.c_str(),
+                    m_path.c_str(),
+                    m_interface.c_str(),
+                    m_method.c_str()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_method_call() failed");
+        }
+        append_retvals(msg, a1);
+
+        //parameter marshaling (none)
+        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+
+        DBusPendingCallPtr mCall (call);
+        Callback_t *data = new Callback_t(callback);
+        dbus_pending_call_set_notify(mCall.get(),
+                                     dbusCallback,
+                                     data,
+                                     callDataUnref);
+    }
+
+    template <class A1, class A2>
+    void operator () (const A1 &a1, const A2 &a2, const Callback_t &callback)
+    {
+        DBusPendingCall *call;
+        DBusMessagePtr msg(dbus_message_new_method_call(
+                    m_destination.c_str(),
+                    m_path.c_str(),
+                    m_interface.c_str(),
+                    m_method.c_str()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_method_call() failed");
+        }
+        append_retvals(msg, a1);
+        append_retvals(msg, a2);
 
         //parameter marshaling (none)
         if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
@@ -4147,6 +4456,52 @@ class SignalWatch
     }
 
     virtual ~SignalWatch() {}
+};
+
+class SignalWatch0 : public SignalWatch
+{
+    typedef boost::function<void (void)> Callback_t;
+    guint m_tag;
+    Callback_t *m_callback;
+
+ public:
+    SignalWatch0(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+    {
+    }
+
+    ~SignalWatch0()
+    {
+        if(m_tag) {
+            g_dbus_remove_watch(m_object.getConnection(), m_tag);
+        }
+        if(m_callback) {
+            delete m_callback;
+        }
+    }
+
+    static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
+    {
+        if(isMatched(msg, data) == FALSE) {
+            return TRUE;
+        }
+        SignalWatch0 *watch = static_cast<SignalWatch0* >(data);
+        (*watch->m_callback)();
+
+        return TRUE;
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        m_callback = new Callback_t(callback);
+        std::string rule = makeSignalRule();
+        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
+                                        rule.c_str(),
+                                        internalCallback,
+                                        this,
+                                        NULL);
+    }
 };
 
 template <typename A1>
@@ -4241,6 +4596,246 @@ class SignalWatch2 : public SignalWatch
         dbus_traits<A1>::get(conn, msg, iter, a1);
         dbus_traits<A2>::get(conn, msg, iter, a2);
         (*watch->m_callback)(a1, a2);
+
+        return TRUE;
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        m_callback = new Callback_t(callback);
+        std::string rule = makeSignalRule();
+        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
+                                        rule.c_str(),
+                                        internalCallback,
+                                        this,
+                                        NULL);
+    }
+};
+
+template <typename A1, typename A2, typename A3>
+class SignalWatch3 : public SignalWatch
+{
+    typedef boost::function<void (const A1 &, const A2 &, const A3 &)> Callback_t;
+
+    guint m_tag;
+    Callback_t *m_callback;
+ public:
+    SignalWatch3(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+    {
+    }
+
+    ~SignalWatch3()
+    {
+        if(m_tag) {
+            g_dbus_remove_watch(m_object.getConnection(), m_tag);
+        }
+        if(m_callback) {
+            delete m_callback;
+        }
+    }
+
+    static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
+    {
+        if(isMatched(msg, data) == FALSE) {
+            return TRUE;
+        }
+        SignalWatch3<A1, A2, A3> *watch = static_cast<SignalWatch3<A1, A2, A3> *>(data);
+
+        typename dbus_traits<A1>::host_type a1;
+        typename dbus_traits<A2>::host_type a2;
+        typename dbus_traits<A3>::host_type a3;
+
+        DBusMessageIter iter;
+        dbus_message_iter_init(msg, &iter);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        (*watch->m_callback)(a1, a2, a3);
+
+        return TRUE;
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        m_callback = new Callback_t(callback);
+        std::string rule = makeSignalRule();
+        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
+                                        rule.c_str(),
+                                        internalCallback,
+                                        this,
+                                        NULL);
+    }
+};
+
+template <typename A1, typename A2, typename A3, typename A4>
+class SignalWatch4 : public SignalWatch
+{
+    typedef boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &)> Callback_t;
+
+    guint m_tag;
+    Callback_t *m_callback;
+ public:
+    SignalWatch4(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+    {
+    }
+
+    ~SignalWatch4()
+    {
+        if(m_tag) {
+            g_dbus_remove_watch(m_object.getConnection(), m_tag);
+        }
+        if(m_callback) {
+            delete m_callback;
+        }
+    }
+
+    static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
+    {
+        if(isMatched(msg, data) == FALSE) {
+            return TRUE;
+        }
+        SignalWatch4<A1, A2, A3, A4> *watch = static_cast<SignalWatch4<A1, A2, A3, A4> *>(data);
+
+        typename dbus_traits<A1>::host_type a1;
+        typename dbus_traits<A2>::host_type a2;
+        typename dbus_traits<A3>::host_type a3;
+        typename dbus_traits<A4>::host_type a4;
+
+        DBusMessageIter iter;
+        dbus_message_iter_init(msg, &iter);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        (*watch->m_callback)(a1, a2, a3, a4);
+
+        return TRUE;
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        m_callback = new Callback_t(callback);
+        std::string rule = makeSignalRule();
+        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
+                                        rule.c_str(),
+                                        internalCallback,
+                                        this,
+                                        NULL);
+    }
+};
+
+template <typename A1, typename A2, typename A3, typename A4, typename A5>
+class SignalWatch5 : public SignalWatch
+{
+    typedef boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &, const A5 &)> Callback_t;
+
+    guint m_tag;
+    Callback_t *m_callback;
+ public:
+    SignalWatch5(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+    {
+    }
+
+    ~SignalWatch5()
+    {
+        if(m_tag) {
+            g_dbus_remove_watch(m_object.getConnection(), m_tag);
+        }
+        if(m_callback) {
+            delete m_callback;
+        }
+    }
+
+    static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
+    {
+        if(isMatched(msg, data) == FALSE) {
+            return TRUE;
+        }
+        SignalWatch5<A1, A2, A3, A4, A5> *watch = static_cast<SignalWatch5<A1, A2, A3, A4, A5> *>(data);
+
+        typename dbus_traits<A1>::host_type a1;
+        typename dbus_traits<A2>::host_type a2;
+        typename dbus_traits<A3>::host_type a3;
+        typename dbus_traits<A4>::host_type a4;
+        typename dbus_traits<A5>::host_type a5;
+
+        DBusMessageIter iter;
+        dbus_message_iter_init(msg, &iter);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        (*watch->m_callback)(a1, a2, a3, a4, a5);
+
+        return TRUE;
+    }
+
+    void operator () (const Callback_t &callback)
+    {
+        m_callback = new Callback_t(callback);
+        std::string rule = makeSignalRule();
+        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
+                                        rule.c_str(),
+                                        internalCallback,
+                                        this,
+                                        NULL);
+    }
+};
+
+template <typename A1, typename A2, typename A3, typename A4, typename A5, typename A6>
+class SignalWatch6 : public SignalWatch
+{
+    typedef boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &, const A5 &, const A6 &)> Callback_t;
+
+    guint m_tag;
+    Callback_t *m_callback;
+ public:
+    SignalWatch6(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+    {
+    }
+
+    ~SignalWatch6()
+    {
+        if(m_tag) {
+            g_dbus_remove_watch(m_object.getConnection(), m_tag);
+        }
+        if(m_callback) {
+            delete m_callback;
+        }
+    }
+
+    static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
+    {
+        if(isMatched(msg, data) == FALSE) {
+            return TRUE;
+        }
+        SignalWatch6<A1, A2, A3, A4, A5, A6> *watch = static_cast<SignalWatch6<A1, A2, A3, A4, A5, A6> *>(data);
+
+        typename dbus_traits<A1>::host_type a1;
+        typename dbus_traits<A2>::host_type a2;
+        typename dbus_traits<A3>::host_type a3;
+        typename dbus_traits<A4>::host_type a4;
+        typename dbus_traits<A5>::host_type a5;
+        typename dbus_traits<A6>::host_type a6;
+
+        DBusMessageIter iter;
+        dbus_message_iter_init(msg, &iter);
+        dbus_traits<A1>::get(conn, msg, iter, a1);
+        dbus_traits<A2>::get(conn, msg, iter, a2);
+        dbus_traits<A3>::get(conn, msg, iter, a3);
+        dbus_traits<A4>::get(conn, msg, iter, a4);
+        dbus_traits<A5>::get(conn, msg, iter, a5);
+        dbus_traits<A6>::get(conn, msg, iter, a6);
+        (*watch->m_callback)(a1, a2, a3, a4, a5, a6);
 
         return TRUE;
     }

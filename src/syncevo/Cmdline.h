@@ -27,6 +27,7 @@
 using namespace std;
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_array.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -42,6 +43,7 @@ public:
      * @param err      stderr stream for error messages
      */
     Cmdline(int argc, const char * const *argv, ostream &out, ostream &err);
+    Cmdline(const vector<string> &args, ostream &out, ostream &err);
 
     /**
      * parse the command line options
@@ -51,6 +53,20 @@ public:
     bool parse();
 
     bool run();
+
+    string useDaemon() { return m_useDaemon; }
+
+    /** whether '--monitor' is set */
+    bool monitor() { return m_monitor; }
+
+    /** whether 'status' is set */
+    bool status() { return m_status; }
+
+    /* server name */
+    string getConfigName() { return m_server; }
+
+    /* check whether command line runs sync. It should be called after parsing. */
+    bool isSync();
 
 protected:
     class Bool { 
@@ -62,9 +78,15 @@ protected:
         bool m_value;
     };
 
+    // vector to store strings for arguments 
+    vector<string> m_args;
+
     int m_argc;
     const char * const * m_argv;
     ostream &m_out, &m_err;
+
+    //array to store pointers of arguments
+    boost::scoped_array<const char *> m_argvArray;
 
     Bool m_quiet;
     Bool m_dryrun;
@@ -81,6 +103,8 @@ protected:
     Bool m_printSessions;
     Bool m_dontrun;
     Bool m_keyring;
+    Bool m_monitor;
+    string m_useDaemon;
     FilterConfigNode::ConfigFilter m_syncProps, m_sourceProps;
     const ConfigPropertyRegistry &m_validSyncProps;
     const ConfigPropertyRegistry &m_validSourceProps;

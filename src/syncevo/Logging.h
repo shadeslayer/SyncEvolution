@@ -200,6 +200,7 @@ class LoggerBase : public Logger
         } \
     } while(false)
 
+#define SE_LOG_SHOW(_instance, _prefix, _format, _args...) SE_LOG(Logger::SHOW, _instance, _prefix, _format, ##_args)
 #define SE_LOG_ERROR(_instance, _prefix, _format, _args...) SE_LOG(Logger::ERROR, _instance, _prefix, _format, ##_args)
 #define SE_LOG_WARNING(_instance, _prefix, _format, _args...) SE_LOG(Logger::WARNING, _instance, _prefix, _format, ##_args)
 #define SE_LOG_INFO(_instance, _prefix, _format, _args...) SE_LOG(Logger::INFO, _instance, _prefix, _format, ##_args)
