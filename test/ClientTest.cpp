@@ -2930,9 +2930,13 @@ void SyncTests::doInterruptResume(int changes,
         // by overloading the delete operator.
         int wasInterrupted;
         {
-            SyncOptions options(SYNC_TWO_WAY,
-                                CheckSyncReport(-1, -1, -1, -1,
-                                                -1, -1, resend));
+            CheckSyncReport check(-1, -1, -1, -1, -1, -1, false);
+            if (resend && interruptAtMessage != 0) {
+                // resend tests must succeed, except for the first
+                // message in the session, which is not resent
+                check.mustSucceed = true;
+            }
+            SyncOptions options(SYNC_TWO_WAY, check);
             options.setTransportAgent(wrapper);
             options.setMaxMsgSize(maxMsgSize);
             if (!resend) {

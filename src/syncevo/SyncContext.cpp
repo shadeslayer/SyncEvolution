@@ -3343,7 +3343,7 @@ SyncMLStatus SyncContext::doSync()
                 break;
             }
             case sysync::STEPCMD_RESENDDATA: {
-                SE_LOG_INFO (NULL, NULL, "SyncContext: resend previous request #%d", m_retries);
+                SE_LOG_INFO (NULL, NULL, "resend previous message, retry #%d", m_retries);
                 resendStart = time(NULL);
                 /* We are resending previous message, just read from the
                  * previous buffer */
@@ -3364,8 +3364,9 @@ SyncMLStatus SyncContext::doSync()
                     // reply.  Other server transports could in theory
                     // resend, but don't have the necessary D-Bus APIs
                     // (MB #6370).
+                    // Same if() as below for FAILED.
                     if (m_serverMode ||
-                        duration > m_retryDuration){
+                        !m_retryInterval || duration > m_retryDuration || requestNum == 1) {
                         SE_LOG_INFO(NULL, NULL,
                                     "Transport giving up after %d retries and %ld:%02ldmin",
                                     m_retries,
@@ -3416,6 +3417,7 @@ SyncMLStatus SyncContext::doSync()
                 case TransportAgent::FAILED: {
                     time_t curTime = time(NULL);
                     time_t duration = curTime - sendStart;
+                    // same if() as above for TIME_OUT
                     if (m_serverMode ||
                         !m_retryInterval || duration > m_retryDuration || requestNum == 1) {
                         SE_LOG_INFO(NULL, NULL,
