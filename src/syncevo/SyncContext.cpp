@@ -2642,6 +2642,12 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
          * */
         if ( getPeerIsClient()) {
             m_serverMode = true;
+            /* Do not check username/pwd if this is a server session over
+             * bluetooth transport*/
+            if (boost::starts_with (getUsedSyncURL(), "obex-bt")) {
+                setUsername ("", true);
+                setPassword ("", true);
+            }
         }
 
         // create a Synthesis engine, used purely for logging purposes
