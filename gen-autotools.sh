@@ -9,10 +9,96 @@
 # out-of-tree backends. Now git pretty much removes
 # the need for such tricks, but it's still around.
 
+# Another reason for gen-autotools.sh is that it generates
+# the version in the configure script. This cannot be
+# done inside the script because autoconf expects a
+# literal string, not some kind of variable.
+#
+# To use the version specified in AC_INIT() unmodified,
+# the following checks must pass:
+# - SyncEvolution source is clean (git status reports
+#   no "modified" files or "untracked" files, or the source
+#   is not in git at all)
+# - the source is tagged with the version of SyncEvolution
+#   (git describe --tags HEAD reports something which matches,
+#   for example syncevolution-1-0-beta-2a for 1.0beta2a)
+# - same for libsynthesis, if the SYNTHESISSRC env variable
+#   is set
+#
+# If these tests fail, the version is extended:
+# +<yyyymmdd>+SE+<status>+SYSYNC+<status>
+# <yyyymmdd> = date
+# <status> = <hash>[+unclean]
+# <hash> = shortened hash from describe (for example, 1040ffd)
+# +unclean = source was dirty
+
+set -e
+
+version=`grep '^AC_INIT' configure-pre.in | sed -e 's/.*\[\(.*\)\])/\1/'`
+checksource () {
+    dir=$1
+    force=$2
+    dirty=
+    if [ ! -d $dir/.git ]; then
+        return
+    fi
+
+    cur=`pwd`
+    cd $dir
+    
+    if git status | grep -e "modified:" -e "Untracked files:" -q; then
+        dirty=+unclean
+    fi
+    describe=`git describe --long --tags`
+    hash=`echo $describe | sed -e 's/.*-g//'`
+    tag=`echo $describe | sed -e 's/-[0123456789]*-g.*//'`
+    simpletag=$tag
+    # Hyphens between numbers in the tag are dots in the version
+    # and all other hyphens can be removed.
+    while true; do
+        tmp=`echo $simpletag | sed -e 's/\([0123456789]\)-\([0123456789]\)/\1.\2/'`
+        if [ $tmp == $simpletag ]; then
+            break
+        else
+            simpletag=$tmp
+        fi
+    done
+    simpletag=`echo $simpletag | sed -e 's/-//g'`
+    if [ "$dirty" ] || [ "$force" ]; then
+        # previous check failed, always print hash
+        echo $hash$dirty
+    elif git describe --exact --tags 2>/dev/null >/dev/null &&
+        echo $simpletag | grep -q "syncevolution${version}\$"; then
+        true
+    else
+        echo $hash$dirty
+    fi
+    cd $cur
+}
+
+versionsuffix=
+syncevo=`checksource .`
+if [ "$SYNTHESISSRC" ]; then
+    sysync=`checksource $SYNTHESISSRC $syncevo`
+fi
+# run check again, to get hash when only libsynthesis failed
+syncevo=`checksource . $sysync`
+if [ "$syncevo" ]; then
+    versionsuffix=+SE+$syncevo
+fi
+if [ "$sysync" ]; then
+    versionsuffix=$versionsuffix+SYSYNC+$sysync
+fi
+if [ "$versionsuffix" ]; then
+    versionsuffix=+`date +%Y%m%d`$versionsuffix
+fi
+
+
 # generate configure.in from main configure-*.in pieces
 # and all backend configure-sub.in pieces
 rm -f configure.in
-cat configure-pre.in >>configure.in
+sed -e "s/^\\(AC_INIT.*\\)\\[\\(.*\\)\\]/\\1[\\2$versionsuffix]/" configure-pre.in >>configure.in
+
 BACKENDS=
 SUBS=
 for sub in src/backends/*/configure-sub.in; do
