@@ -3879,8 +3879,8 @@ void Connection::ready()
                 // range selection for events)
                 if (boost::starts_with(sourceConfig->getURI(), serverURI)) {
                     SE_LOG_DEBUG(NULL, NULL,
-                            "SAN entry #%d = source %s with mode %s",
-                            sync, source.c_str(), syncMode.c_str());
+                                 "SAN entry #%d = source %s with mode %s",
+                                 (int)sync, source.c_str(), syncMode.c_str());
                     m_sourceModes[source] = syncMode;
                     found = true;
                     break;
@@ -3888,8 +3888,8 @@ void Connection::ready()
             }
             if (!found) {
                 SE_LOG_DEBUG(NULL, NULL,
-                        "SAN entry #%d with mode %s ignored because Server URI %s is unknown",
-                        sync, syncMode.c_str(), serverURI.c_str());
+                             "SAN entry #%d with mode %s ignored because Server URI %s is unknown",
+                             (int)sync, syncMode.c_str(), serverURI.c_str());
             }
         }
         if (m_sourceModes.empty()) {
@@ -3900,7 +3900,7 @@ void Connection::ready()
     }
 
     if (m_SANContent) {
-        m_session->setRemoteInited (true);
+        m_session->setRemoteInitiated(true);
     }
     // proceed with sync now that our session is ready
     m_session->sync(m_syncMode, m_sourceModes);
