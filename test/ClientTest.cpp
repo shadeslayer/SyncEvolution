@@ -2837,7 +2837,7 @@ void SyncTests::doInterruptResume(int changes,
     // bit small when running with many stores
     size_t maxMsgSize = 20000;
     size_t changedItemSize = (changes & BIG) ?
-        3 * maxMsgSize / 2 :
+        5 * maxMsgSize / 2 : // large enough to be split over three messages
         0;
 
     // After running the uninterrupted sync, we remember the number
