@@ -3524,13 +3524,9 @@ void Connection::process(const Caller_t &caller,
                 // type used for testing, payload is config name
                 config.assign(reinterpret_cast<const char *>(message.second),
                               message.first);
-            } else if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS||
-                       /* SAN 1.0/1.1 */
-                       message_type == TransportAgent::m_contentTypeSyncML ||
-                       message_type == TransportAgent::m_contentTypeSyncWBXML) {
+            } else if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
             	sysync::SanPackage san;
-                int mode = (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) ? 2 : 1;
-            	if (san.PassSan(const_cast<uint8_t *>(message.second), message.first, mode) || san.GetHeader()) {
+            	if (san.PassSan(const_cast<uint8_t *>(message.second), message.first, 2) || san.GetHeader()) {
                     // We are very tolerant regarding the content of the message.
                     // If it doesn't parse, try to do something useful anyway.
                     // only for SAN 1.2, for SAN 1.0/1.1 we can not be sure
@@ -3538,47 +3534,6 @@ void Connection::process(const Caller_t &caller,
                     if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
                         config = "default";
                         SE_LOG_DEBUG(NULL, NULL, "SAN parsing failed, falling back to 'default' config");
-                    } else if (message_type == TransportAgent::m_contentTypeSyncML ||
-                            message_type == TransportAgent::m_contentTypeSyncWBXML) {
-                        // run a new SyncML session as server
-                        serverMode = true;
-                        if (m_peer.find("config") == m_peer.end() &&
-                                !m_peer["config"].empty()) {
-                            SE_LOG_DEBUG(NULL, NULL, "ignoring pre-chosen config '%s'",
-                                    m_peer["config"].c_str());
-                        }
-
-                        // peek into the data to extract the locURI = device ID,
-                        // then use it to find the configuration
-                        SyncContext::SyncMLMessageInfo info;
-                        info = SyncContext::analyzeSyncMLMessage(reinterpret_cast<const char *>(message.second),
-                                message.first,
-                                message_type);
-                        if (info.m_deviceID.empty()) {
-                            // TODO: proper exception
-                            throw runtime_error("could not extract LocURI=deviceID from initial message");
-                        }
-                        BOOST_FOREACH(const SyncConfig::ConfigList::value_type &entry,
-                                SyncConfig::getConfigs()) {
-                            SyncConfig peer(entry.first);
-                            if (info.m_deviceID == peer.getRemoteDevID()) {
-                                config = entry.first;
-                                SE_LOG_DEBUG(NULL, NULL, "matched %s against config %s (%s)",
-                                        info.toString().c_str(),
-                                        entry.first.c_str(),
-                                        entry.second.c_str());
-                                break;
-                            }
-                        }
-                        if (config.empty()) {
-                            // TODO: proper exception
-                            throw runtime_error(string("no configuration found for ") +
-                                    info.toString());
-                        }
-
-                        // abort previous session of this client
-                        m_server.killSessions(info.m_deviceID);
-                        peerDeviceID = info.m_deviceID;
                     }  
             	} else { //Server alerted notification case
                     // Extract server ID and match it against a server
@@ -3682,6 +3637,47 @@ void Connection::process(const Caller_t &caller,
                     }
                 }
                 // TODO: use the session ID set by the server if non-null
+            } else if (message_type == TransportAgent::m_contentTypeSyncML ||
+                       message_type == TransportAgent::m_contentTypeSyncWBXML) {
+                // run a new SyncML session as server
+                serverMode = true;
+                if (m_peer.find("config") == m_peer.end() &&
+                    !m_peer["config"].empty()) {
+                    SE_LOG_DEBUG(NULL, NULL, "ignoring pre-chosen config '%s'",
+                                 m_peer["config"].c_str());
+                }
+
+                // peek into the data to extract the locURI = device ID,
+                // then use it to find the configuration
+                SyncContext::SyncMLMessageInfo info;
+                info = SyncContext::analyzeSyncMLMessage(reinterpret_cast<const char *>(message.second),
+                                                         message.first,
+                                                         message_type);
+                if (info.m_deviceID.empty()) {
+                    // TODO: proper exception
+                    throw runtime_error("could not extract LocURI=deviceID from initial message");
+                }
+                BOOST_FOREACH(const SyncConfig::ConfigList::value_type &entry,
+                              SyncConfig::getConfigs()) {
+                    SyncConfig peer(entry.first);
+                    if (info.m_deviceID == peer.getRemoteDevID()) {
+                        config = entry.first;
+                        SE_LOG_DEBUG(NULL, NULL, "matched %s against config %s (%s)",
+                                     info.toString().c_str(),
+                                     entry.first.c_str(),
+                                     entry.second.c_str());
+                        break;
+                    }
+                }
+                if (config.empty()) {
+                    // TODO: proper exception
+                    throw runtime_error(string("no configuration found for ") +
+                                        info.toString());
+                }
+
+                // abort previous session of this client
+                m_server.killSessions(info.m_deviceID);
+                peerDeviceID = info.m_deviceID;
             } else {
                 throw runtime_error("message type not supported for starting a sync");
             }
