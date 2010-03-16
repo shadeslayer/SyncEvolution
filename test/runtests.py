@@ -618,7 +618,10 @@ class SyncEvolutionCheckout(GitCheckout):
     def __init__(self, name, revision):
         """checkout SyncEvolution"""
         GitCheckout.__init__(self,
-                             name, context.workdir, options.shell,
+                             name, context.workdir,
+                             # parameter to autogen.sh in SyncEvolution: also
+                             # check for clean Synthesis source
+                             "env SYNTHESISSRC=../libsynthesis %s" % options.shell,
                              "git@git.moblin.org:syncevolution.git",
                              revision)
 
