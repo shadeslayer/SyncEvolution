@@ -2832,6 +2832,8 @@ void SyncTests::doInterruptResume(int changes,
     std::string refFileBase = getCurrentTest() + ".ref.";
     bool equal = true;
     bool resend = dynamic_cast <TransportResendInjector *> (wrapper.get()) != NULL;
+    bool suspend = dynamic_cast <UserSuspendInjector *> (wrapper.get()) != NULL;
+    bool interrupt = dynamic_cast <TransportFaultInjector *> (wrapper.get()) != NULL;
 
     // better be large enough for complete DevInf, 20000 is already a
     // bit small when running with many stores
@@ -2963,8 +2965,8 @@ void SyncTests::doInterruptResume(int changes,
             if(sleep_t) 
                 sleep (sleep_t);
 
-            // no need for resend tests 
-            if (!resend) {
+            // no need for resend tests, unless they were interrupted at the first message
+            if (!resend || interruptAtMessage == 0) {
                 accessClientB->doSync("retryB", SyncOptions(SYNC_TWO_WAY));
             }
         }
@@ -3017,9 +3019,29 @@ void SyncTests::doInterruptResume(int changes,
         } else {
             // interrupt one message later than before
             interruptAtMessage++;
-            if (!resend &&
+            if (interrupt &&
                 interruptAtMessage + 1 >= maxMsgNum) {
-                // don't interrupt before the server's last reply
+                // Don't interrupt before the server's last reply,
+                // because then the server thinks we completed the
+                // session when we think we didn't, which leads to a
+                // slow sync. Testing that is better done with a
+                // specific test.
+                break;
+            }
+            if (suspend &&
+                interruptAtMessage + 1 >= maxMsgNum) {
+                // Suspend requests at the very end cannot be executed
+                // anymore. The Synthesis engine sends its final
+                // message without asking for a suspend, but then
+                // suspends anyway, leading to an unexpected slow
+                // sync. The engine should simply ignore the suspend
+                // request.
+                // This if() prevents that problematic case. It should
+                // be removed once the problem is fixed.
+                break;
+            }
+            if (interruptAtMessage >= maxMsgNum) {
+                // next run would not interrupt at all, stop now
                 break;
             }
         }
