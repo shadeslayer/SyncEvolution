@@ -49,15 +49,21 @@ checksource () {
     if git status | grep -e "modified:" -e "Untracked files:" -q; then
         dirty=+unclean
     fi
-    describe=`git describe --long --tags`
-    hash=`echo $describe | sed -e 's/.*-g//'`
-    tag=`echo $describe | sed -e 's/-[0123456789]*-g.*//'`
+    describe=`git describe --tags`
+    hash=`git show-ref --abbrev --hash HEAD`
+    if echo $describe | grep -e '-[0-9]+-[0-9a-f]{8}$' -q; then
+        exact=
+        tag=`echo $describe | sed -e 's/-[0123456789]*-g.*//'`
+    else
+        exact=1
+        tag=$describe
+    fi
     simpletag=$tag
     # Hyphens between numbers in the tag are dots in the version
     # and all other hyphens can be removed.
     while true; do
         tmp=`echo $simpletag | sed -e 's/\([0123456789]\)-\([0123456789]\)/\1.\2/'`
-        if [ $tmp == $simpletag ]; then
+        if [ $tmp = $simpletag ]; then
             break
         else
             simpletag=$tmp
@@ -67,7 +73,7 @@ checksource () {
     if [ "$dirty" ] || [ "$force" ]; then
         # previous check failed, always print hash
         echo $hash$dirty
-    elif git describe --exact --tags 2>/dev/null >/dev/null &&
+    elif [ "$exact" ] &&
         echo $simpletag | grep -q "syncevolution${version}\$"; then
         true
     else
