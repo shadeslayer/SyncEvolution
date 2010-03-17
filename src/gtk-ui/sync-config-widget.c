@@ -246,40 +246,6 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         return;
     }
 
-    if (self->current_service_name && !self->current) {
-        gboolean ret;
-        char *msg, *yes, *no, *new_name, *old_name;
-
-        /*TRANSLATORS: warning dialog text for changing current service */
-        msg = g_strdup_printf
-            (_("Do you want to replace %s with %s? This "
-               "will not remove any synced information on either "
-               "end but you will no longer be able to sync with %s."),
-             self->current_service_name,
-             gtk_entry_get_text (GTK_ENTRY (self->entry)),
-             self->current_service_name);
-
-        new_name = g_strndup (gtk_entry_get_text (GTK_ENTRY (self->entry)), 40);
-        old_name = g_strndup (self->current_service_name, 40);
-
-        /* TRANSLATORS: decline/accept buttons in warning dialog.
-           Placeholder is service name */
-        yes = g_strdup_printf (_("Yes, use %s"), new_name);
-        no = g_strdup_printf (_("No, use %s"), old_name);
-
-        ret = show_confirmation (GTK_WIDGET (self), msg, yes, no);
-
-        g_free (msg);
-        g_free (yes);
-        g_free (no);
-        g_free (new_name);
-        g_free (old_name);
-
-        if (!ret) {
-            return;
-        }
-    }
-
     if (strlen (self->config_name) == 0) {
         g_free (self->config_name);
         self->config_name = g_strdup (gtk_entry_get_text (GTK_ENTRY (self->entry)));
