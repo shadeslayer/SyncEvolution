@@ -274,7 +274,8 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
             const char *mode_str;
             gboolean active;
 
-            active = toggle_get_active (widgets->check);
+            active = toggle_get_active (widgets->check) &&
+                     GTK_WIDGET_SENSITIVE (widgets->check);
             if (active) {
                 mode_str = syncevo_sync_mode_to_string (mode);
             } else {
