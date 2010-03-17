@@ -182,7 +182,7 @@ std::string Status2String(SyncMLStatus status)
         break;
 
     case STATUS_PASSWORD_TIMEOUT:
-        error = "password can't be gotten";
+        error = "password request timed out";
         break;
 
     case sysync::LOCERR_BADPROTO:
