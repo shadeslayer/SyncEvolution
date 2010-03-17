@@ -2536,6 +2536,14 @@ get_reports_cb (SyncevoServer *server,
             type = GTK_MESSAGE_QUESTION;
         }
 
+        if (!data->synced_this_session) {
+            /* TRANSLATORS: the placeholder is a error message (hopefully) 
+             * explaining the problem */
+            char *msg = g_strdup_printf (_("There was a problem with last sync:\n%s"),
+                                         error_msg);
+            g_free (error_msg);
+            error_msg = msg;
+        }
         set_info_bar (data->info_bar, type, response, error_msg);
         g_free (error_msg);
     } else if (data->current_operation == OP_RESTORE) {
@@ -2907,7 +2915,7 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
                            "suggests a slow sync, but this might not always be "
                            "what you want if both ends already have data."));
     case 22002:
-        return g_strdup (_("The sync service died unexpectedly."));
+        return g_strdup (_("The sync process died unexpectedly."));
     case DB_Unauthorized:
         if (response) {
             *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
@@ -2931,7 +2939,7 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
         return g_strdup(_("There is a problem with the local database. "
                           "Syncing again or rebooting may help."));
     case DB_Full:
-        return g_strdup(_("No space left"));
+        return g_strdup(_("No space on disk"));
     case LOCERR_PROCESSMSG:
         return g_strdup(_("Failed to process SyncML"));
     case LOCERR_AUTHFAIL:
