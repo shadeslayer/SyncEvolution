@@ -2916,6 +2916,12 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
                            "what you want if both ends already have data."));
     case 22002:
         return g_strdup (_("The sync process died unexpectedly."));
+    case 22003:
+        if (response) {
+            *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
+        }
+        return g_strdup (_("Password request was not answered. You can save the "
+                           "password in the settings to prevent the request."));
     case DB_Unauthorized:
         if (response) {
             *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
