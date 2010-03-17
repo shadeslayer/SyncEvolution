@@ -31,7 +31,7 @@ void SharedEngine::Connect(const string &aEngineName,
 {
     sysync::TSyError err = m_engine->Connect(aEngineName, aPrgVersion, aDebugFlags);
     if (err) {
-        throw BadSynthesisResult(std::string("cannot connect to engine '") + aEngineName + "'", static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, std::string("cannot connect to engine '") + aEngineName + "'", static_cast<sysync::TSyErrorEnum>(err));
     }
 }
 
@@ -39,7 +39,7 @@ void SharedEngine::Disconnect()
 {
     sysync::TSyError err = m_engine->Disconnect();
     if (err) {
-        throw BadSynthesisResult("cannot disconnect engine", static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, "cannot disconnect engine", static_cast<sysync::TSyErrorEnum>(err));
     }
 }
 
@@ -47,7 +47,7 @@ void SharedEngine::InitEngineXML(const string &aConfigXML)
 {
     sysync::TSyError err = m_engine->InitEngineXML(aConfigXML.c_str());
     if (err) {
-        throw BadSynthesisResult("Synthesis XML config parser error", static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, "Synthesis XML config parser error", static_cast<sysync::TSyErrorEnum>(err));
     }
 }
 
@@ -72,7 +72,7 @@ SharedSession SharedEngine::OpenSession(const string &aSessionID)
     sysync::TSyError err = m_engine->OpenSession(sessionH, 0,
                                                  aSessionID.empty() ? NULL : aSessionID.c_str());
     if (err) {
-        throw BadSynthesisResult("opening session failed", static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, "opening session failed", static_cast<sysync::TSyErrorEnum>(err));
     }
     return SharedSession(sessionH, FreeEngineItem(*this));
 }
@@ -82,7 +82,7 @@ SharedKey SharedEngine::OpenSessionKey(SharedSession &aSessionH)
     sysync::KeyH key;
     sysync::TSyError err = m_engine->OpenSessionKey(aSessionH.get(), key, 0);
     if (err) {
-        throw BadSynthesisResult("opening session key failed", static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, "opening session key failed", static_cast<sysync::TSyErrorEnum>(err));
     }
     return SharedKey(key, FreeEngineItem(*this));
 }
@@ -95,7 +95,7 @@ void SharedEngine::SessionStep(const SharedSession &aSessionH,
                                                  aStepCmd,
                                                  aInfoP);
     if (err) {
-        throw BadSynthesisResult("proceeding with session failed", static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, "proceeding with session failed", static_cast<sysync::TSyErrorEnum>(err));
     }
 }
 
@@ -127,7 +127,7 @@ SharedBuffer SharedEngine::GetSyncMLBuffer(const SharedSession &aSessionH, bool 
                                                      aForSend,
                                                      buffer, bufSize);
     if (err) {
-        throw BadSynthesisResult("acquiring SyncML buffer failed", static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult,"acquiring SyncML buffer failed", static_cast<sysync::TSyErrorEnum>(err));
     }
 
     return SharedBuffer((char *)buffer, (size_t)bufSize,
@@ -138,7 +138,7 @@ void SharedEngine::WriteSyncMLBuffer(const SharedSession &aSessionH, const char 
 {
     sysync::TSyError err = m_engine->WriteSyncMLBuffer(aSessionH.get(), const_cast<char *>(data), len);
     if (err) {
-        throw BadSynthesisResult("writing SyncML buffer failed", static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, "writing SyncML buffer failed", static_cast<sysync::TSyErrorEnum>(err));
     }
 }
 
@@ -155,9 +155,9 @@ SharedKey SharedEngine::OpenKeyByPath(const SharedKey &aParentKeyH,
         string what = "opening key ";
         what += aPath;
         if (err == sysync::DB_NoContent) {
-            throw NoSuchKey(what);
+            SE_THROW_EXCEPTION(NoSuchKey, what);
         } else {
-            throw BadSynthesisResult(what, static_cast<sysync::TSyErrorEnum>(err));
+            SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, what, static_cast<sysync::TSyErrorEnum>(err));
         }
     }
     return SharedKey(key, FreeEngineItem(*this));
@@ -175,9 +175,9 @@ SharedKey SharedEngine::OpenSubkey(const SharedKey &aParentKeyH,
     if (err) {
         string what = "opening sub key";
         if (err == sysync::DB_NoContent) {
-            throw NoSuchKey(what);
+            SE_THROW_EXCEPTION(NoSuchKey, what);
         } else {
-            throw BadSynthesisResult(what, static_cast<sysync::TSyErrorEnum>(err));
+            SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, what, static_cast<sysync::TSyErrorEnum>(err));
         }
     }
     return SharedKey(key, FreeEngineItem(*this));
@@ -188,7 +188,7 @@ string SharedEngine::GetStrValue(const SharedKey &aKeyH, const string &aValName)
     std::string s;
     sysync::TSyError err = m_engine->GetStrValue(aKeyH.get(), aValName.c_str(), s);
     if (err) {
-        throw BadSynthesisResult(string("error reading value ") + aValName, static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, string("error reading value ") + aValName, static_cast<sysync::TSyErrorEnum>(err));
     }
     return s;
 }
@@ -197,7 +197,7 @@ void SharedEngine::SetStrValue(const SharedKey &aKeyH, const string &aValName, c
 {
     sysync::TSyError err = m_engine->SetStrValue(aKeyH.get(), aValName.c_str(), aValue);
     if (err) {
-        throw BadSynthesisResult(string("error writing value ") + aValName, static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, string("error writing value ") + aValName, static_cast<sysync::TSyErrorEnum>(err));
     }
 }
 
@@ -206,7 +206,7 @@ sysync::sInt32 SharedEngine::GetInt32Value(const SharedKey &aKeyH, const string 
     sysync::sInt32 v;
     sysync::TSyError err = m_engine->GetInt32Value(aKeyH.get(), aValName.c_str(), v);
     if (err) {
-        throw BadSynthesisResult(string("error reading value ") + aValName, static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, string("error reading value ") + aValName, static_cast<sysync::TSyErrorEnum>(err));
     }
     return v;
 }
@@ -215,7 +215,7 @@ void SharedEngine::SetInt32Value(const SharedKey &aKeyH, const string &aValName,
 {
     sysync::TSyError err = m_engine->SetInt32Value(aKeyH.get(), aValName.c_str(), aValue);
     if (err) {
-        throw BadSynthesisResult(string("error writing value ") + aValName, static_cast<sysync::TSyErrorEnum>(err));
+        SE_THROW_EXCEPTION_STATUS(BadSynthesisResult, string("error writing value ") + aValName, static_cast<sysync::TSyErrorEnum>(err));
     }
 }
 

@@ -386,6 +386,10 @@ SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger)
         new_status = SyncMLStatus(ex.result());
         SE_LOG_DEBUG(logger, NULL, "error code from Synthesis engine %s",
                      Status2String(new_status).c_str());
+    } catch (const StatusException &ex) {
+        new_status = ex.syncMLStatus();
+        SE_LOG_DEBUG(logger, NULL, "error code from SyncEvolution %s and exception thrown at %s:%d",
+                     Status2String(new_status).c_str(), ex.m_file.c_str(), ex.m_line);
     } catch (const Exception &ex) {
         SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);

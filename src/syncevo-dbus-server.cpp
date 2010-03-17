@@ -3212,7 +3212,7 @@ string Session::askPassword(const string &passwordName,
         return response["password"];
     } 
 
-    SyncContext::throwError("can't get the password from clients. The password request is '" + req->getStatusStr() + "'");
+    SE_THROW_EXCEPTION_STATUS(StatusException, "can't get the password from clients. The password request is '" + req->getStatusStr() + "'", STATUS_PASSWORD_TIMEOUT);
     return "";
 }
 

@@ -231,6 +231,24 @@ class Exception : public std::runtime_error
 };
 
 /**
+ * StatusException by wrapping a SyncML status
+ */
+class StatusException : public Exception
+{
+public:
+    StatusException(const std::string &file,
+                    int line,
+                    const std::string &what,
+                    SyncMLStatus status)
+        : Exception(file, line, what), m_status(status)
+    {}
+
+    SyncMLStatus syncMLStatus() const { return m_status; }
+protected:
+    SyncMLStatus m_status;
+};
+
+/**
  * replace ${} with environment variables, with
  * XDG_DATA_HOME, XDG_CACHE_HOME and XDG_CONFIG_HOME having their normal
  * defaults
@@ -271,6 +289,10 @@ std::string getCurrentTime();
 /** throw a class which accepts file, line, what parameters */
 #define SE_THROW_EXCEPTION(_class,  _what) \
     throw _class(__FILE__, __LINE__, _what)
+
+/** throw a class which accepts file, line, what parameters and status parameters*/
+#define SE_THROW_EXCEPTION_STATUS(_class,  _what, _status) \
+    throw _class(__FILE__, __LINE__, _what, _status)
 
 SE_END_CXX
 #endif // INCL_SYNCEVOLUTION_UTIL

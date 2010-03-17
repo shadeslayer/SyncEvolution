@@ -39,6 +39,7 @@
 #include <stdexcept>
 
 #include <syncevo/declarations.h>
+#include <syncevo/util.h>
 SE_BEGIN_CXX
 
 typedef boost::shared_ptr<sysync::SessionType> SharedSession;
@@ -126,17 +127,17 @@ class SharedEngine {
 /**
  * thrown when a function returns a non-okay error code
  */
-class BadSynthesisResult : public std::runtime_error
+class BadSynthesisResult : public StatusException
 {
-    sysync::TSyErrorEnum m_result;
-
  public:
-    BadSynthesisResult(const string &what, sysync::TSyErrorEnum result) :
-    std::runtime_error(what),
-    m_result(result)
-        {}
+    BadSynthesisResult(const std::string &file,
+                       int line,
+                       const string &what,
+                       sysync::TSyErrorEnum result) 
+        : StatusException(file, line, what, SyncMLStatus(result))
+    {}
 
-    sysync::TSyErrorEnum result() const { return m_result; }
+    sysync::TSyErrorEnum result() const { return sysync::TSyErrorEnum(syncMLStatus()); }
 };
 
 /**
@@ -145,8 +146,8 @@ class BadSynthesisResult : public std::runtime_error
 class NoSuchKey : public BadSynthesisResult
 {
  public:
-    NoSuchKey(const string &what) :
-    BadSynthesisResult(what, sysync::DB_NoContent)
+    NoSuchKey(const std::string &file, int line, const string &what) :
+    BadSynthesisResult(file, line, what, sysync::DB_NoContent)
         {}
 };
 

@@ -181,6 +181,10 @@ std::string Status2String(SyncMLStatus status)
         error = "some changes could not be transferred";
         break;
 
+    case STATUS_PASSWORD_TIMEOUT:
+        error = "password can't be gotten";
+        break;
+
     case sysync::LOCERR_BADPROTO:
         error = "bad or unknown protocol";
         break;

@@ -140,6 +140,12 @@ enum SyncMLStatus {
      */
     STATUS_DIED_PREMATURELY = 22002,
 
+    /**
+     * Set by dbus server when it asks password from dbus clients
+     * and no responsble is gotten in a specific time.
+     */
+    STATUS_PASSWORD_TIMEOUT = 22003,
+
     STATUS_MAX = 0x7FFFFFF
 };
 
