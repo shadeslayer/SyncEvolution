@@ -1187,6 +1187,14 @@ public:
      */
     std::string getDataTypeSupport();
     using SyncSourceBase::getDataTypeSupport;
+
+
+   /*
+    * If any of the sub datasource has no databases associated, return an empty
+    * database list to indicate a possibly error condition; otherwise return a
+    * dummy database to identify "calendar+todo" combined datasource.
+    **/
+    virtual Databases getDatabases();
 };
 
 /**

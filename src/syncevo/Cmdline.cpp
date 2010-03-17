@@ -457,7 +457,7 @@ bool Cmdline::run() {
 
                     // check whether the sync source works
                     SyncSourceParams params("list", to->getSyncSourceNodes(source));
-                    auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false));
+                    auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false, to.get()));
                     if (syncSource.get() == NULL) {
                         disable = "no backend available";
                     } else {

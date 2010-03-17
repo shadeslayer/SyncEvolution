@@ -407,6 +407,20 @@ std::string VirtualSyncSource::getDataTypeSupport()
     return datatypes;
 }
 
+SyncSource::Databases VirtualSyncSource::getDatabases()
+{
+    SyncSource::Databases dbs;
+    BOOST_FOREACH (boost::shared_ptr<SyncSource> &source, m_sources) {
+        SyncSource::Databases sub = source->getDatabases();
+        if (sub.empty()) {
+            return dbs;
+        }
+    }
+    Database db ("calendar+todo", "");
+    dbs.push_back (db);
+    return dbs;
+}
+
 void SyncSourceSession::init(SyncSource::Operations &ops)
 {
     ops.m_startDataRead = boost::bind(&SyncSourceSession::startDataRead, this, _1, _2);
