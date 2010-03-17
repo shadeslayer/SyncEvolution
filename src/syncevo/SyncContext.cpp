@@ -2184,8 +2184,13 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             "\n" <<
             sessioninitscript <<
             "    <sessiontimeout>300</sessiontimeout>\n"
-            "\n"
-            "    <defaultauth/>\n"
+            "\n";
+        //do not send respuri if over bluetooth
+        if (boost::starts_with (getUsedSyncURL(), "obex-bt://")) {
+            clientorserver << "    <sendrespuri>no</sendrespuri>\n"
+            "\n";
+        }
+        clientorserver<<"    <defaultauth/>\n"
             "\n"
             "    <datastore/>\n"
             "\n"
