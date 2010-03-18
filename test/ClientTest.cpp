@@ -3032,18 +3032,6 @@ void SyncTests::doInterruptResume(int changes,
                 // specific test.
                 break;
             }
-            if (suspend &&
-                interruptAtMessage + 1 >= maxMsgNum) {
-                // Suspend requests at the very end cannot be executed
-                // anymore. The Synthesis engine sends its final
-                // message without asking for a suspend, but then
-                // suspends anyway, leading to an unexpected slow
-                // sync. The engine should simply ignore the suspend
-                // request.
-                // This if() prevents that problematic case. It should
-                // be removed once the problem is fixed.
-                break;
-            }
             if (interruptAtMessage >= maxMsgNum) {
                 // next run would not interrupt at all, stop now
                 break;
