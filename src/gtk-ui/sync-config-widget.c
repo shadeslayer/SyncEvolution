@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <stdlib.h>
 #include <string.h>
 #include <glib/gi18n.h>
 #include <dbus/dbus-glib.h>
@@ -898,8 +899,57 @@ sync_config_widget_add_config (SyncConfigWidget *self,
                                const char *name,
                                SyncevoConfig *config)
 {
-    g_hash_table_insert (self->configs, g_strdup (name), config);
-    gtk_combo_box_prepend_text (GTK_COMBO_BOX (self->combo), name);
+    GtkListStore *store;
+    GtkTreeIter iter;
+    const char *guess_name;
+    SyncevoConfig *guess_config;
+    int score = 1;
+    int guess_score, second_guess_score = -1;
+    char *str;
+
+    store = GTK_LIST_STORE (gtk_combo_box_get_model (GTK_COMBO_BOX (self->combo)));
+    if (syncevo_config_get_value (config, NULL, "score", &str)) {
+        score = (int)strtol (str, NULL, 10);
+    }
+    gtk_list_store_append (store, &iter);
+    gtk_list_store_set (store, &iter,
+                        0, name,
+                        1, config,
+                        2, score,
+                        -1);
+
+    /* make an educated guess if possible */
+    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (store), &iter);
+    gtk_tree_model_get (GTK_TREE_MODEL (store), &iter,
+                        0, &guess_name,
+                        1, &guess_config,
+                        2, &guess_score,
+                        -1);
+
+    if (gtk_tree_model_iter_next (GTK_TREE_MODEL (store), &iter)) {
+        gtk_tree_model_get (GTK_TREE_MODEL (store), &iter,
+                            2, &second_guess_score,
+                            -1);
+    }
+
+    if (guess_score > 1 && guess_score >= second_guess_score) {
+        gtk_combo_box_set_active (GTK_COMBO_BOX (self->combo), 0);
+        /* TRANSLATORS: explanation before a device template combobox.
+         * Placeholder is a device name like 'Nokia N85' or 'Syncevolution
+         * Client' */
+        str = g_strdup_printf (_("This device looks like it might be a '%s'. "
+                                 "If this is not correct, please take a look at "
+                                 "the list of supported devices and pick yours "
+                                 "if it is listed"), guess_name);
+    } else {
+        gtk_combo_box_set_active (GTK_COMBO_BOX (self->combo), -1);
+        str = g_strdup (_("We don't know what this device is exactly. "
+                          "Please take a look at the list of "
+                          "supported devices and pick yours if it "
+                          "is listed"));
+    }
+    gtk_label_set_text (GTK_LABEL (self->device_text), str);
+    g_free (str);
 }
 
 static void
@@ -949,21 +999,24 @@ sync_config_widget_set_name (SyncConfigWidget *self,
 static void
 device_selection_btn_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
 {
-    const char *name;
-    SyncevoConfig *config;
+    GtkTreeIter iter;
 
-    self->device_template_selected = TRUE;
+    if (gtk_combo_box_get_active_iter (GTK_COMBO_BOX (self->combo), &iter)) {
+        const char *name;
+        SyncevoConfig *config;
+        GtkTreeModel *model;
 
-    name = gtk_combo_box_get_active_text (GTK_COMBO_BOX (self->combo));
-    g_return_if_fail (name);
+        self->device_template_selected = TRUE;
 
-    config = g_hash_table_lookup (self->configs, name);
-    g_return_if_fail (config);
+        model = gtk_combo_box_get_model(GTK_COMBO_BOX (self->combo));
+        gtk_tree_model_get (model, &iter, 0, &name, -1 );
+        gtk_tree_model_get (model, &iter, 1, &config, -1 );
 
-    sync_config_widget_set_config (self, config);
-    sync_config_widget_set_name (self, name);
+        sync_config_widget_set_config (self, config);
+        sync_config_widget_set_name (self, name);
 
-    sync_config_widget_update_expander (self);
+        sync_config_widget_update_expander (self);
+    }
 }
 
 static void
@@ -1240,10 +1293,6 @@ sync_config_widget_dispose (GObject *object)
     }
     self->config = NULL;
 
-    if (self->configs) {
-        g_hash_table_destroy (self->configs);
-        self->configs = NULL;
-    }
     g_free (self->config_name);
     self->config_name = NULL;
     g_free (self->current_service_name);
@@ -1664,12 +1713,10 @@ static void
 sync_config_widget_init (SyncConfigWidget *self)
 {
     GtkWidget *tmp_box, *hbox, *cont, *vbox, *label;
+    GtkListStore *store;
+    GtkCellRenderer *renderer;
 
     GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
-
-    /* should free the config? */
-    self->configs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                           g_free, NULL);
 
     self->label_box = gtk_event_box_new ();
     gtk_widget_set_app_paintable (self->label_box, TRUE);
@@ -1746,7 +1793,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     hbox = gtk_hbox_new (FALSE, 8);
     gtk_widget_show (hbox);
     gtk_box_pack_start (GTK_BOX (self->device_selector_box), hbox,
-                        FALSE, TRUE, 16);
+                        FALSE, TRUE, 8);
     self->device_text = gtk_label_new (("We don't know what this device is exactly. "
                                         "Please take a look at the list of "
                                         "supported devices and pick yours if it "
@@ -1758,17 +1805,29 @@ sync_config_widget_init (SyncConfigWidget *self)
                         FALSE, TRUE, 0);
 
 
-    hbox = gtk_hbox_new (FALSE, 8);
+    hbox = gtk_hbox_new (FALSE, 16);
     gtk_widget_show (hbox);
     gtk_box_pack_start (GTK_BOX (self->device_selector_box), hbox,
                         FALSE, TRUE, 16);
-    self->combo = gtk_combo_box_new_text ();
+
+    store = gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_INT);
+    gtk_tree_sortable_set_sort_column_id (GTK_TREE_SORTABLE (store),
+                                          2, GTK_SORT_ASCENDING);
+
+    self->combo = gtk_combo_box_new_with_model (GTK_TREE_MODEL (store));
+    g_object_unref (G_OBJECT (store)); 
     gtk_widget_set_size_request (self->combo, 200, -1);
     gtk_widget_show (self->combo);
-    gtk_box_pack_start (GTK_BOX (hbox), self->combo,
-                        FALSE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), self->combo, FALSE, TRUE, 0);
+
+    renderer = gtk_cell_renderer_text_new ();
+    gtk_cell_layout_pack_start (GTK_CELL_LAYOUT(self->combo), renderer, TRUE);
+    gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT(self->combo), renderer,
+                                    "text", 0, NULL);
+
     g_signal_connect (self->combo, "changed",
                       G_CALLBACK (device_combo_changed), self);
+
 
     self->device_select_btn = gtk_button_new_with_label ("Use these settings");
     gtk_widget_set_sensitive (self->device_select_btn, FALSE);
