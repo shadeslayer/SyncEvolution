@@ -1540,6 +1540,10 @@ void SyncTests::addTests() {
             ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerAdd);
             ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerRemove);
             ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerUpdate);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendClientAddBig);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendClientUpdateBig);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerAddBig);
+            ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendServerUpdateBig);
             ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendFull);
             addTest(FilterTest(suspendTests));
         }
@@ -3134,6 +3138,26 @@ void SyncTests::testUserSuspendServerRemove()
 void SyncTests::testUserSuspendServerUpdate()
 {
     doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendClientAddBig()
+{
+    doInterruptResume(CLIENT_ADD|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendClientUpdateBig()
+{
+    doInterruptResume(CLIENT_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendServerAddBig()
+{
+    doInterruptResume(SERVER_ADD|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+}
+
+void SyncTests::testUserSuspendServerUpdateBig()
+{
+    doInterruptResume(SERVER_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
 }
 
 void SyncTests::testUserSuspendFull()

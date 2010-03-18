@@ -725,6 +725,10 @@ protected:
     virtual void testUserSuspendServerAdd();
     virtual void testUserSuspendServerRemove();
     virtual void testUserSuspendServerUpdate();
+    virtual void testUserSuspendClientAddBig();
+    virtual void testUserSuspendClientUpdateBig();
+    virtual void testUserSuspendServerAddBig();
+    virtual void testUserSuspendServerUpdateBig();
     virtual void testUserSuspendFull();
 
     virtual void testResendClientAdd();
