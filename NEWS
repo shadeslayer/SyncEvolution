@@ -1,3 +1,69 @@
+SyncEvolution 1.0 beta 2 -> beta 3, xxxxxxxxxx
+==============================================
+
+One more step towards the long awaited 1.0. 0.1 was released over four
+years ago and the 1.0 cycle started some time last summer. Beta 3 is
+considered feature complete at this point.
+
+Automatic synchronization is supported by the syncevo-dbus-server (MB
+#6378). When that is installed, it will be started as part of a user
+session and keep running to trigger syncs in the
+background. Notifications are emitted when syncs start, end or fail
+(MB #10000).
+
+Automatic synchronization can be enabled separately for each peer
+("autoSync=0/1", off by default), will be done at regular intervals
+("autoSyncInterval=30" minutes) when online long enough
+("autoSyncDelay=15" minutes). That last option ensures that a) an
+automatic sync does not attempt to use a network connection unless it
+was already active and b) hopefully is also around long enough to
+complete the sync.
+
+Detecting online status depends on ConnMan. Without it, SyncEvolution
+assumes that the network is available. For Bluetooth it is enough to
+have a peer paired.
+
+Thanks to fixes and improvements in both Synthesis engine and
+SyncEvolution, suspend and resume are fully supported in client and
+server (MB #2425). Previously it failed in some cases, as mercilessly
+exposed by our automated testing. Now all of these tests pass. The
+HTTP server now also handles message resends by clients correctly.
+
+Direct synchronization with older phones (like Sony Ericsson K750i)
+can be started now by switching to an older version of the SyncML
+standard ("SyncMLVersion" property, MB #9312). No further
+interoperability testing with such phones has been done at this
+time. When acting as client, that same property allows talking to
+older SyncML servers, like desknow.com.
+
+Other changes:
+
+* Nokia N900: added a config template for it and disabled the redundant
+  RespURI when using Bluetooth. Preliminary testing shows that this solves
+  some of the issues seen before (MB #10224).
+* syncevolution.org binaries: finally solved the libbluetooth3
+  incompatibility (MB #9289). Binaries of beta 2 crashed on more
+  recent distros because of that.
+* SyncML client and Bluetooth: a mobile device running SyncEvolution
+  creates a configuration automatically (MB #6175). The peer contacting
+  us has to use the standard SyncEvolution URIs (addressbook, calendar,
+  todo, memo).
+* command line: when dealing with the shared non-peer part of a config,
+  it checks for properties which are unsuitable only prints
+  those (MB #8048)
+* GTK GUI: improved setup of devices, automatic sync switch,
+  some fixes for crashes and other tweaks
+* Nokia 7210c: send time as UTC instead of relying on time zone
+  information (MB #9907).
+* command line: setting up a configuration for a "SyncEvolution"
+  server on a client was not possible because the "SyncEvolutionClient"
+  configuration was picked instead (MB #10004). The latter has to
+  be used when configuring a SyncEvolution server to talk to a
+  SyncEvolution client.
+* restore: no longer updates the time of the backup (MB #9963)
+* various minor improvements and fixes, see ChangeLog
+
+
 SyncEvolution 1.0 beta 1 -> beta 2, 23.02.2010
 ==============================================
 
