@@ -1728,8 +1728,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                 "   template name = template description    matching score in percent (100% = exact match)\n"
                 "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    100%\n"
-                "   SyncEvolutionClient = SyncEvolution server side template    40%\n"
-                "   ServerDefault = server side default template    20%\n",
+                "   SyncEvolutionClient = SyncEvolution server side template    40%\n",
                 help1.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help1.m_err.str());
         TestCmdline help2("--template", "?nokia", NULL);
@@ -1737,8 +1736,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                 "   template name = template description    matching score in percent (100% = exact match)\n"
                 "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    100%\n"
-                "   SyncEvolutionClient = SyncEvolution server side template    40%\n"
-                "   ServerDefault = server side default template    20%\n",
+                "   SyncEvolutionClient = SyncEvolution server side template    40%\n",
                 help2.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help2.m_err.str());
         TestCmdline help3("--template", "?7210c", NULL);
@@ -1746,7 +1744,6 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                 "   template name = template description    matching score in percent (100% = exact match)\n"
                 "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    60%\n"
-                "   ServerDefault = server side default template    20%\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    20%\n",
                 help3.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help3.m_err.str());
@@ -1755,8 +1752,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                 "   template name = template description    matching score in percent (100% = exact match)\n"
                 "   SyncEvolutionClient = SyncEvolution server side template    100%\n"
-                "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    40%\n"
-                "   ServerDefault = server side default template    40%\n",
+                "   Nokia_7210c = Template for Nokia 7210c phone and as default template for all Nokia phones    40%\n",
                 help4.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help4.m_err.str());
     }

@@ -2195,7 +2195,8 @@ bool SyncConfig::TemplateDescription::compare_op (boost::shared_ptr<SyncConfig::
 
 TemplateConfig::TemplateConfig (const string &path)
     : m_metaNode (new FileConfigNode (path, "template.ini", true)),
-    m_name("")
+    m_name(""),
+    m_path(path)
 {
     m_metaNode->readProperties(m_metaProps);
 }
@@ -2207,8 +2208,10 @@ bool TemplateConfig::isTemplateConfig (const string &dir)
 
 int TemplateConfig::serverModeMatch (SyncConfig::MatchMode mode)
 {
-    std::string peerIsClient = m_metaProps["peerIsClient"];
 
+    FileConfigNode configNode (m_path, "config.ini", true);
+    std::string peerIsClient = configNode.readProperty ("peerIsClient");
+    
     //not a match if serverMode does not match
     if ((peerIsClient.empty() || peerIsClient == "0") && mode == SyncConfig::MATCH_FOR_SERVER_MODE) {
         return NO_MATCH;

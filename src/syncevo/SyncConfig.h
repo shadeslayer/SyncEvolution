@@ -1659,6 +1659,7 @@ class TemplateConfig
     boost::shared_ptr<FileConfigNode> m_metaNode;
     ConfigProps m_metaProps;
     string m_name;
+    string m_path;
 public:
     TemplateConfig (const string &path);
     enum {

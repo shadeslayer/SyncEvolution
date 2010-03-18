@@ -194,7 +194,6 @@ nodist_client_test_SOURCES = ../test/test.cpp
 CLIENT_LIB_TEST_FILES = \
 	testcases/lcs/file1.txt \
 	testcases/lcs/file2.txt \
-	testcases/templates/clients/default/template.ini \
 	testcases/templates/clients/SyncEvolution/sources/addressbook/config.ini \
 	testcases/templates/clients/SyncEvolution/sources/memo/config.ini \
 	testcases/templates/clients/SyncEvolution/sources/todo/config.ini \
