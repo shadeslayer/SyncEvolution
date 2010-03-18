@@ -2102,11 +2102,16 @@ get_config_for_main_win_cb (SyncevoServer *server,
         if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
             dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_NO_SUCH_CONFIG)) {
             /* another syncevolution client probably removed the config */
+            set_app_state (data, SYNC_UI_STATE_NO_SERVER);
         } else {
             g_warning ("Error in Server.GetConfig: %s", error->message);
-            /* non-fatal, ignore in UI */
+            /* TRANSLATORS: message in main view */
+            set_info_bar (data->info_bar, GTK_MESSAGE_ERROR,
+                          SYNC_ERROR_RESPONSE_NONE,
+                          _("There was a problem communicating with the "
+                            "sync process. Please try again later."));
+            set_app_state (data, SYNC_UI_STATE_SERVER_FAILURE);
         }
-        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
         g_error_free (error);
 
         return;
