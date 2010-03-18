@@ -2357,8 +2357,14 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 //check the data type
                 SyncSource *subSource = (*m_sourceListPtr)[source];
                 SourceType subType = subSource->getSourceType();
-                if (sourceType.m_format != subType.m_format ||
-                    sourceType.m_forceFormat != subType.m_forceFormat) {
+
+                //If there is no format explictly selected in sub SyncSource, we
+                //have no way to determine whether it works with the format
+                //specific in the virtual SyncSource, thus no warning in this
+                //case.
+                if (!subType.m_format.empty() && (
+                    sourceType.m_format != subType.m_format ||
+                    sourceType.m_forceFormat != subType.m_forceFormat)) {
                     SE_LOG_WARNING(NULL, NULL, 
                                    "Virtual data source \"%s\" and sub data source \"%s\" have different data format. Will use the format in virtual data source.",
                                    vSource->getName(), source.c_str());
