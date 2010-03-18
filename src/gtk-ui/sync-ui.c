@@ -112,6 +112,8 @@ struct _app_data {
     GtkWidget *emergency_btn;
 
     GtkWidget *server_label;
+    GtkWidget *autosync_box;
+    GtkWidget *autosync_toggle;
     GtkWidget *last_synced_label;
     GtkWidget *sources_box;
 
@@ -655,6 +657,7 @@ set_app_state (app_data *data, app_state state)
         break;
     case SYNC_UI_STATE_NO_SERVER:
         gtk_widget_hide (data->service_box);
+        gtk_widget_hide (data->autosync_box);
         set_info_bar (data->info_bar,
                       GTK_MESSAGE_INFO, SYNC_ERROR_RESPONSE_SETTINGS_SELECT,
                       _("You haven't selected a sync service or device yet. "
@@ -673,6 +676,7 @@ set_app_state (app_data *data, app_state state)
         break;
     case SYNC_UI_STATE_SERVER_FAILURE:
         gtk_widget_hide (data->service_box);
+        gtk_widget_hide (data->autosync_box);
         refresh_last_synced_label (data);
 
         /* info bar content should be set earlier */
@@ -688,6 +692,7 @@ set_app_state (app_data *data, app_state state)
     case SYNC_UI_STATE_SERVER_OK:
         /* we have a active, idle session */
         gtk_widget_show (data->service_box);
+        gtk_widget_show (data->autosync_box);
         gtk_widget_hide (data->info_bar);
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
@@ -1005,6 +1010,77 @@ init_bluetooth_ui (app_data *data)
     }
 }
 
+
+static void
+autosync_toggle_cb (GtkWidget *widget, gpointer x, app_data *data)
+{
+    if (data->current_service && data->current_service->config) {
+        gboolean new_active, old_active = FALSE;
+        char *autosync = NULL;
+
+        new_active = toggle_get_active (widget);
+        syncevo_config_get_value (data->current_service->config, NULL,
+                                  "autoSync", &autosync);
+        old_active = (g_strcmp0 (autosync, "1") == 0);
+
+        if (old_active != new_active) {
+            char *new_val;
+            operation_data *op_data;
+
+            new_val = new_active ? "1": "0";
+            syncevo_config_set_value (data->current_service->config, NULL,
+                                      "autoSync", new_val);
+
+            op_data = g_slice_new (operation_data);
+            op_data->data = data;
+            op_data->operation = OP_SAVE;
+            op_data->started = FALSE;
+            syncevo_server_start_session (data->server,
+                                          data->current_service->name,
+                                          (SyncevoServerStartSessionCb)start_session_cb,
+                                          op_data);
+        }
+    }
+}
+
+static void
+build_autosync_ui (app_data *data)
+{
+    char *txt;
+
+    /* TRANSLATORS: label for checkbutton/toggle in main view.
+     * Please stick to similar length strings or break the line with
+     * "\n" if absolutely needed */
+    txt = _("Automatic sync");
+
+#ifdef USE_MOBLIN_UX
+    GtkWidget *lbl;
+
+    lbl = gtk_label_new (txt);
+    gtk_widget_show (lbl);
+    gtk_box_pack_end (GTK_BOX (data->autosync_box), lbl, FALSE, FALSE, 0);
+
+    data->autosync_toggle = mx_gtk_light_switch_new ();
+    gtk_widget_show (data->autosync_toggle);
+    gtk_box_pack_end (GTK_BOX (data->autosync_box), data->autosync_toggle,
+                      FALSE, FALSE, 0);
+    g_signal_connect (data->autosync_toggle, "switch-flipped",
+                      G_CALLBACK (autosync_toggle_cb), data);
+#else
+    GtkWidget *align;
+
+    align = gtk_alignment_new (0.5, 1.0, 1.0, 0.0);
+    gtk_widget_show (align);
+    gtk_box_pack_start (GTK_BOX (data->autosync_box), align, TRUE, TRUE, 0);
+
+    data->autosync_toggle = gtk_check_button_new_with_label (txt);
+    gtk_container_add (GTK_CONTAINER (align), data->autosync_toggle);
+    g_signal_connect (data->autosync_toggle, "notify::active",
+                      G_CALLBACK (autosync_toggle_cb), data);
+#endif
+    gtk_widget_show (data->autosync_toggle);
+}
+
 static gboolean
 init_ui (app_data *data)
 {
@@ -1048,6 +1124,9 @@ init_ui (app_data *data)
     gtk_image_set_from_file (GTK_IMAGE (data->spinner_image), THEMEDIR "sync-spinner.gif");
     gtk_widget_set_no_show_all (data->spinner_image, TRUE);
     gtk_widget_hide (data->spinner_image);
+
+    data->autosync_box = GTK_WIDGET (gtk_builder_get_object (builder, "autosync_box"));
+    build_autosync_ui (data);
 
     data->server_label = GTK_WIDGET (gtk_builder_get_object (builder, "sync_service_label"));
     data->last_synced_label = GTK_WIDGET (gtk_builder_get_object (builder, "last_synced_label"));
@@ -1620,6 +1699,7 @@ static void
 update_service_ui (app_data *data)
 {
     char *icon_uri = NULL;
+    char *autosync = NULL;
 
     gtk_container_foreach (GTK_CONTAINER (data->sources_box),
                            (GtkCallback)remove_child,
@@ -1628,6 +1708,8 @@ update_service_ui (app_data *data)
     if (data->current_service && data->current_service->config) {
         syncevo_config_get_value (data->current_service->config,
                                   NULL, "IconURI", &icon_uri);
+        syncevo_config_get_value (data->current_service->config,
+                                  NULL, "autoSync", &autosync);
 
         g_hash_table_foreach (data->current_service->source_configs,
                               (GHFunc)update_service_source_ui,
@@ -1636,6 +1718,9 @@ update_service_ui (app_data *data)
     load_icon (icon_uri,
                GTK_BOX (data->server_icon_box),
                SYNC_UI_ICON_SIZE);
+
+    toggle_set_active (data->autosync_toggle,
+                       g_strcmp0 (autosync, "1") == 0);
 
     refresh_last_synced_label (data);
 
