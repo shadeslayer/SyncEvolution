@@ -2971,7 +2971,22 @@ void SyncTests::doInterruptResume(int changes,
 
             // no need for resend tests, unless they were interrupted at the first message
             if (!resend || interruptAtMessage == 0) {
-                accessClientB->doSync("retryB", SyncOptions(SYNC_TWO_WAY));
+                SyncReport report;
+                accessClientB->doSync("retryB",
+                                      SyncOptions(SYNC_TWO_WAY,
+                                                  CheckSyncReport().setMode(SYNC_TWO_WAY).setReport(&report)));
+                // Suspending at first and last message doesn't need a
+                // resume, everything else does. When multiple sources
+                // are involved, some may suspend, some may not, so we
+                // cannot check.
+                if (suspend &&
+                    interruptAtMessage != 0 &&
+                    interruptAtMessage + 1 != maxMsgNum &&
+                    report.size() == 1) {
+                    BOOST_FOREACH(const SyncReport::SourceReport_t &sourceReport, report) {
+                        CPPUNIT_ASSERT(sourceReport.second.isResumeSync());
+                    }
+                }
             }
         }
 
@@ -4052,6 +4067,10 @@ void ClientTest::getTestData(const char *type, Config &config)
 
 void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
 {
+    if (m_report) {
+        *m_report = report;
+    }
+
     stringstream str;
 
     str << report;

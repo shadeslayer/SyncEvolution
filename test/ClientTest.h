@@ -70,7 +70,8 @@ class CheckSyncReport {
         serverUpdated(srUpdated),
         serverDeleted(srDeleted),
         mustSucceed(mstSucceed),
-        syncMode(mode)
+        syncMode(mode),
+        m_report(NULL)
         {}
 
     virtual ~CheckSyncReport() {}
@@ -79,6 +80,13 @@ class CheckSyncReport {
         serverAdded, serverUpdated, serverDeleted;
     bool mustSucceed;
     SyncMode syncMode;
+
+    // if set, then the report is copied here
+    SyncReport *m_report;
+
+    CheckSyncReport &setMode(SyncMode mode) { syncMode = mode; return *this; }
+    CheckSyncReport &setReport(SyncReport *report) { m_report = report; return *this; }
+
 
     /**
      * checks that the sync completed as expected and throws
