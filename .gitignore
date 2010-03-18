@@ -19,5 +19,4 @@ po/Makefile.in.in
 po/LINGUAS
 mkinstalldirs
 intltool-*.in
-.gitignore
-*.patch
+/*.patch
