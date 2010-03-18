@@ -903,7 +903,8 @@ class PresenceStatus {
  * of these objects and deletes them before destructing itself,
  * that reference is guaranteed to remain valid.
  */
-class DBusServer : public DBusObjectHelper
+class DBusServer : public DBusObjectHelper,
+                   public LoggerBase
 {
     GMainLoop *m_loop;
     uint32_t m_lastSession;
@@ -1100,6 +1101,11 @@ class DBusServer : public DBusObjectHelper
                 const std::string &,
                 const std::map<string, string> &> infoRequest;
 
+    /** Server.LogOutput */
+    EmitSignal3<const DBusObject_t &,
+                uint32_t,
+                const std::string &> logOutput;
+
     static gboolean connmanPoll (gpointer dbus_server);
     DBusConnectionPtr m_connmanConn;
 
@@ -1112,6 +1118,10 @@ class DBusServer : public DBusObjectHelper
 
     //automatic termination
     AutoTerm m_autoTerm;
+
+    //records the parent logger, dbus server acts as logger to 
+    //send signals to clients and put logs in the parent logger.
+    LoggerBase &m_parentLogger;
 
 public:
     DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration);
@@ -1220,6 +1230,19 @@ public:
     std::string getNextSession();
 
     AutoSyncManager &getAutoSyncManager() { return m_autoSync; }
+
+    /**
+     * implement virtual method from LogStdout.
+     * Not only print the message in the console
+     * but also send them as signals to clients
+     */
+    virtual void messagev(Level level,
+                          const char *prefix,
+                          const char *file,
+                          int line,
+                          const char *function,
+                          const char *format,
+                          va_list args);
 };
 
 /**
@@ -4447,9 +4470,11 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     presence(*this, "Presence"),
     templatesChanged(*this, "TemplatesChanged"),
     infoRequest(*this, "InfoRequest"),
+    logOutput(*this, "LogOutput"),
     m_presence(*this),
     m_autoSync(*this),
-    m_autoTerm(m_autoSync.preventTerm() ? -1 : duration) //if there is any task in auto sync, prevent auto termination
+    m_autoTerm(m_autoSync.preventTerm() ? -1 : duration), //if there is any task in auto sync, prevent auto termination
+    m_parentLogger(LoggerBase::instance())
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -4470,6 +4495,10 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     add(templatesChanged);
     add(presence);
     add(infoRequest);
+    add(logOutput);
+
+    LoggerBase::pushLogger(this);
+    setLevel(LoggerBase::DEBUG);
 
     const char *connmanTest = getenv ("DBUS_TEST_CONNMAN");
     m_connmanConn = g_dbus_setup_bus (connmanTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
@@ -4485,6 +4514,7 @@ DBusServer::~DBusServer()
     m_workQueue.clear();
     m_clients.clear();
     m_attachedClients.clear();
+    LoggerBase::popLogger();
 }
 
 void DBusServer::run()
@@ -4882,6 +4912,26 @@ void DBusServer::updateDevice(const string &deviceId,
             templatesChanged();
             break;
         }
+    }
+}
+
+void DBusServer::messagev(Level level,
+                          const char *prefix,
+                          const char *file,
+                          int line,
+                          const char *function,
+                          const char *format,
+                          va_list args)
+{
+    m_parentLogger.messagev(level, prefix, file, line, function, format, args);
+    string log = StringPrintfV(format, args);
+    // prefix is used to set session path
+    // for general server output, the object path field is dbus server 
+    // the object path can't be empty for object paths prevent using empty string.
+    if(m_activeSession) {
+        logOutput(m_activeSession->getPath(), (uint32_t)level, log);
+    } else {
+        logOutput(getPath(), (uint32_t)level, log);
     }
 }
 
