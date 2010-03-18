@@ -490,6 +490,13 @@ sync_clicked_cb (GtkButton *btn, app_data *data)
     start_sync (data);
 }
 
+#define DAY 60 * 60 * 24
+#define HALF_DAY 60 * 60 * 12
+#define HOUR 60 * 60
+#define HALF_HOUR 60 * 30
+#define MINUTE 60
+#define HALF_MINUTE 30
+
 static gboolean
 refresh_last_synced_label (app_data *data)
 {
@@ -507,39 +514,39 @@ refresh_last_synced_label (app_data *data)
     } else if (data->last_sync <= 0) {
         msg = g_strdup (data->current_service->pretty_name); /* we don't know */
         delay = -1;
-    } else if (diff < 30) {
+    } else if (diff < HALF_MINUTE) {
         /* TRANSLATORS: This is the title on main view. Placeholder is 
          * the service name. Example: "Google - synced just now" */
         msg = g_strdup_printf (_("%s - synced just now"),
                                data->current_service->pretty_name);
-        delay = 30;
-    } else if (diff < 90) {
+        delay = 10;
+    } else if (diff < MINUTE + HALF_MINUTE) {
         msg = g_strdup_printf (_("%s - synced a minute ago"),
                                data->current_service->pretty_name);
-        delay = 60;
-    } else if (diff < 60 * 60) {
+        delay = MINUTE;
+    } else if (diff < HOUR) {
         msg = g_strdup_printf (_("%s - synced %ld minutes ago"),
                                data->current_service->pretty_name,
-                               (diff + 30) / 60);
-        delay = 60;
-    } else if (diff < 60 * 90) {
+                               (diff + HALF_MINUTE) / MINUTE);
+        delay = MINUTE;
+    } else if (diff < HOUR + HALF_HOUR) {
         msg = g_strdup_printf (_("%s - synced an hour ago"),
                                data->current_service->pretty_name);
-        delay = 60 * 60;
-    } else if (diff < 60 * 60 * 24) {
+        delay = HOUR;
+    } else if (diff < DAY) {
         msg = g_strdup_printf (_("%s - synced %ld hours ago"),
                                data->current_service->pretty_name,
-                               (diff + 60 * 30) / (60 * 60));
-        delay = 60 * 60;
-    } else if (diff < 60 * 60 * 24 - (60 * 30)) {
+                               (diff + HALF_HOUR) / (HOUR));
+        delay = HOUR;
+    } else if (diff < DAY + HALF_DAY) {
         msg = g_strdup_printf (_("%s - synced a day ago"),
                                data->current_service->pretty_name);
-        delay = 60 * 60 * 24;
+        delay = HOUR;
     } else {
         msg = g_strdup_printf (_("%s - synced %ld days ago"),
                                data->current_service->pretty_name,
-                               (diff + 24 * 60 * 30) / (60 * 60 * 24));
-        delay = 60 * 60 * 24;
+                               (diff + HALF_DAY) / (DAY));
+        delay = HOUR;
     }
 
     gtk_label_set_text (GTK_LABEL (data->server_label), msg);
@@ -552,7 +559,6 @@ refresh_last_synced_label (app_data *data)
 
     return FALSE;
 }
-
 
 static void
 set_sync_progress (app_data *data, float progress, char *status)
