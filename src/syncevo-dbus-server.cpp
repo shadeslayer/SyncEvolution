@@ -5179,9 +5179,8 @@ void AutoSyncManager::remove(const string &configName)
         }
         //if list is empty, remove the list from map
         if(list->empty()) {
-            PeerMap::iterator next = ++it;
-            m_peerMap.erase(it);
-            it = next;
+            PeerMap::iterator erased = it++;
+            m_peerMap.erase(erased);
         } else {
             ++it;
         }
