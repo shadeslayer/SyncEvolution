@@ -69,6 +69,7 @@ void Logger::message(Level level,
 const char *Logger::levelToStr(Level level)
 {
     switch (level) {
+    case SHOW: return "SHOW";
     case ERROR: return "ERROR";
     case WARNING: return "WARNING";
     case INFO: return "INFO";

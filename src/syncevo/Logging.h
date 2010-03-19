@@ -55,6 +55,7 @@ class Logger
      * - debug: most detailed logging, messages may be arbitrarily large
      *
      * Here is a decision tree which helps to pick the right level:
+     * - a must-shown message: => SHOW
      * - an error: => ERROR
      * - a non-fatal error: => WARNING
      * - it changes during each sync or marks important steps
@@ -64,6 +65,10 @@ class Logger
      * - everything else: DEBUG
      */
     typedef enum {
+        /**
+         *
+         */
+        SHOW,
         /**
          * only error messages printed
          */

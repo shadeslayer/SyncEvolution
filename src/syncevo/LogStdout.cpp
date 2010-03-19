@@ -60,9 +60,12 @@ void LoggerStdout::messagev(FILE *file,
     if (file &&
         msglevel <= filelevel) {
         // TODO: print time
-        fprintf(file, "[%s] ", levelToStr(msglevel));
-        if (prefix) {
-            fprintf(file, "%s: ", prefix);
+        if(msglevel != SHOW) {
+            // in case of 'SHOW' level, don't print level and prefix information
+            fprintf(file, "[%s] ", levelToStr(msglevel));
+            if (prefix) {
+                fprintf(file, "%s: ", prefix);
+            }
         }
         // TODO: print debugging information, perhaps only in log file
         vfprintf(file, format, args);

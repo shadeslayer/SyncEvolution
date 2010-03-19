@@ -23,6 +23,8 @@
 #endif
 
 #include <syncevo/Logging.h>
+#include <syncevo/LogStdout.h>
+#include <syncevo/LogRedirect.h>
 #include <syncevo/util.h>
 #include <syncevo/SyncContext.h>
 #include <syncevo/SoupTransportAgent.h>
@@ -1586,6 +1588,8 @@ private:
     string m_source;
 };
 
+class CmdlineWrapper;
+
 /**
  * Represents and implements the Session interface.  Use
  * boost::shared_ptr to track it and ensure that there are references
@@ -1850,6 +1854,73 @@ private:
     virtual bool setFilters(SyncConfig &config);
 };
 
+/**
+ * a wrapper to maintain the execution of command line 
+ * arguments from dbus clients. It is in charge of
+ * redirecting output of cmd line to logging system.
+ */
+class CmdlineWrapper
+{
+    /**
+     * inherit from stream buf to redirect the output.
+     * Set a log until we gets a '\n' separator since we know
+     * the command line message often ends with '\n'. The reason
+     * is to avoid setting less characters in one log and thus
+     * sending many signals to dbus clients.
+     */
+    class CmdlineStreamBuf : public std::streambuf
+    {
+    public:
+        virtual ~CmdlineStreamBuf()
+        {
+            //flush cached characters
+            if(!m_str.empty()) {
+                SE_LOG(LoggerBase::SHOW, NULL, NULL, "%s", m_str.c_str());
+            }
+        }
+    protected:
+        /**
+         * inherit from std::streambuf, all characters are cached in m_str
+         * until a character '\n' is reached.
+         */
+        virtual int_type overflow (int_type ch) {
+            if(ch == '\n') {
+                //don't append this character for logging system will append it
+                SE_LOG(LoggerBase::SHOW, NULL, NULL, "%s", m_str.c_str());
+                m_str.clear();
+            } else if (ch != EOF) {
+                m_str += ch;
+            }
+            return ch;
+        }
+
+        /** the cached output characters */
+        string m_str;
+    };
+
+    /** streambuf used for m_cmdlineOutStream */
+    CmdlineStreamBuf m_outStreamBuf;
+
+    /** stream for command line out and err arguments */
+    std::ostream m_cmdlineOutStream;
+
+    /** instance to run command line arguments */
+    Cmdline m_cmdline;
+public:
+    /**
+     * constructor to create cmdline instance.
+     * Here just one stream is used and error message in
+     * command line is output to this stream for it is
+     * different from Logger::ERROR.
+     */
+    CmdlineWrapper(Session &session, const vector<string> &args)
+        : m_cmdlineOutStream(&m_outStreamBuf),
+        m_cmdline(args, m_cmdlineOutStream, m_cmdlineOutStream)
+    {}
+
+    void parse() { m_cmdline.parse(); }
+    void run() { m_cmdline.run(); }
+};
 
 /**
  * Represents and implements the Connection interface.
@@ -5530,6 +5601,8 @@ int main(int argc, char **argv)
 
         signal(SIGTERM, niam);
         signal(SIGINT, niam);
+
+        LogRedirect redirect(false);
 
         LoggerBase::instance().setLevel(LoggerBase::DEBUG);
 
