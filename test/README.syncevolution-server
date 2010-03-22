@@ -1,0 +1,57 @@
+Here are some quick (and probably incomplete) notes about setting up
+SyncEvolution as HTTP server for client-test runs using just the local
+account and machine.
+
+# 1. run client-test like this:
+CLIENT_TEST_SERVER=syncevolution --help
+
+# 2. set the URL (using IPv4 here, in case that "localhost" expands to IPv6, which
+#    can be problematic):
+for i in 1 2; do
+   syncevolution --configure --sync-property syncURL=http://127.0.0.1:9000/syncevolution syncevolution_$i
+done
+
+# 3. configure the server, using a separate context with the four standard URIs
+#    implemented via files in /tmp, no credential checking, maximum message size
+#    which forces the clients to split items (makes testInterruptResume*Big more
+#    interesting), low timeout to keep tests going quickly, with device IDs as
+#    set by client-test-app.cpp in step 1:
+for i in 1 2; do
+   syncevolution --configure --template SyncEvolutionClient \
+                 --sync-property username= \
+                 --sync-property password= \
+                 --sync-property maxMsgSize=20000 \
+                 --sync-property RetryDuration=20 \
+                 syncevolution_client_$i@server
+done
+syncevolution --configure \
+              --source-property type=file:text/vcard:3.0 \
+              --source-property evolutionsource=file:///tmp/server_addressbook \
+              @server addressbook
+syncevolution --configure \
+              --source-property type=file:text/calendar:2.0 \
+              --source-property evolutionsource=file:///tmp/server_calendar \
+              @server calendar
+syncevolution --configure \
+              --source-property type=file:text/plain:1.0 \
+              --source-property evolutionsource=file:///tmp/server_memo \
+              @server memo
+syncevolution --configure \
+              --source-property type=file:text/calendar:2.0 \
+              --source-property evolutionsource=file:///tmp/server_todo \
+              @server todo
+syncevolution --configure --sync-property remoteDeviceId=sc-api-nat syncevolution_client_1@server
+syncevolution --configure --sync-property remoteDeviceId=sc-pim-ppc syncevolution_client_2@server
+
+# 4. run the syncevo-dbus-server (necessary when not installed):
+syncevo-dbus-server -d 1000000 &
+
+# 5. run http server:
+syncevo-http-server http://localhost:9000/syncevolution &
+
+# 6. run testing, here using again file backends:
+CLIENT_TEST_SERVER=syncevolution \
+CLIENT_TEST_RETRY=t CLIENT_TEST_RESEND=t CLIENT_TEST_SUSPEND=t \
+CLIENT_TEST_SOURCES=file_vcard30,file_ical20 \
+CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test_ \
+client-test
