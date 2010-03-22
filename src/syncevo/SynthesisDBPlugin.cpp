@@ -731,7 +731,7 @@ sysync::TSyError SyncEvolution_ReadBlob(CContext aContext, cItemID  aID,  cAppCh
   }
 
   SE_LOG_DEBUG(source, NULL, "ReadBlob aID=(%s,%s) aBlobID=(%s) aBlkPtr=%p aBlkSize=%lu aTotSize=%lu aFirst=%s aLast=%s res=%d",
-               aID->item,aID->parent, aBlobID, aBlkPtr, *aBlkSize, *aTotSize,
+               aID->item,aID->parent, aBlobID, aBlkPtr, (unsigned long)*aBlkSize, (unsigned long)*aTotSize,
                aFirst? "true" : "false", *aLast ? "true" : "false", res);
   return res;
 } /* ReadBlob */
@@ -905,7 +905,7 @@ TSyError SyncEvolution_WriteBlob(CContext aContext, cItemID aID,  cAppCharP aBlo
     }
     
     SE_LOG_DEBUG(source, NULL, "WriteBlob aID=(%s,%s) aBlobID=(%s) aBlkPtr=%p aBlkSize=%lu aTotSize=%lu aFirst=%s aLast=%s res=%d",
-                 aID->item,aID->parent, aBlobID, aBlkPtr, aBlkSize, aTotSize, 
+                 aID->item,aID->parent, aBlobID, aBlkPtr, (unsigned long)aBlkSize, (unsigned long)aTotSize, 
                  aFirst ? "true" : "false", aLast ? "true" : "false", res);
     return res;
 } /* WriteBlob */
