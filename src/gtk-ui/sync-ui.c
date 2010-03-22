@@ -3018,6 +3018,10 @@ get_error_string_for_code (int error_code, SyncErrorResponse *response)
         }
         return g_strdup (_("Password request was not answered. You can save the "
                            "password in the settings to prevent the request."));
+    case 506:
+        /* TODO use the service device name here, this is a remote problem */
+        return g_strdup (_("There was a problem processing sync request. "
+                           "Trying again may help."));
     case DB_Unauthorized:
         if (response) {
             *response = SYNC_ERROR_RESPONSE_SETTINGS_OPEN;
