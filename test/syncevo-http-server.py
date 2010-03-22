@@ -13,6 +13,7 @@ import dbus
 import gobject
 import sys
 import urlparse
+import optparse
 
 import twisted.web
 from twisted.web import server, resource, http
@@ -207,8 +208,20 @@ class SyncMLPost(resource.Resource):
             raise twisted.web.Error(http.NOT_FOUND)
 
 
+usage =  """usage: %prog http://localhost:<port>/<path>
+
+Runs a HTTP server which listens on all network interfaces on
+the given port and answers requests for the given path.
+Configurations for clients must be created manually, see
+http://syncevolution.org/development/http-server-howto"""
+
 def main():
-    url = urlparse.urlparse(sys.argv[1])
+    parser = optparse.OptionParser(usage=usage)
+    (options, args) = parser.parse_args()
+    if len(args) != 1:
+        print "need exactly on URL as command line parameter"
+        exit(1)
+    url = urlparse.urlparse(args[0])
     root = resource.Resource()
     root.putChild(url.path[1:], SyncMLPost(url))
     site = server.Site(root)

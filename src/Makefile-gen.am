@@ -31,6 +31,13 @@ AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(B
 EXTRA_PROGRAMS =
 TESTS =
 bin_PROGRAMS = syncevolution
+libexec_PROGRAMS =
+libexec_SCRIPTS =
+DISTCLEANFILES = synccompare
+MAINTAINERCLEANFILES = Makefile.in
+CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES) \
+	org.syncevolution.service \
+    $(SYNCEVO_DBUS_SERVER_DESKTOP) $(SYNCEVO_DBUS_SERVER_SCRIPT)
 
 SYNCEVO_DBUS_SERVER_SCRIPT = syncevo-dbus-server-startup.sh
 SYNCEVO_DBUS_SERVER_SCRIPT_IN = $(SYNCEVO_DBUS_SERVER_SCRIPT).in
@@ -40,14 +47,18 @@ SYNCEVO_DBUS_SERVER_DESKTOP = syncevo-dbus-server.desktop
 SYNCEVO_DBUS_SERVER_DESKTOP_IN = $(SYNCEVO_DBUS_SERVER_DESKTOP).in
 
 if COND_DBUS
-libexec_PROGRAMS = syncevo-dbus-server
-libexec_SCRIPTS = $(SYNCEVO_DBUS_SERVER_SCRIPT)
+libexec_PROGRAMS += syncevo-dbus-server
+bin_PROGRAMS += syncevo-http-server
+libexec_SCRIPTS += $(SYNCEVO_DBUS_SERVER_SCRIPT)
 $(libexec_SCRIPTS): $(SYNCEVO_DBUS_SERVER_SCRIPT_IN) Makefile
 	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
 autostart_DATA = $(SYNCEVO_DBUS_SERVER_DESKTOP)
 $(autostart_DATA): $(SYNCEVO_DBUS_SERVER_DESKTOP_IN) Makefile
 	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
 endif
+syncevo-http-server: $(srcdir)/../test/syncevo-http-server.py
+	cp $< $@
+CLEANFILES += syncevo-http-server
 
 bin_SCRIPTS = synccompare
 SYNCEVOLUTION_DEP =
@@ -61,12 +72,6 @@ EXTRA_DIST = shlibs.local Makefile-gen.am $(service_in_files) $(SYNCEVO_DBUS_SER
 TEMPLATE_FILES = @TEMPLATE_FILES@
 templatedir = $(datadir)/syncevolution/
 nobase_dist_template_DATA = $(TEMPLATE_FILES)
-
-DISTCLEANFILES = synccompare
-MAINTAINERCLEANFILES = Makefile.in
-CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES) \
-	org.syncevolution.service \
-    $(SYNCEVO_DBUS_SERVER_DESKTOP) $(SYNCEVO_DBUS_SERVER_SCRIPT)
 
 # synccompare is created by replacing its 'import Algorithm::Diff;'
 # with a simplified copy of Diff.pm.
