@@ -1049,7 +1049,7 @@ static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "enables or disables the detailed (and sometimes slow) comparison\n"
                                                "of database content before and after a sync session",
                                                "1");
-static UIntConfigProperty syncPropRetryDuration("RetryDuration",
+static SecondsConfigProperty syncPropRetryDuration("RetryDuration",
                                           "The total amount of time in seconds in which the client\n"
                                           "tries to get a response from the server.\n"
                                           "During this time, the client will resend messages\n"
@@ -1062,7 +1062,7 @@ static UIntConfigProperty syncPropRetryDuration("RetryDuration",
                                           "When acting as server, this setting controls how long\n"
                                           "a client is allowed to not send a message before the\n"
                                           "synchronization is aborted."
-                                          ,"300");
+                                          ,"5M");
 static UIntConfigProperty syncPropRetryInterval("RetryInterval",
                                           "The number of seconds between the start of message sending\n"
                                           "and the start of the retransmission. If the interval has\n"
@@ -1073,7 +1073,7 @@ static UIntConfigProperty syncPropRetryInterval("RetryInterval",
                                           "\n"
                                           "Servers cannot resend messages, so this setting has no\n"
                                           "effect in that case."
-                                          ,"60");
+                                          ,"1M");
 static BoolConfigProperty syncPropPeerIsClient("PeerIsClient",
                                           "Indicates whether this configuration is about a\n"
                                           "client peer or server peer.\n",
@@ -1188,30 +1188,34 @@ static StringConfigProperty syncPropAutoSync("autoSync",
                                              "http,obex-bt - pick one of these\n",
                                              "0");
 
-static UIntConfigProperty syncPropAutoSyncInterval("autoSyncInterval",
-                                                   "This is the minimum number of minutes between two\n"
-                                                   "synchronizations that has to pass before starting\n"
-                                                   "an automatic synchronization.\n"
-                                                   "Before reducing this interval, consider that it will\n"
-                                                   "increase resource consumption on the local and remote\n"
-                                                   "side. Some SyncML server operators only allow a\n"
-                                                   "certain number of sessions per day.\n"
-                                                   "The value 0 has the effect of only running automatic\n"
-                                                   "synchronization when changes are detected (not\n"
-                                                   "implemented yet, therefore it basically disables\n"
-                                                   "automatic synchronization).\n",
-                                                   "30");
+static SecondsConfigProperty syncPropAutoSyncInterval("autoSyncInterval",
+                                                      "This is the minimum number of seconds between two\n"
+                                                      "synchronizations that has to pass before starting\n"
+                                                      "an automatic synchronization. Can be specified using\n"
+                                                      "a 1h30m5s format.\n"
+                                                      "\n"
+                                                      "Before reducing this interval, consider that it will\n"
+                                                      "increase resource consumption on the local and remote\n"
+                                                      "side. Some SyncML server operators only allow a\n"
+                                                      "certain number of sessions per day.\n"
+                                                      "The value 0 has the effect of only running automatic\n"
+                                                      "synchronization when changes are detected (not\n"
+                                                      "implemented yet, therefore it basically disables\n"
+                                                      "automatic synchronization).\n",
+                                                      "30M");
 
-static UIntConfigProperty syncPropAutoSyncDelay("autoSyncDelay",
-                                                "An automatic sync will not be started unless the peer\n"
-                                                "has been available for this number of minutes. This\n"
-                                                "prevents running a sync when network connectivity\n"
-                                                "is unreliable or was recently established for some\n"
-                                                "other purpose. It is also a heuristic that attempts\n"
-                                                "to predict how long connectivity be available in the\n"
-                                                "future, because it should better be available long\n"
-                                                "enough to complete the synchronization.\n",
-                                                "15");
+static SecondsConfigProperty syncPropAutoSyncDelay("autoSyncDelay",
+                                                   "An automatic sync will not be started unless the peer\n"
+                                                   "has been available for this duration, specified in seconds\n"
+                                                   "or 1h30m5s format.\n"
+                                                   "\n"
+                                                   "This prevents running a sync when network connectivity\n"
+                                                   "is unreliable or was recently established for some\n"
+                                                   "other purpose. It is also a heuristic that attempts\n"
+                                                   "to predict how long connectivity be available in the\n"
+                                                   "future, because it should better be available long\n"
+                                                   "enough to complete the synchronization.\n",
+                                                   "5M");
 
 ConfigPropertyRegistry &SyncConfig::getRegistry()
 {
@@ -2287,11 +2291,84 @@ string TemplateConfig::getName(){
     return m_name;
 }
 
+bool SecondsConfigProperty::checkValue(const string &value, string &error) const
+{
+    unsigned int seconds;
+    return parseDuration(value, error, seconds);
+}
+
+unsigned int SecondsConfigProperty::getPropertyValue(const ConfigNode &node, bool *isDefault) const
+{
+    string name = getName();
+    string value = node.readProperty(name);
+    if (value.empty()) {
+        if (isDefault) {
+            *isDefault = true;
+        }
+        value = getDefValue();
+    }
+    string error;
+    unsigned int seconds;
+    if (!parseDuration(value, error, seconds)) {
+        throwValueError(node, name, value, error);
+    }
+    return seconds;
+}
+
+bool SecondsConfigProperty::parseDuration(const string &value, string &error, unsigned int &seconds)
+{
+    seconds = 0;
+    if (value.empty()) {
+        // ambiguous - zero seconds?!
+        error = "duration expected, empty string not valid";
+        return false;
+    }
+
+    unsigned int current = 0;
+    BOOST_FOREACH(char c, value) {
+        if (isdigit(c)) {
+            current = current * 10 + (c - '0');
+        } else {
+            unsigned int multiplier = 1;
+            switch (toupper(c)) {
+            case 'Y':
+                multiplier = 365 * 24 * 60 * 60;
+                break;
+            case 'D':
+                multiplier = 24 * 60 * 60;
+                break;
+            case 'H':
+                multiplier = 60 * 60;
+                break;
+            case 'M':
+                multiplier = 60;
+                break;
+            case 'S':
+                break;
+            case ' ':
+            case '\t':
+                continue;
+            case '+':
+                break;
+            default:
+                error = StringPrintf("invalid character '%c'", c);
+                return false;
+            }
+            seconds += current * multiplier;
+            current = 0;
+        }
+    }
+    seconds += current;
+    return true;
+}
+
+
 #ifdef ENABLE_UNIT_TESTS
 
 class SyncConfigTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(SyncConfigTest);
     CPPUNIT_TEST(normalize);
+    CPPUNIT_TEST(parseDuration);
     CPPUNIT_TEST_SUITE_END();
 
 private:
@@ -2312,6 +2389,36 @@ private:
                              SyncConfig::normalizeConfigString("FooBar@Something"));
         CPPUNIT_ASSERT_EQUAL(std::string("foo_bar_x_y_z"),
                              SyncConfig::normalizeConfigString("Foo/bar\\x:y:z"));
+    }
+
+    void parseDuration()
+    {
+        string error;
+        unsigned int seconds;
+        unsigned int expected;
+
+        CPPUNIT_ASSERT(!SecondsConfigProperty::parseDuration("foo", error, seconds));
+        CPPUNIT_ASSERT_EQUAL(error, string("invalid character 'f'"));
+        CPPUNIT_ASSERT(!SecondsConfigProperty::parseDuration("1g", error, seconds));
+        CPPUNIT_ASSERT_EQUAL(error, string("invalid character 'g'"));
+        CPPUNIT_ASSERT(!SecondsConfigProperty::parseDuration("", error, seconds));
+        CPPUNIT_ASSERT_EQUAL(error, string("duration expected, empty string not valid"));
+
+        expected = 5;
+        CPPUNIT_ASSERT(SecondsConfigProperty::parseDuration("5", error, seconds));
+        CPPUNIT_ASSERT_EQUAL(expected, seconds);
+        CPPUNIT_ASSERT(SecondsConfigProperty::parseDuration("05", error, seconds));
+        CPPUNIT_ASSERT_EQUAL(expected, seconds);
+        CPPUNIT_ASSERT(SecondsConfigProperty::parseDuration("05s", error, seconds));
+        CPPUNIT_ASSERT_EQUAL(expected, seconds);
+        CPPUNIT_ASSERT(SecondsConfigProperty::parseDuration("5s", error, seconds));
+        CPPUNIT_ASSERT_EQUAL(expected, seconds);
+
+        expected = (((1 * 365 + 2) * 24 + 3) * 60 + 4) * 60 + 5;
+        CPPUNIT_ASSERT(SecondsConfigProperty::parseDuration("1y2d3H4M5s", error, seconds));
+        CPPUNIT_ASSERT_EQUAL(expected, seconds);
+        CPPUNIT_ASSERT(SecondsConfigProperty::parseDuration("5 + 1y+2d + 3 H4M", error, seconds));
+        CPPUNIT_ASSERT_EQUAL(expected, seconds);
     }
 };
 

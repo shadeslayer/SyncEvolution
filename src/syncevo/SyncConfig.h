@@ -521,6 +521,31 @@ typedef ScalarConfigProperty<long, LONG_MIN, LONG_MAX, long, LONG_MIN, LONG_MAX,
 typedef ScalarConfigProperty<unsigned long, 0, ULONG_MAX, unsigned long, 0, ULONG_MAX, strtoul> ULongConfigProperty;
 
 /**
+ * Time interval >= 0. Values are formatted as number of seconds
+ * and accepted in a variety of formats, following ISO 8601:
+ * - x = x seconds
+ * - d = x[YyWwDdHhMmSs] = x years/weeks/days/hours/minutes/seconds
+ * - d[+]d... = combination of the previous durations
+ *
+ * As an extension of ISO 8601, white spaces are silently ignored,
+ * suffix checks are case-insensitive and s (or S) for seconds
+ * can be omitted.
+ */
+class SecondsConfigProperty : public UIntConfigProperty
+{
+ public:
+    SecondsConfigProperty(const string &name, const string &comment,
+                          const string &defValue = string("0"), const string &descr = "") :
+        UIntConfigProperty(name, comment, defValue, descr)
+        {}
+
+    virtual bool checkValue(const string &value, string &error) const;
+    unsigned int getPropertyValue(const ConfigNode &node, bool *isDefault = NULL) const;
+
+    static bool parseDuration(const string &value, string &error, unsigned int &seconds);
+};
+
+/**
  * This struct wraps keys for storing passwords
  * in configuration system. Some fields might be empty
  * for some passwords. Each field might have different 
