@@ -789,7 +789,7 @@ msgstr "Parece que este dispositivo es: %s'. Si no es cierto, mira la lista de l
 
 #: ../src/gtk-ui/sync-config-widget.c:946
 msgid "We don't know what this device is exactly. Please take a look at the list of supported devices and pick yours if it is listed"
-msgstr ""
+msgstr "No sabemos qué dispositivo es éste. Mira la lista de los dispositivos compatibles y selecciona el correcto, si aparece."
 
 #: ../src/gtk-ui/sync-config-widget.c:1099
 #, c-format
