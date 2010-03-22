@@ -1031,14 +1031,14 @@ static ConfigProperty syncPropLogDir("logdir",
                                      "usually expands to ${HOME}/.cache/...) will be used;\n"
                                      "if \"none\", then no backups of the databases are made and any\n"
                                      "output is printed directly to the screen");
-static IntConfigProperty syncPropMaxLogDirs("maxlogdirs",
+static UIntConfigProperty syncPropMaxLogDirs("maxlogdirs",
                                             "Unless this option is set, SyncEvolution will never delete\n"
                                             "anything in the \"logdir\". If set, the oldest directories and\n"
                                             "all their content will be removed after a successful sync\n"
                                             "to prevent the number of log directories from growing beyond\n"
                                             "the given limit.",
                                             "10");
-static IntConfigProperty syncPropLogLevel("loglevel",
+static UIntConfigProperty syncPropLogLevel("loglevel",
                                           "level of detail for log messages:\n"
                                           "- 0 (or unset) = INFO messages without log file, DEBUG with log file\n"
                                           "- 1 = only ERROR messages\n"
