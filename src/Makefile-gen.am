@@ -1,41 +1,46 @@
 BACKENDS = @BACKENDS@
 
+# start with building nothing and add more targets below
+SUBDIRS =
+EXTRA_PROGRAMS =
+TESTS =
+bin_PROGRAMS =
+bin_SCRIPTS =
+libexec_PROGRAMS =
+libexec_SCRIPTS =
+nobase_dist_template_DATA =
+DISTCLEANFILES =
+CLEANFILES =
+BUILT_SOURCES =
+
 service_in_files = org.syncevolution.service.in
 if COND_DBUS
 servicedir = $(DBUS_SERVICES_DIR)
 service_DATA = $(service_in_files:.service.in=.service)
 $(service_DATA): $(service_in_files) Makefile
 	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
-
-DBUS_DIRS = gdbus dbus
-else
-if COND_GUI
-# jump into interface directory directly instead of going through dbus
-DBUS_DIRS = dbus/interfaces
+SUBDIRS += gdbus
 endif
-endif
-
-if COND_GUI
-GUI_DIR = gtk-ui
-endif
-
-SUBDIRS = $(SYNTHESIS_SUBDIR) $(DBUS_DIRS) syncevo $(BACKENDS) $(GUI_DIR)
 if ENABLE_GNOME_BLUETOOTH_PANEL
 SUBDIRS += gnome-bluetooth
 endif
-DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui gnome-bluetooth
-BUILT_SOURCES =
+if COND_CORE
+SUBDIRS += $(SYNTHESIS_SUBDIR) syncevo $(BACKENDS)
+bin_PROGRAMS += syncevolution
+bin_SCRIPTS += synccompare
+nobase_dist_template_DATA += $(TEMPLATE_FILES)
+else
+SUBDIRS += $(SYNTHESIS_SUBDIR_INCLUDES)
+endif
+if COND_GUI
+SUBDIRS += dbus gtk-ui
+endif
+DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui gnome-bluetooth synthesis-includes
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS)
 
-EXTRA_PROGRAMS =
-TESTS =
-bin_PROGRAMS = syncevolution
-libexec_PROGRAMS =
-libexec_SCRIPTS =
-DISTCLEANFILES = synccompare
-MAINTAINERCLEANFILES = Makefile.in
-CLEANFILES = libstdc++.a client-test $(CLIENT_LIB_TEST_FILES) \
+DISTCLEANFILES += synccompare
+CLEANFILES += libstdc++.a client-test $(CLIENT_LIB_TEST_FILES) \
 	org.syncevolution.service \
     $(SYNCEVO_DBUS_SERVER_DESKTOP) $(SYNCEVO_DBUS_SERVER_SCRIPT)
 
@@ -60,7 +65,6 @@ syncevo-http-server: $(srcdir)/../test/syncevo-http-server.py
 	cp $< $@
 CLEANFILES += syncevo-http-server
 
-bin_SCRIPTS = synccompare
 SYNCEVOLUTION_DEP =
 if ENABLE_MODULES
 else
@@ -71,7 +75,6 @@ EXTRA_DIST = shlibs.local Makefile-gen.am $(service_in_files) $(SYNCEVO_DBUS_SER
 
 TEMPLATE_FILES = @TEMPLATE_FILES@
 templatedir = $(datadir)/syncevolution/
-nobase_dist_template_DATA = $(TEMPLATE_FILES)
 
 # synccompare is created by replacing its 'import Algorithm::Diff;'
 # with a simplified copy of Diff.pm.
