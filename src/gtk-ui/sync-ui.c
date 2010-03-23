@@ -34,7 +34,6 @@
 /* for return value definitions */
 /* TODO: would be nice to have a non-synthesis-dependent API but for now it's like this... */
 #include <synthesis/syerror.h>
-#include <synthesis/engine_defs.h>
 
 #include "config.h"
 #include "sync-ui-config.h"

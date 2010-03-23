@@ -22,7 +22,6 @@
 #include "syncevo-server.h"
 
 #include <synthesis/syerror.h>
-#include <synthesis/engine_defs.h>
 
 gboolean stop = FALSE;
 GMainLoop *loop;
