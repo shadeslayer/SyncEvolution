@@ -48,7 +48,7 @@ SYNCEVO_DBUS_SERVER_DESKTOP_IN = $(SYNCEVO_DBUS_SERVER_DESKTOP).in
 
 if COND_DBUS
 libexec_PROGRAMS += syncevo-dbus-server
-bin_PROGRAMS += syncevo-http-server
+bin_SCRIPTS += syncevo-http-server
 libexec_SCRIPTS += $(SYNCEVO_DBUS_SERVER_SCRIPT)
 $(libexec_SCRIPTS): $(SYNCEVO_DBUS_SERVER_SCRIPT_IN) Makefile
 	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
