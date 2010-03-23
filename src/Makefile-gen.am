@@ -6,6 +6,7 @@ EXTRA_PROGRAMS =
 TESTS =
 bin_PROGRAMS =
 bin_SCRIPTS =
+nodist_bin_SCRIPTS =
 libexec_PROGRAMS =
 libexec_SCRIPTS =
 nobase_dist_template_DATA =
@@ -53,7 +54,7 @@ SYNCEVO_DBUS_SERVER_DESKTOP_IN = $(SYNCEVO_DBUS_SERVER_DESKTOP).in
 
 if COND_DBUS
 libexec_PROGRAMS += syncevo-dbus-server
-bin_SCRIPTS += syncevo-http-server
+nodist_bin_SCRIPTS += syncevo-http-server
 libexec_SCRIPTS += $(SYNCEVO_DBUS_SERVER_SCRIPT)
 $(libexec_SCRIPTS): $(SYNCEVO_DBUS_SERVER_SCRIPT_IN) Makefile
 	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
