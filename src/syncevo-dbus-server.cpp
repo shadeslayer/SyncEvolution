@@ -253,31 +253,33 @@ template<> struct dbus_traits<ReadOperations::SourceDatabase> :
  */
 class AutoTerm {
     int m_refs;
-    guint m_elapsed;
     guint m_interval;
     guint m_checkSource;
+    time_t m_lastUsed;
 
-    static const guint TERM_INTERVAL = 5;
-
-    /* A callback is called in each TERM_INTERVAL seconds, registered to check whether the
-     * dbus server is timeout regurally.
-     * In reality it will be called after TERM_INTERVAL + delta, with delta being large
-     * if the D-Bus server is busy. Therefore m_elapsed will underestimate the real
-     * elapsed time. But because this only happens in a busy server and a busy server
-     * doesn't have to auto-terminate, this assumption could work.
+    /**
+     * This callback is called as soon as we might have to terminate.
+     * If it finds that the server has been used in the meantime, it
+     * will simply set another timeout and check again later.
      */
     static gboolean checkCallback(gpointer data) {
         AutoTerm *at = static_cast<AutoTerm*>(data);
-        // if no conncetions or attached clients
-        if(at->m_refs <= 0) {
-            at->m_elapsed += TERM_INTERVAL;
-            if(at->m_elapsed >= at->m_interval) {
+        if (!at->m_refs) {
+            // currently idle, but also long enough?
+            time_t now = time(NULL);
+            if (at->m_lastUsed + at->m_interval <= now) {
+                // yes, shut down event loop and daemon
                 shutdownRequested = true;
                 g_main_loop_quit(loop);
-                return FALSE;
+            } else {
+                // check again later
+                at->m_checkSource = g_timeout_add_seconds(at->m_lastUsed + at->m_interval - now,
+                                                          checkCallback,
+                                                          data);
             }
         }
-        return TRUE;
+        // always remove the current timeout, its job is done
+        return FALSE;
     }
 
  public:
@@ -285,39 +287,66 @@ class AutoTerm {
      * constructor
      * If interval is less than 0, it means 'unlimited' and never terminate
      */
-    AutoTerm(int interval) : m_refs(0), m_elapsed(0) {
-            if(interval <= 0) {
-                ref();
-                m_interval = 0;
-                m_checkSource = 0;
-            } else {
-                m_interval = interval;
-                // call checking every 5 seconds
-                // here we don't use add/remove new sources for we might
-                // make glib source id integer overflow since its id calculation
-                // only plus one each time
-                m_checkSource = g_timeout_add_seconds(TERM_INTERVAL, 
-                                                      (GSourceFunc) checkCallback,
-                                                      static_cast<gpointer>(this));
-            }
+    AutoTerm(int interval) :
+        m_refs(0),
+        m_interval(interval),
+        m_checkSource(0),
+        m_lastUsed(0)
+    {
+        if (interval <= 0) {
+            // increasing reference counts prevents shutdown forever
+            ref();
         }
+        reset();
+    }
+
+    ~AutoTerm()
+    {
+        if (m_checkSource) {
+            g_source_remove(m_checkSource);
+        }
+    }
 
     //increase the actives objects
     void ref(int refs = 1) {  
         m_refs += refs; 
+        reset();
     }
 
     //decrease the actives objects
     void unref(int refs = 1) { 
         m_refs -= refs; 
         if(m_refs <= 0) {
-           reset();
            m_refs = 0;
         }
+        reset();
     }
 
-    void reset() {
-        m_elapsed = 0;
+    /**
+     * To be called each time the server interacts with a client,
+     * which includes adding or removing a client. If necessary,
+     * this installs a timeout to stop the daemon when it has been
+     * idle long enough.
+     */
+    void reset()
+    {
+        if (m_refs > 0) {
+            // in use, don't need timeout
+            if (m_checkSource) {
+                g_source_remove(m_checkSource);
+                m_checkSource = 0;
+            }
+        } else {
+            // An already active timeout will trigger at the chosen time,
+            // then notice that the server has been used in the meantime and
+            // reset the timer. Therefore we don't have to remove it.
+            m_lastUsed = time(NULL);
+            if (!m_checkSource) {
+                m_checkSource = g_timeout_add_seconds(m_interval,
+                                                      checkCallback,
+                                                      static_cast<gpointer>(this));
+            }
+        }
     }
 };
 
