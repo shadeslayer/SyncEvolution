@@ -120,7 +120,8 @@ set_config_cb (SyncevoSession *session,
         g_warning ("Error in Session.SetConfig: %s", error->message);
         g_error_free (error);
         g_object_unref (session);
-        /* TODO show in UI: save failed in service list */
+        show_error_dialog (GTK_WIDGET (self),
+                           _("Sorry, failed to save the configuration"));
         return;
     }
 
