@@ -1063,7 +1063,7 @@ static SecondsConfigProperty syncPropRetryDuration("RetryDuration",
                                           "a client is allowed to not send a message before the\n"
                                           "synchronization is aborted."
                                           ,"5M");
-static UIntConfigProperty syncPropRetryInterval("RetryInterval",
+static SecondsConfigProperty syncPropRetryInterval("RetryInterval",
                                           "The number of seconds between the start of message sending\n"
                                           "and the start of the retransmission. If the interval has\n"
                                           "already passed when a message send returns, the\n"
