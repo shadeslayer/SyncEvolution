@@ -373,7 +373,7 @@ SyncConfig::TemplateList SyncConfig::getBuiltInTemplates()
         public:
             void addDefaultTemplate(const string &server, const string &url) {
                 BOOST_FOREACH(const boost::shared_ptr<TemplateDescription> entry, static_cast<TemplateList &>(*this)) {
-                    if (boost::iequals(entry->m_name, server)) {
+                    if (boost::iequals(entry->m_templateId, server)) {
                         //already present 
                         return;
                     }
@@ -437,13 +437,28 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
                 if (fuzzyMatch){
                     if (rank > TemplateConfig::NO_MATCH) {
                         result.push_back (boost::shared_ptr<TemplateDescription>(
-                                    new TemplateDescription(templateConf.getName(),
-                                        templateConf.getDescription(), rank, entry.m_deviceId, entry.m_fingerprint, sDir, templateConf.getFingerprint())));
+                                    new TemplateDescription(templateConf.getTemplateId(),
+                                                            templateConf.getDescription(),
+                                                            rank,
+                                                            entry.m_deviceId,
+                                                            entry.m_fingerprint,
+                                                            sDir,
+                                                            templateConf.getFingerprint(),
+                                                            templateConf.getTemplateName()
+                                                            )
+                                    ));
                     }
                 } else if (rank == TemplateConfig::BEST_MATCH){
                     result.push_back (boost::shared_ptr<TemplateDescription>(
-                                new TemplateDescription(templateConf.getName(),
-                                    templateConf.getDescription(), rank, entry.m_deviceId, entry.m_fingerprint, sDir, templateConf.getFingerprint())));
+                                new TemplateDescription(templateConf.getTemplateId(),
+                                                        templateConf.getDescription(),
+                                                        rank,
+                                                        entry.m_deviceId,
+                                                        entry.m_fingerprint,
+                                                        sDir, 
+                                                        templateConf.getFingerprint(),
+                                                        templateConf.getTemplateName())
+                                ));
                     break;
                 }
             }
@@ -2172,7 +2187,7 @@ ConfigPasswordKey EvolutionPasswordConfigProperty::getPasswordKey(const string &
 
 // Used for built-in templates
 SyncConfig::TemplateDescription::TemplateDescription (const std::string &name, const std::string &description)
-:   m_name (name), m_description (description)
+:   m_templateId (name), m_description (description)
 {
     m_rank = TemplateConfig::LEVEL3_MATCH;
     m_fingerprint = "";
@@ -2193,13 +2208,13 @@ bool SyncConfig::TemplateDescription::compare_op (boost::shared_ptr<SyncConfig::
     if (right->m_rank != left->m_rank) {
         return (right->m_rank < left->m_rank);
     }
-    // sort against the config name
-    return (left->m_name < right->m_name);
+    // sort against the template id
+    return (left->m_templateId < right->m_templateId);
 }
 
 TemplateConfig::TemplateConfig (const string &path)
     : m_metaNode (new FileConfigNode (path, "template.ini", true)),
-    m_name(""),
+    m_id(""),
     m_path(path)
 {
     m_metaNode->readProperties(m_metaProps);
@@ -2280,15 +2295,23 @@ string TemplateConfig::getFingerprint(){
     return m_metaProps["fingerprint"];
 }
 
-string TemplateConfig::getName(){
-    if (m_name.empty()){
+string TemplateConfig::getTemplateName() {
+    return m_metaProps["templateName"];
+}
+
+/*
+ * A unique identifier for this template, it must be unique and retrieveable.
+ * We use the first entry in the "fingerprint" property for cmdline.
+ **/
+string TemplateConfig::getTemplateId(){
+    if (m_id.empty()){
         std::string fingerprintProp = m_metaProps["fingerprint"];
         if (!fingerprintProp.empty()){
             std::vector<std::string> subfingerprints = unescapeJoinedString (fingerprintProp, ',');
-            m_name = subfingerprints[0];
+            m_id = subfingerprints[0];
         }
     }
-    return m_name;
+    return m_id;
 }
 
 bool SecondsConfigProperty::checkValue(const string &value, string &error) const

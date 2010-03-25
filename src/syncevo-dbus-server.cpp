@@ -2173,14 +2173,14 @@ void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &con
         BOOST_FOREACH(const boost::shared_ptr<SyncConfig::TemplateDescription> peer, list) {
             //if it is not a template for device
             if(peer->m_fingerprint.empty()) {
-                configNames.push_back(peer->m_name);
+                configNames.push_back(peer->m_templateId);
             } else {
                 string templName = "Bluetooth_";
-                templName += peer->m_id;
+                templName += peer->m_deviceId;
                 templName += "_";
-                std::map<std::string, int>::iterator it = numbers.find(peer->m_id);
+                std::map<std::string, int>::iterator it = numbers.find(peer->m_deviceId);
                 if(it == numbers.end()) {
-                    numbers.insert(std::make_pair(peer->m_id, 1));
+                    numbers.insert(std::make_pair(peer->m_deviceId, 1));
                     templName += "1";
                 } else {
                     it->second++;
@@ -2235,7 +2235,7 @@ void ReadOperations::getConfig(bool getTemplate,
         boost::shared_ptr<SyncConfig::TemplateDescription> peerTemplate =
             m_server.getPeerTempl(m_configName);
         if(peerTemplate) {
-            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(peerTemplate->m_name),
+            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(peerTemplate->m_templateId),
                     peer, context);
             dbusConfig = SyncConfig::createPeerTemplate(peerTemplate->m_path);
             // if we have cached template information, add match information for it
@@ -2248,11 +2248,15 @@ void ReadOperations::getConfig(bool getTemplate,
             localConfigs.insert(pair<string, string>("deviceName", peerTemplate->m_fingerprint));
             // This is the fingerprint of the template
             localConfigs.insert(pair<string, string>("fingerPrint", peerTemplate->m_matchedModel));
+            // This is the template name presented to UI (or device class)
+            if (!peerTemplate->m_templateName.empty()) {
+                localConfigs.insert(pair<string,string>("templateName", peerTemplate->m_templateName));
+            }
 
             // if the peer is client, then replace syncURL with bluetooth
             // MAC address
             syncURL = "obex-bt://";
-            syncURL += peerTemplate->m_id;
+            syncURL += peerTemplate->m_deviceId;
         } else {
             SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_configName),
                     peer, context);

@@ -862,7 +862,7 @@ void Cmdline::dumpConfigTemplates(const string &preamble,
     m_out << endl;
 
     BOOST_FOREACH(const SyncConfig::TemplateList::value_type server,templates) {
-        m_out << "   "  << server->m_name << " = " << server->m_description;
+        m_out << "   "  << server->m_templateId << " = " << server->m_description;
         if (printRank){
             m_out << "    " << server->m_rank *20 << "%";
         }

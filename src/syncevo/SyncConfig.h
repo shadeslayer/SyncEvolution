@@ -868,8 +868,8 @@ class SyncConfig {
      * template. The rank field is used to indicate how good it matches the
      * user input <MacAddress, DeviceName> */
     struct TemplateDescription {
-        // The name of the template
-        std::string m_name;
+        // The unique identifier of the template
+        std::string m_templateId;
         // The description of the template (eg. the web server URL for a
         // SyncML server. This is not used for UI, only CMD line used this.
         std::string m_description;
@@ -877,7 +877,7 @@ class SyncConfig {
         int m_rank;
 
         //a unique identity of the device that the template is for, used by caller
-        std::string m_id;
+        std::string m_deviceId;
 
         // A string identify which fingerprint the template is matched with.
         std::string m_fingerprint;
@@ -890,15 +890,19 @@ class SyncConfig {
         // will not necessarily the same with m_fingerprint
         std::string m_matchedModel;
 
-        TemplateDescription (const std::string &name, const std::string &description, 
-                const int rank, const std::string id, const std::string &fingerprint, const std::string &path, const std::string &model)
-            :   m_name (name),
+        // The template name (device class) presented
+        std::string m_templateName;
+
+        TemplateDescription (const std::string &templateId, const std::string &description, 
+                const int rank, const std::string deviceId, const std::string &fingerprint, const std::string &path, const std::string &model, const std::string &templateName)
+            :   m_templateId (templateId),
                 m_description (description),
                 m_rank (rank),
-                m_id (id),
+                m_deviceId (deviceId),
                 m_fingerprint (fingerprint),
                 m_path (path),
-                m_matchedModel(model)
+                m_matchedModel(model),
+                m_templateName (templateName)
         {
         }
 
@@ -1683,7 +1687,8 @@ class TemplateConfig
 {
     boost::shared_ptr<FileConfigNode> m_metaNode;
     ConfigProps m_metaProps;
-    string m_name;
+    string m_id;
+    string m_templateName;
     string m_path;
 public:
     TemplateConfig (const string &path);
@@ -1699,9 +1704,10 @@ public:
     virtual int metaMatch (const string &fingerprint, SyncConfig::MatchMode mode);
     virtual int serverModeMatch (SyncConfig::MatchMode mode);
     virtual int fingerprintMatch (const string &fingerprint);
-    virtual string getName();
+    virtual string getTemplateId ();
     virtual string getDescription();
     virtual string getFingerprint();
+    virtual string getTemplateName();
 };
 
 
