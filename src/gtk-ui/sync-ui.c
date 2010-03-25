@@ -45,7 +45,6 @@
 
 #ifdef USE_MOBLIN_UX
 #include "mux-frame.h"
-#include "mux-window.h"
 #include <mx/mx-gtk.h>
 #endif
 
@@ -55,6 +54,12 @@ static gboolean support_canceling = FALSE;
 #define SYNC_UI_ICON_SIZE 48
 
 #define STRING_VARIANT_HASHTABLE (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, G_TYPE_VALUE))
+
+enum  {
+    PAGE_MAIN,
+    PAGE_SETTINGS,
+    PAGE_EMERGENCY,
+};
 
 typedef enum bluetooth_type {
     SYNC_BLUETOOTH_NONE,
@@ -92,8 +97,10 @@ struct _app_data {
 
     GtkWidget *services_win; /* will be NULL when USE_MOBLIN_UX is set*/
     GtkWidget *emergency_win; /* will be NULL when USE_MOBLIN_UX is set*/
-
-    gint emergency_index; /* for use in mux_window_set_current_page() */
+    GtkWidget *notebook; /* only in use with USE_MOBLIN_UX */
+    GtkWidget *back_btn; /* only in use with USE_MOBLIN_UX */
+    GtkWidget *settings_btn; /* only in use with USE_MOBLIN_UX */
+    guint settings_id;
 
     GtkWidget *service_box;
     GtkWidget *info_bar;
@@ -121,8 +128,8 @@ struct _app_data {
     GtkWidget *services_box;
     GtkWidget *devices_box;
     GtkWidget *scrolled_window;
-    GtkWidget *back_btn;
     GtkWidget *expanded_config;
+    GtkWidget *settings_close_btn;
 
     GtkWidget *emergency_label;
     GtkWidget *emergency_expander;
@@ -130,6 +137,7 @@ struct _app_data {
     GtkWidget *refresh_from_server_btn_label;
     GtkWidget *refresh_from_client_btn_label;
     GtkWidget *emergency_backup_table;
+    GtkWidget *emergency_close_btn;
 
     GtkWidget *password_dialog_entry;
     char *password_dialog_id;
@@ -744,10 +752,6 @@ set_app_state (app_data *data, app_state state)
 
 #ifdef USE_MOBLIN_UX
 
-/* truly stupid, but glade doesn't allow custom containers.
-   Now glade file has dummy containers that will be replaced here.
-   The dummy should be a gtkbin and it's parent should be a box with just one child */ 
-
 static GtkWidget*
 switch_dummy_to_mux_frame (GtkWidget *dummy)
 {
@@ -768,36 +772,80 @@ switch_dummy_to_mux_frame (GtkWidget *dummy)
     gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (dummy)), frame);
     gtk_container_remove (GTK_CONTAINER (parent), dummy);
 
-    /* make sure there are no other children in box */
-    g_assert (gtk_container_get_children (GTK_CONTAINER (parent)) == NULL);
-
     gtk_box_pack_start (GTK_BOX (parent), frame, TRUE, TRUE, 0);
     gtk_widget_show (frame);
     return frame;
 }
 
+static void
+set_page (app_data *data, int page)
+{
+    int current = gtk_notebook_get_current_page (GTK_NOTEBOOK (data->notebook));
+
+    if (page != current) {
+        gtk_notebook_set_current_page (GTK_NOTEBOOK (data->notebook),
+                                       page);
+        if (page != PAGE_MAIN) {
+            gtk_widget_show (data->back_btn);
+        } else {
+            gtk_widget_hide (data->back_btn);
+        }
+
+        /* make sure the toggle is correct */
+        g_signal_handler_block (data->settings_btn, data->settings_id);
+        if (page == PAGE_SETTINGS) {
+            gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (data->settings_btn),
+                                          TRUE); 
+        } else if (current == PAGE_SETTINGS) {
+            gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (data->settings_btn),
+                                          FALSE);
+        }
+        g_signal_handler_unblock (data->settings_btn, data->settings_id);
+    }
+
+    gtk_window_present (GTK_WINDOW (data->sync_win));
+}
+
+
+static void
+settings_toggled (GtkToggleButton *button, app_data *data)
+{
+    int page = gtk_notebook_get_current_page (GTK_NOTEBOOK (data->notebook));
+
+    if (page == PAGE_SETTINGS) {
+        show_main_view (data);
+    } else {
+        show_services_list (data, NULL);
+    }
+}
 
 static gboolean
 key_press_cb (GtkWidget *widget,
               GdkEventKey *event,
               app_data *data)
 {
-    if (event->keyval == GDK_Escape &&
-        mux_window_get_current_page (MUX_WINDOW (data->sync_win)) >= 0) {
+    int page = gtk_notebook_get_current_page (GTK_NOTEBOOK (data->notebook));
 
+    if (event->keyval == GDK_Escape && page != PAGE_MAIN) {
         show_main_view (data);
     }
 
     return FALSE;
 }
 
-static void
-settings_visibility_changed_cb (MuxWindow *win, app_data *data)
+/* For some reason metacity sometimes won't maximize but will if asked 
+ * another time. For the record, I'm not proud of writing this */
+static gboolean
+try_maximize (GtkWindow *win)
 {
-    if (mux_window_get_settings_visible (MUX_WINDOW (data->sync_win))) {
-        update_services_list (data);
-    }
+    static int count = 0;
+
+    count++;
+    gtk_window_maximize (win);
+
+    return (count < 10);
 }
+
 
 static void
 setup_windows (app_data *data,
@@ -805,44 +853,124 @@ setup_windows (app_data *data,
                GtkWidget *settings,
                GtkWidget *emergency)
 {
-    GtkWidget *mux_main;
-    GtkWidget *tmp;
+    GtkWidget *tmp, *toolbar, *close_btn;
+    GtkToolItem *item;
 
     g_assert (GTK_IS_WINDOW (main));
     g_assert (GTK_IS_WINDOW (settings));
     g_assert (GTK_IS_WINDOW (emergency));
 
-    /* TRANSLATORS: button in the Moblin window title bar when main view is 
-     * not visible */
-    mux_main = mux_window_new (_("Back to sync"));
-    gtk_window_set_title (GTK_WINDOW (mux_main),
-                          gtk_window_get_title (GTK_WINDOW (main)));
-    gtk_window_set_default_size (GTK_WINDOW (mux_main), 1024, 600);
-    gtk_widget_set_name (mux_main, gtk_widget_get_name (main));
-    gtk_widget_reparent (gtk_bin_get_child (GTK_BIN (main)), mux_main);
-    mux_window_set_decorations (MUX_WINDOW (mux_main), MUX_DECOR_SETTINGS|MUX_DECOR_CLOSE);
-    g_signal_connect (mux_main, "key-press-event",
-                      G_CALLBACK (key_press_cb), data);
-    g_signal_connect (mux_main, "settings-visibility-changed",
-                      G_CALLBACK (settings_visibility_changed_cb), data);
+    data->sync_win = main;
+    data->services_win = NULL;
+    data->emergency_win = NULL;
 
+    /* populate the notebook with window contents */
+    data->notebook = gtk_notebook_new ();
+    gtk_widget_show (data->notebook);
+    gtk_notebook_set_show_tabs (GTK_NOTEBOOK (data->notebook), FALSE);
+    gtk_notebook_set_show_border (GTK_NOTEBOOK (data->notebook), FALSE);
+
+    gtk_window_maximize (GTK_WINDOW (data->sync_win));
+    g_timeout_add (10, (GSourceFunc)try_maximize, data->sync_win);
+    gtk_window_set_decorated (GTK_WINDOW (data->sync_win), FALSE);
+    gtk_widget_set_name (data->sync_win, "meego_win");
+    g_signal_connect (data->sync_win, "key-press-event",
+                      G_CALLBACK (key_press_cb), data);
+
+    tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (data->sync_win)));
+    gtk_container_remove (GTK_CONTAINER (data->sync_win), tmp);
+    gtk_notebook_append_page (GTK_NOTEBOOK (data->notebook), tmp, NULL);
+    g_object_unref (tmp);
 
     tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (settings)));
     gtk_container_remove (GTK_CONTAINER (settings), tmp);
-    mux_window_append_page (MUX_WINDOW (mux_main), tmp, TRUE);
+    gtk_notebook_append_page (GTK_NOTEBOOK (data->notebook), tmp, NULL);
     g_object_unref (tmp);
 
     tmp = g_object_ref (gtk_bin_get_child (GTK_BIN (emergency)));
     gtk_container_remove (GTK_CONTAINER (emergency), tmp);
-    data->emergency_index =
-        mux_window_append_page (MUX_WINDOW (mux_main), tmp, FALSE);
+    gtk_notebook_append_page (GTK_NOTEBOOK (data->notebook), tmp, NULL);
     g_object_unref (tmp);
 
-    data->sync_win = mux_main;
-    data->services_win = NULL;
-    data->emergency_win = NULL;
+    tmp = gtk_vbox_new (FALSE, 0);
+    gtk_widget_show (tmp);
+    gtk_container_add (GTK_CONTAINER (data->sync_win), tmp);
+
+    gtk_box_pack_end (GTK_BOX (tmp), data->notebook,
+                      TRUE, TRUE, 0);
+
+    /* create the window toolbar */
+    toolbar = gtk_toolbar_new ();
+    gtk_widget_set_name (toolbar, "MeeGoToolbar");
+    gtk_box_pack_start (GTK_BOX (tmp), toolbar,
+                        FALSE, FALSE, 0);
+
+    data->back_btn = gtk_button_new_with_label (_("Back to sync"));
+    gtk_widget_set_can_focus (data->back_btn, FALSE);
+    gtk_widget_set_no_show_all (data->back_btn, TRUE);
+    g_signal_connect_swapped (data->back_btn, "clicked",
+                              G_CALLBACK (show_main_view), data);
+    item = gtk_tool_item_new ();
+    gtk_container_add (GTK_CONTAINER (item), data->back_btn);
+    gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, 0);
+
+    item = gtk_separator_tool_item_new ();
+    gtk_tool_item_set_expand (item, TRUE);
+    gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, 1);
+
+    data->settings_btn = gtk_toggle_button_new ();
+    gtk_widget_set_can_focus (data->settings_btn, FALSE);
+    gtk_widget_set_name (data->settings_btn, "MeeGoSettingsButton");
+    data->settings_id = g_signal_connect (data->settings_btn, "toggled",
+                                          G_CALLBACK (settings_toggled), data);
+
+    gtk_container_add (GTK_CONTAINER (data->settings_btn),
+                       gtk_image_new_from_icon_name ("preferences-other-hover",
+                                                     GTK_ICON_SIZE_DIALOG));
+    item = gtk_tool_item_new ();
+    gtk_container_add (GTK_CONTAINER (item), data->settings_btn);
+    gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, -1);
+
+    close_btn = gtk_button_new ();
+    gtk_widget_set_can_focus (close_btn, FALSE);
+    gtk_widget_set_name (close_btn, "MeeGoCloseButton");
+    g_signal_connect (close_btn, "clicked",
+                      G_CALLBACK (gtk_main_quit), NULL);
+    gtk_container_add (GTK_CONTAINER (close_btn),
+                       gtk_image_new_from_icon_name ("window-close-hover",
+                                                     GTK_ICON_SIZE_DIALOG));
+    item = gtk_tool_item_new ();
+    gtk_container_add (GTK_CONTAINER (item), close_btn);
+    gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, -1);
+
+    gtk_widget_show_all (toolbar);
+
+    /* no need for close buttons */
+    gtk_widget_hide (data->settings_close_btn);
+    gtk_widget_hide (data->emergency_close_btn);
 }
 
+static void
+show_emergency_view (app_data *data)
+{
+    update_emergency_view (data);
+    set_page (data, PAGE_EMERGENCY);
+}
+
+static void
+show_services_list (app_data *data, const char *config_id_to_open)
+{
+    g_free (data->config_id_to_open);
+    data->config_id_to_open = g_strdup (config_id_to_open);
+    set_page (data, PAGE_SETTINGS);
+    update_services_list (data);
+}
+
+static void
+show_main_view (app_data *data)
+{
+    set_page (data, PAGE_MAIN);
+}
 
 #else
 
@@ -869,6 +997,34 @@ setup_windows (app_data *data,
     g_signal_connect (data->emergency_win, "delete-event",
                       G_CALLBACK (gtk_widget_hide_on_delete), NULL);
 }
+
+static void
+show_emergency_view (app_data *data)
+{
+    update_emergency_view (data);
+    gtk_widget_hide (data->services_win);
+    gtk_window_present (GTK_WINDOW (data->emergency_win));
+}
+
+static void
+show_services_list (app_data *data, const char *config_id_to_open)
+{
+    g_free (data->config_id_to_open);
+    data->config_id_to_open = g_strdup (config_id_to_open);
+
+    gtk_widget_hide (data->emergency_win);
+    gtk_window_present (GTK_WINDOW (data->services_win));
+    update_services_list (data);
+}
+
+static void
+show_main_view (app_data *data)
+{
+    gtk_widget_hide (data->services_win);
+    gtk_widget_hide (data->emergency_win);
+    gtk_window_present (GTK_WINDOW (data->sync_win));
+}
+
 #endif
 
 /* This is a hacky way to achieve autoscrolling when the expanders open/close */
@@ -1146,8 +1302,7 @@ init_ui (app_data *data)
                      G_CALLBACK (services_box_allocate_cb), data);
 
     data->devices_box = GTK_WIDGET (gtk_builder_get_object (builder, "devices_box"));
-
-    data->back_btn = GTK_WIDGET (gtk_builder_get_object (builder, "back_btn"));
+    data->settings_close_btn = GTK_WIDGET (gtk_builder_get_object (builder, "settings_close_btn"));
 
     /* emergency view */
     btn = GTK_WIDGET (gtk_builder_get_object (builder, "slow_sync_btn"));
@@ -1164,6 +1319,7 @@ init_ui (app_data *data)
     data->emergency_expander = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_expander"));
     data->emergency_source_table = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_source_table"));
     data->emergency_backup_table = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_backup_table"));
+    data->emergency_close_btn = GTK_WIDGET (gtk_builder_get_object (builder, "emergency_close_btn"));
 
     /* No (documented) way to add own widgets to gtkbuilder it seems...
        swap the all dummy widgets with Muxwidgets */
@@ -1185,6 +1341,12 @@ init_ui (app_data *data)
                       G_CALLBACK (emergency_clicked_cb), data);
     g_signal_connect (data->sync_btn, "clicked", 
                       G_CALLBACK (sync_clicked_cb), data);
+    g_signal_connect_swapped (data->emergency_close_btn, "clicked",
+                              G_CALLBACK (show_main_view), data);
+    g_signal_connect_swapped (data->settings_close_btn, "clicked",
+                              G_CALLBACK (show_main_view), data);
+    g_signal_connect (data->emergency_btn, "clicked",
+                      G_CALLBACK (emergency_clicked_cb), data);
 
     data->new_device_btn = GTK_WIDGET (gtk_builder_get_object (builder, "new_device_btn"));
     g_signal_connect (data->new_device_btn, "clicked", 
@@ -2952,46 +3114,6 @@ start_session_cb (SyncevoServer *server,
                                 op_data);
 
     g_free (path);
-}
-
-static void
-show_emergency_view (app_data *data)
-{
-    update_emergency_view (data);
-#ifdef USE_MOBLIN_UX
-    mux_window_set_current_page (MUX_WINDOW (data->sync_win),
-                                 data->emergency_index);
-#else
-    gtk_widget_hide (data->services_win);
-    gtk_window_present (GTK_WINDOW (data->emergency_win));
-#endif
-}
-
-static void
-show_services_list (app_data *data, const char *config_id_to_open)
-{
-    g_free (data->config_id_to_open);
-    data->config_id_to_open = g_strdup (config_id_to_open);
-
-#ifdef USE_MOBLIN_UX
-    mux_window_set_settings_visible (MUX_WINDOW (data->sync_win), TRUE);
-#else
-    gtk_widget_hide (data->emergency_win);
-    gtk_window_present (GTK_WINDOW (data->services_win));
-    update_services_list (data);
-#endif
-}
-
-static void
-show_main_view (app_data *data)
-{
-#ifdef USE_MOBLIN_UX
-    mux_window_set_current_page (MUX_WINDOW (data->sync_win), -1);
-#else
-    gtk_widget_hide (data->services_win);
-    gtk_widget_hide (data->emergency_win);
-#endif
-    gtk_window_present (GTK_WINDOW (data->sync_win));
 }
 
 /* TODO: this function should accept source/peer name as param */

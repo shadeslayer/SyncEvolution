@@ -22,7 +22,6 @@ dist_icon_DATA = sync.png
 
 themercdir = $(datadir)/syncevolution/
 themerc_DATA = \
-	close.png close_hover.png settings.png settings_hover.png \
 	sync-generic.png \
 	sync-spinner.gif \
 	sync-ui.rc
@@ -51,7 +50,7 @@ bin_PROGRAMS = $(GUI_PROGRAMS)
 
 sync_ui_SOURCES = \
 	main.c sync-ui.c sync-ui.h sync-ui-config.c sync-ui-config.h \
-	mux-frame.c mux-frame.h mux-window.c mux-window.h mux-icon-button.c mux-icon-button.h \
+	mux-frame.c mux-frame.h \
 	sync-config-widget.c sync-config-widget.h \
 	gtkinfobar.c gtkinfobar.h
 

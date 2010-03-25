@@ -1,12 +1,5 @@
 # generic rules for MuxWidgets
 
-style "mux-win" {
-    bg[NORMAL] = "#4a535a"
-    MuxWindow::title-bar-bg = "#333333"
-    MuxWindow::title-bar-fg = "#c2c2c2"
-}
-class "MuxWindow" style "mux-win"
-
 style "mux-frame" {
     bg[NORMAL] = "#ffffff"
     bg[INSENSITIVE] = "#ffffff"
@@ -17,6 +10,11 @@ style "mux-frame" {
 class "MuxFrame" style "mux-frame"
 
 # sync-ui specific rules
+
+style "meego-win" {
+    bg[NORMAL] = "#4a535a"
+}
+widget "meego_win" style "meego-win"
 
 style "data-box" {
     bg[NORMAL] = "#ececec"
