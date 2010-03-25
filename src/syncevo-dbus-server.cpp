@@ -253,7 +253,7 @@ template<> struct dbus_traits<ReadOperations::SourceDatabase> :
  */
 class AutoTerm {
     int m_refs;
-    guint m_interval;
+    time_t m_interval;
     guint m_checkSource;
     time_t m_lastUsed;
 
@@ -289,13 +289,15 @@ class AutoTerm {
      */
     AutoTerm(int interval) :
         m_refs(0),
-        m_interval(interval),
         m_checkSource(0),
         m_lastUsed(0)
     {
         if (interval <= 0) {
+            m_interval = 0;
             // increasing reference counts prevents shutdown forever
             ref();
+        } else {
+            m_interval = interval;
         }
         reset();
     }
