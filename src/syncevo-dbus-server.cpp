@@ -571,7 +571,7 @@ class AutoSyncManager : public SessionListener
      public:
         /** the peer name of a config */
         string m_peer;
-        /** the time that the peer must at least have been around */
+        /** the time that the peer must at least have been around (seconds) */
         unsigned int m_delay;
         /** the 'syncURL' used by synchronization. It always contains only one sync URL. */
         string m_url;
@@ -598,7 +598,7 @@ class AutoSyncManager : public SessionListener
     class AutoSyncTaskList : public list<AutoSyncTask>
     {
         AutoSyncManager &m_manager;
-        /** the interval used to create timeout source */
+        /** the interval used to create timeout source (seconds) */
         unsigned int m_interval;
 
         /** timeout gsource */
@@ -5288,7 +5288,7 @@ bool AutoSyncManager::taskLikelyToRun(const AutoSyncTask &syncTask)
             Timer& timer = status.getHttpTimer();
             // if the time peer have been around is longer than 'autoSyncDelay',
             // then return true
-            if(timer.timeout(syncTask.m_delay * 60 * 100)) {
+            if (timer.timeout(syncTask.m_delay * 1000 /* seconds to milliseconds */)) {
                 return true;
             }
         } 
@@ -5452,7 +5452,7 @@ void AutoSyncManager::AutoSyncTaskList::createTimeoutSource()
 {
     //if interval is 0, only run auto sync when changes are detected.
     if(m_interval) {
-        m_source = g_timeout_add_seconds(m_interval * 60, taskListTimeoutCb, static_cast<gpointer>(this));
+        m_source = g_timeout_add_seconds(m_interval, taskListTimeoutCb, static_cast<gpointer>(this));
     }
 }
 
