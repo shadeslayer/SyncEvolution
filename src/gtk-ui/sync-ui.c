@@ -1858,12 +1858,14 @@ get_config_for_config_widget_cb (SyncevoServer *server,
             /* NOTE: using device_name here means a new config will be saved with
              * device_name (and not the template name). Not sure if this is
              * what we really want... */
-            syncevo_config_get_value (config, NULL, "fingerPrint", &fp);
-
-            if (fp) {
-                fpv = g_strsplit_set (fp, ",;", 2);
-                if (g_strv_length (fpv) > 0) {
-                    device_name = fpv[0];
+            syncevo_config_get_value (config, NULL, "templateName", &device_name);
+            if (!device_name) {
+                syncevo_config_get_value (config, NULL, "fingerPrint", &fp);
+                if (fp) {
+                    fpv = g_strsplit_set (fp, ",;", 2);
+                    if (g_strv_length (fpv) > 0) {
+                        device_name = fpv[0];
+                    }
                 }
             }
             if (!device_name) {
