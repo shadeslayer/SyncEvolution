@@ -825,7 +825,7 @@ bool RemoteDBusServer::monitor(const string &peer)
         vector<boost::shared_ptr<RemoteSession> >::iterator it = m_sessions.begin();
         while(it != m_sessions.end()) {
             string tempNorm = (*it)->configName();
-            if(boost::iequals(peerNorm, tempNorm)) {
+            if (peerNorm == tempNorm) {
                 m_session = *it;
                 //monitor the session status
                 m_session->monitorSync();
@@ -833,10 +833,7 @@ bool RemoteDBusServer::monitor(const string &peer)
             }
             it++;
         }
-
-        if(it == m_sessions.end()) {
-            SE_LOG_SHOW(NULL, NULL, "'%s' is not running", peer.c_str());
-        }
+        SE_LOG_SHOW(NULL, NULL, "'%s' is not running.", peer.c_str());
     }
     return m_result;
 }

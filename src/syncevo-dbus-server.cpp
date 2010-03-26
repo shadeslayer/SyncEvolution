@@ -2437,8 +2437,8 @@ void ReadOperations::getConfig(bool getTemplate,
         }
     }
 
-    //insert 'configName'
-    localConfigs.insert(pair<string, string>("configName", m_configName));
+    // insert 'configName' of the chosen config (m_configName is not normalized)
+    localConfigs.insert(pair<string, string>("configName", syncConfig->getConfigName()));
 
     config.insert(pair<string,map<string, string> >("", localConfigs));
 
