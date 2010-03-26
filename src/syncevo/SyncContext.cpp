@@ -3757,7 +3757,9 @@ public:
     LogDirTest() :
         SyncContext("nosuchconfig@nosuchcontext"),
         m_maxLogDirs(10)
-    {}
+    {
+        setOutput(&m_out);
+    }
 
     void setUp() {
         static const char *vcard_1 =
@@ -3838,6 +3840,8 @@ public:
 
         mkdir_p(getLogDir());
         m_maxLogDirs = 0;
+        m_out.clear();
+        m_out.str("");
     }
 
 private:
@@ -3845,6 +3849,8 @@ private:
     string getLogData() { return "LogDirTest/data"; }
     virtual const char *getLogDir() { return "LogDirTest/cache/syncevolution"; }
     int m_maxLogDirs;
+
+    ostringstream m_out;
 
     void dump(const char *dir, const char *file, const char *data) {
         string name = getLogData();
