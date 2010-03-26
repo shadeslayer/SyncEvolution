@@ -533,6 +533,7 @@ bool Cmdline::run() {
         context->setQuiet(m_quiet);
         context->setDryRun(m_dryrun);
         context->setConfigFilter(true, "", m_syncProps);
+        context->setOutput(&m_out);
         if (m_sources.empty()) {
             if (m_sourceProps.empty()) {
                 // empty source list, empty source filter => run with
