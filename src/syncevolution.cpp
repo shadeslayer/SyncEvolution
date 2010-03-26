@@ -592,8 +592,8 @@ bool RemoteDBusServer::execute(const vector<string> &args, const string &peer, b
         while(!isActive()) {
             g_main_loop_run(m_loop);
         }
-        Logger::Level level = LoggerBase::instance().getLevel();
-        LoggerBase::instance().setLevel(Logger::DEBUG);
+        // Logger::Level level = LoggerBase::instance().getLevel();
+        // LoggerBase::instance().setLevel(Logger::DEBUG);
         resetReplies();
         m_session->executeAsync(args);
 
@@ -643,7 +643,7 @@ bool RemoteDBusServer::execute(const vector<string> &args, const string &peer, b
         //reset session
         g_session.reset();
         //restore logging level
-        LoggerBase::instance().setLevel(level);
+        // LoggerBase::instance().setLevel(level);
     }
     return m_result;
 }
@@ -963,8 +963,8 @@ void RemoteSession::logOutput(Logger::Level level, const string &log)
 void RemoteSession::monitorSync()
 {
     m_output = true;
-    Logger::Level level = LoggerBase::instance().getLevel();
-    LoggerBase::instance().setLevel(Logger::DEBUG);
+    // Logger::Level level = LoggerBase::instance().getLevel();
+    // LoggerBase::instance().setLevel(Logger::DEBUG);
     SE_LOG(Logger::SHOW, NULL, NULL, "Monitoring '%s' (%s)\n", m_configName.c_str(), getPath());
 
     while(!statusDone()) {
@@ -972,7 +972,7 @@ void RemoteSession::monitorSync()
     }
 
     SE_LOG(Logger::SHOW, NULL, NULL, "Monitoring done");
-    LoggerBase::instance().setLevel(level);
+    // LoggerBase::instance().setLevel(level);
     m_output = false;
 }
 
