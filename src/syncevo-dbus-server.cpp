@@ -4987,8 +4987,13 @@ void DBusServer::messagev(Level level,
                           const char *format,
                           va_list args)
 {
+    // iterating over args in messagev() is destructive, must make a copy first
+    va_list argsCopy;
+    va_copy(argsCopy, args);
     m_parentLogger.messagev(level, prefix, file, line, function, format, args);
-    string log = StringPrintfV(format, args);
+    string log = StringPrintfV(format, argsCopy);
+    va_end(argsCopy);
+
     // prefix is used to set session path
     // for general server output, the object path field is dbus server 
     // the object path can't be empty for object paths prevent using empty string.
