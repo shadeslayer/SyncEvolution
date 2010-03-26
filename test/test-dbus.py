@@ -992,7 +992,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                 "password" : "-",
                                 "deviceId" : "foo",
                                 "RetryInterval" : "10",
-                                "RetryDuration" : "20"
+                                "RetryDuration" : "20",
+                                "configName" : "dummy-test"
                               },
                          "source/addressbook" : { "sync" : "slow",
                                                   "type" : "addressbook",
