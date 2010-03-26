@@ -1972,7 +1972,16 @@ public:
     {}
 
     void parse() { m_cmdline.parse(); }
-    void run() { m_cmdline.run(); }
+    void run()
+    {
+        // exceptions must be handled (= printed) before returning,
+        // so that our client gets the output
+        try {
+            m_cmdline.run();
+        } catch (...) {
+            Exception::handle();
+        }
+    }
 };
 
 /**
