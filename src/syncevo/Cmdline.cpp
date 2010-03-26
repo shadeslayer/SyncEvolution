@@ -73,6 +73,7 @@ Cmdline::Cmdline(const vector<string> &args, ostream &out, ostream &err) :
 bool Cmdline::parse()
 {
     int opt = 1;
+    bool ok;
     while (opt < m_argc) {
         if (m_argv[opt][0] != '-') {
             break;
@@ -171,21 +172,13 @@ bool Cmdline::parse()
             m_usage = true;
         } else if(boost::iequals(m_argv[opt], "--version")) {
             m_version = true;
-        } else if(boost::iequals(m_argv[opt], "--keyring")||
-                boost::iequals(m_argv[opt], "-k")) {
-            m_keyring = true;
-        } else if(boost::iequals(m_argv[opt], "--use-daemon")) {
-            opt++;
-            if (opt >= m_argc) {
-                usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
+        } else if (parseBool(opt, "--keyring", "-k", true, m_keyring, ok)) {
+            if (!ok) {
                 return false;
             }
-            if(boost::iequals(m_argv[opt], "yes")) {
-                m_useDaemon = "yes";
-            } else if(boost::iequals(m_argv[opt], "no")) {
-                m_useDaemon = "no";
-            } else {
-                usage(true, string("parameter '") + m_restore + "' for " + cmdOpt(m_argv[opt - 1]) + " must be 'yes' or 'no'");
+        } else if (parseBool(opt, "--daemon", NULL, true, m_useDaemon, ok)) {
+            if (!ok) {
+                return false;
             }
         } else if(boost::iequals(m_argv[opt], "--monitor")||
                 boost::iequals(m_argv[opt], "-m")) {
@@ -207,6 +200,44 @@ bool Cmdline::parse()
     return true;
 }
 
+bool Cmdline::parseBool(int opt, const char *longName, const char *shortName,
+                        bool def, Bool &value,
+                        bool &ok)
+{
+    string option = m_argv[opt];
+    string param;
+    size_t pos = option.find('=');
+    if (pos != option.npos) {
+        param = option.substr(pos + 1);
+        option.resize(pos);
+    }
+    if ((longName && boost::iequals(option, longName)) ||
+        (shortName && boost::iequals(option, shortName))) {
+        ok = true;
+        if (param.empty()) {
+            value = def;
+        } else if (boost::iequals(param, "t") ||
+                   boost::iequals(param, "1") ||
+                   boost::iequals(param, "true") ||
+                   boost::iequals(param, "yes")) {
+            value = true;
+        } else if (boost::iequals(param, "f") ||
+              boost::iequals(param, "0") ||
+              boost::iequals(param, "false") ||
+              boost::iequals(param, "no")) {
+            value = false;
+        } else {
+            usage(true, string("parameter in '") + m_argv[opt] + "' must be 1/t/true/yes or 0/f/false/no");
+            ok = false;
+        }
+        // was our option
+        return true;
+    } else {
+        // keep searching for match
+        return false;
+    }
+}
+
 bool Cmdline::isSync()
 {
     //make sure command line arguments really try to run sync
@@ -216,7 +247,7 @@ bool Cmdline::isSync()
         return false;
     } else if(m_printTemplates || m_dontrun) {
         return false;
-    } else if(m_argc == 1 || (!m_useDaemon.empty() && m_argc == 3)) {
+    } else if(m_argc == 1 || (m_useDaemon.wasSet() && m_argc == 2)) {
         return false;
     } else if(m_printConfig || m_remove) {
         return false;
@@ -264,7 +295,7 @@ bool Cmdline::run() {
         }
     } else if (m_dontrun) {
         // user asked for information
-    } else if (m_argc == 1 || (!m_useDaemon.empty() && m_argc == 3)) {
+    } else if (m_argc == 1 || (m_useDaemon.wasSet() && m_argc == 2)) {
         // no parameters: list databases and short usage
         const SourceRegistry &registry(SyncSource::getSourceRegistry());
         boost::shared_ptr<FilterConfigNode> sharedNode(new VolatileConfigNode());
@@ -1154,7 +1185,7 @@ void Cmdline::usage(bool full, const string &error, const string &param)
             "  Suppresses most of the normal output during a synchronization. The" << endl <<
             "  log file still contains all the information." << endl <<
             "" << endl <<
-            "--keyring|-k" << endl <<
+            "--keyring|-k[=yes/no/...]" << endl <<
             "  Save or retrieve passwords from the GNOME keyring when modifying the" << endl <<
             "  configuration or running a synchronization. Note that using this option" << endl <<
             "  applies to *all* passwords in a configuration, so setting a single" << endl <<
@@ -1162,15 +1193,15 @@ void Cmdline::usage(bool full, const string &error, const string &param)
             "  they were not stored there already:" << endl <<
             "     --keyring --configure --sync-property proxyPassword=foo" << endl <<
             "" << endl <<
-            "--use-daemon [yes/no]" << endl <<
-            "  Run operations in cooperation with the background sync daemon;" << endl <<
-            "  enabled by default if it is installed" << endl <<
-            "" << endl <<
             "  When passwords were stored in the keyring, their value is set to '-'" << endl <<
             "  in the configuration. This means that when running a synchronization" << endl <<
             "  without the --keyring argument, the password has to be entered" << endl <<
             "  interactively. The --print-config output always shows '-' instead of" << endl <<
             "  retrieving the password from the keyring." << endl <<
+            "" << endl <<
+            "--daemon[=yes/no/...]" << endl <<
+            "  Run operations in cooperation with the background sync daemon;" << endl <<
+            "  enabled by default if it is installed." << endl <<
             "" << endl <<
             "--help|-h" << endl <<
             "  Prints usage information." << endl <<

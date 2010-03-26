@@ -3855,10 +3855,10 @@ void Connection::process(const Caller_t &caller,
                     SyncConfig peer(entry.first);
                     if (info.m_deviceID == peer.getRemoteDevID()) {
                         config = entry.first;
-                        SE_LOG_DEBUG(NULL, NULL, "matched %s against config %s (%s)",
-                                     info.toString().c_str(),
-                                     entry.first.c_str(),
-                                     entry.second.c_str());
+                        SE_LOG_INFO(NULL, NULL, "matched %s against config %s (%s)",
+                                    info.toString().c_str(),
+                                    entry.first.c_str(),
+                                    entry.second.c_str());
                         break;
                     }
                 }

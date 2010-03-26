@@ -54,7 +54,22 @@ public:
 
     bool run();
 
-    string useDaemon() { return m_useDaemon; }
+    /**
+     * Acts like a boolean, but in addition, can also tell whether the
+     * value was explicitly set.
+     */
+    class Bool { 
+    public:
+    Bool(bool val = false) : m_value(val), m_wasSet(false) {}
+        operator bool () { return m_value; }
+        Bool & operator = (bool val) { m_value = val; m_wasSet = true; return *this; }
+        bool wasSet() { return m_wasSet; }
+    private:
+        bool m_value;
+        bool m_wasSet;
+    };
+
+    Bool useDaemon() { return m_useDaemon; }
 
     /** whether '--monitor' is set */
     bool monitor() { return m_monitor; }
@@ -69,15 +84,6 @@ public:
     bool isSync();
 
 protected:
-    class Bool { 
-    public:
-        Bool(bool val = false) : m_value(val) {}
-        operator bool () { return m_value; }
-        Bool & operator = (bool val) { m_value = val; return *this; }
-    private:
-        bool m_value;
-    };
-
     // vector to store strings for arguments 
     vector<string> m_args;
 
@@ -104,7 +110,7 @@ protected:
     Bool m_dontrun;
     Bool m_keyring;
     Bool m_monitor;
-    string m_useDaemon;
+    Bool m_useDaemon;
     FilterConfigNode::ConfigFilter m_syncProps, m_sourceProps;
     const ConfigPropertyRegistry &m_validSyncProps;
     const ConfigPropertyRegistry &m_validSourceProps;
@@ -212,6 +218,22 @@ protected:
     virtual SyncContext* createSyncClient();
 
     friend class CmdlineTest;
+
+ private:
+    /**
+     * Utility function to check m_argv[opt] against a specific boolean
+     * parameter of the form "<longName|shortName>[=yes/1/t/true/no/0/f/false].
+     *
+     * @param opt        current index in m_argv
+     * @param longName   long form of the parameter, including --, may be NULL
+     * @param shortName  short form, including -, may be NULL
+     * @param  def       default value if m_argv[opt] contains no explicit value
+     * @retval value     if and only if m_argv[opt] matches, then this is set to to true or false
+     * @retval ok        true if parsing succeeded, false if not and error message was printed
+     */
+    bool parseBool(int opt, const char *longName, const char *shortName,
+                   bool def, Bool &value,
+                   bool &ok);
 };
 
 

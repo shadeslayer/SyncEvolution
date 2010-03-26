@@ -121,10 +121,11 @@ public:
     GMainLoop *getLoop() { return m_loop; }
 
     /** 
-     * check whether the server is started and can be attached.
-     * If not, report an error message
+     * Check whether the server is started and can be attached.
+     * Printing an error message is optional, some callers might
+     * prefer a different kind of error handling.
      */
-    bool checkStarted();
+    bool checkStarted(bool printError = true);
 
     /**
      * execute arguments from command line
@@ -397,6 +398,8 @@ int main( int argc, char **argv )
             return 1;
         }
 
+        Cmdline::Bool useDaemon = cmdline.useDaemon();
+
         if(cmdline.monitor()) {
 
 #ifdef DBUS_SERVICE
@@ -407,13 +410,11 @@ int main( int argc, char **argv )
             }
             return 1;
 #else
-            SE_LOG_SHOW(NULL, NULL, "ERROR: can't monitor running a session. "
-                        "this syncevolution binary was compiled without support of daemon. "
-                        "Try to re-configure with '--enable-dbus-service' option."); 
+            SE_LOG_ERROR(NULL, NULL, "this syncevolution binary was compiled without support for monitoring a background sync");
             return 1;
 #endif
         } else if(cmdline.status() && 
-                cmdline.getConfigName().empty()) {
+                  cmdline.getConfigName().empty()) {
 
 #ifdef DBUS_SERVICE
             // '--status' and no server name, try to get running sessions 
@@ -423,14 +424,11 @@ int main( int argc, char **argv )
             }
             return 1;
 #else
-            SE_LOG_SHOW(NULL, NULL, "ERROR: can't get all running sessions. " 
-                        "this syncevolution binary was compiled without support of daemon. "
-                        "Try to re-configure with '--enable-dbus-service' option."); 
+            SE_LOG_SHOW(NULL, NULL, "this syncevolution binary was compiled without support for monitoring a background sync");
             return 1;
 #endif
-        } else if(boost::iequals(cmdline.useDaemon(), "yes") ||
-                cmdline.useDaemon().empty()){
-
+        } else if (useDaemon ||
+                   !useDaemon.wasSet()) {
 #ifdef DBUS_SERVICE
             RemoteDBusServer server;
 
@@ -439,32 +437,30 @@ int main( int argc, char **argv )
                 arguments.push_back(argv[i]);
             }
 
-            bool result;
-            result = server.execute(arguments, cmdline.getConfigName(), cmdline.isSync());
-            //if '--use-daemon' is not set as 'yes' and can't execute
-            //successfully using daemon, falling back to run sync in the process
-            if(boost::iequals(cmdline.useDaemon(), "yes") && result == false) {
-                SE_LOG_SHOW(NULL, NULL, "ERROR: this syncevolution can't run by using daemon. "
-                            "Either run syncevolution with '--use-daemon no' or without option.");
-                return 1;
-            } else if(result == true) {
-                return 0;
-            } else if(cmdline.useDaemon().empty()) {
-                SE_LOG_SHOW(NULL, NULL, "WARNING: can't run syncevolution with daemon. "
-                                        "Try to run your arguments directly.");
+            // Running execute() without the server available will print errors.
+            // Avoid that unless the user explicitly asked for the daemon.
+            bool result = server.checkStarted(false);
+            if (useDaemon.wasSet() || result) {
+                return server.execute(arguments, cmdline.getConfigName(), cmdline.isSync());
+            } else {
+                // User didn't select --use-daemon and thus doesn't need to know about it
+                // not being available.
+                // SE_LOG_SHOW(NULL, NULL, "WARNING: cannot run syncevolution as daemon. "
+                //             "Trying to run it without daemon.");
             }
 #else
-            if(boost::iequals(cmdline.useDaemon(), "yes")) {
+            if (useDaemon.wasSet()) {
                 SE_LOG_SHOW(NULL, NULL, "ERROR: this syncevolution binary was compiled without support of daemon. "
-                           "Either run syncevolution with '--use-daemon no' or without option."); 
+                            "Either run syncevolution with '--use-daemon=no' or without that option."); 
+                return 1;
             }
 #endif
         } 
 
         // if forcing not using daemon or trying to use daemon with failures,
         // run arguments in the process
-        if(cmdline.useDaemon().empty() ||
-                boost::iequals(cmdline.useDaemon(), "no")) {
+        if (!useDaemon.wasSet() ||
+            !useDaemon) {
             EDSAbiWrapperInit();
 
             /*
@@ -509,10 +505,12 @@ RemoteDBusServer::RemoteDBusServer()
     }
 }
 
-bool RemoteDBusServer::checkStarted()
+bool RemoteDBusServer::checkStarted(bool printError)
 {
     if(!m_attached) {
-        SE_LOG_SHOW(NULL, NULL,"The Daemon can't be started successfully. Try to check it is successfully setup.");
+        if (printError) {
+            SE_LOG_ERROR(NULL, NULL, "SyncEvolution D-Bus server not available.");
+        }
         return false;
     }
     return true;
@@ -652,7 +650,7 @@ void RemoteDBusServer::startSessionCb(const DBusObject_t &sessionPath, const str
 {
     replyInc();
     if(!error.empty()) {
-        SE_LOG_SHOW(NULL, NULL, "ERROR: %s", error.c_str());
+        SE_LOG_ERROR(NULL, NULL, "starting D-Bus session failed: %s", error.c_str());
         m_result = false;
         g_main_loop_quit(m_loop);
         return;
@@ -712,7 +710,7 @@ bool RemoteDBusServer::runningSessions()
     getRunningSessions();
 
     if(m_runSessions.empty()) {
-        SE_LOG_SHOW(NULL, NULL, "No running session(s) just now");
+        SE_LOG_SHOW(NULL, NULL, "Background sync daemon is idle.");
     } else {
         SE_LOG_SHOW(NULL, NULL, "Running session(s): ");
 
@@ -744,7 +742,7 @@ void RemoteDBusServer::getSessionsCb(const vector<string> &sessions, const strin
 {
     replyInc();
     if(!error.empty()) {
-        SE_LOG_SHOW(NULL, NULL, "ERROR: %s", error.c_str());
+        SE_LOG_ERROR(NULL, NULL, "getting session failed: %s", error.c_str());
         m_result = false;
         g_main_loop_quit(m_loop);
         return;
@@ -806,7 +804,7 @@ bool RemoteDBusServer::monitor(const string &peer)
             }
         }
         //if no running session
-        SE_LOG_SHOW(NULL, NULL, "No session is going to be monitored.");
+        SE_LOG_SHOW(NULL, NULL, "Background sync daemon is idle, no session available to be be monitored.");
     } else {
         string peerNorm = SyncConfig::normalizeConfigString(peer);
 
@@ -860,7 +858,7 @@ void RemoteSession::executeCb(const string &error)
 {
     m_server.replyInc();
     if(!error.empty()) {
-        SE_LOG_SHOW(NULL, NULL, "ERROR: %s", error.c_str());
+        SE_LOG_ERROR(NULL, NULL, "running the command line inside the D-Bus server failed: %s", error.c_str());
         m_server.setResult(false);
         //end to print outputs
         m_output = false;
