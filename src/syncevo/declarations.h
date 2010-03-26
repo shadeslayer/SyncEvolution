@@ -28,4 +28,21 @@
 #define SE_BEGIN_CXX namespace SyncEvo {
 #define SE_END_CXX }
 
+SE_BEGIN_CXX
+/*
+ * SyncEvolution should never use standard IO directly. Either use the
+ * logging facilities or use variables that point towards the real
+ * output channels.  In particular the command line code then can be
+ * run as pointing towards real std::cout, a string stream, or redirected
+ * via D-Bus.
+ *
+ * These dummy declarations trip up code inside SyncEvo namespace or using it
+ * which use plain "cout << something" after a "using namespace std".
+ * They don't help catching code which references std::cout.
+ */
+struct DontUseStandardIO;
+extern DontUseStandardIO *cout;
+extern DontUseStandardIO *cerr;
+SE_END_CXX
+
 #endif /** INCL_DECLARATIONS */

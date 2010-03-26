@@ -147,8 +147,14 @@ SyncContext::SyncContext(const string &server,
     m_doLogging = doLogging;
 }
 
+void SyncContext::setOutput(ostream *out)
+{
+    m_out = out ? out : &std::cout;
+}
+
 void SyncContext::init()
 {
+    m_out = &std::cout;
     m_doLogging = false;
     m_quiet = false;
     m_dryrun = false;
@@ -1174,6 +1180,7 @@ public:
             m_logdir.previousLogdirs(dirs);
         }
 
+        ostream &out = m_client.getOutput();
         BOOST_FOREACH(SyncSource *source, *this) {
             if ((!excludeSource.empty() && excludeSource != source->getName()) ||
                 (newSuffix == "after" && m_prepared.find(source->getName()) == m_prepared.end())) {
@@ -1182,7 +1189,7 @@ public:
 
             // dump only if not done before or changed
             if (m_intro != intro) {
-                cout << intro;
+                m_client.getOutput() << intro;
                 m_intro = intro;
             }
 
@@ -1209,22 +1216,22 @@ public:
                 oldDir = databaseName(*source, oldSuffix, oldSession);
             }
             string newDir = databaseName(*source, newSuffix);
-            cout << "*** " << source->getName() << " ***\n" << flush;
+            out << "*** " << source->getName() << " ***\n" << flush;
             string cmd = string("env CLIENT_TEST_COMPARISON_FAILED=10 " + config + " synccompare 2>/dev/null '" ) +
                 oldDir + "' '" + newDir + "'";
             int ret = system(cmd.c_str());
             switch (ret == -1 ? ret : WEXITSTATUS(ret)) {
             case 0:
-                cout << "no changes\n";
+                out << "no changes\n";
                 break;
             case 10:
                 break;
             default:
-                cout << "Comparison was impossible.\n";
+                out << "Comparison was impossible.\n";
                 break;
             }
         }
-        cout << "\n";
+        out << "\n";
         return true;
     }
 
@@ -1276,28 +1283,28 @@ public:
                 m_reportTodo = false;
 
                 string logfile = m_logdir.getLogfile();
-                cout << flush;
-                cerr << flush;
-                cout << "\n";
+                ostream &out = m_client.getOutput();
+                out << flush;
+                out << "\n";
                 if (status == STATUS_OK) {
-                    cout << "Synchronization successful.\n";
+                    out << "Synchronization successful.\n";
                 } else if (logfile.size()) {
-                    cout << "Synchronization failed, see "
-                         << logfile
-                         << " for details.\n";
+                    out << "Synchronization failed, see "
+                        << logfile
+                        << " for details.\n";
                 } else {
-                    cout << "Synchronization failed.\n";
+                    out << "Synchronization failed.\n";
                 }
 
                 // pretty-print report
                 if (m_logLevel > LOGGING_QUIET) {
-                    cout << "\nChanges applied during synchronization:\n";
+                    out << "\nChanges applied during synchronization:\n";
                 }
                 if (m_logLevel > LOGGING_QUIET && report) {
-                    cout << *report;
+                    out << *report;
                     std::string slowSync = report->slowSyncExplanation(m_client.getPeer());
                     if (!slowSync.empty()) {
-                        cout << endl << slowSync;
+                        out << endl << slowSync;
                     }
                 }
 
@@ -3575,9 +3582,10 @@ void SyncContext::status()
             Exception::handle();
         }
     } else {
-        cout << "Previous log directory not found.\n";
+        ostream &out = getOutput();
+        out << "Previous log directory not found.\n";
         if (!getLogDir() || !getLogDir()[0]) {
-            cout << "Enable the 'logdir' option and synchronize to use this feature.\n";
+            out << "Enable the 'logdir' option and synchronize to use this feature.\n";
         }
     }
 }

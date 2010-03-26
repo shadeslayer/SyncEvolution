@@ -178,6 +178,13 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
                 bool doLogging = false);
     ~SyncContext();
 
+    /**
+     * Output channel to be used by this context. NULL means "use std::cout", the default.
+     * Owned by caller, must remain valid as long as SyncContext exists.
+     */
+    void setOutput(ostream *out);
+    ostream &getOutput() const { return *m_out; }
+
     bool getQuiet() { return m_quiet; }
     void setQuiet(bool quiet) { m_quiet = quiet; }
 
@@ -732,6 +739,9 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     //a flag indicating whether it is the first time to start source access.
     //It can be used to report infomation about a sync is successfully started.
     bool m_firstSourceAccess;
+
+    // output stream to be used by this context, never NULL (uses cout as fallback)
+    ostream *m_out;
 
 public:
     static bool transport_cb (void *data);

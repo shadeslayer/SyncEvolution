@@ -125,7 +125,7 @@ public:
 
     void startTest (CppUnit::Test *test) {
         m_currentTest = test->getName();
-        cerr << m_currentTest;
+        std::cerr << m_currentTest;
         string logfile = m_currentTest + ".log";
         simplifyFilename(logfile);
         m_logger.reset(new LoggerStdout(logfile));
@@ -190,9 +190,9 @@ public:
             }
         }
 
-        cerr << " " << result << "\n";
+        std::cerr << " " << result << "\n";
         if (!failure.empty()) {
-            cerr << failure << "\n";
+            std::cerr << failure << "\n";
         }
     }
 

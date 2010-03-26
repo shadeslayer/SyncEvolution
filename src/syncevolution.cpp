@@ -138,7 +138,7 @@ int main( int argc, char **argv )
          * libs, therefore it would get suppressed (logged at
          * level DEVELOPER, while output is at most INFO)
          */
-        KeyringSyncCmdline cmdline(argc, argv, cout, cout);
+        KeyringSyncCmdline cmdline(argc, argv, std::cout, std::cout);
         if (cmdline.parse() &&
             cmdline.run()) {
             return 0;

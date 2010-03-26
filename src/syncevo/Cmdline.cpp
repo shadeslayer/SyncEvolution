@@ -604,13 +604,13 @@ bool Cmdline::run() {
                 if (first) {
                     first = false;
                 } else if(!m_quiet) {
-                    cout << endl;
+                    m_out << endl;
                 }
-                cout << dir << endl;
+                m_out << dir << endl;
                 if (!m_quiet) {
                     SyncReport report;
                     context->readSessionInfo(dir, report);
-                    cout << report;
+                    m_out << report;
                 }
             }
         } else if (!m_restore.empty()) {
@@ -2516,7 +2516,7 @@ private:
             success = m_cmdline->parse() &&
                 m_cmdline->run();
             if (m_err.str().size()) {
-                cout << endl << m_err.str();
+                m_out << endl << m_err.str();
             }
             CPPUNIT_ASSERT(success);
         }
