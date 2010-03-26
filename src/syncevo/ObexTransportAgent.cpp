@@ -770,6 +770,8 @@ void ObexTransportAgent::obex_callback (obex_object_t *object, int mode, int eve
                         //disconnct event
                         m_connectStatus = END;
                         OBEX_TransportDisconnect (m_handle->get());
+                        //a normal case, same as OBEX_EV_DONE
+                        m_obexReady = true;
                         m_status = CLOSED;
                     } else if (obex_rsp !=0) {
                         SE_LOG_ERROR (NULL, NULL, "ObexTransport Error %d", obex_rsp);
