@@ -95,6 +95,9 @@ class Logger
     } Level;
     static const char *levelToStr(Level level);
 
+    /** always returns a valid level, also for NULL, by falling back to DEBUG */
+    static Level strToLevel(const char *str);
+    
     virtual ~Logger() {}
 
     /**

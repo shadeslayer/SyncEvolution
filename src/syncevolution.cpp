@@ -174,7 +174,7 @@ private:
     void sessionChangedCb(const DBusObject_t &object, bool active);
 
     /** callback of 'Server.LogOutput' */
-    void logOutputCb(const DBusObject_t &object, uint32_t level, const string &log);
+    void logOutputCb(const DBusObject_t &object, const string &level, const string &log);
 
     /** callback of calling 'Server.StartSession' */
     void startSessionCb(const DBusObject_t &session, const string &error);
@@ -228,9 +228,9 @@ private:
     // sessions which are running
     vector<boost::weak_ptr<RemoteSession> > m_runSessions;
     // listen to dbus server signal 'SessionChanged'
-    boost::shared_ptr<SignalWatch2<DBusObject_t, bool> > m_sessionChanged;
+    SignalWatch2<DBusObject_t, bool> m_sessionChanged;
     // listen to dbus server signal 'LogOutput'
-    boost::shared_ptr<SignalWatch3<DBusObject_t, uint32_t, string> > m_logOutput;
+    SignalWatch3<DBusObject_t, string, string> m_logOutput;
 };
 
 /**
@@ -488,7 +488,8 @@ int main( int argc, char **argv )
 /********************** RemoteDBusServer implementation **************************/
 RemoteDBusServer::RemoteDBusServer()
     :m_attached(false), m_result(true),
-    m_replyTotal(0), m_replyCounter(0)
+     m_replyTotal(0), m_replyCounter(0),
+     m_sessionChanged(*this,"SessionChanged"), m_logOutput(*this, "LogOutput")
 {
     m_loop = g_main_loop_new (NULL, FALSE);
     m_conn = g_dbus_setup_bus(DBUS_BUS_SESSION, NULL, true, NULL);
@@ -497,10 +498,8 @@ RemoteDBusServer::RemoteDBusServer()
         //check whether we can attach to the daemon
         attachSync();
         if(m_attached) {
-            m_sessionChanged.reset(new SignalWatch2<DBusObject_t, bool>(*this,"SessionChanged"));
-            (*m_sessionChanged)(boost::bind(&RemoteDBusServer::sessionChangedCb, this, _1, _2));
-            m_logOutput.reset(new SignalWatch3<DBusObject_t, uint32_t, string>(*this,"LogOutput"));
-            (*m_logOutput)(boost::bind(&RemoteDBusServer::logOutputCb, this, _1, _2, _3));
+            m_sessionChanged.activate(boost::bind(&RemoteDBusServer::sessionChangedCb, this, _1, _2));
+            m_logOutput.activate(boost::bind(&RemoteDBusServer::logOutputCb, this, _1, _2, _3));
         }
     }
 }
@@ -536,13 +535,13 @@ void RemoteDBusServer::attachCb(const string &error)
 }
 
 void RemoteDBusServer::logOutputCb(const DBusObject_t &object,
-        uint32_t level,
-        const string &log)
+                                   const string &level,
+                                   const string &log)
 {
-    if(m_session && 
-            (boost::equals(object.c_str(), getPath()) ||
-             boost::equals(m_session->getPath(), object.c_str()))) {
-        m_session->logOutput((Logger::Level)level, log);
+    if (m_session && 
+        (boost::equals(object, getPath()) ||
+         boost::equals(object, m_session->getPath()))) {
+        m_session->logOutput(Logger::strToLevel(level.c_str()), log);
     }
 }
 
@@ -853,7 +852,7 @@ RemoteSession::RemoteSession(RemoteDBusServer &server,
     :m_server(server), m_output(false), m_path(path),
     m_statusChanged(*this, "StatusChanged")
 {
-    m_statusChanged(boost::bind(&RemoteSession::statusChangedCb, this, _1, _2, _3));
+    m_statusChanged.activate(boost::bind(&RemoteSession::statusChangedCb, this, _1, _2, _3));
 }
 
 void RemoteSession::executeAsync(const vector<string> &args)

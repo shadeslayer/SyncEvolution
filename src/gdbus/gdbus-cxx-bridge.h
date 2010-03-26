@@ -4424,11 +4424,34 @@ public:
     }
 };
 
-class SignalWatch
+/**
+ * Common functionality of all SignalWatch* classes.
+ * @param T     boost::function with the right signature
+ */
+template <class T> class SignalWatch
 {
+ public:
+    SignalWatch(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : m_object(object), m_signal(signal)
+    {
+    }
+
+    ~SignalWatch()
+    {
+        if (m_tag) {
+            g_dbus_remove_watch(m_object.getConnection(), m_tag);
+        }
+    }
+
+    typedef T Callback_t;
+    const Callback_t &getCallback() const{ return m_callback; }
+
  protected:
     const DBusRemoteObject &m_object;
     std::string m_signal;
+    guint m_tag;
+    T m_callback;
 
     std::string makeSignalRule() {
         std::string rule;
@@ -4448,84 +4471,28 @@ class SignalWatch
                 dbus_message_is_signal(msg, watch->m_object.getInterface(), watch->m_signal.c_str());
     }
 
- public:
-    SignalWatch(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : m_object(object), m_signal(signal)
+    void activateInternal(const Callback_t &callback,
+                          gboolean (*cb)(DBusConnection *, DBusMessage *, void *))
     {
-    }
-
-    virtual ~SignalWatch() {}
-};
-
-class SignalWatch0 : public SignalWatch
-{
-    typedef boost::function<void (void)> Callback_t;
-    guint m_tag;
-    Callback_t *m_callback;
-
- public:
-    SignalWatch0(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : SignalWatch(object, signal), m_tag(0), m_callback(0)
-    {
-    }
-
-    ~SignalWatch0()
-    {
-        if(m_tag) {
-            g_dbus_remove_watch(m_object.getConnection(), m_tag);
-        }
-        if(m_callback) {
-            delete m_callback;
-        }
-    }
-
-    static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
-    {
-        if(isMatched(msg, data) == FALSE) {
-            return TRUE;
-        }
-        SignalWatch0 *watch = static_cast<SignalWatch0* >(data);
-        (*watch->m_callback)();
-
-        return TRUE;
-    }
-
-    void operator () (const Callback_t &callback)
-    {
-        m_callback = new Callback_t(callback);
+        m_callback = callback;
         std::string rule = makeSignalRule();
         m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
                                         rule.c_str(),
-                                        internalCallback,
+                                        cb,
                                         this,
                                         NULL);
     }
 };
 
-template <typename A1>
-class SignalWatch1 : public SignalWatch
+class SignalWatch0 : public SignalWatch< boost::function<void (void)> >
 {
-    typedef boost::function<void (const A1 &)> Callback_t;
-    guint m_tag;
-    Callback_t *m_callback;
+    typedef boost::function<void (void)> Callback_t;
 
  public:
-    SignalWatch1(const DBusRemoteObject &object,
+    SignalWatch0(const DBusRemoteObject &object,
                  const std::string &signal)
-        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+        : SignalWatch<Callback_t>(object, signal)
     {
-    }
-
-    ~SignalWatch1()
-    {
-        if(m_tag) {
-            g_dbus_remove_watch(m_object.getConnection(), m_tag);
-        }
-        if(m_callback) {
-            delete m_callback;
-        }
     }
 
     static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
@@ -4533,60 +4500,65 @@ class SignalWatch1 : public SignalWatch
         if(isMatched(msg, data) == FALSE) {
             return TRUE;
         }
-        SignalWatch1<A1> *watch = static_cast<SignalWatch1<A1>* >(data);
+        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
+        cb();
+
+        return TRUE;
+    }
+
+    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
+};
+
+template <typename A1>
+class SignalWatch1 : public SignalWatch< boost::function<void (const A1 &)> >
+{
+    typedef boost::function<void (const A1 &)> Callback_t;
+
+ public:
+    SignalWatch1(const DBusRemoteObject &object,
+                 const std::string &signal)
+        : SignalWatch<Callback_t>(object, signal)
+    {
+    }
+
+    static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
+    {
+        if (SignalWatch<Callback_t>::isMatched(msg, data) == FALSE) {
+            return TRUE;
+        }
+        const Callback_t &cb =static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
         typename dbus_traits<A1>::host_type a1;
 
         DBusMessageIter iter;
         dbus_message_iter_init(msg, &iter);
         dbus_traits<A1>::get(conn, msg, iter, a1);
-        (*watch->m_callback)(a1);
+        cb(a1);
 
         return TRUE;
     }
 
-    void operator () (const Callback_t &callback)
-    {
-        m_callback = new Callback_t(callback);
-        std::string rule = makeSignalRule();
-        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
-                                        rule.c_str(),
-                                        internalCallback,
-                                        this,
-                                        NULL);
-    }
+    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2>
-class SignalWatch2 : public SignalWatch
+class SignalWatch2 : public SignalWatch< boost::function<void (const A1 &, const A2 &)> >
 {
     typedef boost::function<void (const A1 &, const A2 &)> Callback_t;
 
-    guint m_tag;
-    Callback_t *m_callback;
  public:
     SignalWatch2(const DBusRemoteObject &object,
                  const std::string &signal)
-        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+        : SignalWatch<Callback_t>(object, signal)
     {
-    }
-
-    ~SignalWatch2()
-    {
-        if(m_tag) {
-            g_dbus_remove_watch(m_object.getConnection(), m_tag);
-        }
-        if(m_callback) {
-            delete m_callback;
-        }
     }
 
     static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
     {
-        if(isMatched(msg, data) == FALSE) {
+        if (SignalWatch<Callback_t>::isMatched(msg, data) == FALSE) {
             return TRUE;
         }
-        SignalWatch2<A1, A2> *watch = static_cast<SignalWatch2<A1, A2> *>(data);
+        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
         typename dbus_traits<A1>::host_type a1;
         typename dbus_traits<A2>::host_type a2;
@@ -4595,53 +4567,32 @@ class SignalWatch2 : public SignalWatch
         dbus_message_iter_init(msg, &iter);
         dbus_traits<A1>::get(conn, msg, iter, a1);
         dbus_traits<A2>::get(conn, msg, iter, a2);
-        (*watch->m_callback)(a1, a2);
+        cb(a1, a2);
 
         return TRUE;
     }
 
-    void operator () (const Callback_t &callback)
-    {
-        m_callback = new Callback_t(callback);
-        std::string rule = makeSignalRule();
-        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
-                                        rule.c_str(),
-                                        internalCallback,
-                                        this,
-                                        NULL);
-    }
+    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2, typename A3>
-class SignalWatch3 : public SignalWatch
+class SignalWatch3 : public SignalWatch< boost::function<void (const A1 &, const A2 &, const A3 &)> >
 {
     typedef boost::function<void (const A1 &, const A2 &, const A3 &)> Callback_t;
 
-    guint m_tag;
-    Callback_t *m_callback;
  public:
     SignalWatch3(const DBusRemoteObject &object,
                  const std::string &signal)
-        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+        : SignalWatch<Callback_t>(object, signal)
     {
-    }
-
-    ~SignalWatch3()
-    {
-        if(m_tag) {
-            g_dbus_remove_watch(m_object.getConnection(), m_tag);
-        }
-        if(m_callback) {
-            delete m_callback;
-        }
     }
 
     static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
     {
-        if(isMatched(msg, data) == FALSE) {
+        if (SignalWatch<Callback_t>::isMatched(msg, data) == FALSE) {
             return TRUE;
         }
-        SignalWatch3<A1, A2, A3> *watch = static_cast<SignalWatch3<A1, A2, A3> *>(data);
+        const Callback_t &cb =static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
         typename dbus_traits<A1>::host_type a1;
         typename dbus_traits<A2>::host_type a2;
@@ -4652,53 +4603,32 @@ class SignalWatch3 : public SignalWatch
         dbus_traits<A1>::get(conn, msg, iter, a1);
         dbus_traits<A2>::get(conn, msg, iter, a2);
         dbus_traits<A3>::get(conn, msg, iter, a3);
-        (*watch->m_callback)(a1, a2, a3);
+        cb(a1, a2, a3);
 
         return TRUE;
     }
 
-    void operator () (const Callback_t &callback)
-    {
-        m_callback = new Callback_t(callback);
-        std::string rule = makeSignalRule();
-        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
-                                        rule.c_str(),
-                                        internalCallback,
-                                        this,
-                                        NULL);
-    }
+    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2, typename A3, typename A4>
-class SignalWatch4 : public SignalWatch
+class SignalWatch4 : public SignalWatch< boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &)> >
 {
     typedef boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &)> Callback_t;
 
-    guint m_tag;
-    Callback_t *m_callback;
  public:
     SignalWatch4(const DBusRemoteObject &object,
                  const std::string &signal)
-        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+        : SignalWatch<Callback_t>(object, signal)
     {
-    }
-
-    ~SignalWatch4()
-    {
-        if(m_tag) {
-            g_dbus_remove_watch(m_object.getConnection(), m_tag);
-        }
-        if(m_callback) {
-            delete m_callback;
-        }
     }
 
     static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
     {
-        if(isMatched(msg, data) == FALSE) {
+        if (SignalWatch<Callback_t>::isMatched(msg, data) == FALSE) {
             return TRUE;
         }
-        SignalWatch4<A1, A2, A3, A4> *watch = static_cast<SignalWatch4<A1, A2, A3, A4> *>(data);
+        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
         typename dbus_traits<A1>::host_type a1;
         typename dbus_traits<A2>::host_type a2;
@@ -4711,53 +4641,32 @@ class SignalWatch4 : public SignalWatch
         dbus_traits<A2>::get(conn, msg, iter, a2);
         dbus_traits<A3>::get(conn, msg, iter, a3);
         dbus_traits<A4>::get(conn, msg, iter, a4);
-        (*watch->m_callback)(a1, a2, a3, a4);
+        cb(a1, a2, a3, a4);
 
         return TRUE;
     }
 
-    void operator () (const Callback_t &callback)
-    {
-        m_callback = new Callback_t(callback);
-        std::string rule = makeSignalRule();
-        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
-                                        rule.c_str(),
-                                        internalCallback,
-                                        this,
-                                        NULL);
-    }
+    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5>
-class SignalWatch5 : public SignalWatch
+class SignalWatch5 : public SignalWatch< boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &, const A5 &)> >
 {
     typedef boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &, const A5 &)> Callback_t;
 
-    guint m_tag;
-    Callback_t *m_callback;
  public:
     SignalWatch5(const DBusRemoteObject &object,
                  const std::string &signal)
-        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+        : SignalWatch<Callback_t>(object, signal)
     {
-    }
-
-    ~SignalWatch5()
-    {
-        if(m_tag) {
-            g_dbus_remove_watch(m_object.getConnection(), m_tag);
-        }
-        if(m_callback) {
-            delete m_callback;
-        }
     }
 
     static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
     {
-        if(isMatched(msg, data) == FALSE) {
+        if (SignalWatch<Callback_t>::isMatched(msg, data) == FALSE) {
             return TRUE;
         }
-        SignalWatch5<A1, A2, A3, A4, A5> *watch = static_cast<SignalWatch5<A1, A2, A3, A4, A5> *>(data);
+        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
         typename dbus_traits<A1>::host_type a1;
         typename dbus_traits<A2>::host_type a2;
@@ -4772,53 +4681,33 @@ class SignalWatch5 : public SignalWatch
         dbus_traits<A3>::get(conn, msg, iter, a3);
         dbus_traits<A4>::get(conn, msg, iter, a4);
         dbus_traits<A5>::get(conn, msg, iter, a5);
-        (*watch->m_callback)(a1, a2, a3, a4, a5);
+        cb(a1, a2, a3, a4, a5);
 
         return TRUE;
     }
 
-    void operator () (const Callback_t &callback)
-    {
-        m_callback = new Callback_t(callback);
-        std::string rule = makeSignalRule();
-        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
-                                        rule.c_str(),
-                                        internalCallback,
-                                        this,
-                                        NULL);
-    }
+    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5, typename A6>
-class SignalWatch6 : public SignalWatch
+class SignalWatch6 : public SignalWatch< boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &, const A5 &, const A6 &)> >
 {
     typedef boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &, const A5 &, const A6 &)> Callback_t;
 
-    guint m_tag;
-    Callback_t *m_callback;
+
  public:
     SignalWatch6(const DBusRemoteObject &object,
                  const std::string &signal)
-        : SignalWatch(object, signal), m_tag(0), m_callback(0)
+        : SignalWatch<Callback_t>(object, signal)
     {
-    }
-
-    ~SignalWatch6()
-    {
-        if(m_tag) {
-            g_dbus_remove_watch(m_object.getConnection(), m_tag);
-        }
-        if(m_callback) {
-            delete m_callback;
-        }
     }
 
     static gboolean internalCallback(DBusConnection *conn, DBusMessage *msg, void *data)
     {
-        if(isMatched(msg, data) == FALSE) {
+        if (SignalWatch<Callback_t>::isMatched(msg, data) == FALSE) {
             return TRUE;
         }
-        SignalWatch6<A1, A2, A3, A4, A5, A6> *watch = static_cast<SignalWatch6<A1, A2, A3, A4, A5, A6> *>(data);
+        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
         typename dbus_traits<A1>::host_type a1;
         typename dbus_traits<A2>::host_type a2;
@@ -4835,21 +4724,12 @@ class SignalWatch6 : public SignalWatch
         dbus_traits<A4>::get(conn, msg, iter, a4);
         dbus_traits<A5>::get(conn, msg, iter, a5);
         dbus_traits<A6>::get(conn, msg, iter, a6);
-        (*watch->m_callback)(a1, a2, a3, a4, a5, a6);
+        cb(a1, a2, a3, a4, a5, a6);
 
         return TRUE;
     }
 
-    void operator () (const Callback_t &callback)
-    {
-        m_callback = new Callback_t(callback);
-        std::string rule = makeSignalRule();
-        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
-                                        rule.c_str(),
-                                        internalCallback,
-                                        this,
-                                        NULL);
-    }
+    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
 };
 
 #endif // INCL_GDBUS_CXX_BRIDGE

@@ -506,7 +506,7 @@ private:
     boost::shared_ptr<BluezAdapter> m_adapter;
 
     /** represents 'DefaultAdapterChanged' signal of org.bluez.Adapter*/
-    boost::shared_ptr<SignalWatch1<DBusObject_t> > m_adapterChanged;
+    SignalWatch1<DBusObject_t> m_adapterChanged;
 
     /** flag to indicate whether the calls are all returned */
     bool m_done;
@@ -1104,7 +1104,7 @@ class DBusServer : public DBusObjectHelper,
 
     /** Server.LogOutput */
     EmitSignal3<const DBusObject_t &,
-                uint32_t,
+                string,
                 const std::string &> logOutput;
 
     static gboolean connmanPoll (gpointer dbus_server);
@@ -4997,10 +4997,11 @@ void DBusServer::messagev(Level level,
     // prefix is used to set session path
     // for general server output, the object path field is dbus server 
     // the object path can't be empty for object paths prevent using empty string.
+    string strLevel = Logger::levelToStr(level);
     if(m_activeSession) {
-        logOutput(m_activeSession->getPath(), (uint32_t)level, log);
+        logOutput(m_activeSession->getPath(), strLevel, log);
     } else {
-        logOutput(getPath(), (uint32_t)level, log);
+        logOutput(getPath(), strLevel, log);
     }
 }
 
@@ -5158,15 +5159,15 @@ void InfoReq::done()
 
 /********************** BluezManager implementation ******************/
 BluezManager::BluezManager(DBusServer &server) :
-    m_server(server)
+    m_server(server),
+    m_adapterChanged(*this, "DefaultAdapterChanged")
 {
     m_bluezConn = g_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
     if(m_bluezConn) {
         m_done = false;
         DBusClientCall1<DBusObject_t> getAdapter(*this, "DefaultAdapter");
         getAdapter(boost::bind(&BluezManager::defaultAdapterCb, this, _1, _2 ));
-        m_adapterChanged.reset(new SignalWatch1<DBusObject_t>(*this, "DefaultAdapterChanged"));
-        (*m_adapterChanged)(boost::bind(&BluezManager::defaultAdapterChanged, this, _1));
+        m_adapterChanged.activate(boost::bind(&BluezManager::defaultAdapterChanged, this, _1));
     } else {
         m_done = true;
     }
@@ -5201,11 +5202,8 @@ BluezManager::BluezAdapter::BluezAdapter(BluezManager &manager, const string &pa
 {
     DBusClientCall1<std::vector<DBusObject_t> > listDevices(*this, "ListDevices");
     listDevices(boost::bind(&BluezAdapter::listDevicesCb, this, _1, _2));
-    //m_deviceRemoved.reset(new SignalWatch1<DBusObject_t>(*this, "DeviceRemoved"));
-    m_deviceRemoved(boost::bind(&BluezAdapter::deviceRemoved, this, _1));
-
-    //m_deviceAdded.reset(new SignalWatch1<DBusObject_t>(*this, "DeviceCreated"));
-    m_deviceAdded(boost::bind(&BluezAdapter::deviceCreated, this, _1));
+    m_deviceRemoved.activate(boost::bind(&BluezAdapter::deviceRemoved, this, _1));
+    m_deviceAdded.activate(boost::bind(&BluezAdapter::deviceCreated, this, _1));
 }
 
 void BluezManager::BluezAdapter::listDevicesCb(const std::vector<DBusObject_t> &devices, const string &error)
@@ -5254,7 +5252,7 @@ BluezManager::BluezDevice::BluezDevice (BluezAdapter &adapter, const string &pat
     DBusClientCall1<PropDict> getProperties(*this, "GetProperties");
     getProperties(boost::bind(&BluezDevice::getPropertiesCb, this, _1, _2));
 
-    m_propertyChanged(boost::bind(&BluezDevice::propertyChanged, this, _1, _2));
+    m_propertyChanged.activate(boost::bind(&BluezDevice::propertyChanged, this, _1, _2));
 }
 
 void BluezManager::BluezDevice::checkSyncService(const std::vector<std::string> &uuids)

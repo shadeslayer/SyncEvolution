@@ -598,8 +598,8 @@
             </doc:summary>
           </doc:doc>
       </arg>
-      <arg type="u" name="level">
-        <doc:doc><doc:summary>the output level</doc:summary></doc:doc>
+      <arg type="s" name="level">
+        <doc:doc><doc:summary>the output level (DEBUG/INFO/SHOW/ERROR/WARNING/DEV)</doc:summary></doc:doc>
       </arg>
       <arg type="s" name="output">
         <doc:doc><doc:summary>the output string to be broadcast</doc:summary></doc:doc>

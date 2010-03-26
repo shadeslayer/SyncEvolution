@@ -22,6 +22,7 @@
 #include <syncevo/LogStdout.h>
 
 #include <vector>
+#include <string.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -76,6 +77,27 @@ const char *Logger::levelToStr(Level level)
     case DEV: return "DEVELOPER";
     case DEBUG: return "DEBUG";
     default: return "???";
+    }
+}
+
+Logger::Level Logger::strToLevel(const char *str)
+{
+    // order is based on a rough estimate of message frequency of the
+    // corresponding type
+    if (!str || !strcmp(str, "DEBUG")) {
+        return DEBUG;
+    } else if (!strcmp(str, "INFO")) {
+        return INFO;
+    } else if (!strcmp(str, "SHOW")) {
+        return SHOW;
+    } else if (!strcmp(str, "ERROR")) {
+        return ERROR;
+    } else if (!strcmp(str, "WARNING")) {
+        return WARNING;
+    } else if (!strcmp(str, "DEV")) {
+        return DEV;
+    } else {
+        return DEBUG;
     }
 }
 
