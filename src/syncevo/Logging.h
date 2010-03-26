@@ -55,20 +55,16 @@ class Logger
      * - debug: most detailed logging, messages may be arbitrarily large
      *
      * Here is a decision tree which helps to pick the right level:
-     * - a must-shown message: => SHOW
      * - an error: => ERROR
      * - a non-fatal error: => WARNING
      * - it changes during each sync or marks important steps
      *   in the sync: INFO
+     * - same as before, but without the [INFO] prefix added to each line: => SHOW
      * - small, non-recurring message which is important for developers
      *   who read a log produced at LOG_LEVEL_INFO: DEVELOPER
      * - everything else: DEBUG
      */
     typedef enum {
-        /**
-         *
-         */
-        SHOW,
         /**
          * only error messages printed
          */
@@ -77,6 +73,11 @@ class Logger
          * error and warning messages printed
          */
         WARNING,
+        /**
+         * "Normal" stdout output which is meant to be seen by a
+         * user.
+         */
+        SHOW,
         /**
          * errors and info messages for users and developers will be
          * printed: use this to keep the output consise and small
