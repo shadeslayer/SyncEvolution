@@ -200,7 +200,7 @@ private:
 
     // session used for signal handler, 
     // used to call 'suspend' and 'abort'
-    static boost::shared_ptr<RemoteSession> g_session;
+    static boost::weak_ptr<RemoteSession> g_session;
 
     // the main loop
     GMainLoop *m_loop;
@@ -553,16 +553,26 @@ void RemoteDBusServer::sessionChangedCb(const DBusObject_t &object, bool active)
     g_main_loop_quit(m_loop);
 }
 
-boost::shared_ptr<RemoteSession> RemoteDBusServer::g_session;
+/**
+ * Don't hang onto a shared_ptr here!
+ *
+ * RemoteSessions contain a reference to the
+ * RemoteDBusServer which created them. Once that
+ * server destructs, all sessions must have been
+ * deleted earlier, otherwise they'll call a destructed
+ * object.
+ */
+boost::weak_ptr<RemoteSession> RemoteDBusServer::g_session;
 void RemoteDBusServer::handleSignal(int sig)
 {
     SyncContext::handleSignal(sig);
-    if(g_session) {
+    boost::shared_ptr<RemoteSession> session = g_session.lock();
+    if (session) {
         const SuspendFlags &flags = SyncContext::getSuspendFlags(); 
         if(flags.state == SuspendFlags::CLIENT_SUSPEND) {
-            g_session->suspendAsync();
+            session->suspendAsync();
         } else if(flags.state == SuspendFlags::CLIENT_ABORT) {
-            g_session->abortAsync();
+            session->abortAsync();
         }
     }
 }
