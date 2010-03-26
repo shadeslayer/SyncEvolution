@@ -5723,7 +5723,8 @@ int main(int argc, char **argv)
 
         LogRedirect redirect(false);
 
-        LoggerBase::instance().setLevel(LoggerBase::DEBUG);
+        // make daemon less chatty - long term this should be a command line option
+        LoggerBase::instance().setLevel(LoggerBase::INFO);
 
         DBusErrorCXX err;
         DBusConnectionPtr conn = g_dbus_setup_bus(DBUS_BUS_SESSION,
