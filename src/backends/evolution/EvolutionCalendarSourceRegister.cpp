@@ -338,6 +338,7 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "virtual:text/x-vcalendar";
+        config.subConfigs = "ical20,itodo20";
     }
 
 } superTest;

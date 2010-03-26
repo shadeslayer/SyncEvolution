@@ -171,6 +171,18 @@ public:
     }
 } ITodo20Test;
 
+static class SuperTest : public RegisterSyncSourceTest {
+public:
+    SuperTest() : RegisterSyncSourceTest("file_calendar+todo", "calendar+todo") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.type = "virtual:text/x-vcalendar";
+        config.subConfigs = "file_ical20,file_itodo20";
+    }
+
+} superTest;
+
 }
 
 #endif // ENABLE_FILE

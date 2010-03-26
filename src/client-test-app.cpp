@@ -243,11 +243,7 @@ public:
 
             // always set these properties: they might have changed since the last run
             string database = getDatabaseName(test->m_configName);
-            if (test->m_configName!="calendar+todo"){
-                sc->setDatabaseID(database);
-            } else {
-                sc->setDatabaseID("ical20,itodo20");
-            }
+            sc->setDatabaseID(database);
             sc->setUser(m_evoUser);
             sc->setPassword(m_evoPassword);
         }
@@ -403,6 +399,11 @@ private:
 
     /** returns the name of the Evolution database */
     string getDatabaseName(const string &configName) {
+        if (configName == "calendar+todo") {
+            return "ical20,itodo20";
+        } else if (configName == "file_calendar+todo") {
+            return "file_ical20,file_itodo20";
+        }
         return m_evoPrefix + configName + "_" + m_clientID;
     }
     
@@ -417,11 +418,7 @@ private:
                                                           "_" + (isSourceA ? "A" : "B"));
 
         // always set this property: the name might have changes since last test run
-        if (name != "calendar+todo") {
-            nodes.getProperties()->setProperty("evolutionsource", database.c_str());
-        } else {
-            nodes.getProperties()->setProperty("evolutionsource", "ical20,itodo20");
-        }
+        nodes.getProperties()->setProperty("evolutionsource", database.c_str());
         nodes.getProperties()->setProperty("evolutionuser", evClient.m_evoUser.c_str());
         nodes.getProperties()->setProperty("evolutionpassword", evClient.m_evoPassword.c_str());
 
