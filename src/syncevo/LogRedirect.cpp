@@ -49,7 +49,8 @@ LogRedirect *LogRedirect::m_redirect;
 
 void LogRedirect::abortHandler(int sig) throw()
 {
-    SE_LOG_ERROR(NULL, NULL, "caught signal %d, shutting down", sig);
+    // Don't know state of logging system, don't log here!
+    // SE_LOG_ERROR(NULL, NULL, "caught signal %d, shutting down", sig);
 
     // shut down redirection, also flushes to log
     if (m_redirect) {
