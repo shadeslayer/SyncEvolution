@@ -2185,6 +2185,8 @@ void SyncContext::getConfigXML(string &xml, string &configname)
     size_t index;
     unsigned long hash = 0;
 
+
+    const char *noctcap = getenv("SYNCEVOLUTION_NOCTCAP");
     const char *sessioninitscript =
         "    <sessioninitscript><![CDATA[\n"
         "      // these variables are possibly modified by rule scripts\n"
@@ -2214,6 +2216,10 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             clientorserver << "    <sendrespuri>no</sendrespuri>\n"
             "\n";
         }
+        if (noctcap) {
+            clientorserver << "    <showctcapproperties>no</showctcapproperties>\n"
+            "\n";
+        }
         clientorserver<<"    <defaultauth/>\n"
             "\n"
             "    <datastore/>\n"
@@ -2231,6 +2237,12 @@ void SyncContext::getConfigXML(string &xml, string &configname)
              clientorserver << "<defaultsyncmlversion>"
                  <<syncMLVersion.c_str()<<"</defaultsyncmlversion>\n";
          }
+
+         if (noctcap) {
+             clientorserver << "    <showctcapproperties>no</showctcapproperties>\n"
+                 "\n";
+         }
+
          clientorserver << sessioninitscript <<
             // SyncEvolution has traditionally not folded long lines in
             // vCard.  Testing showed that servers still have problems with
