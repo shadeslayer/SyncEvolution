@@ -1181,6 +1181,9 @@ void Cmdline::usage(bool full, const string &error, const string &param)
             "  shown without starting a new one. This can be used to see in advance" << endl <<
             "  whether the local data needs to be synchronized with the peer." << endl <<
             "" << endl <<
+            "  When used without configuration name, it shows the status of the background" << endl <<
+            "  sync daemon or an error if no such daemon exists." << endl <<
+            "" << endl <<
             "--quiet|-q" << endl <<
             "  Suppresses most of the normal output during a synchronization. The" << endl <<
             "  log file still contains all the information." << endl <<
