@@ -1710,6 +1710,20 @@ label_button_release_cb (GtkWidget *widget,
     }
 }
 
+static gint
+compare_list_items (GtkTreeModel *model,
+                    GtkTreeIter  *a,
+                    GtkTreeIter  *b,
+                    SyncConfigWidget *self)
+{
+    int score_a, score_b;
+
+    gtk_tree_model_get(model, a, 2, &score_a, -1);
+    gtk_tree_model_get(model, b, 2, &score_b, -1);
+
+    return score_a - score_b;
+}
+
 static void
 sync_config_widget_init (SyncConfigWidget *self)
 {
@@ -1813,7 +1827,10 @@ sync_config_widget_init (SyncConfigWidget *self)
 
     store = gtk_list_store_new (3, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_INT);
     gtk_tree_sortable_set_sort_column_id (GTK_TREE_SORTABLE (store),
-                                          2, GTK_SORT_ASCENDING);
+                                          2, GTK_SORT_DESCENDING);
+    gtk_tree_sortable_set_sort_func (GTK_TREE_SORTABLE (store), 2,
+                                     (GtkTreeIterCompareFunc)compare_list_items,
+                                     NULL, NULL);
 
     self->combo = gtk_combo_box_new_with_model (GTK_TREE_MODEL (store));
     g_object_unref (G_OBJECT (store)); 
