@@ -36,6 +36,7 @@ using namespace std;
 #include "CmdlineSyncClient.h"
 
 #include <dlfcn.h>
+#include <signal.h>
 
 #include <syncevo/declarations.h>
 
