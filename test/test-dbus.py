@@ -546,8 +546,8 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
                                        "Goosync",
                                        "Memotoo",
                                        "Mobical",
-                                       "Ovi",
                                        "Oracle",
+                                       "Ovi",
                                        "ScheduleWorld",
                                        "SyncEvolution",
                                        "Synthesis",
@@ -1578,7 +1578,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
     def doSync(self):
         self.setupConfig()
         self.setUpListeners(self.sessionpath)
-        self.session.Sync("", {})
+        self.session.Sync("slow", {})
         loop.run()
         self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
 
