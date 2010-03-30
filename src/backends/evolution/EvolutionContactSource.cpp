@@ -156,6 +156,7 @@ void EvolutionContactSource::open()
     string id = getDatabaseID();
     ESource *source = findSource(sources, id);
     bool onlyIfExists = true;
+    bool created = false;
     if (!source) {
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
@@ -168,17 +169,22 @@ void EvolutionContactSource::open()
         } else {
             throwError(string(getName()) + ": no such address book: '" + id + "'");
         }
+        created = true;
         onlyIfExists = false;
     } else {
         m_addressbook.set( e_book_new( source, &gerror ), "address book" );
     }
  
     if (!e_book_open( m_addressbook, onlyIfExists, &gerror) ) {
-        // opening newly created address books often fails, try again once more
-        g_clear_error(&gerror);
-        sleep(5);
-        if (!e_book_open( m_addressbook, onlyIfExists, &gerror) ) {
-            throwError( "opening address book", gerror );
+        if (created) {
+            // opening newly created address books often fails, try again once more
+            g_clear_error(&gerror);
+            sleep(5);
+            if (!e_book_open(m_addressbook, onlyIfExists, &gerror)) {
+                throwError("opening address book", gerror);
+            }
+        } else {
+            throwError("opening address book", gerror);
         }
     }
 

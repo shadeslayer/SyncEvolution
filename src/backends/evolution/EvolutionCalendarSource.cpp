@@ -177,6 +177,7 @@ void EvolutionCalendarSource::open()
     string id = getDatabaseID();    
     ESource *source = findSource(sources, id);
     bool onlyIfExists = true;
+    bool created = false;
     if (!source) {
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
@@ -187,6 +188,7 @@ void EvolutionCalendarSource::open()
         } else {
             throwError(string("not found: '") + id + "'");
         }
+        created = true;
         onlyIfExists = false;
     } else {
         m_calendar.set(e_cal_new(source, m_type), m_typeName.c_str());
@@ -195,10 +197,14 @@ void EvolutionCalendarSource::open()
     e_cal_set_auth_func(m_calendar, eCalAuthFunc, this);
     
     if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
-        // opening newly created address books often failed, perhaps that also applies to calendars - try again
-        g_clear_error(&gerror);
-        sleep(5);
-        if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
+        if (created) {
+            // opening newly created address books often failed, perhaps that also applies to calendars - try again
+            g_clear_error(&gerror);
+            sleep(5);
+            if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
+                throwError(string("opening ") + m_typeName, gerror );
+            }
+        } else {
             throwError(string("opening ") + m_typeName, gerror );
         }
     }
