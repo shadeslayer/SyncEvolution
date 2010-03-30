@@ -122,7 +122,10 @@ endif
 # SYNCEVOLUTION_LDADD will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
 # if linking statically against them, empty otherwise;
 # either way this does not lead to a dependency on those libs - done explicitly
-syncevolution_LDADD = gdbus/libgdbus.la $(CORE_LDADD) $(KEYRING_LIBS)
+syncevolution_LDADD = $(CORE_LDADD) $(KEYRING_LIBS)
+if COND_DBUS
+syncevolution_LDADD += gdbus/libgdbus.la
+endif
 syncevolution_LDFLAGS = $(CORE_LD_FLAGS) $(DBUS_LIBS)
 syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS) -I$(srcdir)/gdbus $(DBUS_CFLAGS)
 syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) # $(SYNTHESIS_DEP)
