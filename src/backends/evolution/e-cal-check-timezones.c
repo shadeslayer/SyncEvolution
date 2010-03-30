@@ -461,7 +461,8 @@ icaltimezone *e_cal_tzlookup_ecal(const char *tzid,
     } else {
         g_assert(*error);
         if ((*error)->domain == E_CALENDAR_ERROR &&
-            (*error)->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
+            ((*error)->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND /* EDS < 2.30 */ ||
+             (*error)->code == E_CALENDAR_STATUS_INVALID_OBJECT /* EDS >= 2.30 */ )) {
             /*
              * we had to trigger this error to check for the timezone existance,
              * clear it and return NULL
