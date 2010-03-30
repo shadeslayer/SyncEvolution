@@ -233,8 +233,14 @@ private:
      */
     virtual bool setFilters(SyncConfig &config) { return false; }
 
-    /** utility method which constructs a SyncConfig which references a local configuration (never a template) */
-    boost::shared_ptr<DBusUserInterface> getLocalConfig(const std::string &configName);
+    /**
+     * utility method which constructs a SyncConfig which references a local configuration (never a template)
+     *
+     * In general, the config must exist, except in two cases:
+     * - configName = @default (considered always available)
+     * - mustExist = false (used when reading a templates for a context which might not exist yet)
+     */
+    boost::shared_ptr<DBusUserInterface> getLocalConfig(const std::string &configName, bool mustExist = true);
 };
 
 /**
@@ -2365,7 +2371,7 @@ void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &con
     }
 }
 
-boost::shared_ptr<DBusUserInterface> ReadOperations::getLocalConfig(const string &configName)
+boost::shared_ptr<DBusUserInterface> ReadOperations::getLocalConfig(const string &configName, bool mustExist)
 {
     string peer, context;
     SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configName),
@@ -2378,7 +2384,8 @@ boost::shared_ptr<DBusUserInterface> ReadOperations::getLocalConfig(const string
         // the default configuration can always be opened for reading,
         // everything else must exist
         if ((context != "default" || peer != "") &&
-                !syncConfig->exists()) {
+            mustExist &&
+            !syncConfig->exists()) {
             SE_THROW_EXCEPTION(NoSuchConfig, "No configuration '" + configName + "' found");
         }
     }
@@ -2434,7 +2441,7 @@ void ReadOperations::getConfig(bool getTemplate,
 
         // use the shared properties from the right context as filter
         // so that the returned template preserves existing properties
-        boost::shared_ptr<DBusUserInterface> shared = getLocalConfig(string("@") + context);
+        boost::shared_ptr<DBusUserInterface> shared = getLocalConfig(string("@") + context, false);
 
         ConfigProps props;
         shared->getProperties()->readProperties(props);

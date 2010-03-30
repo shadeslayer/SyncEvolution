@@ -2101,6 +2101,33 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config = self.server.GetConfig("@default", False, utf8_strings=True)
         self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/x-vcard:2.1")
 
+    def testSharedTypeOther(self):
+        """'type' must not be overwritten when set in the context"""
+        # writing for peer modifies "type" in "foo" and context "@other"
+        self.setUpSession("Foo@other")
+        config = self.server.GetConfig("ScheduleWorld@other", True, utf8_strings=True)
+        config["source/addressbook"]["type"] = "file:text/vcard:3.0"
+        self.session.SetConfig(False, False,
+                               config,
+                               utf8_strings=True)
+        config = self.server.GetConfig("Foo", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        config = self.server.GetConfig("@other", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.session.Detach()
+
+        # adding second client must preserve type
+        self.setUpSession("bar@other")
+        config = self.server.GetConfig("Funambol@other", True, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.session.SetConfig(False, False,
+                               config,
+                               utf8_strings=True)
+        config = self.server.GetConfig("bar", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        config = self.server.GetConfig("@other", False, utf8_strings=True)
+        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+
     def testOtherContext(self):
         """write into independent context"""
         self.setupConfigs()
