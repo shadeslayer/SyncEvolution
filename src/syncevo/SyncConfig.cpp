@@ -2348,9 +2348,11 @@ bool SecondsConfigProperty::parseDuration(const string &value, string &error, un
     }
 
     unsigned int current = 0;
+    bool haveDigit = false;
     BOOST_FOREACH(char c, value) {
         if (isdigit(c)) {
             current = current * 10 + (c - '0');
+            haveDigit = true;
         } else {
             unsigned int multiplier = 1;
             switch (toupper(c)) {
@@ -2377,8 +2379,13 @@ bool SecondsConfigProperty::parseDuration(const string &value, string &error, un
                 error = StringPrintf("invalid character '%c'", c);
                 return false;
             }
+            if (!haveDigit) {
+                error = StringPrintf("unit character without preceeding number: %c", c);
+                return false;
+            }
             seconds += current * multiplier;
             current = 0;
+            haveDigit = false;
         }
     }
     seconds += current;
