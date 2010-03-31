@@ -23,6 +23,8 @@ G_DEFINE_TYPE (SyncConfigWidget, sync_config_widget, GTK_TYPE_CONTAINER)
 
 
 typedef struct source_widgets {
+    char *name;
+
     GtkWidget *label;
     GtkWidget *entry;
     GtkWidget *check;
@@ -111,47 +113,111 @@ update_source_uri (char *name,
     g_hash_table_insert (source_configuration, g_strdup ("uri"), g_strdup (uri));
 }
 
+typedef struct save_config_data {
+    SyncConfigWidget *widget;
+    gboolean delete;
+    gboolean temporary;
+    source_widgets *widgets;
+} save_config_data;
+
+static source_widgets *
+source_widgets_ref (source_widgets *widgets)
+{
+    if (widgets) {
+        widgets->count++;
+    }
+    return widgets;
+}
+
+static void
+source_widgets_unref (source_widgets *widgets)
+{
+    if (widgets) {
+        widgets->count--;
+        if (widgets->count == 0)
+            g_slice_free (source_widgets, widgets);
+    }
+}
+
+static void
+check_source_cb (SyncevoSession *session,
+                 GError *error,
+                 source_widgets *widgets)
+{
+    gboolean show = TRUE;
+
+    if (error) {
+        if(error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
+           dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_SOURCE_UNUSABLE)) {
+            show = FALSE;
+        } else {
+            g_warning ("CheckSource failed: %s", error->message);
+            /* non-fatal, ignore in UI */
+        }
+        g_error_free (error);
+    }
+
+    if (widgets->count > 1) {
+        if (show) {
+            /* NOTE: with the new two sources per row layout not showing things
+             * may look weird in some cases... the layout should really only be
+             * done at this point  */
+            gtk_widget_show (widgets->source_toggle_label);
+            gtk_widget_show (widgets->label);
+            gtk_widget_show (widgets->entry);
+            gtk_widget_show (widgets->check);
+        } else {
+            /* next save should disable this source */
+            toggle_set_active (widgets->check, FALSE);
+        }
+    }
+    source_widgets_unref (widgets);
+    g_object_unref (session);
+}
+
 static void
 set_config_cb (SyncevoSession *session,
                GError *error,
-               SyncConfigWidget *self)
+               save_config_data *data)
 {
     if (error) {
         g_warning ("Error in Session.SetConfig: %s", error->message);
         g_error_free (error);
         g_object_unref (session);
-        show_error_dialog (GTK_WIDGET (self),
+        show_error_dialog (GTK_WIDGET (data->widget),
                            _("Sorry, failed to save the configuration"));
         return;
     }
 
-    self->configured = TRUE;
+    if (data->temporary) {
+        syncevo_session_check_source (session,
+                                      data->widgets->name,
+                                      (SyncevoSessionGenericCb)check_source_cb,
+                                      data->widgets);
+    } else {
+        data->widget->configured = TRUE;
+        g_signal_emit (data->widget, signals[SIGNAL_CHANGED], 0);
+        g_object_unref (session);
+    }
 
-    g_object_unref (session);
-    g_signal_emit (self, signals[SIGNAL_CHANGED], 0);
 }
 
 static void
-sync_config_widget_save_config (SyncConfigWidget *self,
-                                SyncevoSession *session,
-                                gboolean delete)
+save_config (save_config_data *data,
+             SyncevoSession *session)
 {
-    if (delete) {
-        syncevo_config_free (self->config);
-        self->config = g_hash_table_new (g_str_hash, g_str_equal);
+    if (data->delete) {
+        syncevo_config_free (data->widget->config);
+        data->widget->config = g_hash_table_new (g_str_hash, g_str_equal);
     }
-    syncevo_session_set_config (session,
-                                FALSE,
-                                FALSE,
-                                self->config,
-                                (SyncevoSessionGenericCb)set_config_cb,
-                                self);
-}
 
-typedef struct save_config_data {
-    SyncConfigWidget *widget;
-    gboolean delete;
-} save_config_data;
+    syncevo_session_set_config (session,
+                                data->temporary,
+                                data->temporary,
+                                data->widget->config,
+                                (SyncevoSessionGenericCb)set_config_cb,
+                                data);
+}
 
 static void
 status_changed_for_config_write_cb (SyncevoSession *session,
@@ -161,7 +227,7 @@ status_changed_for_config_write_cb (SyncevoSession *session,
                                     save_config_data *data)
 {
     if (status == SYNCEVO_STATUS_IDLE) {
-        sync_config_widget_save_config (data->widget, session, data->delete);
+        save_config (data, session);
     }
 }
 
@@ -184,7 +250,7 @@ get_status_for_config_write_cb (SyncevoSession *session,
     syncevo_source_statuses_free (source_statuses);
 
     if (status == SYNCEVO_STATUS_IDLE) {
-        sync_config_widget_save_config (data->widget, session, data->delete);
+        save_config (data, session);
     }
 }
 
@@ -229,6 +295,7 @@ stop_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     data = g_slice_new (save_config_data);
     data->widget = self;
     data->delete = FALSE;
+    data->temporary = FALSE;
     syncevo_server_start_session (self->server,
                                   self->config_name,
                                   (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
@@ -325,6 +392,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     data = g_slice_new (save_config_data);
     data->widget = self;
     data->delete = FALSE;
+    data->temporary = FALSE;
     syncevo_server_start_session (self->server,
                                   self->config_name,
                                   (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
@@ -380,6 +448,7 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     data = g_slice_new (save_config_data);
     data->widget = self;
     data->delete = TRUE;
+    data->temporary = FALSE;
     syncevo_server_start_session (self->server,
                                   self->config_name,
                                   (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
@@ -426,58 +495,6 @@ static void update_buttons (SyncConfigWidget *self)
     } else { 
         gtk_widget_hide (self->stop_button);
     }
-}
-
-static void
-source_widgets_ref (source_widgets *widgets)
-{
-    if (widgets) {
-        widgets->count++;
-    }
-}
-
-static void
-source_widgets_unref (source_widgets *widgets)
-{
-    if (widgets) {
-        widgets->count--;
-        if (widgets->count == 0)
-            g_slice_free (source_widgets, widgets);
-    }
-}
-
-static void
-check_source_cb (SyncevoServer *server,
-                 GError *error,
-                 source_widgets *widgets)
-{
-    gboolean show = TRUE;
-
-    if (error) {
-        if(error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
-           dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_SOURCE_UNUSABLE)) {
-            show = FALSE;
-        } else if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
-                   dbus_g_error_has_name (error,
-                                          SYNCEVO_DBUS_ERROR_NO_SUCH_CONFIG)){
-            /* apparently templates can't be checked... */
-            /* TODO: could use a temporary config to do it... */
-        } else {
-            g_warning ("CheckSource failed: %s", error->message);
-            /* non-fatal, ignore in UI */
-        }
-        g_error_free (error);
-    }
-
-    if (show && widgets->count > 1) {
-        /* TODO: with the new two sources per row layout not showing things
-         * probably won't look good... */
-        gtk_widget_show (widgets->source_toggle_label);
-        gtk_widget_show (widgets->label);
-        gtk_widget_show (widgets->entry);
-        gtk_widget_show (widgets->check);
-    }
-    source_widgets_unref (widgets);
 }
 
 static void
@@ -602,6 +619,7 @@ init_source (char *name,
     static guint col = 0;
     source_widgets *widgets;
     SyncevoSyncMode mode;
+    save_config_data *data;
 
     type = g_hash_table_lookup (source_configuration, "type");
     uri = g_hash_table_lookup (source_configuration, "uri");
@@ -632,6 +650,7 @@ init_source (char *name,
     self->no_source_toggles = FALSE;
 
     widgets = g_slice_new0 (source_widgets);
+    widgets->name = name;
     widgets->count = 1;
     g_hash_table_insert (self->sources, name, widgets);
 
@@ -677,21 +696,18 @@ init_source (char *name,
     gtk_widget_set_sensitive (widgets->check,
                               uri && strlen (uri) > 0);
 
-    /* TODO: template sources cannot be checked. Should set a temporary config
-     * to check sources */
-    if (self->configured) {
-        source_widgets_ref (widgets);
-        syncevo_server_check_source (self->server,
-                                     self->config_name,
-                                     name,
-                                     (SyncevoServerGenericCb)check_source_cb,
-                                     widgets);
-    } else {
-        gtk_widget_show (widgets->source_toggle_label);
-        gtk_widget_show (widgets->label);
-        gtk_widget_show (widgets->entry);
-        gtk_widget_show (widgets->check);
-    }
+    /* start a session so we save a temporary config so we can do
+     * CheckSource, and show the source-related widgets if the 
+     * source is available */
+    data = g_slice_new (save_config_data);
+    data->widget = self;
+    data->delete = FALSE;
+    data->temporary = TRUE;
+    data->widgets = source_widgets_ref (widgets);
+    syncevo_server_start_session (self->server,
+                                  self->config_name,
+                                  (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
+                                  data);
 }
 
 static void
@@ -1158,7 +1174,6 @@ session_changed_cb (SyncevoServer *server,
                     gboolean started,
                     SyncConfigWidget *self)
 {
-
     if (started) {
         set_session (self, path);
     } else if (g_strcmp0 (self->running_session, path) == 0 ) {
@@ -1209,7 +1224,6 @@ sync_config_widget_set_server (SyncConfigWidget *self,
 
     /* reference is released in callback */
     g_object_ref (self);
-    /* TODO: this is stupid, every widget running the same dbus call*/
     syncevo_server_get_sessions (self->server,
                                  (SyncevoServerGetSessionsCb)get_sessions_cb,
                                  self);
