@@ -849,10 +849,12 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
      * or device name */
     str = g_strdup_printf (_("Send changes to %s"), self->pretty_name);
     self->send_check = add_toggle_widget (self, str, send, 0, 0);
+    gtk_widget_show (self->send_check);
     g_free (str);
 
     str = g_strdup_printf (_("Receive changes from %s"), self->pretty_name);
     self->receive_check = add_toggle_widget (self, str, receive, 0, 1);
+    gtk_widget_show (self->receive_check);
     g_free (str);
 
     align = gtk_alignment_new (0.0, 1.0, 0.0, 0.0);
