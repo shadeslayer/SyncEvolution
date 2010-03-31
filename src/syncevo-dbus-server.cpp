@@ -5796,7 +5796,7 @@ int main(int argc, char **argv)
         signal(SIGTERM, niam);
         signal(SIGINT, niam);
 
-        LogRedirect redirect(false);
+        LogRedirect redirect(true);
 
         // make daemon less chatty - long term this should be a command line option
         LoggerBase::instance().setLevel(LoggerBase::INFO);
@@ -5813,7 +5813,7 @@ int main(int argc, char **argv)
         DBusServer server(loop, conn, duration);
         server.activate();
 
-        std::cout << argv[0] << " ready to run\n" << std::flush;
+        SE_LOG_INFO(NULL, NULL, "%s: ready to run",  argv[0]);
         server.run();
 	return 0;
     } catch ( const std::exception &ex ) {
