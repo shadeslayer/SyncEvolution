@@ -529,6 +529,9 @@ add_toggle_widget (SyncConfigWidget *self,
                    guint row, guint col)
 {
     GtkWidget *toggle;
+    int padding;
+
+    padding = (col == 1) ? 0 : 32;
 
 #ifdef USE_MOBLIN_UX
     GtkWidget *label;
@@ -556,9 +559,10 @@ add_toggle_widget (SyncConfigWidget *self,
     g_signal_connect (toggle, "notify::active",
                       G_CALLBACK (mode_widget_notify_active_cb), self);
 #endif
+
     gtk_table_attach (GTK_TABLE (self->mode_table), toggle,
                       col + 1, col + 2, row, row + 1,
-                      GTK_FILL, GTK_FILL, 32, 0);
+                      GTK_FILL, GTK_FILL, padding, 0);
 
     return toggle;
 }
