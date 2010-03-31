@@ -901,7 +901,7 @@ setup_windows (app_data *data,
 
     /* create the window toolbar */
     toolbar = gtk_toolbar_new ();
-    gtk_widget_set_name (toolbar, "MeeGoToolbar");
+    gtk_widget_set_name (toolbar, "moblin-toolbar");
     gtk_box_pack_start (GTK_BOX (tmp), toolbar,
                         FALSE, FALSE, 0);
 
@@ -920,7 +920,7 @@ setup_windows (app_data *data,
 
     data->settings_btn = gtk_toggle_button_new ();
     gtk_widget_set_can_focus (data->settings_btn, FALSE);
-    gtk_widget_set_name (data->settings_btn, "MeeGoSettingsButton");
+    gtk_widget_set_name (data->settings_btn, "moblin-settings-button");
     data->settings_id = g_signal_connect (data->settings_btn, "toggled",
                                           G_CALLBACK (settings_toggled), data);
 
@@ -933,7 +933,7 @@ setup_windows (app_data *data,
 
     close_btn = gtk_button_new ();
     gtk_widget_set_can_focus (close_btn, FALSE);
-    gtk_widget_set_name (close_btn, "MeeGoCloseButton");
+    gtk_widget_set_name (close_btn, "moblin-close-button");
     g_signal_connect (close_btn, "clicked",
                       G_CALLBACK (gtk_main_quit), NULL);
     gtk_container_add (GTK_CONTAINER (close_btn),
