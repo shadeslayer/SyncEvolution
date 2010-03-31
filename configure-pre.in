@@ -378,6 +378,11 @@ if test $enable_dbus_service == "yes"; then
                  [Define to 1 if you need the dbus_watch_get_unix_fd() function.]))
     need_glib=yes
     PKG_CHECK_MODULES(LIBNOTIFY, [libnotify], HAVE_LIBNOTIFY=yes, HAVE_LIBNOTIFY=no)
+    AC_ARG_ENABLE(notify,
+                  AS_HELP_STRING([--enable-notify],
+                                 [send notifications for automatic sync events]),
+                  [ test "$enableval" = "no" || test $HAVE_LIBNOTIFY = "yes" || AC_ERROR([required libnotify package not found]) ],
+                  [ test $HAVE_LIBNOTIFY = "yes" || AC_ERROR([required libnotify package not found, use --disable-notify to compile without notifications]) ])
     if test $HAVE_LIBNOTIFY == "yes"; then
         AC_DEFINE(HAS_NOTIFY, 1, [define if libnotify could be used in dbus service])
     fi
