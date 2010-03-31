@@ -285,11 +285,44 @@ void LogRedirect::process(FDs &fds) throw()
             // out known noise.
             const char *prefix = NULL;
             Logger::Level level = Logger::DEV;
-            const char *text = m_buffer;
+            char *text = m_buffer;
 
             if (fds.m_original == STDOUT_FILENO) {
                 // stdout: not sure what this could be, so show it
-                level = Logger::INFO;
+                level = Logger::SHOW;
+                char *eol = strchr(text, '\n');
+                if (!m_stdoutData.empty()) {
+                    // try to complete previous line, can be done
+                    // if text contains a line break
+                    if (eol) {
+                        m_stdoutData.append(text, eol - text);
+                        text = eol + 1;
+                        LoggerBase::instance().message(level, prefix,
+                                                       NULL, 0, NULL,
+                                                       "%s", m_stdoutData.c_str());
+                        m_stdoutData.clear();
+                    }
+                }
+
+                // avoid sending incomplete line at end of text,
+                // must be done when there is no line break or
+                // it is not at the end of the buffer
+                eol = strrchr(text, '\n');
+                if (eol != m_buffer + available - 1) {
+                    if (eol) {
+                        m_stdoutData.append(eol + 1);
+                        *eol = 0;
+                    } else {
+                        m_stdoutData.append(text);
+                        *text = 0;
+                    }
+                }
+
+                // output might have been processed as part of m_stdoutData,
+                // don't log empty string below
+                if (!*text) {
+                    continue;
+                }
             } else if (fds.m_original == STDERR_FILENO) {
                 // stderr: not normally useful for users, so we
                 // can filter it more aggressively. For example,
@@ -342,6 +375,19 @@ void LogRedirect::process() throw()
     }
 
     m_processing = false;
+}
+
+
+
+void LogRedirect::flush() throw()
+{
+    process();
+    if (!m_stdoutData.empty()) {
+        LoggerBase::instance().message(Logger::SHOW, NULL,
+                                       NULL, 0, NULL,
+                                       "%s", m_stdoutData.c_str());
+        m_stdoutData.clear();
+    }
 }
 
 

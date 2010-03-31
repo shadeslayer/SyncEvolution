@@ -74,6 +74,7 @@ using namespace SyncEvo;
 
 static GMainLoop *loop = NULL;
 static bool shutdownRequested = false;
+static LogRedirect *redirectPtr;
 
 /**
  * Anything that can be owned by a client, like a connection
@@ -2009,6 +2010,9 @@ public:
         } catch (...) {
             Exception::handle();
         }
+        // always forward all currently pending redirected output
+        // before closing the session
+        redirectPtr->flush();
     }
 };
 
@@ -5797,6 +5801,7 @@ int main(int argc, char **argv)
         signal(SIGINT, niam);
 
         LogRedirect redirect(true);
+        redirectPtr = &redirect;
 
         // make daemon less chatty - long term this should be a command line option
         LoggerBase::instance().setLevel(LoggerBase::INFO);

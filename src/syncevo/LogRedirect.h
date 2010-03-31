@@ -76,9 +76,14 @@ SE_BEGIN_CXX
  *
  * Redirection and signal handlers are disabled if the environment
  * variable SYNCEVOLUTION_DEBUG is set (regardless of its value).
+ *
+ * In contrast to stderr, stdout is only passed into the logging
+ * system as complete lines. That's because it may include data (like
+ * synccompare output) which is not printed line-oriented and
+ * inserting line breaks (as the logging system does) is undesirable.
+ * If an output packet does not end in a line break, that last line
+ * is buffered and written together with the next packet, or in flush().
  */
-
-
 class LogRedirect : public LoggerStdout
 {
     struct FDs {
@@ -89,6 +94,7 @@ class LogRedirect : public LoggerStdout
     } m_stdout, m_stderr;
     FILE *m_out;            /** a stream for the normal LogStdout which isn't redirected */
     char *m_buffer;         /** typically fairly small buffer for reading */
+    std::string m_stdoutData;  /**< incomplete stdout line */
     size_t m_len;           /** total length of buffer */
     bool m_processing;      /** flag to detect recursive process() calls */
     static LogRedirect *m_redirect; /**< single active instance, for signal handler */
@@ -107,6 +113,9 @@ class LogRedirect : public LoggerStdout
     ~LogRedirect() throw();
 
     void process() throw();
+
+    /** same as process(), but also dump all cached output */
+    void flush() throw();
 
     /** format log messages via normal LogStdout and print to a valid stream owned by us */
     virtual void messagev(Level level,
