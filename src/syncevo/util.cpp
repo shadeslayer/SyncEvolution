@@ -24,17 +24,21 @@
 #include <syncevo/TransportAgent.h>
 #include <syncevo/SynthesisEngine.h>
 #include <syncevo/Logging.h>
+#include <syncevo/LogRedirect.h>
 
 #include <synthesis/syerror.h>
 
 #include <boost/scoped_array.hpp>
 #include <boost/foreach.hpp>
 #include <fstream>
+#include <iostream>
 
 #include <errno.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <dirent.h>
 
 #if USE_SHA256 == 1
@@ -174,6 +178,91 @@ bool isDir(const string &path)
     }
 
     return false;
+}
+
+int Execute(const std::string &cmd, ExecuteFlags flags) throw()
+{
+    int ret = -1;
+
+    try {
+        // use simpler system() calls whenever we don't want to capture
+        // output, because it means that output is sent to the user
+        // directly
+        if (((flags & EXECUTE_NO_STDERR) || !LogRedirect::redirectingStderr()) &&
+            ((flags & EXECUTE_NO_STDOUT) || !LogRedirect::redirectingStdout())) {
+            string fullcmd = cmd;
+            if (flags & EXECUTE_NO_STDERR) {
+                fullcmd += " 2>/dev/null";
+            }
+            if (flags & EXECUTE_NO_STDOUT) {
+                fullcmd += " >/dev/null";
+            }
+            ret = system(fullcmd.c_str());
+        } else {
+            // Need to catch at least one of stdout or stderr. A
+            // low-tech solution would be to use temporary files which
+            // are read after system() returns. But we want true
+            // streaming of the output, so use fork()/exec() plus
+            // reliable output redirection.
+            LogRedirect io(flags);
+            pid_t child = fork();
+            switch (child) {
+            case 0: {
+                // child process:
+                // - close unused end of the pipes
+                if (io.getStdout().m_read >= 0) {
+                    close(io.getStdout().m_read);
+                }
+                if (io.getStderr().m_read >= 0) {
+                    close(io.getStderr().m_read);
+                }
+                // - replace file descriptors 1 and 2 with the ones
+                //   prepared for us or /dev/null
+                int fd;
+                int fd_null = open("/dev/null", O_WRONLY);
+                fd = io.getStdout().m_write;
+                if (fd <= 0) {
+                    fd = fd_null;
+                }
+                dup2(fd, STDOUT_FILENO);
+                fd = io.getStderr().m_write;
+                if (fd <= 0) {
+                    fd = fd_null;
+                }
+                dup2(fd, STDERR_FILENO);
+                // - run command
+                execl("/bin/sh", "sh", "-c", cmd.c_str(), NULL);
+                // - error handling if execl() failed (= returned)
+                std::cerr << cmd << ": execl() failed: " << strerror(errno);
+                exit(1);
+                break;
+            }
+            case -1:
+                // error handling in parent when fork() fails
+                SE_LOG_ERROR(NULL, NULL, "%s: fork() failed: %s",
+                             cmd.c_str(), strerror(errno));
+                break;
+            default:
+                // parent:
+                // - close write side so that we can detect "end of data"
+                if (io.getStdout().m_write >= 0) {
+                    close(io.getStdout().m_write);
+                }
+                if (io.getStderr().m_write >= 0) {
+                    close(io.getStderr().m_write);
+                }
+                // - read until no more data
+                io.process();
+                // - wait for child, without caring about errors
+                waitpid(child, &ret, 0);
+                break;
+            }
+        }
+    } catch (...) {
+        Exception::handle();
+    }
+
+    return ret;
 }
 
 UUID::UUID()

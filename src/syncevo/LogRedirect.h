@@ -21,6 +21,7 @@
 #define INCL_LOGREDIRECT
 
 #include <syncevo/LogStdout.h>
+#include <syncevo/util.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -86,12 +87,17 @@ SE_BEGIN_CXX
  */
 class LogRedirect : public LoggerStdout
 {
+ public:
     struct FDs {
         int m_original;     /** the original output FD, 2 for stderr */
         int m_copy;         /** a duplicate of the original output file descriptor */
         int m_write;        /** the write end of the replacement */
         int m_read;         /** the read end of the replacement */
-    } m_stdout, m_stderr;
+    };
+
+ private:
+    FDs m_stdout, m_stderr;
+    bool m_streams;         /**< using reliable streams instead of UDP */
     FILE *m_out;            /** a stream for the normal LogStdout which isn't redirected */
     char *m_buffer;         /** typically fairly small buffer for reading */
     std::string m_stdoutData;  /**< incomplete stdout line */
@@ -104,14 +110,40 @@ class LogRedirect : public LoggerStdout
     void redirect(int original, FDs &fds) throw();
     void restore(FDs &fds) throw();
     void restore() throw();
-    void process(FDs &fds) throw();
+    /** @return true if data was available */
+    bool process(FDs &fds) throw();
     static void abortHandler(int sig) throw();
 
+    void init();
+
  public:
-    /** redirect both stderr and stdout or just stderr */
+    /** 
+     * Redirect both stderr and stdout or just stderr,
+     * using UDP so that we don't block when not reading
+     * redirected output.
+     */
     LogRedirect(bool both = true) throw();
     ~LogRedirect() throw();
 
+    /**
+     * Meant to be used for redirecting output of a specific command
+     * via fork()/exec(). Prepares reliable streams, as determined by
+     * ExecuteFlags, without touch file descriptor 1 and 2 and without
+     * installing itself as logger. In such an instance, process()
+     * will block until both streams get closed on the writing end.
+     */
+    LogRedirect(ExecuteFlags flags);
+
+    /** true if stdout is redirected */
+    static bool redirectingStdout() { return m_redirect && m_redirect->m_stdout.m_read > 0; }
+
+    /** true if stderr is redirected */
+    static bool redirectingStderr() { return m_redirect && m_redirect->m_stderr.m_read > 0; }
+
+    const FDs &getStdout() { return m_stdout; }
+    const FDs &getStderr() { return m_stderr; }
+
+    /** read currently available redirected output and handle it */
     void process() throw();
 
     /** same as process(), but also dump all cached output */

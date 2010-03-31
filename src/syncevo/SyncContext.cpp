@@ -1217,10 +1217,12 @@ public:
             }
             string newDir = databaseName(*source, newSuffix);
             out << "*** " << source->getName() << " ***\n" << flush;
-            string cmd = string("env CLIENT_TEST_COMPARISON_FAILED=10 " + config + " synccompare 2>/dev/null '" ) +
+            string cmd = string("env CLIENT_TEST_COMPARISON_FAILED=10 " + config + " synccompare '" ) +
                 oldDir + "' '" + newDir + "'";
-            int ret = system(cmd.c_str());
-            switch (ret == -1 ? ret : WEXITSTATUS(ret)) {
+            int ret = Execute(cmd, EXECUTE_NO_STDERR);
+            switch (ret == -1 ? ret :
+                    WIFEXITED(ret) ? WEXITSTATUS(ret) :
+                    -1) {
             case 0:
                 out << "no changes\n";
                 break;

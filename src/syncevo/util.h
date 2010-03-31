@@ -107,6 +107,30 @@ bool isDir(const string &path);
  */
 bool ReadFile(const string &filename, string &content);
 
+enum ExecuteFlags {
+    EXECUTE_NO_STDERR = 1<<0,       /**< suppress stderr of command */
+    EXECUTE_NO_STDOUT = 1<<1        /**< suppress stdout of command */
+};
+
+/**
+ * system() replacement
+ *
+ * If called without output redirection active (see LogRedirect),
+ * then it will simply call system(). If output redirection is
+ * active, the command is executed in a forked process without
+ * blocking the parent process and the parent reads the output,
+ * passing it through LogRedirect for processing.
+ *
+ * This is necessary to capture all output reliably: LogRedirect
+ * ensures that we don't deadlock, but to achieve that, it drops
+ * data when the child prints too much of it.
+ *
+ * @param cmd      command including parameters, without output redirection
+ * @param flags    see ExecuteFlags
+ * @return same as in system(): use WEXITSTATUS() et.al. to decode it
+ */
+int Execute(const std::string &cmd, ExecuteFlags flags) throw();
+
 /**
  * Simple string hash function, derived from Dan Bernstein's algorithm.
  */

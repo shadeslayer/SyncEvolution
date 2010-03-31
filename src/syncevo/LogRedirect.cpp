@@ -63,12 +63,13 @@ void LogRedirect::abortHandler(int sig) throw()
     raise(sig);
 }
 
-LogRedirect::LogRedirect(bool both) throw()
+void LogRedirect::init()
 {
     m_processing = false;
     m_buffer = NULL;
     m_len = 0;
     m_out = NULL;
+    m_streams = false;
     m_stderr.m_original =
         m_stderr.m_read =
         m_stderr.m_write =
@@ -77,6 +78,11 @@ LogRedirect::LogRedirect(bool both) throw()
         m_stdout.m_read =
         m_stdout.m_write =
         m_stdout.m_copy = -1;
+}
+
+LogRedirect::LogRedirect(bool both) throw()
+{
+    init();
     if (!getenv("SYNCEVOLUTION_DEBUG")) {
         redirect(STDERR_FILENO, m_stderr);
         if (both) {
@@ -110,9 +116,26 @@ LogRedirect::LogRedirect(bool both) throw()
     }
 }
 
+LogRedirect::LogRedirect(ExecuteFlags flags)
+{
+    init();
+
+    m_streams = true;
+    if (!(flags & EXECUTE_NO_STDERR)) {
+        redirect(STDERR_FILENO, m_stderr);
+    }
+    if (!(flags & EXECUTE_NO_STDOUT)) {
+        redirect(STDOUT_FILENO, m_stdout);
+    }
+}
+
 LogRedirect::~LogRedirect() throw()
 {
-    m_redirect = NULL;
+    bool pop = false;
+    if (m_redirect == this) {
+        m_redirect = NULL;
+        pop = true;
+    }
     process();
     restore();
     if (m_out) {
@@ -121,7 +144,9 @@ LogRedirect::~LogRedirect() throw()
     if (m_buffer) {
         free(m_buffer);
     }
-    LoggerBase::popLogger();
+    if (pop) {
+        LoggerBase::popLogger();
+    }
 }
 
 void LogRedirect::restore() throw()
@@ -154,57 +179,62 @@ void LogRedirect::redirect(int original, FDs &fds) throw()
     fds.m_write = fds.m_read = -1;
     fds.m_copy = dup(fds.m_original);
     if (fds.m_copy >= 0) {
-#ifdef USE_LOGREDIRECT_UNIX_DOMAIN
-        int sockets[2];
-
-        if (!socketpair(AF_LOCAL, SOCK_DGRAM, 0, sockets)) {
-            if (dup2(sockets[0], fds.m_original) >= 0) {
+        if (m_streams) {
+            // According to Stevens, Unix Network Programming, "Unix
+            // domain datagram sockets are similar to UDP sockets: the
+            // provide an *unreliable* datagram service that preserves
+            // record boundaries." (14.4 Socket Functions,
+            // p. 378). But unit tests showed that they do block on
+            // Linux and thus seem reliable. Not sure what the official
+            // spec is.
+            //
+            // To avoid the deadlock risk, we must use UDP. But when we
+            // want "reliable" behavior, Unix domain sockets seem to work
+            // and have the advantage over pipes that write() boundaries
+            // are preserved, so let's use them.
+            int sockets[2];
+            if (!socketpair(AF_LOCAL, SOCK_DGRAM, 0, sockets)) {
                 // success
                 fds.m_write = sockets[0];
                 fds.m_read = sockets[1];
                 return;
             } else {
-                perror("LogRedirect::redirect() dup2");
+                perror("LogRedirect::redirect() socketpair");
             }
-            close(sockets[0]);
-            close(sockets[1]);
         } else {
-            perror("LogRedirect::redirect() socketpair");
-        }
-#else
-        int write = socket(AF_INET, SOCK_DGRAM, 0);
-        if (write >= 0) {
-            int read = socket(AF_INET, SOCK_DGRAM, 0);
-            if (read >= 0) {
-                struct sockaddr_in addr;
-                memset(&addr, 0, sizeof(addr));
-                addr.sin_family = AF_INET;
-                addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-                bool bound = false;
-                for (int port = 1025; !bound && port < 10000; port++) {
-                    addr.sin_port = htons(port);
-                    if (!bind(read, (struct sockaddr *)&addr, sizeof(addr))) {
-                        bound = true;
-                    }
-                }
-
-                if (bound) {
-                    if (!connect(write, (struct sockaddr *)&addr, sizeof(addr))) {
-                        if (dup2(write, fds.m_original) >= 0) {
-                            // success
-                            fds.m_write = write;
-                            fds.m_read = read;
-                            return;
+            int write = socket(AF_INET, SOCK_DGRAM, 0);
+            if (write >= 0) {
+                int read = socket(AF_INET, SOCK_DGRAM, 0);
+                if (read >= 0) {
+                    struct sockaddr_in addr;
+                    memset(&addr, 0, sizeof(addr));
+                    addr.sin_family = AF_INET;
+                    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+                    bool bound = false;
+                    for (int port = 1025; !bound && port < 10000; port++) {
+                        addr.sin_port = htons(port);
+                        if (!bind(read, (struct sockaddr *)&addr, sizeof(addr))) {
+                            bound = true;
                         }
-                        perror("LogRedirect::redirect() dup2");
                     }
-                    perror("LogRedirect::redirect connect");
+
+                    if (bound) {
+                        if (!connect(write, (struct sockaddr *)&addr, sizeof(addr))) {
+                            if (dup2(write, fds.m_original) >= 0) {
+                                // success
+                                fds.m_write = write;
+                                fds.m_read = read;
+                                return;
+                            }
+                            perror("LogRedirect::redirect() dup2");
+                        }
+                        perror("LogRedirect::redirect connect");
+                    }
+                    close(read);
                 }
-                close(read);
+                close(write);
             }
-            close(write);
         }
-#endif
         close(fds.m_copy);
         fds.m_copy = -1;
     } else {
@@ -214,35 +244,41 @@ void LogRedirect::redirect(int original, FDs &fds) throw()
 
 void LogRedirect::restore(FDs &fds) throw()
 {
-    if (fds.m_copy < 0) {
-        return;
+    if (!m_streams && fds.m_copy >= 0) {
+        // flush our own redirected output and process what they might have written
+        if (fds.m_original == STDOUT_FILENO) {
+            fflush(stdout);
+            std::cout << std::flush;
+        } else {
+            fflush(stderr);
+            std::cerr << std::flush;
+        }
+        process(fds);
+
+        dup2(fds.m_copy, fds.m_original);
     }
 
-    // flush streams and process what they might have written
-    if (fds.m_original == STDOUT_FILENO) {
-        fflush(stdout);
-        std::cout << std::flush;
-    } else {
-        fflush(stderr);
-        std::cerr << std::flush;
+    if (fds.m_copy >= 0) {
+        close(fds.m_copy);
     }
-    process(fds);
-
-    dup2(fds.m_copy, fds.m_original);
-    close(fds.m_copy);
-    close(fds.m_write);
-    close(fds.m_read);
+    if (fds.m_write >= 0) {
+        close(fds.m_write);
+    }
+    if (fds.m_read >= 0) {
+        close(fds.m_read);
+    }
     fds.m_copy =
         fds.m_write =
         fds.m_read = -1;
 }
 
-void LogRedirect::process(FDs &fds) throw()
+bool LogRedirect::process(FDs &fds) throw()
 {
     bool have_message;
+    bool data_read = false;
 
     if (fds.m_read <= 0) {
-        return;
+        return data_read;
     }
 
     do {
@@ -276,6 +312,7 @@ void LogRedirect::process(FDs &fds) throw()
         if (have_message) {
             // swallow packet, even if empty or we couldn't receive it
             recv(fds.m_read, NULL, 0, MSG_DONTWAIT);
+            data_read = true;
         }
 
         if (available > 0) {
@@ -354,11 +391,78 @@ void LogRedirect::process(FDs &fds) throw()
                                            "%s", text);
         }
     } while(have_message);
+
+    return data_read;
 }
 
 
 void LogRedirect::process() throw()
 {
+    if (m_streams) {
+        // iterate until both sockets are closed by peer
+        while (true) {
+            fd_set readfds;
+            fd_set errfds;
+            int maxfd = 0;
+            FD_ZERO(&readfds);
+            FD_ZERO(&errfds);
+            if (m_stdout.m_read >= 0) {
+                FD_SET(m_stdout.m_read, &readfds);
+                FD_SET(m_stdout.m_read, &errfds);
+                maxfd = m_stdout.m_read;
+            }
+            if (m_stderr.m_read >= 0) {
+                FD_SET(m_stderr.m_read, &readfds);
+                FD_SET(m_stderr.m_read, &errfds);
+                if (m_stderr.m_read > maxfd) {
+                    maxfd = m_stderr.m_read;
+                }
+            }
+            if (maxfd == 0) {
+                // both closed
+                return;
+            }
+
+            int res = select(maxfd + 1, &readfds, NULL, &errfds, NULL);
+            switch (res) {
+            case -1:
+                perror("LogRedirect::process(): select()");
+                return;
+            case 0:
+                // None ready? Try again.
+                break;
+            default:
+                if (m_stdout.m_read >= 0 && FD_ISSET(m_stdout.m_read, &readfds)) {
+                    if (!process(m_stdout)) {
+                        // Exact status of a Unix domain datagram socket upon close
+                        // of the remote end is a bit uncertain. For TCP, we would end
+                        // up here: marked by select as "ready for read", but no data -> EOF.
+                        close(m_stdout.m_read);
+                        m_stdout.m_read = -1;
+                    }
+                }
+                if (m_stdout.m_read >= 0 && FD_ISSET(m_stdout.m_read, &errfds)) {
+                    // But in practice, Unix domain sockets don't mark the stream
+                    // as "closed". This is an attempt to detect that situation
+                    // via the FDs exception status, but that also doesn't work.
+                    close(m_stdout.m_read);
+                    m_stdout.m_read = -1;
+                }
+                if (m_stderr.m_read >= 0 && FD_ISSET(m_stderr.m_read, &readfds)) {
+                    if (!process(m_stderr)) {
+                        close(m_stderr.m_read);
+                        m_stderr.m_read = -1;
+                    }
+                }
+                if (m_stderr.m_read >= 0 && FD_ISSET(m_stderr.m_read, &errfds)) {
+                    close(m_stderr.m_read);
+                    m_stderr.m_read = -1;
+                }
+                break;
+            }
+        }
+    }
+
     if (m_processing) {
         return;
     }
