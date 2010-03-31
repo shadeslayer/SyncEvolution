@@ -1421,17 +1421,32 @@ string SyncContext::getUsedSyncURL() {
 boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainloop)
 {
     string url = getUsedSyncURL();
+    m_retryInterval = getRetryInterval();
+    m_retryDuration = getRetryDuration();
+    int timeout = m_serverMode ? m_retryDuration : m_retryInterval;
+
     if (boost::starts_with(url, "http://") ||
         boost::starts_with(url, "https://")) {
 #ifdef ENABLE_LIBSOUP
         
         boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent(static_cast<GMainLoop *>(gmainloop)));
         agent->setConfig(*this);
+
+        if (timeout) {
+            agent->setCallback(transport_cb,
+                        reinterpret_cast<void *>(static_cast<uintptr_t>(timeout)),
+                        timeout);
+        }
         return agent;
 #elif defined(ENABLE_LIBCURL)
         if (!gmainloop) {
             boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
             agent->setConfig(*this);
+            if (timeout) {
+                agent->setCallback(transport_cb,
+                        reinterpret_cast<void *>(static_cast<uintptr_t>(timeout)),
+                        timeout);
+            }
             return agent;
         }
 #endif
@@ -1441,6 +1456,11 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainl
         boost::shared_ptr<ObexTransportAgent> agent(new ObexTransportAgent(ObexTransportAgent::OBEX_BLUETOOTH,
                                                                            static_cast<GMainLoop *>(gmainloop)));
         agent->setURL (btUrl);
+        if (timeout) {
+            agent->setCallback(transport_cb,
+                    reinterpret_cast<void *>(static_cast<uintptr_t>(timeout)),
+                    timeout);
+        }
         agent->connect();
         return agent;
 #endif
@@ -1949,13 +1969,6 @@ bool SyncContext::transport_cb (void *udata)
     // never cancel the transport, the higher levels will deal
     // with the timeout
     return true;
-}
-
-void SyncContext::setTransportCallback(int seconds)
-{
-    m_agent->setCallback(transport_cb,
-                         reinterpret_cast<void *>(static_cast<uintptr_t>(seconds)),
-                         seconds);
 }
 
 // XML configuration converted to C string constants
@@ -2889,13 +2902,6 @@ bool SyncContext::sendSAN(uint16_t version)
     }
 
     m_agent = createTransportAgent();
-    // Time out after the complete retry duration. This is the
-    // initial message of a sync, so we don't resend it (just as
-    // in a HTTP SyncML client trying to contact server).
-    int retryDuration = getRetryDuration();
-    if (retryDuration) {
-        setTransportCallback(retryDuration);
-    }
     SE_LOG_INFO (NULL, NULL, "Server sending SAN");
     m_agent->setContentType(!legacy ? 
                            TransportAgent::m_contentTypeServerAlertedNotificationDS
@@ -3116,8 +3122,6 @@ SyncMLStatus SyncContext::doSync()
         targets = m_engine.OpenKeyByPath(profile, "targets");
     }
 
-    m_retryInterval = getRetryInterval();
-    m_retryDuration = getRetryDuration();
     m_retries = 0;
 
     //Create the transport agent if not already created
@@ -3347,10 +3351,6 @@ SyncMLStatus SyncContext::doSync()
                 sessionKey.reset();
                 
                 sendStart = resendStart = time (NULL);
-                int timeout = m_serverMode ? m_retryDuration : m_retryInterval;
-                if (timeout) {
-                    setTransportCallback(timeout);
-                }
                 requestNum ++;
                 // use GetSyncMLBuffer()/RetSyncMLBuffer() to access the data to be
                 // sent or have it copied into caller's buffer using
