@@ -251,6 +251,7 @@ void ObexTransportAgent::connectReq() {
     header.bs = (unsigned char *) "SYNCML-SYNC";
     OBEX_ObjectAddHeader(m_handle->get(), connect, OBEX_HDR_TARGET, header, strlen ((char *) header.bs), OBEX_FL_FIT_ONE_PACKET);
     m_obexReady = false;
+    m_requestStart = time (NULL);
     if (OBEX_Request (m_handle->get(), connect) <0) {
         SE_THROW_EXCEPTION (TransportException, "ObexTransport: OBEX connect init failed");
     }
