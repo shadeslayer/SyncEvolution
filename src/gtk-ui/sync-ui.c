@@ -1328,8 +1328,9 @@ update_emergency_expander (app_data *data)
 }
 
 static void
-add_emergency_source (const char *name, source_config *conf, app_data *data)
+add_emergency_source (const char *name, GHashTable *source, app_data *data)
 {
+    source_config *conf;
     GtkWidget *toggle;
     guint rows, cols;
     guint row;
@@ -1337,6 +1338,8 @@ add_emergency_source (const char *name, source_config *conf, app_data *data)
     gboolean active = TRUE;
     char *pretty_name;
 
+    conf = g_hash_table_lookup (data->current_service->source_configs,
+                                name);
     g_object_get (data->emergency_source_table,
                   "n-rows", &rows,
                   "n-columns", &cols,
@@ -1609,9 +1612,12 @@ update_emergency_view (app_data *data)
                            (GtkCallback)remove_child,
                            data->emergency_source_table);
     gtk_table_resize (GTK_TABLE (data->emergency_source_table), 1, 1);
-    g_hash_table_foreach (data->current_service->source_configs,
-                          (GHFunc)add_emergency_source,
-                          data);
+
+     /* using this instead of current_service->source_configs
+      *  to get the same order as the configuration has... */
+    syncevo_config_foreach_source (data->current_service->config,
+                                   (ConfigFunc)add_emergency_source,
+                                   data);
     update_emergency_expander (data);
 
     data->backup_count = 0;
