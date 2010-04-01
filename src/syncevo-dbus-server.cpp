@@ -2694,9 +2694,20 @@ boost::shared_ptr<TransportAgent> DBusSync::createTransportAgent()
 {
     if (m_session.useConnection()) {
         // use the D-Bus Connection to send and receive messages
-        return boost::shared_ptr<TransportAgent>(new DBusTransportAgent(m_session.getServer().getLoop(),
-                                                                        m_session,
-                                                                        m_session.getConnection()));
+        boost::shared_ptr<TransportAgent> agent(new DBusTransportAgent(m_session.getServer().getLoop(),
+                                                                       m_session,
+                                                                       m_session.getConnection()));
+        // We don't know whether we'll run as client or server.
+        // But we as we cannot resend messages via D-Bus even if running as
+        // client (API not designed for it), let's use the hard timeout
+        // from RetryDuration here.
+        int timeout = getRetryDuration();
+        if (timeout) {
+            agent->setCallback(transport_cb,
+                               reinterpret_cast<void *>(static_cast<uintptr_t>(timeout)),
+                               timeout);
+        }
+        return agent;
     } else {
         // no connection, use HTTP via libsoup/GMainLoop
         GMainLoop *loop = m_session.getServer().getLoop();

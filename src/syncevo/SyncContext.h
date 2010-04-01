@@ -588,7 +588,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     /**
      * instantiate transport agent
      *
-     * Called by engine when it needs to do HTTP POST requests.  The
+     * Called by engine when it needs to exchange messages.  The
      * transport agent will be used throughout the sync session and
      * unref'ed when no longer needed. At most one agent will be
      * requested at a time. The transport agent is intentionally
@@ -596,6 +596,12 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * class with a different life cycle is possible, either by
      * keeping a reference or by returning a shared_ptr where the
      * destructor doesn't do anything.
+     *
+     * The agent must be ready for use:
+     * - HTTP specific settings must have been applied
+     * - the current SyncContect's transport_cb() must have been
+     *   installed via TransportAgent::setCallback(), with a suitable
+     *   timeout for the agent
      *
      * The default implementation instantiates one of the builtin
      * transport agents, depending on how it was compiled.
