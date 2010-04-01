@@ -1086,7 +1086,7 @@ class DBusServer : public DBusObjectHelper,
                        std::vector<std::string> &transports);
 
     /** Server.GetSessions() */
-    void getSessions(std::vector<std::string> &sessions);
+    void getSessions(std::vector<DBusObject_t> &sessions);
 
     /** Server.InfoResponse() */
     void infoResponse(const Caller_t &caller,
@@ -4645,7 +4645,7 @@ void DBusServer::checkPresence(const std::string &server,
     return m_presence.checkPresence(server, status, transports);
 }
 
-void DBusServer::getSessions(std::vector<std::string> &sessions)
+void DBusServer::getSessions(std::vector<DBusObject_t> &sessions)
 {
     sessions.reserve(m_workQueue.size() + 1);
     if (m_activeSession) {
