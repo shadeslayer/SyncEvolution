@@ -100,10 +100,10 @@
         }
       }
       // a workaround for funambol: adding 'action' for 'alarm'
-      if (ITEMDATATYPE()=="iCalendar20") {
-        if (ALARM_TIME!=EMPTY && ALARM_ACTION==EMPTY) {
-            ALARM_ACTION = "DISPLAY";
-        }
+      // if item data type is vCalendar1.0, also add 'action' for 'alarm'.
+      // This is a workaround for Mobical.net, which uses vCalendar1.0.
+      if (ALARM_TIME!=EMPTY && ALARM_ACTION==EMPTY) {
+          ALARM_ACTION = "DISPLAY";
       }
     ]]></macro>
 
