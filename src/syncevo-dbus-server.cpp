@@ -2450,6 +2450,11 @@ void ReadOperations::getConfig(bool getTemplate,
             SyncSourceNodes nodes = shared->getSyncSourceNodes(source, "");
             props.clear();
             nodes.getProperties()->readProperties(props);
+            // Special case "type" property: the value in the context
+            // is not preserved. Every new peer must ensure that
+            // its own value is compatible (= same backend) with
+            // the other peers.
+            props.erase("type");
             dbusConfig->setConfigFilter(false, source, props);
         }
         syncConfig = dbusConfig.get();
