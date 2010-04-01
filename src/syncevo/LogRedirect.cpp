@@ -189,11 +189,15 @@ void LogRedirect::redirect(int original, FDs &fds) throw()
             // spec is.
             //
             // To avoid the deadlock risk, we must use UDP. But when we
-            // want "reliable" behavior, Unix domain sockets seem to work
-            // and have the advantage over pipes that write() boundaries
-            // are preserved, so let's use them.
+            // want "reliable" behavior *and* detect that all output was
+            // processed, we have to use streams despite loosing
+            // the write() boundaries, because Unix domain datagram sockets
+            // do not flag "end of data".
             int sockets[2];
-            if (!socketpair(AF_LOCAL, SOCK_DGRAM, 0, sockets)) {
+#define USE_UNIX_DOMAIN_DGRAM 0
+            if (!socketpair(AF_LOCAL,
+                            USE_UNIX_DOMAIN_DGRAM ? SOCK_DGRAM : SOCK_STREAM,
+                            0, sockets)) {
                 // success
                 fds.m_write = sockets[0];
                 fds.m_read = sockets[1];
@@ -299,9 +303,23 @@ bool LogRedirect::process(FDs &fds) throw()
                     m_len = newlen;
                 }
             }
-            // read, but leave space for nul byte
-            available = recv(fds.m_read, m_buffer, m_len - 1, MSG_PEEK|MSG_DONTWAIT);
-            have_message = available >= 0;
+            // read, but leave space for nul byte;
+            // when using datagrams, we only peek here and remove the
+            // datagram below, without rereading the data
+            if (!USE_UNIX_DOMAIN_DGRAM && m_streams) {
+                available = recv(fds.m_read, m_buffer, m_len - 1, MSG_DONTWAIT);
+                if (available == 0 ||
+                    available == -1) { // assuming EAGAIN here
+                    return data_read;
+                } else {
+                    // data read, process it
+                    data_read = true;
+                    break;
+                }
+            } else {
+                available = recv(fds.m_read, m_buffer, m_len - 1, MSG_DONTWAIT|MSG_PEEK);
+                have_message = available >= 0;
+            }
             if (available < (ssize_t)m_len - 1) {
                 break;
             } else {
