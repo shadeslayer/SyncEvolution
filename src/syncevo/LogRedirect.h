@@ -143,8 +143,15 @@ class LogRedirect : public LoggerStdout
     const FDs &getStdout() { return m_stdout; }
     const FDs &getStderr() { return m_stderr; }
 
-    /** read currently available redirected output and handle it */
-    void process() throw();
+    /**
+     * Read currently available redirected output and handle it.
+     *
+     * When using unreliable output redirection, it will always
+     * keep going without throwing exceptions. When using reliable
+     * redirection and a fatal error occurs, then and exception
+     * is thrown.
+     */
+    void process();
 
     /** same as process(), but also dump all cached output */
     void flush() throw();

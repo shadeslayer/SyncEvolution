@@ -21,6 +21,7 @@
 #include "config.h"
 #include <syncevo/LogRedirect.h>
 #include <syncevo/Logging.h>
+#include <syncevo/SyncContext.h>
 #include "test.h"
 #include <syncevo/util.h>
 #include <sys/types.h>
@@ -308,9 +309,16 @@ bool LogRedirect::process(FDs &fds) throw()
             // datagram below, without rereading the data
             if (!USE_UNIX_DOMAIN_DGRAM && m_streams) {
                 available = recv(fds.m_read, m_buffer, m_len - 1, MSG_DONTWAIT);
-                if (available == 0 ||
-                    available == -1) { // assuming EAGAIN here
+                if (available == 0) {
                     return data_read;
+                } else if (available == -1) {
+                    if (errno == EAGAIN) {
+                        // pretend that data was read, so that caller invokes us again
+                        return true;
+                    } else {
+                        SyncContext::throwError("reading output", errno);
+                        return false;
+                    }
                 } else {
                     // data read, process it
                     data_read = true;
@@ -414,7 +422,7 @@ bool LogRedirect::process(FDs &fds) throw()
 }
 
 
-void LogRedirect::process() throw()
+void LogRedirect::process()
 {
     if (m_streams) {
         // iterate until both sockets are closed by peer
@@ -444,8 +452,10 @@ void LogRedirect::process() throw()
             int res = select(maxfd + 1, &readfds, NULL, &errfds, NULL);
             switch (res) {
             case -1:
-                perror("LogRedirect::process(): select()");
+                // fatal, cannot continue
+                SyncContext::throwError("waiting for output", errno);
                 return;
+                break;
             case 0:
                 // None ready? Try again.
                 break;

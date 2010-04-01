@@ -251,7 +251,7 @@ int Execute(const std::string &cmd, ExecuteFlags flags) throw()
                 if (io.getStderr().m_write >= 0) {
                     close(io.getStderr().m_write);
                 }
-                // - read until no more data
+                // - read until no more data or error triggers exception
                 io.process();
                 // - wait for child, without caring about errors
                 waitpid(child, &ret, 0);
